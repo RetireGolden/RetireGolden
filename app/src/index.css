@@ -18,7 +18,10 @@
   --bad: #b91c1c;
   --chart-1: #B8860B;
   --chart-2: #6366f1;
-  --chart-3: #d97706;
+  /* Green, not amber: the gold rebrand made --chart-1 gold, and amber was
+     indistinguishable from it in 1-vs-3 pairings (Income vs Spending,
+     Traditional vs Taxable). Green is maximally distinct from gold. */
+  --chart-3: #0C8F66;
   --chart-4: #db2777;
   --chart-5: #64748b;
   --chart-6: #7c3aed;
@@ -50,7 +53,7 @@
   --bad: #f87171;
   --chart-1: #E3B341;
   --chart-2: #818cf8;
-  --chart-3: #fbbf24;
+  --chart-3: #34D399;
   --chart-4: #f472b6;
   --chart-5: #94a3b8;
   --chart-6: #a78bfa;
@@ -76,7 +79,7 @@
     --bad: #f87171;
     --chart-1: #E3B341;
     --chart-2: #818cf8;
-    --chart-3: #fbbf24;
+    --chart-3: #34D399;
     --chart-4: #f472b6;
     --chart-5: #94a3b8;
     --chart-6: #a78bfa;
