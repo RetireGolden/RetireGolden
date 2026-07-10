@@ -31,6 +31,12 @@ function successRateOf(plan: Plan): Promise<number> {
     seed: seedFromPlanId(plan.id),
     model,
   }).then((s) => s.successRate)
+  // Successful runs stay cached (later subscribers reuse the result), but a
+  // rejection is evicted so the next subscriber retries instead of replaying
+  // a transient worker failure forever for this plan object.
+  run.catch(() => {
+    inflight.delete(plan)
+  })
   inflight.set(plan, run)
   return run
 }
