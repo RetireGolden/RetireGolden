@@ -15,7 +15,7 @@ RetireGolden is under active development. Security fixes are applied to the late
 
 Report security issues privately:
 
-1. Go to the [Security](https://github.com/FlyOverCoderKY/RetireGolden/security) tab of this repository.
+1. Go to the [Security](https://github.com/RetireGolden/RetireGolden/security) tab of this repository.
 2. Click **Report a vulnerability** (GitHub private vulnerability reporting).
 
 Include:
