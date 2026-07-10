@@ -4,22 +4,20 @@
  * deterministic projection live as the plan changes.
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import { duplicatePlan } from '../data/planStore'
-import type { Plan } from '../engine/model/plan'
-import { DEFAULT_PATH_COUNT, runMonteCarlo } from '../mc/pool'
 import { useDialogs } from './dialogs'
 import { isPlanIncomplete } from './planCompleteness'
 import { ExamplePreviewBanner } from './examples/ExamplePreviewBanner'
 import { EXAMPLE_SAVE_INDICATOR } from './examples/exampleCopy'
-import { buildModel } from './marketModelPicker'
 import { PlanProvider } from './PlanContext'
 import { usePlan } from './planContextCore'
 import { fmtMoneyCompact } from './format'
 import { successBand } from './successBand'
-import { currentStartYear, seedFromPlanId, useProjection } from './useProjection'
+import { useMcSuccessRate } from './useMcSuccessRate'
+import { useProjection } from './useProjection'
 
 const railClass = ({ isActive }: { isActive: boolean }) => (isActive ? 'rail-link rail-link--active' : 'rail-link')
 
@@ -84,53 +82,10 @@ function SaveIndicator() {
   )
 }
 
-/**
- * Background Monte Carlo for the KPI bar (the app's headline is the
- * distribution, not just the steady-markets ledger). Runs the MC page's exact
- * default configuration — same seed, model, and path count — so the KPI number
- * always matches what the Monte Carlo page shows on arrival. Debounced well
- * past the autosave window; failures stay silent here (the MC page owns the
- * full error/retry surface).
- */
-const KPI_MC_DEBOUNCE_MS = 1200
-
-function useKpiSuccessRate(plan: Plan, enabled: boolean): number | null {
-  // The rate is stored WITH the plan it was computed for, and derived to null
-  // whenever the current plan differs — so a headline KPI can never show a
-  // previous plan's number through the debounce + recompute, and a silently
-  // failed re-run can never leave a stale rate up (edits produce a new plan
-  // object via structuredClone, so reference identity is the right key).
-  const [snapshot, setSnapshot] = useState<{ plan: Plan; rate: number } | null>(null)
-  const runToken = useRef(0)
-  useEffect(() => {
-    if (!enabled) return undefined
-    const token = ++runToken.current
-    const t = window.setTimeout(() => {
-      const model = buildModel('lognormal', plan.assumptions.inflationPct, 12, 60, plan)
-      runMonteCarlo(plan, {
-        startYear: currentStartYear(),
-        pathCount: DEFAULT_PATH_COUNT,
-        seed: seedFromPlanId(plan.id),
-        model,
-      })
-        .then((s) => {
-          if (token === runToken.current) setSnapshot({ plan, rate: s.successRate })
-        })
-        .catch(() => {
-          /* silent — the Monte Carlo page carries the error state and retry */
-        })
-    }, KPI_MC_DEBOUNCE_MS)
-    return () => {
-      window.clearTimeout(t)
-    }
-  }, [plan, enabled])
-  return enabled && snapshot !== null && snapshot.plan === plan ? snapshot.rate : null
-}
-
 function KpiBar() {
   const { plan } = usePlan()
   const { result, summary, deflate } = useProjection(plan)
-  const mcRate = useKpiSuccessRate(plan, !isPlanIncomplete(plan))
+  const mcRate = useMcSuccessRate(plan, !isPlanIncomplete(plan))
   const endYear = result.endYear
   const depleted = summary.depletionYear !== null
   const endingToday = deflate(endYear, result.endingNetWorth)
@@ -192,7 +147,7 @@ function KpiBar() {
       <div className="kpi">
         <span className="kpi-label">Lifetime tax</span>
         <span className="kpi-value">{fmtMoneyCompact(summary.lifetimeTaxesAndPenalties)}</span>
-        <span className="kpi-sub">federal + state + penalties</span>
+        <span className="kpi-sub">nominal $ · federal + state + penalties</span>
       </div>
       <div className="kpi">
         <span className="kpi-label">Roth converted</span>
@@ -278,6 +233,12 @@ function WorkspaceInner() {
       </div>
       <KpiBar />
       <div className="workspace">
+        {/* The global skip link lands on #main-content, which still puts the
+            19-link rail between keyboard users and the page content. This
+            second link lets them clear the rail in one stop. */}
+        <a className="skip-link" href="#plan-content">
+          Skip section navigation
+        </a>
         <nav className="workspace-rail" aria-label="Plan sections">
           <NavLink to="/" className="rail-link rail-link--back" end>
             ← Your plans
@@ -307,7 +268,7 @@ function WorkspaceInner() {
           <NavLink to="relocation" className={railClass}>Relocation Compare</NavLink>
           <NavLink to="/compare" className={railClass}>Compare plans</NavLink>
         </nav>
-        <div>
+        <div id="plan-content" tabIndex={-1}>
           <h1 className="sr-only">{sectionTitle ? `${sectionTitle} — ${plan.name}` : plan.name}</h1>
           <Outlet />
         </div>

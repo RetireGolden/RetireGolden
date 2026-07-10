@@ -162,7 +162,13 @@ export function ChoiceDialog({
       <div className="dialog-body">{opts.body}</div>
       <div className="dialog-choices">
         {opts.choices.map((choice) => (
-          <button key={choice.value} type="button" className="dialog-choice" onClick={() => onResult(choice.value)}>
+          <button
+            key={choice.value}
+            type="button"
+            className="dialog-choice"
+            aria-label={choice.description ? `${choice.label} — ${choice.description}` : choice.label}
+            onClick={() => onResult(choice.value)}
+          >
             <span className="dialog-choice-label">{choice.label}</span>
             {choice.description ? <span className="dialog-choice-desc">{choice.description}</span> : null}
           </button>

@@ -72,9 +72,13 @@ export function BucketLensCard({
         <>
           <div className="chart-frame" style={frameH(280)}>
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={rows} margin={{ left: 12, right: 8, top: 8 }}>
+              <AreaChart
+                data={rows}
+                margin={{ left: 12, right: 8, top: 8 }}
+                aria-label="Bucket view: projected balances segmented into spending buckets, year by year"
+              >
                 <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
-                <XAxis dataKey="year" tick={{ fill: 'var(--muted)', fontSize: 12 }} />
+                <XAxis dataKey="year" interval="equidistantPreserveStart" tick={{ fill: 'var(--muted)', fontSize: 12 }} />
                 <YAxis tickFormatter={fmtMoneyCompact} tick={{ fill: 'var(--muted)', fontSize: 12 }} width={70} />
                 <Legend />
                 {preset.bucketLabels.map((label, i) => (

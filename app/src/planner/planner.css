@@ -595,9 +595,10 @@
   white-space: nowrap;
 }
 
-@media (max-width: 640px) {
-  /* Phones: one sticky row that scrolls horizontally instead of a 2x2 wall
-     that eats half the viewport while typing. */
+@media (max-width: 880px) {
+  /* Phones and narrow tablets: one sticky row that scrolls horizontally
+     instead of a two-row wall that, with the toolbar, pushes the verdict
+     below the fold while typing. */
   .kpi-bar {
     grid-template-columns: none;
     grid-auto-flow: column;
@@ -937,6 +938,8 @@
 
 .ss-explainer li {
   margin: 0.2rem 0;
+  /* Definition-style items (the column legend) run ~130ch unwrapped. */
+  max-width: 75ch;
 }
 
 /* --- results -------------------------------------------------------------- */
@@ -947,6 +950,44 @@
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 1rem;
+}
+
+/* In-page shortcut to the ledger ~4,000px down; scroll-padding-top (below)
+   keeps the target clear of the sticky KPI bar. */
+.results-jump {
+  margin: -0.25rem 0 1rem;
+  font-size: 0.9rem;
+}
+
+/* Anchored and focus-scrolled targets must land below the sticky KPI bar,
+   not underneath it. Scoped to pages that actually render the bar. */
+html:has(.kpi-bar) {
+  scroll-padding-top: 8rem;
+}
+
+#plan-content:focus {
+  outline: none;
+}
+
+/* The year-table summary carries a real h2 so heading navigation finds the
+   ledger; inline display keeps the disclosure marker on the same line. */
+.year-table-summary {
+  cursor: pointer;
+  margin: 0 0 0.6rem;
+}
+
+.year-table-summary h2 {
+  display: inline;
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+/* Recharts' accessibility layer makes each chart surface a focusable
+   application node; give it the app's gold focus signature instead of the
+   browser default. */
+.chart-frame svg:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .seg {
@@ -1007,9 +1048,13 @@
   z-index: 1;
 }
 
+/* Both axes scroll INSIDE this wrapper: the vertical cap is what lets the
+   sticky thead (top: 0) and sticky first column (left: 0) actually engage —
+   sticky against the page never fires from inside an overflow container.
+   Zero padding so rows can't peek past the sticky edges. */
 .year-table-wrap {
-  overflow-x: auto;
-  padding: 0.35rem;
+  overflow: auto;
+  max-height: min(70vh, 56rem);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-1);
@@ -1034,6 +1079,7 @@
   text-align: left;
   position: sticky;
   left: 0;
+  z-index: 1;
   background: var(--surface-1);
   font-weight: 600;
 }
@@ -1042,10 +1088,17 @@
   background: var(--surface-2);
   position: sticky;
   top: 0;
+  z-index: 2;
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--muted);
+}
+
+/* The Year corner cell sticks on both axes and sits above everything. */
+.year-table thead th:first-child {
+  z-index: 3;
+  background: var(--surface-2);
 }
 
 .year-table tbody tr:hover td {
