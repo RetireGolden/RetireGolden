@@ -67,9 +67,17 @@ export function DisclaimerPage() {
 
       <h2>Software license &amp; third-party notices</h2>
       <p>
-        RetireGolden is proprietary software. © 2026 Nathan Rover; all rights reserved. It bundles third-party
-        packages (React, Recharts, HiGHS-WASM, Zod, and their dependencies) distributed under their respective
-        permissive licenses — see the{' '}
+        RetireGolden is free and open-source software, licensed under the{' '}
+        <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener noreferrer">
+          GNU Affero General Public License v3.0 (AGPL-3.0)
+        </a>
+        . © 2026 RetireGolden, LLC. "RetireGolden" and the RetireGolden logo are trademarks of RetireGolden, LLC.
+        The source code is available on{' '}
+        <a href="https://github.com/RetireGolden/RetireGolden" target="_blank" rel="noopener noreferrer">
+          GitHub
+        </a>
+        . It bundles third-party packages (React, Recharts, HiGHS-WASM, Zod, and their dependencies) distributed
+        under their respective permissive licenses — see the{' '}
         <a href="/THIRD-PARTY-NOTICES.txt" target="_blank" rel="noopener noreferrer">
           full third-party notices
         </a>

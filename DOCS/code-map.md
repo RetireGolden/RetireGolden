@@ -9,11 +9,11 @@ why) and [standards.md](standards.md) (the conventions).
 RetireGolden/
 ├── app/              the entire application (Vite + React + TS)
 ├── DOCS/             this documentation set
-├── LICENSE            proprietary (All Rights Reserved); Apache-2.0 is the documented future open-source path
+├── LICENSE            AGPL-3.0-only (© RetireGolden, LLC); see TRADEMARKS.md for the brand policy
 └── .github/workflows/  CI: azure-static-web-apps-retiregolden.yml, owl-parity.yml, semgrep.yml, zap.yml
 ```
 
-The root `LICENSE` is proprietary (All Rights Reserved). `app/THIRD-PARTY-NOTICES.txt` (and the shipped copy
+The root `LICENSE` is AGPL-3.0-only; copyright is held by RetireGolden, LLC. `app/THIRD-PARTY-NOTICES.txt` (and the shipped copy
 in `app/public/`) attribute every bundled MIT/ISC/0BSD package; regenerate with `npm run licenses`
 (see maintenance-schedule.md for the regeneration reminder).
 
