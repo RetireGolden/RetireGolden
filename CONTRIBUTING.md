@@ -26,7 +26,7 @@ a golden number, explain why in the PR — with a source (IRS/SSA publication, s
 
 ## Licensing of contributions
 
-RetireGolden's source is licensed under **AGPL-3.0** (see [LICENSE](LICENSE)) and that will not change —
+RetireGolden's source is licensed under **AGPL-3.0-only** (see [LICENSE](LICENSE)) and that will not change —
 the community edition stays free and open forever.
 
 RetireGolden, LLC also ships a commercial desktop edition built from this same engine, which funds the
