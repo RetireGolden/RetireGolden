@@ -488,8 +488,9 @@ export function ResultsPage() {
               <XAxis dataKey="year" tick={{ fill: 'var(--muted)', fontSize: 12 }} />
               <YAxis tickFormatter={moneyTick} tick={{ fill: 'var(--muted)', fontSize: 12 }} width={70} />
               <Legend />
-              <Bar dataKey="income" name="Income" fill="var(--chart-1)" />
-              <Bar dataKey="spending" name="Spending + tax" fill="var(--chart-3)" />
+              {/* Income is green (chart-3), spending gold: money in reads as green. */}
+              <Bar dataKey="income" name="Income" fill="var(--chart-3)" />
+              <Bar dataKey="spending" name="Spending + tax" fill="var(--chart-1)" />
               <Tooltip {...tooltipProps} />
             </BarChart>
           </ResponsiveContainer>

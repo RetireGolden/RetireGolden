@@ -197,8 +197,9 @@ function ReportBody() {
             <YAxis tickFormatter={fmtMoneyCompact} tick={{ fill: 'var(--muted)', fontSize: 11 }} width={64} />
             <Tooltip formatter={(v: unknown) => fmtMoney(Number(v))} />
             <Legend />
-            <Bar dataKey="income" name="Income" fill="var(--chart-1)" isAnimationActive={false} />
-            <Bar dataKey="spending" name="Spending + tax" fill="var(--chart-3)" isAnimationActive={false} />
+            {/* Income is green (chart-3), spending gold: money in reads as green. */}
+            <Bar dataKey="income" name="Income" fill="var(--chart-3)" isAnimationActive={false} />
+            <Bar dataKey="spending" name="Spending + tax" fill="var(--chart-1)" isAnimationActive={false} />
           </BarChart>
         </div>
         <div className="report-chart">
