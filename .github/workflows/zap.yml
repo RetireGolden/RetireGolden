@@ -1,0 +1,72 @@
+# OWASP ZAP DAST — passive baseline scan against a deployed environment.
+# Reusable workflow: the Azure deploy workflow calls this after a PR preview
+# environment is live and passes the deployed URL in. Can also be run manually.
+# All alerts are reported (uploaded artifact); the build is gated only on
+# High-risk alerts — Low/Medium/Informational are surfaced but never blocking.
+name: OWASP ZAP DAST
+
+on:
+  # Invoked by .github/workflows/azure-static-web-apps-retiregolden.yml after deploy.
+  workflow_call:
+    inputs:
+      target_url:
+        # Empty means "nothing was deployed" (label-gated PR CI): the caller
+        # invokes this workflow anyway so the required `ZAP DAST / ZAP Baseline`
+        # check reports as skipped instead of hanging on "Expected".
+        description: URL of the deployed environment to scan (empty = skip the scan)
+        required: false
+        default: ''
+        type: string
+  # Run on demand against any URL from the Actions tab.
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: URL to scan
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  zap_baseline:
+    name: ZAP Baseline
+    # Skip (rather than fail) when there is no deployed environment to scan;
+    # a skipped run still reports the required check. See target_url above.
+    if: inputs.target_url != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.15.0
+        with:
+          target: ${{ inputs.target_url }}
+          # Passive scan only — non-intrusive and fast; safe against a live env.
+          # fail_action stays false: the scan never fails on its own (that would
+          # block on Low/Info noise). High-risk gating is enforced by the next step.
+          fail_action: false
+          # Don't auto-open GitHub issues; review findings via the artifact below.
+          # Flip to true (and grant `issues: write`) if you want issues filed.
+          allow_issue_writing: false
+          # The action uploads HTML/Markdown/JSON reports under this artifact name.
+          artifact_name: zap-baseline-report
+
+      - name: Gate — fail only on High-risk alerts
+        # ZAP writes report_json.json to the workspace (riskcode 3 == High). The
+        # report artifact is already uploaded by the step above, so the full
+        # findings stay available for review even when this gate fails the build.
+        run: |
+          report=report_json.json
+          if [ ! -f "$report" ]; then
+            echo "::warning::ZAP report ($report) not found; skipping High-risk gate."
+            exit 0
+          fi
+          high=$(jq '[.site[]?.alerts[]? | select((.riskcode|tostring) == "3")] | length' "$report")
+          echo "High-risk alerts found: ${high:-0}"
+          if [ "${high:-0}" -gt 0 ]; then
+            echo "::error::ZAP found ${high} High-risk alert(s) — failing the DAST gate:"
+            jq -r '.site[]?.alerts[]? | select((.riskcode|tostring) == "3") | "  - \(.alert) [\(.riskdesc)]"' "$report"
+            exit 1
+          fi
+          echo "No High-risk alerts. ✅"

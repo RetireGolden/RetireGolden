@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "retiregolden-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "app", "--", "--port", "5199", "--strictPort"],
+      "port": 5199
+    }
+  ]
+}

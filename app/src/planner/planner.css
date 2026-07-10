@@ -1,0 +1,2236 @@
+/* Planner workspace styles (v2 cutover UI). Tokens live in index.css. */
+
+/* The planner wants room; the shell stays 52rem for legacy pages. */
+.planner-shell {
+  max-width: 80rem;
+  margin: 0 auto;
+}
+
+.kpi-value,
+.year-table td,
+.compare-table td {
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- plan picker ---------------------------------------------------------- */
+
+.picker-page {
+  text-align: left;
+}
+
+/* The shared empty state is centered for in-page sections, but on the picker
+   landing page it should sit on the same left edge as the heading and cards. */
+.picker-page .empty-state {
+  text-align: left;
+  padding: 2rem 0 1.5rem;
+}
+
+/* --- planner home redesign ----------------------------------------------- */
+
+.home-hero {
+  margin-bottom: 2rem;
+}
+
+.home-hero h1 {
+  margin-bottom: 0.5rem;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  line-height: 1.2;
+}
+
+.home-hero-subhead {
+  margin-bottom: 1rem;
+}
+
+.trust-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  list-style: none;
+}
+
+.trust-chips li {
+  font-size: 0.85rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--fg) 4%, var(--surface-1));
+  color: var(--muted);
+}
+
+.home-hero-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+@media (max-width: 640px) {
+  .home-hero-cta .btn-primary {
+    width: 100%;
+  }
+}
+
+.home-paths {
+  margin-bottom: 2rem;
+}
+
+.home-paths h2,
+.home-start-here h2 {
+  margin-bottom: 0.75rem;
+  font-size: 1.15rem;
+}
+
+.home-paths-grid {
+  margin: 0;
+}
+
+.home-path-card {
+  text-align: left;
+  text-decoration: none;
+  color: inherit;
+  font: inherit;
+  width: 100%;
+}
+
+.home-path-card-title {
+  font-weight: 650;
+  font-size: 1.05rem;
+}
+
+.home-path-card-desc {
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.home-start-here {
+  margin-bottom: 2rem;
+}
+
+.home-start-here-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-your-plans h1,
+.home-your-plans h2 {
+  margin: 0 0 0.25rem;
+}
+
+.home-your-plans-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.home-returning-actions {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.home-getting-started-reopener {
+  margin: 0 0 1.5rem;
+}
+
+.home-reopener-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.home-reopener-btn:hover {
+  border-color: var(--accent);
+}
+
+.home-reopener-icon {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.home-getting-started-panel {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.home-privacy-card {
+  margin-top: 1.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-getting-started-panel {
+    transition: none;
+  }
+}
+
+.example-library {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.examples-page .example-library {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.examples-back {
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.examples-back a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.examples-back a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.example-library h1,
+.example-library h2 {
+  margin-bottom: 0.35rem;
+}
+
+.examples-browse-all {
+  display: flex;
+  justify-content: center;
+  margin: 1.5rem 0 0.5rem;
+}
+
+.example-card {
+  cursor: default;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.example-card-teaches {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--muted);
+  flex: 1;
+}
+
+.example-preview-banner {
+  margin-bottom: 1rem;
+}
+
+.example-preview-banner .picker-actions {
+  margin-top: 0.75rem;
+}
+
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: 1rem;
+  margin: 1.25rem 0;
+}
+
+.plan-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  text-align: left;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 1rem 1.1rem;
+  color: var(--fg);
+  font: inherit;
+  transition: border-color 120ms ease, transform 120ms ease;
+}
+
+.plan-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+/* Example cards aren't clickable as a whole (their buttons are) — no lift. */
+.example-card:hover {
+  border-color: var(--border);
+  transform: none;
+}
+
+/* The primary "open" action stretched over the whole card; sibling action
+   buttons re-raise themselves above it. */
+.plan-card-open {
+  display: block;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.plan-card-open::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+}
+
+.plan-card-open:focus-visible {
+  outline: none;
+}
+
+.plan-card-open:focus-visible::after {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.plan-card-actions {
+  position: relative;
+  z-index: 1;
+}
+
+.plan-card-name {
+  font-weight: 650;
+  font-size: 1.05rem;
+}
+
+.plan-card-meta {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.picker-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 1rem 0 0.5rem;
+}
+
+/* --- workspace shell ------------------------------------------------------ */
+
+.workspace {
+  display: grid;
+  grid-template-columns: 13.5rem minmax(0, 1fr);
+  gap: 1.75rem;
+  align-items: start;
+  text-align: left;
+}
+
+@media (max-width: 880px) {
+  .workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.workspace-rail {
+  position: sticky;
+  top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+@media (max-width: 880px) {
+  /* Flattened rail becomes a single scrollable chip strip instead of a
+     16-chip wall that pushes the form below the fold. */
+  .workspace-rail {
+    position: static;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 0.25rem;
+    padding-bottom: 0.35rem;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+.rail-group {
+  margin: 0.9rem 0 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+@media (max-width: 880px) {
+  /* Group headings read as inline separators in the strip. */
+  .rail-group {
+    flex-shrink: 0;
+    align-self: center;
+    margin: 0 0.35rem 0 0.5rem;
+    white-space: nowrap;
+  }
+}
+
+.rail-link {
+  display: block;
+  padding: 0.42rem 0.7rem;
+  border-radius: 8px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 880px) {
+  .rail-link {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+}
+
+.rail-link:hover {
+  color: var(--fg);
+  background: color-mix(in srgb, var(--fg) 6%, transparent);
+}
+
+.rail-link--active {
+  color: var(--accent);
+  font-weight: 650;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.workspace-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.workspace-head-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.workspace-breadcrumb ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.workspace-breadcrumb li + li::before {
+  content: '/';
+  margin-right: 0.35rem;
+  color: var(--muted);
+}
+
+.workspace-breadcrumb a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.workspace-breadcrumb a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.workspace-breadcrumb [aria-current='page'] {
+  color: var(--fg);
+  font-weight: 550;
+}
+
+.rail-link--back {
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+  color: var(--fg);
+  border: 1px solid var(--border);
+}
+
+.rail-link--back:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+@media (max-width: 880px) {
+  .rail-link--back {
+    flex-basis: auto;
+    flex-shrink: 0;
+    margin-bottom: 0;
+  }
+}
+
+.workspace-head h1 {
+  margin: 0;
+  font-size: 1.45rem;
+}
+
+.plan-name-input {
+  font: inherit;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--fg);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0.1rem 0.4rem;
+  margin-left: -0.4rem;
+  max-width: 24rem;
+}
+
+.plan-name-input:hover,
+.plan-name-input:focus {
+  border-color: var(--border);
+  background: var(--surface-1);
+}
+
+.plan-name-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.save-state {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.save-state--error {
+  color: var(--bad);
+}
+
+/* --- sticky KPI bar ------------------------------------------------------- */
+
+.kpi-bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.75rem;
+  padding: 0.7rem 0.9rem;
+  margin-bottom: 1.25rem;
+  background: color-mix(in srgb, var(--surface-1) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+}
+
+.kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  min-width: 0;
+}
+
+.kpi-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.kpi-value {
+  font-size: clamp(1.15rem, 2.2vw, 1.5rem);
+  font-weight: 700;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.kpi-value--good { color: var(--good); }
+.kpi-value--bad { color: var(--bad); }
+
+/* Getting-started state: no verdict framing while the plan is half-entered. */
+.kpi-value--pending {
+  color: var(--muted);
+}
+
+.kpi-sub--wrap {
+  white-space: normal;
+}
+
+/* A KPI value that routes somewhere ("what would change this", Monte Carlo).
+   Decoration follows the value's own tone via currentColor. */
+.kpi-value-link {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, currentColor 55%, transparent);
+}
+
+.kpi-value-link:hover {
+  text-decoration-color: currentColor;
+}
+
+.kpi-value-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.kpi-sub {
+  font-size: 0.78rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  /* Phones: one sticky row that scrolls horizontally instead of a 2x2 wall
+     that eats half the viewport while typing. */
+  .kpi-bar {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(8.5rem, 1fr);
+    overflow-x: auto;
+    gap: 0.6rem;
+    padding: 0.55rem 0.75rem;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* --- cards + forms -------------------------------------------------------- */
+
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 1.1rem 1.25rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.card > h1,
+.card > h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.15rem;
+}
+
+.card > h3 {
+  margin: 1rem 0 0.25rem;
+  font-size: 1rem;
+}
+
+.card-hint {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0 0 0.85rem;
+  /* Keep hint lines readable — the home cards were pushing ~122ch. */
+  max-width: 70ch;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr));
+  gap: 0.8rem 1.1rem;
+}
+
+.form-grid > .field-span-full {
+  grid-column: 1 / -1;
+}
+
+.form-grid .field {
+  margin-top: 0;
+}
+
+.nested-form-section {
+  border-left: 3px solid var(--accent);
+  padding-left: 1rem;
+  margin: 0.35rem 0 0.25rem;
+}
+
+.nested-form-section > h4 {
+  margin: 0 0 0.75rem;
+  font-size: 0.98rem;
+}
+
+.nested-control-grid,
+.nested-phase-grid {
+  grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));
+}
+
+.nested-phase-row {
+  border-bottom: 1px dashed var(--border);
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+.nested-phase-row:last-of-type {
+  margin-bottom: 0.75rem;
+}
+
+.nested-phase-row > button {
+  margin-top: 0.6rem;
+}
+
+.field-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.field input:not([type='checkbox']):not([type='radio']),
+.field select {
+  padding: 0.45rem 0.55rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  color: var(--fg);
+  font-size: 0.98rem;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Safety net: a long option label degrades to an ellipsis instead of clipping
+   mid-glyph when the closed control is narrower than the selected text. */
+.field select {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.field--checkbox input[type='checkbox'] {
+  align-self: flex-start;
+  width: auto;
+  margin: 0;
+  cursor: pointer;
+}
+
+.field-readonly {
+  margin: 0;
+  padding: 0.45rem 0.55rem;
+  border-radius: 8px;
+  border: 1px dashed var(--border);
+  background: var(--surface-2);
+  color: var(--fg);
+  font-size: 0.98rem;
+}
+
+.field input:focus-visible,
+.field select:focus-visible,
+.btn:focus-visible,
+.rail-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.input-affix {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-1);
+  overflow: hidden;
+}
+
+.input-affix:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.input-affix > span {
+  padding: 0 0.55rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  background: var(--surface-2);
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+}
+
+.input-affix > input {
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  flex: 1;
+  min-width: 0;
+}
+
+.item-row {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  padding: 0.9rem 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.item-row-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.item-row-title {
+  font-weight: 650;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.type-chip {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+  font-size: 0.88rem;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.btn-ghost:hover {
+  color: var(--fg);
+  background: color-mix(in srgb, var(--fg) 6%, transparent);
+}
+
+.btn-ghost:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.btn-ghost-danger:hover {
+  color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 10%, transparent);
+}
+
+.btn-small {
+  font-size: 0.88rem;
+  padding: 0.35rem 0.7rem;
+}
+
+.add-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.issue-list {
+  margin: 0.75rem 0 0;
+  padding-left: 1.2rem;
+  color: var(--bad);
+  font-size: 0.9rem;
+}
+
+/* Lead verdict on Results: the one-line answer the charts are evidence for. */
+.results-verdict {
+  margin: 0 0 1.1rem;
+}
+
+.results-verdict h2 {
+  margin: 0 0 0.25rem;
+}
+
+.results-verdict .muted {
+  margin: 0;
+  max-width: 70ch;
+}
+
+/* Post-delete undo toast — the deleted plan is recoverable for a few seconds. */
+.undo-toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  margin: 0.9rem 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.undo-toast-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* --- callouts ------------------------------------------------------------- */
+
+.callout {
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  margin: 0.9rem 0;
+  font-size: 0.92rem;
+  text-align: left;
+  border: 1px solid;
+}
+
+/* The banner box stays full width; its prose still wraps at a readable measure. */
+.callout p,
+.callout li {
+  max-width: 75ch;
+}
+
+.callout--warn {
+  border-color: color-mix(in srgb, var(--warn) 45%, var(--border));
+  background: color-mix(in srgb, var(--warn) 10%, var(--surface-1));
+}
+
+.callout--info {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface-1));
+}
+
+.callout ul {
+  margin: 0.25rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.ss-explainer {
+  margin-top: 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.ss-explainer > summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.ss-explainer ul {
+  margin: 0.5rem 0 0.25rem;
+  padding-left: 1.2rem;
+  color: var(--muted);
+}
+
+/* Explainer prose runs long ("Why this number?" panels) — cap the measure. */
+.ss-explainer p {
+  max-width: 75ch;
+}
+
+.ss-explainer li {
+  margin: 0.2rem 0;
+}
+
+/* --- results -------------------------------------------------------------- */
+
+.results-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--surface-1);
+}
+
+.seg button {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.88rem;
+  padding: 0.32rem 0.85rem;
+  cursor: pointer;
+}
+
+.seg button[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-weight: 600;
+}
+
+.seg button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  position: relative;
+  z-index: 1;
+}
+
+.chart-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 1rem 1.1rem 0.6rem;
+  margin-bottom: 1.25rem;
+}
+
+.chart-card h2 {
+  margin: 0 0 0.15rem;
+  font-size: 1.05rem;
+}
+
+.chart-card .card-hint {
+  margin-bottom: 0.5rem;
+}
+
+/* Recharts 3 portals tooltip and legend into the same wrapper; legend wins by DOM order unless layered. */
+.recharts-wrapper .recharts-tooltip-wrapper {
+  z-index: 2;
+}
+
+.recharts-wrapper .recharts-legend-wrapper {
+  z-index: 1;
+}
+
+.year-table-wrap {
+  overflow-x: auto;
+  padding: 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+}
+
+.year-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+  white-space: nowrap;
+}
+
+.year-table th,
+.year-table td {
+  padding: 0.4rem 0.7rem;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+}
+
+.year-table th:first-child,
+.year-table td:first-child {
+  text-align: left;
+  position: sticky;
+  left: 0;
+  background: var(--surface-1);
+  font-weight: 600;
+}
+
+.year-table thead th {
+  background: var(--surface-2);
+  position: sticky;
+  top: 0;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.year-table tbody tr:hover td {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+.row-depleted td {
+  color: var(--bad);
+}
+
+/* --- stat tiles + chart grids ---------------------------------------------- */
+
+/* One vocabulary for big-number tiles (Monte Carlo metrics, Optimize deltas,
+   spending-solver stats) instead of per-page inline styles, and dedicated
+   grids instead of reusing .workspace with inline column overrides. */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0.75rem;
+  align-items: start;
+  text-align: left;
+}
+
+.stat-grid > .card {
+  margin-bottom: 0;
+}
+
+/* A subtle inset panel for a grouped set of metrics inside a card. */
+.metric-panel {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: 1.25rem;
+  align-items: start;
+  text-align: left;
+}
+
+.stat-value {
+  font-size: 1.6rem;
+  font-weight: 650;
+}
+
+.stat-value--sm {
+  font-size: 1.1rem;
+}
+
+.stat-value--good { color: var(--good); }
+.stat-value--bad { color: var(--bad); }
+.stat-value--neutral { color: var(--fg); }
+
+/* --- monte carlo ---------------------------------------------------------- */
+
+.model-preset-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.6rem;
+}
+
+.model-preset {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  text-align: left;
+  font: inherit;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+  color: var(--fg);
+  cursor: pointer;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.model-preset:hover {
+  border-color: var(--accent);
+}
+
+.model-preset:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.model-preset[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface-1));
+}
+
+.model-preset-label {
+  font-weight: 650;
+  font-size: 0.95rem;
+}
+
+.model-preset-desc {
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.model-advanced {
+  margin-top: 0.6rem;
+}
+
+.model-advanced-field {
+  max-width: 26rem;
+  margin: 0.5rem 0 0.25rem;
+}
+
+/* Shared responsive chart frame — replaces repeated inline
+   width:100%/height wrappers on the Monte Carlo and Results pages. Height comes
+   in via the --chart-frame-h custom property so the frame itself stays reusable. */
+.chart-frame {
+  --chart-frame-h: 240px;
+  width: 100%;
+  height: var(--chart-frame-h);
+}
+
+.chart-frame--spaced {
+  margin-top: 1rem;
+}
+
+/* Inline error text (worker/run failures) as a shared token, not a per-site style. */
+.error-text {
+  color: var(--bad);
+}
+
+/* An error message paired with a recovery action (e.g. "Run again"). */
+.error-recovery {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.error-recovery .error-text {
+  margin: 0;
+}
+
+.mc-hero {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.mc-hero h2 {
+  margin: 0 0 0.35rem;
+}
+
+.mc-hero .muted {
+  margin: 0;
+  max-width: 70ch;
+}
+
+@media (max-width: 720px) {
+  .mc-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* The handrail under a non-green verdict: one sentence + links to the
+   surfaces that answer "what would change this". */
+.mc-handrail {
+  margin: 0.75rem 0 0;
+  font-size: 1rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  max-width: 75ch;
+}
+
+.mc-handrail a {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.success-gauge {
+  position: relative;
+  width: 11rem;
+  height: 11rem;
+}
+
+.success-gauge svg {
+  transform: rotate(-90deg);
+}
+
+.success-gauge-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.success-gauge-value {
+  font-size: 2.1rem;
+  font-weight: 750;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.success-gauge-caption {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 0.3rem;
+}
+
+.progress-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+  margin: 0.6rem 0;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-soft));
+  /* Scale instead of animating width: compositor-only, no layout thrash. */
+  transform-origin: left center;
+  transition: transform 160ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-fill,
+  .plan-card {
+    transition: none;
+  }
+}
+
+.skeleton {
+  border-radius: var(--radius);
+  background: linear-gradient(100deg, var(--surface-2) 40%, color-mix(in srgb, var(--fg) 7%, var(--surface-2)) 50%, var(--surface-2) 60%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* --- scenarios ------------------------------------------------------------ */
+
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.compare-table th,
+.compare-table td {
+  padding: 0.55rem 0.8rem;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+  vertical-align: top;
+}
+
+.compare-table th:first-child,
+.compare-table td:first-child {
+  text-align: left;
+}
+
+.compare-table thead th {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.diff-chip {
+  display: inline-block;
+  font-size: 0.76rem;
+  padding: 0.08rem 0.5rem;
+  margin: 0.1rem 0.2rem 0.1rem 0;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.delta-pos { color: var(--good); }
+.delta-neg { color: var(--bad); }
+
+/* --- assumption provenance ------------------------------------------------ */
+
+.provenance-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.provenance-table th,
+.provenance-table td {
+  padding: 0.6rem 0.8rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.provenance-table thead th {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.provenance-table th[scope='row'] {
+  font-weight: 400;
+}
+
+.provenance-label {
+  display: block;
+  font-weight: 600;
+}
+
+.provenance-figures {
+  display: block;
+  margin-top: 0.15rem;
+  line-height: 1.4;
+}
+
+.provenance-table td {
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .provenance-table td {
+    white-space: normal;
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--muted);
+}
+
+.empty-state h2 {
+  color: var(--fg);
+}
+
+.app-footer {
+  margin-top: 3rem;
+  padding: 1rem 0 0.5rem;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
+.app-footer a {
+  color: var(--accent);
+}
+
+/* --- help tooltips --------------------------------------------------------- */
+
+.field-label-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.help-tip {
+  position: relative;
+  display: inline-flex;
+}
+
+.help-tip > button {
+  position: relative;
+  width: 1rem;
+  height: 1rem;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.help-tip > button:hover,
+.help-tip > button:focus-visible,
+.help-tip--pinned > button {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.help-tip-bubble {
+  /* JS positions this with fixed coordinates clamped to the viewport, so it can
+     never clip at a screen edge or be cut off inside a scrolling panel. */
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  width: max-content;
+  max-width: min(20rem, calc(100vw - 1rem));
+  background: var(--surface-1);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-card);
+  padding: 0.55rem 0.7rem;
+  font-size: 0.82rem;
+  font-weight: 400;
+  line-height: 1.45;
+  text-align: left;
+  white-space: normal;
+  /* Hidden state: non-interactive and out of the tab order until revealed. */
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 100ms ease;
+}
+
+.help-tip-bubble--open {
+  visibility: visible;
+  opacity: 1;
+}
+
+.help-tip-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+/* A short input note (formerly the under-field hint) shown inside the bubble. */
+.help-tip-hint {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+/* The "Learn more" link living at the foot of a help bubble. */
+.help-tip-bubble .learn-link--tip {
+  align-self: flex-start;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* Cite-the-authority link (provenance) inside a help bubble. */
+.help-tip-bubble .help-tip-source {
+  align-self: flex-start;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.field-with-action {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 0.5rem;
+  row-gap: 0.25rem;
+  align-items: end;
+}
+
+.field-with-action > .field {
+  display: contents;
+}
+
+.field-with-action > .field > .field-label-row {
+  grid-column: 1 / -1;
+}
+
+.field-with-action > .field > .input-affix,
+.field-with-action > .field > input,
+.field-with-action > .field > select {
+  grid-column: 1;
+  min-width: 0;
+}
+
+.field-with-action > button {
+  grid-column: 2;
+  grid-row: 2;
+  margin-bottom: 1px;
+  white-space: nowrap;
+}
+
+/* --- modal ----------------------------------------------------------------- */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgb(8 10 14 / 0.55);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 4vh 1rem;
+  overflow-y: auto;
+}
+
+.modal-panel {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.45);
+  width: 100%;
+  max-width: 36rem;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  outline: none;
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-head h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.modal-close:hover {
+  color: var(--fg);
+  background: color-mix(in srgb, var(--fg) 8%, transparent);
+}
+
+.modal-body {
+  padding: 1rem 1.25rem 1.25rem;
+  overflow-y: auto;
+  text-align: left;
+}
+
+/* --- confirm / prompt / alert dialogs -------------------------------------- */
+
+.dialog-body {
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.dialog-body p {
+  margin: 0 0 0.6rem;
+}
+
+.dialog-body p:last-child {
+  margin-bottom: 0;
+}
+
+.dialog-typed-field {
+  margin-top: 0.9rem;
+}
+
+.dialog-typed-field input {
+  max-width: 12rem;
+}
+
+.dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+}
+
+.dialog-actions .dialog-extra-action {
+  margin-right: auto;
+}
+
+.dialog-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0.9rem;
+}
+
+.dialog-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  text-align: left;
+  font: inherit;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+  color: var(--fg);
+  cursor: pointer;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.dialog-choice:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface-1));
+}
+
+.dialog-choice:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.dialog-choice-label {
+  font-weight: 650;
+}
+
+.dialog-choice-desc {
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+/* --- allocation estimator -------------------------------------------------- */
+
+.alloc-row {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr) 3.5rem;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.alloc-result {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.alloc-result strong {
+  font-size: 1.4rem;
+}
+
+/* --- SS claim table -------------------------------------------------------- */
+
+.claim-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.claim-table th,
+.claim-table td {
+  padding: 0.4rem 0.7rem;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+}
+
+.claim-table th:first-child,
+.claim-table td:first-child {
+  text-align: left;
+}
+
+.claim-table thead th {
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.claim-row--best td {
+  background: color-mix(in srgb, var(--good) 10%, transparent);
+  font-weight: 600;
+}
+
+.claim-row--current td:first-child::after {
+  content: ' (current)';
+  color: var(--accent);
+  font-size: 0.78rem;
+}
+
+.claim-table.heatmap th {
+  text-align: center;
+}
+
+.claim-table.heatmap td {
+  text-align: center;
+  border: 1px solid var(--border);
+  font-size: 0.82rem;
+}
+
+.claim-table.heatmap tbody th {
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.earnings-entry {
+  margin-top: 0.5rem;
+}
+
+/* --- printable report ------------------------------------------------------ */
+
+.report {
+  max-width: 760px;
+  margin: 1.5rem auto 4rem;
+  text-align: left;
+}
+
+.report-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 0.75rem;
+}
+
+.report-head h1 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.report-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.report-disclaimer {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin: 0.75rem 0 0;
+}
+
+.report-section {
+  margin-top: 1.75rem;
+}
+
+.report-section h2 {
+  font-size: 1.2rem;
+  margin: 0 0 0.5rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.report-section h3 {
+  font-size: 0.95rem;
+  margin: 1rem 0 0.4rem;
+  color: var(--muted);
+}
+
+.report-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.report-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.75rem;
+}
+
+.report-kpi .kpi-value {
+  font-size: 1.25rem;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.report-table thead th {
+  text-align: left;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  padding: 0.3rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.report-chart {
+  overflow-x: auto;
+}
+
+.report-appendix-table {
+  font-size: 0.78rem;
+}
+
+@media print {
+  :root {
+    --bg: #fff;
+    --fg: #111;
+    --muted: #555;
+    --border: #bbb;
+    --surface-1: #fff;
+    --surface-2: #f2f2f2;
+  }
+  .app-header,
+  .app-footer,
+  .no-print {
+    display: none !important;
+  }
+  .app-shell,
+  .planner-shell {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+  .report {
+    margin: 0;
+    max-width: none;
+  }
+  .report-section {
+    break-inside: avoid;
+  }
+  .report-appendix {
+    break-inside: auto;
+  }
+  .report-appendix-table tr {
+    break-inside: avoid;
+  }
+  .report-chart {
+    break-inside: avoid;
+  }
+  /* Recharts renders SVG; keep colors in print. */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+.plan-card-actions,
+.workspace-head-actions,
+.compare-selectors {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.workspace-head-actions {
+  justify-content: flex-end;
+}
+
+.compare-selectors {
+  align-items: flex-end;
+  margin-bottom: 1rem;
+}
+
+.compare-selectors label {
+  display: grid;
+  gap: 0.35rem;
+  min-width: min(22rem, 100%);
+  font-weight: 650;
+}
+
+.compare-table th:first-child {
+  min-width: 12rem;
+}
+
+/* --- insights ------------------------------------------------------------- */
+
+.insight-optimizer-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.insight-optimizer-row > .card {
+  flex: 1 1 17.5rem;
+  margin-bottom: 0;
+}
+
+.insight-category-group {
+  margin-bottom: 1.5rem;
+}
+
+/* Structural heading only — the toggle button carries all the styling, so the
+   wrapping h2 resets to inherited type and spacing. */
+.insight-category-heading {
+  margin: 0;
+  font: inherit;
+}
+
+.insight-category-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--fg);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.insight-category-header:hover {
+  background: color-mix(in srgb, var(--fg) 8%, var(--surface-2));
+}
+
+.insight-category-header:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.insight-cards-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.insight-card {
+  position: relative;
+  margin-bottom: 0;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.insight-card:hover {
+  transform: translateY(-1px);
+}
+
+.insight-dismiss {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+}
+
+.insight-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+  /* Keep chips clear of the absolutely positioned dismiss button. */
+  padding-right: 2.25rem;
+}
+
+.type-chip--good {
+  background: color-mix(in srgb, var(--good) 14%, transparent);
+  color: var(--good);
+}
+
+.type-chip--warn {
+  background: color-mix(in srgb, var(--warn) 14%, transparent);
+  color: var(--warn);
+}
+
+.type-chip--muted {
+  background: color-mix(in srgb, var(--muted) 16%, transparent);
+  color: var(--muted);
+}
+
+.insight-card-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.insight-rationale {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  max-width: 75ch;
+}
+
+.insight-impact-box {
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.insight-impact-box p {
+  margin: 0 0 0.5rem;
+  max-width: 75ch;
+}
+
+.insight-impact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.5rem;
+}
+
+.insight-impact-box .delta-pos,
+.insight-impact-box .delta-neg {
+  font-weight: 600;
+}
+
+.insight-impact-box .delta-pos {
+  color: var(--good);
+}
+
+/* A negative delta on this surface is a caution, not a failure. */
+.insight-impact-box .delta-neg {
+  color: var(--warn);
+}
+
+.insight-impact-note {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.insight-error {
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+}
+
+.insight-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.insight-actions-links {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.insight-actions-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.insight-advisory-note {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.insight-restore-row {
+  text-align: center;
+  margin-top: 2rem;
+}
+
+.insight-empty-note {
+  max-width: 26rem;
+  margin: 0 auto 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .insight-card,
+  .insight-category-header {
+    transition: none;
+  }
+
+  .insight-card:hover {
+    transform: none;
+  }
+}
+
+/* --- touch ergonomics ------------------------------------------------------ */
+
+/* Grow tap targets to ≥44px effective on coarse pointers while keeping the
+   visual glyph sizes unchanged on desktop. The ⓘ button gets an invisible
+   44px hit circle; text controls get taller padding. */
+@media (pointer: coarse) {
+  .help-tip > button::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 2.75rem;
+    height: 2.75rem;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+  }
+
+  .btn {
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
+  }
+
+  .model-preset,
+  .dialog-choice {
+    padding-top: 0.8rem;
+    padding-bottom: 0.8rem;
+  }
+
+  .seg button {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .btn-small {
+    padding-top: 0.68rem;
+    padding-bottom: 0.68rem;
+  }
+
+  .btn-ghost {
+    padding-top: 0.65rem;
+    padding-bottom: 0.65rem;
+  }
+
+  .insight-dismiss {
+    padding: 0.85rem;
+  }
+
+  .rail-link {
+    padding-top: 0.7rem;
+    padding-bottom: 0.7rem;
+  }
+}
+
+
+/* ---- Import & migrate wizard (/import) + review checklist ---------------- */
+
+.import-page {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+.import-page > .card-hint {
+  max-width: 75ch;
+}
+
+.import-review {
+  margin-top: 0.9rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+}
+
+.import-review-group {
+  margin-top: 0.75rem;
+}
+
+.import-review-group h4 {
+  margin: 0 0 0.3rem;
+  font-size: 0.95rem;
+}
+
+.import-review-group ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  max-width: 78ch;
+}
+
+.import-review-group li {
+  margin: 0.25rem 0;
+  font-size: 0.92rem;
+}
+
+/* Attention colors mirror the callout tones: unmapped needs a hand, defaulted needs a look. */
+.import-review-group--unmapped h4 {
+  color: var(--warn);
+}
+
+.import-review-group--defaulted h4 {
+  color: var(--accent);
+}
+
+.import-review-group--skipped h4,
+.import-review-group--skipped li {
+  color: var(--muted);
+}

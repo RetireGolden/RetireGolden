@@ -1,0 +1,42 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Secrets
+.env
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# IDE / agent harness (local only)
+.cursor/
+mcps/
+terminals/
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Claude / Codex local
+.claude/worktrees/
+.claude/settings.local.json
+.codex-remote-attachments/
+.codex-artifacts/
+.impeccable/
+
+# Stray tool caches at the repo root (real deps live in app/node_modules)
+/node_modules/
+
+# App build & test artifacts
+app/dist
+app/.cache/
+app/artifacts/
+app/node_modules/.vite/
+app/test-results/
+app/playwright-report/
+app/blob-report/
+app/playwright/.cache/
+*.tsbuildinfo

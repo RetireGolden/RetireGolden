@@ -1,0 +1,627 @@
+:root {
+  color-scheme: light dark;
+  --bg: #f4f6f8;
+  --fg: #161a1f;
+  --muted: #5b6470;
+  --border: #dde2e8;
+  --surface-1: #ffffff;
+  --surface-2: #eef1f4;
+  /* Gold rebrand (2026-07): 5.6:1 against white (--accent-fg), so white-on-accent
+     primary buttons and accent-on-light text meet WCAG AA 4.5:1. */
+  --accent: #84620f;
+  --accent-soft: #D9A521;
+  --accent-fg: #ffffff;
+  /* Status text darkened from #15803d / #b45309: both sat at ~4.4:1 on
+     --surface-2, a hair under WCAG AA. Guarded by tokenContrast.test.ts. */
+  --good: #157a3a;
+  --warn: #a84e08;
+  --bad: #b91c1c;
+  --chart-1: #B8860B;
+  --chart-2: #6366f1;
+  --chart-3: #d97706;
+  --chart-4: #db2777;
+  --chart-5: #64748b;
+  --chart-6: #7c3aed;
+  --chart-7: #0891b2;
+  --chart-8: #b91c1c;
+  --radius: 10px;
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.06), 0 2px 8px rgb(15 23 42 / 0.06);
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #0e1116;
+  --fg: #eef1f4;
+  --muted: #97a1ad;
+  --border: #283038;
+  --surface-1: #161b22;
+  --surface-2: #1d242d;
+  --accent: #E3B341;
+  --accent-soft: #F0C75E;
+  --accent-fg: #241a03;
+  --good: #4ade80;
+  --warn: #fbbf24;
+  --bad: #f87171;
+  --chart-1: #E3B341;
+  --chart-2: #818cf8;
+  --chart-3: #fbbf24;
+  --chart-4: #f472b6;
+  --chart-5: #94a3b8;
+  --chart-6: #a78bfa;
+  --chart-7: #22d3ee;
+  --chart-8: #f87171;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 2px 8px rgb(0 0 0 / 0.3);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --bg: #0e1116;
+    --fg: #eef1f4;
+    --muted: #97a1ad;
+    --border: #283038;
+    --surface-1: #161b22;
+    --surface-2: #1d242d;
+    --accent: #E3B341;
+    --accent-soft: #F0C75E;
+    --accent-fg: #241a03;
+    --good: #4ade80;
+    --warn: #fbbf24;
+    --bad: #f87171;
+    --chart-1: #E3B341;
+    --chart-2: #818cf8;
+    --chart-3: #fbbf24;
+    --chart-4: #f472b6;
+    --chart-5: #94a3b8;
+    --chart-6: #a78bfa;
+    --chart-7: #22d3ee;
+    --chart-8: #f87171;
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 2px 8px rgb(0 0 0 / 0.3);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+code {
+  font-size: 0.95em;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--fg) 8%, transparent);
+}
+
+/* Content links: one vocabulary. Without this, prose links render the
+   browser-default blue with purple :visited against the app's accent system —
+   including on the highest-stakes rescue links ("See what would change this").
+   :where() keeps specificity at zero, so every class-styled anchor (.btn,
+   .nav-link, .rail-link, .skip-link, .kpi-value-link, …) still wins via its
+   own rule while the UA default (blue/purple) always loses. */
+:where(a) {
+  color: var(--accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+:where(a:visited) {
+  color: var(--accent);
+}
+
+:where(a:hover) {
+  color: color-mix(in srgb, var(--accent) 75%, var(--fg));
+}
+
+.app-shell {
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: 0 1.25rem 3rem;
+}
+
+/* The landing/plan-picker route holds little content, so the full 80rem workspace
+   width leaves it looking sparse and left-weighted. A tighter shell keeps the
+   header and content aligned on both edges and reads as a focused column.
+   The compound selector outranks .planner-shell regardless of stylesheet order. */
+.app-shell.app-shell--landing {
+  max-width: 60rem;
+}
+
+.app-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--fg);
+  text-decoration: none;
+}
+
+.brand:hover {
+  text-decoration: underline;
+}
+
+.brand-logo-link:hover {
+  text-decoration: none;
+}
+
+.brand-logo-link picture {
+  display: inline-flex;
+}
+
+/* Sized by height so the header bar height is stable (no vertical CLS) while the
+   logo width follows the artwork's aspect ratio. */
+.brand-logo {
+  display: block;
+  height: clamp(3rem, 4.5vw, 3.5rem);
+  width: auto;
+}
+
+/* Wraps nav + theme switcher. On wide screens it's an inline strip that fills the
+   bar (so the theme switcher can sit hard right); on narrow screens its children
+   are lifted into the header flex (display: contents) so the nav shares the logo
+   row and the theme switcher wraps to its own row — no hamburger, and the visual
+   order stays logo → nav → theme, matching DOM and tab order at every width. */
+.header-menu {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.nav {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.theme-switcher {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  margin-left: auto;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--surface-1);
+}
+
+.theme-switcher-button {
+  min-width: 4.2rem;
+  border: 0;
+  border-right: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.88rem;
+  padding: 0.35rem 0.65rem;
+}
+
+.theme-switcher-button:last-child {
+  border-right: 0;
+}
+
+.theme-switcher-button:hover {
+  color: var(--fg);
+  background: color-mix(in srgb, var(--fg) 6%, transparent);
+}
+
+.theme-switcher-button[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-weight: 650;
+}
+
+.nav-link {
+  color: var(--muted);
+  text-decoration: none;
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+}
+
+.nav-link:hover {
+  color: var(--fg);
+  background: color-mix(in srgb, var(--fg) 6%, transparent);
+}
+
+.nav-link--active {
+  color: var(--fg);
+  font-weight: 600;
+  background: color-mix(in srgb, var(--fg) 10%, transparent);
+}
+
+.nav-link:focus-visible,
+.brand:focus-visible,
+.theme-switcher-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 640px) {
+  /* Compact two-row header, no hamburger: the nav shares the top row with the
+     logo mark, and the theme switcher wraps to its own right-aligned row below
+     (the growing nav leaves it no room on row one). Keeping DOM order
+     logo → nav → theme means focus/tab order matches the visual order. */
+  .app-header {
+    gap: 0.35rem 0.5rem;
+    padding: 0.65rem 0;
+  }
+
+  .brand-logo {
+    height: 2.25rem;
+  }
+
+  .header-menu {
+    display: contents;
+  }
+
+  .nav {
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 0.15rem;
+  }
+
+  .nav .nav-link {
+    padding: 0.45rem 0.4rem;
+    font-size: 0.92rem;
+  }
+
+  .theme-switcher {
+    margin-left: auto;
+  }
+
+  .theme-switcher-button {
+    min-width: 0;
+    font-size: 0.82rem;
+    padding: 0.4rem 0.55rem;
+  }
+}
+
+/* Touch ergonomics: grow tap targets to ~44px on coarse pointers without
+   changing the visual glyph sizes on desktop. */
+@media (pointer: coarse) {
+  .nav-link,
+  .theme-switcher-button {
+    padding-top: 0.7rem;
+    padding-bottom: 0.7rem;
+  }
+}
+
+.app-main {
+  padding-top: 1.75rem;
+}
+
+.page h1 {
+  margin: 0 0 0.75rem;
+  font-size: 1.75rem;
+  line-height: 1.2;
+}
+
+.lede {
+  font-size: 1.05rem;
+  color: var(--muted);
+  margin: 0 0 1.25rem;
+  max-width: 42em;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 0.9rem;
+}
+
+/* Longevity wizard */
+.wizard {
+  max-width: 36rem;
+}
+
+.wizard.wizard-wide {
+  max-width: 52rem;
+}
+
+.wizard-progress {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 0 0 1rem;
+}
+
+.wizard-fieldset {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.1rem 1.25rem;
+  margin: 0 0 1.25rem;
+}
+
+.wizard-fieldset legend {
+  font-weight: 600;
+  padding: 0 0.35rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  text-align: left;
+  margin-top: 0.5rem;
+}
+
+.field input[type='number'] {
+  max-width: 8rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 1rem;
+}
+
+.field-hint {
+  font-size: 0.88rem;
+  color: var(--muted);
+  margin: 0.35rem 0 0;
+  text-align: left;
+  /* Hints outside the narrow form grid can run 130ch+ — cap the measure. */
+  max-width: 75ch;
+}
+
+.radio-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.radio-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  text-align: left;
+  cursor: pointer;
+  padding: 0.35rem 0;
+}
+
+.radio-option input {
+  margin-top: 0.2rem;
+}
+
+.wizard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  text-decoration: none;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-color: transparent;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 88%, var(--fg));
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--fg);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--fg) 24%, var(--border));
+  background: color-mix(in srgb, var(--fg) 6%, transparent);
+}
+
+.btn-danger {
+  color: var(--bad);
+}
+
+.btn-danger:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--bad) 45%, var(--border));
+  background: color-mix(in srgb, var(--bad) 10%, transparent);
+  color: var(--bad);
+}
+
+.disclaimer-box {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.5rem;
+  background: color-mix(in srgb, var(--fg) 4%, transparent);
+  text-align: left;
+}
+
+.disclaimer-box p {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.results-hero {
+  text-align: left;
+  margin-bottom: 1.5rem;
+}
+
+.results-hero h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.35rem;
+}
+
+.results-central {
+  font-size: 1.15rem;
+  margin: 0 0 0.5rem;
+}
+
+.results-detail {
+  text-align: left;
+  margin-bottom: 1rem;
+}
+
+.results-detail h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.results-list {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.results-list li {
+  margin-bottom: 0.35rem;
+}
+
+.results-list a {
+  color: var(--accent);
+}
+
+/* Social Security workbench */
+.earnings-textarea {
+  width: 100%;
+  min-height: 10rem;
+  margin-top: 0.35rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.9rem;
+  font-family: ui-monospace, 'Cascadia Code', 'Consolas', monospace;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.claim-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: 0.35rem 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.chart-wrap {
+  width: 100%;
+  min-height: 360px;
+}
+
+/* var(--bad) tracks both theme mechanisms (prefers-color-scheme AND
+   [data-theme]), unlike the old hardcoded pair that missed toggled-dark. */
+.error-text {
+  color: var(--bad);
+  margin-top: 0.75rem;
+  text-align: left;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+  margin: 0.5rem 0 1.25rem;
+}
+
+.data-table th,
+.data-table td {
+  border: 1px solid var(--border);
+  padding: 0.45rem 0.65rem;
+  text-align: left;
+}
+
+.data-table th {
+  background: color-mix(in srgb, var(--fg) 6%, transparent);
+}
+
+.error-boundary-fallback {
+  max-width: 36rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+
+.error-boundary-stack {
+  font-size: 0.85rem;
+  overflow: auto;
+  padding: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--fg) 5%, transparent);
+  white-space: pre-wrap;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Keyboard skip link: off-screen until focused, then pinned top-left. */
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -3rem;
+  z-index: 100;
+  padding: 0.5rem 0.9rem;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--accent-fg);
+  text-decoration: none;
+  transition: top 0.15s ease;
+}
+
+.skip-link:focus {
+  top: 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skip-link {
+    transition: none;
+  }
+}
+
+#main-content:focus {
+  outline: none;
+}

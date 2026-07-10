@@ -1,0 +1,56 @@
+name: Owl Parity Oracle
+
+on:
+  workflow_dispatch:
+    inputs:
+      strict:
+        description: Fail if Owl cannot be installed or any fixture is missing
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+permissions:
+  contents: read
+
+jobs:
+  owl-parity:
+    name: Run Owl parity harness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install app dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Run Owl parity
+        working-directory: app
+        env:
+          STRICT: ${{ inputs.strict }}
+        run: |
+          args=(--install-owl)
+          if [ "$STRICT" = "true" ]; then
+            args+=(--strict-owl)
+          fi
+          npm run owl-parity -- "${args[@]}"
+
+      - name: Upload parity artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owl-parity
+          path: app/artifacts/owl-parity
+          retention-days: 14
