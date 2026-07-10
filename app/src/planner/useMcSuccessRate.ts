@@ -52,7 +52,7 @@ export function useMcSuccessRate(plan: Plan, enabled: boolean): number | null {
   useEffect(() => {
     if (!enabled) return undefined
     const token = ++runToken.current
-    const t = window.setTimeout(() => {
+    const attach = () => {
       successRateOf(plan)
         .then((rate) => {
           if (token === runToken.current) setSnapshot({ plan, rate })
@@ -60,7 +60,15 @@ export function useMcSuccessRate(plan: Plan, enabled: boolean): number | null {
         .catch(() => {
           /* silent — the Monte Carlo page carries the error state and retry */
         })
-    }, MC_DEBOUNCE_MS)
+    }
+    // A run for this plan already exists (typically started by the KPI bar):
+    // attach immediately. The debounce only guards against launching fresh
+    // simulations mid-edit, and attaching to an existing run starts none.
+    if (inflight.get(plan) !== undefined) {
+      attach()
+      return undefined
+    }
+    const t = window.setTimeout(attach, MC_DEBOUNCE_MS)
     return () => {
       window.clearTimeout(t)
     }

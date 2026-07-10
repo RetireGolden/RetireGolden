@@ -8,6 +8,7 @@ import { useEffect } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import { duplicatePlan } from '../data/planStore'
+import { DEFAULT_PATH_COUNT } from '../mc/pool'
 import { useDialogs } from './dialogs'
 import { isPlanIncomplete } from './planCompleteness'
 import { ExamplePreviewBanner } from './examples/ExamplePreviewBanner'
@@ -133,7 +134,7 @@ function KpiBar() {
             className="kpi-value kpi-value-link"
             style={{ color: successBand(mcRate).color }}
             to="monte-carlo"
-            title="Share of 1,000 varied-market simulations where the money lasts — open Monte Carlo for the full picture"
+            title={`Share of ${DEFAULT_PATH_COUNT.toLocaleString()} varied-market simulations where the money lasts — open Monte Carlo for the full picture`}
           >
             {Math.round(mcRate * 100)}%
           </Link>
@@ -142,7 +143,7 @@ function KpiBar() {
             …
           </span>
         )}
-        <span className="kpi-sub">of 1,000 varied markets</span>
+        <span className="kpi-sub">of {DEFAULT_PATH_COUNT.toLocaleString()} varied markets</span>
       </div>
       <div className="kpi">
         <span className="kpi-label">Lifetime tax</span>

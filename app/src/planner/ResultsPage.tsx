@@ -24,6 +24,7 @@ import {
 
 import type { Plan } from '../engine/model/plan'
 import { startingInvestableOf } from '../engine/montecarlo/riskBasedGuardrails'
+import { DEFAULT_PATH_COUNT } from '../mc/pool'
 import type { YearResult } from '../engine/projection/types'
 import { usePlan } from './planContextCore'
 import { isPlanIncomplete } from './planCompleteness'
@@ -113,6 +114,9 @@ const tooltipProps = {
   contentStyle: chartTooltipStyle,
   wrapperStyle: { zIndex: 2 },
 } as const
+
+/** "1,000" — keeps verdict copy in sync if the default path count changes. */
+const PATH_COUNT_LABEL = DEFAULT_PATH_COUNT.toLocaleString()
 
 /**
  * The FIRE metrics + FI-target chart. Rendered as the leading card only for
@@ -328,8 +332,13 @@ export function ResultsPage() {
   const mcRate = useMcSuccessRate(plan, !isPlanIncomplete(plan))
   // The first full year after depletion shows what the ledger already knows:
   // guaranteed income keeps flowing, and the uncovered gap is the engine's own
-  // shortfall figure — no recomputation here.
-  const floorYear = depletionYear !== null ? view.result.years.find((y) => y.year > depletionYear) : undefined
+  // shortfall figure — no recomputation here. When depletion lands in the
+  // final plan year there is no later year, so that year carries the floor.
+  const floorYear =
+    depletionYear !== null
+      ? (view.result.years.find((y) => y.year > depletionYear) ??
+        view.result.years.find((y) => y.year === depletionYear))
+      : undefined
   // The FIRE lens leads only for households genuinely accumulating: wages in
   // the projection AND retirement 5+ years out. For everyone else (retirees,
   // near-retirees whose plan may succeed while "FI date: —" reads as failure)
@@ -372,6 +381,13 @@ export function ResultsPage() {
                     ) : null}
                     .
                   </>
+                ) : null}
+                {mcRate !== null ? (
+                  <>
+                    {' '}
+                    Across {PATH_COUNT_LABEL} varied markets, this plan succeeds {Math.round(mcRate * 100)}% of the
+                    time — <Link to={`/plan/${plan.id}/monte-carlo`}>see Monte Carlo</Link>.
+                  </>
                 ) : null}{' '}
                 <Link to={`/plan/${plan.id}/insights`}>See what would change this →</Link>
               </>
@@ -382,8 +398,8 @@ export function ResultsPage() {
                 {mcRate !== null ? (
                   <>
                     {' '}
-                    Across 1,000 varied markets, this plan succeeds {Math.round(mcRate * 100)}% of the time —{' '}
-                    <Link to={`/plan/${plan.id}/monte-carlo`}>see Monte Carlo</Link>.
+                    Across {PATH_COUNT_LABEL} varied markets, this plan succeeds {Math.round(mcRate * 100)}% of the
+                    time — <Link to={`/plan/${plan.id}/monte-carlo`}>see Monte Carlo</Link>.
                   </>
                 ) : null}{' '}
                 The charts below are the evidence behind this verdict.
