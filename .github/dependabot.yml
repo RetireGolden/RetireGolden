@@ -6,6 +6,10 @@ updates:
       interval: "weekly"
     cooldown:
       default-days: 7
+    ignore:
+      # Pinned to the v1 branch tip by hand; Dependabot resolves this action to
+      # a stale 2021 SHA cited in Azure's docs and would downgrade the pin.
+      - dependency-name: "Azure/static-web-apps-deploy"
     commit-message:
       prefix: "chore(ci)"
     groups:
