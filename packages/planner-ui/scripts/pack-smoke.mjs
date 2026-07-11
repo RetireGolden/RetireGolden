@@ -63,20 +63,28 @@ import {
 } from '@retiregolden/planner-ui'
 import { parseV2Backup, serializeV2Backup } from '@retiregolden/planner-ui/plan-format'
 
-const hostStore: PlanStore = indexedDbPlanStore
+// A host-shaped adapter (not the browser store) so both injection routes —
+// the planStore prop and a wrapping PlanStoreProvider — compile against a
+// real implementation of the interface. Runtime injection semantics are
+// covered by data/planStoreContext.test.tsx; this file proves the surface
+// resolves and bundles from the tarball.
+const hostStore: PlanStore = {
+  listPlans: () => indexedDbPlanStore.listPlans(),
+  loadPlan: (id) => indexedDbPlanStore.loadPlan(id),
+  savePlan: (plan) => indexedDbPlanStore.savePlan(plan),
+  deletePlan: (id) => indexedDbPlanStore.deletePlan(id),
+}
 
 function WorkspaceOnlyHost() {
   return useRoutes([...plannerWorkspaceRoutes, ...plannerContentRoutes])
 }
 
-console.debug(parseV2Backup(serializeV2Backup([])).ok, WorkspaceOnlyHost.name)
+console.debug(parseV2Backup(serializeV2Backup([])).ok, WorkspaceOnlyHost.name, PlanStoreProvider.name)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <PlanStoreProvider store={hostStore}>
-        <PlannerApp />
-      </PlanStoreProvider>
+      <PlannerApp planStore={hostStore} />
     </BrowserRouter>
   </StrictMode>,
 )

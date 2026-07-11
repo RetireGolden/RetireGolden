@@ -168,9 +168,9 @@ Zod validation on it — the same single code path the web app has always used
 — while `savePlan` receives a plan that already passed validation and got its
 `updatedAtIso` stamp. A store never re-implements plan semantics.
 
-Supply a store with the provider (or the `planStore` prop on
-`<PlannerApp/>`); keep the instance stable — the planner reloads when the
-store's identity changes:
+Supply a store with the provider or the `planStore` prop on `<PlannerApp/>`
+(the prop wins when both are present); keep the instance stable — the
+planner reloads when the store's identity changes:
 
 ```tsx
 import { PlanStoreProvider } from '@retiregolden/planner-ui'
@@ -196,10 +196,15 @@ Deliberate boundaries of the seam:
 ### Route groups
 
 The route table is exported as three react-router v7 `RouteObject[]` arrays
-that spread into `useRoutes`, nest under a host's route config, or feed
-`createBrowserRouter`. Paths are relative, so the groups mount at the router
-root or under a host path, and deep links (e.g. `/plan/<id>/results`) work
-with only the workspace group mounted:
+that spread into `useRoutes` or feed `createBrowserRouter`. Mount them at
+the host router's **root**; to serve the planner under a URL prefix, put the
+prefix in the router's `basename`
+(e.g. `<BrowserRouter basename="/planner">`) — planner pages navigate with
+root-absolute paths, which react-router resolves against the basename. Do
+not nest the groups under a parent route path (`path: 'planner/*'`): the
+initial deep link would render, but the first in-app navigation would escape
+the prefix. Deep links (e.g. `/plan/<id>/results`) work with only the
+workspace group mounted:
 
 | Export | Routes | Notes |
 |--------|--------|-------|

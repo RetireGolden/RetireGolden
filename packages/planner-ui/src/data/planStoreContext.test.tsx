@@ -8,12 +8,13 @@
  */
 import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { act } from 'react'
+import { act, type ReactNode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { IDBFactory } from 'fake-indexeddb'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
+import { App } from '../App.tsx'
 import { _resetPlanStoreForTests, loadPlan } from './planStore'
 import {
   duplicatePlanVia,
@@ -151,6 +152,22 @@ describe('demo records stay browser-local', () => {
     // The browser-local demo record is gone.
     expect((await loadPlan(seeded.plan.id)).ok).toBe(false)
   })
+
+  it('a host-store save failure during convert surfaces as issues and keeps the demo record', async () => {
+    const { store } = makeFakeStore()
+    store.savePlan = async () => {
+      throw new Error('disk full')
+    }
+    const seeded = await saveFreshDemo(EXAMPLE_PLANS[0]!)
+    expect(seeded.ok).toBe(true)
+    if (!seeded.ok) return
+
+    const converted = await saveExampleToMyPlans(seeded.plan, { store })
+    expect(converted.ok).toBe(false)
+    if (!converted.ok) expect(converted.issues.join(' ')).toContain('could not save')
+    // Nothing was lost: the browser-local demo is still there.
+    expect((await loadPlan(seeded.plan.id)).ok).toBe(true)
+  })
 })
 
 describe('workspace over a fake store', () => {
@@ -218,5 +235,79 @@ describe('workspace over a fake store', () => {
     expect((await loadPlan(sample.id)).ok).toBe(false)
     await act(async () => root.unmount())
     container.remove()
+  })
+})
+
+describe('<PlannerApp/> store injection', () => {
+  async function waitFor(container: HTMLElement, predicate: () => boolean) {
+    for (let attempt = 0; attempt < 200; attempt++) {
+      if (predicate()) return
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10))
+      })
+    }
+    throw new Error(`Timed out waiting for expected render; got: ${container.textContent}`)
+  }
+
+  async function mountApp(ui: ReactNode) {
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+    await act(async () => {
+      root.render(<MemoryRouter initialEntries={['/']}>{ui}</MemoryRouter>)
+    })
+    return {
+      container,
+      unmount: async () => {
+        await act(async () => root.unmount())
+        container.remove()
+      },
+    }
+  }
+
+  it('honors an ambient <PlanStoreProvider> when the planStore prop is omitted', async () => {
+    const { store, docs } = makeFakeStore()
+    const sample = { ...createSamplePlan(), name: 'Ambient host plan' }
+    docs.set(sample.id, structuredClone(sample))
+
+    const { container, unmount } = await mountApp(
+      <PlanStoreProvider store={store}>
+        <App />
+      </PlanStoreProvider>,
+    )
+    await waitFor(container, () => (container.textContent ?? '').includes('Ambient host plan'))
+    await unmount()
+  })
+
+  it('"Clear all data" erases the host store too, not just this browser', async () => {
+    const { store, docs } = makeFakeStore()
+    const sample = { ...createSamplePlan(), name: 'Host plan to clear' }
+    docs.set(sample.id, structuredClone(sample))
+
+    const { container, unmount } = await mountApp(<App planStore={store} />)
+    await waitFor(container, () => (container.textContent ?? '').includes('Host plan to clear'))
+
+    const clearBtn = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Clear all data')
+    await act(async () => {
+      clearBtn!.click()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    // The typed-confirmation gate: type 'delete', then the erase button arms.
+    const gate = document.querySelector<HTMLInputElement>('.modal-panel input[type="text"]')!
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!
+    await act(async () => {
+      setter.call(gate, 'delete')
+      gate.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await act(async () => {
+      Array.from(document.querySelectorAll<HTMLButtonElement>('.modal-panel button'))
+        .find((b) => b.textContent === 'Erase everything')!
+        .click()
+      await new Promise((resolve) => setTimeout(resolve, 50))
+    })
+
+    expect(docs.size).toBe(0)
+    await waitFor(container, () => !(container.textContent ?? '').includes('Host plan to clear'))
+    await unmount()
   })
 })

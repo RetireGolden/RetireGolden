@@ -5,11 +5,17 @@
  * under its router and omits the home group entirely.
  *
  * The groups are react-router v7 `RouteObject[]` arrays — the shape that
- * spreads into `useRoutes`, nests under a host's route config, or feeds
- * `createBrowserRouter` — rather than `<Route>` fragments, which can't cross
- * a component boundary (`<Routes>` only reads `<Route>` children it can see
- * literally). Paths are relative so the groups work at the router root or
- * nested under a host path.
+ * spreads into `useRoutes` or feeds `createBrowserRouter` — rather than
+ * `<Route>` fragments, which can't cross a component boundary (`<Routes>`
+ * only reads `<Route>` children it can see literally).
+ *
+ * **Mount the groups at the host router's root.** To serve the planner under
+ * a URL prefix, put the prefix in the router's `basename` — the planner's
+ * pages navigate with root-absolute paths (`/plan/:id/…`, `/compare`,
+ * `/learn/…`), which react-router resolves against the basename. Nesting the
+ * groups under a parent route path (e.g. `path: 'planner/*'`) is NOT
+ * supported: the initial deep link would render, but the first in-app
+ * navigation would escape the prefix.
  *
  * Everything here stays chrome-free: pages only, no header/nav/footer and no
  * document.title management for non-plan routes (plan routes retitle

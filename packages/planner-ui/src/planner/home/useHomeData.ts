@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-// "Clear all data" wipes this browser (IndexedDB + localStorage) by design,
-// so it stays on the browser store rather than the seam — the home surface
-// is a web-only route and the promise it makes is device-scoped.
 import { clearAllPlans } from '../../data/planStore'
 import {
   deletePlanVia,
   duplicatePlanVia,
+  indexedDbPlanStore,
   listKnownPlanIdsVia,
   listPlansVia,
   loadPlanVia,
@@ -163,6 +161,13 @@ export function useHomeData() {
     // A pending delete-undo would let "Undo" resurrect a plan after the
     // erasure — drop it before clearing so "erases ALL data" stays true.
     dismissUndo()
+    // With a host-provided store, this surface's plan list lives there —
+    // honor the dialog's "every plan" promise through the seam before the
+    // device-local wipe. (The default web path is untouched: clearAllPlans
+    // already clears the browser database in one call.)
+    if (store !== indexedDbPlanStore) {
+      for (const s of await store.listPlans()) await deletePlanVia(store, s.id)
+    }
     await clearAllPlans()
     try {
       for (const key of Object.keys(localStorage)) {

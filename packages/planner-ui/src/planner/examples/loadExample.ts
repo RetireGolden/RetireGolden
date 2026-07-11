@@ -105,7 +105,18 @@ export async function saveExampleToMyPlans(
   // copies (recoverable), never neither.
   const converted = convertedFromExample(plan, opts)
   if (!converted.ok) return converted
-  await store.savePlan(converted.plan)
-  await deletePlan(plan.id)
+  try {
+    await store.savePlan(converted.plan)
+  } catch {
+    // A store rejection must surface through the same result channel as a
+    // validation failure — callers show issues in a dialog, not a crash.
+    return { ok: false, issues: ['The plan store could not save the converted plan.'] }
+  }
+  try {
+    await deletePlan(plan.id)
+  } catch {
+    // Non-fatal: the user plan landed; a surviving demo record is the
+    // recoverable half of the both-copies-never-neither invariant.
+  }
   return converted
 }

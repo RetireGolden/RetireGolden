@@ -3,7 +3,7 @@ import { NavLink, useLocation, useRoutes } from 'react-router-dom'
 import { RouteErrorBoundary } from './RouteErrorBoundary.tsx'
 import { plannerContentRoutes, plannerHomeRoutes, plannerWorkspaceRoutes } from './routes/groups'
 import { readLocal, STORAGE_KEYS, writeLocal } from './data/localStore'
-import { indexedDbPlanStore, type PlanStore } from './data/planStoreContext'
+import { usePlanStore, type PlanStore } from './data/planStoreContext'
 import { PlanStoreProvider } from './data/PlanStoreProvider'
 import { ReportBrandingContext } from './report/brandingContext'
 import type { ReportBranding } from './report/reportHtml'
@@ -57,7 +57,8 @@ export interface PlannerAppProps {
   reportBranding?: ReportBranding
   /**
    * Plan storage for the planner (see `PlanStore` in the package exports).
-   * Omit it and plans persist in the browser via IndexedDB, exactly as on
+   * Precedence: this prop, else a `<PlanStoreProvider>` wrapping
+   * `<PlannerApp/>`, else the browser IndexedDB store — exactly as on
    * retiregolden.app. Pass a stable instance — the planner reloads when the
    * store's identity changes.
    */
@@ -65,6 +66,10 @@ export interface PlannerAppProps {
 }
 
 export function App({ reportBranding, planStore }: PlannerAppProps = {}) {
+  // An ambient <PlanStoreProvider> above the app must win over the built-in
+  // default; with neither prop nor provider this resolves to the browser
+  // store (the context's default value).
+  const ambientStore = usePlanStore()
   const location = useLocation()
   // The full route table — <Routes> is exactly useRoutes over its children,
   // so composing the exported groups this way renders identically.
@@ -120,7 +125,7 @@ export function App({ reportBranding, planStore }: PlannerAppProps = {}) {
       : '/brand/retiregolden-logo-lockup-light.png'
 
   return (
-    <PlanStoreProvider store={planStore ?? indexedDbPlanStore}>
+    <PlanStoreProvider store={planStore ?? ambientStore}>
     <ReportBrandingContext.Provider value={reportBranding ?? null}>
     <div className={`app-shell planner-shell${isLanding ? ' app-shell--landing' : ''}`}>
       <a className="skip-link" href="#main-content">

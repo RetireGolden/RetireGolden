@@ -79,6 +79,51 @@ describe('workspace group mounted alone', () => {
     )
     expect(html).toBe('')
   })
+
+  it('serves under a URL prefix via the router basename — in-app navigation stays inside it', async () => {
+    // The supported prefixing story (README "Route groups"): the prefix lives
+    // in the router's basename, so the pages' root-absolute navigation
+    // resolves against it instead of escaping to the host's root.
+    const sample = createSamplePlan()
+    const saved = await savePlan(sample)
+    if (!saved.ok) throw new Error('seed save failed')
+
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+    await act(async () => {
+      root.render(
+        <MemoryRouter basename="/planner" initialEntries={[`/planner/plan/${sample.id}/household`]}>
+          <GroupHost routes={plannerWorkspaceRoutes} />
+        </MemoryRouter>,
+      )
+    })
+    for (let attempt = 0; attempt < 200 && !container.innerHTML.includes('workspace-rail'); attempt++) {
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 10))
+      })
+    }
+    expect(container.textContent).toContain('Household')
+
+    // Navigate in-app via the rail (rendered href carries the basename), and
+    // the destination must still match inside the prefixed mount.
+    const resultsLink = Array.from(container.querySelectorAll<HTMLAnchorElement>('a')).find(
+      (a) => a.textContent === 'Results',
+    )
+    expect(resultsLink?.getAttribute('href')).toBe(`/planner/plan/${sample.id}/results`)
+    await act(async () => {
+      resultsLink!.click()
+    })
+    for (let attempt = 0; attempt < 200 && !(container.textContent ?? '').includes('Results —'); attempt++) {
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 10))
+      })
+    }
+    expect(container.querySelector('h1')?.textContent).toBe(`Results — ${sample.name}`)
+
+    await act(async () => root.unmount())
+    container.remove()
+  })
 })
 
 describe('content group mounted alone', () => {
