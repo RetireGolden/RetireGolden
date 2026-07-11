@@ -30,10 +30,20 @@ RetireGolden's source is licensed under **AGPL-3.0-only** (see [LICENSE](LICENSE
 the community edition stays free and open forever.
 
 RetireGolden, LLC also ships a commercial desktop edition built from this same engine, which funds the
-free product. To make that possible, **all contributions require signing our Contributor License
-Agreement (CLA)** — a one-time, automated step on your first pull request. The CLA grants RetireGolden,
-LLC the right to relicense your contribution for the commercial edition; you keep the copyright to your
-work, and your contribution remains available to everyone under AGPL-3.0 here.
+free product. To make that possible, **all contributions require signing our
+[Contributor License Agreement](CLA.md)** — a one-time, automated step on your first pull request:
+the CLA bot comments on your PR and you sign by replying with the acceptance phrase it shows. The CLA
+grants RetireGolden, LLC the right to relicense your contribution for the commercial edition; you keep
+the copyright to your work, and your contribution remains available to everyone under AGPL-3.0 here.
+
+Two things the CLA asks of you beyond the signature itself:
+
+- **Employer-owned work:** if your employer (or another entity) owns or may own rights in your
+  contribution, that entity must have a signed [Corporate CLA](CLA-CORPORATE.md) on file naming you as
+  a designated contributor before you submit. Email [info@retiregolden.org](mailto:info@retiregolden.org)
+  to set that up.
+- **AI disclosure:** if a generative-AI tool produced a material part of your contribution (beyond
+  routine completion/formatting), say so in the pull request.
 
 If you're not comfortable with that, we understand — but we can't merge unsigned contributions.
 
