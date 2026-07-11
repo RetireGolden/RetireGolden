@@ -1,4 +1,4 @@
-import type { LongevityAnswers, LongevityPersisted, LongevityResult } from './types'
+import type { LongevityAnswers, LongevityPersisted, LongevityResult } from '@retiregolden/engine/longevity/types'
 
 const SEX: LongevityAnswers['sex'][] = ['male', 'female', 'average']
 const BMI: LongevityAnswers['bmiCategory'][] = [

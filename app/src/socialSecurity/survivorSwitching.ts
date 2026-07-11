@@ -21,11 +21,11 @@
  * @see DOCS/features/social-security.md
  */
 
-import { claimFactor } from './claimFactor'
+import { claimFactor } from '@retiregolden/engine/socialSecurity/claimFactor'
 import { survivalCurve } from './expectedPv'
-import type { Sex } from '../longevity/types'
-import { effectiveBirthYear, fraForBirthYear, fraTotalMonths, survivorFraForBirthYear } from './nra'
-import { survivorBenefitMonthly, survivorReductionFactor, SURVIVOR_EARLIEST_AGE } from './survivorBenefit'
+import type { Sex } from '@retiregolden/engine/longevity/types'
+import { effectiveBirthYear, fraForBirthYear, fraTotalMonths, survivorFraForBirthYear } from '@retiregolden/engine/socialSecurity/nra'
+import { survivorBenefitMonthly, survivorReductionFactor, SURVIVOR_EARLIEST_AGE } from '@retiregolden/engine/socialSecurity/survivorBenefit'
 
 // Re-exported for back-compat (callers that previously imported them from here).
 export { survivorReductionFactor, SURVIVOR_EARLIEST_AGE }

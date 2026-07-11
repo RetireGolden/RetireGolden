@@ -1,6 +1,6 @@
 import { combinedMultiplier } from './factors'
-import { baselineRemainingYears } from './ssaPeriod2022'
-import type { LongevityAnswers, LongevityResult } from './types'
+import { baselineRemainingYears } from '@retiregolden/engine/longevity/ssaPeriod2022'
+import type { LongevityAnswers, LongevityResult } from '@retiregolden/engine/longevity/types'
 
 const MULT_MIN = 0.55
 const MULT_MAX = 1.12

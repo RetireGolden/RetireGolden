@@ -5,7 +5,7 @@
 
 import { Link, useNavigate } from 'react-router-dom'
 
-import { createEmptyPlan } from '../engine/model/plan'
+import { createEmptyPlan } from '@retiregolden/engine/model/plan'
 import { DataAndPrivacyCard } from './home/DataAndPrivacyCard'
 import { GettingStartedPaths } from './home/GettingStartedPaths'
 import { GettingStartedReopener } from './home/GettingStartedReopener'

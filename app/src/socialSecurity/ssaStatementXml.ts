@@ -3,7 +3,7 @@
  * @see http://ssa.gov/osss/schemas/2.0
  */
 
-import type { YearEarning } from './piaFromEarnings'
+import type { YearEarning } from '@retiregolden/engine/socialSecurity/piaFromEarnings'
 
 export const OSSS_NS = 'http://ssa.gov/osss/schemas/2.0'
 

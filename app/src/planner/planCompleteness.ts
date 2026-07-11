@@ -6,7 +6,7 @@
  * payment/value account types must carry a positive amount.
  */
 
-import type { Account, Plan } from '../engine/model/plan'
+import type { Account, Plan } from '@retiregolden/engine/model/plan'
 
 function accountProvidesFunding(account: Account): boolean {
   switch (account.type) {

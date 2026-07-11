@@ -11,12 +11,12 @@
 
 import { useMemo, useState } from 'react'
 
-import type { Person } from '../engine/model/plan'
+import type { Person } from '@retiregolden/engine/model/plan'
 import {
   hazardForExpectancyMultiplier,
   jointSurvivalPercentileAge,
   survivalPercentileAge,
-} from '../engine/montecarlo/survival'
+} from '@retiregolden/engine/montecarlo/survival'
 import { loadLongevity, loadLongevityPartner } from '../longevity/storage'
 import { CheckboxField, SelectField } from './fields'
 import { Modal } from './Modal'

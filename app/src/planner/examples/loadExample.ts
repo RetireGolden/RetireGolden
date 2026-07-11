@@ -4,7 +4,7 @@
 
 import { exampleStorageId } from '../../data/planOrigin'
 import { convertExampleToUserPlan, loadPlan, savePlan, type SavePlanResult } from '../../data/planStore'
-import type { Plan } from '../../engine/model/plan'
+import type { Plan } from '@retiregolden/engine/model/plan'
 import { exampleFixedNow } from './buildContext'
 import { getExampleById, type ExamplePlan } from './registry'
 

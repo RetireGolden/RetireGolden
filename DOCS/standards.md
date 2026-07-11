@@ -8,11 +8,13 @@ or changing a feature. These are the rules the codebase already follows — matc
 1. **Local-first, no network for user data.** No backend, no account, no analytics, no remote content. Any
    feature that would send a plan off the device is out of scope by definition. Persistence is IndexedDB +
    JSON export only.
-2. **The engine stays pure.** `app/src/engine/**` must not import React, recharts, `idb`, or app-layer code,
-   and must not touch `localStorage`, `indexedDB`, `document`, or `window`. This is enforced by ESLint
-   (`app/eslint.config.js`) — if the lint rule fights you, the code is in the wrong layer, not the rule.
+2. **The engine stays pure.** `packages/engine/src/**` (the `@retiregolden/engine` package) must not
+   import React, recharts, `idb`, or app-layer code, and must not touch `localStorage`, `indexedDB`,
+   `document`, `window`, or `fetch` — it runs in plain Node as well as the browser. This is enforced by
+   ESLint (`packages/engine/eslint.config.js`) — if the lint rule fights you, the code is in the wrong
+   layer, not the rule.
 3. **The UI never computes money math.** Components call engine functions; all dollars, taxes, and
-   projections originate in `app/src/engine/`.
+   projections originate in `packages/engine/`.
 4. **Determinism.** Every engine function is deterministic; anything stochastic takes an **injected RNG**
    (`engine/montecarlo/rng.ts`) so runs reproduce and scenario diffs aren't sampling noise.
 5. **One ledger.** Monte Carlo and the optimizer wrap the same `simulate` function — never write a second,

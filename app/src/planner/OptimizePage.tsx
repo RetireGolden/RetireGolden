@@ -12,13 +12,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
-import type { OptimizedSchedule } from '../engine/strategies/optimizer'
-import { objectivePolicies, type ObjectivePolicyId } from '../engine/decisions'
+import type { OptimizedSchedule } from '@retiregolden/engine/strategies/optimizer'
+import { objectivePolicies, type ObjectivePolicyId } from '@retiregolden/engine/decisions'
 import {
   type ExactLedgerRecommendationState,
   type ExactLedgerValidation,
   withOptimizedConversions,
-} from '../engine/projection/optimizePlan'
+} from '@retiregolden/engine/projection/optimizePlan'
 import { DEFAULT_PATH_COUNT, runMonteCarlo } from '../mc/pool'
 import type { OptimizeResult } from '../optimize/messages'
 import { runOptimize } from '../optimize/runner'

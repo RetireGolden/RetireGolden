@@ -1,6 +1,6 @@
 /** Survivor years (widow's penalty) — first death flips to single brackets and survivor SS. */
 
-import { createEmptyPlan, parsePlan, type Plan } from '../../engine/model/plan'
+import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
 import { exampleEntityId, exampleFixedNow, exampleIdFactory } from './buildContext'
 
 const EXAMPLE_ID = 'survivor-years'

@@ -1,15 +1,15 @@
-import { objectivePolicies } from '../engine/decisions'
-import type { Account, IncomeStream, Plan } from '../engine/model/plan'
+import { objectivePolicies } from '@retiregolden/engine/decisions'
+import type { Account, IncomeStream, Plan } from '@retiregolden/engine/model/plan'
 import {
   LATEST_PACK_YEAR,
   PARAMETER_DATA_AS_OF,
   PARAMETER_DATA_BASIS,
   PARAMETER_PROVENANCE,
-} from '../engine/params'
-import { LATEST_STATE_PACK_YEAR } from '../engine/params/state'
-import type { ProjectionSummary } from '../engine/projection/compare'
-import type { ProjectionResult, YearResult } from '../engine/projection/types'
-import type { ExactLedgerTournament, ExactLedgerValidation } from '../engine/projection/optimizePlan'
+} from '@retiregolden/engine/params'
+import { LATEST_STATE_PACK_YEAR } from '@retiregolden/engine/params/state'
+import type { ProjectionSummary } from '@retiregolden/engine/projection/compare'
+import type { ProjectionResult, YearResult } from '@retiregolden/engine/projection/types'
+import type { ExactLedgerTournament, ExactLedgerValidation } from '@retiregolden/engine/projection/optimizePlan'
 import type { OptimizeResult } from '../optimize/messages'
 import { fmtMoney } from '../planner/format'
 

@@ -5,7 +5,7 @@
  * a full ProjectionResult) is summarized into `evidence` before posting.
  */
 
-import type { Plan } from '../engine/model/plan'
+import type { Plan } from '@retiregolden/engine/model/plan'
 
 export interface SpendingSolveRequest {
   plan: Plan

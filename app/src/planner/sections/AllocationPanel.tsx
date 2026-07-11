@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 
-import type { AllocationWeights, AssetAllocationPolicy, Plan } from '../../engine/model/plan'
-import { ASSET_CLASS_IDS } from '../../engine/model/plan'
+import type { AllocationWeights, AssetAllocationPolicy, Plan } from '@retiregolden/engine/model/plan'
+import { ASSET_CLASS_IDS } from '@retiregolden/engine/model/plan'
 import type { AllocatableAccount } from './sectionHelpers'
 import {
   blendedReturnPct,
@@ -11,7 +11,7 @@ import {
   DEFAULT_ASSET_CLASS_PARAMS,
   resolveAssetClassParams,
   targetWeightsAt,
-} from '../../engine/allocation/assetClasses'
+} from '@retiregolden/engine/allocation/assetClasses'
 import { NumberField, PercentField, ReadonlyField, SelectField } from '../fields'
 import { Modal } from '../Modal'
 import { currentStartYear } from '../useProjection'

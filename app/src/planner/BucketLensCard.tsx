@@ -19,7 +19,7 @@ import {
   YAxis,
 } from 'recharts'
 
-import type { ProjectionResult } from '../engine/projection/types'
+import type { ProjectionResult } from '@retiregolden/engine/projection/types'
 import { bucketLens, BUCKET_PRESETS } from './bucketLens'
 import { chartTooltipStyle } from './chartStyle'
 import { frameH } from './chartFrame'

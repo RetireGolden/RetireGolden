@@ -11,7 +11,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { MemoryRouter } from 'react-router-dom'
 
-import type { Plan } from '../engine/model/plan'
+import type { Plan } from '@retiregolden/engine/model/plan'
 import { PlanCtx, type PlanContextValue } from './planContextCore'
 import { createSamplePlan } from '../testSupport/samplePlan'
 import { importErrorMessage } from './home/importErrorMessage'

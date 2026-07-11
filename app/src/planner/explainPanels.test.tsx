@@ -10,8 +10,8 @@ import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { MemoryRouter } from 'react-router-dom'
 
-import type { MonteCarloSummary } from '../engine/montecarlo/run'
-import type { ExactLedgerTournament, ExactLedgerValidation } from '../engine/projection/optimizePlan'
+import type { MonteCarloSummary } from '@retiregolden/engine/montecarlo/run'
+import type { ExactLedgerTournament, ExactLedgerValidation } from '@retiregolden/engine/projection/optimizePlan'
 import { WhyRecommendationPanel, WhySuccessPanel } from './explainPanels'
 
 function render(node: React.ReactNode): { container: HTMLDivElement; unmount: () => void } {

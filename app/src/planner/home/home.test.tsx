@@ -7,7 +7,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { IDBFactory } from 'fake-indexeddb'
 
 import { _resetPlanStoreForTests, listUserPlanSummaries, savePlan } from '../../data/planStore'
-import { createEmptyPlan, type Account } from '../../engine/model/plan'
+import { createEmptyPlan, type Account } from '@retiregolden/engine/model/plan'
 import { getArticle } from '../../learn/learningRegistry'
 import { isPlanIncomplete } from '../planCompleteness'
 import { PlanPickerPage } from '../PlanPickerPage'

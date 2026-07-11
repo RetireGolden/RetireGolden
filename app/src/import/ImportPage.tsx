@@ -12,7 +12,7 @@ import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import { savePlan } from '../data/planStore'
-import type { Plan } from '../engine/model/plan'
+import type { Plan } from '@retiregolden/engine/model/plan'
 import { DateField, MoneyField, SelectField } from '../planner/fields'
 import { US_STATES } from '../planner/usStates'
 import { parseBrokerPositionsCsv, draftPlanFromBrokerAccounts, BROKER_LABEL } from './brokerCsv'

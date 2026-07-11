@@ -5,9 +5,9 @@
  * rate as an override, matching ./runOptimize.ts.
  */
 
-import { createDecisionContext, solveMaxSustainableSpending, SPENDING_SOLVER_UI_BUDGET } from '../engine/decisions'
-import { combineTaxCalculators, createFederalTaxCalculator } from '../engine/tax/federalTax'
-import { createStateTaxCalculator } from '../engine/tax/stateTax'
+import { createDecisionContext, solveMaxSustainableSpending, SPENDING_SOLVER_UI_BUDGET } from '@retiregolden/engine/decisions'
+import { combineTaxCalculators, createFederalTaxCalculator } from '@retiregolden/engine/tax/federalTax'
+import { createStateTaxCalculator } from '@retiregolden/engine/tax/stateTax'
 import type { SpendingSolveRequest, SpendingSolveResult } from './spendingMessages'
 
 export function runSpendingSolveRequest(req: SpendingSolveRequest): SpendingSolveResult {

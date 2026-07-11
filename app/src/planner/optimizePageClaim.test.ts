@@ -7,9 +7,9 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { createEmptyPlan, parsePlan, type Plan } from '../engine/model/plan'
-import type { ClaimAgeCoOptimization } from '../engine/projection/optimizePlan'
-import { socialSecurityIncome } from '../testSupport/planFixtures'
+import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
+import type { ClaimAgeCoOptimization } from '@retiregolden/engine/projection/optimizePlan'
+import { socialSecurityIncome } from '@retiregolden/engine/testing/planFixtures'
 import { applyOptimizeRecommendation, claimEstateGain, planWithWinningClaim } from './optimizePageClaim'
 
 let counter = 0

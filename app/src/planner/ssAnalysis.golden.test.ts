@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { singlePersonPlan } from '../testSupport/planFixtures'
+import { singlePersonPlan } from '@retiregolden/engine/testing/planFixtures'
 import { candidateClaimAges } from './ssAnalysis'
 
 /**

@@ -10,7 +10,7 @@ import {
   selfRatedHealthMultiplier,
   smokingMultiplier,
 } from './factors'
-import type { LongevityAnswers } from './types'
+import type { LongevityAnswers } from '@retiregolden/engine/longevity/types'
 
 describe('longevity factor multipliers', () => {
   it('pins every BMI category multiplier', () => {

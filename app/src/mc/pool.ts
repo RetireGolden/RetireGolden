@@ -8,16 +8,16 @@
  * unavailable (tests, very old browsers).
  */
 
-import type { Plan } from '../engine/model/plan'
-import type { LtcShockParams } from '../engine/montecarlo/ltcShock'
-import type { MarketModelConfig } from '../engine/montecarlo/marketModels'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import type { LtcShockParams } from '@retiregolden/engine/montecarlo/ltcShock'
+import type { MarketModelConfig } from '@retiregolden/engine/montecarlo/marketModels'
 import {
   aggregateMonteCarlo,
   mergePathResults,
   type MonteCarloPathsResult,
   type MonteCarloSummary,
-} from '../engine/montecarlo/run'
-import type { RiskBasedGuardrailSolution } from '../engine/montecarlo/riskBasedGuardrails'
+} from '@retiregolden/engine/montecarlo/run'
+import type { RiskBasedGuardrailSolution } from '@retiregolden/engine/montecarlo/riskBasedGuardrails'
 import type {
   FrontierWorkerRequest,
   FrontierWorkerResponse,

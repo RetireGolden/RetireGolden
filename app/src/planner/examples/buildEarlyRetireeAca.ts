@@ -1,6 +1,6 @@
 /** Early retiree and the ACA cliff — pre-65 MAGI vs premium-credit cliff. */
 
-import { createEmptyPlan, parsePlan, type Plan } from '../../engine/model/plan'
+import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
 import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory } from './buildContext'
 
 const EXAMPLE_ID = 'early-retiree-aca'

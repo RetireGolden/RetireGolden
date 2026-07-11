@@ -2,7 +2,7 @@
 
 import { Link } from 'react-router-dom'
 
-import { PARAMETER_DATA_AS_OF, PARAMETER_DATA_BASIS } from '../engine/params'
+import { PARAMETER_DATA_AS_OF, PARAMETER_DATA_BASIS } from '@retiregolden/engine/params'
 import { ProvenancePanel } from './ProvenancePanel'
 
 export function DisclaimerPage() {

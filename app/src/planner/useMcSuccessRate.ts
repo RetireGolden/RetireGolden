@@ -12,7 +12,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 
-import type { Plan } from '../engine/model/plan'
+import type { Plan } from '@retiregolden/engine/model/plan'
 import { DEFAULT_PATH_COUNT, runMonteCarlo } from '../mc/pool'
 import { buildModel } from './marketModelPicker'
 import { currentStartYear, seedFromPlanId } from './useProjection'

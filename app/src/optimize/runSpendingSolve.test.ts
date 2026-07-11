@@ -10,10 +10,10 @@ import {
   createDecisionContext,
   solveMaxSustainableSpending,
   SPENDING_SOLVER_UI_BUDGET,
-} from '../engine/decisions'
-import { noTraditionalPlan } from '../engine/decisions/decisionFixtures'
-import { combineTaxCalculators, createFederalTaxCalculator } from '../engine/tax/federalTax'
-import { createStateTaxCalculator } from '../engine/tax/stateTax'
+} from '@retiregolden/engine/decisions'
+import { noTraditionalPlan } from '@retiregolden/engine/decisions/decisionFixtures'
+import { combineTaxCalculators, createFederalTaxCalculator } from '@retiregolden/engine/tax/federalTax'
+import { createStateTaxCalculator } from '@retiregolden/engine/tax/stateTax'
 import { runSpendingSolveRequest } from './runSpendingSolve'
 
 describe('runSpendingSolveRequest', () => {

@@ -9,8 +9,8 @@
  * "from your 1040" review item and is ordinary editable plan data afterward.
  */
 
-import type { Plan } from '../engine/model/plan'
-import { createEmptyPlan, parsePlan } from '../engine/model/plan'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import { createEmptyPlan, parsePlan } from '@retiregolden/engine/model/plan'
 import { MAX_REASONABLE_DOLLARS } from './csv'
 import type { ImportReviewItem } from './reviewChecklist'
 

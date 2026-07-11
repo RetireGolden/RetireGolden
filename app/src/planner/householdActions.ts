@@ -1,7 +1,7 @@
 /** Pure plan mutations for household edits (kept out of the component file so
  *  they're testable and don't trip react-refresh's only-export-components rule). */
 
-import type { Plan } from '../engine/model/plan'
+import type { Plan } from '@retiregolden/engine/model/plan'
 
 /**
  * Remove a partner and re-home everything that referenced them so the plan stays

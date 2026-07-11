@@ -9,7 +9,7 @@ import type {
   SelfRatedHealth,
   Sex,
   Smoking,
-} from './types'
+} from '@retiregolden/engine/longevity/types'
 import { computeLongevity } from './model'
 import { saveLongevity, saveLongevityPartner } from './storage'
 

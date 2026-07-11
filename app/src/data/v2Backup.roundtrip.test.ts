@@ -12,8 +12,8 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { CURRENT_PLAN_SCHEMA_VERSION, createEmptyPlan } from '../engine/model/plan'
-import { migratePlanToCurrent } from '../engine/model/migrations'
+import { CURRENT_PLAN_SCHEMA_VERSION, createEmptyPlan } from '@retiregolden/engine/model/plan'
+import { migratePlanToCurrent } from '@retiregolden/engine/model/migrations'
 import { EXAMPLE_PLANS } from '../planner/examples/registry'
 import { parseV2Backup, serializeV2Backup } from './v2Backup'
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { createEmptyPlan } from '../engine/model/plan'
+import { createEmptyPlan } from '@retiregolden/engine/model/plan'
 import { MAX_BACKUP_JSON_CHARS, parseV2Backup, serializeV2Backup } from './v2Backup'
 
 let counter = 0

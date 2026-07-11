@@ -13,7 +13,7 @@
  * @see DOCS/features/social-security.md §3.2
  */
 
-import { claimFactor } from './claimFactor'
+import { claimFactor } from '@retiregolden/engine/socialSecurity/claimFactor'
 
 export interface BreakEvenInput {
   dob: { year: number; month: number; day: number }

@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 
 import { describe, expect, it } from 'vitest'
-import { parseEarningsLines } from './piaFromEarnings'
+import { parseEarningsLines } from '@retiregolden/engine/socialSecurity/piaFromEarnings'
 import {
   defaultLastEarningsYearFromRows,
   parseSsaStatementXml,

@@ -11,9 +11,9 @@
  * @see DOCS/features/social-security.md
  */
 
-import type { IncomeStream, Person, Plan } from '../engine/model/plan'
-import { summarizeProjection, type ProjectionSummary } from '../engine/projection/compare'
-import { simulatePlan } from '../engine/projection/simulate'
+import type { IncomeStream, Person, Plan } from '@retiregolden/engine/model/plan'
+import { summarizeProjection, type ProjectionSummary } from '@retiregolden/engine/projection/compare'
+import { simulatePlan } from '@retiregolden/engine/projection/simulate'
 import {
   createDecisionContext,
   evaluateCandidate,
@@ -21,21 +21,21 @@ import {
   rankEvaluations,
   socialSecurityClaimGridGenerator,
   type ObjectivePolicyId,
-} from '../engine/decisions'
+} from '@retiregolden/engine/decisions'
 import {
   expectedPvCouple,
   expectedPvSingle,
   type ClaimantInput,
 } from '../socialSecurity/expectedPv'
-import { spousalBenefitFactor } from '../socialSecurity/claimFactor'
-import { DIVORCED_MIN_MARRIAGE_YEARS } from '../socialSecurity/maritalBenefits'
+import { spousalBenefitFactor } from '@retiregolden/engine/socialSecurity/claimFactor'
+import { DIVORCED_MIN_MARRIAGE_YEARS } from '@retiregolden/engine/socialSecurity/maritalBenefits'
 import {
   computePiaFromEarnings,
   isPiaFromEarningsError,
   piaInputFromEarnings,
   resolveEarningsProjection,
   type PiaFromEarningsResult,
-} from '../socialSecurity/piaFromEarnings'
+} from '@retiregolden/engine/socialSecurity/piaFromEarnings'
 import { currentStartYear, taxCalculatorFor } from './useProjection'
 
 type SsStream = Extract<IncomeStream, { type: 'socialSecurity' }>

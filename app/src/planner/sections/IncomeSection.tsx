@@ -2,7 +2,7 @@
 
 import { Link } from 'react-router-dom'
 
-import type { IncomeStream } from '../../engine/model/plan'
+import type { IncomeStream } from '@retiregolden/engine/model/plan'
 import { usePlan } from '../planContextCore'
 import { CheckboxField, MoneyField, NumberField, PercentField, ReadonlyField, SelectField, TextField } from '../fields'
 import { LEARN } from '../learnLinks'

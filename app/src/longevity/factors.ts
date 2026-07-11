@@ -12,7 +12,7 @@ import type {
   ParentalLongevity,
   SelfRatedHealth,
   Smoking,
-} from './types'
+} from '@retiregolden/engine/longevity/types'
 
 export function bmiMultiplier(c: BmiCategory): number {
   switch (c) {

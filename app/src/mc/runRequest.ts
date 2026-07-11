@@ -5,21 +5,21 @@
  * an override).
  */
 
-import type { Plan } from '../engine/model/plan'
-import { buildAnnuitizationSweep } from '../engine/decisions/annuitization'
-import { buildRetirementAgeSuccessFrontier, buildSpendingSuccessFrontier } from '../engine/montecarlo/frontiers'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import { buildAnnuitizationSweep } from '@retiregolden/engine/decisions/annuitization'
+import { buildRetirementAgeSuccessFrontier, buildSpendingSuccessFrontier } from '@retiregolden/engine/montecarlo/frontiers'
 import {
   runHistoricalStressSuites,
   type HistoricalStressWindow,
-} from '../engine/montecarlo/historicalSuites'
-import { createMarketModel } from '../engine/montecarlo/marketModels'
+} from '@retiregolden/engine/montecarlo/historicalSuites'
+import { createMarketModel } from '@retiregolden/engine/montecarlo/marketModels'
 import {
   solveRiskBasedGuardrails,
   type RiskBasedGuardrailSolution,
-} from '../engine/montecarlo/riskBasedGuardrails'
-import { runMonteCarloPaths, type MonteCarloPathsResult } from '../engine/montecarlo/run'
-import { combineTaxCalculators, createFederalTaxCalculator } from '../engine/tax/federalTax'
-import { createStateTaxCalculator } from '../engine/tax/stateTax'
+} from '@retiregolden/engine/montecarlo/riskBasedGuardrails'
+import { runMonteCarloPaths, type MonteCarloPathsResult } from '@retiregolden/engine/montecarlo/run'
+import { combineTaxCalculators, createFederalTaxCalculator } from '@retiregolden/engine/tax/federalTax'
+import { createStateTaxCalculator } from '@retiregolden/engine/tax/stateTax'
 import type {
   FrontierWorkerRequest,
   FrontierWorkerResult,

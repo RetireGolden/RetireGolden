@@ -1,5 +1,5 @@
 import { BASELINE_CITATION } from './constants'
-import type { LongevityPersisted } from './types'
+import type { LongevityPersisted } from '@retiregolden/engine/longevity/types'
 
 export interface LongevityResultsProps {
   data: LongevityPersisted

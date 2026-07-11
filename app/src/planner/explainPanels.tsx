@@ -8,8 +8,8 @@
 
 import { Link } from 'react-router-dom'
 
-import type { MonteCarloSummary } from '../engine/montecarlo/run'
-import type { ExactLedgerTournament } from '../engine/projection/optimizePlan'
+import type { MonteCarloSummary } from '@retiregolden/engine/montecarlo/run'
+import type { ExactLedgerTournament } from '@retiregolden/engine/projection/optimizePlan'
 import { fmtMoney, fmtMoneyCompact } from './format'
 
 function fmtSignedMoney(v: number): string {

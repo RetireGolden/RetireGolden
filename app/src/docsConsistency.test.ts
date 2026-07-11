@@ -11,7 +11,7 @@ import codeMap from '../../DOCS/code-map.md?raw'
 import planFileFormat from '../../DOCS/features/plan-file-format.md?raw'
 import readme from '../../README.md?raw'
 import { V2_BACKUP_VERSION } from './data/v2Backup'
-import { CURRENT_PLAN_SCHEMA_VERSION } from './engine/model/plan'
+import { CURRENT_PLAN_SCHEMA_VERSION } from '@retiregolden/engine/model/plan'
 import { LEARNING_ARTICLES } from './learn/learningRegistry'
 
 const workflowFiles = Object.keys(import.meta.glob('../../.github/workflows/*.yml')).map(

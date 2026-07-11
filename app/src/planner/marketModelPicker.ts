@@ -6,10 +6,10 @@
  * given (kind, seed) pair produces byte-identical Monte Carlo results.
  */
 
-import { planUsesAssetAllocation, resolveAssetClassParams } from '../engine/allocation/assetClasses'
-import { ASSET_CLASS_IDS, type AssetClassId } from '../engine/model/plan'
-import type { Plan } from '../engine/model/plan'
-import { buildLognormalModelConfigForPlan, type ClassShockConfig, type MarketModelConfig } from '../engine/montecarlo/marketModels'
+import { planUsesAssetAllocation, resolveAssetClassParams } from '@retiregolden/engine/allocation/assetClasses'
+import { ASSET_CLASS_IDS, type AssetClassId } from '@retiregolden/engine/model/plan'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import { buildLognormalModelConfigForPlan, type ClassShockConfig, type MarketModelConfig } from '@retiregolden/engine/montecarlo/marketModels'
 
 export type ModelKind =
   | 'lognormal'

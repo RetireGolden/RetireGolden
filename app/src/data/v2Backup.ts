@@ -5,8 +5,8 @@
  * migrated on import, so old backups stay restorable forever.
  */
 
-import { migratePlanToCurrent } from '../engine/model/migrations'
-import type { Plan } from '../engine/model/plan'
+import { migratePlanToCurrent } from '@retiregolden/engine/model/migrations'
+import type { Plan } from '@retiregolden/engine/model/plan'
 import { isExamplePlanId } from './planOrigin'
 import { listPlanSummaries } from './planStore'
 

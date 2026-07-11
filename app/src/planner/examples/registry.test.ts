@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { parsePlan } from '../../engine/model/plan'
+import { parsePlan } from '@retiregolden/engine/model/plan'
 import { EXAMPLE_PLANS } from './registry'
 
 describe('example registry', () => {

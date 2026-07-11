@@ -20,14 +20,14 @@ import {
   YAxis,
 } from 'recharts'
 
-import { planUsesAssetAllocation } from '../engine/allocation/assetClasses'
-import type { Plan } from '../engine/model/plan'
-import { DEFAULT_LTC_SHOCK } from '../engine/montecarlo/ltcShock'
-import { startingInvestableOf } from '../engine/montecarlo/riskBasedGuardrails'
-import type { MarketModelConfig } from '../engine/montecarlo/marketModels'
-import type { AnnuitizationSweep } from '../engine/decisions/annuitization'
-import type { StochasticFrontierPoint } from '../engine/montecarlo/frontiers'
-import type { MonteCarloSummary } from '../engine/montecarlo/run'
+import { planUsesAssetAllocation } from '@retiregolden/engine/allocation/assetClasses'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import { DEFAULT_LTC_SHOCK } from '@retiregolden/engine/montecarlo/ltcShock'
+import { startingInvestableOf } from '@retiregolden/engine/montecarlo/riskBasedGuardrails'
+import type { MarketModelConfig } from '@retiregolden/engine/montecarlo/marketModels'
+import type { AnnuitizationSweep } from '@retiregolden/engine/decisions/annuitization'
+import type { StochasticFrontierPoint } from '@retiregolden/engine/montecarlo/frontiers'
+import type { MonteCarloSummary } from '@retiregolden/engine/montecarlo/run'
 import {
   DEFAULT_PATH_COUNT,
   ON_DEMAND_PATH_COUNT,

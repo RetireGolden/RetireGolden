@@ -10,15 +10,15 @@
 import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import type { StateRetirementExclusion } from '../engine/params/state'
+import type { StateRetirementExclusion } from '@retiregolden/engine/params/state'
 import {
   MAX_RELOCATION_CANDIDATES,
   relocationScenarioPatch,
   type RelocationCandidate,
   type RelocationCandidateRow,
   type RelocationComparison,
-} from '../engine/projection/relocation'
-import type { Plan } from '../engine/model/plan'
+} from '@retiregolden/engine/projection/relocation'
+import type { Plan } from '@retiregolden/engine/model/plan'
 import { runRelocationCompare } from '../relocation/runner'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { LearnLink } from '../learn/LearnLink'

@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
 import { bucketLens, BUCKET_PRESETS, netPortfolioNeed } from './bucketLens'
-import { createFlatTaxCalculator } from '../engine/projection/flatTax'
+import { createFlatTaxCalculator } from '@retiregolden/engine/projection/flatTax'
 import {
   cashAccount,
   recurringOrdinaryIncome,
   runPlan,
   singlePersonPlan,
-} from '../testSupport/planFixtures'
+} from '@retiregolden/engine/testing/planFixtures'
 
 const noTax = createFlatTaxCalculator(0)
 

@@ -18,13 +18,13 @@ import {
   expectedAccountReturnPct,
   resolveAssetClassParams,
   DEFAULT_ASSET_CLASS_PARAMS,
-} from '../engine/allocation/assetClasses'
-import { createEmptyPlan, ASSET_CLASS_IDS, type Account, type Plan } from '../engine/model/plan'
+} from '@retiregolden/engine/allocation/assetClasses'
+import { createEmptyPlan, ASSET_CLASS_IDS, type Account, type Plan } from '@retiregolden/engine/model/plan'
 import {
   LATEST_PACK_YEAR,
   PARAMETER_DATA_AS_OF,
   PARAMETER_PROVENANCE,
-} from '../engine/params'
+} from '@retiregolden/engine/params'
 import { fmtMoney } from './format'
 
 /** Where a shown value comes from. */

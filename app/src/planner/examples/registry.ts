@@ -2,7 +2,7 @@
  * Curated example plan registry — single source of truth for library demos.
  */
 
-import type { Plan } from '../../engine/model/plan'
+import type { Plan } from '@retiregolden/engine/model/plan'
 import { buildBracketFillRoth } from './buildBracketFillRoth'
 import { buildEarlyRetireeAca } from './buildEarlyRetireeAca'
 import { buildExampleCouple } from './buildExampleCouple'

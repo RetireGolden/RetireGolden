@@ -7,7 +7,7 @@ import {
   replaceZeroYearGain,
   summarizeComputation,
 } from './explain'
-import { computePiaFromEarnings, isPiaFromEarningsError, type PiaFromEarningsResult } from './piaFromEarnings'
+import { computePiaFromEarnings, isPiaFromEarningsError, type PiaFromEarningsResult } from '@retiregolden/engine/socialSecurity/piaFromEarnings'
 
 describe('bendTierForAime', () => {
   // 2015 published bend points: first 826, second 4980.

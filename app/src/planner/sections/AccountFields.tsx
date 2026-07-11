@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from 'react'
 
-import type { Account, Plan } from '../../engine/model/plan'
-import { analyzePensionElections } from '../../engine/decisions/pensionElection'
-import { packForYear } from '../../engine/params'
+import type { Account, Plan } from '@retiregolden/engine/model/plan'
+import { analyzePensionElections } from '@retiregolden/engine/decisions/pensionElection'
+import { packForYear } from '@retiregolden/engine/params'
 import { AllocationPanel, ReturnEstimatorModal } from './AllocationPanel'
 import { ACCOUNT_LABEL, EVEN_START_WEIGHTS, isAllocatable, isIndividuallyOwnedAccount, type AllocatableAccount } from './sectionHelpers'
 import { usePlan } from '../planContextCore'

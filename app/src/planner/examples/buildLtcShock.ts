@@ -1,6 +1,6 @@
 /** Long-term-care shock — a care episode and how LTC insurance offsets it. */
 
-import { createEmptyPlan, parsePlan, type Plan } from '../../engine/model/plan'
+import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
 import { exampleEntityId, exampleFixedNow, exampleIdFactory } from './buildContext'
 
 const EXAMPLE_ID = 'ltc-shock'

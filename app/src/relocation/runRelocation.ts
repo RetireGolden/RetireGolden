@@ -6,7 +6,7 @@
  * identical numbers.
  */
 
-import { compareRelocationCandidates, type RelocationComparison } from '../engine/projection/relocation'
+import { compareRelocationCandidates, type RelocationComparison } from '@retiregolden/engine/projection/relocation'
 import type { RelocationCompareRequest } from './messages'
 
 export function runRelocationCompareRequest(req: RelocationCompareRequest): RelocationComparison {

@@ -5,7 +5,7 @@
  * src/optimize/spendingRunner.ts.
  */
 
-import type { RelocationComparison } from '../engine/projection/relocation'
+import type { RelocationComparison } from '@retiregolden/engine/projection/relocation'
 import { runWorkerRequest } from '../workers/run'
 import type { RelocationCompareRequest, RelocationCompareResponse } from './messages'
 import { runRelocationCompareRequest } from './runRelocation'

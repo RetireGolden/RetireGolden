@@ -3,7 +3,7 @@
  * component files so react-refresh sees component-only modules).
  */
 
-import type { Account, AllocationWeights } from '../../engine/model/plan'
+import type { Account, AllocationWeights } from '@retiregolden/engine/model/plan'
 
 export const newId = () => crypto.randomUUID()
 

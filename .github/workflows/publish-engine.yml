@@ -1,0 +1,77 @@
+# Publishes @retiregolden/engine to npm.
+#
+# Trigger by pushing a tag `engine-v<version>` (must match the version in
+# packages/engine/package.json), or manually via workflow_dispatch — the
+# manual run defaults to `npm publish --dry-run` so the pipeline can be
+# rehearsed without releasing.
+#
+# Requires the `NPM_TOKEN` repository secret: a granular npm automation token
+# for the @retiregolden org with publish rights on @retiregolden/engine.
+
+name: Publish engine package
+
+on:
+  push:
+    tags: ['engine-v*']
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Use npm publish --dry-run (no release)
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+permissions:
+  contents: read
+  id-token: write # npm --provenance
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check tag matches package version
+        if: startsWith(github.ref, 'refs/tags/engine-v')
+        run: |
+          tag="${GITHUB_REF_NAME#engine-v}"
+          version="$(node -p "require('./packages/engine/package.json').version")"
+          if [ "$tag" != "$version" ]; then
+            echo "Tag engine-v$tag does not match packages/engine version $version" >&2
+            exit 1
+          fi
+
+      - name: Lint
+        run: npm run lint -w @retiregolden/engine
+
+      - name: Build
+        run: npm run build -w @retiregolden/engine
+
+      - name: Test
+        run: npm run test -w @retiregolden/engine
+
+      - name: Publish to npm
+        working-directory: packages/engine
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          extra=""
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ "$DRY_RUN" != "false" ]; then
+            extra="--dry-run"
+          fi
+          npm publish --access public --provenance $extra

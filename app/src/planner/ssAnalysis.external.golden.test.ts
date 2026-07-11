@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { couplePlan, singlePersonPlan, socialSecurityIncome, validatePlan } from '../testSupport/planFixtures'
+import { couplePlan, singlePersonPlan, socialSecurityIncome, validatePlan } from '@retiregolden/engine/testing/planFixtures'
 import { benefitsOnlyRanking } from './ssAnalysis'
 
 /**

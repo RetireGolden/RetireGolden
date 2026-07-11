@@ -9,8 +9,8 @@
  * @see DOCS/features/social-security.md
  */
 
-import type { PiaFromEarningsResult, YearEarning } from './piaFromEarnings'
-import { bendPointsForEligibilityYearOrLatest } from './ssaWageData'
+import type { PiaFromEarningsResult, YearEarning } from '@retiregolden/engine/socialSecurity/piaFromEarnings'
+import { bendPointsForEligibilityYearOrLatest } from '@retiregolden/engine/socialSecurity/ssaWageData'
 
 /**
  * SSA quarter-of-coverage ("credit") earnings amount — 2025 figure. One credit

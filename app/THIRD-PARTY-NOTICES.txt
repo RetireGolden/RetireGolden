@@ -5,39 +5,10 @@ distributed under their respective licenses. Generated from the resolved
 production dependency tree (direct + transitive, excluding TypeScript-only
 @types/* packages that never reach the runtime bundle).
 
-Generated: 2026-06-30
-Source:    npm ls --omit=dev --all (app/package-lock.json)
+Generated: 2026-07-11
+Source:    npm ls --omit=dev --all (workspace root package-lock.json)
 
 ================================================================================
-
-@emnapi/runtime (1.10.0)
-License: MIT
-Author: toyobayashi
-Homepage: https://github.com/toyobayashi/emnapi#readme
-----------
-MIT License
-
-Copyright (c) 2021-present Toyobayashi
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
---------------------------------------------------------------------------------
 
 @reduxjs/toolkit (2.11.2)
 License: MIT
@@ -1006,26 +977,6 @@ SOFTWARE.
 
 --------------------------------------------------------------------------------
 
-tslib (2.8.1)
-License: 0BSD
-Author: Microsoft Corp.
-Homepage: https://www.typescriptlang.org/
-----------
-Copyright (c) Microsoft Corporation.
-
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THIS SOFTWARE.
-
---------------------------------------------------------------------------------
-
 use-sync-external-store (1.6.0)
 License: MIT
 Homepage: https://github.com/facebook/react.git
@@ -1094,14 +1045,16 @@ SOFTWARE.
 
 Summary
 -------
-Packages attributed: 42
-Type-only @types/* excluded: 11
+Packages attributed: 40
+Excluded (type-only @types/*, first-party @retiregolden/*): 12
 Copyleft/share-alike licenses detected: none (all permissive MIT/ISC/BSD/Apache).
 
 Packages with no LICENSE file found (metadata only above):
+  - retiregolden-web@0.0.0 (not found in node_modules)
   - victory-vendor@37.3.6
 
 Excluded @types/* packages (TypeScript-only; not in the runtime bundle):
+  - @retiregolden/engine@0.1.0
   - @types/react@19.2.14
   - @types/use-sync-external-store@0.0.6
   - @types/d3-array@3.2.2

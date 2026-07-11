@@ -5,7 +5,7 @@
  * right where the number is used — not only on the Disclaimer page.
  */
 
-import { PARAMETER_PROVENANCE } from '../engine/params'
+import { PARAMETER_PROVENANCE } from '@retiregolden/engine/params'
 import type { SourceLink } from './fields'
 
 const BY_ID = new Map(PARAMETER_PROVENANCE.map((s) => [s.id, s]))

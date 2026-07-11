@@ -8,8 +8,8 @@
 import { openDB, type IDBPDatabase } from 'idb'
 
 import { isUserPlan, planOriginFromRaw } from './planOrigin'
-import { migratePlanToCurrent, type MigrateResult } from '../engine/model/migrations'
-import { parsePlan, type Plan } from '../engine/model/plan'
+import { migratePlanToCurrent, type MigrateResult } from '@retiregolden/engine/model/migrations'
+import { parsePlan, type Plan } from '@retiregolden/engine/model/plan'
 
 const DB_NAME = 'retiregolden.v2'
 const DB_VERSION = 1

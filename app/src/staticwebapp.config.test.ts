@@ -11,7 +11,7 @@ describe('staticwebapp.config.json', () => {
     expect(headers['Permissions-Policy']).toBeTruthy()
     expect(headers['Content-Security-Policy']).toContain("default-src 'self'")
     expect(headers['Content-Security-Policy']).toContain("worker-src 'self'")
-    // The opt-in FedInvest TIPS price fetch (engine/ladder/fedInvest.ts) is the
+    // The opt-in FedInvest TIPS price fetch (data/fedInvestClient.ts) is the
     // app's only outbound request; connect-src stays 'self' plus that one host.
     expect(headers['Content-Security-Policy']).toContain("connect-src 'self' https://www.treasurydirect.gov")
     expect(headers['Content-Security-Policy']).toContain("frame-ancestors 'none'")

@@ -1,4 +1,4 @@
-import type { InsightCategory } from '../../engine/insights/types'
+import type { InsightCategory } from '@retiregolden/engine/insights/types'
 
 /** Human-readable names for insight categories, shared by the page grouping and card badges. */
 export const CATEGORY_LABELS: Record<InsightCategory, string> = {

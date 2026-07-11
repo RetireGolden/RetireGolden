@@ -20,8 +20,8 @@ import {
   YAxis,
 } from 'recharts'
 
-import type { Account, IncomeStream, Plan } from '../engine/model/plan'
-import type { YearResult } from '../engine/projection/types'
+import type { Account, IncomeStream, Plan } from '@retiregolden/engine/model/plan'
+import type { YearResult } from '@retiregolden/engine/projection/types'
 import { downloadStandaloneReport } from '../report/downloadReport'
 import { PlanProvider } from './PlanContext'
 import { usePlan } from './planContextCore'

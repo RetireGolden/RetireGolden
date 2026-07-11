@@ -18,7 +18,7 @@
  * construction, every year — the acceptance criterion.
  */
 
-import type { ProjectionResult, YearResult } from '../engine/projection/types'
+import type { ProjectionResult, YearResult } from '@retiregolden/engine/projection/types'
 
 export interface BucketYearRow {
   year: number

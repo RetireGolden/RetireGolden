@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { createEmptyPlan, parsePlan, type Account, type Plan } from '../engine/model/plan'
+import { createEmptyPlan, parsePlan, type Account, type Plan } from '@retiregolden/engine/model/plan'
 import { runHistoricalStressSuiteViews, runMonteCarlo, runStochasticFrontiers } from './pool'
 
 let counter = 0

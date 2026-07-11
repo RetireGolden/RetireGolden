@@ -7,8 +7,8 @@
  * conversions applied to the unpatched plan are a different (wrong) plan.
  */
 
-import type { Plan } from '../engine/model/plan'
-import type { ClaimAgeCoOptimization } from '../engine/projection/optimizePlan'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import type { ClaimAgeCoOptimization } from '@retiregolden/engine/projection/optimizePlan'
 
 /** Exact-estate improvement of the joint optimum over the current-claim optimum. */
 export function claimEstateGain(claimAge: ClaimAgeCoOptimization | null): number {

@@ -9,8 +9,8 @@
  * checklist. Reuses the hardened CSV core from step 2.
  */
 
-import type { Account, Plan } from '../engine/model/plan'
-import { createEmptyPlan, parsePlan } from '../engine/model/plan'
+import type { Account, Plan } from '@retiregolden/engine/model/plan'
+import { createEmptyPlan, parsePlan } from '@retiregolden/engine/model/plan'
 import { parseCsv, parseMoney } from './csv'
 import { mapProjectionLabAccountType } from './projectionLab'
 import type { ImportReviewItem } from './reviewChecklist'

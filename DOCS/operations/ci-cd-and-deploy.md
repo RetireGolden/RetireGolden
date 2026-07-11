@@ -22,17 +22,18 @@ e2e  ─┘
 
 | Job | Runs | What it does |
 |-----|------|--------------|
-| `lint` | push + labeled PR | `npm ci` then `npm run lint` (ESLint) in `app/` |
-| `test` | push + labeled PR | `npm ci` then `npm run test:coverage` (Vitest) in `app/` |
+| `lint` | push + labeled PR | root `npm ci` then `npm run lint` (ESLint in `packages/engine` and `app`) |
+| `test` | push + labeled PR | root `npm ci` then `npm run test:coverage` (Vitest in `packages/engine` and `app`) |
 | `e2e` | push + labeled PR | Playwright browser layout tests (`npm run test:e2e`) in `app/` |
-| `build` | needs `lint`, `test`, `e2e` | `npm run build` (`tsc -b && vite build`); uploads `app/dist` as the `dist` artifact |
+| `build` | needs `lint`, `test`, `e2e` | root `npm run build` (engine `tsc -b`, then app `tsc -b && vite build`); uploads `app/dist` as the `dist` artifact |
 | `deploy` | needs `build`; skipped on PR close | downloads `dist`, deploys via `Azure/static-web-apps-deploy@v1` with `skip_app_build: true`, `app_location: app/dist`; exposes the deployed URL as `preview_url` |
 | `dast` | PR only; needs `deploy` | OWASP ZAP baseline scan of the freshly deployed PR preview URL — see [security-scanning.md](security-scanning.md). On unlabeled PRs it still invokes `zap.yml` with an empty URL (the scan job skips itself) so the required nested check reports as skipped instead of hanging on "Expected" |
 | `close_pull_request` | PR close | tears down the SWA preview environment |
 
-CI uses **Node 22** (`actions/setup-node`); `app/package.json` requires **Node ≥ 20**. Semgrep SAST runs
-as a separate workflow on every push/PR — deliberately **not** label-gated, because the scan is cheap and
-it is a Main Guard required check (also in [security-scanning.md](security-scanning.md)).
+CI uses **Node 22** (`actions/setup-node`); the workspaces require **Node ≥ 20**. Dependencies install
+once at the repo root (`npm ci` against the root `package-lock.json` — the repo is an npm workspace).
+Semgrep SAST runs as a separate workflow on every push/PR — deliberately **not** label-gated, because the
+scan is cheap and it is a Main Guard required check (also in [security-scanning.md](security-scanning.md)).
 
 ## Label-gated PR CI
 
@@ -54,7 +55,8 @@ PR only while it carries the **`run-ci` label**:
 
 ## Build and SPA routing
 
-- Source and `package.json` live under **`app/`**; production output is **`app/dist/`**.
+- The web app lives under **`app/`** (the engine package under `packages/engine/`); production output
+  is **`app/dist/`**.
 - The deploy action uses `skip_app_build: true` — the action uploads the already-built `app/dist`
   rather than building inside Azure.
 - SPA deep links (e.g. `/plan/...`, `/learn/...`) are served by a navigation fallback in
@@ -77,8 +79,17 @@ renaming any job.
 
 ## Local commands
 
-From `app/`: `npm run dev` (Vite dev server), `npm run build` (type-check + production build),
-`npm run test` (Vitest), `npm run lint` (ESLint), `npm run preview` (serve the built `dist/`).
+From the repo root: `npm run dev` (Vite dev server), `npm run build` (type-check + production build),
+`npm run test` (Vitest, both workspaces), `npm run lint` (ESLint, both workspaces). From `app/`:
+`npm run preview` (serve the built `dist/`).
+
+## Engine package release
+
+[`publish-engine.yml`](../../.github/workflows/publish-engine.yml) publishes `packages/engine` to npm
+as **`@retiregolden/engine`** (`npm publish --access public --provenance`). It fires on `engine-v<version>`
+tags — the tag must match `packages/engine/package.json` — or manually via workflow_dispatch (manual runs
+default to `--dry-run`). It needs the **`NPM_TOKEN`** repo secret: a granular npm automation token for the
+`@retiregolden` org with publish rights on the package.
 
 ## Run on a new host / fork
 

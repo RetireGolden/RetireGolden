@@ -27,32 +27,28 @@ RetireGolden is for **education only** — not tax, legal, financial, or medical
 
 ## Development
 
-The Vite + React + TypeScript client lives in [`app/`](app/).
+The repo is an npm workspace: the Vite + React + TypeScript client lives in [`app/`](app/), and the
+pure calculation engine lives in [`packages/engine/`](packages/engine/) — published to npm as
+[`@retiregolden/engine`](https://www.npmjs.com/package/@retiregolden/engine) and consumed by the app
+as a workspace dependency.
 
 **Requirements:** Node.js 20+
 
 ```bash
-cd app
 npm install
 npm run dev
 ```
 
-| Command | Purpose |
+| Command (repo root) | Purpose |
 |---------|---------|
 | `npm run dev` | Local dev server |
-| `npm run build` | Production build → `app/dist/` |
-| `npm run test` | Vitest unit tests |
-| `npm run lint` | ESLint |
+| `npm run build` | Engine package build, then production app build → `app/dist/` |
+| `npm run test` | Vitest unit tests (engine package + app) |
+| `npm run lint` | ESLint (engine package + app) |
 
 ## CI/CD
 
-Five GitHub Actions workflows: four run on relevant pushes or pull requests; the Owl parity oracle is triggered manually. Full setup notes: [DOCS/operations/ci-cd-and-deploy.md](DOCS/operations/ci-cd-and-deploy.md).
-
-### Contributor license agreement
-
-[`.github/workflows/cla.yml`](.github/workflows/cla.yml)
-
-Checks pull requests for the required contributor license agreement and records signatures through CLA Assistant.
+Six GitHub Actions workflows: the SWA pipeline and both security scans run on pushes and pull requests to `main`; CLA enforcement runs on PR activity; the Owl parity oracle and the engine npm release are triggered manually (the release also fires on `engine-v*` tags). Full setup notes: [DOCS/operations/ci-cd-and-deploy.md](DOCS/operations/ci-cd-and-deploy.md).
 
 ### Azure Static Web Apps — build & deploy
 
@@ -60,9 +56,9 @@ Checks pull requests for the required contributor license agreement and records 
 
 | Job | What it does |
 |-----|----------------|
-| `lint` | `npm ci` + `npm run lint` in `app/` |
-| `test` | `npm ci` + `npm run test:coverage` in `app/` (unit tests + coverage thresholds) |
-| `e2e` | Playwright browser smoke/layout specs (`npm run test:e2e`) |
+| `lint` | Root `npm ci` + `npm run lint` (engine package + app) |
+| `test` | Root `npm ci` + `npm run test:coverage` (engine package + app, unit tests + coverage thresholds) |
+| `e2e` | Playwright browser smoke/layout specs (`npm run test:e2e` in `app/`) |
 | `build` | Runs after lint, test, and e2e pass; `npm run build` → `app/dist/` (artifact retained 1 day) |
 | `deploy` | Uploads `app/dist` to **Azure Static Web Apps** (`skip_app_build: true`) |
 | `dast` | PR previews only — calls the ZAP workflow against the deployed preview URL |
@@ -70,7 +66,7 @@ Checks pull requests for the required contributor license agreement and records 
 
 **Triggers:** push to `main` deploys production; open/sync/reopen PRs get a preview URL; closing a PR removes the preview.
 
-**Requirements:** repository secret `AZURE_STATIC_WEB_APPS_API_TOKEN` (Azure SWA deployment token). Node **22** in CI (`app/package.json` requires Node ≥ 20). SPA routing is configured in [`app/public/staticwebapp.config.json`](app/public/staticwebapp.config.json).
+**Requirements:** repository secret `AZURE_STATIC_WEB_APPS_API_TOKEN` (Azure SWA deployment token). Node **22** in CI (the workspaces require Node ≥ 20). SPA routing is configured in [`app/public/staticwebapp.config.json`](app/public/staticwebapp.config.json).
 
 **Live site:** [https://retiregolden.app/](https://retiregolden.app/)
 
@@ -91,6 +87,18 @@ Runs on every push and PR to `main`. Scans the repo with Semgrep's `p/default` r
 [`.github/workflows/zap.yml`](.github/workflows/zap.yml)
 
 Reusable workflow invoked by the Azure deploy job after a **PR preview** is live (production pushes are not scanned). Runs a passive ZAP baseline scan against the deployed URL and uploads HTML/JSON reports. **Only High-risk alerts fail the check** — lower severities are surfaced for review. Can also be triggered manually from the Actions tab with a custom `target_url`.
+
+### CLA enforcement
+
+[`.github/workflows/cla.yml`](.github/workflows/cla.yml)
+
+Runs on pull-request activity. First-time contributors are asked to sign the [Contributor License Agreement](CLA.md) by replying with the acceptance phrase; the check blocks merge until every commit author has signed. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+### Engine package release
+
+[`.github/workflows/publish-engine.yml`](.github/workflows/publish-engine.yml)
+
+Publishes [`packages/engine`](packages/engine/) to npm as `@retiregolden/engine` with provenance. Fires on `engine-v<version>` tags (the tag must match the package version) or manually from the Actions tab (manual runs default to `--dry-run`). Requires the `NPM_TOKEN` repository secret — a granular npm automation token for the `@retiregolden` org.
 
 ## License
 
