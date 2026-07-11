@@ -15,7 +15,7 @@ and a doc disagree, fix the doc to match the code.
 | Doc | What it covers |
 |-----|----------------|
 | [architecture.md](architecture.md) | The system design: pure engine + React shell, local-first, the simulation core |
-| [code-map.md](code-map.md) | Where everything lives in `app/src/`, entry points, and commands |
+| [code-map.md](code-map.md) | Where everything lives across the workspaces, entry points, and commands |
 | [standards.md](standards.md) | Conventions to follow when changing the app (read before contributing) |
 | [CHANGELOG.md](../CHANGELOG.md) | Sequential high-level history of system changes (from commits + shipped work) |
 

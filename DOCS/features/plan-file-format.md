@@ -3,8 +3,8 @@
 RetireGolden's answer to lock-in fear is a documented, versioned, plain-JSON export. This page is the
 contract: what the file contains, what stays stable, and what the app guarantees when it reads one back.
 It backs the app's public sustainability and data-portability commitments and is
-enforced by tests (`app/src/data/v2Backup.roundtrip.test.ts`, `app/src/data/v2Backup.test.ts`,
-`app/src/engine/model/migrations.test.ts`, and the docs-consistency suite).
+enforced by tests (`packages/planner-ui/src/data/v2Backup.roundtrip.test.ts`, `packages/planner-ui/src/data/v2Backup.test.ts`,
+`packages/engine/src/model/migrations.test.ts`, and the docs-consistency suite).
 
 ## The envelope
 
@@ -36,7 +36,7 @@ selecting the wrong (huge) file, not a practical limit on plans.
 A plan is the complete household model: `household` (people, filing status, state, moves),
 `accounts`, `insurance`, `careEvents`, `incomes`, `expenses`, `strategies`, `assumptions`, and
 `scenarios`. The single source of truth for every field is the Zod schema in
-[`app/src/engine/model/plan.ts`](../../app/src/engine/model/plan.ts) — the same schema validates
+[`packages/engine/src/model/plan.ts`](../../packages/engine/src/model/plan.ts) — the same schema validates
 IndexedDB reads, JSON imports, and migration output, so there is no separate (drifting) file spec.
 Field-level semantics are documented inline on the schema as doc comments.
 
@@ -45,7 +45,7 @@ Field-level semantics are documented inline on the schema as doc comments.
 ## Stability guarantees
 
 1. **Old exports import forward, forever.** Every persisted or imported plan passes through
-   `migratePlanToCurrent` (`app/src/engine/model/migrations.ts`). When the schema version bumps,
+   `migratePlanToCurrent` (`packages/engine/src/model/migrations.ts`). When the schema version bumps,
    a pure `fromVersion → fromVersion+1` step is registered and covered by a fixture test, so a
    backup written by any past version of the app migrates step-by-step to current. A pinned
    full-featured v1 export lives in the round-trip test suite and must stay importable — CI fails
@@ -82,4 +82,4 @@ Third-party tools (or your own scripts) can read a backup with ordinary JSON too
 `plans[]`, and treat `schemaVersion` as the compatibility key. Writing files RetireGolden imports is
 equally supported: emit the envelope above with plans that satisfy the current schema — the import
 path gives field-by-field validation errors on anything malformed. The in-app import wizards
-(`app/src/import/`) produce plans through exactly this route.
+(`packages/planner-ui/src/import/`) produce plans through exactly this route.

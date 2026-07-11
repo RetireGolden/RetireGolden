@@ -6,13 +6,13 @@ given everything else in the plan* (taxes, IRMAA, ACA, RMDs, portfolio growth) �
 benefit-only question. The pure SS math carried forward from the original app and was extended; the v1
 claiming wizard UI was retired (its `/social-security` route now redirects to the planner).
 
-**Code:** claiming/PIA math in [app/src/socialSecurity/](../../app/src/socialSecurity/) (`nra.ts`,
+**Code:** claiming/PIA math in [packages/planner-ui/src/socialSecurity/](../../packages/planner-ui/src/socialSecurity/) (`nra.ts`,
 `benefitFactor.ts`, `piaFromEarnings.ts`, `ssaWageData.ts`, `familyMaximum.ts`, `ssaStatementXml.ts`, `breakEven.ts`,
 `explain.ts`, `maritalBenefits.ts`, `survivorSwitching.ts`, and — since the 2026-07-08 consolidation —
 `claimFactor.ts` and `expectedPv.ts`, formerly `engine/socialsecurity/`); the
-analysis UI in [planner/SsAnalysisPage.tsx](../../app/src/planner/SsAnalysisPage.tsx) +
-[planner/ssAnalysis.ts](../../app/src/planner/ssAnalysis.ts) and entry in
-[planner/SocialSecuritySection.tsx](../../app/src/planner/SocialSecuritySection.tsx).
+analysis UI in [planner/SsAnalysisPage.tsx](../../packages/planner-ui/src/planner/SsAnalysisPage.tsx) +
+[planner/ssAnalysis.ts](../../packages/planner-ui/src/planner/ssAnalysis.ts) and entry in
+[planner/SocialSecuritySection.tsx](../../packages/planner-ui/src/planner/SocialSecuritySection.tsx).
 
 ## The benefit base (PIA)
 
@@ -20,16 +20,16 @@ Each person's Primary Insurance Amount is entered one of two ways (a per-person 
 
 - **Quick PIA** — a benefit-at-FRA figure from a statement, with a disclosure that mySSA estimates
   *assume continued work through a stated age*, so the real PIA is lower if you stop earlier.
-- **Earnings history** — paste `year amount` lines or **import mySSA XML** ([ssaStatementXml.ts](../../app/src/socialSecurity/ssaStatementXml.ts)).
+- **Earnings history** — paste `year amount` lines or **import mySSA XML** ([ssaStatementXml.ts](../../packages/planner-ui/src/socialSecurity/ssaStatementXml.ts)).
   The engine computes indexed earnings → **AIME** → **PIA** via the 90/32/15% bend-point formula for the
-  correct eligibility year ([piaFromEarnings.ts](../../app/src/socialSecurity/piaFromEarnings.ts)).
+  correct eligibility year ([piaFromEarnings.ts](../../packages/planner-ui/src/socialSecurity/piaFromEarnings.ts)).
 
 Methodology that matters for accuracy:
 
 - **AIME** uses up to **35 years** of indexed covered earnings; fewer than 35 inserts **zeros**, lowering
   the average — the whole point of modeling early retirement honestly.
 - **Wage indexing** uses SSA's national Average Wage Index, with the numerator from the year **two years
-  before eligibility**; bend points and wage bases are data-driven ([ssaWageData.ts](../../app/src/socialSecurity/ssaWageData.ts)).
+  before eligibility**; bend points and wage bases are data-driven ([ssaWageData.ts](../../packages/planner-ui/src/socialSecurity/ssaWageData.ts)).
   If a required AWI year isn't in the table the engine returns a `missing_awi` error rather than guessing.
 - **Early-retirement projection:** future years between the last earnings year and the declared retirement
   age are projected at an assumed salary (default: most recent year, wage-indexed/capped), then zeroed —
@@ -42,16 +42,16 @@ Income tab shows it read-only and links there.
 
 ## Claiming factors
 
-Monthly granularity from 62 to 70 ([benefitFactor.ts](../../app/src/socialSecurity/benefitFactor.ts),
-[socialSecurity/claimFactor.ts](../../app/src/socialSecurity/claimFactor.ts)): early
+Monthly granularity from 62 to 70 ([benefitFactor.ts](../../packages/planner-ui/src/socialSecurity/benefitFactor.ts),
+[socialSecurity/claimFactor.ts](../../packages/planner-ui/src/socialSecurity/claimFactor.ts)): early
 reduction 5/9%/mo for the first 36 months then 5/12%/mo; delayed credits 2/3%/mo to 70. FRA by birth year
-with the Jan-1 rule ([nra.ts](../../app/src/socialSecurity/nra.ts)).
+with the Jan-1 rule ([nra.ts](../../packages/planner-ui/src/socialSecurity/nra.ts)).
 
 ## The benefit menu
 
 Beyond personal retirement benefits, the household ledger models the full eligibility menu
-([maritalBenefits.ts](../../app/src/socialSecurity/maritalBenefits.ts),
-[survivorSwitching.ts](../../app/src/socialSecurity/survivorSwitching.ts)):
+([maritalBenefits.ts](../../packages/planner-ui/src/socialSecurity/maritalBenefits.ts),
+[survivorSwitching.ts](../../packages/planner-ui/src/socialSecurity/survivorSwitching.ts)):
 
 - **Spousal top-up** while both are alive and claiming: the lower earner receives
   `max(own, 0.5 × spousePIA × spousal factor)`. The current-spouse auxiliary is capped to the room left
@@ -99,7 +99,7 @@ The headline capability. Two complementary views, mirroring the two questions in
 - **"Benefits only" (actuarial view)** — the Open-Social-Security-style lens: expected present value per
   claim age, each future month weighted by survival probability (SSA period tables, optionally the
   longevity multiplier) and discounted at a user-set **real** rate (~long TIPS yield)
-  ([socialSecurity/expectedPv.ts](../../app/src/socialSecurity/expectedPv.ts)). It needs no
+  ([socialSecurity/expectedPv.ts](../../packages/planner-ui/src/socialSecurity/expectedPv.ts)). It needs no
   accounts and serves as the cross-check against Open Social Security.
 
 When the two views disagree, that gap *is* the insight: how far tax and portfolio effects pull the answer
@@ -113,15 +113,15 @@ bounded claim candidate and applies the winning claim change and schedule togeth
 ## Break-even education
 
 A straight cumulative break-even chart plus a growth-adjusted view (0/3/5/7% return), framed as a
-pedagogical lens *alongside* the whole-plan sweep ([breakEven.ts](../../app/src/socialSecurity/breakEven.ts),
-[explain.ts](../../app/src/socialSecurity/explain.ts)). On-page copy is lean; the conceptual narrative
+pedagogical lens *alongside* the whole-plan sweep ([breakEven.ts](../../packages/planner-ui/src/socialSecurity/breakEven.ts),
+[explain.ts](../../packages/planner-ui/src/socialSecurity/explain.ts)). On-page copy is lean; the conceptual narrative
 (what break-even is, COLA, common mistakes, why the whole-plan sweep is the better answer) lives in the
 [Learning Center](learning-center.md), which deep-links into the chart.
 
 ## "What you paid in vs. what you get back"
 
 An education/context readout (not a working-years tax inside the projection — `simulate` never taxes
-pre-retirement wages): a pure helper ([socialSecurity/ficaReturn.ts](../../app/src/socialSecurity/ficaReturn.ts))
+pre-retirement wages): a pure helper ([socialSecurity/ficaReturn.ts](../../packages/planner-ui/src/socialSecurity/ficaReturn.ts))
 sums the **OASDI** payroll tax (employee 6.2% / self-employed 12.4%, capped at each year's taxable wage base,
 OASDI-only — not the 1.45% Medicare HI) over the entered earnings history, beside the survival-weighted
 expected PV of lifetime benefits at the chosen claim age (reusing the tested `expectedPvSingle` path).

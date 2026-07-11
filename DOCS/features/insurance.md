@@ -5,11 +5,11 @@ RetireGolden models two insurance instruments that materially alter a household 
 stream plus a conditional payout that lands somewhere in the ledger — so they live in one model. Both
 are common real-household instruments whose effects a planner that ignored them would misstate.
 
-Code: schema in [engine/model/plan.ts](../../app/src/engine/model/plan.ts) (`plan.insurance`); deterministic
-behavior in [engine/projection/](../../app/src/engine/projection/) (see `insurance.test.ts`); the
+Code: schema in [engine/model/plan.ts](../../packages/engine/src/model/plan.ts) (`plan.insurance`); deterministic
+behavior in [engine/projection/](../../packages/engine/src/projection/) (see `insurance.test.ts`); the
 Monte-Carlo LTC shock and mortality model in
-[engine/montecarlo/ltcShock.ts](../../app/src/engine/montecarlo/ltcShock.ts) and
-[mortality.ts](../../app/src/engine/montecarlo/mortality.ts).
+[engine/montecarlo/ltcShock.ts](../../packages/engine/src/montecarlo/ltcShock.ts) and
+[mortality.ts](../../packages/engine/src/montecarlo/mortality.ts).
 
 ## How it attaches to the engine
 

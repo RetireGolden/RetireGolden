@@ -2,7 +2,7 @@
 
 One file per state, named `<CODE>.md` (e.g. `CA.md`). These docs are the
 **cited source of truth** that later gets transcribed into
-`app/src/engine/params/state/data/year2026.ts` (`StateTaxParams`). Keep every
+`packages/engine/src/params/state/data/year2026.ts` (`StateTaxParams`). Keep every
 number traceable to an authoritative source so the code transcription is a
 mechanical, reviewable step.
 

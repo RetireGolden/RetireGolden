@@ -5,11 +5,11 @@ tax planning value. Conversions and withdrawals share an engine seam: each strat
 that emits a per-year schedule fed into the same `simulate` ledger (see [standards.md](../standards.md)),
 which is also how the [optimizer](optimizer.md) plugs in as "just another strategy provider."
 
-**Code:** [engine/strategies/](../../app/src/engine/strategies/) (`rothConversion.ts`, `optimizer.ts`,
+**Code:** [engine/strategies/](../../packages/engine/src/strategies/) (`rothConversion.ts`, `optimizer.ts`,
 `sepp.ts`, `inheritedIra.ts`); withdrawal sequencing and the tax fixed-point in
-[engine/projection/simulate.ts](../../app/src/engine/projection/simulate.ts); UI in
-[planner/sections.tsx](../../app/src/planner/sections.tsx) (Strategy) and
-[planner/OptimizePage.tsx](../../app/src/planner/OptimizePage.tsx).
+[engine/projection/simulate.ts](../../packages/engine/src/projection/simulate.ts); UI in
+[planner/sections.tsx](../../packages/planner-ui/src/planner/sections.tsx) (Strategy) and
+[planner/OptimizePage.tsx](../../packages/planner-ui/src/planner/OptimizePage.tsx).
 
 ## Roth conversions
 
@@ -30,7 +30,7 @@ principal are surfaced as warnings rather than hard-modeled.
 
 For a true multi-year co-optimization of conversions and withdrawals, see [optimizer.md](optimizer.md);
 the fill-to-target strategies here cover most of the practical value without a solver. They also double as
-**candidate generators** for the shared [decision engine](../../app/src/engine/decisions/)
+**candidate generators** for the shared [decision engine](../../packages/engine/src/decisions/)
 (the `ledger-native-decision-engine` plan): the optimizer's
 exact-ledger tournament runs these same simple strategies against the solver's schedule and recommends
 whichever the exact ledger prices best — RetireGolden compares candidate strategies on the exact projection
@@ -49,12 +49,12 @@ When spending exceeds income in a year, the engine drains accounts per the chose
 Always overlaid with two hard rules: **RMDs first** (mandatory, forced into income whether or not spending
 needs them — excess reinvested into taxable), and **penalty avoidance pre-59½** where possible. Early
 access before 59½ is ordered taxable → Roth contributions/seasoned conversions → **72(t) / Rule of 55**
-SEPP schedules ([strategies/sepp.ts](../../app/src/engine/strategies/sepp.ts)) → penalized deferred
+SEPP schedules ([strategies/sepp.ts](../../packages/engine/src/strategies/sepp.ts)) → penalized deferred
 withdrawals only as a last resort. Inherited accounts honor the **10-year drain**
-([strategies/inheritedIra.ts](../../app/src/engine/strategies/inheritedIra.ts)) and are not treated as
+([strategies/inheritedIra.ts](../../packages/engine/src/strategies/inheritedIra.ts)) and are not treated as
 Roth-convertible owner assets. All of these movement rules — convertibility, RMD applicability, spendability,
 and the penalty rate — are answered by the shared account-eligibility service
-([strategies/accountEligibility.ts](../../app/src/engine/strategies/accountEligibility.ts)), so the ledger,
+([strategies/accountEligibility.ts](../../packages/engine/src/strategies/accountEligibility.ts)), so the ledger,
 the optimizer input builder, and the decision generators can never disagree.
 
 An HSA left last for medical is qualified (tax- and penalty-free) only up to modeled medical costs when the

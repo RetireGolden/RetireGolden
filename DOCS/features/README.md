@@ -11,9 +11,9 @@ Financial rules and current-year numbers are in
 [optimizer.md](optimizer.md) · [learning-center.md](learning-center.md) · [longevity.md](longevity.md) ·
 [plan-file-format.md](plan-file-format.md) · [imports-and-migration.md](imports-and-migration.md)
 
-**Code:** pure engine in `app/src/engine/` (model/params/tax/rmd/strategies/projection/montecarlo/
-scenarios/decisions/spending/ladder/insights); Social Security math in `app/src/socialSecurity/`; planner UI
-in `app/src/planner/`; see [code-map.md](../code-map.md).
+**Code:** pure engine in `packages/engine/src/` (model/params/tax/rmd/strategies/projection/montecarlo/
+scenarios/decisions/spending/ladder/insights); Social Security math in `packages/planner-ui/src/socialSecurity/`; planner UI
+in `packages/planner-ui/src/planner/`; see [code-map.md](../code-map.md).
 
 ---
 
@@ -26,7 +26,7 @@ the plan horizon runs to the later death age, with survivor years modeled after 
 (filing status flips to single, survivor SS benefit, RMD changes). The planning age can also be set from
 a **survival percentile** — "the age I/we have a 25% (or 10%) chance of reaching", single or joint
 ("either of us" for couples), from the SSA 2022 table
-([engine/montecarlo/survival.ts](../../app/src/engine/montecarlo/survival.ts)) with an optional
+([engine/montecarlo/survival.ts](../../packages/engine/src/montecarlo/survival.ts)) with an optional
 proportional-hazards adjustment derived from the saved longevity questionnaire. The picked age is written
 once with provenance (`longevity.source = 'percentile'`) and never silently recomputed; typing a number
 still overrides. Children/dependents appear only as expense line items.
@@ -60,16 +60,16 @@ QLAC-at-cap / no-purchase) on the same exact ledger. Rules + sources:
 [domain rules §19](../domain/domain-rules-reference.md)): annuities carry a **payout form** — life-only
 (default), life with an N-year **period certain**, or **joint & survivor** with a chosen continuation share —
 with non-qualified exclusion-ratio taxation extended per form
-([engine/projection/annuityForms.ts](../../app/src/engine/projection/annuityForms.ts), planning-grade
+([engine/projection/annuityForms.ts](../../packages/engine/src/projection/annuityForms.ts), planning-grade
 Pub 939 approximations); **annuity ladders** (multiple dated purchases) are first-class, and the candidate
 generator adds a laddered SPIA option. An **annuitization sweep** ("how much to annuitize?") runs a 0–30%
 allocation grid through shared-path Monte Carlo against a sourced SPIA payout-rate table
-([engine/decisions/spiaQuotes.ts](../../app/src/engine/decisions/spiaQuotes.ts); user quotes override) and
+([engine/decisions/spiaQuotes.ts](../../packages/engine/src/decisions/spiaQuotes.ts); user quotes override) and
 reports the success-vs-legacy frontier with allocation-matched glidepath controls (Kitces attribution).
 Pensions can record a **lump-sum offer**; electing commutes the pension into a tax-free rollover in the
 election year, with a decision view comparing the annuity's PV at a curve-anchored discount rate plus a
 discount-rate × longevity sensitivity table
-([engine/decisions/pensionElection.ts](../../app/src/engine/decisions/pensionElection.ts)). A primary
+([engine/decisions/pensionElection.ts](../../packages/engine/src/decisions/pensionElection.ts)). A primary
 residence can opt into a **HECM line of credit** (buffer asset, Pfau): line sized from a lender quote or the
 published HUD PLF pack, line and loan balance compounding, **coordinated** (draw after a down-market year) or
 **last-resort** draw policies, non-recourse honored end to end. Insights detectors: `annuitization-headroom`,
@@ -119,27 +119,27 @@ Baseline annual spending (today's dollars), inflation-adjusted, with optional go
 retirement-phase multipliers at user-set ages. **Spending-shape presets** (constant-real / retirement
 smile / retirement **smirk** (Blanchett-median −1%/yr real) / front-loaded travel / a custom annual real
 delta) compile to ordinary phase rows the user can edit afterwards
-([engine/spending/shapePresets.ts](../../app/src/engine/spending/shapePresets.ts)); the "How much can I
+([engine/spending/shapePresets.ts](../../packages/engine/src/spending/shapePresets.ts)); the "How much can I
 spend?" page can re-solve the plan **per shape** to show the initial-spending uplift each shape supports,
 and also prices the published **SWR rules** (Bengen 4.7% / Morningstar 3.9% / ERN CAPE) on the user's own
-ledger ([engine/decisions/swrComparator.ts](../../app/src/engine/decisions/swrComparator.ts)). An
+ledger ([engine/decisions/swrComparator.ts](../../packages/engine/src/decisions/swrComparator.ts)). An
 opt-in **amortized spending policy** (`expenses.spendingPolicy.mode = 'abw'`; the ABW/VPW/TPAW family)
 replaces the fixed baseline: each year's lifestyle target is the actual start-of-year portfolio amortized
 over the remaining horizon at an expected real return (fixed / CAPE earnings yield / TIPS real yield) with
 an optional spending tilt, funded through the normal tax cascade
-([engine/spending/abw.ts](../../app/src/engine/spending/abw.ts)). **Spending guardrails** ration the
+([engine/spending/abw.ts](../../packages/engine/src/spending/abw.ts)). **Spending guardrails** ration the
 discretionary spending layer year by year — classic **Guyton-Klinger** withdrawal-rate bands, or
 **risk-based guardrails** where cuts/raises trigger on real dollar-balance thresholds solved from a target
 probability-of-success band on shared Monte Carlo paths
-([engine/spending/guardrails.ts](../../app/src/engine/spending/guardrails.ts),
-[engine/montecarlo/riskBasedGuardrails.ts](../../app/src/engine/montecarlo/riskBasedGuardrails.ts)); the
+([engine/spending/guardrails.ts](../../packages/engine/src/spending/guardrails.ts),
+[engine/montecarlo/riskBasedGuardrails.ts](../../packages/engine/src/montecarlo/riskBasedGuardrails.ts)); the
 required floor is never cut, and the Monte Carlo page reports the **adjustment outlook** (P(any cut),
 median/p90 deepest cut, cut years, longest spell, P(raise)) for any guardrail plan. An optional **survivor
 spending percentage** scales base + phase spending in years when only one member of a couple is alive
 (one-time goals and separately-modeled healthcare/debt/property costs are unaffected). An optional
 **bequest target** (today's dollars) sets the after-tax-estate floor used by the **"How much can I
 spend?"** solver page and the estate-floor optimizer objective — see [optimizer.md](optimizer.md).
-Results offers an honest **bucket reporting lens** ([planner/bucketLens.ts](../../app/src/planner/bucketLens.ts)):
+Results offers an honest **bucket reporting lens** ([planner/bucketLens.ts](../../packages/planner-ui/src/planner/bucketLens.ts)):
 the projected balances re-read as "next N years of net spending" buckets, reconciling to the ledger totals
 every year, with the Estrada/Kitces evidence note — the plan is always simulated total-return.
 One-time goals (amount + year). Healthcare:
@@ -163,7 +163,7 @@ for salary-growth ramps), so an early-career accumulator's rising savings are mo
 
 For accumulators and the FIRE movement the projection also derives **financial-independence metrics** on the
 Results and Report pages (`ProjectionSummary` in
-[engine/projection/compare.ts](../../app/src/engine/projection/compare.ts)): per-year and average
+[engine/projection/compare.ts](../../packages/engine/src/projection/compare.ts)): per-year and average
 pre-retirement **savings rate**, the **FI number** (today's-dollars spending ÷ the assumed safe withdrawal
 rate, `assumptions.safeWithdrawalRatePct`, default 4%), the **FI year/age** the deflated investable balance
 first crosses it, and the **Coast-FIRE number** (the FI number discounted by real growth to today). See the
@@ -171,8 +171,8 @@ first crosses it, and the **Coast-FIRE number** (the FI number discounted by rea
 
 ## 6. Tax engine (federal + state)
 
-Annual computation inside the projection loop ([tax/federalTax.ts](../../app/src/engine/tax/federalTax.ts),
-[tax/stateTax.ts](../../app/src/engine/tax/stateTax.ts)); full detail in [taxes.md](taxes.md):
+Annual computation inside the projection loop ([tax/federalTax.ts](../../packages/engine/src/tax/federalTax.ts),
+[tax/stateTax.ts](../../packages/engine/src/tax/stateTax.ts)); full detail in [taxes.md](taxes.md):
 
 - Ordinary income stack: wages, interest, non-qualified dividends, traditional withdrawals/conversions,
   pension/annuity taxable parts, taxable SS (provisional-income 0/50/85% tiers, unindexed).
@@ -198,8 +198,8 @@ them (excess reinvested into taxable). QCDs route a user-set charitable amount f
 from income (2026 limit $111k, data-driven). A **QLAC** annuity purchase (§2,
 [domain rules §17](../domain/domain-rules-reference.md)) removes its premium from the RMD base until the
 deferred payouts begin. The inherited-account **10-year rule** is modeled (forced
-distributions to the post-death deadline — [strategies/inheritedIra.ts](../../app/src/engine/strategies/inheritedIra.ts)).
-Code: [rmd/rmd.ts](../../app/src/engine/rmd/rmd.ts).
+distributions to the post-death deadline — [strategies/inheritedIra.ts](../../packages/engine/src/strategies/inheritedIra.ts)).
+Code: [rmd/rmd.ts](../../packages/engine/src/rmd/rmd.ts).
 
 ## 8. Roth conversions
 
@@ -207,7 +207,7 @@ A marquee feature — two modes (full detail in [roth-and-withdrawals.md](roth-a
 
 1. **Manual:** per-year conversion amounts, instantly reflected in tax/IRMAA/ACA outputs.
 2. **Strategy ("fill to target"):** convert each year up to a chosen ceiling — top of a tax bracket, an
-   IRMAA tier edge, the ACA 400% FPL cliff, or a fixed MAGI ([strategies/](../../app/src/engine/strategies/)).
+   IRMAA tier edge, the ACA 400% FPL cliff, or a fixed MAGI ([strategies/](../../packages/engine/src/strategies/)).
 
 Conversions are taxable ordinary income with no early-withdrawal penalty; interactions surfaced
 explicitly (SS taxation, IRMAA +2yr, ACA PTC, NIIT, senior-deduction phase-out, widow's penalty, future
@@ -226,7 +226,7 @@ RMDs first and pre-59½ penalty avoidance where possible. See [roth-and-withdraw
 
 ## 10. Projection engine (deterministic)
 
-Annual ledger from the current year to end of plan ([projection/simulate.ts](../../app/src/engine/projection/simulate.ts)).
+Annual ledger from the current year to end of plan ([projection/simulate.ts](../../packages/engine/src/projection/simulate.ts)).
 Each year: income → contributions → spending need → RMDs → withdrawals/conversions → taxes (fixed-point
 iteration over the circular tax-on-withdrawal dependency) → growth → end-of-year balances. Computed in
 nominal dollars, displayed in today's or nominal dollars (toggle). Survivor transition handles filing
@@ -236,7 +236,7 @@ income vs. spending, tax detail, ending estate (pre/post-tax), and a full per-ye
 ## 11. Monte Carlo
 
 The **same** annual engine driven by stochastic returns/inflation in a Web Worker pool
-([app/src/mc/](../../app/src/mc/), [engine/montecarlo/](../../app/src/engine/montecarlo/)); seedable RNG
+([packages/planner-ui/src/mc/](../../packages/planner-ui/src/mc/), [engine/montecarlo/](../../packages/engine/src/montecarlo/)); seedable RNG
 for reproducibility. **15 pluggable return models** behind one `MarketModelConfig` interface — lognormal IID
 per asset class with correlation and historical bootstrap (Shiller annual data), plus Student-t,
 regime-switching, CAPE-conditioned, stationary/empirical bootstrap, GARCH, inflation-regime,
@@ -251,16 +251,16 @@ via the longevity module feeds the LTC shock. See [monte-carlo-and-scenarios.md]
 
 A plan holds named **scenarios** (base + clones with overrides: retire at 62 vs 65, convert vs not, 17%
 SS cut, LTC shock). Side-by-side compare of success %, lifetime taxes, ending estate, key-year table, and
-a diff of changed assumptions ([engine/scenarios/](../../app/src/engine/scenarios/),
-[planner/ScenariosPage.tsx](../../app/src/planner/ScenariosPage.tsx)). Whole separate **plans** can also be
-duplicated and compared ([planner/ComparePlansPage.tsx](../../app/src/planner/ComparePlansPage.tsx)).
+a diff of changed assumptions ([engine/scenarios/](../../packages/engine/src/scenarios/),
+[planner/ScenariosPage.tsx](../../packages/planner-ui/src/planner/ScenariosPage.tsx)). Whole separate **plans** can also be
+duplicated and compared ([planner/ComparePlansPage.tsx](../../packages/planner-ui/src/planner/ComparePlansPage.tsx)).
 
 Two dedicated what-if views on the Explore rail run the user's **actual plan** through the same exact ledger:
 
 - **Relocation Compare** (`/plan/:id/relocation`, 2026-07-09): "where should I retire?" — up to 5 candidate
   states (optional split-year move, flat local rate, cost-of-living spending delta) each run in a Web Worker
-  ([engine/projection/relocation.ts](../../app/src/engine/projection/relocation.ts),
-  [src/relocation/](../../app/src/relocation/)), ranked by lifetime state+local tax, total taxes & penalties,
+  ([engine/projection/relocation.ts](../../packages/engine/src/projection/relocation.ts),
+  [src/relocation/](../../packages/planner-ui/src/relocation/)), ranked by lifetime state+local tax, total taxes & penalties,
   ending after-tax estate, and Monte Carlo success on **shared market paths**. A per-state driver drill-down
   attributes lifetime state tax to SS treatment, retirement-income exclusions, and capital-gain treatment
   through the production calculator. Candidates are ordinary scenario patches (proven byte-identical to
@@ -269,7 +269,7 @@ Two dedicated what-if views on the Explore rail run the user's **actual plan** t
   zero-income-tax shortlist.
 - **Survivor transition view** (`/plan/:id/survivor`, couples-only, 2026-07-09): sweeps earlier first-death
   timings (ages 70–90, either spouse first) via `deathAgeByPersonId` overrides
-  ([planner/survivorAnalysis.ts](../../app/src/planner/survivorAnalysis.ts)) — filing-status timeline,
+  ([planner/survivorAnalysis.ts](../../packages/planner-ui/src/planner/survivorAnalysis.ts)) — filing-status timeline,
   survivor SS step, tax on similar MAGI across the transition, IRMAA with/without SSA-44, survivor spending
   coverage, and the convert-while-joint lever priced as an ordinary scenario. Educational framing throughout:
   timings are chosen scenarios, never predictions. The `widows-penalty-roth` detector quantifies the survivor
@@ -278,11 +278,11 @@ Two dedicated what-if views on the Explore rail run the user's **actual plan** t
 ## 13. Reports and export
 
 Print-styled report route (browser print-to-PDF: plan summary, assumptions, charts, year-by-year
-appendix) — [planner/ReportPage.tsx](../../app/src/planner/ReportPage.tsx). Results, Report, and Optimize
+appendix) — [planner/ReportPage.tsx](../../packages/planner-ui/src/planner/ReportPage.tsx). Results, Report, and Optimize
 can also download a self-contained HTML report generated by
-[`report/reportHtml.ts`](../../app/src/report/reportHtml.ts): assumptions, parameter provenance, warnings,
+[`report/reportHtml.ts`](../../packages/planner-ui/src/report/reportHtml.ts): assumptions, parameter provenance, warnings,
 annual ledger data, and optimizer recommendation evidence when available. Plus JSON backup/restore
-(versioned envelope) + clear-all-data ([data/v2Backup.ts](../../app/src/data/v2Backup.ts)) and CSV export
+(versioned envelope) + clear-all-data ([data/v2Backup.ts](../../packages/planner-ui/src/data/v2Backup.ts)) and CSV export
 of the annual ledger. Local regression review lives in [`cases/`](../../app/src/cases/): `npm run cases`
 emits stable exact-ledger manifests over the example library or imported plans/scenario sets, and
 `npm run cases:diff` flags unexpected changes; `npm run owl-parity` re-prices the optimizer against a pinned
@@ -294,17 +294,17 @@ emits stable exact-ledger manifests over the example library or imported plans/s
 ## 14. Data management and trust
 
 IndexedDB persistence, schema-versioned with migrations, autosave
-([data/planStore.ts](../../app/src/data/planStore.ts), [engine/model/](../../app/src/engine/model/)). Annual
+([data/planStore.ts](../../packages/planner-ui/src/data/planStore.ts), [engine/model/](../../packages/engine/src/model/)). Annual
 **parameter packs** (tax brackets, limits, SSA tables, Medicare/FPL numbers) are versioned data files with
 source URLs — refreshing each fall is a data PR, not a code change
-([engine/params/](../../app/src/engine/params/), [maintenance-schedule.md](../maintenance-schedule.md)).
+([engine/params/](../../packages/engine/src/params/), [maintenance-schedule.md](../maintenance-schedule.md)).
 Assumption provenance shows each default's source and date in the UI
-([planner/ProvenancePanel.tsx](../../app/src/planner/ProvenancePanel.tsx)). Educational tool — not
+([planner/ProvenancePanel.tsx](../../packages/planner-ui/src/planner/ProvenancePanel.tsx)). Educational tool — not
 tax/legal/investment advice; rules change.
 
 The **trust & transparency layer** ("show your work", 2026-07-08) sits on top: a per-plan **assumptions
 card** at `/plan/:id/assumptions-card` tags every live assumption user-set / app default / published source
-with copy-as-text/JSON exports ([planner/assumptionsExport.ts](../../app/src/planner/assumptionsExport.ts));
+with copy-as-text/JSON exports ([planner/assumptionsExport.ts](../../packages/planner-ui/src/planner/assumptionsExport.ts));
 **"Why this number?"** explainer panels unpack the Monte Carlo success % (model/seed/precision,
 depletion-year trace, sequence sensitivity), the optimizer recommendation (objective, winner, dollar margins
 over every beaten alternative from the exact-ledger tournament), and the spending-solver answer; field ⓘ
@@ -315,7 +315,7 @@ simplifications stated as prominently as the strengths.
 
 ## 15. Planner home
 
-The planner home at `/` ([`PlanPickerPage.tsx`](../../app/src/planner/PlanPickerPage.tsx)) is **adaptive**:
+The planner home at `/` ([`PlanPickerPage.tsx`](../../packages/planner-ui/src/planner/PlanPickerPage.tsx)) is **adaptive**:
 
 - **First-time visitors** (no saved user plans) see a welcome hero with trust cues, three getting-started path
   cards (*Learn the basics* → Learning Center, *Try an example* → `/examples`, *Build your own* → new plan),
@@ -324,13 +324,13 @@ The planner home at `/` ([`PlanPickerPage.tsx`](../../app/src/planner/PlanPicker
 guidance is collapsed behind a slim *New here? Getting started* disclosure (state in
 `retiregolden.home.welcomeDismissed`, reset by Clear all data).
 
-Section components live in [`planner/home/`](../../app/src/planner/home/). Inside a plan,
-[`PlanWorkspace.tsx`](../../app/src/planner/PlanWorkspace.tsx) adds **Your plans / {name}** breadcrumb and a
+Section components live in [`planner/home/`](../../packages/planner-ui/src/planner/home/). Inside a plan,
+[`PlanWorkspace.tsx`](../../packages/planner-ui/src/planner/PlanWorkspace.tsx) adds **Your plans / {name}** breadcrumb and a
 **← Your plans** rail link back to `/`.
 
 ## 16. Example library
 
-The **Example library** lives at `/examples` ([`ExamplesPage.tsx`](../../app/src/planner/examples/ExamplesPage.tsx))
+The **Example library** lives at `/examples` ([`ExamplesPage.tsx`](../../packages/planner-ui/src/planner/examples/ExamplesPage.tsx))
 — **24 curated teaching households** (the original eight, eight early-investing/FIRE accumulators, and eight
 July-2026 depth-wave plans — four feature demos each paired with a matched control for side-by-side Compare)
 that users can open in the full planner without cluttering **Your plans**. The dedicated route keeps the
@@ -338,7 +338,7 @@ planner home focused on the user's own plans as the library grows. Examples are 
 shapes as the golden/characterization test fixtures but use realistic inflation and returns; each has a
 golden test pinning headline KPIs.
 
-- **Registry:** [planner/examples/](../../app/src/planner/examples/) (`registry.ts`, per-example `build*`
+- **Registry:** [planner/examples/](../../packages/planner-ui/src/planner/examples/) (`registry.ts`, per-example `build*`
   factories). The legacy `createSamplePlan()` entry point now delegates to the **Example couple** registry
   builder.
 - **Demo storage:** lazy — nothing is written until first **Open**. Each example uses a reserved id

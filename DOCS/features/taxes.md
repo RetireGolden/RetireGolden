@@ -6,13 +6,13 @@ of Roth-conversion and withdrawal planning. It targets **planning-grade**, not f
 Current-year figures and citations live in [domain-rules-reference.md](../domain/domain-rules-reference.md);
 all dollar values come from versioned parameter packs, never hardcoded.
 
-**Code:** [engine/tax/federalTax.ts](../../app/src/engine/tax/federalTax.ts),
-[engine/tax/stateTax.ts](../../app/src/engine/tax/stateTax.ts),
-[engine/tax/aca.ts](../../app/src/engine/tax/aca.ts),
-[engine/tax/medicare.ts](../../app/src/engine/tax/medicare.ts); parameter packs in
-[engine/params/](../../app/src/engine/params/) (federal in `data/year2026.ts`, state in `params/state/`).
+**Code:** [engine/tax/federalTax.ts](../../packages/engine/src/tax/federalTax.ts),
+[engine/tax/stateTax.ts](../../packages/engine/src/tax/stateTax.ts),
+[engine/tax/aca.ts](../../packages/engine/src/tax/aca.ts),
+[engine/tax/medicare.ts](../../packages/engine/src/tax/medicare.ts); parameter packs in
+[engine/params/](../../packages/engine/src/params/) (federal in `data/year2026.ts`, state in `params/state/`).
 The projection runs federal and state as two calculators over one income input
-([engine/projection/simulate.ts](../../app/src/engine/projection/simulate.ts)).
+([engine/projection/simulate.ts](../../packages/engine/src/projection/simulate.ts)).
 
 ## Federal engine
 
@@ -28,7 +28,7 @@ Computed each year inside the projection loop:
   (2025–2028, 6% MAGI phase-out)** — a major Roth-conversion interaction for 65+ planners; itemized as a
   simple user-entered total (SALT cap, mortgage interest, charitable) where it beats the standard.
 - **NIIT** 3.8% over $200k/$250k MAGI (unindexed). **Early-withdrawal penalty** 10% pre-59½, with the
-  Rule-of-55 / 72(t) **SEPP** exceptions ([strategies/sepp.ts](../../app/src/engine/strategies/sepp.ts)).
+  Rule-of-55 / 72(t) **SEPP** exceptions ([strategies/sepp.ts](../../packages/engine/src/strategies/sepp.ts)).
 - **Planning-grade AMT screen:** AMTI starts from taxable income plus modeled AMT add-backs (the regular
   standard/senior deduction for non-itemizers, itemized SALT when itemizing, and any advanced calculator-only
   preference items supplied by tests or future integrations). The engine applies the 2026 AMT exemption,
@@ -37,7 +37,7 @@ Computed each year inside the projection loop:
   substitute.
 - **IRMAA:** Medicare Part B/D surcharges from **MAGI two years prior** (a conversion at 63+ hits Medicare
   pricing); the brackets are cliffs, so bracket-edge warnings show "$1 over costs $X/yr"
-  ([medicare.ts](../../app/src/engine/tax/medicare.ts)).
+  ([medicare.ts](../../packages/engine/src/tax/medicare.ts)).
 - **SSA-44 redetermination (opt-in, `expenses.healthcare.ssa44`):** after a qualifying life-changing event —
   a couple's first death, and optionally each person's retirement year — the two following premium years
   price IRMAA on **min(lookback MAGI, prior-year MAGI)**, the planning-grade stand-in for the current-year
@@ -45,7 +45,7 @@ Computed each year inside the projection loop:
   IRMAA-binary source to (t−1) in-solve. Off/absent = the plain lookback; the couples' **Survivor
   transition** view shows the with/without delta per death timing.
 - **ACA premium tax credit** (pre-65): computed from MAGI vs FPL with the restored **400% FPL cliff** — a
-  first-class constraint for early retirees managing MAGI ([aca.ts](../../app/src/engine/tax/aca.ts)). The
+  first-class constraint for early retirees managing MAGI ([aca.ts](../../packages/engine/src/tax/aca.ts)). The
   credit is a **household** calculation: covered members' premiums pool and the MAGI-based expected
   contribution is subtracted once per household, not per person.
 - **Age-65 transition:** Medicare eligibility starts in the birth month of the year a member turns 65, so
@@ -67,7 +67,7 @@ IRMAA tier) for the results table, charts, and CSV.
 
 A starting net capital loss (e.g. an ESPP sold at a loss) is a common attribute a near-retiree brings to
 the plan, and it matters most in early-retirement brokerage-drawdown years. The rule
-([`applyCapitalLossCarryforward`](../../app/src/engine/tax/federalTax.ts)):
+([`applyCapitalLossCarryforward`](../../packages/engine/src/tax/federalTax.ts)):
 
 1. Net against this year's realized gains first;
 2. then up to **$3,000/yr** against ordinary income (a fixed, never-indexed pack constant,
@@ -146,7 +146,7 @@ capped exclusion there applies once to the combined private + public retirement 
   NYC/Yonkers, Michigan cities, and Ohio municipalities) without maintaining a locality-specific tax pack.
   Local tax is a tax output only; it does not feed MAGI, ACA, IRMAA, or Social Security taxation.
 - **Relocation Compare** (`/plan/:id/relocation`, Explore rail;
-  [engine/projection/relocation.ts](../../app/src/engine/projection/relocation.ts)): runs the user's actual
+  [engine/projection/relocation.ts](../../packages/engine/src/projection/relocation.ts)): runs the user's actual
   plan once per candidate state (≤5, each expressed as a scenario patch over the existing state/`stateMoves`
   fields — no new persistence) in a Web Worker, ranked by lifetime state+local tax, lifetime taxes &
   penalties, ending after-tax estate, and a shared-path Monte Carlo success rate. A per-state drill-down
@@ -205,7 +205,7 @@ projection ledger prices. Do not rebuild a simplified income model inside a reco
 
 The developer checklist lives in [standards.md](../standards.md#recommendation-income-coverage-checklist). The
 named fixture suite
-[`engine/decisions/incomeCoverage.test.ts`](../../app/src/engine/decisions/incomeCoverage.test.ts) proves that
+[`engine/decisions/incomeCoverage.test.ts`](../../packages/engine/src/decisions/incomeCoverage.test.ts) proves that
 candidate generators and detectors preserve one-time income, contributions and employer match, taxable gains
 and qualified dividends, and Social Security taxability when those sources change the recommendation. Add or
 update a fixture whenever a new recommendation path touches AGI, MAGI, taxable income, balances, or spending

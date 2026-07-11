@@ -5,14 +5,14 @@ returns/inflation to produce a success probability and outcome distribution; **s
 what-if variants (and whole separate plans) side by side. Both reuse the same `simulate` ledger — Monte
 Carlo never runs a second, simplified model, so a stochastic run can't diverge from the deterministic one.
 
-**Code:** [engine/montecarlo/](../../app/src/engine/montecarlo/) (`marketModels.ts`, `historicalReturns.ts`,
+**Code:** [engine/montecarlo/](../../packages/engine/src/montecarlo/) (`marketModels.ts`, `historicalReturns.ts`,
 `rng.ts`, `mortality.ts`, `ltcShock.ts`, `run.ts`, `sharedPaths.ts`, `frontiers.ts`,
 `historicalSuites.ts`); the Web Worker pool in
-[app/src/mc/](../../app/src/mc/) (`monteCarlo.worker.ts`, `pool.ts`); scenarios in
-[engine/scenarios/](../../app/src/engine/scenarios/) and [engine/projection/compare.ts](../../app/src/engine/projection/compare.ts);
-UI in [planner/MonteCarloPage.tsx](../../app/src/planner/MonteCarloPage.tsx),
-[ScenariosPage.tsx](../../app/src/planner/ScenariosPage.tsx), and
-[ComparePlansPage.tsx](../../app/src/planner/ComparePlansPage.tsx).
+[packages/planner-ui/src/mc/](../../packages/planner-ui/src/mc/) (`monteCarlo.worker.ts`, `pool.ts`); scenarios in
+[engine/scenarios/](../../packages/engine/src/scenarios/) and [engine/projection/compare.ts](../../packages/engine/src/projection/compare.ts);
+UI in [planner/MonteCarloPage.tsx](../../packages/planner-ui/src/planner/MonteCarloPage.tsx),
+[ScenariosPage.tsx](../../packages/planner-ui/src/planner/ScenariosPage.tsx), and
+[ComparePlansPage.tsx](../../packages/planner-ui/src/planner/ComparePlansPage.tsx).
 
 ## Monte Carlo
 
@@ -42,8 +42,8 @@ UI in [planner/MonteCarloPage.tsx](../../app/src/planner/MonteCarloPage.tsx),
   the same windows in reverse order through the normal ledger, then lists the worst windows by after-tax
   ending estate and shortfall.
 - **Stochastic longevity:** mortality-weighted per-path lifespans (instead of a fixed end age) feed the
-  **LTC Monte-Carlo shock** ([ltcShock.ts](../../app/src/engine/montecarlo/ltcShock.ts),
-  [mortality.ts](../../app/src/engine/montecarlo/mortality.ts)) — see [insurance.md](insurance.md).
+  **LTC Monte-Carlo shock** ([ltcShock.ts](../../packages/engine/src/montecarlo/ltcShock.ts),
+  [mortality.ts](../../packages/engine/src/montecarlo/mortality.ts)) — see [insurance.md](insurance.md).
 - **Spending layers & guardrails (opt-in):** a plan can split baseline spending into a **required floor**,
   target lifestyle, annual ideal/excess upside layers, and flexible one-time goals with earliest/latest windows,
   priority, skip/defer rules, and partial funding. **Withdrawal-rate guardrails** (Guyton-Klinger style) ration
@@ -53,10 +53,10 @@ UI in [planner/MonteCarloPage.tsx](../../app/src/planner/MonteCarloPage.tsx),
   target-attainment percentiles, target shortfall, ideal/excess funding rates, flexible-goal outcomes, and
   guardrail action counts. Absent a policy, behavior is unchanged. Details and defaults:
   [domain-rules-reference.md](../domain/domain-rules-reference.md) Section 14; code in
-  [engine/spending/](../../app/src/engine/spending/).
+  [engine/spending/](../../packages/engine/src/spending/).
 - **Risk-based guardrails + adjustment outlook (opt-in):** the alternative guardrail mode triggers on
   **dollar portfolio thresholds** solved from a target probability-of-success band
-  ([riskBasedGuardrails.ts](../../app/src/engine/montecarlo/riskBasedGuardrails.ts): bisection over the
+  ([riskBasedGuardrails.ts](../../packages/engine/src/montecarlo/riskBasedGuardrails.ts): bisection over the
   starting-balance scale on shared seeded paths, plus $/mo adjustment sizing), instead of the withdrawal-rate
   ratio. For any guardrail plan the Monte Carlo page adds an **Adjustment outlook** card — P(any cut), median/
   p90 deepest cut, cut duration, P(raise), P(ending surplus), and P(clearing the bequest target) — the
@@ -70,7 +70,7 @@ vs not, a 17% SS trust-fund cut, an LTC shock, a bad-decade start. The compare v
 lifetime taxes, ending estate, and a key-year table, plus a diff of exactly which assumptions changed.
 Scenarios are stored as overrides applied at run time, not as duplicated plans.
 
-Separately, whole **plans** can be duplicated and compared ([ComparePlansPage.tsx](../../app/src/planner/ComparePlansPage.tsx))
+Separately, whole **plans** can be duplicated and compared ([ComparePlansPage.tsx](../../packages/planner-ui/src/planner/ComparePlansPage.tsx))
 for A/B or year-over-year review — useful when the differences are too structural for a scenario override.
 
 ## Related

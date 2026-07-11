@@ -1,6 +1,6 @@
 # Domain rules reference (2026 law)
 
-The financial rules the RetireGolden engine encodes, with current (tax year 2026) figures and sources. **All dollar figures live in versioned parameter-data files (`app/src/engine/params/`), not code** — see [standards.md](../standards.md). Verified June 2026; re-verify each fall when the IRS/SSA/CMS publish next-year numbers — cadence and the legislative watch-list are in [maintenance-schedule.md](../maintenance-schedule.md).
+The financial rules the RetireGolden engine encodes, with current (tax year 2026) figures and sources. **All dollar figures live in versioned parameter-data files (`packages/engine/src/params/`), not code** — see [standards.md](../standards.md). Verified June 2026; re-verify each fall when the IRS/SSA/CMS publish next-year numbers — cadence and the legislative watch-list are in [maintenance-schedule.md](../maintenance-schedule.md).
 
 Legal baseline: the **One Big Beautiful Bill Act (OBBBA, July 2025)** made the TCJA rate structure permanent and added the senior deduction, so 2026 brackets are stable current law rather than a sunset cliff.
 
@@ -234,7 +234,7 @@ as **required**; a plan can never report "floor success" after silently cutting 
   rationing machinery, but triggered by the **real (deflated) portfolio balance** against dollar thresholds
   instead of the withdrawal-rate ratio. The user picks a target probability-of-success band
   (`targetSuccessLowerPct`/`targetSuccessUpperPct`, defaults **70/95**); a shared-path solver
-  ([engine/montecarlo/riskBasedGuardrails.ts](../../app/src/engine/montecarlo/riskBasedGuardrails.ts))
+  ([engine/montecarlo/riskBasedGuardrails.ts](../../packages/engine/src/montecarlo/riskBasedGuardrails.ts))
   bisects the starting-balance scale on identical seeded Monte Carlo paths to find the balances where the
   *fixed-target* plan's success probability crosses each band edge, and sizes the $/mo spending change that
   restores the band midpoint. The solved thresholds persist on the policy
@@ -269,9 +269,9 @@ as **required**; a plan can never report "floor success" after silently cutting 
   success-band metadata. Surfaces evaluate that patch through the normal exact ledger and Monte Carlo paths,
   not through a private spending approximation.
 
-**Code:** [engine/spending/](../../app/src/engine/spending/) (`layers.ts`, `guardrails.ts`,
-`flexibleGoals.ts`), applied in [engine/projection/simulate.ts](../../app/src/engine/projection/simulate.ts),
-aggregated in [engine/montecarlo/run.ts](../../app/src/engine/montecarlo/run.ts), surfaced in Results/Monte
+**Code:** [engine/spending/](../../packages/engine/src/spending/) (`layers.ts`, `guardrails.ts`,
+`flexibleGoals.ts`), applied in [engine/projection/simulate.ts](../../packages/engine/src/projection/simulate.ts),
+aggregated in [engine/montecarlo/run.ts](../../packages/engine/src/montecarlo/run.ts), surfaced in Results/Monte
 Carlo/Spending, and exposed as a previewable Insights scenario.
 
 The Insights R3 "Dynamic spending guardrails" card calls
@@ -287,7 +287,7 @@ adapter and Monte Carlo preview compare it against the baseline.
   Consumed by the "How much can I spend?" solver and by estate-floor / max-sustainable-spending objective
   policies via `objectivePolicyForPlan`.
 - **Spending-shape presets** (Spending screen; compiler in
-  [engine/spending/shapePresets.ts](../../app/src/engine/spending/shapePresets.ts)): named shapes compile to
+  [engine/spending/shapePresets.ts](../../packages/engine/src/spending/shapePresets.ts)): named shapes compile to
   ordinary `expenses.phases` rows — constant-real (no phases), retirement **smile** (−10% at 75, −20% at 85:
   Blanchett's *average* retiree, JFP 2014 with 2025–26 updates; the two-step calibration approximates the
   smile's decline-then-late-healthcare-rise at its overall level, without an explicit late step-up — the
@@ -299,14 +299,14 @@ adapter and Monte Carlo preview compare it against the baseline.
   page can re-solve the plan per shape to quantify the shape-aware uplift on the user's own ledger
   (Blanchett: shape-aware plans support materially higher initial withdrawals than constant-real).
 - **Objective policy resolution** (`objectivePolicyForPlan` in
-  [engine/decisions/objectives.ts](../../app/src/engine/decisions/objectives.ts)): picks up plan-level floors
+  [engine/decisions/objectives.ts](../../packages/engine/src/decisions/objectives.ts)): picks up plan-level floors
   automatically — `bequestTargetDollars` feeds `min-lifetime-tax-estate-floor` and
   `max-sustainable-spending`; `strategies.survivorReserveTarget` feeds `protect-survivor-liquidity`. The
   `max-sustainable-spending` policy ranks candidates by base annual spending and disqualifies any exact-ledger
   run that depletes or ends below the inflated estate floor.
 
-**Code:** [engine/decisions/spendingSolver.ts](../../app/src/engine/decisions/spendingSolver.ts),
-[engine/decisions/objectives.ts](../../app/src/engine/decisions/objectives.ts). Product mechanics:
+**Code:** [engine/decisions/spendingSolver.ts](../../packages/engine/src/decisions/spendingSolver.ts),
+[engine/decisions/objectives.ts](../../packages/engine/src/decisions/objectives.ts). Product mechanics:
 [features/optimizer.md](../features/optimizer.md), [features/README.md](../features/README.md) §4.
 
 ### Spending paths & SWR lenses (opt-in)
@@ -315,7 +315,7 @@ Five research-backed lenses over the same ledger (spending-paths-and-swr-lenses 
 feature-off plans byte-identical, guarded by `cases:diff` and the golden suites):
 
 - **Amortized spending / ABW** (`expenses.spendingPolicy.mode = 'abw'`, params in `spendingPolicy.abw`;
-  pure math in [engine/spending/abw.ts](../../app/src/engine/spending/abw.ts), applied in
+  pure math in [engine/spending/abw.ts](../../packages/engine/src/spending/abw.ts), applied in
   `simulate.ts`): the amortization-based withdrawal family the Bogleheads wiki formalized — VPW, TPAW, and
   CAPE rules are members. Each year the recurring lifestyle target is the **actual start-of-year investable
   balance** re-amortized over the remaining horizon (annuity-due, matching the ledger's spend-then-grow
@@ -330,7 +330,7 @@ feature-off plans byte-identical, guarded by `cases:diff` and the golden suites)
   = expected returns the identity recomputes to exact depletion at the horizon (fixture-tested). Guardrail
   machinery is unused under ABW — re-amortization *is* the adjustment rule.
 - **Survival-percentile planning ages** (Household screen "Percentile";
-  [engine/montecarlo/survival.ts](../../app/src/engine/montecarlo/survival.ts)): planning age expressed as
+  [engine/montecarlo/survival.ts](../../packages/engine/src/montecarlo/survival.ts)): planning age expressed as
   "the age I/we have a 25% (10%) chance of reaching", single or joint ("either of us", independent
   lifetimes: 1 − (1−S_a)(1−S_b)), from the same SSA 2022 q(x) derivation as the stochastic-longevity
   engine. Optional health adjustment: the longevity questionnaire's remaining-years multiplier converts to
@@ -339,7 +339,7 @@ feature-off plans byte-identical, guarded by `cases:diff` and the golden suites)
   picked age is written once with provenance (`longevity.source = 'percentile'`, spec kept for restating) —
   never silently recomputed; fixed-age plans unchanged.
 - **SWR comparator** ("How much can I spend?" page;
-  [engine/decisions/swrComparator.ts](../../app/src/engine/decisions/swrComparator.ts)): the live
+  [engine/decisions/swrComparator.ts](../../packages/engine/src/decisions/swrComparator.ts)): the live
   "whose 4% rule?" argument priced on the user's own plan — **Bengen 4.7%** (*A Richer Retirement*, 2025:
   SAFEMAX ≈ 4.7% with seven asset classes), **Morningstar 3.9%** (*State of Retirement Income* 2025, for
   2026 retirees), and the **ERN CAPE rule** (SWR = 1.75% + 0.5 × 100/CAPE, SWR series part 18). Each rule
@@ -349,18 +349,18 @@ feature-off plans byte-identical, guarded by `cases:diff` and the golden suites)
 - **Solver-per-shape** (same page): re-solves `solveMaxSustainableSpending` under constant-real / smile /
   smirk phase sets to show the shape-aware initial-spending uplift on the user's plan (~25 sims per shape,
   on demand).
-- **Bucket reporting lens** (Results; [planner/bucketLens.ts](../../app/src/planner/bucketLens.ts)):
+- **Bucket reporting lens** (Results; [planner/bucketLens.ts](../../packages/planner-ui/src/planner/bucketLens.ts)):
   buckets are popular but the evidence (Estrada's bucket studies; Kitces) finds no systematic benefit over
   total-return rebalancing, so RetireGolden *reports* buckets without *managing* them — each year's investable
   total is partitioned into "next N years of net spending" segments (net need = spending + taxes −
   income, floored at 0; presets 2yr/8yr/growth and 3yr/growth), reconciling to the ledger total every year
   by construction. Presentation only; no engine feedback.
 
-**Code:** [engine/spending/abw.ts](../../app/src/engine/spending/abw.ts),
-[engine/spending/shapePresets.ts](../../app/src/engine/spending/shapePresets.ts),
-[engine/montecarlo/survival.ts](../../app/src/engine/montecarlo/survival.ts),
-[engine/decisions/swrComparator.ts](../../app/src/engine/decisions/swrComparator.ts),
-[planner/bucketLens.ts](../../app/src/planner/bucketLens.ts). Sources: Bogleheads wiki
+**Code:** [engine/spending/abw.ts](../../packages/engine/src/spending/abw.ts),
+[engine/spending/shapePresets.ts](../../packages/engine/src/spending/shapePresets.ts),
+[engine/montecarlo/survival.ts](../../packages/engine/src/montecarlo/survival.ts),
+[engine/decisions/swrComparator.ts](../../packages/engine/src/decisions/swrComparator.ts),
+[planner/bucketLens.ts](../../packages/planner-ui/src/planner/bucketLens.ts). Sources: Bogleheads wiki
 "Amortization based withdrawal formulas" and "Variable percentage withdrawal"; Blanchett, *Exploring the
 Retirement Consumption Puzzle* (JFP 2014) and 2025–26 median-spending ("smirk") updates; Bengen, *A Richer
 Retirement* (2025); Morningstar, *State of Retirement Income* (2025); Early Retirement Now SWR series part
@@ -377,7 +377,7 @@ staged steps / custom interpolated year targets), and Monte Carlo shocks each cl
 sharing the same schema.
 
 **Class defaults** (Assumptions-level, user-editable via `assumptions.assetClassParams`; code in
-[engine/allocation/assetClasses.ts](../../app/src/engine/allocation/assetClasses.ts)):
+[engine/allocation/assetClasses.ts](../../packages/engine/src/allocation/assetClasses.ts)):
 
 | Class | Return (nominal) | Volatility | Yield | Qualified share |
 |-------|------------------|------------|-------|-----------------|
@@ -427,14 +427,14 @@ long-horizon average, deliberately not the post-2000 negative regime.
   the generator's candidates as previewable scenarios (the Roth conversion optimizer tournament does not
   include them).
 
-**Code:** [engine/allocation/assetClasses.ts](../../app/src/engine/allocation/assetClasses.ts) (params,
+**Code:** [engine/allocation/assetClasses.ts](../../packages/engine/src/allocation/assetClasses.ts) (params,
 glidepath compilation, blends), applied in
-[engine/projection/simulate.ts](../../app/src/engine/projection/simulate.ts) (rebalance pass, yield blend,
-growth), [engine/montecarlo/marketModels.ts](../../app/src/engine/montecarlo/marketModels.ts) (class
-shocks), [engine/decisions/generators.ts](../../app/src/engine/decisions/generators.ts) (location
-candidates), [engine/insights/detectors/assetLocation.ts](../../app/src/engine/insights/detectors/assetLocation.ts);
+[engine/projection/simulate.ts](../../packages/engine/src/projection/simulate.ts) (rebalance pass, yield blend,
+growth), [engine/montecarlo/marketModels.ts](../../packages/engine/src/montecarlo/marketModels.ts) (class
+shocks), [engine/decisions/generators.ts](../../packages/engine/src/decisions/generators.ts) (location
+candidates), [engine/insights/detectors/assetLocation.ts](../../packages/engine/src/insights/detectors/assetLocation.ts);
 account editor + Assumptions class table in
-[planner/sections.tsx](../../app/src/planner/sections.tsx).
+[planner/sections.tsx](../../packages/planner-ui/src/planner/sections.tsx).
 
 ## 16. Account eligibility, HSA, nondeductible basis, and fixed-asset disposition (opt-in)
 
@@ -470,11 +470,11 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   intact, and fill-to-target Roth conversions are trimmed so their tax bill stays payable above the floor; it is
   breached only as a last resort, with a warning. Manual/optimized conversion schedules are executed as typed.
 
-**Code:** [engine/strategies/accountEligibility.ts](../../app/src/engine/strategies/accountEligibility.ts),
-[engine/strategies/iraBasis.ts](../../app/src/engine/strategies/iraBasis.ts),
-[engine/tax/propertySale.ts](../../app/src/engine/tax/propertySale.ts), threaded through
-[engine/projection/simulate.ts](../../app/src/engine/projection/simulate.ts) and the after-tax estate metric in
-[engine/projection/compare.ts](../../app/src/engine/projection/compare.ts).
+**Code:** [engine/strategies/accountEligibility.ts](../../packages/engine/src/strategies/accountEligibility.ts),
+[engine/strategies/iraBasis.ts](../../packages/engine/src/strategies/iraBasis.ts),
+[engine/tax/propertySale.ts](../../packages/engine/src/tax/propertySale.ts), threaded through
+[engine/projection/simulate.ts](../../packages/engine/src/projection/simulate.ts) and the after-tax estate metric in
+[engine/projection/compare.ts](../../packages/engine/src/projection/compare.ts).
 
 ## 17. Guaranteed income (annuity purchases) and estate & beneficiary depth (opt-in)
 
@@ -520,13 +520,13 @@ and after-tax estate.
 **Documented simplifications:** users enter annuity quotes (no pricing/rate tables); no variable/indexed
 annuity products; estate/inheritance tax, probate, trusts, and legal-planning precision are out of scope.
 
-**Code:** schema in [engine/model/plan.ts](../../app/src/engine/model/plan.ts) (`annuityPurchaseSchema`,
+**Code:** schema in [engine/model/plan.ts](../../packages/engine/src/model/plan.ts) (`annuityPurchaseSchema`,
 `estateBeneficiarySchema`, `heirTaxByClass`, `survivorReserveTarget`); purchase execution, QLAC RMD-base
 exclusion, and exclusion-ratio taxation in
-[engine/projection/simulate.ts](../../app/src/engine/projection/simulate.ts) and
-[engine/rmd/](../../app/src/engine/rmd/); after-tax estate depth in
-[engine/projection/compare.ts](../../app/src/engine/projection/compare.ts); candidates in
-[engine/decisions/generators.ts](../../app/src/engine/decisions/generators.ts).
+[engine/projection/simulate.ts](../../packages/engine/src/projection/simulate.ts) and
+[engine/rmd/](../../packages/engine/src/rmd/); after-tax estate depth in
+[engine/projection/compare.ts](../../packages/engine/src/projection/compare.ts); candidates in
+[engine/decisions/generators.ts](../../packages/engine/src/decisions/generators.ts).
 
 ## 18. TIPS income floor: ladders, the SS bridge, and the funded ratio (opt-in)
 
@@ -576,12 +576,12 @@ and absent means no behavior change (feature-off byte-identical, `cases:diff` cl
 **Documented simplifications:** annual coupons (real TIPS pay semiannually); no CUSIP lot rounding in core
 mode; par-rung pricing on the par curve; planning-grade OID; taxable-side ladders only.
 
-**Code:** math in [engine/ladder/](../../app/src/engine/ladder/); schema in
-[engine/model/plan.ts](../../app/src/engine/model/plan.ts) (`tipsLadderSchema`, `incomeFloorSchema`); ledger
-integration in [engine/projection/simulate.ts](../../app/src/engine/projection/simulate.ts); state exemption
-in [engine/tax/stateTax.ts](../../app/src/engine/tax/stateTax.ts); UI in
-[planner/sections/IncomeFloorSection.tsx](../../app/src/planner/sections/IncomeFloorSection.tsx) and the
-bridge panel in [planner/SsAnalysisPage.tsx](../../app/src/planner/SsAnalysisPage.tsx).
+**Code:** math in [engine/ladder/](../../packages/engine/src/ladder/); schema in
+[engine/model/plan.ts](../../packages/engine/src/model/plan.ts) (`tipsLadderSchema`, `incomeFloorSchema`); ledger
+integration in [engine/projection/simulate.ts](../../packages/engine/src/projection/simulate.ts); state exemption
+in [engine/tax/stateTax.ts](../../packages/engine/src/tax/stateTax.ts); UI in
+[planner/sections/IncomeFloorSection.tsx](../../packages/planner-ui/src/planner/sections/IncomeFloorSection.tsx) and the
+bridge panel in [planner/SsAnalysisPage.tsx](../../packages/planner-ui/src/planner/SsAnalysisPage.tsx).
 
 ## 19. Annuity payout forms, the annuitization sweep, pension lump-sum elections, and the HECM buffer (opt-in)
 
@@ -655,14 +655,14 @@ the remaining certain payments a real contract would pay a beneficiary/estate ar
 post-household cash-flow path); the per-account estate breakdown covers investable classes only — property
 net of the (non-recourse-capped) HECM loan rides through net worth without a breakdown row.
 
-**Code:** schema in [engine/model/plan.ts](../../app/src/engine/model/plan.ts) (`annuityPayoutFormSchema`,
+**Code:** schema in [engine/model/plan.ts](../../packages/engine/src/model/plan.ts) (`annuityPayoutFormSchema`,
 `pensionLumpSumOfferSchema`, `hecmLineOfCreditSchema`); form payout/taxation in
-[engine/projection/annuityForms.ts](../../app/src/engine/projection/annuityForms.ts) and
-[engine/projection/simulate.ts](../../app/src/engine/projection/simulate.ts) (HECM open/draw/payoff, pension
+[engine/projection/annuityForms.ts](../../packages/engine/src/projection/annuityForms.ts) and
+[engine/projection/simulate.ts](../../packages/engine/src/projection/simulate.ts) (HECM open/draw/payoff, pension
 rollover); PV math + scenario pair in
-[engine/decisions/pensionElection.ts](../../app/src/engine/decisions/pensionElection.ts); sweep in
-[engine/decisions/annuitization.ts](../../app/src/engine/decisions/annuitization.ts); PLF table + provenance
-in [engine/params](../../app/src/engine/params/data/year2026.ts); detectors in
-[engine/insights/detectors/](../../app/src/engine/insights/detectors/); UI in
-[planner/sections/AccountFields.tsx](../../app/src/planner/sections/AccountFields.tsx) and the sweep chart
-in [planner/MonteCarloPage.tsx](../../app/src/planner/MonteCarloPage.tsx).
+[engine/decisions/pensionElection.ts](../../packages/engine/src/decisions/pensionElection.ts); sweep in
+[engine/decisions/annuitization.ts](../../packages/engine/src/decisions/annuitization.ts); PLF table + provenance
+in [engine/params](../../packages/engine/src/params/data/year2026.ts); detectors in
+[engine/insights/detectors/](../../packages/engine/src/insights/detectors/); UI in
+[planner/sections/AccountFields.tsx](../../packages/planner-ui/src/planner/sections/AccountFields.tsx) and the sweep chart
+in [planner/MonteCarloPage.tsx](../../packages/planner-ui/src/planner/MonteCarloPage.tsx).
