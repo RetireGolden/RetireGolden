@@ -32,9 +32,11 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # This workflow holds npm publish rights, so its actions are pinned to
+      # full commit SHAs (tags are mutable and can be repointed upstream).
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
           cache: npm
@@ -62,6 +64,12 @@ jobs:
 
       - name: Test
         run: npm run test -w @retiregolden/engine
+
+      # Prove the published surface (exports map + emitted dist) from plain
+      # Node ESM, the way an external consumer will use it — the workspace
+      # dev loop aliases the package to its TS source and never exercises it.
+      - name: Smoke test the packed artifact
+        run: node packages/engine/scripts/pack-smoke.mjs
 
       - name: Publish to npm
         working-directory: packages/engine

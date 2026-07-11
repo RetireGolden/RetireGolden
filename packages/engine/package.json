@@ -30,11 +30,26 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./dist/index.js",
-    "./decisions": "./dist/decisions/index.js",
-    "./params": "./dist/params/index.js",
-    "./params/state": "./dist/params/state/index.js",
-    "./*": "./dist/*.js",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./decisions": {
+      "types": "./dist/decisions/index.d.ts",
+      "default": "./dist/decisions/index.js"
+    },
+    "./params": {
+      "types": "./dist/params/index.d.ts",
+      "default": "./dist/params/index.js"
+    },
+    "./params/state": {
+      "types": "./dist/params/state/index.d.ts",
+      "default": "./dist/params/state/index.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    },
     "./package.json": "./package.json"
   },
   "scripts": {

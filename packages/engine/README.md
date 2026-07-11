@@ -42,8 +42,8 @@ import { packForYear } from '@retiregolden/engine/params'
 ```
 
 Test fixtures used by the RetireGolden apps' own suites ship under
-`@retiregolden/engine/testing/*` (they import `vitest`; not part of the
-supported runtime API).
+`@retiregolden/engine/testing/*` — framework-free (no vitest or other
+test-runner dependency), but not part of the supported runtime API.
 
 ## Layout
 
