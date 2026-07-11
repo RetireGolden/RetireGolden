@@ -10,10 +10,10 @@
     "packages/*"
   ],
   "scripts": {
-    "lint": "npm run lint -w @retiregolden/engine && npm run lint -w retiregolden-web",
-    "test": "npm run test -w @retiregolden/engine && npm run test -w retiregolden-web",
-    "test:coverage": "npm run test:coverage -w @retiregolden/engine && npm run test:coverage -w retiregolden-web",
-    "build": "npm run build -w @retiregolden/engine && npm run build -w retiregolden-web",
+    "lint": "npm run lint -w @retiregolden/engine && npm run lint -w @retiregolden/planner-ui && npm run lint -w retiregolden-web",
+    "test": "npm run test -w @retiregolden/engine && npm run test -w @retiregolden/planner-ui && npm run test -w retiregolden-web",
+    "test:coverage": "npm run test:coverage -w @retiregolden/engine && npm run test:coverage -w @retiregolden/planner-ui && npm run test:coverage -w retiregolden-web",
+    "build": "npm run build -w @retiregolden/engine && npm run build -w @retiregolden/planner-ui && npm run build -w retiregolden-web",
     "dev": "npm run dev -w retiregolden-web",
     "cases": "npm run cases -w retiregolden-web",
     "cases:diff": "npm run cases:diff -w retiregolden-web",

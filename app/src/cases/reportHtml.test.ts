@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { defaultExampleCases, projectCase } from '../cases/caseRunner'
-import { buildStandaloneReportHtml, type ReportRecommendationEvidence } from './reportHtml'
+import { defaultExampleCases, projectCase } from './caseRunner'
+import { buildStandaloneReportHtml, type ReportRecommendationEvidence } from '@retiregolden/planner-ui/report/reportHtml'
 
 describe('standalone report HTML', () => {
   it('renders self-contained audit sections for a projected plan', () => {

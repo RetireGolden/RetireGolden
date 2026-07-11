@@ -9,17 +9,25 @@
 
 import { Link } from 'react-router-dom'
 
+// Sibling-workspace globs (engine, app harness tests) resolve when this file
+// is built inside the RetireGolden monorepo — retiregolden.app's build. In an
+// external consumer of the published package they match nothing (the tarball
+// ships without test files), so the counts degrade to zero rather than lie.
 /** Suites checked against third-party implementations that share no code with RetireGolden. */
 const EXTERNAL_ORACLE_SUITES = Object.keys(
-  import.meta.glob(['../**/*.external.golden.test.ts', '../../../packages/engine/src/**/*.external.golden.test.ts']),
+  import.meta.glob(['../**/*.external.golden.test.ts', '../../../engine/src/**/*.external.golden.test.ts']),
 )
 /** All golden suites (fixed expected-value fixtures), external and internal. */
 const GOLDEN_SUITES = Object.keys(
-  import.meta.glob(['../**/*.golden.test.ts', '../../../packages/engine/src/**/*.golden.test.ts']),
+  import.meta.glob(['../**/*.golden.test.ts', '../../../engine/src/**/*.golden.test.ts']),
 )
-/** Every automated test file in the source tree (app + engine package). */
+/** Every automated test file in the source tree (planner-ui + engine + app harness). */
 const ALL_TEST_FILES = Object.keys(
-  import.meta.glob(['../**/*.test.{ts,tsx}', '../../../packages/engine/src/**/*.test.ts']),
+  import.meta.glob([
+    '../**/*.test.{ts,tsx}',
+    '../../../engine/src/**/*.test.ts',
+    '../../../../app/src/**/*.test.{ts,tsx}',
+  ]),
 )
 
 /** "federalTaxSocialSecurity.external.golden.test.ts" → "federal tax social security". */

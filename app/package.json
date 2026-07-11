@@ -22,18 +22,14 @@
   },
   "dependencies": {
     "@retiregolden/engine": "^0.1.0",
-    "highs": "^1.14.2",
-    "idb": "^8.0.3",
+    "@retiregolden/planner-ui": "^0.1.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "react-router-dom": "^7.18.0",
-    "recharts": "^3.8.1",
-    "zod": "^4.4.3"
+    "react-router-dom": "^7.18.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.61.1",
-    "@types/jsdom": "^28.0.3",
     "@types/node": "^24.12.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
@@ -43,9 +39,7 @@
     "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
-    "fake-indexeddb": "^6.2.5",
     "globals": "^17.6.0",
-    "jsdom": "^29.1.1",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
     "vite": "^8.0.16",

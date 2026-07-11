@@ -33,6 +33,7 @@ node_modules/
 # Package build & test artifacts
 packages/engine/dist/
 packages/engine/coverage/
+packages/planner-ui/coverage/
 
 # App build & test artifacts
 app/dist

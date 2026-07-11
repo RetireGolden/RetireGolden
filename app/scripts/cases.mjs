@@ -101,7 +101,7 @@ async function loadViteModules() {
   try {
     const caseRunner = await server.ssrLoadModule('/src/cases/caseRunner.ts')
     const caseDiff = await server.ssrLoadModule('/src/cases/caseDiff.ts')
-    const reportHtml = await server.ssrLoadModule('/src/report/reportHtml.ts')
+    const reportHtml = await server.ssrLoadModule('@retiregolden/planner-ui/report/reportHtml')
     return { server, caseRunner, caseDiff, reportHtml }
   } catch (error) {
     await server.close()

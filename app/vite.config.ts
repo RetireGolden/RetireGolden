@@ -4,20 +4,24 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { defineConfig } from 'vitest/config'
 
-// Engine package source, as a posix path for Vite's resolver.
+// Workspace package sources, as posix paths for Vite's resolver.
 const engineSrc = fileURLToPath(new URL('../packages/engine/src', import.meta.url)).replaceAll('\\', '/')
+const plannerUiSrc = fileURLToPath(new URL('../packages/planner-ui/src', import.meta.url)).replaceAll('\\', '/')
 
 // https://vite.dev/config/
 export default defineConfig({
   resolve: {
-    // Dev, tests, and the bundled build all consume the engine package
-    // straight from its TypeScript source — no rebuild step while iterating,
-    // and the shipped app is compiled from the same files the tests ran
-    // against. `tsc -b` still type-checks the app against the package's real
-    // built dist/*.d.ts via the project reference.
+    // Dev, tests, and the bundled build all consume the workspace packages
+    // straight from their TypeScript source — no rebuild step while
+    // iterating, and the shipped app is compiled from the same files the
+    // tests ran against. `tsc -b` still type-checks the app against the
+    // engine's real built dist/*.d.ts via the project reference; planner-ui
+    // ships TypeScript source, so its exports map points at the same files.
     alias: [
       { find: /^@retiregolden\/engine$/, replacement: `${engineSrc}/index.ts` },
       { find: /^@retiregolden\/engine\/(.*)$/, replacement: `${engineSrc}/$1` },
+      { find: /^@retiregolden\/planner-ui$/, replacement: `${plannerUiSrc}/index.ts` },
+      { find: /^@retiregolden\/planner-ui\/(.*)$/, replacement: `${plannerUiSrc}/$1` },
     ],
   },
   plugins: [
@@ -89,29 +93,11 @@ export default defineConfig({
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     coverage: {
       provider: 'v8',
-      // Engine coverage (and its thresholds) live in packages/engine; the
-      // app run only measures app code, so aliased package sources don't
-      // dilute the report.
+      // Package coverage (and thresholds) lives with each package; the app
+      // run only measures app code, so aliased package sources don't dilute
+      // the report. The socialSecurity/data floors moved to
+      // packages/planner-ui/vite.config.ts with the code they guard.
       include: ['src/**'],
-      thresholds: {
-        // The ledger-consumed SS math (and its 88/75/90/90 bar) moved to
-        // packages/engine. What remains here are the analysis features
-        // (well-tested) plus the never-tested form/storage helpers that the
-        // moved math used to average over — this floor reflects the actual
-        // coverage the old threshold enforced on these files.
-        'src/socialSecurity/**': {
-          statements: 84,
-          branches: 70,
-          functions: 85,
-          lines: 86,
-        },
-        'src/data/**': {
-          statements: 90,
-          branches: 70,
-          functions: 75,
-          lines: 90,
-        },
-      },
     },
   },
 })

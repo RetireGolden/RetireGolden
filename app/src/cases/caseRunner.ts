@@ -1,4 +1,4 @@
-import { parseV2Backup } from '../data/v2Backup'
+import { parseV2Backup } from '@retiregolden/planner-ui/data/v2Backup'
 import {
   assetLocationGenerator,
   createDecisionContext,
@@ -20,8 +20,8 @@ import type { ProjectionResult } from '@retiregolden/engine/projection/types'
 import { applyScenarioPatch } from '@retiregolden/engine/scenarios/scenarios'
 import { combineTaxCalculators, createFederalTaxCalculator } from '@retiregolden/engine/tax/federalTax'
 import { createStateTaxCalculator } from '@retiregolden/engine/tax/stateTax'
-import { EXAMPLE_FIXED_YEAR } from '../planner/examples/buildContext'
-import { EXAMPLE_PLANS } from '../planner/examples/registry'
+import { EXAMPLE_FIXED_YEAR } from '@retiregolden/planner-ui/planner/examples/buildContext'
+import { EXAMPLE_PLANS } from '@retiregolden/planner-ui/planner/examples/registry'
 import { stableStringify } from './stableJson'
 
 export const CASE_MANIFEST_KIND = 'retiregolden.case-runner.manifest'
