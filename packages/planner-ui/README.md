@@ -143,9 +143,11 @@ RetireGolden defaults when omitted:
 `buildStandaloneReportHtml` (deep subpath `./report/reportHtml` — the
 stability caveat under "Published API surface" applies) accepts the same
 `branding` object directly for hosts that generate reports outside the
-planner pages. Values are sanitized — the logo must be a `data:image/...`
-URI, the accent must be a plain CSS color, and text fields are escaped — so
-the report's no-script guarantee holds regardless of input. This branding
+planner pages. Values are sanitized — the logo must be a base64
+`data:image/...` URI, the accent must parse as a real CSS color (hex,
+`rgb()`/`hsl()`, or a named color; anything else falls back to the default
+gold), and text fields are escaped-and-kept — so the report's no-script
+guarantee holds regardless of input. This branding
 applies to downloaded reports only; the in-app chrome is themed via the CSS
 tokens (above).
 

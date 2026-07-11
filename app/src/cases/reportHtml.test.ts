@@ -160,20 +160,46 @@ describe('report branding', () => {
     expect(html).not.toContain('<script')
   })
 
-  it('sanitizes hostile branding values instead of trusting them', () => {
+  it('escapes hostile text fields and keeps them, rather than dropping them', () => {
     const html = htmlWith({
       productName: '<script>alert(1)</script>Firm',
       logoDataUri: 'javascript:alert(1)',
       accentColor: 'red; } </style><script>alert(1)</script>',
       footerNote: '<img src=x onerror=alert(1)>',
     })
-    // Name and footer note are escaped, the non-data logo is dropped, and the
-    // unsafe accent falls back to the default — the no-script guarantee holds.
+    // The no-script guarantee holds...
     expect(html).not.toContain('<script')
     expect(html).not.toContain('javascript:alert')
     expect(html).not.toContain('<img src=x')
     expect(html).toContain('border-bottom: 3px solid #B8860B;')
     expect(html).not.toContain('report-logo')
+    // ...and hostile text is escaped-and-kept, not silently dropped: the
+    // contract for text fields is "escape", so the content must still render.
+    expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;Firm self-contained HTML report prepared')
+    expect(html).toContain('<p class="muted">&lt;img src=x onerror=alert(1)&gt;</p>')
+  })
+
+  it('escapes attribute breakout in logoAlt while keeping the logo', () => {
+    const html = htmlWith({
+      productName: 'Acme',
+      logoDataUri: PNG_DATA_URI,
+      logoAlt: '"><img src=x onerror=alert(1)>',
+    })
+    expect(html).not.toContain('"><img src=x')
+    expect(html).toContain(
+      `<img class="report-logo" src="${PNG_DATA_URI}" alt="&quot;&gt;&lt;img src=x onerror=alert(1)&gt;">`,
+    )
+  })
+
+  it('renders an SVG data-URI logo as an <img> without exposing embedded script', () => {
+    // <img>-rendered SVG never executes scripts; the document itself must
+    // still contain no raw <script (the payload stays base64-opaque).
+    const svgWithScript = Buffer.from(
+      '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+    ).toString('base64')
+    const html = htmlWith({ logoDataUri: `data:image/svg+xml;base64,${svgWithScript}` })
+    expect(html).toContain(`<img class="report-logo" src="data:image/svg+xml;base64,${svgWithScript}"`)
+    expect(html).not.toContain('<script')
   })
 
   it('falls back to the logo-less default when the logo is not a data URI', () => {
@@ -181,5 +207,31 @@ describe('report branding', () => {
     expect(html).toContain('- Acme report</title>')
     expect(html).not.toContain('report-logo')
     expect(html).not.toContain('example.com')
+  })
+
+  it('accepts real CSS colors for the accent', () => {
+    const accents = [
+      '#123456',
+      '#abc',
+      'navy',
+      'Navy',
+      'rgb(10, 20, 30)',
+      'rgba(10,20,30,0.5)',
+      'hsl(210deg 50% 40%)',
+      'hsl(210, 50%, 40%)',
+    ]
+    for (const accent of accents) {
+      expect(htmlWith({ accentColor: accent }), accent).toContain(`border-bottom: 3px solid ${accent};`)
+    }
+  })
+
+  it('falls back to the default accent for safe-charset non-colors instead of emitting an invalid declaration', () => {
+    // A charset-only allowlist passes these through; the browser then drops
+    // the invalid declaration and the letterhead rule silently vanishes.
+    for (const accent of ['not-a-color', 'calc(1px)', 'expression(alert(1))', 'rgb(foo)', 'rgb(1, 2)', 'url(x)']) {
+      const html = htmlWith({ accentColor: accent })
+      expect(html, accent).toContain('border-bottom: 3px solid #B8860B;')
+      expect(html, accent).not.toContain(accent)
+    }
   })
 })

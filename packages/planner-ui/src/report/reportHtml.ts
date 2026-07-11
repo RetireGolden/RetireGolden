@@ -55,7 +55,11 @@ export interface ReportBranding {
   logoDataUri?: string
   /** Alt text for the logo; defaults to the product name. */
   logoAlt?: string
-  /** CSS color for the letterhead rule under the header. Default: the RetireGolden gold. */
+  /**
+   * Color for the letterhead rule under the header — hex, rgb()/hsl(), or a
+   * CSS named color; anything that doesn't parse as one falls back to the
+   * default RetireGolden gold.
+   */
   accentColor?: string
   /** Extra line rendered at the end of the report (e.g. a firm disclosure). Plain text; rendered escaped. */
   footerNote?: string
@@ -76,13 +80,47 @@ const DEFAULT_ACCENT_COLOR = '#B8860B'
 
 /**
  * The accent is interpolated into a CSS context where escapeHtml doesn't
- * apply, so allow only characters a color value can need — no quotes,
- * braces, semicolons, angle brackets, or url() escapes out of the property.
+ * apply, so it must positively parse as a color — a charset allowlist alone
+ * would still admit safe-charset non-colors (`not-a-color`, `calc(1px)`,
+ * IE-era `expression(...)`), which the browser drops as invalid
+ * declarations, silently losing the letterhead rule instead of falling back.
+ * Recognized: hex, rgb()/rgba()/hsl()/hsla() (comma or space syntax), and
+ * CSS named colors. Anything else falls back to the default.
  */
+const HEX_COLOR = /^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/
+/** One rgb()/hsl() argument: a number with an optional %/angle unit, or CSS4 `none`. */
+const COLOR_FUNCTION_ARG = /^(?:none|-?(?:\d+\.?\d*|\.\d+)(?:e-?\d+)?(?:%|deg|grad|rad|turn)?)$/i
+// prettier-ignore
+const NAMED_COLORS = new Set(('aliceblue,antiquewhite,aqua,aquamarine,azure,beige,bisque,black,blanchedalmond,blue,' +
+  'blueviolet,brown,burlywood,cadetblue,chartreuse,chocolate,coral,cornflowerblue,cornsilk,crimson,cyan,darkblue,' +
+  'darkcyan,darkgoldenrod,darkgray,darkgreen,darkgrey,darkkhaki,darkmagenta,darkolivegreen,darkorange,darkorchid,' +
+  'darkred,darksalmon,darkseagreen,darkslateblue,darkslategray,darkslategrey,darkturquoise,darkviolet,deeppink,' +
+  'deepskyblue,dimgray,dimgrey,dodgerblue,firebrick,floralwhite,forestgreen,fuchsia,gainsboro,ghostwhite,gold,' +
+  'goldenrod,gray,green,greenyellow,grey,honeydew,hotpink,indianred,indigo,ivory,khaki,lavender,lavenderblush,' +
+  'lawngreen,lemonchiffon,lightblue,lightcoral,lightcyan,lightgoldenrodyellow,lightgray,lightgreen,lightgrey,' +
+  'lightpink,lightsalmon,lightseagreen,lightskyblue,lightslategray,lightslategrey,lightsteelblue,lightyellow,lime,' +
+  'limegreen,linen,magenta,maroon,mediumaquamarine,mediumblue,mediumorchid,mediumpurple,mediumseagreen,' +
+  'mediumslateblue,mediumspringgreen,mediumturquoise,mediumvioletred,midnightblue,mintcream,mistyrose,moccasin,' +
+  'navajowhite,navy,oldlace,olive,olivedrab,orange,orangered,orchid,palegoldenrod,palegreen,paleturquoise,' +
+  'palevioletred,papayawhip,peachpuff,peru,pink,plum,powderblue,purple,rebeccapurple,red,rosybrown,royalblue,' +
+  'saddlebrown,salmon,sandybrown,seagreen,seashell,sienna,silver,skyblue,slateblue,slategray,slategrey,snow,' +
+  'springgreen,steelblue,tan,teal,thistle,tomato,transparent,turquoise,violet,wheat,white,whitesmoke,yellow,' +
+  'yellowgreen').split(','))
+
+function isCssColor(value: string): boolean {
+  if (HEX_COLOR.test(value)) return true
+  const colorFunction = /^(?:rgb|rgba|hsl|hsla)\((.*)\)$/i.exec(value)
+  if (colorFunction) {
+    const args = colorFunction[1].trim().split(/\s*[,/]\s*|\s+/)
+    return args.length >= 3 && args.length <= 4 && args.every((arg) => COLOR_FUNCTION_ARG.test(arg))
+  }
+  return NAMED_COLORS.has(value.toLowerCase())
+}
+
 function safeCssColor(value: string | undefined): string {
   const trimmed = value?.trim()
   if (!trimmed) return DEFAULT_ACCENT_COLOR
-  return /^[#a-zA-Z0-9(),.%/\s-]{1,64}$/.test(trimmed) && !/url/i.test(trimmed) ? trimmed : DEFAULT_ACCENT_COLOR
+  return trimmed.length <= 64 && isCssColor(trimmed) ? trimmed : DEFAULT_ACCENT_COLOR
 }
 
 /** Only self-contained raster/svg data URIs; <img> never executes SVG scripts. */
