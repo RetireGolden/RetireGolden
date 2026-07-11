@@ -8,7 +8,7 @@
 import { useState, type ChangeEvent } from 'react'
 import { Link } from 'react-router-dom'
 
-import type { FormerSpouse, IncomeStream, Person } from '../engine/model/plan'
+import type { FormerSpouse, IncomeStream, Person } from '@retiregolden/engine/model/plan'
 import {
   bendTierForAime,
   CREDITS_FOR_ELIGIBILITY,
@@ -16,8 +16,8 @@ import {
   replaceZeroYearGain,
   summarizeComputation,
 } from '../socialSecurity/explain'
-import { effectiveBirthYear, fraForBirthYear } from '../socialSecurity/nra'
-import type { PiaFromEarningsResult } from '../socialSecurity/piaFromEarnings'
+import { effectiveBirthYear, fraForBirthYear } from '@retiregolden/engine/socialSecurity/nra'
+import type { PiaFromEarningsResult } from '@retiregolden/engine/socialSecurity/piaFromEarnings'
 import { parseSsaStatementXml } from '../socialSecurity/ssaStatementXml'
 import { usePlan } from './planContextCore'
 import { CheckboxField, DateField, NumberField, MoneyField, SelectField } from './fields'

@@ -5,15 +5,15 @@
  * rate as an override, matching src/mc/runRequest.ts.
  */
 
-import { objectivePolicyForPlan } from '../engine/decisions'
+import { objectivePolicyForPlan } from '@retiregolden/engine/decisions'
 import {
   optimizePlan,
   optimizePlanCoOptimizingClaimAge,
   type ExactLedgerPostProcessing,
   type OptimizePlanOptions,
-} from '../engine/projection/optimizePlan'
-import { combineTaxCalculators, createFederalTaxCalculator } from '../engine/tax/federalTax'
-import { createStateTaxCalculator } from '../engine/tax/stateTax'
+} from '@retiregolden/engine/projection/optimizePlan'
+import { combineTaxCalculators, createFederalTaxCalculator } from '@retiregolden/engine/tax/federalTax'
+import { createStateTaxCalculator } from '@retiregolden/engine/tax/stateTax'
 import type { OptimizePostProcessing, OptimizeRequest, OptimizeResult } from './messages'
 
 function summarizePostProcessing(postProcessed: ExactLedgerPostProcessing | null): OptimizePostProcessing | null {

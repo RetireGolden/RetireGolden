@@ -7,8 +7,8 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { createEmptyPlan, parsePlan, type Account, type IncomeStream, type Plan } from '../engine/model/plan'
-import { socialSecurityIncome } from '../testSupport/planFixtures'
+import { createEmptyPlan, parsePlan, type Account, type IncomeStream, type Plan } from '@retiregolden/engine/model/plan'
+import { socialSecurityIncome } from '@retiregolden/engine/testing/planFixtures'
 import { runOptimizeRequest } from './runOptimize'
 
 let counter = 0

@@ -5,7 +5,7 @@
  * the effect of glidepath + rebalancing + class MC on risk metrics and ending values.
  */
 
-import { createEmptyPlan, parsePlan, type Plan } from '../../engine/model/plan'
+import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
 import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory } from './buildContext'
 
 const EXAMPLE_ID = 'static-allocation-control'

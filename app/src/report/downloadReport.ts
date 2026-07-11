@@ -1,6 +1,6 @@
-import type { Plan } from '../engine/model/plan'
-import type { ProjectionSummary } from '../engine/projection/compare'
-import type { ProjectionResult } from '../engine/projection/types'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import type { ProjectionSummary } from '@retiregolden/engine/projection/compare'
+import type { ProjectionResult } from '@retiregolden/engine/projection/types'
 import { buildStandaloneReportHtml, type ReportRecommendationEvidence } from './reportHtml'
 
 function fileStem(name: string): string {

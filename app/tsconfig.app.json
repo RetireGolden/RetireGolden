@@ -23,6 +23,7 @@
     "noFallthroughCasesInSwitch": true,
     "strict": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "references": [{ "path": "../packages/engine" }]
 }
 

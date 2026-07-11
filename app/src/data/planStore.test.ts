@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { IDBFactory } from 'fake-indexeddb'
 
-import { createEmptyPlan, type Plan } from '../engine/model/plan'
+import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
 import {
   _resetPlanStoreForTests,
   clearAllPlans,

@@ -126,14 +126,19 @@ function main() {
   const tree = JSON.parse(json)
   const prodNames = flatten(tree.dependencies)
 
-  // Walk the actual install tree to find each package's directory.
+  // Walk the actual install tree to find each package's directory. npm
+  // workspaces hoist to the repo-root node_modules, so walk both it and any
+  // app-local nest.
   const installed = walkNodeModules(join(appDir, 'node_modules'))
+  walkNodeModules(join(appDir, '..', 'node_modules'), installed)
 
-  // Exclude TypeScript-only type packages: they never reach the runtime bundle.
+  // Exclude TypeScript-only type packages (they never reach the runtime
+  // bundle) and first-party @retiregolden/* workspace packages (our own
+  // AGPL code, not a third party).
   const excluded = []
   const included = []
   for (const [name, versions] of prodNames) {
-    if (name.startsWith('@types/')) {
+    if (name.startsWith('@types/') || name.startsWith('@retiregolden/')) {
       excluded.push(`${name}@${[...versions].join('/')}`)
       continue
     }
@@ -180,7 +185,7 @@ function main() {
   out.push('@types/* packages that never reach the runtime bundle).')
   out.push('')
   out.push(`Generated: ${today}`)
-  out.push(`Source:    npm ls --omit=dev --all (app/package-lock.json)`)
+  out.push(`Source:    npm ls --omit=dev --all (workspace root package-lock.json)`)
   out.push('')
   out.push('================================================================================')
   out.push('')
@@ -196,7 +201,7 @@ function main() {
   out.push('Summary')
   out.push('-------')
   out.push(`Packages attributed: ${blocks.length}`)
-  out.push(`Type-only @types/* excluded: ${excluded.length}`)
+  out.push(`Excluded (type-only @types/*, first-party @retiregolden/*): ${excluded.length}`)
   if (copyleftHits.length > 0) {
     out.push('')
     out.push('COOPYLEFT / SHARE-ALIKE LICENSES DETECTED (review before shipping):')

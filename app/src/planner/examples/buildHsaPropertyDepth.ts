@@ -3,7 +3,7 @@
  * sale with basis/exclusion/recapture, and pro-rata on IRA conversions.
  */
 
-import { createEmptyPlan, parsePlan, type Plan } from '../../engine/model/plan'
+import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
 import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory } from './buildContext'
 
 const EXAMPLE_ID = 'hsa-property-depth'

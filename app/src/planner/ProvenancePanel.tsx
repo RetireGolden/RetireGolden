@@ -8,7 +8,7 @@ import {
   LATEST_PACK_YEAR,
   PARAMETER_DATA_AS_OF,
   PARAMETER_PROVENANCE,
-} from '../engine/params'
+} from '@retiregolden/engine/params'
 
 export function ProvenancePanel() {
   return (

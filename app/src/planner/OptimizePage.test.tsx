@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 import { describe, expect, it } from 'vitest'
 
-import type { OptimizedSchedule } from '../engine/strategies/optimizer'
+import type { OptimizedSchedule } from '@retiregolden/engine/strategies/optimizer'
 import { buildOptimizeChartRows, shouldShowRecommendedScheduleBars } from './optimizePageChart'
 
 function schedule(conversions: { year: number; amount: number }[]): OptimizedSchedule {

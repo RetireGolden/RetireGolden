@@ -6,9 +6,9 @@
 
 import { useEffect, useMemo, useState } from 'react'
 
-import type { Plan } from '../engine/model/plan'
-import { TRUSTEES_DEFAULT_SS_HAIRCUT } from '../engine/params'
-import { compareScenarios, type ScenarioComparison } from '../engine/scenarios/scenarios'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import { TRUSTEES_DEFAULT_SS_HAIRCUT } from '@retiregolden/engine/params'
+import { compareScenarios, type ScenarioComparison } from '@retiregolden/engine/scenarios/scenarios'
 import { usePlan } from './planContextCore'
 import { MoneyField, NumberField, PercentField, SelectField } from './fields'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'

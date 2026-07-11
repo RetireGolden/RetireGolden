@@ -10,11 +10,17 @@
 import { Link } from 'react-router-dom'
 
 /** Suites checked against third-party implementations that share no code with RetireGolden. */
-const EXTERNAL_ORACLE_SUITES = Object.keys(import.meta.glob('../**/*.external.golden.test.ts'))
+const EXTERNAL_ORACLE_SUITES = Object.keys(
+  import.meta.glob(['../**/*.external.golden.test.ts', '../../../packages/engine/src/**/*.external.golden.test.ts']),
+)
 /** All golden suites (fixed expected-value fixtures), external and internal. */
-const GOLDEN_SUITES = Object.keys(import.meta.glob('../**/*.golden.test.ts'))
-/** Every automated test file in the source tree. */
-const ALL_TEST_FILES = Object.keys(import.meta.glob('../**/*.test.{ts,tsx}'))
+const GOLDEN_SUITES = Object.keys(
+  import.meta.glob(['../**/*.golden.test.ts', '../../../packages/engine/src/**/*.golden.test.ts']),
+)
+/** Every automated test file in the source tree (app + engine package). */
+const ALL_TEST_FILES = Object.keys(
+  import.meta.glob(['../**/*.test.{ts,tsx}', '../../../packages/engine/src/**/*.test.ts']),
+)
 
 /** "federalTaxSocialSecurity.external.golden.test.ts" → "federal tax social security". */
 function suiteName(path: string): string {

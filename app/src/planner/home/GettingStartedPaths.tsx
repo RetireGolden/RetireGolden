@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 
-import { createEmptyPlan } from '../../engine/model/plan'
+import { createEmptyPlan } from '@retiregolden/engine/model/plan'
 
 type GettingStartedPathsProps = {
   onCreatePlan: (plan: ReturnType<typeof createEmptyPlan>) => void

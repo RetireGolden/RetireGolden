@@ -25,33 +25,5 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
-  {
-    // Engine purity: src/engine is pure domain math — no UI or storage imports.
-    // See app/src/engine/README.md and DOCS/architecture.md.
-    files: ['src/engine/**/*.ts'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            {
-              group: ['react', 'react-*', 'recharts', 'jspdf', 'html2canvas', 'idb'],
-              message: 'src/engine must stay pure: no UI or storage imports.',
-            },
-            {
-              group: ['../pages/*', '../pdf/*', '../data/*', '**/data/planStore'],
-              message: 'src/engine must not depend on app-layer code.',
-            },
-          ],
-        },
-      ],
-      'no-restricted-globals': [
-        'error',
-        { name: 'localStorage', message: 'Persistence belongs in src/data/, not the engine.' },
-        { name: 'indexedDB', message: 'Persistence belongs in src/data/, not the engine.' },
-        { name: 'document', message: 'No DOM access in the engine.' },
-        { name: 'window', message: 'No DOM access in the engine.' },
-      ],
-    },
-  },
+  // Engine purity rules moved with the engine: see packages/engine/eslint.config.js.
 ])

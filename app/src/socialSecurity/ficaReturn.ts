@@ -20,7 +20,7 @@
  * survivor insurance value, spousal benefits, and the Medicare portion.
  */
 
-import { WAGE_BASE_BY_YEAR } from './ssaWageData'
+import { WAGE_BASE_BY_YEAR } from '@retiregolden/engine/socialSecurity/ssaWageData'
 
 export interface FicaPaidInResult {
   /** Employee (or self-employed total) OASDI paid over the earnings history, today's $. */

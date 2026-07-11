@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
-import { parsePlan, type Plan } from '../engine/model/plan'
+import { parsePlan, type Plan } from '@retiregolden/engine/model/plan'
 import { loadPlan, savePlan } from '../data/planStore'
 import { EXAMPLE_PLAN_ID_PREFIX, isExamplePlanId } from '../data/planOrigin'
 import { getExampleById } from './examples/registry'

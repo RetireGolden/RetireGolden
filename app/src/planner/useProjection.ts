@@ -7,12 +7,12 @@
 
 import { useMemo } from 'react'
 
-import type { Plan } from '../engine/model/plan'
-import { summarizeProjection, type ProjectionSummary } from '../engine/projection/compare'
-import { simulatePlan } from '../engine/projection/simulate'
-import type { ProjectionResult } from '../engine/projection/types'
-import { combineTaxCalculators, createFederalTaxCalculator } from '../engine/tax/federalTax'
-import { createStateTaxCalculator } from '../engine/tax/stateTax'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import { summarizeProjection, type ProjectionSummary } from '@retiregolden/engine/projection/compare'
+import { simulatePlan } from '@retiregolden/engine/projection/simulate'
+import type { ProjectionResult } from '@retiregolden/engine/projection/types'
+import { combineTaxCalculators, createFederalTaxCalculator } from '@retiregolden/engine/tax/federalTax'
+import { createStateTaxCalculator } from '@retiregolden/engine/tax/stateTax'
 
 export function taxCalculatorFor(plan: Plan) {
   return combineTaxCalculators(

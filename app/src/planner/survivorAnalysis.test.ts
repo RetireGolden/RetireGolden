@@ -9,11 +9,11 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { createEmptyPlan, parsePlan, type Account, type Plan } from '../engine/model/plan'
-import { summarizeProjection } from '../engine/projection/compare'
-import { simulatePlan } from '../engine/projection/simulate'
-import { applyScenarioPatch } from '../engine/scenarios/scenarios'
-import { createFederalTaxCalculator } from '../engine/tax/federalTax'
+import { createEmptyPlan, parsePlan, type Account, type Plan } from '@retiregolden/engine/model/plan'
+import { summarizeProjection } from '@retiregolden/engine/projection/compare'
+import { simulatePlan } from '@retiregolden/engine/projection/simulate'
+import { applyScenarioPatch } from '@retiregolden/engine/scenarios/scenarios'
+import { createFederalTaxCalculator } from '@retiregolden/engine/tax/federalTax'
 import { buildSurvivorAnalysis, candidateDeathAges, conversionLeverPatch } from './survivorAnalysis'
 
 let counter = 0

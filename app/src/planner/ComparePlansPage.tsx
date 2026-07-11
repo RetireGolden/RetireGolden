@@ -8,8 +8,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { listUserPlanSummaries, loadPlan, type PlanSummary } from '../data/planStore'
-import type { Plan } from '../engine/model/plan'
-import type { ProjectionSummary } from '../engine/projection/compare'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import type { ProjectionSummary } from '@retiregolden/engine/projection/compare'
 import { fmtMoneyCompact } from './format'
 import { projectPlan, type ProjectionView } from './useProjection'
 

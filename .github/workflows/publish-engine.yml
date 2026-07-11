@@ -1,0 +1,85 @@
+# Publishes @retiregolden/engine to npm.
+#
+# Trigger by pushing a tag `engine-v<version>` (must match the version in
+# packages/engine/package.json), or manually via workflow_dispatch — the
+# manual run defaults to `npm publish --dry-run` so the pipeline can be
+# rehearsed without releasing.
+#
+# Requires the `NPM_TOKEN` repository secret: a granular npm automation token
+# for the @retiregolden org with publish rights on @retiregolden/engine.
+
+name: Publish engine package
+
+on:
+  push:
+    tags: ['engine-v*']
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Use npm publish --dry-run (no release)
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+permissions:
+  contents: read
+  id-token: write # npm --provenance
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      # This workflow holds npm publish rights, so its actions are pinned to
+      # full commit SHAs (tags are mutable and can be repointed upstream).
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check tag matches package version
+        if: startsWith(github.ref, 'refs/tags/engine-v')
+        run: |
+          tag="${GITHUB_REF_NAME#engine-v}"
+          version="$(node -p "require('./packages/engine/package.json').version")"
+          if [ "$tag" != "$version" ]; then
+            echo "Tag engine-v$tag does not match packages/engine version $version" >&2
+            exit 1
+          fi
+
+      - name: Lint
+        run: npm run lint -w @retiregolden/engine
+
+      - name: Build
+        run: npm run build -w @retiregolden/engine
+
+      - name: Test
+        run: npm run test -w @retiregolden/engine
+
+      # Prove the published surface (exports map + emitted dist) from plain
+      # Node ESM, the way an external consumer will use it — the workspace
+      # dev loop aliases the package to its TS source and never exercises it.
+      - name: Smoke test the packed artifact
+        run: node packages/engine/scripts/pack-smoke.mjs
+
+      - name: Publish to npm
+        working-directory: packages/engine
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          extra=""
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ "$DRY_RUN" != "false" ]; then
+            extra="--dry-run"
+          fi
+          npm publish --access public --provenance $extra

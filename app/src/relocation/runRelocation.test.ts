@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { singlePersonPlan, traditionalAccount, validatePlan } from '../testSupport/planFixtures'
+import { singlePersonPlan, traditionalAccount, validatePlan } from '@retiregolden/engine/testing/planFixtures'
 import { runRelocationCompare } from './runner'
 import { runRelocationCompareRequest } from './runRelocation'
 

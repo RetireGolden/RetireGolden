@@ -1,6 +1,6 @@
 /** High balances: RMDs and IRMAA — large traditional balances push MAGI into Medicare tiers. */
 
-import { createEmptyPlan, parsePlan, type Plan } from '../../engine/model/plan'
+import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
 import { exampleEntityId, exampleFixedNow, exampleIdFactory } from './buildContext'
 
 const EXAMPLE_ID = 'rmd-irmaa'

@@ -4,14 +4,14 @@
  * Float64Array only.
  */
 
-import type { Plan } from '../engine/model/plan'
-import type { AnnuitizationSweep } from '../engine/decisions/annuitization'
-import type { StochasticFrontierPoint } from '../engine/montecarlo/frontiers'
-import type { HistoricalStressSuiteKind } from '../engine/montecarlo/historicalSuites'
-import type { LtcShockParams } from '../engine/montecarlo/ltcShock'
-import type { MarketModelConfig } from '../engine/montecarlo/marketModels'
-import type { RiskBasedGuardrailSolution } from '../engine/montecarlo/riskBasedGuardrails'
-import type { MonteCarloPathsResult } from '../engine/montecarlo/run'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import type { AnnuitizationSweep } from '@retiregolden/engine/decisions/annuitization'
+import type { StochasticFrontierPoint } from '@retiregolden/engine/montecarlo/frontiers'
+import type { HistoricalStressSuiteKind } from '@retiregolden/engine/montecarlo/historicalSuites'
+import type { LtcShockParams } from '@retiregolden/engine/montecarlo/ltcShock'
+import type { MarketModelConfig } from '@retiregolden/engine/montecarlo/marketModels'
+import type { RiskBasedGuardrailSolution } from '@retiregolden/engine/montecarlo/riskBasedGuardrails'
+import type { MonteCarloPathsResult } from '@retiregolden/engine/montecarlo/run'
 
 export interface McWorkerRequest {
   kind: 'monteCarlo'

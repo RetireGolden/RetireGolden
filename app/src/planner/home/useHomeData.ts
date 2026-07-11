@@ -11,7 +11,7 @@ import {
   type PlanSummary,
 } from '../../data/planStore'
 import { normalizePlansForImport, parseV2Backup, serializeV2Backup } from '../../data/v2Backup'
-import { type Plan } from '../../engine/model/plan'
+import { type Plan } from '@retiregolden/engine/model/plan'
 import { useDialogs } from '../dialogs'
 import { importErrorMessage } from './importErrorMessage'
 

@@ -1,7 +1,7 @@
 import { readLocal, removeLocal, writeLocal } from '../data/localStore'
 import { LONGEVITY_PARTNER_STORAGE_KEY, LONGEVITY_STORAGE_KEY } from './constants'
 import { parseLongevityPersistedLoose } from './persistedGuard'
-import type { LongevityPersisted } from './types'
+import type { LongevityPersisted } from '@retiregolden/engine/longevity/types'
 
 export function loadLongevity(): LongevityPersisted | null {
   try {

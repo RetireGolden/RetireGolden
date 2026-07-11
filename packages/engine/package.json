@@ -1,0 +1,75 @@
+{
+  "name": "@retiregolden/engine",
+  "version": "0.1.0",
+  "description": "Pure-TypeScript retirement-planning engine: year-by-year household projection with federal + state taxes, Social Security, RMDs, Roth conversions, withdrawal strategies, Monte Carlo, and an LP optimizer. Deterministic, no DOM, no network.",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RetireGolden/RetireGolden.git",
+    "directory": "packages/engine"
+  },
+  "homepage": "https://github.com/RetireGolden/RetireGolden/tree/main/packages/engine#readme",
+  "bugs": "https://github.com/RetireGolden/RetireGolden/issues",
+  "keywords": [
+    "retirement",
+    "financial-planning",
+    "social-security",
+    "roth-conversion",
+    "monte-carlo",
+    "tax"
+  ],
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./decisions": {
+      "types": "./dist/decisions/index.d.ts",
+      "default": "./dist/decisions/index.js"
+    },
+    "./params": {
+      "types": "./dist/params/index.d.ts",
+      "default": "./dist/params/index.js"
+    },
+    "./params/state": {
+      "types": "./dist/params/state/index.d.ts",
+      "default": "./dist/params/state/index.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "lint": "eslint .",
+    "test": "tsc -p tsconfig.test.json && vitest run",
+    "test:coverage": "tsc -p tsconfig.test.json && vitest run --coverage",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "highs": "^1.14.2",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@vitest/coverage-v8": "^4.1.6",
+    "eslint": "^10.3.0",
+    "globals": "^17.6.0",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.59.2",
+    "vitest": "^4.0.16"
+  }
+}

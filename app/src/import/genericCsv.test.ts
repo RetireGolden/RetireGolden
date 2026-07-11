@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { parsePlan } from '../engine/model/plan'
+import { parsePlan } from '@retiregolden/engine/model/plan'
 import { analyzeGenericCsv, draftPlanFromGenericCsv, guessColumnRole, type ColumnRole } from './genericCsv'
 
 let n = 0

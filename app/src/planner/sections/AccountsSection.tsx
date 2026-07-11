@@ -1,6 +1,6 @@
 /** Accounts section: add/edit accounts. */
 
-import type { Account } from '../../engine/model/plan'
+import type { Account } from '@retiregolden/engine/model/plan'
 import { AccountFields } from './AccountFields'
 import { ACCOUNT_LABEL, isIndividuallyOwnedAccount } from './sectionHelpers'
 import { usePlan } from '../planContextCore'

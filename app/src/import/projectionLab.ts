@@ -11,8 +11,8 @@
  * the user's own exported file, parsed in the browser.
  */
 
-import type { Account, Plan } from '../engine/model/plan'
-import { createEmptyPlan, parsePlan } from '../engine/model/plan'
+import type { Account, Plan } from '@retiregolden/engine/model/plan'
+import { createEmptyPlan, parsePlan } from '@retiregolden/engine/model/plan'
 import { MAX_REASONABLE_DOLLARS, parseMoney } from './csv'
 import type { ImportReviewItem } from './reviewChecklist'
 

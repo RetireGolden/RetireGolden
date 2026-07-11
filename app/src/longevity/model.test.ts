@@ -3,7 +3,7 @@ import {
   baselineRemainingYears,
   FEMALE,
   MALE,
-} from './ssaPeriod2022'
+} from '@retiregolden/engine/longevity/ssaPeriod2022'
 import { computeLongevity } from './model'
 
 describe('ssaPeriod2022', () => {

@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 
-import type { GoalFlexibility, SpendingClassification, SpendingPolicy } from '../../engine/model/plan'
-import { annualDeltaPhases, spendingShapePhases, type SpendingShapeId } from '../../engine/spending/shapePresets'
-import { startingInvestableOf, type RiskBasedGuardrailSolution } from '../../engine/montecarlo/riskBasedGuardrails'
+import type { GoalFlexibility, SpendingClassification, SpendingPolicy } from '@retiregolden/engine/model/plan'
+import { annualDeltaPhases, spendingShapePhases, type SpendingShapeId } from '@retiregolden/engine/spending/shapePresets'
+import { startingInvestableOf, type RiskBasedGuardrailSolution } from '@retiregolden/engine/montecarlo/riskBasedGuardrails'
 import { runRiskBasedGuardrailSolve } from '../../mc/pool'
 import { usePlan } from '../planContextCore'
 import { CheckboxField, MoneyField, NumberField, PercentField, SelectField, TextField } from '../fields'

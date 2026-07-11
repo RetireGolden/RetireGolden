@@ -27,8 +27,12 @@ terminals/
 .codex-artifacts/
 .impeccable/
 
-# Stray tool caches at the repo root (real deps live in app/node_modules)
-/node_modules/
+# Workspace dependencies (npm hoists to the repo root)
+node_modules/
+
+# Package build & test artifacts
+packages/engine/dist/
+packages/engine/coverage/
 
 # App build & test artifacts
 app/dist

@@ -10,8 +10,8 @@
  * otherwise. All parsing is client-side on hostile input; see csv.ts.
  */
 
-import type { Account, Plan } from '../engine/model/plan'
-import { createEmptyPlan, parsePlan } from '../engine/model/plan'
+import type { Account, Plan } from '@retiregolden/engine/model/plan'
+import { createEmptyPlan, parsePlan } from '@retiregolden/engine/model/plan'
 import { findColumn, parseCsv, parseMoney } from './csv'
 import type { ImportReviewItem } from './reviewChecklist'
 

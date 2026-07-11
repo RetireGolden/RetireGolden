@@ -20,9 +20,9 @@
  * projection engine. See DOCS/features/social-security.md.
  */
 
-import { FEMALE, MALE } from '../longevity/ssaPeriod2022'
-import type { Sex } from '../longevity/types'
-import { claimFactor, spousalBenefitFactor, type ClaimAge } from './claimFactor'
+import { FEMALE, MALE } from '@retiregolden/engine/longevity/ssaPeriod2022'
+import type { Sex } from '@retiregolden/engine/longevity/types'
+import { claimFactor, spousalBenefitFactor, type ClaimAge } from '@retiregolden/engine/socialSecurity/claimFactor'
 
 function table(sex: Sex): readonly number[] {
   return sex === 'male' ? MALE : sex === 'female' ? FEMALE : MALE // 'average' handled in remainingYears

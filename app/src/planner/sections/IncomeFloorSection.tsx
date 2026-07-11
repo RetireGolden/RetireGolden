@@ -8,19 +8,17 @@
 
 import { useMemo, useState } from 'react'
 
-import type { TipsLadder } from '../../engine/model/plan'
-import { EMBEDDED_REAL_YIELD_CURVE } from '../../engine/params'
-import { buildLadder, type LadderBuild } from '../../engine/ladder/ladderMath'
-import { computeFundedRatio } from '../../engine/ladder/fundedRatio'
+import type { TipsLadder } from '@retiregolden/engine/model/plan'
+import { EMBEDDED_REAL_YIELD_CURVE } from '@retiregolden/engine/params'
+import { buildLadder, type LadderBuild } from '@retiregolden/engine/ladder/ladderMath'
+import { computeFundedRatio } from '@retiregolden/engine/ladder/fundedRatio'
 import {
   FEDINVEST_PAGE_URL,
-  fetchFedInvestTips,
-  importFedInvestCsv,
   latestPriceDateIso,
   nearestTipsForYear,
-  readFedInvestCache,
   type FedInvestSnapshot,
-} from '../../engine/ladder/fedInvest'
+} from '@retiregolden/engine/ladder/fedInvest'
+import { fetchFedInvestTips, importFedInvestCsv, readFedInvestCache } from '../../data/fedInvestClient'
 import { LearnAboutScreen } from '../../learn/LearnAboutScreen'
 import { LearnLink } from '../../learn/LearnLink'
 import { LEARN } from '../learnLinks'

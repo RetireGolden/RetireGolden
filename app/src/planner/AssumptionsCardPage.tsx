@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-import { PARAMETER_PROVENANCE } from '../engine/params'
+import { PARAMETER_PROVENANCE } from '@retiregolden/engine/params'
 import { usePlan } from './planContextCore'
 import { currentStartYear } from './useProjection'
 import {

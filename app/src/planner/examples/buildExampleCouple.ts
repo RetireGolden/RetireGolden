@@ -1,7 +1,7 @@
 /** Example couple — the full picture: accounts, SS, Roth strategy, insurance, scenarios. */
 
-import { createEmptyPlan, parsePlan, type Plan } from '../../engine/model/plan'
-import { TRUSTEES_DEFAULT_SS_HAIRCUT } from '../../engine/params'
+import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
+import { TRUSTEES_DEFAULT_SS_HAIRCUT } from '@retiregolden/engine/params'
 import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory } from './buildContext'
 
 const EXAMPLE_ID = 'example-couple'

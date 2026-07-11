@@ -1,4 +1,4 @@
-import type { OptimizedSchedule } from '../engine/strategies/optimizer'
+import type { OptimizedSchedule } from '@retiregolden/engine/strategies/optimizer'
 import type { OptimizePostProcessing } from '../optimize/messages'
 
 export interface OptimizeChartRow {

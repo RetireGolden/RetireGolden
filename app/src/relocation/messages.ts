@@ -4,9 +4,9 @@
  * comparison rows are plain data (numbers, strings, small arrays).
  */
 
-import type { Plan } from '../engine/model/plan'
-import type { MarketModelConfig } from '../engine/montecarlo/marketModels'
-import type { RelocationCandidate, RelocationComparison } from '../engine/projection/relocation'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import type { MarketModelConfig } from '@retiregolden/engine/montecarlo/marketModels'
+import type { RelocationCandidate, RelocationComparison } from '@retiregolden/engine/projection/relocation'
 
 export interface RelocationCompareRequest {
   plan: Plan

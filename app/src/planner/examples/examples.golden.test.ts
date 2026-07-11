@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { summarizeProjection } from '../../engine/projection/compare'
-import { simulatePlan } from '../../engine/projection/simulate'
-import { combineTaxCalculators, createFederalTaxCalculator } from '../../engine/tax/federalTax'
-import { createStateTaxCalculator } from '../../engine/tax/stateTax'
+import { summarizeProjection } from '@retiregolden/engine/projection/compare'
+import { simulatePlan } from '@retiregolden/engine/projection/simulate'
+import { combineTaxCalculators, createFederalTaxCalculator } from '@retiregolden/engine/tax/federalTax'
+import { createStateTaxCalculator } from '@retiregolden/engine/tax/stateTax'
 import { EXAMPLE_FIXED_YEAR } from './buildContext'
 import { EXAMPLE_PLANS } from './registry'
 

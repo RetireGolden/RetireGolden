@@ -13,7 +13,7 @@ import {
   loadPlan,
   savePlan,
 } from './planStore'
-import { createEmptyPlan, parsePlan, type Plan } from '../engine/model/plan'
+import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
 import { EXAMPLE_PLANS } from '../planner/examples/registry'
 import { saveFreshDemo, saveExampleToMyPlans } from '../planner/examples/loadExample'
 import { serializeV2Backup, normalizePlansForImport } from './v2Backup'

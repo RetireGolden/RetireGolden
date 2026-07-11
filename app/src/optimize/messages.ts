@@ -5,8 +5,8 @@
  * like the Monte Carlo worker (see src/mc/runRequest.ts).
  */
 
-import type { ObjectivePolicyId } from '../engine/decisions'
-import type { Plan } from '../engine/model/plan'
+import type { ObjectivePolicyId } from '@retiregolden/engine/decisions'
+import type { Plan } from '@retiregolden/engine/model/plan'
 import type {
   ClaimAgeCoOptimization,
   ExactLedgerConvergenceDiagnostics,
@@ -14,8 +14,8 @@ import type {
   ExactLedgerScheduleAdjustment,
   ExactLedgerTournament,
   ExactLedgerValidation,
-} from '../engine/projection/optimizePlan'
-import type { OptimizedSchedule } from '../engine/strategies/optimizer'
+} from '@retiregolden/engine/projection/optimizePlan'
+import type { OptimizedSchedule } from '@retiregolden/engine/strategies/optimizer'
 
 export interface OptimizeRequest {
   plan: Plan

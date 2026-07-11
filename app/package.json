@@ -21,6 +21,7 @@
     "licenses": "node scripts/generate-third-party-notices.mjs"
   },
   "dependencies": {
+    "@retiregolden/engine": "^0.1.0",
     "highs": "^1.14.2",
     "idb": "^8.0.3",
     "react": "^19.2.6",

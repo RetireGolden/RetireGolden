@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 
-import { createEmptyPlan, type Plan } from '../../engine/model/plan'
+import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
 import { PlanCtx } from '../planContextCore'
 import { UpdateBalancesPanel } from './UpdateBalancesPanel'
 

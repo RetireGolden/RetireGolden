@@ -22,10 +22,10 @@ import {
   YAxis,
 } from 'recharts'
 
-import type { Plan } from '../engine/model/plan'
-import { startingInvestableOf } from '../engine/montecarlo/riskBasedGuardrails'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import { startingInvestableOf } from '@retiregolden/engine/montecarlo/riskBasedGuardrails'
 import { DEFAULT_PATH_COUNT } from '../mc/pool'
-import type { YearResult } from '../engine/projection/types'
+import type { YearResult } from '@retiregolden/engine/projection/types'
 import { usePlan } from './planContextCore'
 import { isPlanIncomplete } from './planCompleteness'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'

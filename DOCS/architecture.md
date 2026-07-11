@@ -28,12 +28,13 @@ Browser
 
 ## Headline decisions (and why)
 
-1. **Pure engine, React shell.** The financial math lives in a pure-TypeScript engine with a hard boundary
-from the UI, enforced by ESLint (`app/eslint.config.js`: `src/engine/**` may not import React, recharts,
-`idb`, app-layer code, or touch `localStorage`/`indexedDB`/`document`/`window`). The engine is the
-product's durable asset; the UI is replaceable around it. The original app's SS and longevity math —
-roughly the highest-value third of the old codebase — ported forward into this engine; the shell, data
-model, and persistence were rebuilt around a plan-centric model.
+1. **Pure engine, React shell.** The financial math lives in a pure-TypeScript engine
+(`packages/engine`, published as `@retiregolden/engine`) with a hard boundary from the UI, enforced by
+ESLint (`packages/engine/eslint.config.js`: the engine may not import React, recharts, `idb`, app-layer
+code, or touch `localStorage`/`indexedDB`/`document`/`window`/`fetch`). The engine is the product's
+durable asset; the UI is replaceable around it. The original app's SS and longevity math — roughly the
+highest-value third of the old codebase — ported forward into this engine; the shell, data model, and
+persistence were rebuilt around a plan-centric model.
 2. **Local-first, browser-only, forever.** No backend. Static hosting stays free; privacy is structural,
 not a policy. JSON export/import is the portability and backup story. This is a permanent constraint,
 not a v1 limitation.
@@ -43,13 +44,16 @@ simplified model that could diverge.
 4. **Parameters are data, not code.** Tax brackets, limits, SSA tables, and Medicare/FPL numbers live in
 versioned parameter packs; the annual refresh is a data change (see [maintenance-schedule.md](maintenance-schedule.md)).
 
-> **Not a packages/ monorepo.** Earlier design docs proposed an `app/packages/{engine,params-data,ui}`
-npm-workspaces layout. That was never adopted — the engine/UI boundary is enforced by **folder
-discipline + ESLint** inside a single `app/src/` tree instead. This doc reflects current reality.
+> **Workspace layout.** The repo is an npm workspace: the engine is extracted into
+`packages/engine` and published to npm as **`@retiregolden/engine`** so downstream products (the
+commercial desktop edition) consume the identical code as a pinned dependency — fix once, ship twice.
+The web app depends on the package (Vite aliases it to the TypeScript source for dev/tests; `tsc -b`
+type-checks against the built `dist/` via a project reference). The purity boundary is enforced by the
+package's own ESLint config.
 
 ## Layers
 
-### Engine (`app/src/engine/`) — pure domain math
+### Engine (`packages/engine/src/`) — pure domain math
 
 Deterministic, unit-tested, no UI/DOM/storage imports. Subfolders:
 
@@ -68,12 +72,13 @@ Deterministic, unit-tested, no UI/DOM/storage imports. Subfolders:
 | `insights/` | Detector registry (guardrails, bridge gap, annuitization headroom, widow's penalty, relocation, …) |
 | `scenarios/` | Scenario patch apply/diff + side-by-side comparison |
 
-Social Security math (PIA from earnings, bend points, mySSA XML, break-even, marital benefits, claim
-factors, expected PV) lives in `src/socialSecurity/` — one home since the 2026-07-08 consolidation folded
-the old `engine/socialsecurity/` into it — and the life-table model in `src/longevity/`. These are pure
-modules consumed by the engine and planner.
+The ledger-consumed Social Security math (PIA from earnings, bend points, claim factors, marital/
+survivor benefits, family maximum, disability) lives in the package's `socialSecurity/`, and the SSA
+period life table + shared types in its `longevity/`. The app-side analysis features built on top of
+them (break-even, expected PV, explain, mySSA XML import) stay in `app/src/socialSecurity/`, and the
+longevity wizard UI in `app/src/longevity/`.
 
-### Data model and persistence (`app/src/engine/model/`, `app/src/data/`)
+### Data model and persistence (engine `model/`, `app/src/data/`)
 
 - A **`Plan`** is the whole household model (people, accounts, income streams, expenses, strategies,
   assumptions, scenarios). Zod schemas define it and infer the types; the same schemas validate imports and
@@ -92,7 +97,7 @@ modules consumed by the engine and planner.
   `'user'`). JSON backup/restore (`data/v2Backup.ts`) is the export envelope; import rekeys reserved
   `example:*` ids. `localStorage` is used only for UI prefs.
 
-### Simulation core (`app/src/engine/projection/simulate.ts`)
+### Simulation core (`packages/engine/src/projection/simulate.ts`)
 
 A deterministic annual ledger from the current year to end of plan. Each year, in order: income →
 contributions (limit-enforced) → spending need (phased + healthcare incl. IRMAA(MAGI[y−2]) / ACA) → RMDs →

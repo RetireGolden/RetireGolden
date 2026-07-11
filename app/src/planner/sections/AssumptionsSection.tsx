@@ -2,10 +2,10 @@
 
 import { Link } from 'react-router-dom'
 
-import type { AssetClassId } from '../../engine/model/plan'
-import { ASSET_CLASS_IDS } from '../../engine/model/plan'
-import { DEFAULT_ASSET_CLASS_PARAMS, resolveAssetClassParams } from '../../engine/allocation/assetClasses'
-import { LATEST_PACK_YEAR, TRUSTEES_DEFAULT_SS_HAIRCUT } from '../../engine/params'
+import type { AssetClassId } from '@retiregolden/engine/model/plan'
+import { ASSET_CLASS_IDS } from '@retiregolden/engine/model/plan'
+import { DEFAULT_ASSET_CLASS_PARAMS, resolveAssetClassParams } from '@retiregolden/engine/allocation/assetClasses'
+import { LATEST_PACK_YEAR, TRUSTEES_DEFAULT_SS_HAIRCUT } from '@retiregolden/engine/params'
 import { usePlan } from '../planContextCore'
 import { provenanceSource } from '../provenanceLinks'
 import { CheckboxField, MoneyField, NumberField, PercentField, SelectField } from '../fields'

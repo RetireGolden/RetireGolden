@@ -2,8 +2,8 @@
 
 import { useMemo } from 'react'
 
-import type { CareEvent, InsurancePolicy, Plan } from '../../engine/model/plan'
-import { compareLtcStress } from '../../engine/projection/compare'
+import type { CareEvent, InsurancePolicy, Plan } from '@retiregolden/engine/model/plan'
+import { compareLtcStress } from '@retiregolden/engine/projection/compare'
 import { usePlan } from '../planContextCore'
 import { CheckboxField, MoneyField, NumberField, PercentField, SelectField, TextField } from '../fields'
 import { LearnAboutScreen } from '../../learn/LearnAboutScreen'

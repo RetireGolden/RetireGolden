@@ -6,8 +6,8 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import { createEmptyPlan, parsePlan, type Plan } from '../engine/model/plan'
-import { PARAMETER_PROVENANCE } from '../engine/params'
+import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
+import { PARAMETER_PROVENANCE } from '@retiregolden/engine/params'
 import {
   assumptionsExportJson,
   assumptionsExportText,

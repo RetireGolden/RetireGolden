@@ -2,7 +2,7 @@
 
 import { createContext, useContext } from 'react'
 
-import type { Plan } from '../engine/model/plan'
+import type { Plan } from '@retiregolden/engine/model/plan'
 
 export type SaveState = 'loading' | 'saved' | 'saving' | 'dirty' | 'invalid' | 'error'
 

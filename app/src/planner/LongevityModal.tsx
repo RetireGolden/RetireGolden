@@ -8,7 +8,7 @@ import { useCallback } from 'react'
 
 import { LongevityWizard } from '../longevity/LongevityWizard'
 import { loadLongevity, loadLongevityPartner } from '../longevity/storage'
-import type { Person } from '../engine/model/plan'
+import type { Person } from '@retiregolden/engine/model/plan'
 import { Modal } from './Modal'
 
 export interface LongevityModalProps {

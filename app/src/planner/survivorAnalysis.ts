@@ -13,11 +13,11 @@
  * equivalent scenario by hand (guarded by tests).
  */
 
-import type { Plan } from '../engine/model/plan'
-import { applyScenarioPatch } from '../engine/scenarios/scenarios'
-import { summarizeProjection } from '../engine/projection/compare'
-import { simulatePlan } from '../engine/projection/simulate'
-import type { ProjectedFilingStatus, ProjectionResult, TaxCalculator } from '../engine/projection/types'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import { applyScenarioPatch } from '@retiregolden/engine/scenarios/scenarios'
+import { summarizeProjection } from '@retiregolden/engine/projection/compare'
+import { simulatePlan } from '@retiregolden/engine/projection/simulate'
+import type { ProjectedFilingStatus, ProjectionResult, TaxCalculator } from '@retiregolden/engine/projection/types'
 
 export const SURVIVOR_DEATH_AGES = [70, 75, 80, 85, 90] as const
 
