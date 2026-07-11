@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 
 import { readLocal, STORAGE_KEYS, writeLocal } from '../../data/localStore'
-import type { PlanSummary } from '../../data/planStore'
+import type { PlanSummary } from '../../data/planStoreContext'
 
 export const WELCOME_DISMISSED_KEY = STORAGE_KEYS.homeWelcomeDismissed
 

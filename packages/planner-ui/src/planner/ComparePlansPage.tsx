@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-import { listUserPlanSummaries, loadPlan, type PlanSummary } from '../data/planStore'
+import { listPlansVia, loadPlanVia, usePlanStore, type PlanSummary } from '../data/planStoreContext'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import type { ProjectionSummary } from '@retiregolden/engine/projection/compare'
 import { fmtMoneyCompact } from './format'
@@ -65,6 +65,7 @@ function MetricRow({
 }
 
 export function ComparePlansPage() {
+  const store = usePlanStore()
   const [summaries, setSummaries] = useState<PlanSummary[] | null>(null)
   const [leftId, setLeftId] = useState('')
   const [rightId, setRightId] = useState('')
@@ -73,12 +74,12 @@ export function ComparePlansPage() {
   const [notice, setNotice] = useState<string | null>(null)
 
   useEffect(() => {
-    void listUserPlanSummaries().then((items) => {
+    void listPlansVia(store).then((items) => {
       setSummaries(items)
       setLeftId(items[0]?.id ?? '')
       setRightId(items.find((p) => p.id !== items[0]?.id)?.id ?? '')
     })
-  }, [])
+  }, [store])
 
   useEffect(() => {
     let cancelled = false
@@ -87,7 +88,7 @@ export function ComparePlansPage() {
         setter(null)
         return
       }
-      const r = await loadPlan(id)
+      const r = await loadPlanVia(store, id)
       if (cancelled) return
       if (r.ok) setter({ plan: r.plan, view: projectPlan(r.plan) })
       else {
@@ -100,7 +101,7 @@ export function ComparePlansPage() {
     return () => {
       cancelled = true
     }
-  }, [leftId, rightId])
+  }, [leftId, rightId, store])
 
   const options = summaries ?? []
   const canCompare = left !== null && right !== null && left.plan.id !== right.plan.id

@@ -347,7 +347,7 @@ describe('useHomeMode localStorage safety', () => {
       throw new Error('blocked')
     })
     const mode: HomeMode = deriveHomeMode([
-      { id: 'a', name: 'X', updatedAtIso: '2026-01-01T00:00:00.000Z', origin: 'user' },
+      { id: 'a', name: 'X', updatedAtIso: '2026-01-01T00:00:00.000Z' },
     ])
     expect(mode).toBe('returning')
     expect(isWelcomeExpanded(mode, true)).toBe(false)

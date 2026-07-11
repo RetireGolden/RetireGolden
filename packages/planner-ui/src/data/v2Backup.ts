@@ -76,11 +76,12 @@ export function parseV2Backup(json: string): ParseV2BackupResult {
 
 /**
  * On import, demos become user plans and reserved `example:*` ids are rekeyed
- * so they cannot collide with library demo slots.
+ * so they cannot collide with library demo slots. `existingIds` is every id
+ * already taken (host store plans + browser demo slots — see
+ * `listKnownPlanIdsVia`); when omitted, the browser store supplies them.
  */
-export async function normalizePlansForImport(plans: Plan[]): Promise<Plan[]> {
-  const existing = new Set((await listPlanSummaries()).map((s) => s.id))
-  const used = new Set(existing)
+export async function normalizePlansForImport(plans: Plan[], existingIds?: Iterable<string>): Promise<Plan[]> {
+  const used = new Set(existingIds ?? (await listPlanSummaries()).map((s) => s.id))
   const normalized: Plan[] = []
 
   for (const plan of plans) {

@@ -1,15 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+// "Clear all data" wipes this browser (IndexedDB + localStorage) by design,
+// so it stays on the browser store rather than the seam — the home surface
+// is a web-only route and the promise it makes is device-scoped.
+import { clearAllPlans } from '../../data/planStore'
 import {
-  clearAllPlans,
-  duplicatePlan,
-  listUserPlanSummaries,
-  loadPlan,
-  savePlan,
-  deletePlan,
+  deletePlanVia,
+  duplicatePlanVia,
+  listKnownPlanIdsVia,
+  listPlansVia,
+  loadPlanVia,
+  savePlanVia,
+  usePlanStore,
   type PlanSummary,
-} from '../../data/planStore'
+} from '../../data/planStoreContext'
 import { normalizePlansForImport, parseV2Backup, serializeV2Backup } from '../../data/v2Backup'
 import { type Plan } from '@retiregolden/engine/model/plan'
 import { useDialogs } from '../dialogs'
@@ -17,6 +22,7 @@ import { importErrorMessage } from './importErrorMessage'
 
 export function useHomeData() {
   const navigate = useNavigate()
+  const store = usePlanStore()
   const [plans, setPlans] = useState<PlanSummary[] | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   // A just-deleted plan, held in memory for a brief undo window. The delete is
@@ -28,8 +34,8 @@ export function useHomeData() {
   const { confirm, prompt, dialogs } = useDialogs()
 
   const refresh = useCallback(() => {
-    void listUserPlanSummaries().then(setPlans)
-  }, [])
+    void listPlansVia(store).then(setPlans)
+  }, [store])
 
   const clearUndoTimer = () => {
     if (undoTimer.current !== null) {
@@ -47,16 +53,16 @@ export function useHomeData() {
   const openPlan = (id: string) => navigate(`/plan/${id}`)
 
   const createAndOpen = async (plan: Plan) => {
-    const r = await savePlan(plan)
+    const r = await savePlanVia(store, plan)
     if (r.ok) openPlan(r.plan.id)
     else setNotice(`Could not save the new plan: ${r.issues.join('; ')}`)
   }
 
   const handleExportAll = async () => {
-    const summaries = await listUserPlanSummaries()
+    const summaries = await listPlansVia(store)
     const loaded: Plan[] = []
     for (const s of summaries) {
-      const r = await loadPlan(s.id)
+      const r = await loadPlanVia(store, s.id)
       if (r.ok) loaded.push(r.plan)
     }
     const blob = new Blob([serializeV2Backup(loaded)], { type: 'application/json' })
@@ -73,8 +79,8 @@ export function useHomeData() {
       setNotice(importErrorMessage(r.reason))
       return
     }
-    const normalized = await normalizePlansForImport(r.plans)
-    for (const p of normalized) await savePlan(p)
+    const normalized = await normalizePlansForImport(r.plans, await listKnownPlanIdsVia(store))
+    for (const p of normalized) await savePlanVia(store, p)
     setNotice(
       `Imported ${normalized.length} plan${normalized.length === 1 ? '' : 's'}.` +
         (r.warnings.length > 0 ? ` Skipped: ${r.warnings.join('; ')}` : ''),
@@ -90,7 +96,7 @@ export function useHomeData() {
       confirmLabel: 'Duplicate',
     })
     if (name === null) return
-    const r = await duplicatePlan(s.id, { name })
+    const r = await duplicatePlanVia(store, s.id, { name })
     if (r.ok) {
       setNotice(`Duplicated "${s.name}" as "${r.plan.name}".`)
       refresh()
@@ -107,8 +113,8 @@ export function useHomeData() {
       danger: true,
     })
     if (!ok) return
-    const loaded = await loadPlan(s.id)
-    await deletePlan(s.id)
+    const loaded = await loadPlanVia(store, s.id)
+    await deletePlanVia(store, s.id)
     refresh()
     if (loaded.ok) {
       clearUndoTimer()
@@ -125,7 +131,7 @@ export function useHomeData() {
     // lands — if the save fails, the user must not lose both the plan and
     // the affordance at once.
     try {
-      const r = await savePlan(restored)
+      const r = await savePlanVia(store, restored)
       if (r.ok) {
         setUndoPlan(null)
         refresh()

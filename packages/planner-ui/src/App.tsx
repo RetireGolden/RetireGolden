@@ -5,6 +5,8 @@ import { DisclaimerPage } from './planner/DisclaimerPage'
 import { RouteErrorBoundary } from './RouteErrorBoundary.tsx'
 import { RouteFallback } from './routes/RouteFallback'
 import { readLocal, STORAGE_KEYS, writeLocal } from './data/localStore'
+import { indexedDbPlanStore, type PlanStore } from './data/planStoreContext'
+import { PlanStoreProvider } from './data/PlanStoreProvider'
 import { ReportBrandingContext } from './report/brandingContext'
 import type { ReportBranding } from './report/reportHtml'
 import './planner/planner.css'
@@ -67,9 +69,16 @@ export interface PlannerAppProps {
    * (override the custom properties from index.css).
    */
   reportBranding?: ReportBranding
+  /**
+   * Plan storage for the planner (see `PlanStore` in the package exports).
+   * Omit it and plans persist in the browser via IndexedDB, exactly as on
+   * retiregolden.app. Pass a stable instance — the planner reloads when the
+   * store's identity changes.
+   */
+  planStore?: PlanStore
 }
 
-export function App({ reportBranding }: PlannerAppProps = {}) {
+export function App({ reportBranding, planStore }: PlannerAppProps = {}) {
   const location = useLocation()
   const isLanding = location.pathname === '/' || location.pathname === '/examples'
   const [themeMode, setThemeMode] = useState<ThemeMode>(getInitialThemeMode)
@@ -122,6 +131,7 @@ export function App({ reportBranding }: PlannerAppProps = {}) {
       : '/brand/retiregolden-logo-lockup-light.png'
 
   return (
+    <PlanStoreProvider store={planStore ?? indexedDbPlanStore}>
     <ReportBrandingContext.Provider value={reportBranding ?? null}>
     <div className={`app-shell planner-shell${isLanding ? ' app-shell--landing' : ''}`}>
       <a className="skip-link" href="#main-content">
@@ -242,5 +252,6 @@ export function App({ reportBranding }: PlannerAppProps = {}) {
       </footer>
     </div>
     </ReportBrandingContext.Provider>
+    </PlanStoreProvider>
   )
 }
