@@ -105,7 +105,7 @@ insight preview:
 
 ## Adding a Learning Center article
 
-Content is **structured TypeScript** under `app/src/learn/content/` registered in `learningRegistry.ts` —
+Content is **structured TypeScript** under `packages/planner-ui/src/learn/content/` registered in `learningRegistry.ts` —
 not Markdown/MDX. Each article carries metadata (`slug`, `category`, `status`, `lastReviewed`,
 `reviewCadence`, `currentYearSensitive`, `sourceUrls`, `relatedPlannerRoutes`). Rule-heavy articles must set
 `currentYearSensitive` and a `reviewCadence`, cite primary sources (IRS/SSA/CMS), and avoid hardcoding
@@ -118,5 +118,5 @@ current-year dollars in evergreen prose. Follow the full style guide and topic i
 Keep these docs **ground truth**. When you ship a feature, update the relevant `features/*` doc and
 [domain/domain-rules-reference.md](domain/domain-rules-reference.md) in the same change — describe what the
 code does and why, not a plan to build it. If you find the docs and code disagree, fix the doc immediately
-to match the implementation. Do not trust a roadmap-style status line over the code — verify against `app/src`.
+to match the implementation. Do not trust a roadmap-style status line over the code — verify against the source (`packages/*/src`, `app/src`).
 Historical audits are preserved in git history.

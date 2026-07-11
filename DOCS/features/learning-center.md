@@ -7,9 +7,9 @@ engine-light — it adds no financial calculations or runtime services, only a
 navigation surface, a content authoring/rendering pattern, article standards,
 contextual links from the planner, and the body of educational content itself.
 
-**Code:** [app/src/learn/](../../app/src/learn/) — pages (`LearningCenterPage`,
+**Code:** [packages/planner-ui/src/learn/](../../packages/planner-ui/src/learn/) — pages (`LearningCenterPage`,
 `ArticlePage`, `GlossaryPage`, `SourcesPage`), the article registry
-([learningRegistry.ts](../../app/src/learn/learningRegistry.ts)), reusable blocks under
+([learningRegistry.ts](../../packages/planner-ui/src/learn/learningRegistry.ts)), reusable blocks under
 `components/`, and ~100 articles authored as structured TypeScript under `content/`.
 
 This document is the **authoring standard**: the product stance, information
@@ -86,7 +86,7 @@ inventory. After that, articles can land in small batches as token budget allows
 
 ## 4. Current app context
 
-- `app/src/App.tsx` has primary navigation for Planner and Disclaimer.
+- `packages/planner-ui/src/App.tsx` has primary navigation for Planner and Disclaimer.
 - Planner routes live under `/plan/:planId/*` with `PlanWorkspace` as the shell.
 - `PlanWorkspace` has a rail for Household, Social Security, Accounts,
   Insurance, Income, Spending, Strategy, Assumptions, Results, Social Security
@@ -99,7 +99,7 @@ inventory. After that, articles can land in small batches as token budget allows
   charts live in the planner, while the conceptual narrative belongs in the Learning Center.
 
 The Learning Center reuses the existing React Router shell and planner visual
-language, while giving content its own structure under `app/src/learn/`.
+language, while giving content its own structure under `packages/planner-ui/src/learn/`.
 
 ## 5. Scope
 
@@ -222,10 +222,10 @@ Initial category set:
 
 Articles are authored as **structured TypeScript** so prose, visuals, and metadata
 live together, bundle for offline use, and stay type-safe. The content lives under
-`app/src/learn/`:
+`packages/planner-ui/src/learn/`:
 
 ```text
-app/src/learn/
+packages/planner-ui/src/learn/
   LearningCenterPage.tsx
   ArticlePage.tsx
   GlossaryPage.tsx
@@ -251,7 +251,7 @@ tooling and keeps every article type-checked against the registry.
 
 ### 7.2 Article metadata
 
-Article metadata is defined in [learningRegistry.ts](../../app/src/learn/learningRegistry.ts) (the source of truth):
+Article metadata is defined in [learningRegistry.ts](../../packages/planner-ui/src/learn/learningRegistry.ts) (the source of truth):
 
 ```ts
 type LearningArticle = {

@@ -42,6 +42,29 @@ export interface ReportRecommendationEvidence {
   claimAge: ReportClaimAgeEvidence | null
 }
 
+/**
+ * Host-supplied identity for downloaded reports — a generic composition hook
+ * (any host can pass any brand); omitting every field reproduces today's
+ * RetireGolden report byte for byte. Values are sanitized, not trusted: the
+ * report's no-script guarantee must hold whatever the host passes.
+ */
+export interface ReportBranding {
+  /** Name used in the report <title>, the "prepared" line, and the download filename. Default: "RetireGolden". */
+  productName?: string
+  /** Letterhead logo. Must be a data:image/... URI so the report stays self-contained; anything else is ignored. */
+  logoDataUri?: string
+  /** Alt text for the logo; defaults to the product name. */
+  logoAlt?: string
+  /**
+   * Color for the letterhead rule under the header — hex, rgb()/hsl(), or a
+   * CSS named color; anything that doesn't parse as one falls back to the
+   * default RetireGolden gold.
+   */
+  accentColor?: string
+  /** Extra line rendered at the end of the report (e.g. a firm disclosure). Plain text; rendered escaped. */
+  footerNote?: string
+}
+
 export interface StandaloneReportInput {
   plan: Plan
   result: ProjectionResult
@@ -49,6 +72,62 @@ export interface StandaloneReportInput {
   startYear: number
   preparedAtIso?: string
   recommendationEvidence?: ReportRecommendationEvidence | null
+  branding?: ReportBranding | null
+}
+
+const DEFAULT_PRODUCT_NAME = 'RetireGolden'
+const DEFAULT_ACCENT_COLOR = '#B8860B'
+
+/**
+ * The accent is interpolated into a CSS context where escapeHtml doesn't
+ * apply, so it must positively parse as a color — a charset allowlist alone
+ * would still admit safe-charset non-colors (`not-a-color`, `calc(1px)`,
+ * IE-era `expression(...)`), which the browser drops as invalid
+ * declarations, silently losing the letterhead rule instead of falling back.
+ * Recognized: hex, rgb()/rgba()/hsl()/hsla() (comma or space syntax), and
+ * CSS named colors. Anything else falls back to the default.
+ */
+const HEX_COLOR = /^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/
+/** One rgb()/hsl() argument: a number with an optional %/angle unit, or CSS4 `none`. */
+const COLOR_FUNCTION_ARG = /^(?:none|-?(?:\d+\.?\d*|\.\d+)(?:e-?\d+)?(?:%|deg|grad|rad|turn)?)$/i
+// prettier-ignore
+const NAMED_COLORS = new Set(('aliceblue,antiquewhite,aqua,aquamarine,azure,beige,bisque,black,blanchedalmond,blue,' +
+  'blueviolet,brown,burlywood,cadetblue,chartreuse,chocolate,coral,cornflowerblue,cornsilk,crimson,cyan,darkblue,' +
+  'darkcyan,darkgoldenrod,darkgray,darkgreen,darkgrey,darkkhaki,darkmagenta,darkolivegreen,darkorange,darkorchid,' +
+  'darkred,darksalmon,darkseagreen,darkslateblue,darkslategray,darkslategrey,darkturquoise,darkviolet,deeppink,' +
+  'deepskyblue,dimgray,dimgrey,dodgerblue,firebrick,floralwhite,forestgreen,fuchsia,gainsboro,ghostwhite,gold,' +
+  'goldenrod,gray,green,greenyellow,grey,honeydew,hotpink,indianred,indigo,ivory,khaki,lavender,lavenderblush,' +
+  'lawngreen,lemonchiffon,lightblue,lightcoral,lightcyan,lightgoldenrodyellow,lightgray,lightgreen,lightgrey,' +
+  'lightpink,lightsalmon,lightseagreen,lightskyblue,lightslategray,lightslategrey,lightsteelblue,lightyellow,lime,' +
+  'limegreen,linen,magenta,maroon,mediumaquamarine,mediumblue,mediumorchid,mediumpurple,mediumseagreen,' +
+  'mediumslateblue,mediumspringgreen,mediumturquoise,mediumvioletred,midnightblue,mintcream,mistyrose,moccasin,' +
+  'navajowhite,navy,oldlace,olive,olivedrab,orange,orangered,orchid,palegoldenrod,palegreen,paleturquoise,' +
+  'palevioletred,papayawhip,peachpuff,peru,pink,plum,powderblue,purple,rebeccapurple,red,rosybrown,royalblue,' +
+  'saddlebrown,salmon,sandybrown,seagreen,seashell,sienna,silver,skyblue,slateblue,slategray,slategrey,snow,' +
+  'springgreen,steelblue,tan,teal,thistle,tomato,transparent,turquoise,violet,wheat,white,whitesmoke,yellow,' +
+  'yellowgreen').split(','))
+
+function isCssColor(value: string): boolean {
+  if (HEX_COLOR.test(value)) return true
+  const colorFunction = /^(?:rgb|rgba|hsl|hsla)\((.*)\)$/i.exec(value)
+  if (colorFunction) {
+    const args = colorFunction[1].trim().split(/\s*[,/]\s*|\s+/)
+    return args.length >= 3 && args.length <= 4 && args.every((arg) => COLOR_FUNCTION_ARG.test(arg))
+  }
+  return NAMED_COLORS.has(value.toLowerCase())
+}
+
+function safeCssColor(value: string | undefined): string {
+  const trimmed = value?.trim()
+  if (!trimmed) return DEFAULT_ACCENT_COLOR
+  return trimmed.length <= 64 && isCssColor(trimmed) ? trimmed : DEFAULT_ACCENT_COLOR
+}
+
+/** Only self-contained raster/svg data URIs; <img> never executes SVG scripts. */
+function safeLogoDataUri(value: string | undefined): string | null {
+  const trimmed = value?.trim()
+  if (!trimmed) return null
+  return /^data:image\/(png|jpeg|gif|webp|svg\+xml|avif);base64,[a-zA-Z0-9+/=]+$/.test(trimmed) ? trimmed : null
 }
 
 const CATEGORIES = ['cash', 'taxable', 'equityComp', 'traditional', 'roth', 'hsa'] as const
@@ -350,18 +429,28 @@ function balanceChartData(plan: Plan, result: ProjectionResult): string {
 export function buildStandaloneReportHtml(input: StandaloneReportInput): string {
   const preparedAtIso = input.preparedAtIso ?? new Date().toISOString()
   const csvData = escapeHtml(balanceChartData(input.plan, input.result))
+  const branding = input.branding ?? {}
+  const productName = branding.productName?.trim() || DEFAULT_PRODUCT_NAME
+  const accentColor = safeCssColor(branding.accentColor)
+  const logoDataUri = safeLogoDataUri(branding.logoDataUri)
+  const logoHtml = logoDataUri
+    ? `<img class="report-logo" src="${escapeHtml(logoDataUri)}" alt="${escapeHtml(branding.logoAlt?.trim() || productName)}">\n`
+    : ''
+  const logoCss = logoDataUri ? '.report-logo { display: block; max-height: 56px; max-width: 280px; margin-bottom: 12px; }\n' : ''
+  const footerNote = branding.footerNote?.trim()
+  const footerNoteHtml = footerNote ? `\n<p class="muted">${escapeHtml(footerNote)}</p>` : ''
   return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${escapeHtml(input.plan.name)} - RetireGolden report</title>
+<title>${escapeHtml(input.plan.name)} - ${escapeHtml(productName)} report</title>
 <style>
 :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #12342b; background: #f7fbf8; }
 body { margin: 0; }
 main { max-width: 1040px; margin: 0 auto; padding: 32px 20px 56px; }
-header { border-bottom: 3px solid #B8860B; margin-bottom: 24px; padding-bottom: 18px; }
-h1 { font-size: 2rem; margin: 0 0 6px; }
+header { border-bottom: 3px solid ${accentColor}; margin-bottom: 24px; padding-bottom: 18px; }
+${logoCss}h1 { font-size: 2rem; margin: 0 0 6px; }
 h2 { border-bottom: 1px solid #cfe2d8; font-size: 1.25rem; margin: 32px 0 12px; padding-bottom: 6px; }
 h3 { font-size: 1rem; margin: 18px 0 8px; }
 p, li { line-height: 1.5; }
@@ -379,8 +468,8 @@ pre { background: #f0f5f2; border: 1px solid #dceae3; border-radius: 8px; max-he
 <body>
 <main>
 <header>
-<h1>${escapeHtml(input.plan.name)}</h1>
-<p class="muted">RetireGolden self-contained HTML report prepared ${escapeHtml(dateLabel(preparedAtIso))}. Projection start year: ${input.startYear}.</p>
+${logoHtml}<h1>${escapeHtml(input.plan.name)}</h1>
+<p class="muted">${escapeHtml(productName)} self-contained HTML report prepared ${escapeHtml(dateLabel(preparedAtIso))}. Projection start year: ${input.startYear}.</p>
 </header>
 <p class="disclaimer">Educational illustration only - not tax, legal, financial, or medical advice. Figures are projections based on the assumptions below and will differ from actual results.</p>
 ${headlineSection(input.summary, input.result)}
@@ -395,7 +484,7 @@ ${provenanceSection()}
 <details>
 <summary>Embedded chart/automation data CSV</summary>
 <pre>${csvData}</pre>
-</details>
+</details>${footerNoteHtml}
 </main>
 </body>
 </html>`

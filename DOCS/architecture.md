@@ -44,12 +44,16 @@ simplified model that could diverge.
 4. **Parameters are data, not code.** Tax brackets, limits, SSA tables, and Medicare/FPL numbers live in
 versioned parameter packs; the annual refresh is a data change (see [maintenance-schedule.md](maintenance-schedule.md)).
 
-> **Workspace layout.** The repo is an npm workspace: the engine is extracted into
-`packages/engine` and published to npm as **`@retiregolden/engine`** so downstream products (the
-commercial desktop edition) consume the identical code as a pinned dependency — fix once, ship twice.
-The web app depends on the package (Vite aliases it to the TypeScript source for dev/tests; `tsc -b`
-type-checks against the built `dist/` via a project reference). The purity boundary is enforced by the
-package's own ESLint config.
+> **Workspace layout.** The repo is an npm workspace: the engine lives in `packages/engine`
+(published as **`@retiregolden/engine`**) and the planner UI in `packages/planner-ui` (published as
+**`@retiregolden/planner-ui`**), so downstream products (the commercial desktop edition) consume the
+identical code as pinned dependencies — fix once, ship twice. `app/` is a thin host: entry +
+router, PWA/SEO, the cases/e2e harnesses. The web app depends on the packages (Vite aliases both to
+their TypeScript source for dev/tests; `tsc -b` type-checks the engine against its built `dist/`
+via a project reference, while planner-ui ships TypeScript source as its published form and
+requires a Vite-class bundler — see its README). The engine purity boundary is enforced by that
+package's own ESLint config. The planner-ui package has **no edition or product awareness**: hosts
+compose `<PlannerApp/>` and theme via CSS tokens; anything product-specific lives in the host.
 
 ## Layers
 
@@ -75,10 +79,10 @@ Deterministic, unit-tested, no UI/DOM/storage imports. Subfolders:
 The ledger-consumed Social Security math (PIA from earnings, bend points, claim factors, marital/
 survivor benefits, family maximum, disability) lives in the package's `socialSecurity/`, and the SSA
 period life table + shared types in its `longevity/`. The app-side analysis features built on top of
-them (break-even, expected PV, explain, mySSA XML import) stay in `app/src/socialSecurity/`, and the
-longevity wizard UI in `app/src/longevity/`.
+them (break-even, expected PV, explain, mySSA XML import) stay in the planner-ui package's
+`socialSecurity/`, and the longevity wizard UI in its `longevity/`.
 
-### Data model and persistence (engine `model/`, `app/src/data/`)
+### Data model and persistence (engine `model/`, planner-ui `data/`)
 
 - A **`Plan`** is the whole household model (people, accounts, income streams, expenses, strategies,
   assumptions, scenarios). Zod schemas define it and infer the types; the same schemas validate imports and
@@ -112,13 +116,14 @@ recomputation.
   (`src/mc/`), seedable for reproducibility.
 - **The optimizer** (`src/optimize/`) solves a MILP with **HiGHS compiled to WASM** in a worker (the ~3 MB
   wasm loads lazily), emitting a schedule that the exact ledger then re-runs. See [features/optimizer.md](features/optimizer.md).
-- **The relocation sweep** (`src/relocation/`) runs the same plan once per candidate state in a Web Worker,
+- **The relocation sweep** (planner-ui `relocation/`) runs the same plan once per candidate state in a Web Worker,
   again through the identical `simulate` — same-ledger discipline holds for every what-if surface (the
   survivor transition view runs `simulate` with death-age overrides on the main projection path).
 
-### UI (`app/src/planner/`, `app/src/routes/`, `app/src/learn/`, `app/src/App.tsx`)
+### UI (`packages/planner-ui/src/` — published as `@retiregolden/planner-ui`)
 
-React with React Router. `App.tsx` declares the shell and routes (`/`, `/compare`, `/examples`, `/import`,
+React with React Router; the host owns the router and mounts the exported `<PlannerApp/>`
+(`app/src/main.tsx` for the web). `App.tsx` declares the shell and routes (`/`, `/compare`, `/examples`, `/import`,
 `/how-tested`, `/plan/*`, `/learn/*`, `/disclaimer`); plan and learn routes are lazy-loaded. The planner holds plan context, the projection hook,
 the entry sections, and the result/analysis/report pages. Charts use Recharts. State is React context +
 the IndexedDB store (no Redux/React Query — there is no server). The Learning Center

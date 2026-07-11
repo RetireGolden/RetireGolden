@@ -26,7 +26,7 @@ async function loadArticleSlugs() {
     server: { middlewareMode: true, hmr: { port: 30_000 + (process.pid % 20_000) } },
   })
   try {
-    const registry = await server.ssrLoadModule('/src/learn/learningRegistry.ts')
+    const registry = await server.ssrLoadModule('@retiregolden/planner-ui/learn/learningRegistry')
     return registry.LEARNING_ARTICLES.map((a) => a.slug)
   } finally {
     await server.close()

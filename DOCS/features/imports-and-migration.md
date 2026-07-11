@@ -7,7 +7,7 @@ last year's Form 1040). Everything here is client-side: files the user already h
 browser, nothing transmitted. Portability **out** is the companion contract in
 [plan-file-format.md](plan-file-format.md).
 
-Code: `app/src/import/` (pure mappers + wizard UI), `app/src/planner/sections/UpdateBalancesPanel.tsx`
+Code: `packages/planner-ui/src/import/` (pure mappers + wizard UI), `packages/planner-ui/src/planner/sections/UpdateBalancesPanel.tsx`
 (account editor hook). Shipped by the `onboarding-import-and-migration` plan (private planning docs).
 
 ## The wizard (`/import`)

@@ -39,7 +39,7 @@ jobs:
           cache-dependency-path: package-lock.json
       - name: Install dependencies
         run: npm ci
-      - name: Lint (engine package + app)
+      - name: Lint (packages + app)
         run: npm run lint
 
   test:
@@ -54,7 +54,7 @@ jobs:
           cache-dependency-path: package-lock.json
       - name: Install dependencies
         run: npm ci
-      - name: Test (engine package + app, with coverage thresholds)
+      - name: Test (packages + app, with coverage thresholds)
         run: npm run test:coverage
 
   e2e:
@@ -88,13 +88,18 @@ jobs:
           cache-dependency-path: package-lock.json
       - name: Install dependencies
         run: npm ci
-      - name: Type check + Build (engine package, then app)
+      - name: Type check + Build (packages, then app)
         run: npm run build
       # The dev/test loop aliases the engine package to its TS source, so this
       # is the only per-PR check that the published exports map + dist emit
       # actually resolve for an external consumer.
       - name: Smoke test the packed engine artifact
         run: node packages/engine/scripts/pack-smoke.mjs
+      # Same idea for planner-ui, which ships TypeScript source: a scratch
+      # Vite consumer builds from the packed tarball, proving the exports map
+      # and the dep-internal worker/wasm bundling for external consumers.
+      - name: Smoke test the packed planner-ui artifact
+        run: node packages/planner-ui/scripts/pack-smoke.mjs
       - name: Upload build output
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

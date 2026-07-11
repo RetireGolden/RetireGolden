@@ -11,8 +11,8 @@ fall for the next tax year) and an **event-driven watch-list** (legislation that
 
 The annual refresh is a **data change, not a code change** (that's the point of params-as-data):
 
-1. Add a new dated parameter pack for the year under `app/src/engine/params/data/` (federal) and
-   `app/src/engine/params/state/` (states), copying forward and updating the published figures.
+1. Add a new dated parameter pack for the year under `packages/engine/src/params/data/` (federal) and
+   `packages/engine/src/params/state/` (states), copying forward and updating the published figures.
 2. Update [domain/domain-rules-reference.md](domain/domain-rules-reference.md) with the new numbers and
    refresh the source links; bump the provenance dates (`engine/params/provenance.ts`).
 3. Re-run the engine tests and any offline oracle fixtures (Owl / PolicyEngine / Open Social Security).

@@ -30,6 +30,7 @@ import { usePlan } from './planContextCore'
 import { isPlanIncomplete } from './planCompleteness'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { downloadStandaloneReport } from '../report/downloadReport'
+import { useReportBranding } from '../report/brandingContext'
 import { fmtMoney, fmtMoneyCompact } from './format'
 import { useProjection } from './useProjection'
 import { BucketLensCard } from './BucketLensCard'
@@ -190,6 +191,7 @@ function FireLens({
 
 export function ResultsPage() {
   const { plan } = usePlan()
+  const reportBranding = useReportBranding()
   const view = useProjection(plan)
   const [dollars, setDollars] = useState<Dollars>('today')
   const dollarLabel = dollars === 'today' ? 'today\'s $' : 'nominal $'
@@ -320,6 +322,7 @@ export function ResultsPage() {
       result: view.result,
       summary: view.summary,
       startYear: view.startYear,
+      branding: reportBranding,
     })
   }
 

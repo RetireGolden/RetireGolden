@@ -5,25 +5,28 @@ why) and [standards.md](standards.md) (the conventions).
 
 ## Repository top level
 
-The repo is an npm workspace: `npm ci` at the root installs both packages; the app consumes the
-engine as `@retiregolden/engine` (a workspace dependency, published to npm from `packages/engine`).
+The repo is an npm workspace: `npm ci` at the root installs everything; the app consumes the
+engine as `@retiregolden/engine` and the planner UI as `@retiregolden/planner-ui` (workspace
+dependencies, published to npm from `packages/`).
 
 ```
 RetireGolden/
-├── package.json      workspace root ("app", "packages/*") + cross-workspace scripts
-├── app/              the web application (Vite + React + TS)
-├── packages/engine/  @retiregolden/engine — the pure calculation engine (published to npm)
+├── package.json          workspace root ("app", "packages/*") + cross-workspace scripts
+├── app/                  the web host (Vite + React + TS): entry, PWA/SEO, cases harness, e2e
+├── packages/engine/      @retiregolden/engine — the pure calculation engine (published to npm)
+├── packages/planner-ui/  @retiregolden/planner-ui — the planner React UI (published to npm; ships TS source)
 ├── DOCS/             this documentation set
 ├── LICENSE            AGPL-3.0-only (© RetireGolden, LLC); see TRADEMARKS.md for the brand policy
 └── .github/workflows/  CI: azure-static-web-apps-retiregolden.yml, owl-parity.yml, semgrep.yml,
-                        zap.yml, cla.yml (CLA signatures), publish-engine.yml (npm release on engine-v* tags)
+                        zap.yml, cla.yml (CLA signatures), publish-engine.yml / publish-planner-ui.yml
+                        (npm releases on engine-v* / planner-ui-v* tags)
 ```
 
 The root `LICENSE` is AGPL-3.0-only; copyright is held by RetireGolden, LLC. `app/THIRD-PARTY-NOTICES.txt` (and the shipped copy
 in `app/public/`) attribute every bundled MIT/ISC/0BSD package; regenerate with `npm run licenses`
 (see maintenance-schedule.md for the regeneration reminder).
 
-## `app/`
+## `app/` — the thin web host
 
 ```
 app/
@@ -32,17 +35,19 @@ app/
 ├── index.html
 ├── scripts/               local Node/Vite-backed tooling (`cases.mjs`, `owl-parity.mjs`, sitemap generator, license notices)
 ├── public/                staticwebapp.config.json (SPA fallback), PWA manifest/icons
-└── src/                   all source (below)
+├── e2e/                   Playwright browser specs
+└── src/                   host source (below)
 ```
 
-## `app/src/` — entry points
+## `app/src/` — what the host keeps
 
-- [`main.tsx`](../app/src/main.tsx) — React root; mounts `<App/>`.
-- [`App.tsx`](../app/src/App.tsx) — app shell + route table. Routes: `/` (plan picker), `/examples` (lazy),
-  `/compare` (lazy), `/plan/*` (lazy `routes/PlanRoutes`), `/learn/*` (lazy `routes/LearnRoutes`),
-  `/disclaimer`. Retired v1 routes (`/legacy`, `/longevity`, `/social-security`) redirect to `/`.
-- [`routes/`](../app/src/routes/) — `PlanRoutes.tsx`, `LearnRoutes.tsx`, `RouteFallback.tsx`.
-- `index.css`, `RouteErrorBoundary.tsx`, plus `staticwebapp.config.test.ts` / `appShell.smoke.test.tsx`.
+- [`main.tsx`](../app/src/main.tsx) — React root; owns `BrowserRouter`, imports
+  `@retiregolden/planner-ui/index.css`, and mounts `<PlannerApp/>`. Everything inside the router
+  lives in the planner-ui package.
+- `cases/` — the exact-ledger case runner, manifest diffing, Owl parity harness, and the standalone
+  report regression test (`npm run cases`, `npm run cases:diff`, `npm run owl-parity`).
+- Host-level guards: `staticwebapp.config.test.ts` (SWA routing config) and
+  `docsConsistency.test.ts` (docs ↔ tree drift).
 
 ## `packages/engine/` — `@retiregolden/engine`, pure domain math
 
@@ -70,12 +75,23 @@ type-checks against the real `dist/` through a project reference). No React/DOM/
 | `scenarios/` | `scenarios.ts` |
 | `testing/` | Test fixtures shared with the app's suites (`planFixtures.ts`, `money.ts`), exported as `@retiregolden/engine/testing/*` |
 
-## `app/src/` — app layer
+## `packages/planner-ui/` — `@retiregolden/planner-ui`, the planner UI
 
-| Folder | What's here |
+Everything inside the router, published to npm and consumed by the app (and by downstream hosts)
+as `@retiregolden/planner-ui`. The package ships TypeScript source and requires a Vite-class
+bundler — see [packages/planner-ui/README.md](../packages/planner-ui/README.md) for the consumer
+contract. Vite/Vitest alias it to source in-repo, same as the engine.
+
+Top level of `src/`: `index.ts` (public API: `PlannerApp`), `App.tsx` (app shell + route table —
+routes: `/` plan picker, `/examples`, `/compare`, `/plan/*` via lazy `routes/PlanRoutes`,
+`/learn/*` via lazy `routes/LearnRoutes`, `/disclaimer`; retired v1 routes redirect to `/`),
+`routes/`, `RouteErrorBoundary.tsx`, `index.css` (the design-token layer, exported as
+`@retiregolden/planner-ui/index.css`), plus the `staticGuards` / `tokenContrast` / `appShell.smoke`
+test files.
+
+| Folder (`src/`) | What's here |
 |--------|-------------|
-| `cases/` | Local exact-ledger case runner, manifest diffing, Owl parity harness, and deterministic JSON helpers (`npm run cases`, `npm run cases:diff`, `npm run owl-parity`) |
-| `data/` | Persistence: `planStore.ts` (IndexedDB via `idb`, user vs demo filtering), `planOrigin.ts`, `v2Backup.ts` (JSON export), `localStore.ts` (guarded localStorage + `STORAGE_KEYS`), `fedInvestClient.ts` (the opt-in FedInvest fetch + cache — the app's only network touch) |
+| `data/` | Persistence: `planStore.ts` (IndexedDB via `idb`, user vs demo filtering), `planOrigin.ts`, `v2Backup.ts` (JSON export), `localStore.ts` (guarded localStorage + `STORAGE_KEYS`), `fedInvestClient.ts` (the opt-in FedInvest fetch + cache — the planner's only network touch) |
 | `planner/` | The planner UI (see below) |
 | `report/` | Self-contained HTML report rendering and browser download helper |
 | `mc/` | Monte Carlo Web Worker: `monteCarlo.worker.ts`, `pool.ts`, `runRequest.ts`, `messages.ts` |
@@ -89,7 +105,7 @@ type-checks against the real `dist/` through a project reference). No React/DOM/
 | `learn/` | Learning Center: pages, `learningRegistry.ts`, `glossary.ts`, `components/`, 131 articles in `content/` |
 | `testSupport/` | `samplePlan.ts` (deprecated shim over the example library); shared fixtures moved to the engine package's `testing/` |
 
-### `app/src/planner/` highlights
+### `packages/planner-ui/src/planner/` highlights
 
 - State/data: `PlanContext.tsx` (autosave incl. pagehide flush), `planContextCore.ts`, `useProjection.ts`.
 - Home: `home/` (`useHomeData.ts`, `useHomeMode.ts`, `YourPlans.tsx`, `WelcomeHero.tsx`, getting-started cards, `DataAndPrivacyCard.tsx`).
@@ -110,7 +126,8 @@ type-checks against the real `dist/` through a project reference). No React/DOM/
 
 ## Where to find…
 
-Engine paths below are under `packages/engine/src/`; the rest are under `app/src/`.
+`engine:` paths are under `packages/engine/src/`; `cases/` is under `app/src/`; the rest are under
+`packages/planner-ui/src/`.
 
 | You want… | Look at |
 |-----------|---------|
@@ -131,16 +148,16 @@ Engine paths below are under `packages/engine/src/`; the rest are under `app/src
 ## Commands
 
 Install once at the repo root with `npm ci` (npm workspaces). The root `package.json` runs each of
-these across both workspaces (engine package first); the same commands run from `app/` or
-`packages/engine/` scope to that workspace.
+these across all three workspaces (engine, then planner-ui, then app); the same commands run from
+`app/` or a `packages/*` directory scope to that workspace.
 
 | Command (repo root) | Does |
 |---------|------|
 | `npm run dev` | Vite dev server (app) |
-| `npm run build` | Engine `tsc -b`, then app `tsc -b && vite build` + sitemap generation → `app/dist/` |
-| `npm run test` | Vitest in both workspaces (co-located `*.test.ts(x)`) |
+| `npm run build` | Engine `tsc -b`, planner-ui `tsc -b` (type check — the package ships source), then app `tsc -b && vite build` + sitemap generation → `app/dist/` |
+| `npm run test` | Vitest in every workspace (co-located `*.test.ts(x)`) |
 | `npm run test:coverage` | Vitest with the coverage thresholds CI enforces (per workspace) |
-| `npm run lint` | ESLint in both workspaces (incl. the engine-purity rule) |
+| `npm run lint` | ESLint in every workspace (incl. the engine-purity rule) |
 | `npm run cases` | Emit a stable exact-ledger case manifest (default: bundled example library) |
 | `npm run cases:diff` | Compare two case manifests and exit nonzero on unexpected deltas |
 | `npm run owl-parity` | Run the Owl parity oracle harness |

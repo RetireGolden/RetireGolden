@@ -10,9 +10,9 @@ import { describe, expect, it } from 'vitest'
 import codeMap from '../../DOCS/code-map.md?raw'
 import planFileFormat from '../../DOCS/features/plan-file-format.md?raw'
 import readme from '../../README.md?raw'
-import { V2_BACKUP_VERSION } from './data/v2Backup'
+import { V2_BACKUP_VERSION } from '@retiregolden/planner-ui/data/v2Backup'
 import { CURRENT_PLAN_SCHEMA_VERSION } from '@retiregolden/engine/model/plan'
-import { LEARNING_ARTICLES } from './learn/learningRegistry'
+import { LEARNING_ARTICLES } from '@retiregolden/planner-ui/learn/learningRegistry'
 
 const workflowFiles = Object.keys(import.meta.glob('../../.github/workflows/*.yml')).map(
   (path) => path.split('/').pop()!,

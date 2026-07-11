@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { EXAMPLE_PLANS } from '../planner/examples/registry'
+import { EXAMPLE_PLANS } from '@retiregolden/planner-ui/planner/examples/registry'
 import { diffCaseManifests, formatCaseDiffSummary } from './caseDiff'
 import { defaultExampleCases, runCases, stableCaseManifestJson, type CaseRunnerManifest } from './caseRunner'
 

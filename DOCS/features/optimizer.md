@@ -6,9 +6,9 @@ real solver in the browser — and it builds on the mature engine (mortality/lon
 menu) the rest of the planner provides. Several tax-depth refinements that sharpen the same
 withdrawal/conversion engine ride alongside it.
 
-**Code:** pure solver in [engine/strategies/optimizer.ts](../../app/src/engine/strategies/optimizer.ts) and
-[engine/projection/optimizePlan.ts](../../app/src/engine/projection/optimizePlan.ts); Web Worker in
-[app/src/optimize/](../../app/src/optimize/); UI in [planner/OptimizePage.tsx](../../app/src/planner/OptimizePage.tsx).
+**Code:** pure solver in [engine/strategies/optimizer.ts](../../packages/engine/src/strategies/optimizer.ts) and
+[engine/projection/optimizePlan.ts](../../packages/engine/src/projection/optimizePlan.ts); Web Worker in
+[packages/planner-ui/src/optimize/](../../packages/planner-ui/src/optimize/); UI in [planner/OptimizePage.tsx](../../packages/planner-ui/src/planner/OptimizePage.tsx).
 
 ## Design decisions (and why)
 
@@ -70,7 +70,7 @@ change and the schedule atomically.
 
 **Exact-ledger candidate tournament:** after post-processing, six simple fill-to-target strategies
 (10/12/22/24% bracket fills, ACA-cliff cap, first-IRMAA-tier cap) are each run through the exact ledger
-(`runExactLedgerTournament` in [optimizePlan.ts](../../app/src/engine/projection/optimizePlan.ts)) and the
+(`runExactLedgerTournament` in [optimizePlan.ts](../../packages/engine/src/projection/optimizePlan.ts)) and the
 recommendation goes to whichever schedule wins on exact after-tax estate — a candidate must beat the cleaned
 MILP by a $1k margin to displace it, must never shorten money-lasts, and its schedule is exact-executed
 amounts by construction. This exists because the LP's linearisation can over-convert past its own
@@ -84,7 +84,7 @@ Cost: six extra deterministic `simulatePlan` runs per optimize.
 exogenous inputs (the taxable Social-Security portion, IRMAA/ACA-priced spending) are only exact at the
 schedule they were captured from. Rather than solve once against a conversion-free baseline, the worker
 wraps the solve in a bounded sequential-linear-programming loop (`convergeSchedule` in
-[optimizePlan.ts](../../app/src/engine/projection/optimizePlan.ts)): solve → run the exact ledger with the
+[optimizePlan.ts](../../packages/engine/src/projection/optimizePlan.ts)): solve → run the exact ledger with the
 emitted schedule → recapture the exogenous inputs from *that* run (so `ordinaryIncomeBase` now reflects the
 taxable SS the conversions actually push into the 85% tier) → re-solve, iterating to a fixed point. Each
 step is damped by a trust-region per-year step limit and adopted only when the exact ledger prices it **no
@@ -165,7 +165,7 @@ and +$18.2k on the traditional-heavy bridge. The recommendation is honestly desc
 real projection to tolerance* — a stronger claim than an optimum on a simplified model.
 
 **Shared decision engine:** the tournament's candidates, exact evaluation, and validation now live in the
-reusable [engine/decisions/](../../app/src/engine/decisions/) module
+reusable [engine/decisions/](../../packages/engine/src/decisions/) module
 (the `ledger-native-decision-engine` plan): candidate
 generators propose bounded plan patches or conversion schedules, `evaluateCandidate` prices every one
 through the exact ledger against a shared baseline, and named objective policies (maximize after-tax
@@ -182,14 +182,14 @@ Insights card and this page always agree on a change's exact numbers and recomme
 
 **Local search refinement:** when a simple candidate wins the tournament, the worker path runs a bounded
 **coordinate-descent search** (`refineConversionSchedule` in
-[engine/decisions/search.ts](../../app/src/engine/decisions/search.ts)) over the winning schedule's
+[engine/decisions/search.ts](../../packages/engine/src/decisions/search.ts)) over the winning schedule's
 per-year amounts — coarse $10k steps then $2.5k refinement, deterministic under a fixed simulation budget
 (default 48). A refined schedule is adopted only when the exact ledger prices it beneficial, it improves
 the winner's exact estate delta, and the money-lasts guardrail still holds; it is snapped to exact-executed
 amounts so it stays executable by construction.
 
 **Sustainable-spending solver:** `solveMaxSustainableSpending` in
-[engine/decisions/spendingSolver.ts](../../app/src/engine/decisions/spendingSolver.ts) answers "how much
+[engine/decisions/spendingSolver.ts](../../packages/engine/src/decisions/spendingSolver.ts) answers "how much
 can this plan spend every year?" by exact-ledger bisection over the plan's annual base spending: a level is
 feasible only when the full `simulatePlan` run never depletes and the ending after-tax estate stays at or
 above an optional floor (the bequest target from the Spending screen, entered in today's dollars and
@@ -201,11 +201,11 @@ surfaces consume it, all under the shared `SPENDING_SOLVER_UI_BUDGET` (25 simula
 agree exactly:
 
 - **"How much can I spend?"** page on the Optimize rail
-  ([planner/SpendingSolverPage.tsx](../../app/src/planner/SpendingSolverPage.tsx)) — runs the solver in a
-  dedicated Web Worker ([optimize/spendingSolve.worker.ts](../../app/src/optimize/spendingSolve.worker.ts)),
+  ([planner/SpendingSolverPage.tsx](../../packages/planner-ui/src/planner/SpendingSolverPage.tsx)) — runs the solver in a
+  dedicated Web Worker ([optimize/spendingSolve.worker.ts](../../packages/planner-ui/src/optimize/spendingSolve.worker.ts)),
   shows the answer + evidence, and can add a scenario at the solved level.
 - **Insights `spending-headroom` detector**
-  ([engine/insights/detectors/spendingHeadroom.ts](../../app/src/engine/insights/detectors/spendingHeadroom.ts))
+  ([engine/insights/detectors/spendingHeadroom.ts](../../packages/engine/src/insights/detectors/spendingHeadroom.ts))
   — screens cheaply (no depletion + large excess estate over the bequest target), solves exactly on
   preview, and offers the solved level as a scenario.
 - The paired objective policy, selectable on the Optimize page (below).
@@ -215,7 +215,7 @@ from the shared `objectivePolicies` registry (default unchanged: `max-after-tax-
 policy re-ranks the same exact-ledger evaluations (simple candidates + the post-processed MILP schedule
 synthesized as one more evaluation) through the shared `rankEvaluations` under that policy's primary
 metric and hard constraints — never a separate ranking implementation
-(`runPolicyRankedTournament` in [projection/optimizePlan.ts](../../app/src/engine/projection/optimizePlan.ts)).
+(`runPolicyRankedTournament` in [projection/optimizePlan.ts](../../packages/engine/src/projection/optimizePlan.ts)).
 Floor-style policies (`min-lifetime-tax-estate-floor`, `max-sustainable-spending`) pick up the plan's
 bequest target via `objectivePolicyForPlan`. `max-sustainable-spending` is excluded from the Roth
 optimizer's selector (conversion candidates never change base spending); Phase 4 search refinement runs
@@ -238,9 +238,9 @@ exact-ledger result found within the search limits*, not that the solver's sched
 Each sharpens the same withdrawal/conversion engine:
 
 - **72(t) / Rule of 55** — penalty-free early traditional access (SEPP schedules; separation-year 401(k)
-  access) — [strategies/sepp.ts](../../app/src/engine/strategies/sepp.ts).
+  access) — [strategies/sepp.ts](../../packages/engine/src/strategies/sepp.ts).
 - **Inherited-IRA 10-year rule** — beneficiary accounts with the 10-year drain + RMD-during-window —
-  [strategies/inheritedIra.ts](../../app/src/engine/strategies/inheritedIra.ts).
+  [strategies/inheritedIra.ts](../../packages/engine/src/strategies/inheritedIra.ts).
 - **Gain-harvesting** — surfaces 0% LTCG-bracket headroom per year (combined with any capital-loss
   carryforward) as an advisory; see [taxes.md](taxes.md).
 - **Itemized-deduction detail** — an itemized path (SALT cap, mortgage interest, charitable) where it beats
@@ -269,7 +269,7 @@ Each sharpens the same withdrawal/conversion engine:
 Before the real optimizer landed, a throwaway PR 0 spike (a toy Roth/withdrawment MILP over N plan years)
 answered the two architecture questions: **can HiGHS-WASM solve a multi-year MILP in a Web Worker within
 UX budget, and what's the bundle cost?** The spike was deleted once the shipped optimizer
-([engine/strategies/optimizer.ts](../../app/src/engine/strategies/optimizer.ts)) proved it out; the
+([engine/strategies/optimizer.ts](../../packages/engine/src/strategies/optimizer.ts)) proved it out; the
 measurements that justified the MILP path are recorded here so the decision stays legible.
 
 **Solve time** (toy model: convex piecewise-linear tax + a non-convex IRMAA binary step):

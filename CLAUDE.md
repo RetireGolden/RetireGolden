@@ -12,6 +12,7 @@ Before any UI or design work, read:
   AI-SaaS gloss), design principles, and the AA + age-friendly accessibility bar.
 - **[DESIGN.md](DESIGN.md)** — the visual system ("The Candid Ledger"): tokens, typography,
   elevation, component vocabulary, and do's/don'ts. Tokens are defined in
-  `app/src/index.css` and contrast-guarded by `app/src/tokenContrast.test.ts`.
+  `packages/planner-ui/src/index.css` and contrast-guarded by
+  `packages/planner-ui/src/tokenContrast.test.ts`.
 
 New UI must use the existing tokens and component classes; keep light and dark themes in parity.

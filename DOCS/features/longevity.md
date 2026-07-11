@@ -9,13 +9,13 @@ is surfaced inside the planner via the Longevity modal rather than a standalone 
 
 | Area | Location |
 |------|----------|
-| SSA 2022 period table e(x), ages 0–119 | [`longevity/ssaPeriod2022.ts`](../../app/src/longevity/ssaPeriod2022.ts) |
-| Lifestyle multipliers + comments | [`longevity/factors.ts`](../../app/src/longevity/factors.ts) |
-| Baseline × clamped product + illustrative band | [`longevity/model.ts`](../../app/src/longevity/model.ts) |
-| Wizard + results UI | [`longevity/LongevityWizard.tsx`](../../app/src/longevity/LongevityWizard.tsx), [`LongevityResults.tsx`](../../app/src/longevity/LongevityResults.tsx) |
-| Planner entry point | [`planner/LongevityModal.tsx`](../../app/src/planner/LongevityModal.tsx) (opened from the Household screen) |
-| Persistence guard | [`longevity/storage.ts`](../../app/src/longevity/storage.ts), [`persistedGuard.ts`](../../app/src/longevity/persistedGuard.ts) |
-| Tests | [`longevity/model.test.ts`](../../app/src/longevity/model.test.ts) |
+| SSA 2022 period table e(x), ages 0–119 | [`longevity/ssaPeriod2022.ts`](../../packages/engine/src/longevity/ssaPeriod2022.ts) |
+| Lifestyle multipliers + comments | [`longevity/factors.ts`](../../packages/planner-ui/src/longevity/factors.ts) |
+| Baseline × clamped product + illustrative band | [`longevity/model.ts`](../../packages/planner-ui/src/longevity/model.ts) |
+| Wizard + results UI | [`longevity/LongevityWizard.tsx`](../../packages/planner-ui/src/longevity/LongevityWizard.tsx), [`LongevityResults.tsx`](../../packages/planner-ui/src/longevity/LongevityResults.tsx) |
+| Planner entry point | [`planner/LongevityModal.tsx`](../../packages/planner-ui/src/planner/LongevityModal.tsx) (opened from the Household screen) |
+| Persistence guard | [`longevity/storage.ts`](../../packages/planner-ui/src/longevity/storage.ts), [`persistedGuard.ts`](../../packages/planner-ui/src/longevity/persistedGuard.ts) |
+| Tests | [`longevity/model.test.ts`](../../packages/planner-ui/src/longevity/model.test.ts) |
 
 ## Baseline data source
 

@@ -27,10 +27,12 @@ RetireGolden is for **education only** — not tax, legal, financial, or medical
 
 ## Development
 
-The repo is an npm workspace: the Vite + React + TypeScript client lives in [`app/`](app/), and the
-pure calculation engine lives in [`packages/engine/`](packages/engine/) — published to npm as
-[`@retiregolden/engine`](https://www.npmjs.com/package/@retiregolden/engine) and consumed by the app
-as a workspace dependency.
+The repo is an npm workspace: the web host lives in [`app/`](app/), the pure calculation engine in
+[`packages/engine/`](packages/engine/) — published to npm as
+[`@retiregolden/engine`](https://www.npmjs.com/package/@retiregolden/engine) — and the planner React
+UI in [`packages/planner-ui/`](packages/planner-ui/) — published as
+[`@retiregolden/planner-ui`](https://www.npmjs.com/package/@retiregolden/planner-ui). The app
+consumes both as workspace dependencies.
 
 **Requirements:** Node.js 20+
 
@@ -99,6 +101,12 @@ Runs on pull-request activity. First-time contributors are asked to sign the [Co
 [`.github/workflows/publish-engine.yml`](.github/workflows/publish-engine.yml)
 
 Publishes [`packages/engine`](packages/engine/) to npm as `@retiregolden/engine` with provenance. Fires on `engine-v<version>` tags (the tag must match the package version) or manually from the Actions tab (manual runs default to `--dry-run`). Requires the `NPM_TOKEN` repository secret — a granular npm automation token for the `@retiregolden` org.
+
+### Planner UI package release
+
+[`.github/workflows/publish-planner-ui.yml`](.github/workflows/publish-planner-ui.yml)
+
+Publishes [`packages/planner-ui`](packages/planner-ui/) to npm as `@retiregolden/planner-ui` with provenance. Fires on `planner-ui-v<version>` tags (the tag must match the package version) or manually from the Actions tab (manual runs default to `--dry-run`). Uses the same `NPM_TOKEN` secret; the token needs publish rights on this package too. Before publishing, a pack-smoke step builds a scratch Vite consumer from the packed tarball to prove the published surface (exports map, dep-internal workers, HiGHS wasm).
 
 ## License
 
