@@ -10,7 +10,7 @@ RetireGolden/
 ├── app/              the entire application (Vite + React + TS)
 ├── DOCS/             this documentation set
 ├── LICENSE            AGPL-3.0-only (© RetireGolden, LLC); see TRADEMARKS.md for the brand policy
-└── .github/workflows/  CI: azure-static-web-apps-retiregolden.yml, owl-parity.yml, semgrep.yml, zap.yml
+└── .github/workflows/  CI: azure-static-web-apps-retiregolden.yml, cla.yml, owl-parity.yml, semgrep.yml, zap.yml
 ```
 
 The root `LICENSE` is AGPL-3.0-only; copyright is held by RetireGolden, LLC. `app/THIRD-PARTY-NOTICES.txt` (and the shipped copy

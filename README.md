@@ -46,7 +46,13 @@ npm run dev
 
 ## CI/CD
 
-Four GitHub Actions workflows: three run on pushes and pull requests to `main`; the Owl parity oracle is triggered manually. Full setup notes: [DOCS/operations/ci-cd-and-deploy.md](DOCS/operations/ci-cd-and-deploy.md).
+Five GitHub Actions workflows: four run on relevant pushes or pull requests; the Owl parity oracle is triggered manually. Full setup notes: [DOCS/operations/ci-cd-and-deploy.md](DOCS/operations/ci-cd-and-deploy.md).
+
+### Contributor license agreement
+
+[`.github/workflows/cla.yml`](.github/workflows/cla.yml)
+
+Checks pull requests for the required contributor license agreement and records signatures through CLA Assistant.
 
 ### Azure Static Web Apps — build & deploy
 

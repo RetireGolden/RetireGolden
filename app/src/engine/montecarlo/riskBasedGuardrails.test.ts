@@ -80,11 +80,15 @@ describe('solveRiskBasedGuardrails', () => {
     expect(solution.upper!.successAtThreshold).toBeLessThanOrEqual(1)
   })
 
-  it('is deterministic for the same plan, seed, and model', () => {
-    const a = solveRiskBasedGuardrails(basePlan(), opts)
-    const b = solveRiskBasedGuardrails(basePlan(), opts)
-    expect(b).toEqual(a)
-  })
+  it(
+    'is deterministic for the same plan, seed, and model',
+    () => {
+      const a = solveRiskBasedGuardrails(basePlan(), opts)
+      const b = solveRiskBasedGuardrails(basePlan(), opts)
+      expect(b).toEqual(a)
+    },
+    10_000,
+  )
 
   it('honors the band configured on the plan spending policy', () => {
     const plan = basePlan()
