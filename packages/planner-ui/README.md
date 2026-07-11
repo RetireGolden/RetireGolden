@@ -115,12 +115,128 @@ resolve against the app bundle, not the filesystem root.
 
 ### Published API surface
 
-The supported product API is the root export (`PlannerApp`) plus
-`./index.css`. The exports map also exposes wildcard `./*.ts` subpaths
+The supported product API is:
+
+- the **root export** — `PlannerApp`, the plan-persistence seam
+  (`PlanStore`, `PlanSummary`, `PlanStoreProvider`, `indexedDbPlanStore`),
+  the route groups (`plannerWorkspaceRoutes`, `plannerContentRoutes`,
+  `plannerHomeRoutes`), and `ReportBrandingProvider` — see "Hosting the
+  workspace" below;
+- the **`./plan-format` subpath** — `serializeV2Backup`, `parseV2Backup`,
+  the envelope types, and the kind/version constants. This is the plan
+  interchange format (the same file the web app's backup download produces);
+  its exported names, signatures, and envelope contract only change with a
+  semver-major release. The parser ignores unknown envelope fields, so hosts
+  may extend the envelope with their own top-level keys and the file still
+  imports everywhere. The module is browser-free (no IndexedDB/DOM) and safe
+  to run in Node — e.g. an Electron main process assembling backups;
+- `./index.css`.
+
+The exports map also exposes wildcard `./*.ts` subpaths
 (e.g. `./report/reportHtml`) — these exist for the upstream repo's own test
 and case-runner harnesses, are not covered by any stability promise, and may
 move or change in any release. If a host needs one of them long-term, open an
 upstream issue so it can be promoted to a real export instead.
+
+## Hosting the workspace
+
+`<PlannerApp/>` is the batteries-included web composition: chrome, all
+routes, browser storage. A host with its own plans-management surface (its
+own library UI, its own chrome) instead mounts *parts* of the planner and
+supplies storage. Three hooks make that possible; none of them involve any
+capability detection — they are plain props, context, and route arrays.
+
+### Plan storage: the `PlanStore` seam
+
+The workspace, Compare, the optimizers, and the import wizard read and write
+plans through a provider interface:
+
+```ts
+import type { PlanStore, PlanSummary } from '@retiregolden/planner-ui'
+
+interface PlanStore {
+  listPlans(): Promise<PlanSummary[]>   // { id, name, updatedAtIso }
+  loadPlan(id: string): Promise<unknown> // stored plan JSON verbatim; null/undefined when absent
+  savePlan(plan: Plan): Promise<void>    // already validated + stamped; the autosave path
+  deletePlan(id: string): Promise<void>
+}
+```
+
+Implementations are storage-dumb by design: `loadPlan` returns the stored
+document as-is (any schema version) and planner-ui runs schema migration and
+Zod validation on it — the same single code path the web app has always used
+— while `savePlan` receives a plan that already passed validation and got its
+`updatedAtIso` stamp. A store never re-implements plan semantics.
+
+Supply a store with the provider or the `planStore` prop on `<PlannerApp/>`
+(the prop wins when both are present); keep the instance stable — the
+planner reloads when the store's identity changes:
+
+```tsx
+import { PlanStoreProvider } from '@retiregolden/planner-ui'
+
+<PlanStoreProvider store={myStore}>{/* planner routes */}</PlanStoreProvider>
+```
+
+Omit the provider and the browser IndexedDB implementation applies — it is
+also exported as `indexedDbPlanStore` for hosts that want to wrap it.
+
+Deliberate boundaries of the seam:
+
+- **Plan-scoped.** No client/household-grouping concepts; a host that keeps
+  per-client libraries maps plan ids to its own structure in its adapter.
+- **No change feed.** Planner list views refetch after their own mutations,
+  so the interface carries no subscription mechanism.
+- **Example demo records never cross it.** The example library's editable
+  demo slots (`example:*` ids) are per-device preview UX and stay in the
+  browser store regardless of provider; "Save to my plans" converts a demo
+  into a user plan and writes *that* through the seam. Small conveniences
+  (theme, dismissed banners) likewise stay in `localStorage`.
+
+### Route groups
+
+The route table is exported as three react-router v7 `RouteObject[]` arrays
+that spread into `useRoutes` or feed `createBrowserRouter`. Mount them at
+the host router's **root**; to serve the planner under a URL prefix, put the
+prefix in the router's `basename`
+(e.g. `<BrowserRouter basename="/planner">`) — planner pages navigate with
+root-absolute paths, which react-router resolves against the basename. Do
+not nest the groups under a parent route path (`path: 'planner/*'`): the
+initial deep link would render, but the first in-app navigation would escape
+the prefix. Deep links (e.g. `/plan/<id>/results`) work with only the
+workspace group mounted:
+
+| Export | Routes | Notes |
+|--------|--------|-------|
+| `plannerWorkspaceRoutes` | `plan/:planId/*` (sections, results, Monte Carlo, scenarios, survivor, relocation, optimizers, report) + `compare` | The plan workspace a host wraps in its own chrome |
+| `plannerContentRoutes` | `examples`, `learn/*`, `disclaimer`, `how-tested` | Storage-independent content; workspace pages link into it, so mount it (or redirect those paths) |
+| `plannerHomeRoutes` | `` (index), `import`, retired-route redirects | The web plans-management home — omit it if the host owns plan management |
+
+```tsx
+import { useRoutes } from 'react-router-dom'
+import { plannerWorkspaceRoutes, plannerContentRoutes } from '@retiregolden/planner-ui'
+
+function PlannerRoutes() {
+  return useRoutes([...plannerWorkspaceRoutes, ...plannerContentRoutes])
+}
+```
+
+The groups are chrome-free: no header/nav/footer, no theme toggle, and no
+`document.title` management for non-plan routes (plan routes retitle
+themselves). Workspace pages render links to `/` ("Your plans") — point that
+path at your own library surface. Hosts mounting groups directly brand
+downloaded reports with `ReportBrandingProvider` (the component form of the
+`reportBranding` prop below); `<PlannerApp/>` remains exactly the composition
+of all three groups plus the web chrome.
+
+### Plan interchange
+
+Use the `./plan-format` subpath (see "Published API surface") for import/
+export that speaks the same envelope as the web app's backup files:
+
+```ts
+import { serializeV2Backup, parseV2Backup } from '@retiregolden/planner-ui/plan-format'
+```
 
 ### Report branding
 
@@ -153,10 +269,11 @@ tokens (above).
 
 ### Storage
 
-Plans persist in the browser profile via IndexedDB (`idb`) with localStorage
-for small preferences, exactly as on retiregolden.app. Hosts that need a
-different persistence story should treat that as an upstream conversation,
-not a fork point.
+By default, plans persist in the browser profile via IndexedDB (`idb`) with
+localStorage for small preferences, exactly as on retiregolden.app. Hosts
+that need a different persistence story implement the `PlanStore` seam (see
+"Hosting the workspace") — anything the seam doesn't cover should be an
+upstream conversation, not a fork point.
 
 ## Relationship to the web app
 

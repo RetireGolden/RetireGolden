@@ -11,7 +11,7 @@
 import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
-import { savePlan } from '../data/planStore'
+import { savePlanVia, usePlanStore } from '../data/planStoreContext'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import { DateField, MoneyField, SelectField } from '../planner/fields'
 import { US_STATES } from '../planner/usStates'
@@ -82,6 +82,7 @@ const EMPTY_1040: TenFortyInputs = {
 
 export function ImportPage() {
   const navigate = useNavigate()
+  const store = usePlanStore()
   const [source, setSource] = useState<SourceId | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [draft, setDraft] = useState<Draft | null>(null)
@@ -151,7 +152,7 @@ export function ImportPage() {
 
   const saveAndOpen = async () => {
     if (!draft) return
-    const r = await savePlan(draft.plan)
+    const r = await savePlanVia(store, draft.plan)
     if (r.ok) navigate(`/plan/${r.plan.id}`)
     else setError(`Could not save the draft plan: ${r.issues.join('; ')}`)
   }

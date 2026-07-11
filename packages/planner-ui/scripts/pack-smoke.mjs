@@ -49,14 +49,42 @@ const indexHtml = `<!doctype html>
 const mainTsx = `
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
+import { BrowserRouter, useRoutes } from 'react-router-dom'
 import '@retiregolden/planner-ui/index.css'
-import { PlannerApp } from '@retiregolden/planner-ui'
+// The 0.2.0 host surface: the seam, the route groups, and the stable
+// plan-format subpath must all resolve from the tarball's exports map.
+import {
+  PlannerApp,
+  PlanStoreProvider,
+  indexedDbPlanStore,
+  plannerContentRoutes,
+  plannerWorkspaceRoutes,
+  type PlanStore,
+} from '@retiregolden/planner-ui'
+import { parseV2Backup, serializeV2Backup } from '@retiregolden/planner-ui/plan-format'
+
+// A host-shaped adapter (not the browser store) so both injection routes —
+// the planStore prop and a wrapping PlanStoreProvider — compile against a
+// real implementation of the interface. Runtime injection semantics are
+// covered by data/planStoreContext.test.tsx; this file proves the surface
+// resolves and bundles from the tarball.
+const hostStore: PlanStore = {
+  listPlans: () => indexedDbPlanStore.listPlans(),
+  loadPlan: (id) => indexedDbPlanStore.loadPlan(id),
+  savePlan: (plan) => indexedDbPlanStore.savePlan(plan),
+  deletePlan: (id) => indexedDbPlanStore.deletePlan(id),
+}
+
+function WorkspaceOnlyHost() {
+  return useRoutes([...plannerWorkspaceRoutes, ...plannerContentRoutes])
+}
+
+console.debug(parseV2Backup(serializeV2Backup([])).ok, WorkspaceOnlyHost.name, PlanStoreProvider.name)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <PlannerApp />
+      <PlannerApp planStore={hostStore} />
     </BrowserRouter>
   </StrictMode>,
 )

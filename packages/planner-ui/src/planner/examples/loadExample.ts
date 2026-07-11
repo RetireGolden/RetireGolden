@@ -3,7 +3,15 @@
  */
 
 import { exampleStorageId } from '../../data/planOrigin'
-import { convertExampleToUserPlan, loadPlan, savePlan, type SavePlanResult } from '../../data/planStore'
+import {
+  convertExampleToUserPlan,
+  convertedFromExample,
+  deletePlan,
+  loadPlan,
+  savePlan,
+  type SavePlanResult,
+} from '../../data/planStore'
+import { indexedDbPlanStore, type PlanStore } from '../../data/planStoreContext'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import { exampleFixedNow } from './buildContext'
 import { getExampleById, type ExamplePlan } from './registry'
@@ -81,10 +89,34 @@ export async function openExampleFresh(exampleId: string): Promise<{ ok: true; p
 
 export async function saveExampleToMyPlans(
   plan: Plan,
-  opts: { newId?: () => string } = {},
+  opts: { newId?: () => string; store?: PlanStore } = {},
 ): Promise<SavePlanResult> {
   if (plan.origin !== 'example') {
     return { ok: false, issues: ['Only library examples can be converted.'] }
   }
-  return convertExampleToUserPlan(plan, opts)
+  const { store } = opts
+  if (store === undefined || store === indexedDbPlanStore) {
+    // Demo records live in the browser store, so when the user-plan store is
+    // that same database the swap is a single atomic transaction.
+    return convertExampleToUserPlan(plan, opts)
+  }
+  // Host-provided store: land the converted user plan there first, then drop
+  // the browser-local demo record — an interrupted convert can leave both
+  // copies (recoverable), never neither.
+  const converted = convertedFromExample(plan, opts)
+  if (!converted.ok) return converted
+  try {
+    await store.savePlan(converted.plan)
+  } catch {
+    // A store rejection must surface through the same result channel as a
+    // validation failure — callers show issues in a dialog, not a crash.
+    return { ok: false, issues: ['The plan store could not save the converted plan.'] }
+  }
+  try {
+    await deletePlan(plan.id)
+  } catch {
+    // Non-fatal: the user plan landed; a surviving demo record is the
+    // recoverable half of the both-copies-never-neither invariant.
+  }
+  return converted
 }

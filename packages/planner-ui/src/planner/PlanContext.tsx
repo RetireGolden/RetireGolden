@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
 import { parsePlan, type Plan } from '@retiregolden/engine/model/plan'
-import { loadPlan, savePlan } from '../data/planStore'
+import { loadPlanVia, savePlanVia, usePlanStore } from '../data/planStoreContext'
 import { EXAMPLE_PLAN_ID_PREFIX, isExamplePlanId } from '../data/planOrigin'
 import { getExampleById } from './examples/registry'
 import { saveFreshDemo } from './examples/loadExample'
@@ -24,6 +24,7 @@ const AUTOSAVE_MS = 600
  * asynchronously.
  */
 export function PlanProvider({ planId, children }: { planId: string; children: ReactNode }) {
+  const store = usePlanStore()
   const [plan, setPlan] = useState<Plan | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [saveState, setSaveState] = useState<SaveState>('loading')
@@ -39,7 +40,7 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
       setSaveState('saved')
     }
     void (async () => {
-      const r = await loadPlan(planId)
+      const r = await loadPlanVia(store, planId)
       if (cancelled) return
       if (r.ok) {
         adopt(r.plan)
@@ -68,21 +69,21 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
     return () => {
       cancelled = true
     }
-  }, [planId])
+  }, [planId, store])
 
-  // savePlan resolves { ok: false } on validation failure, but the IndexedDB
+  // savePlanVia resolves { ok: false } on validation failure, but the store
   // write itself can still reject (quota, private mode) — degrade to 'error'
   // instead of leaving 'saving' stuck plus an unhandled rejection.
   const runSave = useCallback((toSave: Plan) => {
     setSaveState('saving')
-    void savePlan(toSave)
+    void savePlanVia(store, toSave)
       .then((r) => {
         setSaveState(r.ok ? 'saved' : 'error')
       })
       .catch(() => {
         setSaveState('error')
       })
-  }, [])
+  }, [store])
 
   const scheduleSave = useCallback(() => {
     if (timer.current !== null) window.clearTimeout(timer.current)

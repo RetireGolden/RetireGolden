@@ -10,7 +10,10 @@ import { useDialogs } from '../dialogs'
 import { EXAMPLE_PLANS, type ExamplePlan } from './registry'
 import { openExampleExisting, openExampleFresh, prepareExampleOpen, saveExampleToMyPlans } from './loadExample'
 import { EXAMPLE_LOAD_FRESH_DESC, EXAMPLE_OPEN_EXISTING_DESC } from './exampleCopy'
+// Demo records are browser-local by design, so this loadPlan stays on the
+// browser store; only the "Save to my plans" conversion crosses the seam.
 import { loadPlan } from '../../data/planStore'
+import { usePlanStore } from '../../data/planStoreContext'
 import { readLocal, STORAGE_KEYS, writeLocal } from '../../data/localStore'
 
 /**
@@ -30,6 +33,7 @@ function householdFacts(example: ExamplePlan): string {
 
 function ExampleCard({ example, onNotice }: { example: ExamplePlan; onNotice: (msg: string) => void }) {
   const navigate = useNavigate()
+  const store = usePlanStore()
   const [busy, setBusy] = useState(false)
   const { choice, dialogs } = useDialogs()
 
@@ -94,7 +98,7 @@ function ExampleCard({ example, onNotice }: { example: ExamplePlan; onNotice: (m
         onNotice('Could not load the example to save.')
         return
       }
-      const converted = await saveExampleToMyPlans(loaded.plan)
+      const converted = await saveExampleToMyPlans(loaded.plan, { store })
       if (converted.ok) {
         onNotice(`"${example.title}" saved to Your plans.`)
         navigate(`/plan/${converted.plan.id}/results`)

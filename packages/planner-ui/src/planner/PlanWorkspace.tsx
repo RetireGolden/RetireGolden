@@ -7,7 +7,7 @@
 import { useEffect } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom'
 
-import { duplicatePlan } from '../data/planStore'
+import { duplicatePlanVia, usePlanStore } from '../data/planStoreContext'
 import { DEFAULT_PATH_COUNT } from '../mc/pool'
 import { useDialogs } from './dialogs'
 import { isPlanIncomplete } from './planCompleteness'
@@ -177,6 +177,7 @@ function PlanName() {
 
 function WorkspaceInner() {
   const { plan, discardPendingSave } = usePlan()
+  const store = usePlanStore()
   const navigate = useNavigate()
   const location = useLocation()
   const { prompt, alert, dialogs } = useDialogs()
@@ -205,7 +206,7 @@ function WorkspaceInner() {
     })
     if (name === null) return
     if (plan.origin === 'example') discardPendingSave()
-    const r = await duplicatePlan(plan.id, { name, source: plan })
+    const r = await duplicatePlanVia(store, plan.id, { name, source: plan })
     if (r.ok) navigate(`/plan/${r.plan.id}/results`)
     else await alert({ title: 'Duplicate plan', body: `Could not duplicate this plan: ${r.issues.join('; ')}` })
   }

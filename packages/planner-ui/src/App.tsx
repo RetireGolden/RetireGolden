@@ -1,25 +1,13 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
-import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
-import { PlanPickerPage } from './planner/PlanPickerPage'
-import { DisclaimerPage } from './planner/DisclaimerPage'
+import { useEffect, useRef, useState } from 'react'
+import { NavLink, useLocation, useRoutes } from 'react-router-dom'
 import { RouteErrorBoundary } from './RouteErrorBoundary.tsx'
-import { RouteFallback } from './routes/RouteFallback'
+import { plannerContentRoutes, plannerHomeRoutes, plannerWorkspaceRoutes } from './routes/groups'
 import { readLocal, STORAGE_KEYS, writeLocal } from './data/localStore'
+import { usePlanStore, type PlanStore } from './data/planStoreContext'
+import { PlanStoreProvider } from './data/PlanStoreProvider'
 import { ReportBrandingContext } from './report/brandingContext'
 import type { ReportBranding } from './report/reportHtml'
 import './planner/planner.css'
-
-const PlanRoutes = lazy(() => import('./routes/PlanRoutes'))
-const LearnRoutes = lazy(() => import('./routes/LearnRoutes'))
-// Lazy like /plan and /learn: Examples pulls in all example builders + the Zod
-// schema, Compare pulls in the whole engine via projectPlan — eager imports
-// here would drag both into the landing entry chunk.
-const ExamplesPage = lazy(() => import('./planner/examples/ExamplesPage').then((m) => ({ default: m.ExamplesPage })))
-const ComparePlansPage = lazy(() => import('./planner/ComparePlansPage').then((m) => ({ default: m.ComparePlansPage })))
-// Lazy so the glob-derived test-suite manifests it embeds stay out of the landing chunk.
-const HowTestedPage = lazy(() => import('./planner/HowTestedPage').then((m) => ({ default: m.HowTestedPage })))
-// Lazy: the import wizard pulls in the per-source mappers and the Zod schema.
-const ImportPage = lazy(() => import('./import/ImportPage').then((m) => ({ default: m.ImportPage })))
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
   isActive ? 'nav-link nav-link--active' : 'nav-link'
@@ -67,10 +55,25 @@ export interface PlannerAppProps {
    * (override the custom properties from index.css).
    */
   reportBranding?: ReportBranding
+  /**
+   * Plan storage for the planner (see `PlanStore` in the package exports).
+   * Precedence: this prop, else a `<PlanStoreProvider>` wrapping
+   * `<PlannerApp/>`, else the browser IndexedDB store — exactly as on
+   * retiregolden.app. Pass a stable instance — the planner reloads when the
+   * store's identity changes.
+   */
+  planStore?: PlanStore
 }
 
-export function App({ reportBranding }: PlannerAppProps = {}) {
+export function App({ reportBranding, planStore }: PlannerAppProps = {}) {
+  // An ambient <PlanStoreProvider> above the app must win over the built-in
+  // default; with neither prop nor provider this resolves to the browser
+  // store (the context's default value).
+  const ambientStore = usePlanStore()
   const location = useLocation()
+  // The full route table — <Routes> is exactly useRoutes over its children,
+  // so composing the exported groups this way renders identically.
+  const routeTree = useRoutes([...plannerHomeRoutes, ...plannerWorkspaceRoutes, ...plannerContentRoutes])
   const isLanding = location.pathname === '/' || location.pathname === '/examples'
   const [themeMode, setThemeMode] = useState<ThemeMode>(getInitialThemeMode)
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(() => getResolvedTheme(getInitialThemeMode()))
@@ -122,6 +125,7 @@ export function App({ reportBranding }: PlannerAppProps = {}) {
       : '/brand/retiregolden-logo-lockup-light.png'
 
   return (
+    <PlanStoreProvider store={planStore ?? ambientStore}>
     <ReportBrandingContext.Provider value={reportBranding ?? null}>
     <div className={`app-shell planner-shell${isLanding ? ' app-shell--landing' : ''}`}>
       <a className="skip-link" href="#main-content">
@@ -175,64 +179,7 @@ export function App({ reportBranding }: PlannerAppProps = {}) {
         </div>
       </header>
       <main className="app-main" id="main-content" tabIndex={-1}>
-        <RouteErrorBoundary>
-          <Routes>
-            <Route path="/" element={<PlanPickerPage />} />
-            <Route
-              path="/examples"
-              element={
-                <Suspense fallback={<RouteFallback />}>
-                  <ExamplesPage />
-                </Suspense>
-              }
-            />
-            <Route
-              path="/compare"
-              element={
-                <Suspense fallback={<RouteFallback />}>
-                  <ComparePlansPage />
-                </Suspense>
-              }
-            />
-            <Route
-              path="/plan/*"
-              element={
-                <Suspense fallback={<RouteFallback />}>
-                  <PlanRoutes />
-                </Suspense>
-              }
-            />
-            <Route
-              path="/learn/*"
-              element={
-                <Suspense fallback={<RouteFallback />}>
-                  <LearnRoutes />
-                </Suspense>
-              }
-            />
-            <Route
-              path="/import"
-              element={
-                <Suspense fallback={<RouteFallback />}>
-                  <ImportPage />
-                </Suspense>
-              }
-            />
-            <Route path="/disclaimer" element={<DisclaimerPage />} />
-            <Route
-              path="/how-tested"
-              element={
-                <Suspense fallback={<RouteFallback />}>
-                  <HowTestedPage />
-                </Suspense>
-              }
-            />
-            {/* Retired v1 routes now redirect into the planner. */}
-            <Route path="/legacy" element={<Navigate to="/" replace />} />
-            <Route path="/longevity" element={<Navigate to="/" replace />} />
-            <Route path="/social-security" element={<Navigate to="/" replace />} />
-          </Routes>
-        </RouteErrorBoundary>
+        <RouteErrorBoundary>{routeTree}</RouteErrorBoundary>
       </main>
       <footer className="app-footer">
         <span className="muted small">
@@ -242,5 +189,6 @@ export function App({ reportBranding }: PlannerAppProps = {}) {
       </footer>
     </div>
     </ReportBrandingContext.Provider>
+    </PlanStoreProvider>
   )
 }

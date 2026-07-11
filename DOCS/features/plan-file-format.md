@@ -83,3 +83,11 @@ Third-party tools (or your own scripts) can read a backup with ordinary JSON too
 equally supported: emit the envelope above with plans that satisfy the current schema — the import
 path gives field-by-field validation errors on anything malformed. The in-app import wizards
 (`packages/planner-ui/src/import/`) produce plans through exactly this route.
+
+JavaScript/TypeScript hosts don't need to hand-roll the envelope:
+`serializeV2Backup`/`parseV2Backup` and the envelope types are published as the
+stability-promised `@retiregolden/planner-ui/plan-format` subpath
+(`packages/planner-ui/src/data/planFormat.ts` — browser-free, runs in plain Node). The parser
+ignores unknown top-level envelope fields, so a host may extend the envelope with its own keys
+and the file remains importable everywhere; that tolerance is test-pinned
+(`packages/planner-ui/src/data/planFormat.test.ts`).

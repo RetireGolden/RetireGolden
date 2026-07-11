@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { LearnLink } from '../../learn/LearnLink'
+import { usePlanStore } from '../../data/planStoreContext'
 import { useDialogs } from '../dialogs'
 import { usePlan } from '../planContextCore'
 import { getExampleById } from './registry'
@@ -14,6 +15,7 @@ import { EXAMPLE_BANNER_PERSISTENCE } from './exampleCopy'
 
 export function ExamplePreviewBanner() {
   const { plan, discardPendingSave } = usePlan()
+  const store = usePlanStore()
   const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
   const { alert, dialogs } = useDialogs()
@@ -29,7 +31,7 @@ export function ExamplePreviewBanner() {
     setBusy(true)
     try {
       discardPendingSave()
-      const r = await saveExampleToMyPlans(plan)
+      const r = await saveExampleToMyPlans(plan, { store })
       if (r.ok) navigate(`/plan/${r.plan.id}/results`)
       else await alert({ title: 'Save example', body: `Could not save: ${r.issues.join('; ')}` })
     } finally {

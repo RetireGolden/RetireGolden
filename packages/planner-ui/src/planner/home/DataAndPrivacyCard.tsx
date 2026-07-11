@@ -1,6 +1,6 @@
 import type { RefObject } from 'react'
 
-import type { PlanSummary } from '../../data/planStore'
+import type { PlanSummary } from '../../data/planStoreContext'
 
 type DataAndPrivacyCardProps = {
   plans: PlanSummary[] | null

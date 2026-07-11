@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-import type { PlanSummary } from '../../data/planStore'
+import type { PlanSummary } from '../../data/planStoreContext'
 
 function fmtUpdated(iso: string): string {
   const d = new Date(iso)

@@ -82,13 +82,24 @@ export async function loadPlan(id: string): Promise<MigrateResult> {
 
 export type SavePlanResult = { ok: true; plan: Plan } | { ok: false; issues: string[] }
 
-/** Validates and writes a plan, bumping `updatedAtIso`. */
-export async function savePlan(plan: Plan, now: () => Date = () => new Date()): Promise<SavePlanResult> {
+/**
+ * The pure half of a save: bump `updatedAtIso` and re-validate. Every store
+ * that persists plans (this one and any host-provided `PlanStore`) writes
+ * through this so validation cannot drift between implementations.
+ */
+export function checkPlanForSave(plan: Plan, now: () => Date = () => new Date()): SavePlanResult {
   const stamped: Plan = { ...plan, updatedAtIso: now().toISOString() }
   const checked = parsePlan(stamped)
   if (!checked.ok) return { ok: false, issues: checked.issues }
-  await (await db()).put(PLANS_STORE, checked.plan)
   return { ok: true, plan: checked.plan }
+}
+
+/** Validates and writes a plan, bumping `updatedAtIso`. */
+export async function savePlan(plan: Plan, now: () => Date = () => new Date()): Promise<SavePlanResult> {
+  const checked = checkPlanForSave(plan, now)
+  if (!checked.ok) return checked
+  await (await db()).put(PLANS_STORE, checked.plan)
+  return checked
 }
 
 export interface DuplicatePlanOptions {
@@ -103,13 +114,12 @@ export interface DuplicatePlanOptions {
   source?: Plan
 }
 
-export async function duplicatePlan(id: string, opts: DuplicatePlanOptions = {}): Promise<SavePlanResult> {
-  let source = opts.source
-  if (!source) {
-    const loaded = await loadPlan(id)
-    if (!loaded.ok) return { ok: false, issues: [`Could not load source plan (${loaded.reason}).`] }
-    source = loaded.plan
-  }
+/**
+ * The pure half of duplication: fresh id, user origin, stamped timestamps.
+ * Shared by the browser store and the store-generic seam operations so the
+ * clone semantics live in exactly one place.
+ */
+export function cloneAsUserPlan(source: Plan, opts: DuplicatePlanOptions = {}): { clone: Plan; nowIso: string } {
   const now = opts.now ?? (() => new Date())
   const nowIso = now().toISOString()
   const clone: Plan = structuredClone(source)
@@ -119,17 +129,29 @@ export async function duplicatePlan(id: string, opts: DuplicatePlanOptions = {})
   clone.exampleSourceId = source.exampleSourceId
   clone.createdAtIso = nowIso
   clone.updatedAtIso = nowIso
+  return { clone, nowIso }
+}
+
+export async function duplicatePlan(id: string, opts: DuplicatePlanOptions = {}): Promise<SavePlanResult> {
+  let source = opts.source
+  if (!source) {
+    const loaded = await loadPlan(id)
+    if (!loaded.ok) return { ok: false, issues: [`Could not load source plan (${loaded.reason}).`] }
+    source = loaded.plan
+  }
+  const { clone, nowIso } = cloneAsUserPlan(source, opts)
   return savePlan(clone, () => new Date(nowIso))
 }
 
 /**
- * Atomically converts a library demo to a user plan: delete the reserved
- * `example:*` record and put the converted plan under a fresh id.
+ * The pure half of demo conversion: the `example:*` record re-keyed under a
+ * fresh id as a user plan, re-validated. The delete/write choreography is the
+ * caller's business (atomic here; save-then-delete across the seam).
  */
-export async function convertExampleToUserPlan(
+export function convertedFromExample(
   plan: Plan,
   opts: { newId?: () => string; now?: () => Date } = {},
-): Promise<SavePlanResult> {
+): SavePlanResult {
   const newId = (opts.newId ?? (() => crypto.randomUUID()))()
   const now = opts.now ?? (() => new Date())
   const nowIso = now().toISOString()
@@ -142,13 +164,26 @@ export async function convertExampleToUserPlan(
   }
   const checked = parsePlan(converted)
   if (!checked.ok) return { ok: false, issues: checked.issues }
+  return { ok: true, plan: checked.plan }
+}
+
+/**
+ * Atomically converts a library demo to a user plan: delete the reserved
+ * `example:*` record and put the converted plan under a fresh id.
+ */
+export async function convertExampleToUserPlan(
+  plan: Plan,
+  opts: { newId?: () => string; now?: () => Date } = {},
+): Promise<SavePlanResult> {
+  const converted = convertedFromExample(plan, opts)
+  if (!converted.ok) return converted
 
   const database = await db()
   const tx = database.transaction(PLANS_STORE, 'readwrite')
   await tx.store.delete(plan.id)
-  await tx.store.put(checked.plan)
+  await tx.store.put(converted.plan)
   await tx.done
-  return { ok: true, plan: checked.plan }
+  return converted
 }
 
 export async function deletePlan(id: string): Promise<void> {
@@ -162,4 +197,18 @@ export async function clearAllPlans(): Promise<void> {
 /** Raw record count — includes library demos. */
 export async function countStoredPlans(): Promise<number> {
   return (await (await db()).count(PLANS_STORE))
+}
+
+/**
+ * Raw record accessors backing the browser implementation of the `PlanStore`
+ * seam (data/planStoreContext.tsx): documents in/out, no migration or
+ * validation — those stay in the seam layer so they run identically over any
+ * store. Prefer `loadPlan`/`savePlan` everywhere else.
+ */
+export async function getPlanRecord(id: string): Promise<unknown> {
+  return (await (await db()).get(PLANS_STORE, id)) as unknown
+}
+
+export async function putPlanRecord(plan: Plan): Promise<void> {
+  await (await db()).put(PLANS_STORE, plan)
 }
