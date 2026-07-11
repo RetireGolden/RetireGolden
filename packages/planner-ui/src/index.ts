@@ -12,4 +12,5 @@
  * (cases, owl-parity, docs tests). Those deep paths carry no stability
  * promise — see README "Published API surface".
  */
-export { App as PlannerApp } from './App.tsx'
+export { App as PlannerApp, type PlannerAppProps } from './App.tsx'
+export type { ReportBranding } from './report/reportHtml'

@@ -23,6 +23,7 @@ import { DEFAULT_PATH_COUNT, runMonteCarlo } from '../mc/pool'
 import type { OptimizeResult } from '../optimize/messages'
 import { runOptimize } from '../optimize/runner'
 import { downloadStandaloneReport } from '../report/downloadReport'
+import { useReportBranding } from '../report/brandingContext'
 import { reportEvidenceFromOptimizeResult } from '../report/reportHtml'
 import { usePlan } from './planContextCore'
 import { WhyRecommendationPanel } from './explainPanels'
@@ -124,6 +125,7 @@ const OBJECTIVE_CHOICES: ReadonlyArray<{ value: ObjectivePolicyId; label: string
 
 export function OptimizePage() {
   const { plan, update } = usePlan()
+  const reportBranding = useReportBranding()
   const startYear = currentStartYear()
 
   const [optimizeResult, setOptimizeResult] = useState<OptimizeResult | null>(null)
@@ -295,6 +297,7 @@ export function OptimizePage() {
       summary: view.summary,
       startYear,
       recommendationEvidence: reportEvidenceFromOptimizeResult(optimizeResult),
+      branding: reportBranding,
     })
   }
 

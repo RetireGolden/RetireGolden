@@ -23,6 +23,7 @@ import {
 import type { Account, IncomeStream, Plan } from '@retiregolden/engine/model/plan'
 import type { YearResult } from '@retiregolden/engine/projection/types'
 import { downloadStandaloneReport } from '../report/downloadReport'
+import { useReportBranding } from '../report/brandingContext'
 import { PlanProvider } from './PlanContext'
 import { usePlan } from './planContextCore'
 import { fmtMoney, fmtMoneyCompact, fmtPct } from './format'
@@ -105,6 +106,7 @@ const td: React.CSSProperties = { padding: '0.3rem 0.6rem', borderBottom: '1px s
 
 function ReportBody() {
   const { plan } = usePlan()
+  const reportBranding = useReportBranding()
   const view = useProjection(plan)
   const { result, summary } = view
   const hasCarryforward = plan.household.capitalLossCarryforward > 0
@@ -145,6 +147,7 @@ function ReportBody() {
                 result,
                 summary,
                 startYear: view.startYear,
+                branding: reportBranding,
               })
             }
           >
