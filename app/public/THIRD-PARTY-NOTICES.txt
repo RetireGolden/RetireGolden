@@ -10,7 +10,7 @@ Source:    npm ls --omit=dev --all (workspace root package-lock.json)
 
 ================================================================================
 
-@reduxjs/toolkit (2.11.2)
+@reduxjs/toolkit (2.12.0)
 License: MIT
 Author: Mark Erikson <mark@isquaredsoftware.com>
 Homepage: https://redux-toolkit.js.org
@@ -448,17 +448,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 --------------------------------------------------------------------------------
 
-es-toolkit (1.46.1)
+es-toolkit (1.49.0)
 License: MIT
 Homepage: https://es-toolkit.dev
 ----------
 MIT License
 
-Copyright (c) 2024 Viva Republica, Inc
-
-Copyright OpenJS Foundation and other contributors
-
-Parts of the test suite and compatibility layer in `es-toolkit/compat` are derived from Lodash (https://github.com/lodash/lodash) by the OpenJS Foundation (https://openjsf.org/) and Underscore.js by Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors (http://underscorejs.org/)
+Copyright (c) 2024 Viva Republica, Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -552,7 +548,7 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH RE
 
 --------------------------------------------------------------------------------
 
-immer (11.1.8, 10.2.0)
+immer (11.1.11)
 License: MIT
 Author: Michel Weststrate <info@michel.codes>
 Homepage: https://github.com/immerjs/immer#readme
@@ -602,7 +598,7 @@ THIS SOFTWARE.
 
 --------------------------------------------------------------------------------
 
-react (19.2.6)
+react (19.2.7)
 License: MIT
 Homepage: https://react.dev/
 ----------
@@ -630,7 +626,7 @@ SOFTWARE.
 
 --------------------------------------------------------------------------------
 
-react-dom (19.2.6)
+react-dom (19.2.7)
 License: MIT
 Homepage: https://react.dev/
 ----------
@@ -658,7 +654,7 @@ SOFTWARE.
 
 --------------------------------------------------------------------------------
 
-react-is (19.2.6)
+react-is (19.2.7)
 License: MIT
 Homepage: https://react.dev/
 ----------
@@ -686,7 +682,7 @@ SOFTWARE.
 
 --------------------------------------------------------------------------------
 
-react-redux (9.2.0)
+react-redux (9.3.0)
 License: MIT
 Author: Dan Abramov <dan.abramov@me.com> (https://github.com/gaearon)
 Homepage: https://github.com/reduxjs/react-redux
@@ -715,7 +711,7 @@ SOFTWARE.
 
 --------------------------------------------------------------------------------
 
-react-router (7.18.0)
+react-router (7.18.1)
 License: MIT
 Author: Remix Software <hello@remix.run>
 Homepage: https://github.com/remix-run/react-router
@@ -746,7 +742,7 @@ SOFTWARE.
 
 --------------------------------------------------------------------------------
 
-react-router-dom (7.18.0)
+react-router-dom (7.18.1)
 License: MIT
 Author: Remix Software <hello@remix.run>
 Homepage: https://github.com/remix-run/react-router
@@ -777,7 +773,7 @@ SOFTWARE.
 
 --------------------------------------------------------------------------------
 
-recharts (3.8.1)
+recharts (3.9.2)
 License: MIT
 Author: recharts group
 Homepage: https://github.com/recharts/recharts
@@ -863,7 +859,7 @@ SOFTWARE.
 
 --------------------------------------------------------------------------------
 
-reselect (5.1.1)
+reselect (5.2.0)
 License: MIT
 Homepage: https://github.com/reduxjs/reselect.git
 ----------
@@ -1055,7 +1051,7 @@ Packages with no LICENSE file found (metadata only above):
 
 Excluded @types/* packages (TypeScript-only; not in the runtime bundle):
   - @retiregolden/engine@0.1.0
-  - @types/react@19.2.14
+  - @types/react@19.2.17
   - @types/use-sync-external-store@0.0.6
   - @types/d3-array@3.2.2
   - @types/d3-ease@3.0.2
