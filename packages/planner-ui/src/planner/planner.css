@@ -6,6 +6,21 @@
   margin: 0 auto;
 }
 
+/* Order-proof copy of the rule above for the app shell itself: .app-shell
+   (52rem, index.css) ties this file's .planner-shell on specificity, so the
+   winner used to depend on which stylesheet the bundler emitted first — dev
+   injected planner.css last (80rem shell), while the production build linked
+   it first, quietly capping the whole workspace at 52rem. The compound +
+   :not() outranks .app-shell regardless of order, keeps the tighter
+   .app-shell--landing column (index.css) in charge of the landing routes,
+   and @media screen leaves the print reset (max-width: none, below)
+   uncontested. */
+@media screen {
+  .app-shell.planner-shell:not(.app-shell--landing) {
+    max-width: 80rem;
+  }
+}
+
 .kpi-value,
 .year-table td,
 .compare-table td {
