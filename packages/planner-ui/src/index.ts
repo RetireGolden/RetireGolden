@@ -24,3 +24,16 @@ export {
   type PlanStore,
   type PlanSummary,
 } from './data/planStoreContext.ts'
+
+// Route-level exports: mount a subset of the planner under the host's own
+// router (react-router v7 route-object arrays). `<PlannerApp/>` remains the
+// batteries-included composition of all three groups plus the web chrome.
+export {
+  plannerContentRoutes,
+  plannerHomeRoutes,
+  plannerWorkspaceRoutes,
+} from './routes/groups.tsx'
+
+// Report branding for hosts that mount route groups directly; `<PlannerApp/>`
+// hosts use the `reportBranding` prop instead.
+export { ReportBrandingProvider } from './report/ReportBrandingProvider.tsx'
