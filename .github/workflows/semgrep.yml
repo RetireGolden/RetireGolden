@@ -28,10 +28,10 @@ jobs:
     name: Scan (p/default)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.x"
 
@@ -46,7 +46,7 @@ jobs:
 
       - name: Upload SARIF as build artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: semgrep-sarif
           path: semgrep.sarif
@@ -58,7 +58,7 @@ jobs:
         # available (e.g. a private repo without GitHub Advanced Security).
         if: always()
         continue-on-error: true
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@02c5e83432fe5497fd85b873b6c9f16a8578e1d9 # v3.37.0
         with:
           sarif_file: semgrep.sarif
           category: semgrep
