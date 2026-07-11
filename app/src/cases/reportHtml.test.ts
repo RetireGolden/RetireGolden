@@ -194,9 +194,8 @@ describe('report branding', () => {
   it('renders an SVG data-URI logo as an <img> without exposing embedded script', () => {
     // <img>-rendered SVG never executes scripts; the document itself must
     // still contain no raw <script (the payload stays base64-opaque).
-    const svgWithScript = Buffer.from(
-      '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
-    ).toString('base64')
+    // btoa, not Buffer: the app tsconfig deliberately omits node types.
+    const svgWithScript = btoa('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>')
     const html = htmlWith({ logoDataUri: `data:image/svg+xml;base64,${svgWithScript}` })
     expect(html).toContain(`<img class="report-logo" src="data:image/svg+xml;base64,${svgWithScript}"`)
     expect(html).not.toContain('<script')
