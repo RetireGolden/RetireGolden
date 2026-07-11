@@ -20,7 +20,7 @@ enforced by tests (`app/src/data/v2Backup.roundtrip.test.ts`, `app/src/data/v2Ba
 ```
 
 - `kind` — file discriminator. `retiregolden.v2.backup` is current; the pre-rebrand
-  `retirecalc.v2.backup` is accepted on import forever.
+  `retiremint.v2.backup` and `retirecalc.v2.backup` kinds are accepted on import forever.
 - `backupVersion` — envelope layout version, currently **1**. A file with an unknown
   `backupVersion` is refused with a clear message rather than guessed at.
 - `exportedAtIso` — informational timestamp; never used for logic.

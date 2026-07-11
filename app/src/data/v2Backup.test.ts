@@ -34,6 +34,19 @@ describe('v2 backup envelope', () => {
     if (result.ok) expect(result.plans).toHaveLength(1)
   })
 
+  it('accepts RetireMint backups for migration to RetireGolden', () => {
+    const plan = createEmptyPlan({ newId: testIds, now: fixedNow, name: 'RetireMint plan' })
+    const json = JSON.stringify({
+      kind: 'retiremint.v2.backup',
+      backupVersion: 1,
+      exportedAtIso: 'x',
+      plans: [plan],
+    })
+    const result = parseV2Backup(json)
+    expect(result.ok).toBe(true)
+    if (result.ok) expect(result.plans).toEqual([plan])
+  })
+
   it('rejects oversized payloads', () => {
     const result = parseV2Backup('x'.repeat(MAX_BACKUP_JSON_CHARS + 1))
     expect(result).toEqual({ ok: false, reason: 'too_large' })

@@ -11,8 +11,9 @@ import { isExamplePlanId } from './planOrigin'
 import { listPlanSummaries } from './planStore'
 
 export const V2_BACKUP_KIND = 'retiregolden.v2.backup'
-/** Legacy envelope kind from before the RetireGolden rebrand — still accepted on import. */
+/** Legacy envelope kinds from before the RetireGolden rebrand — still accepted on import. */
 export const LEGACY_V2_BACKUP_KIND = 'retirecalc.v2.backup'
+export const RETIREMINT_V2_BACKUP_KIND = 'retiremint.v2.backup'
 export const V2_BACKUP_VERSION = 1
 /** Generous cap; primarily guards against importing the wrong (huge) file. */
 export const MAX_BACKUP_JSON_CHARS = 10_000_000
@@ -49,7 +50,12 @@ export function parseV2Backup(json: string): ParseV2BackupResult {
   }
   if (typeof raw !== 'object' || raw === null) return { ok: false, reason: 'wrong_kind' }
   const env = raw as { kind?: string; backupVersion?: number; plans?: unknown }
-  if ((env.kind !== V2_BACKUP_KIND && env.kind !== LEGACY_V2_BACKUP_KIND) || !Array.isArray(env.plans)) {
+  if (
+    (env.kind !== V2_BACKUP_KIND &&
+      env.kind !== RETIREMINT_V2_BACKUP_KIND &&
+      env.kind !== LEGACY_V2_BACKUP_KIND) ||
+    !Array.isArray(env.plans)
+  ) {
     return { ok: false, reason: 'wrong_kind' }
   }
   if (env.backupVersion !== V2_BACKUP_VERSION) return { ok: false, reason: 'unsupported_version' }
