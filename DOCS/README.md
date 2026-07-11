@@ -59,4 +59,4 @@ and a doc disagree, fix the doc to match the code.
 | `/learn/*` | Learning Center |
 | `/disclaimer` | Full disclaimer |
 
-Routes are declared in [`app/src/App.tsx`](../app/src/App.tsx). See [code-map.md](code-map.md) for the source layout.
+Routes are declared in [`packages/planner-ui/src/App.tsx`](../packages/planner-ui/src/App.tsx). See [code-map.md](code-map.md) for the source layout.

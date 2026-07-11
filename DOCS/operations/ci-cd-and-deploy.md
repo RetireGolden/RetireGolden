@@ -22,10 +22,10 @@ e2e  ─┘
 
 | Job | Runs | What it does |
 |-----|------|--------------|
-| `lint` | push + labeled PR | root `npm ci` then `npm run lint` (ESLint in `packages/engine` and `app`) |
-| `test` | push + labeled PR | root `npm ci` then `npm run test:coverage` (Vitest in `packages/engine` and `app`) |
+| `lint` | push + labeled PR | root `npm ci` then `npm run lint` (ESLint in `packages/engine`, `packages/planner-ui`, and `app`) |
+| `test` | push + labeled PR | root `npm ci` then `npm run test:coverage` (Vitest in `packages/engine`, `packages/planner-ui`, and `app`) |
 | `e2e` | push + labeled PR | Playwright browser layout tests (`npm run test:e2e`) in `app/` |
-| `build` | needs `lint`, `test`, `e2e` | root `npm run build` (engine `tsc -b`, then app `tsc -b && vite build`); uploads `app/dist` as the `dist` artifact |
+| `build` | needs `lint`, `test`, `e2e` | root `npm run build` (engine `tsc -b`, planner-ui `tsc -b`, then app `tsc -b && vite build`), then both packages' pack-smoke scripts (the engine tarball from plain Node ESM; the planner-ui tarball from a scratch Vite consumer); uploads `app/dist` as the `dist` artifact |
 | `deploy` | needs `build`; skipped on PR close | downloads `dist`, deploys via `Azure/static-web-apps-deploy@v1` with `skip_app_build: true`, `app_location: app/dist`; exposes the deployed URL as `preview_url` |
 | `dast` | PR only; needs `deploy` | OWASP ZAP baseline scan of the freshly deployed PR preview URL — see [security-scanning.md](security-scanning.md). On unlabeled PRs it still invokes `zap.yml` with an empty URL (the scan job skips itself) so the required nested check reports as skipped instead of hanging on "Expected" |
 | `close_pull_request` | PR close | tears down the SWA preview environment |
@@ -80,16 +80,22 @@ renaming any job.
 ## Local commands
 
 From the repo root: `npm run dev` (Vite dev server), `npm run build` (type-check + production build),
-`npm run test` (Vitest, both workspaces), `npm run lint` (ESLint, both workspaces). From `app/`:
+`npm run test` (Vitest, all workspaces), `npm run lint` (ESLint, all workspaces). From `app/`:
 `npm run preview` (serve the built `dist/`).
 
-## Engine package release
+## Package releases
 
 [`publish-engine.yml`](../../.github/workflows/publish-engine.yml) publishes `packages/engine` to npm
 as **`@retiregolden/engine`** (`npm publish --access public --provenance`). It fires on `engine-v<version>`
 tags — the tag must match `packages/engine/package.json` — or manually via workflow_dispatch (manual runs
 default to `--dry-run`). It needs the **`NPM_TOKEN`** repo secret: a granular npm automation token for the
 `@retiregolden` org with publish rights on the package.
+
+[`publish-planner-ui.yml`](../../.github/workflows/publish-planner-ui.yml) is the same pipeline for
+`packages/planner-ui` → **`@retiregolden/planner-ui`**, firing on `planner-ui-v<version>` tags. Its
+pack-smoke step installs the packed tarball into a scratch Vite consumer and builds it, proving the
+exports map, the dep-internal worker chunks, and the HiGHS wasm for external consumers. The same
+`NPM_TOKEN` must have publish rights on this package as well.
 
 ## Run on a new host / fork
 
