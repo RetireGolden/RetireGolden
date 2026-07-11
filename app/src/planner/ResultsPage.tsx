@@ -24,6 +24,7 @@ import {
 
 import type { Plan } from '../engine/model/plan'
 import { startingInvestableOf } from '../engine/montecarlo/riskBasedGuardrails'
+import { DEFAULT_PATH_COUNT } from '../mc/pool'
 import type { YearResult } from '../engine/projection/types'
 import { usePlan } from './planContextCore'
 import { isPlanIncomplete } from './planCompleteness'
@@ -35,6 +36,7 @@ import { BucketLensCard } from './BucketLensCard'
 import { FundedRatioCard } from './sections/IncomeFloorSection'
 import { chartTooltipStyle } from './chartStyle'
 import { frameH } from './chartFrame'
+import { useMcSuccessRate } from './useMcSuccessRate'
 
 type Dollars = 'nominal' | 'today'
 
@@ -113,6 +115,9 @@ const tooltipProps = {
   wrapperStyle: { zIndex: 2 },
 } as const
 
+/** "1,000" — keeps verdict copy in sync if the default path count changes. */
+const PATH_COUNT_LABEL = DEFAULT_PATH_COUNT.toLocaleString()
+
 /**
  * The FIRE metrics + FI-target chart. Rendered as the leading card only for
  * households still accumulating with retirement 5+ years out; for everyone
@@ -124,17 +129,20 @@ function FireLens({
   view,
   plan,
   rows,
+  dollarLabel,
 }: {
   view: ReturnType<typeof useProjection>
   plan: Plan
   rows: ReadonlyArray<{ year: number; investable: number; fiTarget: number }>
+  dollarLabel: string
 }) {
   return (
     <>
       <p className="card-hint">
         {view.summary.fiYear !== null
           ? `Based on your safe withdrawal rate assumption (${plan.assumptions.safeWithdrawalRatePct ?? 4}%), you reach FI in ${view.summary.fiYear} (age ${view.summary.fiAge}).`
-          : 'Your investable balance stays below the FI target through the plan horizon.'}
+          : 'Your investable balance stays below the FI target through the plan horizon.'}{' '}
+        Chart shown in {dollarLabel}.
       </p>
       <div className="metric-panel stat-grid">
         <div>
@@ -161,9 +169,13 @@ function FireLens({
 
       <div className="chart-frame" style={frameH(320)}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={[...rows]} margin={{ left: 12, right: 8, top: 8 }}>
+          <LineChart
+            data={[...rows]}
+            margin={{ left: 12, right: 8, top: 8 }}
+            aria-label="Path to financial independence: investable portfolio vs. FI target, year by year"
+          >
             <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
-            <XAxis dataKey="year" tick={{ fill: 'var(--muted)', fontSize: 12 }} />
+            <XAxis dataKey="year" interval="equidistantPreserveStart" tick={{ fill: 'var(--muted)', fontSize: 12 }} />
             <YAxis tickFormatter={moneyTick} tick={{ fill: 'var(--muted)', fontSize: 12 }} width={70} />
             <Legend />
             <Line dataKey="investable" name="Investable Portfolio" stroke="var(--chart-1)" dot={false} strokeWidth={3} />
@@ -217,7 +229,14 @@ export function ResultsPage() {
         const nominalFiTarget = view.summary.fiNumber * Math.pow(1 + plan.assumptions.inflationPct / 100, y.year - view.startYear)
         return {
           year: y.year,
-          ...Object.fromEntries(CATEGORIES.map((c) => [c, adj(y.year, cats[c])])),
+          // Zero balances render as null so empty categories stay out of the
+          // tooltip (an "HSA: $0" row is noise in a six-series stack).
+          ...Object.fromEntries(
+            CATEGORIES.map((c) => {
+              const v = adj(y.year, cats[c])
+              return [c, v > 0.5 ? v : null]
+            }),
+          ),
           income: adj(y.year, y.incomes.total),
           spending: adj(y.year, y.expenses.total + y.tax + y.penalties),
           tax: adj(y.year, y.tax),
@@ -230,18 +249,22 @@ export function ResultsPage() {
     [view, plan, adj],
   )
 
+  // Zero series values render as null so the tooltip (filterNull) skips them —
+  // a stack of 6–8 series otherwise lists every "$0" row as noise.
+  const orNull = (v: number) => (v > 0.5 ? v : null)
+
   const incomeRows = useMemo(
     () =>
       view.result.years.map((y) => ({
         year: y.year,
-        wages: adj(y.year, y.incomes.wages),
-        socialSecurity: adj(y.year, y.incomes.socialSecurity),
-        pension: adj(y.year, y.incomes.pension),
-        annuity: adj(y.year, y.incomes.annuity),
-        tipsLadder: adj(y.year, y.incomes.tipsLadder),
-        recurring: adj(y.year, y.incomes.recurring),
-        oneTime: adj(y.year, y.incomes.oneTime),
-        taxableYield: adj(y.year, y.incomes.taxableYield),
+        wages: orNull(adj(y.year, y.incomes.wages)),
+        socialSecurity: orNull(adj(y.year, y.incomes.socialSecurity)),
+        pension: orNull(adj(y.year, y.incomes.pension)),
+        annuity: orNull(adj(y.year, y.incomes.annuity)),
+        tipsLadder: orNull(adj(y.year, y.incomes.tipsLadder)),
+        recurring: orNull(adj(y.year, y.incomes.recurring)),
+        oneTime: orNull(adj(y.year, y.incomes.oneTime)),
+        taxableYield: orNull(adj(y.year, y.incomes.taxableYield)),
       })),
     [view, adj],
   )
@@ -250,14 +273,14 @@ export function ResultsPage() {
     () =>
       view.result.years.map((y) => ({
         year: y.year,
-        base: adj(y.year, y.expenses.baseSpending),
-        healthcare: adj(y.year, y.expenses.healthcare),
-        property: adj(y.year, y.expenses.propertyCosts),
-        debt: adj(y.year, y.expenses.debtService),
-        insurance: adj(y.year, y.expenses.insurancePremiums),
-        care: adj(y.year, Math.max(0, y.expenses.careCost - y.expenses.ltcBenefit)),
-        goals: adj(y.year, y.expenses.oneTimeGoals),
-        taxes: adj(y.year, y.tax + y.penalties),
+        base: orNull(adj(y.year, y.expenses.baseSpending)),
+        healthcare: orNull(adj(y.year, y.expenses.healthcare)),
+        property: orNull(adj(y.year, y.expenses.propertyCosts)),
+        debt: orNull(adj(y.year, y.expenses.debtService)),
+        insurance: orNull(adj(y.year, y.expenses.insurancePremiums)),
+        care: orNull(adj(y.year, Math.max(0, y.expenses.careCost - y.expenses.ltcBenefit))),
+        goals: orNull(adj(y.year, y.expenses.oneTimeGoals)),
+        taxes: orNull(adj(y.year, y.tax + y.penalties)),
       })),
     [view, adj],
   )
@@ -303,6 +326,19 @@ export function ResultsPage() {
   const depletionYear = view.summary.depletionYear
   const endYear = view.result.endYear
   const endingToday = view.deflate(endYear, view.result.endingNetWorth)
+  // Same debounced, plan-keyed run the KPI bar uses (shared in-flight, so this
+  // never adds a second simulation) — the verdict must speak with both of the
+  // engine's voices, not just the steady-markets ledger.
+  const mcRate = useMcSuccessRate(plan, !isPlanIncomplete(plan))
+  // The first full year after depletion shows what the ledger already knows:
+  // guaranteed income keeps flowing, and the uncovered gap is the engine's own
+  // shortfall figure — no recomputation here. When depletion lands in the
+  // final plan year there is no later year, so that year carries the floor.
+  const floorYear =
+    depletionYear !== null
+      ? (view.result.years.find((y) => y.year > depletionYear) ??
+        view.result.years.find((y) => y.year === depletionYear))
+      : undefined
   // The FIRE lens leads only for households genuinely accumulating: wages in
   // the projection AND retirement 5+ years out. For everyone else (retirees,
   // near-retirees whose plan may succeed while "FI date: —" reads as failure)
@@ -331,13 +367,42 @@ export function ResultsPage() {
             {depletionYear !== null ? (
               <>
                 The portfolio depletes {endYear - depletionYear} year{endYear - depletionYear === 1 ? '' : 's'} before
-                the end of the plan. <Link to={`/plan/${plan.id}/insights`}>See what would change this →</Link>
+                the end of the plan.
+                {floorYear !== undefined && floorYear.incomes.total > 0.5 ? (
+                  <>
+                    {' '}
+                    Income doesn't stop: about {fmtMoneyCompact(view.deflate(floorYear.year, floorYear.incomes.total))}
+                    /yr (today's dollars) of Social Security, pensions, and other income keeps arriving
+                    {floorYear.shortfall > 0.5 ? (
+                      <>
+                        , leaving an uncovered spending gap of about{' '}
+                        {fmtMoneyCompact(view.deflate(floorYear.year, floorYear.shortfall))}/yr
+                      </>
+                    ) : null}
+                    .
+                  </>
+                ) : null}
+                {mcRate !== null ? (
+                  <>
+                    {' '}
+                    Across {PATH_COUNT_LABEL} varied markets, this plan succeeds {Math.round(mcRate * 100)}% of the
+                    time — <Link to={`/plan/${plan.id}/monte-carlo`}>see Monte Carlo</Link>.
+                  </>
+                ) : null}{' '}
+                <Link to={`/plan/${plan.id}/insights`}>See what would change this →</Link>
               </>
             ) : (
               <>
-                Ending net worth {fmtMoneyCompact(view.result.endingNetWorth)} (
-                {fmtMoneyCompact(endingToday)} in today's dollars). The charts below are the evidence behind this
-                verdict.
+                In steady markets, ending net worth is {fmtMoneyCompact(view.result.endingNetWorth)} (
+                {fmtMoneyCompact(endingToday)} in today's dollars).
+                {mcRate !== null ? (
+                  <>
+                    {' '}
+                    Across {PATH_COUNT_LABEL} varied markets, this plan succeeds {Math.round(mcRate * 100)}% of the
+                    time — <Link to={`/plan/${plan.id}/monte-carlo`}>see Monte Carlo</Link>.
+                  </>
+                ) : null}{' '}
+                The charts below are the evidence behind this verdict.
               </>
             )}
           </p>
@@ -359,6 +424,10 @@ export function ResultsPage() {
           View assumptions card
         </Link>
       </div>
+
+      <p className="results-jump">
+        <a href="#year-table">Jump to the year-by-year table ↓</a>
+      </p>
 
       {view.result.warnings.length > 0 ? (
         <div className="callout callout--warn">
@@ -431,14 +500,14 @@ export function ResultsPage() {
       {fireLeads ? (
         <div className="chart-card">
           <h2>Path to Financial Independence (FIRE)</h2>
-          <FireLens view={view} plan={plan} rows={rows} />
+          <FireLens view={view} plan={plan} rows={rows} dollarLabel={dollarLabel} />
         </div>
       ) : null}
 
       <div className="chart-card">
         <h2>Investable balances by account type</h2>
         <p className="card-hint">
-          End-of-year balances.
+          End-of-year balances, shown in {dollarLabel}.
           {view.summary.depletionYear !== null ? (
             <>
               {' '}
@@ -448,9 +517,13 @@ export function ResultsPage() {
         </p>
         <div className="chart-frame" style={frameH(320)}>
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={rows} margin={{ left: 12, right: 8, top: 8 }}>
+            <AreaChart
+              data={rows}
+              margin={{ left: 12, right: 8, top: 8 }}
+              aria-label="Investable balances by account type, year by year"
+            >
               <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
-              <XAxis dataKey="year" tick={{ fill: 'var(--muted)', fontSize: 12 }} />
+              <XAxis dataKey="year" interval="equidistantPreserveStart" tick={{ fill: 'var(--muted)', fontSize: 12 }} />
               <YAxis tickFormatter={moneyTick} tick={{ fill: 'var(--muted)', fontSize: 12 }} width={70} />
               <Legend />
               {CATEGORIES.map((c) => (
@@ -474,18 +547,20 @@ export function ResultsPage() {
             FI metrics matter most while accumulating; for plans at or near retirement they are shown here for
             reference, not as a verdict.
           </p>
-          <FireLens view={view} plan={plan} rows={rows} />
+          <FireLens view={view} plan={plan} rows={rows} dollarLabel={dollarLabel} />
         </details>
       ) : null}
 
       <div className="chart-card">
         <h2>Income vs. spending</h2>
-        <p className="card-hint">Spending includes taxes and penalties; the gap is funded by withdrawals.</p>
+        <p className="card-hint">
+          Spending includes taxes and penalties; the gap is funded by withdrawals. Shown in {dollarLabel}.
+        </p>
         <div className="chart-frame" style={frameH(280)}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={rows} margin={{ left: 12, right: 8, top: 8 }}>
+            <BarChart data={rows} margin={{ left: 12, right: 8, top: 8 }} aria-label="Income vs. spending, year by year">
               <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
-              <XAxis dataKey="year" tick={{ fill: 'var(--muted)', fontSize: 12 }} />
+              <XAxis dataKey="year" interval="equidistantPreserveStart" tick={{ fill: 'var(--muted)', fontSize: 12 }} />
               <YAxis tickFormatter={moneyTick} tick={{ fill: 'var(--muted)', fontSize: 12 }} width={70} />
               <Legend />
               {/* Income is green (chart-3), spending gold: money in reads as green. */}
@@ -499,12 +574,15 @@ export function ResultsPage() {
 
       <div className="chart-card">
         <h2>Income by source</h2>
-        <p className="card-hint">Gross income streams each year. Any shortfall below spending is funded by portfolio withdrawals.</p>
+        <p className="card-hint">
+          Gross income streams each year, shown in {dollarLabel}. Any shortfall below spending is funded by portfolio
+          withdrawals.
+        </p>
         <div className="chart-frame" style={frameH(280)}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={incomeRows} margin={{ left: 12, right: 8, top: 8 }}>
+            <BarChart data={incomeRows} margin={{ left: 12, right: 8, top: 8 }} aria-label="Income by source, year by year">
               <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
-              <XAxis dataKey="year" tick={{ fill: 'var(--muted)', fontSize: 12 }} />
+              <XAxis dataKey="year" interval="equidistantPreserveStart" tick={{ fill: 'var(--muted)', fontSize: 12 }} />
               <YAxis tickFormatter={moneyTick} tick={{ fill: 'var(--muted)', fontSize: 12 }} width={70} />
               <Legend />
               {INCOME_SOURCES.map((s) => (
@@ -521,14 +599,19 @@ export function ResultsPage() {
       <div className="chart-card">
         <h2>Spending by category</h2>
         <p className="card-hint">
-          The big line items behind the Expenses column (taxes and penalties included). Mortgage principal &amp; interest
-          is "Debt payments"; property tax &amp; insurance are their own band; everything else lives in "Baseline living."
+          The big line items behind the Expenses column (taxes and penalties included), shown in {dollarLabel}. Mortgage
+          principal &amp; interest is "Debt payments"; property tax &amp; insurance are their own band; everything else
+          lives in "Baseline living."
         </p>
         <div className="chart-frame" style={frameH(280)}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={expenseRows} margin={{ left: 12, right: 8, top: 8 }}>
+            <BarChart
+              data={expenseRows}
+              margin={{ left: 12, right: 8, top: 8 }}
+              aria-label="Spending by category, year by year"
+            >
               <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
-              <XAxis dataKey="year" tick={{ fill: 'var(--muted)', fontSize: 12 }} />
+              <XAxis dataKey="year" interval="equidistantPreserveStart" tick={{ fill: 'var(--muted)', fontSize: 12 }} />
               <YAxis tickFormatter={moneyTick} tick={{ fill: 'var(--muted)', fontSize: 12 }} width={70} />
               <Legend />
               {EXPENSE_CATEGORIES.map((c) => (
@@ -543,14 +626,15 @@ export function ResultsPage() {
       <div className="chart-card">
         <h2>Tax and MAGI ({dollarLabel})</h2>
         <p className="card-hint">
-          MAGI drives IRMAA (two-year lookback) and the ACA credit before 65. Insight threshold checks use the nominal
-          dollars for each rule.
+          Modified adjusted gross income (MAGI) sets Medicare's income surcharge (IRMAA, which looks back two years)
+          and the marketplace health-insurance credit (ACA) before 65. Threshold checks always use each year's nominal
+          dollars.
         </p>
         <div className="chart-frame" style={frameH(280)}>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={rows} margin={{ left: 12, right: 8, top: 8 }}>
+            <LineChart data={rows} margin={{ left: 12, right: 8, top: 8 }} aria-label="Tax and MAGI, year by year">
               <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
-              <XAxis dataKey="year" tick={{ fill: 'var(--muted)', fontSize: 12 }} />
+              <XAxis dataKey="year" interval="equidistantPreserveStart" tick={{ fill: 'var(--muted)', fontSize: 12 }} />
               <YAxis tickFormatter={moneyTick} tick={{ fill: 'var(--muted)', fontSize: 12 }} width={70} />
               <Legend />
               <Line dataKey="tax" name="Tax" stroke="var(--chart-4)" dot={false} strokeWidth={2} />
@@ -561,8 +645,12 @@ export function ResultsPage() {
         </div>
       </div>
 
-      <details open>
-        <summary style={{ cursor: 'pointer', fontWeight: 650, margin: '0 0 0.6rem' }}>Year-by-year detail</summary>
+      <details open id="year-table">
+        {/* The h2 inside the summary keeps this reachable by heading navigation
+            (screen readers, heading-jump extensions) — a bare summary is not. */}
+        <summary className="year-table-summary">
+          <h2>Year-by-year detail</h2>
+        </summary>
         <div className="year-table-wrap">
           <table className="year-table">
             <thead>
@@ -639,7 +727,10 @@ export function ResultsPage() {
                     <td>
                       {y.guardrailAction !== 'hold' ? y.guardrailAction : ''}
                       {y.flexibleGoals.funded + y.flexibleGoals.partiallyFunded + y.flexibleGoals.deferred + y.flexibleGoals.skipped > 0 ? (
-                        <span>
+                        <span
+                          title={`Goals: ${y.flexibleGoals.funded} funded, ${y.flexibleGoals.partiallyFunded} partially funded, ${y.flexibleGoals.deferred} deferred, ${y.flexibleGoals.skipped} skipped`}
+                          aria-label={`Goals: ${y.flexibleGoals.funded} funded, ${y.flexibleGoals.partiallyFunded} partially funded, ${y.flexibleGoals.deferred} deferred, ${y.flexibleGoals.skipped} skipped`}
+                        >
                           {y.guardrailAction !== 'hold' ? ' · ' : ''}
                           {y.flexibleGoals.funded}F/{y.flexibleGoals.partiallyFunded}P/{y.flexibleGoals.deferred}D/{y.flexibleGoals.skipped}S
                         </span>
@@ -659,6 +750,10 @@ export function ResultsPage() {
         <details className="ss-explainer">
           <summary>What the columns mean</summary>
           <ul>
+            <li>
+              <strong>Age</strong> — one entry per person (e.g. "67 / 64"). A person shows "—" after their modeled
+              death; income and spending reflect the survivor from that year on.
+            </li>
             {hasLayeredSpending ? (
               <>
                 <li>
