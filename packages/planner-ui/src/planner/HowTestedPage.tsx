@@ -36,6 +36,13 @@ function suiteName(path: string): string {
   return base.replace(/([a-z0-9])([A-Z])/g, '$1 $2').toLowerCase()
 }
 
+// True when built inside the RetireGolden monorepo (retiregolden.app). A
+// build from the published tarball has no test files to count, and a trust
+// page must not report zeros as if the suites didn't exist — so counts and
+// the pinned-suite list degrade to count-free prose plus a pointer at the
+// upstream tree where they are derived.
+const HAS_SUITE_DATA = ALL_TEST_FILES.length > 0
+
 export function HowTestedPage() {
   return (
     <article className="page" style={{ maxWidth: '46rem', margin: '0 auto', textAlign: 'left' }}>
@@ -56,8 +63,8 @@ export function HowTestedPage() {
 
       <h2>Checked against independent implementations</h2>
       <p>
-        {EXTERNAL_ORACLE_SUITES.length} external-oracle golden suites pin RetireGolden's calculations to third-party
-        references that share no code with it:
+        {HAS_SUITE_DATA ? `${EXTERNAL_ORACLE_SUITES.length} external-oracle` : 'External-oracle'} golden suites pin
+        RetireGolden's calculations to third-party references that share no code with it:
       </p>
       <ul>
         <li>
@@ -74,9 +81,11 @@ export function HowTestedPage() {
           published rules (bend points, actuarial factors, family maximums, survivor limits).
         </li>
       </ul>
-      <p className="muted small">
-        Suites currently pinned: {EXTERNAL_ORACLE_SUITES.map(suiteName).join(' · ')}.
-      </p>
+      {HAS_SUITE_DATA && (
+        <p className="muted small">
+          Suites currently pinned: {EXTERNAL_ORACLE_SUITES.map(suiteName).join(' · ')}.
+        </p>
+      )}
       <p>
         The Roth-conversion optimizer additionally runs through a <strong>parity harness</strong>: a shared fixture
         matrix is solved both by RetireGolden and by an independent open-source conversion optimizer (pinned version),
@@ -106,12 +115,28 @@ export function HowTestedPage() {
 
       <h2>Golden suites and regression gates</h2>
       <p>
-        {GOLDEN_SUITES.length} golden suites hold fixed expected values for the tax engine, RMDs, Social Security, and
-        full-plan projections, out of {ALL_TEST_FILES.length} automated test files overall. A deterministic case
-        runner replays the whole example-plan library and diffs engine output on every change, so unintended result
-        drift is caught before it ships. New engine features land behind no-op defaults, guarded by "feature-off is
-        byte-identical" regressions.
+        {HAS_SUITE_DATA ? (
+          <>
+            {GOLDEN_SUITES.length} golden suites hold fixed expected values for the tax engine, RMDs, Social Security,
+            and full-plan projections, out of {ALL_TEST_FILES.length} automated test files overall.
+          </>
+        ) : (
+          <>
+            Golden suites hold fixed expected values for the tax engine, RMDs, Social Security, and full-plan
+            projections.
+          </>
+        )}{' '}
+        A deterministic case runner replays the whole example-plan library and diffs engine output on every change, so
+        unintended result drift is caught before it ships. New engine features land behind no-op defaults, guarded by
+        "feature-off is byte-identical" regressions.
       </p>
+      {!HAS_SUITE_DATA && (
+        <p className="muted small">
+          Suite counts and names are derived from the RetireGolden source tree at build time; this build was produced
+          outside that tree, so they aren't shown here. The live suites are public at{' '}
+          <a href="https://github.com/RetireGolden/RetireGolden">github.com/RetireGolden/RetireGolden</a>.
+        </p>
+      )}
 
       <h2>What RetireGolden deliberately simplifies</h2>
       <p>Honest scope beats false precision. RetireGolden is planning-grade, not filing-grade:</p>

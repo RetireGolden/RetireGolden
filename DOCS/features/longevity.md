@@ -9,7 +9,7 @@ is surfaced inside the planner via the Longevity modal rather than a standalone 
 
 | Area | Location |
 |------|----------|
-| SSA 2022 period table e(x), ages 0–119 | [`longevity/ssaPeriod2022.ts`](../../packages/planner-ui/src/longevity/ssaPeriod2022.ts) |
+| SSA 2022 period table e(x), ages 0–119 | [`longevity/ssaPeriod2022.ts`](../../packages/engine/src/longevity/ssaPeriod2022.ts) |
 | Lifestyle multipliers + comments | [`longevity/factors.ts`](../../packages/planner-ui/src/longevity/factors.ts) |
 | Baseline × clamped product + illustrative band | [`longevity/model.ts`](../../packages/planner-ui/src/longevity/model.ts) |
 | Wizard + results UI | [`longevity/LongevityWizard.tsx`](../../packages/planner-ui/src/longevity/LongevityWizard.tsx), [`LongevityResults.tsx`](../../packages/planner-ui/src/longevity/LongevityResults.tsx) |

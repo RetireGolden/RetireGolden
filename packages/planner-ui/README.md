@@ -95,6 +95,33 @@ Theming hook: the token layer is plain CSS custom properties on `:root` (and
 stylesheet after `index.css` and overriding tokens. Keep overrides
 WCAG-AA-honest — the upstream palette is contrast-guarded by tests.
 
+### Host-served static assets (required)
+
+The planner references a small set of **root-absolute URLs that the host must
+serve** — they are deliberately not bundled, because several are
+host-specific by nature. `app/public/` in the upstream repo is the reference
+tree to copy from:
+
+| Path | Used by | Notes |
+|------|---------|-------|
+| `/favicon.svg` | Header brand mark (mobile), logo fallback | |
+| `/brand/retiregolden-logo-lockup.png`, `/brand/retiregolden-logo-lockup-light.png` | Header logo (dark/light) | Missing files degrade to `/favicon.svg` |
+| `/learn/images/*.webp` | Learning Center article illustrations (~5 MB total) | Copy from `app/public/learn/images/` |
+| `/THIRD-PARTY-NOTICES.txt` | Disclaimer page's third-party attribution link | **Must describe the host's own bundle** — generate it from your dependency tree (the upstream generator is `app/scripts/generate-third-party-notices.mjs`); do not copy the web app's file verbatim |
+
+Electron hosts loading over `file://` should use `HashRouter` and a protocol
+handler (or serve the app over a local scheme) so these root-absolute URLs
+resolve against the app bundle, not the filesystem root.
+
+### Published API surface
+
+The supported product API is the root export (`PlannerApp`) plus
+`./index.css`. The exports map also exposes wildcard `./*.ts` subpaths
+(e.g. `./report/reportHtml`) — these exist for the upstream repo's own test
+and case-runner harnesses, are not covered by any stability promise, and may
+move or change in any release. If a host needs one of them long-term, open an
+upstream issue so it can be promoted to a real export instead.
+
 ### Storage
 
 Plans persist in the browser profile via IndexedDB (`idb`) with localStorage

@@ -22,14 +22,14 @@ Each person's Primary Insurance Amount is entered one of two ways (a per-person 
   *assume continued work through a stated age*, so the real PIA is lower if you stop earlier.
 - **Earnings history** — paste `year amount` lines or **import mySSA XML** ([ssaStatementXml.ts](../../packages/planner-ui/src/socialSecurity/ssaStatementXml.ts)).
   The engine computes indexed earnings → **AIME** → **PIA** via the 90/32/15% bend-point formula for the
-  correct eligibility year ([piaFromEarnings.ts](../../packages/planner-ui/src/socialSecurity/piaFromEarnings.ts)).
+  correct eligibility year ([piaFromEarnings.ts](../../packages/engine/src/socialSecurity/piaFromEarnings.ts)).
 
 Methodology that matters for accuracy:
 
 - **AIME** uses up to **35 years** of indexed covered earnings; fewer than 35 inserts **zeros**, lowering
   the average — the whole point of modeling early retirement honestly.
 - **Wage indexing** uses SSA's national Average Wage Index, with the numerator from the year **two years
-  before eligibility**; bend points and wage bases are data-driven ([ssaWageData.ts](../../packages/planner-ui/src/socialSecurity/ssaWageData.ts)).
+  before eligibility**; bend points and wage bases are data-driven ([ssaWageData.ts](../../packages/engine/src/socialSecurity/ssaWageData.ts)).
   If a required AWI year isn't in the table the engine returns a `missing_awi` error rather than guessing.
 - **Early-retirement projection:** future years between the last earnings year and the declared retirement
   age are projected at an assumed salary (default: most recent year, wage-indexed/capped), then zeroed —
@@ -42,15 +42,15 @@ Income tab shows it read-only and links there.
 
 ## Claiming factors
 
-Monthly granularity from 62 to 70 ([benefitFactor.ts](../../packages/planner-ui/src/socialSecurity/benefitFactor.ts),
-[socialSecurity/claimFactor.ts](../../packages/planner-ui/src/socialSecurity/claimFactor.ts)): early
+Monthly granularity from 62 to 70 ([benefitFactor.ts](../../packages/engine/src/socialSecurity/benefitFactor.ts),
+[socialSecurity/claimFactor.ts](../../packages/engine/src/socialSecurity/claimFactor.ts)): early
 reduction 5/9%/mo for the first 36 months then 5/12%/mo; delayed credits 2/3%/mo to 70. FRA by birth year
-with the Jan-1 rule ([nra.ts](../../packages/planner-ui/src/socialSecurity/nra.ts)).
+with the Jan-1 rule ([nra.ts](../../packages/engine/src/socialSecurity/nra.ts)).
 
 ## The benefit menu
 
 Beyond personal retirement benefits, the household ledger models the full eligibility menu
-([maritalBenefits.ts](../../packages/planner-ui/src/socialSecurity/maritalBenefits.ts),
+([maritalBenefits.ts](../../packages/engine/src/socialSecurity/maritalBenefits.ts),
 [survivorSwitching.ts](../../packages/planner-ui/src/socialSecurity/survivorSwitching.ts)):
 
 - **Spousal top-up** while both are alive and claiming: the lower earner receives

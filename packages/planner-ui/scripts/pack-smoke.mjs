@@ -97,6 +97,9 @@ try {
     ),
   )
   writeFileSync(join(scratchDir, 'vite.config.ts'), viteConfig)
+  // Build-time CI script writing a constant Vite index.html into a mkdtemp
+  // scratch dir — nothing here is user-controlled or served to a browser.
+  // nosemgrep: javascript.lang.security.audit.unknown-value-with-script-tag.unknown-value-with-script-tag
   writeFileSync(join(scratchDir, 'index.html'), indexHtml)
   mkdirSync(join(scratchDir, 'src'))
   writeFileSync(join(scratchDir, 'src', 'main.tsx'), mainTsx)
