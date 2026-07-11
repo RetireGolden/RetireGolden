@@ -5,6 +5,8 @@ import { DisclaimerPage } from './planner/DisclaimerPage'
 import { RouteErrorBoundary } from './RouteErrorBoundary.tsx'
 import { RouteFallback } from './routes/RouteFallback'
 import { readLocal, STORAGE_KEYS, writeLocal } from './data/localStore'
+import { ReportBrandingContext } from './report/brandingContext'
+import type { ReportBranding } from './report/reportHtml'
 import './planner/planner.css'
 
 const PlanRoutes = lazy(() => import('./routes/PlanRoutes'))
@@ -57,7 +59,17 @@ function getResolvedTheme(mode: ThemeMode) {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
-export function App() {
+export interface PlannerAppProps {
+  /**
+   * Identity applied to downloaded HTML reports (name, logo, accent color,
+   * footer note) — a generic host hook; omit it and reports keep the
+   * RetireGolden defaults. In-app chrome is themed via CSS tokens instead
+   * (override the custom properties from index.css).
+   */
+  reportBranding?: ReportBranding
+}
+
+export function App({ reportBranding }: PlannerAppProps = {}) {
   const location = useLocation()
   const isLanding = location.pathname === '/' || location.pathname === '/examples'
   const [themeMode, setThemeMode] = useState<ThemeMode>(getInitialThemeMode)
@@ -110,6 +122,7 @@ export function App() {
       : '/brand/retiregolden-logo-lockup-light.png'
 
   return (
+    <ReportBrandingContext.Provider value={reportBranding ?? null}>
     <div className={`app-shell planner-shell${isLanding ? ' app-shell--landing' : ''}`}>
       <a className="skip-link" href="#main-content">
         Skip to content
@@ -228,5 +241,6 @@ export function App() {
         </span>
       </footer>
     </div>
+    </ReportBrandingContext.Provider>
   )
 }

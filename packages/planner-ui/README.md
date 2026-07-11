@@ -122,6 +122,35 @@ and case-runner harnesses, are not covered by any stability promise, and may
 move or change in any release. If a host needs one of them long-term, open an
 upstream issue so it can be promoted to a real export instead.
 
+### Report branding
+
+Downloaded HTML reports (Results, Report, and Optimizer pages) can carry the
+host's identity via the optional `reportBranding` prop — a generic hook, with
+RetireGolden defaults when omitted:
+
+```tsx
+<PlannerApp
+  reportBranding={{
+    productName: 'Acme Wealth Planner',        // report title, header line, filename
+    logoDataUri: 'data:image/png;base64,...',  // letterhead logo (data: URI only — reports stay self-contained)
+    logoAlt: 'Acme Wealth',
+    accentColor: '#1a3a5c',                    // letterhead rule color
+    footerNote: 'Prepared by Acme Wealth Advisors LLC.',
+  }}
+/>
+```
+
+`buildStandaloneReportHtml` (deep subpath `./report/reportHtml` — the
+stability caveat under "Published API surface" applies) accepts the same
+`branding` object directly for hosts that generate reports outside the
+planner pages. Values are sanitized — the logo must be a base64
+`data:image/...` URI, the accent must parse as a real CSS color (hex,
+`rgb()`/`hsl()`, or a named color; anything else falls back to the default
+gold), and text fields are escaped-and-kept — so the report's no-script
+guarantee holds regardless of input. This branding
+applies to downloaded reports only; the in-app chrome is themed via the CSS
+tokens (above).
+
 ### Storage
 
 Plans persist in the browser profile via IndexedDB (`idb`) with localStorage

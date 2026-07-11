@@ -21,6 +21,18 @@ describe('App shell smoke', () => {
     expect(html).not.toContain('Legacy v1')
   })
 
+  it('accepts a host reportBranding prop without changing the chrome', () => {
+    // The prop only affects downloaded reports (threaded via context to the
+    // report pages); the shell itself must render identically with it set.
+    const html = renderToString(
+      <MemoryRouter>
+        <App reportBranding={{ productName: 'Acme Wealth', accentColor: '#123456' }} />
+      </MemoryRouter>,
+    )
+    expect(html).toContain('RetireGolden')
+    expect(html).not.toContain('Acme Wealth')
+  })
+
   it('renders the examples page', async () => {
     // /examples is a lazy route, so it needs a client render (renderToString
     // would only emit the Suspense fallback).
