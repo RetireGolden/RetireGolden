@@ -82,16 +82,19 @@ as `@retiregolden/planner-ui`. The package ships TypeScript source and requires 
 bundler — see [packages/planner-ui/README.md](../packages/planner-ui/README.md) for the consumer
 contract. Vite/Vitest alias it to source in-repo, same as the engine.
 
-Top level of `src/`: `index.ts` (public API: `PlannerApp`), `App.tsx` (app shell + route table —
-routes: `/` plan picker, `/examples`, `/compare`, `/plan/*` via lazy `routes/PlanRoutes`,
-`/learn/*` via lazy `routes/LearnRoutes`, `/disclaimer`; retired v1 routes redirect to `/`),
-`routes/`, `RouteErrorBoundary.tsx`, `index.css` (the design-token layer, exported as
+Top level of `src/`: `index.ts` (public API: `PlannerApp`, the `PlanStore` seam, the route groups,
+`ReportBrandingProvider`), `App.tsx` (app shell: chrome + theme + `useRoutes` over the exported
+route groups), `routes/` (`groups.tsx` — the exported `plannerWorkspaceRoutes` /
+`plannerContentRoutes` / `plannerHomeRoutes` route-object arrays: `/` plan picker + `/import` in
+home; `/plan/*` via lazy `routes/PlanRoutes` + `/compare` in workspace; `/examples`, `/learn/*`
+via lazy `routes/LearnRoutes`, `/disclaimer`, `/how-tested` in content; retired v1 routes redirect
+to `/`), `RouteErrorBoundary.tsx`, `index.css` (the design-token layer, exported as
 `@retiregolden/planner-ui/index.css`), plus the `staticGuards` / `tokenContrast` / `appShell.smoke`
 test files.
 
 | Folder (`src/`) | What's here |
 |--------|-------------|
-| `data/` | Persistence: `planStore.ts` (IndexedDB via `idb`, user vs demo filtering), `planOrigin.ts`, `v2Backup.ts` (JSON export), `localStore.ts` (guarded localStorage + `STORAGE_KEYS`), `fedInvestClient.ts` (the opt-in FedInvest fetch + cache — the planner's only network touch) |
+| `data/` | Persistence: `planStoreContext.ts` + `PlanStoreProvider.tsx` (the host-implementable `PlanStore` seam and its store-generic `*Via` operations; demo records route to the browser store), `planStore.ts` (the IndexedDB implementation via `idb`, user vs demo filtering), `planOrigin.ts`, `planFormat.ts` (the v2 backup envelope — the stable `plan-format` subpath), `v2Backup.ts` (re-exports the envelope + storage-aware import normalization), `localStore.ts` (guarded localStorage + `STORAGE_KEYS`), `fedInvestClient.ts` (the opt-in FedInvest fetch + cache — the planner's only network touch) |
 | `planner/` | The planner UI (see below) |
 | `report/` | Self-contained HTML report rendering and browser download helper |
 | `mc/` | Monte Carlo Web Worker: `monteCarlo.worker.ts`, `pool.ts`, `runRequest.ts`, `messages.ts` |
@@ -134,7 +137,7 @@ test files.
 | The year-by-year projection | `engine: projection/simulate.ts` |
 | The plan data shape / schema version | `engine: model/plan.ts` |
 | Tax brackets / limits / 2026 numbers | `engine: params/data/year2026.ts` (+ `params/state/`) |
-| How a plan is saved/loaded | `data/planStore.ts`; export in `data/v2Backup.ts` (format contract: `DOCS/features/plan-file-format.md`) |
+| How a plan is saved/loaded | `data/planStoreContext.ts` (the `PlanStore` seam) over `data/planStore.ts` (IndexedDB default); export in `data/planFormat.ts` / `data/v2Backup.ts` (format contract: `DOCS/features/plan-file-format.md`) |
 | Importing from other tools / broker CSVs / a 1040 | `import/` (`ImportPage.tsx`, per-source mappers); balance updates in `planner/sections/UpdateBalancesPanel.tsx` |
 | Example library demos | `planner/examples/registry.ts`, `planner/examples/loadExample.ts`, `planner/examples/ExamplesPage.tsx`; `origin` on `Plan` in `engine: model/plan.ts` |
 | Local engine-regression manifests | `cases/caseRunner.ts`, `cases/caseDiff.ts`, `scripts/cases.mjs` |
