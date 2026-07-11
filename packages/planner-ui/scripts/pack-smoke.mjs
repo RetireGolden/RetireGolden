@@ -49,14 +49,34 @@ const indexHtml = `<!doctype html>
 const mainTsx = `
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
+import { BrowserRouter, useRoutes } from 'react-router-dom'
 import '@retiregolden/planner-ui/index.css'
-import { PlannerApp } from '@retiregolden/planner-ui'
+// The 0.2.0 host surface: the seam, the route groups, and the stable
+// plan-format subpath must all resolve from the tarball's exports map.
+import {
+  PlannerApp,
+  PlanStoreProvider,
+  indexedDbPlanStore,
+  plannerContentRoutes,
+  plannerWorkspaceRoutes,
+  type PlanStore,
+} from '@retiregolden/planner-ui'
+import { parseV2Backup, serializeV2Backup } from '@retiregolden/planner-ui/plan-format'
+
+const hostStore: PlanStore = indexedDbPlanStore
+
+function WorkspaceOnlyHost() {
+  return useRoutes([...plannerWorkspaceRoutes, ...plannerContentRoutes])
+}
+
+console.debug(parseV2Backup(serializeV2Backup([])).ok, WorkspaceOnlyHost.name)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <PlannerApp />
+      <PlanStoreProvider store={hostStore}>
+        <PlannerApp />
+      </PlanStoreProvider>
     </BrowserRouter>
   </StrictMode>,
 )
