@@ -26,6 +26,7 @@ import { downloadStandaloneReport } from '../report/downloadReport'
 import { useReportBranding } from '../report/brandingContext'
 import { reportEvidenceFromOptimizeResult } from '../report/reportHtml'
 import { usePlan } from './planContextCore'
+import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
 import { WhyRecommendationPanel } from './explainPanels'
 import { CheckboxField, HelpTip, SelectField } from './fields'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
@@ -125,6 +126,7 @@ const OBJECTIVE_CHOICES: ReadonlyArray<{ value: ObjectivePolicyId; label: string
 
 export function OptimizePage() {
   const { plan, update } = usePlan()
+  const readOnly = useWorkspaceReadOnly()
   const reportBranding = useReportBranding()
   const startYear = currentStartYear()
 
@@ -398,7 +400,7 @@ export function OptimizePage() {
             ) : null}
             {!scheduleApplyAvailable ? (
               <div style={{ marginTop: '0.75rem' }}>
-                <button type="button" className="btn btn-primary btn-small" onClick={applyClaimChangeOnly}>
+                <button type="button" className="btn btn-primary btn-small" disabled={readOnly} onClick={applyClaimChangeOnly}>
                   Apply claim change
                 </button>
               </div>
@@ -588,10 +590,10 @@ export function OptimizePage() {
                     }`}
               </p>
               <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                <button type="button" className="btn btn-primary btn-small" disabled={blocksApply} onClick={() => apply('optimized')}>
+                <button type="button" className="btn btn-primary btn-small" disabled={blocksApply || readOnly} onClick={() => apply('optimized')}>
                   Apply optimized schedule
                 </button>
-                <button type="button" className="btn btn-secondary btn-small" disabled={blocksApply} onClick={() => apply('manual')}>
+                <button type="button" className="btn btn-secondary btn-small" disabled={blocksApply || readOnly} onClick={() => apply('manual')}>
                   Accept as manual
                 </button>
                 {rerunButton()}

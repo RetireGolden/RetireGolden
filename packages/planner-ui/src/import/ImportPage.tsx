@@ -12,6 +12,7 @@ import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import { savePlanVia, usePlanStore } from '../data/planStoreContext'
+import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import { DateField, MoneyField, SelectField } from '../planner/fields'
 import { US_STATES } from '../planner/usStates'
@@ -83,6 +84,7 @@ const EMPTY_1040: TenFortyInputs = {
 export function ImportPage() {
   const navigate = useNavigate()
   const store = usePlanStore()
+  const readOnly = useWorkspaceReadOnly()
   const [source, setSource] = useState<SourceId | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [draft, setDraft] = useState<Draft | null>(null)
@@ -160,6 +162,20 @@ export function ImportPage() {
   const set1040 = (patch: Partial<TenFortyInputs>) => setTenForty((prev) => ({ ...prev, ...patch }))
 
   const fileAccept = source === 'projectionlab' ? 'application/json,.json' : '.csv,text/csv'
+
+  // Importing creates a new plan through the seam, so the whole wizard is a
+  // write path — surface a read-only notice instead when writes are disallowed.
+  if (readOnly) {
+    return (
+      <div className="import-page">
+        <h1>Import &amp; migrate</h1>
+        <div className="callout callout--info" role="status">
+          Importing creates a new plan, which isn&apos;t available while the workspace is read-only. You can still
+          open and explore existing plans. Return to <Link to="/">your plans</Link>.
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="import-page">

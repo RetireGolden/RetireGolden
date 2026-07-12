@@ -11,6 +11,7 @@ import { Link } from 'react-router-dom'
 
 import { parsePlan, type Plan } from '@retiregolden/engine/model/plan'
 import { loadPlanVia, savePlanVia, usePlanStore } from '../data/planStoreContext'
+import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
 import { EXAMPLE_PLAN_ID_PREFIX, isExamplePlanId } from '../data/planOrigin'
 import { getExampleById } from './examples/registry'
 import { saveFreshDemo } from './examples/loadExample'
@@ -25,12 +26,20 @@ const AUTOSAVE_MS = 600
  */
 export function PlanProvider({ planId, children }: { planId: string; children: ReactNode }) {
   const store = usePlanStore()
+  const readOnly = useWorkspaceReadOnly()
   const [plan, setPlan] = useState<Plan | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [saveState, setSaveState] = useState<SaveState>('loading')
   const [issues, setIssues] = useState<string[]>([])
   const timer = useRef<number | null>(null)
   const latestValid = useRef<Plan | null>(null)
+  // Latest read-only value, read inside the debounced save. A save can be
+  // scheduled while writable and fire ~600 ms later; if the host flips
+  // read-only in that window (an entitlement gate trips mid-session), the
+  // captured closure must still see the current value and not write. Synced in
+  // an effect (never mutate a ref during render); the debounce fires long after
+  // commit, so the ref is always current by the time runSave reads it.
+  const readOnlyRef = useRef(readOnly)
 
   useEffect(() => {
     let cancelled = false
@@ -74,7 +83,16 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
   // savePlanVia resolves { ok: false } on validation failure, but the store
   // write itself can still reject (quota, private mode) — degrade to 'error'
   // instead of leaving 'saving' stuck plus an unhandled rejection.
+  //
+  // Read-only is enforced here, at the single point that touches the store:
+  // no write is even attempted, so the host's `savePlan` throw (its
+  // authoritative gate) is never reached. `update` already avoids scheduling
+  // when read-only; this guard is the belt-and-suspenders backstop for any
+  // other path (flush on pagehide, a stray caller, or a debounce scheduled
+  // just before the flip). It reads the ref so the check is never stale, and
+  // the callback stays store-stable so pending timers point at one function.
   const runSave = useCallback((toSave: Plan) => {
+    if (readOnlyRef.current) return
     setSaveState('saving')
     void savePlanVia(store, toSave)
       .then((r) => {
@@ -111,8 +129,30 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
     latestValid.current = null
   }, [])
 
+  // Track the latest read-only value for the debounced save, and if the host
+  // flips read-only on mid-session, cancel any debounce already in flight so it
+  // doesn't fire a late (no-op) save. `runSave`'s ref guard is the correctness
+  // backstop; this keeps the ref current and stops the stale timer promptly.
+  useEffect(() => {
+    readOnlyRef.current = readOnly
+    if (readOnly && timer.current !== null) {
+      window.clearTimeout(timer.current)
+      timer.current = null
+    }
+  }, [readOnly])
+
   const update = useCallback(
     (mutator: (draft: Plan) => void) => {
+      // Read-only means the plan cannot mutate — not merely that it isn't
+      // saved. Dropping the mutation entirely (no on-screen change, no
+      // latestValid update) keeps read-only from producing a confusing
+      // half-mode where KPIs/strategy shift as if edited and then evaporate on
+      // reload, and stops a later re-enable from persisting that in-memory
+      // change. The editing controls are disabled and the explore-page apply/
+      // add actions are gated on `useWorkspaceReadOnly()`; this is the backstop
+      // for any mutate path that slips the UI gate. Uses the ref so a flip
+      // mid-render can't leave a stale-writable window.
+      if (readOnlyRef.current) return
       setPlan((current) => {
         if (!current) return current
         const draft = structuredClone(current)

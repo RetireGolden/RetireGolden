@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import { usePlan } from '../planContextCore'
+import { useWorkspaceReadOnly } from '../../data/workspaceReadOnly'
 import { useProjection, taxCalculatorFor, seedFromPlanId } from '../useProjection'
 import { packForYear } from '@retiregolden/engine/params'
 import { applyScenarioPatch } from '@retiregolden/engine/scenarios/scenarios'
@@ -31,6 +32,7 @@ function uniqueScenarioName(baseName: string, plan: Plan): string {
 
 export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDismiss: () => void }) {
   const { plan, update } = usePlan()
+  const readOnly = useWorkspaceReadOnly()
   const projectionView = useProjection(plan)
   const navigate = useNavigate()
 
@@ -312,7 +314,7 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
                 {loadingExact ? 'Loading…' : expanded ? 'Hide preview' : 'Preview impact'}
               </button>
               {expanded && exactImpact && (
-                <button type="button" className="btn btn-primary btn-small" onClick={handleAddScenario}>
+                <button type="button" className="btn btn-primary btn-small" disabled={readOnly} onClick={handleAddScenario}>
                   Add as scenario
                 </button>
               )}
@@ -323,11 +325,11 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
           )}
           {card.action.kind === 'apply-toggle' && (
             <>
-              <button type="button" className="btn btn-primary btn-small" onClick={handleApplyToggle}>
+              <button type="button" className="btn btn-primary btn-small" disabled={readOnly} onClick={handleApplyToggle}>
                 Apply to plan
               </button>
               {undoPlan && (
-                <button type="button" className="btn btn-secondary btn-small" onClick={handleUndoToggle}>
+                <button type="button" className="btn btn-secondary btn-small" disabled={readOnly} onClick={handleUndoToggle}>
                   Undo
                 </button>
               )}

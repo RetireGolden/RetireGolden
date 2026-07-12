@@ -27,6 +27,7 @@ import { fmtMoney, fmtPct } from './format'
 import { LEARN } from './learnLinks'
 import { buildModel } from './marketModelPicker'
 import { usePlan } from './planContextCore'
+import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
 import { currentStartYear, seedFromPlanId } from './useProjection'
 import { US_STATES } from './usStates'
 
@@ -164,6 +165,7 @@ function draftToCandidate(draft: CandidateDraft): RelocationCandidate {
 
 export function RelocationComparePage() {
   const { plan, update } = usePlan()
+  const readOnly = useWorkspaceReadOnly()
   const navigate = useNavigate()
   const startYear = currentStartYear()
 
@@ -449,7 +451,7 @@ export function RelocationComparePage() {
                 <DriverDetails row={row} />
                 {row.candidate ? (
                   <div style={{ marginTop: '0.5rem' }}>
-                    <button type="button" className="btn btn-secondary btn-small" onClick={() => addScenario(row)}>
+                    <button type="button" className="btn btn-secondary btn-small" disabled={readOnly} onClick={() => addScenario(row)}>
                       Add as scenario
                     </button>
                     <p className="field-hint" style={{ marginTop: '0.5rem' }}>

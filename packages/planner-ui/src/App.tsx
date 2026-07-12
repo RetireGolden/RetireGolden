@@ -63,9 +63,20 @@ export interface PlannerAppProps {
    * store's identity changes.
    */
   planStore?: PlanStore
+  /**
+   * When `true`, renders the plan-editing surfaces read-only: editing controls
+   * disable, autosave never runs, and the discrete write actions (duplicate,
+   * "Save to my plans", import, new plan, delete) are hidden — while
+   * results/report/compare and the export/download paths keep working. A
+   * generic, edition-neutral capability (planner-ui knows nothing about *why*);
+   * the host renders its own banner explaining the reason. Omitting it inherits
+   * an ambient `<PlanStoreProvider>`'s value (else `false`), so behavior is
+   * exactly as before unless a host opts in.
+   */
+  readOnly?: boolean
 }
 
-export function App({ reportBranding, planStore }: PlannerAppProps = {}) {
+export function App({ reportBranding, planStore, readOnly }: PlannerAppProps = {}) {
   // An ambient <PlanStoreProvider> above the app must win over the built-in
   // default; with neither prop nor provider this resolves to the browser
   // store (the context's default value).
@@ -125,7 +136,7 @@ export function App({ reportBranding, planStore }: PlannerAppProps = {}) {
       : '/brand/retiregolden-logo-lockup-light.png'
 
   return (
-    <PlanStoreProvider store={planStore ?? ambientStore}>
+    <PlanStoreProvider store={planStore ?? ambientStore} readOnly={readOnly}>
     <ReportBrandingContext.Provider value={reportBranding ?? null}>
     <div className={`app-shell planner-shell${isLanding ? ' app-shell--landing' : ''}`}>
       <a className="skip-link" href="#main-content">

@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom'
 
 import { LearnLink } from '../../learn/LearnLink'
 import { usePlanStore } from '../../data/planStoreContext'
+import { useWorkspaceReadOnly } from '../../data/workspaceReadOnly'
 import { useDialogs } from '../dialogs'
 import { usePlan } from '../planContextCore'
 import { getExampleById } from './registry'
@@ -16,6 +17,7 @@ import { EXAMPLE_BANNER_PERSISTENCE } from './exampleCopy'
 export function ExamplePreviewBanner() {
   const { plan, discardPendingSave } = usePlan()
   const store = usePlanStore()
+  const readOnly = useWorkspaceReadOnly()
   const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
   const { alert, dialogs } = useDialogs()
@@ -46,9 +48,14 @@ export function ExamplePreviewBanner() {
         {example?.lookFor ? ` ${example.lookFor}` : ''}
       </p>
       <div className="picker-actions" style={{ margin: 0 }}>
-        <button type="button" className="btn btn-primary btn-small" disabled={busy} onClick={() => void handleSave()}>
-          Save to my plans
-        </button>
+        {/* "Save to my plans" writes a converted user plan through the seam —
+            unavailable when read-only. The banner itself stays (explaining the
+            example is a preview) and the Learn link keeps working. */}
+        {readOnly ? null : (
+          <button type="button" className="btn btn-primary btn-small" disabled={busy} onClick={() => void handleSave()}>
+            Save to my plans
+          </button>
+        )}
         {learnHook ? <LearnLink {...learnHook} variant="button" className="btn btn-secondary btn-small" /> : null}
       </div>
       {dialogs}

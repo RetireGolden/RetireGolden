@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 
 import type { PlanSummary } from '../../data/planStoreContext'
+import { useWorkspaceReadOnly } from '../../data/workspaceReadOnly'
 
 function fmtUpdated(iso: string): string {
   const d = new Date(iso)
@@ -18,6 +19,7 @@ type YourPlansProps = {
 
 export function YourPlans({ plans, headingLevel = 'h2', actions, onOpenPlan, onDuplicate, onDelete }: YourPlansProps) {
   const Heading = headingLevel
+  const readOnly = useWorkspaceReadOnly()
 
   if (plans === null) {
     return <div className="skeleton" style={{ height: '8rem' }} aria-label="Loading plans" />
@@ -46,24 +48,28 @@ export function YourPlans({ plans, headingLevel = 'h2', actions, onOpenPlan, onD
               <span className="plan-card-name">{s.name}</span>
             </button>
             <span className="plan-card-meta">{fmtUpdated(s.updatedAtIso)}</span>
-            <span className="plan-card-actions">
-              <button
-                type="button"
-                className="btn-ghost"
-                aria-label={`Duplicate plan ${s.name}`}
-                onClick={() => void onDuplicate(s)}
-              >
-                Duplicate
-              </button>
-              <button
-                type="button"
-                className="btn-ghost btn-ghost-danger"
-                aria-label={`Delete plan ${s.name}`}
-                onClick={() => void onDelete(s)}
-              >
-                Delete
-              </button>
-            </span>
+            {/* Duplicate/Delete write through the seam — hidden when read-only.
+                Opening a plan (read) stays available. */}
+            {readOnly ? null : (
+              <span className="plan-card-actions">
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  aria-label={`Duplicate plan ${s.name}`}
+                  onClick={() => void onDuplicate(s)}
+                >
+                  Duplicate
+                </button>
+                <button
+                  type="button"
+                  className="btn-ghost btn-ghost-danger"
+                  aria-label={`Delete plan ${s.name}`}
+                  onClick={() => void onDelete(s)}
+                >
+                  Delete
+                </button>
+              </span>
+            )}
           </div>
         ))}
       </div>
