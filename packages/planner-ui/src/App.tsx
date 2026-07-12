@@ -69,13 +69,14 @@ export interface PlannerAppProps {
    * "Save to my plans", import, new plan, delete) are hidden — while
    * results/report/compare and the export/download paths keep working. A
    * generic, edition-neutral capability (planner-ui knows nothing about *why*);
-   * the host renders its own banner explaining the reason. Defaults to `false`,
-   * so omitting it leaves behavior exactly as before.
+   * the host renders its own banner explaining the reason. Omitting it inherits
+   * an ambient `<PlanStoreProvider>`'s value (else `false`), so behavior is
+   * exactly as before unless a host opts in.
    */
   readOnly?: boolean
 }
 
-export function App({ reportBranding, planStore, readOnly = false }: PlannerAppProps = {}) {
+export function App({ reportBranding, planStore, readOnly }: PlannerAppProps = {}) {
   // An ambient <PlanStoreProvider> above the app must win over the built-in
   // default; with neither prop nor provider this resolves to the browser
   // store (the context's default value).

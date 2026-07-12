@@ -18,6 +18,7 @@ import type { Plan } from '@retiregolden/engine/model/plan'
 import { _resetPlanStoreForTests } from './planStore'
 import type { PlanStore, PlanSummary } from './planStoreContext'
 import { PlanStoreProvider } from './PlanStoreProvider'
+import { useWorkspaceReadOnly } from './workspaceReadOnly'
 import { PlanProvider } from '../planner/PlanContext'
 import { PlanCtx, usePlan, type PlanContextValue } from '../planner/planContextCore'
 import { EditableFieldset } from '../planner/EditableFieldset'
@@ -152,6 +153,80 @@ describe('read-only autosave suppression', () => {
     expect((docs.get(sample.id) as Plan).name).toBe('Edited name')
 
     await teardown()
+  })
+})
+
+describe('readOnly inherits an ambient provider', () => {
+  function ReadOnlyProbe() {
+    return <span data-testid="ro">{String(useWorkspaceReadOnly())}</span>
+  }
+
+  async function mountNested(outer: boolean, inner: boolean | undefined) {
+    const { store } = makeFakeStore()
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+    await act(async () => {
+      root.render(
+        <PlanStoreProvider store={store} readOnly={outer}>
+          <PlanStoreProvider store={store} readOnly={inner}>
+            <ReadOnlyProbe />
+          </PlanStoreProvider>
+        </PlanStoreProvider>,
+      )
+    })
+    const seen = container.querySelector('[data-testid="ro"]')!.textContent
+    await act(async () => root.unmount())
+    container.remove()
+    return seen
+  }
+
+  it('a nested provider that omits readOnly inherits the parent value', async () => {
+    expect(await mountNested(true, undefined)).toBe('true')
+  })
+
+  it('an explicit readOnly on the nested provider still wins', async () => {
+    expect(await mountNested(true, false)).toBe('false')
+  })
+})
+
+describe('read-only flips mid-session', () => {
+  it('cancels an in-flight autosave when readOnly flips true before the debounce fires', async () => {
+    const { store, docs, calls } = makeFakeStore()
+    const sample = createSamplePlan()
+    docs.set(sample.id, structuredClone(sample))
+
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+    const tree = (readOnly: boolean) => (
+      <MemoryRouter initialEntries={[`/plan/${sample.id}`]}>
+        <PlanStoreProvider store={store} readOnly={readOnly}>
+          <PlanProvider planId={sample.id}>
+            <Probe />
+          </PlanProvider>
+        </PlanStoreProvider>
+      </MemoryRouter>
+    )
+
+    await act(async () => { root.render(tree(false)) })
+    await act(async () => {})
+    calls.length = 0
+
+    // Edit while writable — this schedules the 600 ms debounce — but do NOT
+    // wait it out; flip read-only on first, then let the window elapse.
+    await act(async () => {
+      ;(container.querySelector('[data-testid="rename"]') as HTMLButtonElement).click()
+    })
+    await act(async () => { root.render(tree(true)) })
+    await act(async () => { await settle() })
+
+    // The scheduled save never reached the store.
+    expect(calls.filter((c) => c.startsWith('savePlan:'))).toEqual([])
+    expect((docs.get(sample.id) as Plan).name).toBe(sample.name)
+
+    await act(async () => root.unmount())
+    container.remove()
   })
 })
 
