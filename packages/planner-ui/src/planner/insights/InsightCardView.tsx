@@ -198,8 +198,8 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
         type="button"
         className="btn-ghost insight-dismiss"
         onClick={onDismiss}
-        aria-label="Dismiss this recommendation"
-        title="Dismiss this recommendation"
+        aria-label="Dismiss this insight"
+        title="Dismiss this insight"
       >
         <svg
           viewBox="0 0 24 24"
@@ -319,7 +319,7 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
             </>
           )}
           {card.action.kind === 'advisory' && (
-            <span className="insight-advisory-note">Advisory only</span>
+            <span className="insight-advisory-note">Informational only</span>
           )}
           {card.action.kind === 'apply-toggle' && (
             <>

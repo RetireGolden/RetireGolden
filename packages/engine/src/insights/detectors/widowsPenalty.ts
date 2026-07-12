@@ -120,19 +120,19 @@ export const widowsPenalty: Detector = {
       (bracketJumpToday > 100
         ? `On the survivor's projected income in ${singleFiledYearObj!.year}, single brackets and the smaller deduction cost about $${bracketJumpToday.toLocaleString('en-US')} more (today's $) than the same income filed jointly. `
         : `Single filing cuts tax bracket ceilings in half, raising their tax rate. `) +
-      `Converting traditional assets to Roth before ${firstSingleYear} utilizes joint brackets.` +
+      `Converting traditional assets to Roth before ${firstSingleYear} would use joint brackets — preview that window as a scenario.` +
       ssa44Note
 
     const card: InsightCard = {
       id: 'widows-penalty-roth',
       category: 'social-security',
-      title: "Avoid the 'widow's penalty' tax cliff",
+      title: "The 'widow's penalty' tax cliff is in this projection",
       rationale,
       impact: {
         // The bracket jump is a size-of-problem number, not this action's
         // delta, so it lives in the rationale; the preview scenario supplies
         // the exact deltas when evaluated.
-        qualitative: 'Proactively convert assets while filing Married Jointly to protect the survivor from higher tax brackets.',
+        qualitative: 'Previews conversions during joint-filing years, priced against the survivor\'s higher single-filing brackets.',
       },
       exact: false,
       confidence: 'high',

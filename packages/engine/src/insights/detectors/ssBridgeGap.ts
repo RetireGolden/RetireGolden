@@ -64,7 +64,7 @@ export const ssBridgeGap: Detector = {
     return {
       id: 'ss-bridge-gap',
       category: 'social-security',
-      title: 'Fund your Social Security gap years with a bridge',
+      title: 'Your Social Security gap years are unfunded — compare a bridge',
       rationale:
         `You delay Social Security but retire earlier, leaving ${firstYear}–${lastYear} without your benefit. ` +
         `A TIPS bridge ladder (≈$${Math.round(totalCost).toLocaleString()} today) pays you the forgone age-62 benefit ` +

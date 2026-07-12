@@ -41,7 +41,7 @@ export interface ModelPreset {
 export const MODEL_PRESETS: ReadonlyArray<ModelPreset> = [
   {
     id: 'smooth',
-    label: 'Smooth randomness (recommended)',
+    label: 'Smooth randomness (default)',
     description: 'Each year varies around your expected return, like a bell curve.',
     kind: 'lognormal',
   },

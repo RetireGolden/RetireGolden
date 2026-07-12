@@ -46,7 +46,7 @@ export const spendingGuardrails: Detector = {
     return {
       id: 'spending-guardrails',
       category: 'sequence-risk',
-      title: 'Use dynamic spending guardrails',
+      title: 'Preview dynamic spending guardrails',
       rationale: `Your plan currently assumes fixed inflation-adjusted spending. Preview a rules-based guardrail scenario with a $${Math.round(requiredAnnual).toLocaleString()} required floor and 10% spending adjustments when the withdrawal-rate band is crossed.`,
       impact: {
         qualitative: 'Preview to compare the projected and Monte Carlo impact of flexible spending rules.',

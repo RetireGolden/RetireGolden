@@ -67,7 +67,7 @@ export const annuitizationHeadroom: Detector = {
       plannerRoute: 'monte-carlo',
       action: {
         kind: 'preview-scenario',
-        scenarioName: 'Buy a cover-the-floor SPIA',
+        scenarioName: 'Model a cover-the-floor SPIA purchase',
         patch: { accounts: [...plan.accounts, spia] },
       },
     }

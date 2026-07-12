@@ -102,9 +102,10 @@ export function InsightsPage() {
     <section>
       <LiveStatus message={liveMessage} />
       <div className="card">
-        <h2>Insights & Recommendations</h2>
+        <h2>Insights</h2>
         <p className="card-hint">
-          RetireGolden scans your plan to identify personalized planning opportunities. These recommendations update live as you edit.
+          RetireGolden scans your plan for modeled opportunities worth comparing. These findings update live as you
+          edit, and each one can be previewed as a scenario before anything in your plan changes.
         </p>
         <div className="callout callout--info">
           <strong>Educational only.</strong> These suggestions are for educational purposes based on the rules and assumptions modeled. They do not constitute financial, tax, or legal advice.
@@ -126,7 +127,7 @@ export function InsightsPage() {
           <div className="card">
             <h2>Social Security Optimizer</h2>
             <p className="card-hint">
-              Analyze every claiming age combination side-by-side to find the schedule that maximizes your ending estate.
+              Run every claiming-age combination through your full plan and rank them by the objective you choose.
             </p>
             <Link to={`/plan/${plan.id}/social-security-analysis`} className="btn btn-secondary btn-small">
               Run SS sweep →
