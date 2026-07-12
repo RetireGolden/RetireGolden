@@ -110,7 +110,7 @@ describe('read-only autosave suppression', () => {
     container.remove()
   }
 
-  it('reflects the edit on screen but never calls store.savePlan', async () => {
+  it('ignores the edit entirely — no mutation, no store.savePlan', async () => {
     const { store, docs, calls } = makeFakeStore()
     const sample = createSamplePlan()
     docs.set(sample.id, structuredClone(sample))
@@ -125,9 +125,10 @@ describe('read-only autosave suppression', () => {
       await settle()
     })
 
-    // The edit shows on screen…
-    expect(container.querySelector('[data-testid="name"]')!.textContent).toBe('Edited name')
-    // …but nothing was persisted: no savePlan call, and the stored doc is unchanged.
+    // Read-only means the plan cannot mutate: the on-screen name is unchanged
+    // (not just unsaved), so a later re-enable can't persist a phantom edit…
+    expect(container.querySelector('[data-testid="name"]')!.textContent).toBe(sample.name)
+    // …and nothing reached the store.
     expect(calls.filter((c) => c.startsWith('savePlan:'))).toEqual([])
     expect((docs.get(sample.id) as Plan).name).toBe(sample.name)
     // No misleading "saving"/"dirty" state churn.

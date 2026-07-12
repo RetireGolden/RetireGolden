@@ -17,6 +17,7 @@ import type { Plan } from '@retiregolden/engine/model/plan'
 import type { SpendingSolveResult } from '../optimize/spendingMessages'
 import { runSpendingSolve } from '../optimize/spendingRunner'
 import { usePlan } from './planContextCore'
+import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
 import { HelpTip } from './fields'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { LearnLink } from '../learn/LearnLink'
@@ -68,6 +69,7 @@ const SHAPE_DEFS: { id: SpendingShapeId; label: string }[] = [
 
 export function SpendingSolverPage() {
   const { plan, update } = usePlan()
+  const readOnly = useWorkspaceReadOnly()
   const navigate = useNavigate()
   const startYear = currentStartYear()
 
@@ -335,10 +337,10 @@ export function SpendingSolverPage() {
                   {result.converged ? ', converged to ~$500 resolution.' : ' — budget exhausted, feasible lower bound.'}
                 </p>
                 <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                  <button type="button" className="btn btn-primary btn-small" onClick={applyToSpending}>
+                  <button type="button" className="btn btn-primary btn-small" disabled={readOnly} onClick={applyToSpending}>
                     Apply to Spending
                   </button>
-                  <button type="button" className="btn btn-secondary btn-small" onClick={addScenario}>
+                  <button type="button" className="btn btn-secondary btn-small" disabled={readOnly} onClick={addScenario}>
                     Add as scenario
                   </button>
                   <button type="button" className="btn btn-secondary btn-small" disabled={running} onClick={run}>

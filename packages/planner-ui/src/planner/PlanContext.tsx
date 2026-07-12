@@ -143,6 +143,16 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
 
   const update = useCallback(
     (mutator: (draft: Plan) => void) => {
+      // Read-only means the plan cannot mutate — not merely that it isn't
+      // saved. Dropping the mutation entirely (no on-screen change, no
+      // latestValid update) keeps read-only from producing a confusing
+      // half-mode where KPIs/strategy shift as if edited and then evaporate on
+      // reload, and stops a later re-enable from persisting that in-memory
+      // change. The editing controls are disabled and the explore-page apply/
+      // add actions are gated on `useWorkspaceReadOnly()`; this is the backstop
+      // for any mutate path that slips the UI gate. Uses the ref so a flip
+      // mid-render can't leave a stale-writable window.
+      if (readOnlyRef.current) return
       setPlan((current) => {
         if (!current) return current
         const draft = structuredClone(current)
@@ -151,20 +161,16 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
         if (parsed.ok) {
           latestValid.current = parsed.plan
           setIssues([])
-          // Read-only: reflect the edit on screen (so any still-live control
-          // stays responsive) but never mark dirty or schedule a save.
-          if (!readOnly) {
-            setSaveState('dirty')
-            scheduleSave()
-          }
+          setSaveState('dirty')
+          scheduleSave()
           return parsed.plan
         }
         setIssues(parsed.issues)
-        if (!readOnly) setSaveState('invalid')
+        setSaveState('invalid')
         return draft
       })
     },
-    [scheduleSave, readOnly],
+    [scheduleSave],
   )
 
   // Flush pending saves when the page is hidden or torn down. The unmount

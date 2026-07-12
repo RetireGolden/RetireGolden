@@ -214,15 +214,21 @@ exactly as before — the public web app is unchanged.
 
 When `readOnly` is `true`:
 
-- **autosave never runs** — editing a plan updates the on-screen state but no
-  `savePlan` call is attempted (so the store's own throw, below, is never
-  reached);
+- **the plan cannot mutate** — the shared `update` path is a no-op, so an edit
+  changes nothing on screen and no `savePlan` is attempted (the store's own
+  throw, below, is never reached). Read-only means no mutation, not merely no
+  autosave, so nothing can silently persist on a later re-enable;
 - **plan-editing controls disable** — the entry sections (Household, Accounts,
   Income, …) and the plan-name field render disabled;
 - **the discrete write actions hide** — duplicate, delete, "Save to my plans",
   import, and new-plan are unavailable;
+- **the explore-page apply/add actions disable** — the "Apply", "Add as
+  scenario", "Use", and similar plan-mutating controls on the optimizer,
+  Scenarios, Relocation, Survivor, and Insights pages disable, so those tools
+  stay read/compute-only;
 - **read/explore/export keep working** — Results, Report, Compare, Monte Carlo,
-  and every download/backup path are untouched.
+  the optimizers' compute + report downloads, and every download/backup path
+  are untouched.
 
 This is a **generic, edition-neutral capability**: planner-ui knows nothing
 about *why* writes are disallowed (entitlements, sign-in, a lapsed

@@ -10,6 +10,8 @@ import type { Plan } from '@retiregolden/engine/model/plan'
 import { TRUSTEES_DEFAULT_SS_HAIRCUT } from '@retiregolden/engine/params'
 import { compareScenarios, type ScenarioComparison } from '@retiregolden/engine/scenarios/scenarios'
 import { usePlan } from './planContextCore'
+import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
+import { EditableFieldset } from './EditableFieldset'
 import { MoneyField, NumberField, PercentField, SelectField } from './fields'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { fmtMoneyCompact } from './format'
@@ -117,7 +119,10 @@ function AddScenario() {
   const [kind, setKind] = useState<TemplateKind>('retireEarlier')
   const [params, setParams] = useState<TemplateParams>(DEFAULT_PARAMS)
   const set = <K extends keyof TemplateParams>(k: K, v: TemplateParams[K]) => setParams((p) => ({ ...p, [k]: v }))
+  // The whole "Add a scenario" card is a plan-mutating form — disable it as a
+  // unit when read-only, like the entry sections.
   return (
+    <EditableFieldset>
     <div className="card">
       <h2>Add a scenario</h2>
       <p className="card-hint">Each scenario overrides just a few assumptions on top of the base plan; everything else stays in sync as you keep editing.</p>
@@ -157,11 +162,13 @@ function AddScenario() {
         </button>
       </div>
     </div>
+    </EditableFieldset>
   )
 }
 
 export function ScenariosPage() {
   const { plan, update } = usePlan()
+  const readOnly = useWorkspaceReadOnly()
   const [withMc, setWithMc] = useState(true)
   const [comparison, setComparison] = useState<ScenarioComparison | null>(null)
   const seed = useMemo(() => seedFromPlanId(plan.id), [plan.id])
@@ -260,6 +267,7 @@ export function ScenariosPage() {
                           <button
                             type="button"
                             className="btn-ghost btn-ghost-danger"
+                            disabled={readOnly}
                             onClick={() =>
                               update((d) => {
                                 d.scenarios = d.scenarios.filter((s) => s.id !== row.scenarioId)

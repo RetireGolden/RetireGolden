@@ -32,6 +32,7 @@ import { objectivePolicies, type ObjectivePolicyId } from '@retiregolden/engine/
 import { effectiveBirthYear, fraForBirthYear, fraTotalMonths, survivorFraForBirthYear } from '@retiregolden/engine/socialSecurity/nra'
 import { packForYear } from '@retiregolden/engine/params'
 import { usePlan } from './planContextCore'
+import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
 import { CheckboxField, HelpTip, SelectField } from './fields'
 import { LEARN } from './learnLinks'
 import { LearnLink } from '../learn/LearnLink'
@@ -159,6 +160,7 @@ interface BridgeComparisonRow {
  */
 function BridgePanel() {
   const { plan, update } = usePlan()
+  const readOnly = useWorkspaceReadOnly()
   const startYear = currentStartYear()
   const people = useMemo(() => claimingPeople(plan), [plan])
 
@@ -332,7 +334,7 @@ function BridgePanel() {
         />
       </div>
       <div className="add-row">
-        <button type="button" className="btn btn-primary btn-small" onClick={addToPlan} disabled={!funding}>
+        <button type="button" className="btn btn-primary btn-small" onClick={addToPlan} disabled={!funding || readOnly}>
           Add bridge ladder{sized.length > 1 ? 's' : ''} to plan ({fmtMoneyCompact(totalCost)})
         </button>{' '}
         <button
@@ -413,6 +415,7 @@ function fmtObjectiveDelta(label: string, value: number): string {
 
 function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
   const { plan, update } = usePlan()
+  const readOnly = useWorkspaceReadOnly()
   const startYear = currentStartYear()
   const [objectiveId, setObjectiveId] = useState<ObjectivePolicyId>('max-after-tax-estate')
   const sweep = useMemo(() => sweepClaimingStrategies(plan, startYear, objectiveId), [plan, startYear, objectiveId])
@@ -501,7 +504,7 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
           ) : null}
           {best && keyOf(best) !== keyOf(currentRow ?? best) ? (
             <div style={{ marginTop: '0.6rem' }}>
-              <button type="button" className="btn btn-primary btn-small" onClick={() => applyStrategy(best.claimByPersonId)}>
+              <button type="button" className="btn btn-primary btn-small" disabled={readOnly} onClick={() => applyStrategy(best.claimByPersonId)}>
                 Apply {ageLabel(best.claimByPersonId, personIds)}
               </button>
             </div>
@@ -550,7 +553,7 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
           ) : ' — the whole-year pick is already optimal to the month.'}
           {personIds.some((id) => refined.claimByPersonId[id]!.months > 0) ? (
             <div style={{ marginTop: '0.6rem' }}>
-              <button type="button" className="btn btn-primary btn-small" onClick={() => applyMonthly(refined.claimByPersonId)}>
+              <button type="button" className="btn btn-primary btn-small" disabled={readOnly} onClick={() => applyMonthly(refined.claimByPersonId)}>
                 Apply {personIds.map((id) => fmtClaim(refined.claimByPersonId[id]!)).join(' / ')}
               </button>
             </div>
@@ -649,6 +652,7 @@ function SingleSweepTable({
   current: Record<string, number>
   applyStrategy: (claim: Record<string, number>) => void
 }) {
+  const readOnly = useWorkspaceReadOnly()
   const id = personIds[0]!
   const byAge = [...sweep.rows].sort((a, b) => a.claimByPersonId[id]! - b.claimByPersonId[id]!)
   const bestKey = sweep.ranked[0]!.claimByPersonId[id]
@@ -677,7 +681,7 @@ function SingleSweepTable({
                   <button
                     type="button"
                     className="btn btn-secondary btn-small"
-                    disabled={age === current[id]}
+                    disabled={age === current[id] || readOnly}
                     onClick={() => applyStrategy(r.claimByPersonId)}
                   >
                     Use
@@ -706,6 +710,7 @@ function CoupleHeatmap({
   applyStrategy: (claim: Record<string, number>) => void
 }) {
   const { plan } = usePlan()
+  const readOnly = useWorkspaceReadOnly()
   const [rowId, colId] = personIds
   const rowAges = candidateClaimAges(plan.household.people.find((p) => p.id === rowId)!, currentStartYear())
   const colAges = candidateClaimAges(plan.household.people.find((p) => p.id === colId)!, currentStartYear())
@@ -744,9 +749,9 @@ function CoupleHeatmap({
                   return (
                     <td
                       key={ca}
-                      style={{ background: heatColor(norm(v)), cursor: 'pointer', outline: isCurrent ? '2px solid var(--accent)' : undefined, fontWeight: isBest ? 700 : undefined }}
+                      style={{ background: heatColor(norm(v)), cursor: readOnly ? 'default' : 'pointer', outline: isCurrent ? '2px solid var(--accent)' : undefined, fontWeight: isBest ? 700 : undefined }}
                       title={`${personName(rowId!)} ${ra} / ${personName(colId!)} ${ca}: ${fmtMoneyCompact(v)}${isBest ? ' (best)' : ''}`}
-                      onClick={() => applyStrategy({ [rowId!]: ra, [colId!]: ca })}
+                      onClick={readOnly ? undefined : () => applyStrategy({ [rowId!]: ra, [colId!]: ca })}
                     >
                       {fmtMoneyCompact(v)}
                     </td>
@@ -879,6 +884,7 @@ function BreakEvenTab({ personIds, personName }: { personIds: string[]; personNa
 
 function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
   const { plan } = usePlan()
+  const readOnly = useWorkspaceReadOnly()
   const [discountPct, setDiscountPct] = useState(2)
   const ranking = useMemo(
     () => benefitsOnlyRanking(plan, discountPct / 100, currentStartYear()),
@@ -912,7 +918,7 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
           {fmtMoneyCompact(best.expectedPv)}.
           {keyOf(best.claimByPersonId) !== keyOf(current) ? (
             <div style={{ marginTop: '0.6rem' }}>
-              <button type="button" className="btn btn-primary btn-small" onClick={() => applyStrategy(best.claimByPersonId)}>
+              <button type="button" className="btn btn-primary btn-small" disabled={readOnly} onClick={() => applyStrategy(best.claimByPersonId)}>
                 Apply {ageLabel(best.claimByPersonId, personIds)}
               </button>
             </div>
@@ -937,7 +943,7 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
                   <td>{ageLabel(r.claimByPersonId, personIds)}</td>
                   <td>{fmtMoneyCompact(r.expectedPv)}</td>
                   <td>
-                    <button type="button" className="btn btn-secondary btn-small" disabled={isCurrent} onClick={() => applyStrategy(r.claimByPersonId)}>
+                    <button type="button" className="btn btn-secondary btn-small" disabled={isCurrent || readOnly} onClick={() => applyStrategy(r.claimByPersonId)}>
                       Use
                     </button>
                   </td>

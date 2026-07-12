@@ -11,6 +11,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { usePlan } from './planContextCore'
+import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { LearnLink } from '../learn/LearnLink'
 import { LEARN } from './learnLinks'
@@ -150,6 +151,7 @@ function ScenarioTable({ rows, personName }: { rows: SurvivorScenarioRow[]; pers
 
 export function SurvivorTransitionPage() {
   const { plan, update } = usePlan()
+  const readOnly = useWorkspaceReadOnly()
   // The analysis is stored WITH the plan it was computed for and derived to
   // null whenever the current plan differs, so a stale sweep can never render
   // against an edited plan through the debounce window.
@@ -234,6 +236,7 @@ export function SurvivorTransitionPage() {
               <button
                 type="button"
                 className="btn btn-secondary btn-small"
+                disabled={readOnly}
                 onClick={() =>
                   update((d) => {
                     d.expenses.healthcare.ssa44 = {
