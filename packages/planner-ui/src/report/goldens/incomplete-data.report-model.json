@@ -467,13 +467,13 @@
     },
     "headline-results": {
       "averagePreRetirementSavingsRatePct": 0,
-      "coastFireNumber": 60481.92810286797,
+      "coastFireNumber": 60482,
       "depletionYear": 2035,
       "endingAfterTaxEstate": 0,
       "endingInvestable": 0,
       "endingNetWorth": 0,
       "fiAge": null,
-      "fiNumber": 78915.19789491053,
+      "fiNumber": 78915,
       "fiYear": null,
       "lifetimeRothConversions": 0,
       "lifetimeTaxesAndPenalties": 0
@@ -713,7 +713,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 3942.1707366818277,
+          "expenses": 3942,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -726,7 +726,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 4158.9901271993285,
+          "expenses": 4159,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -739,7 +739,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 4387.734584195291,
+          "expenses": 4388,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -752,7 +752,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 4629.059986326032,
+          "expenses": 4629,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -765,7 +765,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 4883.658285573964,
+          "expenses": 4884,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -778,7 +778,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 5152.2594912805325,
+          "expenses": 5152,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -791,7 +791,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 5435.633763300961,
+          "expenses": 5436,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -804,7 +804,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 5734.593620282514,
+          "expenses": 5735,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -817,7 +817,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 6049.9962693980515,
+          "expenses": 6050,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -830,7 +830,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 6382.7460642149435,
+          "expenses": 6383,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -843,7 +843,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 6733.797097746767,
+          "expenses": 6734,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -856,7 +856,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 7104.155938122838,
+          "expenses": 7104,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -869,7 +869,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 7494.884514719593,
+          "expenses": 7495,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -882,7 +882,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 7907.103163029171,
+          "expenses": 7907,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -895,7 +895,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 8341.993836995774,
+          "expenses": 8342,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -908,7 +908,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 8800.803498030542,
+          "expenses": 8801,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -921,7 +921,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 9284.84769042222,
+          "expenses": 9285,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -934,7 +934,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 9795.514313395443,
+          "expenses": 9796,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -947,7 +947,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 10334.267600632193,
+          "expenses": 10334,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -960,7 +960,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 10902.652318666962,
+          "expenses": 10903,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -973,7 +973,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 11502.298196193646,
+          "expenses": 11502,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -986,7 +986,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 12134.924596984294,
+          "expenses": 12135,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -999,7 +999,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 12802.34544981843,
+          "expenses": 12802,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -1012,7 +1012,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 13506.474449558445,
+          "expenses": 13506,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -1025,7 +1025,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 14249.330544284156,
+          "expenses": 14249,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -1038,7 +1038,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 15033.043724219784,
+          "expenses": 15033,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -1051,7 +1051,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 15859.861129051875,
+          "expenses": 15860,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -1064,7 +1064,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 16732.153491149726,
+          "expenses": 16732,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -1077,7 +1077,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 17652.421933162957,
+          "expenses": 17652,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -1090,7 +1090,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 18623.30513948692,
+          "expenses": 18623,
           "income": 0,
           "investable": 0,
           "magi": 0,
@@ -1103,7 +1103,7 @@
         },
         {
           "contributions": 0,
-          "expenses": 19647.586922158698,
+          "expenses": 19648,
           "income": 0,
           "investable": 0,
           "magi": 0,

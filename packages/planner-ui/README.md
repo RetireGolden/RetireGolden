@@ -263,6 +263,12 @@ const model = buildReportModel({ plan, result, summary, startYear })
 const json = serializeReportModel(model) // deterministic: same input, same bytes
 ```
 
+Engine-computed dollar figures are carried as **whole nominal dollars** — the
+precision every report presents, and the same whole-dollar discipline as the
+repo's case-runner manifests. (Raw engine floats can differ in the last digit
+across platforms' math libraries, which would make serialized models and
+golden fixtures machine-dependent.)
+
 Every block carries a stable id from `REPORT_BLOCK_IDS`; hosts building their
 own renderers or packet templates should key layout off those ids and warn on
 ids they don't recognize rather than dropping content. The web app's own

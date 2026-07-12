@@ -125,7 +125,13 @@ export interface ReportRecommendationEvidence {
 // Blocks
 // ---------------------------------------------------------------------------
 
-/** Headline projection metrics, selected verbatim from the projection summary. */
+/**
+ * Headline projection metrics from the projection summary. Dollar figures are
+ * whole nominal dollars — the precision the report presents (and the same
+ * whole-dollar discipline as the repo's case-runner manifests), which also
+ * keeps serialized models byte-stable across platforms whose math libraries
+ * differ in the last float digit.
+ */
 export interface ReportHeadlineResultsBlock {
   endingNetWorth: number
   /** Net of heir income tax on inherited pre-tax balances. */
@@ -213,6 +219,7 @@ export interface ReportModelingNotesBlock {
   warnings: string[]
 }
 
+/** One ledger year; dollar fields are whole nominal dollars (see headline block note). */
 export interface ReportYearLedgerRow {
   year: number
   income: number
@@ -363,6 +370,15 @@ export const REPORT_ACCOUNT_TYPE_LABEL: Record<Account['type'], string> = {
 export const REPORT_EDUCATIONAL_DISCLAIMER =
   'Educational illustration only - not tax, legal, financial, or medical advice. Figures are projections based on the assumptions below and will differ from actual results.'
 
+/**
+ * Whole-dollar rounding, half away from zero — the same convention
+ * Intl.NumberFormat's default (halfExpand) applies when the report formats
+ * these values, so pre-rounded figures render to identical bytes.
+ */
+function roundDollar(value: number): number {
+  return value >= 0 ? Math.round(value) : -Math.round(-value)
+}
+
 function ownerName(plan: Plan, ownerPersonId: string | null): string {
   if (ownerPersonId === null) return 'Joint'
   return plan.household.people.find((p) => p.id === ownerPersonId)?.name ?? '-'
@@ -484,16 +500,16 @@ function snapshotFindings(findings: ReportRecommendationEvidence | null | undefi
 function yearLedgerRow(y: YearResult): ReportYearLedgerRow {
   return {
     year: y.year,
-    income: y.incomes.total,
-    expenses: y.expenses.total,
-    contributions: y.contributions,
-    rmd: y.rmd,
-    rothConversion: y.rothConversion,
-    taxAndPenalties: y.tax + y.penalties,
-    magi: y.magi,
-    withdrawals: y.withdrawals.total,
-    investable: y.investableTotal,
-    netWorth: y.netWorth,
+    income: roundDollar(y.incomes.total),
+    expenses: roundDollar(y.expenses.total),
+    contributions: roundDollar(y.contributions),
+    rmd: roundDollar(y.rmd),
+    rothConversion: roundDollar(y.rothConversion),
+    taxAndPenalties: roundDollar(y.tax + y.penalties),
+    magi: roundDollar(y.magi),
+    withdrawals: roundDollar(y.withdrawals.total),
+    investable: roundDollar(y.investableTotal),
+    netWorth: roundDollar(y.netWorth),
   }
 }
 
@@ -521,17 +537,19 @@ export function buildReportModel(input: ReportModelInput): ReportModel {
     },
     blocks: {
       'headline-results': {
-        endingNetWorth: summary.endingNetWorth,
-        endingAfterTaxEstate: summary.endingAfterTaxEstate,
-        endingInvestable: summary.endingInvestable,
+        endingNetWorth: roundDollar(summary.endingNetWorth),
+        endingAfterTaxEstate: roundDollar(summary.endingAfterTaxEstate),
+        endingInvestable: roundDollar(summary.endingInvestable),
         depletionYear: summary.depletionYear,
-        lifetimeTaxesAndPenalties: summary.lifetimeTaxesAndPenalties,
-        lifetimeRothConversions: summary.lifetimeRothConversions,
-        fiNumber: summary.fiNumber,
+        lifetimeTaxesAndPenalties: roundDollar(summary.lifetimeTaxesAndPenalties),
+        lifetimeRothConversions: roundDollar(summary.lifetimeRothConversions),
+        fiNumber: roundDollar(summary.fiNumber),
         fiYear: summary.fiYear,
         fiAge: summary.fiAge,
-        coastFireNumber: summary.coastFireNumber,
-        averagePreRetirementSavingsRatePct: summary.averagePreRetirementSavingsRatePct,
+        coastFireNumber: roundDollar(summary.coastFireNumber),
+        // Presentation precision (the UI shows one decimal), which also keeps
+        // this derived percent platform-stable in serialized output.
+        averagePreRetirementSavingsRatePct: Math.round(summary.averagePreRetirementSavingsRatePct * 10) / 10,
       },
       'modeled-findings': snapshotFindings(input.modeledFindings),
       'household': {
@@ -668,7 +686,7 @@ export function chartDataCsv(block: ReportChartDataBlock): string {
   )
 }
 
-/** The year-by-year ledger appendix as CSV (raw engine dollars, unrounded). */
+/** The year-by-year ledger appendix as CSV (whole nominal dollars, as the model carries them). */
 export function yearLedgerCsv(block: ReportYearLedgerBlock): string {
   return csvTable(
     ['year', 'income', 'expenses', 'contributions', 'rmd', 'rothConversion', 'taxAndPenalties', 'magi', 'withdrawals', 'investable', 'netWorth'],

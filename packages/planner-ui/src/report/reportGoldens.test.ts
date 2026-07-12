@@ -57,8 +57,10 @@ function syntheticFindings(summary: ProjectionSummary): ReportRecommendationEvid
     winnerLabel: 'Fill the 12% bracket',
     winnerSource: 'candidate',
     validation: {
-      baselineAfterTaxEstate: summary.endingAfterTaxEstate,
-      candidateAfterTaxEstate: summary.endingAfterTaxEstate + 1000,
+      // Whole dollars: raw engine floats differ in the last digit across
+      // platforms (libm), which would make the committed goldens unstable.
+      baselineAfterTaxEstate: Math.round(summary.endingAfterTaxEstate),
+      candidateAfterTaxEstate: Math.round(summary.endingAfterTaxEstate) + 1000,
       afterTaxEstateDelta: 1000,
       endingNetWorthDelta: 1200,
       lifetimeTaxDelta: 300,

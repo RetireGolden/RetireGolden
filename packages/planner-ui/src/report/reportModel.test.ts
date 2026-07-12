@@ -59,23 +59,23 @@ describe('buildReportModel', () => {
     expect(model.provenance.hostVersion).toBe('2.3.4')
   })
 
-  it('selects headline metrics verbatim from the projection summary', () => {
+  it('selects headline metrics from the summary at whole-dollar presentation precision', () => {
     const plan = fixturePlan()
     const { result, summary } = projectPlan(plan, START_YEAR)
     const model = buildReportModel({ plan, result, summary, startYear: START_YEAR, generatedAtIso: GENERATED_AT })
     const headline = model.blocks['headline-results']
-    expect(headline.endingNetWorth).toBe(summary.endingNetWorth)
-    expect(headline.endingAfterTaxEstate).toBe(summary.endingAfterTaxEstate)
+    expect(headline.endingNetWorth).toBe(Math.round(summary.endingNetWorth))
+    expect(headline.endingAfterTaxEstate).toBe(Math.round(summary.endingAfterTaxEstate))
     expect(headline.depletionYear).toBe(summary.depletionYear)
-    expect(headline.lifetimeTaxesAndPenalties).toBe(summary.lifetimeTaxesAndPenalties)
-    expect(headline.fiNumber).toBe(summary.fiNumber)
+    expect(headline.lifetimeTaxesAndPenalties).toBe(Math.round(summary.lifetimeTaxesAndPenalties))
+    expect(headline.fiNumber).toBe(Math.round(summary.fiNumber))
     expect(model.blocks['year-ledger'].rows).toHaveLength(result.years.length)
     const firstYear = result.years[0]!
     expect(model.blocks['year-ledger'].rows[0]).toMatchObject({
       year: firstYear.year,
-      income: firstYear.incomes.total,
-      taxAndPenalties: firstYear.tax + firstYear.penalties,
-      netWorth: firstYear.netWorth,
+      income: Math.round(firstYear.incomes.total),
+      taxAndPenalties: Math.round(firstYear.tax + firstYear.penalties),
+      netWorth: Math.round(firstYear.netWorth),
     })
   })
 
