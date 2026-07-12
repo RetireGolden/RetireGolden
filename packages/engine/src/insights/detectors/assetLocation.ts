@@ -59,7 +59,7 @@ export const assetLocation: Detector = {
     return {
       id: 'asset-location',
       category: 'accounts-contributions',
-      title: 'Improve asset location across accounts',
+      title: 'Compare asset location across accounts',
       rationale:
         'Your plan uses class-level allocation on multiple accounts. Preview moving bonds toward tax-deferred wrappers and stocks toward taxable or Roth accounts while keeping the household stock/bond mix unchanged.',
       impact: {

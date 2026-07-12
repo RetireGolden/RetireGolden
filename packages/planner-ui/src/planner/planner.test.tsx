@@ -226,7 +226,7 @@ describe('PlanWorkspace information architecture', () => {
       )
     })
 
-    await waitFor(() => container.textContent?.includes('Insights & Recommendations') ?? false)
+    await waitFor(() => container.textContent?.includes('modeled opportunities worth comparing') ?? false)
 
     const rail = container.querySelector('.workspace-rail')
     if (!rail) throw new Error('rail not rendered')
@@ -244,7 +244,7 @@ describe('PlanWorkspace information architecture', () => {
     expect(h1s).toHaveLength(1)
     expect(h1s[0]!.textContent).toBe('Insights — Example couple')
     expect(h1s[0]!.classList.contains('sr-only')).toBe(true)
-    expect(container.textContent).toContain('Insights & Recommendations')
+    expect(container.textContent).toContain('modeled opportunities worth comparing')
 
     await act(async () => root.unmount())
     container.remove()

@@ -72,7 +72,7 @@ export const hecmBufferCandidate: Detector = {
       plannerRoute: 'accounts',
       action: {
         kind: 'preview-scenario',
-        scenarioName: 'Open a HECM line of credit (coordinated draws)',
+        scenarioName: 'Model a HECM line of credit (coordinated draws)',
         patch: { accounts: plan.accounts.map((a) => (a.id === home.id ? patchedHome : a)) },
       },
     }

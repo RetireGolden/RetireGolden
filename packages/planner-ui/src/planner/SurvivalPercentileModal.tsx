@@ -113,7 +113,7 @@ export function SurvivalPercentileModal({ person, personIndex, partner, onApply,
       <div className="form-grid">
         <SelectField
           label="Chance of reaching that age"
-          help="The survival probability the planning age is anchored to. Planning to the 25th percentile means only a 1-in-4 chance of outliving the plan horizon — the usual prudent recommendation. The median (50%) is a coin flip; 10% is conservative."
+          help="The survival probability the planning age is anchored to. Planning to the 25th percentile means only a 1-in-4 chance of outliving the plan horizon — a common prudent convention. The median (50%) is a coin flip; 10% is conservative."
           value={pct}
           options={PCT_OPTIONS}
           onCommit={(v) => setPct(v as '50' | '25' | '10')}

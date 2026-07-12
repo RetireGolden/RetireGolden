@@ -159,14 +159,14 @@ describe('home-page notices', () => {
 })
 
 describe('insight dismissal announcements', () => {
-  it('announces when a recommendation is dismissed', async () => {
+  it('announces when an insight is dismissed', async () => {
     const sample = createSamplePlan()
     const saved = await savePlan(sample)
     if (!saved.ok) throw new Error('seed save failed')
     await mountWithPlan(<InsightsPage />, sample)
     await flush(60)
     const dismissBtn = Array.from(container.querySelectorAll('button')).find(
-      (b) => b.getAttribute('aria-label') === 'Dismiss this recommendation',
+      (b) => b.getAttribute('aria-label') === 'Dismiss this insight',
     )
     expect(dismissBtn, 'sample plan should surface at least one dismissable insight').toBeDefined()
     await act(async () => dismissBtn!.click())
