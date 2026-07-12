@@ -130,6 +130,14 @@ The supported product API is:
   may extend the envelope with their own top-level keys and the file still
   imports everywhere. The module is browser-free (no IndexedDB/DOM) and safe
   to run in Node — e.g. an Electron main process assembling backups;
+- the **`./report-model` subpath** — the edition-neutral report data model:
+  `ReportModel` and its block types, `buildReportModel`, the stable
+  `REPORT_BLOCK_IDS`, `serializeReportModel` (deterministic JSON), and the
+  CSV table helpers (`chartDataCsv`, `yearLedgerCsv`, `accountsCsv`). See
+  "Report model" under "Hosting the workspace". Like `./plan-format`, its
+  exported names, signatures, and block ids only change with a semver-major
+  release (new blocks/fields may be added in minors), and the module is
+  browser-free and safe to run in Node;
 - `./index.css`.
 
 The exports map also exposes wildcard `./*.ts` subpaths
@@ -237,6 +245,41 @@ export that speaks the same envelope as the web app's backup files:
 ```ts
 import { serializeV2Backup, parseV2Backup } from '@retiregolden/planner-ui/plan-format'
 ```
+
+### Report model
+
+Reports are data before they are documents. The stable `./report-model`
+subpath exposes the edition-neutral `ReportModel`: everything a report needs
+— headline metrics, household snapshot, accounts, income sources,
+assumptions, modeled findings with their evidence, the year-by-year ledger,
+chart series, parameter sources, disclosures, and provenance (parameter pack
+years, data vintage, generation timestamp) — assembled from an
+already-computed projection, independent of any DOM, theme, or layout:
+
+```ts
+import { buildReportModel, serializeReportModel } from '@retiregolden/planner-ui/report-model'
+
+const model = buildReportModel({ plan, result, summary, startYear })
+const json = serializeReportModel(model) // deterministic: same input, same bytes
+```
+
+Every block carries a stable id from `REPORT_BLOCK_IDS`; hosts building their
+own renderers or packet templates should key layout off those ids and warn on
+ids they don't recognize rather than dropping content. The web app's own
+downloaded report is rendered from this same model
+(`buildStandaloneReportHtml` assembles it internally), so a host renderer and
+the standard report can never disagree about the underlying numbers. Golden
+JSON fixtures for the reference cases are committed under
+`src/report/goldens/` and gate changes to the serialized contract.
+
+Boundary notes for hosts (see the decision-support posture in the upstream
+repo): the `modeled-findings` block is calculation evidence attributed to the
+user's selected objective — render it as modeled results, not as advice
+authored by the software. The `advisor-recommendations` block is
+host-authored professional content: `buildReportModel` copies it verbatim
+from its input and never populates it on its own, and renderers must keep it
+visibly attributed to the professional. The `disclosures` block and the
+household `incompleteData` flag are caveats a rendering must keep visible.
 
 ### Report branding
 

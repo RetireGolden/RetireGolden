@@ -1,0 +1,1490 @@
+{
+  "blocks": {
+    "accounts": {
+      "rows": [
+        {
+          "annualReturnPct": 2,
+          "balance": 60000,
+          "id": "example-couple--savings",
+          "name": "Savings",
+          "owner": "Joint",
+          "type": "cash",
+          "typeLabel": "Cash"
+        },
+        {
+          "annualReturnPct": null,
+          "balance": 650000,
+          "id": "example-couple--brokerage",
+          "name": "Joint brokerage",
+          "owner": "Joint",
+          "type": "taxable",
+          "typeLabel": "Brokerage"
+        },
+        {
+          "annualReturnPct": null,
+          "balance": 120000,
+          "id": "example-couple--rsu",
+          "name": "Alex RSUs",
+          "owner": "Alex",
+          "type": "equityComp",
+          "typeLabel": "Equity comp"
+        },
+        {
+          "annualReturnPct": null,
+          "balance": 820000,
+          "id": "example-couple--401k",
+          "name": "Alex 401(k)",
+          "owner": "Alex",
+          "type": "traditional",
+          "typeLabel": "Traditional"
+        },
+        {
+          "annualReturnPct": null,
+          "balance": 310000,
+          "id": "example-couple--sam-ira",
+          "name": "Sam IRA",
+          "owner": "Sam",
+          "type": "traditional",
+          "typeLabel": "Traditional"
+        },
+        {
+          "annualReturnPct": null,
+          "balance": 145000,
+          "id": "example-couple--roth",
+          "name": "Alex Roth IRA",
+          "owner": "Alex",
+          "type": "roth",
+          "typeLabel": "Roth"
+        },
+        {
+          "annualReturnPct": null,
+          "balance": 420000,
+          "id": "example-couple--home",
+          "name": "Home",
+          "owner": "Joint",
+          "type": "property",
+          "typeLabel": "Property"
+        },
+        {
+          "annualReturnPct": null,
+          "balance": 180000,
+          "id": "example-couple--mortgage",
+          "name": "Mortgage",
+          "owner": "Joint",
+          "type": "debt",
+          "typeLabel": "Debt"
+        }
+      ]
+    },
+    "advisor-recommendations": null,
+    "assumptions": {
+      "defaultReturnPct": 5.5,
+      "healthcareExtraInflationPct": 3,
+      "heirTaxRatePct": 25,
+      "inflationPct": 2.5,
+      "localIncomeTaxPct": 0,
+      "rothConversionSummary": "Fill to topOfBracket (22), 2028-2036",
+      "safeWithdrawalRatePct": 4,
+      "spendingPolicySummary": "Fixed target (no guardrails)",
+      "stateEffectiveTaxPct": 0,
+      "withdrawalOrderSummary": "Sequential: cash, taxable, equity comp, traditional, Roth, HSA"
+    },
+    "chart-data": {
+      "rows": [
+        {
+          "cash": 61343,
+          "equityComp": 126600,
+          "hsa": 0,
+          "income": 225000,
+          "roth": 160888,
+          "spendingPlusTax": 181360,
+          "taxable": 698410,
+          "traditional": 1217470,
+          "year": 2026
+        },
+        {
+          "cash": 67636,
+          "equityComp": 133563,
+          "hsa": 0,
+          "income": 230625,
+          "roth": 177847,
+          "spendingPlusTax": 181070,
+          "taxable": 749799,
+          "traditional": 1310384,
+          "year": 2027
+        },
+        {
+          "cash": 0,
+          "equityComp": 140909,
+          "hsa": 0,
+          "income": 0,
+          "roth": 446651,
+          "spendingPlusTax": 204915,
+          "taxable": 646209,
+          "traditional": 1123433,
+          "year": 2028
+        },
+        {
+          "cash": 0,
+          "equityComp": 148659,
+          "hsa": 0,
+          "income": 0,
+          "roth": 731696,
+          "spendingPlusTax": 268196,
+          "taxable": 398804,
+          "traditional": 924742,
+          "year": 2029
+        },
+        {
+          "cash": 0,
+          "equityComp": 156835,
+          "hsa": 0,
+          "income": 0,
+          "roth": 1032419,
+          "spendingPlusTax": 217059,
+          "taxable": 191741,
+          "traditional": 715123,
+          "year": 2030
+        },
+        {
+          "cash": 0,
+          "equityComp": 159922,
+          "hsa": 0,
+          "income": 26475,
+          "roth": 1325940,
+          "spendingPlusTax": 223467,
+          "taxable": 0,
+          "traditional": 517717,
+          "year": 2031
+        },
+        {
+          "cash": 0,
+          "equityComp": 20502,
+          "hsa": 0,
+          "income": 77180,
+          "roth": 1590135,
+          "spendingPlusTax": 217668,
+          "taxable": 0,
+          "traditional": 354923,
+          "year": 2032
+        },
+        {
+          "cash": 0,
+          "equityComp": 0,
+          "hsa": 0,
+          "income": 79109,
+          "roth": 1867130,
+          "spendingPlusTax": 249713,
+          "taxable": 0,
+          "traditional": 26548,
+          "year": 2033
+        },
+        {
+          "cash": 0,
+          "equityComp": 0,
+          "hsa": 0,
+          "income": 81087,
+          "roth": 1906287,
+          "spendingPlusTax": 167858,
+          "taxable": 0,
+          "traditional": 0,
+          "year": 2034
+        },
+        {
+          "cash": 0,
+          "equityComp": 0,
+          "hsa": 0,
+          "income": 83114,
+          "roth": 1913927,
+          "spendingPlusTax": 175252,
+          "taxable": 0,
+          "traditional": 0,
+          "year": 2035
+        },
+        {
+          "cash": 0,
+          "equityComp": 0,
+          "hsa": 0,
+          "income": 85192,
+          "roth": 1929753,
+          "spendingPlusTax": 169970,
+          "taxable": 0,
+          "traditional": 0,
+          "year": 2036
+        },
+        {
+          "cash": 0,
+          "equityComp": 0,
+          "hsa": 0,
+          "income": 87322,
+          "roth": 1957569,
+          "spendingPlusTax": 161559,
+          "taxable": 0,
+          "traditional": 0,
+          "year": 2037
+        },
+        {
+          "cash": 0,
+          "equityComp": 0,
+          "hsa": 0,
+          "income": 89505,
+          "roth": 1984998,
+          "spendingPlusTax": 165560,
+          "taxable": 0,
+          "traditional": 0,
+          "year": 2038
+        },
+        {
+          "cash": 0,
+          "equityComp": 0,
+          "hsa": 0,
+          "income": 91743,
+          "roth": 2011940,
+          "spendingPlusTax": 169688,
+          "taxable": 0,
+          "traditional": 0,
+          "year": 2039
+        },
+        {
+          "cash": 0,
+          "equityComp": 0,
+          "hsa": 0,
+          "income": 94036,
+          "roth": 2038290,
+          "spendingPlusTax": 173948,
+          "taxable": 0,
+          "traditional": 0,
+          "year": 2040
+        },
+        {
+          "cash": 0,
+          "equityComp": 0,
+          "hsa": 0,
+          "income": 96387,
+          "roth": 2063930,
+          "spendingPlusTax": 178345,
+          "taxable": 0,
+          "traditional": 0,
+          "year": 2041
+        },
+        {
+          "cash": 0,
+          "equityComp": 0,
+          "hsa": 0,
+          "income": 98797,
+          "roth": 2088734,
+          "spendingPlusTax": 182884,
+          "taxable": 0,
+          "traditional": 0,
+          "year": 2042
+        },
+        {
+          "cash": 0,
+          "equityComp": 0,
+          "hsa": 0,
+          "income": 101267,
+          "roth": 2115341,
+          "spendingPlusTax": 184938,
+          "taxable": 0,
+          "traditional": 0,
+          "year": 2043
+        },
+        {
+          "cash": 0,
+          "equityComp": 0,
+          "hsa": 0,
+          "income": 103798,
+          "roth": 2152125,
+          "spendingPlusTax": 179210,
+          "taxable": 0,
+          "traditional": 0,
+          "year": 2044
+        },
+        {
+          "cash": 0,
+          "equityComp": 0,
+          "hsa": 0,
+          "income": 106393,
+          "roth": 2188397,
+          "spendingPlusTax": 184208,
+          "taxable": 0,
+          "traditional": 0,
+          "year": 2045
+        },
+        {
+          "cash": 0,
+          "equityComp": 0,
+          "hsa": 0,
+          "income": 109053,
+          "roth": 2224024,
+          "spendingPlusTax": 189371,
+          "taxable": 0,
+          "traditional": 0,
+          "year": 2046
+        },
+        {
+          "cash": 0,
+          "equityComp": 0,
+          "hsa": 0,
+          "income": 111780,
+          "roth": 2275871,
+          "spendingPlusTax": 178580,
+          "taxable": 0,
+          "traditional": 0,
+          "year": 2047
+        },
+        {
+          "cash": 0,
+          "equityComp": 0,
+          "hsa": 0,
+          "income": 114574,
+          "roth": 2328128,
+          "spendingPlusTax": 183689,
+          "taxable": 0,
+          "traditional": 0,
+          "year": 2048
+        },
+        {
+          "cash": 0,
+          "equityComp": 0,
+          "hsa": 0,
+          "income": 117438,
+          "roth": 2380708,
+          "spendingPlusTax": 188971,
+          "taxable": 0,
+          "traditional": 0,
+          "year": 2049
+        },
+        {
+          "cash": 0,
+          "equityComp": 0,
+          "hsa": 0,
+          "income": 120374,
+          "roth": 2206645,
+          "spendingPlusTax": 409476,
+          "taxable": 0,
+          "traditional": 0,
+          "year": 2050
+        },
+        {
+          "cash": 0,
+          "equityComp": 0,
+          "hsa": 0,
+          "income": 123384,
+          "roth": 2044050,
+          "spendingPlusTax": 392541,
+          "taxable": 0,
+          "traditional": 0,
+          "year": 2051
+        },
+        {
+          "cash": 0,
+          "equityComp": 0,
+          "hsa": 0,
+          "income": 126468,
+          "roth": 1854453,
+          "spendingPlusTax": 412743,
+          "taxable": 0,
+          "traditional": 0,
+          "year": 2052
+        },
+        {
+          "cash": 0,
+          "equityComp": 0,
+          "hsa": 0,
+          "income": 129630,
+          "roth": 1869560,
+          "spendingPlusTax": 211988,
+          "taxable": 0,
+          "traditional": 0,
+          "year": 2053
+        },
+        {
+          "cash": 357000,
+          "equityComp": 0,
+          "hsa": 0,
+          "income": 132871,
+          "roth": 1882308,
+          "spendingPlusTax": 218253,
+          "taxable": 0,
+          "traditional": 0,
+          "year": 2054
+        },
+        {
+          "cash": 253240,
+          "equityComp": 0,
+          "hsa": 0,
+          "income": 88307,
+          "roth": 1985834,
+          "spendingPlusTax": 197032,
+          "taxable": 0,
+          "traditional": 0,
+          "year": 2055
+        },
+        {
+          "cash": 144023,
+          "equityComp": 0,
+          "hsa": 0,
+          "income": 90514,
+          "roth": 2095055,
+          "spendingPlusTax": 202554,
+          "taxable": 0,
+          "traditional": 0,
+          "year": 2056
+        },
+        {
+          "cash": 29121,
+          "equityComp": 0,
+          "hsa": 0,
+          "income": 92777,
+          "roth": 2210283,
+          "spendingPlusTax": 208250,
+          "taxable": 0,
+          "traditional": 0,
+          "year": 2057
+        },
+        {
+          "cash": 0,
+          "equityComp": 0,
+          "hsa": 0,
+          "income": 95097,
+          "roth": 2236995,
+          "spendingPlusTax": 214126,
+          "taxable": 0,
+          "traditional": 0,
+          "year": 2058
+        },
+        {
+          "cash": 0,
+          "equityComp": 0,
+          "hsa": 0,
+          "income": 97474,
+          "roth": 2230565,
+          "spendingPlusTax": 220189,
+          "taxable": 0,
+          "traditional": 0,
+          "year": 2059
+        }
+      ]
+    },
+    "disclosures": {
+      "statements": [
+        "Educational illustration only - not tax, legal, financial, or medical advice. Figures are projections based on the assumptions below and will differ from actual results."
+      ]
+    },
+    "headline-results": {
+      "averagePreRetirementSavingsRatePct": 20.44137079674797,
+      "coastFireNumber": 4596116.112929527,
+      "depletionYear": null,
+      "endingAfterTaxEstate": 3203000.5559882917,
+      "endingInvestable": 2230565.2602343215,
+      "endingNetWorth": 3203000.5559882917,
+      "fiAge": null,
+      "fiNumber": 4876019.584206935,
+      "fiYear": null,
+      "lifetimeRothConversions": 1351217.2826564314,
+      "lifetimeTaxesAndPenalties": 466875.755213629
+    },
+    "household": {
+      "filingStatus": "marriedFilingJointly",
+      "incompleteData": false,
+      "people": [
+        {
+          "dob": "1962-04-15",
+          "name": "Alex",
+          "planningAge": 92,
+          "retirementAge": 66
+        },
+        {
+          "dob": "1964-09-02",
+          "name": "Sam",
+          "planningAge": 95,
+          "retirementAge": 64
+        }
+      ],
+      "state": "KY"
+    },
+    "income-sources": {
+      "rows": [
+        {
+          "detail": "$140,000/yr until retirement",
+          "id": "example-couple--wages-alex",
+          "label": "Wages - Alex",
+          "type": "wages"
+        },
+        {
+          "detail": "$85,000/yr until retirement",
+          "id": "example-couple--wages-sam",
+          "label": "Wages - Sam",
+          "type": "wages"
+        },
+        {
+          "detail": "$2,900/mo PIA, claim 70y",
+          "id": "example-couple--ss-alex",
+          "label": "Social Security - Alex",
+          "type": "socialSecurity"
+        },
+        {
+          "detail": "$1,950/mo PIA, claim 67y",
+          "id": "example-couple--ss-sam",
+          "label": "Social Security - Sam",
+          "type": "socialSecurity"
+        }
+      ]
+    },
+    "modeled-findings": {
+      "candidates": [
+        {
+          "afterTaxEstateDelta": 500,
+          "candidateId": "bracket-10",
+          "label": "Fill the 10% bracket",
+          "lifetimeTaxDelta": 100,
+          "lossReason": "Trailed the selected recommendation by $500.",
+          "moneyLastsYearsDelta": 0
+        }
+      ],
+      "claimAge": {
+        "combinationsEvaluated": 3,
+        "currentClaimExactEstate": 1000000,
+        "jointExactEstate": 1118000,
+        "winningClaimLabel": "Pat claims Social Security at 70"
+      },
+      "objectiveId": "max-after-tax-estate",
+      "objectiveLabel": "Maximize after-tax estate",
+      "recommendationState": "beneficial",
+      "validation": {
+        "afterTaxEstateDelta": 1000,
+        "baseline": {
+          "averagePreRetirementSavingsRatePct": 20.44137079674797,
+          "coastFireNumber": 4596116.112929527,
+          "depletionYear": null,
+          "endingAfterTaxEstate": 3203000.5559882917,
+          "endingByCategory": {
+            "cash": 0,
+            "hsa": 0,
+            "roth": 2230565.2602343215,
+            "taxable": 0,
+            "traditional": 0
+          },
+          "endingEstateHeirTax": 0,
+          "endingEstateToCharity": 0,
+          "endingInvestable": 2230565.2602343215,
+          "endingNetWorth": 3203000.5559882917,
+          "estateBreakdown": [
+            {
+              "accountId": "example-couple--roth",
+              "category": "roth",
+              "charityAmount": 0,
+              "destination": "spouse",
+              "grossBalance": 2230565.2602343215,
+              "heirTax": 0,
+              "heirTaxRatePct": 25,
+              "name": "Alex Roth IRA",
+              "netToHeirs": 2230565.2602343215,
+              "taxablePretaxBase": 0
+            }
+          ],
+          "fiAge": null,
+          "fiNumber": 4876019.584206935,
+          "fiYear": null,
+          "lifetimeRothConversions": 1351217.2826564314,
+          "lifetimeTaxesAndPenalties": 466875.755213629,
+          "savingsRates": [
+            {
+              "ratePct": 19.395644444444443,
+              "year": 2026
+            },
+            {
+              "ratePct": 21.4870971490515,
+              "year": 2027
+            },
+            {
+              "ratePct": 0,
+              "year": 2028
+            },
+            {
+              "ratePct": 0,
+              "year": 2029
+            },
+            {
+              "ratePct": 0,
+              "year": 2030
+            },
+            {
+              "ratePct": 0,
+              "year": 2031
+            },
+            {
+              "ratePct": 0,
+              "year": 2032
+            },
+            {
+              "ratePct": 0,
+              "year": 2033
+            },
+            {
+              "ratePct": 0,
+              "year": 2034
+            },
+            {
+              "ratePct": 0,
+              "year": 2035
+            },
+            {
+              "ratePct": 0,
+              "year": 2036
+            },
+            {
+              "ratePct": 0,
+              "year": 2037
+            },
+            {
+              "ratePct": 0,
+              "year": 2038
+            },
+            {
+              "ratePct": 0,
+              "year": 2039
+            },
+            {
+              "ratePct": 0,
+              "year": 2040
+            },
+            {
+              "ratePct": 0,
+              "year": 2041
+            },
+            {
+              "ratePct": 0,
+              "year": 2042
+            },
+            {
+              "ratePct": 0,
+              "year": 2043
+            },
+            {
+              "ratePct": 0,
+              "year": 2044
+            },
+            {
+              "ratePct": 0,
+              "year": 2045
+            },
+            {
+              "ratePct": 0,
+              "year": 2046
+            },
+            {
+              "ratePct": 0,
+              "year": 2047
+            },
+            {
+              "ratePct": 0,
+              "year": 2048
+            },
+            {
+              "ratePct": 0,
+              "year": 2049
+            },
+            {
+              "ratePct": 0,
+              "year": 2050
+            },
+            {
+              "ratePct": 0,
+              "year": 2051
+            },
+            {
+              "ratePct": 0,
+              "year": 2052
+            },
+            {
+              "ratePct": 0,
+              "year": 2053
+            },
+            {
+              "ratePct": 0,
+              "year": 2054
+            },
+            {
+              "ratePct": 0,
+              "year": 2055
+            },
+            {
+              "ratePct": 0,
+              "year": 2056
+            },
+            {
+              "ratePct": 0,
+              "year": 2057
+            },
+            {
+              "ratePct": 0,
+              "year": 2058
+            },
+            {
+              "ratePct": 0,
+              "year": 2059
+            }
+          ],
+          "warnings": [
+            "Some pre-65 years exceed 400% of the federal poverty line: no ACA credit (the cliff).",
+            "Spending withdrawals from traditional accounts pushed income above the Roth-conversion target in some years.",
+            "A requested Roth conversion exceeded the available traditional balance and was reduced."
+          ]
+        },
+        "candidate": {
+          "averagePreRetirementSavingsRatePct": 20.44137079674797,
+          "coastFireNumber": 4596116.112929527,
+          "depletionYear": null,
+          "endingAfterTaxEstate": 3204000.5559882917,
+          "endingByCategory": {
+            "cash": 0,
+            "hsa": 0,
+            "roth": 2230565.2602343215,
+            "taxable": 0,
+            "traditional": 0
+          },
+          "endingEstateHeirTax": 0,
+          "endingEstateToCharity": 0,
+          "endingInvestable": 2230565.2602343215,
+          "endingNetWorth": 3203000.5559882917,
+          "estateBreakdown": [
+            {
+              "accountId": "example-couple--roth",
+              "category": "roth",
+              "charityAmount": 0,
+              "destination": "spouse",
+              "grossBalance": 2230565.2602343215,
+              "heirTax": 0,
+              "heirTaxRatePct": 25,
+              "name": "Alex Roth IRA",
+              "netToHeirs": 2230565.2602343215,
+              "taxablePretaxBase": 0
+            }
+          ],
+          "fiAge": null,
+          "fiNumber": 4876019.584206935,
+          "fiYear": null,
+          "lifetimeRothConversions": 1351217.2826564314,
+          "lifetimeTaxesAndPenalties": 466875.755213629,
+          "savingsRates": [
+            {
+              "ratePct": 19.395644444444443,
+              "year": 2026
+            },
+            {
+              "ratePct": 21.4870971490515,
+              "year": 2027
+            },
+            {
+              "ratePct": 0,
+              "year": 2028
+            },
+            {
+              "ratePct": 0,
+              "year": 2029
+            },
+            {
+              "ratePct": 0,
+              "year": 2030
+            },
+            {
+              "ratePct": 0,
+              "year": 2031
+            },
+            {
+              "ratePct": 0,
+              "year": 2032
+            },
+            {
+              "ratePct": 0,
+              "year": 2033
+            },
+            {
+              "ratePct": 0,
+              "year": 2034
+            },
+            {
+              "ratePct": 0,
+              "year": 2035
+            },
+            {
+              "ratePct": 0,
+              "year": 2036
+            },
+            {
+              "ratePct": 0,
+              "year": 2037
+            },
+            {
+              "ratePct": 0,
+              "year": 2038
+            },
+            {
+              "ratePct": 0,
+              "year": 2039
+            },
+            {
+              "ratePct": 0,
+              "year": 2040
+            },
+            {
+              "ratePct": 0,
+              "year": 2041
+            },
+            {
+              "ratePct": 0,
+              "year": 2042
+            },
+            {
+              "ratePct": 0,
+              "year": 2043
+            },
+            {
+              "ratePct": 0,
+              "year": 2044
+            },
+            {
+              "ratePct": 0,
+              "year": 2045
+            },
+            {
+              "ratePct": 0,
+              "year": 2046
+            },
+            {
+              "ratePct": 0,
+              "year": 2047
+            },
+            {
+              "ratePct": 0,
+              "year": 2048
+            },
+            {
+              "ratePct": 0,
+              "year": 2049
+            },
+            {
+              "ratePct": 0,
+              "year": 2050
+            },
+            {
+              "ratePct": 0,
+              "year": 2051
+            },
+            {
+              "ratePct": 0,
+              "year": 2052
+            },
+            {
+              "ratePct": 0,
+              "year": 2053
+            },
+            {
+              "ratePct": 0,
+              "year": 2054
+            },
+            {
+              "ratePct": 0,
+              "year": 2055
+            },
+            {
+              "ratePct": 0,
+              "year": 2056
+            },
+            {
+              "ratePct": 0,
+              "year": 2057
+            },
+            {
+              "ratePct": 0,
+              "year": 2058
+            },
+            {
+              "ratePct": 0,
+              "year": 2059
+            }
+          ],
+          "warnings": [
+            "Some pre-65 years exceed 400% of the federal poverty line: no ACA credit (the cliff).",
+            "Spending withdrawals from traditional accounts pushed income above the Roth-conversion target in some years.",
+            "A requested Roth conversion exceeded the available traditional balance and was reduced."
+          ]
+        },
+        "endingNetWorthDelta": 1200,
+        "executedConversionRatio": 0.99,
+        "executedConversionTotal": 49500,
+        "firstMateriallyUnexecutedYear": null,
+        "lifetimeTaxDelta": 300,
+        "moneyLastsYearsDelta": 0,
+        "recommendationState": "beneficial",
+        "requestedConversionTotal": 50000,
+        "traditionalDepletionYear": null
+      },
+      "winnerLabel": "Fill the 12% bracket",
+      "winnerSource": "candidate"
+    },
+    "modeling-notes": {
+      "warnings": [
+        "Some pre-65 years exceed 400% of the federal poverty line: no ACA credit (the cliff).",
+        "Spending withdrawals from traditional accounts pushed income above the Roth-conversion target in some years.",
+        "A requested Roth conversion exceeded the available traditional balance and was reduced."
+      ]
+    },
+    "parameter-sources": {
+      "sources": [
+        {
+          "figures": "Seven brackets, 10%–37%. Standard deduction $16,100 single / $32,200 joint; +$2,050 / $1,650 each at 65+.",
+          "label": "Federal income tax brackets & standard deduction",
+          "publisher": "IRS / Tax Foundation",
+          "url": "https://taxfoundation.org/data/all/federal/2026-tax-brackets/"
+        },
+        {
+          "figures": "$6,000 per person 65+, phasing out above $75,000 / $150,000 MAGI; temporary, expires after 2028.",
+          "label": "Senior bonus deduction (OBBBA)",
+          "publisher": "Bipartisan Policy Center / IRS",
+          "url": "https://bipartisanpolicy.org/explainer/2026-federal-income-tax-brackets-and-interactive-calculator/"
+        },
+        {
+          "figures": "0 / 15 / 20% gains (15% above $49,450 / $98,900; 20% above $545,500 / $613,700). 3.8% NIIT above $200,000 / $250,000 MAGI.",
+          "label": "Long-term capital gains & NIIT",
+          "publisher": "Kiplinger / IRS",
+          "url": "https://www.kiplinger.com/taxes/irs-updates-capital-gains-tax-thresholds"
+        },
+        {
+          "figures": "$250,000 single / $500,000 joint of primary-residence gain excluded on sale (statutory since 1997, never indexed); depreciation after May 6, 1997 is not excludable.",
+          "label": "Home-sale gain exclusion (§121)",
+          "publisher": "IRS Topic 701 / Publication 523",
+          "url": "https://www.irs.gov/taxtopics/tc701"
+        },
+        {
+          "figures": "Provisional-income thresholds: up to 50% taxable above $25,000 / $32,000, up to 85% above $34,000 / $44,000 (fixed by statute, never indexed).",
+          "label": "Social Security benefit taxation",
+          "publisher": "IRS Publication 915",
+          "url": "https://www.irs.gov/forms-pubs/about-publication-915"
+        },
+        {
+          "figures": "401(k) $24,500 (+$8,000 at 50+, $11,250 ages 60–63); IRA $7,500 (+$1,100); HSA $4,400 self / $8,750 family (+$1,000 at 55+).",
+          "label": "Contribution limits",
+          "publisher": "IRS",
+          "url": "https://www.irs.gov/newsroom/401k-limit-increases-to-24500-for-2026-ira-limit-increases-to-7500"
+        },
+        {
+          "figures": "IRS Uniform Lifetime Table (Pub 590-B, 2022+); RMDs begin at age 73–75 per SECURE 2.0; QCD exclusion limit $111,000.",
+          "label": "Required minimum distributions & QCD",
+          "publisher": "IRS Publication 590-B",
+          "url": "https://www.irs.gov/retirement-plans/retirement-plan-and-ira-required-minimum-distributions-faqs"
+        },
+        {
+          "figures": "Non-qualified exclusion ratio from IRS Pub 939 Table V expected-return multiples (life expectancy by age); QLAC premium cap $210,000 excluded from RMD balances (SECURE 2.0).",
+          "label": "Annuity purchase (exclusion ratio & QLAC)",
+          "publisher": "IRS Publication 939 / SECURE 2.0 Act §202",
+          "url": "https://www.irs.gov/forms-pubs/about-publication-939"
+        },
+        {
+          "figures": "Principal-limit factors at a 5.875% expected rate: 35.1% of home value at 62 rising to 61.4% at 90 (planning default — a lender quote always wins); line/loan growth default 7.5%/yr (rate + 0.5% MIP).",
+          "label": "HECM reverse-mortgage principal limit",
+          "publisher": "HUD HECM PLF tables (as summarized for 2026)",
+          "url": "https://reverse.mortgage/age-requirements"
+        },
+        {
+          "figures": "Standard Part B $202.90/mo; five IRMAA tiers starting at $109,000 / $218,000 MAGI; Part D IRMAA surcharges $14.50-$91.00/mo.",
+          "label": "Medicare Part B & IRMAA",
+          "publisher": "CMS",
+          "url": "https://www.cms.gov/newsroom/fact-sheets/2026-medicare-parts-b-premiums-deductibles"
+        },
+        {
+          "figures": "2.8% COLA; taxable wage base $184,500; earnings-test exempt amounts $24,480 (pre-FRA) / $65,160 (FRA year); SSDI SGA $1,620/mo (non-blind); OASDI payroll tax 6.2% (employee).",
+          "label": "Social Security COLA & wage base",
+          "publisher": "SSA",
+          "url": "https://www.ssa.gov/news/en/cola/factsheets/2026.html"
+        },
+        {
+          "figures": "2025 HHS guideline — $15,650 first person, +$5,500 each additional — applied to the 2026 ACA coverage year.",
+          "label": "Federal poverty guideline (ACA)",
+          "publisher": "HHS",
+          "url": "https://aspe.hhs.gov/topics/poverty-economic-mobility/poverty-guidelines"
+        },
+        {
+          "figures": "Applicable-percentage schedule per Rev. Proc. 2025-25 (2.10% under 133% FPL up to 9.96% at 300–400%), with the 400% FPL subsidy cliff restored (enhanced credits expired 12/31/2025).",
+          "label": "ACA premium tax credit",
+          "publisher": "IRS",
+          "url": "https://www.irs.gov/pub/irs-drop/rp-25-25.pdf"
+        },
+        {
+          "figures": "Par real yields as of 2026-06-30: 1.85% (5y), 2.05% (7y), 2.25% (10y), 2.55% (20y), 2.70% (30y). Prices TIPS-ladder quotes and the funded-ratio discounting; refreshed annually with the parameter packs.",
+          "label": "TIPS real-yield curve (income floor & bridge)",
+          "publisher": "U.S. Treasury",
+          "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates"
+        },
+        {
+          "figures": "Brackets, standard deduction, Social Security treatment, and major retirement-income exclusions for all 50 states + DC, from each state revenue department.",
+          "label": "State income tax",
+          "publisher": "Tax Foundation / state revenue departments",
+          "url": "https://taxfoundation.org/data/all/state/state-income-tax-rates/"
+        }
+      ]
+    },
+    "year-ledger": {
+      "rows": [
+        {
+          "contributions": 43500,
+          "expenses": 148000,
+          "income": 225000,
+          "investable": 2264710.5039999997,
+          "magi": 201000,
+          "netWorth": 2611410.5039999997,
+          "rmd": 0,
+          "rothConversion": 0,
+          "taxAndPenalties": 33359.8,
+          "withdrawals": 0,
+          "year": 2026
+        },
+        {
+          "contributions": 44587.49999999999,
+          "expenses": 147372.67719999998,
+          "income": 230625,
+          "investable": 2439228.849236,
+          "magi": 206025,
+          "netWorth": 2808261.349236,
+          "rmd": 0,
+          "rothConversion": 0,
+          "taxAndPenalties": 33697.705,
+          "withdrawals": 0,
+          "year": 2027
+        },
+        {
+          "contributions": 0,
+          "expenses": 148257.48726999998,
+          "income": 0,
+          "investable": 2357201.403151237,
+          "magi": 301451.7418879551,
+          "netWorth": 2749217.925651237,
+          "rmd": 0,
+          "rothConversion": 245518.8617169857,
+          "taxAndPenalties": 56657.23575629643,
+          "withdrawals": 204914.72302629641,
+          "year": 2028
+        },
+        {
+          "contributions": 0,
+          "expenses": 197759.43180979998,
+          "income": 0,
+          "investable": 2203901.1481932504,
+          "magi": 364458.94449517236,
+          "netWorth": 2619572.83045575,
+          "rmd": 0,
+          "rothConversion": 246899.99396204948,
+          "taxAndPenalties": 70436.14367010962,
+          "withdrawals": 268195.5754799096,
+          "year": 2029
+        },
+        {
+          "contributions": 0,
+          "expenses": 150204.22424214936,
+          "income": 0,
+          "investable": 2096118.2424089573,
+          "magi": 348399.95192076685,
+          "netWorth": 2536136.44784502,
+          "rmd": 0,
+          "rothConversion": 246899.99396204948,
+          "taxAndPenalties": 66854.98801843998,
+          "withdrawals": 217059.21226058935,
+          "year": 2030
+        },
+        {
+          "contributions": 0,
+          "expenses": 158391.24862592597,
+          "income": 26474.952181640616,
+          "investable": 2003578.2420134328,
+          "magi": 343952.82696814596,
+          "netWorth": 2468655.191332546,
+          "rmd": 0,
+          "rothConversion": 224396.28936052322,
+          "taxAndPenalties": 65075.65021734213,
+          "withdrawals": 196991.9466616275,
+          "year": 2031
+        },
+        {
+          "contributions": 0,
+          "expenses": 162402.56212541048,
+          "income": 77179.91636890426,
+          "investable": 1965559.8211202584,
+          "magi": 306726.5533459551,
+          "netWorth": 2456429.24390642,
+          "rmd": 0,
+          "rothConversion": 181297.06915020943,
+          "taxAndPenalties": 55265.718417819066,
+          "withdrawals": 140488.36417432528,
+          "year": 2032
+        },
+        {
+          "contributions": 0,
+          "expenses": 166546.4177379931,
+          "income": 79109.41427812686,
+          "investable": 1893678.4592569647,
+          "magi": 406346.2548083501,
+          "netWorth": 2411096.2666563583,
+          "rmd": 0,
+          "rothConversion": 179656.9919347763,
+          "taxAndPenalties": 83166.93210876653,
+          "withdrawals": 170603.9355686328,
+          "year": 2033
+        },
+        {
+          "contributions": 0,
+          "expenses": 165496.77064832684,
+          "income": 81087.14963508003,
+          "investable": 1906287.1553109,
+          "magi": 52175.99134910905,
+          "netWorth": 2451032.1345403492,
+          "rmd": 0,
+          "rothConversion": 26548.08256983786,
+          "taxAndPenalties": 2361.58202485523,
+          "withdrawals": 86771.20303810203,
+          "year": 2034
+        },
+        {
+          "contributions": 0,
+          "expenses": 175252.3313340303,
+          "income": 83114.32837595702,
+          "investable": 1913927.355732232,
+          "magi": 4778.582093989255,
+          "netWorth": 2486801.8871422326,
+          "rmd": 0,
+          "rothConversion": 0,
+          "taxAndPenalties": 0,
+          "withdrawals": 92138.0029580733,
+          "year": 2035
+        },
+        {
+          "contributions": 0,
+          "expenses": 169969.940002068,
+          "income": 85192.18658535593,
+          "investable": 1929752.8304428735,
+          "magi": 5298.046646338982,
+          "netWorth": 2531583.6278945426,
+          "rmd": 0,
+          "rothConversion": 0,
+          "taxAndPenalties": 0,
+          "withdrawals": 84777.75341671208,
+          "year": 2036
+        },
+        {
+          "contributions": 0,
+          "expenses": 161559.07151666214,
+          "income": 87321.99124998983,
+          "investable": 1957569.116435892,
+          "magi": 5830.497812497459,
+          "netWorth": 2589207.991777596,
+          "rmd": 0,
+          "rothConversion": 0,
+          "taxAndPenalties": 0,
+          "withdrawals": 74237.0802666723,
+          "year": 2037
+        },
+        {
+          "contributions": 0,
+          "expenses": 165559.86355513218,
+          "income": 89505.04103123955,
+          "investable": 1984997.5800771592,
+          "magi": 6639.642438276811,
+          "netWorth": 2647322.2325339797,
+          "rmd": 0,
+          "rothConversion": 0,
+          "taxAndPenalties": 0,
+          "withdrawals": 76054.82252389262,
+          "year": 2038
+        },
+        {
+          "contributions": 0,
+          "expenses": 169688.00023334438,
+          "income": 91742.66705702055,
+          "investable": 2011940.1204803812,
+          "magi": 7590.633499233732,
+          "netWorth": 2705854.95179793,
+          "rmd": 0,
+          "rothConversion": 0,
+          "taxAndPenalties": 0,
+          "withdrawals": 77945.33317632384,
+          "year": 2039
+        },
+        {
+          "contributions": 0,
+          "expenses": 173948.16803342526,
+          "income": 94036.23373344605,
+          "investable": 2038289.736420324,
+          "magi": 8565.39933671457,
+          "netWorth": 2764726.692633817,
+          "rmd": 0,
+          "rothConversion": 0,
+          "taxAndPenalties": 0,
+          "withdrawals": 79911.93429997921,
+          "year": 2040
+        },
+        {
+          "contributions": 0,
+          "expenses": 178345.25325719177,
+          "income": 96387.13957678218,
+          "investable": 2063929.8619906097,
+          "magi": 9564.534320132427,
+          "netWorth": 2823849.302720542,
+          "rmd": 0,
+          "rothConversion": 0,
+          "taxAndPenalties": 0,
+          "withdrawals": 81958.11368040959,
+          "year": 2041
+        },
+        {
+          "contributions": 0,
+          "expenses": 182884.3515678137,
+          "income": 98796.81806620174,
+          "investable": 2088733.6565558924,
+          "magi": 10588.64767813574,
+          "netWorth": 2883125.252763204,
+          "rmd": 0,
+          "rothConversion": 0,
+          "taxAndPenalties": 0,
+          "withdrawals": 84087.53350161195,
+          "year": 2042
+        },
+        {
+          "contributions": 0,
+          "expenses": 184938.18209768174,
+          "income": 101266.73851785676,
+          "investable": 2115340.634689751,
+          "magi": 11638.363870089124,
+          "netWorth": 2942591.6999336574,
+          "rmd": 0,
+          "rothConversion": 0,
+          "taxAndPenalties": 0,
+          "withdrawals": 83671.44357982498,
+          "year": 2043
+        },
+        {
+          "contributions": 0,
+          "expenses": 179210.07760507334,
+          "income": 103798.40698080318,
+          "investable": 2152125.0570890824,
+          "magi": 12714.322966841351,
+          "netWorth": 3002640.3150211945,
+          "rmd": 0,
+          "rothConversion": 0,
+          "taxAndPenalties": 0,
+          "withdrawals": 75411.67062427016,
+          "year": 2044
+        },
+        {
+          "contributions": 0,
+          "expenses": 184208.03633711382,
+          "income": 106393.36715532324,
+          "investable": 2188397.4592421926,
+          "magi": 13817.181041012376,
+          "netWorth": 3062861.831321999,
+          "rmd": 0,
+          "rothConversion": 0,
+          "taxAndPenalties": 0,
+          "withdrawals": 77814.66918179058,
+          "year": 2045
+        },
+        {
+          "contributions": 0,
+          "expenses": 189370.69291101047,
+          "income": 109053.20133420633,
+          "investable": 2224024.3658869844,
+          "magi": 14947.61056703769,
+          "netWorth": 3123144.029276154,
+          "rmd": 0,
+          "rothConversion": 0,
+          "taxAndPenalties": 0,
+          "withdrawals": 80317.49157680414,
+          "year": 2046
+        },
+        {
+          "contributions": 0,
+          "expenses": 178580.36518839793,
+          "income": 111779.53136756146,
+          "investable": 2275870.826329786,
+          "magi": 16106.30083121362,
+          "netWorth": 3200373.9105913467,
+          "rmd": 0,
+          "rothConversion": 0,
+          "taxAndPenalties": 0,
+          "withdrawals": 66800.83382083647,
+          "year": 2047
+        },
+        {
+          "contributions": 0,
+          "expenses": 183688.50653516635,
+          "income": 114574.01965175048,
+          "investable": 2328127.9381159204,
+          "magi": 17293.958351993955,
+          "netWorth": 3278765.2459431887,
+          "rmd": 0,
+          "rothConversion": 0,
+          "taxAndPenalties": 0,
+          "withdrawals": 69114.48688341587,
+          "year": 2048
+        },
+        {
+          "contributions": 0,
+          "expenses": 188971.0261875422,
+          "income": 117438.37014304425,
+          "investable": 2380708.0225853506,
+          "magi": 18511.307310793803,
+          "netWorth": 3358253.775425836,
+          "rmd": 0,
+          "rothConversion": 0,
+          "taxAndPenalties": 0,
+          "withdrawals": 71532.65604449794,
+          "year": 2049
+        },
+        {
+          "contributions": 0,
+          "expenses": 409475.82341534545,
+          "income": 120374.32939662033,
+          "investable": 2206644.88763779,
+          "magi": 19759.08999356364,
+          "netWorth": 3211897.497109525,
+          "rmd": 0,
+          "rothConversion": 0,
+          "taxAndPenalties": 0,
+          "withdrawals": 289101.4940187251,
+          "year": 2050
+        },
+        {
+          "contributions": 0,
+          "expenses": 392540.5214857203,
+          "income": 123383.68763153582,
+          "investable": 2044049.8967417036,
+          "magi": 21038.067243402726,
+          "netWorth": 3077832.762772878,
+          "rmd": 0,
+          "rothConversion": 0,
+          "taxAndPenalties": 0,
+          "withdrawals": 269156.8338541845,
+          "year": 2051
+        },
+        {
+          "contributions": 0,
+          "expenses": 412742.74031927076,
+          "income": 126468.27982232423,
+          "investable": 1854453.0852382188,
+          "magi": 22349.0189244878,
+          "netWorth": 2917615.4218957247,
+          "rmd": 0,
+          "rothConversion": 0,
+          "taxAndPenalties": 0,
+          "withdrawals": 286274.4604969465,
+          "year": 2052
+        },
+        {
+          "contributions": 0,
+          "expenses": 211988.2291507387,
+          "income": 129629.98681788231,
+          "investable": 1869560.0592651572,
+          "magi": 23692.74439759998,
+          "netWorth": 2962977.7492736755,
+          "rmd": 0,
+          "rothConversion": 0,
+          "taxAndPenalties": 0,
+          "withdrawals": 82358.2423328564,
+          "year": 2053
+        },
+        {
+          "contributions": 0,
+          "expenses": 218253.06530758465,
+          "income": 132870.73648832936,
+          "investable": 2239307.5056204265,
+          "magi": 25070.06300753998,
+          "netWorth": 3098798.611195402,
+          "rmd": 0,
+          "rothConversion": 0,
+          "taxAndPenalties": 0,
+          "withdrawals": 85382.32881925529,
+          "year": 2054
+        },
+        {
+          "contributions": 0,
+          "expenses": 197032.4725467134,
+          "income": 88306.57187564607,
+          "investable": 2239073.9997450607,
+          "magi": 13130.29304714958,
+          "netWorth": 3120052.3829594105,
+          "rmd": 0,
+          "rothConversion": 0,
+          "taxAndPenalties": 0,
+          "withdrawals": 108725.90067106733,
+          "year": 2055
+        },
+        {
+          "contributions": 0,
+          "expenses": 202554.47657023673,
+          "income": 90514.23617253722,
+          "investable": 2239078.639179343,
+          "magi": 14068.550373328317,
+          "netWorth": 3142081.481974052,
+          "rmd": 0,
+          "rothConversion": 0,
+          "taxAndPenalties": 0,
+          "withdrawals": 112040.24039769951,
+          "year": 2056
+        },
+        {
+          "contributions": 0,
+          "expenses": 208250.3462658901,
+          "income": 92777.09207685065,
+          "investable": 2239404.4285906204,
+          "magi": 15030.264132661525,
+          "netWorth": 3164982.3424551967,
+          "rmd": 0,
+          "rothConversion": 0,
+          "taxAndPenalties": 0,
+          "withdrawals": 115473.25418903946,
+          "year": 2057
+        },
+        {
+          "contributions": 0,
+          "expenses": 214126.39813191176,
+          "income": 95096.51937877189,
+          "investable": 2236995.150078542,
+          "magi": 16016.020735978052,
+          "netWorth": 3185712.5117897326,
+          "rmd": 0,
+          "rothConversion": 0,
+          "taxAndPenalties": 0,
+          "withdrawals": 119029.87875313987,
+          "year": 2058
+        },
+        {
+          "contributions": 0,
+          "expenses": 220189.21492109954,
+          "income": 97473.93236324118,
+          "investable": 2230565.2602343215,
+          "magi": 17026.421254377503,
+          "netWorth": 3203000.5559882917,
+          "rmd": 0,
+          "rothConversion": 0,
+          "taxAndPenalties": 0,
+          "withdrawals": 122715.28255785836,
+          "year": 2059
+        }
+      ]
+    }
+  },
+  "endYear": 2059,
+  "generatedAtIso": "2026-07-11T12:00:00.000Z",
+  "kind": "retiregolden.report-model",
+  "planName": "Example couple",
+  "provenance": {
+    "engineVersion": null,
+    "federalParameterPackYear": 2026,
+    "hostVersion": null,
+    "parameterDataAsOf": "June 2026",
+    "parameterDataBasis": "2025 published federal and state rules",
+    "stateParameterPackYear": 2026
+  },
+  "startYear": 2026,
+  "version": 1
+}

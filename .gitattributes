@@ -1,0 +1,3 @@
+# Report goldens are compared byte-for-byte (vitest toMatchFileSnapshot);
+# pin them to LF so Windows autocrlf checkouts don't break the comparison.
+packages/planner-ui/src/report/goldens/** text eol=lf

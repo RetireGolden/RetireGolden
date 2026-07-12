@@ -22,8 +22,12 @@ import { EXAMPLE_FIXED_YEAR, exampleFixedNow, exampleIdFactory } from '../planne
 import { getExampleById } from '../planner/examples/registry'
 import { projectPlan } from '../planner/useProjection'
 import { buildStandaloneReportHtml, type ReportRecommendationEvidence } from './reportHtml'
+import { buildReportModel, serializeReportModel } from './reportModel'
 
-const GOLDEN_PREPARED_AT = '2026-07-11T00:00:00.000Z'
+// Noon UTC (repo convention, see EXAMPLE_FIXED_NOW_ISO): the report's
+// prepared-date line renders in the local timezone, and noon keeps the
+// calendar date stable across the timezones CI and dev machines run in.
+const GOLDEN_PREPARED_AT = '2026-07-11T12:00:00.000Z'
 
 function examplePlan(id: string): Plan {
   const example = getExampleById(id)
@@ -141,5 +145,36 @@ describe('standalone report HTML goldens', () => {
       },
     })
     await expect(html).toMatchFileSnapshot('./goldens/example-couple.branded.report.html')
+  })
+})
+
+describe('report model JSON goldens', () => {
+  for (const goldenCase of GOLDEN_CASES) {
+    it(`matches the committed report model for ${goldenCase.slug} (${goldenCase.covers})`, async () => {
+      const { plan, result, summary, findings } = projectGoldenCase(goldenCase)
+      const model = buildReportModel({
+        plan,
+        result,
+        summary,
+        startYear: EXAMPLE_FIXED_YEAR,
+        generatedAtIso: GOLDEN_PREPARED_AT,
+        modeledFindings: findings,
+      })
+      await expect(serializeReportModel(model)).toMatchFileSnapshot(`./goldens/${goldenCase.slug}.report-model.json`)
+    })
+  }
+
+  it('never marks a funded reference case as incomplete, and always marks the setup case', () => {
+    for (const goldenCase of GOLDEN_CASES) {
+      const { plan, result, summary } = projectGoldenCase(goldenCase)
+      const model = buildReportModel({
+        plan,
+        result,
+        summary,
+        startYear: EXAMPLE_FIXED_YEAR,
+        generatedAtIso: GOLDEN_PREPARED_AT,
+      })
+      expect(model.blocks['household'].incompleteData, goldenCase.slug).toBe(goldenCase.slug === 'incomplete-data')
+    }
   })
 })

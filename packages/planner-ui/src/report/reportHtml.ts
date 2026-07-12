@@ -1,46 +1,33 @@
+/**
+ * Standalone HTML rendering of the edition-neutral report model.
+ *
+ * `buildStandaloneReportHtml` assembles a `ReportModel` (see ./reportModel)
+ * and renders it as the self-contained, no-script HTML report the web app
+ * downloads. All report data comes from the model; this module only formats
+ * and lays it out. Optional host branding is a render-time concern and never
+ * enters the model.
+ */
+
 import { objectivePolicies } from '@retiregolden/engine/decisions'
-import type { Account, IncomeStream, Plan } from '@retiregolden/engine/model/plan'
-import {
-  LATEST_PACK_YEAR,
-  PARAMETER_DATA_AS_OF,
-  PARAMETER_DATA_BASIS,
-  PARAMETER_PROVENANCE,
-} from '@retiregolden/engine/params'
-import { LATEST_STATE_PACK_YEAR } from '@retiregolden/engine/params/state'
+import type { Plan } from '@retiregolden/engine/model/plan'
 import type { ProjectionSummary } from '@retiregolden/engine/projection/compare'
-import type { ProjectionResult, YearResult } from '@retiregolden/engine/projection/types'
+import type { ProjectionResult } from '@retiregolden/engine/projection/types'
 import type { ExactLedgerTournament, ExactLedgerValidation } from '@retiregolden/engine/projection/optimizePlan'
 import type { OptimizeResult } from '../optimize/messages'
 import { fmtMoney } from '../planner/format'
+import {
+  buildReportModel,
+  chartDataCsv,
+  type ReportAdvisorRecommendationsBlock,
+  type ReportModel,
+  type ReportRecommendationEvidence,
+} from './reportModel'
 
-export interface ReportDecisionCandidateRow {
-  afterTaxEstateDelta: number
-  candidateId: string
-  label: string
-  lifetimeTaxDelta: number
-  lossReason: string
-  moneyLastsYearsDelta: number
-}
-
-export interface ReportClaimAgeEvidence {
-  combinationsEvaluated: number
-  /** Null when the current claim ages won the joint grid. */
-  winningClaimLabel: string | null
-  jointExactEstate: number
-  currentClaimExactEstate: number
-}
-
-export interface ReportRecommendationEvidence {
-  objectiveId: string
-  objectiveLabel: string
-  recommendationState: string
-  winnerLabel: string
-  winnerSource: string
-  validation: ExactLedgerValidation | null
-  candidates: ReportDecisionCandidateRow[]
-  /** Non-null only when claim-age co-optimization ran (Step 5). */
-  claimAge: ReportClaimAgeEvidence | null
-}
+export type {
+  ReportClaimAgeEvidence,
+  ReportDecisionCandidateRow,
+  ReportRecommendationEvidence,
+} from './reportModel'
 
 /**
  * Host-supplied identity for downloaded reports — a generic composition hook
@@ -130,21 +117,6 @@ function safeLogoDataUri(value: string | undefined): string | null {
   return /^data:image\/(png|jpeg|gif|webp|svg\+xml|avif);base64,[a-zA-Z0-9+/=]+$/.test(trimmed) ? trimmed : null
 }
 
-const CATEGORIES = ['cash', 'taxable', 'equityComp', 'traditional', 'roth', 'hsa'] as const
-
-const ACCOUNT_LABEL: Record<Account['type'], string> = {
-  annuity: 'Annuity',
-  cash: 'Cash',
-  debt: 'Debt',
-  equityComp: 'Equity comp',
-  hsa: 'HSA',
-  pension: 'Pension',
-  property: 'Property',
-  roth: 'Roth',
-  taxable: 'Brokerage',
-  traditional: 'Traditional',
-}
-
 function escapeHtml(value: unknown): string {
   return String(value)
     .replace(/&/g, '&amp;')
@@ -165,83 +137,6 @@ function dateLabel(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
-function ownerName(plan: Plan, ownerPersonId: string | null): string {
-  if (ownerPersonId === null) return 'Joint'
-  return plan.household.people.find((p) => p.id === ownerPersonId)?.name ?? '-'
-}
-
-function accountBalance(a: Account): number {
-  if ('balance' in a) return a.balance
-  if (a.type === 'property') return a.value
-  return 0
-}
-
-function incomeLabel(plan: Plan, s: IncomeStream): string {
-  if (s.type === 'wages') return `Wages - ${ownerName(plan, s.personId)}`
-  if (s.type === 'socialSecurity') return `Social Security - ${ownerName(plan, s.personId)}`
-  return s.label
-}
-
-function incomeDetail(s: IncomeStream): string {
-  switch (s.type) {
-    case 'wages':
-      return `${fmtMoney(s.annualGross)}/yr until ${s.endAge ?? 'retirement'}`
-    case 'socialSecurity':
-      return `${s.piaMonthly !== null ? `${fmtMoney(s.piaMonthly)}/mo PIA` : 'from earnings record'}, claim ${s.claimAge.years}y${s.claimAge.months ? ` ${s.claimAge.months}m` : ''}`
-    case 'recurring':
-      return `${fmtMoney(s.annualAmount)}/yr${s.inflationAdjusted ? ', inflation-adjusted' : ''}`
-    case 'oneTime':
-      return `${fmtMoney(s.amount)} in ${s.year}`
-  }
-}
-
-function conversionSummary(plan: Plan): string {
-  const rc = plan.strategies.rothConversion
-  if (rc.mode === 'none') return 'None'
-  if (rc.mode === 'manual') return `Manual - ${rc.conversions.length} year(s)`
-  if (rc.mode === 'optimized') return `Optimized - ${rc.conversions.length} year(s)`
-  return `Fill to ${rc.target}${rc.targetValue !== null ? ` (${rc.targetValue})` : ''}, ${rc.startYear}-${rc.endYear}`
-}
-
-function withdrawalSummary(plan: Plan): string {
-  const w = plan.strategies.withdrawalOrder
-  if (w.mode === 'sequential') return 'Sequential: cash, taxable, equity comp, traditional, Roth, HSA'
-  if (w.mode === 'proportional') return 'Proportional across accounts'
-  return `Bracket-targeted to ${w.bracketPct}%`
-}
-
-function spendingPolicySummary(plan: Plan): string {
-  const policy = plan.expenses.spendingPolicy
-  if (!policy || policy.mode === 'fixedTarget') return 'Fixed target (no guardrails)'
-  if (policy.mode === 'withdrawalRateGuardrails') {
-    return `Withdrawal-rate guardrails: cut above ${policy.upperGuardrailPct ?? 120}% / restore below ${policy.lowerGuardrailPct ?? 80}% of the starting rate, ${policy.adjustmentPct ?? 10}% steps`
-  }
-  if (policy.mode === 'abw') {
-    const source =
-      policy.abw?.returnSource === 'cape'
-        ? `CAPE ${policy.abw?.startingCape ?? 25} earnings yield`
-        : policy.abw?.returnSource === 'tips'
-          ? `TIPS real yield ${policy.abw?.bondRealYieldPct ?? 2}%`
-          : `fixed ${policy.abw?.fixedRealReturnPct ?? 3.8}% real`
-    const horizon =
-      policy.abw?.horizon === 'survival25'
-        ? '25% survival age'
-        : policy.abw?.horizon === 'survival10'
-          ? '10% survival age'
-          : 'planning age'
-    return `Amortized spending (ABW): ${source}, to ${horizon}, tilt ${policy.abw?.tiltPct ?? 0}%/yr`
-  }
-  const lower =
-    policy.lowerBalanceThresholdPct !== undefined
-      ? `cut below ${policy.lowerBalanceThresholdPct.toFixed(0)}%`
-      : 'no cut threshold'
-  const upper =
-    policy.upperBalanceThresholdPct !== undefined
-      ? `raise above ${policy.upperBalanceThresholdPct.toFixed(0)}%`
-      : 'no raise threshold'
-  return `Risk-based guardrails (${policy.targetSuccessLowerPct ?? 70}-${policy.targetSuccessUpperPct ?? 95}% success band): ${lower} / ${upper} of the starting portfolio, ${policy.adjustmentPct ?? 10}% steps`
-}
-
 function table(headers: string[], rows: string[][]): string {
   return [
     '<table>',
@@ -251,78 +146,83 @@ function table(headers: string[], rows: string[][]): string {
   ].join('')
 }
 
-function headlineSection(summary: ProjectionSummary, result: ProjectionResult): string {
-  const lasts = summary.depletionYear === null ? `Full plan through ${result.endYear}` : `Depletes in ${summary.depletionYear}`
+function headlineSection(model: ReportModel): string {
+  const headline = model.blocks['headline-results']
+  const lasts =
+    headline.depletionYear === null ? `Full plan through ${model.endYear}` : `Depletes in ${headline.depletionYear}`
   const rows = [
-    ['Ending net worth', fmtMoney(summary.endingNetWorth), `in ${result.endYear}`],
-    ['Ending after-tax estate', fmtMoney(summary.endingAfterTaxEstate), 'net of heir tax on pre-tax balances'],
+    ['Ending net worth', fmtMoney(headline.endingNetWorth), `in ${model.endYear}`],
+    ['Ending after-tax estate', fmtMoney(headline.endingAfterTaxEstate), 'net of heir tax on pre-tax balances'],
     ['Money lasts', escapeHtml(lasts), 'deterministic exact-ledger run'],
-    ['Lifetime tax + penalties', fmtMoney(summary.lifetimeTaxesAndPenalties), 'federal + state + penalties'],
-    ['Lifetime Roth conversions', fmtMoney(summary.lifetimeRothConversions), 'executed by the ledger'],
-    ['FI target', fmtMoney(summary.fiNumber), 'today-dollar portfolio target'],
+    ['Lifetime tax + penalties', fmtMoney(headline.lifetimeTaxesAndPenalties), 'federal + state + penalties'],
+    ['Lifetime Roth conversions', fmtMoney(headline.lifetimeRothConversions), 'executed by the ledger'],
+    ['FI target', fmtMoney(headline.fiNumber), 'today-dollar portfolio target'],
   ]
   return `<section><h2>Headline results</h2>${table(['Metric', 'Value', 'Notes'], rows)}</section>`
 }
 
-function householdSection(plan: Plan): string {
+function householdSection(model: ReportModel): string {
   return `<section><h2>Household</h2>${table(
     ['Person', 'Date of birth', 'Retirement age', 'Planning age'],
-    plan.household.people.map((p) => [
+    model.blocks['household'].people.map((p) => [
       escapeHtml(p.name),
       escapeHtml(p.dob),
       escapeHtml(p.retirementAge ?? '-'),
-      escapeHtml(p.longevity.planningAge),
+      escapeHtml(p.planningAge),
     ]),
   )}</section>`
 }
 
-function accountsSection(plan: Plan): string {
-  const rows = plan.accounts.map((a) => [
+function accountsSection(model: ReportModel): string {
+  const rows = model.blocks['accounts'].rows.map((a) => [
     escapeHtml(a.name),
-    escapeHtml(ACCOUNT_LABEL[a.type]),
-    escapeHtml(ownerName(plan, a.ownerPersonId)),
-    fmtMoney(accountBalance(a)),
-    escapeHtml('annualReturnPct' in a && a.annualReturnPct !== null ? `${a.annualReturnPct}%` : 'default'),
+    escapeHtml(a.typeLabel),
+    escapeHtml(a.owner),
+    fmtMoney(a.balance),
+    escapeHtml(a.annualReturnPct !== null ? `${a.annualReturnPct}%` : 'default'),
   ])
   return `<section><h2>Accounts</h2>${table(['Account', 'Type', 'Owner', 'Balance', 'Return'], rows)}</section>`
 }
 
-function incomeSection(plan: Plan): string {
+function incomeSection(model: ReportModel): string {
   return `<section><h2>Income</h2>${table(
     ['Source', 'Detail'],
-    plan.incomes.map((stream) => [escapeHtml(incomeLabel(plan, stream)), escapeHtml(incomeDetail(stream))]),
+    model.blocks['income-sources'].rows.map((stream) => [escapeHtml(stream.label), escapeHtml(stream.detail)]),
   )}</section>`
 }
 
-function assumptionsSection(plan: Plan): string {
+function assumptionsSection(model: ReportModel): string {
+  const assumptions = model.blocks['assumptions']
+  const provenance = model.provenance
   const rows = [
-    ['General inflation', fmtPct(plan.assumptions.inflationPct)],
-    ['Healthcare extra inflation', fmtPct(plan.assumptions.healthcareExtraInflationPct)],
-    ['Default return', fmtPct(plan.assumptions.defaultReturnPct)],
-    ['Safe withdrawal rate', fmtPct(plan.assumptions.safeWithdrawalRatePct ?? 4)],
-    ['State effective tax override', fmtPct(plan.assumptions.stateEffectiveTaxPct)],
-    ['Local income tax', fmtPct(plan.assumptions.localIncomeTaxPct)],
-    ['Heir tax rate', fmtPct(plan.assumptions.heirTaxRatePct, 0)],
-    ['Roth conversions', escapeHtml(conversionSummary(plan))],
-    ['Withdrawal order', escapeHtml(withdrawalSummary(plan))],
-    ['Spending policy', escapeHtml(spendingPolicySummary(plan))],
-    ['Federal parameter pack', `${LATEST_PACK_YEAR}`],
-    ['State parameter pack', `${LATEST_STATE_PACK_YEAR}`],
-    ['Parameter data as of', escapeHtml(PARAMETER_DATA_AS_OF)],
-    ['Parameter data basis', escapeHtml(PARAMETER_DATA_BASIS)],
+    ['General inflation', fmtPct(assumptions.inflationPct)],
+    ['Healthcare extra inflation', fmtPct(assumptions.healthcareExtraInflationPct)],
+    ['Default return', fmtPct(assumptions.defaultReturnPct)],
+    ['Safe withdrawal rate', fmtPct(assumptions.safeWithdrawalRatePct)],
+    ['State effective tax override', fmtPct(assumptions.stateEffectiveTaxPct)],
+    ['Local income tax', fmtPct(assumptions.localIncomeTaxPct)],
+    ['Heir tax rate', fmtPct(assumptions.heirTaxRatePct, 0)],
+    ['Roth conversions', escapeHtml(assumptions.rothConversionSummary)],
+    ['Withdrawal order', escapeHtml(assumptions.withdrawalOrderSummary)],
+    ['Spending policy', escapeHtml(assumptions.spendingPolicySummary)],
+    ['Federal parameter pack', `${provenance.federalParameterPackYear}`],
+    ['State parameter pack', `${provenance.stateParameterPackYear}`],
+    ['Parameter data as of', escapeHtml(provenance.parameterDataAsOf)],
+    ['Parameter data basis', escapeHtml(provenance.parameterDataBasis)],
   ]
   return `<section><h2>Assumptions and provenance</h2>${table(['Assumption', 'Value'], rows)}</section>`
 }
 
-function warningsSection(result: ProjectionResult): string {
-  if (result.warnings.length === 0) return ''
-  return `<section><h2>Modeling notes</h2><ul>${result.warnings.map((w) => `<li>${escapeHtml(w)}</li>`).join('')}</ul></section>`
+function warningsSection(model: ReportModel): string {
+  const warnings = model.blocks['modeling-notes'].warnings
+  if (warnings.length === 0) return ''
+  return `<section><h2>Modeling notes</h2><ul>${warnings.map((w) => `<li>${escapeHtml(w)}</li>`).join('')}</ul></section>`
 }
 
-function provenanceSection(): string {
+function provenanceSection(model: ReportModel): string {
   return `<section><h2>Parameter source appendix</h2>${table(
     ['Group', 'Figures', 'Publisher', 'Source'],
-    PARAMETER_PROVENANCE.map((source) => [
+    model.blocks['parameter-sources'].sources.map((source) => [
       escapeHtml(source.label),
       escapeHtml(source.figures),
       escapeHtml(source.publisher),
@@ -331,7 +231,7 @@ function provenanceSection(): string {
   )}</section>`
 }
 
-function recommendationSection(evidence: ReportRecommendationEvidence | null | undefined): string {
+function recommendationSection(evidence: ReportRecommendationEvidence | null): string {
   if (!evidence) return ''
   const validation = evidence.validation
   const summaryRows = [
@@ -385,51 +285,49 @@ function recommendationSection(evidence: ReportRecommendationEvidence | null | u
   }</section>`
 }
 
-function appendixSection(result: ProjectionResult): string {
-  const rowFor = (y: YearResult) => [
-    `${y.year}`,
-    fmtMoney(y.incomes.total),
-    fmtMoney(y.expenses.total),
-    fmtMoney(y.contributions),
-    fmtMoney(y.rmd),
-    fmtMoney(y.rothConversion),
-    fmtMoney(y.tax + y.penalties),
-    fmtMoney(y.magi),
-    fmtMoney(y.withdrawals.total),
-    fmtMoney(y.investableTotal),
-    fmtMoney(y.netWorth),
-  ]
+/**
+ * Advisor-authored content, rendered as a separately attributed block. The
+ * model carries this only when the host supplied it (the web app never does);
+ * rendering it here keeps host-authored content from silently disappearing.
+ */
+function advisorSection(block: ReportAdvisorRecommendationsBlock | null): string {
+  if (!block || block.entries.length === 0) return ''
+  const entries = block.entries
+    .map((entry) => {
+      const adopted = entry.adoptedAtIso ? ` - adopted ${escapeHtml(dateLabel(entry.adoptedAtIso))}` : ''
+      return `<h3>${escapeHtml(entry.heading)}</h3><p>${escapeHtml(entry.body)}</p><p class="muted">Authored by ${escapeHtml(entry.authoredBy)}${adopted}</p>`
+    })
+    .join('')
+  return `<section><h2>Advisor recommendations</h2><p class="muted">Professional judgment authored by the advisor named below - not RetireGolden output.</p>${entries}</section>`
+}
+
+function appendixSection(model: ReportModel): string {
   return `<section><h2>Year-by-year ledger appendix</h2>${table(
     ['Year', 'Income', 'Expenses', 'Contrib.', 'RMD', 'Roth conv.', 'Tax + penalties', 'MAGI', 'Withdrawals', 'Investable', 'Net worth'],
-    result.years.map(rowFor),
+    model.blocks['year-ledger'].rows.map((y) => [
+      `${y.year}`,
+      fmtMoney(y.income),
+      fmtMoney(y.expenses),
+      fmtMoney(y.contributions),
+      fmtMoney(y.rmd),
+      fmtMoney(y.rothConversion),
+      fmtMoney(y.taxAndPenalties),
+      fmtMoney(y.magi),
+      fmtMoney(y.withdrawals),
+      fmtMoney(y.investable),
+      fmtMoney(y.netWorth),
+    ]),
   )}</section>`
 }
 
-function balanceChartData(plan: Plan, result: ProjectionResult): string {
-  const rows = result.years.map((year) => {
-    const categories = Object.fromEntries(CATEGORIES.map((category) => [category, 0])) as Record<(typeof CATEGORIES)[number], number>
-    for (const account of plan.accounts) {
-      if ((CATEGORIES as readonly string[]).includes(account.type)) {
-        categories[account.type as (typeof CATEGORIES)[number]] += year.balances[account.id] ?? 0
-      }
-    }
-    return [
-      year.year,
-      ...CATEGORIES.map((category) => Math.round(categories[category])),
-      Math.round(year.incomes.total),
-      Math.round(year.expenses.total + year.tax + year.penalties),
-    ].join(',')
-  })
-  return [
-    ['year', ...CATEGORIES, 'income', 'spendingPlusTax'].join(','),
-    ...rows,
-  ].join('\n')
-}
-
-export function buildStandaloneReportHtml(input: StandaloneReportInput): string {
-  const preparedAtIso = input.preparedAtIso ?? new Date().toISOString()
-  const csvData = escapeHtml(balanceChartData(input.plan, input.result))
-  const branding = input.branding ?? {}
+/**
+ * Render the standalone, self-contained HTML report from a report model.
+ * `buildStandaloneReportHtml` is the assembling wrapper; hosts that already
+ * hold a `ReportModel` (e.g. one they persisted) can render it directly.
+ */
+export function renderStandaloneReportHtml(model: ReportModel, brandingInput?: ReportBranding | null): string {
+  const csvData = escapeHtml(chartDataCsv(model.blocks['chart-data']))
+  const branding = brandingInput ?? {}
   const productName = branding.productName?.trim() || DEFAULT_PRODUCT_NAME
   const accentColor = safeCssColor(branding.accentColor)
   const logoDataUri = safeLogoDataUri(branding.logoDataUri)
@@ -439,12 +337,15 @@ export function buildStandaloneReportHtml(input: StandaloneReportInput): string 
   const logoCss = logoDataUri ? '.report-logo { display: block; max-height: 56px; max-width: 280px; margin-bottom: 12px; }\n' : ''
   const footerNote = branding.footerNote?.trim()
   const footerNoteHtml = footerNote ? `\n<p class="muted">${escapeHtml(footerNote)}</p>` : ''
+  const disclosures = model.blocks['disclosures'].statements
+    .map((statement) => `<p class="disclaimer">${escapeHtml(statement)}</p>`)
+    .join('\n')
   return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${escapeHtml(input.plan.name)} - ${escapeHtml(productName)} report</title>
+<title>${escapeHtml(model.planName)} - ${escapeHtml(productName)} report</title>
 <style>
 :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #12342b; background: #f7fbf8; }
 body { margin: 0; }
@@ -468,19 +369,19 @@ pre { background: #f0f5f2; border: 1px solid #dceae3; border-radius: 8px; max-he
 <body>
 <main>
 <header>
-${logoHtml}<h1>${escapeHtml(input.plan.name)}</h1>
-<p class="muted">${escapeHtml(productName)} self-contained HTML report prepared ${escapeHtml(dateLabel(preparedAtIso))}. Projection start year: ${input.startYear}.</p>
+${logoHtml}<h1>${escapeHtml(model.planName)}</h1>
+<p class="muted">${escapeHtml(productName)} self-contained HTML report prepared ${escapeHtml(dateLabel(model.generatedAtIso))}. Projection start year: ${model.startYear}.</p>
 </header>
-<p class="disclaimer">Educational illustration only - not tax, legal, financial, or medical advice. Figures are projections based on the assumptions below and will differ from actual results.</p>
-${headlineSection(input.summary, input.result)}
-${recommendationSection(input.recommendationEvidence)}
-${householdSection(input.plan)}
-${accountsSection(input.plan)}
-${incomeSection(input.plan)}
-${assumptionsSection(input.plan)}
-${warningsSection(input.result)}
-${appendixSection(input.result)}
-${provenanceSection()}
+${disclosures}
+${headlineSection(model)}
+${recommendationSection(model.blocks['modeled-findings'])}${advisorSection(model.blocks['advisor-recommendations'])}
+${householdSection(model)}
+${accountsSection(model)}
+${incomeSection(model)}
+${assumptionsSection(model)}
+${warningsSection(model)}
+${appendixSection(model)}
+${provenanceSection(model)}
 <details>
 <summary>Embedded chart/automation data CSV</summary>
 <pre>${csvData}</pre>
@@ -488,6 +389,18 @@ ${provenanceSection()}
 </main>
 </body>
 </html>`
+}
+
+export function buildStandaloneReportHtml(input: StandaloneReportInput): string {
+  const model = buildReportModel({
+    plan: input.plan,
+    result: input.result,
+    summary: input.summary,
+    startYear: input.startYear,
+    generatedAtIso: input.preparedAtIso,
+    modeledFindings: input.recommendationEvidence,
+  })
+  return renderStandaloneReportHtml(model, input.branding)
 }
 
 function lossReasonForCandidate(
