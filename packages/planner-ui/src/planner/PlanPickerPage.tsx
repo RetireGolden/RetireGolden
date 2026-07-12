@@ -6,6 +6,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 
 import { createEmptyPlan } from '@retiregolden/engine/model/plan'
+import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
 import { DataAndPrivacyCard } from './home/DataAndPrivacyCard'
 import { GettingStartedPaths } from './home/GettingStartedPaths'
 import { GettingStartedReopener } from './home/GettingStartedReopener'
@@ -37,6 +38,7 @@ export function PlanPickerPage() {
   } = useHomeData()
 
   const { mode, welcomeExpanded, dismissWelcome, showWelcome } = useHomeMode(plans)
+  const readOnly = useWorkspaceReadOnly()
   const isLoading = plans === null
   const isFirstRun = !isLoading && mode === 'first-run'
 
@@ -96,9 +98,11 @@ export function PlanPickerPage() {
             headingLevel="h1"
             actions={
               <>
-                <button type="button" className="btn btn-primary" onClick={() => void createAndOpen(createEmptyPlan())}>
-                  New plan
-                </button>
+                {readOnly ? null : (
+                  <button type="button" className="btn btn-primary" onClick={() => void createAndOpen(createEmptyPlan())}>
+                    New plan
+                  </button>
+                )}
                 <Link to="/compare" className="btn btn-secondary">
                   Compare plans
                 </Link>

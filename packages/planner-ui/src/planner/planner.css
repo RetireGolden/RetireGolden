@@ -532,6 +532,18 @@
   color: var(--bad);
 }
 
+/* Read-only wrapper around a plan-editing section (EditableFieldset). A native
+   <fieldset disabled> disables every control it contains; this strips the
+   element's default border/margin/padding and min-inline-size so it lays out
+   exactly as the bare section did. Descendant controls get the browser's
+   standard disabled affordance when the fieldset is disabled. */
+.editable-region {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-inline-size: 0;
+}
+
 /* --- sticky KPI bar ------------------------------------------------------- */
 
 .kpi-bar {

@@ -119,7 +119,8 @@ The supported product API is:
 
 - the **root export** — `PlannerApp`, the plan-persistence seam
   (`PlanStore`, `PlanSummary`, `PlanStoreProvider`, `indexedDbPlanStore`),
-  the route groups (`plannerWorkspaceRoutes`, `plannerContentRoutes`,
+  the read-only capability (`readOnly` prop + `useWorkspaceReadOnly`), the
+  route groups (`plannerWorkspaceRoutes`, `plannerContentRoutes`,
   `plannerHomeRoutes`), and `ReportBrandingProvider` — see "Hosting the
   workspace" below;
 - the **`./plan-format` subpath** — `serializeV2Backup`, `parseV2Backup`,
@@ -200,6 +201,45 @@ Deliberate boundaries of the seam:
   browser store regardless of provider; "Save to my plans" converts a demo
   into a user plan and writes *that* through the seam. Small conveniences
   (theme, dismissed banners) likewise stay in `localStorage`.
+
+### Read-only mode
+
+The workspace can render read-only: pass `readOnly` to `<PlanStoreProvider>`
+(or `<PlannerApp/>`). It defaults to `false`, so omitting it leaves behavior
+exactly as before — the public web app is unchanged.
+
+```tsx
+<PlanStoreProvider store={myStore} readOnly={!canEdit}>{/* planner routes */}</PlanStoreProvider>
+```
+
+When `readOnly` is `true`:
+
+- **autosave never runs** — editing a plan updates the on-screen state but no
+  `savePlan` call is attempted (so the store's own throw, below, is never
+  reached);
+- **plan-editing controls disable** — the entry sections (Household, Accounts,
+  Income, …) and the plan-name field render disabled;
+- **the discrete write actions hide** — duplicate, delete, "Save to my plans",
+  import, and new-plan are unavailable;
+- **read/explore/export keep working** — Results, Report, Compare, Monte Carlo,
+  and every download/backup path are untouched.
+
+This is a **generic, edition-neutral capability**: planner-ui knows nothing
+about *why* writes are disallowed (entitlements, sign-in, a lapsed
+subscription). The host decides when to set `readOnly` and renders its own
+banner explaining the reason — keep any planner-side text generic. `readOnly`
+is the *cooperative* half of the gate: it stops the planner from attempting
+writes. The authoritative gate stays the host `PlanStore` — `savePlan` is free
+to throw, and that throw is the backstop if a write is ever attempted anyway.
+
+`useWorkspaceReadOnly()` reads the same signal inside a host's own chrome
+mounted under the provider (e.g. to disable a custom toolbar button):
+
+```tsx
+import { useWorkspaceReadOnly } from '@retiregolden/planner-ui'
+
+const readOnly = useWorkspaceReadOnly() // false unless a provider sets it
+```
 
 ### Route groups
 

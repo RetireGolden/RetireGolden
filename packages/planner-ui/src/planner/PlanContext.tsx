@@ -11,6 +11,7 @@ import { Link } from 'react-router-dom'
 
 import { parsePlan, type Plan } from '@retiregolden/engine/model/plan'
 import { loadPlanVia, savePlanVia, usePlanStore } from '../data/planStoreContext'
+import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
 import { EXAMPLE_PLAN_ID_PREFIX, isExamplePlanId } from '../data/planOrigin'
 import { getExampleById } from './examples/registry'
 import { saveFreshDemo } from './examples/loadExample'
@@ -25,6 +26,7 @@ const AUTOSAVE_MS = 600
  */
 export function PlanProvider({ planId, children }: { planId: string; children: ReactNode }) {
   const store = usePlanStore()
+  const readOnly = useWorkspaceReadOnly()
   const [plan, setPlan] = useState<Plan | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [saveState, setSaveState] = useState<SaveState>('loading')
@@ -74,7 +76,14 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
   // savePlanVia resolves { ok: false } on validation failure, but the store
   // write itself can still reject (quota, private mode) — degrade to 'error'
   // instead of leaving 'saving' stuck plus an unhandled rejection.
+  //
+  // Read-only is enforced here, at the single point that touches the store:
+  // no write is even attempted, so the host's `savePlan` throw (its
+  // authoritative gate) is never reached. `update` already avoids scheduling
+  // when read-only; this guard is the belt-and-suspenders backstop for any
+  // other path (flush on pagehide, a stray caller).
   const runSave = useCallback((toSave: Plan) => {
+    if (readOnly) return
     setSaveState('saving')
     void savePlanVia(store, toSave)
       .then((r) => {
@@ -83,7 +92,7 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
       .catch(() => {
         setSaveState('error')
       })
-  }, [store])
+  }, [store, readOnly])
 
   const scheduleSave = useCallback(() => {
     if (timer.current !== null) window.clearTimeout(timer.current)
@@ -121,16 +130,20 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
         if (parsed.ok) {
           latestValid.current = parsed.plan
           setIssues([])
-          setSaveState('dirty')
-          scheduleSave()
+          // Read-only: reflect the edit on screen (so any still-live control
+          // stays responsive) but never mark dirty or schedule a save.
+          if (!readOnly) {
+            setSaveState('dirty')
+            scheduleSave()
+          }
           return parsed.plan
         }
         setIssues(parsed.issues)
-        setSaveState('invalid')
+        if (!readOnly) setSaveState('invalid')
         return draft
       })
     },
-    [scheduleSave],
+    [scheduleSave, readOnly],
   )
 
   // Flush pending saves when the page is hidden or torn down. The unmount

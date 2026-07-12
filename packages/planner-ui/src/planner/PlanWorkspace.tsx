@@ -8,6 +8,7 @@ import { useEffect } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import { duplicatePlanVia, usePlanStore } from '../data/planStoreContext'
+import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
 import { DEFAULT_PATH_COUNT } from '../mc/pool'
 import { useDialogs } from './dialogs'
 import { isPlanIncomplete } from './planCompleteness'
@@ -55,7 +56,18 @@ function sectionTitleOf(pathname: string): string | null {
 
 function SaveIndicator() {
   const { plan, saveState, issues } = usePlan()
+  const readOnly = useWorkspaceReadOnly()
   const isExample = plan.origin === 'example'
+  // Read-only wins over any save state: nothing is being stored, so the
+  // "Stored on this device" / "Storing…" copy would be misleading. Keep the
+  // label generic — planner-ui doesn't know the reason (the host explains it).
+  if (readOnly) {
+    return (
+      <span className="save-state" role="status" aria-live="polite" title="This plan is read-only right now.">
+        Read-only
+      </span>
+    )
+  }
   const text =
     saveState === 'saved'
       ? isExample
@@ -161,11 +173,13 @@ function KpiBar() {
 
 function PlanName() {
   const { plan, update } = usePlan()
+  const readOnly = useWorkspaceReadOnly()
   return (
     <input
       className="plan-name-input"
       value={plan.name}
       aria-label="Plan name"
+      disabled={readOnly}
       onChange={(e) =>
         update((d) => {
           d.name = e.target.value || 'My plan'
@@ -178,6 +192,7 @@ function PlanName() {
 function WorkspaceInner() {
   const { plan, discardPendingSave } = usePlan()
   const store = usePlanStore()
+  const readOnly = useWorkspaceReadOnly()
   const navigate = useNavigate()
   const location = useLocation()
   const { prompt, alert, dialogs } = useDialogs()
@@ -227,9 +242,11 @@ function WorkspaceInner() {
           <PlanName />
         </div>
         <div className="workspace-head-actions">
-          <button type="button" className="btn btn-secondary btn-small" onClick={() => void handleDuplicate()}>
-            Duplicate plan
-          </button>
+          {readOnly ? null : (
+            <button type="button" className="btn btn-secondary btn-small" onClick={() => void handleDuplicate()}>
+              Duplicate plan
+            </button>
+          )}
           <SaveIndicator />
         </div>
       </div>
