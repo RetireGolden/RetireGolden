@@ -21,7 +21,7 @@ const sources = {
   ...import.meta.glob('../../packages/engine/src/decisions/*.ts', { query: '?raw', import: 'default', eager: true }),
   ...import.meta.glob('../../packages/planner-ui/src/planner/**/*.{ts,tsx}', { query: '?raw', import: 'default', eager: true }),
   ...import.meta.glob('../../packages/planner-ui/src/learn/content/**/*.ts', { query: '?raw', import: 'default', eager: true }),
-  ...import.meta.glob('../../packages/planner-ui/src/report/**/*.ts', { query: '?raw', import: 'default', eager: true }),
+  ...import.meta.glob('../../packages/planner-ui/src/report/**/*.{ts,tsx}', { query: '?raw', import: 'default', eager: true }),
 } as Record<string, string>
 
 /**
