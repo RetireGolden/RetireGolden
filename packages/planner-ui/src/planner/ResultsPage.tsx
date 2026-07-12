@@ -36,6 +36,7 @@ import { useProjection } from './useProjection'
 import { BucketLensCard } from './BucketLensCard'
 import { FundedRatioCard } from './sections/IncomeFloorSection'
 import { chartTooltipStyle } from './chartStyle'
+import { NonZeroTooltipContent } from './chartTooltip'
 import { frameH } from './chartFrame'
 import { useMcSuccessRate } from './useMcSuccessRate'
 
@@ -115,6 +116,10 @@ const tooltipProps = {
   contentStyle: chartTooltipStyle,
   wrapperStyle: { zIndex: 2 },
 } as const
+
+// Stacked charts (6–8 series) hide ~$0 rows in the tooltip via content, never
+// by nulling zeros in the data — see NonZeroTooltipContent.
+const stackTooltipProps = { ...tooltipProps, content: NonZeroTooltipContent } as const
 
 /** "1,000" — keeps verdict copy in sync if the default path count changes. */
 const PATH_COUNT_LABEL = DEFAULT_PATH_COUNT.toLocaleString()
@@ -231,14 +236,7 @@ export function ResultsPage() {
         const nominalFiTarget = view.summary.fiNumber * Math.pow(1 + plan.assumptions.inflationPct / 100, y.year - view.startYear)
         return {
           year: y.year,
-          // Zero balances render as null so empty categories stay out of the
-          // tooltip (an "HSA: $0" row is noise in a six-series stack).
-          ...Object.fromEntries(
-            CATEGORIES.map((c) => {
-              const v = adj(y.year, cats[c])
-              return [c, v > 0.5 ? v : null]
-            }),
-          ),
+          ...Object.fromEntries(CATEGORIES.map((c) => [c, adj(y.year, cats[c])])),
           income: adj(y.year, y.incomes.total),
           spending: adj(y.year, y.expenses.total + y.tax + y.penalties),
           tax: adj(y.year, y.tax),
@@ -251,22 +249,18 @@ export function ResultsPage() {
     [view, plan, adj],
   )
 
-  // Zero series values render as null so the tooltip (filterNull) skips them —
-  // a stack of 6–8 series otherwise lists every "$0" row as noise.
-  const orNull = (v: number) => (v > 0.5 ? v : null)
-
   const incomeRows = useMemo(
     () =>
       view.result.years.map((y) => ({
         year: y.year,
-        wages: orNull(adj(y.year, y.incomes.wages)),
-        socialSecurity: orNull(adj(y.year, y.incomes.socialSecurity)),
-        pension: orNull(adj(y.year, y.incomes.pension)),
-        annuity: orNull(adj(y.year, y.incomes.annuity)),
-        tipsLadder: orNull(adj(y.year, y.incomes.tipsLadder)),
-        recurring: orNull(adj(y.year, y.incomes.recurring)),
-        oneTime: orNull(adj(y.year, y.incomes.oneTime)),
-        taxableYield: orNull(adj(y.year, y.incomes.taxableYield)),
+        wages: adj(y.year, y.incomes.wages),
+        socialSecurity: adj(y.year, y.incomes.socialSecurity),
+        pension: adj(y.year, y.incomes.pension),
+        annuity: adj(y.year, y.incomes.annuity),
+        tipsLadder: adj(y.year, y.incomes.tipsLadder),
+        recurring: adj(y.year, y.incomes.recurring),
+        oneTime: adj(y.year, y.incomes.oneTime),
+        taxableYield: adj(y.year, y.incomes.taxableYield),
       })),
     [view, adj],
   )
@@ -275,14 +269,14 @@ export function ResultsPage() {
     () =>
       view.result.years.map((y) => ({
         year: y.year,
-        base: orNull(adj(y.year, y.expenses.baseSpending)),
-        healthcare: orNull(adj(y.year, y.expenses.healthcare)),
-        property: orNull(adj(y.year, y.expenses.propertyCosts)),
-        debt: orNull(adj(y.year, y.expenses.debtService)),
-        insurance: orNull(adj(y.year, y.expenses.insurancePremiums)),
-        care: orNull(adj(y.year, Math.max(0, y.expenses.careCost - y.expenses.ltcBenefit))),
-        goals: orNull(adj(y.year, y.expenses.oneTimeGoals)),
-        taxes: orNull(adj(y.year, y.tax + y.penalties)),
+        base: adj(y.year, y.expenses.baseSpending),
+        healthcare: adj(y.year, y.expenses.healthcare),
+        property: adj(y.year, y.expenses.propertyCosts),
+        debt: adj(y.year, y.expenses.debtService),
+        insurance: adj(y.year, y.expenses.insurancePremiums),
+        care: adj(y.year, Math.max(0, y.expenses.careCost - y.expenses.ltcBenefit)),
+        goals: adj(y.year, y.expenses.oneTimeGoals),
+        taxes: adj(y.year, y.tax + y.penalties),
       })),
     [view, adj],
   )
@@ -535,7 +529,7 @@ export function ResultsPage() {
               {view.summary.depletionYear !== null ? (
                 <ReferenceLine x={view.summary.depletionYear} stroke="var(--bad)" strokeDasharray="4 4" label={{ value: 'depleted', fill: 'var(--bad)', fontSize: 12 }} />
               ) : null}
-              <Tooltip {...tooltipProps} />
+              <Tooltip {...stackTooltipProps} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -591,7 +585,7 @@ export function ResultsPage() {
               {INCOME_SOURCES.map((s) => (
                 <Bar key={s.key} dataKey={s.key} stackId="inc" name={s.label} fill={s.color} />
               ))}
-              <Tooltip {...tooltipProps} />
+              <Tooltip {...stackTooltipProps} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -620,7 +614,7 @@ export function ResultsPage() {
               {EXPENSE_CATEGORIES.map((c) => (
                 <Bar key={c.key} dataKey={c.key} stackId="exp" name={c.label} fill={c.color} />
               ))}
-              <Tooltip {...tooltipProps} />
+              <Tooltip {...stackTooltipProps} />
             </BarChart>
           </ResponsiveContainer>
         </div>
