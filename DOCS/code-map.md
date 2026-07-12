@@ -141,7 +141,8 @@ test files.
 | Importing from other tools / broker CSVs / a 1040 | `import/` (`ImportPage.tsx`, per-source mappers); balance updates in `planner/sections/UpdateBalancesPanel.tsx` |
 | Example library demos | `planner/examples/registry.ts`, `planner/examples/loadExample.ts`, `planner/examples/ExamplesPage.tsx`; `origin` on `Plan` in `engine: model/plan.ts` |
 | Local engine-regression manifests | `cases/caseRunner.ts`, `cases/caseDiff.ts`, `scripts/cases.mjs` |
-| Self-contained HTML reports | `report/reportHtml.ts`, `report/downloadReport.ts`; UI buttons in `planner/ResultsPage.tsx`, `planner/ReportPage.tsx`, `planner/OptimizePage.tsx` |
+| Self-contained HTML reports | `report/reportHtml.ts` (renders the model), `report/downloadReport.ts`; UI buttons in `planner/ResultsPage.tsx`, `planner/ReportPage.tsx`, `planner/OptimizePage.tsx` |
+| The edition-neutral report data model | `report/reportModel.ts` (`buildReportModel`, stable block ids, JSON/CSV export; published as `@retiregolden/planner-ui/report-model`); goldens in `report/goldens/` |
 | Monte Carlo / optimizer entry points | `mc/monteCarlo.worker.ts` / `optimize/optimize.worker.ts` |
 | The Social Security PIA math | `engine: socialSecurity/piaFromEarnings.ts`, `socialSecurity/ssaWageData.ts` |
 | Learning Center articles + metadata | `learn/learningRegistry.ts`, `learn/content/` |
