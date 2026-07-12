@@ -108,7 +108,7 @@ export function InsightsPage() {
           edit, and each one can be previewed as a scenario before anything in your plan changes.
         </p>
         <div className="callout callout--info">
-          <strong>Educational only.</strong> These suggestions are for educational purposes based on the rules and assumptions modeled. They do not constitute financial, tax, or legal advice.
+          <strong>Educational only.</strong> These findings are for educational purposes based on the rules and assumptions modeled. They do not constitute financial, tax, or legal advice.
         </div>
       </div>
 
@@ -116,7 +116,7 @@ export function InsightsPage() {
         <div className="card">
           <h2>Roth & Tax Optimizer</h2>
           <p className="card-hint">
-            Compare candidate Roth-conversion schedules on your full year-by-year projection and see the best result found for your plan.
+            Compare candidate Roth-conversion schedules on your full year-by-year projection, ranked by the objective you select.
           </p>
           <Link to={`/plan/${plan.id}/optimize`} className="btn btn-primary btn-small">
             Run optimizer →

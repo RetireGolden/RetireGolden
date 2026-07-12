@@ -64,7 +64,7 @@ export const ssBridgeGap: Detector = {
     return {
       id: 'ss-bridge-gap',
       category: 'social-security',
-      title: 'Your Social Security gap years are unfunded — compare a bridge',
+      title: 'Compare a TIPS bridge ladder for your Social Security gap years',
       rationale:
         `You delay Social Security but retire earlier, leaving ${firstYear}–${lastYear} without your benefit. ` +
         `A TIPS bridge ladder (≈$${Math.round(totalCost).toLocaleString()} today) pays you the forgone age-62 benefit ` +
@@ -79,7 +79,7 @@ export const ssBridgeGap: Detector = {
       plannerRoute: 'income-floor',
       action: {
         kind: 'preview-scenario',
-        scenarioName: 'Add a Social Security bridge ladder',
+        scenarioName: 'Model a Social Security bridge ladder',
         patch: { incomeFloor: { ladders: [...(plan.incomeFloor?.ladders ?? []), ...ladders] } },
       },
     }
