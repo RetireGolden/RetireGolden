@@ -106,6 +106,34 @@ describe('buildReportModel', () => {
     expect(model.blocks['advisor-recommendations']).toBeNull()
   })
 
+  it('snapshots modeled findings — mutating the input afterwards leaves the model unchanged', () => {
+    const findings = {
+      objectiveId: 'max-after-tax-estate',
+      objectiveLabel: 'Maximize after-tax estate',
+      recommendationState: 'beneficial',
+      winnerLabel: 'Fill the 12% bracket',
+      winnerSource: 'candidate',
+      validation: null,
+      candidates: [
+        {
+          candidateId: 'bracket-10',
+          label: 'Fill the 10% bracket',
+          afterTaxEstateDelta: 500,
+          lifetimeTaxDelta: 100,
+          moneyLastsYearsDelta: 0,
+          lossReason: 'Trailed the selected recommendation by $500.',
+        },
+      ],
+      claimAge: null,
+    }
+    const model = modelFor(fixturePlan(), { modeledFindings: findings })
+    findings.winnerLabel = 'mutated'
+    findings.candidates[0]!.label = 'mutated'
+    const block = model.blocks['modeled-findings']!
+    expect(block.winnerLabel).toBe('Fill the 12% bracket')
+    expect(block.candidates[0]!.label).toBe('Fill the 10% bracket')
+  })
+
   it('copies advisor-authored content verbatim when the host supplies it', () => {
     const model = modelFor(fixturePlan(), {
       advisorRecommendations: [
@@ -174,6 +202,29 @@ describe('table export helpers', () => {
     // Apostrophe-prefixed so Excel/Sheets render text instead of evaluating.
     expect(csv).toContain(`"'=HYPERLINK(""https://attacker.example"",""Open"")"`)
     expect(csv).not.toMatch(/^=|[\n,]=/m)
+  })
+})
+
+describe('renderStandaloneReportHtml incomplete-data caveat', () => {
+  it('renders the missing-data caveat and qualified headline for an incomplete plan', () => {
+    const bare = singlePersonPlan()
+    bare.accounts = []
+    bare.incomes = []
+    const model = modelFor(validatePlan(bare))
+    expect(model.blocks['household'].incompleteData).toBe(true)
+    const html = renderStandaloneReportHtml(model)
+    expect(html).toContain('Missing data: this plan has no income sources and no funded accounts')
+    expect(html).toContain('the household setup is incomplete')
+    if (model.blocks['headline-results'].depletionYear !== null) {
+      expect(html).toContain('(plan setup incomplete - see missing-data note)')
+      expect(html).not.toMatch(/Depletes in \d+</)
+    }
+  })
+
+  it('renders no caveat for a funded plan', () => {
+    const html = renderStandaloneReportHtml(modelFor(fixturePlan()))
+    expect(html).not.toContain('Missing data:')
+    expect(html).not.toContain('setup is incomplete')
   })
 })
 

@@ -150,8 +150,14 @@ function table(headers: string[], rows: string[][]): string {
 
 function headlineSection(model: ReportModel): string {
   const headline = model.blocks['headline-results']
+  // An unfunded plan's depletion year is a fact about missing data, not a
+  // funded plan's failure — qualify it so the headline can't read as doom.
   const lasts =
-    headline.depletionYear === null ? `Full plan through ${model.endYear}` : `Depletes in ${headline.depletionYear}`
+    headline.depletionYear === null
+      ? `Full plan through ${model.endYear}`
+      : model.blocks['household'].incompleteData
+        ? `Depletes in ${headline.depletionYear} (plan setup incomplete - see missing-data note)`
+        : `Depletes in ${headline.depletionYear}`
   const rows = [
     ['Ending net worth', fmtMoney(headline.endingNetWorth), `in ${model.endYear}`],
     ['Ending after-tax estate', fmtMoney(headline.endingAfterTaxEstate), 'net of heir tax on pre-tax balances'],
@@ -164,7 +170,10 @@ function headlineSection(model: ReportModel): string {
 }
 
 function householdSection(model: ReportModel): string {
-  return `<section><h2>Household</h2>${table(
+  const incompleteNote = model.blocks['household'].incompleteData
+    ? '<p class="muted">No income sources or funded accounts yet - the household setup is incomplete.</p>'
+    : ''
+  return `<section><h2>Household</h2>${incompleteNote}${table(
     ['Person', 'Date of birth', 'Retirement age', 'Planning age'],
     model.blocks['household'].people.map((p) => [
       escapeHtml(p.name),
@@ -342,6 +351,11 @@ export function renderStandaloneReportHtml(model: ReportModel, brandingInput?: R
   const disclosures = model.blocks['disclosures'].statements
     .map((statement) => `<p class="disclaimer">${escapeHtml(statement)}</p>`)
     .join('\n')
+  // Missing-data caveat (non-removable, per the model contract): an
+  // incomplete plan must not present its projection as a funded outcome.
+  const incompleteNote = model.blocks['household'].incompleteData
+    ? '\n<p class="disclaimer">Missing data: this plan has no income sources and no funded accounts, so the projection reflects an incomplete setup rather than a funded plan\'s outlook.</p>'
+    : ''
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -374,7 +388,7 @@ pre { background: #f0f5f2; border: 1px solid #dceae3; border-radius: 8px; max-he
 ${logoHtml}<h1>${escapeHtml(model.planName)}</h1>
 <p class="muted">${escapeHtml(productName)} self-contained HTML report prepared ${escapeHtml(dateLabel(model.generatedAtIso))}. Projection start year: ${model.startYear}.</p>
 </header>
-${disclosures}
+${disclosures}${incompleteNote}
 ${headlineSection(model)}
 ${recommendationSection(model.blocks['modeled-findings'])}${advisorSection(model.blocks['advisor-recommendations'])}
 ${householdSection(model)}

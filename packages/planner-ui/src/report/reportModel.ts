@@ -465,6 +465,22 @@ function chartDataRows(plan: Plan, result: ProjectionResult): ReportChartDataRow
   })
 }
 
+/**
+ * The model is a snapshot: copy the findings instead of aliasing the caller's
+ * object, so later mutation of optimizer output can't silently change an
+ * already-built model (all leaf fields are primitives, so shallow copies of
+ * each layer suffice).
+ */
+function snapshotFindings(findings: ReportRecommendationEvidence | null | undefined): ReportRecommendationEvidence | null {
+  if (!findings) return null
+  return {
+    ...findings,
+    validation: findings.validation ? { ...findings.validation } : null,
+    candidates: findings.candidates.map((candidate) => ({ ...candidate })),
+    claimAge: findings.claimAge ? { ...findings.claimAge } : null,
+  }
+}
+
 function yearLedgerRow(y: YearResult): ReportYearLedgerRow {
   return {
     year: y.year,
@@ -517,7 +533,7 @@ export function buildReportModel(input: ReportModelInput): ReportModel {
         coastFireNumber: summary.coastFireNumber,
         averagePreRetirementSavingsRatePct: summary.averagePreRetirementSavingsRatePct,
       },
-      'modeled-findings': input.modeledFindings ?? null,
+      'modeled-findings': snapshotFindings(input.modeledFindings),
       'household': {
         filingStatus: plan.household.filingStatus,
         state: plan.household.state,
