@@ -57,8 +57,8 @@ function syntheticFindings(summary: ProjectionSummary): ReportRecommendationEvid
     winnerLabel: 'Fill the 12% bracket',
     winnerSource: 'candidate',
     validation: {
-      baseline: summary,
-      candidate: { ...summary, endingAfterTaxEstate: summary.endingAfterTaxEstate + 1000 },
+      baselineAfterTaxEstate: summary.endingAfterTaxEstate,
+      candidateAfterTaxEstate: summary.endingAfterTaxEstate + 1000,
       afterTaxEstateDelta: 1000,
       endingNetWorthDelta: 1200,
       lifetimeTaxDelta: 300,

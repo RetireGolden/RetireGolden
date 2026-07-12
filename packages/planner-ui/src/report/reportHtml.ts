@@ -21,12 +21,14 @@ import {
   type ReportAdvisorRecommendationsBlock,
   type ReportModel,
   type ReportRecommendationEvidence,
+  type ReportValidationEvidence,
 } from './reportModel'
 
 export type {
   ReportClaimAgeEvidence,
   ReportDecisionCandidateRow,
   ReportRecommendationEvidence,
+  ReportValidationEvidence,
 } from './reportModel'
 
 /**
@@ -242,8 +244,8 @@ function recommendationSection(evidence: ReportRecommendationEvidence | null): s
   ]
   if (validation) {
     summaryRows.push(
-      ['Baseline after-tax estate', fmtMoney(validation.baseline.endingAfterTaxEstate)],
-      ['Candidate after-tax estate', fmtMoney(validation.candidate.endingAfterTaxEstate)],
+      ['Baseline after-tax estate', fmtMoney(validation.baselineAfterTaxEstate)],
+      ['Candidate after-tax estate', fmtMoney(validation.candidateAfterTaxEstate)],
       ['After-tax estate delta', fmtSignedMoney(validation.afterTaxEstateDelta)],
       ['Lifetime tax delta', fmtSignedMoney(validation.lifetimeTaxDelta)],
       ['Money-lasts delta', `${validation.moneyLastsYearsDelta > 0 ? '+' : ''}${validation.moneyLastsYearsDelta} year(s)`],
@@ -417,6 +419,25 @@ function lossReasonForCandidate(
   return 'Not selected under the active objective and guardrails.'
 }
 
+/** Restate the engine's validation as the flat figures the report model carries. */
+function validationEvidence(validation: ExactLedgerValidation | null): ReportValidationEvidence | null {
+  if (!validation) return null
+  return {
+    baselineAfterTaxEstate: validation.baseline.endingAfterTaxEstate,
+    candidateAfterTaxEstate: validation.candidate.endingAfterTaxEstate,
+    afterTaxEstateDelta: validation.afterTaxEstateDelta,
+    endingNetWorthDelta: validation.endingNetWorthDelta,
+    lifetimeTaxDelta: validation.lifetimeTaxDelta,
+    moneyLastsYearsDelta: validation.moneyLastsYearsDelta,
+    requestedConversionTotal: validation.requestedConversionTotal,
+    executedConversionTotal: validation.executedConversionTotal,
+    executedConversionRatio: validation.executedConversionRatio,
+    firstMateriallyUnexecutedYear: validation.firstMateriallyUnexecutedYear,
+    traditionalDepletionYear: validation.traditionalDepletionYear,
+    recommendationState: validation.recommendationState,
+  }
+}
+
 export function reportEvidenceFromOptimizeResult(result: OptimizeResult): ReportRecommendationEvidence {
   const tournament = result.tournament
   // Only the winning source's validation belongs on the report. winnerValidation is
@@ -439,7 +460,7 @@ export function reportEvidenceFromOptimizeResult(result: OptimizeResult): Report
     recommendationState,
     winnerLabel,
     winnerSource: tournament.winnerSource,
-    validation,
+    validation: validationEvidence(validation),
     candidates: tournament.candidates.map((candidate) => ({
       afterTaxEstateDelta: candidate.afterTaxEstateDelta,
       candidateId: candidate.id,

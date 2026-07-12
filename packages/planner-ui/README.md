@@ -278,8 +278,12 @@ user's selected objective — render it as modeled results, not as advice
 authored by the software. The `advisor-recommendations` block is
 host-authored professional content: `buildReportModel` copies it verbatim
 from its input and never populates it on its own, and renderers must keep it
-visibly attributed to the professional. The `disclosures` block and the
-household `incompleteData` flag are caveats a rendering must keep visible.
+visibly attributed to the professional. The `disclosures` block is a caveat
+every rendering must keep visible. The household `incompleteData` flag marks
+a plan that cannot fund spending yet (no income sources, nothing funded);
+client-facing deliverables should surface it as a missing-data warning
+instead of rendering depletion framing — the in-app Results page already
+treats such plans this way.
 
 ### Report branding
 

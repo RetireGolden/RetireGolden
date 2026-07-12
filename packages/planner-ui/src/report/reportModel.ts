@@ -30,7 +30,6 @@ import {
 } from '@retiregolden/engine/params'
 import { LATEST_STATE_PACK_YEAR } from '@retiregolden/engine/params/state'
 import type { ProjectionSummary } from '@retiregolden/engine/projection/compare'
-import type { ExactLedgerValidation } from '@retiregolden/engine/projection/optimizePlan'
 import type { ProjectionResult, YearResult } from '@retiregolden/engine/projection/types'
 import { fmtMoney } from '../planner/format'
 import { isPlanIncomplete } from '../planner/planCompleteness'
@@ -82,6 +81,29 @@ export interface ReportClaimAgeEvidence {
 }
 
 /**
+ * Exact-ledger validation of the winning candidate, restated as flat report
+ * figures. Deliberately not the engine's `ExactLedgerValidation`: that type
+ * embeds two full projection summaries, and carrying it verbatim would couple
+ * this serialized contract to engine-internal shape. The model states only
+ * the figures a report presents.
+ */
+export interface ReportValidationEvidence {
+  baselineAfterTaxEstate: number
+  candidateAfterTaxEstate: number
+  afterTaxEstateDelta: number
+  endingNetWorthDelta: number
+  lifetimeTaxDelta: number
+  moneyLastsYearsDelta: number
+  requestedConversionTotal: number
+  executedConversionTotal: number
+  executedConversionRatio: number
+  /** Null when every requested conversion year executed materially in full. */
+  firstMateriallyUnexecutedYear: number | null
+  traditionalDepletionYear: number | null
+  recommendationState: string
+}
+
+/**
  * Evidence for a modeled finding: what objective the user selected, which
  * candidate won under it, the exact-ledger validation deltas, and why the
  * other candidates lost. This is calculation output attributed to the stated
@@ -93,7 +115,7 @@ export interface ReportRecommendationEvidence {
   recommendationState: string
   winnerLabel: string
   winnerSource: string
-  validation: ExactLedgerValidation | null
+  validation: ReportValidationEvidence | null
   candidates: ReportDecisionCandidateRow[]
   /** Non-null only when claim-age co-optimization ran (Step 5). */
   claimAge: ReportClaimAgeEvidence | null
@@ -578,7 +600,9 @@ function normalizeJson(value: unknown): JsonValue | undefined {
   if (Array.isArray(value)) return value.map((item) => normalizeJson(item) ?? null)
   if (typeof value === 'object') {
     const out: { [key: string]: JsonValue } = {}
-    for (const [key, child] of Object.entries(value).sort(([a], [b]) => a.localeCompare(b))) {
+    // Codepoint order, not localeCompare: collation varies by runtime locale
+    // and would break the same-bytes-everywhere guarantee.
+    for (const [key, child] of Object.entries(value).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
       const normalized = normalizeJson(child)
       if (normalized !== undefined) out[key] = normalized
     }
@@ -599,7 +623,13 @@ export function serializeReportModel(model: ReportModel): string {
 function csvCell(value: string | number | null): string {
   if (value === null) return ''
   if (typeof value === 'number') return String(value)
-  return /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value
+  // Text cells can carry user-entered names. Neutralize spreadsheet formula
+  // injection: a cell starting with = + - @ or a tab/CR is evaluated by
+  // Excel/Sheets even when quoted, so prefix it with an apostrophe (the
+  // standard render-as-text marker). Then quote anything containing commas,
+  // quotes, or line breaks (\r included — a bare CR also splits rows).
+  const neutralized = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value
+  return /[",\n\r]/.test(neutralized) ? `"${neutralized.replace(/"/g, '""')}"` : neutralized
 }
 
 function csvTable(header: string[], rows: (string | number | null)[][]): string {

@@ -155,13 +155,25 @@ describe('table export helpers', () => {
     expect(lines[1]!.startsWith(`${firstRow.year},${firstRow.income},`)).toBe(true)
   })
 
-  it('accounts CSV quotes cells that contain commas or quotes', () => {
+  it('accounts CSV quotes cells that contain commas, quotes, or line breaks', () => {
     const model = modelFor(
       fixturePlan((plan) => {
-        plan.accounts[plan.accounts.length - 1]!.name = 'Brokerage, "joint"'
+        plan.accounts[plan.accounts.length - 1]!.name = 'Brokerage, "joint"\rextra'
       }),
     )
-    expect(accountsCsv(model.blocks['accounts'])).toContain('"Brokerage, ""joint"""')
+    expect(accountsCsv(model.blocks['accounts'])).toContain('"Brokerage, ""joint""\rextra"')
+  })
+
+  it('accounts CSV neutralizes spreadsheet formula injection in text cells', () => {
+    const model = modelFor(
+      fixturePlan((plan) => {
+        plan.accounts[plan.accounts.length - 1]!.name = '=HYPERLINK("https://attacker.example","Open")'
+      }),
+    )
+    const csv = accountsCsv(model.blocks['accounts'])
+    // Apostrophe-prefixed so Excel/Sheets render text instead of evaluating.
+    expect(csv).toContain(`"'=HYPERLINK(""https://attacker.example"",""Open"")"`)
+    expect(csv).not.toMatch(/^=|[\n,]=/m)
   })
 })
 
