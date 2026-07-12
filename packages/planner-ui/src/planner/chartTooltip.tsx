@@ -10,5 +10,9 @@ import { DefaultTooltipContent, type TooltipContentProps } from 'recharts'
 
 export function NonZeroTooltipContent(props: TooltipContentProps) {
   const payload = props.payload?.filter((entry) => typeof entry.value === 'number' && entry.value > 0.5)
+  // Recharts gates tooltip visibility on the unfiltered payload, so when every
+  // series is ~$0 (e.g. post-depletion years) render nothing rather than a
+  // floating card holding only the year label.
+  if (!payload || payload.length === 0) return null
   return <DefaultTooltipContent {...props} payload={payload} />
 }
