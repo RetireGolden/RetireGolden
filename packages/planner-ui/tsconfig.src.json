@@ -25,5 +25,5 @@
     "strict": true
   },
   "include": ["src"],
-  "references": [{ "path": "../engine" }]
+  "references": [{ "path": "../engine/tsconfig.build.json" }]
 }

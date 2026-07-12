@@ -1,0 +1,17 @@
+{
+  /* Build config — `tsc -b tsconfig.build.json` emits dist/, and this is the
+     project the root, app, and planner-ui tsconfigs reference. The test
+     exclude belongs here rather than in tsconfig.json (see the note there)
+     so co-located *.test.ts files never ship in dist. */
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "tsBuildInfoFile": "./tsconfig.build.tsbuildinfo",
+    "noEmit": false,
+    "rootDir": "src",
+    "outDir": "dist",
+    "declaration": true
+  },
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts"]
+}

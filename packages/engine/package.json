@@ -53,10 +53,10 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "build": "tsc -b",
+    "build": "tsc -b tsconfig.build.json",
     "lint": "eslint .",
-    "test": "tsc -p tsconfig.test.json && vitest run",
-    "test:coverage": "tsc -p tsconfig.test.json && vitest run --coverage",
+    "test": "tsc -p tsconfig.json && vitest run",
+    "test:coverage": "tsc -p tsconfig.json && vitest run --coverage",
     "prepack": "npm run build"
   },
   "dependencies": {
