@@ -21,8 +21,11 @@ npm test         # unit + engine tests (must pass)
 npm run build    # production build (must pass)
 ```
 
-The test suite includes golden/regression gates for the financial math. If your change legitimately moves
-a golden number, explain why in the PR — with a source (IRS/SSA publication, statute, worksheet).
+The test suite includes golden/regression gates for the financial math — see
+[DOCS/testing.md](DOCS/testing.md) for the testing discipline (a correctness test never uses the app's own
+output as its expected value) and [DOCS/external-oracles.md](DOCS/external-oracles.md) for how fixtures
+are sourced. If your change legitimately moves a golden number, explain why in the PR — with a source
+(IRS/SSA publication, statute, worksheet).
 
 ## Licensing of contributions
 

@@ -17,6 +17,8 @@ and a doc disagree, fix the doc to match the code.
 | [architecture.md](architecture.md) | The system design: pure engine + React shell, local-first, the simulation core |
 | [code-map.md](code-map.md) | Where everything lives across the workspaces, entry points, and commands |
 | [standards.md](standards.md) | Conventions to follow when changing the app (read before contributing) |
+| [testing.md](testing.md) | The testing discipline: oracle vs characterization tests, the expected-value rule, invariants |
+| [external-oracles.md](external-oracles.md) | How calculations are validated against IRS/SSA/CMS worksheets and independent tools |
 | [CHANGELOG.md](../CHANGELOG.md) | Sequential high-level history of system changes (from commits + shipped work) |
 
 ## Keep it current
@@ -47,6 +49,7 @@ and a doc disagree, fix the doc to match the code.
 |-----|----------------|
 | [operations/ci-cd-and-deploy.md](operations/ci-cd-and-deploy.md) | Build, test, and deploy to Azure Static Web Apps |
 | [operations/security-scanning.md](operations/security-scanning.md) | Semgrep (SAST) + OWASP ZAP (DAST) and how they gate the pipeline |
+| [operations/owl-parity.md](operations/owl-parity.md) | The Owl parity oracle: cross-checking the optimizer against an independent implementation |
 
 ## App routes
 

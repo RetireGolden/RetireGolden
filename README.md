@@ -76,7 +76,7 @@ Six GitHub Actions workflows: the SWA pipeline and both security scans run on pu
 
 [`.github/workflows/owl-parity.yml`](.github/workflows/owl-parity.yml)
 
-Manually triggered (Actions tab). Runs the Owl parity harness (`npm run owl-parity`), replaying the bundled fixtures through the open-source Owl planner and comparing ending after-tax estates against RetireGolden's exact ledger.
+Manually triggered (Actions tab). Runs the Owl parity harness (`npm run owl-parity`), replaying the bundled fixtures through the open-source Owl planner and comparing ending after-tax estates against RetireGolden's exact ledger. How the harness and its gate work: [DOCS/operations/owl-parity.md](DOCS/operations/owl-parity.md).
 
 ### Semgrep SAST — static analysis
 
