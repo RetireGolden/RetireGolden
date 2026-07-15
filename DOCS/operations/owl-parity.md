@@ -20,9 +20,9 @@ annual ledger, so a delta reflects optimization quality rather than model differ
 
 1. A curated fixture matrix of household plans is defined in
    [`app/src/cases/owlParity.ts`](../../app/src/cases/owlParity.ts) — traditional-heavy low-income
-   bridge, balanced couple with low-basis taxable, Roth-heavy control, high-tax state, and survivor-phase
-   cases, each with mapping notes describing exactly how the plan translates to Owl's inputs and which
-   knobs are intentionally excluded.
+   bridge, balanced couple with low-basis taxable, Roth-heavy control, high-tax state, survivor-phase,
+   and Social Security tax-torpedo cases, each with mapping notes describing exactly how the plan
+   translates to Owl's inputs and which knobs are intentionally excluded.
 2. Each fixture is emitted both as a RetireGolden `Plan` and as an Owl TOML case (written under
    `app/artifacts/owl-parity/owl-cases/`), so both engines see the same household.
 3. [`app/scripts/owl_runner.py`](../../app/scripts/owl_runner.py) runs Owl **out-of-process** and records
