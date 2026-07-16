@@ -41,8 +41,8 @@ annual ledger, so a delta reflects optimization quality rather than model differ
 - Owl is pinned to commit `f09b4022b05e033efc34a74c7c384d605239c9bf` (tag `v2026.07.04`,
   `OWL_PARITY_OWL_PINNED_COMMIT`). Strict runs install exactly this pin in an isolated virtualenv; any
   other locally-available Owl invocation is marked **unverified** in the runner summary.
-- Without `--strict-owl`, a missing Python/Owl environment degrades to a clear skip, never a failure — the
-  harness must not break `npm test` for contributors who don't have Python set up.
+- Without `--strict-owl`, a missing Python/Owl environment reports a skipped gate and exits 0 — a plain
+  `npm run owl-parity` stays safe for contributors who don't have Python set up.
 
 ## CI
 

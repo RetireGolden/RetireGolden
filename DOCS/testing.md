@@ -92,8 +92,10 @@ These catch sign errors, accidental money creation, and ordering mistakes.
 
 **Adversarial import tests** cover the messy-data boundary: malformed/hostile SSA XML, corrupt or
 oversized JSON backups, unknown schema versions, and CSV/JSON import mappers
-([`packages/planner-ui/src/import/`](../packages/planner-ui/src/import/)). Bad imports can silently
-poison calculations if validation misses them — this is correctness work, not just security.
+([`packages/planner-ui/src/import/`](../packages/planner-ui/src/import/)). Only the SSA XML suite carries
+the `*.adversarial.test.ts` suffix today; the backup, schema, and import-mapper hostile-input coverage
+lives in ordinary co-located `*.test.ts` files. Bad imports can silently poison calculations if
+validation misses them — this is correctness work, not just security.
 
 ## Writing one good oracle test
 

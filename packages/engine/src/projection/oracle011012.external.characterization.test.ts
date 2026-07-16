@@ -39,7 +39,7 @@ function picked(y: YearResult) {
 }
 
 /**
- * ORACLE-011 (external-oracle-comparisons.md) - optimizer direction vs Owl.
+ * ORACLE-011 (DOCS/external-oracles.md) - optimizer direction vs Owl.
  *
  * Oracle: Owl - Optimal wealth lab (https://github.com/mdlacasse/Owl)
  * Commit: 266c87b96e5dcd672a236026fb1fdc9a0ec11a7e
@@ -156,7 +156,7 @@ describe('ORACLE-011: Roth bridge optimizer direction vs Owl', () => {
 })
 
 /**
- * ORACLE-012 (external-oracle-comparisons.md) - five-year RMD bridge.
+ * ORACLE-012 (DOCS/external-oracles.md) - five-year RMD bridge.
  *
  * Oracle: hand worksheet from IRS Pub 590-B Uniform Lifetime divisors and the
  * RetireGolden 2026 federal pack. No external software is needed because the

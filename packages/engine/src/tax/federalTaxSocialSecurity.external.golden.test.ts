@@ -5,7 +5,7 @@ import { computeFederalTax } from './federalTax.js'
 import type { TaxYearInput } from '../projection/types.js'
 
 /**
- * ORACLE-002 (Phase 5, external-oracle-comparisons.md) — retired MFJ household
+ * ORACLE-002 (DOCS/external-oracles.md) — retired MFJ household
  * with pension + Social Security, vs the IRS taxable-Social-Security worksheet
  * (IRC §86) and the 2026 IRS rate schedule.
  *

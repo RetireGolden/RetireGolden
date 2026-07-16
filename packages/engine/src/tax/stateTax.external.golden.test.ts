@@ -22,7 +22,7 @@ function stateInput(state: string, overrides: Partial<TaxYearInput>): TaxYearInp
 }
 
 /**
- * ORACLE-009 (Phase 5, external-oracle-comparisons.md) - New Jersey graduated
+ * ORACLE-009 (DOCS/external-oracles.md) - New Jersey graduated
  * income tax vs the New Jersey Division of Taxation 2025 NJ-1040 instructions.
  *
  * The state pack carries latest-published state values forward into the 2026
@@ -68,7 +68,7 @@ describe('ORACLE-009: New Jersey graduated state income tax vs NJ Division of Ta
 })
 
 /**
- * ORACLE-010 (Phase 5, external-oracle-comparisons.md) - Kentucky retirement
+ * ORACLE-010 (DOCS/external-oracles.md) - Kentucky retirement
  * exclusion and flat income tax vs the Kentucky Department of Revenue, 2026.
  *
  * This also closes the open thread from PR #91 review, where the Kentucky flat

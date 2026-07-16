@@ -5,7 +5,7 @@ import { packForYear } from '../params/index.js'
 import { medicareAnnualPremiumPerPerson } from './medicare.js'
 
 /**
- * ORACLE-004 (Phase 5, external-oracle-comparisons.md) — Medicare Part B / IRMAA
+ * ORACLE-004 (DOCS/external-oracles.md) — Medicare Part B / IRMAA
  * vs the CMS 2026 release (premiums from 2024 MAGI, two-year lookback).
  *
  * Oracle: CMS CY2026 Medicare Parts B & D premium / IRMAA amounts.
