@@ -105,7 +105,7 @@ test files.
 | `longevity/` | Life-expectancy wizard: `model`, `factors`, `LongevityWizard.tsx`, `LongevityResults.tsx` (the SSA period table + types live in the engine package) |
 | `integration/` | Engine-adjacent tests that drive engine code through app harnesses (`useProjection`, the learning registry, the spending solver) |
 | `import/` | Import & migration wizard (`/import`): hardened CSV core (`csv.ts`), broker positions mappers (`brokerCsv.ts`), ProjectionLab JSON mapper (`projectionLab.ts`), generic/RPM column-mapping (`genericCsv.ts`), 1040 guided seed (`tenForty.ts`), shared review checklist (`reviewChecklist.ts` + `ReviewChecklistView.tsx`), `ImportPage.tsx` |
-| `learn/` | Learning Center: pages, `learningRegistry.ts`, `glossary.ts`, `components/`, 131 articles in `content/` |
+| `learn/` | Learning Center: pages, `learningRegistry.ts`, `glossary.ts`, `components/`, 132 articles in `content/` |
 | `testSupport/` | `samplePlan.ts` (deprecated shim over the example library); shared fixtures moved to the engine package's `testing/` |
 
 ### `packages/planner-ui/src/planner/` highlights
