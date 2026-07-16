@@ -2,6 +2,11 @@
 
 Tax year: 2025. Researched 2026-06-13.
 
+> **2026 update (staleness sweep, 2026-07-16):** Indiana's legislated ramp cut the flat rate to
+> **2.95%** for 2026 (2.9% scheduled for 2027) — the 2026 pack encodes 2.95%. Do not hold IN forward at
+> refresh time. Source: Tax Foundation 2026 state income tax tables / "State Tax Changes Taking Effect
+> January 1, 2026" (accessed 2026-07-16).
+
 ## Summary
 - Broad individual income tax: **yes** (flat 3.0% state rate)
 - Taxes Social Security benefits: no (fully exempt)

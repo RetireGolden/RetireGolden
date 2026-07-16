@@ -2,6 +2,11 @@
 
 Tax year: 2025. Researched 2026-06-13.
 
+> **2026 update (staleness sweep, 2026-07-16):** North Carolina's statutory ramp cut the flat rate to
+> **3.99%** for 2026 (revenue-triggered cuts possible after) — the 2026 pack encodes 3.99%. Do not hold
+> NC forward at refresh time. Source: Tax Foundation "State Tax Changes Taking Effect January 1, 2026"
+> (accessed 2026-07-16).
+
 ## Summary
 - Broad individual income tax: **yes** (flat 4.25% for 2025)
 - Taxes Social Security benefits: no (fully exempt)

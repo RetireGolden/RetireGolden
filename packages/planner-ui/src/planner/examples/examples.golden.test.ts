@@ -36,7 +36,10 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   'ltc-shock': { depletionYear: 2034, endingInvestable: 0, lifetimeTax: 0, lifetimeRoth: 0 },
   'early-career-match': { depletionYear: null, endingInvestable: 15041257.78, lifetimeTax: 4063312.79, lifetimeRoth: 0 },
   'aggressive-saver': { depletionYear: null, endingInvestable: 134029763.47, lifetimeTax: 9624621.34, lifetimeRoth: 0 },
-  'coast-fire': { depletionYear: null, endingInvestable: 5227394.44, lifetimeTax: 2636951.9, lifetimeRoth: 0 },
+  // coast-fire reviewed 2026-07-16: CO standard deduction moved to the 2026
+  // federal-equivalent ($15,750 -> $16,100) in the state-pack staleness sweep,
+  // lowering lifetime CO tax slightly and raising ending assets to match.
+  'coast-fire': { depletionYear: null, endingInvestable: 5229765.03, lifetimeTax: 2636356.92, lifetimeRoth: 0 },
   'barista-fire': { depletionYear: null, endingInvestable: 13355239.67, lifetimeTax: 3238318.02, lifetimeRoth: 0 },
   'bridge-early-retirement': { depletionYear: null, endingInvestable: 11161152.81, lifetimeTax: 2016757.83, lifetimeRoth: 0 },
   'lean-fat-fire': { depletionYear: null, endingInvestable: 42683484.06, lifetimeTax: 4430206.05, lifetimeRoth: 0 },

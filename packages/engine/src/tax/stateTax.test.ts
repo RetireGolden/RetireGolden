@@ -80,12 +80,12 @@ describe('computeStateTax — code paths', () => {
     const ny = pack('NY')
     // SS not taxed even though present; $20k retirement exclusion at 59½+.
     const taxable = 90_000 - 20_000 - 8000 // ordinary − exclusion − std ded = 62,000
-    // Brackets: 4% to 8,500; 4.5% to 11,700; 5.25% to 13,900; 5.5% to 80,650; ...
+    // 2026 brackets: 3.9% to 8,500; 4.4% to 11,700; 5.15% to 13,900; 5.4% to 80,650; ...
     const expected =
-      8500 * 0.04 +
-      (11_700 - 8500) * 0.045 +
-      (13_900 - 11_700) * 0.0525 +
-      (taxable - 13_900) * 0.055
+      8500 * 0.039 +
+      (11_700 - 8500) * 0.044 +
+      (13_900 - 11_700) * 0.0515 +
+      (taxable - 13_900) * 0.054
     const tax = computeStateTax(ny, input({ ordinaryIncome: 90_000, retirementIncome: 30_000, ssBenefits: 40_000, agesAlive: [66] }))
     expect(tax).toBeCloseTo(expected, 2)
   })

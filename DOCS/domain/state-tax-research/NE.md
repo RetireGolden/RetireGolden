@@ -2,6 +2,11 @@
 
 Tax year: 2025. Researched 2026-06-13.
 
+> **2026 update (staleness sweep, 2026-07-16):** the LB 754 ramp consolidated Nebraska to three
+> brackets for 2026 — 2.46% / 3.51% / **4.55%** at $4,130 / $24,760 (single; $8,250 / $49,530 MFJ) —
+> with the top rate stepping to 3.99% in 2027. The 2026 pack encodes these values. Do not hold NE
+> forward at refresh time. Source: Tax Foundation 2026 state income tax tables (accessed 2026-07-16).
+
 ## Summary
 - Broad individual income tax: **yes** (graduated, 2.46%–5.20%)
 - Taxes Social Security benefits: no (fully exempt as of tax year 2025)

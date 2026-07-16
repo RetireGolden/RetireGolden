@@ -3,9 +3,17 @@
  *
  * Transcribed from the cited per-state research docs in
  * DOCS/domain/state-tax-research/ (see each <CODE>.md for sources and the
- * simplifications each state's mapping makes). Values are latest-published
- * (≈2025) individual-income-tax figures; like the federal pack, nominal
- * brackets are carried forward for future years (bracket creep modeled).
+ * simplifications each state's mapping makes). Values are the published 2026
+ * figures where a state has legislated 2026 changes (swept against the Tax
+ * Foundation 2026 tables + state DOR pages, 2026-07-16), otherwise
+ * latest-published (≈2025) figures carried forward; like the federal pack,
+ * nominal brackets are carried forward for future years (bracket creep
+ * modeled). States on legislated rate ramps (GA, IN, MS, MT, NE, NC, OK) are
+ * commented inline — never hold those forward at refresh time.
+ *
+ * States whose standard deduction conforms to (or proxies) the FEDERAL
+ * standard deduction — AZ, CO, DC, IA, ID, ME, MO, MT, ND, NM, SC — carry the
+ * federal pack's figure for the same year ($16,100/$32,200 for 2026).
  *
  * State taxable income in the engine starts from gross ordinary income (plus
  * gains, plus the federally taxable SS amount where the state taxes SS), minus
@@ -70,7 +78,7 @@ const rawStateYear2026 = {
     },
     AZ: {
       code: 'AZ', name: 'Arizona', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 15000, marriedFilingJointly: 30000 },
+      standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
       brackets: { single: [{ lowerBound: 0, ratePct: 2.5 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 2.5 }] },
       retirement: { kind: 'none' },
     },
@@ -109,7 +117,7 @@ const rawStateYear2026 = {
       // Flat 4.4% on federal taxable income; no separate state deduction, so the
       // standard deduction is the federal-equivalent to convert gross→taxable.
       code: 'CO', name: 'Colorado', hasIncomeTax: true, taxesSocialSecurity: true, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 15750, marriedFilingJointly: 31500 },
+      standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
       brackets: { single: [{ lowerBound: 0, ratePct: 4.4 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 4.4 }] },
       retirement: { kind: 'capped', capPerPerson: 24000, minAge: 65 },
     },
@@ -149,7 +157,7 @@ const rawStateYear2026 = {
     },
     DC: {
       code: 'DC', name: 'District of Columbia', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 15000, marriedFilingJointly: 30000 },
+      standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
       brackets: {
         single: [
           { lowerBound: 0, ratePct: 4 }, { lowerBound: 10000, ratePct: 6 }, { lowerBound: 40000, ratePct: 6.5 },
@@ -199,7 +207,7 @@ const rawStateYear2026 = {
     },
     ID: {
       code: 'ID', name: 'Idaho', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 15000, marriedFilingJointly: 30000 },
+      standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
       brackets: {
         single: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 4811, ratePct: 5.3 }],
         marriedFilingJointly: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 9622, ratePct: 5.3 }],
@@ -213,14 +221,15 @@ const rawStateYear2026 = {
       retirement: { kind: 'full' },
     },
     IN: {
+      // Legislated ramp: 3.0% (2025) -> 2.95% (2026) -> 2.9% (2027). Re-verify annually.
       code: 'IN', name: 'Indiana', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 0, marriedFilingJointly: 0 },
-      brackets: { single: [{ lowerBound: 0, ratePct: 3 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 3 }] },
+      brackets: { single: [{ lowerBound: 0, ratePct: 2.95 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 2.95 }] },
       retirement: { kind: 'none' },
     },
     IA: {
       code: 'IA', name: 'Iowa', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 15000, marriedFilingJointly: 30000 },
+      standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
       brackets: { single: [{ lowerBound: 0, ratePct: 3.8 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 3.8 }] },
       retirement: { kind: 'full', minAge: 55 },
     },
@@ -247,7 +256,7 @@ const rawStateYear2026 = {
     },
     ME: {
       code: 'ME', name: 'Maine', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 15000, marriedFilingJointly: 30000 },
+      standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
       brackets: {
         single: [{ lowerBound: 0, ratePct: 5.8 }, { lowerBound: 26800, ratePct: 6.75 }, { lowerBound: 63450, ratePct: 7.15 }],
         marriedFilingJointly: [{ lowerBound: 0, ratePct: 5.8 }, { lowerBound: 53600, ratePct: 6.75 }, { lowerBound: 126900, ratePct: 7.15 }],
@@ -303,17 +312,25 @@ const rawStateYear2026 = {
       retirement: { kind: 'none' },
     },
     MS: {
+      // Legislated ramp: 4.4% (2025) -> 4.0% (2026), with further cuts scheduled. Re-verify annually.
       code: 'MS', name: 'Mississippi', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 2300, marriedFilingJointly: 4600 },
       brackets: {
-        single: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 10000, ratePct: 4.4 }],
-        marriedFilingJointly: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 10000, ratePct: 4.4 }],
+        single: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 10000, ratePct: 4 }],
+        marriedFilingJointly: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 10000, ratePct: 4 }],
       },
       retirement: { kind: 'full' },
     },
     MO: {
-      code: 'MO', name: 'Missouri', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 15750, marriedFilingJointly: 31500 },
+      // HB 594 (signed 2025-07-10): individuals deduct 100% of federally
+      // reported capital gains from TY2025 on — MO no longer taxes gains.
+      code: 'MO', name: 'Missouri', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: false,
+      capitalGainsNotes: 'HB 594 (2025) fully exempts individual capital gains (short- and long-term) from Missouri income tax from tax year 2025 onward.',
+      capitalGainsSources: [
+        'DOCS/domain/state-tax-research/MO.md',
+        'https://dor.mo.gov/news/newsitem/uuid/15044650-59dd-48f4-975a-01988d485255',
+      ],
+      standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
       brackets: {
         single: [
           { lowerBound: 0, ratePct: 0 }, { lowerBound: 1313, ratePct: 2 }, { lowerBound: 2626, ratePct: 2.5 },
@@ -329,25 +346,27 @@ const rawStateYear2026 = {
       retirement: { kind: 'capped', capPerPerson: 6000 },
     },
     MT: {
+      // HB 337 (2025): 2026 = 4.7%/5.65% at 47,500/95,000; 2027 steps again to
+      // 4.7%/5.4% at 65,000/130,000 (MT DOR, accessed 2026-07-16). Re-verify annually.
       code: 'MT', name: 'Montana', hasIncomeTax: true, taxesSocialSecurity: true, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 15750, marriedFilingJointly: 31500 },
+      standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
       brackets: {
-        single: [{ lowerBound: 0, ratePct: 4.7 }, { lowerBound: 20500, ratePct: 5.9 }],
-        marriedFilingJointly: [{ lowerBound: 0, ratePct: 4.7 }, { lowerBound: 41000, ratePct: 5.9 }],
+        single: [{ lowerBound: 0, ratePct: 4.7 }, { lowerBound: 47500, ratePct: 5.65 }],
+        marriedFilingJointly: [{ lowerBound: 0, ratePct: 4.7 }, { lowerBound: 95000, ratePct: 5.65 }],
       },
       retirement: { kind: 'none' },
     },
     NE: {
+      // LB 754 ramp: top 5.2% (2025) -> 4.55% (2026, brackets consolidated to
+      // three) -> 3.99% (2027). Re-verify annually.
       code: 'NE', name: 'Nebraska', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 8600, marriedFilingJointly: 17200 },
       brackets: {
         single: [
-          { lowerBound: 0, ratePct: 2.46 }, { lowerBound: 4030, ratePct: 3.51 }, { lowerBound: 24120, ratePct: 5.01 },
-          { lowerBound: 38870, ratePct: 5.2 },
+          { lowerBound: 0, ratePct: 2.46 }, { lowerBound: 4130, ratePct: 3.51 }, { lowerBound: 24760, ratePct: 4.55 },
         ],
         marriedFilingJointly: [
-          { lowerBound: 0, ratePct: 2.46 }, { lowerBound: 8040, ratePct: 3.51 }, { lowerBound: 48250, ratePct: 5.01 },
-          { lowerBound: 77730, ratePct: 5.2 },
+          { lowerBound: 0, ratePct: 2.46 }, { lowerBound: 8250, ratePct: 3.51 }, { lowerBound: 49530, ratePct: 4.55 },
         ],
       },
       retirement: { kind: 'none' },
@@ -384,7 +403,7 @@ const rawStateYear2026 = {
     },
     NM: {
       code: 'NM', name: 'New Mexico', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 15750, marriedFilingJointly: 31500 },
+      standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
       brackets: {
         single: [
           { lowerBound: 0, ratePct: 1.5 }, { lowerBound: 5500, ratePct: 3.2 }, { lowerBound: 16500, ratePct: 4.3 },
@@ -398,32 +417,38 @@ const rawStateYear2026 = {
       retirement: { kind: 'none' },
     },
     NY: {
+      // 2025 budget middle-class cuts effective 2026: the five brackets through
+      // 6% each drop 10bp (4->3.9, 4.5->4.4, 5.25->5.15, 5.5->5.4, 6->5.9).
+      // The 10.3%/10.9% brackets at $5M/$25M remain omitted (out of the
+      // planner's audience range; see NY.md).
       code: 'NY', name: 'New York', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 8000, marriedFilingJointly: 16050 },
       brackets: {
         single: [
-          { lowerBound: 0, ratePct: 4 }, { lowerBound: 8500, ratePct: 4.5 }, { lowerBound: 11700, ratePct: 5.25 },
-          { lowerBound: 13900, ratePct: 5.5 }, { lowerBound: 80650, ratePct: 6 }, { lowerBound: 215400, ratePct: 6.85 },
+          { lowerBound: 0, ratePct: 3.9 }, { lowerBound: 8500, ratePct: 4.4 }, { lowerBound: 11700, ratePct: 5.15 },
+          { lowerBound: 13900, ratePct: 5.4 }, { lowerBound: 80650, ratePct: 5.9 }, { lowerBound: 215400, ratePct: 6.85 },
           { lowerBound: 1077550, ratePct: 9.65 },
         ],
         marriedFilingJointly: [
-          { lowerBound: 0, ratePct: 4 }, { lowerBound: 17150, ratePct: 4.5 }, { lowerBound: 23600, ratePct: 5.25 },
-          { lowerBound: 27900, ratePct: 5.5 }, { lowerBound: 161550, ratePct: 6 }, { lowerBound: 323200, ratePct: 6.85 },
+          { lowerBound: 0, ratePct: 3.9 }, { lowerBound: 17150, ratePct: 4.4 }, { lowerBound: 23600, ratePct: 5.15 },
+          { lowerBound: 27900, ratePct: 5.4 }, { lowerBound: 161550, ratePct: 5.9 }, { lowerBound: 323200, ratePct: 6.85 },
           { lowerBound: 2155350, ratePct: 9.65 },
         ],
       },
       retirement: { kind: 'capped', capPerPerson: 20000, minAge: 59 },
     },
     NC: {
+      // Statutory ramp: 4.25% (2025) -> 3.99% (2026), with revenue-triggered
+      // cuts possible after. Re-verify annually.
       code: 'NC', name: 'North Carolina', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 12750, marriedFilingJointly: 25500 },
-      brackets: { single: [{ lowerBound: 0, ratePct: 4.25 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 4.25 }] },
+      brackets: { single: [{ lowerBound: 0, ratePct: 3.99 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 3.99 }] },
       retirement: { kind: 'none' },
     },
     ND: {
       // Brackets defined on federal taxable income; std deduction ≈ federal base.
       code: 'ND', name: 'North Dakota', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 15000, marriedFilingJointly: 30000 },
+      standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
       brackets: {
         single: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 48475, ratePct: 1.95 }, { lowerBound: 244825, ratePct: 2.5 }],
         marriedFilingJointly: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 80975, ratePct: 1.95 }, { lowerBound: 298075, ratePct: 2.5 }],
@@ -431,25 +456,30 @@ const rawStateYear2026 = {
       retirement: { kind: 'none' },
     },
     OH: {
+      // 2025 budget flattening complete: from 2026 a single 2.75% rate applies
+      // above the $26,050 zero bracket (the 3.5% bracket is eliminated).
       code: 'OH', name: 'Ohio', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 0, marriedFilingJointly: 0 },
       brackets: {
-        single: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 26050, ratePct: 2.75 }, { lowerBound: 100000, ratePct: 3.5 }],
-        marriedFilingJointly: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 26050, ratePct: 2.75 }, { lowerBound: 100000, ratePct: 3.5 }],
+        single: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 26050, ratePct: 2.75 }],
+        marriedFilingJointly: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 26050, ratePct: 2.75 }],
       },
       retirement: { kind: 'none' },
     },
     OK: {
+      // HB 2764 (2025): six brackets collapsed to three from 2026 — 0% replaces
+      // the old sub-2.75% bands, then 2.5/3.5/4.5 (top down from 4.75%), with a
+      // stated path to further cuts. Re-verify annually.
       code: 'OK', name: 'Oklahoma', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 6350, marriedFilingJointly: 12700 },
       brackets: {
         single: [
-          { lowerBound: 0, ratePct: 0.25 }, { lowerBound: 1000, ratePct: 0.75 }, { lowerBound: 2500, ratePct: 1.75 },
-          { lowerBound: 3750, ratePct: 2.75 }, { lowerBound: 4900, ratePct: 3.75 }, { lowerBound: 7200, ratePct: 4.75 },
+          { lowerBound: 0, ratePct: 0 }, { lowerBound: 3750, ratePct: 2.5 }, { lowerBound: 4900, ratePct: 3.5 },
+          { lowerBound: 7200, ratePct: 4.5 },
         ],
         marriedFilingJointly: [
-          { lowerBound: 0, ratePct: 0.25 }, { lowerBound: 2000, ratePct: 0.75 }, { lowerBound: 5000, ratePct: 1.75 },
-          { lowerBound: 7500, ratePct: 2.75 }, { lowerBound: 9800, ratePct: 3.75 }, { lowerBound: 14400, ratePct: 4.75 },
+          { lowerBound: 0, ratePct: 0 }, { lowerBound: 7500, ratePct: 2.5 }, { lowerBound: 9800, ratePct: 3.5 },
+          { lowerBound: 14400, ratePct: 4.5 },
         ],
       },
       retirement: { kind: 'capped', capPerPerson: 10000 },
@@ -489,7 +519,7 @@ const rawStateYear2026 = {
     },
     SC: {
       code: 'SC', name: 'South Carolina', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 15000, marriedFilingJointly: 30000 },
+      standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
       brackets: {
         single: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 3560, ratePct: 3 }, { lowerBound: 17830, ratePct: 6 }],
         marriedFilingJointly: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 3560, ratePct: 3 }, { lowerBound: 17830, ratePct: 6 }],

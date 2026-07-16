@@ -2,6 +2,11 @@
 
 Tax year: 2025. Researched 2026-06-13.
 
+> **2026 update (staleness sweep, 2026-07-16):** Ohio's 2025 budget completed the flattening — from
+> 2026 a single **2.75%** rate applies above the $26,050 zero bracket (the 3.5% bracket is eliminated).
+> The 2026 pack encodes this structure. Source: Tax Foundation "State Tax Changes Taking Effect
+> January 1, 2026" (accessed 2026-07-16).
+
 ## Summary
 - Broad individual income tax: **yes** (graduated, with a large 0% bracket up to ~$26k, then 2.75% / 3.5%)
 - Taxes Social Security benefits: no (fully exempt)
