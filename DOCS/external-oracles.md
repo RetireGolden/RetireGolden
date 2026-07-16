@@ -162,11 +162,18 @@ The external-oracle fixtures currently in the tree, each with its primary source
 | ORACLE-007/008 | Social Security claiming | [`packages/planner-ui/src/planner/ssAnalysis.external.golden.test.ts`](../packages/planner-ui/src/planner/ssAnalysis.external.golden.test.ts) | Open Social Security (pinned commit `6e177de`) — single high-discount worker ranks 62 first; low-discount couple delays the higher-PIA spouse to 70. |
 | ORACLE-009/010 | State tax | [`packages/engine/src/tax/stateTax.external.golden.test.ts`](../packages/engine/src/tax/stateTax.external.golden.test.ts) | NJ Division of Taxation graduated brackets; KY DOR flat rate + $31,110 retirement exclusion below/at/above cap. |
 | ORACLE-011/012 | Optimizer / full plan | [`packages/engine/src/projection/oracle011012.external.characterization.test.ts`](../packages/engine/src/projection/oracle011012.external.characterization.test.ts) | Owl (frozen at commit `266c87b`, independent of the parity-harness pin) as a directional Roth-conversion benchmark with exact-ledger non-regression; hand worksheet for a five-year RMD-start bridge (Pub 590-B divisors + 2026 Medicare premium). |
+| ORACLE-013 | State tax | [`packages/engine/src/tax/stateTax.external.golden.test.ts`](../packages/engine/src/tax/stateTax.external.golden.test.ts) | CA FTB 2025 Schedule X — graduated brackets across six layers; SS exempt while pensions are fully taxed. |
+| ORACLE-014 | State tax | [`packages/engine/src/tax/stateTax.external.golden.test.ts`](../packages/engine/src/tax/stateTax.external.golden.test.ts) | GA DOR — flat 5.39% and the 65+ retirement-income exclusion below/at/above the $65,000 per-person cap (the 62–64 tier is a documented model simplification). |
+| ORACLE-015 | State tax | [`packages/engine/src/tax/stateTax.external.golden.test.ts`](../packages/engine/src/tax/stateTax.external.golden.test.ts) | IL DOR — flat 4.95% with the full retirement-income subtraction; cases chosen so the unmodeled personal exemption cannot change the answer. |
+| — | TIPS ladder | [`packages/engine/src/ladder/ladderMath.worksheet.golden.test.ts`](../packages/engine/src/ladder/ladderMath.worksheet.golden.test.ts) | Hand worksheet on the dated U.S. Treasury par real yield curve snapshot (2026-06-30): back-to-front faces, par-as-spot rung prices, and deferral coupons derived by decimal arithmetic outside the engine. |
 
-Known gaps, kept visible on purpose: state-tax spot checks are concentrated in representative states (the
-packs cover all 50 + DC, but only NJ/KY have external fixtures); TIPS-ladder pricing is golden-tested
-against annuity identities but has no independent-tool comparison yet; the SPIA payout-rate table is a
-sourced planning proxy re-anchored at each annual refresh.
+Known gaps, kept visible on purpose: state-tax external fixtures now cover NJ, KY, CA, GA, and IL — but
+states that tax Social Security (CO, MN, MT, …) still have none, because the big-levers model documents an
+intentional overstatement there (income-based SS subtractions are unmodeled), leaving no cleanly comparable
+worksheet subset; TIPS-ladder pricing has a hand-priced dated-curve worksheet but still no independent-tool
+run (e.g., tipsladder.com on the same curve); the SPIA payout-rate table is a sourced planning proxy
+(last re-anchored 2026-07-15 against published April-2026 life-only sheets; the age-85 anchor is
+extrapolated and the QLAC rate awaits a direct quote).
 
 ## Per-domain notes
 
