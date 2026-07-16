@@ -229,6 +229,7 @@ import { healthcareBefore65Article } from './content/healthcare-before-65'
 import { historicalVsRandomReturnModelsArticle } from './content/historical-vs-random-return-models'
 import { howAssumptionsChangeAnswerArticle } from './content/how-assumptions-change-the-answer'
 import { howMuchCanISpendArticle } from './content/how-much-can-i-spend'
+import { howRetireGoldenChecksItsMathArticle } from './content/how-retiregolden-checks-its-math'
 import { howSocialSecurityIsTaxedArticle } from './content/how-social-security-is-taxed'
 import { howTheOptimizerThinksArticle } from './content/how-the-optimizer-thinks'
 import { hsasQualifiedMedicalExpensesArticle } from './content/hsas-and-qualified-medical-expenses'
@@ -322,6 +323,7 @@ export const LEARNING_ARTICLES: LearningArticle[] = [
   howToReadProjectionArticle,
   todaysDollarsArticle,
   whatRetireGoldenModelsArticle,
+  howRetireGoldenChecksItsMathArticle,
   readingResultsPageArticle,
   understandingMonteCarloArticle,
   rothConversionBasicsArticle,
