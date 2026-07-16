@@ -51,9 +51,14 @@ export function spiaPayoutRate(startAge: number): number {
 
 /**
  * Approximate deferred-QLAC annual payout rate (fraction of premium) for a
- * purchase today starting at 80–85: deferral compounds mortality credits well
- * above immediate rates. Not re-anchored on 2026-07-15 (no direct published
- * quote obtained); with the refreshed immediate anchors above it now reads
- * conservative — source a quoted deferred rate at the next refresh.
+ * purchase today starting at 80–85.
+ *
+ * TEMPORARY CONSERVATIVE PLACEHOLDER — not re-anchored on 2026-07-15 (no
+ * direct published deferred quote obtained). Against the refreshed immediate
+ * anchors above it is now barely above the age-85 immediate rate (16% vs
+ * 15.3%) and well under the age-80 spread a real deferral should earn, so it
+ * understates QLAC candidates in `annuityPurchaseGenerator`. Sourcing a quoted
+ * deferred rate is a HARD item for the next parameter-pack refresh
+ * (DOCS/maintenance-schedule.md), not a nice-to-have.
  */
 export const QLAC_DEFERRED_PAYOUT_RATE = 0.16

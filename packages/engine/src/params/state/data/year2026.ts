@@ -170,9 +170,12 @@ const rawStateYear2026 = {
       brackets: { single: [], marriedFilingJointly: [] }, retirement: { kind: 'none' },
     },
     GA: {
+      // 2026 vintage per GA DOR "Important Tax Updates" (accessed 2026-07-15):
+      // flat 4.99% and $15,000/$30,000 standard deductions. (2025 was cut
+      // retroactively from 5.39% to 5.19%; 2026 continues the ramp to 4.99%.)
       code: 'GA', name: 'Georgia', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 12000, marriedFilingJointly: 24000 },
-      brackets: { single: [{ lowerBound: 0, ratePct: 5.39 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 5.39 }] },
+      standardDeduction: { single: 15000, marriedFilingJointly: 30000 },
+      brackets: { single: [{ lowerBound: 0, ratePct: 4.99 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 4.99 }] },
       retirement: { kind: 'capped', capPerPerson: 65000, minAge: 65 },
     },
     HI: {

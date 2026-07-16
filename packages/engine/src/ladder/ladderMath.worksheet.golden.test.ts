@@ -30,7 +30,7 @@ import { buildLadder } from './ladderMath.js'
  *   Prices (discount year k at the curve yield for maturity k):
  *     p5: all five cash-flow years discount at 1.85% = the coupon rate, so the
  *         rung prices exactly at par: p5 = f5 = 11,324.52444
- *     p6 = 224.91355 * A(5, 1.85%) + (224.91355 + 11,534.02815) / 1.0195^6
+ *     p6 = 224.91355 * A(5, 1.85%) + (224.91355 + 11,534.02814) / 1.0195^6
  *        = 224.91355 * 4.73404985 + 11,758.94169 / 1.12285423 = 11,537.11902
  *     p7 = 241.05831 * A(5, 1.85%) + 241.05831 / 1.0195^6 + 12,000 / 1.0205^7
  *        = 1,141.18205 + 214.68354 + 10,410.94570           = 11,766.81129

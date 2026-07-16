@@ -214,70 +214,76 @@ describe('ORACLE-013: California graduated state income tax vs FTB Schedule X', 
 
 /**
  * ORACLE-014 (DOCS/external-oracles.md) - Georgia flat tax and age-65+
- * retirement-income exclusion vs the Georgia Department of Revenue.
+ * retirement-income exclusion vs the Georgia Department of Revenue, 2026.
  *
- * Georgia's Retirement Income Exclusion allows taxpayers 65+ to exclude up to
+ * Georgia's rate is on a legislated ramp: 5.39% (2024), cut retroactively to
+ * 5.19% for 2025, and published at 4.99% with $15,000/$30,000 standard
+ * deductions for 2026 — the values asserted here (this fixture's PR review
+ * caught the pack carrying the stale 5.39%/$12k vintage and both were
+ * refreshed together).
+ *
+ * The Retirement Income Exclusion allows taxpayers 65+ to exclude up to
  * $65,000 per person. The DOR's 62-64 tier ($35,000 per person) is a
  * documented pack simplification (only the 65+ tier is modeled, minAge 65) and
  * is outside the asserted subset, as is the exclusion's coverage of broad
  * investment income (modeled narrowly as pension/IRA income). See
- * DOCS/domain/state-tax-research/GA.md, researched 2026-06-13.
+ * DOCS/domain/state-tax-research/GA.md.
  *
  * Oracle: Georgia Department of Revenue.
+ *   2026 flat rate 4.99% and standard deduction $15,000 single / $30,000 MFJ
+ *   ("2026 Income Tax Changes"):
+ *     https://dor.georgia.gov/taxes/important-tax-updates
  *   Retirement Income Exclusion ($35,000 at 62-64 / $65,000 at 65+ per person):
  *     https://dor.georgia.gov/retirement-income-exclusion
- *   2025 flat rate 5.39%:
- *     https://dor.georgia.gov/taxes/important-tax-updates
- *   2025 standard deduction $12,000 single / $24,000 MFJ:
- *     https://dor.georgia.gov/georgia-standard-deductions-increases
- * Research date: 2026-06-13. Pack year: 2026. Source tax year: 2025.
+ * Access date: 2026-07-15. Pack year: 2026. Source tax year: 2026.
  * Tolerance: $1, asserted to cents where the model is exact.
  */
-describe('ORACLE-014: Georgia retirement-income exclusion vs GA DOR', () => {
-  it('pack GA parameters match the GA DOR published values', () => {
+describe('ORACLE-014: Georgia retirement-income exclusion vs GA DOR 2026', () => {
+  it('pack GA parameters match the GA DOR 2026 published values', () => {
     expect(ga.hasIncomeTax).toBe(true)
     expect(ga.taxesSocialSecurity).toBe(false)
-    expect(ga.brackets.single).toEqual([{ lowerBound: 0, ratePct: 5.39 }])
-    expect(ga.standardDeduction).toEqual({ single: 12_000, marriedFilingJointly: 24_000 })
+    expect(ga.brackets.single).toEqual([{ lowerBound: 0, ratePct: 4.99 }])
+    expect(ga.brackets.marriedFilingJointly).toEqual([{ lowerBound: 0, ratePct: 4.99 }])
+    expect(ga.standardDeduction).toEqual({ single: 15_000, marriedFilingJointly: 30_000 })
     expect(ga.retirementPrivate).toEqual({ kind: 'capped', capPerPerson: 65_000, minAge: 65 })
   })
 
   it('excludes retirement income below the $65,000 cap for a 65+ filer', () => {
     // Single age 66, $20,000 wages + $50,000 pension.
     //   exclusion = min(50,000, 65,000) = 50,000.
-    //   taxable = 70,000 - 50,000 - 12,000 = 8,000; tax = 8,000 * 5.39% = $431.20.
+    //   taxable = 70,000 - 50,000 - 15,000 = 5,000; tax = 5,000 * 4.99% = $249.50.
     const tax = computeStateTax(
       ga,
       stateInput('GA', { ordinaryIncome: 70_000, retirementIncome: 50_000, agesAlive: [66] }),
     )
-    expectMoney(tax, 431.2)
+    expectMoney(tax, 249.5)
   })
 
   it('caps the exclusion at $65,000 per person', () => {
     // Single age 70, $10,000 wages + $80,000 pension.
     //   exclusion = min(80,000, 65,000) = 65,000.
-    //   taxable = 90,000 - 65,000 - 12,000 = 13,000; tax = $700.70.
+    //   taxable = 90,000 - 65,000 - 15,000 = 10,000; tax = $499.00.
     const tax = computeStateTax(
       ga,
       stateInput('GA', { ordinaryIncome: 90_000, retirementIncome: 80_000, agesAlive: [70] }),
     )
-    expectMoney(tax, 700.7)
+    expectMoney(tax, 499)
   })
 
   it('doubles the cap for a married couple who are both 65+', () => {
-    // MFJ ages 70/67, $20,000 wages + $140,000 combined pensions.
+    // MFJ ages 70/67, $40,000 wages + $140,000 combined pensions.
     //   exclusion = min(140,000, 2 * 65,000) = 130,000.
-    //   taxable = 160,000 - 130,000 - 24,000 = 6,000; tax = $323.40.
+    //   taxable = 180,000 - 130,000 - 30,000 = 20,000; tax = $998.00.
     const tax = computeStateTax(
       ga,
       stateInput('GA', {
         filingStatus: 'marriedFilingJointly',
-        ordinaryIncome: 160_000,
+        ordinaryIncome: 180_000,
         retirementIncome: 140_000,
         agesAlive: [70, 67],
       }),
     )
-    expectMoney(tax, 323.4)
+    expectMoney(tax, 998)
   })
 })
 
