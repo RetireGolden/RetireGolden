@@ -80,13 +80,17 @@ insight preview:
 
 ## Testing
 
-- Vitest, **co-located** as `*.test.ts(x)` beside the code.
+- Vitest, **co-located** as `*.test.ts(x)` beside the code. The test taxonomy (oracle vs
+  characterization, golden/external/adversarial naming) and the expected-value rule are in
+  [testing.md](testing.md) — a correctness test never uses RetireGolden's own output as its expected value.
 - Cover the **edges**: bracket boundaries, IRMAA/ACA cliffs, RMD start cohorts, FRA cohorts, zero/low
   earnings years.
 - Add **property-style** checks where they fit (ledger conservation: sources = uses each year; monotonicity:
   more conversion never raises the traditional balance).
 - Owl / PolicyEngine-US / Open Social Security are **offline, dev-time oracles** for golden fixtures — never
-  a runtime or required build dependency.
+  a runtime or required build dependency. Sourcing, tolerances, and fixture records:
+  [external-oracles.md](external-oracles.md); the optimizer cross-check harness:
+  [operations/owl-parity.md](operations/owl-parity.md).
 - CI gates on lint + tests + a type-checked build, plus Semgrep (SAST) and ZAP (DAST); see
   [operations/security-scanning.md](operations/security-scanning.md).
 

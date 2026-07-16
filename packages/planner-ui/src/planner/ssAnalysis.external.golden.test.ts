@@ -4,7 +4,7 @@ import { couplePlan, singlePersonPlan, socialSecurityIncome, validatePlan } from
 import { benefitsOnlyRanking } from './ssAnalysis'
 
 /**
- * ORACLE-007 (external-oracle-comparisons.md) - Social Security claiming vs
+ * ORACLE-007 (DOCS/external-oracles.md) - Social Security claiming vs
  * Open Social Security, single-person claiming fixture.
  *
  * Oracle: Open Social Security (https://github.com/MikePiper/open-social-security)
@@ -51,7 +51,7 @@ describe('ORACLE-007: single-person claiming vs Open Social Security', () => {
 })
 
 /**
- * ORACLE-008 (external-oracle-comparisons.md) - Social Security claiming vs
+ * ORACLE-008 (DOCS/external-oracles.md) - Social Security claiming vs
  * Open Social Security, married-couple claiming fixture.
  *
  * Oracle: Open Social Security (https://github.com/MikePiper/open-social-security)

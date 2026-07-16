@@ -6,7 +6,7 @@ import { expectMoney } from '../testing/money.js'
 import type { TaxYearInput } from '../projection/types.js'
 
 /**
- * ORACLE-001 (Phase 5, external-oracle-comparisons.md) — federal income tax vs
+ * ORACLE-001 (DOCS/external-oracles.md) — federal income tax vs
  * IRS Revenue Procedure 2025-32 (2026 inflation adjustments, post-OBBBA).
  *
  * For wages-only ordinary tax the IRS rate schedule *is* the primary oracle, so

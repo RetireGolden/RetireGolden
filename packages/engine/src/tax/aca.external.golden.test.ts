@@ -5,7 +5,7 @@ import { packForYear } from '../params/index.js'
 import { acaApplicablePct, acaNetAnnualPremium } from './aca.js'
 
 /**
- * ORACLE-003 (Phase 5, external-oracle-comparisons.md) — ACA premium tax credit
+ * ORACLE-003 (DOCS/external-oracles.md) — ACA premium tax credit
  * vs IRS Rev. Proc. 2025-25 (2026 applicable percentages) and the 2025 HHS
  * poverty guidelines (applied to the 2026 coverage year).
  *

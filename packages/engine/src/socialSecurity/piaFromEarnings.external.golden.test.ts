@@ -9,7 +9,7 @@ import {
 import { PIA_BEND_POINTS, WAGE_BASE_BY_YEAR } from './ssaWageData.js'
 
 /**
- * ORACLE-006 (Phase 5, external-oracle-comparisons.md) — Social Security PIA vs
+ * ORACLE-006 (DOCS/external-oracles.md) — Social Security PIA vs
  * SSA primary sources (bend-point series, PIA formula, and a worked example).
  *
  * Oracles:

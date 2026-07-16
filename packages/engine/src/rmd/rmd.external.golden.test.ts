@@ -6,7 +6,7 @@ import { jointLifeTableDivisor } from './jointLifeTable.js'
 import { expectMoney } from '../testing/money.js'
 
 /**
- * ORACLE-005 (Phase 5, external-oracle-comparisons.md) — RMD vs IRS Publication 590-B.
+ * ORACLE-005 (DOCS/external-oracles.md) — RMD vs IRS Publication 590-B.
  *
  * Unlike the Phase 1 atomic test (rmd.golden.test.ts), which spot-checks six
  * divisors against a hand-transcribed table, this fixture freezes values that
