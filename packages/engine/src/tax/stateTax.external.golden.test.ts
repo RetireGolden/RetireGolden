@@ -5,6 +5,9 @@ import { stateParamsFor } from '../params/state/index.js'
 import type { TaxYearInput } from '../projection/types.js'
 import { computeStateTax } from './stateTax.js'
 
+const ca = stateParamsFor('CA', 2026)!
+const ga = stateParamsFor('GA', 2026)!
+const il = stateParamsFor('IL', 2026)!
 const ky = stateParamsFor('KY', 2026)!
 const nj = stateParamsFor('NJ', 2026)!
 
@@ -132,5 +135,203 @@ describe('ORACLE-010: Kentucky retirement exclusion vs KY DOR 2026', () => {
       stateInput('KY', { ordinaryIncome: 80_000, retirementIncome: 50_000, agesAlive: [70] }),
     )
     expectMoney(tax, 1_593.55)
+  })
+})
+
+/**
+ * ORACLE-013 (DOCS/external-oracles.md) - California graduated income tax vs
+ * the Franchise Tax Board 2025 Schedule X rate schedule.
+ *
+ * The state pack carries the latest-published FTB values into the 2026
+ * planning year (same convention as ORACLE-009/NJ). The oracle claim is the
+ * Schedule X bracket arithmetic on California taxable income; FTB personal
+ * exemption CREDITS ($149 single for 2025) are a documented pack
+ * simplification and are outside the asserted subset (see
+ * DOCS/domain/state-tax-research/CA.md, researched 2026-06-13).
+ *
+ * Oracle: California Franchise Tax Board.
+ *   2025 Schedule X/Y rate schedules:
+ *     https://www.ftb.ca.gov/forms/2025/2025-540-tax-rate-schedules.pdf
+ *   2025 Form 540 instructions (standard deduction $5,540 / $11,080; SS exempt):
+ *     https://www.ftb.ca.gov/forms/2025/2025-540-instructions.html
+ * Research date: 2026-06-13. Pack year: 2026. Source tax year: 2025.
+ * Tolerance: $1, asserted to cents where the model is exact.
+ */
+describe('ORACLE-013: California graduated state income tax vs FTB Schedule X', () => {
+  it('pack CA parameters match the published FTB schedule and deduction', () => {
+    expect(ca.hasIncomeTax).toBe(true)
+    expect(ca.taxesSocialSecurity).toBe(false)
+    expect(ca.standardDeduction).toEqual({ single: 5_540, marriedFilingJointly: 11_080 })
+    expect(ca.brackets.single).toEqual([
+      { lowerBound: 0, ratePct: 1 },
+      { lowerBound: 11_079, ratePct: 2 },
+      { lowerBound: 26_264, ratePct: 4 },
+      { lowerBound: 41_452, ratePct: 6 },
+      { lowerBound: 57_542, ratePct: 8 },
+      { lowerBound: 72_724, ratePct: 9.3 },
+      { lowerBound: 371_479, ratePct: 10.3 },
+      { lowerBound: 445_771, ratePct: 11.3 },
+      { lowerBound: 742_953, ratePct: 12.3 },
+    ])
+    expect(ca.retirementPrivate).toEqual({ kind: 'none' })
+  })
+
+  it('taxes a single filer across six Schedule X bracket layers', () => {
+    // Single, $100,000 CA taxable income (model input: 105,540 ordinary less
+    // the 5,540 standard deduction). Schedule X stack:
+    //   11,079 * 1%    =   110.79
+    //   15,185 * 2%    =   303.70   (11,079 -> 26,264)
+    //   15,188 * 4%    =   607.52   (26,264 -> 41,452)
+    //   16,090 * 6%    =   965.40   (41,452 -> 57,542)
+    //   15,182 * 8%    = 1,214.56   (57,542 -> 72,724)
+    //   27,276 * 9.3%  = 2,536.668  (72,724 -> 100,000)
+    //   total          = 5,738.638
+    const tax = computeStateTax(ca, stateInput('CA', { ordinaryIncome: 105_540, agesAlive: [45] }))
+    expectMoney(tax, 5_738.64)
+  })
+
+  it('exempts Social Security while fully taxing pension income (no exclusion)', () => {
+    // MFJ retirees 68/66, $80,000 ordinary income (including a $30,000
+    // pension), $40,000 Social Security. CA exempts SS entirely and has no
+    // retirement-income exclusion, so taxable = 80,000 - 11,080 = 68,920.
+    //   22,158 * 1% =   221.58
+    //   30,370 * 2% =   607.40   (22,158 -> 52,528)
+    //   16,392 * 4% =   655.68   (52,528 -> 68,920)
+    //   total       = 1,484.66
+    const tax = computeStateTax(
+      ca,
+      stateInput('CA', {
+        filingStatus: 'marriedFilingJointly',
+        ordinaryIncome: 80_000,
+        retirementIncome: 30_000,
+        ssBenefits: 40_000,
+        agesAlive: [68, 66],
+      }),
+    )
+    expectMoney(tax, 1_484.66)
+  })
+})
+
+/**
+ * ORACLE-014 (DOCS/external-oracles.md) - Georgia flat tax and age-65+
+ * retirement-income exclusion vs the Georgia Department of Revenue, 2026.
+ *
+ * Georgia's rate is on a legislated ramp: 5.39% (2024), cut retroactively to
+ * 5.19% for 2025, and published at 4.99% with $15,000/$30,000 standard
+ * deductions for 2026 — the values asserted here (this fixture's PR review
+ * caught the pack carrying the stale 5.39%/$12k vintage and both were
+ * refreshed together).
+ *
+ * The Retirement Income Exclusion allows taxpayers 65+ to exclude up to
+ * $65,000 per person. The DOR's 62-64 tier ($35,000 per person) is a
+ * documented pack simplification (only the 65+ tier is modeled, minAge 65) and
+ * is outside the asserted subset, as is the exclusion's coverage of broad
+ * investment income (modeled narrowly as pension/IRA income). See
+ * DOCS/domain/state-tax-research/GA.md.
+ *
+ * Oracle: Georgia Department of Revenue.
+ *   2026 flat rate 4.99% and standard deduction $15,000 single / $30,000 MFJ
+ *   ("2026 Income Tax Changes"):
+ *     https://dor.georgia.gov/taxes/important-tax-updates
+ *   Retirement Income Exclusion ($35,000 at 62-64 / $65,000 at 65+ per person):
+ *     https://dor.georgia.gov/retirement-income-exclusion
+ * Access date: 2026-07-15. Pack year: 2026. Source tax year: 2026.
+ * Tolerance: $1, asserted to cents where the model is exact.
+ */
+describe('ORACLE-014: Georgia retirement-income exclusion vs GA DOR 2026', () => {
+  it('pack GA parameters match the GA DOR 2026 published values', () => {
+    expect(ga.hasIncomeTax).toBe(true)
+    expect(ga.taxesSocialSecurity).toBe(false)
+    expect(ga.brackets.single).toEqual([{ lowerBound: 0, ratePct: 4.99 }])
+    expect(ga.brackets.marriedFilingJointly).toEqual([{ lowerBound: 0, ratePct: 4.99 }])
+    expect(ga.standardDeduction).toEqual({ single: 15_000, marriedFilingJointly: 30_000 })
+    expect(ga.retirementPrivate).toEqual({ kind: 'capped', capPerPerson: 65_000, minAge: 65 })
+  })
+
+  it('excludes retirement income below the $65,000 cap for a 65+ filer', () => {
+    // Single age 66, $20,000 wages + $50,000 pension.
+    //   exclusion = min(50,000, 65,000) = 50,000.
+    //   taxable = 70,000 - 50,000 - 15,000 = 5,000; tax = 5,000 * 4.99% = $249.50.
+    const tax = computeStateTax(
+      ga,
+      stateInput('GA', { ordinaryIncome: 70_000, retirementIncome: 50_000, agesAlive: [66] }),
+    )
+    expectMoney(tax, 249.5)
+  })
+
+  it('caps the exclusion at $65,000 per person', () => {
+    // Single age 70, $10,000 wages + $80,000 pension.
+    //   exclusion = min(80,000, 65,000) = 65,000.
+    //   taxable = 90,000 - 65,000 - 15,000 = 10,000; tax = $499.00.
+    const tax = computeStateTax(
+      ga,
+      stateInput('GA', { ordinaryIncome: 90_000, retirementIncome: 80_000, agesAlive: [70] }),
+    )
+    expectMoney(tax, 499)
+  })
+
+  it('doubles the cap for a married couple who are both 65+', () => {
+    // MFJ ages 70/67, $40,000 wages + $140,000 combined pensions.
+    //   exclusion = min(140,000, 2 * 65,000) = 130,000.
+    //   taxable = 180,000 - 130,000 - 30,000 = 20,000; tax = $998.00.
+    const tax = computeStateTax(
+      ga,
+      stateInput('GA', {
+        filingStatus: 'marriedFilingJointly',
+        ordinaryIncome: 180_000,
+        retirementIncome: 140_000,
+        agesAlive: [70, 67],
+      }),
+    )
+    expectMoney(tax, 998)
+  })
+})
+
+/**
+ * ORACLE-015 (DOCS/external-oracles.md) - Illinois flat tax with the full
+ * retirement-income subtraction vs the Illinois Department of Revenue.
+ *
+ * Illinois subtracts essentially all retirement income (qualified pensions,
+ * IRA/401(k) distributions, Social Security) from base income and taxes the
+ * rest at a flat 4.95%. The $2,850 personal exemption is a documented pack
+ * simplification (not modeled); both cases below are chosen so the exemption
+ * does not change the DOR answer - the wages case sits above the exemption's
+ * $250,000 single-filer AGI disallowance threshold, and the retiree case is
+ * zero-tax regardless. See DOCS/domain/state-tax-research/IL.md, researched
+ * 2026-06-13.
+ *
+ * Oracle: Illinois Department of Revenue.
+ *   Flat 4.95% rate and What's New:
+ *     https://tax.illinois.gov/research/publications/bulletins/fy-2025-16.html
+ *   Personal exemption $2,850 and the high-AGI disallowance:
+ *     https://tax.illinois.gov/questionsandanswers/answer.851.html
+ * Research date: 2026-06-13. Pack year: 2026. Source tax year: 2025.
+ * Tolerance: $1, asserted to cents where the model is exact.
+ */
+describe('ORACLE-015: Illinois full retirement subtraction vs IL DOR', () => {
+  it('pack IL parameters match the IL DOR published values', () => {
+    expect(il.hasIncomeTax).toBe(true)
+    expect(il.taxesSocialSecurity).toBe(false)
+    expect(il.brackets.single).toEqual([{ lowerBound: 0, ratePct: 4.95 }])
+    expect(il.standardDeduction).toEqual({ single: 0, marriedFilingJointly: 0 })
+    expect(il.retirementPrivate).toEqual({ kind: 'full' })
+  })
+
+  it('taxes wages at the flat 4.95% with no standard deduction', () => {
+    // Single, $300,000 wages (above the exemption disallowance threshold, so
+    // the DOR return has no exemption either): tax = 300,000 * 4.95% = $14,850.
+    const tax = computeStateTax(il, stateInput('IL', { ordinaryIncome: 300_000, agesAlive: [55] }))
+    expectMoney(tax, 14_850)
+  })
+
+  it('subtracts retirement income in full, leaving a retiree at zero tax', () => {
+    // Single age 70, $80,000 pension/IRA distributions + $30,000 Social
+    // Security. The retirement subtraction removes all $80,000 and SS is
+    // exempt: taxable = 0; tax = $0.
+    const tax = computeStateTax(
+      il,
+      stateInput('IL', { ordinaryIncome: 80_000, retirementIncome: 80_000, ssBenefits: 30_000, agesAlive: [70] }),
+    )
+    expectMoney(tax, 0)
   })
 })

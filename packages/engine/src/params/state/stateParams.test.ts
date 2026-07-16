@@ -92,7 +92,7 @@ describe('spot oracle checks (flat states, single filer, non-retirement income)'
     expect(wages('CO', 60_000)).toBeCloseTo((60_000 - 15_750) * 0.044, 2)
   })
 
-  it('GA: graduated table reduces to flat 5.39% over the $12,000 deduction', () => {
-    expect(wages('GA', 70_000)).toBeCloseTo((70_000 - 12_000) * 0.0539, 2)
+  it('GA: flat 4.99% over the $15,000 deduction (2026 DOR vintage)', () => {
+    expect(wages('GA', 70_000)).toBeCloseTo((70_000 - 15_000) * 0.0499, 2)
   })
 })

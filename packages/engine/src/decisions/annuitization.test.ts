@@ -68,9 +68,12 @@ describe('buildAnnuitizationSweep', () => {
     expect(sweep.points[1]!.effectiveAllocationPct).toBeCloseTo(10, 5)
     expect(sweep.points[2]!.effectiveAllocationPct).toBeCloseTo(20, 5)
     // Payout rate comes from the sourced default table at the start age (65).
+    // Reviewed change 2026-07-15: the table was re-anchored to published
+    // April-2026 life-only sheets (spiaQuotes.ts), moving the age-65 anchor
+    // from 6.1% to 7.0%.
     expect(sweep.rateSource).toBe('default-table')
-    expect(sweep.payoutRatePct).toBeCloseTo(6.1, 5)
-    expect(sweep.points[1]!.annualIncome).toBeCloseTo(70_000 * 0.061, 0)
+    expect(sweep.payoutRatePct).toBeCloseTo(7.0, 5)
+    expect(sweep.points[1]!.annualIncome).toBeCloseTo(70_000 * 0.07, 0)
     // Same seed → identical frontier.
     const again = buildAnnuitizationSweep(basePlan(false), opts, { allocationPcts: [0, 10, 20] })
     expect(again.points.map((p) => p.metrics.successRate)).toEqual(sweep.points.map((p) => p.metrics.successRate))

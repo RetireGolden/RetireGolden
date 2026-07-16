@@ -607,9 +607,10 @@ byte-identical projection.
   own tranche at its own start age. The `annuityPurchaseGenerator` adds a laddered candidate (three tranches
   at now/+3y/+6y splitting the SPIA premium) beside the single purchase.
 - **SPIA payout-rate defaults.** `engine/decisions/spiaQuotes.ts` carries the sourced planning table
-  (public quote aggregators — Blueprint-Income-style marketplaces — mid-2026; 5.5% at 60 rising to 11% at
-  85, life-only) used to size candidates and the sweep. A user-entered quote always wins; refresh with the
-  annual packs.
+  (published April-2026 life-only quote sheets, female column rounded down as the conservative unisex
+  anchor; 6.0% at 60 rising to a 15.3% extrapolated anchor at 85; re-anchored 2026-07-15 with an
+  actuarial cross-check) used to size candidates and the sweep. A user-entered quote always wins; refresh
+  with the annual packs.
 - **Annuitization sweep.** `buildAnnuitizationSweep` (engine/decisions/annuitization.ts) sweeps a bounded
   grid of allocation percentages (default 0–30%) through the shared-path Monte Carlo primitive: each point
   adds a life-only SPIA purchase funded from the largest liquid account and reports success-rate/estate
