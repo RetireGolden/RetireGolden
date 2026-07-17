@@ -2,6 +2,13 @@
 
 Tax year: 2025. Researched 2026-06-13.
 
+> **2026 update (staleness sweep, 2026-07-16):** HB 337 (2025 session) rewrote the brackets: 2026 =
+> **4.7% / 5.65%** with the threshold widened to **$47,500 single / $95,000 MFJ**; 2027 steps again to
+> 4.7% / 5.4% at $65,000 / $130,000. The 2026 pack encodes the 2026 values, and the standard deduction
+> now tracks the federal pack's 2026 figure ($16,100/$32,200), resolving the Form 2 conflict noted
+> below. Do not hold MT forward at refresh time. Source (primary): MT DOR HB-337 notice,
+> https://revenue.mt.gov/news/recent-news/HB-337 (accessed 2026-07-16).
+
 ## Summary
 - Broad individual income tax: **yes** (two brackets, 4.7% and 5.9%)
 - Taxes Social Security benefits: **yes** (starts from the federally taxable amount; income-based subtraction exempts lower-income retirees)

@@ -80,12 +80,12 @@ describe('computeStateTax — code paths', () => {
     const ny = pack('NY')
     // SS not taxed even though present; $20k retirement exclusion at 59½+.
     const taxable = 90_000 - 20_000 - 8000 // ordinary − exclusion − std ded = 62,000
-    // Brackets: 4% to 8,500; 4.5% to 11,700; 5.25% to 13,900; 5.5% to 80,650; ...
+    // 2026 brackets: 3.9% to 8,500; 4.4% to 11,700; 5.15% to 13,900; 5.4% to 80,650; ...
     const expected =
-      8500 * 0.04 +
-      (11_700 - 8500) * 0.045 +
-      (13_900 - 11_700) * 0.0525 +
-      (taxable - 13_900) * 0.055
+      8500 * 0.039 +
+      (11_700 - 8500) * 0.044 +
+      (13_900 - 11_700) * 0.0515 +
+      (taxable - 13_900) * 0.054
     const tax = computeStateTax(ny, input({ ordinaryIncome: 90_000, retirementIncome: 30_000, ssBenefits: 40_000, agesAlive: [66] }))
     expect(tax).toBeCloseTo(expected, 2)
   })
@@ -125,6 +125,17 @@ describe('computeStateTax — code paths', () => {
     const params = { ...pack('PA'), capitalGainsAsOrdinary: false, capitalGainsTaxablePct: 50 }
     const tax = computeStateTax(params, input({ capitalGains: 20_000 }))
     expect(tax).toBeCloseTo(10_000 * 0.0307, 6)
+  })
+
+  it('MO fully exempts individual capital gains (HB 594, from TY2025)', () => {
+    // Missouri's pack sets capitalGainsAsOrdinary: false with no partial
+    // inclusion, so growing gains must leave MO tax unchanged while ordinary
+    // income stays taxed.
+    const mo = pack('MO')
+    const withoutGain = computeStateTax(mo, input({ ordinaryIncome: 80_000, agesAlive: [68] }))
+    const withGain = computeStateTax(mo, input({ ordinaryIncome: 80_000, capitalGains: 250_000, agesAlive: [68] }))
+    expect(withoutGain).toBeGreaterThan(0)
+    expect(withGain).toBe(withoutGain)
   })
 
   it('does not let a federal capital-loss carryforward erase PA current-year gains', () => {

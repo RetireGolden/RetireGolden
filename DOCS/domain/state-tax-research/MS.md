@@ -2,6 +2,11 @@
 
 Tax year: 2025. Researched 2026-06-13.
 
+> **2026 update (staleness sweep, 2026-07-16):** Mississippi's legislated ramp cut the rate on income
+> over $10,000 from 4.4% to **4.0%** for 2026, with further scheduled cuts after — the 2026 pack encodes
+> 4.0%. Do not hold MS forward at refresh time. Source: Tax Foundation "State Tax Changes Taking Effect
+> January 1, 2026" (accessed 2026-07-16).
+
 ## Summary
 - Broad individual income tax: **yes** (flat 4.4% on taxable income over $10,000; first $10,000 effectively 0%)
 - Taxes Social Security benefits: no (fully exempt)

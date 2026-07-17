@@ -2,6 +2,15 @@
 
 Tax year: 2025. Researched 2026-06-13.
 
+> **2026 update (PR #23 review, 2026-07-17):** Maine **decoupled from the federal standard deduction**
+> for tax years from 2026 (36 M.R.S. §5124-C 1-B). Per the MRS revised 2026 rate schedule (rev.
+> 2026-05-20): standard deduction **$15,700 / $31,400**; brackets 5.8% / 6.75% / 7.15% at
+> **$27,400 / $64,850** single and **$54,850 / $129,750** MFJ; plus a new **2% surcharge** on taxable
+> income over $1,000,000 single / $1,500,000 MFJ (encoded in the pack as an equivalent 9.15% top
+> bracket; surcharge thresholds index from 2027). The statement below that the deduction is federal is
+> obsolete for 2026. Source (primary): MRS 2026 rate schedule PDF (rev. May 20, 2026), accessed
+> 2026-07-17.
+
 ## Summary
 - Broad individual income tax: **yes** (graduated, 5.8%–7.15%)
 - Taxes Social Security benefits: no (fully exempt)

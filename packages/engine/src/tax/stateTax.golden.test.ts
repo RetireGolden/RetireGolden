@@ -47,8 +47,9 @@ describe('state tax golden worksheets', () => {
     // ordinary 30,000 + SS 20,000. Federal taxable SS:
     //   provisional 40,000 > 34,000; tier1 = min(10,000, 4,500) = 4,500;
     //   taxable SS = min(17,000, 85%*6,000 + 4,500) = 9,600.
-    // CO: SD 15,750, flat 4.4%. (30,000 + 9,600 - 15,750) * 4.4% = 23,850 * 4.4% = 1,049.40.
-    expectMoney(computeStateTax(params('CO'), input({ ordinaryIncome: 30_000, ssBenefits: 20_000 })), 1_049.4)
+    // CO: SD 16,100 (2026 federal-equivalent), flat 4.4%.
+    //   (30,000 + 9,600 - 16,100) * 4.4% = 23,500 * 4.4% = 1,034.00.
+    expectMoney(computeStateTax(params('CO'), input({ ordinaryIncome: 30_000, ssBenefits: 20_000 })), 1_034)
   })
 
   it('a full retirement-income exclusion removes all retirement income (IL)', () => {

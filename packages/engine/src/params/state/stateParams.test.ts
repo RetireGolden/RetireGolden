@@ -76,8 +76,8 @@ describe('spot oracle checks (flat states, single filer, non-retirement income)'
     expect(wages('KY', 100_000)).toBeCloseTo((100_000 - 3360) * 0.035, 2)
   })
 
-  it('NC: flat 4.25% over the $12,750 standard deduction', () => {
-    expect(wages('NC', 80_000)).toBeCloseTo((80_000 - 12_750) * 0.0425, 2)
+  it('NC: flat 3.99% over the $12,750 standard deduction (2026 statutory ramp step)', () => {
+    expect(wages('NC', 80_000)).toBeCloseTo((80_000 - 12_750) * 0.0399, 2)
   })
 
   it('IL: flat 4.95%, no deduction, but retirement income is fully exempt', () => {
@@ -88,8 +88,8 @@ describe('spot oracle checks (flat states, single filer, non-retirement income)'
     ).toBe(0)
   })
 
-  it('CO: flat 4.4% over the federal-equivalent deduction', () => {
-    expect(wages('CO', 60_000)).toBeCloseTo((60_000 - 15_750) * 0.044, 2)
+  it('CO: flat 4.4% over the federal-equivalent deduction (2026 federal figure)', () => {
+    expect(wages('CO', 60_000)).toBeCloseTo((60_000 - 16_100) * 0.044, 2)
   })
 
   it('GA: flat 4.99% over the $15,000 deduction (2026 DOR vintage)', () => {

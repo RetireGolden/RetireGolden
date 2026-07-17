@@ -2,6 +2,12 @@
 
 Tax year: 2025. Researched 2026-06-13.
 
+> **2026 update (staleness sweep, 2026-07-16):** HB 2764 (2025) collapsed Oklahoma's six brackets into
+> three from 2026 — 0% replaces the old sub-2.75% bands, then **2.5% / 3.5% / 4.5%** at $3,750 / $4,900
+> / $7,200 (single; doubled MFJ), top rate down from 4.75% — with a stated path to further cuts. The
+> 2026 pack encodes this structure. Do not hold OK forward at refresh time. Sources: Tax Foundation
+> "State Tax Changes Taking Effect January 1, 2026" + 2026 tables (accessed 2026-07-16).
+
 ## Summary
 - Broad individual income tax: **yes** (graduated, 0.25%–4.75%)
 - Taxes Social Security benefits: no (federally taxable SS is subtracted)

@@ -2,6 +2,13 @@
 
 Tax year: 2025. (Completed example — already in `year2026.ts`.)
 
+> **2026 update (staleness sweep, 2026-07-16):** the 2025 enacted budget's middle-class cuts take
+> effect for 2026 — the five brackets through 6% each drop 10bp (4% → **3.9%**, 4.5% → **4.4%**,
+> 5.25% → **5.15%**, 5.5% → **5.4%**, 6% → **5.9%**); 6.85% and 9.65% are unchanged, and the 10.3%/10.9%
+> brackets at $5M/$25M remain omitted from the pack as out of the planner's audience range. The 2026
+> pack encodes the reduced rates. Source: Tax Foundation 2026 state income tax tables (accessed
+> 2026-07-16).
+
 ## Summary
 - Broad individual income tax: **yes** (graduated, 4%–10.9%)
 - Taxes Social Security benefits: no (fully exempt)

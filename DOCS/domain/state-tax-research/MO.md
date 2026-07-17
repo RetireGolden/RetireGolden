@@ -2,6 +2,15 @@
 
 Tax year: 2025. Researched 2026-06-13.
 
+> **2026 update (staleness sweep, 2026-07-16):** HB 594 (signed 2025-07-10) makes Missouri the first
+> state to fully exempt **individual capital gains** (short- and long-term, 100% deduction of federally
+> reported gains) effective tax year 2025 — the pack now sets `capitalGainsAsOrdinary: false`. The
+> standard deduction (federal-mirrored) tracks the federal pack's 2026 figure ($16,100/$32,200). Top
+> rate stays 4.7% for 2026; a corporate trigger fires if the individual top rate reaches 4.5%. The
+> 2026 indexed bracket thresholds are $1,348 steps ($1,348 … $9,436; TF 2026 tables, corrected in the
+> PR #23 review, 2026-07-17). Source (primary): MO DOR news release,
+> https://dor.mo.gov/news/newsitem/uuid/15044650-59dd-48f4-975a-01988d485255 (accessed 2026-07-16).
+
 ## Summary
 - Broad individual income tax: **yes** (graduated, 2%–4.7%; first ~$1,313 untaxed)
 - Taxes Social Security benefits: no (fully exempt for all ages as of 2024, SB 190)
