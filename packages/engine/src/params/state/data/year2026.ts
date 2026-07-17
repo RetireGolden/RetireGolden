@@ -12,8 +12,10 @@
  * commented inline — never hold those forward at refresh time.
  *
  * States whose standard deduction conforms to (or proxies) the FEDERAL
- * standard deduction — AZ, CO, DC, IA, ID, ME, MO, MT, ND, NM, SC — carry the
- * federal pack's figure for the same year ($16,100/$32,200 for 2026).
+ * standard deduction — AZ, CO, DC, IA, ID, MO, MT, ND, NM — carry the federal
+ * pack's figure for the same year ($16,100/$32,200 for 2026). ME and SC
+ * decoupled from the federal deduction for 2026 (ME §5124-C 1-B; SC H.4216)
+ * and carry their own published amounts.
  *
  * State taxable income in the engine starts from gross ordinary income (plus
  * gains, plus the federally taxable SS amount where the state taxes SS), minus
@@ -255,11 +257,21 @@ const rawStateYear2026 = {
       retirement: { kind: 'capped', capPerPerson: 12000, minAge: 65 },
     },
     ME: {
+      // 2026 per MRS revised schedule (2026-05-20): ME decoupled from the
+      // federal standard deduction (36 M.R.S. §5124-C 1-B) — own $15,700/
+      // $31,400 amounts — and added a 2% surcharge on taxable income over
+      // $1M single / $1.5M MFJ, encoded as an equivalent 9.15% top bracket.
       code: 'ME', name: 'Maine', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
+      standardDeduction: { single: 15700, marriedFilingJointly: 31400 },
       brackets: {
-        single: [{ lowerBound: 0, ratePct: 5.8 }, { lowerBound: 26800, ratePct: 6.75 }, { lowerBound: 63450, ratePct: 7.15 }],
-        marriedFilingJointly: [{ lowerBound: 0, ratePct: 5.8 }, { lowerBound: 53600, ratePct: 6.75 }, { lowerBound: 126900, ratePct: 7.15 }],
+        single: [
+          { lowerBound: 0, ratePct: 5.8 }, { lowerBound: 27400, ratePct: 6.75 }, { lowerBound: 64850, ratePct: 7.15 },
+          { lowerBound: 1000000, ratePct: 9.15 },
+        ],
+        marriedFilingJointly: [
+          { lowerBound: 0, ratePct: 5.8 }, { lowerBound: 54850, ratePct: 6.75 }, { lowerBound: 129750, ratePct: 7.15 },
+          { lowerBound: 1500000, ratePct: 9.15 },
+        ],
       },
       retirement: { kind: 'capped', capPerPerson: 48216 },
     },
@@ -333,14 +345,14 @@ const rawStateYear2026 = {
       standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
       brackets: {
         single: [
-          { lowerBound: 0, ratePct: 0 }, { lowerBound: 1313, ratePct: 2 }, { lowerBound: 2626, ratePct: 2.5 },
-          { lowerBound: 3939, ratePct: 3 }, { lowerBound: 5252, ratePct: 3.5 }, { lowerBound: 6565, ratePct: 4 },
-          { lowerBound: 7878, ratePct: 4.5 }, { lowerBound: 9191, ratePct: 4.7 },
+          { lowerBound: 0, ratePct: 0 }, { lowerBound: 1348, ratePct: 2 }, { lowerBound: 2696, ratePct: 2.5 },
+          { lowerBound: 4044, ratePct: 3 }, { lowerBound: 5392, ratePct: 3.5 }, { lowerBound: 6740, ratePct: 4 },
+          { lowerBound: 8088, ratePct: 4.5 }, { lowerBound: 9436, ratePct: 4.7 },
         ],
         marriedFilingJointly: [
-          { lowerBound: 0, ratePct: 0 }, { lowerBound: 1313, ratePct: 2 }, { lowerBound: 2626, ratePct: 2.5 },
-          { lowerBound: 3939, ratePct: 3 }, { lowerBound: 5252, ratePct: 3.5 }, { lowerBound: 6565, ratePct: 4 },
-          { lowerBound: 7878, ratePct: 4.5 }, { lowerBound: 9191, ratePct: 4.7 },
+          { lowerBound: 0, ratePct: 0 }, { lowerBound: 1348, ratePct: 2 }, { lowerBound: 2696, ratePct: 2.5 },
+          { lowerBound: 4044, ratePct: 3 }, { lowerBound: 5392, ratePct: 3.5 }, { lowerBound: 6740, ratePct: 4 },
+          { lowerBound: 8088, ratePct: 4.5 }, { lowerBound: 9436, ratePct: 4.7 },
         ],
       },
       retirement: { kind: 'capped', capPerPerson: 6000 },
@@ -360,7 +372,7 @@ const rawStateYear2026 = {
       // LB 754 ramp: top 5.2% (2025) -> 4.55% (2026, brackets consolidated to
       // three) -> 3.99% (2027). Re-verify annually.
       code: 'NE', name: 'Nebraska', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 8600, marriedFilingJointly: 17200 },
+      standardDeduction: { single: 8850, marriedFilingJointly: 17700 },
       brackets: {
         single: [
           { lowerBound: 0, ratePct: 2.46 }, { lowerBound: 4130, ratePct: 3.51 }, { lowerBound: 24760, ratePct: 4.55 },
@@ -518,11 +530,16 @@ const rawStateYear2026 = {
       retirement: { kind: 'capped', capPerPerson: 20000, minAge: 67 },
     },
     SC: {
+      // H.4216 (signed 2026-03-30) rewrote TY2026: SCIAD deduction of
+      // $15,000/$30,000 replaces the federal deduction (its AGI phase-out is
+      // not modeled), and "5.21% minus $966 at/above $30,000" is exactly the
+      // graduated pair below (1.99% x 30,000 gap = 966). Revenue-triggered
+      // further cuts are legislated — re-verify annually via SCDOR news.
       code: 'SC', name: 'South Carolina', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
+      standardDeduction: { single: 15000, marriedFilingJointly: 30000 },
       brackets: {
-        single: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 3560, ratePct: 3 }, { lowerBound: 17830, ratePct: 6 }],
-        marriedFilingJointly: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 3560, ratePct: 3 }, { lowerBound: 17830, ratePct: 6 }],
+        single: [{ lowerBound: 0, ratePct: 1.99 }, { lowerBound: 30000, ratePct: 5.21 }],
+        marriedFilingJointly: [{ lowerBound: 0, ratePct: 1.99 }, { lowerBound: 30000, ratePct: 5.21 }],
       },
       retirement: { kind: 'capped', capPerPerson: 10000, minAge: 65 },
     },

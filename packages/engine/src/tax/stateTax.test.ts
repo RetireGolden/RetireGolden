@@ -127,6 +127,17 @@ describe('computeStateTax — code paths', () => {
     expect(tax).toBeCloseTo(10_000 * 0.0307, 6)
   })
 
+  it('MO fully exempts individual capital gains (HB 594, from TY2025)', () => {
+    // Missouri's pack sets capitalGainsAsOrdinary: false with no partial
+    // inclusion, so growing gains must leave MO tax unchanged while ordinary
+    // income stays taxed.
+    const mo = pack('MO')
+    const withoutGain = computeStateTax(mo, input({ ordinaryIncome: 80_000, agesAlive: [68] }))
+    const withGain = computeStateTax(mo, input({ ordinaryIncome: 80_000, capitalGains: 250_000, agesAlive: [68] }))
+    expect(withoutGain).toBeGreaterThan(0)
+    expect(withGain).toBe(withoutGain)
+  })
+
   it('does not let a federal capital-loss carryforward erase PA current-year gains', () => {
     const pa = pack('PA')
     const tax = computeStateTax(

@@ -2,6 +2,15 @@
 
 Tax year: 2025. Researched 2026-06-13.
 
+> **2026 update (PR #23 review, 2026-07-17):** **H.4216 (signed 2026-03-30) rewrote TY2026** — this
+> was missed by the Jan-1 sweep because it was enacted mid-year. From 2026: (1) SC decouples from the
+> federal standard deduction, replaced by the SCIAD — **$15,000 single / $30,000 MFJ** (AGI phase-out
+> not modeled in the pack); (2) the 0%/3%/6% schedule is replaced by **1.99% under $30,000 and
+> "5.21% minus $966" at/above** — mathematically exactly the graduated pair 1.99%/5.21% at $30,000,
+> which is how the pack encodes it; (3) further revenue-triggered rate cuts are legislated — treat SC
+> as a ramp state and re-verify annually via SCDOR news. Source (primary): SCDOR "Information About
+> H. 4216", https://www.dor.sc.gov/index.php/news/information-about-h-4216 (accessed 2026-07-17).
+
 ## Summary
 - Broad individual income tax: **yes** (graduated, 0% / 3% / 6%; top rate 6.0% for 2025)
 - Taxes Social Security benefits: no (fully exempt)
