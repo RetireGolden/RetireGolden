@@ -18,12 +18,13 @@
  * Run from anywhere: `node packages/planner-ui/scripts/pack-smoke.mjs`.
  */
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, mkdtempSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const pkgDir = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const scriptsDir = dirname(fileURLToPath(import.meta.url))
+const pkgDir = resolve(scriptsDir, '..')
 const shell = process.platform === 'win32' // npm/npx are .cmd files on Windows
 
 const viteConfig = `
@@ -37,13 +38,6 @@ export default defineConfig({
     include: ['@retiregolden/planner-ui > highs', '@retiregolden/planner-ui > recharts'],
   },
 })
-`
-
-const indexHtml = `<!doctype html>
-<html lang="en">
-  <head><meta charset="UTF-8" /><title>planner-ui pack smoke</title></head>
-  <body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body>
-</html>
 `
 
 const mainTsx = `
@@ -125,10 +119,9 @@ try {
     ),
   )
   writeFileSync(join(scratchDir, 'vite.config.ts'), viteConfig)
-  // Build-time CI script writing a constant Vite index.html into a mkdtemp
-  // scratch dir — nothing here is user-controlled or served to a browser.
-  // nosemgrep: javascript.lang.security.audit.unknown-value-with-script-tag.unknown-value-with-script-tag
-  writeFileSync(join(scratchDir, 'index.html'), indexHtml)
+  // Sibling fixture avoids an inline HTML string in this script (Semgrep XSS FP
+  // when a mkdtemp path sits next to a script-tag literal).
+  copyFileSync(join(scriptsDir, 'pack-smoke-index.html'), join(scratchDir, 'index.html'))
   mkdirSync(join(scratchDir, 'src'))
   writeFileSync(join(scratchDir, 'src', 'main.tsx'), mainTsx)
 
