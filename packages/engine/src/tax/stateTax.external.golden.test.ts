@@ -10,6 +10,8 @@ const ga = stateParamsFor('GA', 2026)!
 const il = stateParamsFor('IL', 2026)!
 const ky = stateParamsFor('KY', 2026)!
 const nj = stateParamsFor('NJ', 2026)!
+const sc = stateParamsFor('SC', 2026)!
+const me = stateParamsFor('ME', 2026)!
 
 function stateInput(state: string, overrides: Partial<TaxYearInput>): TaxYearInput {
   return {
@@ -333,5 +335,191 @@ describe('ORACLE-015: Illinois full retirement subtraction vs IL DOR', () => {
       stateInput('IL', { ordinaryIncome: 80_000, retirementIncome: 80_000, ssBenefits: 30_000, agesAlive: [70] }),
     )
     expectMoney(tax, 0)
+  })
+})
+
+/**
+ * ORACLE-016 (DOCS/external-oracles.md) - South Carolina's H.4216 (signed
+ * 2026-03-30) two-tier 2026 schedule and the SCIAD standard deduction vs the
+ * SCDOR "Information About H.4216" notice.
+ *
+ * H.4216 rewrote TY2026 mid-year: (1) SC decouples from the federal standard
+ * deduction, replaced by the SC Income Adjusted Deduction (SCIAD) of $15,000
+ * single / $30,000 MFJ (its AGI phase-out is not modeled in the pack); (2) the
+ * old 0%/3%/6% schedule becomes "1.99% for South Carolina taxable income under
+ * $30,000" and "5.21% minus $966 at $30,000 and above". That is mathematically
+ * the two-bracket graduated pair 1.99% (0-$30,000) / 5.21% (above), which is
+ * exactly how the pack encodes it:
+ *
+ *   Continuity identity. The $966 offset is (5.21% - 1.99%) x $30,000
+ *   = 3.22% x $30,000 = $966, so at taxable = $30,000 both formulas meet:
+ *     lower tier:  $30,000 x 1.99%            = $597.00
+ *     upper tier:  $30,000 x 5.21% - $966     = $1,563.00 - $966 = $597.00
+ *   and for any taxable T >= $30,000 the two-bracket stack reproduces the
+ *   "5.21% minus $966" rule exactly:
+ *     $30,000 x 1.99% + (T - $30,000) x 5.21% = T x 5.21% - $966.
+ *
+ * These cases use wage income only (no retirement income) so the schedule and
+ * the SCIAD are isolated; SC's retirement-income deduction ($10,000 at 65+),
+ * the age-65 general deduction, the 44% net-LTCG deduction, and the SCIAD
+ * income phase-out are documented pack simplifications outside this subset
+ * (see DOCS/domain/state-tax-research/SC.md).
+ *
+ * Oracle: South Carolina Department of Revenue.
+ *   "Information About H. 4216" (SCIAD $15,000/$30,000; 1.99% under $30,000;
+ *   5.21% minus $966 at/above $30,000):
+ *     https://www.dor.sc.gov/index.php/news/information-about-h-4216
+ * Access date: 2026-07-17. Pack year: 2026. Source tax year: 2026.
+ * Tolerance: $1, asserted to cents where the model is exact.
+ */
+describe('ORACLE-016: South Carolina H.4216 two-tier schedule + SCIAD vs SCDOR', () => {
+  it('pack SC parameters match the H.4216 SCIAD and two-tier schedule', () => {
+    expect(sc.hasIncomeTax).toBe(true)
+    expect(sc.taxesSocialSecurity).toBe(false)
+    expect(sc.standardDeduction).toEqual({ single: 15_000, marriedFilingJointly: 30_000 })
+    expect(sc.brackets.single).toEqual([
+      { lowerBound: 0, ratePct: 1.99 },
+      { lowerBound: 30_000, ratePct: 5.21 },
+    ])
+    expect(sc.brackets.marriedFilingJointly).toEqual([
+      { lowerBound: 0, ratePct: 1.99 },
+      { lowerBound: 30_000, ratePct: 5.21 },
+    ])
+  })
+
+  it('taxes South Carolina taxable income below $30,000 at the 1.99% lower tier', () => {
+    // Single, $40,000 wages. SCIAD: taxable = 40,000 - 15,000 = 25,000 (< 30,000).
+    //   tax = 25,000 * 1.99% = $497.50.
+    const tax = computeStateTax(sc, stateInput('SC', { ordinaryIncome: 40_000, agesAlive: [45] }))
+    expectMoney(tax, 497.5)
+  })
+
+  it('meets the continuity point at exactly $30,000 of taxable income ($966 identity)', () => {
+    // Single, $45,000 wages. SCIAD: taxable = 45,000 - 15,000 = 30,000.
+    //   lower tier:  30,000 * 1.99%        = 597.00
+    //   upper tier:  30,000 * 5.21% - 966  = 1,563.00 - 966 = 597.00  (identical)
+    const tax = computeStateTax(sc, stateInput('SC', { ordinaryIncome: 45_000, agesAlive: [45] }))
+    expectMoney(tax, 597)
+  })
+
+  it('taxes South Carolina taxable income above $30,000 (the "5.21% minus $966" rule)', () => {
+    // Single, $75,000 wages. SCIAD: taxable = 75,000 - 15,000 = 60,000 (> 30,000).
+    //   two-bracket stack: 30,000 * 1.99% + 30,000 * 5.21% = 597.00 + 1,563.00 = 2,160.00
+    //   "5.21% minus $966": 60,000 * 5.21% - 966 = 3,126.00 - 966 = 2,160.00  (identical)
+    const tax = computeStateTax(sc, stateInput('SC', { ordinaryIncome: 75_000, agesAlive: [45] }))
+    expectMoney(tax, 2_160)
+  })
+
+  it('applies the doubled $30,000 SCIAD for a married-filing-jointly couple', () => {
+    // MFJ, $90,000 wages. SCIAD: taxable = 90,000 - 30,000 = 60,000 (> 30,000).
+    //   (thresholds are NOT doubled: the $30,000 rate breakpoint is per-return.)
+    //   60,000 * 5.21% - 966 = 3,126.00 - 966 = 2,160.00.
+    const tax = computeStateTax(
+      sc,
+      stateInput('SC', { filingStatus: 'marriedFilingJointly', ordinaryIncome: 90_000, agesAlive: [45, 45] }),
+    )
+    expectMoney(tax, 2_160)
+  })
+})
+
+/**
+ * ORACLE-017 (DOCS/external-oracles.md) - Maine's decoupled 2026 standard
+ * deduction, graduated bracket stack, and the 2% high-income surcharge
+ * (modeled as a 9.15% top bracket) vs the Maine Revenue Services 2026 rate
+ * schedule.
+ *
+ * For 2026 Maine decoupled from the federal standard deduction (36 M.R.S.
+ * §5124-C 1-B), publishing its own $15,700 single / $31,400 MFJ amounts; and
+ * added a 2% surcharge on Maine taxable income over $1,000,000 (single) /
+ * $1,500,000 (MFJ). The pack encodes the surcharge as an equivalent 9.15% top
+ * bracket (7.15% base + 2% surcharge); on income above the threshold,
+ * 9.15% = 7.15% + 2%, so the marginal-bracket form reproduces the surcharge
+ * exactly.
+ *
+ * The MRS schedule publishes each bracket's cumulative base rounded to whole
+ * dollars (single: $1,589 / $4,117 / $70,980; MFJ: $3,181 / $8,237 /
+ * $106,210). The worksheets below compute the unrounded marginal-bracket stack
+ * the engine uses and cross-check each cumulative sum against the published
+ * rounded base; the two agree within rounding (<$1).
+ *
+ * Maine's $48,216-per-person pension deduction, its reduction by SS/Railroad
+ * Retirement received, the personal exemption ($5,300), and the standard-
+ * deduction phase-out are documented pack simplifications outside this subset
+ * (see DOCS/domain/state-tax-research/ME.md); these cases carry wage income
+ * only so the deduction and schedule are isolated.
+ *
+ * Oracle: Maine Revenue Services.
+ *   "2026 Individual Income Tax Rates" schedule, rev. May 5, 2026
+ *   (standard deduction $15,700/$31,400; brackets 5.8%/6.75%/7.15% at
+ *   $27,400/$64,850 single and $54,850/$129,750 MFJ; 9.15% over $1M single /
+ *   $1.5M MFJ from the 2% surcharge):
+ *     https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/ind_tax_rate_sched_2026.pdf
+ * Access date: 2026-07-17. Pack year: 2026. Source tax year: 2026.
+ * Tolerance: $1, asserted to cents where the model is exact.
+ */
+describe('ORACLE-017: Maine decoupled deduction + surcharge bracket vs MRS 2026 schedule', () => {
+  it('pack ME parameters match the MRS 2026 schedule (surcharge as a 9.15% top bracket)', () => {
+    expect(me.hasIncomeTax).toBe(true)
+    expect(me.taxesSocialSecurity).toBe(false)
+    expect(me.standardDeduction).toEqual({ single: 15_700, marriedFilingJointly: 31_400 })
+    expect(me.brackets.single).toEqual([
+      { lowerBound: 0, ratePct: 5.8 },
+      { lowerBound: 27_400, ratePct: 6.75 },
+      { lowerBound: 64_850, ratePct: 7.15 },
+      { lowerBound: 1_000_000, ratePct: 9.15 },
+    ])
+    expect(me.brackets.marriedFilingJointly).toEqual([
+      { lowerBound: 0, ratePct: 5.8 },
+      { lowerBound: 54_850, ratePct: 6.75 },
+      { lowerBound: 129_750, ratePct: 7.15 },
+      { lowerBound: 1_500_000, ratePct: 9.15 },
+    ])
+  })
+
+  it('applies the decoupled $15,700 single standard deduction in the first bracket', () => {
+    // Single, $30,000 wages. Decoupled SD: taxable = 30,000 - 15,700 = 14,300
+    // (< 27,400, first bracket). tax = 14,300 * 5.8% = $829.40. (The federal
+    // 2026 standard deduction is $16,100, so decoupling raises Maine tax here.)
+    const tax = computeStateTax(me, stateInput('ME', { ordinaryIncome: 30_000, agesAlive: [45] }))
+    expectMoney(tax, 829.4)
+  })
+
+  it('stacks the 5.8% / 6.75% / 7.15% single brackets', () => {
+    // Single, $100,000 wages. SD: taxable = 100,000 - 15,700 = 84,300 (7.15% band).
+    //   27,400 * 5.8%             = 1,589.20   (base check: MRS $1,589)
+    //   (64,850 - 27,400) * 6.75% = 2,527.875  (cum 4,117.075; MRS $4,117)
+    //   (84,300 - 64,850) * 7.15% = 1,390.675
+    //   total                     = 5,507.75
+    const tax = computeStateTax(me, stateInput('ME', { ordinaryIncome: 100_000, agesAlive: [45] }))
+    expectMoney(tax, 5_507.75)
+  })
+
+  it('applies the 2% surcharge (9.15% top bracket) for a single filer above $1M', () => {
+    // Single, $1,215,700 wages. SD: taxable = 1,215,700 - 15,700 = 1,200,000.
+    //   27,400 * 5.8%                    =     1,589.20
+    //   (64,850 - 27,400) * 6.75%        =     2,527.875
+    //   (1,000,000 - 64,850) * 7.15%     =    66,863.225  (cum 70,980.30; MRS $70,980)
+    //   (1,200,000 - 1,000,000) * 9.15%  =    18,300.00
+    //   total                            =    89,280.30
+    //   surcharge check: the $200,000 over $1M is taxed at 9.15% = 7.15% + 2%,
+    //   i.e. 18,300 = 14,300 (base) + 4,000 (2% surcharge).
+    const tax = computeStateTax(me, stateInput('ME', { ordinaryIncome: 1_215_700, agesAlive: [55] }))
+    expectMoney(tax, 89_280.3)
+  })
+
+  it('applies the 2% surcharge (9.15% top bracket) for an MFJ couple above $1.5M', () => {
+    // MFJ, $1,631,400 wages. SD: taxable = 1,631,400 - 31,400 = 1,600,000.
+    //   54,850 * 5.8%                    =      3,181.30
+    //   (129,750 - 54,850) * 6.75%       =      5,055.75
+    //   (1,500,000 - 129,750) * 7.15%    =     97,972.875 (cum 106,209.925; MRS $106,210)
+    //   (1,600,000 - 1,500,000) * 9.15%  =      9,150.00
+    //   total                            =    115,359.925  (to the cent: $115,359.93)
+    //   surcharge check: the $100,000 over $1.5M is taxed at 9.15% = 7.15% + 2%,
+    //   i.e. 9,150 = 7,150 (base) + 2,000 (2% surcharge).
+    const tax = computeStateTax(
+      me,
+      stateInput('ME', { filingStatus: 'marriedFilingJointly', ordinaryIncome: 1_631_400, agesAlive: [55, 55] }),
+    )
+    expectMoney(tax, 115_359.93)
   })
 })

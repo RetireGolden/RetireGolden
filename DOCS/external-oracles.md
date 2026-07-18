@@ -165,12 +165,15 @@ The external-oracle fixtures currently in the tree, each with its primary source
 | ORACLE-013 | State tax | [`packages/engine/src/tax/stateTax.external.golden.test.ts`](../packages/engine/src/tax/stateTax.external.golden.test.ts) | CA FTB 2025 Schedule X — graduated brackets across six layers; SS exempt while pensions are fully taxed. |
 | ORACLE-014 | State tax | [`packages/engine/src/tax/stateTax.external.golden.test.ts`](../packages/engine/src/tax/stateTax.external.golden.test.ts) | GA DOR 2026 — flat 4.99% + $15k/$30k deductions and the 65+ retirement-income exclusion below/at/above the $65,000 per-person cap (the 62–64 tier is a documented model simplification). This fixture's review caught the pack carrying GA's stale 2025 vintage — the oracle process working as intended. |
 | ORACLE-015 | State tax | [`packages/engine/src/tax/stateTax.external.golden.test.ts`](../packages/engine/src/tax/stateTax.external.golden.test.ts) | IL DOR — flat 4.95% with the full retirement-income subtraction; cases chosen so the unmodeled personal exemption cannot change the answer. |
+| ORACLE-016 | State tax | [`packages/engine/src/tax/stateTax.external.golden.test.ts`](../packages/engine/src/tax/stateTax.external.golden.test.ts) | SCDOR H.4216 — the rewritten 2026 two-tier schedule (1.99% under $30,000 / "5.21% minus $966" at-and-above) plus the SCIAD $15,000/$30,000 standard deduction; below/at/above the $30,000 breakpoint with the $966 continuity identity asserted in the worksheet. |
+| ORACLE-017 | State tax | [`packages/engine/src/tax/stateTax.external.golden.test.ts`](../packages/engine/src/tax/stateTax.external.golden.test.ts) | MRS 2026 rate schedule — Maine's decoupled $15,700/$31,400 standard deduction, the 5.8%/6.75%/7.15% bracket stack, and the 2% high-income surcharge modeled as a 9.15% top bracket (surcharge cases above $1M single / $1.5M MFJ). |
 | — | TIPS ladder | [`packages/engine/src/ladder/ladderMath.worksheet.golden.test.ts`](../packages/engine/src/ladder/ladderMath.worksheet.golden.test.ts) | Hand worksheet on the dated U.S. Treasury par real yield curve snapshot (2026-06-30): back-to-front faces, par-as-spot rung prices, and deferral coupons derived by decimal arithmetic outside the engine. |
 
-Known gaps, kept visible on purpose: state-tax external fixtures now cover NJ, KY, CA, GA, and IL — but
-states that tax Social Security (CO, MN, MT, …) still have none, because the big-levers model documents an
-intentional overstatement there (income-based SS subtractions are unmodeled), leaving no cleanly comparable
-worksheet subset; TIPS-ladder pricing has a hand-priced dated-curve worksheet but still no independent-tool
+Known gaps, kept visible on purpose: state-tax external fixtures now cover NJ, KY, CA, GA, IL, SC, and
+ME — including both states whose 2026 structures were rewritten mid-year (SC's H.4216 two-tier schedule
++ SCIAD, ME's decoupled deduction + 2%-surcharge-as-9.15%-bracket) — but states that tax Social Security
+(CO, MN, MT, …) still have none, because the big-levers model documents an intentional overstatement there
+(income-based SS subtractions are unmodeled), leaving no cleanly comparable worksheet subset; TIPS-ladder pricing has a hand-priced dated-curve worksheet but still no independent-tool
 run (e.g., tipsladder.com on the same curve); the SPIA payout-rate table is a sourced planning proxy
 (last re-anchored 2026-07-15 against published April-2026 life-only sheets; the age-85 anchor is
 extrapolated and the QLAC rate awaits a direct quote).
