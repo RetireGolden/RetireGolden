@@ -604,7 +604,7 @@ Her parents elected the account at birth, the government added the one-time $1,0
 
 Because family contributions are after-tax and nondeductible, the IRA carries $45,000 of Form 8606 basis (18 × $2,500). The seed and all earnings are the pre-tax portion. Any withdrawal or Roth conversion applies the pro-rata rule — exactly the machinery this planner models on traditional IRAs.
 
-The built-in scenario converts to Roth in the early career years: the basis portion converts tax-free and the pre-tax portion fills only the 12% bracket, showing why commentators call the age-18 conversion window a "legal backdoor" to a Roth.`,
+The built-in scenario — "Bracket-fill Roth conversions (Form 8606 basis)" — fills the 12% bracket during ages 22–26, while Nova's wages already occupy most of it. The conversions are deliberately modest and shrink as raises consume the bracket headroom; the point is the mechanics, not the size: under the pro-rata rule the basis portion converts tax-free, so only part of each conversion is taxed. The often-cited near-free move — converting at 18 with little or no income, before a career starts — happens earlier than this plan's window and is not what this scenario runs; see the caveat below before attempting it.`,
   'Compare ending assets against the starting-from-zero control, then run the conversion scenario with and without the nondeductible basis in mind — the basis visibly lowers the conversion tax.',
   ['savings-rate-biggest-lever', 'roth-conversion-basics', 'account-types-overview'],
   ['/plan/:planId/results', '/plan/:planId/accounts', '/plan/:planId/scenarios'],
@@ -616,7 +616,7 @@ The built-in scenario converts to Roth in the early career years: the basis port
       { label: 'Wages', value: '$62,000, 2.5% real growth' },
       { label: 'Ongoing savings', value: '$8,000/yr 401(k) + 100%-to-4% employer match (identical to control)' },
       { label: 'Seeded IRA', value: '$115,800 traditional IRA, $45,000 nondeductible basis' },
-      { label: 'Built-in scenario', value: 'Bracket-fill Roth conversions ages 22–26' },
+      { label: 'Built-in scenario', value: 'Bracket-fill 12% conversions ages 22–26 (Form 8606 basis)' },
     ],
     summary: 'Feature case: one seeded account, zero extra behavior — the delta against the control prices the 18-year head start.',
   },
@@ -652,12 +652,12 @@ The built-in scenario converts to Roth in the early career years: the basis port
       },
       {
         type: 'prose',
-        md: 'This example uses the moderate middle row. Not every child will get $115,000 — a seed-only account is worth about $3,400 at 18, still a real head start from a single $1,000 contribution.',
+        md: 'This example uses the moderate middle row. Not every child will get $115,000 — at the same 7% assumption, a seed-only account is worth about $3,400 at 18 and about $4,500 at 22, versus this example\'s ≈ $88,400 at 18 and ≈ $115,800 at 22. Still a real head start from a single $1,000 contribution.',
       },
       {
         type: 'callout',
         tone: 'warn',
-        md: '**Kiddie-tax caveat:** Roth conversions in low-income years (roughly ages 18–24) can be nearly free, but a dependent full-time student under 24 may have unearned income — including the taxable part of a conversion — taxed at the parents\' rates under the kiddie tax. Check dependency status before converting.',
+        md: '**Kiddie-tax caveat:** if you convert at 18 while still a dependent — the near-free no-income window commentators call a "legal backdoor" — the taxable part of the conversion is unearned income, and a dependent full-time student under 24 may have it taxed at the parents\' rates under the kiddie tax. Check dependency status before converting. (This example\'s built-in scenario converts later, at ages 22–26 against wage income, and does not model that window.)',
       },
     ],
     sourceUrls: [

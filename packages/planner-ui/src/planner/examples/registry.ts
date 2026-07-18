@@ -342,7 +342,7 @@ export const EXAMPLE_PLANS: ExamplePlan[] = [
     teaches: 'The head start compounds into a dramatically larger estate with zero extra saving by Nova. The converted account is just a traditional IRA: the $45,000 of after-tax family contributions is Form 8606 basis, so the pro-rata rule prices any withdrawal or Roth conversion. Illustrative framing — the library clock is 2026, so this shows what a child born under the program will experience at 22.',
     themeTags: ['accumulation'],
     learnSlug: 'example-trump-account-head-start',
-    lookFor: 'The seeded IRA compounding untouched to 60, and the "Convert to Roth in low-income years" scenario where the basis converts tax-free and the pre-tax portion fills the 12% bracket cheaply.',
+    lookFor: 'The seeded IRA compounding untouched to 60, and the "Bracket-fill Roth conversions (Form 8606 basis)" scenario where the basis converts tax-free pro-rata while only the pre-tax portion fills the 12% bracket.',
     build: buildTrumpAccountHeadStart,
   },
 ]

@@ -61,7 +61,7 @@ export function buildTrumpAccountHeadStart(): Plan {
       employerMatch: { matchPct: 100, capPctOfPay: 4 },
     },
     // Empty Roth IRA in both halves of the pair: no ledger effect, but it gives
-    // the low-income conversion scenario a destination account.
+    // the basis-conversion scenario a destination account.
     { type: 'roth', id: exampleEntityId(EXAMPLE_ID, 'roth'), name: 'Roth IRA', ownerPersonId: p1, annualReturnPct: 7, kind: 'ira', balance: 0, annualContribution: 0 },
   ]
 
@@ -96,14 +96,17 @@ export function buildTrumpAccountHeadStart(): Plan {
     safeWithdrawalRatePct: 4,
   }
 
-  // The CNBC "legal backdoor" teaching point: converting in early low-bracket
-  // years is cheap — the $45,000 basis converts tax-free (pro-rata) and the
-  // pre-tax portion fills only the 12% bracket. OFF in the base plan so Compare
-  // isolates the head start itself; kiddie-tax caveat lives in the article.
+  // Early-career 12%-bracket fills demonstrate the Form 8606 mechanics: the
+  // basis portion converts tax-free under the pro-rata rule while only the
+  // pre-tax portion is taxed, and the headroom shrinks as raises consume the
+  // bracket. (The oft-cited near-free "convert at 18 with no income" window is
+  // not representable at the library's fixed 2026 clock with this household;
+  // the article covers it — with the kiddie-tax caveat — as context.) OFF in
+  // the base plan so Compare isolates the head start itself.
   plan.scenarios = [
     {
-      id: exampleEntityId(EXAMPLE_ID, 'low-income-conversions'),
-      name: 'Convert to Roth in low-income years',
+      id: exampleEntityId(EXAMPLE_ID, 'basis-conversions'),
+      name: 'Bracket-fill Roth conversions (Form 8606 basis)',
       patch: {
         strategies: {
           rothConversion: { mode: 'fillToTarget', target: 'topOfBracket', targetValue: 12, startYear: EXAMPLE_FIXED_YEAR, endYear: EXAMPLE_FIXED_YEAR + 4 },
