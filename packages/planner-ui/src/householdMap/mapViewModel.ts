@@ -7,11 +7,12 @@
  * values formatted here — no money math.
  */
 
-import type {
-  HouseholdEdge,
-  HouseholdGraph,
-  HouseholdNode,
-  HouseholdEditSurface,
+import {
+  personNodeId,
+  type HouseholdEdge,
+  type HouseholdGraph,
+  type HouseholdNode,
+  type HouseholdEditSurface,
 } from '@retiregolden/engine/household/householdGraph'
 import { fmtMoney } from '../planner/format'
 import { columnForKind, layoutHouseholdGraph, type MapColumnId } from './layout'
@@ -231,7 +232,7 @@ export function buildMapViewModel(graph: HouseholdGraph, options: MapViewOptions
   // Filter the graph first, then lay out, so the visible picture is compact.
   let nodes = graph.nodes
   if (options.focusPersonId) {
-    const keep = connectedNodeIds(graph, `person:${options.focusPersonId}`)
+    const keep = connectedNodeIds(graph, personNodeId(options.focusPersonId))
     nodes = nodes.filter((n) => keep.has(n.id))
   }
   if (options.visibleColumns) {

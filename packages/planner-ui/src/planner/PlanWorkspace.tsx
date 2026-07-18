@@ -16,6 +16,8 @@ import { ExamplePreviewBanner } from './examples/ExamplePreviewBanner'
 import { EXAMPLE_SAVE_INDICATOR } from './examples/exampleCopy'
 import { PlanProvider } from './PlanContext'
 import { usePlan } from './planContextCore'
+import { PrivacyProvider } from './privacyContext'
+import { usePrivacy } from './privacyContextCore'
 import { fmtMoneyCompact } from './format'
 import { successBand } from './successBand'
 import { useMcSuccessRate } from './useMcSuccessRate'
@@ -100,6 +102,12 @@ function KpiBar() {
   const { plan } = usePlan()
   const { result, summary, deflate } = useProjection(plan)
   const mcRate = useMcSuccessRate(plan, !isPlanIncomplete(plan))
+  // While a page has Hide amounts active (the Household map's screen-share
+  // toggle), the KPI bar masks every dollar it would otherwise show — the
+  // chrome must not leak what the page below is hiding. The literal "$" unit
+  // captions go too, so a masked workspace contains no dollar text at all.
+  const { hideAmounts } = usePrivacy()
+  const money = (v: number) => (hideAmounts ? '•••' : fmtMoneyCompact(v))
   const endYear = result.endYear
   const depleted = summary.depletionYear !== null
   const endingToday = deflate(endYear, result.endingNetWorth)
@@ -122,8 +130,8 @@ function KpiBar() {
     <div className="kpi-bar" aria-label="Plan headline results">
       <div className="kpi">
         <span className="kpi-label">Ending net worth</span>
-        <span className="kpi-value">{fmtMoneyCompact(result.endingNetWorth)}</span>
-        <span className="kpi-sub">{fmtMoneyCompact(endingToday)} today's $ · {endYear}</span>
+        <span className="kpi-value">{money(result.endingNetWorth)}</span>
+        <span className="kpi-sub">{hideAmounts ? 'amounts hidden' : <>{fmtMoneyCompact(endingToday)} today's $ · {endYear}</>}</span>
       </div>
       <div className="kpi">
         <span className="kpi-label">Money lasts</span>
@@ -160,13 +168,13 @@ function KpiBar() {
       </div>
       <div className="kpi">
         <span className="kpi-label">Lifetime tax</span>
-        <span className="kpi-value">{fmtMoneyCompact(summary.lifetimeTaxesAndPenalties)}</span>
-        <span className="kpi-sub">nominal $ · federal + state + penalties</span>
+        <span className="kpi-value">{money(summary.lifetimeTaxesAndPenalties)}</span>
+        <span className="kpi-sub">{hideAmounts ? 'amounts hidden' : 'nominal $ · federal + state + penalties'}</span>
       </div>
       <div className="kpi">
         <span className="kpi-label">Roth converted</span>
-        <span className="kpi-value">{fmtMoneyCompact(summary.lifetimeRothConversions)}</span>
-        <span className="kpi-sub">ending Roth {fmtMoneyCompact(summary.endingByCategory.roth)}</span>
+        <span className="kpi-value">{money(summary.lifetimeRothConversions)}</span>
+        <span className="kpi-sub">{hideAmounts ? 'amounts hidden' : <>ending Roth {fmtMoneyCompact(summary.endingByCategory.roth)}</>}</span>
       </div>
     </div>
   )
@@ -304,7 +312,9 @@ export function PlanWorkspace() {
   if (!planId) return null
   return (
     <PlanProvider planId={planId}>
-      <WorkspaceInner />
+      <PrivacyProvider>
+        <WorkspaceInner />
+      </PrivacyProvider>
     </PlanProvider>
   )
 }

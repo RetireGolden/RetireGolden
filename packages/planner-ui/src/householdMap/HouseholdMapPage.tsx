@@ -7,12 +7,13 @@
  * listed plainly instead of being drawn.
  */
 
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { buildHouseholdGraph } from '@retiregolden/engine/household/householdGraph'
 import { isPlanIncomplete } from '../planner/planCompleteness'
 import { usePlan } from '../planner/planContextCore'
+import { usePrivacy } from '../planner/privacyContextCore'
 import type { MapColumnId } from './layout'
 import { MAP_COLUMN_LABELS } from './layout'
 import { buildMapViewModel, EDIT_SURFACE_ROUTES, type MapNodeVM } from './mapViewModel'
@@ -75,7 +76,11 @@ function completenessBadge(node: MapNodeVM) {
 
 export function HouseholdMapPage() {
   const { plan } = usePlan()
-  const [hideAmounts, setHideAmounts] = useState(false)
+  // Workspace-level privacy state: hiding amounts here also masks the KPI
+  // bar above the page (see privacyContext.tsx). Reset on unmount so
+  // navigating away always restores the workspace chrome.
+  const { hideAmounts, setHideAmounts } = usePrivacy()
+  useEffect(() => () => setHideAmounts(false), [setHideAmounts])
   const [zoom, setZoom] = useState<number>(1)
   const [focusPersonId, setFocusPersonId] = useState<string>('')
   const [hiddenColumns, setHiddenColumns] = useState<readonly MapColumnId[]>([])
@@ -144,7 +149,7 @@ export function HouseholdMapPage() {
               pairing a pressed state with an already-flipped label reads as
               contradictory in screen readers. Current state is announced by
               the totals line ("Amounts hidden"). */}
-          <button type="button" className="btn btn-secondary btn-small" onClick={() => setHideAmounts((v) => !v)}>
+          <button type="button" className="btn btn-secondary btn-small" onClick={() => setHideAmounts(!hideAmounts)}>
             {hideAmounts ? 'Show amounts' : 'Hide amounts'}
           </button>
           <label className="map-control">

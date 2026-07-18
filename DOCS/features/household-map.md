@@ -64,7 +64,13 @@ invents an edge the schema does not carry, and never infers a legal relationship
   categorical `estate` destinations (surviving spouse / non-spouse heirs / charity / estate).
   Node ids are stable and derived from plan entity ids (`person:<id>`, `acct:<id>`, `inc:<id>`,
   `ins:<id>`, `ladder:<id>`, `fs:<streamId>:<formerSpouseId>`, `estate:<destination>`), so layout
-  and tests survive unrelated plan edits.
+  and tests survive unrelated plan edits. Raw id components are injectively encoded
+  (`encodeIdComponent`: `\` → `\\`, `:` → `\:`, `>` → `\>`) so entity ids containing delimiters can
+  never forge a structural `:` or the `->` arrow in an edge id — well-behaved ids stay unchanged
+  and human-readable. Duplicate entity ids within a collection (the schema doesn't forbid them —
+  imports can carry them) are disambiguated with an ordinal suffix (`:2`, `:3`, … — collision-proof
+  under the encoding) and every occurrence is flagged as an attention fact ("Duplicate account id
+  … — provenance ambiguous").
 - **Amounts** are the plan's own stored figures (balance, property value, debt owed, annual/monthly
   amounts) tagged with an `amountKind` — the selector never computes derived dollars beyond exact
   sums of stored values.
@@ -102,7 +108,11 @@ layout (fixed columns People → Income → Accounts → Property & debt → Pro
 follow plan entry order; pure data, no dollars — covered by stable-layout snapshot tests).
 `mapViewModel.ts` produces the sanitized render model: pixel positions, edge paths, formatted
 labels — and under the privacy toggle ("Hide amounts") the view model contains **no dollar strings
-at all** (test-enforced), so it is safe for screen sharing and reusable for report embedding
+at all** (test-enforced). The toggle is workspace-wide: it drives a `PrivacyContext` provided by
+`PlanWorkspace`, so the KPI bar above the page masks its dollar values (`•••`, unit captions
+included) while hide is active, and restores automatically when the toggle goes off or the user
+navigates away from the map page — the screen-share promise covers the whole window, not just the
+canvas. The model is reusable for report embedding
 later — with `hasAmount` preserved so placeholders ("•••"/"hidden") appear only where a real
 amount is concealed. The view model also phrases every edge per node (`relations`), so topology is
 never confined to the aria-hidden SVG. `HouseholdMapPage.tsx` renders HTML node cards

@@ -101,7 +101,7 @@ test files.
 | `mc/` | Monte Carlo Web Worker: `monteCarlo.worker.ts`, `pool.ts`, `runRequest.ts`, `messages.ts` |
 | `optimize/` | Optimizer + spending-solver Web Workers: `optimize.worker.ts` (HiGHS-WASM), `spendingSolve.worker.ts`, `runOptimize.ts`, `runner.ts`, `spendingRunner.ts` |
 | `relocation/` | Relocation-compare Web Worker: `relocation.worker.ts`, `runRelocation.ts`, `runner.ts`, `messages.ts` (engine in `engine/projection/relocation.ts`) |
-| `householdMap/` | Household map page (`/plan/:id/household-map`): deterministic layered `layout.ts`, sanitized `mapViewModel.ts` (privacy-hide strips every dollar string), `HouseholdMapPage.tsx` (graph selector in `engine/household/`; [features/household-map.md](features/household-map.md)) |
+| `householdMap/` | Household map page (`/plan/:id/household-map`): deterministic layered `layout.ts`, sanitized `mapViewModel.ts` (privacy-hide strips every dollar string), `HouseholdMapPage.tsx`; the hide toggle also masks the workspace KPI bar via `planner/privacyContext.tsx` (graph selector in `engine/household/`; [features/household-map.md](features/household-map.md)) |
 | `workers/` | `run.ts` — the generic `runWorkerRequest` helper shared by `mc/`, `optimize/`, and `relocation/` |
 | `socialSecurity/` | SS analysis features on top of the engine's SS math: `expectedPv`, `breakEven`, `explain`, `ficaReturn`, `survivorSwitching`, `ssaStatementXml`, plus form storage/guards (the ledger-consumed math lives in the engine package) |
 | `longevity/` | Life-expectancy wizard: `model`, `factors`, `LongevityWizard.tsx`, `LongevityResults.tsx` (the SSA period table + types live in the engine package) |

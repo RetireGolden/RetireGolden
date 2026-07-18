@@ -8,7 +8,7 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { buildHouseholdGraph } from '@retiregolden/engine/household/householdGraph'
+import { accountNodeId, buildHouseholdGraph, incomeNodeId } from '@retiregolden/engine/household/householdGraph'
 import { EXAMPLE_PLANS } from '../planner/examples/registry'
 import { projectPlan } from '../planner/useProjection'
 import { buildReportModel } from '../report/reportModel'
@@ -27,7 +27,7 @@ describe('household graph ⇄ report model reconciliation', () => {
       // Every plan account appears in both, once, under the same id.
       expect(rows).toHaveLength(plan.accounts.length)
       for (const row of rows) {
-        const node = graph.nodes.find((n) => n.id === `acct:${row.id}`)
+        const node = graph.nodes.find((n) => n.id === accountNodeId(row.id))
         expect(node, `graph node for account ${row.id}`).toBeDefined()
         // The report's balance figure (balance / property value; 0 for
         // pension/annuity) must equal the graph's stored amount for the same
@@ -59,7 +59,7 @@ describe('household graph ⇄ report model reconciliation', () => {
       const plan = example.build()
       const graph = buildHouseholdGraph(plan)
       const incomeNodeIds = graph.nodes.filter((n) => n.kind === 'income').map((n) => n.id)
-      expect(incomeNodeIds.sort()).toEqual(plan.incomes.map((s) => `inc:${s.id}`).sort())
+      expect(incomeNodeIds.sort()).toEqual(plan.incomes.map((s) => incomeNodeId(s.id)).sort())
       // And each is reachable from a person (or household-level with 2 edges).
       for (const id of incomeNodeIds) {
         expect(graph.edges.some((e) => e.kind === 'receives' && e.to === id)).toBe(true)

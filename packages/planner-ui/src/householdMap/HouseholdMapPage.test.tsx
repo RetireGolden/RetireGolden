@@ -13,10 +13,12 @@ import { createRoot, type Root } from 'react-dom/client'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { IDBFactory } from 'fake-indexeddb'
 
+import { accountNodeId } from '@retiregolden/engine/household/householdGraph'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import { _resetPlanStoreForTests, savePlan } from '../data/planStore'
 import { PlanCtx } from '../planner/planContextCore'
 import { PlanWorkspace } from '../planner/PlanWorkspace'
+import { PrivacyProvider } from '../planner/privacyContext'
 import { buildExampleCouple } from '../planner/examples/buildExampleCouple'
 import { HouseholdMapPage } from './HouseholdMapPage'
 
@@ -39,12 +41,15 @@ function renderPage(plan: Plan) {
         <PlanCtx.Provider
           value={{ plan, update: () => undefined, discardPendingSave: () => undefined, saveState: 'saved', issues: [] }}
         >
-          {/* Mirror the app's nesting so relative deep links resolve like production. */}
-          <Routes>
-            <Route path="/plan/:planId">
-              <Route path="household-map" element={<HouseholdMapPage />} />
-            </Route>
-          </Routes>
+          {/* Mirror the app's nesting so relative deep links resolve like
+              production; bare mounts still need a live privacy provider. */}
+          <PrivacyProvider>
+            <Routes>
+              <Route path="/plan/:planId">
+                <Route path="household-map" element={<HouseholdMapPage />} />
+              </Route>
+            </Routes>
+          </PrivacyProvider>
         </PlanCtx.Provider>
       </MemoryRouter>,
     )
@@ -222,7 +227,7 @@ describe('HouseholdMapPage', () => {
     plan.incomeFloor = undefined
     const el = renderPage(plan)
     const stage = el.querySelector<HTMLElement>('.household-map-stage')!
-    const account = nodeLinks(el).find((a) => a.dataset.nodeId === 'acct:we"ird\\id')!
+    const account = nodeLinks(el).find((a) => a.dataset.nodeId === accountNodeId('we"ird\\id'))!
     const person = nodeLinks(el).find((a) => a.dataset.nodeId?.startsWith('person:'))!
     act(() => person.focus())
     act(() => {
@@ -295,5 +300,59 @@ describe('HouseholdMapPage inside the real workspace chrome', () => {
     expect(hiddenRule).toContain('.kpi-bar')
     expect(hiddenRule).toContain('.workspace-rail')
     expect(hiddenRule).toContain('.workspace-head')
+  })
+
+  it('Hide amounts masks the KPI bar on screen and restores it after navigating away', async () => {
+    const plan = buildExampleCouple()
+    const saved = await savePlan(plan)
+    if (!saved.ok) throw new Error('seed save failed')
+
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+    await act(async () => {
+      root!.render(
+        <MemoryRouter initialEntries={[`/plan/${plan.id}/household-map`]}>
+          <Routes>
+            <Route path="/plan/:planId/*" element={<PlanWorkspace />}>
+              <Route path="household-map" element={<HouseholdMapPage />} />
+              <Route path="results" element={<div>results stub</div>} />
+            </Route>
+          </Routes>
+        </MemoryRouter>,
+      )
+    })
+    for (let attempt = 0; attempt < 100 && !container.querySelector('.household-map-stage'); attempt++) {
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10))
+      })
+    }
+
+    // With amounts visible the KPI bar shows real dollars.
+    expect(container.querySelector('.kpi-bar')!.textContent).toContain('$')
+
+    const toggle = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Hide amounts')!
+    await act(async () => {
+      toggle.click()
+    })
+    // The whole workspace — chrome and page alike — now carries no dollar
+    // strings anywhere: the screen-share promise covers the KPI bar too.
+    expect(container.textContent).not.toContain('$')
+    expect(container.querySelector('.kpi-bar')!.textContent).toContain('•••')
+
+    // Navigating off the map page restores the KPI bar automatically.
+    const resultsLink = Array.from(container.querySelectorAll<HTMLAnchorElement>('.workspace-rail a')).find(
+      (a) => a.textContent === 'Results',
+    )!
+    await act(async () => {
+      resultsLink.click()
+    })
+    for (let attempt = 0; attempt < 100 && !container.textContent?.includes('results stub'); attempt++) {
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10))
+      })
+    }
+    expect(container.querySelector('.kpi-bar')!.textContent).toContain('$')
+    expect(container.querySelector('.kpi-bar')!.textContent).not.toContain('•••')
   })
 })

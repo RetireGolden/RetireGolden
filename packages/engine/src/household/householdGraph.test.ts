@@ -10,7 +10,13 @@ import {
   traditionalAccount,
   validatePlan,
 } from '../testing/planFixtures.js'
-import { buildHouseholdGraph, UNSUPPORTED_RELATIONSHIPS } from './householdGraph.js'
+import {
+  accountNodeId,
+  buildHouseholdGraph,
+  encodeIdComponent,
+  formerSpouseNodeId,
+  UNSUPPORTED_RELATIONSHIPS,
+} from './householdGraph.js'
 
 function nodeById(graph: ReturnType<typeof buildHouseholdGraph>, id: string) {
   const node = graph.nodes.find((n) => n.id === id)
@@ -280,6 +286,75 @@ describe('buildHouseholdGraph', () => {
     }
     expect(nodeById(graph, 'person:p1').source).toBe('household.people[0]')
     expect(nodeById(graph, 'acct:brokerage').source).toBe('accounts[0]')
+  })
+
+  it('node and tuple ids are injective for delimiter-bearing entity ids', () => {
+    // Escaping keeps well-behaved ids readable and unchanged…
+    expect(encodeIdComponent('example-couple--brokerage')).toBe('example-couple--brokerage')
+    expect(accountNodeId('normal-id_1')).toBe('acct:normal-id_1')
+    // …while reserved characters cannot forge structural delimiters.
+    expect(encodeIdComponent('a:b')).toBe('a\\:b')
+    expect(encodeIdComponent('b->c')).toBe('b-\\>c')
+    expect(encodeIdComponent('a\\:b')).toBe('a\\\\\\:b')
+    // The fs tuple from the finding: ("a:b", "c") vs ("a", "b:c").
+    expect(formerSpouseNodeId('a:b', 'c')).not.toBe(formerSpouseNodeId('a', 'b:c'))
+    // A raw id resembling a full node id cannot collide with the real one.
+    expect(accountNodeId('b->acct:c')).not.toBe(`${accountNodeId('b')}->acct:c`)
+  })
+
+  it('edge ids cannot be forged by entity ids containing the arrow', () => {
+    // (funding "a", annuity "b->acct:c") vs (funding "a->acct:b", annuity "c")
+    // collided as `funds:acct:a->acct:b->acct:c` before encoding.
+    const withFundedAnnuity = (fundingId: string, annuityId: string): Plan => {
+      const plan = couplePlan()
+      const funding = taxableAccount(fundingId, 300_000, 200_000)
+      const annuity: Account = {
+        type: 'annuity',
+        id: annuityId,
+        name: 'SPIA',
+        ownerPersonId: 'p1',
+        annualReturnPct: null,
+        startAge: 70,
+        monthlyAmount: 900,
+        colaPct: 0,
+        taxablePct: 60,
+        purchase: { year: 2030, premium: 100_000, fundingAccountId: fundingId, taxQualification: 'nonQualified' },
+      }
+      plan.accounts = [funding, annuity]
+      plan.incomes = [socialSecurityIncome('ss1', 2_000, 67, 'p1'), socialSecurityIncome('ss2', 1_500, 67, 'p2')]
+      return validatePlan(plan)
+    }
+    const fundsEdge = (plan: Plan) => buildHouseholdGraph(plan).edges.find((e) => e.kind === 'funds')!
+    const g1 = fundsEdge(withFundedAnnuity('a', 'b->acct:c'))
+    const g2 = fundsEdge(withFundedAnnuity('a->acct:b', 'c'))
+    expect(g1.id).not.toBe(g2.id)
+    // Neither forged id equals the honest two-account edge id.
+    expect(g1.id).not.toBe('funds:acct:a->acct:b->acct:c')
+    expect(g2.id).not.toBe('funds:acct:a->acct:b->acct:c')
+  })
+
+  it('duplicate account ids are disambiguated deterministically and flagged', () => {
+    const plan = singleFixture()
+    plan.accounts = [
+      cashAccount('dup', 10_000),
+      { ...cashAccount('dup', 20_000), name: 'Second dup' },
+      taxableAccount('brok', 50_000, 40_000),
+    ]
+    const graph = buildHouseholdGraph(validatePlan(plan))
+    // Both accounts render under unique, deterministic node ids.
+    const dupNodes = graph.nodes.filter((n) => n.kind === 'account' && n.label !== 'brok')
+    expect(dupNodes.map((n) => n.id)).toEqual(['acct:dup', 'acct:dup:2'])
+    // Every occurrence of the duplicated id carries the attention fact.
+    for (const n of dupNodes) {
+      expect(n.completeness.missing).toContain('Duplicate account id "dup" — provenance ambiguous')
+    }
+    // The suffix cannot collide with a real id: `dup:2` encodes differently.
+    expect(accountNodeId('dup:2')).toBe('acct:dup\\:2')
+    // Edge ids stay unique and totals still reconcile to the entered values.
+    const ids = edgeIds(graph)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(graph.totals.investable).toBe(80_000)
+    expect(graph.totals.netWorth).toBe(80_000)
   })
 
   it('states its unsupported relationships — the full audit-table set, in order', () => {

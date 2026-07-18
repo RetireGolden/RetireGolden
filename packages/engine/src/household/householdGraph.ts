@@ -227,23 +227,38 @@ export const UNSUPPORTED_RELATIONSHIPS: readonly UnsupportedRelationship[] = [
 // Node id helpers (stable, derived from plan entity ids)
 // ---------------------------------------------------------------------------
 
+/**
+ * Injective encoding for raw entity-id components. Plan entity ids are
+ * arbitrary nonempty strings, so naive concatenation is ambiguous:
+ * `fs:a:b:c` could be (stream "a:b", record "c") or (stream "a", record
+ * "b:c"), and an entity id containing "->" could forge the arrow inside an
+ * edge id. Escaping the reserved characters — '\' → '\\', ':' → '\:',
+ * '>' → '\>' — means the structural ':' separators and the single unescaped
+ * "->" in an edge id can only come from the builders, never from data.
+ * Well-behaved ids (letters, digits, '-', '_', UUIDs) are unchanged, so
+ * normal plans keep human-readable, snapshot-stable node ids.
+ */
+export function encodeIdComponent(raw: string): string {
+  return raw.replace(/[\\:>]/g, (ch) => `\\${ch}`)
+}
+
 export function personNodeId(personId: string): string {
-  return `person:${personId}`
+  return `person:${encodeIdComponent(personId)}`
 }
 export function accountNodeId(accountId: string): string {
-  return `acct:${accountId}`
+  return `acct:${encodeIdComponent(accountId)}`
 }
 export function incomeNodeId(streamId: string): string {
-  return `inc:${streamId}`
+  return `inc:${encodeIdComponent(streamId)}`
 }
 export function insuranceNodeId(policyId: string): string {
-  return `ins:${policyId}`
+  return `ins:${encodeIdComponent(policyId)}`
 }
 export function ladderNodeId(ladderId: string): string {
-  return `ladder:${ladderId}`
+  return `ladder:${encodeIdComponent(ladderId)}`
 }
 export function formerSpouseNodeId(streamId: string, formerSpouseId: string): string {
-  return `fs:${streamId}:${formerSpouseId}`
+  return `fs:${encodeIdComponent(streamId)}:${encodeIdComponent(formerSpouseId)}`
 }
 export function estateNodeId(destination: EstateDestinationId): string {
   return `estate:${destination}`
@@ -262,6 +277,11 @@ const INVESTABLE_TYPES = new Set<Account['type']>(['cash', 'taxable', 'equityCom
 // Selector
 // ---------------------------------------------------------------------------
 
+/**
+ * `from`/`to` are node ids (already component-encoded), so the single
+ * unescaped "->" in the id is always the structural arrow — see
+ * `encodeIdComponent` for the injectivity argument.
+ */
 function edge(kind: HouseholdEdgeKind, from: string, to: string, extra?: { label?: string; joint?: boolean }): HouseholdEdge {
   const e: HouseholdEdge = { id: `${kind}:${from}->${to}`, kind, from, to }
   if (extra?.label !== undefined) e.label = extra.label
@@ -375,8 +395,38 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
     if (!referencedEstates.has(destination)) referencedEstates.set(destination, { source, editSurface })
   }
 
+  // --- duplicate entity ids -------------------------------------------------
+  // The plan schema does not enforce id uniqueness within a collection, so an
+  // imported plan can carry e.g. two accounts with the same id. The selector
+  // must still emit unique node ids: second and later occurrences get an
+  // ordinal suffix (`:2`, `:3`, …) — collision-proof because an encoded
+  // component can never contain an unescaped ':' — and every occurrence of a
+  // duplicated id is flagged as an attention fact (provenance is ambiguous).
+  const prospectiveCounts = new Map<string, number>()
+  const countProspective = (nodeId: string) => prospectiveCounts.set(nodeId, (prospectiveCounts.get(nodeId) ?? 0) + 1)
+  people.forEach((p) => countProspective(personNodeId(p.id)))
+  plan.incomes.forEach((s) => {
+    countProspective(incomeNodeId(s.id))
+    if (s.type === 'socialSecurity') s.formerSpouses?.forEach((fs) => countProspective(formerSpouseNodeId(s.id, fs.id)))
+  })
+  plan.accounts.forEach((a) => countProspective(accountNodeId(a.id)))
+  plan.insurance.forEach((p) => countProspective(insuranceNodeId(p.id)))
+  plan.incomeFloor?.ladders.forEach((l) => countProspective(ladderNodeId(l.id)))
+  const claimedCounts = new Map<string, number>()
+  const claimNodeId = (nodeId: string): { id: string; duplicated: boolean } => {
+    const n = (claimedCounts.get(nodeId) ?? 0) + 1
+    claimedCounts.set(nodeId, n)
+    return { id: n === 1 ? nodeId : `${nodeId}:${n}`, duplicated: (prospectiveCounts.get(nodeId) ?? 0) > 1 }
+  }
+  const duplicateFlag = (entity: string, rawId: string): string => `Duplicate ${entity} id "${rawId}" — provenance ambiguous`
+  const withDuplicateFlag = (c: HouseholdCompleteness, duplicated: boolean, entity: string, rawId: string): HouseholdCompleteness =>
+    duplicated
+      ? { state: c.state === 'unknown' ? 'unknown' : 'partial', missing: [...c.missing, duplicateFlag(entity, rawId)] }
+      : c
+
   // --- people ---------------------------------------------------------------
   people.forEach((person, i) => {
+    const claimed = claimNodeId(personNodeId(person.id))
     const missing: string[] = []
     const hasSs = plan.incomes.some((s) => s.type === 'socialSecurity' && s.personId === person.id)
     if (!hasSs) missing.push('No Social Security record entered')
@@ -384,8 +434,9 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
     if (person.retirementAge === null && wages.some((w) => w.type === 'wages' && w.endAge === null)) {
       missing.push('Wages have no end age and no retirement age is set')
     }
+    if (claimed.duplicated) missing.push(duplicateFlag('person', person.id))
     nodes.push({
-      id: personNodeId(person.id),
+      id: claimed.id,
       kind: 'person',
       subtype: 'person',
       label: person.name,
@@ -403,7 +454,7 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
   plan.incomes.forEach((s, i) => {
     if (s.type !== 'socialSecurity' || !s.formerSpouses) return
     s.formerSpouses.forEach((fs, j) => {
-      const id = formerSpouseNodeId(s.id, fs.id)
+      const { id, duplicated } = claimNodeId(formerSpouseNodeId(s.id, fs.id))
       nodes.push({
         id,
         kind: 'formerSpouse',
@@ -414,7 +465,7 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
         personIds: [s.personId],
         source: `incomes[${i}].formerSpouses[${j}]`,
         editSurface: 'socialSecurity',
-        completeness: complete(),
+        completeness: withDuplicateFlag(complete(), duplicated, 'former-spouse record', fs.id),
         notes: [],
       })
       edges.push(edge('formerSpouseOf', id, personNodeId(s.personId), { label: `${fs.marriageYears}-yr marriage` }))
@@ -423,7 +474,7 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
 
   // --- income streams -------------------------------------------------------
   plan.incomes.forEach((s, i) => {
-    const id = incomeNodeId(s.id)
+    const { id, duplicated } = claimNodeId(incomeNodeId(s.id))
     const { amount, amountKind } = incomeAmount(s)
     nodes.push({
       id,
@@ -435,7 +486,7 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
       personIds: s.type === 'wages' || s.type === 'socialSecurity' ? [s.personId] : [],
       source: `incomes[${i}]`,
       editSurface: s.type === 'socialSecurity' ? 'socialSecurity' : 'income',
-      completeness: incomeCompleteness(s),
+      completeness: withDuplicateFlag(incomeCompleteness(s), duplicated, 'income stream', s.id),
       notes: [],
     })
     if (s.type === 'wages' || s.type === 'socialSecurity') {
@@ -452,10 +503,12 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
   const totals: HouseholdGraphTotals = { investable: 0, property: 0, assets: 0, liabilities: 0, netWorth: 0 }
   const spouseCanExist = people.length === 2
   plan.accounts.forEach((a, i) => {
-    const id = accountNodeId(a.id)
+    const claimed = claimNodeId(accountNodeId(a.id))
+    const id = claimed.id
     const { amount, amountKind } = accountAmount(a)
     const owners = a.ownerPersonId === null ? personIds : [a.ownerPersonId]
     const missing = accountMissingFacts(a, people.length)
+    if (claimed.duplicated) missing.push(duplicateFlag('account', a.id))
     const notes: string[] = []
     if (a.type === 'property' && a.hecm !== undefined) {
       notes.push(`HECM line of credit (opened ${a.hecm.openYear})`)
@@ -552,7 +605,7 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
 
   // --- insurance ------------------------------------------------------------
   plan.insurance.forEach((p, i) => {
-    const id = insuranceNodeId(p.id)
+    const { id, duplicated } = claimNodeId(insuranceNodeId(p.id))
     const subject = insuranceSubject(p)
     nodes.push({
       id,
@@ -564,7 +617,7 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
       personIds: [subject],
       source: `insurance[${i}]`,
       editSurface: 'insurance',
-      completeness: complete(),
+      completeness: withDuplicateFlag(complete(), duplicated, 'insurance policy', p.id),
       notes: [],
     })
     edges.push(edge('covers', id, personNodeId(subject)))
@@ -580,7 +633,7 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
 
   // --- TIPS ladders ---------------------------------------------------------
   plan.incomeFloor?.ladders.forEach((l, i) => {
-    const id = ladderNodeId(l.id)
+    const { id, duplicated } = claimNodeId(ladderNodeId(l.id))
     nodes.push({
       id,
       kind: 'ladder',
@@ -591,7 +644,7 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
       personIds: [],
       source: `incomeFloor.ladders[${i}]`,
       editSurface: 'incomeFloor',
-      completeness: complete(),
+      completeness: withDuplicateFlag(complete(), duplicated, 'ladder', l.id),
       notes: [],
     })
     if (l.purchase) {
