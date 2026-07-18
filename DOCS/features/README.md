@@ -9,7 +9,8 @@ Financial rules and current-year numbers are in
 [roth-and-withdrawals.md](roth-and-withdrawals.md) ·
 [monte-carlo-and-scenarios.md](monte-carlo-and-scenarios.md) · [insurance.md](insurance.md) ·
 [optimizer.md](optimizer.md) · [learning-center.md](learning-center.md) · [longevity.md](longevity.md) ·
-[plan-file-format.md](plan-file-format.md) · [imports-and-migration.md](imports-and-migration.md)
+[plan-file-format.md](plan-file-format.md) · [imports-and-migration.md](imports-and-migration.md) ·
+[household-map.md](household-map.md)
 
 **Code:** pure engine in `packages/engine/src/` (model/params/tax/rmd/strategies/projection/montecarlo/
 scenarios/decisions/spending/ladder/insights); Social Security math in `packages/planner-ui/src/socialSecurity/`; planner UI
@@ -356,3 +357,17 @@ golden test pinning headline KPIs.
 - **Learning Center:** new **Example Plans** category — one `ready` article per example, bidirectionally
   linked (library card / preview banner → article; article → **Open this example in the planner**). See
   [learning-center.md](learning-center.md).
+
+## 17. Household map
+
+A one-page topology view at `/plan/:id/household-map` (Explore rail): people, income sources,
+accounts, property, debts, insurance, TIPS ladders, and categorical estate destinations as a
+deterministic layered diagram, every box deep-linking to the screen where that item is edited.
+Derived by the pure `buildHouseholdGraph` selector
+([engine/household/householdGraph.ts](../../packages/engine/src/household/householdGraph.ts)) with
+per-node completeness flags (missing estate destinations, absent Social Security records, planned
+sales without basis, 0%-survivor pensions), entered-value totals reconciled against the report
+model, an amounts-hiding privacy toggle whose view model carries no dollar strings, Letter-landscape
+print styles, and an explicit "Not in the model" panel for relationships the schema cannot express
+(dependents, trusts, named beneficiaries, debt collateral). Full detail:
+[household-map.md](household-map.md).

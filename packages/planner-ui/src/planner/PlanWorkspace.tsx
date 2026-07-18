@@ -41,6 +41,7 @@ const SECTION_TITLES: Record<string, string> = {
   results: 'Results',
   'monte-carlo': 'Monte Carlo',
   scenarios: 'Scenarios',
+  'household-map': 'Household map',
   survivor: 'Survivor transition',
   relocation: 'Relocation Compare',
   report: 'Report',
@@ -253,7 +254,7 @@ function WorkspaceInner() {
       <KpiBar />
       <div className="workspace">
         {/* The global skip link lands on #main-content, which still puts the
-            19-link rail between keyboard users and the page content. This
+            20-link rail between keyboard users and the page content. This
             second link lets them clear the rail in one stop. */}
         <a className="skip-link" href="#plan-content">
           Skip section navigation
@@ -281,6 +282,7 @@ function WorkspaceInner() {
           <NavLink to="results" className={railClass}>Results</NavLink>
           <NavLink to="monte-carlo" className={railClass}>Monte Carlo</NavLink>
           <NavLink to="scenarios" className={railClass}>Scenarios</NavLink>
+          <NavLink to="household-map" className={railClass}>Household map</NavLink>
           {plan.household.filingStatus === 'marriedFilingJointly' && plan.household.people.length === 2 ? (
             <NavLink to="survivor" className={railClass}>Survivor transition</NavLink>
           ) : null}

@@ -21,6 +21,7 @@ import { ScenariosPage } from '../planner/ScenariosPage'
 import { OptimizePage } from '../planner/OptimizePage'
 import { SpendingSolverPage } from '../planner/SpendingSolverPage'
 import { SurvivorTransitionPage } from '../planner/SurvivorTransitionPage'
+import { HouseholdMapPage } from '../householdMap/HouseholdMapPage'
 import { InsightsPage } from '../planner/insights/InsightsPage'
 import { EditableFieldset } from '../planner/EditableFieldset'
 import '../planner/planner.css'
@@ -49,6 +50,7 @@ export default function PlanRoutes() {
         <Route path="results" element={<ResultsPage />} />
         <Route path="monte-carlo" element={<MonteCarloPage />} />
         <Route path="scenarios" element={<ScenariosPage />} />
+        <Route path="household-map" element={<HouseholdMapPage />} />
         <Route path="survivor" element={<SurvivorTransitionPage />} />
         <Route path="relocation" element={<RelocationComparePage />} />
         <Route path="optimize" element={<OptimizePage />} />

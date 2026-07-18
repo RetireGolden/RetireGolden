@@ -84,5 +84,24 @@ invents an edge the schema does not carry, and never infers a legal relationship
   `planner-ui/src/integration/householdGraphReconciliation.test.ts` across the whole example
   library.
 
-Feature-off discipline: the graph is a read-only selector — it writes nothing, adds no schema
+## Map page (`planner-ui/src/householdMap/`)
+
+`/plan/:planId/household-map`, in the Explore rail group. `layout.ts` is a deterministic layered
+layout (fixed columns People → Income → Accounts → Property & debt → Protection & estate; rows
+follow plan entry order; pure data, no dollars — covered by stable-layout snapshot tests).
+`mapViewModel.ts` produces the sanitized render model: pixel positions, edge paths, formatted
+labels — and under the privacy toggle ("Hide amounts") the view model contains **no dollar strings
+at all** (test-enforced), so it is safe for screen sharing and reusable for report embedding
+later. `HouseholdMapPage.tsx` renders HTML node cards (react-router deep links to each item's
+edit screen) over an SVG edge layer: zoom control, person focus (non-transitive through joint
+items — focusing one member never pulls in the other member's whole side), group filters,
+arrow-key navigation between cards plus natural tab order, a "Text list of this map" `<details>`
+table as the non-visual equivalent, a "What needs attention" panel (every `missing` fact with a
+link to fix it), and the out-of-model panel from `UNSUPPORTED_RELATIONSHIPS`. Totals are labeled
+"as entered" to keep them distinct from the projection. Print rules target Letter landscape via a
+`@page` rule inside the page's own mounted `<style>` (so it never leaks into other planner
+printouts), with controls hidden and colors flattened by the existing planner print rules; long
+names truncate visually with the full name preserved in the tooltip and accessible label.
+
+Feature-off discipline: the map is read-only over the plan — it writes nothing, adds no schema
 fields, and touches no engine ledger path, so `npm run cases:diff` is unchanged by its presence.
