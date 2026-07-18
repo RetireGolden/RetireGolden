@@ -1,0 +1,75 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`layoutHouseholdGraph > stable snapshot: the example couple layout 1`] = `
+[
+  {
+    "id": "people",
+    "nodeIds": [
+      "person:example-couple--alex",
+      "person:example-couple--sam",
+    ],
+  },
+  {
+    "id": "income",
+    "nodeIds": [
+      "inc:example-couple--wages-alex",
+      "inc:example-couple--wages-sam",
+      "inc:example-couple--ss-alex",
+      "inc:example-couple--ss-sam",
+    ],
+  },
+  {
+    "id": "accounts",
+    "nodeIds": [
+      "acct:example-couple--savings",
+      "acct:example-couple--brokerage",
+      "acct:example-couple--rsu",
+      "acct:example-couple--401k",
+      "acct:example-couple--sam-ira",
+      "acct:example-couple--roth",
+    ],
+  },
+  {
+    "id": "propertyDebt",
+    "nodeIds": [
+      "acct:example-couple--home",
+      "acct:example-couple--mortgage",
+    ],
+  },
+  {
+    "id": "protection",
+    "nodeIds": [
+      "ins:example-couple--wl",
+      "ins:example-couple--ltc-alex",
+      "ins:example-couple--ltc-sam",
+      "estate:estate",
+    ],
+  },
+]
+`;
+
+exports[`layoutHouseholdGraph > stable snapshot: the under-saved single layout 1`] = `
+[
+  {
+    "id": "people",
+    "nodeIds": [
+      "person:under-saved-single--p1",
+    ],
+  },
+  {
+    "id": "income",
+    "nodeIds": [
+      "inc:under-saved-single--consulting",
+      "inc:under-saved-single--ss",
+    ],
+  },
+  {
+    "id": "accounts",
+    "nodeIds": [
+      "acct:under-saved-single--cash",
+      "acct:under-saved-single--brokerage",
+      "acct:under-saved-single--ira",
+    ],
+  },
+]
+`;

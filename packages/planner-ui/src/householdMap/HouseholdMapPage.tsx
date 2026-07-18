@@ -1,0 +1,342 @@
+/**
+ * Household map — the Explore-rail topology page. Renders the sanitized map
+ * view model as HTML node cards (each a deep link to the planner screen where
+ * that item is edited) over an SVG edge layer. Everything shown is a reading
+ * of entered plan data: totals are "as entered" (not the projection), missing
+ * facts are flagged per node, and relationships the schema cannot express are
+ * listed plainly instead of being drawn.
+ */
+
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
+
+import { buildHouseholdGraph } from './householdGraph'
+import { isPlanIncomplete } from '../planner/planCompleteness'
+import { usePlan } from '../planner/planContextCore'
+import { usePrivacy } from '../planner/privacyContextCore'
+import type { MapColumnId } from './layout'
+import { MAP_COLUMN_LABELS } from './layout'
+import { buildMapViewModel, EDIT_SURFACE_ROUTES, type MapNodeVM } from './mapViewModel'
+
+const ZOOM_STEPS = [0.75, 1, 1.25, 1.5] as const
+
+const FILTER_COLUMNS: readonly MapColumnId[] = ['income', 'accounts', 'propertyDebt', 'protection']
+
+/** Letter landscape with 0.5in margins at CSS 96dpi: the printable area. */
+const PRINT_WIDTH_PX = 10 * 96
+/**
+ * Printable height (7.5in) minus what actually prints above the canvas: the
+ * card padding, the page heading, and the totals line (~1.5in — the on-screen
+ * explainer paragraph is hidden in print), so even a worst-case tall map fits
+ * on one page instead of being pushed whole to page 2 by break-inside: avoid.
+ */
+const PRINT_HEIGHT_PX = 6 * 96
+
+/**
+ * Print rules scoped to this page's lifetime: mounted with the page, gone on
+ * navigation, so the Letter-landscape @page rule never leaks into other
+ * planner printouts. The printed artifact is the map alone: the workspace
+ * KPI bar (which shows real dollar values even when map amounts are hidden),
+ * rail, header, and the page's auxiliary panels never print from here, and
+ * the canvas is scaled from its actual layout size to fit one page — no
+ * hard-coded shrink, no cards sliced across page breaks.
+ */
+function printCss(scale: number): string {
+  return `
+@media print {
+  @page { size: letter landscape; margin: 0.5in; }
+  .kpi-bar,
+  .workspace-rail,
+  .workspace-head,
+  .skip-link,
+  .example-preview-banner,
+  .household-map-page > .card:not(:first-of-type),
+  .household-map-page .card-hint,
+  .household-map-page details { display: none !important; }
+  .workspace { display: block; }
+  .household-map-scroll { overflow: visible; border: none; padding: 0; break-inside: avoid; }
+  .household-map-stage { width: auto !important; height: auto !important; }
+  .household-map-canvas { transform: none !important; zoom: ${scale}; }
+}
+`
+}
+
+function completenessBadge(node: MapNodeVM) {
+  if (node.completenessState === 'complete') return null
+  const symbol = node.completenessState === 'unknown' ? '?' : '!'
+  const srText = node.completenessState === 'unknown' ? 'cannot be estimated' : 'needs attention'
+  return (
+    <span className="map-node-flag" aria-hidden="true" title={`${srText}: ${node.missing.join('; ')}`}>
+      {symbol}
+    </span>
+  )
+  // The state itself is announced via the card's aria-label, so the badge is
+  // decorative for assistive tech (aria-hidden) — no color-only meaning.
+}
+
+export function HouseholdMapPage() {
+  const { plan } = usePlan()
+  // Workspace-level privacy state: hiding amounts here also masks the KPI
+  // bar above the page (see privacyContext.tsx). Reset on unmount so
+  // navigating away always restores the workspace chrome.
+  const { hideAmounts, setHideAmounts } = usePrivacy()
+  useEffect(() => () => setHideAmounts(false), [setHideAmounts])
+  const [zoom, setZoom] = useState<number>(1)
+  const [focusPersonId, setFocusPersonId] = useState<string>('')
+  const [hiddenColumns, setHiddenColumns] = useState<readonly MapColumnId[]>([])
+  const stageRef = useRef<HTMLDivElement>(null)
+
+  const graph = useMemo(() => buildHouseholdGraph(plan), [plan])
+  const vm = useMemo(
+    () =>
+      buildMapViewModel(graph, {
+        hideAmounts,
+        focusPersonId: focusPersonId || null,
+        visibleColumns: FILTER_COLUMNS.filter((c) => !hiddenColumns.includes(c)),
+      }),
+    [graph, hideAmounts, focusPersonId, hiddenColumns],
+  )
+
+  const attention = useMemo(() => graph.nodes.filter((n) => n.completeness.missing.length > 0), [graph])
+  const printScale = Math.min(1, PRINT_WIDTH_PX / vm.width, PRINT_HEIGHT_PX / vm.height)
+
+  // Arrow keys move focus between cards (grid-wise); Tab order stays the
+  // natural column-by-column DOM order.
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return
+    const active = document.activeElement as HTMLElement | null
+    const currentId = active?.dataset?.nodeId
+    if (!currentId) return
+    const current = vm.nodes.find((n) => n.id === currentId)
+    if (!current) return
+    e.preventDefault()
+    let next: MapNodeVM | undefined
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      const delta = e.key === 'ArrowDown' ? 1 : -1
+      next = vm.nodes.find((n) => n.col === current.col && n.row === current.row + delta)
+    } else {
+      const delta = e.key === 'ArrowRight' ? 1 : -1
+      const candidates = vm.nodes.filter((n) => n.col === current.col + delta)
+      next = candidates.reduce<MapNodeVM | undefined>(
+        (best, n) => (best === undefined || Math.abs(n.row - current.row) < Math.abs(best.row - current.row) ? n : best),
+        undefined,
+      )
+    }
+    if (next) {
+      // Node ids embed plan entity ids, which may legally contain quotes or
+      // backslashes (imports preserve ids verbatim) — escape for the selector.
+      const escaped =
+        typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+          ? CSS.escape(next.id)
+          : next.id.replace(/["\\]/g, '\\$&')
+      stageRef.current?.querySelector<HTMLElement>(`[data-node-id="${escaped}"]`)?.focus()
+    }
+  }
+
+  return (
+    <section className="household-map-page">
+      <style>{printCss(printScale)}</style>
+      <div className="card">
+        <h2>Household map</h2>
+        <p className="card-hint">
+          One page of everything you've entered — people, income, accounts, property, debts, insurance, and where
+          things go — with the gaps made visible. Every box opens the screen where that item is edited. This is a
+          picture of your entries, not advice; amounts are as entered, not projected.
+        </p>
+
+        <div className="household-map-controls no-print">
+          {/* The label states the action it will perform, so no aria-pressed:
+              pairing a pressed state with an already-flipped label reads as
+              contradictory in screen readers. Current state is announced by
+              the totals line ("Amounts hidden"). */}
+          <button type="button" className="btn btn-secondary btn-small" onClick={() => setHideAmounts(!hideAmounts)}>
+            {hideAmounts ? 'Show amounts' : 'Hide amounts'}
+          </button>
+          <label className="map-control">
+            Zoom
+            <select value={zoom} onChange={(e) => setZoom(Number(e.target.value))} aria-label="Zoom level">
+              {ZOOM_STEPS.map((z) => (
+                <option key={z} value={z}>
+                  {Math.round(z * 100)}%
+                </option>
+              ))}
+            </select>
+          </label>
+          {plan.household.people.length > 1 ? (
+            <label className="map-control">
+              Focus on
+              <select value={focusPersonId} onChange={(e) => setFocusPersonId(e.target.value)}>
+                <option value="">Whole household</option>
+                {plan.household.people.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          <fieldset className="map-filter-group">
+            <legend className="sr-only">Show groups</legend>
+            {FILTER_COLUMNS.map((c) => (
+              <label key={c} className="map-control map-control--check">
+                <input
+                  type="checkbox"
+                  checked={!hiddenColumns.includes(c)}
+                  onChange={(e) =>
+                    setHiddenColumns((prev) => (e.target.checked ? prev.filter((x) => x !== c) : [...prev, c]))
+                  }
+                />
+                {MAP_COLUMN_LABELS[c]}
+              </label>
+            ))}
+          </fieldset>
+          <button type="button" className="btn btn-secondary btn-small" onClick={() => window.print()}>
+            Print map
+          </button>
+        </div>
+
+        <p className="map-totals" role="status">
+          {vm.totals ? (
+            <>
+              As entered: assets <strong>{vm.totals.assetsText}</strong> · debts{' '}
+              <strong>{vm.totals.liabilitiesText}</strong> · net <strong>{vm.totals.netWorthText}</strong>
+            </>
+          ) : (
+            <>Amounts hidden</>
+          )}
+        </p>
+
+        {isPlanIncomplete(plan) ? (
+          <p className="card-hint">
+            The map fills in as you enter your household — add accounts and income sources to see the full picture.
+          </p>
+        ) : null}
+
+        <div className="household-map-scroll">
+          {/* onKeyDown provides arrow-key roving between the focusable card
+              links inside; the group itself is not interactive. */}
+          <div
+            className="household-map-stage"
+            ref={stageRef}
+            role="group"
+            aria-label="Household map diagram. Use Tab or arrow keys to move between items."
+            onKeyDown={onKeyDown}
+            style={{
+              width: vm.width * zoom,
+              height: vm.height * zoom,
+            }}
+          >
+            <div className="household-map-canvas" style={{ width: vm.width, height: vm.height, transform: `scale(${zoom})` }}>
+              <svg className="map-edges" width={vm.width} height={vm.height} aria-hidden="true" focusable="false">
+                {vm.edges.map((e) => (
+                  <g key={e.id}>
+                    <path className={`map-edge map-edge--${e.kind}`} d={e.path} />
+                    {/* Every computed annotation renders — "joint", survivor %,
+                        marriage years — so joint holding is visually distinct
+                        from two individual ownership edges. */}
+                    {e.label ? (
+                      <text className="map-edge-label" x={e.labelX} y={e.labelY - 4} textAnchor="middle">
+                        {e.label}
+                      </text>
+                    ) : null}
+                  </g>
+                ))}
+              </svg>
+              {vm.columns.map((c) => (
+                <span key={c.id} className="map-col-label" style={{ left: c.x }}>
+                  {c.label}
+                </span>
+              ))}
+              {vm.nodes.map((n) => (
+                <Link
+                  key={n.id}
+                  to={`../${n.to}`}
+                  className={`map-node map-node--${n.kind}`}
+                  style={{ left: n.x, top: n.y, width: n.w, minHeight: n.h }}
+                  data-node-id={n.id}
+                  aria-label={n.ariaLabel}
+                  title={n.label}
+                >
+                  <span className="map-node-head">
+                    <span className="map-node-label">{n.label}</span>
+                    {completenessBadge(n)}
+                  </span>
+                  <span className="map-node-meta">
+                    {n.typeLabel}
+                    {/* The placeholder appears only where a real amount is concealed. */}
+                    {n.amountText ? ` · ${n.amountText}` : vm.amountsHidden && n.hasAmount ? ' · •••' : ''}
+                  </span>
+                  {n.notes.length > 0 ? <span className="map-node-meta">{n.notes.join(' · ')}</span> : null}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <details className="map-details">
+          <summary>Text list of this map</summary>
+          <table className="report-table">
+            <thead>
+              <tr>
+                <th scope="col">Item</th>
+                <th scope="col">Type</th>
+                <th scope="col">Amount</th>
+                <th scope="col">Connected to</th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {vm.nodes.map((n) => (
+                <tr key={n.id}>
+                  <th scope="row">
+                    <Link to={`../${n.to}`}>{n.label}</Link>
+                  </th>
+                  <td>
+                    {n.typeLabel}
+                    {n.notes.length > 0 ? ` — ${n.notes.join('; ')}` : ''}
+                  </td>
+                  <td>{n.amountText ?? (vm.amountsHidden && n.hasAmount ? 'hidden' : '—')}</td>
+                  <td>{n.relations.length > 0 ? n.relations.join('; ') : '—'}</td>
+                  <td>{n.missing.length > 0 ? n.missing.join('; ') : 'Complete'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </details>
+      </div>
+
+      {attention.length > 0 ? (
+        <div className="card">
+          <h3 style={{ marginTop: 0 }}>What needs attention</h3>
+          <p className="card-hint">
+            Facts the plan could carry but doesn't yet. Filling them in sharpens the projection and the estate picture.
+          </p>
+          <ul className="map-attention-list">
+            {attention.map((n) => (
+              <li key={n.id}>
+                <Link to={`../${EDIT_SURFACE_ROUTES[n.editSurface]}`}>{n.label}</Link>
+                {' — '}
+                <span className="muted">{n.completeness.missing.join('; ')}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      <div className="card">
+        <h3 style={{ marginTop: 0 }}>Not in the model</h3>
+        <p className="card-hint">
+          Relationships RetireGolden's plan can't express. The map never guesses at them — if one matters to your
+          situation, discuss it with a professional.
+        </p>
+        <ul className="map-unsupported-list">
+          {graph.unsupported.map((u) => (
+            <li key={u.id}>
+              <strong>{u.label}.</strong> <span className="muted">{u.detail}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )
+}
