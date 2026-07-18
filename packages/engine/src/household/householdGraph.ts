@@ -462,16 +462,15 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
     }
 
     // Estate destination (explicit field wins; HSA shorthand as fallback).
-    let destination: EstateDestinationId | null =
-      a.estateBeneficiary !== undefined
-        ? a.estateBeneficiary.destination === 'nonSpouse'
-          ? 'heir'
-          : a.estateBeneficiary.destination
-        : a.type === 'hsa' && a.beneficiary !== undefined
-          ? a.beneficiary === 'nonSpouse'
-            ? 'heir'
-            : 'spouse'
-          : null
+    // Provenance names the field the destination was actually read from.
+    let destination: EstateDestinationId | null = null
+    let destinationSource = `accounts[${i}].estateBeneficiary`
+    if (a.estateBeneficiary !== undefined) {
+      destination = a.estateBeneficiary.destination === 'nonSpouse' ? 'heir' : a.estateBeneficiary.destination
+    } else if (a.type === 'hsa' && a.beneficiary !== undefined) {
+      destination = a.beneficiary === 'nonSpouse' ? 'heir' : 'spouse'
+      destinationSource = `accounts[${i}].beneficiary`
+    }
     // A spouse destination in a one-person plan is stale data, not a spouse to
     // draw: never invent a person the plan doesn't have — flag it instead.
     if (destination === 'spouse' && !spouseCanExist) {
@@ -507,14 +506,14 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
 
     if (destination === 'charity') {
       const pct = a.estateBeneficiary?.charityPct ?? 0
-      referenceEstate('charity', `accounts[${i}].estateBeneficiary`, 'accounts')
+      referenceEstate('charity', destinationSource, 'accounts')
       edges.push(edge('beneficiary', id, estateNodeId('charity'), { label: `${pct}%` }))
       if (pct < 100) {
-        referenceEstate('heir', `accounts[${i}].estateBeneficiary`, 'accounts')
+        referenceEstate('heir', destinationSource, 'accounts')
         edges.push(edge('beneficiary', id, estateNodeId('heir'), { label: 'remainder' }))
       }
     } else if (destination !== null) {
-      referenceEstate(destination, `accounts[${i}].estateBeneficiary`, 'accounts')
+      referenceEstate(destination, destinationSource, 'accounts')
       // The sole-beneficiary assertion targets the same spouse destination —
       // emit ONE labeled edge, never two edges with the same id.
       const label = destination === 'spouse' && soleBeneficiary ? { label: 'sole beneficiary' } : undefined

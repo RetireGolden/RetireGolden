@@ -169,11 +169,39 @@ describe('HouseholdMapPage', () => {
     const canvas = el.querySelector<HTMLElement>('.household-map-canvas')!
     const width = Number.parseFloat(canvas.style.width)
     const height = Number.parseFloat(canvas.style.height)
-    const expected = Math.min(1, (10 * 96) / width, (6.5 * 96) / height)
+    const expected = Math.min(1, (10 * 96) / width, (6 * 96) / height)
     const style = el.querySelector('style')!.textContent!
     const zoom = Number(style.match(/zoom: ([\d.]+)/)?.[1])
     expect(zoom).toBeCloseTo(expected, 5)
     expect(zoom).toBeLessThanOrEqual(1)
+    // The on-screen explainer is condensed away in print, so the height
+    // reserve stays honest about what actually prints above the canvas.
+    expect(style).toMatch(/\.household-map-page \.card-hint[\s\S]*?display: none !important;/)
+  })
+
+  it('a worst-case tall map still scales to fit one Letter landscape page', () => {
+    const plan = buildExampleCouple()
+    // Force a 12-row accounts column — taller than the printable area.
+    for (let i = 0; i < 12; i++) {
+      plan.accounts.push({
+        type: 'cash',
+        id: `tall-${i}`,
+        name: `Extra savings ${i}`,
+        ownerPersonId: null,
+        annualReturnPct: 1,
+        balance: 1_000,
+        annualContribution: 0,
+      })
+    }
+    const el = renderPage(plan)
+    const canvas = el.querySelector<HTMLElement>('.household-map-canvas')!
+    const width = Number.parseFloat(canvas.style.width)
+    const height = Number.parseFloat(canvas.style.height)
+    expect(height).toBeGreaterThan(6 * 96)
+    const zoom = Number(el.querySelector('style')!.textContent!.match(/zoom: ([\d.]+)/)?.[1])
+    // Scaled dimensions fit the printable area on both axes.
+    expect(zoom * height).toBeLessThanOrEqual(6 * 96 + 0.5)
+    expect(zoom * width).toBeLessThanOrEqual(10 * 96 + 0.5)
   })
 
   it('arrow-key navigation survives hostile entity ids (quotes in plan ids)', () => {

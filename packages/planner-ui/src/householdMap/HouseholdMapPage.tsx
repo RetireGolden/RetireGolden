@@ -23,8 +23,13 @@ const FILTER_COLUMNS: readonly MapColumnId[] = ['income', 'accounts', 'propertyD
 
 /** Letter landscape with 0.5in margins at CSS 96dpi: the printable area. */
 const PRINT_WIDTH_PX = 10 * 96
-/** Printable height minus room for the page heading and totals line. */
-const PRINT_HEIGHT_PX = 6.5 * 96
+/**
+ * Printable height (7.5in) minus what actually prints above the canvas: the
+ * card padding, the page heading, and the totals line (~1.5in — the on-screen
+ * explainer paragraph is hidden in print), so even a worst-case tall map fits
+ * on one page instead of being pushed whole to page 2 by break-inside: avoid.
+ */
+const PRINT_HEIGHT_PX = 6 * 96
 
 /**
  * Print rules scoped to this page's lifetime: mounted with the page, gone on
@@ -45,6 +50,7 @@ function printCss(scale: number): string {
   .skip-link,
   .example-preview-banner,
   .household-map-page > .card:not(:first-of-type),
+  .household-map-page .card-hint,
   .household-map-page details { display: none !important; }
   .workspace { display: block; }
   .household-map-scroll { overflow: visible; border: none; padding: 0; break-inside: avoid; }

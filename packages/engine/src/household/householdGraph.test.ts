@@ -357,7 +357,17 @@ describe('buildHouseholdGraph', () => {
       colaPct: 0,
       survivorPct: 50,
     }
-    plan.accounts = [...plan.accounts, pension]
+    const hsa: Account = {
+      type: 'hsa',
+      id: 'solo-hsa',
+      name: 'HSA',
+      ownerPersonId: 'p1',
+      annualReturnPct: null,
+      balance: 20_000,
+      annualContribution: 0,
+      beneficiary: 'spouse',
+    }
+    plan.accounts = [...plan.accounts, pension, hsa]
     const graph = buildHouseholdGraph(validatePlan(plan))
     // No spouse node, no survivor or spouse-beneficiary edges.
     expect(graph.nodes.filter((n) => n.kind === 'estate')).toEqual([])
@@ -371,6 +381,10 @@ describe('buildHouseholdGraph', () => {
     )
     expect(nodeById(graph, 'acct:solo-pen').completeness.missing).toContain(
       'Survivor continuation recorded (50%) but the plan has no second person',
+    )
+    // The HSA legacy-shorthand spouse is suppressed and flagged the same way.
+    expect(nodeById(graph, 'acct:solo-hsa').completeness.missing).toContain(
+      'Estate destination is the surviving spouse, but the plan has no second person',
     )
   })
 
@@ -411,6 +425,33 @@ describe('buildHouseholdGraph', () => {
     expect(spouse.source).toBe('accounts[3].survivorPct')
     const blended = buildHouseholdGraph(blendedFixture())
     expect(nodeById(blended, 'estate:charity').source).toBe('accounts[0].estateBeneficiary')
+  })
+
+  it('HSA-shorthand estate references carry the legacy beneficiary field as provenance', () => {
+    // The only spouse reference is the HSA's legacy `beneficiary` shorthand —
+    // the estate node must name that field, not a nonexistent estateBeneficiary.
+    const plan = couplePlan()
+    const hsa: Account = {
+      type: 'hsa',
+      id: 'hsa1',
+      name: 'HSA',
+      ownerPersonId: 'p1',
+      annualReturnPct: null,
+      balance: 50_000,
+      annualContribution: 0,
+      beneficiary: 'spouse',
+    }
+    plan.accounts = [hsa]
+    plan.incomes = [socialSecurityIncome('ss1', 2_000, 67, 'p1'), socialSecurityIncome('ss2', 1_500, 67, 'p2')]
+    const graph = buildHouseholdGraph(validatePlan(plan))
+    const spouse = nodeById(graph, 'estate:spouse')
+    expect(spouse.source).toBe('accounts[0].beneficiary')
+    expect(spouse.editSurface).toBe('accounts')
+    expect(edgeIds(graph)).toContain('beneficiary:acct:hsa1->estate:spouse')
+    // The explicit field still wins the provenance when both are present.
+    if (hsa.type === 'hsa') hsa.estateBeneficiary = { destination: 'spouse' }
+    const explicit = buildHouseholdGraph(validatePlan(plan))
+    expect(nodeById(explicit, 'estate:spouse').source).toBe('accounts[0].estateBeneficiary')
   })
 
   it('a HECM line of credit surfaces as a note on its property node', () => {
