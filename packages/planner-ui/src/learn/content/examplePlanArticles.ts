@@ -1,4 +1,4 @@
-import type { LearningArticle, LearningCategoryId, ArticleBlock, ScenarioAssumption } from '../learningRegistry'
+import type { LearningArticle, LearningCategoryId, ArticleBlock, ReviewCadence, ScenarioAssumption } from '../learningRegistry'
 
 function exampleArticle(
   slug: string,
@@ -11,6 +11,14 @@ function exampleArticle(
   relatedPlannerRoutes: string[],
   category: LearningCategoryId = 'example-plans',
   scenario?: { name: string; assumptions: ScenarioAssumption[]; summary?: string },
+  extras?: {
+    /** Extra blocks rendered after "The Basic Idea" (rules tables, callouts, …). */
+    blocks?: ArticleBlock[]
+    sourceUrls?: string[]
+    lastReviewed?: string
+    reviewCadence?: ReviewCadence
+    currentYearSensitive?: boolean
+  },
 ): LearningArticle {
   const blocks: ArticleBlock[] = [
     { type: 'heading', text: 'Quick Takeaways' },
@@ -42,6 +50,7 @@ function exampleArticle(
       type: 'prose',
       md: teaches,
     },
+    ...(extras?.blocks ?? []),
     { type: 'heading', text: 'Why It Matters In RetireGolden' },
     {
       type: 'prose',
@@ -71,12 +80,12 @@ function exampleArticle(
     tags: ['example-plan', 'worked example', 'planner', 'fire'],
     audience: 'beginner',
     status: 'ready',
-    lastReviewed: '2026-07-07',
-    reviewCadence: 'stable',
-    sourceUrls: [],
+    lastReviewed: extras?.lastReviewed ?? '2026-07-07',
+    reviewCadence: extras?.reviewCadence ?? 'stable',
+    sourceUrls: extras?.sourceUrls ?? [],
     relatedArticles,
     relatedPlannerRoutes,
-    currentYearSensitive: false,
+    currentYearSensitive: extras?.currentYearSensitive ?? false,
     priority: 'P1',
     exampleId,
     blocks,
@@ -497,6 +506,174 @@ Compare this version directly with the HSA version to see the difference in tax 
   }
 )
 
+export const exampleAll401kNoBridgeArticle = exampleArticle(
+  'example-all-401k-no-bridge',
+  'All-in 401(k) control (Sam & Jordan)',
+  'Control half of the savings-location pair: the whole $45,000/yr savings budget goes pre-tax, and retiring at 52 exposes the bridge problem.',
+  'all-401k-no-bridge',
+  `Sam and Jordan earn $180,000 together and save $45,000 a year — all of it into traditional 401(k)s — planning to retire at 52.
+
+The deduction feels great every year. The problem surfaces at 52: nearly everything they own is inaccessible before 59½ without a 10% penalty (or a rigid SEPP program).
+
+Once their cash and small brokerage run dry, penalized 401(k) withdrawals carry the bridge years. Each withdrawal is ordinary income, so MAGI jumps — and the ACA premium credits that subsidize marketplace coverage disappear, adding tens of thousands a year in health premiums.
+
+The identical savings budget, placed differently, avoids all of this. That comparison is the point of the pair.`,
+  'Watch Results ages 52–59: penalties once the taxable money is gone, marketplace premiums jumping when MAGI clears the ACA cliff, and a depletion year the bridge version avoids.',
+  ['aca-premium-tax-credits-and-magi', 'rule-of-55-and-72t', 'withdrawal-order-basics'],
+  ['/plan/:planId/results', '/plan/:planId/accounts'],
+  'early-investing-fire',
+  {
+    name: 'The Sam & Jordan household (all-401(k) version)',
+    assumptions: [
+      { label: 'Filing status', value: 'Married Filing Jointly' },
+      { label: 'Retirement age', value: '52 (both)' },
+      { label: 'Wages', value: '$105,000 + $75,000, 1% real growth' },
+      { label: 'Savings', value: '$45,000/yr, all traditional 401(k) + 50%-to-6% match' },
+      { label: 'Starting balances', value: '$210k + $85k in 401(k)s, $40k brokerage, $30k cash' },
+      { label: 'Healthcare', value: 'Marketplace pre-65 with ACA credits enabled' },
+    ],
+    summary: 'Control case: identical budget and household to the bridge version — only the destination of the savings differs.',
+  }
+)
+
+export const exampleBrokerageBridge401kArticle = exampleArticle(
+  'example-brokerage-bridge-401k',
+  '401(k) plus brokerage bridge (Sam & Jordan)',
+  'Feature half of the savings-location pair: 401(k) to the match, the rest into a taxable bridge that funds ages 52–59½.',
+  'brokerage-bridge-401k',
+  `Same couple, same wages, same $45,000/yr gross savings budget as the control — but only enough goes into the 401(k)s to capture the full employer match. The remaining ~$30,600/yr builds a joint taxable brokerage.
+
+Because the gross budget is held constant, this plan pays more income tax during the accumulation years — the contributions above the match lose their deduction. That honesty is the tradeoff being taught.
+
+At 52 the brokerage is large and mostly basis. Selling it to fund the bridge years realizes modest capital gains, so MAGI stays low: ACA credits keep net marketplace premiums tiny while the control pays full price, and no early-withdrawal penalties ever apply.
+
+The built-in scenario stress-tests the popular "convert to Roth during the bridge" advice. For this lean plan it backfires: the conversion tax plus the forfeited ACA credits drain the bridge fund and hand back most of the strategy's advantage. Cheap conversions need spare money — this household's bridge fund is the spending money.`,
+  'Compare bridge-year MAGI, net healthcare premiums, penalties, and the depletion year against the all-401(k) control; then run the conversion scenario and watch the advantage evaporate.',
+  ['aca-premium-tax-credits-and-magi', 'why-roth-conversions-raise-other-costs', 'withdrawal-order-basics'],
+  ['/plan/:planId/results', '/plan/:planId/accounts', '/plan/:planId/scenarios'],
+  'early-investing-fire',
+  {
+    name: 'The Sam & Jordan household (bridge version)',
+    assumptions: [
+      { label: 'Filing status', value: 'Married Filing Jointly' },
+      { label: 'Retirement age', value: '52 (both)' },
+      { label: 'Wages', value: '$105,000 + $75,000, 1% real growth' },
+      { label: 'Savings', value: '$14,400/yr to 401(k)s (full match kept) + $30,600/yr brokerage' },
+      { label: 'Key difference', value: 'Savings destination only — budget, balances, and household identical' },
+      { label: 'Built-in scenario', value: 'Bracket-fill Roth conversions during the bridge (a cautionary tale here)' },
+    ],
+    summary: 'Feature case: the taxable bridge keeps MAGI low through 52–59½, preserving ACA credits and avoiding penalties.',
+  }
+)
+
+export const exampleNoHeadStartGradArticle = exampleArticle(
+  'example-no-head-start-grad',
+  'Starting from zero control (Nova)',
+  'Control half of the head-start pair: a 22-year-old starting the retirement journey with no seeded accounts.',
+  'no-head-start-grad',
+  `Nova is 22, earns $62,000 with strong raises, spends $44,000, and does the right things: contributes $8,000 a year to the employer 401(k) and captures the full 100%-to-4% match.
+
+Retirement wealth starts at $0 apart from a small emergency fund. Over a full career that steady saving still compounds into a comfortable retirement at 60.
+
+The pair partner is identical in every respect except one: it begins with a traditional IRA seeded by a childhood Trump account. Load both and use Compare Plans to price the head start.`,
+  'Note where the 401(k)-only trajectory lands by 60 and beyond, then Compare ending assets against the head-start version — the delta is the value of the first 18 years.',
+  ['what-is-fire', 'savings-rate-biggest-lever'],
+  ['/plan/:planId/results', '/plan/:planId/accounts'],
+  'early-investing-fire',
+  {
+    name: 'The Nova household (no head start)',
+    assumptions: [
+      { label: 'Filing status', value: 'Single, age 22' },
+      { label: 'Wages', value: '$62,000, 2.5% real growth' },
+      { label: 'Ongoing savings', value: '$8,000/yr 401(k) + 100%-to-4% employer match' },
+      { label: 'Starting balances', value: '$8,000 emergency fund only' },
+      { label: 'Retirement age', value: '60' },
+    ],
+    summary: 'Control case: everything the head-start version has except the seeded IRA.',
+  }
+)
+
+export const exampleTrumpAccountHeadStartArticle = exampleArticle(
+  'example-trump-account-head-start',
+  'Trump account IRA head start (Nova)',
+  'Feature half of the head-start pair: the same 22-year-old, plus a traditional IRA seeded by a childhood Trump account.',
+  'trump-account-head-start',
+  `Same Nova, same wages, spending, and ongoing savings as the control — plus one account she never had to think about: a traditional IRA that began life as a Trump account.
+
+Her parents elected the account at birth, the government added the one-time $1,000 pilot seed, and the family contributed $2,500 a year until 18. At 7% growth that is about $88,400 on her 18th birthday, when the account automatically became a traditional IRA by operation of law. Left invested, it reaches roughly $115,800 at 22.
+
+Because family contributions are after-tax and nondeductible, the IRA carries $45,000 of Form 8606 basis (18 × $2,500). The seed and all earnings are the pre-tax portion. Any withdrawal or Roth conversion applies the pro-rata rule — exactly the machinery this planner models on traditional IRAs.
+
+The built-in scenario — "Bracket-fill Roth conversions (Form 8606 basis)" — fills the 12% bracket during ages 22–26, while Nova's wages already occupy most of it. The conversions are deliberately modest and shrink as raises consume the bracket headroom; the point is the mechanics, not the size: under the pro-rata rule the basis portion converts tax-free, so only part of each conversion is taxed. The often-cited near-free move — converting at 18 with little or no income, before a career starts — happens earlier than this plan's window and is not what this scenario runs; see the caveat below before attempting it.`,
+  'Compare ending assets against the starting-from-zero control, then run the conversion scenario with and without the nondeductible basis in mind — the basis visibly lowers the conversion tax.',
+  ['savings-rate-biggest-lever', 'roth-conversion-basics', 'account-types-overview'],
+  ['/plan/:planId/results', '/plan/:planId/accounts', '/plan/:planId/scenarios'],
+  'early-investing-fire',
+  {
+    name: 'The Nova household (head-start version)',
+    assumptions: [
+      { label: 'Filing status', value: 'Single, age 22' },
+      { label: 'Wages', value: '$62,000, 2.5% real growth' },
+      { label: 'Ongoing savings', value: '$8,000/yr 401(k) + 100%-to-4% employer match (identical to control)' },
+      { label: 'Seeded IRA', value: '$115,800 traditional IRA, $45,000 nondeductible basis' },
+      { label: 'Built-in scenario', value: 'Bracket-fill 12% conversions ages 22–26 (Form 8606 basis)' },
+    ],
+    summary: 'Feature case: one seeded account, zero extra behavior — the delta against the control prices the 18-year head start.',
+  },
+  {
+    blocks: [
+      {
+        type: 'callout',
+        tone: 'note',
+        md: 'This household is **illustrative by design**. The example library\'s clock is fixed at 2026, and a 22-year-old in 2026 (born 2004) could not actually have had a Trump account — contributions only began July 4, 2026. The plan shows what a child born under the program will experience at 22. The account itself needs no special modeling: after 18 it is an ordinary traditional IRA.',
+      },
+      { type: 'heading', text: 'Trump Account Rules (verified 2026-07-16)' },
+      {
+        type: 'list',
+        items: [
+          '**Eligibility:** a parent or guardian elects an account for a child who has not turned 18 before the end of the election year.',
+          '**Federal seed:** a one-time $1,000 government pilot contribution for U.S.-citizen children born January 1, 2025 through December 31, 2028.',
+          '**Contributions:** none before July 4, 2026; aggregate cap $5,000/yr (inflation-indexed after 2027). Employers may add up to $2,500/yr (counts against the cap, excluded from the employee\'s income).',
+          '**Tax character:** family contributions are after-tax and nondeductible — they become Form 8606 basis. The seed, employer contributions, and all earnings are pre-tax; growth is tax-deferred.',
+          '**Investments:** restricted to low-cost funds tracking the S&P 500 or another primarily-US-equity index, so an equity return assumption is faithful.',
+          '**Lock-up:** no withdrawals before January 1 of the year the child turns 18.',
+          '**At 18:** the account automatically becomes a traditional IRA — no rollover event. Normal IRA rules follow, including the 10% penalty before 59½ and the option of a taxable Roth conversion.',
+        ],
+      },
+      {
+        type: 'table',
+        caption: 'Illustrative values at age 18 (7% nominal, contributions from birth, end-of-year)',
+        columns: ['Funding pattern', 'Value at 18', 'Nondeductible basis'],
+        rows: [
+          ['Seed only ($1,000, no contributions)', '≈ $3,400', '$0'],
+          ['Seed + $2,500/yr family (this example)', '≈ $88,400', '$45,000'],
+          ['Seed + $5,000/yr (max)', '≈ $173,400', '$90,000'],
+        ],
+      },
+      {
+        type: 'prose',
+        md: 'This example uses the moderate middle row. Not every child will get $115,000 — at the same 7% assumption, a seed-only account is worth about $3,400 at 18 and about $4,500 at 22, versus this example\'s ≈ $88,400 at 18 and ≈ $115,800 at 22. Still a real head start from a single $1,000 contribution.',
+      },
+      {
+        type: 'callout',
+        tone: 'warn',
+        md: '**Kiddie-tax caveat:** if you convert at 18 while still a dependent — the near-free no-income window commentators call a "legal backdoor" — the taxable part of the conversion is unearned income, and a dependent full-time student under 24 may have it taxed at the parents\' rates under the kiddie tax. Check dependency status before converting. (This example\'s built-in scenario converts later, at ages 22–26 against wage income, and does not model that window.)',
+      },
+    ],
+    sourceUrls: [
+      'https://www.irs.gov/newsroom/treasury-irs-issue-guidance-on-trump-accounts-established-under-the-working-families-tax-cuts-notice-announces-upcoming-regulations',
+      'https://www.federalregister.gov/documents/2026/03/09/2026-04533/trump-accounts',
+      'https://www.congress.gov/crs-product/R48910',
+      'https://crr.bc.edu/trump-accounts-a-primer-for-parents/',
+      'https://www.cnbc.com/2026/06/03/trump-accounts-roth-ira.html',
+      'https://www.fidelity.com/learning-center/personal-finance/trump-accounts',
+    ],
+    lastReviewed: '2026-07-16',
+    reviewCadence: 'rule-change',
+    currentYearSensitive: true,
+  }
+)
+
 export const EXAMPLE_PLAN_ARTICLES = [
   exampleCoupleArticle,
   exampleUnderSavedSingleArticle,
@@ -522,4 +699,8 @@ export const EXAMPLE_PLAN_ARTICLES = [
   exampleNoAnnuityBrokerageArticle,
   exampleStaticAllocationControlArticle,
   exampleBrokerageNoHsaArticle,
+  exampleAll401kNoBridgeArticle,
+  exampleBrokerageBridge401kArticle,
+  exampleNoHeadStartGradArticle,
+  exampleTrumpAccountHeadStartArticle,
 ]

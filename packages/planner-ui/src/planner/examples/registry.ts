@@ -27,6 +27,10 @@ import { buildFixedTargetSpending } from './buildFixedTargetSpending'
 import { buildNoAnnuityBrokerage } from './buildNoAnnuityBrokerage'
 import { buildStaticAllocationControl } from './buildStaticAllocationControl'
 import { buildBrokerageNoHsa } from './buildBrokerageNoHsa'
+import { buildAll401kNoBridge } from './buildAll401kNoBridge'
+import { buildBrokerageBridge401k } from './buildBrokerageBridge401k'
+import { buildNoHeadStartGrad } from './buildNoHeadStartGrad'
+import { buildTrumpAccountHeadStart } from './buildTrumpAccountHeadStart'
 
 export type ExampleTheme =
   | 'overview'
@@ -299,6 +303,47 @@ export const EXAMPLE_PLANS: ExamplePlan[] = [
     learnSlug: 'example-brokerage-no-hsa',
     lookFor: 'Compare tax drag on withdrawals, qualified medical treatment, and ending balances. Great for showing HSA advantage in Results.',
     build: buildBrokerageNoHsa,
+  },
+  // A-B decision pairs (same engine features both sides; the savings strategy is the variable)
+  {
+    id: 'all-401k-no-bridge',
+    title: 'All-in 401(k) (no bridge)',
+    summary: 'Control version of "401(k) plus brokerage bridge": same couple retiring at 52, same wages and $45,000/yr gross savings budget, but every dollar saved goes into pre-tax 401(k)s.',
+    teaches: 'A-B comparison: load with "401(k) plus brokerage bridge" and Compare. With nearly all wealth pre-tax at 52, the bridge years to 59½ force penalized traditional withdrawals (or a SEPP program — see "Bridge to 59½"), and the MAGI those withdrawals create wipes out ACA premium credits — so identical savings drain years earlier.',
+    themeTags: ['fire', 'accumulation'],
+    learnSlug: 'example-all-401k-no-bridge',
+    lookFor: 'Early-withdrawal penalties in Results once cash and the small brokerage run dry, marketplace premiums jumping when MAGI clears the ACA cliff, and a depletion year the bridge version avoids.',
+    build: buildAll401kNoBridge,
+  },
+  {
+    id: 'brokerage-bridge-401k',
+    title: '401(k) plus brokerage bridge',
+    summary: 'Same couple and gross savings budget as the control, but 401(k) contributions stop near the employer-match cap and the rest builds a taxable brokerage bridge for retiring at 52.',
+    teaches: 'The brokerage basis funds ages 52–59½ at low capital-gains rates and low MAGI, so ACA credits survive and no penalties apply. The gross budget is held constant, so this plan pays more tax during accumulation — and still outlives the control by years. Load with "All-in 401(k) (no bridge)" and Compare.',
+    themeTags: ['fire', 'accumulation'],
+    learnSlug: 'example-brokerage-bridge-401k',
+    lookFor: 'Penalty-free bridge years with tiny net marketplace premiums while the control pays full price, and no depletion where the control runs dry. Then try the conversion scenario: even 12%-bracket conversions can backfire when the bridge fund is also the spending money.',
+    build: buildBrokerageBridge401k,
+  },
+  {
+    id: 'no-head-start-grad',
+    title: 'Starting from zero (no head start)',
+    summary: 'Control version of "Trump account IRA head start": identical 22-year-old, wages, spending, and ongoing savings; retirement wealth starts at $0.',
+    teaches: 'A-B comparison: load with "Trump account IRA head start" — the only difference is the seeded IRA. Load both and Compare to see what an 18-year head start compounds into with zero additional behavior.',
+    themeTags: ['accumulation'],
+    learnSlug: 'example-no-head-start-grad',
+    lookFor: 'Where the 401(k)-only trajectory lands by 60, then Compare ending assets and depletion against the head-start version.',
+    build: buildNoHeadStartGrad,
+  },
+  {
+    id: 'trump-account-head-start',
+    title: 'Trump account IRA head start',
+    summary: 'Illustrative: a 22-year-old whose childhood Trump account (seed + $2,500/yr family contributions) became a traditional IRA at 18 and reaches ≈$115,800 at 22 — with $45,000 of nondeductible basis.',
+    teaches: 'The head start compounds into a dramatically larger estate with zero extra saving by Nova. The converted account is just a traditional IRA: the $45,000 of after-tax family contributions is Form 8606 basis, so the pro-rata rule prices any withdrawal or Roth conversion. Illustrative framing — the library clock is 2026, so this shows what a child born under the program will experience at 22.',
+    themeTags: ['accumulation'],
+    learnSlug: 'example-trump-account-head-start',
+    lookFor: 'The seeded IRA compounding untouched to 60, and the "Bracket-fill Roth conversions (Form 8606 basis)" scenario where the basis converts tax-free pro-rata while only the pre-tax portion fills the 12% bracket.',
+    build: buildTrumpAccountHeadStart,
   },
 ]
 

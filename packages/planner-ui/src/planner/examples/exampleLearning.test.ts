@@ -33,6 +33,10 @@ describe('example library learning integration', () => {
       LEARN.exampleNoAnnuityBrokerage,
       LEARN.exampleStaticAllocationControl,
       LEARN.exampleBrokerageNoHsa,
+      LEARN.exampleAll401kNoBridge,
+      LEARN.exampleBrokerageBridge401k,
+      LEARN.exampleNoHeadStartGrad,
+      LEARN.exampleTrumpAccountHeadStart,
     ]
     for (const hook of hooks) {
       expect(getArticle(hook.slug)?.status).toBe('ready')

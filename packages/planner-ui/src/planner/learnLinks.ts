@@ -30,6 +30,10 @@ export const LEARN = {
   exampleNoAnnuityBrokerage: { slug: 'example-no-annuity-brokerage', label: 'Learn about this example' },
   exampleStaticAllocationControl: { slug: 'example-static-allocation-control', label: 'Learn about this example' },
   exampleBrokerageNoHsa: { slug: 'example-brokerage-no-hsa', label: 'Learn about this example' },
+  exampleAll401kNoBridge: { slug: 'example-all-401k-no-bridge', label: 'Learn about this example' },
+  exampleBrokerageBridge401k: { slug: 'example-brokerage-bridge-401k', label: 'Learn about this example' },
+  exampleNoHeadStartGrad: { slug: 'example-no-head-start-grad', label: 'Learn about this example' },
+  exampleTrumpAccountHeadStart: { slug: 'example-trump-account-head-start', label: 'Learn about this example' },
   withdrawalOrder: { slug: 'withdrawal-order-basics', label: 'Learn about withdrawal order' },
   qcd: { slug: 'qcds-qualified-charitable-distributions', label: 'Learn about QCDs' },
   itemizedDeductions: {
