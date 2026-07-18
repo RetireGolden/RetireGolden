@@ -55,6 +55,16 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   'no-annuity-brokerage': { depletionYear: null, endingInvestable: 3610341.52, lifetimeTax: 318480.89, lifetimeRoth: 1242034.73 },
   'static-allocation-control': { depletionYear: null, endingInvestable: 819914.86, lifetimeTax: 336723.22, lifetimeRoth: 718088.16 },
   'brokerage-no-hsa': { depletionYear: 2043, endingInvestable: 0, lifetimeTax: 33448.85, lifetimeRoth: 0 },
+  // A-B decision pairs (savings location for early retirement; Trump-account IRA head start).
+  // The A-vs-B deltas are the story: the all-401(k) control pays $64.7k of
+  // early-withdrawal penalties, loses ACA credits to withdrawal-driven MAGI,
+  // and depletes at 83, while the identical-budget bridge version reaches the
+  // planning horizon; the seeded IRA compounds into a ~$7.6M larger estate on
+  // identical behavior.
+  'all-401k-no-bridge': { depletionYear: 2069, endingInvestable: 0, lifetimeTax: 1490586.31, lifetimeRoth: 0 },
+  'brokerage-bridge-401k': { depletionYear: null, endingInvestable: 954041.91, lifetimeTax: 2118213.05, lifetimeRoth: 0 },
+  'no-head-start-grad': { depletionYear: null, endingInvestable: 14990224.64, lifetimeTax: 5275288.49, lifetimeRoth: 0 },
+  'trump-account-head-start': { depletionYear: null, endingInvestable: 22561799.59, lifetimeTax: 7402872.99, lifetimeRoth: 0 },
 }
 
 describe('example plan golden KPIs', () => {

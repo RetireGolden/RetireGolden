@@ -864,9 +864,10 @@ Content validation:
 
 Shipped: the Learning Center route and nav entry, search/category browsing, ~100
 articles authored as structured TypeScript with enforced metadata/source/review
-standards, the **Example Plans** category (one article per library demo — 24
-today, spanning the original households, the FIRE accumulators, and the July
-2026 depth-wave A/B pairs), and `LearnLink` contextual links from the planner screens. The
+standards, the **Example Plans** category (one article per library demo — 28
+today, spanning the original households, the FIRE accumulators, the July
+2026 depth-wave A/B pairs, and the savings-location / Trump-account-head-start
+decision pairs), and `LearnLink` contextual links from the planner screens. The
 Strategy, Spending, and Insurance screens now have screen-level clusters plus
 field-level links for budget, spending profiles, survivor spending, sustainable-spending solver,
 objective modes, healthcare, permanent-life, and LTC decisions. Ongoing work
