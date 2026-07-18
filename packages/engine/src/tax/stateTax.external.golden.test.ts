@@ -341,15 +341,14 @@ describe('ORACLE-015: Illinois full retirement subtraction vs IL DOR', () => {
 /**
  * ORACLE-016 (DOCS/external-oracles.md) - South Carolina's H.4216 (signed
  * 2026-03-30) two-tier 2026 schedule and the SCIAD standard deduction vs the
- * SCDOR "Information About H.4216" notice.
+ * SCDOR "Information About H.4216" notice and the ratified bill text.
  *
  * H.4216 rewrote TY2026 mid-year: (1) SC decouples from the federal standard
  * deduction, replaced by the SC Income Adjusted Deduction (SCIAD) of $15,000
- * single / $30,000 MFJ (its AGI phase-out is not modeled in the pack); (2) the
- * old 0%/3%/6% schedule becomes "1.99% for South Carolina taxable income under
- * $30,000" and "5.21% minus $966 at $30,000 and above". That is mathematically
- * the two-bracket graduated pair 1.99% (0-$30,000) / 5.21% (above), which is
- * exactly how the pack encodes it:
+ * single / $30,000 MFJ; (2) the old 0%/3%/6% schedule becomes "1.99% for
+ * South Carolina taxable income under $30,000" and "5.21% minus $966 at
+ * $30,000 and above". That is mathematically the two-bracket graduated pair
+ * 1.99% (0-$30,000) / 5.21% (above), which is exactly how the pack encodes it:
  *
  *   Continuity identity. The $966 offset is (5.21% - 1.99%) x $30,000
  *   = 3.22% x $30,000 = $966, so at taxable = $30,000 both formulas meet:
@@ -359,16 +358,32 @@ describe('ORACLE-015: Illinois full retirement subtraction vs IL DOR', () => {
  *   "5.21% minus $966" rule exactly:
  *     $30,000 x 1.99% + (T - $30,000) x 5.21% = T x 5.21% - $966.
  *
- * These cases use wage income only (no retirement income) so the schedule and
- * the SCIAD are isolated; SC's retirement-income deduction ($10,000 at 65+),
- * the age-65 general deduction, the 44% net-LTCG deduction, and the SCIAD
- * income phase-out are documented pack simplifications outside this subset
- * (see DOCS/domain/state-tax-research/SC.md).
+ * SCIAD phase-out (ratified H.4216 text): the deduction is reduced by the
+ * fraction (federal AGI - floor) / denominator — floor $40,000, denominator
+ * $55,000 for single/MFS (fully phased out at $95,000 AGI); floor $80,000,
+ * denominator $110,000 for MFJ (fully out at $190,000) — with the reduction
+ * rounded down to the next lowest $10. The pack does NOT model the phase-out
+ * (documented simplification: the pack grants the full SCIAD inside the
+ * phase-out ranges and understates SC tax there), so every oracle case below
+ * pins federal AGI at or below its floor, where the phase-out numerator is
+ * zero and the full SCIAD is the DOR answer. Consequence: a single filer with
+ * taxable income at/above the $30,000 breakpoint necessarily has AGI above
+ * $40,000 (inside the phase-out), so the at/above-breakpoint oracle cases use
+ * MFJ filers, whose $80,000 floor leaves room for taxable income up to
+ * $50,000 with the full $30,000 SCIAD.
  *
- * Oracle: South Carolina Department of Revenue.
+ * Wage income only (no retirement income) so the schedule and the SCIAD are
+ * isolated; SC's retirement-income deduction ($10,000 at 65+), the age-65
+ * general deduction, and the 44% net-LTCG deduction are documented pack
+ * simplifications outside this subset (see
+ * DOCS/domain/state-tax-research/SC.md).
+ *
+ * Oracle: South Carolina Department of Revenue / SC General Assembly.
  *   "Information About H. 4216" (SCIAD $15,000/$30,000; 1.99% under $30,000;
- *   5.21% minus $966 at/above $30,000):
+ *   5.21% minus $966 at/above $30,000; "may be reduced based on income"):
  *     https://www.dor.sc.gov/index.php/news/information-about-h-4216
+ *   Ratified H.4216 text (phase-out floors, denominators, rounding rule):
+ *     https://www.scstatehouse.gov/sess126_2025-2026/bills/4216.htm
  * Access date: 2026-07-17. Pack year: 2026. Source tax year: 2026.
  * Tolerance: $1, asserted to cents where the model is exact.
  */
@@ -387,38 +402,39 @@ describe('ORACLE-016: South Carolina H.4216 two-tier schedule + SCIAD vs SCDOR',
     ])
   })
 
-  it('taxes South Carolina taxable income below $30,000 at the 1.99% lower tier', () => {
-    // Single, $40,000 wages. SCIAD: taxable = 40,000 - 15,000 = 25,000 (< 30,000).
+  it('taxes SC taxable income below $30,000 at the 1.99% lower tier (single, AGI at the phase-out floor)', () => {
+    // Single, $40,000 wages = federal AGI $40,000: the single phase-out
+    // numerator is max(0, 40,000 - 40,000) = $0, so the full $15,000 SCIAD is
+    // the DOR answer. taxable = 40,000 - 15,000 = 25,000 (< 30,000).
     //   tax = 25,000 * 1.99% = $497.50.
     const tax = computeStateTax(sc, stateInput('SC', { ordinaryIncome: 40_000, agesAlive: [45] }))
     expectMoney(tax, 497.5)
   })
 
-  it('meets the continuity point at exactly $30,000 of taxable income ($966 identity)', () => {
-    // Single, $45,000 wages. SCIAD: taxable = 45,000 - 15,000 = 30,000.
+  it('meets the continuity point at exactly $30,000 of taxable income ($966 identity, MFJ)', () => {
+    // MFJ, $60,000 wages = federal AGI $60,000 (below the $80,000 MFJ
+    // phase-out floor => full $30,000 SCIAD). taxable = 60,000 - 30,000 = 30,000.
     //   lower tier:  30,000 * 1.99%        = 597.00
     //   upper tier:  30,000 * 5.21% - 966  = 1,563.00 - 966 = 597.00  (identical)
-    const tax = computeStateTax(sc, stateInput('SC', { ordinaryIncome: 45_000, agesAlive: [45] }))
+    const tax = computeStateTax(
+      sc,
+      stateInput('SC', { filingStatus: 'marriedFilingJointly', ordinaryIncome: 60_000, agesAlive: [45, 45] }),
+    )
     expectMoney(tax, 597)
   })
 
-  it('taxes South Carolina taxable income above $30,000 (the "5.21% minus $966" rule)', () => {
-    // Single, $75,000 wages. SCIAD: taxable = 75,000 - 15,000 = 60,000 (> 30,000).
-    //   two-bracket stack: 30,000 * 1.99% + 30,000 * 5.21% = 597.00 + 1,563.00 = 2,160.00
-    //   "5.21% minus $966": 60,000 * 5.21% - 966 = 3,126.00 - 966 = 2,160.00  (identical)
-    const tax = computeStateTax(sc, stateInput('SC', { ordinaryIncome: 75_000, agesAlive: [45] }))
-    expectMoney(tax, 2_160)
-  })
-
-  it('applies the doubled $30,000 SCIAD for a married-filing-jointly couple', () => {
-    // MFJ, $90,000 wages. SCIAD: taxable = 90,000 - 30,000 = 60,000 (> 30,000).
-    //   (thresholds are NOT doubled: the $30,000 rate breakpoint is per-return.)
-    //   60,000 * 5.21% - 966 = 3,126.00 - 966 = 2,160.00.
+  it('taxes SC taxable income above $30,000 (the "5.21% minus $966" rule; MFJ, AGI at the phase-out floor)', () => {
+    // MFJ, $80,000 wages = federal AGI $80,000: the MFJ phase-out numerator is
+    // max(0, 80,000 - 80,000) = $0, so the full $30,000 SCIAD is the DOR
+    // answer. taxable = 80,000 - 30,000 = 50,000 (> 30,000; the $30,000 rate
+    // breakpoint is per-return, NOT doubled for MFJ).
+    //   two-bracket stack: 30,000 * 1.99% + 20,000 * 5.21% = 597.00 + 1,042.00 = 1,639.00
+    //   "5.21% minus $966": 50,000 * 5.21% - 966 = 2,605.00 - 966 = 1,639.00  (identical)
     const tax = computeStateTax(
       sc,
-      stateInput('SC', { filingStatus: 'marriedFilingJointly', ordinaryIncome: 90_000, agesAlive: [45, 45] }),
+      stateInput('SC', { filingStatus: 'marriedFilingJointly', ordinaryIncome: 80_000, agesAlive: [45, 45] }),
     )
-    expectMoney(tax, 2_160)
+    expectMoney(tax, 1_639)
   })
 })
 
@@ -436,17 +452,30 @@ describe('ORACLE-016: South Carolina H.4216 two-tier schedule + SCIAD vs SCDOR',
  * 9.15% = 7.15% + 2%, so the marginal-bracket form reproduces the surcharge
  * exactly.
  *
+ * WHAT THE ORACLE ASSERTS. The MRS rate schedule is a published mapping from
+ * MAINE TAXABLE INCOME to tax, and each worksheet below is that mapping
+ * evaluated at an explicit taxable income T — the overlapping subset — plus
+ * the decoupled deduction AMOUNTS asserted against the pack parameters. Each
+ * fixture input is back-constructed as wages = T + pack standard deduction so
+ * the pack's taxable income equals T. Pack taxable income is NOT Form 1040ME
+ * taxable income, because two return-level rules are documented pack
+ * simplifications (DOCS/domain/state-tax-research/ME.md):
+ *   - the $5,300 personal exemption (unmodeled: a real return subtracts it
+ *     too, until its own high-income phase-out); and
+ *   - the deduction phase-out (36 M.R.S. §5124-C(2); MRS 2026 phase-out
+ *     worksheet, rev. Dec 2025): the deduction shrinks ratably once Maine AGI
+ *     exceeds $102,250 single / $204,550 MFJ (over a $75,000 / $150,000
+ *     range) and is $0 from $177,250 / $354,550 — so in the surcharge cases
+ *     below a real return receives no deduction at all.
+ * Maine's $48,216-per-person pension deduction and its reduction by
+ * SS/Railroad Retirement received are likewise outside this subset; wage
+ * income only here.
+ *
  * The MRS schedule publishes each bracket's cumulative base rounded to whole
  * dollars (single: $1,589 / $4,117 / $70,980; MFJ: $3,181 / $8,237 /
  * $106,210). The worksheets below compute the unrounded marginal-bracket stack
  * the engine uses and cross-check each cumulative sum against the published
  * rounded base; the two agree within rounding (<$1).
- *
- * Maine's $48,216-per-person pension deduction, its reduction by SS/Railroad
- * Retirement received, the personal exemption ($5,300), and the standard-
- * deduction phase-out are documented pack simplifications outside this subset
- * (see DOCS/domain/state-tax-research/ME.md); these cases carry wage income
- * only so the deduction and schedule are isolated.
  *
  * Oracle: Maine Revenue Services.
  *   "2026 Individual Income Tax Rates" schedule, rev. May 5, 2026
@@ -454,6 +483,9 @@ describe('ORACLE-016: South Carolina H.4216 two-tier schedule + SCIAD vs SCDOR',
  *   $27,400/$64,850 single and $54,850/$129,750 MFJ; 9.15% over $1M single /
  *   $1.5M MFJ from the 2% surcharge):
  *     https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/ind_tax_rate_sched_2026.pdf
+ *   "Phaseout of Itemized / Standard Deductions Worksheet" (2026 Estimated
+ *   Tax Worksheet line 6a; the phase-out thresholds cited above):
+ *     https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_item_stand_%20ded_phaseout_wksht_0.pdf
  * Access date: 2026-07-17. Pack year: 2026. Source tax year: 2026.
  * Tolerance: $1, asserted to cents where the model is exact.
  */
@@ -476,46 +508,72 @@ describe('ORACLE-017: Maine decoupled deduction + surcharge bracket vs MRS 2026 
     ])
   })
 
-  it('applies the decoupled $15,700 single standard deduction in the first bracket', () => {
-    // Single, $30,000 wages. Decoupled SD: taxable = 30,000 - 15,700 = 14,300
-    // (< 27,400, first bracket). tax = 14,300 * 5.8% = $829.40. (The federal
-    // 2026 standard deduction is $16,100, so decoupling raises Maine tax here.)
+  it('applies the 5.8% first bracket at Maine taxable income of $14,300', () => {
+    // Oracle: MRS schedule, taxable < $27,400 => tax = 5.8% of Maine taxable
+    // income. T = 14,300; tax = 14,300 * 5.8% = $829.40.
+    // Input construction: wages 30,000 - pack SD 15,700 = T 14,300. (Maine
+    // AGI 30,000 is below the $102,250 phase-out start, so a real return
+    // subtracts the same full $15,700 — but also the unmodeled $5,300
+    // personal exemption. The expectation is the schedule at T on pack
+    // taxable income, not the Form 1040ME return tax on these wages.)
     const tax = computeStateTax(me, stateInput('ME', { ordinaryIncome: 30_000, agesAlive: [45] }))
     expectMoney(tax, 829.4)
   })
 
-  it('stacks the 5.8% / 6.75% / 7.15% single brackets', () => {
-    // Single, $100,000 wages. SD: taxable = 100,000 - 15,700 = 84,300 (7.15% band).
-    //   27,400 * 5.8%             = 1,589.20   (base check: MRS $1,589)
-    //   (64,850 - 27,400) * 6.75% = 2,527.875  (cum 4,117.075; MRS $4,117)
-    //   (84,300 - 64,850) * 7.15% = 1,390.675
-    //   total                     = 5,507.75
+  it('stacks the 5.8% / 6.75% / 7.15% single brackets at Maine taxable income of $84,300', () => {
+    // Oracle: MRS schedule at T = 84,300 (the $64,850-or-more band):
+    //   published form: 4,117 + (84,300 - 64,850) * 7.15% = 4,117 + 1,390.675 = 5,507.68
+    //   unrounded stack:
+    //     27,400 * 5.8%             = 1,589.20   (MRS base $1,589)
+    //     (64,850 - 27,400) * 6.75% = 2,527.875  (cum 4,117.075; MRS $4,117)
+    //     (84,300 - 64,850) * 7.15% = 1,390.675
+    //     total                     = 5,507.75   (within $1 of the published form)
+    // Input construction: wages 100,000 - pack SD 15,700 = T 84,300. (A real
+    // return at Maine AGI 100,000 also gets the full SD — below the $102,250
+    // phase-out start — but subtracts the unmodeled personal exemption; the
+    // expectation is the schedule at T on pack taxable income.)
     const tax = computeStateTax(me, stateInput('ME', { ordinaryIncome: 100_000, agesAlive: [45] }))
     expectMoney(tax, 5_507.75)
   })
 
-  it('applies the 2% surcharge (9.15% top bracket) for a single filer above $1M', () => {
-    // Single, $1,215,700 wages. SD: taxable = 1,215,700 - 15,700 = 1,200,000.
-    //   27,400 * 5.8%                    =     1,589.20
-    //   (64,850 - 27,400) * 6.75%        =     2,527.875
-    //   (1,000,000 - 64,850) * 7.15%     =    66,863.225  (cum 70,980.30; MRS $70,980)
-    //   (1,200,000 - 1,000,000) * 9.15%  =    18,300.00
-    //   total                            =    89,280.30
+  it('applies the 2% surcharge (9.15% top bracket) at single Maine taxable income of $1.2M', () => {
+    // Oracle: MRS schedule at T = 1,200,000 (the $1,000,000-or-more band):
+    //   published form: 70,980 + (1,200,000 - 1,000,000) * 9.15% = 70,980 + 18,300 = 89,280
+    //   unrounded stack:
+    //     27,400 * 5.8%                    =     1,589.20
+    //     (64,850 - 27,400) * 6.75%        =     2,527.875
+    //     (1,000,000 - 64,850) * 7.15%     =    66,863.225  (cum 70,980.30; MRS $70,980)
+    //     (1,200,000 - 1,000,000) * 9.15%  =    18,300.00
+    //     total                            =    89,280.30   (within $1 of the published form)
     //   surcharge check: the $200,000 over $1M is taxed at 9.15% = 7.15% + 2%,
     //   i.e. 18,300 = 14,300 (base) + 4,000 (2% surcharge).
+    // Input construction: wages 1,215,700 - pack SD 15,700 = T 1,200,000. On
+    // a real return the deduction is $0 at this AGI (fully phased out above
+    // $177,250), so return taxable income would be the full 1,215,700 and the
+    // pack's flat SD understates Maine tax by 15,700 * 9.15% ~= $1,437 — the
+    // documented phase-out simplification above. The oracle claim is the
+    // schedule at T = 1,200,000, not the return tax on these wages.
     const tax = computeStateTax(me, stateInput('ME', { ordinaryIncome: 1_215_700, agesAlive: [55] }))
     expectMoney(tax, 89_280.3)
   })
 
-  it('applies the 2% surcharge (9.15% top bracket) for an MFJ couple above $1.5M', () => {
-    // MFJ, $1,631,400 wages. SD: taxable = 1,631,400 - 31,400 = 1,600,000.
-    //   54,850 * 5.8%                    =      3,181.30
-    //   (129,750 - 54,850) * 6.75%       =      5,055.75
-    //   (1,500,000 - 129,750) * 7.15%    =     97,972.875 (cum 106,209.925; MRS $106,210)
-    //   (1,600,000 - 1,500,000) * 9.15%  =      9,150.00
-    //   total                            =    115,359.925  (to the cent: $115,359.93)
+  it('applies the 2% surcharge (9.15% top bracket) at MFJ Maine taxable income of $1.6M', () => {
+    // Oracle: MRS schedule at T = 1,600,000 (the $1,500,000-or-more band):
+    //   published form: 106,210 + (1,600,000 - 1,500,000) * 9.15% = 106,210 + 9,150 = 115,360
+    //   unrounded stack:
+    //     54,850 * 5.8%                    =      3,181.30   (MRS base $3,181)
+    //     (129,750 - 54,850) * 6.75%       =      5,055.75   (cum 8,237.05; MRS $8,237)
+    //     (1,500,000 - 129,750) * 7.15%    =     97,972.875  (cum 106,209.925; MRS $106,210)
+    //     (1,600,000 - 1,500,000) * 9.15%  =      9,150.00
+    //     total                            =    115,359.925  (to the cent $115,359.93)
     //   surcharge check: the $100,000 over $1.5M is taxed at 9.15% = 7.15% + 2%,
     //   i.e. 9,150 = 7,150 (base) + 2,000 (2% surcharge).
+    // Input construction: wages 1,631,400 - pack SD 31,400 = T 1,600,000. On
+    // a real return the deduction is $0 at this AGI (fully phased out above
+    // $354,550), so return taxable income would be the full 1,631,400 and the
+    // pack's flat SD understates Maine tax by 31,400 * 9.15% ~= $2,873 — the
+    // documented phase-out simplification above. The oracle claim is the
+    // schedule at T = 1,600,000, not the return tax on these wages.
     const tax = computeStateTax(
       me,
       stateInput('ME', { filingStatus: 'marriedFilingJointly', ordinaryIncome: 1_631_400, agesAlive: [55, 55] }),
