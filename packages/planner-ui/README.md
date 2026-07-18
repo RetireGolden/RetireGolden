@@ -290,11 +290,13 @@ in a bare host, not just inside `.app-shell`.
 
 ### Edition content
 
-A few content-group strings are written for the free web app and are wrong in a
-differently-configured host — the planner-home label ("Your plans"), the
-Disclaimer's "Your data stays with you" section (no accounts, browser
-storage), and its "Software license & third-party notices" section (AGPL,
-free and open source). `PlannerEditionProvider` overrides just those, leaving
+A few strings are written for the free web app and are wrong in a
+differently-configured host — the planner-home label ("Your plans", used by the
+content pages and the workspace breadcrumb/rail/recovery links), the workspace
+save-indicator tooltip ("Plans live only in this browser…"), the Disclaimer's
+"Your data stays with you" section (no accounts, browser storage), and its
+"Software license & third-party notices" section (AGPL, free and open
+source). `PlannerEditionProvider` overrides just those, leaving
 the shared disclaimer substance (educational-use, model limitations,
 rules-change, provenance, no-warranty) single-sourced. Omit the provider (or
 any field) and every page keeps today's web copy exactly — `<PlannerApp/>` and
@@ -305,7 +307,8 @@ import { PlannerEditionProvider } from '@retiregolden/planner-ui'
 
 <PlannerEditionProvider
   edition={{
-    homeLabel: 'Client library',            // back links + example persistence copy; default 'Your plans'
+    homeLabel: 'Client library',            // home links + example persistence copy; default 'Your plans'
+    storageTooltip: 'Plans live in your encrypted local library — nothing is sent to a server.',
     disclaimerDataSection: <MyDataSection />,      // replaces the whole "Your data stays with you" block
     disclaimerLicenseSection: <MyLicenseSection />, // replaces the whole license block
   }}

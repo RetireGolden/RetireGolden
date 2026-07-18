@@ -28,6 +28,16 @@ export interface PlannerEditionConfig {
    */
   homeLabel?: string
   /**
+   * Tooltip on the workspace save indicator for the user's own (non-example)
+   * plans. The default describes the free web app's persistence ("Plans live
+   * only in this browser — nothing is sent to a server…"), which is false for a
+   * host with its own store behind the PlanStore seam — such a host supplies an
+   * accurate sentence (e.g. an encrypted local library). The indicator label
+   * itself ("Stored on this device") stays shared: it is true wherever the
+   * seam stores locally.
+   */
+  storageTooltip?: string
+  /**
    * Replaces the entire "Your data stays with you" section (heading + body) on
    * the Disclaimer page. The default describes the free web app's storage story
    * (no accounts, browser IndexedDB/localStorage, "Clear all data"); a host with
@@ -43,9 +53,14 @@ export interface PlannerEditionConfig {
   disclaimerLicenseSection?: ReactNode
 }
 
+/** Default save-indicator tooltip for the free web edition's own plans. */
+export const DEFAULT_STORAGE_TOOLTIP =
+  "Plans live only in this browser — nothing is sent to a server. Use 'Download plan backup' on the planner home to keep a copy."
+
 /** Resolved edition content — defaults applied, so consumers never branch. */
 export interface ResolvedPlannerEdition {
   homeLabel: string
+  storageTooltip: string
   disclaimerDataSection: ReactNode | null
   disclaimerLicenseSection: ReactNode | null
 }
@@ -60,8 +75,14 @@ export const PlannerEditionContext = createContext<PlannerEditionConfig | null>(
  */
 export function usePlannerEdition(): ResolvedPlannerEdition {
   const config = useContext(PlannerEditionContext)
+  // Normalize so "never empty" holds even against `homeLabel: ''` or
+  // whitespace — the label lands mid-sentence ("stay out of …") and after the
+  // back arrow, where an empty string reads as broken copy.
+  const homeLabel = config?.homeLabel?.trim()
+  const storageTooltip = config?.storageTooltip?.trim()
   return {
-    homeLabel: config?.homeLabel ?? DEFAULT_HOME_LABEL,
+    homeLabel: homeLabel || DEFAULT_HOME_LABEL,
+    storageTooltip: storageTooltip || DEFAULT_STORAGE_TOOLTIP,
     disclaimerDataSection: config?.disclaimerDataSection ?? null,
     disclaimerLicenseSection: config?.disclaimerLicenseSection ?? null,
   }
