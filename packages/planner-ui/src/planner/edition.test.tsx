@@ -40,10 +40,11 @@ async function render(node: React.ReactNode) {
 }
 
 describe('PlannerEdition defaults (no provider)', () => {
-  it("ExamplesPage back link reads '← Your plans'", async () => {
+  it("ExamplesPage back link and lede read 'Your plans'", async () => {
     await render(<ExamplesPage />)
     const back = container.querySelector('.examples-back a')
     expect(back?.textContent).toBe('← Your plans')
+    expect(container.querySelector('.lede')?.textContent).toContain('stay out of Your plans')
   })
 
   it('DisclaimerPage shows the browser-storage and AGPL sections', async () => {
@@ -66,6 +67,7 @@ describe('PlannerEditionProvider overrides', () => {
     )
     const back = container.querySelector('.examples-back a')
     expect(back?.textContent).toBe('← Client library')
+    expect(container.querySelector('.lede')?.textContent).toContain('stay out of Client library')
   })
 
   it('DisclaimerPage replaces the two host-specific sections and keeps the shared substance', async () => {

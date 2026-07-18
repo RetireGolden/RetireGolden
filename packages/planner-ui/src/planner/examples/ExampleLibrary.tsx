@@ -15,6 +15,7 @@ import { EXAMPLE_LOAD_FRESH_DESC, EXAMPLE_OPEN_EXISTING_DESC } from './exampleCo
 import { loadPlan } from '../../data/planStore'
 import { usePlanStore } from '../../data/planStoreContext'
 import { readLocal, STORAGE_KEYS, writeLocal } from '../../data/localStore'
+import { usePlannerEdition } from '../editionContext'
 
 /**
  * Three curated starters shown first so a confused first-timer faces a handful
@@ -34,6 +35,7 @@ function householdFacts(example: ExamplePlan): string {
 function ExampleCard({ example, onNotice }: { example: ExamplePlan; onNotice: (msg: string) => void }) {
   const navigate = useNavigate()
   const store = usePlanStore()
+  const { homeLabel } = usePlannerEdition()
   const [busy, setBusy] = useState(false)
   const { choice, dialogs } = useDialogs()
 
@@ -100,7 +102,7 @@ function ExampleCard({ example, onNotice }: { example: ExamplePlan; onNotice: (m
       }
       const converted = await saveExampleToMyPlans(loaded.plan, { store })
       if (converted.ok) {
-        onNotice(`"${example.title}" saved to Your plans.`)
+        onNotice(`"${example.title}" saved to ${homeLabel}.`)
         navigate(`/plan/${converted.plan.id}/results`)
       } else {
         onNotice(converted.issues.join('; '))
@@ -144,6 +146,7 @@ export function ExampleLibrary({
   headingLevel?: 'h1' | 'h2'
 }) {
   const Heading = headingLevel
+  const { homeLabel } = usePlannerEdition()
   // First-time visitors see the three starters; anyone who expanded the full
   // grid before keeps it open (stored per-device, cleared by "Clear all data").
   const [expanded, setExpanded] = useState(() => readLocal(STORAGE_KEYS.examplesExpanded) === 'true')
@@ -160,8 +163,8 @@ export function ExampleLibrary({
     <section className="example-library" aria-labelledby="example-library-heading">
       <Heading id="example-library-heading">Example library</Heading>
       <p className="lede">
-        Explore curated households in the full planner. Examples stay out of Your plans until you save one — edit freely
-        and refresh without cluttering your own list.
+        Explore curated households in the full planner. Examples stay out of {homeLabel} until you save one — edit
+        freely and refresh without cluttering your own list.
       </p>
       <div className="plan-grid">
         {FEATURED.map((example) => (
