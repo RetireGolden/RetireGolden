@@ -98,6 +98,11 @@ export interface HouseholdNode {
   /** Planner surface where this item is edited (UI maps to a route). */
   editSurface: HouseholdEditSurface
   completeness: HouseholdCompleteness
+  /**
+   * Factual attachments the schema records on this entity that are not a
+   * separate node (e.g. a property's HECM line of credit). Empty when none.
+   */
+  notes: string[]
 }
 
 export type HouseholdEdgeKind =
@@ -191,6 +196,12 @@ export const UNSUPPORTED_RELATIONSHIPS: readonly UnsupportedRelationship[] = [
     detail: 'Only the tax filing status is recorded; an unmarried two-person household carries no relationship data.',
   },
   {
+    id: 'former-spouses-as-people',
+    label: 'Former spouses as people',
+    detail:
+      'Former spouses exist only as unnamed benefit-unlock records on a Social Security stream — no name, assets, or other links.',
+  },
+  {
     id: 'other-insurance',
     label: 'Term life, disability, and umbrella insurance',
     detail: 'Only long-term-care and permanent life policies are modeled; health coverage is an expense setting.',
@@ -282,7 +293,7 @@ function accountAmount(a: Account): { amount: number; amountKind: HouseholdAmoun
   return { amount: a.balance, amountKind: 'balance' }
 }
 
-function accountCompleteness(a: Account, peopleCount: number): HouseholdCompleteness {
+function accountMissingFacts(a: Account, peopleCount: number): string[] {
   const missing: string[] = []
   if (INVESTABLE_TYPES.has(a.type)) {
     const hasDestination = a.estateBeneficiary !== undefined || (a.type === 'hsa' && a.beneficiary !== undefined)
@@ -299,12 +310,25 @@ function accountCompleteness(a: Account, peopleCount: number): HouseholdComplete
         missing.push('Life-only payout — no survivor continuation')
       }
     }
+    // A survivor share with no second person is stale data, not a spouse to draw.
+    if (peopleCount === 1 && a.type === 'pension' && a.survivorPct > 0) {
+      missing.push(`Survivor continuation recorded (${a.survivorPct}%) but the plan has no second person`)
+    }
   }
-  return missing.length === 0 ? complete() : partial(...missing)
+  return missing
+}
+
+/**
+ * The engine treats an empty earnings array the same as no earnings record
+ * (simulate skips such streams), so the graph must too — otherwise a stream
+ * with `piaMonthly: null, earnings: []` would read as complete.
+ */
+function hasEarningsRecord(s: Extract<IncomeStream, { type: 'socialSecurity' }>): boolean {
+  return s.earnings !== null && s.earnings.length > 0
 }
 
 function incomeCompleteness(s: IncomeStream): HouseholdCompleteness {
-  if (s.type === 'socialSecurity' && s.piaMonthly === null && s.earnings === null) {
+  if (s.type === 'socialSecurity' && s.piaMonthly === null && !hasEarningsRecord(s)) {
     return { state: 'unknown', missing: ['No PIA or earnings record — the benefit cannot be estimated'] }
   }
   return complete()
@@ -345,7 +369,11 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
   const edges: HouseholdEdge[] = []
   const people = plan.household.people
   const personIds = people.map((p) => p.id)
-  const referencedEstates = new Set<EstateDestinationId>()
+  /** Destination → provenance of the first plan field that referenced it. */
+  const referencedEstates = new Map<EstateDestinationId, { source: string; editSurface: HouseholdEditSurface }>()
+  const referenceEstate = (destination: EstateDestinationId, source: string, editSurface: HouseholdEditSurface) => {
+    if (!referencedEstates.has(destination)) referencedEstates.set(destination, { source, editSurface })
+  }
 
   // --- people ---------------------------------------------------------------
   people.forEach((person, i) => {
@@ -367,6 +395,7 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
       source: `household.people[${i}]`,
       editSurface: 'household',
       completeness: missing.length === 0 ? complete() : partial(...missing),
+      notes: [],
     })
   })
 
@@ -386,6 +415,7 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
         source: `incomes[${i}].formerSpouses[${j}]`,
         editSurface: 'socialSecurity',
         completeness: complete(),
+        notes: [],
       })
       edges.push(edge('formerSpouseOf', id, personNodeId(s.personId), { label: `${fs.marriageYears}-yr marriage` }))
     })
@@ -406,6 +436,7 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
       source: `incomes[${i}]`,
       editSurface: s.type === 'socialSecurity' ? 'socialSecurity' : 'income',
       completeness: incomeCompleteness(s),
+      notes: [],
     })
     if (s.type === 'wages' || s.type === 'socialSecurity') {
       edges.push(edge('receives', personNodeId(s.personId), id))
@@ -419,10 +450,39 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
 
   // --- accounts (incl. pensions, annuities, property, debts) ---------------
   const totals: HouseholdGraphTotals = { investable: 0, property: 0, assets: 0, liabilities: 0, netWorth: 0 }
+  const spouseCanExist = people.length === 2
   plan.accounts.forEach((a, i) => {
     const id = accountNodeId(a.id)
     const { amount, amountKind } = accountAmount(a)
     const owners = a.ownerPersonId === null ? personIds : [a.ownerPersonId]
+    const missing = accountMissingFacts(a, people.length)
+    const notes: string[] = []
+    if (a.type === 'property' && a.hecm !== undefined) {
+      notes.push(`HECM line of credit (opened ${a.hecm.openYear})`)
+    }
+
+    // Estate destination (explicit field wins; HSA shorthand as fallback).
+    let destination: EstateDestinationId | null =
+      a.estateBeneficiary !== undefined
+        ? a.estateBeneficiary.destination === 'nonSpouse'
+          ? 'heir'
+          : a.estateBeneficiary.destination
+        : a.type === 'hsa' && a.beneficiary !== undefined
+          ? a.beneficiary === 'nonSpouse'
+            ? 'heir'
+            : 'spouse'
+          : null
+    // A spouse destination in a one-person plan is stale data, not a spouse to
+    // draw: never invent a person the plan doesn't have — flag it instead.
+    if (destination === 'spouse' && !spouseCanExist) {
+      destination = null
+      missing.push('Estate destination is the surviving spouse, but the plan has no second person')
+    }
+    const soleBeneficiary = a.type === 'traditional' && a.spouseSoleBeneficiary === true
+    if (soleBeneficiary && !spouseCanExist) {
+      missing.push('Marked spouse-as-sole-beneficiary, but the plan has no second person')
+    }
+
     nodes.push({
       id,
       kind: accountKind(a),
@@ -433,7 +493,8 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
       personIds: owners,
       source: `accounts[${i}]`,
       editSurface: 'accounts',
-      completeness: accountCompleteness(a, people.length),
+      completeness: missing.length === 0 ? complete() : partial(...missing),
+      notes,
     })
     for (const pid of owners) {
       edges.push(edge('owns', personNodeId(pid), id, a.ownerPersonId === null && personIds.length > 1 ? { joint: true } : undefined))
@@ -444,43 +505,34 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
     if (a.type === 'property') totals.property += a.value
     if (a.type === 'debt') totals.liabilities += a.balance
 
-    // Estate destination (explicit field wins; HSA shorthand as fallback).
-    const destination =
-      a.estateBeneficiary !== undefined
-        ? a.estateBeneficiary.destination === 'nonSpouse'
-          ? ('heir' as const)
-          : a.estateBeneficiary.destination
-        : a.type === 'hsa' && a.beneficiary !== undefined
-          ? a.beneficiary === 'nonSpouse'
-            ? ('heir' as const)
-            : ('spouse' as const)
-          : null
-    if (destination !== null) {
-      if (destination === 'charity') {
-        const pct = a.estateBeneficiary?.charityPct ?? 0
-        referencedEstates.add('charity')
-        edges.push(edge('beneficiary', id, estateNodeId('charity'), { label: `${pct}%` }))
-        if (pct < 100) {
-          referencedEstates.add('heir')
-          edges.push(edge('beneficiary', id, estateNodeId('heir'), { label: 'remainder' }))
-        }
-      } else {
-        referencedEstates.add(destination)
-        edges.push(edge('beneficiary', id, estateNodeId(destination)))
+    if (destination === 'charity') {
+      const pct = a.estateBeneficiary?.charityPct ?? 0
+      referenceEstate('charity', `accounts[${i}].estateBeneficiary`, 'accounts')
+      edges.push(edge('beneficiary', id, estateNodeId('charity'), { label: `${pct}%` }))
+      if (pct < 100) {
+        referenceEstate('heir', `accounts[${i}].estateBeneficiary`, 'accounts')
+        edges.push(edge('beneficiary', id, estateNodeId('heir'), { label: 'remainder' }))
       }
+    } else if (destination !== null) {
+      referenceEstate(destination, `accounts[${i}].estateBeneficiary`, 'accounts')
+      // The sole-beneficiary assertion targets the same spouse destination —
+      // emit ONE labeled edge, never two edges with the same id.
+      const label = destination === 'spouse' && soleBeneficiary ? { label: 'sole beneficiary' } : undefined
+      edges.push(edge('beneficiary', id, estateNodeId(destination), label))
     }
-    if (a.type === 'traditional' && a.spouseSoleBeneficiary === true) {
-      referencedEstates.add('spouse')
+    if (soleBeneficiary && spouseCanExist && destination !== 'spouse') {
+      referenceEstate('spouse', `accounts[${i}].spouseSoleBeneficiary`, 'accounts')
       edges.push(edge('beneficiary', id, estateNodeId('spouse'), { label: 'sole beneficiary' }))
     }
 
-    // Survivor continuations (categorical — the schema names no person).
-    if (a.type === 'pension' && a.survivorPct > 0) {
-      referencedEstates.add('spouse')
+    // Survivor continuations (categorical — the schema names no person). A
+    // one-person plan's survivor share is flagged in accountMissingFacts, not drawn.
+    if (a.type === 'pension' && a.survivorPct > 0 && spouseCanExist) {
+      referenceEstate('spouse', `accounts[${i}].survivorPct`, 'accounts')
       edges.push(edge('survivor', id, estateNodeId('spouse'), { label: `${a.survivorPct}%` }))
     }
     if (a.type === 'annuity' && a.payoutForm?.kind === 'jointSurvivor') {
-      referencedEstates.add('spouse')
+      referenceEstate('spouse', `accounts[${i}].payoutForm`, 'accounts')
       edges.push(edge('survivor', id, estateNodeId('spouse'), { label: `${a.payoutForm.survivorPct}%` }))
     }
 
@@ -514,11 +566,12 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
       source: `insurance[${i}]`,
       editSurface: 'insurance',
       completeness: complete(),
+      notes: [],
     })
     edges.push(edge('covers', id, personNodeId(subject)))
     if (p.kind === 'permanentLife') {
       if (p.beneficiary === 'estate') {
-        referencedEstates.add('estate')
+        referenceEstate('estate', `insurance[${i}].beneficiary`, 'insurance')
         edges.push(edge('beneficiary', id, estateNodeId('estate')))
       } else {
         edges.push(edge('beneficiary', id, personNodeId(p.beneficiary)))
@@ -540,15 +593,20 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
       source: `incomeFloor.ladders[${i}]`,
       editSurface: 'incomeFloor',
       completeness: complete(),
+      notes: [],
     })
     if (l.purchase) {
       edges.push(edge('funds', accountNodeId(l.purchase.fundingAccountId), id, { label: `${l.purchase.year}` }))
     }
   })
 
-  // --- estate destination nodes (only the referenced ones, fixed order) -----
+  // --- estate destination nodes (only the referenced ones, fixed order).
+  // Provenance and edit surface come from the first plan field that actually
+  // referenced the destination (the 'estate' subtype, for example, is only
+  // reachable via a permanent-life beneficiary — never an account field).
   for (const destination of ['spouse', 'heir', 'charity', 'estate'] as const) {
-    if (!referencedEstates.has(destination)) continue
+    const referencedBy = referencedEstates.get(destination)
+    if (referencedBy === undefined) continue
     nodes.push({
       id: estateNodeId(destination),
       kind: 'estate',
@@ -557,9 +615,10 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
       amount: null,
       amountKind: null,
       personIds: [],
-      source: 'accounts[*].estateBeneficiary',
-      editSurface: 'accounts',
+      source: referencedBy.source,
+      editSurface: referencedBy.editSurface,
       completeness: complete(),
+      notes: [],
     })
   }
 

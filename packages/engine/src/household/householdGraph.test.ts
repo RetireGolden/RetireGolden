@@ -282,12 +282,146 @@ describe('buildHouseholdGraph', () => {
     expect(nodeById(graph, 'acct:brokerage').source).toBe('accounts[0]')
   })
 
-  it('states its unsupported relationships (dependents, trusts, named beneficiaries, …)', () => {
+  it('states its unsupported relationships — the full audit-table set, in order', () => {
     const graph = buildHouseholdGraph(singleFixture())
     expect(graph.unsupported).toBe(UNSUPPORTED_RELATIONSHIPS)
-    const ids = graph.unsupported.map((u) => u.id)
-    for (const required of ['dependents', 'trusts-entities', 'named-beneficiaries', 'debt-collateral']) {
-      expect(ids).toContain(required)
+    // One entry per row of the not-expressible table in
+    // DOCS/features/household-map.md — keep the two in lockstep.
+    expect(graph.unsupported.map((u) => u.id)).toEqual([
+      'dependents',
+      'trusts-entities',
+      'named-beneficiaries',
+      'contingent-beneficiaries',
+      'household-size',
+      'partner-legal-relationship',
+      'former-spouses-as-people',
+      'other-insurance',
+      'debt-collateral',
+      'income-asset-linkage',
+      'estate-documents',
+    ])
+  })
+
+  it('edge ids are globally unique in every fixture', () => {
+    for (const plan of [singleFixture(), coupleFixture(), blendedFixture(), propertiesFixture()]) {
+      const ids = edgeIds(buildHouseholdGraph(plan))
+      expect(new Set(ids).size).toBe(ids.length)
     }
+  })
+
+  it('spouse destination + sole-beneficiary assertion emits one labeled edge, not two colliding ids', () => {
+    const plan = coupleFixture()
+    const ira1 = plan.accounts.find((a) => a.id === 'ira1')!
+    ira1.estateBeneficiary = { destination: 'spouse' }
+    if (ira1.type === 'traditional') ira1.spouseSoleBeneficiary = true
+    const graph = buildHouseholdGraph(validatePlan(plan))
+    const spouseEdges = graph.edges.filter((e) => e.from === 'acct:ira1' && e.to === 'estate:spouse')
+    expect(spouseEdges).toEqual([
+      {
+        id: 'beneficiary:acct:ira1->estate:spouse',
+        kind: 'beneficiary',
+        from: 'acct:ira1',
+        to: 'estate:spouse',
+        label: 'sole beneficiary',
+      },
+    ])
+    const ids = edgeIds(graph)
+    expect(new Set(ids).size).toBe(ids.length)
+  })
+
+  it('a sole-beneficiary assertion still shows when the estate destination points elsewhere', () => {
+    const plan = coupleFixture()
+    const ira1 = plan.accounts.find((a) => a.id === 'ira1')!
+    ira1.estateBeneficiary = { destination: 'nonSpouse' }
+    if (ira1.type === 'traditional') ira1.spouseSoleBeneficiary = true
+    const graph = buildHouseholdGraph(validatePlan(plan))
+    expect(edgeIds(graph)).toContain('beneficiary:acct:ira1->estate:heir')
+    const sole = graph.edges.find((e) => e.id === 'beneficiary:acct:ira1->estate:spouse')
+    expect(sole?.label).toBe('sole beneficiary')
+  })
+
+  it('single-person plans never draw a spouse: stale survivor/beneficiary fields are flagged instead', () => {
+    const plan = singleFixture()
+    const cash = plan.accounts.find((a) => a.id === 'cash')!
+    cash.estateBeneficiary = { destination: 'spouse' }
+    const ira = plan.accounts.find((a) => a.id === 'ira')!
+    if (ira.type === 'traditional') ira.spouseSoleBeneficiary = true
+    const pension: Account = {
+      type: 'pension',
+      id: 'solo-pen',
+      name: 'Old employer pension',
+      ownerPersonId: 'p1',
+      annualReturnPct: null,
+      startAge: 65,
+      monthlyAmount: 800,
+      colaPct: 0,
+      survivorPct: 50,
+    }
+    plan.accounts = [...plan.accounts, pension]
+    const graph = buildHouseholdGraph(validatePlan(plan))
+    // No spouse node, no survivor or spouse-beneficiary edges.
+    expect(graph.nodes.filter((n) => n.kind === 'estate')).toEqual([])
+    expect(graph.edges.filter((e) => e.kind === 'survivor' || e.to === 'estate:spouse')).toEqual([])
+    // Each stale field surfaces as an attention fact.
+    expect(nodeById(graph, 'acct:cash').completeness.missing).toContain(
+      'Estate destination is the surviving spouse, but the plan has no second person',
+    )
+    expect(nodeById(graph, 'acct:ira').completeness.missing).toContain(
+      'Marked spouse-as-sole-beneficiary, but the plan has no second person',
+    )
+    expect(nodeById(graph, 'acct:solo-pen').completeness.missing).toContain(
+      'Survivor continuation recorded (50%) but the plan has no second person',
+    )
+  })
+
+  it('an empty earnings array counts as no earnings record (mirrors simulate)', () => {
+    const plan = singleFixture()
+    const ss = plan.incomes.find((s) => s.id === 'ss1') as Extract<IncomeStream, { type: 'socialSecurity' }>
+    ss.piaMonthly = null
+    ss.earnings = []
+    const graph = buildHouseholdGraph(validatePlan(plan))
+    expect(nodeById(graph, 'inc:ss1').completeness.state).toBe('unknown')
+  })
+
+  it('estate destination nodes carry the provenance of what referenced them', () => {
+    // 'estate' is only reachable via a permanent-life beneficiary.
+    const plan = coupleFixture()
+    plan.insurance = [
+      {
+        kind: 'permanentLife',
+        id: 'life-estate',
+        name: 'Legacy policy',
+        insured: 'p1',
+        beneficiary: 'estate',
+        annualPremium: 1_000,
+        premiumMode: 'lifetime',
+        deathBenefit: 100_000,
+        cashValue: 0,
+        cashValueMode: 'flatRate',
+        cashValueGrowthPct: 0,
+      },
+    ]
+    const graph = buildHouseholdGraph(validatePlan(plan))
+    const estate = nodeById(graph, 'estate:estate')
+    expect(estate.editSurface).toBe('insurance')
+    expect(estate.source).toBe('insurance[0].beneficiary')
+    // Account-referenced destinations point back at account fields.
+    const spouse = nodeById(graph, 'estate:spouse') // via the pension's survivorPct
+    expect(spouse.editSurface).toBe('accounts')
+    expect(spouse.source).toBe('accounts[3].survivorPct')
+    const blended = buildHouseholdGraph(blendedFixture())
+    expect(nodeById(blended, 'estate:charity').source).toBe('accounts[0].estateBeneficiary')
+  })
+
+  it('a HECM line of credit surfaces as a note on its property node', () => {
+    const plan = propertiesFixture()
+    const home = plan.accounts.find((a) => a.id === 'home')!
+    if (home.type === 'property') {
+      home.hecm = { openYear: 2032, growthRatePct: 7, drawPolicy: 'coordinated' }
+    }
+    const graph = buildHouseholdGraph(validatePlan(plan))
+    expect(nodeById(graph, 'acct:home').notes).toEqual(['HECM line of credit (opened 2032)'])
+    // Properties without one carry no notes.
+    expect(nodeById(graph, 'acct:rental').notes).toEqual([])
   })
 })

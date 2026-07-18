@@ -14,7 +14,9 @@ rather than inferring them.
 This audit is the ground truth behind the graph model. "Supported" means a first-class schema field
 in `engine/model/plan.ts` the graph can read; "not expressible" relationships are listed in the
 graph's `unsupported` set (`UNSUPPORTED_RELATIONSHIPS`) and surfaced on the page — the graph never
-invents an edge the schema does not carry, and never infers a legal relationship.
+invents an edge the schema does not carry, and never infers a legal relationship. The
+`UNSUPPORTED_RELATIONSHIPS` ids match this table row-for-row (test-enforced in
+`householdGraph.test.ts` — change one, change both).
 
 ### Supported relationships
 
@@ -33,7 +35,7 @@ invents an edge the schema does not carry, and never infers a legal relationship
 | Pension survivor continuation | `pension.survivorPct` (percent to a surviving spouse) |
 | Annuity survivor form | `annuity.payoutForm` (`lifeOnly` / `periodCertain` / `jointSurvivor` + survivor %) |
 | Funding relationships | `annuity.purchase.fundingAccountId`, `pension.lumpSumElection.rolloverAccountId`, `tipsLadder.purchase.fundingAccountId` |
-| Home-equity line | `property.hecm` (attribute of the property; requires `primaryResidence`) |
+| Home-equity line | `property.hecm` (attribute of the property; requires `primaryResidence`) — surfaced as a note on the property node ("HECM line of credit (opened YYYY)") |
 | Qualifying-dependent assertion | `household.hasQualifyingDependent` (a boolean tax assertion, **not** a person) |
 
 ### Not expressible in the schema (shown as out-of-model, never inferred)
@@ -72,12 +74,21 @@ invents an edge the schema does not carry, and never infers a legal relationship
   `joint`.
 - **Completeness** per node (`complete` / `partial` / `unknown` + factual `missing` strings):
   e.g. an investable account with no estate destination, a person with no Social Security record,
-  a Social Security stream with neither PIA nor earnings (`unknown` — benefit can't be estimated),
-  a planned property sale with no basis or proceeds estimate, a 0%-survivor pension or life-only
-  annuity in a two-person household, an ownerless pension/annuity.
+  a Social Security stream with neither PIA nor an earnings record (`unknown` — an empty earnings
+  array counts as absent, mirroring `simulate`), a planned property sale with no basis or proceeds
+  estimate, a 0%-survivor pension or life-only annuity in a two-person household, an ownerless
+  pension/annuity. **One-person plans never draw a spouse**: a spouse estate destination, a
+  spouse-sole-beneficiary assertion, or a >0% pension survivor share in a single-person plan is
+  stale data — it is suppressed from the diagram and flagged as a `missing` fact instead.
+- **Notes** per node carry factual schema attachments that are not separate nodes — today a
+  property's HECM line of credit ("HECM line of credit (opened YYYY)").
+- **Edge-id uniqueness**: a spouse estate destination combined with the spouse-sole-beneficiary
+  assertion emits one labeled `sole beneficiary` edge, never two edges with a colliding id.
 - **Provenance**: every node carries `source` (the plan path it was read from, e.g. `accounts[3]`)
   and `editSurface` (semantic id of the planner screen where it is edited; the UI maps it to a
-  route).
+  route). Estate destination nodes take both from the first plan field that referenced them — the
+  `estate` destination, reachable only via a permanent-life beneficiary, carries insurance
+  provenance.
 - **Totals** (`assets` = investable + property, `investable`, `property`, `liabilities`,
   `netWorth = assets − liabilities`) are sums of *entered* values — deliberately distinct from the
   projection's simulated net worth, and reconciled 1:1 against the report model's accounts block in
@@ -92,16 +103,31 @@ follow plan entry order; pure data, no dollars — covered by stable-layout snap
 `mapViewModel.ts` produces the sanitized render model: pixel positions, edge paths, formatted
 labels — and under the privacy toggle ("Hide amounts") the view model contains **no dollar strings
 at all** (test-enforced), so it is safe for screen sharing and reusable for report embedding
-later. `HouseholdMapPage.tsx` renders HTML node cards (react-router deep links to each item's
-edit screen) over an SVG edge layer: zoom control, person focus (non-transitive through joint
-items — focusing one member never pulls in the other member's whole side), group filters,
-arrow-key navigation between cards plus natural tab order, a "Text list of this map" `<details>`
-table as the non-visual equivalent, a "What needs attention" panel (every `missing` fact with a
-link to fix it), and the out-of-model panel from `UNSUPPORTED_RELATIONSHIPS`. Totals are labeled
-"as entered" to keep them distinct from the projection. Print rules target Letter landscape via a
-`@page` rule inside the page's own mounted `<style>` (so it never leaks into other planner
-printouts), with controls hidden and colors flattened by the existing planner print rules; long
-names truncate visually with the full name preserved in the tooltip and accessible label.
+later — with `hasAmount` preserved so placeholders ("•••"/"hidden") appear only where a real
+amount is concealed. The view model also phrases every edge per node (`relations`), so topology is
+never confined to the aria-hidden SVG. `HouseholdMapPage.tsx` renders HTML node cards
+(react-router deep links to each item's edit screen) over an SVG edge layer: zoom control, person
+focus, group filters, arrow-key navigation between cards plus natural tab order (entity ids are
+CSS-escaped, so ids containing quotes can't break navigation), a "Text list of this map"
+`<details>` table — including a "Connected to" relationships column — as the non-visual
+equivalent, a "What needs attention" panel (every `missing` fact with a link to fix it), and the
+out-of-model panel from `UNSUPPORTED_RELATIONSHIPS`. Edge annotations ("joint", survivor %,
+marriage years) render on the diagram, so joint holding is visually distinct from two individual
+ownership edges. Totals are labeled "as entered" to keep them distinct from the projection.
+
+**Person-focus traversal rule** (`connectedNodeIds`): seed with edges touching the focus person
+directly (what they own/receive; what covers, names, or unlocks them), then grow to a fixpoint
+along *attachment* edges only (beneficiary / survivor / funds endpoints of kept nodes) so the
+result is independent of plan entry order. Ownership/receives edges are never re-traversed from
+kept non-focus nodes — a jointly held account never pulls in the other member or their side of the
+map (test-enforced with negative assertions).
+
+**Print** targets Letter landscape via a `@page` rule inside the page's own mounted `<style>` (so
+it never leaks into other planner printouts). The printed artifact is the map alone: the workspace
+KPI bar (which shows real dollar values even when map amounts are hidden), rail, header, and the
+page's auxiliary panels are hidden in print, and the canvas is scaled to fit one page from its
+actual layout size (no hard-coded shrink, no cards sliced across page breaks). Long names truncate
+visually with the full name preserved in the tooltip and accessible label.
 
 Feature-off discipline: the map is read-only over the plan — it writes nothing, adds no schema
 fields, and touches no engine ledger path, so `npm run cases:diff` is unchanged by its presence.

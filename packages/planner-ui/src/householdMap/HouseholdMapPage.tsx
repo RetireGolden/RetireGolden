@@ -21,21 +21,38 @@ const ZOOM_STEPS = [0.75, 1, 1.25, 1.5] as const
 
 const FILTER_COLUMNS: readonly MapColumnId[] = ['income', 'accounts', 'propertyDebt', 'protection']
 
+/** Letter landscape with 0.5in margins at CSS 96dpi: the printable area. */
+const PRINT_WIDTH_PX = 10 * 96
+/** Printable height minus room for the page heading and totals line. */
+const PRINT_HEIGHT_PX = 6.5 * 96
+
 /**
  * Print rules scoped to this page's lifetime: mounted with the page, gone on
  * navigation, so the Letter-landscape @page rule never leaks into other
- * planner printouts.
+ * planner printouts. The printed artifact is the map alone: the workspace
+ * KPI bar (which shows real dollar values even when map amounts are hidden),
+ * rail, header, and the page's auxiliary panels never print from here, and
+ * the canvas is scaled from its actual layout size to fit one page — no
+ * hard-coded shrink, no cards sliced across page breaks.
  */
-const PRINT_CSS = `
+function printCss(scale: number): string {
+  return `
 @media print {
   @page { size: letter landscape; margin: 0.5in; }
-  .household-map-scroll { overflow: visible; border: none; }
+  .kpi-bar,
+  .workspace-rail,
+  .workspace-head,
+  .skip-link,
+  .example-preview-banner,
+  .household-map-page > .card:not(:first-of-type),
+  .household-map-page details { display: none !important; }
+  .workspace { display: block; }
+  .household-map-scroll { overflow: visible; border: none; padding: 0; break-inside: avoid; }
   .household-map-stage { width: auto !important; height: auto !important; }
-  /* Print at natural layout size, gently shrunk to fit Letter landscape. */
-  .household-map-canvas { transform: none !important; zoom: 0.78; }
-  .household-map-page details { display: none; }
+  .household-map-canvas { transform: none !important; zoom: ${scale}; }
 }
 `
+}
 
 function completenessBadge(node: MapNodeVM) {
   if (node.completenessState === 'complete') return null
@@ -70,6 +87,7 @@ export function HouseholdMapPage() {
   )
 
   const attention = useMemo(() => graph.nodes.filter((n) => n.completeness.missing.length > 0), [graph])
+  const printScale = Math.min(1, PRINT_WIDTH_PX / vm.width, PRINT_HEIGHT_PX / vm.height)
 
   // Arrow keys move focus between cards (grid-wise); Tab order stays the
   // natural column-by-column DOM order.
@@ -94,14 +112,19 @@ export function HouseholdMapPage() {
       )
     }
     if (next) {
-      // Node ids never contain quotes, so a plain attribute selector is safe.
-      stageRef.current?.querySelector<HTMLElement>(`[data-node-id="${next.id}"]`)?.focus()
+      // Node ids embed plan entity ids, which may legally contain quotes or
+      // backslashes (imports preserve ids verbatim) — escape for the selector.
+      const escaped =
+        typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+          ? CSS.escape(next.id)
+          : next.id.replace(/["\\]/g, '\\$&')
+      stageRef.current?.querySelector<HTMLElement>(`[data-node-id="${escaped}"]`)?.focus()
     }
   }
 
   return (
     <section className="household-map-page">
-      <style>{PRINT_CSS}</style>
+      <style>{printCss(printScale)}</style>
       <div className="card">
         <h2>Household map</h2>
         <p className="card-hint">
@@ -111,12 +134,11 @@ export function HouseholdMapPage() {
         </p>
 
         <div className="household-map-controls no-print">
-          <button
-            type="button"
-            className="btn btn-secondary btn-small"
-            aria-pressed={hideAmounts}
-            onClick={() => setHideAmounts((v) => !v)}
-          >
+          {/* The label states the action it will perform, so no aria-pressed:
+              pairing a pressed state with an already-flipped label reads as
+              contradictory in screen readers. Current state is announced by
+              the totals line ("Amounts hidden"). */}
+          <button type="button" className="btn btn-secondary btn-small" onClick={() => setHideAmounts((v) => !v)}>
             {hideAmounts ? 'Show amounts' : 'Hide amounts'}
           </button>
           <label className="map-control">
@@ -198,7 +220,10 @@ export function HouseholdMapPage() {
                 {vm.edges.map((e) => (
                   <g key={e.id}>
                     <path className={`map-edge map-edge--${e.kind}`} d={e.path} />
-                    {e.label && (e.kind === 'beneficiary' || e.kind === 'survivor' || e.kind === 'funds') ? (
+                    {/* Every computed annotation renders — "joint", survivor %,
+                        marriage years — so joint holding is visually distinct
+                        from two individual ownership edges. */}
+                    {e.label ? (
                       <text className="map-edge-label" x={e.labelX} y={e.labelY - 4} textAnchor="middle">
                         {e.label}
                       </text>
@@ -227,8 +252,10 @@ export function HouseholdMapPage() {
                   </span>
                   <span className="map-node-meta">
                     {n.typeLabel}
-                    {n.amountText ? ` · ${n.amountText}` : vm.amountsHidden ? ' · •••' : ''}
+                    {/* The placeholder appears only where a real amount is concealed. */}
+                    {n.amountText ? ` · ${n.amountText}` : vm.amountsHidden && n.hasAmount ? ' · •••' : ''}
                   </span>
+                  {n.notes.length > 0 ? <span className="map-node-meta">{n.notes.join(' · ')}</span> : null}
                 </Link>
               ))}
             </div>
@@ -243,6 +270,7 @@ export function HouseholdMapPage() {
                 <th scope="col">Item</th>
                 <th scope="col">Type</th>
                 <th scope="col">Amount</th>
+                <th scope="col">Connected to</th>
                 <th scope="col">Status</th>
               </tr>
             </thead>
@@ -252,8 +280,12 @@ export function HouseholdMapPage() {
                   <th scope="row">
                     <Link to={`../${n.to}`}>{n.label}</Link>
                   </th>
-                  <td>{n.typeLabel}</td>
-                  <td>{n.amountText ?? (vm.amountsHidden ? 'hidden' : '—')}</td>
+                  <td>
+                    {n.typeLabel}
+                    {n.notes.length > 0 ? ` — ${n.notes.join('; ')}` : ''}
+                  </td>
+                  <td>{n.amountText ?? (vm.amountsHidden && n.hasAmount ? 'hidden' : '—')}</td>
+                  <td>{n.relations.length > 0 ? n.relations.join('; ') : '—'}</td>
                   <td>{n.missing.length > 0 ? n.missing.join('; ') : 'Complete'}</td>
                 </tr>
               ))}
