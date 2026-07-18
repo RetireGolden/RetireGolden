@@ -9,12 +9,22 @@
  * "Load a fresh copy" resets the slot to the example's defaults.
  */
 
+import { DEFAULT_HOME_LABEL } from '../editionContext'
+
 /** Save indicator shown in the workspace header for `origin: 'example'` plans. */
 export const EXAMPLE_SAVE_INDICATOR = 'Example — edits kept on this device until you reset'
 
-/** Preview-banner sentence describing where an example's edits live. */
-export const EXAMPLE_BANNER_PERSISTENCE =
-  'Your edits are kept on this device, but this example stays out of Your plans until you Save to my plans.'
+/**
+ * Preview-banner sentence describing where an example's edits live.
+ *
+ * `homeLabel` names the planner-home destination the example stays out of until
+ * promoted — 'Your plans' in the free web app, a host edition's own label (e.g.
+ * 'Client library') when supplied via `PlannerEditionProvider`. It is a function
+ * of the label, defaulting to the web copy, so existing hosts are unaffected.
+ */
+export function exampleBannerPersistence(homeLabel: string = DEFAULT_HOME_LABEL): string {
+  return `Your edits are kept on this device, but this example stays out of ${homeLabel} until you Save to my plans.`
+}
 
 /** "Open my version" choice: opening the previously edited example. */
 export const EXAMPLE_OPEN_EXISTING_DESC = 'Keeps the edits you made last time, saved on this device.'

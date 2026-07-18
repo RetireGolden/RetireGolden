@@ -7,14 +7,16 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { ExampleLibrary } from './ExampleLibrary'
+import { usePlannerEdition } from '../editionContext'
 
 export function ExamplesPage() {
   const [notice, setNotice] = useState<string | null>(null)
+  const { homeLabel } = usePlannerEdition()
 
   return (
     <section className="page examples-page">
       <nav className="examples-back" aria-label="Back to planner home">
-        <Link to="/">← Your plans</Link>
+        <Link to="/">← {homeLabel}</Link>
       </nav>
 
       {notice ? <div className="callout callout--info">{notice}</div> : null}

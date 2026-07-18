@@ -83,7 +83,9 @@ bundler — see [packages/planner-ui/README.md](../packages/planner-ui/README.md
 contract. Vite/Vitest alias it to source in-repo, same as the engine.
 
 Top level of `src/`: `index.ts` (public API: `PlannerApp`, the `PlanStore` seam, the route groups,
-`ReportBrandingProvider`), `App.tsx` (app shell: chrome + theme + `useRoutes` over the exported
+`ReportBrandingProvider`, and `PlannerEditionProvider` / `usePlannerEdition` — route-group hosts
+override the home label and the two host-specific Disclaimer sections via
+`planner/editionContext.ts`), `App.tsx` (app shell: chrome + theme + `useRoutes` over the exported
 route groups), `routes/` (`groups.tsx` — the exported `plannerWorkspaceRoutes` /
 `plannerContentRoutes` / `plannerHomeRoutes` route-object arrays: `/` plan picker + `/import` in
 home; `/plan/*` via lazy `routes/PlanRoutes` + `/compare` in workspace; `/examples`, `/learn/*`

@@ -42,3 +42,9 @@ export {
 // Report branding for hosts that mount route groups directly; `<PlannerApp/>`
 // hosts use the `reportBranding` prop instead.
 export { ReportBrandingProvider } from './report/ReportBrandingProvider.tsx'
+
+// Edition content for hosts that mount route groups directly: override the
+// planner-home label and the two host-specific Disclaimer sections (data-storage
+// story, software license). Omit it and the content pages keep the web copy.
+export { PlannerEditionProvider } from './planner/PlannerEditionProvider.tsx'
+export { usePlannerEdition, type PlannerEditionConfig } from './planner/editionContext.ts'
