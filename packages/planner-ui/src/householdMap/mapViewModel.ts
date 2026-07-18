@@ -13,7 +13,7 @@ import {
   type HouseholdGraph,
   type HouseholdNode,
   type HouseholdEditSurface,
-} from '@retiregolden/engine/household/householdGraph'
+} from './householdGraph'
 import { fmtMoney } from '../planner/format'
 import { columnForKind, layoutHouseholdGraph, type MapColumnId } from './layout'
 

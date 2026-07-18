@@ -72,7 +72,6 @@ type-checks against the real `dist/` through a project reference). No React/DOM/
 | `decisions/` | Shared exact-ledger decision engine: `objectives.ts` (objective policies), candidate `generators.ts`, `evaluateCandidate.ts`, `tournament.ts`, `search.ts`, `spendingSolver.ts`, `swrComparator.ts` (published SWR rules on the user's plan) |
 | `spending/` | Spending layers, guardrails, flexible goals, ABW, and shape presets (`layers.ts`, `guardrails.ts`, `flexibleGoals.ts`, `abw.ts`, `shapePresets.ts`) |
 | `insights/` | Insight detectors + registry (`runInsights.ts`, `detectors/`) surfaced on the planner Insights page |
-| `household/` | `householdGraph.ts` — pure household-topology selector (typed nodes/edges, completeness, entered-value totals) behind the Household map ([features/household-map.md](features/household-map.md)) |
 | `scenarios/` | `scenarios.ts` |
 | `testing/` | Test fixtures shared with the app's suites (`planFixtures.ts`, `money.ts`), exported as `@retiregolden/engine/testing/*` |
 
@@ -101,7 +100,7 @@ test files.
 | `mc/` | Monte Carlo Web Worker: `monteCarlo.worker.ts`, `pool.ts`, `runRequest.ts`, `messages.ts` |
 | `optimize/` | Optimizer + spending-solver Web Workers: `optimize.worker.ts` (HiGHS-WASM), `spendingSolve.worker.ts`, `runOptimize.ts`, `runner.ts`, `spendingRunner.ts` |
 | `relocation/` | Relocation-compare Web Worker: `relocation.worker.ts`, `runRelocation.ts`, `runner.ts`, `messages.ts` (engine in `engine/projection/relocation.ts`) |
-| `householdMap/` | Household map page (`/plan/:id/household-map`): deterministic layered `layout.ts`, sanitized `mapViewModel.ts` (privacy-hide strips every dollar string), `HouseholdMapPage.tsx`; the hide toggle also masks the workspace KPI bar via `planner/privacyContext.tsx` (graph selector in `engine/household/`; [features/household-map.md](features/household-map.md)) |
+| `householdMap/` | Household map (`/plan/:id/household-map`): `householdGraph.ts` (pure topology selector — typed nodes/edges, completeness, entered-value totals; engine *types* only), deterministic layered `layout.ts`, sanitized `mapViewModel.ts` (privacy-hide strips every dollar string), `HouseholdMapPage.tsx`; the hide toggle also masks the workspace KPI bar via `planner/privacyContext.tsx` ([features/household-map.md](features/household-map.md)) |
 | `workers/` | `run.ts` — the generic `runWorkerRequest` helper shared by `mc/`, `optimize/`, and `relocation/` |
 | `socialSecurity/` | SS analysis features on top of the engine's SS math: `expectedPv`, `breakEven`, `explain`, `ficaReturn`, `survivorSwitching`, `ssaStatementXml`, plus form storage/guards (the ledger-consumed math lives in the engine package) |
 | `longevity/` | Life-expectancy wizard: `model`, `factors`, `LongevityWizard.tsx`, `LongevityResults.tsx` (the SSA period table + types live in the engine package) |
@@ -150,7 +149,7 @@ test files.
 | Learning Center articles + metadata | `learn/learningRegistry.ts`, `learn/content/` |
 | Assumption sources shown in the UI | `engine: params/provenance.ts`, `planner/ProvenancePanel.tsx`, `planner/AssumptionsCardPage.tsx`, `planner/provenanceLinks.ts` |
 | The in-app validation story | `planner/HowTestedPage.tsx` (`/how-tested`); invariance fixture `engine: decisions/assetLocationInvariance.test.ts` |
-| The household map (topology view) | `engine: household/householdGraph.ts` (pure graph selector); `householdMap/` (layout, sanitized view model, page); reconciliation test in `integration/householdGraphReconciliation.test.ts` |
+| The household map (topology view) | `householdMap/` (`householdGraph.ts` pure graph selector, layout, sanitized view model, page); reconciliation test in `integration/householdGraphReconciliation.test.ts` |
 
 ## Commands
 

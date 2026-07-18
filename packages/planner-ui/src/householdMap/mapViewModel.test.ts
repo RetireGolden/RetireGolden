@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildHouseholdGraph } from '@retiregolden/engine/household/householdGraph'
+import { buildHouseholdGraph } from './householdGraph'
 import type { Account, Plan } from '@retiregolden/engine/model/plan'
 import { couplePlan, socialSecurityIncome, taxableAccount, validatePlan } from '@retiregolden/engine/testing/planFixtures'
 import { buildExampleCouple } from '../planner/examples/buildExampleCouple'

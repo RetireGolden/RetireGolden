@@ -13,7 +13,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { IDBFactory } from 'fake-indexeddb'
 
-import { accountNodeId } from '@retiregolden/engine/household/householdGraph'
+import { accountNodeId } from './householdGraph'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import { _resetPlanStoreForTests, savePlan } from '../data/planStore'
 import { PlanCtx } from '../planner/planContextCore'

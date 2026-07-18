@@ -15,10 +15,15 @@
  *    `UNSUPPORTED_RELATIONSHIPS` — the graph never infers a legal
  *    relationship (estate destinations stay categorical, exactly as stored).
  *
+ * Lives in planner-ui (not the engine package) by the same convention as the
+ * report model: a pure, deterministic reading of the Plan with no ledger
+ * math, importing only *types* from the published engine surface — so the
+ * packed planner-ui artifact builds against the registry engine release.
+ *
  * @see DOCS/features/household-map.md (taxonomy audit + feature doc)
  */
 
-import type { Account, IncomeStream, InsurancePolicy, Plan, TipsLadder } from '../model/plan.js'
+import type { Account, IncomeStream, InsurancePolicy, Plan, TipsLadder } from '@retiregolden/engine/model/plan'
 
 // ---------------------------------------------------------------------------
 // Types

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Account, IncomeStream, Plan } from '../model/plan.js'
+import type { Account, IncomeStream, Plan } from '@retiregolden/engine/model/plan'
 import {
   cashAccount,
   couplePlan,
@@ -9,14 +9,14 @@ import {
   taxableAccount,
   traditionalAccount,
   validatePlan,
-} from '../testing/planFixtures.js'
+} from '@retiregolden/engine/testing/planFixtures'
 import {
   accountNodeId,
   buildHouseholdGraph,
   encodeIdComponent,
   formerSpouseNodeId,
   UNSUPPORTED_RELATIONSHIPS,
-} from './householdGraph.js'
+} from './householdGraph'
 
 function nodeById(graph: ReturnType<typeof buildHouseholdGraph>, id: string) {
   const node = graph.nodes.find((n) => n.id === id)

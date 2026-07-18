@@ -54,9 +54,12 @@ invents an edge the schema does not carry, and never infers a legal relationship
 | Income–asset linkage | Rental income is a recurring stream with no link to the property that produces it |
 | External estate documents | Wills, trusts-as-documents, POAs are out of scope (product non-goal: no estate-document drafting or legal conclusions) |
 
-## Graph selector (`engine/household/householdGraph.ts`)
+## Graph selector (`planner-ui/src/householdMap/householdGraph.ts`)
 
-`buildHouseholdGraph(plan)` is a pure, deterministic selector producing typed nodes and edges:
+`buildHouseholdGraph(plan)` is a pure, deterministic selector producing typed nodes and edges. It
+lives in planner-ui by the same convention as the report model: a reading of the Plan with no
+ledger math, importing only *types* from the published engine surface — so the packed planner-ui
+artifact builds against the registry engine release (CI's pack-smoke gate).
 
 - **Nodes** — `person`, `formerSpouse`, `income` (wages / Social Security / recurring / one-time),
   `guaranteedIncome` (pension / annuity), `account` (cash / taxable / equity comp / traditional /

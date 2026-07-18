@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildHouseholdGraph } from '@retiregolden/engine/household/householdGraph'
+import { buildHouseholdGraph } from './householdGraph'
 import { buildExampleCouple } from '../planner/examples/buildExampleCouple'
 import { buildUnderSavedSingle } from '../planner/examples/buildUnderSavedSingle'
 import { layoutHouseholdGraph, MAP_COLUMN_ORDER } from './layout'

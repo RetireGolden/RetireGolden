@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-import { buildHouseholdGraph } from '@retiregolden/engine/household/householdGraph'
+import { buildHouseholdGraph } from './householdGraph'
 import { isPlanIncomplete } from '../planner/planCompleteness'
 import { usePlan } from '../planner/planContextCore'
 import { usePrivacy } from '../planner/privacyContextCore'

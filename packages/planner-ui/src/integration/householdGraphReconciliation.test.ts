@@ -8,7 +8,7 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { accountNodeId, buildHouseholdGraph, incomeNodeId } from '@retiregolden/engine/household/householdGraph'
+import { accountNodeId, buildHouseholdGraph, incomeNodeId } from '../householdMap/householdGraph'
 import { EXAMPLE_PLANS } from '../planner/examples/registry'
 import { projectPlan } from '../planner/useProjection'
 import { buildReportModel } from '../report/reportModel'

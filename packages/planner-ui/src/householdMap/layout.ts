@@ -7,7 +7,7 @@
  * values — only node identity and grid positions.
  */
 
-import type { HouseholdGraph, HouseholdNodeKind } from '@retiregolden/engine/household/householdGraph'
+import type { HouseholdGraph, HouseholdNodeKind } from './householdGraph'
 
 export type MapColumnId = 'people' | 'income' | 'accounts' | 'propertyDebt' | 'protection'
 
