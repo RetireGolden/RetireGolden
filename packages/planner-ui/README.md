@@ -121,8 +121,9 @@ The supported product API is:
   (`PlanStore`, `PlanSummary`, `PlanStoreProvider`, `indexedDbPlanStore`),
   the read-only capability (`readOnly` prop + `useWorkspaceReadOnly`), the
   route groups (`plannerWorkspaceRoutes`, `plannerContentRoutes`,
-  `plannerHomeRoutes`), and `ReportBrandingProvider` — see "Hosting the
-  workspace" below;
+  `plannerHomeRoutes`), `ReportBrandingProvider`, and
+  `PlannerEditionProvider` (with `usePlannerEdition` /
+  `PlannerEditionConfig`) — see "Hosting the workspace" below;
 - the **`./plan-format` subpath** — `serializeV2Backup`, `parseV2Backup`,
   the envelope types, and the kind/version constants. This is the plan
   interchange format (the same file the web app's backup download produces);
@@ -282,6 +283,46 @@ path at your own library surface. Hosts mounting groups directly brand
 downloaded reports with `ReportBrandingProvider` (the component form of the
 `reportBranding` prop below); `<PlannerApp/>` remains exactly the composition
 of all three groups plus the web chrome.
+
+The content-group pages are layout-robust standalone — the Examples page
+centers its own 52rem column (matching the web shell) so it renders correctly
+in a bare host, not just inside `.app-shell`.
+
+### Edition content
+
+A few strings are written for the free web app and are wrong in a
+differently-configured host — the planner-home label ("Your plans", used by the
+content pages and the workspace breadcrumb/rail/recovery links), the workspace
+save-indicator tooltip ("Plans live only in this browser…"), the Disclaimer's
+"Your data stays with you" section (no accounts, browser storage), and its
+"Software license & third-party notices" section (AGPL, free and open
+source). `PlannerEditionProvider` overrides just those, leaving
+the shared disclaimer substance (educational-use, model limitations,
+rules-change, provenance, no-warranty) single-sourced. Omit the provider (or
+any field) and every page keeps today's web copy exactly — `<PlannerApp/>` and
+existing hosts are unchanged.
+
+```tsx
+import { PlannerEditionProvider } from '@retiregolden/planner-ui'
+
+<PlannerEditionProvider
+  edition={{
+    homeLabel: 'Client library',            // home links + example persistence copy; default 'Your plans'
+    storageTooltip: 'Plans live in your encrypted local library — nothing is sent to a server.',
+    disclaimerDataSection: <MyDataSection />,      // replaces the whole "Your data stays with you" block
+    disclaimerLicenseSection: <MyLicenseSection />, // replaces the whole license block
+  }}
+>
+  {/* plannerContentRoutes / plannerWorkspaceRoutes */}
+</PlannerEditionProvider>
+```
+
+`PlannerEditionConfig` is the `edition` shape; all fields are optional.
+`usePlannerEdition()` reads the resolved values (defaults applied) inside a
+host's own chrome mounted under the provider. This is a route-group-host
+concern, so — unlike `reportBranding` — `<PlannerApp/>` exposes no matching
+prop: it renders the web plans-management home and the AGPL web app, where the
+defaults are always correct.
 
 ### Plan interchange
 

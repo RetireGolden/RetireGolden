@@ -14,6 +14,7 @@ import { useDialogs } from './dialogs'
 import { isPlanIncomplete } from './planCompleteness'
 import { ExamplePreviewBanner } from './examples/ExamplePreviewBanner'
 import { EXAMPLE_SAVE_INDICATOR } from './examples/exampleCopy'
+import { usePlannerEdition } from './editionContext'
 import { PlanProvider } from './PlanContext'
 import { usePlan } from './planContextCore'
 import { PrivacyProvider } from './privacyContext'
@@ -60,6 +61,7 @@ function sectionTitleOf(pathname: string): string | null {
 function SaveIndicator() {
   const { plan, saveState, issues } = usePlan()
   const readOnly = useWorkspaceReadOnly()
+  const { homeLabel, storageTooltip } = usePlannerEdition()
   const isExample = plan.origin === 'example'
   // Read-only wins over any save state: nothing is being stored, so the
   // "Stored on this device" / "Storing…" copy would be misleading. Keep the
@@ -84,8 +86,8 @@ function SaveIndicator() {
             ? 'Could not store locally'
             : ''
   const title = isExample
-    ? "This example is saved on this device under its own slot — your edits stick across reloads, but it stays out of Your plans until you use 'Save to my plans'. 'Load a fresh copy' resets it."
-    : "Plans live only in this browser — nothing is sent to a server. Use 'Download plan backup' on the planner home to keep a copy."
+    ? `This example is saved on this device under its own slot — your edits stick across reloads, but it stays out of ${homeLabel} until you use 'Save to my plans'. 'Load a fresh copy' resets it.`
+    : storageTooltip
   return (
     <span
       className={saveState === 'invalid' || saveState === 'error' ? 'save-state save-state--error' : 'save-state'}
@@ -202,6 +204,7 @@ function WorkspaceInner() {
   const { plan, discardPendingSave } = usePlan()
   const store = usePlanStore()
   const readOnly = useWorkspaceReadOnly()
+  const { homeLabel } = usePlannerEdition()
   const navigate = useNavigate()
   const location = useLocation()
   const { prompt, alert, dialogs } = useDialogs()
@@ -243,7 +246,7 @@ function WorkspaceInner() {
           <nav className="workspace-breadcrumb" aria-label="Breadcrumb">
             <ol>
               <li>
-                <Link to="/">Your plans</Link>
+                <Link to="/">{homeLabel}</Link>
               </li>
               <li aria-current="page">{plan.name}</li>
             </ol>
@@ -269,7 +272,7 @@ function WorkspaceInner() {
         </a>
         <nav className="workspace-rail" aria-label="Plan sections">
           <NavLink to="/" className="rail-link rail-link--back" end>
-            ← Your plans
+            ← {homeLabel}
           </NavLink>
           <span className="rail-group">Enter</span>
           <NavLink to="household" className={railClass}>Household</NavLink>

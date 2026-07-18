@@ -8,25 +8,31 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  EXAMPLE_BANNER_PERSISTENCE,
   EXAMPLE_LOAD_FRESH_DESC,
   EXAMPLE_OPEN_EXISTING_DESC,
   EXAMPLE_SAVE_INDICATOR,
+  exampleBannerPersistence,
 } from './exampleCopy'
 
 describe('example persistence copy', () => {
   it('the banner and save indicator agree that edits are kept on this device', () => {
     expect(EXAMPLE_SAVE_INDICATOR).toMatch(/kept on this device/i)
-    expect(EXAMPLE_BANNER_PERSISTENCE).toMatch(/kept on this device/i)
+    expect(exampleBannerPersistence()).toMatch(/kept on this device/i)
   })
 
   it('the banner explains the example stays out of Your plans until promoted', () => {
-    expect(EXAMPLE_BANNER_PERSISTENCE).toMatch(/Your plans/)
-    expect(EXAMPLE_BANNER_PERSISTENCE).toMatch(/Save to my plans/)
+    expect(exampleBannerPersistence()).toMatch(/Your plans/)
+    expect(exampleBannerPersistence()).toMatch(/Save to my plans/)
+  })
+
+  it("names a host edition's home label in place of 'Your plans' when given one", () => {
+    const copy = exampleBannerPersistence('Client library')
+    expect(copy).toMatch(/stays out of Client library until/)
+    expect(copy).not.toMatch(/Your plans/)
   })
 
   it('never contradicts itself by claiming edits are not kept', () => {
-    for (const copy of [EXAMPLE_SAVE_INDICATOR, EXAMPLE_BANNER_PERSISTENCE, EXAMPLE_OPEN_EXISTING_DESC]) {
+    for (const copy of [EXAMPLE_SAVE_INDICATOR, exampleBannerPersistence(), EXAMPLE_OPEN_EXISTING_DESC]) {
       expect(copy, copy).not.toMatch(/won.?t (be )?(kept|saved|appear)/i)
       expect(copy, copy).not.toMatch(/not (kept|saved)/i)
     }

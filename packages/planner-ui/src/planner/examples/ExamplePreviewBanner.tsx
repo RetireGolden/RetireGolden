@@ -12,7 +12,8 @@ import { useDialogs } from '../dialogs'
 import { usePlan } from '../planContextCore'
 import { getExampleById } from './registry'
 import { saveExampleToMyPlans } from './loadExample'
-import { EXAMPLE_BANNER_PERSISTENCE } from './exampleCopy'
+import { exampleBannerPersistence } from './exampleCopy'
+import { usePlannerEdition } from '../editionContext'
 
 export function ExamplePreviewBanner() {
   const { plan, discardPendingSave } = usePlan()
@@ -21,6 +22,7 @@ export function ExamplePreviewBanner() {
   const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
   const { alert, dialogs } = useDialogs()
+  const { homeLabel } = usePlannerEdition()
 
   if (plan.origin !== 'example') return null
 
@@ -44,7 +46,7 @@ export function ExamplePreviewBanner() {
   return (
     <div className="callout callout--info example-preview-banner" role="status">
       <p>
-        <strong>You&apos;re viewing an example.</strong> {EXAMPLE_BANNER_PERSISTENCE}
+        <strong>You&apos;re viewing an example.</strong> {exampleBannerPersistence(homeLabel)}
         {example?.lookFor ? ` ${example.lookFor}` : ''}
       </p>
       <div className="picker-actions" style={{ margin: 0 }}>

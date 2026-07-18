@@ -16,6 +16,7 @@ import { EXAMPLE_PLAN_ID_PREFIX, isExamplePlanId } from '../data/planOrigin'
 import { getExampleById } from './examples/registry'
 import { saveFreshDemo } from './examples/loadExample'
 import { PlanCtx, type PlanContextValue, type SaveState } from './planContextCore'
+import { usePlannerEdition } from './editionContext'
 
 const AUTOSAVE_MS = 600
 
@@ -27,6 +28,7 @@ const AUTOSAVE_MS = 600
 export function PlanProvider({ planId, children }: { planId: string; children: ReactNode }) {
   const store = usePlanStore()
   const readOnly = useWorkspaceReadOnly()
+  const { homeLabel } = usePlannerEdition()
   const [plan, setPlan] = useState<Plan | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [saveState, setSaveState] = useState<SaveState>('loading')
@@ -218,7 +220,7 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
         </p>
         <div className="picker-actions">
           <Link to="/" className="btn btn-primary">
-            Your plans
+            {homeLabel}
           </Link>
           <Link to="/examples" className="btn btn-secondary">
             Browse examples

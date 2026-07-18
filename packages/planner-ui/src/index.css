@@ -141,6 +141,21 @@ code {
   max-width: 60rem;
 }
 
+/* Standalone-robustness contract: the Examples page is the only content route
+   with no internal container of its own (DisclaimerPage centers itself inline;
+   Learn articles use ArticleShell). So it centers its own column here — matching
+   `.app-shell--landing`'s 60rem max-width and auto margins (in the web app,
+   /examples is a landing route: App.tsx `isLanding`) — so a bare host that
+   mounts `plannerContentRoutes` without the web chrome still gets a centered
+   column. Inside the web shell this is a visual no-op (the landing shell
+   already constrains to the same 60rem). No horizontal padding: the web shell
+   already provides 1.25rem of it, and doubling it up would misalign the page
+   from the rest of the chrome. */
+.examples-page {
+  max-width: 60rem;
+  margin: 0 auto;
+}
+
 .app-header {
   display: flex;
   flex-wrap: wrap;

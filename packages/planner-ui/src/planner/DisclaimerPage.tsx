@@ -4,8 +4,10 @@ import { Link } from 'react-router-dom'
 
 import { PARAMETER_DATA_AS_OF, PARAMETER_DATA_BASIS } from '@retiregolden/engine/params'
 import { ProvenancePanel } from './ProvenancePanel'
+import { usePlannerEdition } from './editionContext'
 
 export function DisclaimerPage() {
+  const { disclaimerDataSection, disclaimerLicenseSection } = usePlannerEdition()
   return (
     <article className="page" style={{ maxWidth: '46rem', margin: '0 auto', textAlign: 'left' }}>
       <h1>Disclaimer</h1>
@@ -50,13 +52,20 @@ export function DisclaimerPage() {
       </p>
       <ProvenancePanel />
 
-      <h2>Your data stays with you</h2>
-      <p>
-        RetireGolden has no server-side storage and no accounts. Everything you enter lives only in this browser
-        (IndexedDB and localStorage) and is never transmitted anywhere. That also means <strong>we cannot recover it</strong>:
-        clearing your browser data, switching devices, or using the "Clear all data" button erases it permanently.
-        Download a plan backup from the planner home if you want to keep or move your plans.
-      </p>
+      {/* Host-specific: the free web app's storage story. A host edition with a
+          different persistence/account model replaces the whole block via
+          PlannerEditionProvider (`disclaimerDataSection`). */}
+      {disclaimerDataSection ?? (
+        <>
+          <h2>Your data stays with you</h2>
+          <p>
+            RetireGolden has no server-side storage and no accounts. Everything you enter lives only in this browser
+            (IndexedDB and localStorage) and is never transmitted anywhere. That also means <strong>we cannot recover it</strong>:
+            clearing your browser data, switching devices, or using the "Clear all data" button erases it permanently.
+            Download a plan backup from the planner home if you want to keep or move your plans.
+          </p>
+        </>
+      )}
 
       <h2>No warranty</h2>
       <p>
@@ -65,24 +74,31 @@ export function DisclaimerPage() {
         this tool.
       </p>
 
-      <h2>Software license &amp; third-party notices</h2>
-      <p>
-        RetireGolden is free and open-source software, licensed under the{' '}
-        <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener noreferrer">
-          GNU Affero General Public License v3.0 (AGPL-3.0)
-        </a>
-        . © 2026 RetireGolden, LLC. "RetireGolden" and the RetireGolden logo are trademarks of RetireGolden, LLC.
-        The source code is available on{' '}
-        <a href="https://github.com/RetireGolden/RetireGolden" target="_blank" rel="noopener noreferrer">
-          GitHub
-        </a>
-        . It bundles third-party packages (React, Recharts, HiGHS-WASM, Zod, and their dependencies) distributed
-        under their respective permissive licenses — see the{' '}
-        <a href="/THIRD-PARTY-NOTICES.txt" target="_blank" rel="noopener noreferrer">
-          full third-party notices
-        </a>
-        .
-      </p>
+      {/* Host-specific: the free web app is AGPL. A differently-licensed host
+          edition (e.g. EULA-licensed) replaces the whole block via
+          PlannerEditionProvider (`disclaimerLicenseSection`). */}
+      {disclaimerLicenseSection ?? (
+        <>
+          <h2>Software license &amp; third-party notices</h2>
+          <p>
+            RetireGolden is free and open-source software, licensed under the{' '}
+            <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener noreferrer">
+              GNU Affero General Public License v3.0 (AGPL-3.0)
+            </a>
+            . © 2026 RetireGolden, LLC. "RetireGolden" and the RetireGolden logo are trademarks of RetireGolden, LLC.
+            The source code is available on{' '}
+            <a href="https://github.com/RetireGolden/RetireGolden" target="_blank" rel="noopener noreferrer">
+              GitHub
+            </a>
+            . It bundles third-party packages (React, Recharts, HiGHS-WASM, Zod, and their dependencies) distributed
+            under their respective permissive licenses — see the{' '}
+            <a href="/THIRD-PARTY-NOTICES.txt" target="_blank" rel="noopener noreferrer">
+              full third-party notices
+            </a>
+            .
+          </p>
+        </>
+      )}
     </article>
   )
 }
