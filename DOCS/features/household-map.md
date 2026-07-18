@@ -51,3 +51,38 @@ invents an edge the schema does not carry, and never infers a legal relationship
 | Debt collateral | Debts are standalone; a mortgage is not linked to the property it secures |
 | Income–asset linkage | Rental income is a recurring stream with no link to the property that produces it |
 | External estate documents | Wills, trusts-as-documents, POAs are out of scope (product non-goal: no estate-document drafting or legal conclusions) |
+
+## Graph selector (`engine/household/householdGraph.ts`)
+
+`buildHouseholdGraph(plan)` is a pure, deterministic selector producing typed nodes and edges:
+
+- **Nodes** — `person`, `formerSpouse`, `income` (wages / Social Security / recurring / one-time),
+  `guaranteedIncome` (pension / annuity), `account` (cash / taxable / equity comp / traditional /
+  Roth / HSA), `property`, `debt`, `insurance` (LTC / permanent life), `ladder` (TIPS), and
+  categorical `estate` destinations (surviving spouse / non-spouse heirs / charity / estate).
+  Node ids are stable and derived from plan entity ids (`person:<id>`, `acct:<id>`, `inc:<id>`,
+  `ins:<id>`, `ladder:<id>`, `fs:<streamId>:<formerSpouseId>`, `estate:<destination>`), so layout
+  and tests survive unrelated plan edits.
+- **Amounts** are the plan's own stored figures (balance, property value, debt owed, annual/monthly
+  amounts) tagged with an `amountKind` — the selector never computes derived dollars beyond exact
+  sums of stored values.
+- **Edges** — `owns`, `receives`, `covers` (insurance → insured), `beneficiary`,
+  `survivor` (pension/annuity continuation), `funds` (annuity purchase, pension lump-sum rollover,
+  ladder purchase), `formerSpouseOf`. Joint ownership emits one edge per household member flagged
+  `joint`.
+- **Completeness** per node (`complete` / `partial` / `unknown` + factual `missing` strings):
+  e.g. an investable account with no estate destination, a person with no Social Security record,
+  a Social Security stream with neither PIA nor earnings (`unknown` — benefit can't be estimated),
+  a planned property sale with no basis or proceeds estimate, a 0%-survivor pension or life-only
+  annuity in a two-person household, an ownerless pension/annuity.
+- **Provenance**: every node carries `source` (the plan path it was read from, e.g. `accounts[3]`)
+  and `editSurface` (semantic id of the planner screen where it is edited; the UI maps it to a
+  route).
+- **Totals** (`assets` = investable + property, `investable`, `property`, `liabilities`,
+  `netWorth = assets − liabilities`) are sums of *entered* values — deliberately distinct from the
+  projection's simulated net worth, and reconciled 1:1 against the report model's accounts block in
+  `planner-ui/src/integration/householdGraphReconciliation.test.ts` across the whole example
+  library.
+
+Feature-off discipline: the graph is a read-only selector — it writes nothing, adds no schema
+fields, and touches no engine ledger path, so `npm run cases:diff` is unchanged by its presence.

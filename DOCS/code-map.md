@@ -72,6 +72,7 @@ type-checks against the real `dist/` through a project reference). No React/DOM/
 | `decisions/` | Shared exact-ledger decision engine: `objectives.ts` (objective policies), candidate `generators.ts`, `evaluateCandidate.ts`, `tournament.ts`, `search.ts`, `spendingSolver.ts`, `swrComparator.ts` (published SWR rules on the user's plan) |
 | `spending/` | Spending layers, guardrails, flexible goals, ABW, and shape presets (`layers.ts`, `guardrails.ts`, `flexibleGoals.ts`, `abw.ts`, `shapePresets.ts`) |
 | `insights/` | Insight detectors + registry (`runInsights.ts`, `detectors/`) surfaced on the planner Insights page |
+| `household/` | `householdGraph.ts` — pure household-topology selector (typed nodes/edges, completeness, entered-value totals) behind the Household map ([features/household-map.md](features/household-map.md)) |
 | `scenarios/` | `scenarios.ts` |
 | `testing/` | Test fixtures shared with the app's suites (`planFixtures.ts`, `money.ts`), exported as `@retiregolden/engine/testing/*` |
 
