@@ -2390,26 +2390,24 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // iteration); netting reduces ordinary + gains before both federal and state
     // tax so the AGI cascade (taxable SS, IRMAA, ACA, state) falls out for free.
     const lossOffsetLimit = pack.federalTax.capitalLossOrdinaryOffsetLimit
-    let tax = 0
-    let penalties = 0
-    for (let i = 0; i < MAX_TAX_ITERATIONS; i++) {
-      const need = Math.max(0, expenses.total + contributions + tax + penalties - cashInflows)
-      const candidate = planWithdrawals(need, balances, withdrawalStrategy, year, floorReserveNominal)
-      const rothEffect = rothEarlyEffect(candidate.byAccountId)
-      const hsaProbe = hsaEffect(candidate.byAccountId)
-      const iraNontaxableProbe = iraBasisEffect(candidate.byAccountId)
+    const spendingNeedBeforeTax = Math.max(0, expenses.total + contributions - cashInflows)
+    const evaluateWithdrawalNeed = (need: number) => {
+      const withdrawalPlan = planWithdrawals(need, balances, withdrawalStrategy, year, floorReserveNominal)
+      const rothEffect = rothEarlyEffect(withdrawalPlan.byAccountId)
+      const hsaProbe = hsaEffect(withdrawalPlan.byAccountId)
+      const iraNontaxableProbe = iraBasisEffect(withdrawalPlan.byAccountId)
       const nettedProbe = applyCapitalLossCarryforward(
         capitalLossPool,
-        ordinaryBase + candidate.byCategory.traditional - iraNontaxableProbe + rothEffect.taxableOrdinary + hsaProbe.taxableOrdinary,
-        oneTimeGains + rebalanceRealizedGains + candidate.realizedGains,
+        ordinaryBase + withdrawalPlan.byCategory.traditional - iraNontaxableProbe + rothEffect.taxableOrdinary + hsaProbe.taxableOrdinary,
+        oneTimeGains + rebalanceRealizedGains + withdrawalPlan.realizedGains,
         lossOffsetLimit,
       )
-      const newTax = taxCalculator.compute({
+      const tax = taxCalculator.compute({
         year,
         filingStatus: filingStatusForYear,
         ordinaryIncome: nettedProbe.ordinaryAfter,
         capitalGains: nettedProbe.netCapitalGain,
-        realizedCapitalGainsBeforeCarryforward: oneTimeGains + rebalanceRealizedGains + candidate.realizedGains,
+        realizedCapitalGainsBeforeCarryforward: oneTimeGains + rebalanceRealizedGains + withdrawalPlan.realizedGains,
         taxableInterestIncome: incomes.taxableInterest + ladderTaxableInterest,
         usGovernmentInterest: ladderTaxableInterest,
         ordinaryDividends: incomes.ordinaryDividends,
@@ -2418,19 +2416,78 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         peopleAged65Plus,
         state: residenceState,
         stateResidency,
-        privateRetirementIncome: privateRetirementBase + candidate.byCategory.traditional - iraNontaxableProbe,
+        privateRetirementIncome: privateRetirementBase + withdrawalPlan.byCategory.traditional - iraNontaxableProbe,
         publicPensionIncome: publicPensionBase,
         agesAlive,
         itemizedDeductions,
       })
-      const newPenalties = penaltiesFor(candidate.byAccountId) + rothEffect.penalty + hsaProbe.penalty
-      const converged = Math.abs(newTax - tax) + Math.abs(newPenalties - penalties) < EPSILON
-      tax = newTax
-      penalties = newPenalties
-      if (converged) break
+      const penalties = penaltiesFor(withdrawalPlan.byAccountId) + rothEffect.penalty + hsaProbe.penalty
+      return {
+        withdrawalPlan,
+        tax,
+        penalties,
+        requiredNeed: Math.max(0, expenses.total + contributions + tax + penalties - cashInflows),
+      }
     }
-    const finalNeed = Math.max(0, expenses.total + contributions + tax + penalties - cashInflows)
-    const withdrawalPlan = planWithdrawals(finalNeed, balances, withdrawalStrategy, year, floorReserveNominal)
+
+    // The quick fixed-point pass covers the usual case.  Crucially, its
+    // accepted evaluation includes the withdrawal plan that produced its tax,
+    // rather than applying a new, unchecked plan after the loop.
+    let need = spendingNeedBeforeTax
+    let evaluation = evaluateWithdrawalNeed(need)
+    let converged = Math.abs(evaluation.requiredNeed - need) < EPSILON
+    for (let i = 1; i < MAX_TAX_ITERATIONS && !converged; i++) {
+      need = evaluation.requiredNeed
+      evaluation = evaluateWithdrawalNeed(need)
+      converged = Math.abs(evaluation.requiredNeed - need) < EPSILON
+    }
+
+    if (!converged) {
+      // Tax and penalties are a function of the withdrawal plan, so solve the
+      // one-dimensional funding equation instead of silently accepting the
+      // eighth provisional value.  A finite portfolio still brackets the root:
+      // once all spendable balances are exhausted, requiredNeed is bounded
+      // while the candidate need keeps growing.
+      let lowerNeed = 0
+      let lower = evaluateWithdrawalNeed(lowerNeed)
+      let upperNeed = Math.max(1, need, evaluation.requiredNeed)
+      let upper = evaluateWithdrawalNeed(upperNeed)
+      for (let i = 0; i < 64 && upper.requiredNeed - upperNeed > EPSILON; i++) {
+        upperNeed *= 2
+        upper = evaluateWithdrawalNeed(upperNeed)
+      }
+      if (upper.requiredNeed - upperNeed > EPSILON) {
+        throw new Error(`Tax/withdrawal fixed point could not be bracketed for ${year}.`)
+      }
+
+      // A fixed count here is a numerical precision bound, not a substitute
+      // for convergence: the result is accepted only when the invariant below
+      // holds.  64 halvings is far below a cent even for trillion-dollar plans.
+      for (let i = 0; i < 64; i++) {
+        const midpointNeed = (lowerNeed + upperNeed) / 2
+        const midpoint = evaluateWithdrawalNeed(midpointNeed)
+        const residual = midpoint.requiredNeed - midpointNeed
+        if (Math.abs(residual) < EPSILON) {
+          evaluation = midpoint
+          converged = true
+          break
+        }
+        if (residual > 0) {
+          lowerNeed = midpointNeed
+          lower = midpoint
+        } else {
+          upperNeed = midpointNeed
+          upper = midpoint
+        }
+      }
+      if (!converged) {
+        // Keep the projection from committing an internally inconsistent ledger.
+        const closestResidual = Math.min(Math.abs(lower.requiredNeed - lowerNeed), Math.abs(upper.requiredNeed - upperNeed))
+        throw new Error(`Tax/withdrawal fixed point did not converge for ${year} (residual ${closestResidual}).`)
+      }
+    }
+
+    const { withdrawalPlan, tax, penalties } = evaluation
     // Any open HECM line backstops a true portfolio shortfall regardless of
     // draw policy — no borrower defaults on spending with credit available.
     // The policy only controls proactive (coordinated) draws above.
