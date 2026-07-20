@@ -1129,7 +1129,14 @@ describe('federal tax integration', () => {
     // A 50% marginal rate needs more than eight simple fixed-point iterations
     // from zero to settle this $100k traditional-only spending draw.
     const flat50 = createFlatTaxCalculator(50)
-    const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: flat50 })
+    let taxEvaluations = 0
+    const countedFlat50 = {
+      compute: (input: Parameters<typeof flat50.compute>[0]) => {
+        taxEvaluations += 1
+        return flat50.compute(input)
+      },
+    }
+    const result = simulatePlan(validate(plan), { startYear: 2026, horizonEndYear: 2026, taxCalculator: countedFlat50 })
 
     const y1 = result.years[0]!
     const recomputedTax = flat50.compute({
@@ -1142,6 +1149,40 @@ describe('federal tax integration', () => {
     })
     expect(Math.abs(y1.tax - recomputedTax)).toBeLessThan(0.005)
     expect(Math.abs(y1.withdrawals.traditional - (y1.expenses.total + y1.tax))).toBeLessThan(0.005)
+    expect(taxEvaluations).toBeGreaterThan(10) // quick pass plus bracket expansion and bisection
+  })
+
+  it('uses the fallback with the production federal calculator for a high traditional draw', () => {
+    const plan = basePlan()
+    plan.expenses.baseAnnual = 500_000
+    plan.accounts = [traditional(5_000_000)]
+    const federal = createFederalTaxCalculator()
+    let taxEvaluations = 0
+    const countedFederal = {
+      compute: (input: Parameters<typeof federal.compute>[0]) => {
+        taxEvaluations += 1
+        return federal.compute(input)
+      },
+    }
+
+    const result = simulatePlan(validate(plan), { startYear: 2026, horizonEndYear: 2026, taxCalculator: countedFederal })
+    const y1 = result.years[0]!
+    expect(Math.abs(y1.withdrawals.traditional - (y1.expenses.total + y1.tax + y1.penalties))).toBeLessThanOrEqual(0.005)
+    expect(taxEvaluations).toBeGreaterThan(10)
+  })
+
+  it('warns and keeps the closest ledger when a discontinuous calculator has no fixed point', () => {
+    const plan = basePlan()
+    plan.expenses.baseAnnual = 100_000
+    plan.accounts = [traditional(2_000_000)]
+    const discontinuous = {
+      compute: ({ ordinaryIncome }: { ordinaryIncome: number }) => ordinaryIncome < 150_000 ? 100_000 : 0,
+    }
+
+    const result = simulatePlan(validate(plan), { startYear: 2026, horizonEndYear: 2026, taxCalculator: discontinuous })
+
+    expect(result.years).toHaveLength(1)
+    expect(result.warnings.some((warning) => warning.includes('could not reconcile within half a cent'))).toBe(true)
   })
 
   it('self-consistently grosses up traditional withdrawals under real brackets', () => {

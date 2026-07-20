@@ -2435,11 +2435,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // rather than applying a new, unchecked plan after the loop.
     let need = spendingNeedBeforeTax
     let evaluation = evaluateWithdrawalNeed(need)
-    let converged = Math.abs(evaluation.requiredNeed - need) < EPSILON
+    let converged = Math.abs(evaluation.requiredNeed - need) <= EPSILON
     for (let i = 1; i < MAX_TAX_ITERATIONS && !converged; i++) {
       need = evaluation.requiredNeed
       evaluation = evaluateWithdrawalNeed(need)
-      converged = Math.abs(evaluation.requiredNeed - need) < EPSILON
+      converged = Math.abs(evaluation.requiredNeed - need) <= EPSILON
     }
 
     if (!converged) {
@@ -2452,22 +2452,35 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       let lower = evaluateWithdrawalNeed(lowerNeed)
       let upperNeed = Math.max(1, need, evaluation.requiredNeed)
       let upper = evaluateWithdrawalNeed(upperNeed)
-      for (let i = 0; i < 64 && upper.requiredNeed - upperNeed > EPSILON; i++) {
+      let upperResidual = upper.requiredNeed - upperNeed
+      for (let i = 0; i < 64 && upperResidual > EPSILON && upper.withdrawalPlan.shortfall <= EPSILON; i++) {
         upperNeed *= 2
         upper = evaluateWithdrawalNeed(upperNeed)
-      }
-      if (upper.requiredNeed - upperNeed > EPSILON) {
-        throw new Error(`Tax/withdrawal fixed point could not be bracketed for ${year}.`)
+        upperResidual = upper.requiredNeed - upperNeed
       }
 
-      // A fixed count here is a numerical precision bound, not a substitute
-      // for convergence: the result is accepted only when the invariant below
-      // holds.  64 halvings is far below a cent even for trillion-dollar plans.
-      for (let i = 0; i < 64; i++) {
+      // Once withdrawals are exhausted, requiredNeed is bounded by this
+      // evaluation. Jump to that bound instead of doubling through nonsense
+      // inputs; the saturated withdrawal mix makes this a useful endpoint.
+      if (upperResidual > EPSILON && upper.withdrawalPlan.shortfall > EPSILON) {
+        upperNeed = Math.max(upperNeed, upper.requiredNeed)
+        upper = evaluateWithdrawalNeed(upperNeed)
+        upperResidual = upper.requiredNeed - upperNeed
+      }
+
+      if (Math.abs(upperResidual) <= EPSILON) {
+        evaluation = upper
+        converged = true
+      }
+
+      // Bisection needs a true sign-change bracket. Tax rules can contain hard
+      // steps, so also stop when the interval collapses and retain the endpoint
+      // with the smallest funding residual instead of aborting the projection.
+      for (let i = 0; i < 64 && !converged && upperResidual <= 0; i++) {
         const midpointNeed = (lowerNeed + upperNeed) / 2
         const midpoint = evaluateWithdrawalNeed(midpointNeed)
         const residual = midpoint.requiredNeed - midpointNeed
-        if (Math.abs(residual) < EPSILON) {
+        if (Math.abs(residual) <= EPSILON) {
           evaluation = midpoint
           converged = true
           break
@@ -2478,12 +2491,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         } else {
           upperNeed = midpointNeed
           upper = midpoint
+          upperResidual = residual
+        }
+        if (upperNeed - lowerNeed <= EPSILON) {
+          break
         }
       }
       if (!converged) {
-        // Keep the projection from committing an internally inconsistent ledger.
-        const closestResidual = Math.min(Math.abs(lower.requiredNeed - lowerNeed), Math.abs(upper.requiredNeed - upperNeed))
-        throw new Error(`Tax/withdrawal fixed point did not converge for ${year} (residual ${closestResidual}).`)
+        const lowerResidual = Math.abs(lower.requiredNeed - lowerNeed)
+        const closestResidual = Math.min(lowerResidual, Math.abs(upperResidual))
+        evaluation = lowerResidual <= Math.abs(upperResidual) ? lower : upper
+        warnings.add(
+          `Tax and withdrawal funding could not reconcile within half a cent for ${year}; the closest result differs by $${closestResidual.toFixed(2)}.`,
+        )
       }
     }
 
