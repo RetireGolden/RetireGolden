@@ -100,13 +100,13 @@ Runs on pull-request activity. First-time contributors are asked to sign the [Co
 
 [`.github/workflows/publish-engine.yml`](.github/workflows/publish-engine.yml)
 
-Publishes [`packages/engine`](packages/engine/) to npm as `@retiregolden/engine` with provenance. Fires on `engine-v<version>` tags (the tag must match the package version) or manually from the Actions tab (manual runs default to `--dry-run`). Requires the `NPM_TOKEN` repository secret — a granular npm automation token for the `@retiregolden` org.
+Publishes [`packages/engine`](packages/engine/) to npm as `@retiregolden/engine` with provenance. Fires on `engine-v<version>` tags (the tag must match the package version) or manually from the Actions tab (manual runs default to `--dry-run`). Authenticates via npm Trusted Publishing (OIDC) — no long-lived token; the package is configured with a trusted publisher pinned to this repo and workflow file.
 
 ### Planner UI package release
 
 [`.github/workflows/publish-planner-ui.yml`](.github/workflows/publish-planner-ui.yml)
 
-Publishes [`packages/planner-ui`](packages/planner-ui/) to npm as `@retiregolden/planner-ui` with provenance. Fires on `planner-ui-v<version>` tags (the tag must match the package version) or manually from the Actions tab (manual runs default to `--dry-run`). Uses the same `NPM_TOKEN` secret; the token needs publish rights on this package too. Before publishing, a pack-smoke step builds a scratch Vite consumer from the packed tarball to prove the published surface (exports map, dep-internal workers, HiGHS wasm).
+Publishes [`packages/planner-ui`](packages/planner-ui/) to npm as `@retiregolden/planner-ui` with provenance. Fires on `planner-ui-v<version>` tags (the tag must match the package version) or manually from the Actions tab (manual runs default to `--dry-run`). Uses the same npm Trusted Publishing (OIDC) flow — configure a trusted publisher for this package too, no token needed. Before publishing, a pack-smoke step builds a scratch Vite consumer from the packed tarball to prove the published surface (exports map, dep-internal workers, HiGHS wasm).
 
 ## License
 

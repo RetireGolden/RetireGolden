@@ -5,8 +5,19 @@
 # manual run defaults to `npm publish --dry-run` so the pipeline can be
 # rehearsed without releasing.
 #
-# Requires the `NPM_TOKEN` repository secret: a granular npm automation token
-# for the @retiregolden org with publish rights on @retiregolden/planner-ui.
+# Publishes via npm Trusted Publishing (OIDC): the @retiregolden/planner-ui
+# package on npmjs.com is configured with a trusted publisher pinned to this
+# repo, this workflow filename, and the `npm-publish` environment, so no
+# long-lived token is needed. This requires npm >= 11.5.1, which is newer than
+# the npm bundled with Node 22 — hence the explicit `npm install -g npm@latest`
+# step below. There is no NPM_TOKEN: token-based publishing has been retired in
+# favour of OIDC.
+#
+# The publish job runs in the `npm-publish` environment, which requires manual
+# approval from a reviewer before any release. Its deployment branch policy
+# allows the tag pattern `planner-ui-v*` plus the `main` branch; `main` is
+# permitted only so dry-runs can be dispatched, and the `guard` job below is
+# what keeps a dispatch from ever becoming a real publish.
 
 name: Publish planner-ui package
 
@@ -26,11 +37,28 @@ on:
 
 permissions:
   contents: read
-  id-token: write # npm --provenance
+  id-token: write # OIDC trusted-publishing auth + provenance
 
 jobs:
+  # Real publishes must originate from a `planner-ui-v*` tag push, because the
+  # tag is what triggers the version-consistency check below. A manual dispatch
+  # skips that check, so dispatch is dry-run only. This guard deliberately lives
+  # in its own ungated job: the `npm-publish` environment pauses `publish` for
+  # approval before any of its steps run, so a guard inside that job would only
+  # fire after a reviewer had already approved the deployment.
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reject non-dry-run manual dispatch
+        if: github.event_name == 'workflow_dispatch' && inputs.dry_run == 'false'
+        run: |
+          echo "Manual dispatch is dry-run only. To publish for real, push a tag planner-ui-v<version> matching packages/planner-ui/package.json." >&2
+          exit 1
+
   publish:
     runs-on: ubuntu-latest
+    needs: guard
+    environment: npm-publish
     steps:
       # This workflow holds npm publish rights, so its actions are pinned to
       # full commit SHAs (tags are mutable and can be repointed upstream).
@@ -42,6 +70,21 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
           registry-url: https://registry.npmjs.org
+
+      # actions/setup-node writes `//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}`
+      # into the generated npmrc. With no NODE_AUTH_TOKEN set (the OIDC state),
+      # npm reads that as a configured credential and skips the OIDC trusted-
+      # publishing exchange, so the publish fails to authenticate. Strip the line
+      # so npm sees no credentials and uses OIDC. See actions/setup-node#1551.
+      - name: Remove npm auth placeholder so OIDC is used
+        run: |
+          if [ -n "$NPM_CONFIG_USERCONFIG" ] && [ -f "$NPM_CONFIG_USERCONFIG" ]; then
+            sed -i '/_authToken/d' "$NPM_CONFIG_USERCONFIG"
+          fi
+
+      # OIDC trusted publishing requires npm >= 11.5.1; Node 22 ships npm 10.x.
+      - name: Upgrade npm for OIDC support
+        run: npm install -g npm@latest
 
       - name: Install dependencies
         run: npm ci
@@ -77,13 +120,20 @@ jobs:
 
       - name: Publish to npm
         working-directory: packages/planner-ui
+        # No NODE_AUTH_TOKEN: auth is via OIDC trusted publishing. `id-token:
+        # write` (set at the top) lets npm exchange a short-lived OIDC token for
+        # publish credentials, and provenance is generated automatically.
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           EVENT_NAME: ${{ github.event_name }}
-          DRY_RUN: ${{ inputs.dry_run }}
+        # Belt-and-braces: any workflow_dispatch publishes with --dry-run, no
+        # matter what the dry_run input says. The `guard` job already rejects a
+        # dispatch with dry_run=false, but even if that guard is removed this
+        # step still cannot make a real release from a dispatch. Real publishes
+        # come only from a `planner-ui-v*` tag push (event_name = push), which is
+        # what runs the tag/package.json version check above.
         run: |
-          extra=""
-          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ "$DRY_RUN" != "false" ]; then
-            extra="--dry-run"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            npm publish --access public --dry-run
+          else
+            npm publish --access public --provenance
           fi
-          npm publish --access public --provenance $extra
