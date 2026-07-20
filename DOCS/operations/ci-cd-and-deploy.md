@@ -94,11 +94,11 @@ the job exchanges GitHub's OIDC token (`id-token: write`) for short-lived publis
 provenance automatically. OIDC requires npm ≥ 11.5.1, so the workflow upgrades npm before publishing.
 
 The publish job runs in the **`npm-publish`** GitHub environment, which requires manual reviewer approval
-before any release. A separate ungated `guard` job forces manual `workflow_dispatch` runs to `--dry-run`
-(a real release must come from a version-matched `engine-v*` / `planner-ui-v*` tag push), so the approval
-prompt only ever gates genuine tag-triggered publishes. The `npm-publish` environment is shared by both
-package workflows; its deployment-branch policy allows the `engine-v*` and `planner-ui-v*` tag patterns
-plus `main`.
+before any of its steps run — this includes manual `workflow_dispatch` dry-runs, which also pause for
+approval. A separate ungated `guard` job forces `workflow_dispatch` runs to `--dry-run`, so an approved
+dispatch can only ever rehearse; a real release must come from a version-matched `engine-v*` /
+`planner-ui-v*` tag push. The `npm-publish` environment is shared by both package workflows; its
+deployment-branch policy allows the `engine-v*` and `planner-ui-v*` tag patterns plus `main`.
 
 [`publish-planner-ui.yml`](../../.github/workflows/publish-planner-ui.yml) is the same pipeline for
 `packages/planner-ui` → **`@retiregolden/planner-ui`**, firing on `planner-ui-v<version>` tags. Its

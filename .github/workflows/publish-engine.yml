@@ -82,8 +82,10 @@ jobs:
           fi
 
       # OIDC trusted publishing requires npm >= 11.5.1; Node 22 ships npm 10.x.
+      # Pin to major 11 so a future npm major can't silently change publish
+      # semantics — 11.5.1+ is all trusted publishing needs.
       - name: Upgrade npm for OIDC support
-        run: npm install -g npm@latest
+        run: npm install -g 'npm@^11.5.1'
 
       - name: Install dependencies
         run: npm ci
