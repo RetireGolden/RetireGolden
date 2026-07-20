@@ -4,6 +4,11 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## 2026-07 (July 2026 Depth Wave)
 
+**2026-07-20**
+- Migrated npm publishing to **Trusted Publishing (OIDC)** with a manual-approval gate (PR #32): both package workflows now authenticate via GitHub's OIDC token instead of the long-lived `NPM_TOKEN`, pin npm to `^11.5.1` for OIDC support, and run the publish job in the `npm-publish` environment (required reviewer plus an `engine-v*` / `planner-ui-v*` tag deployment policy). Provenance is still generated automatically; a `guard` job keeps manual dispatches dry-run-only.
+- Released **`@retiregolden/engine` 0.1.2** to npm (patch — bug fixes, no API changes): graceful handling of tax-solver discontinuities, a fix to the tax-withdrawal fixed-point convergence, and the SC H.4216 / ME 2026 state-tax corrections (ORACLE-016/017 kept outside the SCIAD and ME deduction phase-outs) backed by external oracle fixtures. `^0.1.0` consumers pick up the fixes automatically.
+- Released **`@retiregolden/planner-ui` 0.4.2** to npm (patch — no API changes): rebaselined the projection characterization goldens to track the engine 0.1.2 tax fixes, and cleared a Semgrep XSS false positive in the pack-smoke script.
+
 **2026-07-17**
 - Released **`@retiregolden/engine` 0.1.1** to npm (patch — corrected data, no API changes): the GA 2026 rate/deduction fix (4.99% / $15,000–$30,000, DOR vintage), the full 2026 state-pack staleness sweep (legislated rate changes in IN, MS, MT, NE, NC, OH, OK, NY; Missouri's HB 594 individual capital-gains exemption; ME/SC 2026 rewrites from PR #23 review — ME decoupled deduction + 2% surcharge, SC H.4216 SCIAD + 1.99%/5.21%; federal-conformed standard deductions aligned to the 2026 federal figure), and the re-anchored SPIA payout-rate planning table. Patch semantics chosen deliberately: `^0.1.0` consumers pick up the corrected 2026 math automatically.
 
