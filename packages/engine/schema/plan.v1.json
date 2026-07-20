@@ -4264,5 +4264,23 @@
   ],
   "$id": "https://retiregolden.org/schemas/plan/v1.json",
   "title": "RetireGolden Plan (schemaVersion 1)",
-  "description": "The RetireGolden engine Plan document, schemaVersion 1. This schema is DERIVED from the engine’s zod `planSchema` and describes the document’s structure (shapes, required/optional fields, types, ranges, enums, and the account/income discriminated unions as `oneOf`). It is NECESSARY BUT NOT SUFFICIENT: `parsePlan` additionally enforces cross-field constraints that JSON Schema cannot express (referential integrity of ids, discriminated funding rules, allocation weights summing to 100%, year-window ordering, and more). A document valid against this schema may still be rejected by `parsePlan`; validate through `parsePlan` (or the MCP `validate_plan` tool) before trusting a plan."
+  "description": "The RetireGolden engine Plan document, schemaVersion 1. This schema is DERIVED from the engine’s zod `planSchema` and describes the document’s structure (shapes, required/optional fields, types, ranges, enums, and the account/income discriminated unions as `oneOf`). It is NECESSARY BUT NOT SUFFICIENT: `parsePlan` additionally enforces cross-field constraints that JSON Schema cannot express (referential integrity of ids, discriminated funding rules, allocation weights summing to 100%, year-window ordering, and more; see the x-retiregolden-unrepresentableConstraints annotation on this schema for the full list). A document valid against this schema may still be rejected by `parsePlan`; validate through `parsePlan` (or the MCP `validate_plan` tool) before trusting a plan.",
+  "x-retiregolden-unrepresentableConstraints": [
+    "household.filingStatus \"marriedFilingJointly\" requires exactly two people.",
+    "account.ownerPersonId, income.personId, insurance owner/insured/beneficiary, and careEvent.personId must reference an existing person.",
+    "traditional/roth/hsa accounts must have an individual owner (ownerPersonId not null).",
+    "annuity.purchase.fundingAccountId, pension.lumpSumElection.rolloverAccountId, and incomeFloor ladder purchase fundingAccountId must reference another existing account.",
+    "employerMatch may be set only on employer-kind traditional/roth accounts.",
+    "cliff-vesting equity compensation requires a vestDate.",
+    "nondeductibleBasis (Form 8606) applies only to traditional IRAs and not to inherited accounts.",
+    "hsa reimburse-later accumulation requires the capByMedicalExpenses withdrawal treatment.",
+    "property depreciationRecapture requires a costBasis; a HECM line of credit requires a primary residence.",
+    "an estateBeneficiary charity destination requires charityPct.",
+    "account allocation weights must sum to 100% (±0.5); a linear glidepath must end after it starts.",
+    "a qualified annuity purchase must be funded from a traditional account; a non-qualified purchase from cash/taxable/equity-comp; a QLAC must be a qualified purchase; a joint-and-survivor payout form requires a two-person household.",
+    "a pension lump-sum election requires a lump-sum offer and must roll over into an existing traditional account.",
+    "premiumEndAge is required when premiumMode is 'untilAge'; a permanent-life policy with cashValueMode 'schedule' requires a cashValueSchedule.",
+    "a TIPS ladder must end in or after its first payout year, be purchased before that year, and be funded from cash/taxable/equity-comp savings.",
+    "expenses.requiredAnnual cannot exceed baseAnnual; a one-time goal’s earliestYear/latestYear window must bracket its year; partial funding requires minFundingPct below 100."
+  ]
 }

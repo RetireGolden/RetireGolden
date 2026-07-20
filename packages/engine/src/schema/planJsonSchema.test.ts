@@ -18,7 +18,7 @@
 import { Ajv2020 } from 'ajv/dist/2020.js'
 import type { ValidateFunction } from 'ajv/dist/2020.js'
 import { describe, expect, it } from 'vitest'
-import { createEmptyPlan, parsePlan, type Plan } from '../model/plan.js'
+import { CURRENT_PLAN_SCHEMA_VERSION, createEmptyPlan, parsePlan, type Plan } from '../model/plan.js'
 import {
   accumulatorPlan,
   assetLocationPlan,
@@ -32,12 +32,17 @@ import {
   tradHeavyPlan,
 } from '../decisions/decisionFixtures.js'
 import { couplePlan, singlePersonPlan } from '../testing/planFixtures.js'
+import { generatePlanJsonSchema } from './generate.js'
 import {
   PLAN_SCHEMA_ID,
   PLAN_SCHEMA_VERSION,
-  generatePlanJsonSchema,
-} from './planJsonSchema.js'
-import { planJsonSchema } from './plan.v1.generated.js'
+  PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS,
+  UNREPRESENTABLE_CONSTRAINTS_KEY,
+} from './planSchemaMeta.js'
+// Import the public data surface through the zod-free barrel, and the whole
+// namespace so a test can assert the barrel does not re-expose the zod generator.
+import * as schemaBarrel from './index.js'
+import { planJsonSchema } from './index.js'
 // The shipped offline artifact, imported through the bundler as a plain module so
 // this parity check needs no node fs types (keeps the engine's pure typing).
 import shippedPlanJsonSchema from '../../schema/plan.v1.json' with { type: 'json' }
@@ -351,6 +356,51 @@ function kitchenSinkPlanRaw(): Record<string, unknown> {
   }
 }
 
+/**
+ * The sparsest valid authoring input: it omits every field that carries a zod
+ * default (origin, insurance, careEvents, stateMoves, capitalLossCarryforward,
+ * the optional expense/strategy/assumption layers) and nested defaults inside a
+ * contribution phase and a wages stream. This is the shape an MCP client emits
+ * before normalization — exactly what `io: 'input'` is meant to describe.
+ */
+function sparseAuthoringPlanRaw(): Record<string, unknown> {
+  return {
+    schemaVersion: 1,
+    id: 'sparse',
+    name: 'Sparse authoring plan',
+    createdAtIso: '2026-01-01T00:00:00.000Z',
+    updatedAtIso: '2026-01-01T00:00:00.000Z',
+    household: {
+      filingStatus: 'single',
+      state: 'KY',
+      people: [{ id: 'p1', name: 'Sam', dob: '1965-05-05', sex: 'average', retirementAge: 65, longevity: { planningAge: 90, source: 'manual' } }],
+    },
+    accounts: [
+      // contributionSchedule phase omits the defaulted fromAge/toAge/escalationPct.
+      { type: 'traditional', id: 'a1', name: 'IRA', ownerPersonId: 'p1', annualReturnPct: null, kind: 'ira', balance: 100000, annualContribution: 0, contributionSchedule: [{ annualAmount: 6000 }] },
+    ],
+    // wages omits the defaulted realGrowthPct.
+    incomes: [{ type: 'wages', id: 'w1', personId: 'p1', annualGross: 50000, endAge: null }],
+    expenses: {
+      baseAnnual: 40000,
+      phases: [],
+      oneTimeGoals: [],
+      healthcare: { pre65MonthlyPremiumPerPerson: 0, applyAcaCredit: false, medicareExtrasMonthlyPerPerson: 0 },
+    },
+    strategies: { withdrawalOrder: { mode: 'sequential' }, rothConversion: { mode: 'none' }, qcdAnnual: 0 },
+    assumptions: {
+      inflationPct: 2.5,
+      healthcareExtraInflationPct: 1.5,
+      defaultReturnPct: 5,
+      ssCola: { mode: 'matchInflation' },
+      ssHaircut: null,
+      stateEffectiveTaxPct: 0,
+      recentAnnualMagi: 0,
+    },
+    scenarios: [],
+  }
+}
+
 /** Every fixture the engine already trusts, each gated through parsePlan. */
 function acceptedFixtures(): Array<[string, Plan]> {
   const raw: Array<[string, unknown]> = [
@@ -379,6 +429,51 @@ describe('planJsonSchema — version', () => {
     expect(planJsonSchema.properties.schemaVersion).toMatchObject({ const: PLAN_SCHEMA_VERSION })
     expect(planJsonSchema.$id).toBe(PLAN_SCHEMA_ID)
     expect(planJsonSchema.$id).toContain(`/v${PLAN_SCHEMA_VERSION}.json`)
+  })
+
+  it('keeps the zod-free PLAN_SCHEMA_VERSION in lockstep with the plan model', () => {
+    expect(PLAN_SCHEMA_VERSION).toBe(CURRENT_PLAN_SCHEMA_VERSION)
+  })
+})
+
+describe('schema barrel — zero-dependency data surface', () => {
+  it('exposes the constant + version but NOT the zod-backed generator', () => {
+    // The generator lives on ./generate (and @retiregolden/engine/schema/generate);
+    // re-exporting it here would drag zod + the plan model into every importer of
+    // the barrel, breaking the MCP's "data-only" story. Guard against a regression.
+    expect(Object.keys(schemaBarrel).sort()).toEqual(
+      ['PLAN_SCHEMA_ID', 'PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS', 'PLAN_SCHEMA_VERSION', 'planJsonSchema'].sort(),
+    )
+    expect('generatePlanJsonSchema' in schemaBarrel).toBe(false)
+    expect(typeof planJsonSchema).toBe('object')
+  })
+})
+
+describe('planJsonSchema — accepts authoring-shaped (pre-parse) inputs', () => {
+  // io: 'input' means the schema describes what a client AUTHORS, not the
+  // defaults-applied parsePlan output. Validate raw, sparse docs directly.
+  it('validates a sparse plan that omits every defaulted field', () => {
+    const raw = sparseAuthoringPlanRaw()
+    expect(validate(raw)).toBe(true)
+    expect(validate.errors ?? []).toEqual([])
+    expect(parsePlan(raw).ok).toBe(true)
+  })
+
+  it('validates the kitchen-sink plan as authored, before parsePlan normalizes it', () => {
+    expect(validate(kitchenSinkPlanRaw())).toBe(true)
+    expect(validate.errors ?? []).toEqual([])
+  })
+})
+
+describe('planJsonSchema — embeds the unrepresentable-constraints catalog', () => {
+  it('carries the constraint list as a machine-readable annotation for offline readers', () => {
+    expect(planJsonSchema[UNREPRESENTABLE_CONSTRAINTS_KEY]).toEqual([...PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS])
+    // The shipped JSON artifact must carry it too (offline path has no TS import).
+    expect(shippedPlanJsonSchema[UNREPRESENTABLE_CONSTRAINTS_KEY]).toEqual([...PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS])
+  })
+
+  it('treats the annotation as a non-validating keyword (a valid plan still passes)', () => {
+    expect(validate(accept(tradHeavyPlan(), 'tradHeavyPlan'))).toBe(true)
   })
 })
 

@@ -49,12 +49,17 @@ learn the plan format:
 import { planJsonSchema, PLAN_SCHEMA_VERSION } from '@retiregolden/engine/schema'
 ```
 
-The same bytes ship as `@retiregolden/engine/schema/plan.v1.json` for offline,
-no-import reads. The schema describes the plan's *structure*; it is necessary but
-not sufficient — cross-field rules (id references, funding rules, allocation
-weights summing to 100%, …) live only in `parsePlan`, which stays the full
-validator. See the schema's `description` and
-`PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS`.
+This subpath is **zod-free** — it resolves only to the generated constant and
+plain metadata, so importing it pulls in neither zod nor the plan model. The same
+bytes ship as `@retiregolden/engine/schema/plan.v1.json` for offline, no-import
+reads. The schema describes the plan's *structure*; it is necessary but not
+sufficient — cross-field rules (id references, funding rules, allocation weights
+summing to 100%, …) live only in `parsePlan`, which stays the full validator.
+Those dropped rules are summarized in the schema's `description` and carried as a
+machine-readable `x-retiregolden-unrepresentableConstraints` array on the schema
+itself (also exported as `PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS`). The zod-backed
+generator behind the artifact is `@retiregolden/engine/schema/generate`
+(`generatePlanJsonSchema`), used by the build-time `npm run generate:schema`.
 
 Test fixtures used by the RetireGolden apps' own suites ship under
 `@retiregolden/engine/testing/*` — framework-free (no vitest or other

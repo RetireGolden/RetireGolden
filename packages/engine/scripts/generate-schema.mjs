@@ -26,16 +26,19 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const pkgDir = resolve(scriptDir, '..')
 
-// Bump this in lockstep with a Plan schema-version bump AFTER updating the
-// versioned paths that reference v1 by hand: the package.json `exports` key
-// (`./schema/plan.v1.json`) and `files` entry, and the barrel import in
-// src/schema/index.ts. This guard fails generation loudly if the model's
-// version moves ahead of those static paths, so a future v2 can't silently
-// overwrite the v1 artifact (the sync test would otherwise compare the
-// overwritten file against the new object and pass).
+// Bump this in lockstep with a Plan schema-version bump AFTER retargeting every
+// place that hardcodes `v1`:
+//   - package.json `exports` key (`./schema/plan.v1.json`) and `files` entry
+//   - src/schema/index.ts barrel import (`./plan.v1.generated.js`)
+//   - src/schema/planSchemaMeta.ts (`PLAN_SCHEMA_VERSION`)
+//   - scripts/pack-smoke.mjs (the `@retiregolden/engine/schema/plan.v<N>.json` read)
+//   - README.md usage examples / subpath table
+// This guard fails generation loudly if the model's version moves ahead of those
+// static paths, so a future v2 can't silently overwrite the v1 artifact (the sync
+// test would otherwise compare the overwritten file against the new object and pass).
 const EXPECTED_VERSION = 1
 
-const generatorUrl = pathToFileURL(join(pkgDir, 'dist', 'schema', 'planJsonSchema.js')).href
+const generatorUrl = pathToFileURL(join(pkgDir, 'dist', 'schema', 'generate.js')).href
 let generatePlanJsonSchema
 let PLAN_SCHEMA_VERSION
 try {
@@ -69,9 +72,9 @@ const tsText = `/**
  *
  * The checked-in Plan JSON Schema, emitted from the engine's \`planSchema\`.
  * Regenerate with \`npm run generate:schema\` (rewrites this file and
- * schema/plan.v1.json). A sync test guards against hand-edits and drift.
+ * schema/plan.v${PLAN_SCHEMA_VERSION}.json). A sync test guards against hand-edits and drift.
  */
-import type { JsonSchemaDocument } from './planJsonSchema.js'
+import type { JsonSchemaDocument } from './planSchemaMeta.js'
 
 export const planJsonSchema: JsonSchemaDocument = ${JSON.stringify(schema, null, 2)}
 `
