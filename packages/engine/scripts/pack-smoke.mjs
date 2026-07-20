@@ -20,6 +20,8 @@ const shell = process.platform === 'win32' // npm is npm.cmd on Windows
 
 const smokeScript = `
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
 
 // Prove "no ambient network / no browser globals": any engine code path that
 // reached for these would now throw.
@@ -38,10 +40,33 @@ const { singlePersonPlan, cashAccount, productionTaxCalculator, runPlan } = awai
   '@retiregolden/engine/testing/planFixtures'
 )
 
+// The ./schema subpath (the MCP's plan-format source) and the offline JSON
+// artifact must both resolve from the installed tarball. Read the JSON via
+// createRequire + fs — not an import attribute — so this stays valid on the whole
+// supported Node range (engines.node >=20; import attributes need >=20.10). The
+// JSON path is derived from PLAN_SCHEMA_VERSION so a future schema-version bump
+// retargets it automatically.
+const { planJsonSchema, PLAN_SCHEMA_VERSION } = await import('@retiregolden/engine/schema')
+const requireFromSmoke = createRequire(import.meta.url)
+const shippedPath = requireFromSmoke.resolve(
+  '@retiregolden/engine/schema/plan.v' + PLAN_SCHEMA_VERSION + '.json',
+)
+const shippedSchema = JSON.parse(readFileSync(shippedPath, 'utf8'))
+
 assert.equal(typeof simulatePlan, 'function')
 assert.equal(simulate.simulatePlan, simulatePlan)
 assert.equal(CURRENT_PLAN_SCHEMA_VERSION, 1)
 assert.ok(packForYear(2026) && typeof packForYear(2026) === 'object')
+
+assert.equal(PLAN_SCHEMA_VERSION, 1)
+assert.equal(planJsonSchema.properties.schemaVersion.const, 1)
+assert.ok(String(planJsonSchema.$id).includes('/v' + PLAN_SCHEMA_VERSION + '.json'), 'schema carries a versioned $id')
+assert.deepEqual(shippedSchema, planJsonSchema, 'offline JSON artifact matches the exported constant')
+assert.ok(
+  Array.isArray(planJsonSchema['x-retiregolden-unrepresentableConstraints']) &&
+    planJsonSchema['x-retiregolden-unrepresentableConstraints'].length > 0,
+  'offline schema embeds the machine-readable unrepresentable-constraints catalog',
+)
 
 const plan = singlePersonPlan({ planningAge: 90 })
 plan.accounts = [cashAccount('cash', 500_000)]
