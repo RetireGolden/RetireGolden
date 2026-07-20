@@ -38,10 +38,22 @@ const { singlePersonPlan, cashAccount, productionTaxCalculator, runPlan } = awai
   '@retiregolden/engine/testing/planFixtures'
 )
 
+// The ./schema subpath (the MCP's plan-format source) and the offline JSON
+// artifact must both resolve from the installed tarball.
+const { planJsonSchema, PLAN_SCHEMA_VERSION } = await import('@retiregolden/engine/schema')
+const shippedSchema = (
+  await import('@retiregolden/engine/schema/plan.v1.json', { with: { type: 'json' } })
+).default
+
 assert.equal(typeof simulatePlan, 'function')
 assert.equal(simulate.simulatePlan, simulatePlan)
 assert.equal(CURRENT_PLAN_SCHEMA_VERSION, 1)
 assert.ok(packForYear(2026) && typeof packForYear(2026) === 'object')
+
+assert.equal(PLAN_SCHEMA_VERSION, 1)
+assert.equal(planJsonSchema.properties.schemaVersion.const, 1)
+assert.ok(String(planJsonSchema.$id).includes('/v1.json'), 'schema carries a versioned $id')
+assert.deepEqual(shippedSchema, planJsonSchema, 'offline JSON artifact matches the exported constant')
 
 const plan = singlePersonPlan({ planningAge: 90 })
 plan.accounts = [cashAccount('cash', 500_000)]

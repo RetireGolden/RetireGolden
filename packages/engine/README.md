@@ -41,6 +41,21 @@ import { runMonteCarlo } from '@retiregolden/engine/montecarlo/run'
 import { packForYear } from '@retiregolden/engine/params'
 ```
 
+A versioned JSON Schema for the `Plan` document is derived from `planSchema` and
+shipped both as a constant and as a static file, so a non-TypeScript consumer can
+learn the plan format:
+
+```ts
+import { planJsonSchema, PLAN_SCHEMA_VERSION } from '@retiregolden/engine/schema'
+```
+
+The same bytes ship as `@retiregolden/engine/schema/plan.v1.json` for offline,
+no-import reads. The schema describes the plan's *structure*; it is necessary but
+not sufficient — cross-field rules (id references, funding rules, allocation
+weights summing to 100%, …) live only in `parsePlan`, which stays the full
+validator. See the schema's `description` and
+`PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS`.
+
 Test fixtures used by the RetireGolden apps' own suites ship under
 `@retiregolden/engine/testing/*` — framework-free (no vitest or other
 test-runner dependency), but not part of the supported runtime API.
@@ -50,6 +65,7 @@ test-runner dependency), but not part of the supported runtime API.
 | Subpath | Contents |
 |---------|----------|
 | `model/` | Plan schema (Zod), types, migrations |
+| `schema/` | Derived, versioned JSON Schema for the `Plan` document (`planJsonSchema`, `PLAN_SCHEMA_VERSION`) + the shipped `schema/plan.v1.json` artifact |
 | `params/` | Annual parameter packs (tax brackets, limits, RMD, Medicare, SS, state) + typed accessors |
 | `tax/` | Federal + state tax engine, ACA credit, Medicare/IRMAA |
 | `rmd/` | Required minimum distributions (SECURE 2.0) |
