@@ -88,14 +88,23 @@ From the repo root: `npm run dev` (Vite dev server), `npm run build` (type-check
 [`publish-engine.yml`](../../.github/workflows/publish-engine.yml) publishes `packages/engine` to npm
 as **`@retiregolden/engine`** (`npm publish --access public --provenance`). It fires on `engine-v<version>`
 tags — the tag must match `packages/engine/package.json` — or manually via workflow_dispatch (manual runs
-default to `--dry-run`). It needs the **`NPM_TOKEN`** repo secret: a granular npm automation token for the
-`@retiregolden` org with publish rights on the package.
+default to `--dry-run`). It authenticates via **npm Trusted Publishing (OIDC)** — no long-lived token:
+the package on npmjs.com is configured with a trusted publisher pinned to this repo and workflow file, and
+the job exchanges GitHub's OIDC token (`id-token: write`) for short-lived publish credentials, generating
+provenance automatically. OIDC requires npm ≥ 11.5.1, so the workflow upgrades npm before publishing.
+
+The publish job runs in the **`npm-publish`** GitHub environment, which requires manual reviewer approval
+before any of its steps run — this includes manual `workflow_dispatch` dry-runs, which also pause for
+approval. A separate ungated `guard` job forces `workflow_dispatch` runs to `--dry-run`, so an approved
+dispatch can only ever rehearse; a real release must come from a version-matched `engine-v*` /
+`planner-ui-v*` tag push. The `npm-publish` environment is shared by both package workflows; its
+deployment-branch policy allows the `engine-v*` and `planner-ui-v*` tag patterns plus `main`.
 
 [`publish-planner-ui.yml`](../../.github/workflows/publish-planner-ui.yml) is the same pipeline for
 `packages/planner-ui` → **`@retiregolden/planner-ui`**, firing on `planner-ui-v<version>` tags. Its
 pack-smoke step installs the packed tarball into a scratch Vite consumer and builds it, proving the
-exports map, the dep-internal worker chunks, and the HiGHS wasm for external consumers. The same
-`NPM_TOKEN` must have publish rights on this package as well.
+exports map, the dep-internal worker chunks, and the HiGHS wasm for external consumers. It uses the same
+OIDC trusted-publishing flow — its own trusted publisher must be configured for this package on npmjs.com.
 
 ## Run on a new host / fork
 
