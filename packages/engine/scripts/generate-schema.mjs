@@ -26,10 +26,20 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const pkgDir = resolve(scriptDir, '..')
 
+// Bump this in lockstep with a Plan schema-version bump AFTER updating the
+// versioned paths that reference v1 by hand: the package.json `exports` key
+// (`./schema/plan.v1.json`) and `files` entry, and the barrel import in
+// src/schema/index.ts. This guard fails generation loudly if the model's
+// version moves ahead of those static paths, so a future v2 can't silently
+// overwrite the v1 artifact (the sync test would otherwise compare the
+// overwritten file against the new object and pass).
+const EXPECTED_VERSION = 1
+
 const generatorUrl = pathToFileURL(join(pkgDir, 'dist', 'schema', 'planJsonSchema.js')).href
 let generatePlanJsonSchema
+let PLAN_SCHEMA_VERSION
 try {
-  ;({ generatePlanJsonSchema } = await import(generatorUrl))
+  ;({ generatePlanJsonSchema, PLAN_SCHEMA_VERSION } = await import(generatorUrl))
 } catch (err) {
   console.error(
     'Could not import the compiled generator from dist/. Run `npm run build` first.\n' + String(err),
@@ -38,13 +48,22 @@ try {
   throw err
 }
 
+if (PLAN_SCHEMA_VERSION !== EXPECTED_VERSION) {
+  throw new Error(
+    `Plan schema version is ${PLAN_SCHEMA_VERSION} but the versioned artifact paths still target v${EXPECTED_VERSION}. ` +
+      'Update package.json exports/files and src/schema/index.ts to the new plan.v<N>.* paths, then set EXPECTED_VERSION to match.',
+  )
+}
+
 const schema = generatePlanJsonSchema()
 
-const jsonPath = join(pkgDir, 'schema', 'plan.v1.json')
+// Derived from the version so the basenames track a bump automatically once the
+// guard above and the static paths are updated.
+const jsonPath = join(pkgDir, 'schema', `plan.v${PLAN_SCHEMA_VERSION}.json`)
 const jsonText = JSON.stringify(schema, null, 2) + '\n'
 writeFileSync(jsonPath, jsonText)
 
-const tsPath = join(pkgDir, 'src', 'schema', 'plan.v1.generated.ts')
+const tsPath = join(pkgDir, 'src', 'schema', `plan.v${PLAN_SCHEMA_VERSION}.generated.ts`)
 const tsText = `/**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
@@ -58,5 +77,5 @@ export const planJsonSchema: JsonSchemaDocument = ${JSON.stringify(schema, null,
 `
 writeFileSync(tsPath, tsText)
 
-console.log(`Wrote ${jsonText.length} bytes to schema/plan.v1.json`)
-console.log(`Wrote src/schema/plan.v1.generated.ts`)
+console.log(`Wrote ${jsonText.length} bytes to schema/plan.v${PLAN_SCHEMA_VERSION}.json`)
+console.log(`Wrote src/schema/plan.v${PLAN_SCHEMA_VERSION}.generated.ts`)
