@@ -4077,6 +4077,17 @@ export const planJsonSchema: JsonSchemaDocument = {
           "type": "number",
           "minimum": 0
         },
+        "historicalAnnualMagiByYear": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^\\d{4}$"
+          },
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
         "heirTaxRatePct": {
           "default": 25,
           "type": "number",
