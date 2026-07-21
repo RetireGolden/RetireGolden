@@ -1354,6 +1354,26 @@ describe('healthcare and penalties', () => {
     expect(spikeYear.expenses.healthcare).toBeCloseTo((202.9 * 3.2 + 83.3) * 12 * healthInfl(2029), 4)
   })
 
+  it('uses distinct historical MAGI tax years for the first two IRMAA lookbacks', () => {
+    const plan = basePlan()
+    plan.household.people[0]!.dob = '1960-06-15' // already on Medicare in 2026
+    plan.household.people[0]!.retirementAge = null
+    plan.assumptions.recentAnnualMagi = 0
+    plan.assumptions.historicalAnnualMagiByYear = {
+      '2024': 50_000,
+      '2025': 150_000,
+    }
+    plan.accounts = [cash(3_000_000)]
+
+    const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+    const y2026 = result.years.find((y) => y.year === 2026)!
+    const y2027 = result.years.find((y) => y.year === 2027)!
+
+    expect(y2026.irmaaTier).toBe(0)
+    expect(y2027.irmaaTier).toBeGreaterThan(0)
+    expect(y2027.expenses.healthcare).toBeGreaterThan(y2026.expenses.healthcare)
+  })
+
   it('grosses up the 10% early-withdrawal penalty on pre-59½ traditional draws', () => {
     const plan = basePlan()
     plan.household.people[0]!.dob = '1976-06-15' // 50 in 2026

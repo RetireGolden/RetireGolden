@@ -570,9 +570,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   // equity-comp) reserve, in today's dollars, that withdrawals preserve and
   // fill-to-target conversions respect. 0 = off (today's behavior).
   const safetyNetFloorToday = plan.strategies.taxableSafetyNetFloor ?? 0
-  /** Realized MAGI by year; pre-projection years fall back to assumptions.recentAnnualMagi. */
+  /**
+   * Realized MAGI by year. Before the projection, prefer an exact tax-year
+   * history entry and retain recentAnnualMagi as the legacy fallback.
+   */
   const magiHistory = new Map<number, number>()
-  const magiFor = (y: number) => magiHistory.get(y) ?? plan.assumptions.recentAnnualMagi
+  const magiFor = (y: number) =>
+    magiHistory.get(y) ??
+    plan.assumptions.historicalAnnualMagiByYear?.[String(y)] ??
+    plan.assumptions.recentAnnualMagi
 
   const deposit = (amount: number) => {
     if (amount <= 0) return

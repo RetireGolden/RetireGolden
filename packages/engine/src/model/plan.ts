@@ -1243,6 +1243,14 @@ export const assumptionsSchema = z.object({
   /** Recent annual MAGI, used for IRMAA's 2-year lookback in the first projection years. */
   recentAnnualMagi: nonNegative,
   /**
+   * Optional tax-year MAGI history for exact IRMAA lookbacks before the
+   * projection begins. A year-specific value takes precedence over
+   * `recentAnnualMagi`, which remains the backward-compatible fallback.
+   */
+  historicalAnnualMagiByYear: z
+    .record(z.string().regex(/^\d{4}$/), nonNegative)
+    .optional(),
+  /**
    * Assumed marginal income-tax rate heirs pay on inherited pre-tax (traditional)
    * balances, used by the after-tax estate metric. Roth and stepped-up taxable
    * accounts pass through untaxed. Optional with a default so older saved plans
