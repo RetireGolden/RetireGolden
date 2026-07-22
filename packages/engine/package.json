@@ -1,6 +1,6 @@
 {
   "name": "@retiregolden/engine",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Pure-TypeScript retirement-planning engine: year-by-year household projection with federal + state taxes, Social Security, RMDs, Roth conversions, withdrawal strategies, Monte Carlo, and an LP optimizer. Deterministic, no DOM, no network.",
   "license": "AGPL-3.0-only",
   "type": "module",
@@ -61,6 +61,7 @@
   "scripts": {
     "build": "tsc -b tsconfig.build.json",
     "generate:schema": "npm run build && node scripts/generate-schema.mjs",
+    "generate:version": "node scripts/generate-version.mjs",
     "lint": "eslint .",
     "test": "tsc -p tsconfig.json && vitest run",
     "test:coverage": "tsc -p tsconfig.json && vitest run --coverage",

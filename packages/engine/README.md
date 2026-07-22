@@ -61,6 +61,19 @@ itself (also exported as `PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS`). The zod-bac
 generator behind the artifact is `@retiregolden/engine/schema/generate`
 (`generatePlanJsonSchema`), used by the build-time `npm run generate:schema`.
 
+The engine's own package version is available as a bare string constant, for
+consumers that stamp provenance on a document they export:
+
+```ts
+import { ENGINE_VERSION } from '@retiregolden/engine/version' // or from the root
+```
+
+It is generated from `package.json` into a checked-in constant
+(`npm run generate:version`, guarded by a test) rather than read at runtime,
+because the engine ships into browser bundles where there is no package.json to
+read. The MCP's `build_plan` accepts this value back as `engineVersion` and warns
+when a document was exported under a different engine than the one running.
+
 Test fixtures used by the RetireGolden apps' own suites ship under
 `@retiregolden/engine/testing/*` — framework-free (no vitest or other
 test-runner dependency), but not part of the supported runtime API.
@@ -84,6 +97,7 @@ test-runner dependency), but not part of the supported runtime API.
 | `ladder/` | TIPS ladder math, Social Security bridge, FedInvest CSV parsing |
 | `allocation/`, `spending/` | Asset classes, spending shape presets |
 | `testing/` | Plan fixtures and money matchers for consumer test suites |
+| `version` | `ENGINE_VERSION` — this package's version, generated from `package.json` |
 
 ## License
 
