@@ -19,6 +19,22 @@ function makePlan(overrides: PlanDocOverrides = {}): Plan {
   return plan
 }
 
+// A schema-1-era shape: fields the current schema no longer carries and none
+// of its later additions. The store must round-trip it untouched — migration
+// happens in the seam layer (`loadPlanVia`), never in a store.
+function makeLegacyPlan(overrides: PlanDocOverrides = {}): Plan {
+  const legacy = {
+    schemaVersion: 1,
+    id: overrides.id ?? testIds(),
+    name: overrides.name ?? `legacy-${testIds()}`,
+    updatedAtIso: overrides.updatedAtIso ?? '2024-03-01T00:00:00.000Z',
+    people: [{ name: 'Sam', birthYear: 1970 }],
+    accounts: [{ kind: 'taxable', balance: 125000 }],
+    legacyOnlyField: 'kept-verbatim',
+  }
+  return legacy as unknown as Plan
+}
+
 describePlanStoreContract('indexedDbPlanStore', {
   createStore: () => {
     // A fresh backing database per test: swap in a new fake IndexedDB and drop
@@ -28,4 +44,5 @@ describePlanStoreContract('indexedDbPlanStore', {
     return indexedDbPlanStore
   },
   makePlan,
+  makeLegacyPlan,
 })

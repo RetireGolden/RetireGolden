@@ -35,7 +35,12 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import type { PlanStore, PlanSummary } from './planStoreContext'
 
-/** A plan document as the store receives it — the seam's own `savePlan` input type, kept engine-free here. */
+/**
+ * A plan document as the store receives it — the seam's own `savePlan` input
+ * type (currently the engine `Plan`), referenced through the seam so this
+ * module tracks whatever the seam declares without importing engine code
+ * itself. Consumers build these via their factory's `makePlan`.
+ */
 export type PlanDoc = Parameters<PlanStore['savePlan']>[0]
 
 /** Fields the suite varies when building documents. Everything else the factory fills with valid defaults. */
@@ -66,6 +71,15 @@ export interface PlanStoreContractFactory {
    * unique, valid defaults; two calls with no `id` yield two distinct ids.
    */
   makePlan: (overrides?: PlanDocOverrides) => PlanDoc | Promise<PlanDoc>
+  /**
+   * Optional but strongly recommended: build a LEGACY document — an older
+   * schemaVersion in a shape the current app would migrate on read. When
+   * supplied, the suite asserts the store returns it byte-verbatim: migration
+   * belongs to the seam layer (`loadPlanVia`), never to a store. The returned
+   * value may be any legacy shape cast to `PlanDoc`; the store must treat it
+   * as opaque. Overrides must be reflected verbatim, as with `makePlan`.
+   */
+  makeLegacyPlan?: (overrides?: PlanDocOverrides) => PlanDoc | Promise<PlanDoc>
   /** Optional teardown run in `afterEach` (close handles, drop the database). */
   cleanup?: () => void | Promise<void>
 }
@@ -99,7 +113,11 @@ export function describePlanStoreContract(label: string, factory: PlanStoreContr
     })
 
     it('surfaces id, name and updatedAtIso in a summary after save', async () => {
-      const plan = await makePlan({ id: 'plan-1', name: 'Alpha', updatedAtIso: '2026-01-01T00:00:00.000Z' })
+      const plan = await makePlan({
+        id: 'plan-1',
+        name: 'Alpha',
+        updatedAtIso: '2026-01-01T00:00:00.000Z',
+      })
       await store.savePlan(plan)
 
       const summaries = await store.listPlans()
@@ -121,14 +139,32 @@ export function describePlanStoreContract(label: string, factory: PlanStoreContr
       expect(loaded).toEqual(plan)
     })
 
+    // Registered only when the consumer can build one; both known consumers do.
+    if (factory.makeLegacyPlan) {
+      const makeLegacy = factory.makeLegacyPlan
+      it('returns a legacy-schema document verbatim — migration is the seam layer, never the store', async () => {
+        const legacy = await Promise.resolve(makeLegacy({ id: 'plan-legacy' }))
+        await store.savePlan(legacy)
+        expect(await store.loadPlan('plan-legacy')).toEqual(legacy)
+      })
+    }
+
     it('returns null/undefined when loading an absent id', async () => {
       const loaded = await store.loadPlan('does-not-exist')
       expect(loaded == null).toBe(true)
     })
 
     it('lists every saved plan regardless of order', async () => {
-      const a = await makePlan({ id: 'a', name: 'A', updatedAtIso: '2026-01-01T00:00:00.000Z' })
-      const b = await makePlan({ id: 'b', name: 'B', updatedAtIso: '2026-06-01T00:00:00.000Z' })
+      const a = await makePlan({
+        id: 'a',
+        name: 'A',
+        updatedAtIso: '2026-01-01T00:00:00.000Z',
+      })
+      const b = await makePlan({
+        id: 'b',
+        name: 'B',
+        updatedAtIso: '2026-06-01T00:00:00.000Z',
+      })
       await store.savePlan(a)
       await store.savePlan(b)
 
@@ -137,33 +173,48 @@ export function describePlanStoreContract(label: string, factory: PlanStoreContr
     })
 
     it('upserts by the document id: saving twice keeps one entry with the later content and updatedAtIso', async () => {
-      const first = await makePlan({ id: 'same-id', name: 'First', updatedAtIso: '2026-01-01T00:00:00.000Z' })
+      const first = await makePlan({
+        id: 'same-id',
+        name: 'First',
+        updatedAtIso: '2026-01-01T00:00:00.000Z',
+      })
       await store.savePlan(first)
 
-      const second = await makePlan({ id: 'same-id', name: 'Second', updatedAtIso: '2026-02-02T00:00:00.000Z' })
+      const before = summaryById(await store.listPlans(), 'same-id')
+      expect(before?.updatedAtIso).toBe('2026-01-01T00:00:00.000Z')
+
+      const second = await makePlan({
+        id: 'same-id',
+        name: 'Second',
+        updatedAtIso: '2026-02-02T00:00:00.000Z',
+      })
       await store.savePlan(second)
 
       const summaries = await store.listPlans()
       expect(summaries).toHaveLength(1)
       const summary = summaryById(summaries, 'same-id')
       expect(summary?.name).toBe('Second')
+      // The summary's updatedAtIso genuinely advanced past the first save's.
       expect(summary?.updatedAtIso).toBe('2026-02-02T00:00:00.000Z')
-      // updatedAtIso genuinely advanced, not merely overwritten with the same value.
-      expect('2026-02-02T00:00:00.000Z' > '2026-01-01T00:00:00.000Z').toBe(true)
+      expect(summary?.updatedAtIso).not.toBe(before?.updatedAtIso)
 
       const loaded = await store.loadPlan('same-id')
       expect(loaded).toEqual(second)
     })
 
-    it('deletes a stored plan', async () => {
-      const plan = await makePlan({ id: 'to-delete', name: 'Doomed' })
-      await store.savePlan(plan)
-      expect(await store.listPlans()).toHaveLength(1)
+    it('deletes exactly the requested plan, leaving others stored and listed', async () => {
+      const doomed = await makePlan({ id: 'to-delete', name: 'Doomed' })
+      const survivor = await makePlan({ id: 'survivor', name: 'Survivor' })
+      await store.savePlan(doomed)
+      await store.savePlan(survivor)
+      expect(await store.listPlans()).toHaveLength(2)
 
       await store.deletePlan('to-delete')
 
-      expect(await store.listPlans()).toEqual([])
+      const ids = (await store.listPlans()).map((s) => s.id)
+      expect(ids).toEqual(['survivor'])
       expect((await store.loadPlan('to-delete')) == null).toBe(true)
+      expect(await store.loadPlan('survivor')).toEqual(survivor)
     })
 
     it('does not reject when deleting an absent id, and leaves other plans intact', async () => {
