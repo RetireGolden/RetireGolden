@@ -1,6 +1,9 @@
 /**
- * The v2 backup envelope — serialization and parsing of the plan-interchange
- * format documented in DOCS/features/plan-file-format.md.
+ * The plan-interchange wrappers documented in DOCS/features/plan-file-format.md:
+ * the **v2 backup envelope** (every plan, for restore and device-to-device
+ * moves) and the **single-plan export** (one plan, for handing to an AI
+ * assistant). Both wrap the same engine `Plan` document — one source of truth,
+ * two envelopes.
  *
  * **Stability promise:** this module is published as the
  * `@retiregolden/planner-ui/plan-format` subpath and, unlike the wildcard
@@ -22,7 +25,8 @@
  */
 
 import { migratePlanToCurrent } from '@retiregolden/engine/model/migrations'
-import type { Plan } from '@retiregolden/engine/model/plan'
+import { CURRENT_PLAN_SCHEMA_VERSION, type Plan } from '@retiregolden/engine/model/plan'
+import { ENGINE_VERSION } from '@retiregolden/engine/version'
 
 export const V2_BACKUP_KIND = 'retiregolden.v2.backup'
 /** Legacy envelope kinds from before the RetireGolden rebrand — still accepted on import. */
@@ -47,6 +51,62 @@ export function serializeV2Backup(plans: Plan[], now: () => Date = () => new Dat
     plans,
   }
   return JSON.stringify(envelope, null, 2)
+}
+
+/**
+ * One plan plus the context needed to reproduce the projection the app is
+ * showing — the payload behind "Copy plan for your AI".
+ *
+ * This is deliberately the subset of the MCP's `export_plan` envelope the
+ * browser can honestly fill, so a pasted payload spreads straight into
+ * `build_plan({ plan, startYear, schemaVersion, engineVersion })` and comes back
+ * as the same plan. It is NOT a summary format: `plan` is the real engine
+ * document, the same object the backup envelope carries.
+ */
+export interface SinglePlanExport {
+  /** The engine `Plan` document — validates with the engine's `parsePlan`. */
+  plan: Plan
+  /**
+   * The calendar year the projection was run from. Load-bearing, not
+   * informational: `build_plan` defaults `startYear` to the literal 2026, while
+   * the browser projects from the current year. Without this field a payload
+   * matches the app during 2026 and silently diverges from 2027-01-01.
+   */
+  startYear: number
+  /** Plan-schema version of `plan` (`schemaVersion` inside it says the same). */
+  schemaVersion: number
+  /** The engine that produced this document, so a reader can spot version skew. */
+  engineVersion: string
+}
+
+/**
+ * Serialize one plan as the single-plan export above.
+ *
+ * `startYear` is a required argument rather than a default, so the caller passes
+ * the year its *displayed* projection actually used (`ProjectionView.startYear`)
+ * instead of a second, independently-computed "now" that could disagree with the
+ * numbers on screen.
+ *
+ * **There is deliberately no `conventions` key** — not `null`, not `{}`. The
+ * MCP's convention knobs (`lawSunsetFreezeYear`, `irmaaLookbackMagis`, …) are
+ * session overrides built for benchmark harnesses; they exist nowhere in the
+ * engine or in this app, so the browser has nothing truthful to put there. Since
+ * the MCP's 0.3.0 default flip its own defaults are the end-user-correct ones,
+ * and emitting an empty or invented object would assert a benchmark posture the
+ * user never chose. Read the absence as a decision, not an omission.
+ */
+export function serializeSinglePlan(plan: Plan, startYear: number): string {
+  const payload: SinglePlanExport = {
+    plan,
+    startYear,
+    // Equal to `plan.schemaVersion` by construction — every plan reaching here
+    // has been through parsePlan/migratePlanToCurrent, which pin that field to
+    // the current literal. Emitted from the constant so the sibling states what
+    // this build writes, independent of what the document happens to carry.
+    schemaVersion: CURRENT_PLAN_SCHEMA_VERSION,
+    engineVersion: ENGINE_VERSION,
+  }
+  return JSON.stringify(payload, null, 2)
 }
 
 export type ParseV2BackupResult =

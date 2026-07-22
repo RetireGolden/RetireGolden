@@ -26,6 +26,8 @@ import type { Plan } from '@retiregolden/engine/model/plan'
 import { startingInvestableOf } from '@retiregolden/engine/montecarlo/riskBasedGuardrails'
 import { DEFAULT_PATH_COUNT } from '../mc/pool'
 import type { YearResult } from '@retiregolden/engine/projection/types'
+import { serializeSinglePlan } from '../data/planFormat'
+import { CopyButton } from './CopyButton'
 import { usePlan } from './planContextCore'
 import { isPlanIncomplete } from './planCompleteness'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
@@ -420,7 +422,23 @@ export function ResultsPage() {
         <Link to={`/plan/${plan.id}/assumptions-card`} className="btn btn-secondary btn-small">
           View assumptions card
         </Link>
+        <CopyButton
+          label="Copy plan for your AI"
+          copiedLabel="Plan copied ✓"
+          fallbackLabel="Your plan, as JSON"
+          // The projection's own start year, not a freshly computed one — the
+          // payload must reproduce the numbers on this page, and a reader that
+          // defaults the year would drift from them every January.
+          text={() => serializeSinglePlan(plan, view.startYear)}
+        />
       </div>
+
+      <p className="results-privacy field-hint">
+        <strong>Copy plan for your AI</strong> puts this plan on your clipboard as JSON — paste it into any assistant
+        and ask it about your plan. It is your whole plan in the clear: balances, ages, income, spending. Nothing
+        leaves this device when you copy, but whatever you paste it into sees all of it, under your own account and
+        that provider's terms.
+      </p>
 
       <p className="results-jump">
         <a href="#year-table">Jump to the year-by-year table ↓</a>
