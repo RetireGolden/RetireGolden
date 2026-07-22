@@ -979,6 +979,31 @@
   margin-bottom: 1rem;
 }
 
+/* What leaves the device when a plan is pasted into a third-party assistant.
+   Sits directly under the toolbar it qualifies, before the charts. */
+.results-privacy {
+  margin: -0.5rem 0 1rem;
+  max-width: 68ch;
+}
+
+/* Shown only when the clipboard is unavailable (insecure context, permission
+   denial): the text the user now has to select by hand. Its callers lay their
+   buttons out in a wrapping flex row, so it claims a full row of its own rather
+   than squeezing in beside them. */
+.copy-fallback {
+  flex-basis: 100%;
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.85rem;
+  font-family: ui-monospace, 'Cascadia Code', 'Consolas', monospace;
+  line-height: 1.45;
+  resize: vertical;
+}
+
 /* In-page shortcut to the ledger ~4,000px down; scroll-padding-top (below)
    keeps the target clear of the sticky KPI bar. */
 .results-jump {

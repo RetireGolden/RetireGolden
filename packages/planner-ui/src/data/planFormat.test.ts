@@ -13,12 +13,16 @@ import { readFileSync } from 'node:fs'
 // @ts-expect-error -- node builtins in a node-env test; the app tsconfig omits node types
 import { fileURLToPath } from 'node:url'
 
+import { CURRENT_PLAN_SCHEMA_VERSION, parsePlan } from '@retiregolden/engine/model/plan'
+import { ENGINE_VERSION } from '@retiregolden/engine/version'
+
 import { createSamplePlan } from '../testSupport/samplePlan'
 import {
   MAX_BACKUP_JSON_CHARS,
   V2_BACKUP_KIND,
   V2_BACKUP_VERSION,
   parseV2Backup,
+  serializeSinglePlan,
   serializeV2Backup,
 } from './planFormat'
 
@@ -59,5 +63,44 @@ describe('plan-format subpath', () => {
     expect(V2_BACKUP_KIND).toBe('retiregolden.v2.backup')
     expect(V2_BACKUP_VERSION).toBe(1)
     expect(MAX_BACKUP_JSON_CHARS).toBe(10_000_000)
+  })
+})
+
+describe('serializeSinglePlan', () => {
+  const payloadFor = (startYear = 2026) =>
+    JSON.parse(serializeSinglePlan(createSamplePlan(), startYear)) as Record<string, unknown>
+
+  it('emits exactly one plan, and it validates with the engine', () => {
+    const payload = payloadFor()
+    expect(Array.isArray(payload.plan)).toBe(false)
+    const parsed = parsePlan(payload.plan)
+    expect(parsed.ok, parsed.ok ? '' : parsed.issues.join('; ')).toBe(true)
+    if (parsed.ok) expect(parsed.plan).toEqual(createSamplePlan())
+  })
+
+  it('carries startYear, schemaVersion and engineVersion as siblings of the plan', () => {
+    const payload = payloadFor(2031)
+    expect(payload.startYear).toBe(2031)
+    expect(payload.schemaVersion).toBe(CURRENT_PLAN_SCHEMA_VERSION)
+    expect(payload.engineVersion).toBe(ENGINE_VERSION)
+    // The document's own version and the sibling label agree.
+    expect((payload.plan as { schemaVersion: number }).schemaVersion).toBe(payload.schemaVersion)
+  })
+
+  it('emits no `conventions` key at all — not null, not {}', () => {
+    // The absence is deliberate (MCP session knobs have no browser meaning); an
+    // empty object would assert a benchmark posture the user never chose. See
+    // the serializer's doc comment.
+    const payload = payloadFor()
+    expect(Object.keys(payload).sort()).toEqual(['engineVersion', 'plan', 'schemaVersion', 'startYear'])
+    expect('conventions' in payload).toBe(false)
+  })
+
+  it('is parseable JSON with no prose wrapper', () => {
+    // A human instruction line above the payload would break JSON.parse for the
+    // assistant reading it; the instruction lives in the UI hint instead.
+    const text = serializeSinglePlan(createSamplePlan(), 2026)
+    expect(text.trimStart().startsWith('{')).toBe(true)
+    expect(() => JSON.parse(text)).not.toThrow()
   })
 })

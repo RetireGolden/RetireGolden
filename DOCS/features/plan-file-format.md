@@ -4,7 +4,12 @@ RetireGolden's answer to lock-in fear is a documented, versioned, plain-JSON exp
 contract: what the file contains, what stays stable, and what the app guarantees when it reads one back.
 It backs the app's public sustainability and data-portability commitments and is
 enforced by tests (`packages/planner-ui/src/data/v2Backup.roundtrip.test.ts`, `packages/planner-ui/src/data/v2Backup.test.ts`,
+`packages/planner-ui/src/data/planForAi.roundtrip.test.ts`,
 `packages/engine/src/model/migrations.test.ts`, and the docs-consistency suite).
+
+There are two wrappers around the same plan document: the **backup envelope** (every plan, for
+restore and moving between devices) and the **single-plan export** (one plan, for handing to an AI
+assistant). The plan object inside them is identical and is the single source of truth.
 
 ## The envelope
 
@@ -30,6 +35,59 @@ enforced by tests (`packages/planner-ui/src/data/v2Backup.roundtrip.test.ts`, `p
 
 Imports over 10,000,000 characters are refused (`MAX_BACKUP_JSON_CHARS`) — a guard against
 selecting the wrong (huge) file, not a practical limit on plans.
+
+## The single-plan export
+
+**Copy plan for your AI** on the results page puts *one* plan on the clipboard, wrapped differently.
+The backup envelope answers "keep all my plans safe"; this one answers "hand this plan to an
+assistant", and an assistant's tool takes a single plan, not a library:
+
+```json
+{
+  "plan": { "schemaVersion": 1, "id": "…", "name": "…", "…": "…" },
+  "startYear": 2026,
+  "schemaVersion": 1,
+  "engineVersion": "0.1.5"
+}
+```
+
+- `plan` — the same plan object the backup envelope carries, unchanged. Not a summary: there is
+  deliberately no second, drifting representation of a plan.
+- `startYear` — the calendar year the projection on screen was run from. **Load-bearing.** A reader
+  that has to guess will guess wrong: the RetireGolden MCP's `build_plan` defaults to the literal
+  2026, while the planner projects from the current year, so an unstamped payload would agree with
+  the app throughout 2026 and silently diverge on 2027-01-01.
+- `schemaVersion` — the plan-schema version this build writes (equal to the `schemaVersion` inside
+  `plan`).
+- `engineVersion` — the `@retiregolden/engine` release that produced the document
+  (`ENGINE_VERSION`), so a reader running a different engine can say that defaults and modeling
+  semantics may have moved rather than presenting a divergent projection as authoritative.
+
+This is deliberately the subset of the RetireGolden MCP's `export_plan` envelope the browser can
+honestly fill, so a pasted payload spreads straight into `build_plan({ plan, startYear,
+schemaVersion, engineVersion })`. Two consequences of "honestly":
+
+- **There is no `conventions` key** — not `null`, not `{}`. The MCP's convention knobs
+  (`lawSunsetFreezeYear`, `irmaaLookbackMagis`, `withdrawalOrdering`) are session overrides built for
+  benchmark harnesses; they exist nowhere in the engine or the browser, so there is nothing truthful
+  to put there, and the MCP's own defaults are the end-user-correct ones. An empty or invented object
+  would assert a benchmark posture the user never chose. **Read the absence as a decision, not an
+  oversight.**
+- **There is no `mcpVersion`** either, for the plain reason that no MCP produced it.
+- **No prose wrapper.** The clipboard holds parseable JSON and nothing else — an instruction line
+  above it would break `JSON.parse` for the assistant reading it. The instruction lives in the UI
+  beside the button.
+
+The serializer is `serializeSinglePlan` in
+[`packages/planner-ui/src/data/planFormat.ts`](../../packages/planner-ui/src/data/planFormat.ts),
+published on the same `@retiregolden/planner-ui/plan-format` subpath as the backup envelope, and
+pinned end-to-end by `packages/planner-ui/src/data/planForAi.roundtrip.test.ts` — which feeds a real
+copied payload to the real `build_plan` and checks that the plan, the start year, and the projection
+come back unchanged.
+
+Copying is a local action; pasting is not. The plan is your full finances in the clear (see
+[What the file is not](#what-the-file-is-not) below — it applies here identically), and whatever you
+paste it into receives all of it under your own account and that provider's terms.
 
 ## The plan object
 
@@ -84,8 +142,8 @@ equally supported: emit the envelope above with plans that satisfy the current s
 path gives field-by-field validation errors on anything malformed. The in-app import wizards
 (`packages/planner-ui/src/import/`) produce plans through exactly this route.
 
-JavaScript/TypeScript hosts don't need to hand-roll the envelope:
-`serializeV2Backup`/`parseV2Backup` and the envelope types are published as the
+JavaScript/TypeScript hosts don't need to hand-roll either wrapper:
+`serializeV2Backup`/`parseV2Backup`, `serializeSinglePlan`, and their types are published as the
 stability-promised `@retiregolden/planner-ui/plan-format` subpath
 (`packages/planner-ui/src/data/planFormat.ts` — browser-free, runs in plain Node). The parser
 ignores unknown top-level envelope fields, so a host may extend the envelope with its own keys

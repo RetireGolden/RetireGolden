@@ -7,10 +7,11 @@
  * different planners give different answers?": they differ here.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 
 import { PARAMETER_PROVENANCE } from '@retiregolden/engine/params'
+import { CopyButton } from './CopyButton'
 import { usePlan } from './planContextCore'
 import { currentStartYear } from './useProjection'
 import {
@@ -24,34 +25,6 @@ const PROVENANCE_CHIP: Record<AssumptionProvenance, { label: string; title: stri
   'user-set': { label: 'You set this', title: 'Entered or changed by you — other tools need this value to match your run.' },
   'app-default': { label: 'App default', title: "RetireGolden's shipped default — you have not changed it." },
   'published-source': { label: 'Published source', title: 'Comes from a cited publication (statute, agency figure, or documented dataset).' },
-}
-
-function CopyButton({ label, copiedLabel, text }: { label: string; copiedLabel: string; text: () => string }) {
-  const [state, setState] = useState<'idle' | 'copied' | 'failed'>('idle')
-  const resetTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-  useEffect(() => () => clearTimeout(resetTimer.current), [])
-  const flash = (next: 'copied' | 'failed') => {
-    setState(next)
-    clearTimeout(resetTimer.current)
-    resetTimer.current = setTimeout(() => setState('idle'), 2500)
-  }
-  const copy = () => {
-    // The Clipboard API is absent in insecure contexts and some browsers; say
-    // so instead of throwing (or faking success).
-    if (typeof navigator === 'undefined' || !navigator.clipboard?.writeText) {
-      flash('failed')
-      return
-    }
-    navigator.clipboard
-      .writeText(text())
-      .then(() => flash('copied'))
-      .catch(() => flash('failed'))
-  }
-  return (
-    <button type="button" className="btn btn-secondary btn-small" onClick={copy}>
-      {state === 'copied' ? copiedLabel : state === 'failed' ? 'Clipboard unavailable — copy manually' : label}
-    </button>
-  )
 }
 
 export function AssumptionsCardPage() {
@@ -72,8 +45,18 @@ export function AssumptionsCardPage() {
           from the planner home.)
         </p>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <CopyButton label="Copy as text" copiedLabel="Copied ✓" text={() => assumptionsExportText(snapshot)} />
-          <CopyButton label="Copy as JSON" copiedLabel="Copied ✓" text={() => assumptionsExportJson(snapshot)} />
+          <CopyButton
+            label="Copy as text"
+            copiedLabel="Copied ✓"
+            fallbackLabel="Your assumptions, as text"
+            text={() => assumptionsExportText(snapshot)}
+          />
+          <CopyButton
+            label="Copy as JSON"
+            copiedLabel="Copied ✓"
+            fallbackLabel="Your assumptions, as JSON"
+            text={() => assumptionsExportJson(snapshot)}
+          />
         </div>
         <p className="field-hint" style={{ marginTop: '0.5rem' }}>
           Applies to the {snapshot.packYear} tax year · parameter figures compiled {snapshot.dataAsOf} ·{' '}
