@@ -7,6 +7,10 @@
  * this root re-exports just enough to parse a plan and run a projection.
  */
 export { CURRENT_PLAN_SCHEMA_VERSION, planSchema, type Plan } from './model/plan.js'
+// This package's own version, for consumers stamping provenance on a document
+// they export. A bare string constant, so re-exporting it here costs nothing;
+// also available on its own at `@retiregolden/engine/version`.
+export { ENGINE_VERSION } from './version.js'
 // The derived Plan JSON Schema is intentionally NOT re-exported here: it lives
 // only on the `@retiregolden/engine/schema` subpath so importing this minimal
 // root (simulatePlan, planSchema) never eagerly evaluates the ~130 KB generated
