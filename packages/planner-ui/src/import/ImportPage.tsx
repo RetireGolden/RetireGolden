@@ -121,24 +121,25 @@ export function ImportPage() {
 
   const handleFile = async (file: File) => {
     setError(null)
-    // A file over the mapper's own character cap can never import (UTF-8 bytes
-    // ≥ characters) — refuse before reading and hashing the whole payload.
+    // The mappers cap CHARACTERS; File.size is BYTES. UTF-8 decodes to at
+    // least one UTF-16 unit per three bytes, so size > 3×cap can never fit —
+    // refuse those without reading at all (bounds the read); anything smaller
+    // is decoded and held to the exact character cap before any hashing work.
     const charCap = source === 'projectionlab' ? MAX_IMPORT_JSON_CHARS : MAX_CSV_CHARS
-    if (file.size > charCap) {
-      return setError(
-        source === 'projectionlab'
-          ? 'File is too large to be a ProjectionLab export.'
-          : 'File is too large to be a positions/plan export.',
-      )
-    }
+    const tooLarge =
+      source === 'projectionlab'
+        ? 'File is too large to be a ProjectionLab export.'
+        : 'File is too large to be a positions/plan export.'
+    if (file.size > charCap * 3) return setError(tooLarge)
+    const raw = await file.arrayBuffer()
+    const text = new TextDecoder().decode(raw)
+    if (text.length > charCap) return setError(tooLarge)
     // Identify the source at the async edge: hash the raw bytes once, here, so
     // the pure mappers stay synchronous and the report can prove which file fed
     // the draft without ever embedding its contents. The digest reads the raw
-    // buffer — decoding first would strip BOMs and mangle non-UTF-8 bytes, and
-    // the hash must match the file on disk.
-    const raw = await file.arrayBuffer()
+    // buffer — decoding it first would strip BOMs and mangle non-UTF-8 bytes,
+    // and the hash must match the file on disk.
     const { sha256, bytes } = await digestSource(raw)
-    const text = new TextDecoder().decode(raw)
     if (source === 'projectionlab') {
       const r = mapProjectionLabExport(text)
       if (!r.ok) return setError(r.message)
