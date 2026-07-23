@@ -48,6 +48,21 @@ export type SourceLocator =
   | { kind: 'derived'; from: SourceLocator[]; note?: string }
   | { kind: 'none'; note: string }
 
+/** A CSV-row locator; row numbers are 1-based indices into the parsed rows. */
+export function csvRowLocator(row: number, column?: string): SourceLocator {
+  return column ? { kind: 'csvRow', row, column } : { kind: 'csvRow', row }
+}
+
+/** A locator into a JSON export, keyed by dotted path (e.g. `accounts[2].balance`). */
+export function jsonPathLocator(path: string): SourceLocator {
+  return { kind: 'jsonPath', path }
+}
+
+/** A Form 1040 locator keyed by the line id (e.g. `'1a'`, `'11'`, `'header'`). */
+export function form1040Locator(line: string): SourceLocator {
+  return { kind: 'form1040', line }
+}
+
 /**
  * How faithfully a source value survived the trip into the draft plan. See the
  * module header for why this is intentionally distinct from the insights

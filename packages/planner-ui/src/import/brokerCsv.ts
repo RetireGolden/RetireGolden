@@ -13,13 +13,8 @@
 import type { Account, Plan } from '@retiregolden/engine/model/plan'
 import { createEmptyPlan, parsePlan } from '@retiregolden/engine/model/plan'
 import { findColumn, parseCsv, parseMoney } from './csv'
-import type { SourceLocator } from './provenance'
+import { csvRowLocator as csvRow } from './provenance'
 import type { ImportReviewItem } from './reviewChecklist'
-
-/** A CSV-row locator; row numbers are 1-based indices into the parsed rows. */
-function csvRow(row: number, column?: string): SourceLocator {
-  return column ? { kind: 'csvRow', row, column } : { kind: 'csvRow', row }
-}
 
 export type BrokerId = 'schwab' | 'fidelity' | 'vanguard'
 
@@ -69,10 +64,6 @@ interface Aggregate {
   rows: number[]
   /** 1-based rows of the positions that carried no cost basis. */
   basislessRows: number[]
-  /** Header text of the market-value column these rows were read from. */
-  valueColumn: string
-  /** Header text of the cost-basis column, when the file has one. */
-  basisColumn: string
 }
 
 function newAggregate(label: string): Aggregate {
@@ -85,8 +76,6 @@ function newAggregate(label: string): Aggregate {
     positions: 0,
     rows: [],
     basislessRows: [],
-    valueColumn: '',
-    basisColumn: '',
   }
 }
 
@@ -94,6 +83,9 @@ function finishAggregates(
   broker: BrokerId,
   byAccount: Map<string, Aggregate>,
   review: ImportReviewItem[],
+  /** Header text of the market-value and cost-basis columns the rows were read from. */
+  valueColumn: string,
+  basisColumn: string,
 ): BrokerCsvResult {
   const accounts: BrokerAccountBalance[] = []
   for (const agg of byAccount.values()) {
@@ -110,7 +102,7 @@ function finishAggregates(
       detail: `${agg.positions} position${agg.positions === 1 ? '' : 's'} totaling $${agg.total.toLocaleString('en-US', { maximumFractionDigits: 0 })}${
         agg.basisRows > 0 ? ` (cost basis $${agg.basis.toLocaleString('en-US', { maximumFractionDigits: 0 })})` : ''
       }.`,
-      locator: { kind: 'derived', from: agg.rows.map((row) => csvRow(row, agg.valueColumn)), note: 'summed position market values' },
+      locator: { kind: 'derived', from: agg.rows.map((row) => csvRow(row, valueColumn)), note: 'summed position market values' },
       confidence: 'exact',
     })
     if (agg.basisRows > 0 && agg.valueRowsWithoutBasis > 0) {
@@ -118,7 +110,7 @@ function finishAggregates(
         status: 'defaulted',
         source: agg.label,
         detail: `${agg.valueRowsWithoutBasis} position${agg.valueRowsWithoutBasis === 1 ? '' : 's'} (typically cash/money market) had no cost basis; the imported basis covers the rest. Adjust it if this is a taxable account.`,
-        locator: { kind: 'derived', from: agg.basislessRows.map((row) => csvRow(row, agg.basisColumn)), note: 'positions with no cost basis' },
+        locator: { kind: 'derived', from: agg.basislessRows.map((row) => csvRow(row, basisColumn)), note: 'positions with no cost basis' },
         confidence: 'assumed',
       })
     }
@@ -186,7 +178,6 @@ function parseSchwab(rows: string[][]): BrokerCsvResult {
     current.total += value
     current.positions++
     current.rows.push(r + 1)
-    current.valueColumn = 'market value'
     const basis = basisCol === -1 ? null : parseMoney(cells[basisCol])
     if (basis === null) {
       current.valueRowsWithoutBasis++
@@ -194,12 +185,11 @@ function parseSchwab(rows: string[][]): BrokerCsvResult {
     } else {
       current.basis += basis
       current.basisRows++
-      current.basisColumn = 'cost basis'
     }
   }
 
   if (byAccount.size === 0) return { ok: false, message: UNRECOGNIZED_MESSAGE }
-  return finishAggregates('schwab', byAccount, review)
+  return finishAggregates('schwab', byAccount, review, 'market value', 'cost basis')
 }
 
 // ---------------------------------------------------------------------------
@@ -271,7 +261,6 @@ function parseAccountColumnFile(
     agg.total += value
     agg.positions++
     agg.rows.push(r + 1)
-    agg.valueColumn = valueLabel
     const basis = cols.basis === -1 ? null : parseMoney(cells[cols.basis])
     if (basis === null) {
       agg.valueRowsWithoutBasis++
@@ -279,7 +268,6 @@ function parseAccountColumnFile(
     } else {
       agg.basis += basis
       agg.basisRows++
-      agg.basisColumn = basisLabel
     }
   }
 
@@ -293,7 +281,7 @@ function parseAccountColumnFile(
     })
   }
   if (byAccount.size === 0) return { ok: false, message: 'No positions with a readable value were found in this file.' }
-  return finishAggregates(broker, byAccount, review)
+  return finishAggregates(broker, byAccount, review, valueLabel, basisLabel)
 }
 
 /**

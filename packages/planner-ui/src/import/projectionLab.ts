@@ -14,15 +14,10 @@
 import type { Account, Plan } from '@retiregolden/engine/model/plan'
 import { createEmptyPlan, parsePlan } from '@retiregolden/engine/model/plan'
 import { MAX_REASONABLE_DOLLARS, parseMoney } from './csv'
-import type { SourceLocator } from './provenance'
+import { jsonPathLocator as jsonPath, type SourceLocator } from './provenance'
 import type { ImportReviewItem } from './reviewChecklist'
 
 export const MAX_IMPORT_JSON_CHARS = 10_000_000
-
-/** A dotted/indexed JSON-path locator into the ProjectionLab export. */
-function jsonPath(path: string): SourceLocator {
-  return { kind: 'jsonPath', path }
-}
 
 export type ProjectionLabImportResult =
   | { ok: true; plan: Plan; review: ImportReviewItem[] }
@@ -119,8 +114,9 @@ export function mapProjectionLabExport(
   const person = plan.household.people[0]!
 
   // --- Household ------------------------------------------------------------
-  const userKey = asRecord(root['user']) ? 'user' : 'profile'
-  const user = asRecord(root['user']) ?? asRecord(root['profile'])
+  const userRec = asRecord(root['user'])
+  const userKey = userRec ? 'user' : 'profile'
+  const user = userRec ?? asRecord(root['profile'])
   const birthYearRaw = user?.['birthYear']
   const birthYear =
     typeof birthYearRaw === 'number' && Number.isInteger(birthYearRaw) && birthYearRaw > 1900 && birthYearRaw < 2100
@@ -154,16 +150,8 @@ export function mapProjectionLabExport(
 
   // Retirement milestone age, when present on the first plan.
   const plansArray = asArray(root['plans']) ?? []
-  let firstPlanIndex = -1
-  let firstPlan: Record<string, unknown> | null = null
-  for (let i = 0; i < plansArray.length; i++) {
-    const rec = asRecord(plansArray[i])
-    if (rec) {
-      firstPlan = rec
-      firstPlanIndex = i
-      break
-    }
-  }
+  const firstPlanIndex = plansArray.findIndex((p) => asRecord(p) !== null)
+  const firstPlan = firstPlanIndex === -1 ? null : asRecord(plansArray[firstPlanIndex])
   const milestones = firstPlan ? (asArray(firstPlan['milestones']) ?? []) : []
   for (let mi = 0; mi < milestones.length; mi++) {
     const rec = asRecord(milestones[mi])
@@ -376,7 +364,7 @@ export function mapProjectionLabExport(
         source: name,
         detail: `Imported as recurring ordinary income of $${annual.toLocaleString('en-US')} /yr with no end year — set dates and tax treatment on the Income screen.`,
         locator: jsonPath(incomePath),
-        confidence: 'exact',
+        confidence: 'assumed',
       })
     }
   }

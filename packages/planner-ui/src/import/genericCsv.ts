@@ -13,13 +13,8 @@ import type { Account, Plan } from '@retiregolden/engine/model/plan'
 import { createEmptyPlan, parsePlan } from '@retiregolden/engine/model/plan'
 import { parseCsv, parseMoney } from './csv'
 import { mapProjectionLabAccountType } from './projectionLab'
-import type { SourceLocator } from './provenance'
+import { csvRowLocator as csvRow } from './provenance'
 import type { ImportReviewItem } from './reviewChecklist'
-
-/** A CSV-row locator; row numbers are 1-based indices into the parsed rows. */
-function csvRow(row: number, column?: string): SourceLocator {
-  return column ? { kind: 'csvRow', row, column } : { kind: 'csvRow', row }
-}
 
 export type ColumnRole = 'name' | 'type' | 'balance' | 'costBasis' | 'contribution' | 'ignore'
 

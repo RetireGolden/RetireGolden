@@ -28,13 +28,12 @@ import {
 import { mapProjectionLabExport } from './projectionLab'
 import {
   serializeImportProvenance,
-  type ImportProvenanceEntry,
   type ImportProvenanceInput,
   type ImportSourceRef,
 } from './provenance'
-import type { ImportReviewItem } from './reviewChecklist'
+import { reviewToProvenance, type ImportReviewItem } from './reviewChecklist'
 import { ReviewChecklist } from './ReviewChecklistView'
-import { sha256Hex, utf8ByteLength } from './sourceHash'
+import { digestSource } from './sourceHash'
 import { seedPlanFromTenForty, type TenFortyInputs } from './tenForty'
 
 type SourceId = 'projectionlab' | 'broker' | 'generic' | 'tenforty'
@@ -125,8 +124,7 @@ export function ImportPage() {
     // Identify the source at the async edge: hash the raw bytes once, here, so
     // the pure mappers stay synchronous and the report can prove which file fed
     // the draft without ever embedding its contents.
-    const sha256 = await sha256Hex(text)
-    const bytes = utf8ByteLength(text)
+    const { sha256, bytes } = await digestSource(text)
     if (source === 'projectionlab') {
       const r = mapProjectionLabExport(text)
       if (!r.ok) return setError(r.message)
@@ -180,16 +178,11 @@ export function ImportPage() {
     if (!r.ok) return setError(r.message)
     // No file on the guided path — identify the typed inputs themselves: the
     // canonical JSON of what the user entered, hashed the same way a file is.
-    const canonical = JSON.stringify(tenForty)
+    const { sha256, bytes } = await digestSource(JSON.stringify(tenForty))
     setDraft({
       plan: r.plan,
       review: r.review,
-      source: {
-        file: 'guided-1040-entry',
-        sha256: await sha256Hex(canonical),
-        bytes: utf8ByteLength(canonical),
-        mapper: 'tenForty',
-      },
+      source: { file: 'guided-1040-entry', sha256, bytes, mapper: 'tenForty' },
     })
   }
 
@@ -202,26 +195,12 @@ export function ImportPage() {
 
   const downloadReport = () => {
     if (!draft) return
-    // Split the review checklist into what landed vs. what the user must add by
-    // hand; decisions stay absent (pending) — the Pro/Advisor workbench sets them.
-    const mappings: ImportProvenanceEntry[] = []
-    const unresolved: ImportProvenanceEntry[] = []
-    for (const item of draft.review) {
-      const entry: ImportProvenanceEntry = {
-        source: item.source,
-        detail: item.detail,
-        locator: item.locator ?? { kind: 'none', note: item.source },
-        confidence: item.confidence ?? 'unmapped',
-      }
-      if (item.status === 'unmapped' || item.status === 'skipped') unresolved.push(entry)
-      else mappings.push(entry)
-    }
+    // Decisions stay absent (pending) — the Pro/Advisor workbench sets them.
     const input: ImportProvenanceInput = {
       planSchemaVersion: CURRENT_PLAN_SCHEMA_VERSION,
       engineVersion: ENGINE_VERSION,
       sources: [draft.source],
-      mappings,
-      unresolved,
+      ...reviewToProvenance(draft.review),
     }
     const blob = new Blob([serializeImportProvenance(input)], { type: 'application/json' })
     const a = document.createElement('a')

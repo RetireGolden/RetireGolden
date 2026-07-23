@@ -55,10 +55,14 @@ export { usePlannerEdition, type PlannerEditionConfig } from './planner/editionC
 export {
   IMPORT_PROVENANCE_KIND,
   IMPORT_PROVENANCE_VERSION,
+  csvRowLocator,
   describeSourceLocator,
+  form1040Locator,
+  jsonPathLocator,
   parseImportProvenance,
   serializeImportProvenance,
 } from './import/provenance.ts'
+export { reviewToProvenance, type ImportReviewItem, type ImportItemStatus } from './import/reviewChecklist.ts'
 export type {
   DecisionState,
   ImportConfidence,

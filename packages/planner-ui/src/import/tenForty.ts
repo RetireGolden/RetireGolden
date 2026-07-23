@@ -12,13 +12,8 @@
 import type { Plan } from '@retiregolden/engine/model/plan'
 import { createEmptyPlan, parsePlan } from '@retiregolden/engine/model/plan'
 import { MAX_REASONABLE_DOLLARS } from './csv'
-import type { SourceLocator } from './provenance'
+import { form1040Locator as form1040 } from './provenance'
 import type { ImportReviewItem } from './reviewChecklist'
-
-/** A Form 1040 locator keyed by the line id (e.g. '1a', '11', 'header'). */
-function form1040(line: string): SourceLocator {
-  return { kind: 'form1040', line }
-}
 
 export interface TenFortyInputs {
   filingStatus: 'single' | 'marriedFilingJointly'

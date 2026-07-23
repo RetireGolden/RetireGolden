@@ -124,7 +124,7 @@ items split into `mappings` (what landed) and `unresolved` (the add-by-hand list
 `ImportSourceRef` — `file`, SHA-256, byte count, and the mapper that read it — and **nothing else**:
 the report identifies a source by hash, it **never embeds the raw document**, which is exactly what
 makes it safe to hand off (it carries provenance, not the 1040 PDF it describes). Hashing is the one
-piece that needs Web Crypto, so it lives in the sibling `sourceHash.ts` (`sha256Hex`, async) and is
+piece that needs Web Crypto, so it lives in the sibling `sourceHash.ts` (`digestSource`, async) and is
 called only at the async UI boundary in `ImportPage.tsx`; the mappers stay synchronous and pure.
 `parseImportProvenance` reads the envelope back with a named-reason result union (`too_large`,
 `not_json`, `wrong_kind`, `unsupported_version`), tolerating unknown top-level fields so a host may
