@@ -14,7 +14,7 @@
 import type { Account, Plan } from '@retiregolden/engine/model/plan'
 import { createEmptyPlan, parsePlan } from '@retiregolden/engine/model/plan'
 import { MAX_REASONABLE_DOLLARS, parseMoney } from './csv'
-import { jsonPathLocator as jsonPath, type SourceLocator } from './provenance'
+import { jsonPathLocator as jsonPath, type ImportConfidence, type SourceLocator } from './provenance'
 import type { ImportReviewItem } from './reviewChecklist'
 
 export const MAX_IMPORT_JSON_CHARS = 10_000_000
@@ -265,12 +265,18 @@ export function mapProjectionLabExport(
         const payment = firstDollars(rec, 'payment', 'monthlyPayment')
         // Nothing imports silently: an unreadable rate falls back to 5% with a
         // review item, and a fraction-looking rate (0.035) is scaled with one.
+        // A pure default has NO source coordinate (a jsonPath here would
+        // fabricate one); the scaled fraction genuinely derives from the field.
         let interestPct = 5
         let interestNote: string | null = 'No readable interest rate in the export — 5% was assumed. Set the real rate on the Accounts screen.'
+        let interestLocator: SourceLocator = { kind: 'none', note: 'no readable interest rate in the export' }
+        let interestConfidence: ImportConfidence = 'assumed'
         if (typeof interestRaw === 'number' && Number.isFinite(interestRaw) && interestRaw >= 0 && interestRaw < 100) {
           if (interestRaw > 0 && interestRaw < 1) {
             interestPct = Math.round(interestRaw * 100 * 10000) / 10000
             interestNote = `The export's interest rate of ${interestRaw} looked like a fraction — imported as ${interestPct}%. Check it on the Accounts screen.`
+            interestLocator = jsonPath(`${accountPath}.interestRate`)
+            interestConfidence = 'derived'
           } else {
             interestPct = interestRaw
             interestNote = null
@@ -289,9 +295,9 @@ export function mapProjectionLabExport(
             status: 'defaulted',
             source: name,
             detail: interestNote,
-            locator: jsonPath(`${accountPath}.interestRate`),
-            confidence: 'assumed',
-            target: `accounts[${accountIndex}]`,
+            locator: interestLocator,
+            confidence: interestConfidence,
+            target: `accounts[${accountIndex}].interestPct`,
           })
         }
         if (payment === null) {
@@ -299,9 +305,9 @@ export function mapProjectionLabExport(
             status: 'defaulted',
             source: name,
             detail: 'No monthly payment in the export — set the real payment on the Accounts screen.',
-            locator: jsonPath(accountPath),
+            locator: { kind: 'none', note: 'no monthly payment in the export' },
             confidence: 'assumed',
-            target: `accounts[${accountIndex}]`,
+            target: `accounts[${accountIndex}].monthlyPayment`,
           })
         }
         break
@@ -342,7 +348,8 @@ export function mapProjectionLabExport(
       continue
     }
     const typeStr = (firstString(rec, 'type', 'category') ?? '').toLowerCase()
-    const looksLikeWages = /employment|salary|wage|job|work/.test(`${typeStr} ${name.toLowerCase()}`)
+    const wagesFromType = /employment|salary|wage|job|work/.test(typeStr)
+    const looksLikeWages = wagesFromType || /employment|salary|wage|job|work/.test(name.toLowerCase())
     if (looksLikeWages) {
       plan.incomes.push({ type: 'wages', id: newId(), personId: person.id, annualGross: annual, endAge: null, realGrowthPct: 0 })
       review.push({
@@ -350,7 +357,9 @@ export function mapProjectionLabExport(
         source: name,
         detail: `Imported as wages of $${annual.toLocaleString('en-US')} /yr until retirement.`,
         locator: jsonPath(incomePath),
-        confidence: 'exact',
+        // 'exact' only when the source's own type/category said wages; a
+        // keyword match on the NAME is a heuristic classification.
+        confidence: wagesFromType ? 'exact' : 'assumed',
         target: `incomes[${plan.incomes.length - 1}]`,
       })
     } else if (/social security|\bss\b|ssa/.test(`${typeStr} ${name.toLowerCase()}`)) {

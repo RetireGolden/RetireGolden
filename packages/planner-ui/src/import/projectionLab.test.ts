@@ -224,6 +224,35 @@ describe('projectionLab provenance (WS1)', () => {
     expect(item.target).toBe('accounts[0]')
   })
 
+  it('points debt defaults at their fields and never fabricates a source for them', () => {
+    const json = JSON.stringify({
+      currentFinances: { accounts: [{ name: 'Old mortgage', type: 'debt', balance: 120000 }] },
+    })
+    const r = mapProjectionLabExport(json, testIds)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    // The 5% rate and $0 payment are pure mapper defaults: the export has no
+    // interestRate/payment fields, so a jsonPath locator would fabricate a
+    // source. Each default targets the exact scalar an override applies to.
+    const rate = r.review.find((i) => i.detail.includes('interest rate'))!
+    expect(rate.locator?.kind).toBe('none')
+    expect(rate.target).toBe('accounts[0].interestPct')
+    const payment = r.review.find((i) => i.detail.includes('monthly payment'))!
+    expect(payment.locator?.kind).toBe('none')
+    expect(payment.target).toBe('accounts[0].monthlyPayment')
+  })
+
+  it('grades wages inferred from the income NAME as assumed, not exact', () => {
+    const json = JSON.stringify({
+      currentFinances: { accounts: [], incomes: [{ name: 'Day job', amount: 90000 }] },
+    })
+    const r = mapProjectionLabExport(json, testIds)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    const wages = r.review.find((i) => i.source === 'Day job')!
+    expect(wages.confidence).toBe('assumed')
+  })
+
   it('grades a type string that did not name the class as assumed, even when nonempty', () => {
     // The type "Asset" matches no class keyword — "roth" comes from the NAME,
     // so a nonempty type string alone must not claim exact fidelity.

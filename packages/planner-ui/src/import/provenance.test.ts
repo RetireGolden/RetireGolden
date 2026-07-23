@@ -181,9 +181,36 @@ describe('serializeImportProvenance / parseImportProvenance', () => {
     // A 'none' locator references no source, so an empty sources[] is fine there.
     const none = {
       ...leaf,
-      mappings: [{ source: 'x', detail: 'y', locator: { kind: 'none', note: 'n' }, confidence: 'unmapped' }],
+      mappings: [{ source: 'x', detail: 'y', locator: { kind: 'none', note: 'n' }, confidence: 'assumed' }],
     }
     expect(parseImportProvenance(JSON.stringify(none)).ok).toBe(true)
+  })
+
+  it('rejects misfiled entries and malformed envelope metadata', () => {
+    const valid = JSON.parse(serializeImportProvenance(sampleInput())) as Record<string, unknown>
+    const corruptions: Array<Record<string, unknown>> = [
+      // 'unmapped' means nothing landed — it cannot be a mapping…
+      { ...valid, mappings: [{ source: 'x', detail: 'y', locator: { kind: 'none', note: 'n' }, confidence: 'unmapped' }] },
+      // …and every unresolved entry must carry it.
+      { ...valid, unresolved: [{ source: 'x', detail: 'y', locator: { kind: 'csvRow', row: 1 }, confidence: 'exact' }] },
+      { ...valid, exportedAtIso: 'not-a-date' },
+      { ...valid, planSchemaVersion: -1.5 },
+    ]
+    for (const corrupt of corruptions) {
+      const parsed = parseImportProvenance(JSON.stringify(corrupt))
+      expect(parsed.ok, JSON.stringify(corrupt).slice(0, 120)).toBe(false)
+      if (!parsed.ok) expect(parsed.reason).toBe('malformed')
+    }
+  })
+
+  it('serialize throws — rather than emitting an unreadable file — on relational violations', () => {
+    const badIndex = sampleInput()
+    badIndex.mappings[0] = { ...badIndex.mappings[0]!, locator: { kind: 'csvRow', row: 1, sourceIndex: 99 } }
+    expect(() => serializeImportProvenance(badIndex)).toThrow(/sourceIndex/)
+
+    const misfiled = sampleInput()
+    misfiled.mappings[0] = { ...misfiled.mappings[0]!, confidence: 'unmapped' }
+    expect(() => serializeImportProvenance(misfiled)).toThrow(/filed under/)
   })
 
   it('serializes only contract fields — a caller extension carrying content is dropped', () => {

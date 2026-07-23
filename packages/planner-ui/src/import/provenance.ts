@@ -172,9 +172,19 @@ export const MAX_LOCATOR_DEPTH = 32
  * an extension field a caller left on a source or entry (worst case, one
  * carrying raw document content) is dropped, not emitted. This is what makes
  * the never-embeds-the-raw-document guarantee structural rather than advisory.
+ * Relational invariants a typed caller can still violate (a leaf `sourceIndex`
+ * outside `sources[]`, excessive nesting, an `'unmapped'` entry filed as a
+ * mapping) make serialize THROW — emitting a file this module's own parser
+ * would call malformed is a programming error, not a data condition.
  */
-function cleanLocator(locator: SourceLocator, depth: number): SourceLocator {
+function cleanLocator(locator: SourceLocator, depth: number, sourceCount: number): SourceLocator {
   if (depth > MAX_LOCATOR_DEPTH) throw new Error(`locator nesting exceeds ${MAX_LOCATOR_DEPTH}`)
+  if (locator.kind === 'csvRow' || locator.kind === 'jsonPath' || locator.kind === 'form1040') {
+    const index = locator.sourceIndex ?? 0
+    if (!Number.isInteger(index) || index < 0 || index >= sourceCount) {
+      throw new Error(`locator sourceIndex ${String(locator.sourceIndex)} does not name an entry in sources[] (length ${sourceCount})`)
+    }
+  }
   switch (locator.kind) {
     case 'csvRow':
       return {
@@ -190,7 +200,7 @@ function cleanLocator(locator: SourceLocator, depth: number): SourceLocator {
     case 'derived':
       return {
         kind: 'derived',
-        from: locator.from.map((part) => cleanLocator(part, depth + 1)),
+        from: locator.from.map((part) => cleanLocator(part, depth + 1, sourceCount)),
         ...(locator.note !== undefined ? { note: locator.note } : {}),
       }
     case 'none':
@@ -198,11 +208,16 @@ function cleanLocator(locator: SourceLocator, depth: number): SourceLocator {
   }
 }
 
-function cleanEntry(entry: ImportProvenanceEntry): ImportProvenanceEntry {
+function cleanEntry(entry: ImportProvenanceEntry, sourceCount: number, collection: 'mappings' | 'unresolved'): ImportProvenanceEntry {
+  // `unmapped` means "nothing landed" — an entry graded that way belongs in
+  // `unresolved`, and every unresolved entry must be graded that way.
+  if ((entry.confidence === 'unmapped') !== (collection === 'unresolved')) {
+    throw new Error(`a '${entry.confidence}' entry cannot be filed under '${collection}'`)
+  }
   return {
     source: entry.source,
     detail: entry.detail,
-    locator: cleanLocator(entry.locator, 0),
+    locator: cleanLocator(entry.locator, 0, sourceCount),
     confidence: entry.confidence,
     ...(entry.target !== undefined ? { target: entry.target } : {}),
     ...(entry.decision !== undefined ? { decision: cleanDecision(entry.decision) } : {}),
@@ -234,8 +249,8 @@ export function serializeImportProvenance(
     planSchemaVersion: input.planSchemaVersion,
     engineVersion: input.engineVersion,
     sources: input.sources.map(cleanSourceRef),
-    mappings: input.mappings.map(cleanEntry),
-    unresolved: input.unresolved.map(cleanEntry),
+    mappings: input.mappings.map((entry) => cleanEntry(entry, input.sources.length, 'mappings')),
+    unresolved: input.unresolved.map((entry) => cleanEntry(entry, input.sources.length, 'unresolved')),
   }
   return JSON.stringify(envelope, null, 2)
 }
@@ -345,7 +360,7 @@ function parseDecision(value: unknown): { ok: boolean; value?: ReviewerDecision 
   }
 }
 
-function parseEntry(value: unknown, sourceCount: number): ImportProvenanceEntry | null {
+function parseEntry(value: unknown, sourceCount: number, collection: 'mappings' | 'unresolved'): ImportProvenanceEntry | null {
   const rec = asRecord(value)
   if (!rec) return null
   if (typeof rec['source'] !== 'string' || typeof rec['detail'] !== 'string') return null
@@ -353,6 +368,9 @@ function parseEntry(value: unknown, sourceCount: number): ImportProvenanceEntry 
   if (locator === null) return null
   const confidence = rec['confidence']
   if (typeof confidence !== 'string' || !CONFIDENCE_VALUES.includes(confidence)) return null
+  // `unmapped` means "nothing landed": it belongs in `unresolved` and is the
+  // only grade that does — a misfiled entry is malformed, not reinterpreted.
+  if ((confidence === 'unmapped') !== (collection === 'unresolved')) return null
   const target = optionalString(rec['target'])
   const decision = parseDecision(rec['decision'])
   if (!target.ok || !decision.ok) return null
@@ -395,13 +413,21 @@ export function parseImportProvenance(json: string): ParseImportProvenanceResult
   // a hand-edited or foreign file must fail here, not in a consumer's
   // dereference. Unknown top-level keys stay tolerated (dropped, not an error);
   // sources parse first so leaf `sourceIndex` values can be bounds-checked.
-  if (typeof env['exportedAtIso'] !== 'string') return { ok: false, reason: 'malformed' }
-  if (typeof env['planSchemaVersion'] !== 'number') return { ok: false, reason: 'malformed' }
+  if (typeof env['exportedAtIso'] !== 'string' || Number.isNaN(Date.parse(env['exportedAtIso']))) {
+    return { ok: false, reason: 'malformed' }
+  }
+  if (
+    typeof env['planSchemaVersion'] !== 'number' ||
+    !Number.isInteger(env['planSchemaVersion']) ||
+    env['planSchemaVersion'] < 0
+  ) {
+    return { ok: false, reason: 'malformed' }
+  }
   if (typeof env['engineVersion'] !== 'string') return { ok: false, reason: 'malformed' }
   const sources = parseAll(env['sources'], parseSourceRef)
   if (sources === null) return { ok: false, reason: 'malformed' }
-  const mappings = parseAll(env['mappings'], (entry) => parseEntry(entry, sources.length))
-  const unresolved = parseAll(env['unresolved'], (entry) => parseEntry(entry, sources.length))
+  const mappings = parseAll(env['mappings'], (entry) => parseEntry(entry, sources.length, 'mappings'))
+  const unresolved = parseAll(env['unresolved'], (entry) => parseEntry(entry, sources.length, 'unresolved'))
   if (mappings === null || unresolved === null) return { ok: false, reason: 'malformed' }
 
   return {
@@ -421,13 +447,16 @@ export function parseImportProvenance(json: string): ParseImportProvenanceResult
 
 /** A short, human-readable rendering of a locator for display and debug logs. */
 export function describeSourceLocator(locator: SourceLocator): string {
+  // In a multi-source envelope the index is the only thing separating row 12
+  // of one file from row 12 of another — render it whenever it is present.
+  const inSource = 'sourceIndex' in locator && locator.sourceIndex !== undefined ? ` (source ${locator.sourceIndex})` : ''
   switch (locator.kind) {
     case 'csvRow':
-      return locator.column ? `CSV row ${locator.row}, column ${locator.column}` : `CSV row ${locator.row}`
+      return (locator.column ? `CSV row ${locator.row}, column ${locator.column}` : `CSV row ${locator.row}`) + inSource
     case 'jsonPath':
-      return `JSON ${locator.path}`
+      return `JSON ${locator.path}${inSource}`
     case 'form1040':
-      return `Form 1040 line ${locator.line}`
+      return `Form 1040 line ${locator.line}${inSource}`
     case 'derived': {
       const parts = locator.from.map(describeSourceLocator).join(', ')
       return locator.note ? `derived from ${parts} (${locator.note})` : `derived from ${parts}`

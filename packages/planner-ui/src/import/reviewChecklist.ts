@@ -64,7 +64,9 @@ export function reviewToProvenance(items: ImportReviewItem[]): {
   const unresolved: ImportProvenanceEntry[] = []
   // Confidence fallback for items from producers predating the optional
   // fields: derived from the status so a landed value is never graded
-  // 'unmapped' (which the contract defines as "nothing landed").
+  // 'unmapped' (which the contract defines as "nothing landed"). The envelope
+  // enforces bucket↔confidence agreement, so a contradictory explicit grade
+  // (a landed item claiming 'unmapped', or the reverse) also falls back.
   const fallbackConfidence: Record<ImportItemStatus, ImportConfidence> = {
     mapped: 'exact',
     defaulted: 'assumed',
@@ -72,15 +74,18 @@ export function reviewToProvenance(items: ImportReviewItem[]): {
     skipped: 'unmapped',
   }
   for (const item of items) {
+    const toUnresolved = item.status === 'unmapped' || item.status === 'skipped'
+    const explicit = item.confidence
+    const agrees = explicit !== undefined && (explicit === 'unmapped') === toUnresolved
     const entry: ImportProvenanceEntry = {
       source: item.source,
       detail: item.detail,
       locator: item.locator ?? { kind: 'none', note: item.source },
-      confidence: item.confidence ?? fallbackConfidence[item.status],
+      confidence: agrees ? explicit : fallbackConfidence[item.status],
       ...(item.target ? { target: item.target } : {}),
       ...(item.decision ? { decision: item.decision } : {}),
     }
-    if (item.status === 'unmapped' || item.status === 'skipped') unresolved.push(entry)
+    if (toUnresolved) unresolved.push(entry)
     else mappings.push(entry)
   }
   return { mappings, unresolved }
