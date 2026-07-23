@@ -4,7 +4,13 @@
  * nothing imports silently — every value that lands in a draft plan, every
  * default the mapper had to invent, and every source item it could NOT map
  * becomes a visible review item.
+ *
+ * The structured provenance vocabulary lives in `provenance.ts` (the published
+ * contract); this module imports it type-only. The dependency runs one way —
+ * `provenance.ts` never imports from here — so there is no cycle.
  */
+
+import type { ImportConfidence, ReviewerDecision, SourceLocator } from './provenance.ts'
 
 export type ImportItemStatus = 'mapped' | 'defaulted' | 'unmapped' | 'skipped'
 
@@ -14,6 +20,15 @@ export interface ImportReviewItem {
   source: string
   /** What happened in the draft plan — or why nothing did and what to do instead. */
   detail: string
+  /**
+   * Structured provenance, additive over the human `source`/`detail` strings.
+   * Optional so existing mappers stay valid; a mapper fills them in to feed the
+   * `ImportProvenanceExport` envelope and the Pro/Advisor review workbench.
+   */
+  locator?: SourceLocator
+  confidence?: ImportConfidence
+  /** Left unset (i.e. `'pending'`) by the free planner; the workbench sets it. */
+  decision?: ReviewerDecision
 }
 
 export const IMPORT_STATUS_LABEL: Record<ImportItemStatus, string> = {

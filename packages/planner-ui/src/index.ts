@@ -48,3 +48,25 @@ export { ReportBrandingProvider } from './report/ReportBrandingProvider.tsx'
 // story, software license). Omit it and the content pages keep the web copy.
 export { PlannerEditionProvider } from './planner/PlannerEditionProvider.tsx'
 export { usePlannerEdition, type PlannerEditionConfig } from './planner/editionContext.ts'
+
+// The import-provenance contract (also published at the `./import-provenance`
+// subpath): the vocabulary and export envelope that record where every imported
+// value came from, how confident the mapper was, and a reviewer's verdict.
+export {
+  IMPORT_PROVENANCE_KIND,
+  IMPORT_PROVENANCE_VERSION,
+  describeSourceLocator,
+  parseImportProvenance,
+  serializeImportProvenance,
+} from './import/provenance.ts'
+export type {
+  DecisionState,
+  ImportConfidence,
+  ImportProvenanceExport,
+  ImportProvenanceEntry,
+  ImportProvenanceInput,
+  ImportSourceRef,
+  ParseImportProvenanceResult,
+  ReviewerDecision,
+  SourceLocator,
+} from './import/provenance.ts'

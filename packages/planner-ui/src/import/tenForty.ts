@@ -12,7 +12,13 @@
 import type { Plan } from '@retiregolden/engine/model/plan'
 import { createEmptyPlan, parsePlan } from '@retiregolden/engine/model/plan'
 import { MAX_REASONABLE_DOLLARS } from './csv'
+import type { SourceLocator } from './provenance'
 import type { ImportReviewItem } from './reviewChecklist'
+
+/** A Form 1040 locator keyed by the line id (e.g. '1a', '11', 'header'). */
+function form1040(line: string): SourceLocator {
+  return { kind: 'form1040', line }
+}
 
 export interface TenFortyInputs {
   filingStatus: 'single' | 'marriedFilingJointly'
@@ -127,6 +133,8 @@ export function seedPlanFromTenForty(
     status: 'mapped',
     source: 'Filing status & state (1040 header)',
     detail: `Filing ${inputs.filingStatus === 'single' ? 'single' : 'jointly'}, resident of ${plan.household.state}.`,
+    locator: form1040('header'),
+    confidence: 'exact',
   })
 
   // --- Line 1a: wages -------------------------------------------------------
@@ -140,6 +148,8 @@ export function seedPlanFromTenForty(
         (inputs.filingStatus === 'marriedFilingJointly'
           ? ', all placed on you — split it between spouses on the Income screen so retirement dates apply per person.'
           : '.'),
+      locator: form1040('1a'),
+      confidence: 'exact',
     })
   }
 
@@ -170,6 +180,8 @@ export function seedPlanFromTenForty(
         `Your $${investmentIncome.toLocaleString('en-US')} of interest + dividends implies roughly a ` +
         `$${estimatedBalance.toLocaleString('en-US')} taxable balance at a ${ASSUMED_TAXABLE_YIELD_PCT}% yield — an estimate to replace ` +
         'with the real balance and cost basis on the Accounts screen. The qualified-dividend share was kept.',
+      locator: { kind: 'derived', from: [form1040('2b'), form1040('3a'), form1040('3b')], note: `balance implied by a ${ASSUMED_TAXABLE_YIELD_PCT}% yield` },
+      confidence: 'estimated',
     })
   }
 
@@ -181,6 +193,8 @@ export function seedPlanFromTenForty(
       detail:
         `You took $${inputs.iraDistributions.toLocaleString('en-US')} from IRAs — RetireGolden models withdrawals from account balances, ` +
         'so add your traditional IRA/401(k) accounts with their balances on the Accounts screen (a broker CSV can fill them).',
+      locator: form1040('4b'),
+      confidence: 'unmapped',
     })
   }
 
@@ -205,6 +219,8 @@ export function seedPlanFromTenForty(
       detail:
         `A pension paying $${Math.round(inputs.pensionsAndAnnuities / 12).toLocaleString('en-US')} /mo starting now, with no COLA and a 50% ` +
         'survivor benefit — check the COLA, survivor percentage, and public/private split on the Accounts screen.',
+      locator: form1040('5b'),
+      confidence: 'assumed',
     })
   }
 
@@ -229,12 +245,16 @@ export function seedPlanFromTenForty(
           ? ' Line 6a is the joint total, but it was all placed on you — if both spouses receive benefits, split it into one ' +
             'stream per person on the Social Security screen (survivor-year benefits and benefit end dates depend on whose record is whose).'
           : ''),
+      locator: form1040('6a'),
+      confidence: 'assumed',
     })
   } else {
     review.push({
       status: 'unmapped',
       source: 'Social Security',
       detail: 'No benefits on the return — set up future Social Security on its screen (your SSA statement XML imports there).',
+      locator: { kind: 'none', note: 'no Social Security benefits were entered from the return' },
+      confidence: 'unmapped',
     })
   }
 
@@ -247,6 +267,8 @@ export function seedPlanFromTenForty(
         inputs.capitalGain > 0
           ? 'Last year\'s realized gains are not projected forward — RetireGolden realizes gains from actual modeled sales and yields instead.'
           : `A $${Math.abs(inputs.capitalGain).toLocaleString('en-US')} loss may leave a carryforward — enter any remaining capital-loss carryforward on the Household screen.`,
+      locator: form1040('7'),
+      confidence: 'unmapped',
     })
   }
 
@@ -257,6 +279,8 @@ export function seedPlanFromTenForty(
     status: 'mapped',
     source: 'From your 1040 — lines 11 + 2a (AGI + tax-exempt interest)',
     detail: `Recent MAGI of $${magi.toLocaleString('en-US')} recorded — Medicare IRMAA looks back two years, so early projection years use it.`,
+    locator: { kind: 'derived', from: [form1040('11'), form1040('2a')], note: 'AGI plus tax-exempt interest' },
+    confidence: 'derived',
   })
 
   // --- What a 1040 cannot tell us ---------------------------------------------------
@@ -265,6 +289,8 @@ export function seedPlanFromTenForty(
     source: 'Spending, balances & retirement dates',
     detail:
       'A tax return shows income, not spending or savings — set baseline spending on the Spending screen, account balances on the Accounts screen, and retirement ages on the Household screen.',
+    locator: { kind: 'none', note: 'a tax return shows income, not spending, balances, or retirement dates' },
+    confidence: 'unmapped',
   })
 
   const parsed = parsePlan(plan)

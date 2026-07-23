@@ -82,6 +82,55 @@ else taxable-with-review-item). Negative or unreadable balances are skipped item
 Every prefilled value carries a "From your 1040 — line N" review item and is ordinary editable
 plan data afterward.
 
+## Import-provenance contract
+
+The review checklist is the human honesty layer; the **import-provenance contract** is the
+machine-readable one underneath it. Every review item a mapper emits now carries, alongside its
+`source`/`detail`/`status` strings, a structured **source locator** and a **confidence** grade, so a
+downstream tool can answer "where did this value come from, and how sure were we?" without re-parsing
+the file. The contract is `packages/planner-ui/src/import/provenance.ts` — deliberately browser-free
+(no DOM, no Web Crypto) so a Node process or the Pro/Advisor repo can build and read it. It is
+published on the stability-promised `@retiregolden/planner-ui/import-provenance` subpath.
+
+**Source locators** (`SourceLocator`) pin a value to an exact spot in the source, as a small
+discriminated union: `csvRow` (row number, optional column), `jsonPath` (a path like
+`currentFinances.accounts[7]`), `form1040` (a line like `1a`), `derived` (computed from other
+locators — e.g. a per-account balance points at the exact rows it summed), and `none` (an honest "no
+precise coordinate" for invented defaults and "everything else" reminders, with a note rather than a
+fabricated row). The file name is **not** part of a locator — it lives once at the source level (see
+the export below), so a locator stays small and a value fused from two files points at both.
+
+**Confidence** (`ImportConfidence`) grades how faithfully a source value survived the trip into the
+plan — a distinct axis from the insights high/medium/low scale (which grades how strong a *finding*
+is; the two are deliberately not the same enum):
+
+- **`exact`** — read verbatim from the source (a 1040 wages line, a broker market value).
+- **`derived`** — computed from other sourced values (a MAGI summed from two lines).
+- **`estimated`** — inferred with a heuristic (the 2.5%-yield taxable balance from interest/dividends).
+- **`assumed`** — a mapper default with no source behind it (a guessed account type, a July-1 DOB).
+- **`unmapped`** — present in the source but nothing landed (a recognized-but-unmodeled 1040 line).
+
+**Reviewer decisions** (`ReviewerDecision`: `pending` / `accepted` / `overridden` / `rejected`, with
+an optional override value and note) are the third, optional field. The free import wizard **never**
+sets them — every item stays `pending`; the state exists so the Pro/Advisor review workbench can
+record a human's verdict later without a schema change. All three fields are additive and optional on
+`ImportReviewItem`, so the checklist and the existing wizard UI are unchanged by their presence.
+
+**The import report** ("Download import report", shown once a draft exists) serializes the whole
+picture to a portable JSON envelope via `serializeImportProvenance`, mirroring the plan-format
+envelopes: `kind: "retiregolden.import-provenance"`, integer `version: 1`, an `exportedAtIso` stamp,
+the `planSchemaVersion`/`engineVersion` current when written, a `sources[]` array, and the review
+items split into `mappings` (what landed) and `unresolved` (the add-by-hand list). Each source is an
+`ImportSourceRef` — `file`, SHA-256, byte count, and the mapper that read it — and **nothing else**:
+the report identifies a source by hash, it **never embeds the raw document**, which is exactly what
+makes it safe to hand off (it carries provenance, not the 1040 PDF it describes). Hashing is the one
+piece that needs Web Crypto, so it lives in the sibling `sourceHash.ts` (`sha256Hex`, async) and is
+called only at the async UI boundary in `ImportPage.tsx`; the mappers stay synchronous and pure.
+`parseImportProvenance` reads the envelope back with a named-reason result union (`too_large`,
+`not_json`, `wrong_kind`, `unsupported_version`), tolerating unknown top-level fields so a host may
+extend it. The report bundles the single source per guided path today; the `sources[]` array supports
+multi-source fusion when a future path needs it.
+
 ## Security posture
 
 Imported files are hostile input, same discipline as the SSA statement XML parser: a hardened

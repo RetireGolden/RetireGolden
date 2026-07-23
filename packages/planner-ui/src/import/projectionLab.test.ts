@@ -178,3 +178,56 @@ describe('mapProjectionLabExport', () => {
     expect(r.review.some((i) => i.source === 'Fraction-rate loan' && i.status === 'defaulted' && i.detail.includes('fraction'))).toBe(true)
   })
 })
+
+describe('projectionLab provenance (WS1)', () => {
+  it('gives every review item a locator and a confidence', () => {
+    const r = mapProjectionLabExport(PROJECTIONLAB_FIXTURE, testIds)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    for (const item of r.review) {
+      expect(item.locator, item.source).toBeDefined()
+      expect(item.confidence, item.source).toBeDefined()
+    }
+  })
+
+  it('points each account item at its JSON path with the right confidence', () => {
+    const r = mapProjectionLabExport(PROJECTIONLAB_FIXTURE, testIds)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+
+    // Brokerage is accounts[1]; a mapped balance is exact.
+    const brokerage = r.review.find((i) => i.status === 'mapped' && i.source.startsWith('Brokerage'))!
+    expect(brokerage.locator).toEqual({ kind: 'jsonPath', path: 'currentFinances.accounts[1]' })
+    expect(brokerage.confidence).toBe('exact')
+
+    // Crypto Wallet is accounts[7]; no mapping, so unmapped.
+    const crypto = r.review.find((i) => i.status === 'unmapped' && i.source.startsWith('Crypto Wallet'))!
+    expect(crypto.locator).toEqual({ kind: 'jsonPath', path: 'currentFinances.accounts[7]' })
+    expect(crypto.confidence).toBe('unmapped')
+  })
+
+  it('marks the July-1 DOB assumption and derives the expense baseline', () => {
+    const r = mapProjectionLabExport(PROJECTIONLAB_FIXTURE, testIds)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+
+    const dob = r.review.find((i) => i.source.startsWith('Birth year'))!
+    expect(dob.locator).toEqual({ kind: 'jsonPath', path: 'user.birthYear' })
+    expect(dob.confidence).toBe('assumed')
+
+    const milestone = r.review.find((i) => i.source.startsWith('Milestone'))!
+    expect(milestone.locator).toEqual({ kind: 'jsonPath', path: 'plans[0].milestones[0].age' })
+    expect(milestone.confidence).toBe('exact')
+
+    // The spending baseline is the sum of two expenses — a derived value.
+    const spending = r.review.find((i) => i.source === 'Living, Travel')!
+    expect(spending.confidence).toBe('derived')
+    expect(spending.locator?.kind).toBe('derived')
+    if (spending.locator?.kind === 'derived') {
+      expect(spending.locator.from).toEqual([
+        { kind: 'jsonPath', path: 'currentFinances.expenses[0]' },
+        { kind: 'jsonPath', path: 'currentFinances.expenses[1]' },
+      ])
+    }
+  })
+})

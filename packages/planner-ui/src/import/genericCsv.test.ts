@@ -173,3 +173,45 @@ Mystery deficit,-500
     expect(r.ok).toBe(false)
   })
 })
+
+describe('genericCsv provenance (WS1)', () => {
+  it('gives every review item a locator and a confidence', () => {
+    const analysis = analyzeGenericCsv(RPM_FIXTURE)
+    expect(analysis.ok).toBe(true)
+    if (!analysis.ok) return
+    const r = draftPlanFromGenericCsv(analysis.analysis, analysis.analysis.guessedRoles, testIds)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    for (const item of r.review) {
+      expect(item.locator, item.source).toBeDefined()
+      expect(item.confidence, item.source).toBeDefined()
+    }
+  })
+
+  it('locates each RPM account at its header-offset-corrected row and balance column', () => {
+    const analysis = analyzeGenericCsv(RPM_FIXTURE)
+    expect(analysis.ok).toBe(true)
+    if (!analysis.ok) return
+    // Two title rows (1,2) then the header (3): the first data row is parsed-row 4.
+    expect(analysis.analysis.dataRowNumbers).toEqual([4, 5, 6, 7, 8])
+    const r = draftPlanFromGenericCsv(analysis.analysis, analysis.analysis.guessedRoles, testIds)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    const taxable = r.review.find((i) => i.status === 'mapped' && i.source.startsWith('Taxable account'))!
+    expect(taxable.locator).toEqual({ kind: 'csvRow', row: 4, column: 'Balance' })
+    // No type column in the RPM sheet — the class is a name-keyword guess.
+    expect(taxable.confidence).toBe('assumed')
+  })
+
+  it('grades a class read from an explicit type column as exact', () => {
+    const typed = analyzeGenericCsv('Account,Type,Balance\nMy Roth,Roth IRA,50000\n')
+    expect(typed.ok).toBe(true)
+    if (!typed.ok) return
+    const r = draftPlanFromGenericCsv(typed.analysis, typed.analysis.guessedRoles, testIds)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    const roth = r.review.find((i) => i.status === 'mapped' && i.source.startsWith('My Roth'))!
+    expect(roth.confidence).toBe('exact')
+    expect(roth.locator).toEqual({ kind: 'csvRow', row: 2, column: 'Balance' })
+  })
+})

@@ -13,6 +13,7 @@ import { IDBFactory } from 'fake-indexeddb'
 
 import { _resetPlanStoreForTests, listUserPlanSummaries } from '../data/planStore'
 import { ImportPage } from './ImportPage'
+import { parseImportProvenance } from './provenance'
 
 let root: Root | null = null
 let container: HTMLDivElement | null = null
@@ -83,8 +84,12 @@ describe('ImportPage', () => {
 
     // The guided form shows the 1040 line fields; keep the defaults (all $0)
     // and build — a coherent (if empty) draft with MAGI context still results.
+    // Building hashes the typed inputs (async), so wait for the draft to render.
     expect(el.textContent).toContain('Line 11')
-    click(findButton(el, 'Build my draft plan'))
+    await act(async () => {
+      findButton(el, 'Build my draft plan')!.click()
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
 
     // Review checklist appears with the always-present unmapped guidance.
     expect(el.querySelector('.import-review')).not.toBeNull()
@@ -123,6 +128,104 @@ describe('ImportPage', () => {
     const plans = await listUserPlanSummaries()
     expect(plans).toHaveLength(1)
     expect(plans[0]!.name).toBe('Imported from Schwab')
+  })
+
+  it('offers a download-report action for a drafted import whose envelope round-trips', async () => {
+    const el = render()
+    click(findButton(el, 'Broker CSV'))
+
+    // No draft yet — no report action is offered.
+    expect(findButton(el, 'Download import report')).toBeUndefined()
+
+    const csv = `"Positions for account Roth IRA ...321 as of 09:12 PM ET, 07/07/2026"
+"Symbol","Description","Mkt Val (Market Value)","Cost Basis"
+"VTI","VANGUARD TOTAL STOCK MARKET ETF","$14,000.00","$10,000.00"
+`
+    await chooseFile(el, new File([csv], 'positions.csv', { type: 'text/csv' }))
+
+    // Capture the blob the download assembles without touching the filesystem.
+    let captured: Blob | null = null
+    const origCreate = URL.createObjectURL
+    const origRevoke = URL.revokeObjectURL
+    const origClick = HTMLAnchorElement.prototype.click
+    URL.createObjectURL = (obj: Blob | MediaSource) => {
+      captured = obj as Blob
+      return 'blob:mock'
+    }
+    URL.revokeObjectURL = () => {}
+    HTMLAnchorElement.prototype.click = () => {}
+    try {
+      const btn = findButton(el, 'Download import report')
+      expect(btn, 'download-report action should exist once a draft exists').toBeTruthy()
+      click(btn)
+    } finally {
+      URL.createObjectURL = origCreate
+      URL.revokeObjectURL = origRevoke
+      HTMLAnchorElement.prototype.click = origClick
+    }
+
+    expect(captured).not.toBeNull()
+    const json = await captured!.text()
+    const parsed = parseImportProvenance(json)
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) throw new Error('report did not parse')
+
+    const prov = parsed.provenance
+    // Exactly one source, correctly identified — file name, mapper, a real
+    // 64-hex SHA-256, and the independently-computed UTF-8 byte length.
+    expect(prov.sources).toHaveLength(1)
+    expect(prov.sources[0]!.file).toBe('positions.csv')
+    expect(prov.sources[0]!.mapper).toBe('brokerCsv')
+    expect(prov.sources[0]!.sha256).toMatch(/^[0-9a-f]{64}$/)
+    expect(prov.sources[0]!.bytes).toBe(new TextEncoder().encode(csv).length)
+
+    // The report NEVER embeds the raw document.
+    expect(json).not.toContain('VANGUARD TOTAL STOCK MARKET ETF')
+
+    // Every exported entry carries structured provenance and no reviewer decision.
+    const entries = [...prov.mappings, ...prov.unresolved]
+    expect(entries.length).toBeGreaterThan(0)
+    for (const e of entries) {
+      expect(e.locator).toBeTruthy()
+      expect(e.confidence).toBeTruthy()
+      expect(e.decision).toBeUndefined()
+    }
+    // The page's own file-level summary landed in mappings with a locator.
+    expect(prov.mappings.some((m) => m.source.includes('positions file'))).toBe(true)
+  })
+
+  it('identifies the guided 1040 path by hash of the typed inputs, not a file', async () => {
+    const el = render()
+    click(findButton(el, 'tax return'))
+    await act(async () => {
+      findButton(el, 'Build my draft plan')!.click()
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+
+    let captured: Blob | null = null
+    const origCreate = URL.createObjectURL
+    const origRevoke = URL.revokeObjectURL
+    const origClick = HTMLAnchorElement.prototype.click
+    URL.createObjectURL = (obj: Blob | MediaSource) => {
+      captured = obj as Blob
+      return 'blob:mock'
+    }
+    URL.revokeObjectURL = () => {}
+    HTMLAnchorElement.prototype.click = () => {}
+    try {
+      click(findButton(el, 'Download import report'))
+    } finally {
+      URL.createObjectURL = origCreate
+      URL.revokeObjectURL = origRevoke
+      HTMLAnchorElement.prototype.click = origClick
+    }
+
+    const parsed = parseImportProvenance(await captured!.text())
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) throw new Error('report did not parse')
+    expect(parsed.provenance.sources[0]!.file).toBe('guided-1040-entry')
+    expect(parsed.provenance.sources[0]!.mapper).toBe('tenForty')
+    expect(parsed.provenance.sources[0]!.sha256).toMatch(/^[0-9a-f]{64}$/)
   })
 
   it('surfaces a helpful error for unrecognized files instead of importing junk', async () => {

@@ -238,3 +238,68 @@ describe('applyBrokerBalance / guessAccountTypeFromLabel / draftPlanFromBrokerAc
     expect(r.review.some((i) => i.status === 'unmapped')).toBe(true)
   })
 })
+
+describe('brokerCsv provenance (WS1)', () => {
+  it('gives every review item a locator and a confidence, for all three brokers', () => {
+    for (const fixture of [SCHWAB_FIXTURE, FIDELITY_FIXTURE, VANGUARD_FIXTURE]) {
+      const r = parseBrokerPositionsCsv(fixture)
+      expect(r.ok).toBe(true)
+      if (!r.ok) return
+      for (const item of r.review) {
+        expect(item.locator, `${item.source}`).toBeDefined()
+        expect(item.confidence, `${item.source}`).toBeDefined()
+      }
+    }
+  })
+
+  it('records a Schwab balance as an exact sum of the position rows it read', () => {
+    const r = parseBrokerPositionsCsv(SCHWAB_FIXTURE)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    const balance = r.review.find((i) => i.status === 'mapped' && i.source.startsWith('Individual'))!
+    expect(balance.confidence).toBe('exact')
+    expect(balance.locator?.kind).toBe('derived')
+    if (balance.locator?.kind === 'derived') {
+      // AAPL is the first counted position: parsed rows are Positions title (1),
+      // header (2), then AAPL at parsed-row 3.
+      expect(balance.locator.from).toContainEqual({ kind: 'csvRow', row: 3, column: 'market value' })
+      expect(balance.locator.from).toHaveLength(3) // three positions summed
+    }
+  })
+
+  it('points a skipped Schwab row at its own row and marks it unmapped', () => {
+    const hostile = `"Positions for account Test ...111 as of 07/07/2026"
+"Symbol","Description","Mkt Val (Market Value)","Cost Basis"
+"GOOD","FINE FUND","$1,000.00","$900.00"
+"EVIL","BROKEN ROW","not-a-number","$1.00"
+`
+    const r = parseBrokerPositionsCsv(hostile)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    const skipped = r.review.find((i) => i.status === 'skipped' && i.source.includes('EVIL'))!
+    // Title (1), header (2), GOOD (3), EVIL (4).
+    expect(skipped.locator).toEqual({ kind: 'csvRow', row: 4, column: 'market value' })
+    expect(skipped.confidence).toBe('unmapped')
+  })
+
+  it('marks guessed account types assumed and the not-imported remainder unmapped in the draft', () => {
+    const r = draftPlanFromBrokerAccounts(
+      'schwab',
+      [{ accountLabel: 'Individual ...789', totalValue: 25250, costBasis: 15000, positionCount: 3 }],
+      (() => {
+        let n = 0
+        return () => `id-${++n}`
+      })(),
+    )
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    for (const item of r.review) {
+      expect(item.locator).toBeDefined()
+      expect(item.confidence).toBeDefined()
+    }
+    const guess = r.review.find((i) => i.detail.includes('guessed from the name'))!
+    expect(guess.confidence).toBe('assumed')
+    expect(guess.locator?.kind).toBe('none')
+    expect(r.review.find((i) => i.source === 'Everything except balances')!.confidence).toBe('unmapped')
+  })
+})

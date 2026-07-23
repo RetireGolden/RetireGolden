@@ -149,3 +149,15 @@ stability-promised `@retiregolden/planner-ui/plan-format` subpath
 ignores unknown top-level envelope fields, so a host may extend the envelope with its own keys
 and the file remains importable everywhere; that tolerance is test-pinned
 (`packages/planner-ui/src/data/planFormat.test.ts`).
+
+## A sibling portability artifact: the import-provenance envelope
+
+The plan file answers "keep my finances safe / hand this plan to a tool". Its companion for imports
+is the `retiregolden.import-provenance` envelope (integer `version` 1), which travels the other
+direction: it records, for a just-completed import, where every value came from, how confident the
+mapper was, and what a reviewer decided — carrying source hashes but **never** the raw source
+documents. It mirrors this page's envelope conventions (`kind`/`version` pair, `exportedAtIso` stamp,
+`planSchemaVersion`/`engineVersion`, a parser that tolerates unknown top-level fields and refuses with
+named reasons) on its own stability-promised `@retiregolden/planner-ui/import-provenance` subpath
+(`packages/planner-ui/src/import/provenance.ts`, browser-free). Full detail lives in
+[imports-and-migration.md](imports-and-migration.md#import-provenance-contract).

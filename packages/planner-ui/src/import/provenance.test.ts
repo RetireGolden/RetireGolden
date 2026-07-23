@@ -1,0 +1,151 @@
+import { describe, expect, it } from 'vitest'
+
+// @ts-expect-error -- node builtins in a node-env test; the app tsconfig omits node types
+import { readFileSync } from 'node:fs'
+// @ts-expect-error -- node builtins in a node-env test; the app tsconfig omits node types
+import { fileURLToPath } from 'node:url'
+
+import {
+  IMPORT_PROVENANCE_KIND,
+  IMPORT_PROVENANCE_VERSION,
+  MAX_IMPORT_PROVENANCE_JSON_CHARS,
+  type ImportProvenanceInput,
+  describeSourceLocator,
+  parseImportProvenance,
+  serializeImportProvenance,
+} from './provenance'
+
+// A fully-populated payload, hand-built (never derived from serializer output)
+// so a round-trip test compares against independent expected values.
+const sampleInput = (): ImportProvenanceInput => ({
+  planSchemaVersion: 7,
+  engineVersion: '0.1.5',
+  sources: [
+    { file: 'brokerage-2025.csv', sha256: 'a'.repeat(64), bytes: 4096, mapper: 'brokerCsv' },
+    { file: '1040-2025.json', sha256: 'b'.repeat(64), bytes: 512, mapper: 'tenForty' },
+  ],
+  mappings: [
+    {
+      source: 'Row 12, "Total Value"',
+      detail: 'Set Taxable brokerage balance to $250,000',
+      locator: { kind: 'csvRow', row: 12, column: 'Total Value' },
+      confidence: 'exact',
+      decision: { state: 'accepted', decidedAtIso: '2026-07-23T12:00:00.000Z' },
+    },
+    {
+      source: 'Form 1040 line 9',
+      detail: 'Estimated wage growth from AGI',
+      locator: {
+        kind: 'derived',
+        from: [
+          { kind: 'form1040', line: '9' },
+          { kind: 'jsonPath', path: '$.income.wages' },
+        ],
+        note: 'blended',
+      },
+      confidence: 'derived',
+      decision: { state: 'overridden', overrideValue: '3.0%', note: 'user knows their raise' },
+    },
+  ],
+  unresolved: [
+    {
+      source: 'Row 40, "Crypto"',
+      detail: 'No account type matches — add by hand',
+      locator: { kind: 'none', note: 'no mapping target' },
+      confidence: 'unmapped',
+    },
+  ],
+})
+
+describe('serializeImportProvenance / parseImportProvenance', () => {
+  it('round-trips locators, confidence, decisions, hashes and unresolved items', () => {
+    const input = sampleInput()
+    const json = serializeImportProvenance(input, () => new Date('2026-07-23T00:00:00.000Z'))
+    const parsed = parseImportProvenance(json)
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) return
+    expect(parsed.provenance.kind).toBe(IMPORT_PROVENANCE_KIND)
+    expect(parsed.provenance.version).toBe(IMPORT_PROVENANCE_VERSION)
+    expect(parsed.provenance.exportedAtIso).toBe('2026-07-23T00:00:00.000Z')
+    expect(parsed.provenance.planSchemaVersion).toBe(7)
+    expect(parsed.provenance.engineVersion).toBe('0.1.5')
+    expect(parsed.provenance.sources).toEqual(input.sources)
+    expect(parsed.provenance.mappings).toEqual(input.mappings)
+    expect(parsed.provenance.unresolved).toEqual(input.unresolved)
+  })
+
+  it('tolerates unknown top-level fields (host extension) without failing', () => {
+    const json = serializeImportProvenance(sampleInput())
+    const extended = { ...(JSON.parse(json) as Record<string, unknown>), advisorReviewId: 'r-1', future: { x: 1 } }
+    const parsed = parseImportProvenance(JSON.stringify(extended))
+    expect(parsed.ok).toBe(true)
+    if (parsed.ok) expect(parsed.provenance.mappings).toHaveLength(2)
+  })
+
+  it('rejects a wrong kind', () => {
+    const parsed = parseImportProvenance(JSON.stringify({ kind: 'retiregolden.v2.backup', version: 1 }))
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) expect(parsed.reason).toBe('wrong_kind')
+  })
+
+  it('refuses a newer envelope version', () => {
+    const parsed = parseImportProvenance(JSON.stringify({ kind: IMPORT_PROVENANCE_KIND, version: 2 }))
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) expect(parsed.reason).toBe('unsupported_version')
+  })
+
+  it('rejects non-JSON', () => {
+    const parsed = parseImportProvenance('{ not json')
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) expect(parsed.reason).toBe('not_json')
+  })
+
+  it('rejects input over the size cap', () => {
+    const parsed = parseImportProvenance('x'.repeat(MAX_IMPORT_PROVENANCE_JSON_CHARS + 1))
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) expect(parsed.reason).toBe('too_large')
+  })
+
+  it('never embeds raw source-document content — a source carries only identity', () => {
+    // A source contributes file name, hash, byte count, and mapper; the bytes
+    // themselves never enter the envelope. Pin the exact key set so a future
+    // field named `content`/`text`/`raw` can't slip in unnoticed.
+    const secretBody = 'ACCOUNT 123456789 BALANCE 250000 SSN 000-00-0000'
+    const input = sampleInput()
+    const json = serializeImportProvenance(input)
+    expect(json).not.toContain(secretBody)
+    const envelope = JSON.parse(json) as { sources: Array<Record<string, unknown>> }
+    for (const source of envelope.sources) {
+      expect(Object.keys(source).sort()).toEqual(['bytes', 'file', 'mapper', 'sha256'])
+    }
+  })
+
+  it('is published by the exports map as ./import-provenance → this module', () => {
+    const packageJson = JSON.parse(
+      readFileSync(fileURLToPath(new URL('../../package.json', import.meta.url)), 'utf8'),
+    ) as { exports: Record<string, string> }
+    expect(packageJson.exports['./import-provenance']).toBe('./src/import/provenance.ts')
+  })
+})
+
+describe('describeSourceLocator', () => {
+  it('renders each locator kind', () => {
+    expect(describeSourceLocator({ kind: 'csvRow', row: 12 })).toBe('CSV row 12')
+    expect(describeSourceLocator({ kind: 'csvRow', row: 12, column: 'Total' })).toBe('CSV row 12, column Total')
+    expect(describeSourceLocator({ kind: 'jsonPath', path: '$.income.wages' })).toBe('JSON $.income.wages')
+    expect(describeSourceLocator({ kind: 'form1040', line: '9' })).toBe('Form 1040 line 9')
+    expect(describeSourceLocator({ kind: 'none', note: 'no target' })).toBe('no target')
+  })
+
+  it('renders a derived locator by recursing into its parts', () => {
+    const text = describeSourceLocator({
+      kind: 'derived',
+      from: [
+        { kind: 'form1040', line: '9' },
+        { kind: 'csvRow', row: 3 },
+      ],
+      note: 'blended',
+    })
+    expect(text).toBe('derived from Form 1040 line 9, CSV row 3 (blended)')
+  })
+})

@@ -13,7 +13,8 @@ import { Link, useNavigate } from 'react-router-dom'
 
 import { savePlanVia, usePlanStore } from '../data/planStoreContext'
 import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
-import type { Plan } from '@retiregolden/engine/model/plan'
+import { CURRENT_PLAN_SCHEMA_VERSION, type Plan } from '@retiregolden/engine/model/plan'
+import { ENGINE_VERSION } from '@retiregolden/engine/version'
 import { DateField, MoneyField, SelectField } from '../planner/fields'
 import { US_STATES } from '../planner/usStates'
 import { parseBrokerPositionsCsv, draftPlanFromBrokerAccounts, BROKER_LABEL } from './brokerCsv'
@@ -25,8 +26,15 @@ import {
   type GenericCsvAnalysis,
 } from './genericCsv'
 import { mapProjectionLabExport } from './projectionLab'
+import {
+  serializeImportProvenance,
+  type ImportProvenanceEntry,
+  type ImportProvenanceInput,
+  type ImportSourceRef,
+} from './provenance'
 import type { ImportReviewItem } from './reviewChecklist'
 import { ReviewChecklist } from './ReviewChecklistView'
+import { sha256Hex, utf8ByteLength } from './sourceHash'
 import { seedPlanFromTenForty, type TenFortyInputs } from './tenForty'
 
 type SourceId = 'projectionlab' | 'broker' | 'generic' | 'tenforty'
@@ -34,6 +42,8 @@ type SourceId = 'projectionlab' | 'broker' | 'generic' | 'tenforty'
 interface Draft {
   plan: Plan
   review: ImportReviewItem[]
+  /** The identified source that fed this draft, for the import-provenance report. */
+  source: ImportSourceRef
 }
 
 const SOURCES: Array<{ id: SourceId; title: string; desc: string }> = [
@@ -91,6 +101,9 @@ export function ImportPage() {
   const [analysis, setAnalysis] = useState<GenericCsvAnalysis | null>(null)
   const [roles, setRoles] = useState<ColumnRole[]>([])
   const [tenForty, setTenForty] = useState<TenFortyInputs>(EMPTY_1040)
+  // The generic path reads the file in handleFile but builds the draft later in
+  // buildGenericDraft, so the identified source is stashed here between the two.
+  const [pendingSource, setPendingSource] = useState<ImportSourceRef | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
 
   const reset = () => {
@@ -98,6 +111,7 @@ export function ImportPage() {
     setDraft(null)
     setAnalysis(null)
     setRoles([])
+    setPendingSource(null)
   }
 
   const chooseSource = (id: SourceId) => {
@@ -108,10 +122,19 @@ export function ImportPage() {
   const handleFile = async (file: File) => {
     setError(null)
     const text = await file.text()
+    // Identify the source at the async edge: hash the raw bytes once, here, so
+    // the pure mappers stay synchronous and the report can prove which file fed
+    // the draft without ever embedding its contents.
+    const sha256 = await sha256Hex(text)
+    const bytes = utf8ByteLength(text)
     if (source === 'projectionlab') {
       const r = mapProjectionLabExport(text)
       if (!r.ok) return setError(r.message)
-      setDraft({ plan: r.plan, review: r.review })
+      setDraft({
+        plan: r.plan,
+        review: r.review,
+        source: { file: file.name, sha256, bytes, mapper: 'projectionLab' },
+      })
     } else if (source === 'broker') {
       const parsed = parseBrokerPositionsCsv(text)
       if (!parsed.ok) return setError(parsed.message)
@@ -124,32 +147,50 @@ export function ImportPage() {
             status: 'mapped',
             source: `${BROKER_LABEL[parsed.broker]} positions file`,
             detail: `Recognized ${parsed.accounts.length} account${parsed.accounts.length === 1 ? '' : 's'}.`,
+            // A file-level summary, not a single row — give it a locator so every
+            // rendered (and exported) item carries one.
+            locator: { kind: 'none', note: 'File-level summary of the whole positions file.' },
+            confidence: 'exact',
           },
           ...parsed.review,
           ...drafted.review,
         ],
+        source: { file: file.name, sha256, bytes, mapper: 'brokerCsv' },
       })
     } else if (source === 'generic') {
       const r = analyzeGenericCsv(text)
       if (!r.ok) return setError(r.message)
       setAnalysis(r.analysis)
       setRoles(r.analysis.guessedRoles)
+      setPendingSource({ file: file.name, sha256, bytes, mapper: 'genericCsv' })
     }
   }
 
   const buildGenericDraft = () => {
-    if (!analysis) return
+    if (!analysis || !pendingSource) return
     setError(null)
     const r = draftPlanFromGenericCsv(analysis, roles)
     if (!r.ok) return setError(r.message)
-    setDraft({ plan: r.plan, review: r.review })
+    setDraft({ plan: r.plan, review: r.review, source: pendingSource })
   }
 
-  const buildTenFortyDraft = () => {
+  const buildTenFortyDraft = async () => {
     setError(null)
     const r = seedPlanFromTenForty(tenForty)
     if (!r.ok) return setError(r.message)
-    setDraft({ plan: r.plan, review: r.review })
+    // No file on the guided path — identify the typed inputs themselves: the
+    // canonical JSON of what the user entered, hashed the same way a file is.
+    const canonical = JSON.stringify(tenForty)
+    setDraft({
+      plan: r.plan,
+      review: r.review,
+      source: {
+        file: 'guided-1040-entry',
+        sha256: await sha256Hex(canonical),
+        bytes: utf8ByteLength(canonical),
+        mapper: 'tenForty',
+      },
+    })
   }
 
   const saveAndOpen = async () => {
@@ -157,6 +198,37 @@ export function ImportPage() {
     const r = await savePlanVia(store, draft.plan)
     if (r.ok) navigate(`/plan/${r.plan.id}`)
     else setError(`Could not save the draft plan: ${r.issues.join('; ')}`)
+  }
+
+  const downloadReport = () => {
+    if (!draft) return
+    // Split the review checklist into what landed vs. what the user must add by
+    // hand; decisions stay absent (pending) — the Pro/Advisor workbench sets them.
+    const mappings: ImportProvenanceEntry[] = []
+    const unresolved: ImportProvenanceEntry[] = []
+    for (const item of draft.review) {
+      const entry: ImportProvenanceEntry = {
+        source: item.source,
+        detail: item.detail,
+        locator: item.locator ?? { kind: 'none', note: item.source },
+        confidence: item.confidence ?? 'unmapped',
+      }
+      if (item.status === 'unmapped' || item.status === 'skipped') unresolved.push(entry)
+      else mappings.push(entry)
+    }
+    const input: ImportProvenanceInput = {
+      planSchemaVersion: CURRENT_PLAN_SCHEMA_VERSION,
+      engineVersion: ENGINE_VERSION,
+      sources: [draft.source],
+      mappings,
+      unresolved,
+    }
+    const blob = new Blob([serializeImportProvenance(input)], { type: 'application/json' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `retiregolden-import-provenance-${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    URL.revokeObjectURL(a.href)
   }
 
   const set1040 = (patch: Partial<TenFortyInputs>) => setTenForty((prev) => ({ ...prev, ...patch }))
@@ -229,6 +301,9 @@ export function ImportPage() {
                 <button type="button" className="btn btn-primary" onClick={() => void saveAndOpen()}>
                   Save draft &amp; open in the planner
                 </button>
+                <button type="button" className="btn btn-secondary" onClick={downloadReport}>
+                  Download import report
+                </button>
                 <button type="button" className="btn btn-secondary" onClick={reset}>
                   Start over
                 </button>
@@ -269,7 +344,7 @@ export function ImportPage() {
                 <MoneyField label="Line 11 — adjusted gross income" value={tenForty.agi} onCommit={(v) => set1040({ agi: v ?? 0 })} />
               </div>
               <div className="picker-actions">
-                <button type="button" className="btn btn-primary" onClick={buildTenFortyDraft}>
+                <button type="button" className="btn btn-primary" onClick={() => void buildTenFortyDraft()}>
                   Build my draft plan
                 </button>
               </div>

@@ -164,3 +164,49 @@ describe('seedPlanFromTenForty', () => {
     if (!noSpouse.ok) expect(noSpouse.message).toContain('spouse')
   })
 })
+
+describe('tenForty provenance (WS1)', () => {
+  it('gives every review item a form-1040 locator and a confidence', () => {
+    for (const inputs of [RETIREE_1040, WORKER_1040]) {
+      const r = seedPlanFromTenForty(inputs, testIds, fixedNow)
+      expect(r.ok).toBe(true)
+      if (!r.ok) return
+      for (const item of r.review) {
+        expect(item.locator, item.source).toBeDefined()
+        expect(item.confidence, item.source).toBeDefined()
+      }
+    }
+  })
+
+  it('locates the wages line at 1a and grades a verbatim line exact', () => {
+    const r = seedPlanFromTenForty(WORKER_1040, testIds, fixedNow)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    const wages = r.review.find((i) => i.source.includes('line 1a'))!
+    expect(wages.locator).toEqual({ kind: 'form1040', line: '1a' })
+    expect(wages.confidence).toBe('exact')
+  })
+
+  it('marks the yield-implied taxable balance estimated and the MAGI derived', () => {
+    const r = seedPlanFromTenForty(RETIREE_1040, testIds, fixedNow)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+
+    const taxable = r.review.find((i) => i.source.includes('lines 2b/3a/3b'))!
+    expect(taxable.confidence).toBe('estimated')
+    expect(taxable.locator?.kind).toBe('derived')
+    if (taxable.locator?.kind === 'derived') {
+      expect(taxable.locator.from).toContainEqual({ kind: 'form1040', line: '2b' })
+    }
+
+    const magi = r.review.find((i) => i.source.includes('lines 11 + 2a'))!
+    expect(magi.confidence).toBe('derived')
+    expect(magi.locator?.kind).toBe('derived')
+    if (magi.locator?.kind === 'derived') {
+      expect(magi.locator.from).toEqual([
+        { kind: 'form1040', line: '11' },
+        { kind: 'form1040', line: '2a' },
+      ])
+    }
+  })
+})
