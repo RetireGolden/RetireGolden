@@ -134,8 +134,11 @@ it lives in the sibling `sourceHash.ts` (`digestSource`, async) and is called on
 boundary in `ImportPage.tsx`; the mappers stay synchronous and pure. `parseImportProvenance` reads
 the envelope back with a named-reason result union (`too_large`, `not_json`, `wrong_kind`,
 `unsupported_version`, `malformed`) — every source, entry, locator, confidence, and decision field is
-shape-checked before the typed result exists, while unknown top-level fields stay tolerated so a host
-may extend it. The report bundles the single source per guided path today; the `sources[]` array
+shape-checked before the typed result exists (hash format, non-negative integer byte counts,
+source-index bounds, `overrideValue` exactly when a decision is `overridden`, and a bounded
+derived-locator depth), while unknown top-level fields stay tolerated so a host may extend it. The
+serializer writes only the contract's fields, so a caller extension can never smuggle document
+content into a report. The report bundles the single source per guided path today; the `sources[]` array
 supports multi-source fusion, and leaf locators carry an optional `sourceIndex` naming their entry in
 it (omitted means the first source), when a future path needs it.
 

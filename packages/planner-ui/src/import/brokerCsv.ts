@@ -64,6 +64,8 @@ interface Aggregate {
   rows: number[]
   /** 1-based rows of the positions that carried no cost basis. */
   basislessRows: number[]
+  /** 1-based rows whose cost basis was summed into `basis`. */
+  rowsWithBasis: number[]
 }
 
 function newAggregate(label: string): Aggregate {
@@ -76,6 +78,7 @@ function newAggregate(label: string): Aggregate {
     positions: 0,
     rows: [],
     basislessRows: [],
+    rowsWithBasis: [],
   }
 }
 
@@ -102,7 +105,16 @@ function finishAggregates(
       detail: `${agg.positions} position${agg.positions === 1 ? '' : 's'} totaling $${agg.total.toLocaleString('en-US', { maximumFractionDigits: 0 })}${
         agg.basisRows > 0 ? ` (cost basis $${agg.basis.toLocaleString('en-US', { maximumFractionDigits: 0 })})` : ''
       }.`,
-      locator: { kind: 'derived', from: agg.rows.map((row) => csvRow(row, valueColumn)), note: 'summed position market values' },
+      // When the item also reports a summed cost basis, the basis cells are
+      // part of the derivation too — an advisor must be able to reproduce both.
+      locator: {
+        kind: 'derived',
+        from: [
+          ...agg.rows.map((row) => csvRow(row, valueColumn)),
+          ...(agg.basisRows > 0 ? agg.rowsWithBasis.map((row) => csvRow(row, basisColumn)) : []),
+        ],
+        note: agg.basisRows > 0 ? 'summed position market values and cost basis' : 'summed position market values',
+      },
       confidence: 'derived',
     })
     if (agg.basisRows > 0 && agg.valueRowsWithoutBasis > 0) {
@@ -185,6 +197,7 @@ function parseSchwab(rows: string[][]): BrokerCsvResult {
     } else {
       current.basis += basis
       current.basisRows++
+      current.rowsWithBasis.push(r + 1)
     }
   }
 
@@ -268,6 +281,7 @@ function parseAccountColumnFile(
     } else {
       agg.basis += basis
       agg.basisRows++
+      agg.rowsWithBasis.push(r + 1)
     }
   }
 

@@ -159,6 +159,68 @@ export interface ImportProvenanceInput {
   unresolved: ImportProvenanceEntry[]
 }
 
+/**
+ * Deepest allowed `derived.from` nesting. Real locators are one or two levels;
+ * the bound exists so a hostile file cannot drive the recursive walkers into a
+ * `RangeError` — past it, parse answers `malformed` and serialize throws.
+ */
+export const MAX_LOCATOR_DEPTH = 32
+
+/**
+ * Serialization writes ONLY the contract's fields, rebuilt object-by-object —
+ * an extension field a caller left on a source or entry (worst case, one
+ * carrying raw document content) is dropped, not emitted. This is what makes
+ * the never-embeds-the-raw-document guarantee structural rather than advisory.
+ */
+function cleanLocator(locator: SourceLocator, depth: number): SourceLocator {
+  if (depth > MAX_LOCATOR_DEPTH) throw new Error(`locator nesting exceeds ${MAX_LOCATOR_DEPTH}`)
+  switch (locator.kind) {
+    case 'csvRow':
+      return {
+        kind: 'csvRow',
+        row: locator.row,
+        ...(locator.column !== undefined ? { column: locator.column } : {}),
+        ...(locator.sourceIndex !== undefined ? { sourceIndex: locator.sourceIndex } : {}),
+      }
+    case 'jsonPath':
+      return { kind: 'jsonPath', path: locator.path, ...(locator.sourceIndex !== undefined ? { sourceIndex: locator.sourceIndex } : {}) }
+    case 'form1040':
+      return { kind: 'form1040', line: locator.line, ...(locator.sourceIndex !== undefined ? { sourceIndex: locator.sourceIndex } : {}) }
+    case 'derived':
+      return {
+        kind: 'derived',
+        from: locator.from.map((part) => cleanLocator(part, depth + 1)),
+        ...(locator.note !== undefined ? { note: locator.note } : {}),
+      }
+    case 'none':
+      return { kind: 'none', note: locator.note }
+  }
+}
+
+function cleanEntry(entry: ImportProvenanceEntry): ImportProvenanceEntry {
+  return {
+    source: entry.source,
+    detail: entry.detail,
+    locator: cleanLocator(entry.locator, 0),
+    confidence: entry.confidence,
+    ...(entry.target !== undefined ? { target: entry.target } : {}),
+    ...(entry.decision !== undefined
+      ? {
+          decision: {
+            state: entry.decision.state,
+            ...(entry.decision.overrideValue !== undefined ? { overrideValue: entry.decision.overrideValue } : {}),
+            ...(entry.decision.decidedAtIso !== undefined ? { decidedAtIso: entry.decision.decidedAtIso } : {}),
+            ...(entry.decision.note !== undefined ? { note: entry.decision.note } : {}),
+          },
+        }
+      : {}),
+  }
+}
+
+function cleanSourceRef(source: ImportSourceRef): ImportSourceRef {
+  return { file: source.file, sha256: source.sha256, bytes: source.bytes, mapper: source.mapper }
+}
+
 export function serializeImportProvenance(
   input: ImportProvenanceInput,
   now: () => Date = () => new Date(),
@@ -169,9 +231,9 @@ export function serializeImportProvenance(
     exportedAtIso: now().toISOString(),
     planSchemaVersion: input.planSchemaVersion,
     engineVersion: input.engineVersion,
-    sources: input.sources,
-    mappings: input.mappings,
-    unresolved: input.unresolved,
+    sources: input.sources.map(cleanSourceRef),
+    mappings: input.mappings.map(cleanEntry),
+    unresolved: input.unresolved.map(cleanEntry),
   }
   return JSON.stringify(envelope, null, 2)
 }
@@ -182,6 +244,8 @@ export type ParseImportProvenanceResult =
 
 const CONFIDENCE_VALUES: readonly string[] = ['exact', 'derived', 'estimated', 'assumed', 'unmapped']
 const DECISION_STATES: readonly string[] = ['pending', 'accepted', 'overridden', 'rejected']
+/** Empty (host without Web Crypto) or lowercase 64-hex — the documented contract. */
+const SHA256_RE = /^([0-9a-f]{64})?$/
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -189,36 +253,53 @@ function asRecord(value: unknown): Record<string, unknown> | null {
     : null
 }
 
-function isOptionalString(value: unknown): boolean {
-  return value === undefined || typeof value === 'string'
+function optionalString(value: unknown): { ok: boolean; value?: string } {
+  if (value === undefined) return { ok: true }
+  return typeof value === 'string' ? { ok: true, value } : { ok: false }
 }
 
-function isOptionalNumber(value: unknown): boolean {
-  return value === undefined || typeof value === 'number'
+// The parsers below rebuild every object from its checked fields — a foreign
+// file's extension fields are dropped, invalid shapes fail the whole parse.
+
+function parseLeafSourceIndex(value: unknown, sourceCount: number): { ok: boolean; value?: number } {
+  if (value === undefined) return { ok: true }
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value >= sourceCount) return { ok: false }
+  return { ok: true, value }
 }
 
-function parseLocator(value: unknown): SourceLocator | null {
+function parseLocator(value: unknown, sourceCount: number, depth: number): SourceLocator | null {
+  if (depth > MAX_LOCATOR_DEPTH) return null
   const rec = asRecord(value)
   if (!rec) return null
-  if ((rec['kind'] === 'csvRow' || rec['kind'] === 'jsonPath' || rec['kind'] === 'form1040') && !isOptionalNumber(rec['sourceIndex'])) return null
+  const sourceIndex = parseLeafSourceIndex(rec['sourceIndex'], sourceCount)
+  const withIndex = sourceIndex.value !== undefined ? { sourceIndex: sourceIndex.value } : {}
   switch (rec['kind']) {
-    case 'csvRow':
-      if (typeof rec['row'] !== 'number' || !isOptionalString(rec['column'])) return null
-      return rec as unknown as SourceLocator
+    case 'csvRow': {
+      const column = optionalString(rec['column'])
+      const row = rec['row']
+      if (typeof row !== 'number' || !Number.isInteger(row) || row < 1 || !column.ok || !sourceIndex.ok) return null
+      return { kind: 'csvRow', row, ...(column.value !== undefined ? { column: column.value } : {}), ...withIndex }
+    }
     case 'jsonPath':
-      if (typeof rec['path'] !== 'string') return null
-      return rec as unknown as SourceLocator
+      if (typeof rec['path'] !== 'string' || !sourceIndex.ok) return null
+      return { kind: 'jsonPath', path: rec['path'], ...withIndex }
     case 'form1040':
-      if (typeof rec['line'] !== 'string') return null
-      return rec as unknown as SourceLocator
+      if (typeof rec['line'] !== 'string' || !sourceIndex.ok) return null
+      return { kind: 'form1040', line: rec['line'], ...withIndex }
     case 'derived': {
-      if (!Array.isArray(rec['from']) || !isOptionalString(rec['note'])) return null
-      if (!(rec['from'] as unknown[]).every((entry) => parseLocator(entry) !== null)) return null
-      return rec as unknown as SourceLocator
+      const note = optionalString(rec['note'])
+      if (!Array.isArray(rec['from']) || !note.ok) return null
+      const from: SourceLocator[] = []
+      for (const part of rec['from'] as unknown[]) {
+        const parsed = parseLocator(part, sourceCount, depth + 1)
+        if (parsed === null) return null
+        from.push(parsed)
+      }
+      return { kind: 'derived', from, ...(note.value !== undefined ? { note: note.value } : {}) }
     }
     case 'none':
       if (typeof rec['note'] !== 'string') return null
-      return rec as unknown as SourceLocator
+      return { kind: 'none', note: rec['note'] }
     default:
       return null
   }
@@ -228,27 +309,55 @@ function parseSourceRef(value: unknown): ImportSourceRef | null {
   const rec = asRecord(value)
   if (!rec) return null
   if (typeof rec['file'] !== 'string') return null
-  if (typeof rec['sha256'] !== 'string') return null
-  if (typeof rec['bytes'] !== 'number') return null
+  if (typeof rec['sha256'] !== 'string' || !SHA256_RE.test(rec['sha256'])) return null
+  if (typeof rec['bytes'] !== 'number' || !Number.isInteger(rec['bytes']) || rec['bytes'] < 0) return null
   if (typeof rec['mapper'] !== 'string') return null
-  return rec as unknown as ImportSourceRef
+  return { file: rec['file'], sha256: rec['sha256'], bytes: rec['bytes'], mapper: rec['mapper'] }
 }
 
-function parseEntry(value: unknown): ImportProvenanceEntry | null {
+function parseDecision(value: unknown): { ok: boolean; value?: ReviewerDecision } {
+  if (value === undefined) return { ok: true }
+  const rec = asRecord(value)
+  if (!rec) return { ok: false }
+  const state = rec['state']
+  if (typeof state !== 'string' || !DECISION_STATES.includes(state)) return { ok: false }
+  const overrideValue = optionalString(rec['overrideValue'])
+  const decidedAtIso = optionalString(rec['decidedAtIso'])
+  const note = optionalString(rec['note'])
+  if (!overrideValue.ok || !decidedAtIso.ok || !note.ok) return { ok: false }
+  // `overrideValue` exists exactly when the state is `overridden` — otherwise a
+  // workbench either has no replacement to apply or an ambiguous stray one.
+  if ((state === 'overridden') !== (overrideValue.value !== undefined)) return { ok: false }
+  return {
+    ok: true,
+    value: {
+      state: state as DecisionState,
+      ...(overrideValue.value !== undefined ? { overrideValue: overrideValue.value } : {}),
+      ...(decidedAtIso.value !== undefined ? { decidedAtIso: decidedAtIso.value } : {}),
+      ...(note.value !== undefined ? { note: note.value } : {}),
+    },
+  }
+}
+
+function parseEntry(value: unknown, sourceCount: number): ImportProvenanceEntry | null {
   const rec = asRecord(value)
   if (!rec) return null
   if (typeof rec['source'] !== 'string' || typeof rec['detail'] !== 'string') return null
-  if (parseLocator(rec['locator']) === null) return null
-  if (typeof rec['confidence'] !== 'string' || !CONFIDENCE_VALUES.includes(rec['confidence'])) return null
-  if (!isOptionalString(rec['target'])) return null
-  if (rec['decision'] !== undefined) {
-    const decision = asRecord(rec['decision'])
-    if (!decision) return null
-    if (typeof decision['state'] !== 'string' || !DECISION_STATES.includes(decision['state'])) return null
-    if (!isOptionalString(decision['overrideValue'])) return null
-    if (!isOptionalString(decision['decidedAtIso']) || !isOptionalString(decision['note'])) return null
+  const locator = parseLocator(rec['locator'], sourceCount, 0)
+  if (locator === null) return null
+  const confidence = rec['confidence']
+  if (typeof confidence !== 'string' || !CONFIDENCE_VALUES.includes(confidence)) return null
+  const target = optionalString(rec['target'])
+  const decision = parseDecision(rec['decision'])
+  if (!target.ok || !decision.ok) return null
+  return {
+    source: rec['source'],
+    detail: rec['detail'],
+    locator,
+    confidence: confidence as ImportConfidence,
+    ...(target.value !== undefined ? { target: target.value } : {}),
+    ...(decision.value !== undefined ? { decision: decision.value } : {}),
   }
-  return rec as unknown as ImportProvenanceEntry
 }
 
 function parseAll<T>(value: unknown, parseOne: (entry: unknown) => T | null): T[] | null {
@@ -278,14 +387,16 @@ export function parseImportProvenance(json: string): ParseImportProvenanceResult
 
   // Every element the type promises is checked before the typed result exists —
   // a hand-edited or foreign file must fail here, not in a consumer's
-  // dereference. Unknown top-level keys stay tolerated (dropped, not an error).
+  // dereference. Unknown top-level keys stay tolerated (dropped, not an error);
+  // sources parse first so leaf `sourceIndex` values can be bounds-checked.
   if (typeof env['exportedAtIso'] !== 'string') return { ok: false, reason: 'malformed' }
   if (typeof env['planSchemaVersion'] !== 'number') return { ok: false, reason: 'malformed' }
   if (typeof env['engineVersion'] !== 'string') return { ok: false, reason: 'malformed' }
   const sources = parseAll(env['sources'], parseSourceRef)
-  const mappings = parseAll(env['mappings'], parseEntry)
-  const unresolved = parseAll(env['unresolved'], parseEntry)
-  if (sources === null || mappings === null || unresolved === null) return { ok: false, reason: 'malformed' }
+  if (sources === null) return { ok: false, reason: 'malformed' }
+  const mappings = parseAll(env['mappings'], (entry) => parseEntry(entry, sources.length))
+  const unresolved = parseAll(env['unresolved'], (entry) => parseEntry(entry, sources.length))
+  if (mappings === null || unresolved === null) return { ok: false, reason: 'malformed' }
 
   return {
     ok: true,

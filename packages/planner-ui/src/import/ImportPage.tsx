@@ -18,6 +18,7 @@ import { ENGINE_VERSION } from '@retiregolden/engine/version'
 import { DateField, MoneyField, SelectField } from '../planner/fields'
 import { US_STATES } from '../planner/usStates'
 import { parseBrokerPositionsCsv, draftPlanFromBrokerAccounts, BROKER_LABEL } from './brokerCsv'
+import { MAX_CSV_CHARS } from './csv'
 import {
   analyzeGenericCsv,
   COLUMN_ROLE_LABEL,
@@ -25,7 +26,7 @@ import {
   type ColumnRole,
   type GenericCsvAnalysis,
 } from './genericCsv'
-import { mapProjectionLabExport } from './projectionLab'
+import { MAX_IMPORT_JSON_CHARS, mapProjectionLabExport } from './projectionLab'
 import {
   serializeImportProvenance,
   type ImportProvenanceInput,
@@ -120,6 +121,16 @@ export function ImportPage() {
 
   const handleFile = async (file: File) => {
     setError(null)
+    // A file over the mapper's own character cap can never import (UTF-8 bytes
+    // ≥ characters) — refuse before reading and hashing the whole payload.
+    const charCap = source === 'projectionlab' ? MAX_IMPORT_JSON_CHARS : MAX_CSV_CHARS
+    if (file.size > charCap) {
+      return setError(
+        source === 'projectionlab'
+          ? 'File is too large to be a ProjectionLab export.'
+          : 'File is too large to be a positions/plan export.',
+      )
+    }
     // Identify the source at the async edge: hash the raw bytes once, here, so
     // the pure mappers stay synchronous and the report can prove which file fed
     // the draft without ever embedding its contents. The digest reads the raw
@@ -141,6 +152,18 @@ export function ImportPage() {
       if (!parsed.ok) return setError(parsed.message)
       const drafted = draftPlanFromBrokerAccounts(parsed.broker, parsed.accounts)
       if (!drafted.ok) return setError(drafted.message)
+      // The parse phase has no plan, so its per-account items carry locators but
+      // no targets; the draft phase creates plan.accounts[i] from accounts[i] in
+      // order. Stamp the join here — the one place both phases meet — so the
+      // report ties each sourced aggregate to the account it populated.
+      const targetByLabel = new Map(parsed.accounts.map((a, i) => [a.accountLabel, `accounts[${i}]`]))
+      const parsedReview = parsed.review.map((item) => {
+        const target = targetByLabel.get(item.source)
+        if (!target || item.status === 'skipped') return item
+        if (item.status === 'mapped') return { ...item, target }
+        if (item.status === 'defaulted') return { ...item, target: `${target}.costBasis` }
+        return item
+      })
       setDraft({
         plan: drafted.plan,
         review: [
@@ -153,7 +176,7 @@ export function ImportPage() {
             locator: { kind: 'none', note: 'File-level summary of the whole positions file.' },
             confidence: 'exact',
           },
-          ...parsed.review,
+          ...parsedReview,
           ...drafted.review,
         ],
         source: { file: file.name, sha256, bytes, mapper: 'brokerCsv' },

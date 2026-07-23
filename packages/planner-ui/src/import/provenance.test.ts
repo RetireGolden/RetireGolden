@@ -126,6 +126,57 @@ describe('serializeImportProvenance / parseImportProvenance', () => {
     }
   })
 
+  it('rejects invalid source identity, source indexes, and decision invariants', () => {
+    const valid = JSON.parse(serializeImportProvenance(sampleInput())) as Record<string, unknown>
+    const entry = (patch: Record<string, unknown>) => ({
+      source: 'x',
+      detail: 'y',
+      locator: { kind: 'csvRow', row: 1 },
+      confidence: 'exact',
+      ...patch,
+    })
+    const corruptions: Array<Record<string, unknown>> = [
+      { ...valid, sources: [{ file: 'a.csv', sha256: 'not-a-hash', bytes: 1, mapper: 'brokerCsv' }] },
+      { ...valid, sources: [{ file: 'a.csv', sha256: 'A'.repeat(64), bytes: 1, mapper: 'brokerCsv' }] }, // uppercase
+      { ...valid, sources: [{ file: 'a.csv', sha256: 'a'.repeat(64), bytes: -1, mapper: 'brokerCsv' }] },
+      { ...valid, sources: [{ file: 'a.csv', sha256: 'a'.repeat(64), bytes: 1.5, mapper: 'brokerCsv' }] },
+      { ...valid, mappings: [entry({ locator: { kind: 'csvRow', row: 1, sourceIndex: 99 } })] }, // out of bounds
+      { ...valid, mappings: [entry({ locator: { kind: 'csvRow', row: 1, sourceIndex: 0.5 } })] },
+      { ...valid, mappings: [entry({ locator: { kind: 'csvRow', row: 1, sourceIndex: -1 } })] },
+      { ...valid, mappings: [entry({ decision: { state: 'overridden' } })] }, // no overrideValue
+      { ...valid, mappings: [entry({ decision: { state: 'accepted', overrideValue: 'stray' } })] },
+    ]
+    for (const corrupt of corruptions) {
+      const parsed = parseImportProvenance(JSON.stringify(corrupt))
+      expect(parsed.ok, JSON.stringify(corrupt).slice(0, 140)).toBe(false)
+      if (!parsed.ok) expect(parsed.reason).toBe('malformed')
+    }
+    // An empty sha256 is the documented no-Web-Crypto degradation — accepted.
+    const unhashed = { ...valid, sources: [{ file: 'a.csv', sha256: '', bytes: 1, mapper: 'brokerCsv' }] }
+    expect(parseImportProvenance(JSON.stringify(unhashed)).ok).toBe(true)
+  })
+
+  it('answers malformed — without throwing — on absurdly nested derived locators', () => {
+    // Well past MAX_LOCATOR_DEPTH but shallow enough for JSON.stringify itself.
+    let locator: unknown = { kind: 'none', note: 'leaf' }
+    for (let i = 0; i < 100; i++) locator = { kind: 'derived', from: [locator] }
+    const valid = JSON.parse(serializeImportProvenance(sampleInput())) as Record<string, unknown>
+    const corrupt = { ...valid, mappings: [{ source: 'x', detail: 'y', locator, confidence: 'derived' }] }
+    const parsed = parseImportProvenance(JSON.stringify(corrupt))
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) expect(parsed.reason).toBe('malformed')
+  })
+
+  it('serializes only contract fields — a caller extension carrying content is dropped', () => {
+    const input = sampleInput()
+    ;(input.sources[0] as unknown as Record<string, unknown>)['raw'] = 'THE WHOLE DOCUMENT'
+    ;(input.mappings[0] as unknown as Record<string, unknown>)['scratch'] = 'NOTES WITH PII'
+    const json = serializeImportProvenance(input)
+    expect(json).not.toContain('THE WHOLE DOCUMENT')
+    expect(json).not.toContain('NOTES WITH PII')
+    expect(json).not.toContain('"raw"')
+  })
+
   it('round-trips the optional target plan path and multi-source sourceIndex', () => {
     const input = sampleInput()
     input.mappings[0] = {

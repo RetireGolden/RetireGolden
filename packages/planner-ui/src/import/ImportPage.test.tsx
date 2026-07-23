@@ -197,6 +197,19 @@ describe('ImportPage', () => {
     }
     // The page's own file-level summary landed in mappings with a locator.
     expect(prov.mappings.some((m) => m.source.includes('positions file'))).toBe(true)
+
+    // The sourced aggregate is joined to the plan account it populated: the
+    // balance mapping carries both its CSV-row locator and the accounts[i] target.
+    const balance = prov.mappings.find((m) => m.source.startsWith('Roth IRA') && m.locator.kind === 'derived')
+    expect(balance?.target).toBe('accounts[0]')
+  })
+
+  it('refuses an oversized file before reading or hashing it', async () => {
+    const el = render()
+    click(findButton(el, 'Broker CSV'))
+    const big = new File([new Uint8Array(5_000_001)], 'huge.csv', { type: 'text/csv' })
+    await chooseFile(el, big, () => el.querySelector('[role="alert"]') !== null, 'the error alert')
+    expect(el.querySelector('[role="alert"]')?.textContent).toContain('too large')
   })
 
   it('identifies the guided 1040 path by hash of the typed inputs, not a file', async () => {

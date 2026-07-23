@@ -265,7 +265,10 @@ describe('brokerCsv provenance (WS1)', () => {
       // AAPL is the first counted position: parsed rows are Positions title (1),
       // header (2), then AAPL at parsed-row 3.
       expect(balance.locator.from).toContainEqual({ kind: 'csvRow', row: 3, column: 'market value' })
-      expect(balance.locator.from).toHaveLength(3) // three positions summed
+      // The reported cost basis derives from AAPL's basis cell — the report
+      // must point at it too, or the basis cannot be reproduced from the file.
+      expect(balance.locator.from).toContainEqual({ kind: 'csvRow', row: 3, column: 'cost basis' })
+      expect(balance.locator.from).toHaveLength(4) // three value cells + one basis cell
     }
   })
 
