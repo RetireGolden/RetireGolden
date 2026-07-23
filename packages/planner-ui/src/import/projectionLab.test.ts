@@ -224,6 +224,20 @@ describe('projectionLab provenance (WS1)', () => {
     expect(item.target).toBe('accounts[0]')
   })
 
+  it('grades a type string that did not name the class as assumed, even when nonempty', () => {
+    // The type "Asset" matches no class keyword — "roth" comes from the NAME,
+    // so a nonempty type string alone must not claim exact fidelity.
+    const json = JSON.stringify({
+      currentFinances: { accounts: [{ name: 'My Roth IRA', type: 'Asset', balance: 40000 }] },
+    })
+    const r = mapProjectionLabExport(json, testIds)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.plan.accounts[0]!.type).toBe('roth')
+    const item = r.review.find((i) => i.status === 'mapped' && i.source.startsWith('My Roth IRA'))!
+    expect(item.confidence).toBe('assumed')
+  })
+
   it('targets landed income and spending fields, but not file-level remainders', () => {
     const r = mapProjectionLabExport(PROJECTIONLAB_FIXTURE, testIds)
     expect(r.ok).toBe(true)

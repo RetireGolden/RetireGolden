@@ -313,9 +313,10 @@ export function mapProjectionLabExport(
       source: `${name} (${typeStr || 'type from name'})`,
       detail: `Imported as a ${mapped} account with a $${balance.toLocaleString('en-US', { maximumFractionDigits: 0 })} balance.`,
       locator: jsonPath(accountPath),
-      // 'exact' only when an explicit type string named the class; a type inferred
-      // from the account name (source renders "type from name") is 'assumed'.
-      confidence: typeStr ? 'exact' : 'assumed',
+      // 'exact' only when the type string ITSELF named the class — a nonempty
+      // type does not prove it did (type "Asset" + name "My Roth IRA" maps roth
+      // off the name); a name-inferred type is 'assumed'.
+      confidence: typeStr && mapProjectionLabAccountType(typeStr, '') === mapped ? 'exact' : 'assumed',
       target: `accounts[${accountIndex}]`,
     })
   }

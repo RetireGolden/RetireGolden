@@ -204,6 +204,46 @@ describe('ImportPage', () => {
     expect(balance?.target).toBe('accounts[0]')
   })
 
+  it('does not advertise a costBasis target on accounts that do not track basis', async () => {
+    const el = render()
+    click(findButton(el, 'Broker CSV'))
+    // A Roth section with mixed basis: the partial-basis note appears, but the
+    // drafted roth plan account has no costBasis field to target.
+    const csv = `"Positions for account Roth IRA ...9 as of 09:12 PM ET, 07/07/2026"
+"Symbol","Description","Mkt Val (Market Value)","Cost Basis"
+"VTI","FUND","$10,000.00","$8,000.00"
+"CASH","--","$500.00","--"
+`
+    await chooseFile(el, new File([csv], 'roth.csv', { type: 'text/csv' }), () => el.querySelector('.import-review') !== null, 'the review checklist')
+
+    let captured: Blob | null = null
+    const origCreate = URL.createObjectURL
+    const origRevoke = URL.revokeObjectURL
+    const origClick = HTMLAnchorElement.prototype.click
+    URL.createObjectURL = (obj: Blob | MediaSource) => {
+      captured = obj as Blob
+      return 'blob:mock'
+    }
+    URL.revokeObjectURL = () => {}
+    HTMLAnchorElement.prototype.click = () => {}
+    try {
+      click(findButton(el, 'Download import report'))
+    } finally {
+      URL.createObjectURL = origCreate
+      URL.revokeObjectURL = origRevoke
+      HTMLAnchorElement.prototype.click = origClick
+    }
+    const parsed = parseImportProvenance(await captured!.text())
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) throw new Error('report did not parse')
+    const entries = parsed.provenance.mappings
+    const basisNote = entries.find((m) => m.detail.includes('had no cost basis'))!
+    expect(basisNote).toBeTruthy()
+    expect(basisNote.target).toBeUndefined()
+    const balance = entries.find((m) => m.source.startsWith('Roth IRA') && m.locator.kind === 'derived')!
+    expect(balance.target).toBe('accounts[0]')
+  })
+
   it('refuses an oversized file before reading or hashing it', async () => {
     const el = render()
     click(findButton(el, 'Broker CSV'))

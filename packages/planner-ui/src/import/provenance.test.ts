@@ -167,6 +167,25 @@ describe('serializeImportProvenance / parseImportProvenance', () => {
     if (!parsed.ok) expect(parsed.reason).toBe('malformed')
   })
 
+  it('rejects a leaf locator when sources[] is empty — the default index dangles', () => {
+    const valid = JSON.parse(serializeImportProvenance(sampleInput())) as Record<string, unknown>
+    const leaf = {
+      ...valid,
+      sources: [],
+      mappings: [{ source: 'x', detail: 'y', locator: { kind: 'csvRow', row: 1 }, confidence: 'exact' }],
+      unresolved: [],
+    }
+    const parsed = parseImportProvenance(JSON.stringify(leaf))
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) expect(parsed.reason).toBe('malformed')
+    // A 'none' locator references no source, so an empty sources[] is fine there.
+    const none = {
+      ...leaf,
+      mappings: [{ source: 'x', detail: 'y', locator: { kind: 'none', note: 'n' }, confidence: 'unmapped' }],
+    }
+    expect(parseImportProvenance(JSON.stringify(none)).ok).toBe(true)
+  })
+
   it('serializes only contract fields — a caller extension carrying content is dropped', () => {
     const input = sampleInput()
     ;(input.sources[0] as unknown as Record<string, unknown>)['raw'] = 'THE WHOLE DOCUMENT'

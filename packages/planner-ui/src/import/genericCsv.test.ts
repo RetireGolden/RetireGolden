@@ -136,7 +136,18 @@ Brokerage,"$50,000","($3,000)"
     expect(r.ok).toBe(true)
     if (!r.ok) return
     expect(r.plan.accounts[0]).toMatchObject({ type: 'taxable', balance: 50000, costBasis: 50000 })
-    expect(r.review.some((i) => i.status === 'defaulted' && i.detail.includes('negative'))).toBe(true)
+    const note = r.review.find((i) => i.status === 'defaulted' && i.detail.includes('negative'))!
+    expect(note).toBeTruthy()
+    // The landed basis came from the balance cell; the rejected negative basis
+    // cell is context — the locator must not name it as the value's source.
+    expect(note.locator).toEqual({
+      kind: 'derived',
+      from: [
+        { kind: 'csvRow', row: 2, column: 'Balance' },
+        { kind: 'csvRow', row: 2, column: 'Cost Basis' },
+      ],
+      note: 'basis set from the balance; the negative basis cell was ignored',
+    })
     expect(parsePlan(r.plan).ok).toBe(true)
   })
 
@@ -258,5 +269,19 @@ describe('genericCsv provenance (WS1)', () => {
     const roth = r.review.find((i) => i.status === 'mapped' && i.source.startsWith('My Roth'))!
     expect(roth.confidence).toBe('exact')
     expect(roth.locator).toEqual({ kind: 'csvRow', row: 2, column: 'Balance' })
+  })
+
+  it('grades a type cell that did not name the class as assumed, even when nonempty', () => {
+    // The type cell "Asset" matches no class keyword — "roth" comes from the
+    // NAME, so claiming column-exact fidelity would overstate it.
+    const typed = analyzeGenericCsv('Account,Type,Balance\nMy Roth IRA,Asset,50000\n')
+    expect(typed.ok).toBe(true)
+    if (!typed.ok) return
+    const r = draftPlanFromGenericCsv(typed.analysis, typed.analysis.guessedRoles, testIds)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.plan.accounts[0]!.type).toBe('roth')
+    const roth = r.review.find((i) => i.status === 'mapped' && i.source.startsWith('My Roth'))!
+    expect(roth.confidence).toBe('assumed')
   })
 })

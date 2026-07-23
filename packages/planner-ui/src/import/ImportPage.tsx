@@ -156,12 +156,16 @@ export function ImportPage() {
       // no targets; the draft phase creates plan.accounts[i] from accounts[i] in
       // order. Stamp the join here — the one place both phases meet — so the
       // report ties each sourced aggregate to the account it populated.
-      const targetByLabel = new Map(parsed.accounts.map((a, i) => [a.accountLabel, `accounts[${i}]`]))
+      const accountByLabel = new Map(
+        parsed.accounts.map((a, i) => [a.accountLabel, { path: `accounts[${i}]`, type: drafted.plan.accounts[i]?.type }]),
+      )
       const parsedReview = parsed.review.map((item) => {
-        const target = targetByLabel.get(item.source)
-        if (!target || item.status === 'skipped') return item
-        if (item.status === 'mapped') return { ...item, target }
-        if (item.status === 'defaulted') return { ...item, target: `${target}.costBasis` }
+        const acc = accountByLabel.get(item.source)
+        if (!acc || item.status === 'skipped') return item
+        if (item.status === 'mapped') return { ...item, target: acc.path }
+        // The partial-basis note only has an addressable target on account
+        // types that track basis — an IRA/Roth plan account has no costBasis.
+        if (item.status === 'defaulted' && acc.type === 'taxable') return { ...item, target: `${acc.path}.costBasis` }
         return item
       })
       setDraft({

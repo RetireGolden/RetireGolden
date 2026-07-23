@@ -167,9 +167,15 @@ export function draftPlanFromGenericCsv(
     const guessSource = typeText !== '' ? typeText : name
     const typeGuess = negativeLiability ? 'debt' : mapProjectionLabAccountType(typeText, name)
     const mapped = typeGuess ?? 'taxable'
-    // 'exact' only when an explicit type column named the class; a keyword guess
-    // off the name, or the taxable fallback, is 'assumed'.
-    const typeFromColumn = typeGuess !== null && !negativeLiability && typeCol !== -1 && typeText !== ''
+    // 'exact' only when the type text ITSELF named the class — a nonempty type
+    // cell does not prove it did (Name "My Roth IRA" + Type "Asset" maps roth
+    // off the name); a name-keyword guess or the taxable fallback is 'assumed'.
+    const typeFromColumn =
+      typeGuess !== null &&
+      !negativeLiability &&
+      typeCol !== -1 &&
+      typeText !== '' &&
+      mapProjectionLabAccountType(typeText, '') === typeGuess
     const amount = Math.abs(balance!)
 
     const base = { id: newId(), name, annualReturnPct: null }
@@ -200,7 +206,16 @@ export function draftPlanFromGenericCsv(
             detail:
               (basisRaw !== null && basisRaw < 0 ? 'The cost basis cell was negative, so it was ignored — ' : 'No cost basis column/value — ') +
               'basis was set equal to the balance (no unrealized gain). Correct it on the Accounts screen.',
-            locator: csvRow(rowNumber, columnFor(basisCol) ?? balanceColumn),
+            // The landed basis came from the balance cell; a rejected negative
+            // basis cell is context, never the source of the landed value.
+            locator:
+              basisRaw !== null && basisRaw < 0
+                ? {
+                    kind: 'derived',
+                    from: [csvRow(rowNumber, balanceColumn), csvRow(rowNumber, columnFor(basisCol))],
+                    note: 'basis set from the balance; the negative basis cell was ignored',
+                  }
+                : csvRow(rowNumber, balanceColumn),
             confidence: 'assumed',
             target: `accounts[${accountIndex}].costBasis`,
           })

@@ -79,13 +79,14 @@ export type ImportConfidence = 'exact' | 'derived' | 'estimated' | 'assumed' | '
  */
 export type DecisionState = 'pending' | 'accepted' | 'overridden' | 'rejected'
 
-export interface ReviewerDecision {
-  state: DecisionState
-  /** Present only when `state === 'overridden'`: the value the reviewer chose instead. */
-  overrideValue?: string
-  decidedAtIso?: string
-  note?: string
-}
+/**
+ * A discriminated union so the compiler enforces what the parser checks: an
+ * `overrideValue` exists exactly when the state is `'overridden'` — a typed
+ * client cannot construct a decision this contract would refuse to read back.
+ */
+export type ReviewerDecision =
+  | { state: 'pending' | 'accepted' | 'rejected'; decidedAtIso?: string; note?: string }
+  | { state: 'overridden'; overrideValue: string; decidedAtIso?: string; note?: string }
 
 /**
  * One value the import touched, with its provenance. Mirrors the two human
@@ -204,17 +205,18 @@ function cleanEntry(entry: ImportProvenanceEntry): ImportProvenanceEntry {
     locator: cleanLocator(entry.locator, 0),
     confidence: entry.confidence,
     ...(entry.target !== undefined ? { target: entry.target } : {}),
-    ...(entry.decision !== undefined
-      ? {
-          decision: {
-            state: entry.decision.state,
-            ...(entry.decision.overrideValue !== undefined ? { overrideValue: entry.decision.overrideValue } : {}),
-            ...(entry.decision.decidedAtIso !== undefined ? { decidedAtIso: entry.decision.decidedAtIso } : {}),
-            ...(entry.decision.note !== undefined ? { note: entry.decision.note } : {}),
-          },
-        }
-      : {}),
+    ...(entry.decision !== undefined ? { decision: cleanDecision(entry.decision) } : {}),
   }
+}
+
+function cleanDecision(decision: ReviewerDecision): ReviewerDecision {
+  const shared = {
+    ...(decision.decidedAtIso !== undefined ? { decidedAtIso: decision.decidedAtIso } : {}),
+    ...(decision.note !== undefined ? { note: decision.note } : {}),
+  }
+  return decision.state === 'overridden'
+    ? { state: 'overridden', overrideValue: decision.overrideValue, ...shared }
+    : { state: decision.state, ...shared }
 }
 
 function cleanSourceRef(source: ImportSourceRef): ImportSourceRef {
@@ -262,7 +264,9 @@ function optionalString(value: unknown): { ok: boolean; value?: string } {
 // file's extension fields are dropped, invalid shapes fail the whole parse.
 
 function parseLeafSourceIndex(value: unknown, sourceCount: number): { ok: boolean; value?: number } {
-  if (value === undefined) return { ok: true }
+  // An omitted index means `sources[0]`, so even the default demands a source —
+  // a leaf locator in an envelope with an empty `sources[]` dangles.
+  if (value === undefined) return sourceCount > 0 ? { ok: true } : { ok: false }
   if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value >= sourceCount) return { ok: false }
   return { ok: true, value }
 }
@@ -328,14 +332,16 @@ function parseDecision(value: unknown): { ok: boolean; value?: ReviewerDecision 
   // `overrideValue` exists exactly when the state is `overridden` — otherwise a
   // workbench either has no replacement to apply or an ambiguous stray one.
   if ((state === 'overridden') !== (overrideValue.value !== undefined)) return { ok: false }
+  const shared = {
+    ...(decidedAtIso.value !== undefined ? { decidedAtIso: decidedAtIso.value } : {}),
+    ...(note.value !== undefined ? { note: note.value } : {}),
+  }
   return {
     ok: true,
-    value: {
-      state: state as DecisionState,
-      ...(overrideValue.value !== undefined ? { overrideValue: overrideValue.value } : {}),
-      ...(decidedAtIso.value !== undefined ? { decidedAtIso: decidedAtIso.value } : {}),
-      ...(note.value !== undefined ? { note: note.value } : {}),
-    },
+    value:
+      state === 'overridden'
+        ? { state, overrideValue: overrideValue.value!, ...shared }
+        : { state: state as 'pending' | 'accepted' | 'rejected', ...shared },
   }
 }
 
