@@ -106,6 +106,40 @@ describe('serializeImportProvenance / parseImportProvenance', () => {
     if (!parsed.ok) expect(parsed.reason).toBe('too_large')
   })
 
+  it('rejects malformed contents behind a valid kind/version instead of passing them through', () => {
+    const valid = JSON.parse(serializeImportProvenance(sampleInput())) as Record<string, unknown>
+    const corruptions: Array<Record<string, unknown>> = [
+      { ...valid, mappings: [null] },
+      { ...valid, mappings: [{ source: 'x' }] }, // missing detail/locator/confidence
+      { ...valid, sources: [{ file: 'a.csv', bytes: 1, mapper: 'brokerCsv' }] }, // no sha256
+      { ...valid, unresolved: [{ source: 'x', detail: 'y', locator: { kind: 'nonsense' }, confidence: 'unmapped' }] },
+      { ...valid, mappings: [{ source: 'x', detail: 'y', locator: { kind: 'csvRow', row: 1 }, confidence: 'certain' }] },
+      { ...valid, mappings: [{ source: 'x', detail: 'y', locator: { kind: 'derived', from: 'not-an-array' }, confidence: 'derived' }] },
+      { ...valid, mappings: [{ source: 'x', detail: 'y', locator: { kind: 'csvRow', row: 1 }, confidence: 'exact', decision: { state: 'maybe' } }] },
+      { ...valid, exportedAtIso: 42 },
+      { ...valid, sources: 'not-an-array' },
+    ]
+    for (const corrupt of corruptions) {
+      const parsed = parseImportProvenance(JSON.stringify(corrupt))
+      expect(parsed.ok, JSON.stringify(corrupt).slice(0, 120)).toBe(false)
+      if (!parsed.ok) expect(parsed.reason).toBe('malformed')
+    }
+  })
+
+  it('round-trips the optional target plan path and multi-source sourceIndex', () => {
+    const input = sampleInput()
+    input.mappings[0] = {
+      ...input.mappings[0]!,
+      target: 'accounts[3]',
+      locator: { kind: 'csvRow', row: 12, column: 'Total Value', sourceIndex: 1 },
+    }
+    const parsed = parseImportProvenance(serializeImportProvenance(input))
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) return
+    expect(parsed.provenance.mappings[0]!.target).toBe('accounts[3]')
+    expect(parsed.provenance.mappings[0]!.locator).toEqual({ kind: 'csvRow', row: 12, column: 'Total Value', sourceIndex: 1 })
+  })
+
   it('never embeds raw source-document content — a source carries only identity', () => {
     // A source contributes file name, hash, byte count, and mapper; the bytes
     // themselves never enter the envelope. Pin the exact key set so a future

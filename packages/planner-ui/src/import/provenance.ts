@@ -39,12 +39,14 @@
  * Where a single imported value came from. The file name is NOT part of a
  * locator — it lives once on the `ImportSourceRef` at the session/source level,
  * so a locator stays small and a value that fuses two files points at both via
- * `derived` without repeating names.
+ * `derived` without repeating names. In a multi-source envelope, `sourceIndex`
+ * names the entry in `ImportProvenanceExport.sources` a leaf locator addresses;
+ * omitted means `sources[0]` (every single-source flow can leave it off).
  */
 export type SourceLocator =
-  | { kind: 'csvRow'; row: number; column?: string }
-  | { kind: 'jsonPath'; path: string }
-  | { kind: 'form1040'; line: string }
+  | { kind: 'csvRow'; row: number; column?: string; sourceIndex?: number }
+  | { kind: 'jsonPath'; path: string; sourceIndex?: number }
+  | { kind: 'form1040'; line: string; sourceIndex?: number }
   | { kind: 'derived'; from: SourceLocator[]; note?: string }
   | { kind: 'none'; note: string }
 
@@ -100,15 +102,26 @@ export interface ImportProvenanceEntry {
   detail: string
   locator: SourceLocator
   confidence: ImportConfidence
+  /**
+   * Where the value landed in the draft plan, as an engine plan path
+   * (`accounts[3]`, `incomes[0]`, `household.state` — the Household Map's
+   * node-source convention). Present when the item maps to one addressable
+   * field or record; absent for prose-only and unresolved items.
+   */
+  target?: string
   decision?: ReviewerDecision
 }
 
 /** A source document that fed the import — identified, never embedded. */
 export interface ImportSourceRef {
   file: string
-  /** Lowercase hex SHA-256 of the source bytes (see `sourceHash.ts`). */
+  /**
+   * Lowercase hex SHA-256 of the source's raw bytes (see `sourceHash.ts`), so
+   * the report can be verified against the original file. Empty string when
+   * the host had no Web Crypto to hash with — never a wrong hash.
+   */
   sha256: string
-  /** UTF-8 byte length of the source. */
+  /** Byte length of the source. */
   bytes: number
   /** The mapper that read this source (e.g. `'brokerCsv'`, `'tenForty'`). */
   mapper: string
@@ -165,7 +178,89 @@ export function serializeImportProvenance(
 
 export type ParseImportProvenanceResult =
   | { ok: true; provenance: ImportProvenanceExport }
-  | { ok: false; reason: 'too_large' | 'not_json' | 'wrong_kind' | 'unsupported_version' }
+  | { ok: false; reason: 'too_large' | 'not_json' | 'wrong_kind' | 'unsupported_version' | 'malformed' }
+
+const CONFIDENCE_VALUES: readonly string[] = ['exact', 'derived', 'estimated', 'assumed', 'unmapped']
+const DECISION_STATES: readonly string[] = ['pending', 'accepted', 'overridden', 'rejected']
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null
+}
+
+function isOptionalString(value: unknown): boolean {
+  return value === undefined || typeof value === 'string'
+}
+
+function isOptionalNumber(value: unknown): boolean {
+  return value === undefined || typeof value === 'number'
+}
+
+function parseLocator(value: unknown): SourceLocator | null {
+  const rec = asRecord(value)
+  if (!rec) return null
+  if ((rec['kind'] === 'csvRow' || rec['kind'] === 'jsonPath' || rec['kind'] === 'form1040') && !isOptionalNumber(rec['sourceIndex'])) return null
+  switch (rec['kind']) {
+    case 'csvRow':
+      if (typeof rec['row'] !== 'number' || !isOptionalString(rec['column'])) return null
+      return rec as unknown as SourceLocator
+    case 'jsonPath':
+      if (typeof rec['path'] !== 'string') return null
+      return rec as unknown as SourceLocator
+    case 'form1040':
+      if (typeof rec['line'] !== 'string') return null
+      return rec as unknown as SourceLocator
+    case 'derived': {
+      if (!Array.isArray(rec['from']) || !isOptionalString(rec['note'])) return null
+      if (!(rec['from'] as unknown[]).every((entry) => parseLocator(entry) !== null)) return null
+      return rec as unknown as SourceLocator
+    }
+    case 'none':
+      if (typeof rec['note'] !== 'string') return null
+      return rec as unknown as SourceLocator
+    default:
+      return null
+  }
+}
+
+function parseSourceRef(value: unknown): ImportSourceRef | null {
+  const rec = asRecord(value)
+  if (!rec) return null
+  if (typeof rec['file'] !== 'string') return null
+  if (typeof rec['sha256'] !== 'string') return null
+  if (typeof rec['bytes'] !== 'number') return null
+  if (typeof rec['mapper'] !== 'string') return null
+  return rec as unknown as ImportSourceRef
+}
+
+function parseEntry(value: unknown): ImportProvenanceEntry | null {
+  const rec = asRecord(value)
+  if (!rec) return null
+  if (typeof rec['source'] !== 'string' || typeof rec['detail'] !== 'string') return null
+  if (parseLocator(rec['locator']) === null) return null
+  if (typeof rec['confidence'] !== 'string' || !CONFIDENCE_VALUES.includes(rec['confidence'])) return null
+  if (!isOptionalString(rec['target'])) return null
+  if (rec['decision'] !== undefined) {
+    const decision = asRecord(rec['decision'])
+    if (!decision) return null
+    if (typeof decision['state'] !== 'string' || !DECISION_STATES.includes(decision['state'])) return null
+    if (!isOptionalString(decision['overrideValue'])) return null
+    if (!isOptionalString(decision['decidedAtIso']) || !isOptionalString(decision['note'])) return null
+  }
+  return rec as unknown as ImportProvenanceEntry
+}
+
+function parseAll<T>(value: unknown, parseOne: (entry: unknown) => T | null): T[] | null {
+  if (!Array.isArray(value)) return null
+  const parsed: T[] = []
+  for (const entry of value) {
+    const one = parseOne(entry)
+    if (one === null) return null
+    parsed.push(one)
+  }
+  return parsed
+}
 
 export function parseImportProvenance(json: string): ParseImportProvenanceResult {
   if (json.length > MAX_IMPORT_PROVENANCE_JSON_CHARS) return { ok: false, reason: 'too_large' }
@@ -176,33 +271,35 @@ export function parseImportProvenance(json: string): ParseImportProvenanceResult
   } catch {
     return { ok: false, reason: 'not_json' }
   }
-  if (typeof raw !== 'object' || raw === null) return { ok: false, reason: 'wrong_kind' }
-  const env = raw as {
-    kind?: string
-    version?: number
-    exportedAtIso?: unknown
-    planSchemaVersion?: unknown
-    engineVersion?: unknown
-    sources?: unknown
-    mappings?: unknown
-    unresolved?: unknown
-  }
-  if (env.kind !== IMPORT_PROVENANCE_KIND) return { ok: false, reason: 'wrong_kind' }
-  if (env.version !== IMPORT_PROVENANCE_VERSION) return { ok: false, reason: 'unsupported_version' }
+  const env = asRecord(raw)
+  if (!env) return { ok: false, reason: 'wrong_kind' }
+  if (env['kind'] !== IMPORT_PROVENANCE_KIND) return { ok: false, reason: 'wrong_kind' }
+  if (env['version'] !== IMPORT_PROVENANCE_VERSION) return { ok: false, reason: 'unsupported_version' }
 
-  // Reconstruct the known fields only — this both drops unknown top-level keys
-  // and tolerates them (their presence is not an error).
-  const provenance: ImportProvenanceExport = {
-    kind: IMPORT_PROVENANCE_KIND,
-    version: IMPORT_PROVENANCE_VERSION,
-    exportedAtIso: typeof env.exportedAtIso === 'string' ? env.exportedAtIso : '',
-    planSchemaVersion: typeof env.planSchemaVersion === 'number' ? env.planSchemaVersion : 0,
-    engineVersion: typeof env.engineVersion === 'string' ? env.engineVersion : '',
-    sources: Array.isArray(env.sources) ? (env.sources as ImportSourceRef[]) : [],
-    mappings: Array.isArray(env.mappings) ? (env.mappings as ImportProvenanceEntry[]) : [],
-    unresolved: Array.isArray(env.unresolved) ? (env.unresolved as ImportProvenanceEntry[]) : [],
+  // Every element the type promises is checked before the typed result exists —
+  // a hand-edited or foreign file must fail here, not in a consumer's
+  // dereference. Unknown top-level keys stay tolerated (dropped, not an error).
+  if (typeof env['exportedAtIso'] !== 'string') return { ok: false, reason: 'malformed' }
+  if (typeof env['planSchemaVersion'] !== 'number') return { ok: false, reason: 'malformed' }
+  if (typeof env['engineVersion'] !== 'string') return { ok: false, reason: 'malformed' }
+  const sources = parseAll(env['sources'], parseSourceRef)
+  const mappings = parseAll(env['mappings'], parseEntry)
+  const unresolved = parseAll(env['unresolved'], parseEntry)
+  if (sources === null || mappings === null || unresolved === null) return { ok: false, reason: 'malformed' }
+
+  return {
+    ok: true,
+    provenance: {
+      kind: IMPORT_PROVENANCE_KIND,
+      version: IMPORT_PROVENANCE_VERSION,
+      exportedAtIso: env['exportedAtIso'],
+      planSchemaVersion: env['planSchemaVersion'],
+      engineVersion: env['engineVersion'],
+      sources,
+      mappings,
+      unresolved,
+    },
   }
-  return { ok: true, provenance }
 }
 
 /** A short, human-readable rendering of a locator for display and debug logs. */

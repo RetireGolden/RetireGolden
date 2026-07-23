@@ -188,7 +188,7 @@ describe('genericCsv provenance (WS1)', () => {
     }
   })
 
-  it('locates each RPM account at its header-offset-corrected row and balance column', () => {
+  it('locates each RPM account at its header-offset-corrected row, widened to every column that landed', () => {
     const analysis = analyzeGenericCsv(RPM_FIXTURE)
     expect(analysis.ok).toBe(true)
     if (!analysis.ok) return
@@ -198,9 +198,54 @@ describe('genericCsv provenance (WS1)', () => {
     expect(r.ok).toBe(true)
     if (!r.ok) return
     const taxable = r.review.find((i) => i.status === 'mapped' && i.source.startsWith('Taxable account'))!
-    expect(taxable.locator).toEqual({ kind: 'csvRow', row: 4, column: 'Balance' })
+    // The taxable row supplied a cost basis and a contribution that both landed on
+    // the account, so the locator covers those columns alongside the balance.
+    expect(taxable.locator).toEqual({
+      kind: 'derived',
+      from: [
+        { kind: 'csvRow', row: 4, column: 'Balance' },
+        { kind: 'csvRow', row: 4, column: 'Cost Basis' },
+        { kind: 'csvRow', row: 4, column: 'Annual Contribution' },
+      ],
+      note: 'balance + cost basis + contribution',
+    })
     // No type column in the RPM sheet — the class is a name-keyword guess.
     expect(taxable.confidence).toBe('assumed')
+    // The account is the first row pushed to the draft plan.
+    expect(taxable.target).toBe('accounts[0]')
+  })
+
+  it('keeps the plain balance locator when only the balance column landed', () => {
+    // Cash account: no basis column, no contribution value that lands.
+    const cash = analyzeGenericCsv('Account,Balance\nAlly Savings,20000\n')
+    expect(cash.ok).toBe(true)
+    if (!cash.ok) return
+    const r = draftPlanFromGenericCsv(cash.analysis, cash.analysis.guessedRoles, testIds)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    const item = r.review.find((i) => i.status === 'mapped' && i.source.startsWith('Ally Savings'))!
+    expect(item.locator).toEqual({ kind: 'csvRow', row: 2, column: 'Balance' })
+  })
+
+  it('widens the locator to just the contribution column when no basis landed', () => {
+    // A Roth (explicit type) with a contribution but no cost-basis column.
+    const roth = analyzeGenericCsv('Account,Type,Balance,Annual Contribution\nMy Roth,Roth IRA,50000,7000\n')
+    expect(roth.ok).toBe(true)
+    if (!roth.ok) return
+    const r = draftPlanFromGenericCsv(roth.analysis, roth.analysis.guessedRoles, testIds)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    const item = r.review.find((i) => i.status === 'mapped' && i.source.startsWith('My Roth'))!
+    expect(item.locator).toEqual({
+      kind: 'derived',
+      from: [
+        { kind: 'csvRow', row: 2, column: 'Balance' },
+        { kind: 'csvRow', row: 2, column: 'Annual Contribution' },
+      ],
+      note: 'balance + contribution',
+    })
+    // Confidence semantics are unchanged — an explicit type column is still exact.
+    expect(item.confidence).toBe('exact')
   })
 
   it('grades a class read from an explicit type column as exact', () => {

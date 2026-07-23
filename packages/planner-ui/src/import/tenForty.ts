@@ -131,6 +131,23 @@ export function seedPlanFromTenForty(
     locator: form1040('header'),
     confidence: 'exact',
   })
+  const jointReturn = inputs.filingStatus === 'marriedFilingJointly'
+  review.push({
+    status: 'mapped',
+    source: jointReturn ? 'Dates of birth (guided entry, not on the 1040)' : 'Date of birth (guided entry, not on the 1040)',
+    detail: jointReturn
+      ? "Your and your spouse's dates of birth as you typed them — a 1040 does not carry them, and they anchor every age in the plan. Correct either on the Household screen."
+      : 'Your date of birth as you typed it — a 1040 does not carry it, and it anchors every age in the plan. Correct it on the Household screen.',
+    locator: {
+      kind: 'none',
+      note: jointReturn
+        ? 'both dates of birth are typed in the guided entry form, not read from the 1040'
+        : 'the date of birth is typed in the guided entry form, not read from the 1040',
+    },
+    confidence: 'exact',
+    // Two people's DOBs on a joint return land on two fields — no single target.
+    ...(jointReturn ? {} : { target: 'household.people[0].dob' }),
+  })
 
   // --- Line 1a: wages -------------------------------------------------------
   if (inputs.wages > 0) {
@@ -145,6 +162,7 @@ export function seedPlanFromTenForty(
           : '.'),
       locator: form1040('1a'),
       confidence: 'exact',
+      target: `incomes[${plan.incomes.length - 1}]`,
     })
   }
 
@@ -177,6 +195,7 @@ export function seedPlanFromTenForty(
         'with the real balance and cost basis on the Accounts screen. The qualified-dividend share was kept.',
       locator: { kind: 'derived', from: [form1040('2b'), form1040('3a'), form1040('3b')], note: `balance implied by a ${ASSUMED_TAXABLE_YIELD_PCT}% yield` },
       confidence: 'estimated',
+      target: `accounts[${plan.accounts.length - 1}]`,
     })
   }
 
@@ -216,6 +235,7 @@ export function seedPlanFromTenForty(
         'survivor benefit — check the COLA, survivor percentage, and public/private split on the Accounts screen.',
       locator: form1040('5b'),
       confidence: 'assumed',
+      target: `accounts[${plan.accounts.length - 1}]`,
     })
   }
 
@@ -242,6 +262,7 @@ export function seedPlanFromTenForty(
           : ''),
       locator: form1040('6a'),
       confidence: 'assumed',
+      target: `incomes[${plan.incomes.length - 1}]`,
     })
   } else {
     review.push({
@@ -276,6 +297,7 @@ export function seedPlanFromTenForty(
     detail: `Recent MAGI of $${magi.toLocaleString('en-US')} recorded — Medicare IRMAA looks back two years, so early projection years use it.`,
     locator: { kind: 'derived', from: [form1040('11'), form1040('2a')], note: 'AGI plus tax-exempt interest' },
     confidence: 'derived',
+    target: 'assumptions.recentAnnualMagi',
   })
 
   // --- What a 1040 cannot tell us ---------------------------------------------------

@@ -13,7 +13,7 @@ import type { Account, Plan } from '@retiregolden/engine/model/plan'
 import { createEmptyPlan, parsePlan } from '@retiregolden/engine/model/plan'
 import { parseCsv, parseMoney } from './csv'
 import { mapProjectionLabAccountType } from './projectionLab'
-import { csvRowLocator as csvRow } from './provenance'
+import { csvRowLocator as csvRow, type SourceLocator } from './provenance'
 import type { ImportReviewItem } from './reviewChecklist'
 
 export type ColumnRole = 'name' | 'type' | 'balance' | 'costBasis' | 'contribution' | 'ignore'
@@ -175,6 +175,14 @@ export function draftPlanFromGenericCsv(
     const base = { id: newId(), name, annualReturnPct: null }
     const contribution = contributionCol === -1 ? null : parseMoney(cells[contributionCol])
     const annualContribution = contribution !== null && contribution > 0 ? contribution : 0
+    // The index this row's account will occupy once pushed — every row that
+    // reaches the switch pushes exactly one account (skipped rows `continue`).
+    const accountIndex = plan.accounts.length
+    // Whether a cost-basis / contribution column value actually landed on this
+    // account, so the mapped item's locator can point at those columns too.
+    // Contribution only lands on account types that carry `annualContribution`.
+    const contribContributed = annualContribution > 0 && mapped !== 'property' && mapped !== 'debt'
+    let basisContributed = false
 
     let account: Account
     switch (mapped) {
@@ -183,6 +191,7 @@ export function draftPlanFromGenericCsv(
         // A negative basis cell (adjustment lines, sign conventions) must not
         // sink the whole import at validation — treat it like a missing basis.
         const basis = basisRaw !== null && basisRaw >= 0 ? basisRaw : null
+        basisContributed = basis !== null
         account = { ...base, type: 'taxable', ownerPersonId: null, balance: amount, costBasis: basis ?? amount, annualContribution }
         if (basis === null) {
           review.push({
@@ -193,6 +202,7 @@ export function draftPlanFromGenericCsv(
               'basis was set equal to the balance (no unrealized gain). Correct it on the Accounts screen.',
             locator: csvRow(rowNumber, columnFor(basisCol) ?? balanceColumn),
             confidence: 'assumed',
+            target: `accounts[${accountIndex}].costBasis`,
           })
         }
         break
@@ -226,6 +236,7 @@ export function draftPlanFromGenericCsv(
             detail: `The negative balance looked like a liability sign convention — imported as a $${amount.toLocaleString('en-US', { maximumFractionDigits: 0 })} debt.`,
             locator: csvRow(rowNumber, balanceColumn),
             confidence: 'assumed',
+            target: `accounts[${accountIndex}]`,
           })
         }
         review.push({
@@ -234,10 +245,27 @@ export function draftPlanFromGenericCsv(
           detail: 'Debts need an interest rate and monthly payment — defaults of 5% and $0/mo were used; set the real terms on the Accounts screen.',
           locator: csvRow(rowNumber),
           confidence: 'assumed',
+          target: `accounts[${accountIndex}]`,
         })
         break
     }
     plan.accounts.push(account)
+    // When a cost-basis and/or contribution column also landed on this account,
+    // the locator covers those columns too — not just the balance.
+    const extraLocators: SourceLocator[] = []
+    const extraNotes: string[] = []
+    if (basisContributed) {
+      extraLocators.push(csvRow(rowNumber, columnFor(basisCol) ?? balanceColumn))
+      extraNotes.push('cost basis')
+    }
+    if (contribContributed) {
+      extraLocators.push(csvRow(rowNumber, columnFor(contributionCol) ?? balanceColumn))
+      extraNotes.push('contribution')
+    }
+    const mappedLocator: SourceLocator =
+      extraLocators.length > 0
+        ? { kind: 'derived', from: [csvRow(rowNumber, balanceColumn), ...extraLocators], note: ['balance', ...extraNotes].join(' + ') }
+        : csvRow(rowNumber, balanceColumn)
     review.push({
       status: typeGuess === null ? 'defaulted' : 'mapped',
       source: `${name}${typeText !== '' ? ` (${typeText})` : ''}`,
@@ -245,8 +273,9 @@ export function draftPlanFromGenericCsv(
         typeGuess === null
           ? `No recognizable account type — imported as a taxable account with a $${amount.toLocaleString('en-US', { maximumFractionDigits: 0 })} balance. Change the type on the Accounts screen if that is wrong.`
           : `Imported as a ${mapped} account with a $${amount.toLocaleString('en-US', { maximumFractionDigits: 0 })} balance.`,
-      locator: csvRow(rowNumber, balanceColumn),
+      locator: mappedLocator,
       confidence: typeFromColumn ? 'exact' : 'assumed',
+      target: `accounts[${accountIndex}]`,
     })
   }
 

@@ -103,7 +103,7 @@ function finishAggregates(
         agg.basisRows > 0 ? ` (cost basis $${agg.basis.toLocaleString('en-US', { maximumFractionDigits: 0 })})` : ''
       }.`,
       locator: { kind: 'derived', from: agg.rows.map((row) => csvRow(row, valueColumn)), note: 'summed position market values' },
-      confidence: 'exact',
+      confidence: 'derived',
     })
     if (agg.basisRows > 0 && agg.valueRowsWithoutBasis > 0) {
       review.push({
@@ -389,6 +389,7 @@ export function draftPlanFromBrokerAccounts(
 
   for (const acc of accounts) {
     const type = guessAccountTypeFromLabel(acc.accountLabel)
+    const accountIndex = plan.accounts.length
     const base = {
       id: newId(),
       name: acc.accountLabel,
@@ -410,6 +411,7 @@ export function draftPlanFromBrokerAccounts(
           detail: 'No cost basis in the file — basis was set equal to the balance (no unrealized gain). Correct it on the Accounts screen.',
           locator: { kind: 'none', note: 'the imported broker file carried no cost basis for this account' },
           confidence: 'assumed',
+          target: `accounts[${accountIndex}].costBasis`,
         })
       }
     } else if (type === 'roth' || type === 'traditional') {
@@ -426,6 +428,7 @@ export function draftPlanFromBrokerAccounts(
       }. Change the type or owner on the Accounts screen if the guess is wrong.`,
       locator: { kind: 'none', note: 'account type guessed from the account name' },
       confidence: 'assumed',
+      target: `accounts[${accountIndex}]`,
     })
   }
 

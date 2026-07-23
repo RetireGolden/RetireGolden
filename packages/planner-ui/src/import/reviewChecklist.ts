@@ -27,6 +27,8 @@ export interface ImportReviewItem {
    */
   locator?: SourceLocator
   confidence?: ImportConfidence
+  /** Engine plan path the value landed on (`accounts[3]`), when one field/record is addressable. */
+  target?: string
   /** Left unset (i.e. `'pending'`) by the free planner; the workbench sets it. */
   decision?: ReviewerDecision
 }
@@ -60,12 +62,22 @@ export function reviewToProvenance(items: ImportReviewItem[]): {
 } {
   const mappings: ImportProvenanceEntry[] = []
   const unresolved: ImportProvenanceEntry[] = []
+  // Confidence fallback for items from producers predating the optional
+  // fields: derived from the status so a landed value is never graded
+  // 'unmapped' (which the contract defines as "nothing landed").
+  const fallbackConfidence: Record<ImportItemStatus, ImportConfidence> = {
+    mapped: 'exact',
+    defaulted: 'assumed',
+    unmapped: 'unmapped',
+    skipped: 'unmapped',
+  }
   for (const item of items) {
     const entry: ImportProvenanceEntry = {
       source: item.source,
       detail: item.detail,
       locator: item.locator ?? { kind: 'none', note: item.source },
-      confidence: item.confidence ?? 'unmapped',
+      confidence: item.confidence ?? fallbackConfidence[item.status],
+      ...(item.target ? { target: item.target } : {}),
       ...(item.decision ? { decision: item.decision } : {}),
     }
     if (item.status === 'unmapped' || item.status === 'skipped') unresolved.push(entry)

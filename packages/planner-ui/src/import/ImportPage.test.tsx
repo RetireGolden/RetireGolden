@@ -58,13 +58,25 @@ function findButton(el: HTMLElement, text: string): HTMLButtonElement | undefine
   return Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.includes(text))
 }
 
-async function chooseFile(el: HTMLElement, file: File) {
+/** Poll for an observable UI condition instead of sleeping a fixed interval. */
+async function waitForUi(done: () => boolean, what: string) {
+  const deadline = Date.now() + 2000
+  for (;;) {
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 5))
+    })
+    if (done()) return
+    if (Date.now() > deadline) throw new Error(`timed out waiting for ${what}`)
+  }
+}
+
+async function chooseFile(el: HTMLElement, file: File, done: () => boolean, what: string) {
   const input = el.querySelector<HTMLInputElement>('input[type="file"]')!
   Object.defineProperty(input, 'files', { value: [file], configurable: true })
   await act(async () => {
     input.dispatchEvent(new Event('change', { bubbles: true }))
-    await new Promise((resolve) => setTimeout(resolve, 20))
   })
+  await waitForUi(done, what)
 }
 
 describe('ImportPage', () => {
@@ -86,21 +98,17 @@ describe('ImportPage', () => {
     // and build — a coherent (if empty) draft with MAGI context still results.
     // Building hashes the typed inputs (async), so wait for the draft to render.
     expect(el.textContent).toContain('Line 11')
-    await act(async () => {
-      findButton(el, 'Build my draft plan')!.click()
-      await new Promise((resolve) => setTimeout(resolve, 20))
-    })
+    act(() => findButton(el, 'Build my draft plan')!.click())
+    // Building hashes the typed inputs (async) — wait for the draft to render.
+    await waitForUi(() => el.querySelector('.import-review') !== null, 'the review checklist')
 
     // Review checklist appears with the always-present unmapped guidance.
-    expect(el.querySelector('.import-review')).not.toBeNull()
     expect(el.textContent).toContain('Not imported')
 
     const before = await listUserPlanSummaries()
     expect(before).toHaveLength(0)
-    await act(async () => {
-      findButton(el, 'Save draft')!.click()
-      await new Promise((resolve) => setTimeout(resolve, 20))
-    })
+    act(() => findButton(el, 'Save draft')!.click())
+    await waitForUi(() => el.querySelector('[data-testid="plan-route"]') !== null, 'the saved plan route')
     const after = await listUserPlanSummaries()
     expect(after).toHaveLength(1)
     expect(after[0]!.name).toBe('Seeded from your 1040')
@@ -115,16 +123,13 @@ describe('ImportPage', () => {
 "Symbol","Description","Mkt Val (Market Value)","Cost Basis"
 "VTI","VANGUARD TOTAL STOCK MARKET ETF","$14,000.00","$10,000.00"
 `
-    await chooseFile(el, new File([csv], 'positions.csv', { type: 'text/csv' }))
+    await chooseFile(el, new File([csv], 'positions.csv', { type: 'text/csv' }), () => el.querySelector('.import-review') !== null, 'the review checklist')
 
     expect(el.textContent).toContain('Schwab positions file')
-    expect(el.querySelector('.import-review')).not.toBeNull()
     expect(el.textContent).toContain('Roth IRA ...321')
 
-    await act(async () => {
-      findButton(el, 'Save draft')!.click()
-      await new Promise((resolve) => setTimeout(resolve, 20))
-    })
+    act(() => findButton(el, 'Save draft')!.click())
+    await waitForUi(() => el.querySelector('[data-testid="plan-route"]') !== null, 'the saved plan route')
     const plans = await listUserPlanSummaries()
     expect(plans).toHaveLength(1)
     expect(plans[0]!.name).toBe('Imported from Schwab')
@@ -141,7 +146,7 @@ describe('ImportPage', () => {
 "Symbol","Description","Mkt Val (Market Value)","Cost Basis"
 "VTI","VANGUARD TOTAL STOCK MARKET ETF","$14,000.00","$10,000.00"
 `
-    await chooseFile(el, new File([csv], 'positions.csv', { type: 'text/csv' }))
+    await chooseFile(el, new File([csv], 'positions.csv', { type: 'text/csv' }), () => el.querySelector('.import-review') !== null, 'the review checklist')
 
     // Capture the blob the download assembles without touching the filesystem.
     let captured: Blob | null = null
@@ -197,10 +202,8 @@ describe('ImportPage', () => {
   it('identifies the guided 1040 path by hash of the typed inputs, not a file', async () => {
     const el = render()
     click(findButton(el, 'tax return'))
-    await act(async () => {
-      findButton(el, 'Build my draft plan')!.click()
-      await new Promise((resolve) => setTimeout(resolve, 20))
-    })
+    act(() => findButton(el, 'Build my draft plan')!.click())
+    await waitForUi(() => el.querySelector('.import-review') !== null, 'the review checklist')
 
     let captured: Blob | null = null
     const origCreate = URL.createObjectURL
@@ -231,7 +234,7 @@ describe('ImportPage', () => {
   it('surfaces a helpful error for unrecognized files instead of importing junk', async () => {
     const el = render()
     click(findButton(el, 'Broker CSV'))
-    await chooseFile(el, new File(['name,phone\nalice,555\n'], 'junk.csv', { type: 'text/csv' }))
+    await chooseFile(el, new File(['name,phone\nalice,555\n'], 'junk.csv', { type: 'text/csv' }), () => el.querySelector('[role="alert"]') !== null, 'the error alert')
     expect(el.querySelector('[role="alert"]')?.textContent).toContain('spreadsheet import')
     expect(await listUserPlanSummaries()).toHaveLength(0)
   })

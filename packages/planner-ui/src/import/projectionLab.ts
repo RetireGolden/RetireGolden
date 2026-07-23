@@ -130,6 +130,7 @@ export function mapProjectionLabExport(
       detail: 'Date of birth set to July 1 of your ProjectionLab birth year — set the exact date on the Household screen.',
       locator: jsonPath(`${userKey}.birthYear`),
       confidence: 'assumed',
+      target: 'household.people[0].dob',
     })
   } else {
     review.push({
@@ -166,6 +167,7 @@ export function mapProjectionLabExport(
         detail: `Retirement age set to ${age}.`,
         locator: jsonPath(`plans[${firstPlanIndex}].milestones[${mi}].age`),
         confidence: 'exact',
+        target: 'household.people[0].retirementAge',
       })
       break
     }
@@ -202,6 +204,9 @@ export function mapProjectionLabExport(
     }
 
     const base = { id: newId(), name, annualReturnPct: null }
+    // The index this account will occupy once pushed — every account that reaches
+    // the switch is pushed exactly once (skipped/unmapped rows `continue` above).
+    const accountIndex = plan.accounts.length
     let account: Account
     switch (mapped) {
       case 'taxable': {
@@ -221,6 +226,7 @@ export function mapProjectionLabExport(
             detail: 'No cost basis in the export — basis was set equal to the balance (no unrealized gain). Correct it on the Accounts screen.',
             locator: jsonPath(accountPath),
             confidence: 'assumed',
+            target: `accounts[${accountIndex}].costBasis`,
           })
         }
         break
@@ -285,6 +291,7 @@ export function mapProjectionLabExport(
             detail: interestNote,
             locator: jsonPath(`${accountPath}.interestRate`),
             confidence: 'assumed',
+            target: `accounts[${accountIndex}]`,
           })
         }
         if (payment === null) {
@@ -294,6 +301,7 @@ export function mapProjectionLabExport(
             detail: 'No monthly payment in the export — set the real payment on the Accounts screen.',
             locator: jsonPath(accountPath),
             confidence: 'assumed',
+            target: `accounts[${accountIndex}]`,
           })
         }
         break
@@ -305,7 +313,10 @@ export function mapProjectionLabExport(
       source: `${name} (${typeStr || 'type from name'})`,
       detail: `Imported as a ${mapped} account with a $${balance.toLocaleString('en-US', { maximumFractionDigits: 0 })} balance.`,
       locator: jsonPath(accountPath),
-      confidence: 'exact',
+      // 'exact' only when an explicit type string named the class; a type inferred
+      // from the account name (source renders "type from name") is 'assumed'.
+      confidence: typeStr ? 'exact' : 'assumed',
+      target: `accounts[${accountIndex}]`,
     })
   }
 
@@ -339,6 +350,7 @@ export function mapProjectionLabExport(
         detail: `Imported as wages of $${annual.toLocaleString('en-US')} /yr until retirement.`,
         locator: jsonPath(incomePath),
         confidence: 'exact',
+        target: `incomes[${plan.incomes.length - 1}]`,
       })
     } else if (/social security|\bss\b|ssa/.test(`${typeStr} ${name.toLowerCase()}`)) {
       review.push({
@@ -365,6 +377,7 @@ export function mapProjectionLabExport(
         detail: `Imported as recurring ordinary income of $${annual.toLocaleString('en-US')} /yr with no end year — set dates and tax treatment on the Income screen.`,
         locator: jsonPath(incomePath),
         confidence: 'assumed',
+        target: `incomes[${plan.incomes.length - 1}]`,
       })
     }
   }
@@ -392,6 +405,7 @@ export function mapProjectionLabExport(
       detail: `Baseline annual spending set to the $${expenseTotal.toLocaleString('en-US')} sum of your ProjectionLab expenses — RetireGolden models one baseline plus phases/goals, so re-shape it on the Spending screen (healthcare is modeled separately).`,
       locator: { kind: 'derived', from: expenseLocators, note: 'summed annual expenses' },
       confidence: 'derived',
+      target: 'expenses.baseAnnual',
     })
   } else {
     review.push({

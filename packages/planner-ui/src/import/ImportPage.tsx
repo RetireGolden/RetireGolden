@@ -120,11 +120,14 @@ export function ImportPage() {
 
   const handleFile = async (file: File) => {
     setError(null)
-    const text = await file.text()
     // Identify the source at the async edge: hash the raw bytes once, here, so
     // the pure mappers stay synchronous and the report can prove which file fed
-    // the draft without ever embedding its contents.
-    const { sha256, bytes } = await digestSource(text)
+    // the draft without ever embedding its contents. The digest reads the raw
+    // buffer — decoding first would strip BOMs and mangle non-UTF-8 bytes, and
+    // the hash must match the file on disk.
+    const raw = await file.arrayBuffer()
+    const { sha256, bytes } = await digestSource(raw)
+    const text = new TextDecoder().decode(raw)
     if (source === 'projectionlab') {
       const r = mapProjectionLabExport(text)
       if (!r.ok) return setError(r.message)
@@ -203,11 +206,14 @@ export function ImportPage() {
       ...reviewToProvenance(draft.review),
     }
     const blob = new Blob([serializeImportProvenance(input)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
+    a.href = url
     a.download = `retiregolden-import-provenance-${new Date().toISOString().slice(0, 10)}.json`
     a.click()
-    URL.revokeObjectURL(a.href)
+    // Revoking synchronously can race the download start in some browsers.
+    const revoke = URL.revokeObjectURL.bind(URL)
+    setTimeout(() => revoke(url), 5_000)
   }
 
   const set1040 = (patch: Partial<TenFortyInputs>) => setTenForty((prev) => ({ ...prev, ...patch }))

@@ -209,4 +209,43 @@ describe('tenForty provenance (WS1)', () => {
       ])
     }
   })
+
+  it('emits a review item for the guided DOB(s), typed in the form rather than read from the 1040', () => {
+    // Single filer: one DOB, landing on one addressable field.
+    const single = seedPlanFromTenForty(WORKER_1040, testIds, fixedNow)
+    expect(single.ok).toBe(true)
+    if (!single.ok) return
+    const singleDob = single.review.find((i) => i.source.startsWith('Date of birth'))!
+    expect(singleDob.status).toBe('mapped')
+    expect(singleDob.confidence).toBe('exact') // verbatim user input
+    expect(singleDob.locator).toEqual({
+      kind: 'none',
+      note: 'the date of birth is typed in the guided entry form, not read from the 1040',
+    })
+    expect(singleDob.target).toBe('household.people[0].dob')
+
+    // Joint return: two DOBs land on two fields, so no single target.
+    const joint = seedPlanFromTenForty(RETIREE_1040, testIds, fixedNow)
+    expect(joint.ok).toBe(true)
+    if (!joint.ok) return
+    const jointDob = joint.review.find((i) => i.source.startsWith('Dates of birth'))!
+    expect(jointDob.status).toBe('mapped')
+    expect(jointDob.confidence).toBe('exact')
+    expect(jointDob.locator?.kind).toBe('none')
+    expect(jointDob.target).toBeUndefined()
+  })
+
+  it('targets landed plan records/fields, but not file-level or unmapped items', () => {
+    const r = seedPlanFromTenForty(RETIREE_1040, testIds, fixedNow)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    // MAGI lands on a single assumptions field.
+    expect(r.review.find((i) => i.source.includes('lines 11 + 2a'))!.target).toBe('assumptions.recentAnnualMagi')
+    // The SS benefit basis lands on the one income stream it created.
+    expect(r.review.find((i) => i.source.includes('line 6a'))!.target).toBe('incomes[0]')
+    // Filing status & state describe two household fields — no single target.
+    expect(r.review.find((i) => i.source.startsWith('Filing status & state'))!.target).toBeUndefined()
+    // IRA distributions map to nothing — no target.
+    expect(r.review.find((i) => i.source.includes('line 4b'))!.target).toBeUndefined()
+  })
 })

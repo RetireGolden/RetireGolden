@@ -252,12 +252,14 @@ describe('brokerCsv provenance (WS1)', () => {
     }
   })
 
-  it('records a Schwab balance as an exact sum of the position rows it read', () => {
+  it('records a Schwab balance as a derived sum of the position rows it read', () => {
     const r = parseBrokerPositionsCsv(SCHWAB_FIXTURE)
     expect(r.ok).toBe(true)
     if (!r.ok) return
     const balance = r.review.find((i) => i.status === 'mapped' && i.source.startsWith('Individual'))!
-    expect(balance.confidence).toBe('exact')
+    // A sum computed from sourced position rows is 'derived', not 'exact'
+    // (which the contract reserves for a value read verbatim).
+    expect(balance.confidence).toBe('derived')
     expect(balance.locator?.kind).toBe('derived')
     if (balance.locator?.kind === 'derived') {
       // AAPL is the first counted position: parsed rows are Positions title (1),
@@ -300,6 +302,11 @@ describe('brokerCsv provenance (WS1)', () => {
     const guess = r.review.find((i) => i.detail.includes('guessed from the name'))!
     expect(guess.confidence).toBe('assumed')
     expect(guess.locator?.kind).toBe('none')
-    expect(r.review.find((i) => i.source === 'Everything except balances')!.confidence).toBe('unmapped')
+    // The guessed account is the first (and only) one pushed to the draft plan.
+    expect(guess.target).toBe('accounts[0]')
+    // The file-level "everything except balances" remainder lands on no single field.
+    const remainder = r.review.find((i) => i.source === 'Everything except balances')!
+    expect(remainder.confidence).toBe('unmapped')
+    expect(remainder.target).toBeUndefined()
   })
 })

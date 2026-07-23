@@ -195,15 +195,48 @@ describe('projectionLab provenance (WS1)', () => {
     expect(r.ok).toBe(true)
     if (!r.ok) return
 
-    // Brokerage is accounts[1]; a mapped balance is exact.
+    // Brokerage is accounts[1]; its explicit "taxable" type makes the mapping exact.
     const brokerage = r.review.find((i) => i.status === 'mapped' && i.source.startsWith('Brokerage'))!
     expect(brokerage.locator).toEqual({ kind: 'jsonPath', path: 'currentFinances.accounts[1]' })
     expect(brokerage.confidence).toBe('exact')
+    // It landed on the second account pushed to the draft plan.
+    expect(brokerage.target).toBe('accounts[1]')
 
-    // Crypto Wallet is accounts[7]; no mapping, so unmapped.
+    // Crypto Wallet is accounts[7]; no mapping, so unmapped and no landed field.
     const crypto = r.review.find((i) => i.status === 'unmapped' && i.source.startsWith('Crypto Wallet'))!
     expect(crypto.locator).toEqual({ kind: 'jsonPath', path: 'currentFinances.accounts[7]' })
     expect(crypto.confidence).toBe('unmapped')
+    expect(crypto.target).toBeUndefined()
+  })
+
+  it('grades an account whose type was inferred from the name as assumed, not exact', () => {
+    // No `type` field: mapProjectionLabAccountType falls back to the name keyword,
+    // and the source string renders "(type from name)".
+    const json = JSON.stringify({
+      currentFinances: { accounts: [{ name: 'My rollover 401k', balance: 500000 }] },
+    })
+    const r = mapProjectionLabExport(json, testIds)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    const item = r.review.find((i) => i.status === 'mapped' && i.source.startsWith('My rollover 401k'))!
+    expect(item.source).toContain('type from name')
+    expect(item.confidence).toBe('assumed')
+    expect(item.target).toBe('accounts[0]')
+  })
+
+  it('targets landed income and spending fields, but not file-level remainders', () => {
+    const r = mapProjectionLabExport(PROJECTIONLAB_FIXTURE, testIds)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    // Salary maps to the first income stream; the rental maps to the second.
+    const wages = r.review.find((i) => i.source === 'Salary')!
+    expect(wages.target).toBe('incomes[0]')
+    const rental = r.review.find((i) => i.source === 'Rental duplex')!
+    expect(rental.target).toBe('incomes[1]')
+    // The summed baseline lands on the single expenses.baseAnnual field.
+    expect(r.review.find((i) => i.source === 'Living, Travel')!.target).toBe('expenses.baseAnnual')
+    // "Strategies, assumptions & scenarios" is a file-level remainder — no target.
+    expect(r.review.find((i) => i.source.includes('Strategies'))!.target).toBeUndefined()
   })
 
   it('marks the July-1 DOB assumption and derives the expense baseline', () => {
