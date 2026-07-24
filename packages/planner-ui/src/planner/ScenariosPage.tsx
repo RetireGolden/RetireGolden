@@ -32,6 +32,7 @@ import { LiveStatus } from './LiveStatus'
 import {
   buildScenarioLever,
   SCENARIO_LEVER_DEFINITIONS,
+  supportedRothBracketTargets,
   type ScenarioLeverId,
   type ScenarioLeverRequest,
 } from '../scenarioLevers'
@@ -174,7 +175,17 @@ function AddScenario() {
             <NumberField label="End year" value={params.endYear} min={startYear} max={2200} onCommit={(v) => set('endYear', Math.round(v ?? startYear))} />
           </>
         ) : null}
-        {kind === 'rothTarget' ? <PercentField label="Top of tax bracket" value={params.rothTargetValue} min={1} max={50} onCommit={(v) => set('rothTargetValue', v ?? 24)} /> : null}
+        {kind === 'rothTarget' ? (
+          <SelectField
+            label="Top of federal tax bracket"
+            value={String(params.rothTargetValue)}
+            options={supportedRothBracketTargets(plan, params.startYear, params.endYear).map((rate) => ({
+              value: String(rate),
+              label: `${rate}% bracket`,
+            }))}
+            onCommit={(value) => set('rothTargetValue', Number(value))}
+          />
+        ) : null}
         {kind === 'rothSchedule' ? <MoneyField label="Annual conversion" value={params.rothAnnual} onCommit={(v) => set('rothAnnual', v ?? 0)} /> : null}
         {kind === 'allocation' ? <PercentField label="Stocks (remainder in bonds)" value={params.stockPct} min={0} max={100} onCommit={(v) => set('stockPct', v ?? 60)} /> : null}
         {kind === 'defaultReturn' ? <PercentField label="Default annual return" value={params.returnPct} onCommit={(v) => set('returnPct', v ?? 4)} /> : null}

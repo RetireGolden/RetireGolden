@@ -306,6 +306,23 @@ describe('ScenariosPage comparison lifecycle', () => {
     const states = document.getElementById(stateLabel!.htmlFor) as HTMLSelectElement
     expect(states.options).toHaveLength(51)
     expect(Array.from(states.options).some((option) => option.value === 'DC')).toBe(true)
+
+    await act(async () => {
+      leverSelect!.value = 'rothTarget'
+      leverSelect!.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    const bracketLabel = Array.from(container.querySelectorAll('label')).find(
+      (label) => label.textContent === 'Top of federal tax bracket',
+    )
+    const brackets = document.getElementById(bracketLabel!.htmlFor) as HTMLSelectElement
+    expect(Array.from(brackets.options).map((option) => option.value)).toEqual([
+      '10',
+      '12',
+      '22',
+      '24',
+      '32',
+      '35',
+    ])
   })
 
   it('shows recalculating and error states without ever labeling a failed detail comparison current', async () => {

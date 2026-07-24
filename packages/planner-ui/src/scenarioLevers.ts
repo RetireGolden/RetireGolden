@@ -8,11 +8,13 @@
  */
 
 import type { Plan } from '@retiregolden/engine/model/plan'
+import { packForYear } from '@retiregolden/engine/params'
 import { modeledStateCodes } from '@retiregolden/engine/params/state'
 import { relocationScenarioPatch } from '@retiregolden/engine/projection/relocation'
 import type { ScenarioActor, ScenarioPatchV1 } from '@retiregolden/engine/scenarios/contract'
 import { createScenarioPatch } from '@retiregolden/engine/scenarios/patch'
 import { applyScenarioPatch } from '@retiregolden/engine/scenarios/scenarios'
+import { isConvertibleToRoth } from '@retiregolden/engine/strategies/accountEligibility'
 
 export type ScenarioLeverId =
   | 'retirementAge'
@@ -157,6 +159,47 @@ export type ScenarioLeverBuildResult = BuiltScenarioLever | UnavailableScenarioL
 const DEFAULT_ACTOR: ScenarioActor = { kind: 'user' }
 const MODELED_STATE_CODES = new Set(modeledStateCodes())
 
+/** Non-open-ended federal bracket rates supported throughout the requested window. */
+export function supportedRothBracketTargets(
+  plan: Plan,
+  startYear: number,
+  endYear = startYear,
+): number[] {
+  if (
+    validateCalendarYear(startYear, 'Start year') !== null ||
+    validateCalendarYear(endYear, 'End year') !== null ||
+    startYear > endYear
+  ) {
+    return []
+  }
+  let supported: number[] | null = null
+  for (let year = startYear; year <= endYear; year++) {
+    const brackets = packForYear(year).pack.federalTax.brackets[plan.household.filingStatus]
+    const rates = new Set(brackets.slice(0, -1).map((bracket) => bracket.ratePct))
+    supported =
+      supported === null
+        ? [...rates]
+        : supported.filter((rate) => rates.has(rate))
+  }
+  return (supported ?? []).sort((left, right) => left - right)
+}
+
+/** IRMAA tier numbers supported throughout the requested window. */
+export function supportedRothIrmaaTiers(startYear: number, endYear = startYear): number[] {
+  if (
+    validateCalendarYear(startYear, 'Start year') !== null ||
+    validateCalendarYear(endYear, 'End year') !== null ||
+    startYear > endYear
+  ) {
+    return []
+  }
+  let tierCount = Number.POSITIVE_INFINITY
+  for (let year = startYear; year <= endYear; year++) {
+    tierCount = Math.min(tierCount, packForYear(year).pack.medicare.irmaaTiers.length)
+  }
+  return Array.from({ length: tierCount }, (_, index) => index + 1)
+}
+
 function clonePlan(plan: Plan): Plan {
   return JSON.parse(JSON.stringify(plan)) as Plan
 }
@@ -204,7 +247,7 @@ function firstIssue(...issues: Array<string | null>): string | null {
 }
 
 function hasRothConversionSources(plan: Plan): boolean {
-  return plan.accounts.some((account) => account.type === 'traditional' && account.balance > 0)
+  return plan.accounts.some((account) => isConvertibleToRoth(account) && account.balance > 0)
 }
 
 function hasRothDestination(plan: Plan): boolean {
@@ -295,6 +338,9 @@ export function buildScenarioLever(
     case 'spending': {
       const inputIssue = validateNumber(request.percentChange, 'Spending change', { min: -100, max: 100 })
       if (inputIssue) return unavailable(definition, [inputIssue])
+      if (plan.expenses.spendingPolicy?.mode === 'abw') {
+        return unavailable(definition, ['Base spending is not used while the ABW spending policy is active.'])
+      }
       if (plan.expenses.baseAnnual === 0) {
         return unavailable(definition, ['Base spending is zero; enter spending before applying a percentage change.'])
       }
@@ -349,6 +395,9 @@ export function buildScenarioLever(
         validateCalendarYear(request.fromYear, 'Social Security cut start year'),
       )
       if (inputIssue) return unavailable(definition, [inputIssue])
+      if (!plan.incomes.some((income) => income.type === 'socialSecurity')) {
+        return unavailable(definition, ['Add a Social Security income stream before modeling a benefit cut.'])
+      }
       edited.assumptions.ssHaircut = {
         fromYear: request.fromYear,
         cutPct: request.cutPct,
@@ -371,15 +420,18 @@ export function buildScenarioLever(
             : 'ACA-cliff targets do not take a target value.'
           : request.targetValue === null
             ? 'This Roth target requires a target value.'
-            : validateNumber(
-                request.targetValue,
-                'Roth target value',
-                request.target === 'irmaaTier'
-                  ? { min: 0, max: 10, integer: true }
-                  : request.target === 'topOfBracket'
-                    ? { min: 0, max: 100, minExclusive: true }
-                    : { min: 0 },
-              )
+            : request.target === 'topOfBracket'
+              ? supportedRothBracketTargets(plan, request.startYear, request.endYear).includes(request.targetValue)
+                ? null
+                : 'Roth bracket target must be a supported non-top federal bracket rate.'
+              : request.target === 'irmaaTier'
+                ? supportedRothIrmaaTiers(request.startYear, request.endYear).includes(request.targetValue)
+                  ? null
+                  : 'Roth IRMAA target must be an available surcharge tier.'
+                : validateNumber(request.targetValue, 'Fixed MAGI target', {
+                    min: 0,
+                    minExclusive: true,
+                  })
       const inputIssue = firstIssue(
         validateCalendarYear(request.startYear, 'Roth target start year'),
         validateCalendarYear(request.endYear, 'Roth target end year'),
@@ -389,7 +441,9 @@ export function buildScenarioLever(
       if (!hasRothConversionSources(plan)) {
         return unavailable(definition, ['Add a funded traditional account before modeling Roth conversions.'])
       }
-      if (!hasRothDestination(plan)) warnings.push('No Roth account is recorded; conversion proceeds are still modeled by the engine.')
+      if (!hasRothDestination(plan)) {
+        return unavailable(definition, ['Add a Roth destination account before modeling Roth conversions.'])
+      }
       if (request.startYear > request.endYear) {
         return unavailable(definition, ['Roth target start year must be on or before its end year.'])
       }
@@ -413,7 +467,9 @@ export function buildScenarioLever(
       if (!hasRothConversionSources(plan)) {
         return unavailable(definition, ['Add a funded traditional account before modeling Roth conversions.'])
       }
-      if (!hasRothDestination(plan)) warnings.push('No Roth account is recorded; conversion proceeds are still modeled by the engine.')
+      if (!hasRothDestination(plan)) {
+        return unavailable(definition, ['Add a Roth destination account before modeling Roth conversions.'])
+      }
       if (request.startYear > request.endYear) {
         return unavailable(definition, ['Roth schedule start year must be on or before its end year.'])
       }
@@ -579,6 +635,16 @@ export function buildScenarioLever(
       if (plan.household.stateMoves.length > 0) {
         warnings.push('This scenario replaces the plan’s existing future state moves.')
       }
+      if (plan.assumptions.stateEffectiveTaxPct > 0) {
+        warnings.push(
+          `The ${plan.assumptions.stateEffectiveTaxPct}% flat state-tax override is reset across the entire projection, including years before the move, so modeled destination rules can apply.`,
+        )
+      }
+      if (plan.assumptions.localIncomeTaxPct > 0) {
+        warnings.push(
+          `The ${plan.assumptions.localIncomeTaxPct}% local income-tax rate is reset to 0% across the entire projection, including years before the move.`,
+        )
+      }
       warnings.push('Relocation models state and local income tax; property tax, sales tax, and cost of living are not inferred.')
       const loose = relocationScenarioPatch(
         plan,
@@ -593,6 +659,9 @@ export function buildScenarioLever(
     case 'survivorSpending': {
       const inputIssue = validateNumber(request.percent, 'Survivor spending percent', { min: 0, max: 100 })
       if (inputIssue) return unavailable(definition, [inputIssue])
+      if (plan.expenses.spendingPolicy?.mode === 'abw') {
+        return unavailable(definition, ['Survivor spending scaling is not used while the ABW spending policy is active.'])
+      }
       if (edited.household.people.length < 2) {
         return unavailable(definition, ['Survivor spending applies only to a two-person household.'])
       }
@@ -602,6 +671,7 @@ export function buildScenarioLever(
 
     case 'care': {
       const inputIssue = firstIssue(
+        validateCalendarYear(context.startYear, 'Projection start year'),
         validateNumber(request.startAge, 'Care start age', { min: 40, max: 110, integer: true }),
         validateNumber(request.durationYears, 'Care duration', { min: 1, max: 25, integer: true }),
         validateNumber(request.annualCost, 'Annual care cost', { min: 0 }),
@@ -618,6 +688,14 @@ export function buildScenarioLever(
         return unavailable(definition, [`No household member has id "${request.personId}".`])
       }
       if (!person) return unavailable(definition, ['Add a household member before modeling a care event.'])
+      const attainedAgeAtStart = context.startYear - Number(person.dob.slice(0, 4))
+      if (
+        attainedAgeAtStart >= request.startAge + request.durationYears ||
+        attainedAgeAtStart > person.longevity.planningAge ||
+        request.startAge > person.longevity.planningAge
+      ) {
+        return unavailable(definition, ['The care episode does not overlap this person’s projection.'])
+      }
       if (!context.createId) return unavailable(definition, ['A deterministic care-event ID factory is required.'])
       edited.careEvents.push({
         id: context.createId(),
@@ -633,8 +711,14 @@ export function buildScenarioLever(
     }
 
     case 'homeSale': {
-      const inputIssue = validateCalendarYear(request.saleYear, 'Property sale year')
+      const inputIssue = firstIssue(
+        validateCalendarYear(context.startYear, 'Projection start year'),
+        validateCalendarYear(request.saleYear, 'Property sale year'),
+      )
       if (inputIssue) return unavailable(definition, [inputIssue])
+      if (request.saleYear < context.startYear) {
+        return unavailable(definition, ['Property sale year must be on or after the projection start year.'])
+      }
       const properties = edited.accounts.filter((account) => account.type === 'property')
       if (properties.length === 0) return unavailable(definition, ['Add a property before modeling a home sale.'])
       if (request.propertyId === undefined && properties.length > 1) {

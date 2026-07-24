@@ -338,4 +338,132 @@ describe('scenario lever contract', () => {
     if (spending.ok) expect(spending.name).toContain('105,600')
     if (claims.ok) expect(claims.name).toContain('age 62')
   })
+
+  it('requires both an eligible owned traditional source and a Roth destination', () => {
+    const noDestination = buildExampleCouple()
+    noDestination.accounts = noDestination.accounts.filter((account) => account.type !== 'roth')
+    const target = buildScenarioLever(
+      noDestination,
+      { id: 'rothTarget', target: 'topOfBracket', targetValue: 24, startYear: 2027, endYear: 2030 },
+      context,
+    )
+    const schedule = buildScenarioLever(
+      noDestination,
+      { id: 'rothSchedule', annualAmount: 20_000, startYear: 2027, endYear: 2030 },
+      context,
+    )
+
+    expect(target.ok).toBe(false)
+    expect(schedule.ok).toBe(false)
+    if (!target.ok) expect(target.issues.join(' ')).toContain('Roth destination')
+
+    const inheritedOnly = buildExampleCouple()
+    const ownedTraditional = inheritedOnly.accounts.find((account) => account.type === 'traditional')!
+    inheritedOnly.accounts = inheritedOnly.accounts.filter((account) => account.type !== 'traditional')
+    inheritedOnly.accounts.push({
+      ...ownedTraditional,
+      id: 'inherited-traditional',
+      inherited: { ownerDeathYear: 2024, decedentHadStartedRmds: true },
+    })
+    const inheritedResult = buildScenarioLever(
+      inheritedOnly,
+      { id: 'rothSchedule', annualAmount: 20_000, startYear: 2027, endYear: 2030 },
+      context,
+    )
+    expect(inheritedResult.ok).toBe(false)
+    if (!inheritedResult.ok) expect(inheritedResult.issues.join(' ')).toContain('funded traditional')
+  })
+
+  it('accepts only engine-supported Roth bracket and IRMAA targets', () => {
+    const plan = buildExampleCouple()
+    const unsupportedBracket = buildScenarioLever(
+      plan,
+      { id: 'rothTarget', target: 'topOfBracket', targetValue: 20, startYear: 2027, endYear: 2030 },
+      context,
+    )
+    const zeroTier = buildScenarioLever(
+      plan,
+      { id: 'rothTarget', target: 'irmaaTier', targetValue: 0, startYear: 2027, endYear: 2030 },
+      context,
+    )
+    const highTier = buildScenarioLever(
+      plan,
+      { id: 'rothTarget', target: 'irmaaTier', targetValue: 6, startYear: 2027, endYear: 2030 },
+      context,
+    )
+    const supportedTier = buildScenarioLever(
+      plan,
+      { id: 'rothTarget', target: 'irmaaTier', targetValue: 5, startYear: 2027, endYear: 2030 },
+      context,
+    )
+
+    expect(unsupportedBracket.ok).toBe(false)
+    expect(zeroTier.ok).toBe(false)
+    expect(highTier.ok).toBe(false)
+    expect(supportedTier.ok).toBe(true)
+  })
+
+  it('rejects modeled inputs that cannot affect the projection', () => {
+    const plan = buildExampleCouple()
+    const pastSale = buildScenarioLever(
+      plan,
+      { id: 'homeSale', saleYear: context.startYear - 1 },
+      context,
+    )
+    const endedCare = buildScenarioLever(
+      plan,
+      {
+        id: 'care',
+        personId: plan.household.people[0]!.id,
+        startAge: 40,
+        durationYears: 2,
+        annualCost: 50_000,
+      },
+      context,
+    )
+    const noSocialSecurity = buildExampleCouple()
+    noSocialSecurity.incomes = noSocialSecurity.incomes.filter((income) => income.type !== 'socialSecurity')
+    const benefitCut = buildScenarioLever(
+      noSocialSecurity,
+      { id: 'socialSecurityCut', cutPct: 20, fromYear: 2034 },
+      context,
+    )
+
+    expect(pastSale.ok).toBe(false)
+    expect(endedCare.ok).toBe(false)
+    expect(benefitCut.ok).toBe(false)
+    if (!pastSale.ok) expect(pastSale.issues.join(' ')).toContain('projection start')
+    if (!endedCare.ok) expect(endedCare.issues.join(' ')).toContain('does not overlap')
+    if (!benefitCut.ok) expect(benefitCut.issues.join(' ')).toContain('Social Security income')
+  })
+
+  it('disables base and survivor spending levers while ABW controls lifestyle spending', () => {
+    const plan = buildExampleCouple()
+    plan.expenses.spendingPolicy = { mode: 'abw' }
+
+    const base = buildScenarioLever(plan, { id: 'spending', percentChange: 10 }, context)
+    const survivor = buildScenarioLever(plan, { id: 'survivorSpending', percent: 70 }, context)
+
+    expect(base.ok).toBe(false)
+    expect(survivor.ok).toBe(false)
+    if (!base.ok) expect(base.issues.join(' ')).toContain('ABW')
+    if (!survivor.ok) expect(survivor.issues.join(' ')).toContain('ABW')
+  })
+
+  it('discloses relocation tax assumptions that the shared helper resets plan-wide', () => {
+    const plan = buildExampleCouple()
+    plan.assumptions.stateEffectiveTaxPct = 5
+    plan.assumptions.localIncomeTaxPct = 3
+
+    const result = buildScenarioLever(
+      plan,
+      { id: 'relocation', state: 'FL', moveYear: 2028 },
+      context,
+    )
+
+    expect(result.ok).toBe(true)
+    expect(result.warnings.join(' ')).toContain('5% flat state-tax override')
+    expect(result.warnings.join(' ')).toContain('3% local income-tax rate')
+    expect(result.warnings.join(' ')).toContain('including years before the move')
+  })
 })
