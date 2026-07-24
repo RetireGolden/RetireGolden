@@ -82,7 +82,8 @@ export function reviewToProvenance(items: ImportReviewItem[]): {
       detail: item.detail,
       locator: item.locator ?? { kind: 'none', note: item.source },
       confidence: agrees ? explicit : fallbackConfidence[item.status],
-      ...(item.target ? { target: item.target } : {}),
+      // A value that never landed cannot claim a plan destination.
+      ...(item.target && !toUnresolved ? { target: item.target } : {}),
       ...(item.decision ? { decision: item.decision } : {}),
     }
     if (toUnresolved) unresolved.push(entry)

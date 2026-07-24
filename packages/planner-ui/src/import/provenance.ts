@@ -119,7 +119,10 @@ export interface ImportSourceRef {
   /**
    * Lowercase hex SHA-256 of the source's raw bytes (see `sourceHash.ts`), so
    * the report can be verified against the original file. Empty string when
-   * the host had no Web Crypto to hash with — never a wrong hash.
+   * the host had no Web Crypto to hash with, or when the source is not a
+   * document at all (guided form entry) — a deterministic hash of low-entropy
+   * typed personal inputs would be a dictionary-attackable fingerprint, so
+   * none is published. Never a wrong hash.
    */
   sha256: string
   /** Byte length of the source. */
@@ -210,9 +213,13 @@ function cleanLocator(locator: SourceLocator, depth: number, sourceCount: number
 
 function cleanEntry(entry: ImportProvenanceEntry, sourceCount: number, collection: 'mappings' | 'unresolved'): ImportProvenanceEntry {
   // `unmapped` means "nothing landed" — an entry graded that way belongs in
-  // `unresolved`, and every unresolved entry must be graded that way.
+  // `unresolved`, every unresolved entry must be graded that way, and a value
+  // that never landed cannot claim a plan destination.
   if ((entry.confidence === 'unmapped') !== (collection === 'unresolved')) {
     throw new Error(`a '${entry.confidence}' entry cannot be filed under '${collection}'`)
+  }
+  if (collection === 'unresolved' && entry.target !== undefined) {
+    throw new Error(`an unresolved entry cannot carry a target (got '${entry.target}')`)
   }
   return {
     source: entry.source,
@@ -252,7 +259,13 @@ export function serializeImportProvenance(
     mappings: input.mappings.map((entry) => cleanEntry(entry, input.sources.length, 'mappings')),
     unresolved: input.unresolved.map((entry) => cleanEntry(entry, input.sources.length, 'unresolved')),
   }
-  return JSON.stringify(envelope, null, 2)
+  const json = JSON.stringify(envelope, null, 2)
+  // Never emit what the parser refuses: a report past the parse cap would be
+  // unreadable by this contract's own consumer.
+  if (json.length > MAX_IMPORT_PROVENANCE_JSON_CHARS) {
+    throw new Error(`serialized import provenance exceeds ${MAX_IMPORT_PROVENANCE_JSON_CHARS} characters`)
+  }
+  return json
 }
 
 export type ParseImportProvenanceResult =
@@ -374,6 +387,8 @@ function parseEntry(value: unknown, sourceCount: number, collection: 'mappings' 
   const target = optionalString(rec['target'])
   const decision = parseDecision(rec['decision'])
   if (!target.ok || !decision.ok) return null
+  // A value that never landed cannot claim a plan destination.
+  if (collection === 'unresolved' && target.value !== undefined) return null
   return {
     source: rec['source'],
     detail: rec['detail'],

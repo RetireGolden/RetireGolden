@@ -211,6 +211,27 @@ describe('serializeImportProvenance / parseImportProvenance', () => {
     const misfiled = sampleInput()
     misfiled.mappings[0] = { ...misfiled.mappings[0]!, confidence: 'unmapped' }
     expect(() => serializeImportProvenance(misfiled)).toThrow(/filed under/)
+
+    const unresolvedTarget = sampleInput()
+    unresolvedTarget.unresolved[0] = { ...unresolvedTarget.unresolved[0]!, target: 'accounts[0]' }
+    expect(() => serializeImportProvenance(unresolvedTarget)).toThrow(/cannot carry a target/)
+
+    const oversized = sampleInput()
+    oversized.mappings[0] = { ...oversized.mappings[0]!, detail: 'x'.repeat(MAX_IMPORT_PROVENANCE_JSON_CHARS) }
+    expect(() => serializeImportProvenance(oversized)).toThrow(/exceeds/)
+  })
+
+  it('rejects a target on an unresolved entry when parsing', () => {
+    const valid = JSON.parse(serializeImportProvenance(sampleInput())) as Record<string, unknown>
+    const corrupt = {
+      ...valid,
+      unresolved: [
+        { source: 'x', detail: 'y', locator: { kind: 'none', note: 'n' }, confidence: 'unmapped', target: 'accounts[0]' },
+      ],
+    }
+    const parsed = parseImportProvenance(JSON.stringify(corrupt))
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) expect(parsed.reason).toBe('malformed')
   })
 
   it('serializes only contract fields — a caller extension carrying content is dropped', () => {

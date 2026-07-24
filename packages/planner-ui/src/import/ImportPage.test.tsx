@@ -252,7 +252,7 @@ describe('ImportPage', () => {
     expect(el.querySelector('[role="alert"]')?.textContent).toContain('too large')
   })
 
-  it('identifies the guided 1040 path by hash of the typed inputs, not a file', async () => {
+  it('identifies the guided 1040 path without fingerprinting the typed inputs', async () => {
     const el = render()
     click(findButton(el, 'tax return'))
     act(() => findButton(el, 'Build my draft plan')!.click())
@@ -281,7 +281,11 @@ describe('ImportPage', () => {
     if (!parsed.ok) throw new Error('report did not parse')
     expect(parsed.provenance.sources[0]!.file).toBe('guided-1040-entry')
     expect(parsed.provenance.sources[0]!.mapper).toBe('tenForty')
-    expect(parsed.provenance.sources[0]!.sha256).toMatch(/^[0-9a-f]{64}$/)
+    // Deliberately NO hash: the typed inputs are low-entropy personal data, so
+    // a deterministic fingerprint in a handoff report would be dictionary-
+    // attackable (a DOB has ~36,500 plausible values).
+    expect(parsed.provenance.sources[0]!.sha256).toBe('')
+    expect(parsed.provenance.sources[0]!.bytes).toBe(0)
   })
 
   it('surfaces a helpful error for unrecognized files instead of importing junk', async () => {

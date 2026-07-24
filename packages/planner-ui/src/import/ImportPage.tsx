@@ -105,8 +105,12 @@ export function ImportPage() {
   // buildGenericDraft, so the identified source is stashed here between the two.
   const [pendingSource, setPendingSource] = useState<ImportSourceRef | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
+  // Bumped on every reset/source switch so an async completion from a previous
+  // selection (a file still being read/hashed) cannot install a stale draft.
+  const importEpoch = useRef(0)
 
   const reset = () => {
+    importEpoch.current++
     setError(null)
     setDraft(null)
     setAnalysis(null)
@@ -120,6 +124,7 @@ export function ImportPage() {
   }
 
   const handleFile = async (file: File) => {
+    const epoch = importEpoch.current
     setError(null)
     // The mappers cap CHARACTERS; File.size is BYTES. UTF-8 decodes to at
     // least one UTF-16 unit per three bytes, so size > 3×cap can never fit —
@@ -140,6 +145,7 @@ export function ImportPage() {
     // buffer — decoding it first would strip BOMs and mangle non-UTF-8 bytes,
     // and the hash must match the file on disk.
     const { sha256, bytes } = await digestSource(raw)
+    if (epoch !== importEpoch.current) return
     if (source === 'projectionlab') {
       const r = mapProjectionLabExport(text)
       if (!r.ok) return setError(r.message)
@@ -203,17 +209,19 @@ export function ImportPage() {
     setDraft({ plan: r.plan, review: r.review, source: pendingSource })
   }
 
-  const buildTenFortyDraft = async () => {
+  const buildTenFortyDraft = () => {
     setError(null)
     const r = seedPlanFromTenForty(tenForty)
     if (!r.ok) return setError(r.message)
-    // No file on the guided path — identify the typed inputs themselves: the
-    // canonical JSON of what the user entered, hashed the same way a file is.
-    const { sha256, bytes } = await digestSource(JSON.stringify(tenForty))
+    // No file on the guided path, and deliberately NO fingerprint either: the
+    // typed inputs are low-entropy personal data, so a deterministic hash in a
+    // report meant for handoff would be dictionary-attackable (a DOB has only
+    // ~36,500 plausible values). An empty sha256 is the contract's honest
+    // "nothing to verify against".
     setDraft({
       plan: r.plan,
       review: r.review,
-      source: { file: 'guided-1040-entry', sha256, bytes, mapper: 'tenForty' },
+      source: { file: 'guided-1040-entry', sha256: '', bytes: 0, mapper: 'tenForty' },
     })
   }
 
@@ -233,7 +241,15 @@ export function ImportPage() {
       sources: [draft.source],
       ...reviewToProvenance(draft.review),
     }
-    const blob = new Blob([serializeImportProvenance(input)], { type: 'application/json' })
+    let json: string
+    try {
+      json = serializeImportProvenance(input)
+    } catch {
+      // The serializer refuses to emit what its parser cannot read (e.g. a
+      // report past the size cap for an enormous import).
+      return setError('The import report for this file is too large to generate.')
+    }
+    const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -357,7 +373,7 @@ export function ImportPage() {
                 <MoneyField label="Line 11 — adjusted gross income" value={tenForty.agi} onCommit={(v) => set1040({ agi: v ?? 0 })} />
               </div>
               <div className="picker-actions">
-                <button type="button" className="btn btn-primary" onClick={() => void buildTenFortyDraft()}>
+                <button type="button" className="btn btn-primary" onClick={buildTenFortyDraft}>
                   Build my draft plan
                 </button>
               </div>

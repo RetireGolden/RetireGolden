@@ -129,7 +129,9 @@ the report identifies a source by hash, it **never embeds the raw document**, wh
 makes it safe to hand off (it carries provenance, not the 1040 PDF it describes). The hash is of the
 file's **raw bytes** (decoding first would normalize BOMs out of the digest), so it matches
 `sha256sum` on the original; on a host without Web Crypto it degrades to an empty string — never a
-wrong hash — and the import still completes. Hashing is the one piece that needs `crypto.subtle`, so
+wrong hash — and the import still completes. The guided 1040 path publishes **no** hash at all
+(empty string): its typed inputs are low-entropy personal data, and a deterministic fingerprint in a
+handoff report would be dictionary-attackable. Hashing is the one piece that needs `crypto.subtle`, so
 it lives in the sibling `sourceHash.ts` (`digestSource`, async) and is called only at the async UI
 boundary in `ImportPage.tsx`; the mappers stay synchronous and pure. `parseImportProvenance` reads
 the envelope back with a named-reason result union (`too_large`, `not_json`, `wrong_kind`,
