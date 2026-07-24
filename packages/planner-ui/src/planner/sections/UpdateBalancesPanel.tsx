@@ -26,7 +26,7 @@
  * touches the advisor's stored override record.
  */
 
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
 import {
@@ -134,12 +134,23 @@ export function UpdateBalancesPanel() {
   // before this render derives anything from `parsed`, and React discards the
   // interrupted render without an extra commit).
   const [seenPlanId, setSeenPlanId] = useState(plan.id)
+  // A monotonic counter bumped on every plan-identity reset. An in-flight file read
+  // captures its value before awaiting and discards the parse if it changed while the
+  // read was outstanding — so a read started under the old plan cannot repopulate the
+  // panel after a navigation reset ran. `planIdentityRef` mirrors the CURRENT (id,
+  // generation) so the captured-then-compare check in `handleFile` reads the latest.
+  const [planGeneration, setPlanGeneration] = useState(0)
   if (seenPlanId !== plan.id) {
     setSeenPlanId(plan.id)
+    setPlanGeneration((g) => g + 1)
     setParsed(null)
     setReleased(new Map())
     setMessage(null)
   }
+  const planIdentityRef = useRef({ id: plan.id, generation: planGeneration })
+  useEffect(() => {
+    planIdentityRef.current = { id: plan.id, generation: planGeneration }
+  }, [plan.id, planGeneration])
 
   const updatable = plan.accounts.filter(isBalanceUpdatable).map((a) => ({ id: a.id, name: a.name }))
   const accountName = (id: string) => updatable.find((a) => a.id === id)?.name ?? id
@@ -182,7 +193,18 @@ export function UpdateBalancesPanel() {
     // the table and releases down first makes the restore immediate.
     setParsed(null)
     setReleased(new Map())
-    const r = parseBrokerPositionsCsv(await file.text())
+    // Capture the plan identity BEFORE the async read. `file.text()` can take a while;
+    // if the plan is swapped mid-read (a `/plan/:id` navigation runs the identity reset
+    // above), this continuation would otherwise repopulate `parsed` from the OLD plan
+    // AFTER the reset ran. Cloned plans share account ids, so an old file could then be
+    // applied to the new plan. Discard the result when the id OR the generation changed.
+    const startPlanId = plan.id
+    const startGeneration = planGeneration
+    const text = await file.text()
+    if (planIdentityRef.current.id !== startPlanId || planIdentityRef.current.generation !== startGeneration) {
+      return // a different plan (or a swap-away-and-back) landed during the read — drop it
+    }
+    const r = parseBrokerPositionsCsv(text)
     if (!r.ok) {
       resetPanel()
       setMessage(r.message)
@@ -217,40 +239,47 @@ export function UpdateBalancesPanel() {
     if (t !== '') selection.set(i, t)
   })
 
-  // Belt against DOM tampering: before any engine call, drop only the (row →
-  // account) pairing where the account is host-protected AND released to a
-  // DIFFERENT row. That is the sole unsafe case — the engine's effective set drops
-  // a released account for EVERY row, so without this row-scope check a sibling
-  // could reach an account another row released.
+  // Before any engine call, strip EVERY (row → account) pairing where the account
+  // is host-protected and NOT released to THIS row — both the unreleased case and
+  // the released-to-a-DIFFERENT-row case. The engine never sees a protected
+  // selection at all.
   //
-  // An UNRELEASED protected selection is deliberately KEPT: the effective set still
-  // covers it (positionalProtectedSet keeps unreleased protections), so the engine
-  // skips its write AND emits its protected-target 'skipped' review item — which is
-  // exactly the provenance the checklist needs. Stripping it here would hide that
-  // the row was deliberately left unchanged. A no-protection plan keeps the
-  // selection untouched.
-  // …but the strip itself leaves an audit trail: the released account is absent
-  // from the effective set, so the engine would emit neither a protected nor a
-  // duplicate skip for the stripped sibling, and the checklist would silently
-  // omit that this broker row was discarded. Synthesize that skipped item here.
+  // Why strip the unreleased case too (a change from keeping it so the engine could
+  // emit the skip item): two rows selecting the SAME unreleased protected account
+  // are a duplicate under `buildRefreshDelta`, and any duplicate disables Apply
+  // GLOBALLY — so a pair of blocked-anyway rows would prevent unrelated rows from
+  // refreshing. Removing protected pairings before the engine sees them keeps a
+  // collision that never lands from blocking the rows that do.
+  //
+  // Stripping erases the engine's audit trail (a stripped account is absent from
+  // the effective set, so the engine emits neither a protected nor a duplicate skip
+  // for it), so synthesize the skipped checklist item HERE: an unreleased protected
+  // account reads like the engine's own protected-skip item; a released-elsewhere
+  // account gets the row-scope wording. A no-protection plan keeps the selection
+  // untouched. The released-to-THIS-row pairing is kept — it is the one the user
+  // deliberately freed, and the effective set already omits it so it applies.
   const strippedAudit: ImportReviewItem[] = []
   const safeSelection = (() => {
     if (hostProtectedIds.size === 0) return selection
     const out = new Map<number, string>()
     for (const [i, accId] of selection) {
-      if (hostProtectedIds.has(accId)) {
-        const releasedRow = released.get(accId)
-        if (releasedRow !== undefined && releasedRow !== i) {
-          // released to a sibling row — off-limits here
-          strippedAudit.push({
-            status: 'skipped',
-            source: parsed?.accounts[i]?.accountLabel ?? `Row ${i + 1}`,
-            detail: `Its selected plan account (${accountName(accId)}) is protected by an advisor override released to a different row — only that row may refresh it this time.`,
-            locator: { kind: 'none', note: 'protected account released to another broker row' },
-            confidence: 'unmapped',
-          })
-          continue
-        }
+      if (hostProtectedIds.has(accId) && released.get(accId) !== i) {
+        const releasedElsewhere = released.get(accId) !== undefined
+        strippedAudit.push({
+          status: 'skipped',
+          source: parsed?.accounts[i]?.accountLabel ?? `Row ${i + 1}`,
+          detail: releasedElsewhere
+            ? `Its selected plan account (${accountName(accId)}) is protected by an advisor override released to a different row — only that row may refresh it this time.`
+            : `Its selected plan account (${accountName(accId)}) is protected by an advisor override, so the refresh left its balance unchanged.`,
+          locator: {
+            kind: 'none',
+            note: releasedElsewhere
+              ? 'protected account released to another broker row'
+              : 'target account is protected from refresh',
+          },
+          confidence: 'unmapped',
+        })
+        continue
       }
       out.set(i, accId)
     }
@@ -326,7 +355,12 @@ export function UpdateBalancesPanel() {
     update((d) => {
       applied = applyRefresh(d, delta, safeSelection, effective)
     })
-    resetPanel()
+    // Keep the table and releases intact when the ONLY reason nothing landed is
+    // protection: the zero-write message points the user at the "Allow this refresh"
+    // controls, which must still be on screen to act on. A genuine nothing-selected
+    // zero-write — and any successful apply — tears the panel down as before.
+    const heldBackByProtection = applied === 0 && protectionBlocked > 0
+    if (!heldBackByProtection) resetPanel()
     setMessage(
       applied > 0
         ? `Updated ${applied} account${applied === 1 ? '' : 's'} from the ${BROKER_LABEL[parsed.broker]} file — balances, plus cost basis where the file carried it. Review taxable accounts whose basis the file lacked.`

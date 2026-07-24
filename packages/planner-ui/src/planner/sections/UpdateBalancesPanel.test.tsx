@@ -99,6 +99,23 @@ const TWO_BROKERAGE_CSV = `"Positions for account Brokerage ...111 as of 07/07/2
 "FXAIX","FUND","$20,000.00","$15,000.00"
 `
 
+// Two "Brokerage" sections (both classify onto the single Brokerage plan account)
+// PLUS a Roth section. When Brokerage is protected, the two Brokerage rows must not
+// register as a duplicate that blocks the whole apply — the unprotected Roth row
+// still applies.
+const TWO_BROKERAGE_PLUS_ROTH_CSV = `"Positions for account Brokerage ...111 as of 07/07/2026"
+"Symbol","Description","Mkt Val (Market Value)","Cost Basis"
+"VTI","FUND","$10,000.00","$8,000.00"
+
+"Positions for account Brokerage ...222 as of 07/07/2026"
+"Symbol","Description","Mkt Val (Market Value)","Cost Basis"
+"FXAIX","FUND","$20,000.00","$15,000.00"
+
+"Positions for account Roth IRA ...321 as of 07/07/2026"
+"Symbol","Description","Mkt Val (Market Value)","Cost Basis"
+"FXAIX","FUND","$14,000.00","$12,000.00"
+`
+
 // One Roth section against a plan holding both a Roth IRA and a Rollover IRA —
 // they share the generic word "ira", so the match is ambiguous.
 const ROTH_ONLY_CSV = `"Positions for account Roth IRA ...321 as of 07/07/2026"
@@ -464,6 +481,39 @@ describe('UpdateBalancesPanel refresh protection', () => {
     expect(plan.accounts.find((a) => a.id === 'acct-roth')!).toMatchObject({ balance: 1 })
   })
 
+  it('does not falsely duplicate-block two rows on the same unreleased protected account', async () => {
+    // Two file rows classify onto the SAME protected Brokerage account, and a third
+    // row onto the unprotected Roth. Round 4 kept the protected selections so the
+    // engine could emit their skip items — but that made the two of them a duplicate
+    // group, and any duplicate disables Apply GLOBALLY, so the unrelated Roth row
+    // could never refresh. Now the protected pairings are stripped before the engine
+    // sees them: no duplicate block, the Roth row applies, and BOTH protected rows
+    // still surface as panel-synthesized skips.
+    const plan = planWithAccounts() // Brokerage (protected below) + Roth IRA
+    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }))
+    await chooseFile(el, TWO_BROKERAGE_PLUS_ROTH_CSV)
+
+    const [b0, b1, rothRow] = selects(el)
+    expect(b0!.value).toBe('acct-brokerage')
+    expect(b1!.value).toBe('acct-brokerage')
+    expect(rothRow!.value).toBe('acct-roth')
+
+    // No false duplicate collision, so Apply stays enabled and no alert is shown.
+    expect(el.querySelector('[role="alert"]')).toBeNull()
+    expect(applyButton(el).disabled).toBe(false)
+
+    // The checklist carries BOTH protected skips (one per Brokerage row) plus the
+    // Roth import.
+    const review = el.querySelector('.import-review')!.textContent ?? ''
+    expect((review.match(/protected by an advisor override/g) ?? []).length).toBe(2)
+    expect(review).toContain('Refreshed the balance')
+
+    act(() => applyButton(el).click())
+    // The unprotected third row applied; the protected account stayed put.
+    expect(plan.accounts.find((a) => a.id === 'acct-brokerage')!).toMatchObject({ balance: 1, costBasis: 1 })
+    expect(plan.accounts.find((a) => a.id === 'acct-roth')!).toMatchObject({ balance: 14000 })
+  })
+
   it('writes nothing to a released account once the releasing row is deselected', async () => {
     const plan = planWithAccounts()
     const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }))
@@ -537,8 +587,9 @@ describe('UpdateBalancesPanel refresh protection', () => {
 
   it('lists the protected row in the review checklist as skipped (provenance is not hidden)', async () => {
     // A selected-but-protected row must be VISIBLE in the checklist as deliberately
-    // left unchanged — the panel keeps the unreleased protected selection in the map
-    // it hands the engine, so the engine emits its protected-target 'skipped' item.
+    // left unchanged. The panel now STRIPS the unreleased protected selection before
+    // the engine sees it (so a duplicate on a protected account can't falsely block
+    // Apply) and SYNTHESIZES the skip item itself, worded to match the engine's own.
     const plan = planWithAccounts()
     const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }))
     await chooseFile(el, TWO_ACCOUNT_CSV)
@@ -547,7 +598,8 @@ describe('UpdateBalancesPanel refresh protection', () => {
     expect(selects(el)[0]!.value).toBe('acct-brokerage')
     const review = el.querySelector('.import-review')!
     expect(review.textContent).toContain('Skipped')
-    expect(review.textContent).toContain('protected, so the refresh left its balance unchanged')
+    expect(review.textContent).toContain('protected by an advisor override')
+    expect(review.textContent).toContain('left its balance unchanged')
     // The row's broker label anchors the skip item to what the user sees in the table.
     expect(review.textContent).toContain('Brokerage')
     // The applying sibling is still reported as imported.
@@ -574,6 +626,15 @@ describe('UpdateBalancesPanel refresh protection', () => {
     expect(status).toContain('Allow this refresh')
     // It must NOT fall back to the "nothing assigned" wording — the selections were visible.
     expect(status).not.toContain('No accounts were assigned')
+    // The zero came purely from protection, so the panel must NOT tear itself down:
+    // the message points at "Allow this refresh" controls, which must still be there.
+    expect(el.querySelector('tbody')).not.toBeNull()
+    expect(selects(el)[0]!.value).toBe('acct-brokerage')
+    expect(selects(el)[1]!.value).toBe('acct-roth')
+    const allowButtons = Array.from(el.querySelectorAll('button')).filter((b) =>
+      b.getAttribute('aria-label')?.startsWith('Allow this refresh for'),
+    )
+    expect(allowButtons.length).toBe(2)
   })
 
   it('resets transient panel state when the plan identity changes', async () => {
@@ -604,5 +665,42 @@ describe('UpdateBalancesPanel refresh protection', () => {
     await chooseFile(el, TWO_ACCOUNT_CSV)
     expect(selects(el)[0]!.value).toBe('acct-brokerage')
     expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected — advisor override')
+  })
+
+  it('discards an in-flight file read when the plan changes mid-read', async () => {
+    // A slow `file.text()` must not repopulate the panel from the OLD plan after a
+    // navigation reset ran — cloned plans share account ids, so an old file applied to
+    // the new plan could bypass its protection. Start a read whose text() we resolve by
+    // hand, swap the plan context mid-read, then resolve: the stale parse is dropped.
+    const p1 = planWithAccounts()
+    const el = renderPanel(p1, protect(p1, { accountId: 'acct-brokerage' }))
+
+    let resolveText!: (value: string) => void
+    const file = new File(['ignored'], 'positions.csv', { type: 'text/csv' })
+    Object.defineProperty(file, 'text', {
+      value: () => new Promise<string>((resolve) => { resolveText = resolve }),
+      configurable: true,
+    })
+
+    const input = el.querySelector<HTMLInputElement>('input[type="file"]')!
+    Object.defineProperty(input, 'files', { value: [file], configurable: true })
+    act(() => input.dispatchEvent(new Event('change', { bubbles: true })))
+    // The read is outstanding — nothing parsed yet.
+    expect(el.querySelector('tbody')).toBeNull()
+
+    // Swap to a DIFFERENT plan (new id, same cloned account ids) mid-read.
+    const p2 = planWithAccounts()
+    expect(p2.id).not.toBe(p1.id)
+    act(() => {
+      root!.render(providerTree(p2, <UpdateBalancesPanel />, protect(p2, { accountId: 'acct-brokerage' })))
+    })
+
+    // Resolve the OLD read now, with a CSV that would otherwise build a table. Because
+    // the plan changed, the continuation discards it — the panel stays reset.
+    await act(async () => {
+      resolveText(TWO_ACCOUNT_CSV)
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+    expect(el.querySelector('tbody')).toBeNull()
   })
 })
