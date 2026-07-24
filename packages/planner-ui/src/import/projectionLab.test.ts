@@ -195,9 +195,10 @@ describe('projectionLab provenance (WS1)', () => {
     expect(r.ok).toBe(true)
     if (!r.ok) return
 
-    // Brokerage is accounts[1]; its explicit "taxable" type makes the mapping exact.
+    // Brokerage is accounts[1]; its explicit "taxable" type makes the mapping
+    // exact, and the locator names the alias key the balance was read from.
     const brokerage = r.review.find((i) => i.status === 'mapped' && i.source.startsWith('Brokerage'))!
-    expect(brokerage.locator).toEqual({ kind: 'jsonPath', path: 'currentFinances.accounts[1]' })
+    expect(brokerage.locator).toEqual({ kind: 'jsonPath', path: 'currentFinances.accounts[1].balance' })
     expect(brokerage.confidence).toBe('exact')
     // It landed on the second account pushed to the draft plan.
     expect(brokerage.target).toBe('accounts[1]')

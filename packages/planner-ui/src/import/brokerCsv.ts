@@ -431,6 +431,17 @@ export function draftPlanFromBrokerAccounts(
     } else if (type === 'roth' || type === 'traditional') {
       const kind = /401|403|tsp/i.test(acc.accountLabel) ? 'employer' : 'ira'
       plan.accounts.push({ ...base, type, kind, ownerPersonId: ownerId, balance: Math.max(0, acc.totalValue) })
+      if (acc.costBasis !== null) {
+        // The file's basis is real, but this account type has no basis field —
+        // say so instead of letting the report imply the basis landed.
+        review.push({
+          status: 'unmapped',
+          source: acc.accountLabel,
+          detail: `The file's $${acc.costBasis.toLocaleString('en-US', { maximumFractionDigits: 0 })} cost basis was not imported — cost basis only applies to taxable accounts, and this was created as a ${type} account.`,
+          locator: { kind: 'none', note: 'cost basis does not apply to this account type' },
+          confidence: 'unmapped',
+        })
+      }
     } else {
       plan.accounts.push({ ...base, type, ownerPersonId: ownerId, balance: Math.max(0, acc.totalValue) })
     }

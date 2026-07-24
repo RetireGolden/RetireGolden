@@ -190,6 +190,11 @@ function cleanLocator(locator: SourceLocator, depth: number, sourceCount: number
   }
   switch (locator.kind) {
     case 'csvRow':
+      // The parser refuses rows below 1 — the serializer must too, or the
+      // supported API can emit a report its own consumer calls malformed.
+      if (!Number.isInteger(locator.row) || locator.row < 1) {
+        throw new Error(`csvRow locator row must be a 1-based integer (got ${String(locator.row)})`)
+      }
       return {
         kind: 'csvRow',
         row: locator.row,

@@ -70,6 +70,15 @@ function firstDollars(rec: Record<string, unknown>, ...keys: string[]): number |
   return null
 }
 
+/** Like `firstDollars`, but preserves WHICH alias key supplied the value, so a locator can name the exact field. */
+function firstDollarsKeyed(rec: Record<string, unknown>, ...keys: string[]): { value: number; key: string } | null {
+  for (const k of keys) {
+    const n = asDollars(rec[k])
+    if (n !== null) return { value: n, key: k }
+  }
+  return null
+}
+
 type MappedType = 'cash' | 'taxable' | 'traditional' | 'roth' | 'hsa' | 'property' | 'debt'
 
 /**
@@ -180,8 +189,9 @@ export function mapProjectionLabExport(
     const accountPath = `currentFinances.accounts[${ai}]`
     const name = firstString(rec, 'name', 'label') ?? 'Imported account'
     const typeStr = firstString(rec, 'type', 'accountType', 'category') ?? ''
-    const balance = firstDollars(rec, 'balance', 'value', 'currentBalance', 'amount')
-    if (balance === null) {
+    const balanceRead = firstDollarsKeyed(rec, 'balance', 'value', 'currentBalance', 'amount')
+    const balance = balanceRead?.value ?? null
+    if (balanceRead === null || balance === null) {
       review.push({
         status: 'skipped',
         source: name,
@@ -318,7 +328,9 @@ export function mapProjectionLabExport(
       status: 'mapped',
       source: `${name} (${typeStr || 'type from name'})`,
       detail: `Imported as a ${mapped} account with a $${balance.toLocaleString('en-US', { maximumFractionDigits: 0 })} balance.`,
-      locator: jsonPath(accountPath),
+      // Point at the exact alias key the balance was read from (an export can
+      // carry both `balance` and `value`; the report must say which one won).
+      locator: jsonPath(`${accountPath}.${balanceRead.key}`),
       // 'exact' only when the type string ITSELF named the class — a nonempty
       // type does not prove it did (type "Asset" + name "My Roth IRA" maps roth
       // off the name); a name-inferred type is 'assumed'.
