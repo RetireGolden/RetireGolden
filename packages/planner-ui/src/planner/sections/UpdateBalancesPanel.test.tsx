@@ -532,6 +532,47 @@ describe('UpdateBalancesPanel refresh protection', () => {
     expect(plan.accounts.find((a) => a.id === 'acct-brokerage')!).toMatchObject({ balance: 14000, costBasis: 12000 })
   })
 
+  it('lists the protected row in the review checklist as skipped (provenance is not hidden)', async () => {
+    // A selected-but-protected row must be VISIBLE in the checklist as deliberately
+    // left unchanged — the panel keeps the unreleased protected selection in the map
+    // it hands the engine, so the engine emits its protected-target 'skipped' item.
+    const plan = planWithAccounts()
+    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }))
+    await chooseFile(el, TWO_ACCOUNT_CSV)
+
+    // Brokerage is the protected, blocked row; Roth applies normally.
+    expect(selects(el)[0]!.value).toBe('acct-brokerage')
+    const review = el.querySelector('.import-review')!
+    expect(review.textContent).toContain('Skipped')
+    expect(review.textContent).toContain('protected, so the refresh left its balance unchanged')
+    // The row's broker label anchors the skip item to what the user sees in the table.
+    expect(review.textContent).toContain('Brokerage')
+    // The applying sibling is still reported as imported.
+    expect(review.textContent).toContain('Refreshed the balance')
+  })
+
+  it('says protection (not a missing assignment) held everything back when every assigned row is blocked', async () => {
+    // Both guesses land on protected accounts, so applying writes zero. The message
+    // must name the advisor overrides rather than falsely claim nothing was assigned.
+    const plan = planWithAccounts()
+    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }, { accountId: 'acct-roth' }))
+    await chooseFile(el, TWO_ACCOUNT_CSV)
+
+    expect(selects(el)[0]!.value).toBe('acct-brokerage')
+    expect(selects(el)[1]!.value).toBe('acct-roth')
+
+    act(() => applyButton(el).click())
+    // Nothing was written — both accounts stayed put.
+    expect(plan.accounts.find((a) => a.id === 'acct-brokerage')!).toMatchObject({ balance: 1, costBasis: 1 })
+    expect(plan.accounts.find((a) => a.id === 'acct-roth')!).toMatchObject({ balance: 1 })
+    const status = el.querySelector('[role="status"]')!.textContent ?? ''
+    expect(status).toContain('No balances were applied')
+    expect(status).toContain('2 selected accounts are protected by advisor overrides')
+    expect(status).toContain('Allow this refresh')
+    // It must NOT fall back to the "nothing assigned" wording — the selections were visible.
+    expect(status).not.toContain('No accounts were assigned')
+  })
+
   it('resets transient panel state when the plan identity changes', async () => {
     // The workspace reuses one panel instance across /plan/:id navigation. Cloned
     // plans share account ids, so a stale release must not survive into a different

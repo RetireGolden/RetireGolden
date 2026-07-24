@@ -174,16 +174,23 @@ export function UpdateBalancesPanel() {
 
   const handleFile = async (file: File) => {
     setMessage(null)
+    // Clear the transient state SYNCHRONOUSLY, before the async read. `file.text()`
+    // can take a while for a large file; if the old parsed table and its releases
+    // survived the read, the previous table would stay interactive with a stale
+    // release still in effect, so Apply could write the protected account from the
+    // OLD file — contradicting "choosing a new file restores protection". Tearing
+    // the table and releases down first makes the restore immediate.
+    setParsed(null)
+    setReleased(new Map())
     const r = parseBrokerPositionsCsv(await file.text())
     if (!r.ok) {
       resetPanel()
       setMessage(r.message)
       return
     }
-    // A fresh file starts with protection fully restored (no releases), so seed
-    // the selection from a classification against the host's full set resolved to
-    // current positions.
-    setReleased(new Map())
+    // A fresh file starts with protection fully restored (no releases) — already
+    // cleared above — so seed the selection from a classification against the
+    // host's full set resolved to current positions.
     const seedProtected = positionalProtectedSet(plan, protectedAccounts, EMPTY_RELEASED)
     const classification = classifyRefresh(plan, r.accounts, { protectedTargets: seedProtected })
     setParsed({
@@ -210,17 +217,26 @@ export function UpdateBalancesPanel() {
     if (t !== '') selection.set(i, t)
   })
 
-  // Belt against DOM tampering: before any engine call, drop any (row → account)
-  // pairing where the account is host-protected but not released to THAT row —
-  // unreleased, or released to a different row. The engine's effective set is
-  // per-account (a released account is fair game for every row), so this row-scope
-  // check is what keeps a released account reachable only from the row that
-  // released it. A no-protection plan keeps the selection untouched.
+  // Belt against DOM tampering: before any engine call, drop only the (row →
+  // account) pairing where the account is host-protected AND released to a
+  // DIFFERENT row. That is the sole unsafe case — the engine's effective set drops
+  // a released account for EVERY row, so without this row-scope check a sibling
+  // could reach an account another row released.
+  //
+  // An UNRELEASED protected selection is deliberately KEPT: the effective set still
+  // covers it (positionalProtectedSet keeps unreleased protections), so the engine
+  // skips its write AND emits its protected-target 'skipped' review item — which is
+  // exactly the provenance the checklist needs. Stripping it here would hide that
+  // the row was deliberately left unchanged. A no-protection plan keeps the
+  // selection untouched.
   const safeSelection = (() => {
     if (hostProtectedIds.size === 0) return selection
     const out = new Map<number, string>()
     for (const [i, accId] of selection) {
-      if (hostProtectedIds.has(accId) && released.get(accId) !== i) continue
+      if (hostProtectedIds.has(accId)) {
+        const releasedRow = released.get(accId)
+        if (releasedRow !== undefined && releasedRow !== i) continue // released to a sibling row — off-limits here
+      }
       out.set(i, accId)
     }
     return out
@@ -283,15 +299,27 @@ export function UpdateBalancesPanel() {
 
   const apply = () => {
     if (!parsed || !delta || blocked) return
+    // Selected rows whose account is protected and NOT released to that row — the
+    // rows the user sees blocked. Counted before the apply so a zero-write result
+    // can name protection as the cause instead of falsely claiming nothing was
+    // assigned. Computed from the raw selection, matching the per-row `rowBlocked`.
+    let protectionBlocked = 0
+    for (const [i, accId] of selection) {
+      if (hostProtectedIds.has(accId) && released.get(accId) !== i) protectionBlocked++
+    }
     let applied = 0
     update((d) => {
       applied = applyRefresh(d, delta, safeSelection, effective)
     })
     resetPanel()
     setMessage(
-      applied === 0
-        ? 'No accounts were assigned, so nothing changed.'
-        : `Updated ${applied} account${applied === 1 ? '' : 's'} from the ${BROKER_LABEL[parsed.broker]} file — balances, plus cost basis where the file carried it. Review taxable accounts whose basis the file lacked.`,
+      applied > 0
+        ? `Updated ${applied} account${applied === 1 ? '' : 's'} from the ${BROKER_LABEL[parsed.broker]} file — balances, plus cost basis where the file carried it. Review taxable accounts whose basis the file lacked.`
+        : protectionBlocked > 0
+          ? // Nothing landed, but the visible selections weren't ignored — they were
+            // held back by advisor overrides. Say so, and point at the escape hatch.
+            `No balances were applied — ${protectionBlocked} selected account${protectionBlocked === 1 ? ' is' : 's are'} protected by advisor overrides. Use “Allow this refresh” to update one deliberately.`
+          : 'No accounts were assigned, so nothing changed.',
     )
   }
 
