@@ -74,6 +74,7 @@ export {
   classifyRefresh,
   type ClassifyRefreshOptions,
   type RefreshCandidate,
+  type RefreshClassification,
   type RefreshDelta,
   type RefreshDuplicateGroup,
   type RefreshFieldDelta,

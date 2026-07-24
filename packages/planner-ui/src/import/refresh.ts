@@ -25,19 +25,31 @@
  * The review checklist below still carries `ImportConfidence` for the values
  * that land; the two scales ride together, never merged.
  *
- * **`protectedTargets` is caller-supplied, enforced as one effective set.** A
- * path in this set (an account `accounts[i]` or one of its fields
- * `accounts[i].balance`) is off-limits to the refresh: it is classified but
- * defaults OFF and is skipped on apply, never partially written. Enforcement has
- * a single authority. Each operation computes an EFFECTIVE protected set —
- * `effectiveProtected` unions the caller's paths with the `targetPath` of every
- * candidate already classified `isProtected` — and `computeWrites` skips any
- * write whose chosen account falls in that set. That union is precisely what
- * keeps a classify-time-protected row skipped even when a caller threads the set
- * into `classifyRefresh` but omits it at apply: the row's own `targetPath`
- * carries the protection forward. The Pro repo feeds the set the WS2 intake
- * decisions in a later dispatch; the public planner panel passes none. This
- * module never invents a protected set of its own — the seam is the argument.
+ * **`protectedTargets` is caller-supplied, enforced as one effective set that
+ * unions across three stages.** A path in this set (an account `accounts[i]` or
+ * one of its fields `accounts[i].balance`) is off-limits to the refresh: it is
+ * classified but defaults OFF and is skipped on apply, never partially written.
+ * The set may be supplied at ANY of three stages — `classifyRefresh`,
+ * `buildRefreshDelta`, or `applyRefresh` — and each stage carries it forward so
+ * enforcement never loses it:
+ *  - `classifyRefresh` takes a faithful snapshot of the set it was given onto
+ *    `RefreshClassification.protectedPaths` (an empty array when none).
+ *  - `buildRefreshDelta` computes ONE effective set = the union of that snapshot,
+ *    any `protectedTargets` passed to it, and the `targetPath` of every candidate
+ *    already classified `isProtected` (the last now redundant, but harmless), and
+ *    records that union as `RefreshDelta.protectedPaths`.
+ *  - `applyRefresh`'s effective set is the union of `delta.protectedPaths` and
+ *    any `protectedTargets` passed to it; `computeWrites` skips any write whose
+ *    chosen account falls in that set.
+ *
+ * Net guarantee: protection reaches enforcement if the set was supplied to ANY
+ * stage. Because classify's snapshot rides on the classification and build's
+ * union rides on the delta, a target is protected even when it was *manually
+ * reassigned* onto a protected account — as long as classify or build saw the
+ * set, apply may be handed nothing and the write is still skipped. The Pro repo
+ * feeds the set the WS2 intake decisions in a later dispatch; the public planner
+ * panel passes none. This module never invents a protected set of its own — the
+ * seam is the argument.
  */
 
 import type { Account, Plan } from '@retiregolden/engine/model/plan'
@@ -89,11 +101,29 @@ export interface RefreshFieldDelta {
   clamped: boolean
 }
 
-/** Multiple selected file rows resolving to one plan account — a SUGGESTION that blocks apply. */
+/**
+ * Multiple selected file rows resolving to one plan account. Never auto-merged:
+ * a single such collision blocks the ENTIRE apply — `applyRefresh` writes nothing
+ * and returns 0, not just the colliding accounts — so a headless caller matches
+ * the panel, which disables its apply button while any duplicate exists.
+ */
 export interface RefreshDuplicateGroup {
   accountId: string
   /** Indexes into the candidates array whose selection points at this account. */
   sourceIndexes: number[]
+}
+
+/**
+ * The output of `classifyRefresh`: the per-row match verdicts plus a faithful
+ * snapshot of the protected-path set the classification was given (an empty array
+ * when none). Carrying the snapshot on the classification is what lets protection
+ * reach enforcement even when the caller supplies the set ONLY to `classifyRefresh`
+ * — `buildRefreshDelta` folds `protectedPaths` into its effective set.
+ */
+export interface RefreshClassification {
+  candidates: RefreshCandidate[]
+  /** Snapshot of the protected paths `classifyRefresh` saw; `[]` when none. */
+  protectedPaths: readonly string[]
 }
 
 /** The full preview of a refresh: what would change, what is stale, what collides. */
@@ -103,10 +133,22 @@ export interface RefreshDelta {
   changes: RefreshFieldDelta[]
   /** Updatable plan accounts no file row matched — their balances are going stale. */
   staleAccountIds: string[]
-  /** Selected collisions (never auto-merged); a non-empty list blocks apply. */
+  /**
+   * Selected collisions (never auto-merged). A non-empty list makes apply a FULL
+   * no-op: `applyRefresh` writes nothing and returns 0, matching the panel's
+   * block-everything behaviour so a headless caller reaches the same verdict.
+   */
   duplicateGroups: RefreshDuplicateGroup[]
   /** Honesty checklist, compatible with `reviewToProvenance`. */
   review: ImportReviewItem[]
+  /**
+   * The effective protected set this delta was built with — the union of the
+   * classification's `protectedPaths`, any `protectedTargets` passed to
+   * `buildRefreshDelta`, and every `isProtected` candidate's `targetPath`.
+   * `applyRefresh` unions this with its own `protectedTargets`, so protection
+   * supplied at classify or build time survives an apply handed nothing.
+   */
+  protectedPaths: readonly string[]
 }
 
 export interface ClassifyRefreshOptions {
@@ -268,18 +310,24 @@ function classifyOne(
  * updatable accounts only (property, debt, pension, annuity are never a refresh
  * target). `exact`/`likely` are safe to default ON; `ambiguous`/`unmatched` and
  * any `isProtected` candidate must default OFF — a caller drives that policy.
+ *
+ * Returns a `RefreshClassification`: the candidates plus a faithful snapshot of
+ * the protected-path set (`protectedPaths`, `[]` when none). The snapshot travels
+ * into `buildRefreshDelta` so protection supplied here alone still reaches apply,
+ * even for a target the user later reassigns by hand.
  */
 export function classifyRefresh(
   plan: Plan,
   accounts: BrokerAccountBalance[],
   opts: ClassifyRefreshOptions = {},
-): RefreshCandidate[] {
+): RefreshClassification {
   const protectedTargets = opts.protectedTargets ?? EMPTY_PROTECTED
   const updatable: UpdatableRef[] = plan.accounts
     .map((account, index) => ({ account, index }))
     .filter(({ account }) => isBalanceUpdatable(account))
     .map(({ account, index }) => ({ id: account.id, index, nameNorm: normalizeName(account.name) }))
-  return accounts.map((source) => classifyOne(source, updatable, protectedTargets))
+  const candidates = accounts.map((source) => classifyOne(source, updatable, protectedTargets))
+  return { candidates, protectedPaths: [...protectedTargets] }
 }
 
 interface RefreshWrite {
@@ -288,18 +336,20 @@ interface RefreshWrite {
 }
 
 /**
- * The EFFECTIVE protected set for one operation: the caller's paths unioned with
- * the `targetPath` of every candidate already classified `isProtected`. Computing
- * it once — in both `buildRefreshDelta` and `applyRefresh` — is what lets
- * `computeWrites` enforce protection in a single place while still honouring a
- * classify-time protection whose set the caller omitted at apply.
+ * The EFFECTIVE protected set `buildRefreshDelta` enforces: the union of the
+ * classification's `protectedPaths` snapshot, any `protectedTargets` passed to
+ * build, and the `targetPath` of every candidate already classified `isProtected`
+ * (redundant once the classification snapshot is folded in, but harmless). The
+ * result is snapshotted onto `RefreshDelta.protectedPaths`, so apply can honour a
+ * classify- or build-time protection whose set the caller omitted at apply.
  */
-function effectiveProtected(
-  candidates: RefreshCandidate[],
+function buildEffectiveProtected(
+  classification: RefreshClassification,
   protectedTargets: ReadonlySet<string>,
-): ReadonlySet<string> {
-  const effective = new Set(protectedTargets)
-  for (const c of candidates) {
+): Set<string> {
+  const effective = new Set<string>(classification.protectedPaths)
+  for (const p of protectedTargets) effective.add(p)
+  for (const c of classification.candidates) {
     if (c.isProtected && c.targetPath) effective.add(c.targetPath)
   }
   return effective
@@ -401,13 +451,14 @@ function aggregateLocator(note: string): SourceLocator {
  */
 export function buildRefreshDelta(
   plan: Plan,
-  candidates: RefreshCandidate[],
+  classification: RefreshClassification,
   selection: ReadonlyMap<number, string>,
   protectedTargets: ReadonlySet<string> = EMPTY_PROTECTED,
 ): RefreshDelta {
+  const { candidates } = classification
   const duplicateGroups = computeDuplicateGroups(plan.accounts, candidates, selection)
   const blockedIds = blockedAccountIds(duplicateGroups)
-  const effective = effectiveProtected(candidates, protectedTargets)
+  const effective = buildEffectiveProtected(classification, protectedTargets)
 
   // A shallow copy per account is sufficient: applyWrites only assigns the
   // top-level `balance`/`costBasis` primitives, and the refresh never reaches
@@ -467,8 +518,15 @@ export function buildRefreshDelta(
           ? `Refreshed the balance to ${money(afterBalance)} and cost basis to ${money(basisAfter)} from the broker file.`
           : `Refreshed the balance to ${money(afterBalance)} from the broker file.`,
       // No per-row locator survives the aggregate — the file import's own review
-      // holds the row detail. A summed total is 'derived'; a lone position is verbatim.
-      locator: aggregateLocator('balance summed from the broker positions file'),
+      // holds the row detail. A multi-position total is summed and grades
+      // 'derived'; a lone position is read verbatim and grades 'exact', so its
+      // note must not claim a summation that never happened. (brokerCsv words the
+      // multi-position case "summed position market values"; stay consistent.)
+      locator: aggregateLocator(
+        source.positionCount > 1
+          ? 'balance summed from the broker positions file'
+          : 'balance read from the single broker position',
+      ),
       confidence: source.positionCount > 1 ? 'derived' : 'exact',
       target: path,
     })
@@ -517,7 +575,7 @@ export function buildRefreshDelta(
     .filter((a) => !matched.has(a.id) && !written.has(a.id))
     .map((a) => a.id)
 
-  return { candidates, changes, staleAccountIds, duplicateGroups, review }
+  return { candidates, changes, staleAccountIds, duplicateGroups, review, protectedPaths: [...effective] }
 }
 
 /**
@@ -526,8 +584,15 @@ export function buildRefreshDelta(
  * only ever writes `balance`/`costBasis` of selected, non-protected, non-
  * duplicate accounts, and it does so through the same `applyBrokerBalance`
  * primitive the preview used — it never assigns a whole account shape and never
- * touches any other collection. Protected and duplicate-collision targets are
- * skipped entirely, not partially applied.
+ * touches any other collection. Protected targets are skipped entirely, not
+ * partially applied. A non-empty `delta.duplicateGroups` blocks EVERYTHING: apply
+ * writes nothing and returns 0, matching the panel, which disables its apply
+ * button while any collision exists.
+ *
+ * The effective protected set is the union of `delta.protectedPaths` (which
+ * already folds in the classification snapshot and build-time set) and any
+ * `protectedTargets` passed here — so a protection supplied at classify or build
+ * time is honoured even if apply is handed nothing.
  *
  * Contract: `delta` and `selection` must have been built together (the panel
  * recomputes the delta from the live selection each render). Duplicate
@@ -540,8 +605,11 @@ export function applyRefresh(
   selection: ReadonlyMap<number, string>,
   protectedTargets: ReadonlySet<string> = EMPTY_PROTECTED,
 ): number {
+  // A single selected collision blocks the entire apply — no partial writes.
+  if (delta.duplicateGroups.length > 0) return 0
   const blockedIds = blockedAccountIds(delta.duplicateGroups)
-  const effective = effectiveProtected(delta.candidates, protectedTargets)
+  const effective = new Set<string>(delta.protectedPaths)
+  for (const p of protectedTargets) effective.add(p)
   const writes = computeWrites(draft.accounts, delta.candidates, selection, effective, blockedIds)
   return applyWrites(draft.accounts, writes)
 }

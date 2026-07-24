@@ -125,8 +125,10 @@ hints the panel shows but never acts on by itself:
 selection every render and shows, per row, the account's current balance → its refreshed value (plus a
 `basis before → after` line when the file carried cost basis, and a "(clamped to $0)" note when a negative
 file value clamped). This preview is computed by running the *same* write primitive apply will use, on a
-`structuredClone` of the accounts — so what the user sees is structurally the writes that will happen, not
-a re-derived guess.
+shallow per-account copy of the plan's accounts (`{ ...account }`) — sufficient because the refresh only
+ever assigns the top-level `balance`/`costBasis` primitives and never reaches into an account's nested
+strategy objects, so those stay shared with the live plan while the copied primitives absorb the writes.
+What the user sees is structurally the writes that will happen, not a re-derived guess.
 
 **The structural guarantee: a balance refresh cannot overwrite unrelated strategy assumptions.** This is
 the whole point of the panel and is enforced by construction, not by discipline. `applyRefresh` mutates

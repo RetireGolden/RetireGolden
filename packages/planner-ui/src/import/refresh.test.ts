@@ -11,7 +11,13 @@ import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, type Account, type Plan } from '@retiregolden/engine/model/plan'
 import type { BrokerAccountBalance } from './brokerCsv'
-import { applyRefresh, buildRefreshDelta, classifyRefresh } from './refresh'
+import {
+  applyRefresh,
+  buildRefreshDelta,
+  classifyRefresh,
+  type RefreshCandidate,
+  type RefreshClassification,
+} from './refresh'
 
 let seq = 0
 const nextId = () => `p-${++seq}`
@@ -24,6 +30,11 @@ function planWith(...accounts: Account[]): Plan {
 
 function ownerId(plan: Plan): string {
   return plan.household.people[0]!.id
+}
+
+/** Wrap loose candidates in a classification (with an optional protected snapshot) for buildRefreshDelta. */
+function classified(candidates: RefreshCandidate[], protectedPaths: readonly string[] = []): RefreshClassification {
+  return { candidates, protectedPaths }
 }
 
 function src(accountLabel: string, totalValue: number, costBasis: number | null = null, positionCount = 2): BrokerAccountBalance {
@@ -69,16 +80,22 @@ function readPath(plan: Plan, path: string): number {
 describe('classifyRefresh — matching', () => {
   it('matches a single whole-name hit as exact', () => {
     const plan = planWith(loadedTaxable('acct-brokerage', 'Brokerage'))
-    const [c] = classifyRefresh(plan, [src('Brokerage ...789', 55_000, 40_000)])
+    const { candidates: [c] } = classifyRefresh(plan, [src('Brokerage ...789', 55_000, 40_000)])
     expect(c!.match).toBe('exact')
     expect(c!.targetAccountId).toBe('acct-brokerage')
     expect(c!.targetPath).toBe('accounts[0]')
     expect(c!.alternativeAccountIds).toEqual([])
   })
 
+  it('snapshots an empty protected set as [] when none is supplied', () => {
+    const plan = planWith(loadedTaxable('acct-brokerage', 'Brokerage'))
+    const classification = classifyRefresh(plan, [src('Brokerage ...789', 55_000, 40_000)])
+    expect(classification.protectedPaths).toEqual([])
+  })
+
   it('matches a single shared-word hit as likely', () => {
     const plan = planWith(loadedTaxable('acct-ind', 'Individual Brokerage'))
-    const [c] = classifyRefresh(plan, [src('Individual ...789', 25_000, 15_000)])
+    const { candidates: [c] } = classifyRefresh(plan, [src('Individual ...789', 25_000, 15_000)])
     expect(c!.match).toBe('likely')
     expect(c!.targetAccountId).toBe('acct-ind')
   })
@@ -88,11 +105,11 @@ describe('classifyRefresh — matching', () => {
     // "brokerage" and silently pre-select overwriting the 401k from an
     // unrelated Brokerage row. Digits are name content and must survive.
     const plan = planWith(loadedTaxable('acct-401k', '401k'))
-    const [c] = classifyRefresh(plan, [src('Brokerage ...789', 40_000, null)])
+    const { candidates: [c] } = classifyRefresh(plan, [src('Brokerage ...789', 40_000, null)])
     expect(c!.match).toBe('unmatched')
     expect(c!.targetAccountId).toBeNull()
     // …while a file row that actually names the 401k still matches it.
-    const [hit] = classifyRefresh(plan, [src('My 401k ...123', 40_000, null)])
+    const { candidates: [hit] } = classifyRefresh(plan, [src('My 401k ...123', 40_000, null)])
     expect(hit!.match).toBe('exact')
     expect(hit!.targetAccountId).toBe('acct-401k')
   })
@@ -103,7 +120,7 @@ describe('classifyRefresh — matching', () => {
     const plan = createEmptyPlan({ newId: nextId })
     const owner = ownerId(plan)
     plan.accounts.push(traditional('acct-ira', 'IRA', owner))
-    const [c] = classifyRefresh(plan, [src('Roth IRA ...321', 14_000, null)])
+    const { candidates: [c] } = classifyRefresh(plan, [src('Roth IRA ...321', 14_000, null)])
     expect(c!.match).toBe('ambiguous')
     expect(c!.targetAccountId).toBe('acct-ira') // suggested, not pre-selected
   })
@@ -113,7 +130,7 @@ describe('classifyRefresh — matching', () => {
     const owner = ownerId(plan)
     plan.accounts.push(roth('acct-roth', 'Roth IRA', owner), traditional('acct-rollover', 'Rollover IRA', owner))
 
-    const [c] = classifyRefresh(plan, [src('Roth IRA ...321', 14_000)])
+    const { candidates: [c] } = classifyRefresh(plan, [src('Roth IRA ...321', 14_000)])
     expect(c!.match).toBe('ambiguous')
     // The whole-name hit is the sensible primary IF the user turns the row on…
     expect(c!.targetAccountId).toBe('acct-roth')
@@ -121,7 +138,7 @@ describe('classifyRefresh — matching', () => {
     expect(c!.alternativeAccountIds).toContain('acct-rollover')
 
     // Ambiguous rows default OFF: with no selection, nothing is written.
-    const delta = buildRefreshDelta(plan, c ? [c] : [], new Map())
+    const delta = buildRefreshDelta(plan, classified(c ? [c] : []), new Map())
     expect(delta.changes).toEqual([])
   })
 
@@ -135,14 +152,14 @@ describe('classifyRefresh — matching', () => {
     const owner = ownerId(plan)
     plan.accounts.push(traditional('acct-rollover', 'Rollover IRA', owner))
 
-    const [c] = classifyRefresh(plan, [src('Roth IRA ...321', 14_000)])
+    const { candidates: [c] } = classifyRefresh(plan, [src('Roth IRA ...321', 14_000)])
     expect(c!.match).toBe('ambiguous')
     // The best guess is still offered for one-click confirmation…
     expect(c!.targetAccountId).toBe('acct-rollover')
     // …but there is no other IRA here, so no runner-up, and — crucially — with
     // nothing selected (ambiguous defaults OFF), nothing is written.
     expect(c!.alternativeAccountIds).toEqual([])
-    const delta = buildRefreshDelta(plan, c ? [c] : [], new Map())
+    const delta = buildRefreshDelta(plan, classified(c ? [c] : []), new Map())
     expect(delta.changes).toEqual([])
   })
 
@@ -154,7 +171,7 @@ describe('classifyRefresh — matching', () => {
     const owner = ownerId(plan)
     plan.accounts.push(traditional('acct-sep', 'SEP IRA', owner))
 
-    const [c] = classifyRefresh(plan, [src('Traditional IRA ...9', 30_000)])
+    const { candidates: [c] } = classifyRefresh(plan, [src('Traditional IRA ...9', 30_000)])
     expect(c!.match).toBe('ambiguous')
     expect(c!.targetAccountId).toBe('acct-sep')
     expect(c!.alternativeAccountIds).toEqual([])
@@ -164,7 +181,7 @@ describe('classifyRefresh — matching', () => {
     // Guard the demotion is narrow: "Individual" is distinctive, not a category
     // word, so a lone shared-"Individual" hit stays 'likely' (default ON).
     const plan = planWith(loadedTaxable('acct-ind', 'Individual Brokerage'))
-    const [c] = classifyRefresh(plan, [src('Individual ...789', 25_000, 15_000)])
+    const { candidates: [c] } = classifyRefresh(plan, [src('Individual ...789', 25_000, 15_000)])
     expect(c!.match).toBe('likely')
     expect(c!.targetAccountId).toBe('acct-ind')
   })
@@ -174,8 +191,8 @@ describe('classifyRefresh — matching', () => {
     const owner = ownerId(plan)
     plan.accounts.push(loadedTaxable('acct-brokerage', 'Brokerage'), roth('acct-roth', 'Roth IRA', owner))
 
-    const candidates = classifyRefresh(plan, [src('Brokerage ...789', 55_000, 40_000)])
-    const delta = buildRefreshDelta(plan, candidates, new Map([[0, 'acct-brokerage']]))
+    const classification = classifyRefresh(plan, [src('Brokerage ...789', 55_000, 40_000)])
+    const delta = buildRefreshDelta(plan, classification, new Map([[0, 'acct-brokerage']]))
     expect(delta.staleAccountIds).toContain('acct-roth')
     expect(delta.staleAccountIds).not.toContain('acct-brokerage')
   })
@@ -191,10 +208,10 @@ describe('classifyRefresh — matching', () => {
     const hsa: Account = { id: 'acct-hsa', type: 'hsa', name: 'Health Savings', ownerPersonId: owner, annualReturnPct: null, balance: 4_000, annualContribution: 0 }
     plan.accounts.push(loadedTaxable('acct-brokerage', 'Brokerage'), hsa)
 
-    const candidates = classifyRefresh(plan, [src('Brokerage ...789', 99_000, 50_000)])
+    const classification = classifyRefresh(plan, [src('Brokerage ...789', 99_000, 50_000)])
     // Classification puts the row on acct-brokerage; the user overrides onto the HSA.
     const selection = new Map([[0, 'acct-hsa']])
-    const delta = buildRefreshDelta(plan, candidates, selection)
+    const delta = buildRefreshDelta(plan, classification, selection)
 
     expect(delta.staleAccountIds).not.toContain('acct-hsa')
     // And the override really does write it — the classification list would
@@ -209,11 +226,11 @@ describe('classifyRefresh — matching', () => {
       { id: 'acct-home', type: 'property', name: 'Home', ownerPersonId: null, annualReturnPct: null, value: 500_000, plannedSaleYear: null, expectedNetProceeds: null },
       { id: 'acct-loan', type: 'debt', name: 'Mortgage', ownerPersonId: null, annualReturnPct: null, balance: 200_000, interestPct: 5, monthlyPayment: 1_500 },
     )
-    const candidates = classifyRefresh(plan, [src('Home ...1', 550_000), src('Mortgage ...2', 190_000)])
-    expect(candidates.every((c) => c.match === 'unmatched' && c.targetAccountId === null)).toBe(true)
+    const classification = classifyRefresh(plan, [src('Home ...1', 550_000), src('Mortgage ...2', 190_000)])
+    expect(classification.candidates.every((c) => c.match === 'unmatched' && c.targetAccountId === null)).toBe(true)
 
     // Even a hand-forced selection cannot write a non-updatable account.
-    const delta = buildRefreshDelta(plan, candidates, new Map([[0, 'acct-home']]))
+    const delta = buildRefreshDelta(plan, classification, new Map([[0, 'acct-home']]))
     expect(delta.changes).toEqual([])
     const applied = applyRefresh(plan, delta, new Map([[0, 'acct-home']]))
     expect(applied).toBe(0)
@@ -226,9 +243,9 @@ describe('applyRefresh — the structural acceptance', () => {
     const account = loadedTaxable('acct-tax', 'Big Brokerage')
     const before = structuredClone(account)
     const plan = planWith(account)
-    const candidates = classifyRefresh(plan, [src('Big Brokerage ...9', 130_000, 75_000)])
+    const classification = classifyRefresh(plan, [src('Big Brokerage ...9', 130_000, 75_000)])
     const selection = new Map([[0, 'acct-tax']])
-    const delta = buildRefreshDelta(plan, candidates, selection)
+    const delta = buildRefreshDelta(plan, classification, selection)
     const applied = applyRefresh(plan, delta, selection)
 
     expect(applied).toBe(1)
@@ -240,9 +257,9 @@ describe('applyRefresh — the structural acceptance', () => {
     const account = loadedTaxable('acct-tax', 'Big Brokerage')
     const before = structuredClone(account)
     const plan = planWith(account)
-    const candidates = classifyRefresh(plan, [src('Big Brokerage ...9', 130_000, null)])
+    const classification = classifyRefresh(plan, [src('Big Brokerage ...9', 130_000, null)])
     const selection = new Map([[0, 'acct-tax']])
-    const delta = buildRefreshDelta(plan, candidates, selection)
+    const delta = buildRefreshDelta(plan, classification, selection)
     applyRefresh(plan, delta, selection)
 
     // basis stays at the original 60,000; the delta shows no basis change.
@@ -250,12 +267,34 @@ describe('applyRefresh — the structural acceptance', () => {
     expect(delta.changes.some((c) => c.field === 'costBasis')).toBe(false)
   })
 
+  it('grades a single-position aggregate as exact and does not claim summation', () => {
+    // A verbatim single-position read must not be labelled 'derived', and its
+    // locator note must not claim a summation that never happened.
+    const plan = planWith(loadedTaxable('acct-tax', 'Big Brokerage'))
+    const classification = classifyRefresh(plan, [src('Big Brokerage ...9', 130_000, 75_000, 1)])
+    const selection = new Map([[0, 'acct-tax']])
+    const delta = buildRefreshDelta(plan, classification, selection)
+    const mapped = delta.review.find((r) => r.status === 'mapped')!
+    expect(mapped.confidence).toBe('exact')
+    expect(mapped.locator).toMatchObject({ note: 'balance read from the single broker position' })
+
+    // A multi-position aggregate is summed and grades 'derived' (plural wording).
+    const multi = buildRefreshDelta(
+      planWith(loadedTaxable('acct-tax', 'Big Brokerage')),
+      classifyRefresh(plan, [src('Big Brokerage ...9', 130_000, 75_000, 3)]),
+      selection,
+    )
+    const mappedMulti = multi.review.find((r) => r.status === 'mapped')!
+    expect(mappedMulti.confidence).toBe('derived')
+    expect(mappedMulti.locator).toMatchObject({ note: 'balance summed from the broker positions file' })
+  })
+
   it('clamps negative totals and negative basis to $0 and flags them clamped', () => {
     const account = loadedTaxable('acct-tax', 'Margin')
     const plan = planWith(account)
-    const candidates = classifyRefresh(plan, [src('Margin ...9', -5_000, -1_000)])
+    const classification = classifyRefresh(plan, [src('Margin ...9', -5_000, -1_000)])
     const selection = new Map([[0, 'acct-tax']])
-    const delta = buildRefreshDelta(plan, candidates, selection)
+    const delta = buildRefreshDelta(plan, classification, selection)
     applyRefresh(plan, delta, selection)
 
     expect(plan.accounts[0]).toMatchObject({ balance: 0, costBasis: 0 })
@@ -271,9 +310,9 @@ describe('applyRefresh — the structural acceptance', () => {
     const account = roth('acct-roth', 'Roth IRA', owner)
     const before = structuredClone(account)
     plan.accounts.push(account)
-    const candidates = classifyRefresh(plan, [src('Roth IRA ...321', 14_000, 12_000)])
+    const classification = classifyRefresh(plan, [src('Roth IRA ...321', 14_000, 12_000)])
     const selection = new Map([[0, 'acct-roth']])
-    const delta = buildRefreshDelta(plan, candidates, selection)
+    const delta = buildRefreshDelta(plan, classification, selection)
     applyRefresh(plan, delta, selection)
 
     // The file's basis is ignored on a Roth; only the balance lands, and no
@@ -287,13 +326,13 @@ describe('applyRefresh — the structural acceptance', () => {
 describe('duplicate collisions', () => {
   it('reports two selected rows on one plan account as a duplicate group that blocks apply', () => {
     const plan = planWith(loadedTaxable('acct-brokerage', 'Brokerage'), loadedTaxable('acct-other', 'Other'))
-    const candidates = classifyRefresh(plan, [src('Statement A ...1', 10_000, 8_000), src('Statement B ...2', 20_000, 15_000)])
+    const classification = classifyRefresh(plan, [src('Statement A ...1', 10_000, 8_000), src('Statement B ...2', 20_000, 15_000)])
     // Force both onto the same plan account.
     const selection = new Map([
       [0, 'acct-brokerage'],
       [1, 'acct-brokerage'],
     ])
-    const delta = buildRefreshDelta(plan, candidates, selection)
+    const delta = buildRefreshDelta(plan, classification, selection)
 
     expect(delta.duplicateGroups).toEqual([{ accountId: 'acct-brokerage', sourceIndexes: [0, 1] }])
     expect(delta.changes).toEqual([]) // blocked, never a last-write-wins merge
@@ -303,17 +342,45 @@ describe('duplicate collisions', () => {
     expect(applied).toBe(0)
     expect(plan.accounts[0]).toMatchObject({ balance: 100_000 }) // unchanged
   })
+
+  it('blocks the ENTIRE apply when any collision exists — a unique row alongside it is not written', () => {
+    // Headless parity with the panel's block-everything gate: a single duplicate
+    // group makes applyRefresh a full no-op, so even the collision-free row that
+    // would otherwise apply lands nothing.
+    const plan = planWith(
+      loadedTaxable('acct-a', 'Alpha'),
+      loadedTaxable('acct-b', 'Bravo'),
+    )
+    const classification = classifyRefresh(plan, [
+      src('Alpha ...1', 11_000, 9_000), // unique → acct-a
+      src('Bravo one ...2', 22_000, 15_000), // collision → acct-b
+      src('Bravo two ...3', 33_000, 20_000), // collision → acct-b
+    ])
+    const selection = new Map([
+      [0, 'acct-a'],
+      [1, 'acct-b'],
+      [2, 'acct-b'],
+    ])
+    const delta = buildRefreshDelta(plan, classification, selection)
+    expect(delta.duplicateGroups).toEqual([{ accountId: 'acct-b', sourceIndexes: [1, 2] }])
+
+    const applied = applyRefresh(plan, delta, selection)
+    expect(applied).toBe(0)
+    expect(plan.accounts[0]).toMatchObject({ balance: 100_000 }) // the unique row's target, untouched
+    expect(plan.accounts[1]).toMatchObject({ balance: 100_000 })
+  })
 })
 
 describe('protectedTargets', () => {
   it('marks a protected candidate isProtected and skips it entirely on apply', () => {
     const plan = planWith(loadedTaxable('acct-brokerage', 'Brokerage'), loadedTaxable('acct-other', 'Other'))
     const protectedTargets = new Set(['accounts[0]'])
-    const candidates = classifyRefresh(plan, [src('Brokerage ...789', 55_000, 40_000)], { protectedTargets })
-    expect(candidates[0]!.isProtected).toBe(true)
+    const classification = classifyRefresh(plan, [src('Brokerage ...789', 55_000, 40_000)], { protectedTargets })
+    expect(classification.candidates[0]!.isProtected).toBe(true)
+    expect(classification.protectedPaths).toEqual(['accounts[0]'])
 
     const selection = new Map([[0, 'acct-brokerage']])
-    const delta = buildRefreshDelta(plan, candidates, selection, protectedTargets)
+    const delta = buildRefreshDelta(plan, classification, selection, protectedTargets)
     // Preview shows it as a skip, not a change.
     expect(delta.changes).toEqual([])
     expect(delta.review.some((r) => r.status === 'skipped' && r.detail.includes('protected'))).toBe(true)
@@ -325,28 +392,61 @@ describe('protectedTargets', () => {
 
   it('keeps a classified-protected candidate skipped even when apply is not handed the set', () => {
     // Belt-and-suspenders: a caller who threads protectedTargets into
-    // classifyRefresh but forgets it at apply time must not write the account.
+    // classifyRefresh but forgets it at build/apply time must not write the
+    // account — the classification's protectedPaths snapshot carries it forward.
     const plan = planWith(loadedTaxable('acct-brokerage', 'Brokerage'))
     const protectedTargets = new Set(['accounts[0]'])
-    const candidates = classifyRefresh(plan, [src('Brokerage ...789', 55_000, 40_000)], { protectedTargets })
-    expect(candidates[0]!.isProtected).toBe(true)
+    const classification = classifyRefresh(plan, [src('Brokerage ...789', 55_000, 40_000)], { protectedTargets })
+    expect(classification.candidates[0]!.isProtected).toBe(true)
     const selection = new Map([[0, 'acct-brokerage']])
-    const delta = buildRefreshDelta(plan, candidates, selection) // set omitted
+    const delta = buildRefreshDelta(plan, classification, selection) // set omitted
     const applied = applyRefresh(plan, delta, selection) // set omitted
     expect(applied).toBe(0)
     expect(plan.accounts[0]).toMatchObject({ balance: 100_000 })
   })
 
+  it('protects a manually reassigned target when the set was supplied to classify ONLY (P1)', () => {
+    // The P1 regression: an UNMATCHED file row (so isProtected is false — the
+    // per-candidate carry-forward does nothing here) is hand-pointed by the user
+    // onto a protected account. Only classify saw the protected set; build and
+    // apply are handed nothing. The classification's protectedPaths snapshot is
+    // the sole thing standing between the reassignment and a write — and it must
+    // hold, so nothing is written.
+    const plan = planWith(loadedTaxable('acct-open', 'Brokerage'), loadedTaxable('acct-secret', 'Vault'))
+    const protectedTargets = new Set(['accounts[1]']) // acct-secret is off-limits
+    const classification = classifyRefresh(plan, [src('Unmatched Holdings ...1', 88_000, 40_000)], { protectedTargets })
+    const [candidate] = classification.candidates
+    expect(candidate!.match).toBe('unmatched') // nothing auto-matched it
+    expect(candidate!.isProtected).toBe(false) // so no per-candidate carry-forward
+    expect(classification.protectedPaths).toEqual(['accounts[1]'])
+
+    // The user overrides the unmatched row onto the protected account.
+    const selection = new Map([[0, 'acct-secret']])
+    const delta = buildRefreshDelta(plan, classification, selection) // set omitted at build
+    expect(delta.changes).toEqual([]) // preview already shows nothing lands
+    const applied = applyRefresh(plan, delta, selection) // set omitted at apply
+    expect(applied).toBe(0)
+    expect(plan.accounts[1]).toMatchObject({ balance: 100_000 }) // untouched
+
+    // Control: the identical manual reassignment with NO protected set anywhere
+    // does write — proving protection, not some other guard, is what stopped it.
+    const openPlan = planWith(loadedTaxable('acct-open', 'Brokerage'), loadedTaxable('acct-secret', 'Vault'))
+    const openClass = classifyRefresh(openPlan, [src('Unmatched Holdings ...1', 88_000, 40_000)])
+    const openDelta = buildRefreshDelta(openPlan, openClass, new Map([[0, 'acct-secret']]))
+    expect(applyRefresh(openPlan, openDelta, new Map([[0, 'acct-secret']]))).toBe(1)
+    expect(openPlan.accounts[1]).toMatchObject({ balance: 88_000 })
+  })
+
   it('protects a single field path (accounts[i].balance), and applies normally without the set', () => {
     const plan = planWith(loadedTaxable('acct-brokerage', 'Brokerage'))
     const fieldProtected = new Set(['accounts[0].balance'])
-    const [protectedCandidate] = classifyRefresh(plan, [src('Brokerage ...789', 55_000, 40_000)], { protectedTargets: fieldProtected })
+    const { candidates: [protectedCandidate] } = classifyRefresh(plan, [src('Brokerage ...789', 55_000, 40_000)], { protectedTargets: fieldProtected })
     expect(protectedCandidate!.isProtected).toBe(true)
 
     // Control: the identical refresh with no protected set does apply.
-    const candidates = classifyRefresh(plan, [src('Brokerage ...789', 55_000, 40_000)])
+    const classification = classifyRefresh(plan, [src('Brokerage ...789', 55_000, 40_000)])
     const selection = new Map([[0, 'acct-brokerage']])
-    const applied = applyRefresh(plan, buildRefreshDelta(plan, candidates, selection), selection)
+    const applied = applyRefresh(plan, buildRefreshDelta(plan, classification, selection), selection)
     expect(applied).toBe(1)
     expect(plan.accounts[0]).toMatchObject({ balance: 55_000, costBasis: 40_000 })
   })
@@ -361,7 +461,7 @@ describe('preview/apply agreement', () => {
       roth('acct-roth', 'Roth IRA', owner),
       loadedTaxable('acct-margin', 'Margin'),
     )
-    const candidates = classifyRefresh(plan, [
+    const classification = classifyRefresh(plan, [
       src('Brokerage ...1', 55_000, 40_000),
       src('Roth IRA ...2', 14_000, 12_000),
       src('Margin ...3', -3_000, 9_000), // clamped balance, real basis
@@ -371,7 +471,7 @@ describe('preview/apply agreement', () => {
       [1, 'acct-roth'],
       [2, 'acct-margin'],
     ])
-    const delta = buildRefreshDelta(plan, candidates, selection)
+    const delta = buildRefreshDelta(plan, classification, selection)
     expect(delta.changes.length).toBeGreaterThan(0)
 
     applyRefresh(plan, delta, selection)

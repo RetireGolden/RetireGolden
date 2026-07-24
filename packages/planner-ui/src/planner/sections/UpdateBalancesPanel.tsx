@@ -24,6 +24,7 @@ import {
   buildRefreshDelta,
   applyRefresh,
   type RefreshCandidate,
+  type RefreshClassification,
 } from '../../import/refresh'
 import type { ImportReviewItem } from '../../import/reviewChecklist'
 import { ReviewChecklist } from '../../import/ReviewChecklistView'
@@ -32,8 +33,12 @@ import { fmtMoney } from '../format'
 
 interface ParsedFile {
   broker: BrokerId
-  /** The engine's match verdicts, one per parsed account; each carries the parsed `source` row. */
-  candidates: RefreshCandidate[]
+  /**
+   * The engine's classification: the per-row match verdicts (each carrying its
+   * parsed `source` row) plus the protected-path snapshot. Threaded whole into
+   * `buildRefreshDelta` so any protected paths reach apply.
+   */
+  classification: RefreshClassification
   /** Selected plan-account id (or '') per parsed account, by index. */
   targets: string[]
   /** The parser's honesty checklist (partial basis, skipped rows, …). */
@@ -64,11 +69,11 @@ export function UpdateBalancesPanel() {
       setMessage(r.message)
       return
     }
-    const candidates = classifyRefresh(plan, r.accounts)
+    const classification = classifyRefresh(plan, r.accounts)
     setParsed({
       broker: r.broker,
-      candidates,
-      targets: candidates.map(defaultTarget),
+      classification,
+      targets: classification.candidates.map(defaultTarget),
       review: r.review,
     })
   }
@@ -82,7 +87,7 @@ export function UpdateBalancesPanel() {
   // One preview of what apply would do, recomputed from the live selection. The
   // panel never applies balances itself — it renders exactly what `applyRefresh`
   // would write, because both go through `buildRefreshDelta`'s single primitive.
-  const delta = parsed ? buildRefreshDelta(plan, parsed.candidates, selection) : null
+  const delta = parsed ? buildRefreshDelta(plan, parsed.classification, selection) : null
 
   // The plan-account index each selected row resolves to, so the row can show
   // that account's before→after from the delta's field writes.
@@ -144,7 +149,7 @@ export function UpdateBalancesPanel() {
                 </tr>
               </thead>
               <tbody>
-                {parsed.candidates.map((candidate, i) => {
+                {parsed.classification.candidates.map((candidate, i) => {
                   const acc = candidate.source
                   const preview = rowPreview(i)
                   return (
