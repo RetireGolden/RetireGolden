@@ -181,6 +181,7 @@ function diffNode(base: unknown, edited: unknown, segments: string[], operations
       const editedValue = ownValue(edited, key)
       const hasBase = Object.hasOwn(base, key) && baseValue !== undefined
       const hasEdited = Object.hasOwn(edited, key) && editedValue !== undefined
+      if (!hasBase && !hasEdited) continue
       const path = encodeScenarioPointer([...segments, key])
       if (!hasEdited) {
         operations.push({
@@ -444,6 +445,33 @@ export function applyScenarioPatchDocument(plan: Plan, patch: ScenarioPatchV1): 
 
 export function revertScenarioPatch(plan: Plan, patch: ScenarioPatchV1): ApplyScenarioDocumentResult {
   return mutateOperations(plan, patch, 'revert')
+}
+
+/**
+ * Rebind valid canonical scenarios after an explicit containing-plan re-key.
+ * Legacy and malformed documents are preserved byte-for-byte.
+ */
+export function rebindScenarioPatchesToPlan(plan: Plan): Plan {
+  const snapshotHash = scenarioPlanSnapshotHash(plan)
+  let changed = false
+  const scenarios = plan.scenarios.map((scenario) => {
+    if (!isScenarioPatchEnvelope(scenario.patch)) return scenario
+    const parsed = parseScenarioPatch(scenario.patch)
+    if (!parsed.ok) return scenario
+    changed = true
+    return {
+      ...scenario,
+      patch: {
+        ...parsed.patch,
+        base: {
+          planId: plan.id,
+          planSchemaVersion: plan.schemaVersion,
+          snapshotHash,
+        },
+      },
+    }
+  })
+  return changed ? { ...plan, scenarios } : plan
 }
 
 export function composeScenarioPatches(

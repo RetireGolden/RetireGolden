@@ -14,6 +14,8 @@ import {
   savePlan,
 } from './planStore'
 import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
+import { createScenarioPatch } from '@retiregolden/engine/scenarios/patch'
+import { applyScenarioPatch } from '@retiregolden/engine/scenarios/scenarios'
 import { EXAMPLE_PLANS } from '../planner/examples/registry'
 import { saveFreshDemo, saveExampleToMyPlans } from '../planner/examples/loadExample'
 import { serializeV2Backup, normalizePlansForImport } from './v2Backup'
@@ -24,6 +26,22 @@ const fixedNow = () => new Date('2026-06-11T12:00:00.000Z')
 
 function newPlan(name: string): Plan {
   return { ...createEmptyPlan({ newId: testIds, now: fixedNow }), name }
+}
+
+function addCanonicalScenario(plan: Plan): void {
+  const edited = structuredClone(plan)
+  edited.expenses.baseAnnual += 12_345
+  const created = createScenarioPatch(plan, edited, {
+    title: 'Higher spending',
+    createdAtIso: fixedNow().toISOString(),
+    actor: { kind: 'user' },
+  })
+  if (!created.ok) throw new Error(created.issues.join('; '))
+  plan.scenarios.push({
+    id: 'canonical-scenario',
+    name: created.patch.title,
+    patch: created.patch,
+  })
 }
 
 beforeEach(() => {
@@ -83,6 +101,7 @@ describe('example plan isolation', () => {
     const saved = await saveFreshDemo(EXAMPLE_PLANS[0]!)
     expect(saved.ok).toBe(true)
     if (!saved.ok) return
+    addCanonicalScenario(saved.plan)
 
     const converted = await convertExampleToUserPlan(saved.plan, { newId: () => 'user-plan-1', now: fixedNow })
     expect(converted.ok).toBe(true)
@@ -93,6 +112,8 @@ describe('example plan isolation', () => {
     if (loaded.ok) {
       expect(loaded.plan.origin).toBe('user')
       expect(loaded.plan.exampleSourceId).toBe('example-couple')
+      const scenario = loaded.plan.scenarios.find(({ id }) => id === 'canonical-scenario')!
+      expect(applyScenarioPatch(loaded.plan, scenario.patch).ok).toBe(true)
     }
     expect((await loadPlan(exampleStorageId('example-couple'))).ok).toBe(false)
   })
@@ -128,10 +149,13 @@ describe('example plan isolation', () => {
     const demo = EXAMPLE_PLANS[0]!.build()
     demo.id = exampleStorageId('example-couple')
     demo.origin = 'example'
+    addCanonicalScenario(demo)
     const normalized = await normalizePlansForImport([demo])
     expect(normalized).toHaveLength(1)
     expect(normalized[0]!.origin).toBe('user')
     expect(normalized[0]!.id).not.toMatch(/^example:/)
+    const scenario = normalized[0]!.scenarios.find(({ id }) => id === 'canonical-scenario')!
+    expect(applyScenarioPatch(normalized[0]!, scenario.patch).ok).toBe(true)
   })
 })
 

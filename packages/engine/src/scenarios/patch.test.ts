@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, parsePlan, type Plan } from '../model/plan.js'
-import { parseScenarioPatch, type ScenarioPatchMetadata } from './contract.js'
+import { isScenarioPatchDocument, parseScenarioPatch, type ScenarioPatchMetadata } from './contract.js'
 import {
   applyLegacyScenarioPatch,
   applyScenarioPatchDocument,
@@ -10,6 +10,7 @@ import {
   createScenarioPatch,
   detectScenarioConflicts,
   migrateLegacyScenarioPatch,
+  rebindScenarioPatchesToPlan,
   revertScenarioPatch,
   scenarioPlanSnapshotHash,
 } from './patch.js'
@@ -277,6 +278,44 @@ describe('canonical scenario patch documents', () => {
     expect(applied.ok).toBe(true)
     if (applied.ok) expect(applied.plan.expenses.baseAnnual).toBe(60_000)
   })
+
+  it('rebinds canonical scenarios when their containing plan is re-keyed', () => {
+    const base = plan()
+    const edited = clonePlan(base)
+    edited.expenses.baseAnnual = 60_000
+    const patch = build(base, edited)
+    const copy = clonePlan(base)
+    copy.id = 'copy-plan'
+    copy.scenarios = [{ id: 'scenario-1', name: patch.title, patch }]
+
+    const rebound = rebindScenarioPatchesToPlan(copy)
+    const applied = applyScenarioPatch(rebound, rebound.scenarios[0]!.patch)
+    expect(applied.ok).toBe(true)
+    if (applied.ok) expect(applied.plan.expenses.baseAnnual).toBe(60_000)
+    expect((rebound.scenarios[0]!.patch as { base: { planId: string } }).base.planId).toBe('copy-plan')
+  })
+
+  it('diffs optional undefined values and numeric record keys safely', () => {
+    const base = plan()
+    const edited = clonePlan(base)
+    base.assumptions.assetClassParams = undefined
+    edited.assumptions.assetClassParams = undefined
+    edited.assumptions.historicalAnnualMagiByYear = { '2024': 75_000 }
+
+    const patch = build(base, edited)
+    expect(patch.operations.map((operation) => operation.path)).toEqual(['/assumptions/historicalAnnualMagiByYear'])
+    expect(apply(base, patch).assumptions.historicalAnnualMagiByYear).toEqual({
+      '2024': 75_000,
+    })
+
+    const next = clonePlan(edited)
+    next.assumptions.historicalAnnualMagiByYear!['2024'] = 80_000
+    const numericKeyPatch = build(edited, next)
+    expect(numericKeyPatch.operations.map((operation) => operation.path)).toEqual([
+      '/assumptions/historicalAnnualMagiByYear/2024',
+    ])
+    expect(apply(edited, numericKeyPatch).assumptions.historicalAnnualMagiByYear).toEqual({ '2024': 80_000 })
+  })
 })
 
 describe('scenario patch validation and hostile paths', () => {
@@ -301,14 +340,37 @@ describe('scenario patch validation and hostile paths', () => {
     '/assumptions/__proto__/polluted',
     '/assumptions/toString',
     '/assumptions/valueOf',
-    '/accounts/0/balance',
-  ])('rejects unsafe or array-positional path %s during document parsing', (path) => {
+  ])('rejects unsafe path %s during document parsing', (path) => {
     expect(
       parseScenarioPatch({
         ...envelope,
         operations: [{ op: 'set', path, before: { present: false }, value: 1 }],
       }).ok,
     ).toBe(false)
+  })
+
+  it('accepts numeric object keys but rejects numeric traversal through actual arrays', () => {
+    const parsed = parseScenarioPatch({
+      ...envelope,
+      operations: [
+        {
+          op: 'set',
+          path: '/accounts/0/balance',
+          before: { present: false },
+          value: 1,
+        },
+      ],
+    })
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) return
+    const applied = applyScenarioPatchDocument(plan(), parsed.patch)
+    expect(applied.ok).toBe(false)
+    if (!applied.ok) expect(applied.conflicts[0]?.kind).toBe('invalid-path')
+  })
+
+  it('only narrows fully validated documents', () => {
+    expect(isScenarioPatchDocument({ kind: 'retiregolden.scenario-patch' })).toBe(false)
+    expect(isScenarioPatchDocument({ ...envelope, operations: [] })).toBe(true)
   })
 
   it('rejects duplicate, overlapping, non-JSON, and malformed-pointer operations', () => {

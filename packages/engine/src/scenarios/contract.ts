@@ -40,7 +40,7 @@ export function decodeScenarioPointer(path: string): string[] | null {
     const raw = rawSegments[index]!
     if (/~(?:[^01]|$)/.test(raw)) return null
     const segment = raw.replaceAll('~1', '/').replaceAll('~0', '~')
-    if (segment.length === 0 || dangerousKeys.has(segment) || (index > 0 && /^(?:0|[1-9]\d*)$/.test(segment))) {
+    if (segment.length === 0 || dangerousKeys.has(segment)) {
       return null
     }
     segments.push(segment)
@@ -172,8 +172,7 @@ export function parseScenarioPatch(input: unknown): ParseScenarioPatchResult {
 }
 
 export function isScenarioPatchDocument(input: unknown): input is ScenarioPatchV1 {
-  if (typeof input !== 'object' || input === null || Array.isArray(input)) return false
-  return (input as Record<string, unknown>)['kind'] === SCENARIO_PATCH_KIND
+  return parseScenarioPatch(input).ok
 }
 
 /**
