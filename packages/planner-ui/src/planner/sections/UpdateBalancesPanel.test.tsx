@@ -453,6 +453,9 @@ describe('UpdateBalancesPanel refresh protection', () => {
       setter.call(rothSel, 'acct-brokerage')
       rothSel.dispatchEvent(new Event('change', { bubbles: true }))
     })
+    // The stripped sibling leaves an audit record: the checklist shows a skipped
+    // item naming the released-elsewhere protection, so the discard is not silent.
+    expect(el.querySelector('.import-review')!.textContent).toContain('released to a different row')
     expect(applyButton(el).disabled).toBe(false) // no false duplicate block
     act(() => applyButton(el).click())
     // Row 0's section total (55,000), not blocked at the starting 1 and not the

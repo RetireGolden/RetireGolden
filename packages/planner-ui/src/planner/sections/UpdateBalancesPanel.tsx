@@ -229,13 +229,28 @@ export function UpdateBalancesPanel() {
   // exactly the provenance the checklist needs. Stripping it here would hide that
   // the row was deliberately left unchanged. A no-protection plan keeps the
   // selection untouched.
+  // …but the strip itself leaves an audit trail: the released account is absent
+  // from the effective set, so the engine would emit neither a protected nor a
+  // duplicate skip for the stripped sibling, and the checklist would silently
+  // omit that this broker row was discarded. Synthesize that skipped item here.
+  const strippedAudit: ImportReviewItem[] = []
   const safeSelection = (() => {
     if (hostProtectedIds.size === 0) return selection
     const out = new Map<number, string>()
     for (const [i, accId] of selection) {
       if (hostProtectedIds.has(accId)) {
         const releasedRow = released.get(accId)
-        if (releasedRow !== undefined && releasedRow !== i) continue // released to a sibling row — off-limits here
+        if (releasedRow !== undefined && releasedRow !== i) {
+          // released to a sibling row — off-limits here
+          strippedAudit.push({
+            status: 'skipped',
+            source: parsed?.accounts[i]?.accountLabel ?? `Row ${i + 1}`,
+            detail: `Its selected plan account (${accountName(accId)}) is protected by an advisor override released to a different row — only that row may refresh it this time.`,
+            locator: { kind: 'none', note: 'protected account released to another broker row' },
+            confidence: 'unmapped',
+          })
+          continue
+        }
       }
       out.set(i, accId)
     }
@@ -449,7 +464,7 @@ export function UpdateBalancesPanel() {
           {/* The parser's file-level honesty items ride alongside the refresh's
               field-level ones — one checklist, so "no cost basis in the file" and
               "refreshed the balance to $X" are read together. */}
-          <ReviewChecklist items={[...delta.review, ...parsed.review]} />
+          <ReviewChecklist items={[...delta.review, ...strippedAudit, ...parsed.review]} />
           <div className="picker-actions">
             <button type="button" className="btn btn-primary" onClick={apply} disabled={blocked}>
               Apply selected balances
