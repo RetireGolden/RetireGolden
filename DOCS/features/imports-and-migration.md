@@ -149,15 +149,27 @@ none** (every updatable account is fair game); the Advisor workbench feeds it th
 Pro repo in a later dispatch, so an advisor can freeze the accounts they've reconciled by hand while letting
 the rest refresh.
 
-**The protection seam into the embedded panel.** The engine takes `protectedTargets`, but the embedded
-`UpdateBalancesPanel` takes no props — so hosts feed protection through the ambient `RefreshProtectionProvider`
-(exported from the package root, mirroring `PlannerEditionProvider`). The professional host derives the set
-from its intake decisions and wraps the planner workspace; the public app renders no provider and the panel
-gets an empty set (every account is fair game, unchanged behaviour). A protected row renders off, its select
-disabled, with a "Protected — advisor override" note and a small **Allow this refresh** control. That control
-is deliberately *transient*: it releases the account path for that panel instance only, subtracting it from
-the effective set the panel re-classifies against — it is **not** a stored re-decision, and the advisor's
-override record stays immutable after approve. Releases are per-row and clear whenever a new file is parsed.
+**The protection seam into the embedded panel.** The engine takes positional `protectedTargets`, but the
+embedded `UpdateBalancesPanel` takes no props — so hosts feed protection through the ambient
+`RefreshProtectionProvider` (exported from the package root, mirroring `PlannerEditionProvider`). The seam
+speaks **stable account IDs**, not `accounts[i]` positions: each entry is a whole-account id (`acct-123`) or
+an `<accountId>.<field>` (`acct-123.costBasis`). Positions are the wrong currency here because plan-array
+indices shift as accounts are added or removed in the workspace, so a stored positional path would silently
+start protecting the wrong account; IDs are stable, and the professional host resolves its stored
+draft-relative paths to IDs once at approve time instead of re-reconciling indices forever. The panel maps
+each protected id to that account's **current** index fresh on every render and emits the `accounts[i]` /
+`accounts[i].<field>` paths the engine's `protectedTargets` contract expects (ids absent from the plan are
+skipped). The public app renders no provider and the panel gets an empty set (every account is fair game,
+unchanged behaviour).
+
+A protected row renders off, its select disabled, with a "Protected — advisor override" note and a small
+**Allow this refresh** control. That control is deliberately *transient* and **row-scoped**: it releases the
+account for that panel instance only, and only for the row that asked. Release is tracked as `account id → the
+requesting row's index`, so the released account is subtracted from the effective set the panel re-classifies
+against — while every *other* row still shows that account disabled (a "(protected)" option) and, defensively,
+a sibling's selection of it is dropped before preview/apply (a belt against DOM tampering). Releasing row *k*
+for account *A* therefore never unlocks *A* in a sibling row's dropdown. It is **not** a stored re-decision,
+the advisor's override record stays immutable after approve, and releases clear whenever a new file is parsed.
 
 The refresh emits an honesty checklist compatible with `reviewToProvenance` (landed values carry an
 `ImportConfidence` — `derived` for a summed aggregate, `exact` for a lone verbatim position — and a target

@@ -3,14 +3,15 @@ import type { ReactNode } from 'react'
 import { RefreshProtectionContext } from './refreshProtectionContext'
 
 /**
- * Supplies the set of refresh-protected plan paths to the embedded
+ * Supplies the set of refresh-protected account IDs to the embedded
  * `UpdateBalancesPanel`. The Pro/Advisor host wraps the mounted planner
- * workspace and passes the accounts frozen by its intake decisions; the public
- * app renders no provider and the panel gets the empty default (unchanged
- * behaviour).
+ * workspace and passes the accounts frozen by its intake decisions — by stable
+ * account id (or `<accountId>.<field>`), never by array position, since indices
+ * shift as accounts are added or removed. The public app renders no provider and
+ * the panel gets the empty default (unchanged behaviour).
  *
  * ```tsx
- * <RefreshProtectionProvider protectedTargets={new Set(['accounts[2]'])}>
+ * <RefreshProtectionProvider protectedAccounts={new Set(['acct-123', 'acct-456.costBasis'])}>
  *   {workspace}
  * </RefreshProtectionProvider>
  * ```
@@ -19,11 +20,11 @@ import { RefreshProtectionContext } from './refreshProtectionContext'
  * exposes no matching prop — the web edition freezes nothing.
  */
 export function RefreshProtectionProvider({
-  protectedTargets,
+  protectedAccounts,
   children,
 }: {
-  protectedTargets: ReadonlySet<string>
+  protectedAccounts: ReadonlySet<string>
   children: ReactNode
 }) {
-  return <RefreshProtectionContext.Provider value={{ protectedTargets }}>{children}</RefreshProtectionContext.Provider>
+  return <RefreshProtectionContext.Provider value={{ protectedAccounts }}>{children}</RefreshProtectionContext.Provider>
 }

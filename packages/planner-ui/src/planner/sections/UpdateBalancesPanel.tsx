@@ -11,13 +11,19 @@
  *
  * Protection comes from the ambient `RefreshProtectionProvider` (the Pro/Advisor
  * host feeds the accounts its intake decisions froze; the public planner mounts
- * no provider and gets an empty set — unchanged behaviour). A protected row can
- * be released transiently with "Allow this refresh": that only frees the path for
- * THIS panel instance and never touches the advisor's stored override record.
+ * no provider and gets an empty set — unchanged behaviour). The host names those
+ * accounts by STABLE ID (or `<accountId>.<field>`), never by array position: this
+ * panel resolves each protected id to its CURRENT `accounts[i]` index fresh on
+ * every render, so protection tracks the account even after the plan array is
+ * reordered. A protected row can be released transiently with "Allow this
+ * refresh": that frees the account for THIS panel instance and only for the ROW
+ * that asked (a sibling row cannot then reach the same account), and it never
+ * touches the advisor's stored override record.
  */
 
 import { useMemo, useRef, useState } from 'react'
 
+import type { Plan } from '@retiregolden/engine/model/plan'
 import {
   BROKER_LABEL,
   isBalanceUpdatable,
@@ -37,6 +43,10 @@ import { usePlan } from '../planContextCore'
 import { useRefreshProtection } from '../refreshProtectionContext'
 import { fmtMoney } from '../format'
 
+const EMPTY_PROTECTED: ReadonlySet<string> = new Set()
+/** A stable empty release map for the fresh-file seed (no allocation per parse). */
+const EMPTY_RELEASED: ReadonlyMap<string, number> = new Map()
+
 interface ParsedFile {
   broker: BrokerId
   /**
@@ -52,6 +62,39 @@ interface ParsedFile {
   review: ImportReviewItem[]
 }
 
+/** The account id half of a protection entry (`'acct-1'` or `'acct-1.costBasis'`). */
+function protectedAccountId(entry: string): string {
+  const dot = entry.indexOf('.')
+  return dot === -1 ? entry : entry.slice(0, dot)
+}
+
+/**
+ * Translate the host's STABLE account-id protection set into the engine's
+ * POSITIONAL `accounts[i]` set against the live plan order, dropping any account
+ * a row has released. This is the one place ids become indices: an id absent from
+ * `plan.accounts` is skipped (a stale protection cannot protect a phantom index),
+ * and a released id is omitted so the engine treats it as fair game. Cheap and
+ * allocation-free when nothing is protected — the empty-provider path returns the
+ * shared empty set without touching `released`.
+ */
+function positionalProtectedSet(
+  plan: Plan,
+  protectedAccounts: ReadonlySet<string>,
+  released: ReadonlyMap<string, number>,
+): ReadonlySet<string> {
+  if (protectedAccounts.size === 0) return EMPTY_PROTECTED
+  const out = new Set<string>()
+  for (const entry of protectedAccounts) {
+    const dot = entry.indexOf('.')
+    const accId = dot === -1 ? entry : entry.slice(0, dot)
+    if (released.has(accId)) continue // released for this panel instance — not off-limits
+    const index = plan.accounts.findIndex((a) => a.id === accId)
+    if (index === -1) continue // stale id: no live account, nothing to protect
+    out.add(dot === -1 ? `accounts[${index}]` : `accounts[${index}].${entry.slice(dot + 1)}`)
+  }
+  return out
+}
+
 /** exact/likely default their select ON; ambiguous/unmatched/protected default OFF. */
 function defaultTarget(candidate: RefreshCandidate): string {
   if (candidate.isProtected) return ''
@@ -61,46 +104,43 @@ function defaultTarget(candidate: RefreshCandidate): string {
 
 export function UpdateBalancesPanel() {
   const { plan, update } = usePlan()
-  const protectedTargets = useRefreshProtection()
+  const protectedAccounts = useRefreshProtection()
   const [parsed, setParsed] = useState<ParsedFile | null>(null)
   const [message, setMessage] = useState<string | null>(null)
-  // Paths (the `accounts[i]` record path) the user has transiently released from
-  // protection for THIS panel instance via "Allow this refresh". This is UI-local
-  // and deliberately does not touch the advisor's stored override — it only
-  // subtracts from the effective set the three engine calls see, and is cleared
-  // whenever a new file is parsed or the panel resets.
-  const [released, setReleased] = useState<ReadonlySet<string>>(() => new Set())
+  // Accounts the user has transiently released from protection for THIS panel
+  // instance via "Allow this refresh", keyed by account id → the broker-row index
+  // that requested the release. This is UI-local and deliberately does not touch
+  // the advisor's stored override — it only frees the account from the effective
+  // set the three engine calls see, and scopes the unlock to the requesting row
+  // (a sibling row still cannot reach the account). Cleared whenever a new file is
+  // parsed or the panel resets.
+  const [released, setReleased] = useState<ReadonlyMap<string, number>>(() => new Map())
   const fileInput = useRef<HTMLInputElement>(null)
 
   const updatable = plan.accounts.filter(isBalanceUpdatable).map((a) => ({ id: a.id, name: a.name }))
   const accountName = (id: string) => updatable.find((a) => a.id === id)?.name ?? id
 
-  // The effective protected set = the host's set MINUS the released paths, where
-  // releasing an account (`accounts[i]`) also frees any protected field of it
-  // (`accounts[i].costBasis`). This one set feeds all three engine calls.
-  const effective = useMemo<ReadonlySet<string>>(() => {
-    if (protectedTargets.size === 0) return protectedTargets
-    const next = new Set<string>()
-    for (const p of protectedTargets) {
-      const freed = [...released].some((r) => p === r || p.startsWith(`${r}.`))
-      if (!freed) next.add(p)
-    }
-    return next
-  }, [protectedTargets, released])
+  // The account ids the host protects (the id half of each entry), independent of
+  // release state — the panel's per-option and belt checks read this so a
+  // field-scoped protection still locks the account in the dropdowns.
+  const hostProtectedIds = useMemo(() => {
+    const ids = new Set<string>()
+    for (const entry of protectedAccounts) ids.add(protectedAccountId(entry))
+    return ids
+  }, [protectedAccounts])
 
-  // Is `path` protected by the effective set — as the account itself, a field of
-  // it, or an ancestor of it (the same three-way test the engine applies)?
-  const pathProtected = (path: string | null): boolean => {
-    if (!path || effective.size === 0) return false
-    for (const p of effective) {
-      if (p === path || p.startsWith(`${path}.`) || path.startsWith(`${p}.`)) return true
-    }
-    return false
-  }
+  // The effective POSITIONAL protected set the engine sees: the host's id set
+  // resolved to current `accounts[i]` paths, minus every account a row released.
+  // Recomputed here so it tracks live plan order and the release map; the empty
+  // provider / no-release path returns the shared empty set with no work.
+  const effective = useMemo<ReadonlySet<string>>(
+    () => positionalProtectedSet(plan, protectedAccounts, released),
+    [plan, protectedAccounts, released],
+  )
 
   const resetPanel = () => {
     setParsed(null)
-    setReleased(new Set())
+    setReleased(new Map())
   }
 
   const handleFile = async (file: File) => {
@@ -111,10 +151,12 @@ export function UpdateBalancesPanel() {
       setMessage(r.message)
       return
     }
-    // A fresh file starts with protection fully restored, so seed the selection
-    // from a classification computed against the host's full set.
-    setReleased(new Set())
-    const classification = classifyRefresh(plan, r.accounts, { protectedTargets })
+    // A fresh file starts with protection fully restored (no releases), so seed
+    // the selection from a classification against the host's full set resolved to
+    // current positions.
+    setReleased(new Map())
+    const seedProtected = positionalProtectedSet(plan, protectedAccounts, EMPTY_RELEASED)
+    const classification = classifyRefresh(plan, r.accounts, { protectedTargets: seedProtected })
     setParsed({
       broker: r.broker,
       accounts: r.accounts,
@@ -133,18 +175,33 @@ export function UpdateBalancesPanel() {
     [plan, rawAccounts, effective],
   )
 
-  // The current selection, as the engine's index→account-id map (empty = skip).
+  // The raw selection, as the engine's index→account-id map (empty = skip).
   const selection = new Map<number, string>()
   parsed?.targets.forEach((t, i) => {
     if (t !== '') selection.set(i, t)
   })
 
-  // One preview of what apply would do, recomputed from the live selection. The
-  // panel never applies balances itself — it renders exactly what `applyRefresh`
-  // would write, because both go through `buildRefreshDelta`'s single primitive.
-  // The effective set is threaded into all three calls so protection (minus any
-  // released rows) is enforced identically at classify, preview, and apply.
-  const delta = parsed && classification ? buildRefreshDelta(plan, classification, selection, effective) : null
+  // Belt against DOM tampering: before any engine call, drop any (row → account)
+  // pairing where the account is host-protected but not released to THAT row —
+  // unreleased, or released to a different row. The engine's effective set is
+  // per-account (a released account is fair game for every row), so this row-scope
+  // check is what keeps a released account reachable only from the row that
+  // released it. A no-protection plan keeps the selection untouched.
+  const safeSelection = (() => {
+    if (hostProtectedIds.size === 0) return selection
+    const out = new Map<number, string>()
+    for (const [i, accId] of selection) {
+      if (hostProtectedIds.has(accId) && released.get(accId) !== i) continue
+      out.set(i, accId)
+    }
+    return out
+  })()
+
+  // One preview of what apply would do, recomputed from the live (sanitized)
+  // selection. The panel never applies balances itself — it renders exactly what
+  // `applyRefresh` would write, because both go through `buildRefreshDelta`'s
+  // single primitive with the same sanitized selection and effective set.
+  const delta = parsed && classification ? buildRefreshDelta(plan, classification, safeSelection, effective) : null
   const candidates = classification?.candidates ?? []
 
   // The plan-account index each selected row resolves to, so the row can show
@@ -165,20 +222,20 @@ export function UpdateBalancesPanel() {
   const blocked = duplicateNames.length > 0
   const staleNames = (delta?.staleAccountIds ?? []).map(accountName)
 
-  // Release a protected row: free its account path for THIS panel only (never the
-  // stored override) and pre-select the account so it applies like any match.
-  const allowRefresh = (i: number, path: string, accountId: string | null) => {
-    setReleased((prev) => new Set(prev).add(path))
-    if (accountId) {
-      setParsed((prev) => (prev ? { ...prev, targets: prev.targets.map((t, j) => (j === i ? accountId : t)) } : prev))
-    }
+  // Release a protected row: free its guessed account for THIS panel and only for
+  // THIS row (never the stored override), then pre-select the account so it
+  // applies like any match. Keyed by account id → row index so sibling rows stay
+  // locked out of the same account.
+  const allowRefresh = (i: number, accId: string) => {
+    setReleased((prev) => new Map(prev).set(accId, i))
+    setParsed((prev) => (prev ? { ...prev, targets: prev.targets.map((t, j) => (j === i ? accId : t)) } : prev))
   }
 
   const apply = () => {
     if (!parsed || !delta || blocked) return
     let applied = 0
     update((d) => {
-      applied = applyRefresh(d, delta, selection, effective)
+      applied = applyRefresh(d, delta, safeSelection, effective)
     })
     resetPanel()
     setMessage(
@@ -219,15 +276,16 @@ export function UpdateBalancesPanel() {
                 {candidates.map((candidate, i) => {
                   const acc = candidate.source
                   const preview = rowPreview(i)
-                  // The row is protected when its guessed target is off-limits, or
-                  // when the user has pointed it at a protected account. Either way
-                  // the account whose path we'd release is that protected target.
-                  const chosenId = parsed.targets[i] ?? ''
-                  const chosenIdx = chosenId ? plan.accounts.findIndex((a) => a.id === chosenId) : -1
-                  const chosenPath = chosenIdx >= 0 ? `accounts[${chosenIdx}]` : null
-                  const isProtectedRow = candidate.isProtected || pathProtected(chosenPath)
-                  const protectedAccountId = candidate.isProtected ? candidate.targetAccountId : chosenId || null
-                  const protectedPath = candidate.isProtected ? candidate.targetPath : chosenPath
+                  // The row's guessed target account and this row's relation to it:
+                  // a host-protected guess released to THIS row is unlocked; the same
+                  // guess unreleased (or released to a sibling) leaves the row locked.
+                  const guessId = candidate.targetAccountId
+                  const guessProtected = guessId != null && hostProtectedIds.has(guessId)
+                  const releasedRow = guessId != null ? released.get(guessId) : undefined
+                  const rowLocked = guessProtected && releasedRow !== i
+                  // Offer a release only when no row has claimed the account yet —
+                  // a sibling can never steal an already-released account.
+                  const canRelease = guessProtected && releasedRow === undefined
                   return (
                     <tr key={`${acc.accountLabel}-${i}`}>
                       <td>{acc.accountLabel}</td>
@@ -237,7 +295,7 @@ export function UpdateBalancesPanel() {
                         <select
                           aria-label={`Plan account for ${acc.accountLabel}`}
                           value={parsed.targets[i] ?? ''}
-                          disabled={isProtectedRow}
+                          disabled={rowLocked}
                           onChange={(e) =>
                             setParsed((prev) =>
                               prev ? { ...prev, targets: prev.targets.map((t, j) => (j === i ? e.target.value : t)) } : prev,
@@ -245,21 +303,28 @@ export function UpdateBalancesPanel() {
                           }
                         >
                           <option value="">Don&apos;t update</option>
-                          {updatable.map((a) => (
-                            <option key={a.id} value={a.id}>
-                              {a.name}
-                            </option>
-                          ))}
+                          {updatable.map((a) => {
+                            // A host-protected account is selectable only from the
+                            // row that released it; disabled (and marked) everywhere
+                            // else, so no sibling row can point at it.
+                            const optionLocked = hostProtectedIds.has(a.id) && released.get(a.id) !== i
+                            return (
+                              <option key={a.id} value={a.id} disabled={optionLocked}>
+                                {a.name}
+                                {optionLocked ? ' (protected)' : ''}
+                              </option>
+                            )
+                          })}
                         </select>
-                        {isProtectedRow ? (
+                        {rowLocked ? (
                           <div className="refresh-protected" role="note">
                             <span className="muted">Protected — advisor override</span>
-                            {protectedPath ? (
+                            {canRelease && guessId ? (
                               <button
                                 type="button"
                                 className="btn btn-secondary btn-small"
-                                aria-label={`Allow this refresh for ${accountName(protectedAccountId ?? '')}`}
-                                onClick={() => allowRefresh(i, protectedPath, protectedAccountId)}
+                                aria-label={`Allow this refresh for ${accountName(guessId)}`}
+                                onClick={() => allowRefresh(i, guessId)}
                               >
                                 Allow this refresh
                               </button>

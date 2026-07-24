@@ -340,22 +340,27 @@ The embedded "Update balances from a broker CSV" panel refreshes balances from a
 broker file. A professional host can freeze accounts it has reconciled by hand so
 the refresh cannot overwrite them. The panel takes no props, so protection is
 supplied through the ambient `RefreshProtectionProvider` (mirroring
-`PlannerEditionProvider`): pass the plan paths (`accounts[i]`) to protect, and
-the panel threads them into the refresh engine. Omit the provider and the panel
-protects nothing — the public web behaviour.
+`PlannerEditionProvider`): pass the **stable account IDs** to protect — either a
+whole-account id (`'acct-123'`) or an `<accountId>.<field>` entry
+(`'acct-123.costBasis'`) — and the panel resolves each id to that account's
+current `accounts[i]` position before threading it into the refresh engine. IDs
+(not array positions) are the contract because plan-array indices shift as
+accounts are added or removed. Omit the provider and the panel protects nothing —
+the public web behaviour.
 
 ```tsx
 import { RefreshProtectionProvider } from '@retiregolden/planner-ui'
 
-<RefreshProtectionProvider protectedTargets={new Set(['accounts[2]'])}>
+<RefreshProtectionProvider protectedAccounts={new Set(['acct-123', 'acct-456.costBasis'])}>
   {/* plannerWorkspaceRoutes */}
 </RefreshProtectionProvider>
 ```
 
 A protected row renders disabled with a note and a transient "Allow this refresh"
-control that releases the path for that panel instance only — it never mutates
-the host's stored decision. `useRefreshProtection()` reads the ambient set;
-`RefreshProtectionValue` is the context value shape.
+control that releases the account for that panel instance only, and only for the
+row that asked — a sibling row still cannot reach it — and never mutates the
+host's stored decision. `useRefreshProtection()` reads the ambient set;
+`RefreshProtectionValue` (`{ protectedAccounts }`) is the context value shape.
 
 ### Plan interchange
 
