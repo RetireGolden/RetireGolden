@@ -206,6 +206,8 @@ function cleanLocator(locator: SourceLocator, depth: number, sourceCount: number
     case 'form1040':
       return { kind: 'form1040', line: locator.line, ...(locator.sourceIndex !== undefined ? { sourceIndex: locator.sourceIndex } : {}) }
     case 'derived':
+      // A derivation from nothing names no source at all — refuse it.
+      if (locator.from.length === 0) throw new Error('a derived locator must name at least one source locator')
       return {
         kind: 'derived',
         from: locator.from.map((part) => cleanLocator(part, depth + 1, sourceCount)),
@@ -247,6 +249,14 @@ function cleanDecision(decision: ReviewerDecision): ReviewerDecision {
 }
 
 function cleanSourceRef(source: ImportSourceRef): ImportSourceRef {
+  // Same constraints the parser enforces — the supported API must not emit a
+  // source identity its own consumer calls malformed.
+  if (!SHA256_RE.test(source.sha256)) {
+    throw new Error(`source sha256 must be empty or lowercase 64-hex (got '${source.sha256.slice(0, 24)}')`)
+  }
+  if (!Number.isInteger(source.bytes) || source.bytes < 0) {
+    throw new Error(`source bytes must be a non-negative integer (got ${String(source.bytes)})`)
+  }
   return { file: source.file, sha256: source.sha256, bytes: source.bytes, mapper: source.mapper }
 }
 
@@ -325,7 +335,7 @@ function parseLocator(value: unknown, sourceCount: number, depth: number): Sourc
       return { kind: 'form1040', line: rec['line'], ...withIndex }
     case 'derived': {
       const note = optionalString(rec['note'])
-      if (!Array.isArray(rec['from']) || !note.ok) return null
+      if (!Array.isArray(rec['from']) || rec['from'].length === 0 || !note.ok) return null
       const from: SourceLocator[] = []
       for (const part of rec['from'] as unknown[]) {
         const parsed = parseLocator(part, sourceCount, depth + 1)
@@ -433,7 +443,14 @@ export function parseImportProvenance(json: string): ParseImportProvenanceResult
   // a hand-edited or foreign file must fail here, not in a consumer's
   // dereference. Unknown top-level keys stay tolerated (dropped, not an error);
   // sources parse first so leaf `sourceIndex` values can be bounds-checked.
-  if (typeof env['exportedAtIso'] !== 'string' || Number.isNaN(Date.parse(env['exportedAtIso']))) {
+  // A real ISO-8601 timestamp, not merely anything Date.parse recognizes —
+  // downstream ordering/display must not depend on locale-format leniency.
+  const ISO_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/
+  if (
+    typeof env['exportedAtIso'] !== 'string' ||
+    !ISO_RE.test(env['exportedAtIso']) ||
+    Number.isNaN(Date.parse(env['exportedAtIso']))
+  ) {
     return { ok: false, reason: 'malformed' }
   }
   if (

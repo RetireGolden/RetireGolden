@@ -410,6 +410,29 @@ export function draftPlanFromBrokerAccounts(
       annualReturnPct: null,
       annualContribution: 0,
     }
+    // Negative aggregates (shorts exceeding longs, adjustment rows) are
+    // clamped to $0 in the plan — the report must say the landed value is not
+    // the file's aggregate, or its provenance overstates fidelity.
+    if (acc.totalValue < 0) {
+      review.push({
+        status: 'defaulted',
+        source: acc.accountLabel,
+        detail: `The file's net-negative total of -$${Math.abs(acc.totalValue).toLocaleString('en-US', { maximumFractionDigits: 0 })} was clamped to a $0 balance — set the real balance on the Accounts screen.`,
+        locator: { kind: 'none', note: 'net-negative account totals cannot be modeled and were clamped to zero' },
+        confidence: 'assumed',
+        target: `accounts[${accountIndex}]`,
+      })
+    }
+    if (type === 'taxable' && acc.costBasis !== null && acc.costBasis < 0) {
+      review.push({
+        status: 'defaulted',
+        source: acc.accountLabel,
+        detail: `The file's negative cost basis of -$${Math.abs(acc.costBasis).toLocaleString('en-US', { maximumFractionDigits: 0 })} was clamped to $0 — correct it on the Accounts screen.`,
+        locator: { kind: 'none', note: 'a negative cost basis cannot be modeled and was clamped to zero' },
+        confidence: 'assumed',
+        target: `accounts[${accountIndex}].costBasis`,
+      })
+    }
     if (type === 'taxable') {
       plan.accounts.push({
         ...base,

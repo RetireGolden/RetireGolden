@@ -265,10 +265,19 @@ export function draftPlanFromGenericCsv(
         break
     }
     plan.accounts.push(account)
-    // When a cost-basis and/or contribution column also landed on this account,
-    // the locator covers those columns too — not just the balance.
+    // The locator covers every cell that populated the account record: the
+    // name/type cells that named and classified it, the balance, and any
+    // cost-basis/contribution cells that landed — not just the balance.
     const extraLocators: SourceLocator[] = []
     const extraNotes: string[] = []
+    if (nameCol !== -1) {
+      extraLocators.push(csvRow(rowNumber, columnFor(nameCol)))
+      extraNotes.push('name')
+    }
+    if (typeFromColumn) {
+      extraLocators.push(csvRow(rowNumber, columnFor(typeCol)))
+      extraNotes.push('type')
+    }
     if (basisContributed) {
       extraLocators.push(csvRow(rowNumber, columnFor(basisCol) ?? balanceColumn))
       extraNotes.push('cost basis')

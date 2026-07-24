@@ -243,8 +243,14 @@ describe('tenForty provenance (WS1)', () => {
     expect(r.review.find((i) => i.source.includes('lines 11 + 2a'))!.target).toBe('assumptions.recentAnnualMagi')
     // The SS benefit basis lands on the one income stream it created.
     expect(r.review.find((i) => i.source.includes('line 6a'))!.target).toBe('incomes[0]')
-    // Filing status & state describe two household fields — no single target.
-    expect(r.review.find((i) => i.source.startsWith('Filing status & state'))!.target).toBeUndefined()
+    // Filing status comes from the return; the state is the wizard's own
+    // question (a 1040 only carries a mailing address) — split, each targeted.
+    const filing = r.review.find((i) => i.source.startsWith('Filing status'))!
+    expect(filing.target).toBe('household.filingStatus')
+    expect(filing.locator).toEqual({ kind: 'form1040', line: 'header' })
+    const state = r.review.find((i) => i.source.startsWith('State of residence'))!
+    expect(state.target).toBe('household.state')
+    expect(state.locator?.kind).toBe('none')
     // IRA distributions map to nothing — no target.
     expect(r.review.find((i) => i.source.includes('line 4b'))!.target).toBeUndefined()
   })

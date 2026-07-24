@@ -209,16 +209,17 @@ describe('genericCsv provenance (WS1)', () => {
     expect(r.ok).toBe(true)
     if (!r.ok) return
     const taxable = r.review.find((i) => i.status === 'mapped' && i.source.startsWith('Taxable account'))!
-    // The taxable row supplied a cost basis and a contribution that both landed on
-    // the account, so the locator covers those columns alongside the balance.
+    // The taxable row's name, cost basis, and contribution all landed on the
+    // account, so the locator covers those columns alongside the balance.
     expect(taxable.locator).toEqual({
       kind: 'derived',
       from: [
         { kind: 'csvRow', row: 4, column: 'Balance' },
+        { kind: 'csvRow', row: 4, column: 'Description' },
         { kind: 'csvRow', row: 4, column: 'Cost Basis' },
         { kind: 'csvRow', row: 4, column: 'Annual Contribution' },
       ],
-      note: 'balance + cost basis + contribution',
+      note: 'balance + name + cost basis + contribution',
     })
     // No type column in the RPM sheet — the class is a name-keyword guess.
     expect(taxable.confidence).toBe('assumed')
@@ -226,8 +227,9 @@ describe('genericCsv provenance (WS1)', () => {
     expect(taxable.target).toBe('accounts[0]')
   })
 
-  it('keeps the plain balance locator when only the balance column landed', () => {
-    // Cash account: no basis column, no contribution value that lands.
+  it('covers the name cell that named the account, not only its balance', () => {
+    // Cash account: no basis column, no contribution value that lands — but the
+    // name cell still populated the account record.
     const cash = analyzeGenericCsv('Account,Balance\nAlly Savings,20000\n')
     expect(cash.ok).toBe(true)
     if (!cash.ok) return
@@ -235,7 +237,14 @@ describe('genericCsv provenance (WS1)', () => {
     expect(r.ok).toBe(true)
     if (!r.ok) return
     const item = r.review.find((i) => i.status === 'mapped' && i.source.startsWith('Ally Savings'))!
-    expect(item.locator).toEqual({ kind: 'csvRow', row: 2, column: 'Balance' })
+    expect(item.locator).toEqual({
+      kind: 'derived',
+      from: [
+        { kind: 'csvRow', row: 2, column: 'Balance' },
+        { kind: 'csvRow', row: 2, column: 'Account' },
+      ],
+      note: 'balance + name',
+    })
   })
 
   it('widens the locator to just the contribution column when no basis landed', () => {
@@ -251,9 +260,11 @@ describe('genericCsv provenance (WS1)', () => {
       kind: 'derived',
       from: [
         { kind: 'csvRow', row: 2, column: 'Balance' },
+        { kind: 'csvRow', row: 2, column: 'Account' },
+        { kind: 'csvRow', row: 2, column: 'Type' },
         { kind: 'csvRow', row: 2, column: 'Annual Contribution' },
       ],
-      note: 'balance + contribution',
+      note: 'balance + name + type + contribution',
     })
     // Confidence semantics are unchanged — an explicit type column is still exact.
     expect(item.confidence).toBe('exact')
@@ -268,7 +279,15 @@ describe('genericCsv provenance (WS1)', () => {
     if (!r.ok) return
     const roth = r.review.find((i) => i.status === 'mapped' && i.source.startsWith('My Roth'))!
     expect(roth.confidence).toBe('exact')
-    expect(roth.locator).toEqual({ kind: 'csvRow', row: 2, column: 'Balance' })
+    expect(roth.locator).toEqual({
+      kind: 'derived',
+      from: [
+        { kind: 'csvRow', row: 2, column: 'Balance' },
+        { kind: 'csvRow', row: 2, column: 'Account' },
+        { kind: 'csvRow', row: 2, column: 'Type' },
+      ],
+      note: 'balance + name + type',
+    })
   })
 
   it('grades a type cell that did not name the class as assumed, even when nonempty', () => {

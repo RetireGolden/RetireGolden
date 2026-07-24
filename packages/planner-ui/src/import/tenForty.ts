@@ -126,10 +126,21 @@ export function seedPlanFromTenForty(
   }
   review.push({
     status: 'mapped',
-    source: 'Filing status & state (1040 header)',
-    detail: `Filing ${inputs.filingStatus === 'single' ? 'single' : 'jointly'}, resident of ${plan.household.state}.`,
+    source: 'Filing status (1040 header)',
+    detail: `Filing ${inputs.filingStatus === 'single' ? 'single' : 'jointly'}.`,
     locator: form1040('header'),
     confidence: 'exact',
+    target: 'household.filingStatus',
+  })
+  // The state is the wizard's own question, NOT read off the return — a 1040
+  // carries a mailing address, which is not necessarily the state of residence.
+  review.push({
+    status: 'mapped',
+    source: 'State of residence (guided entry, not on the 1040)',
+    detail: `Resident of ${plan.household.state}, as entered in the guided form.`,
+    locator: { kind: 'none', note: 'asked directly by the guided form; a 1040 only carries a mailing address' },
+    confidence: 'exact',
+    target: 'household.state',
   })
   const jointReturn = inputs.filingStatus === 'marriedFilingJointly'
   review.push({
