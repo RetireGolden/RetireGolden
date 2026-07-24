@@ -410,7 +410,7 @@ function ScenarioDetail({
             metric: comparison.headline.lifetimeTaxesAndPenalties,
             format: 'money',
           },
-          { label: 'Depletion year', metric: comparison.headline.depletionYear, format: 'year' },
+          { label: 'Depletion year', metric: comparison.headline.depletionYear, format: 'depletionYear' },
           { label: 'Projection end year', metric: comparison.headline.projectionEndYear, format: 'year' },
           { label: 'Intended spending', metric: comparison.spending.intended, format: 'money' },
           { label: 'Funded spending', metric: comparison.spending.funded, format: 'money' },

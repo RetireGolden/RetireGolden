@@ -37,6 +37,7 @@ import * as scenariosModule from '@retiregolden/engine/scenarios/scenarios'
 import { runSpendingSolve } from '../optimize/spendingRunner'
 import { MetricTable, ScenariosPage } from './ScenariosPage'
 import {
+  formatMetricValue,
   formatScenarioDelta,
   isScenarioComparisonCurrent,
   scenarioOverviewRequestKey,
@@ -69,6 +70,12 @@ describe('scenario comparison presentation', () => {
     expect(formatScenarioDelta(2, 'year')).toBe('+2 years')
     expect(formatScenarioDelta(0, 'money')).toBe('$0')
     expect(formatScenarioDelta(null, 'money')).toBe('—')
+  })
+
+  it('renders a non-depleting plan as never instead of unavailable', () => {
+    expect(formatMetricValue(null, 'depletionYear')).toBe('never')
+    expect(formatMetricValue(2045, 'depletionYear')).toBe('2045')
+    expect(formatScenarioDelta(null, 'depletionYear')).toBe('—')
   })
 
   it('distinguishes converged, feasible lower-bound, and unavailable capacity results', () => {

@@ -3,7 +3,7 @@ import type { Plan } from '@retiregolden/engine/model/plan'
 import { canonicalScenarioJson } from '@retiregolden/engine/scenarios/patch'
 import { fmtMoneyCompact } from './format'
 
-export type MetricFormat = 'money' | 'percent' | 'number' | 'year'
+export type MetricFormat = 'money' | 'percent' | 'number' | 'year' | 'depletionYear'
 
 export function scenarioOverviewRequestKey(
   baselineSnapshotHash: string,
@@ -27,6 +27,7 @@ export function isScenarioComparisonCurrent(
 }
 
 export function formatMetricValue(value: number | null, format: MetricFormat): string {
+  if (format === 'depletionYear') return value === null ? 'never' : String(Math.round(value))
   if (value === null) return '—'
   if (format === 'money') return fmtMoneyCompact(value)
   if (format === 'percent') return `${(value * 100).toFixed(1)}%`
@@ -41,7 +42,7 @@ export function formatScenarioDelta(value: number | null, format: MetricFormat):
   const absolute = Math.abs(value)
   if (format === 'money') return `${sign}${fmtMoneyCompact(absolute)}`
   if (format === 'percent') return `${sign}${(absolute * 100).toFixed(1)} pp`
-  if (format === 'year') {
+  if (format === 'year' || format === 'depletionYear') {
     const rounded = Math.round(absolute)
     return `${sign}${rounded} ${rounded === 1 ? 'year' : 'years'}`
   }
