@@ -5,6 +5,7 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 ## 2026-07 (July 2026 Depth Wave)
 
 **2026-07-24**
+- Released **`@retiregolden/planner-ui` 0.4.6** (patch — scenario compatibility fix). Requires `@retiregolden/engine ^0.1.6` and uses its canonical scenario-patch rebind API whenever a plan receives a new identity: duplication, conversion from an example, and collision-rekeyed backup import. Canonical scenarios now keep their baseline preconditions aligned with the cloned plan id and remain applicable after those flows; unchanged-id imports and legacy loose patches retain their prior behavior. Tests cover duplicate, example-conversion, and import round-trips with real canonical scenarios.
 - Prepared **`@retiregolden/engine` 0.1.6** (patch — additive scenario API). Adds the versioned `retiregolden.scenario-patch` contract: canonical typed operations with baseline preconditions and metadata, stable diff and composition, conflict-aware atomic apply/revert, legacy loose-patch compatibility and migration, safe plan-identity rebinding, and fail-closed path validation. Planner-ui adopts the new rebind API in the same wave and must declare `^0.1.6` after this engine release is published.
 
 **2026-07-23**
