@@ -136,7 +136,18 @@ Brokerage,"$50,000","($3,000)"
     expect(r.ok).toBe(true)
     if (!r.ok) return
     expect(r.plan.accounts[0]).toMatchObject({ type: 'taxable', balance: 50000, costBasis: 50000 })
-    expect(r.review.some((i) => i.status === 'defaulted' && i.detail.includes('negative'))).toBe(true)
+    const note = r.review.find((i) => i.status === 'defaulted' && i.detail.includes('negative'))!
+    expect(note).toBeTruthy()
+    // The landed basis came from the balance cell; the rejected negative basis
+    // cell is context — the locator must not name it as the value's source.
+    expect(note.locator).toEqual({
+      kind: 'derived',
+      from: [
+        { kind: 'csvRow', row: 2, column: 'Balance' },
+        { kind: 'csvRow', row: 2, column: 'Cost Basis' },
+      ],
+      note: 'basis set from the balance; the negative basis cell was ignored',
+    })
     expect(parsePlan(r.plan).ok).toBe(true)
   })
 
@@ -171,5 +182,125 @@ Mystery deficit,-500
     const junk = { ...analysis.analysis, dataRows: [['x', 'not-money'], ['y', '--']] }
     const r = draftPlanFromGenericCsv(junk, ['name', 'balance'], testIds)
     expect(r.ok).toBe(false)
+  })
+})
+
+describe('genericCsv provenance (WS1)', () => {
+  it('gives every review item a locator and a confidence', () => {
+    const analysis = analyzeGenericCsv(RPM_FIXTURE)
+    expect(analysis.ok).toBe(true)
+    if (!analysis.ok) return
+    const r = draftPlanFromGenericCsv(analysis.analysis, analysis.analysis.guessedRoles, testIds)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    for (const item of r.review) {
+      expect(item.locator, item.source).toBeDefined()
+      expect(item.confidence, item.source).toBeDefined()
+    }
+  })
+
+  it('locates each RPM account at its header-offset-corrected row, widened to every column that landed', () => {
+    const analysis = analyzeGenericCsv(RPM_FIXTURE)
+    expect(analysis.ok).toBe(true)
+    if (!analysis.ok) return
+    // Two title rows (1,2) then the header (3): the first data row is parsed-row 4.
+    expect(analysis.analysis.dataRowNumbers).toEqual([4, 5, 6, 7, 8])
+    const r = draftPlanFromGenericCsv(analysis.analysis, analysis.analysis.guessedRoles, testIds)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    const taxable = r.review.find((i) => i.status === 'mapped' && i.source.startsWith('Taxable account'))!
+    // The taxable row's name, cost basis, and contribution all landed on the
+    // account, so the locator covers those columns alongside the balance.
+    expect(taxable.locator).toEqual({
+      kind: 'derived',
+      from: [
+        { kind: 'csvRow', row: 4, column: 'Balance' },
+        { kind: 'csvRow', row: 4, column: 'Description' },
+        { kind: 'csvRow', row: 4, column: 'Cost Basis' },
+        { kind: 'csvRow', row: 4, column: 'Annual Contribution' },
+      ],
+      note: 'balance + name + cost basis + contribution',
+    })
+    // No type column in the RPM sheet — the class is a name-keyword guess.
+    expect(taxable.confidence).toBe('assumed')
+    // The account is the first row pushed to the draft plan.
+    expect(taxable.target).toBe('accounts[0]')
+  })
+
+  it('covers the name cell that named the account, not only its balance', () => {
+    // Cash account: no basis column, no contribution value that lands — but the
+    // name cell still populated the account record.
+    const cash = analyzeGenericCsv('Account,Balance\nAlly Savings,20000\n')
+    expect(cash.ok).toBe(true)
+    if (!cash.ok) return
+    const r = draftPlanFromGenericCsv(cash.analysis, cash.analysis.guessedRoles, testIds)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    const item = r.review.find((i) => i.status === 'mapped' && i.source.startsWith('Ally Savings'))!
+    expect(item.locator).toEqual({
+      kind: 'derived',
+      from: [
+        { kind: 'csvRow', row: 2, column: 'Balance' },
+        { kind: 'csvRow', row: 2, column: 'Account' },
+      ],
+      note: 'balance + name',
+    })
+  })
+
+  it('widens the locator to just the contribution column when no basis landed', () => {
+    // A Roth (explicit type) with a contribution but no cost-basis column.
+    const roth = analyzeGenericCsv('Account,Type,Balance,Annual Contribution\nMy Roth,Roth IRA,50000,7000\n')
+    expect(roth.ok).toBe(true)
+    if (!roth.ok) return
+    const r = draftPlanFromGenericCsv(roth.analysis, roth.analysis.guessedRoles, testIds)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    const item = r.review.find((i) => i.status === 'mapped' && i.source.startsWith('My Roth'))!
+    expect(item.locator).toEqual({
+      kind: 'derived',
+      from: [
+        { kind: 'csvRow', row: 2, column: 'Balance' },
+        { kind: 'csvRow', row: 2, column: 'Account' },
+        { kind: 'csvRow', row: 2, column: 'Type' },
+        { kind: 'csvRow', row: 2, column: 'Annual Contribution' },
+      ],
+      note: 'balance + name + type + contribution',
+    })
+    // Confidence semantics are unchanged — an explicit type column is still exact.
+    expect(item.confidence).toBe('exact')
+  })
+
+  it('grades a class read from an explicit type column as exact', () => {
+    const typed = analyzeGenericCsv('Account,Type,Balance\nMy Roth,Roth IRA,50000\n')
+    expect(typed.ok).toBe(true)
+    if (!typed.ok) return
+    const r = draftPlanFromGenericCsv(typed.analysis, typed.analysis.guessedRoles, testIds)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    const roth = r.review.find((i) => i.status === 'mapped' && i.source.startsWith('My Roth'))!
+    expect(roth.confidence).toBe('exact')
+    expect(roth.locator).toEqual({
+      kind: 'derived',
+      from: [
+        { kind: 'csvRow', row: 2, column: 'Balance' },
+        { kind: 'csvRow', row: 2, column: 'Account' },
+        { kind: 'csvRow', row: 2, column: 'Type' },
+      ],
+      note: 'balance + name + type',
+    })
+  })
+
+  it('grades a type cell that did not name the class as assumed, even when nonempty', () => {
+    // The type cell "Asset" matches no class keyword — "roth" comes from the
+    // NAME, so claiming column-exact fidelity would overstate it.
+    const typed = analyzeGenericCsv('Account,Type,Balance\nMy Roth IRA,Asset,50000\n')
+    expect(typed.ok).toBe(true)
+    if (!typed.ok) return
+    const r = draftPlanFromGenericCsv(typed.analysis, typed.analysis.guessedRoles, testIds)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.plan.accounts[0]!.type).toBe('roth')
+    const roth = r.review.find((i) => i.status === 'mapped' && i.source.startsWith('My Roth'))!
+    expect(roth.confidence).toBe('assumed')
   })
 })

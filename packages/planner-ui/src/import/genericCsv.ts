@@ -13,6 +13,7 @@ import type { Account, Plan } from '@retiregolden/engine/model/plan'
 import { createEmptyPlan, parsePlan } from '@retiregolden/engine/model/plan'
 import { parseCsv, parseMoney } from './csv'
 import { mapProjectionLabAccountType } from './projectionLab'
+import { csvRowLocator as csvRow, type SourceLocator } from './provenance'
 import type { ImportReviewItem } from './reviewChecklist'
 
 export type ColumnRole = 'name' | 'type' | 'balance' | 'costBasis' | 'contribution' | 'ignore'
@@ -31,6 +32,12 @@ export interface GenericCsvAnalysis {
   dataRows: string[][]
   /** One guessed role per header column; the wizard lets the user override. */
   guessedRoles: ColumnRole[]
+  /**
+   * 1-based parsed-row number for each `dataRows` entry (the header and any
+   * leading title rows are skipped). Additive/optional so a hand-built analysis
+   * stays valid; when absent, locators fall back to a header-relative estimate.
+   */
+  dataRowNumbers?: number[]
 }
 
 export type GenericCsvAnalysisResult = { ok: true; analysis: GenericCsvAnalysis } | { ok: false; message: string }
@@ -66,12 +73,19 @@ export function analyzeGenericCsv(text: string): GenericCsvAnalysisResult {
     const nonEmpty = cells.filter((c) => c.trim() !== '')
     if (nonEmpty.length < 2) continue
     if (nonEmpty.some(isMoneyish)) continue // data row, not a header
-    const dataRows = rows.slice(r + 1).filter((row) => row.some(isMoneyish))
+    const dataRows: string[][] = []
+    const dataRowNumbers: number[] = []
+    for (let k = r + 1; k < rows.length; k++) {
+      if (rows[k]!.some(isMoneyish)) {
+        dataRows.push(rows[k]!)
+        dataRowNumbers.push(k + 1) // 1-based parsed-row number
+      }
+    }
     if (dataRows.length === 0) continue
     const guessedRoles = cells.map(guessColumnRole)
     // A usable table needs at least a name-ish and a money-ish column somewhere;
     // the user can still fix the guesses by hand.
-    return { ok: true, analysis: { header: cells, dataRows, guessedRoles } }
+    return { ok: true, analysis: { header: cells, dataRows, guessedRoles, dataRowNumbers } }
   }
   return {
     ok: false,
@@ -107,6 +121,10 @@ export function draftPlanFromGenericCsv(
   const basisCol = roles.indexOf('costBasis')
   const contributionCol = roles.indexOf('contribution')
 
+  /** Header text of a role's column, for the `column` on a row locator. */
+  const columnFor = (col: number): string | undefined => (col >= 0 ? analysis.header[col] || undefined : undefined)
+  const balanceColumn = columnFor(balanceCol)
+
   const review: ImportReviewItem[] = []
   const plan = createEmptyPlan({ newId, name: 'Imported from spreadsheet' })
   const ownerId = plan.household.people[0]!.id
@@ -117,10 +135,19 @@ export function draftPlanFromGenericCsv(
 
   for (let r = 0; r < analysis.dataRows.length; r++) {
     const cells = analysis.dataRows[r]!
+    // True parsed-row number when the analysis carries it; else a header-relative
+    // estimate (header at row 1, first data row at row 2).
+    const rowNumber = analysis.dataRowNumbers?.[r] ?? r + 2
     const name = (nameCol === -1 ? '' : (cells[nameCol] ?? '').trim()) || `Row ${r + 1}`
     const typeText = typeCol === -1 ? '' : (cells[typeCol] ?? '').trim()
     if (totalRowRe.test(name) || totalRowRe.test(typeText)) {
-      review.push({ status: 'skipped', source: name, detail: 'Summary/total row — counting it would double the money above it.' })
+      review.push({
+        status: 'skipped',
+        source: name,
+        detail: 'Summary/total row — counting it would double the money above it.',
+        locator: csvRow(rowNumber, columnFor(nameCol) ?? balanceColumn),
+        confidence: 'unmapped',
+      })
       continue
     }
     const balance = parseMoney(cells[balanceCol])
@@ -128,17 +155,40 @@ export function draftPlanFromGenericCsv(
     // sign convention — import it as debt instead of dropping the row.
     const negativeLiability = balance !== null && balance < 0 && loanLikeRe.test(`${name} ${typeText}`)
     if ((balance === null || balance < 0) && !negativeLiability) {
-      review.push({ status: 'skipped', source: name, detail: 'Row had no readable non-negative balance.' })
+      review.push({
+        status: 'skipped',
+        source: name,
+        detail: 'Row had no readable non-negative balance.',
+        locator: csvRow(rowNumber, balanceColumn),
+        confidence: 'unmapped',
+      })
       continue
     }
     const guessSource = typeText !== '' ? typeText : name
     const typeGuess = negativeLiability ? 'debt' : mapProjectionLabAccountType(typeText, name)
     const mapped = typeGuess ?? 'taxable'
+    // 'exact' only when the type text ITSELF named the class — a nonempty type
+    // cell does not prove it did (Name "My Roth IRA" + Type "Asset" maps roth
+    // off the name); a name-keyword guess or the taxable fallback is 'assumed'.
+    const typeFromColumn =
+      typeGuess !== null &&
+      !negativeLiability &&
+      typeCol !== -1 &&
+      typeText !== '' &&
+      mapProjectionLabAccountType(typeText, '') === typeGuess
     const amount = Math.abs(balance!)
 
     const base = { id: newId(), name, annualReturnPct: null }
     const contribution = contributionCol === -1 ? null : parseMoney(cells[contributionCol])
     const annualContribution = contribution !== null && contribution > 0 ? contribution : 0
+    // The index this row's account will occupy once pushed — every row that
+    // reaches the switch pushes exactly one account (skipped rows `continue`).
+    const accountIndex = plan.accounts.length
+    // Whether a cost-basis / contribution column value actually landed on this
+    // account, so the mapped item's locator can point at those columns too.
+    // Contribution only lands on account types that carry `annualContribution`.
+    const contribContributed = annualContribution > 0 && mapped !== 'property' && mapped !== 'debt'
+    let basisContributed = false
 
     let account: Account
     switch (mapped) {
@@ -147,6 +197,7 @@ export function draftPlanFromGenericCsv(
         // A negative basis cell (adjustment lines, sign conventions) must not
         // sink the whole import at validation — treat it like a missing basis.
         const basis = basisRaw !== null && basisRaw >= 0 ? basisRaw : null
+        basisContributed = basis !== null
         account = { ...base, type: 'taxable', ownerPersonId: null, balance: amount, costBasis: basis ?? amount, annualContribution }
         if (basis === null) {
           review.push({
@@ -155,6 +206,18 @@ export function draftPlanFromGenericCsv(
             detail:
               (basisRaw !== null && basisRaw < 0 ? 'The cost basis cell was negative, so it was ignored — ' : 'No cost basis column/value — ') +
               'basis was set equal to the balance (no unrealized gain). Correct it on the Accounts screen.',
+            // The landed basis came from the balance cell; a rejected negative
+            // basis cell is context, never the source of the landed value.
+            locator:
+              basisRaw !== null && basisRaw < 0
+                ? {
+                    kind: 'derived',
+                    from: [csvRow(rowNumber, balanceColumn), csvRow(rowNumber, columnFor(basisCol))],
+                    note: 'basis set from the balance; the negative basis cell was ignored',
+                  }
+                : csvRow(rowNumber, balanceColumn),
+            confidence: 'assumed',
+            target: `accounts[${accountIndex}].costBasis`,
           })
         }
         break
@@ -186,16 +249,47 @@ export function draftPlanFromGenericCsv(
             status: 'defaulted',
             source: name,
             detail: `The negative balance looked like a liability sign convention — imported as a $${amount.toLocaleString('en-US', { maximumFractionDigits: 0 })} debt.`,
+            locator: csvRow(rowNumber, balanceColumn),
+            confidence: 'assumed',
+            target: `accounts[${accountIndex}]`,
           })
         }
         review.push({
           status: 'defaulted',
           source: name,
           detail: 'Debts need an interest rate and monthly payment — defaults of 5% and $0/mo were used; set the real terms on the Accounts screen.',
+          locator: csvRow(rowNumber),
+          confidence: 'assumed',
+          target: `accounts[${accountIndex}]`,
         })
         break
     }
     plan.accounts.push(account)
+    // The locator covers every cell that populated the account record: the
+    // name/type cells that named and classified it, the balance, and any
+    // cost-basis/contribution cells that landed — not just the balance.
+    const extraLocators: SourceLocator[] = []
+    const extraNotes: string[] = []
+    if (nameCol !== -1) {
+      extraLocators.push(csvRow(rowNumber, columnFor(nameCol)))
+      extraNotes.push('name')
+    }
+    if (typeFromColumn) {
+      extraLocators.push(csvRow(rowNumber, columnFor(typeCol)))
+      extraNotes.push('type')
+    }
+    if (basisContributed) {
+      extraLocators.push(csvRow(rowNumber, columnFor(basisCol) ?? balanceColumn))
+      extraNotes.push('cost basis')
+    }
+    if (contribContributed) {
+      extraLocators.push(csvRow(rowNumber, columnFor(contributionCol) ?? balanceColumn))
+      extraNotes.push('contribution')
+    }
+    const mappedLocator: SourceLocator =
+      extraLocators.length > 0
+        ? { kind: 'derived', from: [csvRow(rowNumber, balanceColumn), ...extraLocators], note: ['balance', ...extraNotes].join(' + ') }
+        : csvRow(rowNumber, balanceColumn)
     review.push({
       status: typeGuess === null ? 'defaulted' : 'mapped',
       source: `${name}${typeText !== '' ? ` (${typeText})` : ''}`,
@@ -203,7 +297,30 @@ export function draftPlanFromGenericCsv(
         typeGuess === null
           ? `No recognizable account type — imported as a taxable account with a $${amount.toLocaleString('en-US', { maximumFractionDigits: 0 })} balance. Change the type on the Accounts screen if that is wrong.`
           : `Imported as a ${mapped} account with a $${amount.toLocaleString('en-US', { maximumFractionDigits: 0 })} balance.`,
+      locator: mappedLocator,
+      confidence: typeFromColumn ? 'exact' : 'assumed',
+      target: `accounts[${accountIndex}]`,
     })
+    // Cells the user explicitly assigned but this account type discards — say
+    // so, or the report implies they landed.
+    if (basisCol !== -1 && mapped !== 'taxable' && parseMoney(cells[basisCol]) !== null) {
+      review.push({
+        status: 'unmapped',
+        source: name,
+        detail: `The cost basis cell was not imported — only taxable accounts track cost basis, and this row was imported as ${mapped}.`,
+        locator: csvRow(rowNumber, columnFor(basisCol)),
+        confidence: 'unmapped',
+      })
+    }
+    if (contribution !== null && contribution > 0 && !contribContributed) {
+      review.push({
+        status: 'unmapped',
+        source: name,
+        detail: `The contribution cell was not imported — ${mapped} accounts do not carry an annual contribution.`,
+        locator: csvRow(rowNumber, columnFor(contributionCol)),
+        confidence: 'unmapped',
+      })
+    }
   }
 
   if (plan.accounts.length === 0) {
@@ -214,6 +331,8 @@ export function draftPlanFromGenericCsv(
     status: 'unmapped',
     source: 'Everything except accounts',
     detail: 'Spreadsheet rows import as account balances only — enter household, income, spending, and Social Security in the planner sections.',
+    locator: { kind: 'none', note: 'spreadsheet rows carry only account balances, not household, income, spending, or Social Security' },
+    confidence: 'unmapped',
   })
 
   const parsed = parsePlan(plan)

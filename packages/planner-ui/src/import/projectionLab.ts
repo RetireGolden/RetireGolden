@@ -14,6 +14,7 @@
 import type { Account, Plan } from '@retiregolden/engine/model/plan'
 import { createEmptyPlan, parsePlan } from '@retiregolden/engine/model/plan'
 import { MAX_REASONABLE_DOLLARS, parseMoney } from './csv'
+import { jsonPathLocator as jsonPath, type ImportConfidence, type SourceLocator } from './provenance'
 import type { ImportReviewItem } from './reviewChecklist'
 
 export const MAX_IMPORT_JSON_CHARS = 10_000_000
@@ -69,6 +70,15 @@ function firstDollars(rec: Record<string, unknown>, ...keys: string[]): number |
   return null
 }
 
+/** Like `firstDollars`, but preserves WHICH alias key supplied the value, so a locator can name the exact field. */
+function firstDollarsKeyed(rec: Record<string, unknown>, ...keys: string[]): { value: number; key: string } | null {
+  for (const k of keys) {
+    const n = asDollars(rec[k])
+    if (n !== null) return { value: n, key: k }
+  }
+  return null
+}
+
 type MappedType = 'cash' | 'taxable' | 'traditional' | 'roth' | 'hsa' | 'property' | 'debt'
 
 /**
@@ -113,7 +123,9 @@ export function mapProjectionLabExport(
   const person = plan.household.people[0]!
 
   // --- Household ------------------------------------------------------------
-  const user = asRecord(root['user']) ?? asRecord(root['profile'])
+  const userRec = asRecord(root['user'])
+  const userKey = userRec ? 'user' : 'profile'
+  const user = userRec ?? asRecord(root['profile'])
   const birthYearRaw = user?.['birthYear']
   const birthYear =
     typeof birthYearRaw === 'number' && Number.isInteger(birthYearRaw) && birthYearRaw > 1900 && birthYearRaw < 2100
@@ -125,44 +137,68 @@ export function mapProjectionLabExport(
       status: 'defaulted',
       source: `Birth year ${birthYear}`,
       detail: 'Date of birth set to July 1 of your ProjectionLab birth year — set the exact date on the Household screen.',
+      locator: jsonPath(`${userKey}.birthYear`),
+      confidence: 'assumed',
+      target: 'household.people[0].dob',
     })
   } else {
     review.push({
       status: 'unmapped',
       source: 'Date of birth',
       detail: 'The export carried no readable birth year — set your date of birth on the Household screen.',
+      locator: { kind: 'none', note: 'the export carried no readable birth year' },
+      confidence: 'unmapped',
     })
   }
   review.push({
     status: 'defaulted',
     source: 'Filing status & state',
     detail: `Filing status defaulted to single and state to ${plan.household.state} — ProjectionLab exports do not carry them. Set both on the Household screen.`,
+    locator: { kind: 'none', note: 'ProjectionLab exports do not carry filing status or state' },
+    confidence: 'assumed',
   })
 
   // Retirement milestone age, when present on the first plan.
-  const firstPlan = asArray(root['plans'])?.map(asRecord).find((p) => p !== null) ?? null
+  const plansArray = asArray(root['plans']) ?? []
+  const firstPlanIndex = plansArray.findIndex((p) => asRecord(p) !== null)
+  const firstPlan = firstPlanIndex === -1 ? null : asRecord(plansArray[firstPlanIndex])
   const milestones = firstPlan ? (asArray(firstPlan['milestones']) ?? []) : []
-  for (const m of milestones) {
-    const rec = asRecord(m)
+  for (let mi = 0; mi < milestones.length; mi++) {
+    const rec = asRecord(milestones[mi])
     if (!rec) continue
     const name = (firstString(rec, 'name', 'label') ?? '').toLowerCase()
     const age = rec['age']
     if (name.includes('retire') && typeof age === 'number' && age >= 30 && age <= 80) {
       person.retirementAge = age
-      review.push({ status: 'mapped', source: `Milestone "${firstString(rec, 'name', 'label')!}"`, detail: `Retirement age set to ${age}.` })
+      review.push({
+        status: 'mapped',
+        source: `Milestone "${firstString(rec, 'name', 'label')!}"`,
+        detail: `Retirement age set to ${age}.`,
+        locator: jsonPath(`plans[${firstPlanIndex}].milestones[${mi}].age`),
+        confidence: 'exact',
+        target: 'household.people[0].retirementAge',
+      })
       break
     }
   }
 
   // --- Accounts ---------------------------------------------------------------
-  for (const entry of rawAccounts) {
-    const rec = asRecord(entry)
+  for (let ai = 0; ai < rawAccounts.length; ai++) {
+    const rec = asRecord(rawAccounts[ai])
     if (!rec) continue
+    const accountPath = `currentFinances.accounts[${ai}]`
     const name = firstString(rec, 'name', 'label') ?? 'Imported account'
     const typeStr = firstString(rec, 'type', 'accountType', 'category') ?? ''
-    const balance = firstDollars(rec, 'balance', 'value', 'currentBalance', 'amount')
-    if (balance === null) {
-      review.push({ status: 'skipped', source: name, detail: 'Account had no readable balance.' })
+    const balanceRead = firstDollarsKeyed(rec, 'balance', 'value', 'currentBalance', 'amount')
+    const balance = balanceRead?.value ?? null
+    if (balanceRead === null || balance === null) {
+      review.push({
+        status: 'skipped',
+        source: name,
+        detail: 'Account had no readable balance.',
+        locator: jsonPath(accountPath),
+        confidence: 'unmapped',
+      })
       continue
     }
     const mapped = mapProjectionLabAccountType(typeStr, name)
@@ -171,15 +207,25 @@ export function mapProjectionLabExport(
         status: 'unmapped',
         source: `${name} (${typeStr || 'unknown type'}, $${balance.toLocaleString('en-US', { maximumFractionDigits: 0 })})`,
         detail: 'Account type has no RetireGolden equivalent mapping — add it by hand on the Accounts screen.',
+        locator: jsonPath(accountPath),
+        confidence: 'unmapped',
       })
       continue
     }
 
     const base = { id: newId(), name, annualReturnPct: null }
+    // The index this account will occupy once pushed — every account that reaches
+    // the switch is pushed exactly once (skipped/unmapped rows `continue` above).
+    const accountIndex = plan.accounts.length
+    // Alias keys beyond the balance whose values were copied verbatim into the
+    // account — the mapped item's locator must name every cell that landed.
+    const copiedKeys: string[] = []
     let account: Account
     switch (mapped) {
       case 'taxable': {
-        const costBasis = firstDollars(rec, 'costBasis', 'basis')
+        const basisRead = firstDollarsKeyed(rec, 'costBasis', 'basis')
+        const costBasis = basisRead?.value ?? null
+        if (basisRead) copiedKeys.push(basisRead.key)
         account = {
           ...base,
           type: 'taxable',
@@ -193,6 +239,9 @@ export function mapProjectionLabExport(
             status: 'defaulted',
             source: name,
             detail: 'No cost basis in the export — basis was set equal to the balance (no unrealized gain). Correct it on the Accounts screen.',
+            locator: jsonPath(accountPath),
+            confidence: 'assumed',
+            target: `accounts[${accountIndex}].costBasis`,
           })
         }
         break
@@ -228,18 +277,27 @@ export function mapProjectionLabExport(
         break
       case 'debt': {
         const interestRaw = rec['interestRate']
-        const payment = firstDollars(rec, 'payment', 'monthlyPayment')
+        const paymentRead = firstDollarsKeyed(rec, 'payment', 'monthlyPayment')
+        const payment = paymentRead?.value ?? null
+        if (paymentRead) copiedKeys.push(paymentRead.key)
         // Nothing imports silently: an unreadable rate falls back to 5% with a
         // review item, and a fraction-looking rate (0.035) is scaled with one.
+        // A pure default has NO source coordinate (a jsonPath here would
+        // fabricate one); the scaled fraction genuinely derives from the field.
         let interestPct = 5
         let interestNote: string | null = 'No readable interest rate in the export — 5% was assumed. Set the real rate on the Accounts screen.'
+        let interestLocator: SourceLocator = { kind: 'none', note: 'no readable interest rate in the export' }
+        let interestConfidence: ImportConfidence = 'assumed'
         if (typeof interestRaw === 'number' && Number.isFinite(interestRaw) && interestRaw >= 0 && interestRaw < 100) {
           if (interestRaw > 0 && interestRaw < 1) {
             interestPct = Math.round(interestRaw * 100 * 10000) / 10000
             interestNote = `The export's interest rate of ${interestRaw} looked like a fraction — imported as ${interestPct}%. Check it on the Accounts screen.`
+            interestLocator = jsonPath(`${accountPath}.interestRate`)
+            interestConfidence = 'derived'
           } else {
             interestPct = interestRaw
             interestNote = null
+            copiedKeys.push('interestRate')
           }
         }
         account = {
@@ -251,13 +309,23 @@ export function mapProjectionLabExport(
           monthlyPayment: payment ?? 0,
         }
         if (interestNote !== null) {
-          review.push({ status: 'defaulted', source: name, detail: interestNote })
+          review.push({
+            status: 'defaulted',
+            source: name,
+            detail: interestNote,
+            locator: interestLocator,
+            confidence: interestConfidence,
+            target: `accounts[${accountIndex}].interestPct`,
+          })
         }
         if (payment === null) {
           review.push({
             status: 'defaulted',
             source: name,
             detail: 'No monthly payment in the export — set the real payment on the Accounts screen.',
+            locator: { kind: 'none', note: 'no monthly payment in the export' },
+            confidence: 'assumed',
+            target: `accounts[${accountIndex}].monthlyPayment`,
           })
         }
         break
@@ -268,30 +336,67 @@ export function mapProjectionLabExport(
       status: 'mapped',
       source: `${name} (${typeStr || 'type from name'})`,
       detail: `Imported as a ${mapped} account with a $${balance.toLocaleString('en-US', { maximumFractionDigits: 0 })} balance.`,
+      // Point at the exact alias keys the values were read from (an export can
+      // carry both `balance` and `value`; the report must say which ones won),
+      // covering every field copied into the account — not only the balance.
+      locator:
+        copiedKeys.length > 0
+          ? {
+              kind: 'derived',
+              from: [balanceRead.key, ...copiedKeys].map((k) => jsonPath(`${accountPath}.${k}`)),
+              note: ['balance', ...copiedKeys].join(' + '),
+            }
+          : jsonPath(`${accountPath}.${balanceRead.key}`),
+      // 'exact' only when the type string ITSELF named the class — a nonempty
+      // type does not prove it did (type "Asset" + name "My Roth IRA" maps roth
+      // off the name); a name-inferred type is 'assumed'.
+      confidence: typeStr && mapProjectionLabAccountType(typeStr, '') === mapped ? 'exact' : 'assumed',
+      target: `accounts[${accountIndex}]`,
     })
   }
 
   // --- Income sources ---------------------------------------------------------
-  const rawIncomes = asArray(currentFinances['incomeSources']) ?? asArray(currentFinances['incomes']) ?? []
-  for (const entry of rawIncomes) {
-    const rec = asRecord(entry)
+  const incomesFromSources = asArray(currentFinances['incomeSources'])
+  const incomeKey = incomesFromSources ? 'incomeSources' : 'incomes'
+  const rawIncomes = incomesFromSources ?? asArray(currentFinances['incomes']) ?? []
+  for (let ii = 0; ii < rawIncomes.length; ii++) {
+    const rec = asRecord(rawIncomes[ii])
     if (!rec) continue
+    const incomePath = `currentFinances.${incomeKey}[${ii}]`
     const name = firstString(rec, 'name', 'label') ?? 'Income'
     const annual = firstDollars(rec, 'annualAmount', 'annual', 'amount')
     if (annual === null) {
-      review.push({ status: 'skipped', source: name, detail: 'Income source had no readable annual amount.' })
+      review.push({
+        status: 'skipped',
+        source: name,
+        detail: 'Income source had no readable annual amount.',
+        locator: jsonPath(incomePath),
+        confidence: 'unmapped',
+      })
       continue
     }
     const typeStr = (firstString(rec, 'type', 'category') ?? '').toLowerCase()
-    const looksLikeWages = /employment|salary|wage|job|work/.test(`${typeStr} ${name.toLowerCase()}`)
+    const wagesFromType = /employment|salary|wage|job|work/.test(typeStr)
+    const looksLikeWages = wagesFromType || /employment|salary|wage|job|work/.test(name.toLowerCase())
     if (looksLikeWages) {
       plan.incomes.push({ type: 'wages', id: newId(), personId: person.id, annualGross: annual, endAge: null, realGrowthPct: 0 })
-      review.push({ status: 'mapped', source: name, detail: `Imported as wages of $${annual.toLocaleString('en-US')} /yr until retirement.` })
+      review.push({
+        status: 'mapped',
+        source: name,
+        detail: `Imported as wages of $${annual.toLocaleString('en-US')} /yr until retirement.`,
+        locator: jsonPath(incomePath),
+        // 'exact' only when the source's own type/category said wages; a
+        // keyword match on the NAME is a heuristic classification.
+        confidence: wagesFromType ? 'exact' : 'assumed',
+        target: `incomes[${plan.incomes.length - 1}]`,
+      })
     } else if (/social security|\bss\b|ssa/.test(`${typeStr} ${name.toLowerCase()}`)) {
       review.push({
         status: 'unmapped',
         source: name,
         detail: 'Social Security needs a claim age and benefit basis — set it up on the Social Security screen (you can import your SSA statement there).',
+        locator: jsonPath(incomePath),
+        confidence: 'unmapped',
       })
     } else {
       plan.incomes.push({
@@ -308,6 +413,9 @@ export function mapProjectionLabExport(
         status: 'defaulted',
         source: name,
         detail: `Imported as recurring ordinary income of $${annual.toLocaleString('en-US')} /yr with no end year — set dates and tax treatment on the Income screen.`,
+        locator: jsonPath(incomePath),
+        confidence: 'assumed',
+        target: `incomes[${plan.incomes.length - 1}]`,
       })
     }
   }
@@ -316,12 +424,14 @@ export function mapProjectionLabExport(
   const rawExpenses = asArray(currentFinances['expenses']) ?? []
   let expenseTotal = 0
   const expenseNames: string[] = []
-  for (const entry of rawExpenses) {
-    const rec = asRecord(entry)
+  const expenseLocators: SourceLocator[] = []
+  for (let ei = 0; ei < rawExpenses.length; ei++) {
+    const rec = asRecord(rawExpenses[ei])
     if (!rec) continue
     const annual = firstDollars(rec, 'annualAmount', 'annual', 'amount')
     if (annual === null) continue
     expenseTotal += annual
+    expenseLocators.push(jsonPath(`currentFinances.expenses[${ei}]`))
     const name = firstString(rec, 'name', 'label')
     if (name) expenseNames.push(name)
   }
@@ -331,15 +441,26 @@ export function mapProjectionLabExport(
       status: 'defaulted',
       source: expenseNames.length > 0 ? expenseNames.join(', ') : 'Expenses',
       detail: `Baseline annual spending set to the $${expenseTotal.toLocaleString('en-US')} sum of your ProjectionLab expenses — RetireGolden models one baseline plus phases/goals, so re-shape it on the Spending screen (healthcare is modeled separately).`,
+      locator: { kind: 'derived', from: expenseLocators, note: 'summed annual expenses' },
+      confidence: 'derived',
+      target: 'expenses.baseAnnual',
     })
   } else {
-    review.push({ status: 'unmapped', source: 'Spending', detail: 'No readable expenses in the export — set baseline spending on the Spending screen.' })
+    review.push({
+      status: 'unmapped',
+      source: 'Spending',
+      detail: 'No readable expenses in the export — set baseline spending on the Spending screen.',
+      locator: { kind: 'none', note: 'no readable expenses in the export' },
+      confidence: 'unmapped',
+    })
   }
 
   review.push({
     status: 'unmapped',
     source: 'Strategies, assumptions & scenarios',
     detail: 'Withdrawal strategy, Roth conversions, market assumptions, and scenarios do not transfer between tools — review the Strategy and Assumptions screens.',
+    locator: { kind: 'none', note: 'withdrawal strategy, conversions, assumptions, and scenarios do not transfer between tools' },
+    confidence: 'unmapped',
   })
 
   const parsed = parsePlan(plan)

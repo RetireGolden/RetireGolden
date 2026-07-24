@@ -178,3 +178,141 @@ describe('mapProjectionLabExport', () => {
     expect(r.review.some((i) => i.source === 'Fraction-rate loan' && i.status === 'defaulted' && i.detail.includes('fraction'))).toBe(true)
   })
 })
+
+describe('projectionLab provenance (WS1)', () => {
+  it('gives every review item a locator and a confidence', () => {
+    const r = mapProjectionLabExport(PROJECTIONLAB_FIXTURE, testIds)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    for (const item of r.review) {
+      expect(item.locator, item.source).toBeDefined()
+      expect(item.confidence, item.source).toBeDefined()
+    }
+  })
+
+  it('points each account item at its JSON path with the right confidence', () => {
+    const r = mapProjectionLabExport(PROJECTIONLAB_FIXTURE, testIds)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+
+    // Brokerage is accounts[1]; its explicit "taxable" type makes the mapping
+    // exact, and the locator names the alias keys every copied value was read
+    // from — the balance and the cost basis both landed.
+    const brokerage = r.review.find((i) => i.status === 'mapped' && i.source.startsWith('Brokerage'))!
+    expect(brokerage.locator).toEqual({
+      kind: 'derived',
+      from: [
+        { kind: 'jsonPath', path: 'currentFinances.accounts[1].balance' },
+        { kind: 'jsonPath', path: 'currentFinances.accounts[1].costBasis' },
+      ],
+      note: 'balance + costBasis',
+    })
+    expect(brokerage.confidence).toBe('exact')
+    // It landed on the second account pushed to the draft plan.
+    expect(brokerage.target).toBe('accounts[1]')
+
+    // Crypto Wallet is accounts[7]; no mapping, so unmapped and no landed field.
+    const crypto = r.review.find((i) => i.status === 'unmapped' && i.source.startsWith('Crypto Wallet'))!
+    expect(crypto.locator).toEqual({ kind: 'jsonPath', path: 'currentFinances.accounts[7]' })
+    expect(crypto.confidence).toBe('unmapped')
+    expect(crypto.target).toBeUndefined()
+  })
+
+  it('grades an account whose type was inferred from the name as assumed, not exact', () => {
+    // No `type` field: mapProjectionLabAccountType falls back to the name keyword,
+    // and the source string renders "(type from name)".
+    const json = JSON.stringify({
+      currentFinances: { accounts: [{ name: 'My rollover 401k', balance: 500000 }] },
+    })
+    const r = mapProjectionLabExport(json, testIds)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    const item = r.review.find((i) => i.status === 'mapped' && i.source.startsWith('My rollover 401k'))!
+    expect(item.source).toContain('type from name')
+    expect(item.confidence).toBe('assumed')
+    expect(item.target).toBe('accounts[0]')
+  })
+
+  it('points debt defaults at their fields and never fabricates a source for them', () => {
+    const json = JSON.stringify({
+      currentFinances: { accounts: [{ name: 'Old mortgage', type: 'debt', balance: 120000 }] },
+    })
+    const r = mapProjectionLabExport(json, testIds)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    // The 5% rate and $0 payment are pure mapper defaults: the export has no
+    // interestRate/payment fields, so a jsonPath locator would fabricate a
+    // source. Each default targets the exact scalar an override applies to.
+    const rate = r.review.find((i) => i.detail.includes('interest rate'))!
+    expect(rate.locator?.kind).toBe('none')
+    expect(rate.target).toBe('accounts[0].interestPct')
+    const payment = r.review.find((i) => i.detail.includes('monthly payment'))!
+    expect(payment.locator?.kind).toBe('none')
+    expect(payment.target).toBe('accounts[0].monthlyPayment')
+  })
+
+  it('grades wages inferred from the income NAME as assumed, not exact', () => {
+    const json = JSON.stringify({
+      currentFinances: { accounts: [], incomes: [{ name: 'Day job', amount: 90000 }] },
+    })
+    const r = mapProjectionLabExport(json, testIds)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    const wages = r.review.find((i) => i.source === 'Day job')!
+    expect(wages.confidence).toBe('assumed')
+  })
+
+  it('grades a type string that did not name the class as assumed, even when nonempty', () => {
+    // The type "Asset" matches no class keyword — "roth" comes from the NAME,
+    // so a nonempty type string alone must not claim exact fidelity.
+    const json = JSON.stringify({
+      currentFinances: { accounts: [{ name: 'My Roth IRA', type: 'Asset', balance: 40000 }] },
+    })
+    const r = mapProjectionLabExport(json, testIds)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.plan.accounts[0]!.type).toBe('roth')
+    const item = r.review.find((i) => i.status === 'mapped' && i.source.startsWith('My Roth IRA'))!
+    expect(item.confidence).toBe('assumed')
+  })
+
+  it('targets landed income and spending fields, but not file-level remainders', () => {
+    const r = mapProjectionLabExport(PROJECTIONLAB_FIXTURE, testIds)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    // Salary maps to the first income stream; the rental maps to the second.
+    const wages = r.review.find((i) => i.source === 'Salary')!
+    expect(wages.target).toBe('incomes[0]')
+    const rental = r.review.find((i) => i.source === 'Rental duplex')!
+    expect(rental.target).toBe('incomes[1]')
+    // The summed baseline lands on the single expenses.baseAnnual field.
+    expect(r.review.find((i) => i.source === 'Living, Travel')!.target).toBe('expenses.baseAnnual')
+    // "Strategies, assumptions & scenarios" is a file-level remainder — no target.
+    expect(r.review.find((i) => i.source.includes('Strategies'))!.target).toBeUndefined()
+  })
+
+  it('marks the July-1 DOB assumption and derives the expense baseline', () => {
+    const r = mapProjectionLabExport(PROJECTIONLAB_FIXTURE, testIds)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+
+    const dob = r.review.find((i) => i.source.startsWith('Birth year'))!
+    expect(dob.locator).toEqual({ kind: 'jsonPath', path: 'user.birthYear' })
+    expect(dob.confidence).toBe('assumed')
+
+    const milestone = r.review.find((i) => i.source.startsWith('Milestone'))!
+    expect(milestone.locator).toEqual({ kind: 'jsonPath', path: 'plans[0].milestones[0].age' })
+    expect(milestone.confidence).toBe('exact')
+
+    // The spending baseline is the sum of two expenses — a derived value.
+    const spending = r.review.find((i) => i.source === 'Living, Travel')!
+    expect(spending.confidence).toBe('derived')
+    expect(spending.locator?.kind).toBe('derived')
+    if (spending.locator?.kind === 'derived') {
+      expect(spending.locator.from).toEqual([
+        { kind: 'jsonPath', path: 'currentFinances.expenses[0]' },
+        { kind: 'jsonPath', path: 'currentFinances.expenses[1]' },
+      ])
+    }
+  })
+})

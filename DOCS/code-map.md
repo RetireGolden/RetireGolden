@@ -107,7 +107,7 @@ test files.
 | `socialSecurity/` | SS analysis features on top of the engine's SS math: `expectedPv`, `breakEven`, `explain`, `ficaReturn`, `survivorSwitching`, `ssaStatementXml`, plus form storage/guards (the ledger-consumed math lives in the engine package) |
 | `longevity/` | Life-expectancy wizard: `model`, `factors`, `LongevityWizard.tsx`, `LongevityResults.tsx` (the SSA period table + types live in the engine package) |
 | `integration/` | Engine-adjacent tests that drive engine code through app harnesses (`useProjection`, the learning registry, the spending solver) |
-| `import/` | Import & migration wizard (`/import`): hardened CSV core (`csv.ts`), broker positions mappers (`brokerCsv.ts`), ProjectionLab JSON mapper (`projectionLab.ts`), generic/RPM column-mapping (`genericCsv.ts`), 1040 guided seed (`tenForty.ts`), shared review checklist (`reviewChecklist.ts` + `ReviewChecklistView.tsx`), `ImportPage.tsx` |
+| `import/` | Import & migration wizard (`/import`): hardened CSV core (`csv.ts`), broker positions mappers (`brokerCsv.ts`), ProjectionLab JSON mapper (`projectionLab.ts`), generic/RPM column-mapping (`genericCsv.ts`), 1040 guided seed (`tenForty.ts`), shared review checklist (`reviewChecklist.ts` + `ReviewChecklistView.tsx`), the import-provenance contract + export envelope (`provenance.ts` — browser-free, the stable `import-provenance` subpath) and its source-hash helper (`sourceHash.ts` — Web Crypto, async, called at the UI boundary), `ImportPage.tsx` |
 | `learn/` | Learning Center: pages, `learningRegistry.ts`, `glossary.ts`, `components/`, 136 articles in `content/` |
 | `testSupport/` | `samplePlan.ts` (deprecated shim over the example library); shared fixtures moved to the engine package's `testing/` |
 

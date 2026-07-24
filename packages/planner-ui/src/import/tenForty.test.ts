@@ -164,3 +164,94 @@ describe('seedPlanFromTenForty', () => {
     if (!noSpouse.ok) expect(noSpouse.message).toContain('spouse')
   })
 })
+
+describe('tenForty provenance (WS1)', () => {
+  it('gives every review item a form-1040 locator and a confidence', () => {
+    for (const inputs of [RETIREE_1040, WORKER_1040]) {
+      const r = seedPlanFromTenForty(inputs, testIds, fixedNow)
+      expect(r.ok).toBe(true)
+      if (!r.ok) return
+      for (const item of r.review) {
+        expect(item.locator, item.source).toBeDefined()
+        expect(item.confidence, item.source).toBeDefined()
+      }
+    }
+  })
+
+  it('locates the wages line at 1a and grades a verbatim line exact', () => {
+    const r = seedPlanFromTenForty(WORKER_1040, testIds, fixedNow)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    const wages = r.review.find((i) => i.source.includes('line 1a'))!
+    expect(wages.locator).toEqual({ kind: 'form1040', line: '1a' })
+    expect(wages.confidence).toBe('exact')
+  })
+
+  it('marks the yield-implied taxable balance estimated and the MAGI derived', () => {
+    const r = seedPlanFromTenForty(RETIREE_1040, testIds, fixedNow)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+
+    const taxable = r.review.find((i) => i.source.includes('lines 2b/3a/3b'))!
+    expect(taxable.confidence).toBe('estimated')
+    expect(taxable.locator?.kind).toBe('derived')
+    if (taxable.locator?.kind === 'derived') {
+      expect(taxable.locator.from).toContainEqual({ kind: 'form1040', line: '2b' })
+    }
+
+    const magi = r.review.find((i) => i.source.includes('lines 11 + 2a'))!
+    expect(magi.confidence).toBe('derived')
+    expect(magi.locator?.kind).toBe('derived')
+    if (magi.locator?.kind === 'derived') {
+      expect(magi.locator.from).toEqual([
+        { kind: 'form1040', line: '11' },
+        { kind: 'form1040', line: '2a' },
+      ])
+    }
+  })
+
+  it('emits a review item for the guided DOB(s), typed in the form rather than read from the 1040', () => {
+    // Single filer: one DOB, landing on one addressable field.
+    const single = seedPlanFromTenForty(WORKER_1040, testIds, fixedNow)
+    expect(single.ok).toBe(true)
+    if (!single.ok) return
+    const singleDob = single.review.find((i) => i.source.startsWith('Date of birth'))!
+    expect(singleDob.status).toBe('mapped')
+    expect(singleDob.confidence).toBe('exact') // verbatim user input
+    expect(singleDob.locator).toEqual({
+      kind: 'none',
+      note: 'the date of birth is typed in the guided entry form, not read from the 1040',
+    })
+    expect(singleDob.target).toBe('household.people[0].dob')
+
+    // Joint return: two DOBs land on two fields, so no single target.
+    const joint = seedPlanFromTenForty(RETIREE_1040, testIds, fixedNow)
+    expect(joint.ok).toBe(true)
+    if (!joint.ok) return
+    const jointDob = joint.review.find((i) => i.source.startsWith('Dates of birth'))!
+    expect(jointDob.status).toBe('mapped')
+    expect(jointDob.confidence).toBe('exact')
+    expect(jointDob.locator?.kind).toBe('none')
+    expect(jointDob.target).toBeUndefined()
+  })
+
+  it('targets landed plan records/fields, but not file-level or unmapped items', () => {
+    const r = seedPlanFromTenForty(RETIREE_1040, testIds, fixedNow)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    // MAGI lands on a single assumptions field.
+    expect(r.review.find((i) => i.source.includes('lines 11 + 2a'))!.target).toBe('assumptions.recentAnnualMagi')
+    // The SS benefit basis lands on the one income stream it created.
+    expect(r.review.find((i) => i.source.includes('line 6a'))!.target).toBe('incomes[0]')
+    // Filing status comes from the return; the state is the wizard's own
+    // question (a 1040 only carries a mailing address) — split, each targeted.
+    const filing = r.review.find((i) => i.source.startsWith('Filing status'))!
+    expect(filing.target).toBe('household.filingStatus')
+    expect(filing.locator).toEqual({ kind: 'form1040', line: 'header' })
+    const state = r.review.find((i) => i.source.startsWith('State of residence'))!
+    expect(state.target).toBe('household.state')
+    expect(state.locator?.kind).toBe('none')
+    // IRA distributions map to nothing — no target.
+    expect(r.review.find((i) => i.source.includes('line 4b'))!.target).toBeUndefined()
+  })
+})
