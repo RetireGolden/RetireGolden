@@ -59,6 +59,23 @@ function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
 }
 
+function ownValue(object: Record<string, unknown>, key: string): unknown {
+  return Object.getOwnPropertyDescriptor(object, key)?.value;
+}
+
+function defineOwn(
+  object: Record<string, unknown>,
+  key: string,
+  value: unknown,
+): void {
+  Object.defineProperty(object, key, {
+    value,
+    configurable: true,
+    enumerable: true,
+    writable: true,
+  });
+}
+
 /** Stable JSON bytes: object keys sort recursively and undefined object values are omitted. */
 export function canonicalScenarioJson(value: unknown): string {
   if (value === undefined) return "undefined";
@@ -118,7 +135,7 @@ function valueStateAt(
   for (const segment of segments) {
     if (!isPlainObject(current) || !Object.hasOwn(current, segment))
       return { present: false };
-    current = current[segment];
+    current = ownValue(current, segment);
   }
   return current === undefined
     ? { present: false }
@@ -135,7 +152,7 @@ function assertNoArrayTraversal(
       return `path "${encodeScenarioPointer(segments)}" traverses an array`;
     if (!isPlainObject(current) || !Object.hasOwn(current, segments[index]!))
       return null;
-    current = current[segments[index]!];
+    current = ownValue(current, segments[index]!);
   }
   return Array.isArray(current)
     ? `path "${encodeScenarioPointer(segments)}" traverses an array`
@@ -150,12 +167,12 @@ function setAt(
   let current = root;
   for (let index = 0; index < segments.length - 1; index++) {
     const segment = segments[index]!;
-    const next = Object.hasOwn(current, segment) ? current[segment] : undefined;
+    const next = ownValue(current, segment);
     if (Array.isArray(next))
       return `path "${encodeScenarioPointer(segments)}" traverses an array`;
     if (next === undefined) {
       const created: Record<string, unknown> = {};
-      current[segment] = created;
+      defineOwn(current, segment, created);
       current = created;
     } else if (isPlainObject(next)) {
       current = next;
@@ -163,7 +180,7 @@ function setAt(
       return `path "${encodeScenarioPointer(segments)}" traverses a non-object`;
     }
   }
-  current[segments.at(-1)!] = cloneJson(value);
+  defineOwn(current, segments.at(-1)!, cloneJson(value));
   return null;
 }
 
@@ -177,11 +194,11 @@ function removeAt(
       return `path "${encodeScenarioPointer(segments)}" traverses an array`;
     if (!isPlainObject(current) || !Object.hasOwn(current, segments[index]!))
       return null;
-    current = current[segments[index]!];
+    current = ownValue(current, segments[index]!);
   }
   if (Array.isArray(current))
     return `path "${encodeScenarioPointer(segments)}" traverses an array`;
-  if (isPlainObject(current)) delete current[segments.at(-1)!];
+  if (isPlainObject(current)) Reflect.deleteProperty(current, segments.at(-1)!);
   return null;
 }
 
@@ -197,24 +214,26 @@ function diffNode(
       ...new Set([...Object.keys(base), ...Object.keys(edited)]),
     ].sort(compareText);
     for (const key of keys) {
-      const hasBase = Object.hasOwn(base, key) && base[key] !== undefined;
-      const hasEdited = Object.hasOwn(edited, key) && edited[key] !== undefined;
+      const baseValue = ownValue(base, key);
+      const editedValue = ownValue(edited, key);
+      const hasBase = Object.hasOwn(base, key) && baseValue !== undefined;
+      const hasEdited = Object.hasOwn(edited, key) && editedValue !== undefined;
       const path = encodeScenarioPointer([...segments, key]);
       if (!hasEdited) {
         operations.push({
           op: "remove",
           path,
-          before: { present: true, value: cloneJson(base[key]) as JsonValue },
+          before: { present: true, value: cloneJson(baseValue) as JsonValue },
         });
       } else if (!hasBase) {
         operations.push({
           op: "set",
           path,
           before: { present: false },
-          value: cloneJson(edited[key]) as JsonValue,
+          value: cloneJson(editedValue) as JsonValue,
         });
       } else {
-        diffNode(base[key], edited[key], [...segments, key], operations);
+        diffNode(baseValue, editedValue, [...segments, key], operations);
       }
     }
     return;
@@ -297,7 +316,11 @@ function deepMerge(base: unknown, patch: unknown): unknown {
   for (const [key, value] of Object.entries(patch)) {
     if (key === "__proto__" || key === "constructor" || key === "prototype")
       continue;
-    out[key] = key in out ? deepMerge(out[key], value) : value;
+    defineOwn(
+      out,
+      key,
+      Object.hasOwn(out, key) ? deepMerge(ownValue(out, key), value) : value,
+    );
   }
   return out;
 }
