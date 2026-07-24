@@ -121,9 +121,11 @@ The supported product API is:
   (`PlanStore`, `PlanSummary`, `PlanStoreProvider`, `indexedDbPlanStore`),
   the read-only capability (`readOnly` prop + `useWorkspaceReadOnly`), the
   route groups (`plannerWorkspaceRoutes`, `plannerContentRoutes`,
-  `plannerHomeRoutes`), `ReportBrandingProvider`, and
+  `plannerHomeRoutes`), `ReportBrandingProvider`,
   `PlannerEditionProvider` (with `usePlannerEdition` /
-  `PlannerEditionConfig`) — see "Hosting the workspace" below;
+  `PlannerEditionConfig`), and `RefreshProtectionProvider` (with
+  `useRefreshProtection` / `RefreshProtectionValue`) — see "Hosting the
+  workspace" below;
 - the **`./plan-format` subpath** — `serializeV2Backup`, `parseV2Backup`,
   the envelope types, and the kind/version constants. This is the plan
   interchange format (the same file the web app's backup download produces);
@@ -331,6 +333,60 @@ host's own chrome mounted under the provider. This is a route-group-host
 concern, so — unlike `reportBranding` — `<PlannerApp/>` exposes no matching
 prop: it renders the web plans-management home and the AGPL web app, where the
 defaults are always correct.
+
+### Refresh protection
+
+The embedded "Update balances from a broker CSV" panel refreshes balances from a
+broker file. A professional host can freeze accounts it has reconciled by hand so
+the refresh cannot overwrite them. The panel takes no props, so protection is
+supplied through the ambient `RefreshProtectionProvider` (mirroring
+`PlannerEditionProvider`): pass **structured entries** — a `RefreshProtectionEntry`
+is `{ accountId, field? }`, where a bare `accountId` protects the whole account and
+`field: 'costBasis'` records cost-basis-scoped intent — and the panel resolves each
+`accountId` to that account's current `accounts[i]` position before threading it
+into the refresh engine. IDs (not array positions) are the contract because
+plan-array indices shift as accounts are added or removed. Entries are **structured
+rather than `<id>.<field>` strings** because account ids are arbitrary nonempty
+strings that may contain dots (`'broker.acct-123'` is valid) and an id can equal
+another id's field path — so a flat string like `'a.costBasis'` is genuinely
+ambiguous (whole account `'a.costBasis'` vs field `costBasis` of `'a'`) and no
+longest-match guess can resolve it safely. The `accountId` names the account
+verbatim; there is nothing to parse, and nested or dotted ids are unambiguous. Omit
+the provider and the panel protects nothing — the public web behaviour.
+
+**Field-scoped entries are conservative today.** A `{ accountId, field: 'costBasis' }`
+entry currently blocks that account's **whole** refresh, not just the named field:
+the engine's `applyBrokerBalance` writes balance and cost basis as a unit and cannot
+skip one field, so a protected field locks the entire account's refresh write
+(protection errs toward overwriting *less*). So `{ accountId: 'acct-456', field: 'costBasis' }`
+protects `acct-456`'s balance too. The `field` form is accepted so a host can record
+the intended granularity; finer per-field application is future engine work and will
+not change what hosts pass. (There is no `'balance'` field — a whole-account entry
+already covers a balance lock under these conservative semantics.)
+
+```tsx
+import { RefreshProtectionProvider } from '@retiregolden/planner-ui'
+
+<RefreshProtectionProvider
+  protectedAccounts={[{ accountId: 'acct-123' }, { accountId: 'acct-456', field: 'costBasis' }]}
+>
+  {/* plannerWorkspaceRoutes */}
+</RefreshProtectionProvider>
+```
+
+Protected accounts stay **selectable** in every row (marked "(protected)");
+selecting one **blocks** that row — a "Protected — advisor override" note and a
+transient "Allow this refresh" control — rather than being refused, so even an
+unmatched row has a path to deliberately refresh a frozen account. A blocked row
+contributes nothing to the preview/apply until released. "Allow this refresh"
+releases the account for that panel instance only, and only for the row that asked
+— a sibling row still cannot reach it (one releasing row per account), the release
+is revoked if that row re-targets, and it never mutates the host's stored decision.
+The panel also fully resets whenever the workspace navigates to a different plan
+(keyed on `plan.id`), so no parsed file or release survives across plans.
+`useRefreshProtection()` reads the ambient list; `RefreshProtectionValue`
+(`{ protectedAccounts }`, a `readonly RefreshProtectionEntry[]`) is the context
+value shape.
 
 ### Plan interchange
 
