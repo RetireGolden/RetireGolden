@@ -26,7 +26,7 @@
  * touches the advisor's stored override record.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
 import {
@@ -134,23 +134,30 @@ export function UpdateBalancesPanel() {
   // before this render derives anything from `parsed`, and React discards the
   // interrupted render without an extra commit).
   const [seenPlanId, setSeenPlanId] = useState(plan.id)
-  // A monotonic counter bumped on every plan-identity reset. An in-flight file read
-  // captures its value before awaiting and discards the parse if it changed while the
-  // read was outstanding — so a read started under the old plan cannot repopulate the
-  // panel after a navigation reset ran. `planIdentityRef` mirrors the CURRENT (id,
-  // generation) so the captured-then-compare check in `handleFile` reads the latest.
-  const [planGeneration, setPlanGeneration] = useState(0)
+  // One synchronous epoch guarding every async file read. It is bumped SYNCHRONOUSLY
+  // both here (on a plan-identity reset) and at the very start of `handleFile` (each
+  // file selection supersedes any prior in-flight read). A read captures the epoch
+  // before awaiting `file.text()` and discards its parse if the epoch moved while the
+  // read was outstanding — so neither a navigation reset nor a newer file choice can
+  // be overwritten by a stale continuation. A synchronous ref (not a passive effect)
+  // is required: a `file.text()` that settles before an effect could run must still
+  // see the up-to-date epoch. Bumping the ref twice under a StrictMode double-render
+  // is harmless — a stale read is discarded either way, and no render output depends
+  // on the ref.
+  const readEpoch = useRef(0)
   if (seenPlanId !== plan.id) {
+    // Bumping the ref here — during the render-phase reset — is the deliberate,
+    // load-bearing part of the guard: a `file.text()` still outstanding from the old
+    // plan captured the pre-bump epoch, and its continuation closed over the OLD plan,
+    // so it MUST be discarded once the identity changed. No render output reads this
+    // ref, so the "no refs during render" rule does not apply to this mutation.
+    // eslint-disable-next-line react-hooks/refs -- intentional: discard in-flight reads across a plan swap; render output never reads readEpoch
+    readEpoch.current++
     setSeenPlanId(plan.id)
-    setPlanGeneration((g) => g + 1)
     setParsed(null)
     setReleased(new Map())
     setMessage(null)
   }
-  const planIdentityRef = useRef({ id: plan.id, generation: planGeneration })
-  useEffect(() => {
-    planIdentityRef.current = { id: plan.id, generation: planGeneration }
-  }, [plan.id, planGeneration])
 
   const updatable = plan.accounts.filter(isBalanceUpdatable).map((a) => ({ id: a.id, name: a.name }))
   const accountName = (id: string) => updatable.find((a) => a.id === id)?.name ?? id
@@ -178,9 +185,13 @@ export function UpdateBalancesPanel() {
     [plan, protectedAccounts, released],
   )
 
+  // User-initiated reset (Cancel, or a parse error): tear the table and releases down
+  // AND clear the status message — a message left behind would point the user at
+  // controls the reset just removed.
   const resetPanel = () => {
     setParsed(null)
     setReleased(new Map())
+    setMessage(null)
   }
 
   const handleFile = async (file: File) => {
@@ -193,16 +204,16 @@ export function UpdateBalancesPanel() {
     // the table and releases down first makes the restore immediate.
     setParsed(null)
     setReleased(new Map())
-    // Capture the plan identity BEFORE the async read. `file.text()` can take a while;
-    // if the plan is swapped mid-read (a `/plan/:id` navigation runs the identity reset
-    // above), this continuation would otherwise repopulate `parsed` from the OLD plan
-    // AFTER the reset ran. Cloned plans share account ids, so an old file could then be
-    // applied to the new plan. Discard the result when the id OR the generation changed.
-    const startPlanId = plan.id
-    const startGeneration = planGeneration
+    // Claim the read epoch SYNCHRONOUSLY: each file selection supersedes any prior
+    // in-flight read (so two files chosen back-to-back can't let the OLDER read win),
+    // and a `/plan/:id` navigation reset bumps the same epoch (so a read started under
+    // the old plan can't repopulate the panel after the reset ran — cloned plans share
+    // account ids, so an old file could otherwise be applied to the new plan). After
+    // the await, a moved epoch means this read was superseded, so discard it.
+    const token = ++readEpoch.current
     const text = await file.text()
-    if (planIdentityRef.current.id !== startPlanId || planIdentityRef.current.generation !== startGeneration) {
-      return // a different plan (or a swap-away-and-back) landed during the read — drop it
+    if (token !== readEpoch.current) {
+      return // a newer file choice or a plan swap landed during the read — drop it
     }
     const r = parseBrokerPositionsCsv(text)
     if (!r.ok) {
@@ -309,7 +320,14 @@ export function UpdateBalancesPanel() {
 
   const duplicateNames = (delta?.duplicateGroups ?? []).map((g) => accountName(g.accountId))
   const blocked = duplicateNames.length > 0
-  const staleNames = (delta?.staleAccountIds ?? []).map(accountName)
+  // Stripping a protected pairing before the engine sees it (see `safeSelection`)
+  // means the engine, blind to that selection, reports the account as stale ("not in
+  // the file"). But the user DID assign a file row to it — it is blocked by an
+  // override, not absent. Exclude any account named in the RAW (pre-strip) selection
+  // so the panel never simultaneously says "blocked by an advisor override" and
+  // "isn't in the file" about the same account.
+  const rawSelectedIds = new Set(selection.values())
+  const staleNames = (delta?.staleAccountIds ?? []).filter((id) => !rawSelectedIds.has(id)).map(accountName)
 
   // Point row `i` at plan account `next` (or '' for "Don't update"). Re-targeting a
   // row that had RELEASED an account revokes that release: a release is scoped to
@@ -343,14 +361,16 @@ export function UpdateBalancesPanel() {
 
   const apply = () => {
     if (!parsed || !delta || blocked) return
-    // Selected rows whose account is protected and NOT released to that row — the
-    // rows the user sees blocked. Counted before the apply so a zero-write result
+    // The UNIQUE protected accounts a selected-but-blocked row points at — the
+    // accounts the user sees blocked. Counted before the apply so a zero-write result
     // can name protection as the cause instead of falsely claiming nothing was
-    // assigned. Computed from the raw selection, matching the per-row `rowBlocked`.
-    let protectionBlocked = 0
+    // assigned. Counted by account id (not by row) so two rows on one protected
+    // account report one protected account, matching the message's "accounts" phrasing.
+    const blockedAccountIds = new Set<string>()
     for (const [i, accId] of selection) {
-      if (hostProtectedIds.has(accId) && released.get(accId) !== i) protectionBlocked++
+      if (hostProtectedIds.has(accId) && released.get(accId) !== i) blockedAccountIds.add(accId)
     }
+    const protectionBlocked = blockedAccountIds.size
     let applied = 0
     update((d) => {
       applied = applyRefresh(d, delta, safeSelection, effective)

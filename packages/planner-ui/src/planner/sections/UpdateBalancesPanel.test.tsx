@@ -606,6 +606,41 @@ describe('UpdateBalancesPanel refresh protection', () => {
     expect(review.textContent).toContain('Refreshed the balance')
   })
 
+  it('does not call a manually-assigned protected account stale (blocked, not absent)', async () => {
+    // An unmatched file row manually assigned to a protected account is stripped from
+    // the engine selection, so the engine — blind to the selection — reports that
+    // account as stale ("not in the file"). But the user DID assign it; it is blocked
+    // by an override, not absent. The panel must show the blocked note and must NOT
+    // also name the account in the stale list, so it never says both at once.
+    const plan = createEmptyPlan({ newId: testIds })
+    const ownerId = plan.household.people[0]!.id
+    plan.accounts.push(
+      { id: 'acct-brokerage', type: 'taxable', name: 'Brokerage', ownerPersonId: null, annualReturnPct: null, balance: 1, costBasis: 1, annualContribution: 0 },
+      // Genuinely absent from the file — this one SHOULD be reported stale.
+      { id: 'acct-hsa', type: 'hsa', name: 'Fidelity HSA', ownerPersonId: ownerId, annualReturnPct: null, balance: 4000, annualContribution: 0 },
+    )
+    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }))
+    await chooseFile(el, UNMATCHED_CSV)
+
+    // The Windfall row matches nothing; hand-point it at the protected Brokerage.
+    act(() => {
+      const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value')!.set!
+      setter.call(selects(el)[0]!, 'acct-brokerage')
+      selects(el)[0]!.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+
+    // The row is blocked by the override.
+    expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected — advisor override')
+
+    // The stale note names the genuinely-absent HSA but NOT the assigned-but-blocked
+    // Brokerage — no "blocked AND not in the file" contradiction about one account.
+    const notes = Array.from(el.querySelectorAll('.callout')).map((c) => c.textContent ?? '')
+    const stale = notes.find((t) => t.includes("aren't in the file"))
+    expect(stale).toBeDefined()
+    expect(stale).toContain('Fidelity HSA')
+    expect(stale).not.toContain('Brokerage')
+  })
+
   it('says protection (not a missing assignment) held everything back when every assigned row is blocked', async () => {
     // Both guesses land on protected accounts, so applying writes zero. The message
     // must name the advisor overrides rather than falsely claim nothing was assigned.
@@ -635,6 +670,38 @@ describe('UpdateBalancesPanel refresh protection', () => {
       b.getAttribute('aria-label')?.startsWith('Allow this refresh for'),
     )
     expect(allowButtons.length).toBe(2)
+
+    // User-initiated Cancel tears the table down — and must clear the now-orphaned
+    // status message too, which pointed at "Allow this refresh" controls the reset
+    // just removed. Leaving it up would direct the user at gone controls.
+    const cancel = Array.from(el.querySelectorAll('button')).find((b) => b.textContent === 'Cancel')!
+    act(() => cancel.click())
+    expect(el.querySelector('tbody')).toBeNull()
+    expect(el.querySelector('[role="status"]')).toBeNull()
+  })
+
+  it('counts unique protected accounts (not blocked rows) in the zero-write message', async () => {
+    // Two file rows classify onto the SAME protected Brokerage account. The blocked
+    // count is by account, not by row, so two rows on one protected account report a
+    // single protected account (singular), matching the message's "accounts" wording.
+    const plan = createEmptyPlan({ newId: testIds })
+    plan.accounts.push(
+      { id: 'acct-brokerage', type: 'taxable', name: 'Brokerage', ownerPersonId: null, annualReturnPct: null, balance: 5000, costBasis: 3000, annualContribution: 0 },
+    )
+    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }))
+    await chooseFile(el, TWO_BROKERAGE_CSV)
+
+    // Both rows guessed the one protected Brokerage account; stripping keeps them from
+    // forming a duplicate block, so Apply proceeds and writes nothing.
+    expect(selects(el)[0]!.value).toBe('acct-brokerage')
+    expect(selects(el)[1]!.value).toBe('acct-brokerage')
+    expect(applyButton(el).disabled).toBe(false)
+
+    act(() => applyButton(el).click())
+    const status = el.querySelector('[role="status"]')!.textContent ?? ''
+    // One unique account → singular "1 selected account is", not "2 selected accounts".
+    expect(status).toContain('1 selected account is protected by advisor overrides')
+    expect(status).not.toContain('2 selected')
   })
 
   it('resets transient panel state when the plan identity changes', async () => {
@@ -670,8 +737,10 @@ describe('UpdateBalancesPanel refresh protection', () => {
   it('discards an in-flight file read when the plan changes mid-read', async () => {
     // A slow `file.text()` must not repopulate the panel from the OLD plan after a
     // navigation reset ran — cloned plans share account ids, so an old file applied to
-    // the new plan could bypass its protection. Start a read whose text() we resolve by
-    // hand, swap the plan context mid-read, then resolve: the stale parse is dropped.
+    // the new plan could bypass its protection. The synchronous read epoch is bumped by
+    // the render-phase identity reset, so a read that captured the old epoch is dropped
+    // even if its text() settles before any effect could run. Start a read whose text()
+    // we resolve by hand, swap the plan context mid-read, then resolve: it is dropped.
     const p1 = planWithAccounts()
     const el = renderPanel(p1, protect(p1, { accountId: 'acct-brokerage' }))
 
@@ -696,11 +765,72 @@ describe('UpdateBalancesPanel refresh protection', () => {
     })
 
     // Resolve the OLD read now, with a CSV that would otherwise build a table. Because
-    // the plan changed, the continuation discards it — the panel stays reset.
+    // the epoch moved, the continuation discards it — the panel stays reset.
     await act(async () => {
       resolveText(TWO_ACCOUNT_CSV)
       await new Promise((resolve) => setTimeout(resolve, 20))
     })
     expect(el.querySelector('tbody')).toBeNull()
+
+    // The epoch is not stuck: a fresh read under the new plan still builds its table.
+    await chooseFile(el, TWO_ACCOUNT_CSV)
+    expect(el.querySelector('tbody')).not.toBeNull()
+    expect(selects(el)[0]!.value).toBe('acct-brokerage')
+  })
+
+  it('shows the newer file and discards a superseded slower read (releases after it stay valid)', async () => {
+    // Two files chosen back-to-back carry the same plan identity, so an (id, generation)
+    // guard could let the OLDER read win when it settles last. A synchronous per-read
+    // epoch — bumped at the very start of every handleFile — makes each selection
+    // supersede the prior in-flight read: choose slow A, then fast B; resolve B, then A;
+    // the panel shows B's rows, A is dropped, and a release made after B survives A.
+    const plan = planWithAccounts()
+    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }))
+    const input = el.querySelector<HTMLInputElement>('input[type="file"]')!
+
+    // File A: a slow read we resolve by hand. Its CSV would build a table if it won.
+    let resolveA!: (value: string) => void
+    const fileA = new File(['a'], 'a.csv', { type: 'text/csv' })
+    Object.defineProperty(fileA, 'text', {
+      value: () => new Promise<string>((resolve) => { resolveA = resolve }),
+      configurable: true,
+    })
+    // File B: also hand-resolved, chosen AFTER A so it supersedes it.
+    let resolveB!: (value: string) => void
+    const fileB = new File(['b'], 'b.csv', { type: 'text/csv' })
+    Object.defineProperty(fileB, 'text', {
+      value: () => new Promise<string>((resolve) => { resolveB = resolve }),
+      configurable: true,
+    })
+
+    // Choose A (slow), then B (fast) back-to-back — both reads now outstanding.
+    Object.defineProperty(input, 'files', { value: [fileA], configurable: true })
+    act(() => input.dispatchEvent(new Event('change', { bubbles: true })))
+    Object.defineProperty(input, 'files', { value: [fileB], configurable: true })
+    act(() => input.dispatchEvent(new Event('change', { bubbles: true })))
+
+    // Resolve B first — the newer read wins and builds its table.
+    await act(async () => {
+      resolveB(TWO_ACCOUNT_CSV)
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+    expect(el.querySelector('tbody')).not.toBeNull()
+    expect(selects(el)[0]!.value).toBe('acct-brokerage')
+
+    // A release made after B is in effect (its blocked note clears).
+    act(() => el.querySelector<HTMLButtonElement>('button[aria-label="Allow this refresh for Brokerage"]')!.click())
+    expect(el.querySelector('[role="note"]')).toBeNull()
+
+    // Now resolve the OLDER read A. It was superseded, so it must NOT repopulate the
+    // panel or clobber B's release.
+    await act(async () => {
+      resolveA(TWO_ACCOUNT_CSV)
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+    // Still B's table with B's release intact — the row applies, so apply writes it.
+    expect(selects(el)[0]!.value).toBe('acct-brokerage')
+    expect(el.querySelector('[role="note"]')).toBeNull()
+    act(() => applyButton(el).click())
+    expect(plan.accounts.find((a) => a.id === 'acct-brokerage')!).toMatchObject({ balance: 55000, costBasis: 40000 })
   })
 })
