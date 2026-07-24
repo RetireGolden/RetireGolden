@@ -10,6 +10,7 @@ import { TRUSTEES_DEFAULT_SS_HAIRCUT } from '@retiregolden/engine/params'
 import type { ScenarioPlanComparison } from '@retiregolden/engine/scenarios/comparison'
 import type { ScenarioComparison } from '@retiregolden/engine/scenarios/scenarios'
 import type { SpendingSolveResult } from '../optimize/spendingMessages'
+import { WorkspaceReadOnlyContext } from '../data/workspaceReadOnly'
 import { PlanCtx, type PlanContextValue } from './planContextCore'
 import { createSamplePlan } from '../testSupport/samplePlan'
 import { taxCalculatorFor } from './useProjection'
@@ -214,13 +215,15 @@ describe('ScenariosPage comparison lifecycle', () => {
     }
   }
 
-  async function mount(plan = createSamplePlan(), issues: string[] = []) {
+  async function mount(plan = createSamplePlan(), issues: string[] = [], readOnly = false) {
     await act(async () => {
       root.render(
         <MemoryRouter>
-          <PlanCtx.Provider value={contextFor(plan, issues)}>
-            <ScenariosPage />
-          </PlanCtx.Provider>
+          <WorkspaceReadOnlyContext.Provider value={readOnly}>
+            <PlanCtx.Provider value={contextFor(plan, issues)}>
+              <ScenariosPage />
+            </PlanCtx.Provider>
+          </WorkspaceReadOnlyContext.Provider>
         </MemoryRouter>,
       )
     })
@@ -232,6 +235,78 @@ describe('ScenariosPage comparison lifecycle', () => {
       await vi.advanceTimersByTimeAsync(200)
     })
   }
+
+  it('shows the exact canonical fields for a fast lever and disables unavailable choices', async () => {
+    await mount()
+    const select = container.querySelector<HTMLSelectElement>('select')
+    expect(select).toBeTruthy()
+    expect(select!.options).toHaveLength(16)
+    expect(container.textContent).toContain('Fields this scenario patches:')
+    expect(container.textContent).toContain('/household/people')
+
+    await act(async () => {
+      select!.value = 'pension'
+      select!.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+
+    const add = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent?.includes('Add scenario'),
+    )
+    const unavailableStatus = Array.from(container.querySelectorAll('[role="status"]')).find(
+      (status) => status.textContent?.includes('Add an existing pension'),
+    )
+    expect(add?.disabled).toBe(true)
+    expect(unavailableStatus?.textContent).toContain('Add an existing pension')
+    expect(container.querySelector('[role="alert"]')).toBeNull()
+    expect(unavailableStatus?.getAttribute('aria-live')).toBe('polite')
+  })
+
+  it('keeps lever explanations visible while native controls are read-only', async () => {
+    await mount(createSamplePlan(), [], true)
+    const fieldset = container.querySelector('fieldset.editable-region')
+    expect(fieldset?.hasAttribute('disabled')).toBe(true)
+    expect(container.textContent).toContain('Fields this scenario patches:')
+    expect(container.textContent).toContain('/household/people')
+  })
+
+  it('requires a care recipient for couples and exposes modeled relocation states as options', async () => {
+    const plan = await mount()
+    const leverSelect = container.querySelector<HTMLSelectElement>('select')
+
+    await act(async () => {
+      leverSelect!.value = 'care'
+      leverSelect!.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+
+    const recipientLabel = Array.from(container.querySelectorAll('label')).find(
+      (label) => label.textContent === 'Care recipient',
+    )
+    const recipient = document.getElementById(recipientLabel!.htmlFor) as HTMLSelectElement
+    const add = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent?.includes('Add scenario'),
+    )
+    expect(recipient.options).toHaveLength(plan.household.people.length + 1)
+    expect(add?.disabled).toBe(true)
+    expect(container.textContent).toContain('Choose which household member receives care')
+
+    await act(async () => {
+      recipient.value = plan.household.people[1]!.id
+      recipient.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    expect(add?.disabled).toBe(false)
+    expect(container.textContent).toContain('/careEvents')
+
+    await act(async () => {
+      leverSelect!.value = 'relocation'
+      leverSelect!.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    const stateLabel = Array.from(container.querySelectorAll('label')).find(
+      (label) => label.textContent === 'Destination state',
+    )
+    const states = document.getElementById(stateLabel!.htmlFor) as HTMLSelectElement
+    expect(states.options).toHaveLength(51)
+    expect(Array.from(states.options).some((option) => option.value === 'DC')).toBe(true)
+  })
 
   it('shows recalculating and error states without ever labeling a failed detail comparison current', async () => {
     mockedComparePlans.mockImplementationOnce(() => {

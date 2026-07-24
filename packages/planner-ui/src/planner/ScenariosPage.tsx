@@ -30,6 +30,12 @@ import { runSpendingSolve } from '../optimize/spendingRunner'
 import { fmtMoneyCompact } from './format'
 import { LiveStatus } from './LiveStatus'
 import {
+  buildScenarioLever,
+  SCENARIO_LEVER_DEFINITIONS,
+  type ScenarioLeverId,
+  type ScenarioLeverRequest,
+} from '../scenarioLevers'
+import {
   formatMetricValue,
   formatScenarioDelta,
   isScenarioComparisonCurrent,
@@ -38,147 +44,226 @@ import {
   type MetricFormat,
 } from './scenarioComparisonView'
 import { currentStartYear, seedFromPlanId, taxCalculatorFor } from './useProjection'
+import { US_STATES } from './usStates'
 
 const newId = () => crypto.randomUUID()
 
-type TemplateKind = 'retireEarlier' | 'spendMore' | 'ssCut' | 'noConversions' | 'lowerReturns' | 'ltcShock' | 'coastCheck'
-
-const TEMPLATES: Array<{ kind: TemplateKind; label: string }> = [
-  { kind: 'retireEarlier', label: 'Retire earlier/later' },
-  { kind: 'spendMore', label: 'Spend more/less' },
-  { kind: 'ssCut', label: 'Social Security cut' },
-  { kind: 'noConversions', label: 'Skip Roth conversions' },
-  { kind: 'lowerReturns', label: 'Different returns' },
-  { kind: 'ltcShock', label: 'Long-term-care shock' },
-  { kind: 'coastCheck', label: 'Coast check: stop contributing' },
-]
-
-interface TemplateParams {
+interface LeverParams {
   retireAgeDelta: number
   spendPct: number
+  ssClaimAge: number
   ssCutPct: number
-  returnPct: number | null
-  ltcYears: number
-  ltcAnnual: number
-  ltcStartAge: number
+  rothTargetValue: number
+  rothAnnual: number
+  startYear: number
+  endYear: number
+  stockPct: number
+  returnPct: number
+  incomeChangePct: number
+  incomeStartAgeDelta: number
+  destinationState: string
+  moveYear: number
+  survivorSpendingPct: number
+  carePersonId: string
+  careYears: number
+  careAnnual: number
+  careStartAge: number
+  homePropertyId: string
+  homeSaleYear: number
 }
 
-const DEFAULT_PARAMS: TemplateParams = {
-  retireAgeDelta: -2,
-  spendPct: 15,
-  ssCutPct: TRUSTEES_DEFAULT_SS_HAIRCUT.cutPct,
-  returnPct: 4,
-  ltcYears: 3,
-  ltcAnnual: 110_000,
-  ltcStartAge: 84,
+function defaultLeverParams(startYear: number): LeverParams {
+  return {
+    retireAgeDelta: -2,
+    spendPct: 15,
+    ssClaimAge: 70,
+    ssCutPct: TRUSTEES_DEFAULT_SS_HAIRCUT.cutPct,
+    rothTargetValue: 24,
+    rothAnnual: 40_000,
+    startYear,
+    endYear: startYear + 4,
+    stockPct: 60,
+    returnPct: 4,
+    incomeChangePct: 0,
+    incomeStartAgeDelta: 2,
+    destinationState: 'FL',
+    moveYear: startYear + 1,
+    survivorSpendingPct: 70,
+    carePersonId: '',
+    careYears: 3,
+    careAnnual: 110_000,
+    careStartAge: 84,
+    homePropertyId: '',
+    homeSaleYear: startYear + 5,
+  }
 }
 
-function zeroAccountContributions(account: Plan['accounts'][number]): Plan['accounts'][number] {
-  if (!('annualContribution' in account)) return account
-  const next: Record<string, unknown> = { ...account, annualContribution: 0 }
-  delete next.contributionSchedule
-  return next as Plan['accounts'][number]
-}
-
-/** Builds a schema-safe patch for a template. Arrays are replaced wholesale by design. */
-function buildPatch(kind: TemplateKind, p: TemplateParams, plan: Plan): { name: string; patch: Record<string, unknown> } {
+function leverRequest(kind: ScenarioLeverId, p: LeverParams): ScenarioLeverRequest {
   switch (kind) {
-    case 'retireEarlier': {
-      const people = plan.household.people.map((person) => ({
-        ...person,
-        retirementAge:
-          person.retirementAge === null ? null : Math.min(80, Math.max(30, person.retirementAge + p.retireAgeDelta)),
-      }))
-      const verb = p.retireAgeDelta < 0 ? 'earlier' : 'later'
-      return { name: `Retire ${Math.abs(p.retireAgeDelta)}y ${verb}`, patch: { household: { people } } }
-    }
-    case 'spendMore': {
-      const factor = 1 + p.spendPct / 100
+    case 'retirementAge': return { id: kind, yearsDelta: p.retireAgeDelta }
+    case 'spending': return { id: kind, percentChange: p.spendPct }
+    case 'socialSecurityClaim': return { id: kind, claimAge: p.ssClaimAge }
+    case 'socialSecurityCut':
+      return { id: kind, cutPct: p.ssCutPct, fromYear: TRUSTEES_DEFAULT_SS_HAIRCUT.fromYear }
+    case 'rothTarget':
+      return { id: kind, target: 'topOfBracket', targetValue: p.rothTargetValue, startYear: p.startYear, endYear: p.endYear }
+    case 'rothSchedule':
+      return { id: kind, annualAmount: p.rothAnnual, startYear: p.startYear, endYear: p.endYear }
+    case 'rothNone': return { id: kind }
+    case 'allocation': return { id: kind, stockPct: p.stockPct }
+    case 'defaultReturn': return { id: kind, returnPct: p.returnPct }
+    case 'pension':
+    case 'annuity':
+      return { id: kind, monthlyChangePct: p.incomeChangePct, startAgeDelta: p.incomeStartAgeDelta }
+    case 'relocation': return { id: kind, state: p.destinationState, moveYear: p.moveYear }
+    case 'survivorSpending': return { id: kind, percent: p.survivorSpendingPct }
+    case 'care':
       return {
-        name: `Spend ${p.spendPct >= 0 ? '+' : ''}${p.spendPct}%`,
-        patch: { expenses: { baseAnnual: Math.max(0, Math.round(plan.expenses.baseAnnual * factor)) } },
+        id: kind,
+        personId: p.carePersonId || undefined,
+        startAge: p.careStartAge,
+        durationYears: p.careYears,
+        annualCost: p.careAnnual,
       }
-    }
-    case 'ssCut':
-      return {
-        name: `${p.ssCutPct}% SS cut from ${TRUSTEES_DEFAULT_SS_HAIRCUT.fromYear}`,
-        patch: { assumptions: { ssHaircut: { fromYear: TRUSTEES_DEFAULT_SS_HAIRCUT.fromYear, cutPct: p.ssCutPct } } },
-      }
-    case 'noConversions':
-      return { name: 'No Roth conversions', patch: { strategies: { rothConversion: { mode: 'none' } } } }
-    case 'lowerReturns':
-      return {
-        name: `${p.returnPct ?? 0}% default return`,
-        patch: { assumptions: { defaultReturnPct: p.returnPct ?? 0 } },
-      }
-    case 'ltcShock': {
-      const startYear =
-        Number(plan.household.people[0]!.dob.slice(0, 4)) + p.ltcStartAge
-      const goals = [
-        ...plan.expenses.oneTimeGoals,
-        ...Array.from({ length: p.ltcYears }, (_, i) => ({
-          id: newId(),
-          label: `LTC year ${i + 1}`,
-          year: startYear + i,
-          amount: p.ltcAnnual,
-        })),
-      ]
-      return {
-        name: `LTC: ${p.ltcYears}y × ${fmtMoneyCompact(p.ltcAnnual)} at ${p.ltcStartAge}`,
-        patch: { expenses: { oneTimeGoals: goals } },
-      }
-    }
-    case 'coastCheck':
-      return {
-        name: 'Coast check: stop contributing',
-        patch: { accounts: plan.accounts.map(zeroAccountContributions) },
-      }
+    case 'homeSale':
+      return { id: kind, saleYear: p.homeSaleYear, propertyId: p.homePropertyId || undefined }
+    case 'stopContributions': return { id: kind }
   }
 }
 
 function AddScenario() {
-  const { update } = usePlan()
-  const [kind, setKind] = useState<TemplateKind>('retireEarlier')
-  const [params, setParams] = useState<TemplateParams>(DEFAULT_PARAMS)
-  const set = <K extends keyof TemplateParams>(k: K, v: TemplateParams[K]) => setParams((p) => ({ ...p, [k]: v }))
+  const { plan, update } = usePlan()
+  const startYear = currentStartYear()
+  const [kind, setKind] = useState<ScenarioLeverId>('retirementAge')
+  const [params, setParams] = useState<LeverParams>(() => defaultLeverParams(startYear))
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const set = <K extends keyof LeverParams>(key: K, value: LeverParams[K]) =>
+    setParams((current) => ({ ...current, [key]: value }))
+  const preview = useMemo(
+    () =>
+      buildScenarioLever(plan, leverRequest(kind, params), {
+        createdAtIso: '2000-01-01T00:00:00.000Z',
+        startYear,
+        createId: () => 'preview-care-event',
+      }),
+    [kind, params, plan, startYear],
+  )
   // The whole "Add a scenario" card is a plan-mutating form — disable it as a
   // unit when read-only, like the entry sections.
   return (
     <EditableFieldset>
     <div className="card">
       <h2>Add a scenario</h2>
-      <p className="card-hint">Each scenario overrides just a few assumptions on top of the base plan; everything else stays in sync as you keep editing.</p>
+      <p className="card-hint">Use a fast lever to create a reversible proposal. The exact modeled fields are shown before you add it.</p>
       <div className="form-grid">
         <SelectField
           label="What if…"
           value={kind}
-          options={TEMPLATES.map((t) => ({ value: t.kind, label: t.label }))}
+          options={SCENARIO_LEVER_DEFINITIONS.map((definition) => ({ value: definition.id, label: definition.label }))}
           onCommit={(v) => setKind(v)}
         />
-        {kind === 'retireEarlier' ? (
-          <NumberField label="Years earlier (−) / later (+)" value={params.retireAgeDelta} min={-15} max={15} onCommit={(v) => set('retireAgeDelta', Math.round(v ?? -2))} />
+        {kind === 'retirementAge' ? (
+          <NumberField label="All retirement ages: years earlier (−) / later (+)" value={params.retireAgeDelta} min={-15} max={15} onCommit={(v) => set('retireAgeDelta', Math.round(v ?? -2))} />
         ) : null}
-        {kind === 'spendMore' ? <PercentField label="Spending change" value={params.spendPct} min={-50} max={100} onCommit={(v) => set('spendPct', v ?? 15)} /> : null}
-        {kind === 'ssCut' ? <PercentField label="Benefit cut" value={params.ssCutPct} min={0} max={100} onCommit={(v) => set('ssCutPct', v ?? TRUSTEES_DEFAULT_SS_HAIRCUT.cutPct)} /> : null}
-        {kind === 'lowerReturns' ? <PercentField label="Default return" value={params.returnPct} onCommit={(v) => set('returnPct', v)} /> : null}
-        {kind === 'ltcShock' ? (
+        {kind === 'spending' ? <PercentField label="Base spending change" value={params.spendPct} min={-50} max={100} onCommit={(v) => set('spendPct', v ?? 15)} /> : null}
+        {kind === 'socialSecurityClaim' ? <NumberField label="Claim age for all eligible streams" value={params.ssClaimAge} min={62} max={70} onCommit={(v) => set('ssClaimAge', Math.round(v ?? 70))} /> : null}
+        {kind === 'socialSecurityCut' ? <PercentField label="Benefit cut" value={params.ssCutPct} min={0} max={100} onCommit={(v) => set('ssCutPct', v ?? TRUSTEES_DEFAULT_SS_HAIRCUT.cutPct)} /> : null}
+        {kind === 'rothTarget' || kind === 'rothSchedule' ? (
           <>
-            <NumberField label="Years of care" value={params.ltcYears} min={1} max={10} onCommit={(v) => set('ltcYears', Math.round(v ?? 3))} />
-            <MoneyField label="Annual cost (today's $)" value={params.ltcAnnual} onCommit={(v) => set('ltcAnnual', v ?? 110_000)} />
-            <NumberField label="Starting age" value={params.ltcStartAge} min={60} max={105} onCommit={(v) => set('ltcStartAge', Math.round(v ?? 84))} />
+            <NumberField label="Start year" value={params.startYear} min={startYear} max={2200} onCommit={(v) => set('startYear', Math.round(v ?? startYear))} />
+            <NumberField label="End year" value={params.endYear} min={startYear} max={2200} onCommit={(v) => set('endYear', Math.round(v ?? startYear))} />
+          </>
+        ) : null}
+        {kind === 'rothTarget' ? <PercentField label="Top of tax bracket" value={params.rothTargetValue} min={1} max={50} onCommit={(v) => set('rothTargetValue', v ?? 24)} /> : null}
+        {kind === 'rothSchedule' ? <MoneyField label="Annual conversion" value={params.rothAnnual} onCommit={(v) => set('rothAnnual', v ?? 0)} /> : null}
+        {kind === 'allocation' ? <PercentField label="Stocks (remainder in bonds)" value={params.stockPct} min={0} max={100} onCommit={(v) => set('stockPct', v ?? 60)} /> : null}
+        {kind === 'defaultReturn' ? <PercentField label="Default annual return" value={params.returnPct} onCommit={(v) => set('returnPct', v ?? 4)} /> : null}
+        {kind === 'pension' || kind === 'annuity' ? (
+          <>
+            <PercentField label="All matching accounts: monthly income change" value={params.incomeChangePct} min={-100} max={200} onCommit={(v) => set('incomeChangePct', v ?? 0)} />
+            <NumberField label="All matching accounts: start age change" value={params.incomeStartAgeDelta} min={-20} max={20} onCommit={(v) => set('incomeStartAgeDelta', Math.round(v ?? 0))} />
+          </>
+        ) : null}
+        {kind === 'relocation' ? (
+          <>
+            <SelectField label="Destination state" value={params.destinationState} options={US_STATES} onCommit={(v) => set('destinationState', v)} />
+            <NumberField label="Move year" value={params.moveYear} min={startYear} max={2200} onCommit={(v) => set('moveYear', Math.round(v ?? startYear))} />
+          </>
+        ) : null}
+        {kind === 'survivorSpending' ? <PercentField label="Couple spending kept in survivor years" value={params.survivorSpendingPct} min={0} max={100} onCommit={(v) => set('survivorSpendingPct', v ?? 70)} /> : null}
+        {kind === 'care' ? (
+          <>
+            {plan.household.people.length > 1 ? (
+              <SelectField
+                label="Care recipient"
+                value={params.carePersonId}
+                options={[
+                  { value: '', label: 'Choose a household member' },
+                  ...plan.household.people.map((person) => ({ value: person.id, label: person.name })),
+                ]}
+                onCommit={(value) => set('carePersonId', value)}
+              />
+            ) : null}
+            <NumberField label="Years of care" value={params.careYears} min={1} max={25} onCommit={(v) => set('careYears', Math.round(v ?? 3))} />
+            <MoneyField label="Annual cost (today's $)" value={params.careAnnual} onCommit={(v) => set('careAnnual', v ?? 110_000)} />
+            <NumberField label="Starting age" value={params.careStartAge} min={40} max={110} onCommit={(v) => set('careStartAge', Math.round(v ?? 84))} />
+          </>
+        ) : null}
+        {kind === 'homeSale' ? (
+          <>
+            {plan.accounts.filter((account) => account.type === 'property').length > 1 ? (
+              <SelectField
+                label="Property to sell"
+                value={params.homePropertyId}
+                options={[
+                  { value: '', label: 'Choose a property' },
+                  ...plan.accounts
+                    .filter((account) => account.type === 'property')
+                    .map((property) => ({ value: property.id, label: property.name })),
+                ]}
+                onCommit={(value) => set('homePropertyId', value)}
+              />
+            ) : null}
+            <NumberField label="Property sale year" value={params.homeSaleYear} min={startYear} max={2200} onCommit={(v) => set('homeSaleYear', Math.round(v ?? startYear))} />
           </>
         ) : null}
       </div>
+      {preview.warnings.length > 0 ? (
+        <div className="callout callout--warn" role="status">
+          <ul>{preview.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>
+        </div>
+      ) : null}
+      {!preview.ok ? (
+        <div className="callout callout--warn" role="status" aria-live="polite">
+          <ul>{preview.issues.map((issue) => <li key={issue}>{issue}</li>)}</ul>
+        </div>
+      ) : (
+        <p className="card-hint">
+          <strong>Fields this scenario patches:</strong>{' '}
+          <code>{preview.operationPaths.join(', ')}</code>
+        </p>
+      )}
+      {saveError ? <p className="card-hint" role="alert">{saveError}</p> : null}
       <div className="add-row">
         <button
           type="button"
           className="btn btn-primary btn-small"
-          onClick={() =>
+          disabled={!preview.ok}
+          onClick={() => {
+            setSaveError(null)
+            const built = buildScenarioLever(plan, leverRequest(kind, params), {
+              createdAtIso: new Date().toISOString(),
+              startYear,
+              createId: newId,
+            })
+            if (!built.ok) {
+              setSaveError(built.issues.join(' '))
+              return
+            }
             update((d) => {
-              const built = buildPatch(kind, params, d)
               d.scenarios.push({ id: newId(), name: built.name, patch: built.patch })
             })
-          }
+          }}
         >
           + Add scenario
         </button>

@@ -36,6 +36,7 @@
     "./import-provenance": "./src/import/provenance.ts",
     "./import-refresh": "./src/import/refresh.ts",
     "./report-model": "./src/report/reportModel.ts",
+    "./scenario-levers": "./src/scenarioLevers.ts",
     "./index.css": "./src/index.css",
     "./*": "./src/*.ts",
     "./package.json": "./package.json"
