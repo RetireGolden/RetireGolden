@@ -49,6 +49,13 @@ export { ReportBrandingProvider } from './report/ReportBrandingProvider.tsx'
 export { PlannerEditionProvider } from './planner/PlannerEditionProvider.tsx'
 export { usePlannerEdition, type PlannerEditionConfig } from './planner/editionContext.ts'
 
+// Refresh-protection seam for the embedded "Update balances" panel: a host feeds
+// the plan paths (`accounts[i]`) its intake decisions have frozen, and the panel
+// threads them into the broker-refresh engine. Omit it and the panel protects
+// nothing (public web behaviour).
+export { RefreshProtectionProvider } from './planner/RefreshProtectionProvider.tsx'
+export { useRefreshProtection, type RefreshProtectionValue } from './planner/refreshProtectionContext.ts'
+
 // The import-provenance contract (also published at the `./import-provenance`
 // subpath): the vocabulary and export envelope that record where every imported
 // value came from, how confident the mapper was, and a reviewer's verdict.

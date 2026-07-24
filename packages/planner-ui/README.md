@@ -121,9 +121,11 @@ The supported product API is:
   (`PlanStore`, `PlanSummary`, `PlanStoreProvider`, `indexedDbPlanStore`),
   the read-only capability (`readOnly` prop + `useWorkspaceReadOnly`), the
   route groups (`plannerWorkspaceRoutes`, `plannerContentRoutes`,
-  `plannerHomeRoutes`), `ReportBrandingProvider`, and
+  `plannerHomeRoutes`), `ReportBrandingProvider`,
   `PlannerEditionProvider` (with `usePlannerEdition` /
-  `PlannerEditionConfig`) — see "Hosting the workspace" below;
+  `PlannerEditionConfig`), and `RefreshProtectionProvider` (with
+  `useRefreshProtection` / `RefreshProtectionValue`) — see "Hosting the
+  workspace" below;
 - the **`./plan-format` subpath** — `serializeV2Backup`, `parseV2Backup`,
   the envelope types, and the kind/version constants. This is the plan
   interchange format (the same file the web app's backup download produces);
@@ -331,6 +333,29 @@ host's own chrome mounted under the provider. This is a route-group-host
 concern, so — unlike `reportBranding` — `<PlannerApp/>` exposes no matching
 prop: it renders the web plans-management home and the AGPL web app, where the
 defaults are always correct.
+
+### Refresh protection
+
+The embedded "Update balances from a broker CSV" panel refreshes balances from a
+broker file. A professional host can freeze accounts it has reconciled by hand so
+the refresh cannot overwrite them. The panel takes no props, so protection is
+supplied through the ambient `RefreshProtectionProvider` (mirroring
+`PlannerEditionProvider`): pass the plan paths (`accounts[i]`) to protect, and
+the panel threads them into the refresh engine. Omit the provider and the panel
+protects nothing — the public web behaviour.
+
+```tsx
+import { RefreshProtectionProvider } from '@retiregolden/planner-ui'
+
+<RefreshProtectionProvider protectedTargets={new Set(['accounts[2]'])}>
+  {/* plannerWorkspaceRoutes */}
+</RefreshProtectionProvider>
+```
+
+A protected row renders disabled with a note and a transient "Allow this refresh"
+control that releases the path for that panel instance only — it never mutates
+the host's stored decision. `useRefreshProtection()` reads the ambient set;
+`RefreshProtectionValue` is the context value shape.
 
 ### Plan interchange
 

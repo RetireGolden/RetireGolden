@@ -149,6 +149,16 @@ none** (every updatable account is fair game); the Advisor workbench feeds it th
 Pro repo in a later dispatch, so an advisor can freeze the accounts they've reconciled by hand while letting
 the rest refresh.
 
+**The protection seam into the embedded panel.** The engine takes `protectedTargets`, but the embedded
+`UpdateBalancesPanel` takes no props — so hosts feed protection through the ambient `RefreshProtectionProvider`
+(exported from the package root, mirroring `PlannerEditionProvider`). The professional host derives the set
+from its intake decisions and wraps the planner workspace; the public app renders no provider and the panel
+gets an empty set (every account is fair game, unchanged behaviour). A protected row renders off, its select
+disabled, with a "Protected — advisor override" note and a small **Allow this refresh** control. That control
+is deliberately *transient*: it releases the account path for that panel instance only, subtracting it from
+the effective set the panel re-classifies against — it is **not** a stored re-decision, and the advisor's
+override record stays immutable after approve. Releases are per-row and clear whenever a new file is parsed.
+
 The refresh emits an honesty checklist compatible with `reviewToProvenance` (landed values carry an
 `ImportConfidence` — `derived` for a summed aggregate, `exact` for a lone verbatim position — and a target
 plan-path), so a refresh is as auditable downstream as a first-time import.
