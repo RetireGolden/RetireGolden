@@ -5,12 +5,13 @@
  * silently last-write-winning, and applying writes balances/basis to the plan.
  */
 import { afterEach, describe, expect, it } from 'vitest'
-import { act } from 'react'
+import { act, type ReactNode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 
 import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
 import { PlanCtx } from '../planContextCore'
 import { RefreshProtectionProvider } from '../RefreshProtectionProvider'
+import type { RefreshProtectionEntry } from '../refreshProtectionContext'
 import { UpdateBalancesPanel } from './UpdateBalancesPanel'
 
 let root: Root | null = null
@@ -36,42 +37,44 @@ function planWithAccounts(): Plan {
   return plan
 }
 
-function renderPanel(plan: Plan, protectedAccounts?: ReadonlySet<string>) {
+function providerTree(plan: Plan, panel: ReactNode, protectedAccounts?: readonly RefreshProtectionEntry[]) {
   const update = (mutator: (draft: Plan) => void) => mutator(plan)
+  return (
+    <PlanCtx.Provider value={{ plan, update, discardPendingSave: () => undefined, saveState: 'saved', issues: [] }}>
+      {protectedAccounts ? (
+        <RefreshProtectionProvider protectedAccounts={protectedAccounts}>{panel}</RefreshProtectionProvider>
+      ) : (
+        panel
+      )}
+    </PlanCtx.Provider>
+  )
+}
+
+function renderPanel(plan: Plan, protectedAccounts?: readonly RefreshProtectionEntry[]) {
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
-  const panel = <UpdateBalancesPanel />
   act(() => {
-    root!.render(
-      <PlanCtx.Provider value={{ plan, update, discardPendingSave: () => undefined, saveState: 'saved', issues: [] }}>
-        {protectedAccounts ? (
-          <RefreshProtectionProvider protectedAccounts={protectedAccounts}>{panel}</RefreshProtectionProvider>
-        ) : (
-          panel
-        )}
-      </PlanCtx.Provider>,
-    )
+    root!.render(providerTree(plan, <UpdateBalancesPanel />, protectedAccounts))
   })
   return container
 }
 
 /**
- * Build a host protection set from stable account-id entries (an id, or
- * `<id>.<field>`) — what the protection seam speaks now that it binds to ids, not
- * positions. Every entry is validated against the plan the SAME way the panel
- * decodes it — an exact id, or the (longest) id that `` `${id}.` ``-prefixes the
- * entry — so a typo throws loudly here instead of silently protecting nothing,
- * while a legitimately dotted id (`'broker.acct-1'`, `'broker.acct-1.costBasis'`)
- * validates. Naive first-dot splitting would wrongly reject the dotted ids.
+ * Build a host protection list from structured entries (`{ accountId, field? }`) —
+ * what the protection seam speaks now that it binds to ids as structured values,
+ * not to positions or `<id>.<field>` strings. Every entry's `accountId` is
+ * validated against the plan so a typo throws loudly here instead of silently
+ * protecting nothing. There is no parsing: a dotted id (`'broker.acct-1'`) is one
+ * whole account, and an `{ accountId: 'a', field: 'costBasis' }` entry names its
+ * field explicitly — so ids that nest (`'a'`, `'a.b'`) carry no ambiguity.
  */
-function protect(plan: Plan, ...entries: string[]): ReadonlySet<string> {
+function protect(plan: Plan, ...entries: RefreshProtectionEntry[]): readonly RefreshProtectionEntry[] {
   const ids = new Set(plan.accounts.map((a) => a.id))
   for (const entry of entries) {
-    const ok = ids.has(entry) || [...ids].some((id) => entry.startsWith(`${id}.`))
-    if (!ok) throw new Error(`protect(): no plan account matches entry "${entry}"`)
+    if (!ids.has(entry.accountId)) throw new Error(`protect(): no plan account matches accountId "${entry.accountId}"`)
   }
-  return new Set(entries)
+  return entries
 }
 
 const TWO_ACCOUNT_CSV = `"Positions for account Brokerage ...789 as of 07/07/2026"
@@ -263,8 +266,8 @@ describe('UpdateBalancesPanel', () => {
 
 /**
  * Refresh-protection seam: a `RefreshProtectionProvider` (the Pro/Advisor host)
- * feeds the accounts an advisor froze, by STABLE account id (or `<id>.<field>`),
- * never by array position. The panel resolves each id to its current
+ * feeds the accounts an advisor froze as STRUCTURED entries (`{ accountId, field? }`),
+ * never by array position. The panel resolves each `accountId` to its current
  * `accounts[i]` fresh per render and threads the positional set into all three
  * engine calls so apply skips it. Protected accounts stay SELECTABLE in every row
  * (marked "(protected)"); selecting one BLOCKS the row (note + "Allow this
@@ -278,7 +281,7 @@ describe('UpdateBalancesPanel', () => {
 describe('UpdateBalancesPanel refresh protection', () => {
   it('blocks a protected guess by default while an unprotected sibling applies normally', async () => {
     const plan = planWithAccounts()
-    const el = renderPanel(plan, protect(plan, 'acct-brokerage'))
+    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }))
     await chooseFile(el, TWO_ACCOUNT_CSV)
 
     const [brokerageSel, rothSel] = selects(el)
@@ -301,7 +304,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // Protect Brokerage, then move it to the end of the array. A positional path
     // would now point at Roth; the id-based seam still protects Brokerage.
     const plan = planWithAccounts()
-    const protectedAccounts = protect(plan, 'acct-brokerage')
+    const protectedAccounts = protect(plan, { accountId: 'acct-brokerage' })
     plan.accounts.reverse() // [Roth, Brokerage] — indices swapped vs. classification order
     const el = renderPanel(plan, protectedAccounts)
     await chooseFile(el, TWO_ACCOUNT_CSV)
@@ -312,94 +315,52 @@ describe('UpdateBalancesPanel refresh protection', () => {
     expect(plan.accounts.find((a) => a.id === 'acct-roth')!).toMatchObject({ balance: 14000 })
   })
 
-  it('blocks the whole account refresh for a `<id>.<field>` entry (conservative semantics)', async () => {
-    // Field-scoped protection is conservative today: protecting acct-brokerage.costBasis
-    // blocks the account's ENTIRE refresh, balance included — `applyBrokerBalance` writes
-    // balance+basis as a unit and the engine treats any protected field as locking the
-    // account. This pins the load-bearing conservative behaviour so it can't regress.
+  it('blocks the whole account refresh for a costBasis-scoped entry (conservative semantics)', async () => {
+    // Field-scoped protection is conservative today: an entry for acct-brokerage
+    // narrowed to costBasis blocks the account's ENTIRE refresh, balance included —
+    // `applyBrokerBalance` writes balance+basis as a unit and the engine treats any
+    // protected field as locking the account. This pins the load-bearing conservative
+    // behaviour so it can't regress.
     const plan = planWithAccounts()
-    const el = renderPanel(plan, protect(plan, 'acct-brokerage.costBasis'))
+    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage', field: 'costBasis' }))
     await chooseFile(el, TWO_ACCOUNT_CSV)
     // Selected onto the protected account, the row renders blocked (not disabled).
     expect(selects(el)[0]!.value).toBe('acct-brokerage')
     expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected — advisor override')
 
     act(() => applyButton(el).click())
-    // Balance stays 1 too — the '.costBasis' entry blocked the whole write.
+    // Balance stays 1 too — the costBasis-scoped entry blocked the whole write.
     expect(plan.accounts.find((a) => a.id === 'acct-brokerage')!).toMatchObject({ balance: 1, costBasis: 1 })
     expect(plan.accounts.find((a) => a.id === 'acct-roth')!).toMatchObject({ balance: 14000 })
   })
 
-  it('decodes a dotted account id as a whole account (not split at the first dot)', async () => {
-    // Account ids may contain dots. 'broker.acct-1' must be treated as one whole id,
-    // never as account 'broker' with field 'acct-1'. Protect it (whole) plus a plain
-    // id, and the panel blocks exactly those two accounts.
-    const plan = createEmptyPlan({ newId: testIds })
-    const ownerId = plan.household.people[0]!.id
-    plan.accounts.push(
-      { id: 'broker.acct-1', type: 'taxable', name: 'Brokerage', ownerPersonId: null, annualReturnPct: null, balance: 1, costBasis: 1, annualContribution: 0 },
-      { id: 'acct-roth', type: 'roth', name: 'Roth IRA', ownerPersonId: ownerId, annualReturnPct: null, kind: 'ira', balance: 1, annualContribution: 0 },
-    )
-    const el = renderPanel(plan, protect(plan, 'broker.acct-1', 'acct-roth'))
-    await chooseFile(el, TWO_ACCOUNT_CSV)
-
-    // Both rows guessed onto protected accounts, so both are selected-but-blocked.
-    const [brokerageSel, rothSel] = selects(el)
-    expect(brokerageSel!.value).toBe('broker.acct-1')
-    expect(rothSel!.value).toBe('acct-roth')
-    expect(el.querySelectorAll('[role="note"]').length).toBe(2)
-
-    act(() => applyButton(el).click())
-    // Neither wrote — the dotted id was protected as a whole account, not 'broker'.
-    expect(plan.accounts.find((a) => a.id === 'broker.acct-1')!).toMatchObject({ balance: 1, costBasis: 1 })
-    expect(plan.accounts.find((a) => a.id === 'acct-roth')!).toMatchObject({ balance: 1 })
-  })
-
-  it('decodes a dotted account id with a `.costBasis` field entry (conservative block)', async () => {
-    // 'broker.acct-1.costBasis' decodes to account 'broker.acct-1', field costBasis —
-    // the longest matching id, not the shorter 'broker' (which is not an account).
-    const plan = createEmptyPlan({ newId: testIds })
-    const ownerId = plan.household.people[0]!.id
-    plan.accounts.push(
-      { id: 'broker.acct-1', type: 'taxable', name: 'Brokerage', ownerPersonId: null, annualReturnPct: null, balance: 1, costBasis: 1, annualContribution: 0 },
-      { id: 'acct-roth', type: 'roth', name: 'Roth IRA', ownerPersonId: ownerId, annualReturnPct: null, kind: 'ira', balance: 1, annualContribution: 0 },
-    )
-    const el = renderPanel(plan, protect(plan, 'broker.acct-1.costBasis'))
-    await chooseFile(el, TWO_ACCOUNT_CSV)
-
-    expect(selects(el)[0]!.value).toBe('broker.acct-1')
-    expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected — advisor override')
-
-    act(() => applyButton(el).click())
-    // Conservative: the field entry blocks the whole account (balance stays 1 too).
-    expect(plan.accounts.find((a) => a.id === 'broker.acct-1')!).toMatchObject({ balance: 1, costBasis: 1 })
-    expect(plan.accounts.find((a) => a.id === 'acct-roth')!).toMatchObject({ balance: 14000 })
-  })
-
-  it('protects the longer id when two account ids nest (`a` and `a.b`, entry `a.b.costBasis`)', async () => {
-    // Two accounts whose ids nest: 'a' and 'a.b'. The entry 'a.b.costBasis' must
-    // decode to account 'a.b' (longest matching prefix), field costBasis — NOT
-    // account 'a'. So 'a.b' is blocked and 'a' stays fair game.
+  it('handles nested account ids unambiguously with structured entries (`a.b` whole + `a` costBasis)', async () => {
+    // With the structured contract there is no parsing to get wrong: an entry for
+    // account 'a.b' and a SIBLING entry for account 'a' (field costBasis) name their
+    // accounts verbatim, so ids that nest ('a' and 'a.b') — and dotted ids in general
+    // — carry no ambiguity. Both accounts are protected; neither writes. Under the old
+    // string contract the flat 'a.costBasis' would have been the ambiguous case; the
+    // structured shape eliminates it.
     const plan = createEmptyPlan({ newId: testIds })
     const ownerId = plan.household.people[0]!.id
     plan.accounts.push(
       { id: 'a.b', type: 'taxable', name: 'Brokerage', ownerPersonId: null, annualReturnPct: null, balance: 1, costBasis: 1, annualContribution: 0 },
       { id: 'a', type: 'roth', name: 'Roth IRA', ownerPersonId: ownerId, annualReturnPct: null, kind: 'ira', balance: 1, annualContribution: 0 },
     )
-    const el = renderPanel(plan, protect(plan, 'a.b.costBasis'))
+    const el = renderPanel(plan, protect(plan, { accountId: 'a.b' }, { accountId: 'a', field: 'costBasis' }))
     await chooseFile(el, TWO_ACCOUNT_CSV)
 
-    // Brokerage guessed 'a.b' (protected → blocked); Roth guessed 'a' (fair game).
+    // Brokerage guessed 'a.b' (whole-account protected); Roth guessed 'a' (costBasis
+    // entry, conservatively the whole account). Both selected-but-blocked.
     const [brokerageSel, rothSel] = selects(el)
     expect(brokerageSel!.value).toBe('a.b')
     expect(rothSel!.value).toBe('a')
-    // Exactly one row is blocked, and it's the 'a.b' one.
-    expect(el.querySelectorAll('[role="note"]').length).toBe(1)
+    expect(el.querySelectorAll('[role="note"]').length).toBe(2)
 
     act(() => applyButton(el).click())
-    // 'a.b' blocked (unchanged); 'a' refreshed — proof the entry hit 'a.b', not 'a'.
+    // Neither wrote — the two structured entries protect exactly their two accounts.
     expect(plan.accounts.find((a) => a.id === 'a.b')!).toMatchObject({ balance: 1, costBasis: 1 })
-    expect(plan.accounts.find((a) => a.id === 'a')!).toMatchObject({ balance: 14000 })
+    expect(plan.accounts.find((a) => a.id === 'a')!).toMatchObject({ balance: 1 })
   })
 
   it('lets an unmatched row select a protected account, then block, release, and apply to it', async () => {
@@ -412,7 +373,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
       { id: 'acct-brokerage', type: 'taxable', name: 'Brokerage', ownerPersonId: null, annualReturnPct: null, balance: 1, costBasis: 1, annualContribution: 0 },
       { id: 'acct-hsa', type: 'hsa', name: 'Fidelity HSA', ownerPersonId: ownerId, annualReturnPct: null, balance: 4000, annualContribution: 0 },
     )
-    const el = renderPanel(plan, protect(plan, 'acct-brokerage'))
+    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }))
     await chooseFile(el, UNMATCHED_CSV)
 
     // The file row matches nothing, so it starts on "Don't update" with no note.
@@ -442,7 +403,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
 
   it('releases one row with "Allow this refresh" while a protected sibling stays blocked', async () => {
     const plan = planWithAccounts()
-    const el = renderPanel(plan, protect(plan, 'acct-brokerage', 'acct-roth'))
+    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }, { accountId: 'acct-roth' }))
     await chooseFile(el, TWO_ACCOUNT_CSV)
 
     // Both guessed onto protected accounts: both selected but blocked, each with a note.
@@ -470,7 +431,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // Two file sections; row 0 guesses the protected Brokerage, row 1 guesses the
     // unprotected Roth (so its select applies and can be DOM-tampered).
     const plan = planWithAccounts()
-    const el = renderPanel(plan, protect(plan, 'acct-brokerage'))
+    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }))
     await chooseFile(el, TWO_ACCOUNT_CSV)
 
     // Release Brokerage for row 0.
@@ -502,7 +463,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
 
   it('writes nothing to a released account once the releasing row is deselected', async () => {
     const plan = planWithAccounts()
-    const el = renderPanel(plan, protect(plan, 'acct-brokerage'))
+    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }))
     await chooseFile(el, TWO_ACCOUNT_CSV)
 
     // Release Brokerage for row 0 (it was selected-but-blocked; now it applies).
@@ -523,7 +484,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
 
   it('restores protection when a new file is chosen (releases are transient)', async () => {
     const plan = planWithAccounts()
-    const el = renderPanel(plan, protect(plan, 'acct-brokerage'))
+    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }))
     await chooseFile(el, TWO_ACCOUNT_CSV)
 
     // Release the Brokerage row, proving its note clears (it now applies).
@@ -531,6 +492,71 @@ describe('UpdateBalancesPanel refresh protection', () => {
     expect(el.querySelector('[role="note"]')).toBeNull()
 
     // Choosing a new file clears the release — protection is restored (row blocked again).
+    await chooseFile(el, TWO_ACCOUNT_CSV)
+    expect(selects(el)[0]!.value).toBe('acct-brokerage')
+    expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected — advisor override')
+  })
+
+  it('revokes a row\'s release when that row re-targets, restoring protection for a sibling', async () => {
+    // Release is scoped to the exact (row, account) pairing. When the releasing row
+    // re-targets away from the account, the release must be dropped — protection is
+    // restored, and another row that then selects the account sees it blocked and can
+    // release it itself.
+    const plan = planWithAccounts()
+    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }))
+    await chooseFile(el, TWO_ACCOUNT_CSV)
+
+    // Row 0 guessed Brokerage (protected → blocked). Release it for row 0.
+    act(() => el.querySelector<HTMLButtonElement>('button[aria-label="Allow this refresh for Brokerage"]')!.click())
+    expect(el.querySelector('[role="note"]')).toBeNull() // row 0 now applies
+
+    const setSelect = (sel: HTMLSelectElement, value: string) =>
+      act(() => {
+        const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value')!.set!
+        setter.call(sel, value)
+        sel.dispatchEvent(new Event('change', { bubbles: true }))
+      })
+
+    // Row 0 re-targets to "Don't update": its release of Brokerage is revoked, so
+    // Brokerage is protected again.
+    setSelect(selects(el)[0]!, '')
+
+    // Row 1 now selects Brokerage — with protection restored it is blocked, not applied.
+    setSelect(selects(el)[1]!, 'acct-brokerage')
+    expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected — advisor override')
+
+    // Row 1 releases it (a fresh release, now owned by row 1) and applies — the write
+    // lands from row 1's section (Roth section value, 14,000 / basis 12,000).
+    act(() => el.querySelector<HTMLButtonElement>('button[aria-label="Allow this refresh for Brokerage"]')!.click())
+    act(() => applyButton(el).click())
+    expect(plan.accounts.find((a) => a.id === 'acct-brokerage')!).toMatchObject({ balance: 14000, costBasis: 12000 })
+  })
+
+  it('resets transient panel state when the plan identity changes', async () => {
+    // The workspace reuses one panel instance across /plan/:id navigation. Cloned
+    // plans share account ids, so a stale release must not survive into a different
+    // plan and bypass its protection. Render plan P1, parse + release, then swap the
+    // context to a plan with a DIFFERENT id and assert the panel is back to initial.
+    const p1 = planWithAccounts()
+    const el = renderPanel(p1, protect(p1, { accountId: 'acct-brokerage' }))
+    await chooseFile(el, TWO_ACCOUNT_CSV)
+    act(() => el.querySelector<HTMLButtonElement>('button[aria-label="Allow this refresh for Brokerage"]')!.click())
+    // Parsed table is up and the release cleared the note.
+    expect(el.querySelector('tbody')).not.toBeNull()
+    expect(el.querySelector('[role="note"]')).toBeNull()
+
+    // Swap the context to a different plan (same cloned account ids, new plan id).
+    const p2 = planWithAccounts()
+    expect(p2.id).not.toBe(p1.id)
+    act(() => {
+      root!.render(providerTree(p2, <UpdateBalancesPanel />, protect(p2, { accountId: 'acct-brokerage' })))
+    })
+
+    // Back to the initial state: no parsed table.
+    expect(el.querySelector('tbody')).toBeNull()
+
+    // And re-parsing under the new plan protects its (freshly protected) account —
+    // the stale release did not carry over.
     await chooseFile(el, TWO_ACCOUNT_CSV)
     expect(selects(el)[0]!.value).toBe('acct-brokerage')
     expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected — advisor override')

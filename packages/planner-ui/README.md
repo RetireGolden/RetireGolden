@@ -340,32 +340,36 @@ The embedded "Update balances from a broker CSV" panel refreshes balances from a
 broker file. A professional host can freeze accounts it has reconciled by hand so
 the refresh cannot overwrite them. The panel takes no props, so protection is
 supplied through the ambient `RefreshProtectionProvider` (mirroring
-`PlannerEditionProvider`): pass the **stable account IDs** to protect — either a
-whole-account id (`'acct-123'`) or an `<accountId>.<field>` entry
-(`'acct-123.costBasis'`) — and the panel resolves each id to that account's
-current `accounts[i]` position before threading it into the refresh engine. IDs
-(not array positions) are the contract because plan-array indices shift as
-accounts are added or removed. Because engine account ids are arbitrary nonempty
-strings that may themselves contain dots (`'broker.acct-123'` is valid), the panel
-decodes each entry against the live plan — an exact match to a plan account id is
-a whole-account entry; otherwise the **longest** plan account id whose `` `${id}.` ``
-prefixes the entry names the account and the remainder is the field — never by
-splitting at the first dot. Omit the provider and the panel protects nothing — the
-public web behaviour.
+`PlannerEditionProvider`): pass **structured entries** — a `RefreshProtectionEntry`
+is `{ accountId, field? }`, where a bare `accountId` protects the whole account and
+`field: 'costBasis'` records cost-basis-scoped intent — and the panel resolves each
+`accountId` to that account's current `accounts[i]` position before threading it
+into the refresh engine. IDs (not array positions) are the contract because
+plan-array indices shift as accounts are added or removed. Entries are **structured
+rather than `<id>.<field>` strings** because account ids are arbitrary nonempty
+strings that may contain dots (`'broker.acct-123'` is valid) and an id can equal
+another id's field path — so a flat string like `'a.costBasis'` is genuinely
+ambiguous (whole account `'a.costBasis'` vs field `costBasis` of `'a'`) and no
+longest-match guess can resolve it safely. The `accountId` names the account
+verbatim; there is nothing to parse, and nested or dotted ids are unambiguous. Omit
+the provider and the panel protects nothing — the public web behaviour.
 
-**Field-scoped entries are conservative today.** An `<accountId>.<field>` entry
-currently blocks that account's **whole** refresh, not just the named field: the
-engine's `applyBrokerBalance` writes balance and cost basis as a unit and cannot
-skip one field, so a protected descendant locks the entire account's refresh write
-(protection errs toward overwriting *less*). So `'acct-456.costBasis'` protects
-`acct-456`'s balance too. The `<accountId>.<field>` form is accepted so a host can
-record the intended granularity; finer per-field application is future engine work
-and will not change what hosts pass.
+**Field-scoped entries are conservative today.** A `{ accountId, field: 'costBasis' }`
+entry currently blocks that account's **whole** refresh, not just the named field:
+the engine's `applyBrokerBalance` writes balance and cost basis as a unit and cannot
+skip one field, so a protected field locks the entire account's refresh write
+(protection errs toward overwriting *less*). So `{ accountId: 'acct-456', field: 'costBasis' }`
+protects `acct-456`'s balance too. The `field` form is accepted so a host can record
+the intended granularity; finer per-field application is future engine work and will
+not change what hosts pass. (There is no `'balance'` field — a whole-account entry
+already covers a balance lock under these conservative semantics.)
 
 ```tsx
 import { RefreshProtectionProvider } from '@retiregolden/planner-ui'
 
-<RefreshProtectionProvider protectedAccounts={new Set(['acct-123', 'acct-456.costBasis'])}>
+<RefreshProtectionProvider
+  protectedAccounts={[{ accountId: 'acct-123' }, { accountId: 'acct-456', field: 'costBasis' }]}
+>
   {/* plannerWorkspaceRoutes */}
 </RefreshProtectionProvider>
 ```
@@ -376,9 +380,12 @@ transient "Allow this refresh" control — rather than being refused, so even an
 unmatched row has a path to deliberately refresh a frozen account. A blocked row
 contributes nothing to the preview/apply until released. "Allow this refresh"
 releases the account for that panel instance only, and only for the row that asked
-— a sibling row still cannot reach it (one releasing row per account), and it
-never mutates the host's stored decision. `useRefreshProtection()` reads the
-ambient set; `RefreshProtectionValue` (`{ protectedAccounts }`) is the context
+— a sibling row still cannot reach it (one releasing row per account), the release
+is revoked if that row re-targets, and it never mutates the host's stored decision.
+The panel also fully resets whenever the workspace navigates to a different plan
+(keyed on `plan.id`), so no parsed file or release survives across plans.
+`useRefreshProtection()` reads the ambient list; `RefreshProtectionValue`
+(`{ protectedAccounts }`, a `readonly RefreshProtectionEntry[]`) is the context
 value shape.
 
 ### Plan interchange

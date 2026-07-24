@@ -152,26 +152,31 @@ the rest refresh.
 **The protection seam into the embedded panel.** The engine takes positional `protectedTargets`, but the
 embedded `UpdateBalancesPanel` takes no props — so hosts feed protection through the ambient
 `RefreshProtectionProvider` (exported from the package root, mirroring `PlannerEditionProvider`). The seam
-speaks **stable account IDs**, not `accounts[i]` positions: each entry is a whole-account id (`acct-123`) or
-an `<accountId>.<field>` (`acct-123.costBasis`). Positions are the wrong currency here because plan-array
-indices shift as accounts are added or removed in the workspace, so a stored positional path would silently
-start protecting the wrong account; IDs are stable, and the professional host resolves its stored
-draft-relative paths to IDs once at approve time instead of re-reconciling indices forever. Because engine
-account ids are arbitrary nonempty strings that may themselves contain dots (`broker.acct-123` is a valid id),
-the panel decodes each entry against the **live plan** — an exact match to a plan account id is a whole-account
-entry, otherwise the *longest* plan account id whose `` `${id}.` `` prefixes the entry names the account and the
-remainder is the field — never by splitting at the first dot. The panel maps each protected id to that account's
+speaks **stable account IDs** as **structured entries**, not `accounts[i]` positions: a `RefreshProtectionEntry`
+is `{ accountId, field? }`, where a bare `accountId` protects the whole account and `field: 'costBasis'` records
+cost-basis-scoped intent. Positions are the wrong currency here because plan-array indices shift as accounts are
+added or removed in the workspace, so a stored positional path would silently start protecting the wrong
+account; IDs are stable, and the professional host resolves its stored draft-relative paths to IDs once at
+approve time instead of re-reconciling indices forever. The entries are **structured rather than
+`<id>.<field>` strings** because engine account ids are arbitrary nonempty strings that may contain dots
+(`broker.acct-123` is a valid id) and an account id can equal another id's field path — so a flat string like
+`a.costBasis` is genuinely ambiguous (whole account `a.costBasis` vs field `costBasis` of account `a`), and no
+longest-match guess can resolve that safely; guessing wrong protects the wrong account. The structured shape
+carries the split the host already knew, so there is nothing to parse — the `accountId` names the account
+verbatim and nested or dotted ids are unambiguous. The panel maps each entry's `accountId` to that account's
 **current** index fresh on every render and emits the `accounts[i]` / `accounts[i].<field>` paths the engine's
-`protectedTargets` contract expects (ids absent from the plan are skipped). The public app renders no provider
-and the panel gets an empty set (every account is fair game, unchanged behaviour).
+`protectedTargets` contract expects (entries naming no live account are skipped). The public app renders no
+provider and the panel gets an empty list (every account is fair game, unchanged behaviour).
 
-**Field-scoped entries are conservative today: they block the account's whole refresh.** An `<accountId>.<field>`
-entry currently locks the *entire* account's refresh write, not just the named field — the engine's
-`applyBrokerBalance` writes balance and cost basis as a unit and cannot skip one field, so `isProtectedPath`
-treats a protected descendant as locking the account (protection errs toward overwriting *less*). So
-`acct-123.costBasis` protects `acct-123`'s balance too. The `<accountId>.<field>` form is accepted so a host can
-record the intended granularity; finer per-field application is future engine work and will not change what
-hosts pass.
+**Field-scoped entries are conservative today: they block the account's whole refresh.** A
+`{ accountId, field: 'costBasis' }` entry currently locks the *entire* account's refresh write, not just the
+named field — the engine's `applyBrokerBalance` writes balance and cost basis as a unit and cannot skip one
+field, so `isProtectedPath` treats a protected field as locking the account (protection errs toward overwriting
+*less*). So `{ accountId: 'acct-123', field: 'costBasis' }` protects `acct-123`'s balance too. The `field` form
+is accepted so a host can record the intended granularity; finer per-field application is future engine work and
+will not change what hosts pass. There is deliberately no `'balance'` field — under the conservative semantics a
+balance-only lock is indistinguishable from a whole-account lock, which a bare `accountId` entry already
+expresses.
 
 Protected accounts stay **selectable** in every row (marked "(protected)"); selecting one **blocks** that row —
 a "Protected — advisor override" note and a small **Allow this refresh** control — rather than being refused, so
@@ -182,8 +187,13 @@ is tracked as `account id → the requesting row's index`, so the released accou
 effective set the panel re-classifies against — while every *other* row that selects it stays blocked with the
 note (one releasing row per account) and, defensively, a sibling's selection of it is dropped before
 preview/apply (a belt against DOM tampering). Releasing row *k* for account *A* therefore never unlocks *A* in a
-sibling row. It is **not** a stored re-decision, the advisor's override record stays immutable after approve,
-and releases clear whenever a new file is parsed.
+sibling row. And because the release is bound to that exact (row, account) pairing, re-targeting row *k* to
+anything other than *A* **revokes** the release — protection is restored, and another row may then select *A*,
+see it blocked, and release it itself. It is **not** a stored re-decision, the advisor's override record stays
+immutable after approve, and releases clear whenever a new file is parsed. Finally, because the workspace reuses
+one panel instance across `/plan/:id` navigation, the panel fully resets its transient state (parsed file,
+releases, message) whenever the plan **identity** changes — cloned plans share account ids, so this keeps a
+stale release from one plan from bypassing protection in another.
 
 The refresh emits an honesty checklist compatible with `reviewToProvenance` (landed values carry an
 `ImportConfidence` — `derived` for a summed aggregate, `exact` for a lone verbatim position — and a target

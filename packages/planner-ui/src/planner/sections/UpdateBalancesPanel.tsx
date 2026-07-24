@@ -11,11 +11,13 @@
  *
  * Protection comes from the ambient `RefreshProtectionProvider` (the Pro/Advisor
  * host feeds the accounts its intake decisions froze; the public planner mounts
- * no provider and gets an empty set — unchanged behaviour). The host names those
- * accounts by STABLE ID (or `<accountId>.<field>`), never by array position: this
- * panel resolves each protected id to its CURRENT `accounts[i]` index fresh on
- * every render, so protection tracks the account even after the plan array is
- * reordered. Protected accounts stay SELECTABLE in every row (marked
+ * no provider and gets an empty list — unchanged behaviour). The host names those
+ * accounts by STABLE ID as STRUCTURED entries (`{ accountId, field? }`), never by
+ * array position: this panel resolves each entry's `accountId` to its CURRENT
+ * `accounts[i]` index fresh on every render, so protection tracks the account even
+ * after the plan array is reordered. Entries carry the account/field split
+ * explicitly, so nested or dotted ids need no parsing and stay unambiguous.
+ * Protected accounts stay SELECTABLE in every row (marked
  * "(protected)"); selecting one blocks that row — the "Protected — advisor
  * override" note with an "Allow this refresh" button — rather than being refused,
  * so even an unmatched row has a path to deliberately refresh a frozen account.
@@ -43,7 +45,7 @@ import {
 import type { ImportReviewItem } from '../../import/reviewChecklist'
 import { ReviewChecklist } from '../../import/ReviewChecklistView'
 import { usePlan } from '../planContextCore'
-import { useRefreshProtection } from '../refreshProtectionContext'
+import { useRefreshProtection, type RefreshProtectionEntry } from '../refreshProtectionContext'
 import { fmtMoney } from '../format'
 
 const EMPTY_PROTECTED: ReadonlySet<string> = new Set()
@@ -66,41 +68,14 @@ interface ParsedFile {
 }
 
 /**
- * Decode one protection entry against the LIVE plan account ids. Engine account
- * ids are arbitrary nonempty strings and may themselves contain dots
- * (`'broker.acct-123'` is a valid id), so an entry cannot be split naively at its
- * first dot — that would mis-read `'broker.acct-123'` as account `'broker'`,
- * field `'acct-123'`. Resolve against the actual plan instead:
- *  - an entry that EXACTLY equals a plan account id protects that whole account
- *    (`field === null`), and exact-match wins over any prefix interpretation;
- *  - otherwise the account whose `` `${id}.` `` prefixes the entry, preferring the
- *    LONGEST such id when several match, with the remainder as the field
- *    (so with ids `'a'` and `'a.b'`, the entry `'a.b.costBasis'` protects account
- *    `'a.b'`, field `'costBasis'`, not account `'a'`);
- *  - an entry matching no current account returns `null` and is skipped (a stale
- *    protection cannot protect a phantom account), exactly as before.
- */
-function decodeProtectionEntry(
-  entry: string,
-  accountIds: ReadonlySet<string>,
-): { accId: string; field: string | null } | null {
-  if (accountIds.has(entry)) return { accId: entry, field: null } // exact whole-account, wins over any prefix
-  let best: string | null = null
-  for (const id of accountIds) {
-    if (entry.startsWith(`${id}.`) && (best === null || id.length > best.length)) best = id
-  }
-  if (best === null) return null // no live account is this entry or a prefix of it — skip
-  return { accId: best, field: entry.slice(best.length + 1) }
-}
-
-/**
- * Translate the host's STABLE account-id protection set into the engine's
+ * Translate the host's STABLE account-id protection entries into the engine's
  * POSITIONAL `accounts[i]` set against the live plan order, dropping any account
- * a row has released. This is the one place ids become indices: an entry that
- * decodes to no live account is skipped (a stale protection cannot protect a
- * phantom index), and a released id is omitted so the engine treats it as fair
- * game. Cheap and allocation-free when nothing is protected — the empty-provider
- * path returns the shared empty set without touching `released`.
+ * a row has released. This is the one place ids become indices: an entry whose
+ * `accountId` names no live account is skipped (a stale protection cannot protect
+ * a phantom index), and a released id is omitted so the engine treats it as fair
+ * game. No parsing happens — the entry already carries the account/field split.
+ * Cheap and allocation-free when nothing is protected — the empty-provider path
+ * returns the shared empty set without touching `released`.
  *
  * A field-scoped entry emits `accounts[i].<field>`, but note the engine's
  * `isProtectedPath` treats any protected field of an account as locking the whole
@@ -109,18 +84,16 @@ function decodeProtectionEntry(
  */
 function positionalProtectedSet(
   plan: Plan,
-  protectedAccounts: ReadonlySet<string>,
+  protectedAccounts: readonly RefreshProtectionEntry[],
   released: ReadonlyMap<string, number>,
 ): ReadonlySet<string> {
-  if (protectedAccounts.size === 0) return EMPTY_PROTECTED
-  const accountIds = new Set(plan.accounts.map((a) => a.id))
+  if (protectedAccounts.length === 0) return EMPTY_PROTECTED
   const out = new Set<string>()
   for (const entry of protectedAccounts) {
-    const decoded = decodeProtectionEntry(entry, accountIds)
-    if (decoded === null) continue // stale entry: no live account, nothing to protect
-    if (released.has(decoded.accId)) continue // released for this panel instance — not off-limits
-    const index = plan.accounts.findIndex((a) => a.id === decoded.accId)
-    out.add(decoded.field === null ? `accounts[${index}]` : `accounts[${index}].${decoded.field}`)
+    if (released.has(entry.accountId)) continue // released for this panel instance — not off-limits
+    const index = plan.accounts.findIndex((a) => a.id === entry.accountId)
+    if (index === -1) continue // stale entry: no live account, nothing to protect
+    out.add(entry.field === undefined ? `accounts[${index}]` : `accounts[${index}].${entry.field}`)
   }
   return out
 }
@@ -152,21 +125,35 @@ export function UpdateBalancesPanel() {
   const [released, setReleased] = useState<ReadonlyMap<string, number>>(() => new Map())
   const fileInput = useRef<HTMLInputElement>(null)
 
+  // The workspace reuses this one panel instance across `/plan/:id` navigation, so
+  // the transient file state (parsed table, row-scoped releases, status message)
+  // would otherwise survive into a DIFFERENT plan. Cloned plans share account ids,
+  // so a stale release could bypass protection cross-plan. Reset everything back to
+  // its seed the moment the plan IDENTITY changes, tracked by the render-phase
+  // "adjust state while rendering" pattern (not an effect — the reset must land
+  // before this render derives anything from `parsed`, and React discards the
+  // interrupted render without an extra commit).
+  const [seenPlanId, setSeenPlanId] = useState(plan.id)
+  if (seenPlanId !== plan.id) {
+    setSeenPlanId(plan.id)
+    setParsed(null)
+    setReleased(new Map())
+    setMessage(null)
+  }
+
   const updatable = plan.accounts.filter(isBalanceUpdatable).map((a) => ({ id: a.id, name: a.name }))
   const accountName = (id: string) => updatable.find((a) => a.id === id)?.name ?? id
 
-  // The account ids the host protects, decoded against the live plan (an entry is
-  // a whole-account id or `<accountId>.<field>`, and ids may contain dots) and
-  // independent of release state — the panel's per-option, blocked-row, and belt
-  // checks read this so a field-scoped protection still marks the account in the
-  // dropdowns. Entries decoding to no live account are dropped, matching
+  // The account ids the host protects, taken straight from the structured entries
+  // and independent of release state — the panel's per-option, blocked-row, and
+  // belt checks read this so a field-scoped protection still marks the account in
+  // the dropdowns. Entries naming no live account are dropped, matching
   // `positionalProtectedSet`.
   const planAccountIds = useMemo(() => new Set(plan.accounts.map((a) => a.id)), [plan])
   const hostProtectedIds = useMemo(() => {
     const ids = new Set<string>()
     for (const entry of protectedAccounts) {
-      const decoded = decodeProtectionEntry(entry, planAccountIds)
-      if (decoded) ids.add(decoded.accId)
+      if (planAccountIds.has(entry.accountId)) ids.add(entry.accountId)
     }
     return ids
   }, [protectedAccounts, planAccountIds])
@@ -264,6 +251,26 @@ export function UpdateBalancesPanel() {
   const blocked = duplicateNames.length > 0
   const staleNames = (delta?.staleAccountIds ?? []).map(accountName)
 
+  // Point row `i` at plan account `next` (or '' for "Don't update"). Re-targeting a
+  // row that had RELEASED an account revokes that release: a release is scoped to
+  // the exact (row, account) pairing that asked for it, so once the row no longer
+  // selects that account its release is meaningless — protection is restored, and
+  // another row may then select the account, see it blocked, and release it itself.
+  // Selecting the SAME account again is a no-op and keeps any existing release.
+  const changeTarget = (i: number, next: string) => {
+    setParsed((prev) => (prev ? { ...prev, targets: prev.targets.map((t, j) => (j === i ? next : t)) } : prev))
+    setReleased((prev) => {
+      let out: Map<string, number> | null = null
+      for (const [accId, row] of prev) {
+        if (row === i && accId !== next) {
+          if (out === null) out = new Map(prev)
+          out.delete(accId)
+        }
+      }
+      return out ?? prev
+    })
+  }
+
   // Release the account THIS row has selected: free it for THIS panel and only for
   // THIS row (never the stored override). The account is already the row's
   // selection (that is what made the row blocked), so this only records the
@@ -342,11 +349,7 @@ export function UpdateBalancesPanel() {
                         <select
                           aria-label={`Plan account for ${acc.accountLabel}`}
                           value={parsed.targets[i] ?? ''}
-                          onChange={(e) =>
-                            setParsed((prev) =>
-                              prev ? { ...prev, targets: prev.targets.map((t, j) => (j === i ? e.target.value : t)) } : prev,
-                            )
-                          }
+                          onChange={(e) => changeTarget(i, e.target.value)}
                         >
                           <option value="">Don&apos;t update</option>
                           {updatable.map((a) => {

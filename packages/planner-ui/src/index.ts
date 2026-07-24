@@ -50,12 +50,16 @@ export { PlannerEditionProvider } from './planner/PlannerEditionProvider.tsx'
 export { usePlannerEdition, type PlannerEditionConfig } from './planner/editionContext.ts'
 
 // Refresh-protection seam for the embedded "Update balances" panel: a host feeds
-// the stable account IDs (or `<accountId>.<field>`) its intake decisions have
-// frozen, and the panel resolves them to the current `accounts[i]` positions and
-// threads them into the broker-refresh engine. Omit it and the panel protects
-// nothing (public web behaviour).
+// the accounts its intake decisions have frozen as structured entries (a stable
+// `accountId`, optionally narrowed to a `field`), and the panel resolves them to
+// the current `accounts[i]` positions and threads them into the broker-refresh
+// engine. Omit it and the panel protects nothing (public web behaviour).
 export { RefreshProtectionProvider } from './planner/RefreshProtectionProvider.tsx'
-export { useRefreshProtection, type RefreshProtectionValue } from './planner/refreshProtectionContext.ts'
+export {
+  useRefreshProtection,
+  type RefreshProtectionEntry,
+  type RefreshProtectionValue,
+} from './planner/refreshProtectionContext.ts'
 
 // The import-provenance contract (also published at the `./import-provenance`
 // subpath): the vocabulary and export envelope that record where every imported
