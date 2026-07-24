@@ -736,11 +736,12 @@ describe('UpdateBalancesPanel refresh protection', () => {
 
   it('discards an in-flight file read when the plan changes mid-read', async () => {
     // A slow `file.text()` must not repopulate the panel from the OLD plan after a
-    // navigation reset ran — cloned plans share account ids, so an old file applied to
-    // the new plan could bypass its protection. The synchronous read epoch is bumped by
-    // the render-phase identity reset, so a read that captured the old epoch is dropped
-    // even if its text() settles before any effect could run. Start a read whose text()
-    // we resolve by hand, swap the plan context mid-read, then resolve: it is dropped.
+    // navigation swap — cloned plans share account ids, so an old file applied to the
+    // new plan could bypass its protection. `handleFile` snapshots `plan.id` before the
+    // await and compares it to `committedPlanId`, which a layout effect advances
+    // synchronously at commit — so a read that captured the old identity is dropped even
+    // if its text() settles before any passive effect could run. Start a read whose
+    // text() we resolve by hand, swap the plan context mid-read, then resolve: dropped.
     const p1 = planWithAccounts()
     const el = renderPanel(p1, protect(p1, { accountId: 'acct-brokerage' }))
 
@@ -774,6 +775,45 @@ describe('UpdateBalancesPanel refresh protection', () => {
 
     // The epoch is not stuck: a fresh read under the new plan still builds its table.
     await chooseFile(el, TWO_ACCOUNT_CSV)
+    expect(el.querySelector('tbody')).not.toBeNull()
+    expect(selects(el)[0]!.value).toBe('acct-brokerage')
+  })
+
+  it('leaves an in-flight read untouched by a plain re-render with the same plan (epoch not bumped in render)', async () => {
+    // The concrete false-discard bug — a concurrent render React DISCARDS still leaves a
+    // bumped ref behind, invalidating a legit read for the still-visible plan — is not
+    // directly reproducible in jsdom, which has no concurrent, discardable renders. What
+    // IS testable is the precondition the fix guarantees: the read epoch is bumped only
+    // in event handlers, never in render, so an ordinary re-render cannot invalidate an
+    // outstanding read. Start a read, force a plain re-render with the SAME plan (no
+    // identity change — an ordinary render that concurrent React could discard), then
+    // resolve: the read still builds its table rather than being falsely dropped.
+    const plan = planWithAccounts()
+    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }))
+
+    let resolveText!: (value: string) => void
+    const file = new File(['ignored'], 'positions.csv', { type: 'text/csv' })
+    Object.defineProperty(file, 'text', {
+      value: () => new Promise<string>((resolve) => { resolveText = resolve }),
+      configurable: true,
+    })
+    const input = el.querySelector<HTMLInputElement>('input[type="file"]')!
+    Object.defineProperty(input, 'files', { value: [file], configurable: true })
+    act(() => input.dispatchEvent(new Event('change', { bubbles: true })))
+    // The read is outstanding — nothing parsed yet.
+    expect(el.querySelector('tbody')).toBeNull()
+
+    // Plain re-render with the SAME plan id (no identity reset). This must not touch the
+    // read epoch — a render-phase bump is exactly the removed bug.
+    act(() => {
+      root!.render(providerTree(plan, <UpdateBalancesPanel />, protect(plan, { accountId: 'acct-brokerage' })))
+    })
+
+    // Resolve: epoch unchanged and committed plan identity unchanged, so it lands.
+    await act(async () => {
+      resolveText(TWO_ACCOUNT_CSV)
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
     expect(el.querySelector('tbody')).not.toBeNull()
     expect(selects(el)[0]!.value).toBe('acct-brokerage')
   })

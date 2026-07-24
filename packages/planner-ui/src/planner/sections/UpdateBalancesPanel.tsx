@@ -26,7 +26,7 @@
  * touches the advisor's stored override record.
  */
 
-import { useMemo, useRef, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
 import {
@@ -134,25 +134,38 @@ export function UpdateBalancesPanel() {
   // before this render derives anything from `parsed`, and React discards the
   // interrupted render without an extra commit).
   const [seenPlanId, setSeenPlanId] = useState(plan.id)
-  // One synchronous epoch guarding every async file read. It is bumped SYNCHRONOUSLY
-  // both here (on a plan-identity reset) and at the very start of `handleFile` (each
-  // file selection supersedes any prior in-flight read). A read captures the epoch
-  // before awaiting `file.text()` and discards its parse if the epoch moved while the
-  // read was outstanding — so neither a navigation reset nor a newer file choice can
-  // be overwritten by a stale continuation. A synchronous ref (not a passive effect)
-  // is required: a `file.text()` that settles before an effect could run must still
-  // see the up-to-date epoch. Bumping the ref twice under a StrictMode double-render
-  // is harmless — a stale read is discarded either way, and no render output depends
-  // on the ref.
+  // One epoch guarding every async file read against a NEWER read (a second file
+  // chosen while the first is outstanding). It is bumped ONLY inside event handlers —
+  // at the very start of `handleFile`, before its await — never during render. A
+  // read captures the epoch before awaiting `file.text()` and discards its parse if
+  // the epoch moved while the read was outstanding, so a stale continuation cannot
+  // overwrite a newer selection. Keeping the bump out of render is load-bearing: a
+  // ref mutation does NOT roll back when React discards a concurrent render, so a
+  // render-phase bump could invalidate a legitimate read that belongs to the STILL-
+  // VISIBLE plan the discarded render never replaced. Handlers only ever run for a
+  // committed tree, so an epoch bumped there is always real.
   const readEpoch = useRef(0)
+  // Plan identity guard, separate from the read epoch. `committedPlanId` tracks the
+  // plan whose render actually COMMITTED, updated in a layout effect. Layout effects
+  // run synchronously inside the commit task, so a pending `file.text()` microtask
+  // cannot interleave between commit and this ref update (the flaw of an earlier
+  // passive-effect version), and a discarded render never runs effects — so the ref
+  // is only ever advanced by a real plan swap, never by a render React threw away.
+  // `handleFile` captures `plan.id` before its await and discards its parse if the
+  // committed plan identity changed while the read was outstanding — the id-based
+  // half of the guard that a plain (same-plan) re-render leaves untouched.
+  const committedPlanId = useRef(plan.id)
+  useLayoutEffect(() => {
+    committedPlanId.current = plan.id
+  }, [plan.id])
   if (seenPlanId !== plan.id) {
-    // Bumping the ref here — during the render-phase reset — is the deliberate,
-    // load-bearing part of the guard: a `file.text()` still outstanding from the old
-    // plan captured the pre-bump epoch, and its continuation closed over the OLD plan,
-    // so it MUST be discarded once the identity changed. No render output reads this
-    // ref, so the "no refs during render" rule does not apply to this mutation.
-    // eslint-disable-next-line react-hooks/refs -- intentional: discard in-flight reads across a plan swap; render output never reads readEpoch
-    readEpoch.current++
+    // Render-phase STATE reset on a plan-identity change: this is the sanctioned
+    // "adjust state while rendering" pattern (rollback-safe — React discards the
+    // interrupted render and re-runs with the reset state, no extra commit). Only
+    // STATE is touched here; the read epoch is deliberately NOT bumped in render (a
+    // ref mutation would not roll back on a discarded render). The in-flight-read
+    // discard across a plan swap is handled by the commit-synchronous
+    // `committedPlanId` ref instead.
     setSeenPlanId(plan.id)
     setParsed(null)
     setReleased(new Map())
@@ -204,15 +217,19 @@ export function UpdateBalancesPanel() {
     // the table and releases down first makes the restore immediate.
     setParsed(null)
     setReleased(new Map())
-    // Claim the read epoch SYNCHRONOUSLY: each file selection supersedes any prior
-    // in-flight read (so two files chosen back-to-back can't let the OLDER read win),
-    // and a `/plan/:id` navigation reset bumps the same epoch (so a read started under
-    // the old plan can't repopulate the panel after the reset ran — cloned plans share
-    // account ids, so an old file could otherwise be applied to the new plan). After
-    // the await, a moved epoch means this read was superseded, so discard it.
+    // Claim the read epoch SYNCHRONOUSLY (in this handler, never in render): each file
+    // selection supersedes any prior in-flight read, so two files chosen back-to-back
+    // can't let the OLDER read win. Also snapshot the plan identity this read belongs
+    // to. After the await, discard if EITHER the epoch moved (a newer file choice) OR
+    // the committed plan identity changed (a `/plan/:id` navigation swap) — cloned
+    // plans share account ids, so a read started under the old plan must not repopulate
+    // the panel after the swap. `committedPlanId` is advanced in a layout effect that
+    // runs synchronously at commit, so this microtask cannot slip in before the swap is
+    // recorded.
     const token = ++readEpoch.current
+    const capturedPlanId = plan.id
     const text = await file.text()
-    if (token !== readEpoch.current) {
+    if (token !== readEpoch.current || committedPlanId.current !== capturedPlanId) {
       return // a newer file choice or a plan swap landed during the read — drop it
     }
     const r = parseBrokerPositionsCsv(text)
@@ -371,9 +388,25 @@ export function UpdateBalancesPanel() {
       if (hostProtectedIds.has(accId) && released.get(accId) !== i) blockedAccountIds.add(accId)
     }
     const protectionBlocked = blockedAccountIds.size
-    let applied = 0
+    // Derive the apply outcome SYNCHRONOUSLY from the already-built delta — do NOT read
+    // it back from the `update()` mutator. PlanContext queues the mutator through a
+    // `setPlan` updater that React may DEFER, so a post-update read of a variable the
+    // mutator assigns can still see 0 while the write actually lands later — which would
+    // wrongly report "held back by protection" for a refresh that succeeds. The number
+    // of accounts `applyRefresh` will write equals the unique account indices in
+    // `delta.changes` (every write emits a `.balance` change for its account), and by
+    // the preview-agreement design — same primitive, same sanitized selection, same
+    // effective set — that is exactly what the mutator does; a non-empty
+    // `delta.duplicateGroups` blocks everything, so zero. Every UI decision below reads
+    // this derived count, never the mutator's timing.
+    const applied =
+      delta.duplicateGroups.length > 0
+        ? 0
+        : new Set(delta.changes.map((c) => c.path.slice(0, c.path.lastIndexOf('.')))).size
+    // The mutator still performs the real write; its return value drives no UI decision
+    // (it may run after this function returns), so it is intentionally not captured.
     update((d) => {
-      applied = applyRefresh(d, delta, safeSelection, effective)
+      applyRefresh(d, delta, safeSelection, effective)
     })
     // Keep the table and releases intact when the ONLY reason nothing landed is
     // protection: the zero-write message points the user at the "Allow this refresh"
