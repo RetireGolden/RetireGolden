@@ -25,12 +25,19 @@
  * The review checklist below still carries `ImportConfidence` for the values
  * that land; the two scales ride together, never merged.
  *
- * **`protectedTargets` is caller-supplied.** A path in this set (an account
- * `accounts[i]` or one of its fields `accounts[i].balance`) is off-limits to the
- * refresh: it is classified but defaults OFF and is skipped on apply, never
- * partially written. The Pro repo feeds it the WS2 intake decisions in a later
- * dispatch; the public planner panel passes none. This module never invents a
- * protected set of its own — the seam is the argument.
+ * **`protectedTargets` is caller-supplied, enforced as one effective set.** A
+ * path in this set (an account `accounts[i]` or one of its fields
+ * `accounts[i].balance`) is off-limits to the refresh: it is classified but
+ * defaults OFF and is skipped on apply, never partially written. Enforcement has
+ * a single authority. Each operation computes an EFFECTIVE protected set —
+ * `effectiveProtected` unions the caller's paths with the `targetPath` of every
+ * candidate already classified `isProtected` — and `computeWrites` skips any
+ * write whose chosen account falls in that set. That union is precisely what
+ * keeps a classify-time-protected row skipped even when a caller threads the set
+ * into `classifyRefresh` but omits it at apply: the row's own `targetPath`
+ * carries the protection forward. The Pro repo feeds the set the WS2 intake
+ * decisions in a later dispatch; the public planner panel passes none. This
+ * module never invents a protected set of its own — the seam is the argument.
  */
 
 import type { Account, Plan } from '@retiregolden/engine/model/plan'
@@ -110,6 +117,14 @@ export interface ClassifyRefreshOptions {
 const EMPTY_PROTECTED: ReadonlySet<string> = new Set()
 
 /**
+ * The shared tail of both normalizers: drop everything that is not a lowercase
+ * letter, digit, or space, then squeeze runs of whitespace to a single space and
+ * trim. Digits survive — they are name content ("401k", "529"). Callers lowercase
+ * (and, for labels, strip account-number masks) before handing text in.
+ */
+const collapseText = (s: string): string => s.replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim()
+
+/**
  * Lowercase a broker file label and strip the broker's own account-number mask
  * (`...789`, `(Z12345678)`) plus punctuation, leaving the human words a
  * plan-account name can match against. Digits OUTSIDE a mask are kept — they
@@ -124,19 +139,12 @@ function normalizeLabel(raw: string): string {
     .replace(/\.\.\.\s*\w+/g, ' ') // Schwab/Fidelity trailing "...789" mask
     .replace(/\([^)]*\)/g, ' ') // parenthesized account number "(Z12345678)"
     .replace(/\b[a-z]?\d{4,}\b/g, ' ') // bare long account numbers (Vanguard rows)
-  return unmasked
-    .replace(/[^a-z0-9 ]+/g, ' ') // punctuation only — short digit runs are name content
-    .replace(/\s+/g, ' ')
-    .trim()
+  return collapseText(unmasked) // punctuation only — short digit runs are name content
 }
 
 /** Lowercase a PLAN account name: punctuation goes, digits stay ("401k", "529"). */
 function normalizeName(raw: string): string {
-  return raw
-    .toLowerCase()
-    .replace(/[^a-z0-9 ]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
+  return collapseText(raw.toLowerCase())
 }
 
 /**
@@ -169,7 +177,15 @@ const GENERIC_WORDS: ReadonlySet<string> = new Set([
  * confident guess the panel used to make regresses; the weak tier only ever
  * *demotes* a former lone-`'ira'` `'likely'` to default-off `'ambiguous'`.
  */
-function matchStrength(sourceNorm: string, nameNorm: string): 'strong' | 'fuzzy' | 'weak' | null {
+type MatchTier = 'strong' | 'fuzzy' | 'weak'
+
+/** Match tiers, strongest first — the order candidates are ranked in. */
+const TIER_ORDER: readonly MatchTier[] = ['strong', 'fuzzy', 'weak']
+
+/** How a lone plausible match of each tier grades: whole-name → exact, distinctive word → likely, category word → ambiguous. */
+const TIER_TO_KIND: Record<MatchTier, RefreshMatchKind> = { strong: 'exact', fuzzy: 'likely', weak: 'ambiguous' }
+
+function matchStrength(sourceNorm: string, nameNorm: string): MatchTier | null {
   if (nameNorm === '' || sourceNorm === '') return null
   // Label-equals-name (after mask stripping) is the surest match there is,
   // generic or not — "Brokerage ...789" against an account named "Brokerage"
@@ -212,43 +228,29 @@ function classifyOne(
   protectedTargets: ReadonlySet<string>,
 ): RefreshCandidate {
   const sourceNorm = normalizeLabel(source.accountLabel)
-  const strongs: UpdatableRef[] = []
-  const fuzzies: UpdatableRef[] = []
-  const weaks: UpdatableRef[] = []
-  for (const cand of updatable) {
-    const m = matchStrength(sourceNorm, cand.nameNorm)
-    if (m === 'strong') strongs.push(cand)
-    else if (m === 'fuzzy') fuzzies.push(cand)
-    else if (m === 'weak') weaks.push(cand)
-  }
-  const plausible = [...strongs, ...fuzzies, ...weaks]
+  // Grade every updatable account once, then rank strong→fuzzy→weak (keeping the
+  // plan's account order within a tier). The first entry is the primary guess;
+  // the rest are the plausible runners-up.
+  const graded = updatable
+    .map((ref) => ({ ref, tier: matchStrength(sourceNorm, ref.nameNorm) }))
+    .filter((g): g is { ref: UpdatableRef; tier: MatchTier } => g.tier !== null)
+  const plausible = TIER_ORDER.flatMap((tier) => graded.filter((g) => g.tier === tier))
 
   if (plausible.length === 0) {
     return { source, targetAccountId: null, targetPath: null, match: 'unmatched', alternativeAccountIds: [], isProtected: false }
   }
 
-  let primary: UpdatableRef
-  let match: RefreshMatchKind
-  let alternatives: string[]
-  if (plausible.length === 1) {
-    primary = plausible[0]!
-    // Confident tiers default ON: a whole-name hit is 'exact', a distinctive
-    // word 'likely'. A lone *category-word-only* hit ("IRA" onto the plan's only
-    // IRA) is genuinely uncertain — it fits every same-family account, present
-    // or not — so it is 'ambiguous' and defaults OFF, even with no competitor
-    // in this particular plan. Its best-guess target is still filled so the user
-    // can confirm it with one click; it just is not pre-selected.
-    match = strongs.length === 1 ? 'exact' : fuzzies.length === 1 ? 'likely' : 'ambiguous'
-    alternatives = []
-  } else {
-    // More than one plausible account — a shared category word ("IRA") is enough
-    // to make a second one plausible; refuse to guess between them. A lone
-    // whole-name hit is still the best pre-selection if the user turns the row
-    // on, but it defaults OFF.
-    primary = strongs.length === 1 ? strongs[0]! : plausible[0]!
-    match = 'ambiguous'
-    alternatives = plausible.filter((c) => c.id !== primary.id).map((c) => c.id)
-  }
+  // One plausible match grades by its tier: a whole-name hit is 'exact', a
+  // distinctive word 'likely', and a lone *category-word-only* hit ("IRA" onto
+  // the plan's only IRA) is 'ambiguous' — genuinely uncertain, so default OFF,
+  // even with no competitor in this plan. More than one plausible account is
+  // 'ambiguous' outright: a shared category word is enough to make a second one
+  // plausible, so refuse to guess between them. Either way the primary is the
+  // top-ranked account, still filled so the user can confirm with one click; the
+  // runners-up are the false-positive audit trail.
+  const primary = plausible[0]!.ref
+  const match: RefreshMatchKind = plausible.length > 1 ? 'ambiguous' : TIER_TO_KIND[plausible[0]!.tier]
+  const alternatives = plausible.slice(1).map((g) => g.ref.id)
 
   const targetPath = `accounts[${primary.index}]`
   return {
@@ -285,12 +287,42 @@ interface RefreshWrite {
   source: BrokerAccountBalance
 }
 
-/** Selected rows that resolve to a real account, minus protected/duplicate ones. */
+/**
+ * The EFFECTIVE protected set for one operation: the caller's paths unioned with
+ * the `targetPath` of every candidate already classified `isProtected`. Computing
+ * it once — in both `buildRefreshDelta` and `applyRefresh` — is what lets
+ * `computeWrites` enforce protection in a single place while still honouring a
+ * classify-time protection whose set the caller omitted at apply.
+ */
+function effectiveProtected(
+  candidates: RefreshCandidate[],
+  protectedTargets: ReadonlySet<string>,
+): ReadonlySet<string> {
+  const effective = new Set(protectedTargets)
+  for (const c of candidates) {
+    if (c.isProtected && c.targetPath) effective.add(c.targetPath)
+  }
+  return effective
+}
+
+/** The plan-account ids blocked by a duplicate collision — one derivation for preview and apply. */
+function blockedAccountIds(groups: readonly RefreshDuplicateGroup[]): Set<string> {
+  return new Set(groups.map((g) => g.accountId))
+}
+
+/**
+ * Selected rows that resolve to a real, updatable account, minus duplicate
+ * collisions and protected targets. Protection is enforced HERE and only here,
+ * as one `isProtectedPath` check of the actually-chosen account against the
+ * pre-computed `effective` set (`effectiveProtected`) — no separate belt on the
+ * candidate's classify-time target, because that target is already folded into
+ * `effective`.
+ */
 function computeWrites(
   accounts: Account[],
   candidates: RefreshCandidate[],
   selection: ReadonlyMap<number, string>,
-  protectedTargets: ReadonlySet<string>,
+  effective: ReadonlySet<string>,
   blockedIds: ReadonlySet<string>,
 ): RefreshWrite[] {
   const writes: RefreshWrite[] = []
@@ -298,15 +330,10 @@ function computeWrites(
     const chosenId = selection.get(i)
     if (!chosenId) return
     if (blockedIds.has(chosenId)) return // duplicate collision — never auto-merge
-    // Belt AND suspenders on protection: a candidate classified as protected
-    // stays skipped even when a caller threads `protectedTargets` into
-    // classifyRefresh but forgets to pass the same set here — protection must
-    // not depend on one set being supplied twice.
-    if (candidate.isProtected && chosenId === candidate.targetAccountId) return
     const accountIndex = accounts.findIndex((a) => a.id === chosenId)
     if (accountIndex === -1) return
     if (!isBalanceUpdatable(accounts[accountIndex]!)) return
-    if (isProtectedPath(`accounts[${accountIndex}]`, protectedTargets)) return
+    if (isProtectedPath(`accounts[${accountIndex}]`, effective)) return
     writes.push({ accountIndex, source: candidate.source })
   })
   return writes
@@ -379,10 +406,15 @@ export function buildRefreshDelta(
   protectedTargets: ReadonlySet<string> = EMPTY_PROTECTED,
 ): RefreshDelta {
   const duplicateGroups = computeDuplicateGroups(plan.accounts, candidates, selection)
-  const blockedIds = new Set(duplicateGroups.map((g) => g.accountId))
+  const blockedIds = blockedAccountIds(duplicateGroups)
+  const effective = effectiveProtected(candidates, protectedTargets)
 
-  const clone = plan.accounts.map((a) => structuredClone(a))
-  const writes = computeWrites(clone, candidates, selection, protectedTargets, blockedIds)
+  // A shallow copy per account is sufficient: applyWrites only assigns the
+  // top-level `balance`/`costBasis` primitives, and the refresh never reaches
+  // into an account's nested strategy objects (allocation, schedule, …), so
+  // those stay shared with — and byte-identical to — the live plan.
+  const clone = plan.accounts.map((a) => ({ ...a }))
+  const writes = computeWrites(clone, candidates, selection, effective, blockedIds)
 
   // Capture before-values from the untouched clone, then apply on it.
   const before = new Map<number, { balance: number; costBasis?: number }>()
@@ -406,18 +438,23 @@ export function buildRefreshDelta(
       after: afterBalance,
       clamped: source.totalValue < 0,
     })
-    // `applyBrokerBalance` writes basis only on taxable/equityComp when the file
-    // carried one — mirror that exactly so a Vanguard (null-basis) refresh shows
-    // no basis change, and a basis account with no file basis is untouched.
-    let basisAfter: number | null = null
-    if ((after.type === 'taxable' || after.type === 'equityComp') && source.costBasis !== null) {
-      basisAfter = after.costBasis
-    }
-    if (basisAfter !== null && b.costBasis !== undefined) {
+    // Whether basis moves is `applyBrokerBalance`'s decision — the taxable/
+    // equityComp + non-null rule lives there alone. Here we simply read the
+    // basis it wrote onto the clone and diff it against the before-value: a
+    // moved basis is a change, and a basis the file re-supplied unchanged is
+    // still recorded (its `costBasis !== null` says the file carried one). A
+    // Vanguard (null-basis) refresh leaves the clone's basis equal to before,
+    // so it emits nothing; an account type with no basis field has none to diff.
+    const afterBasis = 'costBasis' in after ? after.costBasis : undefined
+    const basisAfter =
+      b.costBasis !== undefined && afterBasis !== undefined && (afterBasis !== b.costBasis || source.costBasis !== null)
+        ? afterBasis
+        : null
+    if (basisAfter !== null) {
       changes.push({
         path: `${path}.costBasis`,
         field: 'costBasis',
-        before: b.costBasis,
+        before: b.costBasis!,
         after: basisAfter,
         clamped: source.costBasis !== null && source.costBasis < 0,
       })
@@ -443,7 +480,7 @@ export function buildRefreshDelta(
     if (!chosenId) return
     const accountIndex = plan.accounts.findIndex((a) => a.id === chosenId)
     if (accountIndex === -1) return
-    if (isProtectedPath(`accounts[${accountIndex}]`, protectedTargets)) {
+    if (isProtectedPath(`accounts[${accountIndex}]`, effective)) {
       review.push({
         status: 'skipped',
         source: candidate.source.accountLabel,
@@ -503,7 +540,8 @@ export function applyRefresh(
   selection: ReadonlyMap<number, string>,
   protectedTargets: ReadonlySet<string> = EMPTY_PROTECTED,
 ): number {
-  const blockedIds = new Set(delta.duplicateGroups.map((g) => g.accountId))
-  const writes = computeWrites(draft.accounts, delta.candidates, selection, protectedTargets, blockedIds)
+  const blockedIds = blockedAccountIds(delta.duplicateGroups)
+  const effective = effectiveProtected(delta.candidates, protectedTargets)
+  const writes = computeWrites(draft.accounts, delta.candidates, selection, effective, blockedIds)
   return applyWrites(draft.accounts, writes)
 }

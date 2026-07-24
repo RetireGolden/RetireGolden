@@ -17,7 +17,6 @@ import {
   BROKER_LABEL,
   isBalanceUpdatable,
   parseBrokerPositionsCsv,
-  type BrokerAccountBalance,
   type BrokerId,
 } from '../../import/brokerCsv'
 import {
@@ -33,8 +32,7 @@ import { fmtMoney } from '../format'
 
 interface ParsedFile {
   broker: BrokerId
-  accounts: BrokerAccountBalance[]
-  /** The engine's match verdicts, one per parsed account (drives the defaults). */
+  /** The engine's match verdicts, one per parsed account; each carries the parsed `source` row. */
   candidates: RefreshCandidate[]
   /** Selected plan-account id (or '') per parsed account, by index. */
   targets: string[]
@@ -69,7 +67,6 @@ export function UpdateBalancesPanel() {
     const candidates = classifyRefresh(plan, r.accounts)
     setParsed({
       broker: r.broker,
-      accounts: r.accounts,
       candidates,
       targets: candidates.map(defaultTarget),
       review: r.review,
@@ -147,7 +144,8 @@ export function UpdateBalancesPanel() {
                 </tr>
               </thead>
               <tbody>
-                {parsed.accounts.map((acc, i) => {
+                {parsed.candidates.map((candidate, i) => {
+                  const acc = candidate.source
                   const preview = rowPreview(i)
                   return (
                     <tr key={`${acc.accountLabel}-${i}`}>
