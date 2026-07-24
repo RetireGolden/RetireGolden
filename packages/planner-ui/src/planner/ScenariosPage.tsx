@@ -545,7 +545,18 @@ function ScenarioDetail({
   )
 }
 
-export function ScenariosPage() {
+function comparisonFingerprint(plan: Plan, label: 'baseline' | 'proposal') {
+  try {
+    return { hash: scenarioPlanSnapshotHash(plan), error: null }
+  } catch {
+    return {
+      hash: null,
+      error: `The ${label} plan could not be prepared for comparison. Review the plan and try again.`,
+    }
+  }
+}
+
+function ComparableScenariosPage() {
   const { plan, update } = usePlan()
   const readOnly = useWorkspaceReadOnly()
   const [withMc, setWithMc] = useState(true)
@@ -570,27 +581,43 @@ export function ScenariosPage() {
     plan.scenarios.find((scenario) => scenario.id === selectedScenarioId) ?? plan.scenarios[0] ?? null
   const proposal = useMemo(() => {
     if (!selectedScenario) return { plan: null, error: null }
-    const applied = applyScenarioPatch(plan, selectedScenario.patch)
-    return applied.ok
-      ? { plan: applied.plan, error: null }
-      : { plan: null, error: `Scenario overrides are invalid: ${applied.issues.join('; ')}` }
+    try {
+      const applied = applyScenarioPatch(plan, selectedScenario.patch)
+      return applied.ok
+        ? { plan: applied.plan, error: null }
+        : { plan: null, error: `Scenario overrides are invalid: ${applied.issues.join('; ')}` }
+    } catch {
+      return { plan: null, error: 'The selected scenario could not be prepared for comparison.' }
+    }
   }, [plan, selectedScenario])
-  const baselineHash = useMemo(() => scenarioPlanSnapshotHash(plan), [plan])
-  const proposalHash = useMemo(
-    () => (proposal.plan ? scenarioPlanSnapshotHash(proposal.plan) : null),
+  const baselineFingerprint = useMemo(() => comparisonFingerprint(plan, 'baseline'), [plan])
+  const proposalFingerprint = useMemo(
+    () => (proposal.plan ? comparisonFingerprint(proposal.plan, 'proposal') : { hash: null, error: null }),
     [proposal.plan],
   )
+  const baselineHash = baselineFingerprint.hash
+  const proposalHash = proposalFingerprint.hash
   const overviewKey = useMemo(
-    () => scenarioOverviewRequestKey(baselineHash, plan.scenarios, startYear),
+    () => (baselineHash ? scenarioOverviewRequestKey(baselineHash, plan.scenarios, startYear) : null),
     [baselineHash, plan.scenarios, startYear],
   )
-  const detailKey = `${baselineHash}:${proposalHash ?? 'invalid'}:${startYear}:${withMc ? `mc-${seed}` : 'deterministic'}`
-  const overview = overviewResult?.key === overviewKey ? overviewResult.value : null
-  const detail = detailResult?.key === detailKey ? detailResult.value : null
-  const detailError = proposal.error ?? (detailResult?.key === detailKey ? detailResult.error : null)
-  const detailBusy = Boolean(proposal.plan) && detailResult?.key !== detailKey
+  const detailKey =
+    baselineHash && proposalHash
+      ? `${baselineHash}:${proposalHash}:${startYear}:${withMc ? `mc-${seed}` : 'deterministic'}`
+      : null
+  const overview = overviewKey && overviewResult?.key === overviewKey ? overviewResult.value : null
+  const detail = detailKey && detailResult?.key === detailKey ? detailResult.value : null
+  const storedDetailError =
+    detailKey && detailResult?.key === detailKey ? detailResult.error : null
+  const detailError =
+    baselineFingerprint.error ?? proposal.error ?? proposalFingerprint.error ?? storedDetailError
+  const detailBusy = detailKey !== null && Boolean(proposal.plan) && detailResult?.key !== detailKey
+  const capacityInputKey =
+    detailKey && selectedScenario ? `${detailKey}:scenario:${selectedScenario.id}` : null
   const currentCapacityRequest =
-    capacityRequestKey?.startsWith(`${detailKey}:capacity:`) === true ? capacityRequestKey : null
+    capacityInputKey && capacityRequestKey?.startsWith(`${capacityInputKey}:capacity:`) === true
+      ? capacityRequestKey
+      : null
   const capacity =
     currentCapacityRequest && capacityResult?.key === currentCapacityRequest ? capacityResult.value : null
   const capacityError =
@@ -599,6 +626,7 @@ export function ScenariosPage() {
   const detailStatus = detailBusy ? 'Recalculating…' : detailError ? 'Error' : detail ? 'Current' : 'Unavailable'
 
   useEffect(() => {
+    if (!overviewKey) return
     const t = window.setTimeout(() => {
       setOverviewResult({
         key: overviewKey,
@@ -616,7 +644,7 @@ export function ScenariosPage() {
 
   useEffect(() => {
     const generation = ++detailGeneration.current
-    if (!proposal.plan || !proposalHash) return
+    if (!proposal.plan || !proposalHash || !baselineHash || !detailKey) return
     const t = window.setTimeout(() => {
       try {
         const next = compareScenarioPlans(plan, proposal.plan!, {
@@ -650,10 +678,10 @@ export function ScenariosPage() {
   }, [plan, proposal, proposalHash, baselineHash, detailKey, startYear, withMc, seed])
 
   const calculateCapacity = () => {
-    if (!proposal.plan || !proposalHash) return
+    if (!proposal.plan || !proposalHash || !baselineHash || !detailKey || !capacityInputKey) return
     const generation = ++capacityGeneration.current
     const requestDetailGeneration = detailGeneration.current
-    const requestKey = `${detailKey}:capacity:${generation}`
+    const requestKey = `${capacityInputKey}:capacity:${generation}`
     const baselinePlan = plan
     const proposalPlan = proposal.plan
     const requestIsCurrent = () =>
@@ -710,6 +738,8 @@ export function ScenariosPage() {
           <div className="empty-state">
             <p>No scenarios yet. Add one above — “{TRUSTEES_DEFAULT_SS_HAIRCUT.cutPct}% SS cut” and “retire 2 years earlier” are classics.</p>
           </div>
+        ) : baselineFingerprint.error ? (
+          <p style={{ color: 'var(--bad)' }}>{baselineFingerprint.error}</p>
         ) : overview === null ? (
           <div className="skeleton" style={{ height: '10rem' }} aria-label="Comparing scenarios" />
         ) : (
@@ -834,6 +864,24 @@ export function ScenariosPage() {
         </div>
       ) : null}
 
+      <LearnAboutScreen route="/plan/:planId/scenarios" />
+    </section>
+  )
+}
+
+export function ScenariosPage() {
+  const { issues } = usePlan()
+  if (issues.length === 0) return <ComparableScenariosPage />
+
+  const message =
+    'Scenario comparison is unavailable while the plan has validation issues. Fix the highlighted plan fields to continue.'
+  return (
+    <section>
+      <LiveStatus message={message} assertive />
+      <div className="card">
+        <h2>Scenario comparison unavailable</h2>
+        <p style={{ color: 'var(--bad)' }}>{message}</p>
+      </div>
       <LearnAboutScreen route="/plan/:planId/scenarios" />
     </section>
   )

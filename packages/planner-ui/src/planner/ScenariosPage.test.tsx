@@ -8,6 +8,7 @@ import { MemoryRouter } from 'react-router-dom'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import { TRUSTEES_DEFAULT_SS_HAIRCUT } from '@retiregolden/engine/params'
 import type { ScenarioPlanComparison } from '@retiregolden/engine/scenarios/comparison'
+import type { ScenarioComparison } from '@retiregolden/engine/scenarios/scenarios'
 import type { SpendingSolveResult } from '../optimize/spendingMessages'
 import { PlanCtx, type PlanContextValue } from './planContextCore'
 import { createSamplePlan } from '../testSupport/samplePlan'
@@ -30,9 +31,18 @@ vi.mock('@retiregolden/engine/scenarios/scenarios', async (importOriginal) => {
   }
 })
 
+vi.mock('@retiregolden/engine/scenarios/patch', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@retiregolden/engine/scenarios/patch')>()
+  return {
+    ...original,
+    scenarioPlanSnapshotHash: vi.fn(original.scenarioPlanSnapshotHash),
+  }
+})
+
 vi.mock('../optimize/spendingRunner', () => ({ runSpendingSolve: vi.fn() }))
 
 import * as comparisonModule from '@retiregolden/engine/scenarios/comparison'
+import * as scenarioPatchModule from '@retiregolden/engine/scenarios/patch'
 import * as scenariosModule from '@retiregolden/engine/scenarios/scenarios'
 import { runSpendingSolve } from '../optimize/spendingRunner'
 import { MetricTable, ScenariosPage } from './ScenariosPage'
@@ -50,6 +60,7 @@ const actualComparison = await vi.importActual<typeof import('@retiregolden/engi
 const mockedComparePlans = vi.mocked(comparisonModule.compareScenarioPlans)
 const mockedCompareCapacity = vi.mocked(comparisonModule.compareScenarioSpendingCapacityResults)
 const mockedCompareScenarios = vi.mocked(scenariosModule.compareScenarios)
+const mockedSnapshotHash = vi.mocked(scenarioPatchModule.scenarioPlanSnapshotHash)
 const mockedRunSpendingSolve = vi.mocked(runSpendingSolve)
 
 function deferred<T>() {
@@ -193,21 +204,21 @@ describe('ScenariosPage comparison lifecycle', () => {
     vi.useRealTimers()
   })
 
-  function contextFor(plan: Plan): PlanContextValue {
+  function contextFor(plan: Plan, issues: string[] = []): PlanContextValue {
     return {
       plan,
       update: () => undefined,
       discardPendingSave: () => undefined,
       saveState: 'saved',
-      issues: [],
+      issues,
     }
   }
 
-  async function mount(plan = createSamplePlan()) {
+  async function mount(plan = createSamplePlan(), issues: string[] = []) {
     await act(async () => {
       root.render(
         <MemoryRouter>
-          <PlanCtx.Provider value={contextFor(plan)}>
+          <PlanCtx.Provider value={contextFor(plan, issues)}>
             <ScenariosPage />
           </PlanCtx.Provider>
         </MemoryRouter>,
@@ -270,6 +281,40 @@ describe('ScenariosPage comparison lifecycle', () => {
     expect(mockedCompareScenarios.mock.calls.at(-1)![1].startYear).toBe(2027)
   })
 
+  it('does not inspect or compare a draft that PlanContext marks invalid', async () => {
+    const invalidPlan = {
+      ...createSamplePlan(),
+      scenarios: undefined,
+    } as unknown as Plan
+
+    await mount(invalidPlan, ['scenarios: Required'])
+    await advanceComparison()
+
+    expect(container.textContent).toContain('Scenario comparison unavailable')
+    expect(container.querySelector('[aria-label="Comparing scenarios"]')).toBeNull()
+    expect(container.querySelector('[aria-label="Comparing selected scenario"]')).toBeNull()
+    expect(mockedSnapshotHash).not.toHaveBeenCalled()
+    expect(mockedCompareScenarios).not.toHaveBeenCalled()
+    expect(mockedComparePlans).not.toHaveBeenCalled()
+    expect(container.querySelectorAll('[role="alert"][aria-live="assertive"]')).toHaveLength(1)
+  })
+
+  it('surfaces a fingerprint failure without running comparisons or leaving a skeleton', async () => {
+    mockedSnapshotHash.mockImplementationOnce(() => {
+      throw new Error('fingerprint failed')
+    })
+
+    await mount()
+    await advanceComparison()
+
+    expect(container.textContent).toContain('baseline plan could not be prepared for comparison')
+    expect(container.querySelector('[aria-label="Comparing scenarios"]')).toBeNull()
+    expect(container.querySelector('[aria-label="Comparing selected scenario"]')).toBeNull()
+    expect(mockedCompareScenarios).not.toHaveBeenCalled()
+    expect(mockedComparePlans).not.toHaveBeenCalled()
+    expect(container.querySelectorAll('[role="alert"][aria-live="assertive"]')).toHaveLength(1)
+  })
+
   it('rejects a detail result whose provenance no longer matches the active request', async () => {
     mockedComparePlans.mockImplementationOnce((baseline, proposal, options) => {
       const stale = actualComparison.compareScenarioPlans(baseline, proposal, {
@@ -316,6 +361,57 @@ describe('ScenariosPage comparison lifecycle', () => {
     )
     expect(visibleError).toBeTruthy()
     expect(visibleError!.hasAttribute('role')).toBe(false)
+  })
+
+  it('clears an in-flight capacity request when switching between equivalent scenarios', async () => {
+    const plan = createSamplePlan()
+    plan.scenarios = [
+      { id: 'equivalent-a', name: 'Equivalent A', patch: { expenses: { baseAnnual: 105_000 } } },
+      { id: 'equivalent-b', name: 'Equivalent B', patch: { expenses: { baseAnnual: 105_000 } } },
+    ]
+    const summary = {
+      endingNetWorth: 1_000_000,
+      endingAfterTaxEstate: 900_000,
+      lifetimeTaxesAndPenalties: 250_000,
+      depletionYear: null,
+    } as ScenarioComparison['rows'][number]['summary']
+    mockedCompareScenarios.mockReturnValue({
+      rows: [
+        { scenarioId: null, name: 'Base plan', summary, error: null, diff: [], successRate: null },
+        { scenarioId: 'equivalent-a', name: 'Equivalent A', summary, error: null, diff: [], successRate: null },
+        { scenarioId: 'equivalent-b', name: 'Equivalent B', summary, error: null, diff: [], successRate: null },
+      ],
+    })
+    const baselineSolve = deferred<SpendingSolveResult>()
+    const proposalSolve = deferred<SpendingSolveResult>()
+    mockedRunSpendingSolve
+      .mockReturnValueOnce(baselineSolve.promise)
+      .mockReturnValueOnce(proposalSolve.promise)
+
+    await mount(plan)
+    await advanceComparison()
+    const calculate = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent === 'Calculate capacity',
+    )
+    await act(async () => calculate!.click())
+    expect(calculate!.disabled).toBe(true)
+
+    const equivalentB = container.querySelector<HTMLInputElement>('input[aria-label="Compare Equivalent B"]')
+    await act(async () => equivalentB!.click())
+
+    const currentCalculate = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent === 'Calculate capacity',
+    )
+    expect(currentCalculate).toBeTruthy()
+    expect(currentCalculate!.disabled).toBe(false)
+
+    await act(async () => {
+      baselineSolve.resolve(solved)
+      proposalSolve.resolve(solved)
+      await Promise.resolve()
+    })
+    expect(mockedCompareCapacity).not.toHaveBeenCalled()
+    expect(currentCalculate!.disabled).toBe(false)
   })
 
   it('uses per-plan taxes and discards capacity results after the detail request changes', async () => {
