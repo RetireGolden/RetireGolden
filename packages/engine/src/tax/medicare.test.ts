@@ -18,6 +18,7 @@ describe('medicareAnnualPremiumPerPerson', () => {
     expect(r.irmaaTier).toBe(0)
     expect(r.partBAnnual).toBeCloseTo(202.9 * 12, 6)
     expect(r.partDSurchargeAnnual).toBe(0)
+    expect(r.irmaaSurchargeAnnual).toBe(0)
   })
 
   it('jumps to tier 1 a dollar over (cliff), with Part D surcharge', () => {
@@ -25,6 +26,7 @@ describe('medicareAnnualPremiumPerPerson', () => {
     expect(r.irmaaTier).toBe(1)
     expect(r.partBAnnual).toBeCloseTo(202.9 * 1.4 * 12, 6)
     expect(r.partDSurchargeAnnual).toBeCloseTo(14.5 * 12, 6)
+    expect(r.irmaaSurchargeAnnual).toBeCloseTo((202.9 * 0.4 + 14.5) * 12, 6)
     expect(r.partDSurchargeUnverified).toBe(false)
   })
 

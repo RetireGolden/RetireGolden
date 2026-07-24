@@ -15,6 +15,8 @@ import type { FilingStatus, ParameterPack } from '../params/types.js'
 export interface MedicarePremiumResult {
   partBAnnual: number
   partDSurchargeAnnual: number
+  /** Annual Part B + Part D amount above the standard Part B premium. */
+  irmaaSurchargeAnnual: number
   /** 0 = standard premium; 1–5 = IRMAA tier. */
   irmaaTier: number
   /** True when an IRMAA tier with an unverified Part D surcharge was hit. */
@@ -49,6 +51,9 @@ export function medicareAnnualPremiumPerPerson(
   return {
     partBAnnual: partBMonthly * 12,
     partDSurchargeAnnual: partDSurchargeMonthly * 12 * premiumScale,
+    irmaaSurchargeAnnual:
+      Math.max(0, partBMonthly - base * premiumScale) * 12 +
+      partDSurchargeMonthly * 12 * premiumScale,
     irmaaTier: tier,
     partDSurchargeUnverified,
   }
