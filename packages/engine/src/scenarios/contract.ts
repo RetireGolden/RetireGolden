@@ -124,7 +124,7 @@ export const scenarioPatchV1Schema = z.strictObject({
   }),
   title: z.string().min(1),
   rationale: z.string().min(1).nullable(),
-  createdAtIso: z.string().min(1),
+  createdAtIso: z.iso.datetime({ offset: true }),
   actor: scenarioActorSchema,
   operations: z.array(scenarioOperationSchema),
 })

@@ -147,9 +147,7 @@ function setAt(root: Record<string, unknown>, segments: readonly string[], value
     const next = ownValue(current, segment)
     if (Array.isArray(next)) return `path "${encodeScenarioPointer(segments)}" traverses an array`
     if (next === undefined) {
-      const created: Record<string, unknown> = {}
-      defineOwn(current, segment, created)
-      current = created
+      return `path "${encodeScenarioPointer(segments)}" traverses an absent object`
     } else if (isPlainObject(next)) {
       current = next
     } else {
@@ -394,7 +392,7 @@ function mutateOperations(
       conflicts: report.conflicts,
     }
   }
-  const draft = cloneJson(plan) as unknown as Record<string, unknown>
+  const draft = structuredClone(plan) as unknown as Record<string, unknown>
   const operations = direction === 'apply' ? parsedPatch.patch.operations : [...parsedPatch.patch.operations].reverse()
   for (const operation of operations) {
     const segments = decodeScenarioPointer(operation.path)!
@@ -435,7 +433,10 @@ function mutateOperations(
   return {
     ok: true,
     plan: parsedPlan.plan,
-    baseSnapshotMatches: report.baseSnapshotMatches,
+    baseSnapshotMatches:
+      direction === 'revert'
+        ? scenarioPlanSnapshotHash(parsedPlan.plan) === parsedPatch.patch.base.snapshotHash
+        : report.baseSnapshotMatches,
   }
 }
 
@@ -447,22 +448,34 @@ export function revertScenarioPatch(plan: Plan, patch: ScenarioPatchV1): ApplySc
   return mutateOperations(plan, patch, 'revert')
 }
 
+/** Read a validated operation target from the current plan without traversing arrays. */
+export function readScenarioValueState(plan: Plan, path: string): ScenarioValueState | null {
+  const segments = decodeScenarioPointer(path)
+  const record = plan as unknown as Record<string, unknown>
+  if (segments === null || assertNoArrayTraversal(record, segments)) return null
+  return valueStateAt(record, segments)
+}
+
 /**
  * Rebind valid canonical scenarios after an explicit containing-plan re-key.
  * Legacy and malformed documents are preserved byte-for-byte.
  */
 export function rebindScenarioPatchesToPlan(plan: Plan): Plan {
-  const snapshotHash = scenarioPlanSnapshotHash(plan)
-  let changed = false
-  const scenarios = plan.scenarios.map((scenario) => {
-    if (!isScenarioPatchEnvelope(scenario.patch)) return scenario
+  const canonical = plan.scenarios.map((scenario) => {
+    if (!isScenarioPatchEnvelope(scenario.patch)) return null
     const parsed = parseScenarioPatch(scenario.patch)
-    if (!parsed.ok) return scenario
-    changed = true
+    return parsed.ok ? parsed.patch : null
+  })
+  if (canonical.every((patch) => patch === null)) return plan
+  if (!parsePlan(plan).ok) return plan
+  const snapshotHash = scenarioPlanSnapshotHash(plan)
+  const scenarios = plan.scenarios.map((scenario, index) => {
+    const patch = canonical[index]
+    if (patch === null) return scenario
     return {
       ...scenario,
       patch: {
-        ...parsed.patch,
+        ...patch,
         base: {
           planId: plan.id,
           planSchemaVersion: plan.schemaVersion,
@@ -471,7 +484,7 @@ export function rebindScenarioPatchesToPlan(plan: Plan): Plan {
       },
     }
   })
-  return changed ? { ...plan, scenarios } : plan
+  return { ...plan, scenarios }
 }
 
 export function composeScenarioPatches(

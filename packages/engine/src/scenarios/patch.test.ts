@@ -14,7 +14,7 @@ import {
   revertScenarioPatch,
   scenarioPlanSnapshotHash,
 } from './patch.js'
-import { applyScenarioPatch } from './scenarios.js'
+import { applyScenarioPatch, diffScenarioPatch } from './scenarios.js'
 
 const metadata: ScenarioPatchMetadata = {
   title: 'Meeting proposal',
@@ -90,11 +90,15 @@ describe('canonical scenario patch documents', () => {
     const applied = applyScenarioPatchDocument(base, patch)
     expect(applied.ok).toBe(true)
     if (!applied.ok) return
+    expect(applied.baseSnapshotMatches).toBe(true)
     expect(canonicalScenarioJson(applied.plan)).toBe(canonicalScenarioJson(edited))
     expect(base.assumptions.inflationPct).toBe(2.5)
     const reverted = revertScenarioPatch(applied.plan, patch)
     expect(reverted.ok).toBe(true)
-    if (reverted.ok) expect(canonicalScenarioJson(reverted.plan)).toBe(canonicalScenarioJson(base))
+    if (reverted.ok) {
+      expect(reverted.baseSnapshotMatches).toBe(true)
+      expect(canonicalScenarioJson(reverted.plan)).toBe(canonicalScenarioJson(base))
+    }
   })
 
   it('holds apply/revert and empty-diff invariants across deterministic generated edits', () => {
@@ -279,6 +283,24 @@ describe('canonical scenario patch documents', () => {
     if (applied.ok) expect(applied.plan.expenses.baseAnnual).toBe(60_000)
   })
 
+  it('preserves undefined values in historical loose scenarios while applying canonical patches', () => {
+    const base = plan()
+    base.scenarios = [
+      {
+        id: 'legacy-scenario',
+        name: 'Clear guardrails',
+        patch: { expenses: { spendingPolicy: undefined, requiredAnnual: undefined } },
+      },
+    ]
+    const edited = structuredClone(base)
+    edited.expenses.baseAnnual = 60_000
+    const applied = apply(base, build(base, edited))
+    const legacyExpenses = applied.scenarios[0]!.patch['expenses'] as Record<string, unknown>
+    expect(Object.hasOwn(legacyExpenses, 'spendingPolicy')).toBe(true)
+    expect(legacyExpenses['spendingPolicy']).toBeUndefined()
+    expect(Object.hasOwn(legacyExpenses, 'requiredAnnual')).toBe(true)
+  })
+
   it('rebinds canonical scenarios when their containing plan is re-keyed', () => {
     const base = plan()
     const edited = clonePlan(base)
@@ -293,6 +315,13 @@ describe('canonical scenario patch documents', () => {
     expect(applied.ok).toBe(true)
     if (applied.ok) expect(applied.plan.expenses.baseAnnual).toBe(60_000)
     expect((rebound.scenarios[0]!.patch as { base: { planId: string } }).base.planId).toBe('copy-plan')
+  })
+
+  it('does not throw while rebinding an invalid live draft', () => {
+    const invalid = plan()
+    invalid.name = ''
+    expect(() => rebindScenarioPatchesToPlan(invalid)).not.toThrow()
+    expect(rebindScenarioPatchesToPlan(invalid)).toBe(invalid)
   })
 
   it('diffs optional undefined values and numeric record keys safely', () => {
@@ -315,6 +344,28 @@ describe('canonical scenario patch documents', () => {
       '/assumptions/historicalAnnualMagiByYear/2024',
     ])
     expect(apply(edited, numericKeyPatch).assumptions.historicalAnnualMagiByYear).toEqual({ '2024': 80_000 })
+  })
+
+  it('diffs canonical operations against the supplied current plan', () => {
+    const base = plan()
+    const edited = clonePlan(base)
+    edited.expenses.baseAnnual = 60_000
+    const patch = build(base, edited)
+    expect(diffScenarioPatch(base, patch)).toEqual([
+      {
+        path: 'expenses.baseAnnual',
+        baseValue: 48_000,
+        scenarioValue: 60_000,
+      },
+    ])
+    expect(diffScenarioPatch(edited, patch)).toEqual([])
+
+    const withHistory = plan()
+    withHistory.assumptions.historicalAnnualMagiByYear = { '2024': 75_000 }
+    const withoutHistory = clonePlan(withHistory)
+    delete withoutHistory.assumptions.historicalAnnualMagiByYear!['2024']
+    const removal = build(withHistory, withoutHistory)
+    expect(diffScenarioPatch(withoutHistory, removal)).toEqual([])
   })
 })
 
@@ -368,9 +419,36 @@ describe('scenario patch validation and hostile paths', () => {
     if (!applied.ok) expect(applied.conflicts[0]?.kind).toBe('invalid-path')
   })
 
+  it('rejects nested sets that would need an untracked intermediate object', () => {
+    const parsed = parseScenarioPatch({
+      ...envelope,
+      base: { ...envelope.base, snapshotHash: scenarioPlanSnapshotHash(plan()) },
+      operations: [
+        {
+          op: 'set',
+          path: '/assumptions/ssHaircut/fromYear',
+          before: { present: false },
+          value: 2034,
+        },
+        {
+          op: 'set',
+          path: '/assumptions/ssHaircut/cutPct',
+          before: { present: false },
+          value: 20,
+        },
+      ],
+    })
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) return
+    const applied = applyScenarioPatchDocument(plan(), parsed.patch)
+    expect(applied.ok).toBe(false)
+    if (!applied.ok) expect(applied.conflicts[0]?.kind).toBe('invalid-path')
+  })
+
   it('only narrows fully validated documents', () => {
     expect(isScenarioPatchDocument({ kind: 'retiregolden.scenario-patch' })).toBe(false)
     expect(isScenarioPatchDocument({ ...envelope, operations: [] })).toBe(true)
+    expect(isScenarioPatchDocument({ ...envelope, createdAtIso: 'yesterday', operations: [] })).toBe(false)
   })
 
   it('rejects duplicate, overlapping, non-JSON, and malformed-pointer operations', () => {

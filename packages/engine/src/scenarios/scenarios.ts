@@ -28,7 +28,7 @@ import {
   parseScenarioPatch,
   type ScenarioPatchInput,
 } from './contract.js'
-import { applyScenarioPatchInput } from './patch.js'
+import { applyScenarioPatchInput, canonicalScenarioJson, readScenarioValueState } from './patch.js'
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v)
@@ -55,11 +55,23 @@ export function diffScenarioPatch(plan: Plan, patch: ScenarioPatchInput): Scenar
   if (isScenarioPatchEnvelope(patch)) {
     const parsed = parseScenarioPatch(patch)
     if (!parsed.ok) return []
-    return parsed.patch.operations.map((operation) => ({
-      path: decodeScenarioPointer(operation.path)!.join('.'),
-      baseValue: operation.before.present ? operation.before.value : undefined,
-      scenarioValue: operation.op === 'set' ? operation.value : undefined,
-    }))
+    return parsed.patch.operations.flatMap((operation) => {
+      const current = readScenarioValueState(plan, operation.path)
+      if (current === null) return []
+      const scenarioValue = operation.op === 'set' ? operation.value : undefined
+      const alreadyApplied =
+        current.present === (operation.op === 'set') &&
+        (!current.present || canonicalScenarioJson(current.value) === canonicalScenarioJson(scenarioValue))
+      return alreadyApplied
+        ? []
+        : [
+            {
+              path: decodeScenarioPointer(operation.path)!.join('.'),
+              baseValue: current.present ? current.value : undefined,
+              scenarioValue,
+            },
+          ]
+    })
   }
 
   const entries: ScenarioDiffEntry[] = []
