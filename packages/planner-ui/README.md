@@ -345,8 +345,22 @@ whole-account id (`'acct-123'`) or an `<accountId>.<field>` entry
 (`'acct-123.costBasis'`) — and the panel resolves each id to that account's
 current `accounts[i]` position before threading it into the refresh engine. IDs
 (not array positions) are the contract because plan-array indices shift as
-accounts are added or removed. Omit the provider and the panel protects nothing —
-the public web behaviour.
+accounts are added or removed. Because engine account ids are arbitrary nonempty
+strings that may themselves contain dots (`'broker.acct-123'` is valid), the panel
+decodes each entry against the live plan — an exact match to a plan account id is
+a whole-account entry; otherwise the **longest** plan account id whose `` `${id}.` ``
+prefixes the entry names the account and the remainder is the field — never by
+splitting at the first dot. Omit the provider and the panel protects nothing — the
+public web behaviour.
+
+**Field-scoped entries are conservative today.** An `<accountId>.<field>` entry
+currently blocks that account's **whole** refresh, not just the named field: the
+engine's `applyBrokerBalance` writes balance and cost basis as a unit and cannot
+skip one field, so a protected descendant locks the entire account's refresh write
+(protection errs toward overwriting *less*). So `'acct-456.costBasis'` protects
+`acct-456`'s balance too. The `<accountId>.<field>` form is accepted so a host can
+record the intended granularity; finer per-field application is future engine work
+and will not change what hosts pass.
 
 ```tsx
 import { RefreshProtectionProvider } from '@retiregolden/planner-ui'
@@ -356,11 +370,16 @@ import { RefreshProtectionProvider } from '@retiregolden/planner-ui'
 </RefreshProtectionProvider>
 ```
 
-A protected row renders disabled with a note and a transient "Allow this refresh"
-control that releases the account for that panel instance only, and only for the
-row that asked — a sibling row still cannot reach it — and never mutates the
-host's stored decision. `useRefreshProtection()` reads the ambient set;
-`RefreshProtectionValue` (`{ protectedAccounts }`) is the context value shape.
+Protected accounts stay **selectable** in every row (marked "(protected)");
+selecting one **blocks** that row — a "Protected — advisor override" note and a
+transient "Allow this refresh" control — rather than being refused, so even an
+unmatched row has a path to deliberately refresh a frozen account. A blocked row
+contributes nothing to the preview/apply until released. "Allow this refresh"
+releases the account for that panel instance only, and only for the row that asked
+— a sibling row still cannot reach it (one releasing row per account), and it
+never mutates the host's stored decision. `useRefreshProtection()` reads the
+ambient set; `RefreshProtectionValue` (`{ protectedAccounts }`) is the context
+value shape.
 
 ### Plan interchange
 

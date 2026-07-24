@@ -37,10 +37,26 @@ export interface RefreshProtectionValue {
   /**
    * Account IDs the broker refresh must not write, each either a whole-account
    * id (`'acct-123'` — protect balance and cost basis) or an
-   * `<accountId>.<field>` entry (`'acct-123.costBasis'` — protect one field). IDs
-   * are stable across plan-array reordering; the panel resolves them to the
-   * current `accounts[i]` positions itself. An empty set (the default) protects
-   * nothing.
+   * `<accountId>.<field>` entry (`'acct-123.costBasis'`). IDs are stable across
+   * plan-array reordering; the panel resolves them to the current `accounts[i]`
+   * positions itself. An empty set (the default) protects nothing.
+   *
+   * **Field-scoped entries are conservative today: they block the account's
+   * whole refresh, not just the named field.** The engine's `applyBrokerBalance`
+   * writes balance and cost basis as a unit and cannot skip one field, so
+   * `isProtectedPath` treats a protected descendant (`'acct-123.costBasis'`) as
+   * locking the entire account's refresh write — protection deliberately errs
+   * toward overwriting *less*. So `'acct-123.costBasis'` protects `acct-123`'s
+   * balance too, for now. The `<accountId>.<field>` form is accepted so hosts can
+   * record the intended granularity; finer per-field application is future engine
+   * work, and honouring it will not require hosts to change what they pass.
+   *
+   * Because account ids are arbitrary nonempty strings that may contain dots
+   * (`'broker.acct-123'` is valid), the panel decodes each entry against the live
+   * plan — an id that exactly matches a plan account is a whole-account entry,
+   * otherwise the longest plan account id that `` `${id}.` ``-prefixes the entry
+   * names the account and the remainder is the field — never by splitting at the
+   * first dot.
    */
   protectedAccounts: ReadonlySet<string>
 }

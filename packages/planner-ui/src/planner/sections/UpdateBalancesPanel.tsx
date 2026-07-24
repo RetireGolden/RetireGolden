@@ -15,9 +15,12 @@
  * accounts by STABLE ID (or `<accountId>.<field>`), never by array position: this
  * panel resolves each protected id to its CURRENT `accounts[i]` index fresh on
  * every render, so protection tracks the account even after the plan array is
- * reordered. A protected row can be released transiently with "Allow this
- * refresh": that frees the account for THIS panel instance and only for the ROW
- * that asked (a sibling row cannot then reach the same account), and it never
+ * reordered. Protected accounts stay SELECTABLE in every row (marked
+ * "(protected)"); selecting one blocks that row — the "Protected — advisor
+ * override" note with an "Allow this refresh" button — rather than being refused,
+ * so even an unmatched row has a path to deliberately refresh a frozen account.
+ * "Allow this refresh" frees the account for THIS panel instance and only for the
+ * ROW that asked (a sibling row cannot then reach the same account), and it never
  * touches the advisor's stored override record.
  */
 
@@ -62,20 +65,47 @@ interface ParsedFile {
   review: ImportReviewItem[]
 }
 
-/** The account id half of a protection entry (`'acct-1'` or `'acct-1.costBasis'`). */
-function protectedAccountId(entry: string): string {
-  const dot = entry.indexOf('.')
-  return dot === -1 ? entry : entry.slice(0, dot)
+/**
+ * Decode one protection entry against the LIVE plan account ids. Engine account
+ * ids are arbitrary nonempty strings and may themselves contain dots
+ * (`'broker.acct-123'` is a valid id), so an entry cannot be split naively at its
+ * first dot — that would mis-read `'broker.acct-123'` as account `'broker'`,
+ * field `'acct-123'`. Resolve against the actual plan instead:
+ *  - an entry that EXACTLY equals a plan account id protects that whole account
+ *    (`field === null`), and exact-match wins over any prefix interpretation;
+ *  - otherwise the account whose `` `${id}.` `` prefixes the entry, preferring the
+ *    LONGEST such id when several match, with the remainder as the field
+ *    (so with ids `'a'` and `'a.b'`, the entry `'a.b.costBasis'` protects account
+ *    `'a.b'`, field `'costBasis'`, not account `'a'`);
+ *  - an entry matching no current account returns `null` and is skipped (a stale
+ *    protection cannot protect a phantom account), exactly as before.
+ */
+function decodeProtectionEntry(
+  entry: string,
+  accountIds: ReadonlySet<string>,
+): { accId: string; field: string | null } | null {
+  if (accountIds.has(entry)) return { accId: entry, field: null } // exact whole-account, wins over any prefix
+  let best: string | null = null
+  for (const id of accountIds) {
+    if (entry.startsWith(`${id}.`) && (best === null || id.length > best.length)) best = id
+  }
+  if (best === null) return null // no live account is this entry or a prefix of it — skip
+  return { accId: best, field: entry.slice(best.length + 1) }
 }
 
 /**
  * Translate the host's STABLE account-id protection set into the engine's
  * POSITIONAL `accounts[i]` set against the live plan order, dropping any account
- * a row has released. This is the one place ids become indices: an id absent from
- * `plan.accounts` is skipped (a stale protection cannot protect a phantom index),
- * and a released id is omitted so the engine treats it as fair game. Cheap and
- * allocation-free when nothing is protected — the empty-provider path returns the
- * shared empty set without touching `released`.
+ * a row has released. This is the one place ids become indices: an entry that
+ * decodes to no live account is skipped (a stale protection cannot protect a
+ * phantom index), and a released id is omitted so the engine treats it as fair
+ * game. Cheap and allocation-free when nothing is protected — the empty-provider
+ * path returns the shared empty set without touching `released`.
+ *
+ * A field-scoped entry emits `accounts[i].<field>`, but note the engine's
+ * `isProtectedPath` treats any protected field of an account as locking the whole
+ * account's refresh write (balance and basis apply as a unit) — so a field entry
+ * currently blocks the account entirely. See the module and README docs.
  */
 function positionalProtectedSet(
   plan: Plan,
@@ -83,21 +113,26 @@ function positionalProtectedSet(
   released: ReadonlyMap<string, number>,
 ): ReadonlySet<string> {
   if (protectedAccounts.size === 0) return EMPTY_PROTECTED
+  const accountIds = new Set(plan.accounts.map((a) => a.id))
   const out = new Set<string>()
   for (const entry of protectedAccounts) {
-    const dot = entry.indexOf('.')
-    const accId = dot === -1 ? entry : entry.slice(0, dot)
-    if (released.has(accId)) continue // released for this panel instance — not off-limits
-    const index = plan.accounts.findIndex((a) => a.id === accId)
-    if (index === -1) continue // stale id: no live account, nothing to protect
-    out.add(dot === -1 ? `accounts[${index}]` : `accounts[${index}].${entry.slice(dot + 1)}`)
+    const decoded = decodeProtectionEntry(entry, accountIds)
+    if (decoded === null) continue // stale entry: no live account, nothing to protect
+    if (released.has(decoded.accId)) continue // released for this panel instance — not off-limits
+    const index = plan.accounts.findIndex((a) => a.id === decoded.accId)
+    out.add(decoded.field === null ? `accounts[${index}]` : `accounts[${index}].${decoded.field}`)
   }
   return out
 }
 
-/** exact/likely default their select ON; ambiguous/unmatched/protected default OFF. */
+/**
+ * exact/likely default their select ON; ambiguous/unmatched default OFF. A
+ * protected exact/likely guess still defaults to its account so the row renders
+ * BLOCKED (note + "Allow this refresh") rather than silently unselected — the
+ * belt and the blocked-row render keep it out of the delta/apply until released,
+ * so a defaulted-on protected account writes nothing until the user allows it.
+ */
 function defaultTarget(candidate: RefreshCandidate): string {
-  if (candidate.isProtected) return ''
   if (candidate.match === 'exact' || candidate.match === 'likely') return candidate.targetAccountId ?? ''
   return ''
 }
@@ -120,14 +155,21 @@ export function UpdateBalancesPanel() {
   const updatable = plan.accounts.filter(isBalanceUpdatable).map((a) => ({ id: a.id, name: a.name }))
   const accountName = (id: string) => updatable.find((a) => a.id === id)?.name ?? id
 
-  // The account ids the host protects (the id half of each entry), independent of
-  // release state — the panel's per-option and belt checks read this so a
-  // field-scoped protection still locks the account in the dropdowns.
+  // The account ids the host protects, decoded against the live plan (an entry is
+  // a whole-account id or `<accountId>.<field>`, and ids may contain dots) and
+  // independent of release state — the panel's per-option, blocked-row, and belt
+  // checks read this so a field-scoped protection still marks the account in the
+  // dropdowns. Entries decoding to no live account are dropped, matching
+  // `positionalProtectedSet`.
+  const planAccountIds = useMemo(() => new Set(plan.accounts.map((a) => a.id)), [plan])
   const hostProtectedIds = useMemo(() => {
     const ids = new Set<string>()
-    for (const entry of protectedAccounts) ids.add(protectedAccountId(entry))
+    for (const entry of protectedAccounts) {
+      const decoded = decodeProtectionEntry(entry, planAccountIds)
+      if (decoded) ids.add(decoded.accId)
+    }
     return ids
-  }, [protectedAccounts])
+  }, [protectedAccounts, planAccountIds])
 
   // The effective POSITIONAL protected set the engine sees: the host's id set
   // resolved to current `accounts[i]` paths, minus every account a row released.
@@ -222,10 +264,11 @@ export function UpdateBalancesPanel() {
   const blocked = duplicateNames.length > 0
   const staleNames = (delta?.staleAccountIds ?? []).map(accountName)
 
-  // Release a protected row: free its guessed account for THIS panel and only for
-  // THIS row (never the stored override), then pre-select the account so it
-  // applies like any match. Keyed by account id → row index so sibling rows stay
-  // locked out of the same account.
+  // Release the account THIS row has selected: free it for THIS panel and only for
+  // THIS row (never the stored override). The account is already the row's
+  // selection (that is what made the row blocked), so this only records the
+  // release; the target assignment is kept idempotently for robustness. Keyed by
+  // account id → row index so sibling rows stay locked out of the same account.
   const allowRefresh = (i: number, accId: string) => {
     setReleased((prev) => new Map(prev).set(accId, i))
     setParsed((prev) => (prev ? { ...prev, targets: prev.targets.map((t, j) => (j === i ? accId : t)) } : prev))
@@ -276,16 +319,20 @@ export function UpdateBalancesPanel() {
                 {candidates.map((candidate, i) => {
                   const acc = candidate.source
                   const preview = rowPreview(i)
-                  // The row's guessed target account and this row's relation to it:
-                  // a host-protected guess released to THIS row is unlocked; the same
-                  // guess unreleased (or released to a sibling) leaves the row locked.
-                  const guessId = candidate.targetAccountId
-                  const guessProtected = guessId != null && hostProtectedIds.has(guessId)
-                  const releasedRow = guessId != null ? released.get(guessId) : undefined
-                  const rowLocked = guessProtected && releasedRow !== i
+                  // Blocking is driven by the row's CURRENT SELECTION, not the
+                  // classifier's guess: any row (even an unmatched one) may select a
+                  // host-protected account, and doing so never auto-releases — the row
+                  // renders BLOCKED (note + "Allow this refresh" for THAT account) and
+                  // contributes nothing to the delta/apply until released. A row whose
+                  // selection is released to a DIFFERENT row stays blocked with no
+                  // button (one releasing row per account).
+                  const selectedId = parsed.targets[i] || null
+                  const selectionProtected = selectedId != null && hostProtectedIds.has(selectedId)
+                  const releasedRow = selectedId != null ? released.get(selectedId) : undefined
+                  const rowBlocked = selectionProtected && releasedRow !== i
                   // Offer a release only when no row has claimed the account yet —
                   // a sibling can never steal an already-released account.
-                  const canRelease = guessProtected && releasedRow === undefined
+                  const canRelease = selectionProtected && releasedRow === undefined
                   return (
                     <tr key={`${acc.accountLabel}-${i}`}>
                       <td>{acc.accountLabel}</td>
@@ -295,7 +342,6 @@ export function UpdateBalancesPanel() {
                         <select
                           aria-label={`Plan account for ${acc.accountLabel}`}
                           value={parsed.targets[i] ?? ''}
-                          disabled={rowLocked}
                           onChange={(e) =>
                             setParsed((prev) =>
                               prev ? { ...prev, targets: prev.targets.map((t, j) => (j === i ? e.target.value : t)) } : prev,
@@ -304,27 +350,29 @@ export function UpdateBalancesPanel() {
                         >
                           <option value="">Don&apos;t update</option>
                           {updatable.map((a) => {
-                            // A host-protected account is selectable only from the
-                            // row that released it; disabled (and marked) everywhere
-                            // else, so no sibling row can point at it.
-                            const optionLocked = hostProtectedIds.has(a.id) && released.get(a.id) !== i
+                            // Host-protected accounts are SELECTABLE in every row —
+                            // selecting one blocks the row rather than being refused —
+                            // but still carry a "(protected)" marker everywhere they
+                            // are not already released to THIS row, so the user sees
+                            // which choices will need "Allow this refresh".
+                            const optionProtected = hostProtectedIds.has(a.id) && released.get(a.id) !== i
                             return (
-                              <option key={a.id} value={a.id} disabled={optionLocked}>
+                              <option key={a.id} value={a.id}>
                                 {a.name}
-                                {optionLocked ? ' (protected)' : ''}
+                                {optionProtected ? ' (protected)' : ''}
                               </option>
                             )
                           })}
                         </select>
-                        {rowLocked ? (
+                        {rowBlocked ? (
                           <div className="refresh-protected" role="note">
                             <span className="muted">Protected — advisor override</span>
-                            {canRelease && guessId ? (
+                            {canRelease && selectedId ? (
                               <button
                                 type="button"
                                 className="btn btn-secondary btn-small"
-                                aria-label={`Allow this refresh for ${accountName(guessId)}`}
-                                onClick={() => allowRefresh(i, guessId)}
+                                aria-label={`Allow this refresh for ${accountName(selectedId)}`}
+                                onClick={() => allowRefresh(i, selectedId)}
                               >
                                 Allow this refresh
                               </button>
