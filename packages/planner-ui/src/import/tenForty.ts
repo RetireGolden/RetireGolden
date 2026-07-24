@@ -172,7 +172,10 @@ export function seedPlanFromTenForty(
           ? ', all placed on you — split it between spouses on the Income screen so retirement dates apply per person.'
           : '.'),
       locator: form1040('1a'),
-      confidence: 'exact',
+      // On a joint return, line 1a is the combined amount but the per-person
+      // allocation is invented (all placed on the primary) — that mapping is
+      // 'assumed', not source-faithful, until the user splits it.
+      confidence: inputs.filingStatus === 'marriedFilingJointly' ? 'assumed' : 'exact',
       target: `incomes[${plan.incomes.length - 1}]`,
     })
   }

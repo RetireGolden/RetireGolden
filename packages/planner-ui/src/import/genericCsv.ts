@@ -301,6 +301,26 @@ export function draftPlanFromGenericCsv(
       confidence: typeFromColumn ? 'exact' : 'assumed',
       target: `accounts[${accountIndex}]`,
     })
+    // Cells the user explicitly assigned but this account type discards — say
+    // so, or the report implies they landed.
+    if (basisCol !== -1 && mapped !== 'taxable' && parseMoney(cells[basisCol]) !== null) {
+      review.push({
+        status: 'unmapped',
+        source: name,
+        detail: `The cost basis cell was not imported — only taxable accounts track cost basis, and this row was imported as ${mapped}.`,
+        locator: csvRow(rowNumber, columnFor(basisCol)),
+        confidence: 'unmapped',
+      })
+    }
+    if (contribution !== null && contribution > 0 && !contribContributed) {
+      review.push({
+        status: 'unmapped',
+        source: name,
+        detail: `The contribution cell was not imported — ${mapped} accounts do not carry an annual contribution.`,
+        locator: csvRow(rowNumber, columnFor(contributionCol)),
+        confidence: 'unmapped',
+      })
+    }
   }
 
   if (plan.accounts.length === 0) {

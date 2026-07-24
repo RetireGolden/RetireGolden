@@ -217,10 +217,15 @@ export function mapProjectionLabExport(
     // The index this account will occupy once pushed — every account that reaches
     // the switch is pushed exactly once (skipped/unmapped rows `continue` above).
     const accountIndex = plan.accounts.length
+    // Alias keys beyond the balance whose values were copied verbatim into the
+    // account — the mapped item's locator must name every cell that landed.
+    const copiedKeys: string[] = []
     let account: Account
     switch (mapped) {
       case 'taxable': {
-        const costBasis = firstDollars(rec, 'costBasis', 'basis')
+        const basisRead = firstDollarsKeyed(rec, 'costBasis', 'basis')
+        const costBasis = basisRead?.value ?? null
+        if (basisRead) copiedKeys.push(basisRead.key)
         account = {
           ...base,
           type: 'taxable',
@@ -272,7 +277,9 @@ export function mapProjectionLabExport(
         break
       case 'debt': {
         const interestRaw = rec['interestRate']
-        const payment = firstDollars(rec, 'payment', 'monthlyPayment')
+        const paymentRead = firstDollarsKeyed(rec, 'payment', 'monthlyPayment')
+        const payment = paymentRead?.value ?? null
+        if (paymentRead) copiedKeys.push(paymentRead.key)
         // Nothing imports silently: an unreadable rate falls back to 5% with a
         // review item, and a fraction-looking rate (0.035) is scaled with one.
         // A pure default has NO source coordinate (a jsonPath here would
@@ -290,6 +297,7 @@ export function mapProjectionLabExport(
           } else {
             interestPct = interestRaw
             interestNote = null
+            copiedKeys.push('interestRate')
           }
         }
         account = {
@@ -328,9 +336,17 @@ export function mapProjectionLabExport(
       status: 'mapped',
       source: `${name} (${typeStr || 'type from name'})`,
       detail: `Imported as a ${mapped} account with a $${balance.toLocaleString('en-US', { maximumFractionDigits: 0 })} balance.`,
-      // Point at the exact alias key the balance was read from (an export can
-      // carry both `balance` and `value`; the report must say which one won).
-      locator: jsonPath(`${accountPath}.${balanceRead.key}`),
+      // Point at the exact alias keys the values were read from (an export can
+      // carry both `balance` and `value`; the report must say which ones won),
+      // covering every field copied into the account — not only the balance.
+      locator:
+        copiedKeys.length > 0
+          ? {
+              kind: 'derived',
+              from: [balanceRead.key, ...copiedKeys].map((k) => jsonPath(`${accountPath}.${k}`)),
+              note: ['balance', ...copiedKeys].join(' + '),
+            }
+          : jsonPath(`${accountPath}.${balanceRead.key}`),
       // 'exact' only when the type string ITSELF named the class — a nonempty
       // type does not prove it did (type "Asset" + name "My Roth IRA" maps roth
       // off the name); a name-inferred type is 'assumed'.

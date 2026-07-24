@@ -264,6 +264,9 @@ export function serializeImportProvenance(
   input: ImportProvenanceInput,
   now: () => Date = () => new Date(),
 ): string {
+  if (!Number.isInteger(input.planSchemaVersion) || input.planSchemaVersion < 0) {
+    throw new Error(`planSchemaVersion must be a non-negative integer (got ${String(input.planSchemaVersion)})`)
+  }
   const envelope: ImportProvenanceExport = {
     kind: IMPORT_PROVENANCE_KIND,
     version: IMPORT_PROVENANCE_VERSION,
@@ -296,6 +299,19 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : null
+}
+
+const ISO_TIMESTAMP_RE = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+)?(Z|[+-]\d{2}:\d{2})$/
+
+/** A real ISO-8601 timestamp naming a possible calendar instant. */
+function isIsoTimestamp(value: string): boolean {
+  const m = ISO_TIMESTAMP_RE.exec(value)
+  if (!m) return false
+  const [, year, month, day, hour, minute, second] = m.map(Number) as number[]
+  if (month! < 1 || month! > 12) return false
+  const daysInMonth = new Date(Date.UTC(year!, month!, 0)).getUTCDate()
+  if (day! < 1 || day! > daysInMonth) return false
+  return hour! < 24 && minute! < 60 && second! < 60
 }
 
 function optionalString(value: unknown): { ok: boolean; value?: string } {
@@ -444,13 +460,10 @@ export function parseImportProvenance(json: string): ParseImportProvenanceResult
   // dereference. Unknown top-level keys stay tolerated (dropped, not an error);
   // sources parse first so leaf `sourceIndex` values can be bounds-checked.
   // A real ISO-8601 timestamp, not merely anything Date.parse recognizes —
-  // downstream ordering/display must not depend on locale-format leniency.
-  const ISO_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/
-  if (
-    typeof env['exportedAtIso'] !== 'string' ||
-    !ISO_RE.test(env['exportedAtIso']) ||
-    Number.isNaN(Date.parse(env['exportedAtIso']))
-  ) {
+  // downstream ordering/display must not depend on locale-format leniency, and
+  // an impossible calendar date (Feb 30) must not slip through on the strength
+  // of Date.parse silently normalizing it to March.
+  if (typeof env['exportedAtIso'] !== 'string' || !isIsoTimestamp(env['exportedAtIso'])) {
     return { ok: false, reason: 'malformed' }
   }
   if (
