@@ -564,7 +564,7 @@ export function ScenariosPage() {
   } | null>(null)
   const detailGeneration = useRef(0)
   const capacityGeneration = useRef(0)
-  const startYear = useMemo(() => currentStartYear(), [])
+  const startYear = currentStartYear()
   const seed = useMemo(() => seedFromPlanId(plan.id), [plan.id])
   const selectedScenario =
     plan.scenarios.find((scenario) => scenario.id === selectedScenarioId) ?? plan.scenarios[0] ?? null

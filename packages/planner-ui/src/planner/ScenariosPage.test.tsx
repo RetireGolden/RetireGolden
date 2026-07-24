@@ -63,6 +63,10 @@ describe('scenario comparison presentation', () => {
   it('formats proposal-minus-baseline changes with an explicit sign and stable zero', () => {
     expect(formatScenarioDelta(12_500, 'money')).toMatch(/^\+\$/)
     expect(formatScenarioDelta(-0.025, 'percent')).toBe('−2.5 pp')
+    expect(formatScenarioDelta(1, 'year')).toBe('+1 year')
+    expect(formatScenarioDelta(-1, 'year')).toBe('−1 year')
+    expect(formatScenarioDelta(1.2, 'year')).toBe('+1 year')
+    expect(formatScenarioDelta(2, 'year')).toBe('+2 years')
     expect(formatScenarioDelta(0, 'money')).toBe('$0')
     expect(formatScenarioDelta(null, 'money')).toBe('—')
   })
@@ -235,6 +239,28 @@ describe('ScenariosPage comparison lifecycle', () => {
     )
     expect(visibleError).toBeTruthy()
     expect(visibleError!.hasAttribute('role')).toBe(false)
+  })
+
+  it('starts a fresh comparison with the new calendar year after a rerender', async () => {
+    vi.setSystemTime(new Date('2026-12-31T17:00:00Z'))
+    const plan = await mount()
+    await advanceComparison()
+    expect(mockedComparePlans.mock.calls.at(-1)![2].startYear).toBe(2026)
+
+    vi.setSystemTime(new Date('2027-01-02T17:00:00Z'))
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <PlanCtx.Provider value={contextFor(plan)}>
+            <ScenariosPage />
+          </PlanCtx.Provider>
+        </MemoryRouter>,
+      )
+    })
+    await advanceComparison()
+
+    expect(mockedComparePlans.mock.calls.at(-1)![2].startYear).toBe(2027)
+    expect(mockedCompareScenarios.mock.calls.at(-1)![1].startYear).toBe(2027)
   })
 
   it('rejects a detail result whose provenance no longer matches the active request', async () => {

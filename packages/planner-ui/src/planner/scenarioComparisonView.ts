@@ -41,7 +41,10 @@ export function formatScenarioDelta(value: number | null, format: MetricFormat):
   const absolute = Math.abs(value)
   if (format === 'money') return `${sign}${fmtMoneyCompact(absolute)}`
   if (format === 'percent') return `${sign}${(absolute * 100).toFixed(1)} pp`
-  if (format === 'year') return `${sign}${Math.round(absolute)} years`
+  if (format === 'year') {
+    const rounded = Math.round(absolute)
+    return `${sign}${rounded} ${rounded === 1 ? 'year' : 'years'}`
+  }
   return `${sign}${absolute.toLocaleString('en-US', { maximumFractionDigits: 1 })}`
 }
 
