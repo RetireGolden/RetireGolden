@@ -110,18 +110,31 @@ export interface ClassifyRefreshOptions {
 const EMPTY_PROTECTED: ReadonlySet<string> = new Set()
 
 /**
- * Lowercase and strip the broker's own account-number mask (`...789`,
- * `(Z12345678)`) and every other digit/punctuation, leaving the human words a
- * plan-account name can match against. A purely numeric label (a Vanguard raw
- * account number) normalizes to the empty string and matches nothing — the
- * user assigns it by hand, exactly as the panel's original heuristic did.
+ * Lowercase a broker file label and strip the broker's own account-number mask
+ * (`...789`, `(Z12345678)`) plus punctuation, leaving the human words a
+ * plan-account name can match against. Digits OUTSIDE a mask are kept — they
+ * are name content ("401k", "529"), not account numbers. A purely numeric
+ * label (a Vanguard raw account number) is all-mask and normalizes to the
+ * empty string, matching nothing — the user assigns it by hand, exactly as
+ * the panel's original heuristic did.
  */
 function normalizeLabel(raw: string): string {
-  return raw
+  const unmasked = raw
     .toLowerCase()
     .replace(/\.\.\.\s*\w+/g, ' ') // Schwab/Fidelity trailing "...789" mask
     .replace(/\([^)]*\)/g, ' ') // parenthesized account number "(Z12345678)"
-    .replace(/[^a-z ]+/g, ' ') // strip digits and punctuation
+    .replace(/\b[a-z]?\d{4,}\b/g, ' ') // bare long account numbers (Vanguard rows)
+  return unmasked
+    .replace(/[^a-z0-9 ]+/g, ' ') // punctuation only — short digit runs are name content
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/** Lowercase a PLAN account name: punctuation goes, digits stay ("401k", "529"). */
+function normalizeName(raw: string): string {
+  return raw
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
 }
@@ -158,7 +171,19 @@ const GENERIC_WORDS: ReadonlySet<string> = new Set([
  */
 function matchStrength(sourceNorm: string, nameNorm: string): 'strong' | 'fuzzy' | 'weak' | null {
   if (nameNorm === '' || sourceNorm === '') return null
-  if (sourceNorm.includes(nameNorm)) return 'strong'
+  // Label-equals-name (after mask stripping) is the surest match there is,
+  // generic or not — "Brokerage ...789" against an account named "Brokerage"
+  // IS that account.
+  if (sourceNorm === nameNorm) return 'strong'
+  // A mere substring hit takes the word-tier guards: a name that is itself a
+  // lone generic/short token ("IRA", "Savings", or a single stray letter)
+  // inside a label carrying EXTRA words ("Roth IRA …") proves only the account
+  // family — the row describes something more specific than the name, so it
+  // must not be promoted past 'weak' (default OFF).
+  if (sourceNorm.includes(nameNorm)) {
+    const distinctive = nameNorm.length > 2 && !GENERIC_WORDS.has(nameNorm)
+    return distinctive ? 'strong' : 'weak'
+  }
   const hits = nameNorm.split(' ').filter((w) => w.length > 2 && sourceNorm.includes(w))
   if (hits.length === 0) return null
   return hits.some((w) => !GENERIC_WORDS.has(w)) ? 'fuzzy' : 'weak'
@@ -251,7 +276,7 @@ export function classifyRefresh(
   const updatable: UpdatableRef[] = plan.accounts
     .map((account, index) => ({ account, index }))
     .filter(({ account }) => isBalanceUpdatable(account))
-    .map(({ account, index }) => ({ id: account.id, index, nameNorm: normalizeLabel(account.name) }))
+    .map(({ account, index }) => ({ id: account.id, index, nameNorm: normalizeName(account.name) }))
   return accounts.map((source) => classifyOne(source, updatable, protectedTargets))
 }
 
@@ -466,6 +491,11 @@ export function buildRefreshDelta(
  * primitive the preview used — it never assigns a whole account shape and never
  * touches any other collection. Protected and duplicate-collision targets are
  * skipped entirely, not partially applied.
+ *
+ * Contract: `delta` and `selection` must have been built together (the panel
+ * recomputes the delta from the live selection each render). Duplicate
+ * blocking reads `delta.duplicateGroups`, so a delta built from a different
+ * selection would block against stale collisions.
  */
 export function applyRefresh(
   draft: Plan,

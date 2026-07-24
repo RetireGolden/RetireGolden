@@ -83,6 +83,31 @@ describe('classifyRefresh — matching', () => {
     expect(c!.targetAccountId).toBe('acct-ind')
   })
 
+  it('keeps digits in names — "401k" never collapses to a stray letter that false-matches', () => {
+    // The digit-strip regression: "401k" → "k" would whole-name-match inside
+    // "brokerage" and silently pre-select overwriting the 401k from an
+    // unrelated Brokerage row. Digits are name content and must survive.
+    const plan = planWith(loadedTaxable('acct-401k', '401k'))
+    const [c] = classifyRefresh(plan, [src('Brokerage ...789', 40_000, null)])
+    expect(c!.match).toBe('unmatched')
+    expect(c!.targetAccountId).toBeNull()
+    // …while a file row that actually names the 401k still matches it.
+    const [hit] = classifyRefresh(plan, [src('My 401k ...123', 40_000, null)])
+    expect(hit!.match).toBe('exact')
+    expect(hit!.targetAccountId).toBe('acct-401k')
+  })
+
+  it('never defaults ON a plan account whose whole name is a lone generic word', () => {
+    // An account literally named "IRA": a Roth IRA file row proves only the
+    // family, so the whole-name substring hit must stay default-off.
+    const plan = createEmptyPlan({ newId: nextId })
+    const owner = ownerId(plan)
+    plan.accounts.push(traditional('acct-ira', 'IRA', owner))
+    const [c] = classifyRefresh(plan, [src('Roth IRA ...321', 14_000, null)])
+    expect(c!.match).toBe('ambiguous')
+    expect(c!.targetAccountId).toBe('acct-ira') // suggested, not pre-selected
+  })
+
   it('does NOT confuse Roth IRA with Rollover IRA — ambiguous, alternatives listed, not merged', () => {
     const plan = createEmptyPlan({ newId: nextId })
     const owner = ownerId(plan)
