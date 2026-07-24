@@ -3,18 +3,29 @@
  * import (onboarding-import-and-migration step 2, annual-checkup posture).
  * Parses a Schwab/Fidelity/Vanguard positions CSV on-device and lets the user
  * assign each account found in the file to a plan account before applying.
+ *
+ * Matching, preview and apply are the browser-free WS4 refresh engine
+ * (`../../import/refresh`): the panel only turns its candidates into pre-selected
+ * dropdowns, renders the before→after delta it computes, and routes apply through
+ * `applyRefresh` inside the plan `update` seam so `parsePlan` still gates saves.
+ * The public planner supplies no `protectedTargets` — that seam is the Pro repo's.
  */
 
 import { useRef, useState } from 'react'
 
 import {
-  applyBrokerBalance,
   BROKER_LABEL,
   isBalanceUpdatable,
   parseBrokerPositionsCsv,
   type BrokerAccountBalance,
   type BrokerId,
 } from '../../import/brokerCsv'
+import {
+  classifyRefresh,
+  buildRefreshDelta,
+  applyRefresh,
+  type RefreshCandidate,
+} from '../../import/refresh'
 import type { ImportReviewItem } from '../../import/reviewChecklist'
 import { ReviewChecklist } from '../../import/ReviewChecklistView'
 import { usePlan } from '../planContextCore'
@@ -23,17 +34,19 @@ import { fmtMoney } from '../format'
 interface ParsedFile {
   broker: BrokerId
   accounts: BrokerAccountBalance[]
+  /** The engine's match verdicts, one per parsed account (drives the defaults). */
+  candidates: RefreshCandidate[]
   /** Selected plan-account id (or '') per parsed account, by index. */
   targets: string[]
   /** The parser's honesty checklist (partial basis, skipped rows, …). */
   review: ImportReviewItem[]
 }
 
-/** Prefer a plan account whose name shares words with the broker label. */
-function guessTarget(label: string, candidates: Array<{ id: string; name: string }>): string {
-  const l = label.toLowerCase()
-  const hit = candidates.find((c) => l.includes(c.name.toLowerCase()) || c.name.toLowerCase().split(/\s+/).some((w) => w.length > 2 && l.includes(w)))
-  return hit?.id ?? ''
+/** exact/likely default their select ON; ambiguous/unmatched/protected default OFF. */
+function defaultTarget(candidate: RefreshCandidate): string {
+  if (candidate.isProtected) return ''
+  if (candidate.match === 'exact' || candidate.match === 'likely') return candidate.targetAccountId ?? ''
+  return ''
 }
 
 export function UpdateBalancesPanel() {
@@ -43,6 +56,7 @@ export function UpdateBalancesPanel() {
   const fileInput = useRef<HTMLInputElement>(null)
 
   const updatable = plan.accounts.filter(isBalanceUpdatable).map((a) => ({ id: a.id, name: a.name }))
+  const accountName = (id: string) => updatable.find((a) => a.id === id)?.name ?? id
 
   const handleFile = async (file: File) => {
     setMessage(null)
@@ -52,32 +66,50 @@ export function UpdateBalancesPanel() {
       setMessage(r.message)
       return
     }
+    const candidates = classifyRefresh(plan, r.accounts)
     setParsed({
       broker: r.broker,
       accounts: r.accounts,
-      targets: r.accounts.map((acc) => guessTarget(acc.accountLabel, updatable)),
+      candidates,
+      targets: candidates.map(defaultTarget),
       review: r.review,
     })
   }
 
-  // Two file accounts pointed at one plan account would silently last-write-win.
-  const duplicateTargets = parsed
-    ? [...new Set(parsed.targets.filter((t, i) => t !== '' && parsed.targets.indexOf(t) !== i))]
-    : []
-  const duplicateNames = duplicateTargets.map((id) => updatable.find((a) => a.id === id)?.name ?? id)
+  // The current selection, as the engine's index→account-id map (empty = skip).
+  const selection = new Map<number, string>()
+  parsed?.targets.forEach((t, i) => {
+    if (t !== '') selection.set(i, t)
+  })
+
+  // One preview of what apply would do, recomputed from the live selection. The
+  // panel never applies balances itself — it renders exactly what `applyRefresh`
+  // would write, because both go through `buildRefreshDelta`'s single primitive.
+  const delta = parsed ? buildRefreshDelta(plan, parsed.candidates, selection) : null
+
+  // The plan-account index each selected row resolves to, so the row can show
+  // that account's before→after from the delta's field writes.
+  const changeByPath = new Map<string, { before: number; after: number; clamped: boolean }>()
+  for (const c of delta?.changes ?? []) changeByPath.set(c.path, c)
+  const rowPreview = (i: number) => {
+    const targetId = parsed?.targets[i]
+    if (!targetId) return null
+    const idx = plan.accounts.findIndex((a) => a.id === targetId)
+    if (idx === -1) return null
+    const balance = changeByPath.get(`accounts[${idx}].balance`)
+    if (!balance) return null // not selected, protected, or a blocked duplicate — nothing lands
+    return { balance, basis: changeByPath.get(`accounts[${idx}].costBasis`) ?? null }
+  }
+
+  const duplicateNames = (delta?.duplicateGroups ?? []).map((g) => accountName(g.accountId))
+  const blocked = duplicateNames.length > 0
+  const staleNames = (delta?.staleAccountIds ?? []).map(accountName)
 
   const apply = () => {
-    if (!parsed || duplicateTargets.length > 0) return
+    if (!parsed || !delta || blocked) return
     let applied = 0
     update((d) => {
-      parsed.accounts.forEach((source, i) => {
-        const targetId = parsed.targets[i]
-        if (!targetId) return
-        const idx = d.accounts.findIndex((a) => a.id === targetId)
-        if (idx === -1) return
-        d.accounts[idx] = applyBrokerBalance(d.accounts[idx]!, source)
-        applied++
-      })
+      applied = applyRefresh(d, delta, selection)
     })
     setParsed(null)
     setMessage(
@@ -92,15 +124,16 @@ export function UpdateBalancesPanel() {
       <h2>Update balances from a broker CSV</h2>
       <p className="card-hint">
         Download the positions/holdings CSV from Schwab, Fidelity, or Vanguard and refresh your account
-        balances (and cost basis where the file has it) without retyping. The file is read on this device
-        only. To start a whole new plan from a file, use Import &amp; migrate on the home screen.
+        balances (and cost basis where the file has it) without retyping. Only balance and cost basis change —
+        your return, yield, contribution, and beneficiary settings are left alone. The file is read on this
+        device only. To start a whole new plan from a file, use Import &amp; migrate on the home screen.
       </p>
       {message ? (
         <div className="callout callout--info" role="status">
           {message}
         </div>
       ) : null}
-      {parsed ? (
+      {parsed && delta ? (
         <>
           <div className="year-table-wrap">
             <table className="year-table">
@@ -110,46 +143,76 @@ export function UpdateBalancesPanel() {
                   <th scope="col">Value</th>
                   <th scope="col">Cost basis</th>
                   <th scope="col">Apply to plan account</th>
+                  <th scope="col">Plan balance: now → after</th>
                 </tr>
               </thead>
               <tbody>
-                {parsed.accounts.map((acc, i) => (
-                  <tr key={`${acc.accountLabel}-${i}`}>
-                    <td>{acc.accountLabel}</td>
-                    <td>{fmtMoney(acc.totalValue)}</td>
-                    <td>{acc.costBasis === null ? '—' : fmtMoney(acc.costBasis)}</td>
-                    <td>
-                      <select
-                        aria-label={`Plan account for ${acc.accountLabel}`}
-                        value={parsed.targets[i] ?? ''}
-                        onChange={(e) =>
-                          setParsed((prev) =>
-                            prev ? { ...prev, targets: prev.targets.map((t, j) => (j === i ? e.target.value : t)) } : prev,
-                          )
-                        }
-                      >
-                        <option value="">Don&apos;t update</option>
-                        {updatable.map((a) => (
-                          <option key={a.id} value={a.id}>
-                            {a.name}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                  </tr>
-                ))}
+                {parsed.accounts.map((acc, i) => {
+                  const preview = rowPreview(i)
+                  return (
+                    <tr key={`${acc.accountLabel}-${i}`}>
+                      <td>{acc.accountLabel}</td>
+                      <td>{fmtMoney(acc.totalValue)}</td>
+                      <td>{acc.costBasis === null ? '—' : fmtMoney(acc.costBasis)}</td>
+                      <td>
+                        <select
+                          aria-label={`Plan account for ${acc.accountLabel}`}
+                          value={parsed.targets[i] ?? ''}
+                          onChange={(e) =>
+                            setParsed((prev) =>
+                              prev ? { ...prev, targets: prev.targets.map((t, j) => (j === i ? e.target.value : t)) } : prev,
+                            )
+                          }
+                        >
+                          <option value="">Don&apos;t update</option>
+                          {updatable.map((a) => (
+                            <option key={a.id} value={a.id}>
+                              {a.name}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="refresh-preview">
+                        {preview ? (
+                          <>
+                            <span className="muted">{fmtMoney(preview.balance.before)}</span>
+                            <span className="muted" aria-hidden="true"> → </span>
+                            <strong>{fmtMoney(preview.balance.after)}</strong>
+                            {preview.balance.clamped ? <span className="muted"> (clamped to $0)</span> : null}
+                            {preview.basis ? (
+                              <div className="muted">
+                                basis {fmtMoney(preview.basis.before)} → {fmtMoney(preview.basis.after)}
+                              </div>
+                            ) : null}
+                          </>
+                        ) : (
+                          <span className="muted">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
-          {duplicateNames.length > 0 ? (
-            <div className="callout callout--warn" role="alert">
-              Two rows are assigned to the same plan account ({duplicateNames.join(', ')}) — the second would silently
-              overwrite the first. Assign each plan account at most once.
+          {staleNames.length > 0 ? (
+            <div className="callout callout--info" role="status">
+              These plan accounts aren&apos;t in the file, so their balances stay as they are (going stale):{' '}
+              {staleNames.join(', ')}. Update them from their own broker download when you have it.
             </div>
           ) : null}
-          <ReviewChecklist items={parsed.review} />
+          {blocked ? (
+            <div className="callout callout--warn" role="alert">
+              Two rows are assigned to the same plan account ({duplicateNames.join(', ')}) — the second would silently
+              overwrite the first, so nothing is applied. Assign each plan account at most once.
+            </div>
+          ) : null}
+          {/* The parser's file-level honesty items ride alongside the refresh's
+              field-level ones — one checklist, so "no cost basis in the file" and
+              "refreshed the balance to $X" are read together. */}
+          <ReviewChecklist items={[...delta.review, ...parsed.review]} />
           <div className="picker-actions">
-            <button type="button" className="btn btn-primary" onClick={apply} disabled={duplicateNames.length > 0}>
+            <button type="button" className="btn btn-primary" onClick={apply} disabled={blocked}>
               Apply selected balances
             </button>
             <button type="button" className="btn btn-secondary" onClick={() => setParsed(null)}>

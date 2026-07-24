@@ -63,6 +63,22 @@ export {
   serializeImportProvenance,
 } from './import/provenance.ts'
 export { reviewToProvenance, type ImportReviewItem, type ImportItemStatus } from './import/reviewChecklist.ts'
+
+// The broker-refresh engine (also published at the `./import-refresh` subpath):
+// match a parsed broker file to plan accounts, preview the exact before→after
+// balance/cost-basis writes, and apply them without disturbing strategy fields.
+// Browser-free; its names and signatures change only with a semver-major release.
+export {
+  applyRefresh,
+  buildRefreshDelta,
+  classifyRefresh,
+  type ClassifyRefreshOptions,
+  type RefreshCandidate,
+  type RefreshDelta,
+  type RefreshDuplicateGroup,
+  type RefreshFieldDelta,
+  type RefreshMatchKind,
+} from './import/refresh.ts'
 export type {
   DecisionState,
   ImportConfidence,

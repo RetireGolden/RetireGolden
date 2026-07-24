@@ -107,7 +107,7 @@ test files.
 | `socialSecurity/` | SS analysis features on top of the engine's SS math: `expectedPv`, `breakEven`, `explain`, `ficaReturn`, `survivorSwitching`, `ssaStatementXml`, plus form storage/guards (the ledger-consumed math lives in the engine package) |
 | `longevity/` | Life-expectancy wizard: `model`, `factors`, `LongevityWizard.tsx`, `LongevityResults.tsx` (the SSA period table + types live in the engine package) |
 | `integration/` | Engine-adjacent tests that drive engine code through app harnesses (`useProjection`, the learning registry, the spending solver) |
-| `import/` | Import & migration wizard (`/import`): hardened CSV core (`csv.ts`), broker positions mappers (`brokerCsv.ts`), ProjectionLab JSON mapper (`projectionLab.ts`), generic/RPM column-mapping (`genericCsv.ts`), 1040 guided seed (`tenForty.ts`), shared review checklist (`reviewChecklist.ts` + `ReviewChecklistView.tsx`), the import-provenance contract + export envelope (`provenance.ts` — browser-free, the stable `import-provenance` subpath) and its source-hash helper (`sourceHash.ts` — Web Crypto, async, called at the UI boundary), `ImportPage.tsx` |
+| `import/` | Import & migration wizard (`/import`): hardened CSV core (`csv.ts`), broker positions mappers (`brokerCsv.ts`), ProjectionLab JSON mapper (`projectionLab.ts`), generic/RPM column-mapping (`genericCsv.ts`), 1040 guided seed (`tenForty.ts`), shared review checklist (`reviewChecklist.ts` + `ReviewChecklistView.tsx`), the import-provenance contract + export envelope (`provenance.ts` — browser-free, the stable `import-provenance` subpath) and its source-hash helper (`sourceHash.ts` — Web Crypto, async, called at the UI boundary), the browser-free broker-refresh/reconciliation engine (`refresh.ts` — `classifyRefresh`/`buildRefreshDelta`/`applyRefresh`, the stable `import-refresh` subpath, consumed by `UpdateBalancesPanel.tsx`), `ImportPage.tsx` |
 | `learn/` | Learning Center: pages, `learningRegistry.ts`, `glossary.ts`, `components/`, 136 articles in `content/` |
 | `testSupport/` | `samplePlan.ts` (deprecated shim over the example library); shared fixtures moved to the engine package's `testing/` |
 
@@ -141,7 +141,7 @@ test files.
 | The plan data shape / schema version | `engine: model/plan.ts` |
 | Tax brackets / limits / 2026 numbers | `engine: params/data/year2026.ts` (+ `params/state/`) |
 | How a plan is saved/loaded | `data/planStoreContext.ts` (the `PlanStore` seam) over `data/planStore.ts` (IndexedDB default); export in `data/planFormat.ts` / `data/v2Backup.ts` (format contract: `DOCS/features/plan-file-format.md`) |
-| Importing from other tools / broker CSVs / a 1040 | `import/` (`ImportPage.tsx`, per-source mappers); balance updates in `planner/sections/UpdateBalancesPanel.tsx` |
+| Importing from other tools / broker CSVs / a 1040 | `import/` (`ImportPage.tsx`, per-source mappers); balance refresh/reconciliation engine in `import/refresh.ts` (`import-refresh` subpath), its panel in `planner/sections/UpdateBalancesPanel.tsx` |
 | Example library demos | `planner/examples/registry.ts`, `planner/examples/loadExample.ts`, `planner/examples/ExamplesPage.tsx`; `origin` on `Plan` in `engine: model/plan.ts` |
 | Local engine-regression manifests | `cases/caseRunner.ts`, `cases/caseDiff.ts`, `scripts/cases.mjs` |
 | Self-contained HTML reports | `report/reportHtml.ts` (renders the model), `report/downloadReport.ts`; UI buttons in `planner/ResultsPage.tsx`, `planner/ReportPage.tsx`, `planner/OptimizePage.tsx` |

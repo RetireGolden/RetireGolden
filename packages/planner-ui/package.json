@@ -34,6 +34,7 @@
     ".": "./src/index.ts",
     "./plan-format": "./src/data/planFormat.ts",
     "./import-provenance": "./src/import/provenance.ts",
+    "./import-refresh": "./src/import/refresh.ts",
     "./report-model": "./src/report/reportModel.ts",
     "./index.css": "./src/index.css",
     "./*": "./src/*.ts",

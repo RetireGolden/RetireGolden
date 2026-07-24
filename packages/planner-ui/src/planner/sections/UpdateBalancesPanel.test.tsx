@@ -60,6 +60,30 @@ const TWO_ACCOUNT_CSV = `"Positions for account Brokerage ...789 as of 07/07/202
 "FXAIX","FUND","$14,000.00","$12,000.00"
 `
 
+// Two Schwab sections whose masks differ but whose names are identical — both
+// classify (exact) onto the single "Brokerage" plan account, so the duplicate
+// suggestion surfaces on its own, with no manual re-pointing.
+const TWO_BROKERAGE_CSV = `"Positions for account Brokerage ...111 as of 07/07/2026"
+"Symbol","Description","Mkt Val (Market Value)","Cost Basis"
+"VTI","FUND","$10,000.00","$8,000.00"
+
+"Positions for account Brokerage ...222 as of 07/07/2026"
+"Symbol","Description","Mkt Val (Market Value)","Cost Basis"
+"FXAIX","FUND","$20,000.00","$15,000.00"
+`
+
+// One Roth section against a plan holding both a Roth IRA and a Rollover IRA —
+// they share the generic word "ira", so the match is ambiguous.
+const ROTH_ONLY_CSV = `"Positions for account Roth IRA ...321 as of 07/07/2026"
+"Symbol","Description","Mkt Val (Market Value)","Cost Basis"
+"FXAIX","FUND","$14,000.00","$12,000.00"
+`
+
+/** Read the before→after preview cell text for each parsed row, in order. */
+function previewCells(el: HTMLElement): string[] {
+  return Array.from(el.querySelectorAll<HTMLTableCellElement>('.refresh-preview')).map((c) => c.textContent ?? '')
+}
+
 async function chooseFile(el: HTMLElement, text: string) {
   const input = el.querySelector<HTMLInputElement>('input[type="file"]')!
   Object.defineProperty(input, 'files', { value: [new File([text], 'positions.csv', { type: 'text/csv' })], configurable: true })
@@ -120,5 +144,87 @@ describe('UpdateBalancesPanel', () => {
     act(() => applyButton(el).click())
     // Nothing was written.
     expect(plan.accounts.find((a) => a.id === 'acct-brokerage')!).toMatchObject({ balance: 1 })
+  })
+
+  it('renders the before→after delta for an assigned account', async () => {
+    const plan = createEmptyPlan({ newId: testIds })
+    const ownerId = plan.household.people[0]!.id
+    // Distinctive current balances so the "before" side is unambiguous vs. the file value.
+    plan.accounts.push(
+      { id: 'acct-brokerage', type: 'taxable', name: 'Brokerage', ownerPersonId: null, annualReturnPct: null, balance: 33000, costBasis: 22000, annualContribution: 0 },
+      { id: 'acct-roth', type: 'roth', name: 'Roth IRA', ownerPersonId: ownerId, annualReturnPct: null, kind: 'ira', balance: 9000, annualContribution: 0 },
+    )
+    const el = renderPanel(plan)
+    await chooseFile(el, TWO_ACCOUNT_CSV)
+
+    const [brokeragePreview, rothPreview] = previewCells(el)
+    // Brokerage: 33,000 → 55,000, with a basis line 22,000 → 40,000.
+    expect(brokeragePreview).toContain('$33,000')
+    expect(brokeragePreview).toContain('$55,000')
+    expect(brokeragePreview).toContain('$22,000')
+    expect(brokeragePreview).toContain('$40,000')
+    // Roth carries no basis field, so only the balance moves.
+    expect(rothPreview).toContain('$9,000')
+    expect(rothPreview).toContain('$14,000')
+    expect(rothPreview).not.toContain('basis')
+  })
+
+  it('notes an updatable plan account that is missing from the file (going stale)', async () => {
+    const plan = createEmptyPlan({ newId: testIds })
+    const ownerId = plan.household.people[0]!.id
+    plan.accounts.push(
+      { id: 'acct-brokerage', type: 'taxable', name: 'Brokerage', ownerPersonId: null, annualReturnPct: null, balance: 1, costBasis: 1, annualContribution: 0 },
+      { id: 'acct-roth', type: 'roth', name: 'Roth IRA', ownerPersonId: ownerId, annualReturnPct: null, kind: 'ira', balance: 1, annualContribution: 0 },
+      // Updatable, but nothing in the file matches its name.
+      { id: 'acct-hsa', type: 'hsa', name: 'Fidelity HSA', ownerPersonId: ownerId, annualReturnPct: null, balance: 4000, annualContribution: 0 },
+    )
+    const el = renderPanel(plan)
+    await chooseFile(el, TWO_ACCOUNT_CSV)
+
+    const notes = Array.from(el.querySelectorAll('.callout')).map((c) => c.textContent ?? '')
+    const stale = notes.find((t) => t.includes("aren't in the file"))
+    expect(stale).toBeDefined()
+    expect(stale).toContain('Fidelity HSA')
+    // The matched accounts are not called stale.
+    expect(stale).not.toContain('Brokerage')
+  })
+
+  it('surfaces a duplicate-suggestion callout that blocks apply and writes nothing', async () => {
+    const plan = createEmptyPlan({ newId: testIds })
+    plan.accounts.push(
+      { id: 'acct-brokerage', type: 'taxable', name: 'Brokerage', ownerPersonId: null, annualReturnPct: null, balance: 5000, costBasis: 3000, annualContribution: 0 },
+    )
+    const el = renderPanel(plan)
+    // Both file sections name "Brokerage", so both default onto the one plan account.
+    await chooseFile(el, TWO_BROKERAGE_CSV)
+
+    const [first, second] = selects(el)
+    expect(first!.value).toBe('acct-brokerage')
+    expect(second!.value).toBe('acct-brokerage')
+
+    expect(el.querySelector('[role="alert"]')?.textContent).toContain('same plan account')
+    expect(applyButton(el).disabled).toBe(true)
+
+    act(() => applyButton(el).click())
+    // The collision blocks apply entirely — no last-write-wins.
+    expect(plan.accounts.find((a) => a.id === 'acct-brokerage')!).toMatchObject({ balance: 5000, costBasis: 3000 })
+  })
+
+  it('defaults an ambiguous match to "Don\'t update"', async () => {
+    const plan = createEmptyPlan({ newId: testIds })
+    const ownerId = plan.household.people[0]!.id
+    plan.accounts.push(
+      { id: 'acct-roth', type: 'roth', name: 'Roth IRA', ownerPersonId: ownerId, annualReturnPct: null, kind: 'ira', balance: 1, annualContribution: 0 },
+      { id: 'acct-rollover', type: 'traditional', name: 'Rollover IRA', ownerPersonId: ownerId, annualReturnPct: null, kind: 'ira', balance: 1, annualContribution: 0 },
+    )
+    const el = renderPanel(plan)
+    await chooseFile(el, ROTH_ONLY_CSV)
+
+    // "Roth IRA" and "Rollover IRA" both match on the shared word "ira" — the
+    // row is ambiguous, so its select stays on "Don't update" until the user picks.
+    const [rothRow] = selects(el)
+    expect(rothRow!.value).toBe('')
+    // And with nothing assigned, the preview shows no write for it.
+    expect(previewCells(el)[0]).not.toContain('→')
   })
 })

@@ -140,6 +140,14 @@ The supported product API is:
   exported names, signatures, and block ids only change with a semver-major
   release (new blocks/fields may be added in minors), and the module is
   browser-free and safe to run in Node;
+- the **`./import-refresh` subpath** — the broker-refresh engine
+  (`classifyRefresh`, `buildRefreshDelta`, `applyRefresh` and their types) that
+  matches a parsed broker file to plan accounts, previews the exact
+  before→after balance/cost-basis writes, and applies them without disturbing
+  a returning user's strategy fields. Like `./import-provenance`, its exported
+  names and signatures only change with a semver-major release, and the module
+  is browser-free and safe to run in Node (a caller supplies the protected-path
+  set; the web planner passes none);
 - `./index.css`.
 
 The exports map also exposes wildcard `./*.ts` subpaths
