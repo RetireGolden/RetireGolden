@@ -87,6 +87,37 @@ describe('classifyRefresh — matching', () => {
     expect(c!.alternativeAccountIds).toEqual([])
   })
 
+  it('keeps descriptive parentheticals — "(Joint)" is name content, "(Z12345678)" is a mask', () => {
+    // Alone in the plan, the joint account is an exact label-equals-name match
+    // once the mask (and only the mask) is stripped.
+    const solo = planWith(loadedTaxable('acct-joint', 'Brokerage (Joint)'))
+    const { candidates: [exact] } = classifyRefresh(solo, [src('Brokerage (Joint) (Z12345678)', 55_000, 40_000)])
+    expect(exact!.match).toBe('exact')
+    expect(exact!.targetAccountId).toBe('acct-joint')
+
+    // Next to a plain "Brokerage" account the verdict is ambiguous (two
+    // plausible accounts, default OFF) — but the JOINT account is the primary
+    // suggestion. Pre-fix, "(joint)" was stripped as if it were a mask and the
+    // WRONG account (plain Brokerage) won the equality match.
+    const both = planWith(loadedTaxable('acct-joint', 'Brokerage (Joint)'), loadedTaxable('acct-solo', 'Brokerage'))
+    const { candidates: [c] } = classifyRefresh(both, [src('Brokerage (Joint) (Z12345678)', 55_000, 40_000)])
+    expect(c!.match).toBe('ambiguous')
+    expect(c!.targetAccountId).toBe('acct-joint')
+    expect(c!.alternativeAccountIds).toContain('acct-solo')
+  })
+
+  it('grades a clamped single-position value derived, never exact', () => {
+    // max(0, -x) is a transformation, not a verbatim copy — the audit record
+    // must not claim exact fidelity for a floored value.
+    const plan = planWith(loadedTaxable('acct-brokerage', 'Brokerage'))
+    const { candidates } = classifyRefresh(plan, [src('Brokerage ...789', -500, null, 1)])
+    const selection = new Map([[0, 'acct-brokerage']])
+    const delta = buildRefreshDelta(plan, classified(candidates), selection)
+    const mapped = delta.review.find((r) => r.status === 'mapped')!
+    expect(mapped.confidence).toBe('derived')
+    expect(delta.changes[0]).toMatchObject({ field: 'balance', after: 0, clamped: true })
+  })
+
   it('snapshots an empty protected set as [] when none is supplied', () => {
     const plan = planWith(loadedTaxable('acct-brokerage', 'Brokerage'))
     const classification = classifyRefresh(plan, [src('Brokerage ...789', 55_000, 40_000)])
@@ -363,6 +394,9 @@ describe('duplicate collisions', () => {
     ])
     const delta = buildRefreshDelta(plan, classification, selection)
     expect(delta.duplicateGroups).toEqual([{ accountId: 'acct-b', sourceIndexes: [1, 2] }])
+    // The preview agrees with the full no-op: no change may claim it will land,
+    // not even for the collision-free row.
+    expect(delta.changes).toEqual([])
 
     const applied = applyRefresh(plan, delta, selection)
     expect(applied).toBe(0)

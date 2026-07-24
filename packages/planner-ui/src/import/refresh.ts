@@ -179,7 +179,12 @@ function normalizeLabel(raw: string): string {
   const unmasked = raw
     .toLowerCase()
     .replace(/\.\.\.\s*\w+/g, ' ') // Schwab/Fidelity trailing "...789" mask
-    .replace(/\([^)]*\)/g, ' ') // parenthesized account number "(Z12345678)"
+    // Parenthesized ACCOUNT NUMBERS only ("(Z12345678)", "(...4321)") — a
+    // digit-heavy group is a mask; a descriptive one ("(Joint)") is name
+    // content whose parens the punctuation pass strips while keeping the word.
+    .replace(/\(([^)]*)\)/g, (whole, inner: string) =>
+      (inner.match(/\d/g) ?? []).length >= 4 ? ' ' : whole,
+    )
     .replace(/\b[a-z]?\d{4,}\b/g, ' ') // bare long account numbers (Vanguard rows)
   return collapseText(unmasked) // punctuation only — short digit runs are name content
 }
@@ -457,7 +462,11 @@ export function buildRefreshDelta(
 ): RefreshDelta {
   const { candidates } = classification
   const duplicateGroups = computeDuplicateGroups(plan.accounts, candidates, selection)
-  const blockedIds = blockedAccountIds(duplicateGroups)
+  const blockedIds =
+    // A collision blocks the ENTIRE apply (applyRefresh is a full no-op), so
+    // the preview must not claim any write will land — block every selected
+    // account, not just the colliding ones, and the changes list goes empty.
+    duplicateGroups.length > 0 ? new Set(selection.values()) : blockedAccountIds(duplicateGroups)
   const effective = buildEffectiveProtected(classification, protectedTargets)
 
   // A shallow copy per account is sufficient: applyWrites only assigns the
@@ -527,7 +536,12 @@ export function buildRefreshDelta(
           ? 'balance summed from the broker positions file'
           : 'balance read from the single broker position',
       ),
-      confidence: source.positionCount > 1 ? 'derived' : 'exact',
+      // A clamped value (negative total/basis floored to $0) was transformed,
+      // not copied — it grades 'derived' even for a lone position.
+      confidence:
+        source.positionCount > 1 || source.totalValue < 0 || (source.costBasis !== null && source.costBasis < 0)
+          ? 'derived'
+          : 'exact',
       target: path,
     })
   }
@@ -598,6 +612,12 @@ export function buildRefreshDelta(
  * recomputes the delta from the live selection each render). Duplicate
  * blocking reads `delta.duplicateGroups`, so a delta built from a different
  * selection would block against stale collisions.
+ *
+ * Paths supplied ONLY here (not at classify/build) are still honored — but the
+ * previously built preview could not know about them, so apply may then skip
+ * writes the preview showed. The divergence is one-directional by design:
+ * apply can only ever write LESS than the preview, never more. Callers who
+ * want the preview to match exactly must pass the same set at build time.
  */
 export function applyRefresh(
   draft: Plan,
