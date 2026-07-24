@@ -15,38 +15,32 @@
  */
 
 import type { Plan, Scenario } from '../model/plan.js'
-import { parsePlan, type ParsePlanResult } from '../model/plan.js'
+import type { ParsePlanResult } from '../model/plan.js'
 import type { MarketModelConfig } from '../montecarlo/marketModels.js'
 import { createMarketModel } from '../montecarlo/marketModels.js'
 import { aggregateMonteCarlo, runMonteCarloPaths } from '../montecarlo/run.js'
 import { summarizeProjection, type ProjectionSummary } from '../projection/compare.js'
 import { simulatePlan, type SimulateOptions } from '../projection/simulate.js'
 import type { TaxCalculator } from '../projection/types.js'
+import {
+  decodeScenarioPointer,
+  isScenarioPatchEnvelope,
+  parseScenarioPatch,
+  type ScenarioPatchInput,
+} from './contract.js'
+import { applyScenarioPatchInput, canonicalScenarioJson, readScenarioValueState } from './patch.js'
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v)
 }
 
-function deepMerge(base: unknown, patch: unknown): unknown {
-  if (!isPlainObject(base) || !isPlainObject(patch)) return patch
-  const out: Record<string, unknown> = { ...base }
-  for (const [key, value] of Object.entries(patch)) {
-    out[key] = key in out ? deepMerge(out[key], value) : value
-  }
-  return out
-}
-
 /**
- * Deep-merge a scenario patch over the plan and validate the result. The
- * merged plan keeps the base plan's id/name/scenarios; the patch cannot
- * change the schema version.
+ * Apply either a historical deep-merge patch or the canonical versioned
+ * operation document. Legacy patches retain their original behavior; v1
+ * documents add atomic precondition/conflict checks.
  */
-export function applyScenarioPatch(plan: Plan, patch: Record<string, unknown>): ParsePlanResult {
-  const merged = deepMerge(plan, patch) as Record<string, unknown>
-  merged.schemaVersion = plan.schemaVersion
-  merged.id = plan.id
-  merged.scenarios = plan.scenarios
-  return parsePlan(merged)
+export function applyScenarioPatch(plan: Plan, patch: ScenarioPatchInput): ParsePlanResult {
+  return applyScenarioPatchInput(plan, patch)
 }
 
 export interface ScenarioDiffEntry {
@@ -57,7 +51,29 @@ export interface ScenarioDiffEntry {
 }
 
 /** Leaf-level diff of what a patch changes, for the comparison UI's "changed assumptions" panel. */
-export function diffScenarioPatch(plan: Plan, patch: Record<string, unknown>): ScenarioDiffEntry[] {
+export function diffScenarioPatch(plan: Plan, patch: ScenarioPatchInput): ScenarioDiffEntry[] {
+  if (isScenarioPatchEnvelope(patch)) {
+    const parsed = parseScenarioPatch(patch)
+    if (!parsed.ok) return []
+    return parsed.patch.operations.flatMap((operation) => {
+      const current = readScenarioValueState(plan, operation.path)
+      if (current === null) return []
+      const scenarioValue = operation.op === 'set' ? operation.value : undefined
+      const alreadyApplied =
+        current.present === (operation.op === 'set') &&
+        (!current.present || canonicalScenarioJson(current.value) === canonicalScenarioJson(scenarioValue))
+      return alreadyApplied
+        ? []
+        : [
+            {
+              path: decodeScenarioPointer(operation.path)!.join('.'),
+              baseValue: current.present ? current.value : undefined,
+              scenarioValue,
+            },
+          ]
+    })
+  }
+
   const entries: ScenarioDiffEntry[] = []
   const walk = (base: unknown, node: unknown, path: string) => {
     if (isPlainObject(node) && isPlainObject(base)) {

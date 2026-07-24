@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { IDBFactory } from 'fake-indexeddb'
 
 import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
+import { createScenarioPatch } from '@retiregolden/engine/scenarios/patch'
+import { applyScenarioPatch } from '@retiregolden/engine/scenarios/scenarios'
 import {
   _resetPlanStoreForTests,
   clearAllPlans,
@@ -19,6 +21,22 @@ const fixedNow = () => new Date('2026-06-11T12:00:00.000Z')
 
 function newPlan(name: string): Plan {
   return { ...createEmptyPlan({ newId: testIds, now: fixedNow }), name }
+}
+
+function addCanonicalScenario(plan: Plan): void {
+  const edited = structuredClone(plan)
+  edited.expenses.baseAnnual = 12_345
+  const created = createScenarioPatch(plan, edited, {
+    title: 'Higher spending',
+    createdAtIso: fixedNow().toISOString(),
+    actor: { kind: 'user' },
+  })
+  if (!created.ok) throw new Error(created.issues.join('; '))
+  plan.scenarios.push({
+    id: 'scenario-1',
+    name: created.patch.title,
+    patch: created.patch,
+  })
 }
 
 beforeEach(() => {
@@ -74,6 +92,7 @@ describe('planStore', () => {
       balance: 100_000,
       annualContribution: 0,
     })
+    addCanonicalScenario(plan)
     await savePlan(plan, fixedNow)
 
     const duplicated = await duplicatePlan(plan.id, {
@@ -89,6 +108,9 @@ describe('planStore', () => {
     expect(duplicated.plan.createdAtIso).toBe('2026-06-12T12:00:00.000Z')
     expect(duplicated.plan.updatedAtIso).toBe('2026-06-12T12:00:00.000Z')
     expect(duplicated.plan.accounts[0]!.id).toBe('acct-1')
+    const applied = applyScenarioPatch(duplicated.plan, duplicated.plan.scenarios[0]!.patch)
+    expect(applied.ok).toBe(true)
+    if (applied.ok) expect(applied.plan.expenses.baseAnnual).toBe(12_345)
     expect((await listPlanSummaries()).map((s) => s.name)).toEqual(['A/B copy', 'Original'])
   })
 

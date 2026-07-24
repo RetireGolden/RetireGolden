@@ -100,6 +100,13 @@ Field-level semantics are documented inline on the schema as doc comments.
 
 `schemaVersion` is currently **1**.
 
+Scenario entries written by older versions continue to carry a loose deep-override object in `patch`.
+The plan schema still accepts and preserves that representation. A newer scenario may carry the
+versioned `retiregolden.scenario-patch` operation document instead; the engine validates that document
+when it is applied. The operation format is canonical, conflict-aware, and independently versioned from
+the plan schema, so extending professional scenario history does not require rewriting old plan files.
+See [Monte Carlo and scenarios](monte-carlo-and-scenarios.md#scenarios).
+
 ## Stability guarantees
 
 1. **Old exports import forward, forever.** Every persisted or imported plan passes through

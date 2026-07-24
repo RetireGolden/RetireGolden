@@ -255,6 +255,9 @@ SS cut, LTC shock). Side-by-side compare of success %, lifetime taxes, ending es
 a diff of changed assumptions ([engine/scenarios/](../../packages/engine/src/scenarios/),
 [planner/ScenariosPage.tsx](../../packages/planner-ui/src/planner/ScenariosPage.tsx)). Whole separate **plans** can also be
 duplicated and compared ([planner/ComparePlansPage.tsx](../../packages/planner-ui/src/planner/ComparePlansPage.tsx)).
+Alongside the preserved legacy deep-override format, the engine exposes a versioned operation document
+with baseline preconditions, stable diffs, conflict detection, atomic apply/revert, composition, and
+legacy migration when a base snapshot is available.
 
 Two dedicated what-if views on the Explore rail run the user's **actual plan** through the same exact ledger:
 

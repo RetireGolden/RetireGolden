@@ -9,6 +9,7 @@
  */
 
 import type { Plan } from '@retiregolden/engine/model/plan'
+import { rebindScenarioPatchesToPlan } from '@retiregolden/engine/scenarios/patch'
 import { isExamplePlanId } from './planOrigin'
 import { listPlanSummaries } from './planStore'
 
@@ -42,11 +43,12 @@ export async function normalizePlansForImport(plans: Plan[], existingIds?: Itera
       } while (used.has(id))
     }
     used.add(id)
-    normalized.push({
+    const imported = {
       ...plan,
       id,
       origin: 'user',
-    })
+    } satisfies Plan
+    normalized.push(id === plan.id ? imported : rebindScenarioPatchesToPlan(imported))
   }
   return normalized
 }

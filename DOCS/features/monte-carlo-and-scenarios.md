@@ -70,6 +70,16 @@ vs not, a 17% SS trust-fund cut, an LTC shock, a bad-decade start. The compare v
 lifetime taxes, ending estate, and a key-year table, plus a diff of exactly which assumptions changed.
 Scenarios are stored as overrides applied at run time, not as duplicated plans.
 
+The engine supports two patch representations. Existing plans keep their historical loose deep-override
+objects unchanged. New workflow surfaces can instead create a versioned
+`retiregolden.scenario-patch` document (`engine/scenarios/contract.ts` + `patch.ts`). Its RFC 6901
+operations record each value's baseline state, the base plan identity/schema/fingerprint, creation time,
+actor, title, and rationale. Operations are canonical-sorted; arrays replace atomically; plan identity,
+history, and the scenario list are never patchable. Application and reversal are all-or-nothing:
+unrelated baseline edits may coexist, while a changed target produces a path-specific conflict. The
+document can be built by diffing two normalized plans, reverted, composed, or created from a legacy patch
+when the concrete base snapshot is available. Legacy storage is not rewritten on read.
+
 Separately, whole **plans** can be duplicated and compared ([ComparePlansPage.tsx](../../packages/planner-ui/src/planner/ComparePlansPage.tsx))
 for A/B or year-over-year review — useful when the differences are too structural for a scenario override.
 
