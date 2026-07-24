@@ -1,6 +1,6 @@
 # RetireGolden Changelog
 
-This is a high-level, time-ordered summary of changes to the system, synthesized from git commit history and the project documentation (as of 2026-07-08). Focus is on material additions, refactors, and shifts in scope or architecture. See git history for full detail and code diffs. Enhancements plans (historical intent) are preserved in `DOCS/enhancements/`.
+This is a high-level, time-ordered summary of changes to the system, synthesized from git commit history and the project documentation. Focus is on material additions, refactors, and shifts in scope or architecture. See git history for full detail and code diffs. Enhancements plans (historical intent) are preserved in `DOCS/enhancements/`.
 
 ## 2026-07 (July 2026 Depth Wave)
 
