@@ -294,6 +294,8 @@ export interface YearResult {
   magi: number
   /** Medicare premiums charged this year (Part B incl. IRMAA + Part D surcharge, all covered people; excludes the user's "extras"). */
   medicarePremiums: number
+  /** IRMAA-only portion of medicarePremiums (Part B and Part D surcharges above standard Part B). */
+  irmaaSurcharge: number
   /** IRMAA tier the year's Medicare premiums were priced at (0 = standard premium; 1–5 = surcharge tiers). */
   irmaaTier: number
   /** Federal alternative minimum tax included in `tax` when the planning-grade AMT screen binds. */

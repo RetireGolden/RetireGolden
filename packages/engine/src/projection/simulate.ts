@@ -1400,6 +1400,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // single thresholds even though their income tax uses the joint tables.
     const irmaaFilingStatus = filingStatusForYear === 'qualifyingSurvivingSpouse' ? 'single' : taxFilingStatusForYear
     let medicarePremiums = 0
+    let irmaaSurcharge = 0
     let irmaaTier = 0
     for (const s of peopleStates) {
       if (!s.alive) continue
@@ -1425,6 +1426,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         }
         const premium = (med.partBAnnual + med.partDSurchargeAnnual) * (medicareMonths / 12)
         medicarePremiums += premium
+        irmaaSurcharge += med.irmaaSurchargeAnnual * (medicareMonths / 12)
         irmaaTier = med.irmaaTier
         healthcare += premium + hc.medicareExtrasMonthlyPerPerson * medicareMonths * healthInflFactor
       }
@@ -2877,6 +2879,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       penalties,
       magi: magiHistory.get(year)!,
       medicarePremiums,
+      irmaaSurcharge,
       irmaaTier,
       amt: federalDetail.alternativeMinimumTax,
       ltcgZeroHeadroom,
