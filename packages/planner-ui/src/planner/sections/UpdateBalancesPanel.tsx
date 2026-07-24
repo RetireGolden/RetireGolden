@@ -416,7 +416,13 @@ export function UpdateBalancesPanel() {
     if (!heldBackByProtection) resetPanel()
     setMessage(
       applied > 0
-        ? `Updated ${applied} account${applied === 1 ? '' : 's'} from the ${BROKER_LABEL[parsed.broker]} file — balances, plus cost basis where the file carried it. Review taxable accounts whose basis the file lacked.`
+        ? `Updated ${applied} account${applied === 1 ? '' : 's'} from the ${BROKER_LABEL[parsed.broker]} file — balances, plus cost basis where the file carried it. Review taxable accounts whose basis the file lacked.` +
+          // A partial apply tears the table (and its skipped-item audit) down, so
+          // the held-back accounts must be named here or the user never learns a
+          // selected account was deliberately left unchanged.
+          (protectionBlocked > 0
+            ? ` ${protectionBlocked} selected account${protectionBlocked === 1 ? ' was' : 's were'} left unchanged — protected by advisor overrides.`
+            : '')
         : protectionBlocked > 0
           ? // Nothing landed, but the visible selections weren't ignored — they were
             // held back by advisor overrides. Say so, and point at the escape hatch.

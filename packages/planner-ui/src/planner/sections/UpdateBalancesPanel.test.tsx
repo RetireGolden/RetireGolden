@@ -315,6 +315,12 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // The protected account is untouched (blocked contributes nothing); the sibling refreshes.
     expect(plan.accounts.find((a) => a.id === 'acct-brokerage')!).toMatchObject({ balance: 1, costBasis: 1 })
     expect(plan.accounts.find((a) => a.id === 'acct-roth')!).toMatchObject({ balance: 14000 })
+    // The partial-apply message names the held-back account — the table (and its
+    // skipped-item audit) is gone, so the status is the only place the user can
+    // learn a selected account was deliberately left unchanged.
+    const status = el.querySelector('[role="status"]')?.textContent ?? ''
+    expect(status).toContain('Updated 1 account')
+    expect(status).toContain('1 selected account was left unchanged — protected by advisor overrides')
   })
 
   it('protects the right account after the plan array is reordered (id, not index)', async () => {
