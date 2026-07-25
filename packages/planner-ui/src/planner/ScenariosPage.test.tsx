@@ -10,6 +10,7 @@ import { TRUSTEES_DEFAULT_SS_HAIRCUT } from '@retiregolden/engine/params'
 import type { ScenarioPlanComparison } from '@retiregolden/engine/scenarios/comparison'
 import type { ScenarioComparison } from '@retiregolden/engine/scenarios/scenarios'
 import type { SpendingSolveResult } from '../optimize/spendingMessages'
+import { WorkspaceReadOnlyContext } from '../data/workspaceReadOnly'
 import { PlanCtx, type PlanContextValue } from './planContextCore'
 import { createSamplePlan } from '../testSupport/samplePlan'
 import { taxCalculatorFor } from './useProjection'
@@ -39,12 +40,21 @@ vi.mock('@retiregolden/engine/scenarios/patch', async (importOriginal) => {
   }
 })
 
+vi.mock('../scenarioLevers', async (importOriginal) => {
+  const original = await importOriginal<typeof import('../scenarioLevers')>()
+  return {
+    ...original,
+    buildScenarioLever: vi.fn(original.buildScenarioLever),
+  }
+})
+
 vi.mock('../optimize/spendingRunner', () => ({ runSpendingSolve: vi.fn() }))
 
 import * as comparisonModule from '@retiregolden/engine/scenarios/comparison'
 import * as scenarioPatchModule from '@retiregolden/engine/scenarios/patch'
 import * as scenariosModule from '@retiregolden/engine/scenarios/scenarios'
 import { runSpendingSolve } from '../optimize/spendingRunner'
+import * as scenarioLeverModule from '../scenarioLevers'
 import { MetricTable, ScenariosPage } from './ScenariosPage'
 import {
   formatMetricValue,
@@ -62,6 +72,7 @@ const mockedCompareCapacity = vi.mocked(comparisonModule.compareScenarioSpending
 const mockedCompareScenarios = vi.mocked(scenariosModule.compareScenarios)
 const mockedSnapshotHash = vi.mocked(scenarioPatchModule.scenarioPlanSnapshotHash)
 const mockedRunSpendingSolve = vi.mocked(runSpendingSolve)
+const mockedBuildScenarioLever = vi.mocked(scenarioLeverModule.buildScenarioLever)
 
 function deferred<T>() {
   let resolve!: (value: T) => void
@@ -204,27 +215,71 @@ describe('ScenariosPage comparison lifecycle', () => {
     vi.useRealTimers()
   })
 
-  function contextFor(plan: Plan, issues: string[] = []): PlanContextValue {
+  function contextFor(
+    plan: Plan,
+    issues: string[] = [],
+    update: PlanContextValue['update'] = () => undefined,
+  ): PlanContextValue {
     return {
       plan,
-      update: () => undefined,
+      update,
       discardPendingSave: () => undefined,
       saveState: 'saved',
       issues,
     }
   }
 
-  async function mount(plan = createSamplePlan(), issues: string[] = []) {
+  async function mount(
+    plan = createSamplePlan(),
+    issues: string[] = [],
+    readOnly = false,
+    update?: PlanContextValue['update'],
+    settlePreview = true,
+  ) {
     await act(async () => {
       root.render(
         <MemoryRouter>
-          <PlanCtx.Provider value={contextFor(plan, issues)}>
-            <ScenariosPage />
-          </PlanCtx.Provider>
+          <WorkspaceReadOnlyContext.Provider value={readOnly}>
+            <PlanCtx.Provider value={contextFor(plan, issues, update)}>
+              <ScenariosPage />
+            </PlanCtx.Provider>
+          </WorkspaceReadOnlyContext.Provider>
         </MemoryRouter>,
       )
     })
+    if (settlePreview) await advanceLeverPreview()
     return plan
+  }
+
+  async function rerenderWithPlan(plan: Plan) {
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <WorkspaceReadOnlyContext.Provider value={false}>
+            <PlanCtx.Provider value={contextFor(plan)}>
+              <ScenariosPage />
+            </PlanCtx.Provider>
+          </WorkspaceReadOnlyContext.Provider>
+        </MemoryRouter>,
+      )
+    })
+    await advanceLeverPreview()
+  }
+
+  function planWithoutPerson(plan: Plan, personId: string): Plan {
+    const next = structuredClone(plan)
+    next.household.people = next.household.people.filter((person) => person.id !== personId)
+    next.accounts = next.accounts.filter(
+      (account) => account.ownerPersonId === null || account.ownerPersonId !== personId,
+    )
+    next.incomes = next.incomes.filter(
+      (income) => !('personId' in income) || income.personId !== personId,
+    )
+    next.insurance = next.insurance.filter((policy) =>
+      policy.kind === 'ltc' ? policy.owner !== personId : policy.insured !== personId,
+    )
+    next.careEvents = next.careEvents.filter((event) => event.personId !== personId)
+    return next
   }
 
   async function advanceComparison() {
@@ -232,6 +287,380 @@ describe('ScenariosPage comparison lifecycle', () => {
       await vi.advanceTimersByTimeAsync(200)
     })
   }
+
+  async function advanceLeverPreview() {
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(50)
+    })
+  }
+
+  it('shows the exact canonical fields for a fast lever and disables unavailable choices', async () => {
+    await mount()
+    const select = container.querySelector<HTMLSelectElement>('select')
+    expect(select).toBeTruthy()
+    expect(select!.options).toHaveLength(16)
+    expect(container.textContent).toContain('Fields this scenario patches:')
+    expect(container.textContent).toContain('/household/people')
+
+    await act(async () => {
+      select!.value = 'pension'
+      select!.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    await advanceLeverPreview()
+
+    const add = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent?.includes('Add scenario'),
+    )
+    const unavailableStatus = Array.from(container.querySelectorAll('[role="status"]')).find(
+      (status) => status.textContent?.includes('Add an existing pension'),
+    )
+    expect(add?.disabled).toBe(true)
+    expect(unavailableStatus?.textContent).toContain('Add an existing pension')
+    expect(container.querySelector('[role="alert"]')).toBeNull()
+    expect(unavailableStatus?.getAttribute('aria-live')).toBe('polite')
+  })
+
+  it('defers previews, discards stale work, and revalidates the latest request on save', async () => {
+    const plan = createSamplePlan()
+    let updatedPlan: Plan | null = null
+    await mount(
+      plan,
+      [],
+      false,
+      (mutator) => {
+        const next = structuredClone(plan)
+        mutator(next)
+        updatedPlan = next
+      },
+      false,
+    )
+    const select = container.querySelector<HTMLSelectElement>('select')!
+    const add = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent?.includes('Add scenario'),
+    )!
+
+    expect(mockedBuildScenarioLever).not.toHaveBeenCalled()
+    expect(add.disabled).toBe(true)
+    expect(container.textContent).toContain('Checking this scenario against the projection')
+
+    await act(async () => {
+      select.value = 'pension'
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(25)
+    })
+    await act(async () => {
+      select.value = 'spending'
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(25)
+    })
+    expect(mockedBuildScenarioLever).not.toHaveBeenCalled()
+    expect(add.disabled).toBe(true)
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(25)
+    })
+    expect(mockedBuildScenarioLever).toHaveBeenCalledTimes(1)
+    expect(mockedBuildScenarioLever.mock.calls[0]![1]).toEqual({
+      id: 'spending',
+      percentChange: 15,
+    })
+    expect(mockedBuildScenarioLever.mock.calls[0]![2].taxCalculatorForPlan).toBe(
+      taxCalculatorFor,
+    )
+    expect(add.disabled).toBe(false)
+    expect(container.textContent).toContain('/expenses/baseAnnual')
+
+    await act(async () => add.click())
+
+    expect(mockedBuildScenarioLever).toHaveBeenCalledTimes(2)
+    expect(mockedBuildScenarioLever.mock.calls[1]![1]).toEqual({
+      id: 'spending',
+      percentChange: 15,
+    })
+    const savedPlan = updatedPlan as Plan | null
+    expect(savedPlan).not.toBeNull()
+    const applied = scenariosModule.applyScenarioPatch(
+      plan,
+      savedPlan!.scenarios.at(-1)!.patch,
+    )
+    expect(applied.ok).toBe(true)
+    if (applied.ok) expect(applied.plan.expenses.baseAnnual).toBe(110_400)
+  })
+
+  it('keeps lever explanations visible while native controls are read-only', async () => {
+    await mount(createSamplePlan(), [], true)
+    const fieldset = container.querySelector('fieldset.editable-region')
+    expect(fieldset?.hasAttribute('disabled')).toBe(true)
+    expect(container.textContent).toContain('Fields this scenario patches:')
+    expect(container.textContent).toContain('/household/people')
+  })
+
+  it('requires a care recipient for couples and exposes modeled relocation states as options', async () => {
+    const plan = await mount()
+    const leverSelect = container.querySelector<HTMLSelectElement>('select')
+
+    await act(async () => {
+      leverSelect!.value = 'care'
+      leverSelect!.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    await advanceLeverPreview()
+
+    const recipientLabel = Array.from(container.querySelectorAll('label')).find(
+      (label) => label.textContent === 'Care recipient',
+    )
+    const recipient = document.getElementById(recipientLabel!.htmlFor) as HTMLSelectElement
+    const add = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent?.includes('Add scenario'),
+    )
+    expect(recipient.options).toHaveLength(plan.household.people.length + 1)
+    expect(add?.disabled).toBe(true)
+    expect(container.textContent).toContain('Choose which household member receives care')
+
+    await act(async () => {
+      recipient.value = plan.household.people[1]!.id
+      recipient.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    await advanceLeverPreview()
+    expect(add?.disabled).toBe(false)
+    expect(container.textContent).toContain('/careEvents')
+
+    await act(async () => {
+      leverSelect!.value = 'relocation'
+      leverSelect!.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    const stateLabel = Array.from(container.querySelectorAll('label')).find(
+      (label) => label.textContent === 'Destination state',
+    )
+    const states = document.getElementById(stateLabel!.htmlFor) as HTMLSelectElement
+    expect(states.options).toHaveLength(51)
+    expect(Array.from(states.options).some((option) => option.value === 'DC')).toBe(true)
+    const moveMonthLabel = Array.from(container.querySelectorAll('label')).find(
+      (label) => label.textContent?.startsWith('Move month'),
+    )
+    const moveMonth = document.getElementById(moveMonthLabel!.htmlFor) as HTMLInputElement
+    expect(moveMonthLabel!.textContent).toBe('Move month (1-12)')
+    expect(moveMonth.value).toBe('7')
+
+    await act(async () => {
+      leverSelect!.value = 'rothTarget'
+      leverSelect!.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    const bracketLabel = Array.from(container.querySelectorAll('label')).find(
+      (label) => label.textContent === 'Top of federal tax bracket',
+    )
+    const brackets = document.getElementById(bracketLabel!.htmlFor) as HTMLSelectElement
+    expect(Array.from(brackets.options).map((option) => option.value)).toEqual([
+      '10',
+      '12',
+      '22',
+      '24',
+      '32',
+      '35',
+    ])
+  })
+
+  it('omits a retained care recipient when route reuse navigates to a one-person plan', async () => {
+    const original = await mount()
+    const leverSelect = container.querySelector<HTMLSelectElement>('select')!
+    await act(async () => {
+      leverSelect.value = 'care'
+      leverSelect.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    const recipientLabel = Array.from(container.querySelectorAll('label')).find(
+      (label) => label.textContent === 'Care recipient',
+    )!
+    const recipient = document.getElementById(recipientLabel.htmlFor) as HTMLSelectElement
+    await act(async () => {
+      recipient.value = original.household.people[1]!.id
+      recipient.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+
+    const onePerson = planWithoutPerson(original, original.household.people[1]!.id)
+    onePerson.id = 'one-person-route-plan'
+    onePerson.household.filingStatus = 'single'
+    await rerenderWithPlan(onePerson)
+
+    expect(
+      Array.from(container.querySelectorAll('label')).some(
+        (label) => label.textContent === 'Care recipient',
+      ),
+    ).toBe(false)
+    expect(container.textContent).toContain('/careEvents')
+    const add = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent?.includes('Add scenario'),
+    )
+    expect(add?.disabled).toBe(false)
+    expect(container.textContent).not.toContain(original.household.people[1]!.id)
+  })
+
+  it('clears a retained care recipient when route reuse navigates to a different couple', async () => {
+    const original = await mount()
+    const leverSelect = container.querySelector<HTMLSelectElement>('select')!
+    await act(async () => {
+      leverSelect.value = 'care'
+      leverSelect.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    const recipientLabel = Array.from(container.querySelectorAll('label')).find(
+      (label) => label.textContent === 'Care recipient',
+    )!
+    const recipient = document.getElementById(recipientLabel.htmlFor) as HTMLSelectElement
+    const removedPerson = original.household.people[1]!
+    await act(async () => {
+      recipient.value = removedPerson.id
+      recipient.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+
+    const differentCouple = planWithoutPerson(original, removedPerson.id)
+    differentCouple.id = 'different-couple-route-plan'
+    differentCouple.household.people.push({
+      ...removedPerson,
+      id: 'replacement-household-member',
+      name: 'Replacement household member',
+    })
+    await rerenderWithPlan(differentCouple)
+
+    const nextRecipientLabel = Array.from(container.querySelectorAll('label')).find(
+      (label) => label.textContent === 'Care recipient',
+    )!
+    const nextRecipient = document.getElementById(nextRecipientLabel.htmlFor) as HTMLSelectElement
+    expect(nextRecipient.value).toBe('')
+    expect(Array.from(nextRecipient.options).some((option) => option.value === removedPerson.id)).toBe(
+      false,
+    )
+    expect(container.textContent).toContain('Choose which household member receives care')
+    const add = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent?.includes('Add scenario'),
+    )
+    expect(add?.disabled).toBe(true)
+  })
+
+  it('sanitizes retained property choices across plan switches, deletion, and a single-property view', async () => {
+    const original = createSamplePlan()
+    const originalHome = original.accounts.find((account) => account.type === 'property')!
+    original.accounts.push({
+      ...originalHome,
+      id: 'original-second-property',
+      name: 'Original second property',
+    })
+    await mount(original)
+    const leverSelect = container.querySelector<HTMLSelectElement>('select')!
+    await act(async () => {
+      leverSelect.value = 'homeSale'
+      leverSelect.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    const propertyLabel = Array.from(container.querySelectorAll('label')).find(
+      (label) => label.textContent === 'Property to sell',
+    )!
+    const propertySelect = document.getElementById(propertyLabel.htmlFor) as HTMLSelectElement
+    await act(async () => {
+      propertySelect.value = 'original-second-property'
+      propertySelect.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+
+    const differentPlan = createSamplePlan()
+    differentPlan.id = 'different-property-plan'
+    const differentHome = differentPlan.accounts.find((account) => account.type === 'property')!
+    differentPlan.accounts.push(
+      { ...differentHome, id: 'different-second-property', name: 'Different second property' },
+      { ...differentHome, id: 'different-third-property', name: 'Different third property' },
+    )
+    await rerenderWithPlan(differentPlan)
+
+    let currentPropertyLabel = Array.from(container.querySelectorAll('label')).find(
+      (label) => label.textContent === 'Property to sell',
+    )!
+    let currentPropertySelect = document.getElementById(
+      currentPropertyLabel.htmlFor,
+    ) as HTMLSelectElement
+    expect(currentPropertySelect.value).toBe('')
+    expect(container.textContent).toContain('Choose a property before modeling a sale')
+
+    await act(async () => {
+      currentPropertySelect.value = 'different-third-property'
+      currentPropertySelect.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    const afterDeletion = structuredClone(differentPlan)
+    afterDeletion.accounts = afterDeletion.accounts.filter(
+      (account) => account.id !== 'different-third-property',
+    )
+    await rerenderWithPlan(afterDeletion)
+
+    currentPropertyLabel = Array.from(container.querySelectorAll('label')).find(
+      (label) => label.textContent === 'Property to sell',
+    )!
+    currentPropertySelect = document.getElementById(
+      currentPropertyLabel.htmlFor,
+    ) as HTMLSelectElement
+    expect(currentPropertySelect.value).toBe('')
+    expect(container.textContent).toContain('Choose a property before modeling a sale')
+
+    await act(async () => {
+      currentPropertySelect.value = 'different-second-property'
+      currentPropertySelect.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    const singleProperty = structuredClone(afterDeletion)
+    singleProperty.accounts = singleProperty.accounts.filter(
+      (account) => account.id !== 'different-second-property',
+    )
+    await rerenderWithPlan(singleProperty)
+
+    expect(
+      Array.from(container.querySelectorAll('label')).some(
+        (label) => label.textContent === 'Property to sell',
+      ),
+    ).toBe(false)
+    expect(container.textContent).toContain('/accounts')
+    const add = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent?.includes('Add scenario'),
+    )
+    expect(add?.disabled).toBe(false)
+  })
+
+  it('writes the selected relocation month into the scenario request', async () => {
+    const plan = createSamplePlan()
+    let updatedPlan: Plan | null = null
+    await mount(plan, [], false, (mutator) => {
+      const next = structuredClone(plan)
+      mutator(next)
+      updatedPlan = next
+    })
+    const leverSelect = container.querySelector<HTMLSelectElement>('select')!
+    await act(async () => {
+      leverSelect.value = 'relocation'
+      leverSelect.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    const moveMonthLabel = Array.from(container.querySelectorAll('label')).find(
+      (label) => label.textContent?.startsWith('Move month'),
+    )!
+    const moveMonth = document.getElementById(moveMonthLabel.htmlFor) as HTMLInputElement
+    const inputValueSetter = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      'value',
+    )!.set!
+    await act(async () => {
+      inputValueSetter.call(moveMonth, '10')
+      moveMonth.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await advanceLeverPreview()
+    const add = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent?.includes('Add scenario'),
+    )!
+    await act(async () => add.click())
+
+    expect(updatedPlan).not.toBeNull()
+    const scenario = updatedPlan!.scenarios.at(-1)!
+    const applied = scenariosModule.applyScenarioPatch(plan, scenario.patch)
+    expect(applied.ok).toBe(true)
+    if (applied.ok) {
+      expect(applied.plan.household.stateMoves).toEqual([
+        expect.objectContaining({ fromMonth: 10 }),
+      ])
+    }
+  })
 
   it('shows recalculating and error states without ever labeling a failed detail comparison current', async () => {
     mockedComparePlans.mockImplementationOnce(() => {
@@ -262,23 +691,50 @@ describe('ScenariosPage comparison lifecycle', () => {
   it('starts a fresh comparison with the new calendar year after a rerender', async () => {
     vi.setSystemTime(new Date('2026-12-31T17:00:00Z'))
     const plan = await mount()
+    const leverSelect = container.querySelector<HTMLSelectElement>('select')!
+    await act(async () => {
+      leverSelect.value = 'rothSchedule'
+      leverSelect.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    const inputFor = (labelText: string) => {
+      const label = Array.from(container.querySelectorAll('label')).find(
+        (candidate) => candidate.textContent === labelText,
+      )!
+      return document.getElementById(label.htmlFor) as HTMLInputElement
+    }
+    expect(inputFor('Start year').value).toBe('2026')
+    expect(inputFor('End year').value).toBe('2030')
+    const inputValueSetter = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      'value',
+    )!.set!
+    await act(async () => {
+      inputValueSetter.call(inputFor('End year'), '2029')
+      inputFor('End year').dispatchEvent(new Event('input', { bubbles: true }))
+    })
     await advanceComparison()
     expect(mockedComparePlans.mock.calls.at(-1)![2].startYear).toBe(2026)
 
     vi.setSystemTime(new Date('2027-01-02T17:00:00Z'))
-    await act(async () => {
-      root.render(
-        <MemoryRouter>
-          <PlanCtx.Provider value={contextFor(plan)}>
-            <ScenariosPage />
-          </PlanCtx.Provider>
-        </MemoryRouter>,
-      )
-    })
+    await rerenderWithPlan(plan)
     await advanceComparison()
 
     expect(mockedComparePlans.mock.calls.at(-1)![2].startYear).toBe(2027)
     expect(mockedCompareScenarios.mock.calls.at(-1)![1].startYear).toBe(2027)
+    expect(inputFor('Start year').value).toBe('2027')
+    expect(inputFor('End year').value).toBe('2030')
+
+    await act(async () => {
+      leverSelect.value = 'relocation'
+      leverSelect.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    expect(inputFor('Move year').value).toBe('2028')
+
+    await act(async () => {
+      leverSelect.value = 'homeSale'
+      leverSelect.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    expect(inputFor('Property sale year').value).toBe('2032')
   })
 
   it('does not inspect or compare a draft that PlanContext marks invalid', async () => {

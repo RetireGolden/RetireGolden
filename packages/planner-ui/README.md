@@ -150,6 +150,16 @@ The supported product API is:
   names and signatures only change with a semver-major release, and the module
   is browser-free and safe to run in Node (a caller supplies the protected-path
   set; the web planner passes none);
+- the **`./scenario-levers` subpath** — the browser-free fast-lever contract
+  (`SCENARIO_LEVER_DEFINITIONS`, `buildScenarioLever`,
+  `supportedRothBracketTargets`, `supportedRothIrmaaTiers`, and their
+  request/result types). It turns retirement, spending, Social Security, Roth, allocation,
+  guaranteed-income, relocation, survivor, care, and home-sale choices into
+  canonical v1 engine scenario patches. Every definition declares the exact
+  RFC 6901 paths it may patch, while each successful result reports the actual
+  operation paths emitted. Array roots are intentionally atomic. Exported
+  names and signatures only change with a semver-major release; new lever ids
+  may be added in minors;
 - `./index.css`.
 
 The exports map also exposes wildcard `./*.ts` subpaths
