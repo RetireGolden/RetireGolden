@@ -16,13 +16,13 @@ import { targetWeightsAt } from '@retiregolden/engine/allocation/assetClasses'
 import { buildLadder } from '@retiregolden/engine/ladder/ladderMath'
 import { EMBEDDED_REAL_YIELD_CURVE, packForYear } from '@retiregolden/engine/params'
 import { modeledStateCodes } from '@retiregolden/engine/params/state'
-import { createFlatTaxCalculator } from '@retiregolden/engine/projection/flatTax'
 import {
   annuityPayoutForm,
   annuityPayoutFraction,
 } from '@retiregolden/engine/projection/annuityForms'
 import { relocationScenarioPatch } from '@retiregolden/engine/projection/relocation'
 import { simulatePlan } from '@retiregolden/engine/projection/simulate'
+import type { TaxCalculator } from '@retiregolden/engine/projection/types'
 import type { ScenarioActor, ScenarioPatchV1 } from '@retiregolden/engine/scenarios/contract'
 import { createScenarioPatch } from '@retiregolden/engine/scenarios/patch'
 import { applyScenarioPatch } from '@retiregolden/engine/scenarios/scenarios'
@@ -42,6 +42,8 @@ import {
   isSpendableInYear,
   traditionalWithdrawalPenaltyRate,
 } from '@retiregolden/engine/strategies/accountEligibility'
+import { propertySaleTax } from '@retiregolden/engine/tax/propertySale'
+import { taxCalculatorFor as standardTaxCalculatorForPlan } from './planTaxCalculator'
 
 export type ScenarioLeverId =
   | 'retirementAge'
@@ -169,6 +171,11 @@ export interface ScenarioLeverBuildContext {
   startYear: number
   actor?: ScenarioActor
   createId?: () => string
+  /**
+   * Prices bounded availability probes. Defaults to the planner's standard
+   * federal + plan-specific state/local stack.
+   */
+  taxCalculatorForPlan?: (plan: Plan) => TaxCalculator
 }
 
 export interface BuiltScenarioLever {
@@ -353,6 +360,7 @@ function hasPositiveRothTargetHeadroom(
   plan: Plan,
   strategy: Extract<Plan['strategies']['rothConversion'], { mode: 'fillToTarget' }>,
   projectionStartYear: number,
+  taxCalculatorForPlan: (plan: Plan) => TaxCalculator,
 ): boolean {
   const edited = clonePlan(plan)
   edited.strategies.rothConversion = strategy
@@ -360,13 +368,37 @@ function hasPositiveRothTargetHeadroom(
     const projection = simulatePlan(edited, {
       startYear: projectionStartYear,
       horizonEndYear: strategy.endYear,
-      taxCalculator: SCENARIO_PROBE_TAX,
+      taxCalculator: taxCalculatorForPlan(edited),
     })
     return projection.years.some(
       (year) =>
         year.year >= Math.max(projectionStartYear, strategy.startYear) &&
         year.year <= strategy.endYear &&
         year.rothConversion > 1e-8,
+    )
+  } catch {
+    return false
+  }
+}
+
+function hasPositiveRothScheduleOutput(
+  plan: Plan,
+  strategy: Extract<Plan['strategies']['rothConversion'], { mode: 'manual' }>,
+  projectionStartYear: number,
+  projectionEndYear: number,
+  taxCalculatorForPlan: (plan: Plan) => TaxCalculator,
+): boolean {
+  const edited = clonePlan(plan)
+  edited.strategies.rothConversion = strategy
+  try {
+    const projection = simulatePlan(edited, {
+      startYear: projectionStartYear,
+      horizonEndYear: projectionEndYear,
+      taxCalculator: taxCalculatorForPlan(edited),
+    })
+    const requestedYears = new Set(strategy.conversions.map((conversion) => conversion.year))
+    return projection.years.some(
+      (year) => requestedYears.has(year.year) && year.rothConversion > 1e-8,
     )
   } catch {
     return false
@@ -585,18 +617,17 @@ function resolvedSocialSecurityPia(
   return isPiaFromEarningsError(result) ? null : result.piaMonthly
 }
 
-const SCENARIO_PROBE_TAX = createFlatTaxCalculator(0)
-
 function projectedSocialSecuritySchedule(
   plan: Plan,
   startYear: number,
   endYear: number,
+  taxCalculatorForPlan: (plan: Plan) => TaxCalculator,
 ): number[] | null {
   try {
     const projection = simulatePlan(plan, {
       startYear,
       horizonEndYear: endYear,
-      taxCalculator: SCENARIO_PROBE_TAX,
+      taxCalculator: taxCalculatorForPlan(plan),
     })
     return projection.years.map((year) => year.incomes.socialSecurity)
   } catch {
@@ -610,6 +641,7 @@ function claimChangeCanAffectProjection(
   claimAge: { years: number; months: number },
   startYear: number,
   endYear: number,
+  taxCalculatorForPlan: (plan: Plan) => TaxCalculator,
 ): boolean {
   if (
     income.claimAge.years === claimAge.years &&
@@ -624,8 +656,18 @@ function claimChangeCanAffectProjection(
   )
   if (!editedIncome) return false
   editedIncome.claimAge = claimAge
-  const before = projectedSocialSecuritySchedule(plan, startYear, endYear)
-  const after = projectedSocialSecuritySchedule(edited, startYear, endYear)
+  const before = projectedSocialSecuritySchedule(
+    plan,
+    startYear,
+    endYear,
+    taxCalculatorForPlan,
+  )
+  const after = projectedSocialSecuritySchedule(
+    edited,
+    startYear,
+    endYear,
+    taxCalculatorForPlan,
+  )
   return (
     before !== null &&
     after !== null &&
@@ -637,8 +679,16 @@ function hasPayableSocialSecurityBenefit(
   plan: Plan,
   startYear: number,
   endYear: number,
+  taxCalculatorForPlan: (plan: Plan) => TaxCalculator,
 ): boolean {
-  return projectedSocialSecuritySchedule(plan, startYear, endYear)?.some((amount) => amount > 1e-8) === true
+  return (
+    projectedSocialSecuritySchedule(
+      plan,
+      startYear,
+      endYear,
+      taxCalculatorForPlan,
+    )?.some((amount) => amount > 1e-8) === true
+  )
 }
 
 function interpolatedCashValueAtAge(
@@ -681,14 +731,104 @@ function permanentLifeSettlementValue(
   )
 }
 
-function hasPotentialGeneralDeposit(plan: Plan, startYear: number): boolean {
+type PropertyAccount = Extract<Plan['accounts'][number], { type: 'property' }>
+
+function projectedPropertySalePrice(
+  plan: Plan,
+  property: PropertyAccount,
+  startYear: number,
+  saleYear: number,
+): number {
+  return (
+    property.value *
+    Math.pow(
+      1 + plan.assumptions.inflationPct / 100,
+      saleYear - startYear + 1,
+    )
+  )
+}
+
+function projectedHecmPayoffBeforeSale(
+  plan: Plan,
+  property: PropertyAccount,
+  startYear: number,
+  saleYear: number,
+  taxCalculatorForPlan: (plan: Plan) => TaxCalculator,
+): number | null {
+  const hecm = property.hecm
+  if (!hecm || hecm.openYear > saleYear) return 0
+  if (saleYear === startYear) {
+    return (
+      property.value *
+      (Math.max(0, hecm.upfrontCostPct ?? 0) / 100)
+    )
+  }
+  try {
+    const projection = simulatePlan(plan, {
+      startYear,
+      horizonEndYear: saleYear - 1,
+      taxCalculator: taxCalculatorForPlan(plan),
+    })
+    // YearResult currently exposes the household HECM balance. A household
+    // with multiple open lines is therefore treated conservatively: attributing
+    // the total payoff to this sale can hide an available lever, but cannot
+    // advertise proceeds that the modeled liens may consume.
+    return projection.years.at(-1)?.hecmLoanBalance ?? 0
+  } catch {
+    return null
+  }
+}
+
+function modeledPropertySaleDeposit(
+  plan: Plan,
+  property: PropertyAccount,
+  startYear: number,
+  taxCalculatorForPlan: (plan: Plan) => TaxCalculator,
+): number | null {
+  const saleYear = property.plannedSaleYear
+  if (saleYear === null) return null
+  const salePrice = projectedPropertySalePrice(plan, property, startYear, saleYear)
+  const proceeds =
+    property.costBasis === undefined
+      ? Math.max(0, property.expectedNetProceeds ?? salePrice)
+      : propertySaleTax({
+          salePrice,
+          costBasis: property.costBasis,
+          sellingCostPct: property.sellingCostPct,
+          primaryResidence: property.primaryResidence,
+          depreciationRecapture: property.depreciationRecapture,
+          filingStatus: plan.household.filingStatus,
+          pack: packForYear(saleYear).pack,
+        }).netProceeds
+  const modeledLoan = projectedHecmPayoffBeforeSale(
+    plan,
+    property,
+    startYear,
+    saleYear,
+    taxCalculatorForPlan,
+  )
+  if (modeledLoan === null) return null
+  const nonRecoursePayoff = Math.min(modeledLoan, Math.max(0, proceeds))
+  return proceeds - nonRecoursePayoff
+}
+
+function hasPotentialGeneralDeposit(
+  plan: Plan,
+  startYear: number,
+  taxCalculatorForPlan: (plan: Plan) => TaxCalculator,
+): boolean {
   const endYear = householdPlanningHorizonYear(plan)
   const hasIncome = plan.incomes.some((income) => {
     switch (income.type) {
       case 'wages':
         return income.annualGross > 0 && hasWagesInYear(plan, income.personId, startYear)
       case 'socialSecurity':
-        return hasPayableSocialSecurityBenefit(plan, startYear, endYear)
+        return hasPayableSocialSecurityBenefit(
+          plan,
+          startYear,
+          endYear,
+          taxCalculatorForPlan,
+        )
       case 'recurring':
         return (
           income.annualAmount > 0 &&
@@ -760,8 +900,12 @@ function hasPotentialGeneralDeposit(plan: Plan, startYear: number): boolean {
           account.plannedSaleYear >= startYear &&
           account.plannedSaleYear <= endYear &&
           account.value > 0 &&
-          (account.costBasis !== undefined ||
-            (account.expectedNetProceeds ?? account.value) > 0),
+          (modeledPropertySaleDeposit(
+            plan,
+            account,
+            startYear,
+            taxCalculatorForPlan,
+          ) ?? 0) > 1e-8,
     )
   ) {
     return true
@@ -787,7 +931,12 @@ function hasPotentialGeneralDeposit(plan: Plan, startYear: number): boolean {
   )
 }
 
-function holdsProjectedAssets(plan: Plan, account: ProjectedBalanceAccount, startYear: number): boolean {
+function holdsProjectedAssets(
+  plan: Plan,
+  account: ProjectedBalanceAccount,
+  startYear: number,
+  taxCalculatorForPlan: (plan: Plan) => TaxCalculator,
+): boolean {
   const endYear = householdPlanningHorizonYear(plan)
   if (account.balance > 0 || receivesContributionDuringProjection(plan, account, startYear)) {
     return true
@@ -795,7 +944,12 @@ function holdsProjectedAssets(plan: Plan, account: ProjectedBalanceAccount, star
   const depositTarget =
     plan.accounts.find((candidate) => candidate.type === 'cash') ??
     plan.accounts.find((candidate) => candidate.type === 'taxable')
-  if (depositTarget?.id === account.id && hasPotentialGeneralDeposit(plan, startYear)) return true
+  if (
+    depositTarget?.id === account.id &&
+    hasPotentialGeneralDeposit(plan, startYear, taxCalculatorForPlan)
+  ) {
+    return true
+  }
 
   if (
     account.type === 'traditional' &&
@@ -896,6 +1050,7 @@ function retirementAgeChangeCanAffectProjection(
   person: Plan['household']['people'][number],
   nextAge: number,
   startYear: number,
+  taxCalculatorForPlan: (plan: Plan) => TaxCalculator,
 ): boolean {
   if (person.retirementAge === null || person.retirementAge === nextAge) return false
   const birthYear = Number(person.dob.slice(0, 4))
@@ -961,7 +1116,7 @@ function retirementAgeChangeCanAffectProjection(
       account.type !== 'traditional' ||
       account.kind !== 'employer' ||
       (account.ownerPersonId ?? plan.household.people[0]?.id) !== person.id ||
-      !holdsProjectedAssets(plan, account, startYear)
+      !holdsProjectedAssets(plan, account, startYear, taxCalculatorForPlan)
     ) {
       continue
     }
@@ -1005,6 +1160,7 @@ function usesDefaultReturn(
   plan: Plan,
   account: Plan['accounts'][number],
   startYear: number,
+  taxCalculatorForPlan: (plan: Plan) => TaxCalculator,
 ): boolean {
   if (!isProjectedBalanceAccount(account)) return false
   if (
@@ -1013,7 +1169,7 @@ function usesDefaultReturn(
   ) {
     return false
   }
-  return holdsProjectedAssets(plan, account, startYear)
+  return holdsProjectedAssets(plan, account, startYear, taxCalculatorForPlan)
 }
 
 function finish(
@@ -1059,6 +1215,8 @@ export function buildScenarioLever(
   if (startYearIssue) return unavailable(definition, [startYearIssue])
   const edited = clonePlan(plan)
   const warnings: string[] = []
+  const taxCalculatorForPlan =
+    context.taxCalculatorForPlan ?? standardTaxCalculatorForPlan
 
   switch (request.id) {
     case 'retirementAge': {
@@ -1080,7 +1238,15 @@ export function buildScenarioLever(
         const nextAge = person.retirementAge! + request.yearsDelta
         const ageIssue = validateNumber(nextAge, `${person.name} retirement age`, { min: 30, max: 80 })
         if (ageIssue) return unavailable(definition, [ageIssue], warnings)
-        if (retirementAgeChangeCanAffectProjection(plan, person, nextAge, context.startYear)) {
+        if (
+          retirementAgeChangeCanAffectProjection(
+            plan,
+            person,
+            nextAge,
+            context.startYear,
+            taxCalculatorForPlan,
+          )
+        ) {
           overlapsProjection = true
         }
         person.retirementAge = nextAge
@@ -1157,6 +1323,7 @@ export function buildScenarioLever(
             proposedClaimAge,
             context.startYear,
             projectionEndYear,
+            taxCalculatorForPlan,
           ),
       )
       if (eligible.length === 0) {
@@ -1172,6 +1339,7 @@ export function buildScenarioLever(
             proposedClaimAge,
             context.startYear,
             projectionEndYear,
+            taxCalculatorForPlan,
           ),
       )
       if (!effectiveChange) {
@@ -1190,11 +1358,13 @@ export function buildScenarioLever(
         plan,
         context.startYear,
         projectionEndYear,
+        taxCalculatorForPlan,
       )
       const afterSchedule = projectedSocialSecuritySchedule(
         edited,
         context.startYear,
         projectionEndYear,
+        taxCalculatorForPlan,
       )
       if (
         beforeSchedule === null ||
@@ -1246,6 +1416,7 @@ export function buildScenarioLever(
         beforeHaircut,
         context.startYear,
         projectionEndYear,
+        taxCalculatorForPlan,
       )
       const hasPayableBenefit = payableSchedule?.some((amount) => amount > 1e-8) === true
       let changesPayableBenefit = false
@@ -1334,7 +1505,14 @@ export function buildScenarioLever(
         startYear: request.startYear,
         endYear: request.endYear,
       } satisfies Extract<Plan['strategies']['rothConversion'], { mode: 'fillToTarget' }>
-      if (!hasPositiveRothTargetHeadroom(plan, proposedStrategy, context.startYear)) {
+      if (
+        !hasPositiveRothTargetHeadroom(
+          plan,
+          proposedStrategy,
+          context.startYear,
+          taxCalculatorForPlan,
+        )
+      ) {
         return unavailable(definition, [
           'No target year has positive Roth conversion headroom under the requested ceiling.',
         ])
@@ -1387,13 +1565,27 @@ export function buildScenarioLever(
       if (!hasRothDestination(plan)) {
         return unavailable(definition, ['Add a Roth destination account before modeling Roth conversions.'])
       }
-      edited.strategies.rothConversion = {
+      const proposedStrategy = {
         mode: 'manual',
         conversions: Array.from({ length: request.endYear - request.startYear + 1 }, (_, index) => ({
           year: request.startYear + index,
           amount: request.annualAmount,
         })),
+      } satisfies Extract<Plan['strategies']['rothConversion'], { mode: 'manual' }>
+      if (
+        !hasPositiveRothScheduleOutput(
+          plan,
+          proposedStrategy,
+          context.startYear,
+          Math.min(request.endYear, projectionEndYear),
+          taxCalculatorForPlan,
+        )
+      ) {
+        return unavailable(definition, [
+          'No requested year produces a Roth conversion from the projected source balances.',
+        ])
       }
+      edited.strategies.rothConversion = proposedStrategy
       return finish(
         plan,
         edited,
@@ -1449,7 +1641,12 @@ export function buildScenarioLever(
           const proposed = proposedById.get(account.id)!
           return (
             original !== undefined &&
-            holdsProjectedAssets(plan, original, context.startYear) &&
+            holdsProjectedAssets(
+              plan,
+              original,
+              context.startYear,
+              taxCalculatorForPlan,
+            ) &&
             !allocationMatches(original.allocation, proposed)
           )
         })
@@ -1475,7 +1672,16 @@ export function buildScenarioLever(
         maxExclusive: true,
       })
       if (inputIssue) return unavailable(definition, [inputIssue])
-      if (!plan.accounts.some((account) => usesDefaultReturn(plan, account, context.startYear))) {
+      if (
+        !plan.accounts.some((account) =>
+          usesDefaultReturn(
+            plan,
+            account,
+            context.startYear,
+            taxCalculatorForPlan,
+          ),
+        )
+      ) {
         return unavailable(
           definition,
           ['No cash or investment account currently uses the default-return assumption.'],

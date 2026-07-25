@@ -11,18 +11,9 @@ import type { Plan } from '@retiregolden/engine/model/plan'
 import { summarizeProjection, type ProjectionSummary } from '@retiregolden/engine/projection/compare'
 import { simulatePlan } from '@retiregolden/engine/projection/simulate'
 import type { ProjectionResult } from '@retiregolden/engine/projection/types'
-import { combineTaxCalculators, createFederalTaxCalculator } from '@retiregolden/engine/tax/federalTax'
-import { createStateTaxCalculator } from '@retiregolden/engine/tax/stateTax'
+import { taxCalculatorFor } from '../planTaxCalculator'
 
-export function taxCalculatorFor(plan: Plan) {
-  return combineTaxCalculators(
-    createFederalTaxCalculator(),
-    createStateTaxCalculator({
-      overridePct: plan.assumptions.stateEffectiveTaxPct,
-      localPct: plan.assumptions.localIncomeTaxPct,
-    }),
-  )
-}
+export { taxCalculatorFor } from '../planTaxCalculator'
 
 export function currentStartYear(): number {
   return new Date().getFullYear()

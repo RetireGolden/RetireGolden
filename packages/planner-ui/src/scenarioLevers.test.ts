@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
+import { createFlatTaxCalculator } from '@retiregolden/engine/projection/flatTax'
 import { parseScenarioPatch } from '@retiregolden/engine/scenarios/contract'
 import { applyScenarioPatch } from '@retiregolden/engine/scenarios/scenarios'
 import { buildExampleCouple } from './planner/examples/buildExampleCouple'
@@ -713,6 +714,83 @@ describe('scenario lever contract', () => {
     expect(available.ok).toBe(true)
     expect(unavailable.ok).toBe(false)
     if (!unavailable.ok) expect(unavailable.issues.join(' ')).toContain('headroom')
+  })
+
+  it('prices Roth target headroom with the planner tax stack instead of a zero-tax false positive', () => {
+    const plan = buildExampleCouple()
+    plan.incomes = []
+    plan.insurance = []
+    plan.careEvents = []
+    plan.expenses.baseAnnual = 70_000
+    plan.expenses.phases = []
+    plan.expenses.oneTimeGoals = []
+    plan.expenses.healthcare.pre65MonthlyPremiumPerPerson = 0
+    plan.expenses.healthcare.medicareExtrasMonthlyPerPerson = 0
+    plan.assumptions.stateEffectiveTaxPct = 20
+    const firstTraditional = plan.accounts.find(
+      (candidate) => candidate.type === 'traditional',
+    )
+    for (const account of plan.accounts) {
+      if (account.type === 'traditional') {
+        account.balance = account === firstTraditional ? 80_000 : 0
+        account.annualContribution = 0
+        delete account.contributionSchedule
+      }
+    }
+    plan.accounts = plan.accounts.filter(
+      (account) => account.type === 'traditional' || account.type === 'roth',
+    )
+    const roth = plan.accounts.find((account) => account.type === 'roth')!
+    roth.balance = 0
+    roth.annualContribution = 0
+    const request = {
+      id: 'rothTarget' as const,
+      target: 'fixedMagi' as const,
+      targetValue: 200_000,
+      startYear: context.startYear + 1,
+      endYear: context.startYear + 1,
+    }
+
+    const zeroTax = buildScenarioLever(plan, request, {
+      ...context,
+      taxCalculatorForPlan: () => createFlatTaxCalculator(0),
+    })
+    const plannerTax = buildScenarioLever(plan, request, context)
+
+    expect(zeroTax.ok).toBe(true)
+    expect(plannerTax.ok).toBe(false)
+    if (!plannerTax.ok) expect(plannerTax.issues.join(' ')).toContain('headroom')
+  })
+
+  it('rejects a future Roth schedule after the ledger depletes its opening source balance', () => {
+    const plan = buildExampleCouple()
+    plan.incomes = []
+    plan.expenses.baseAnnual = 100_000
+    plan.expenses.idealAnnual = 0
+    plan.expenses.excessAnnual = 0
+    for (const account of plan.accounts) {
+      if (account.type === 'traditional') {
+        account.balance = 50_000
+        account.annualContribution = 0
+        delete account.contributionSchedule
+      } else if ('balance' in account) {
+        account.balance = 0
+      }
+    }
+
+    const result = buildScenarioLever(
+      plan,
+      {
+        id: 'rothSchedule',
+        annualAmount: 10_000,
+        startYear: context.startYear + 1,
+        endYear: context.startYear + 2,
+      },
+      context,
+    )
+
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.issues.join(' ')).toContain('projected source balances')
   })
 
   it('rejects zero-cost care and relocation after the household horizon', () => {
@@ -2559,6 +2637,56 @@ describe('scenario lever contract', () => {
 
     expect(exactTaxSale.ok).toBe(true)
     expect(zeroLegacyProceeds.ok).toBe(false)
+  })
+
+  it.each([
+    { label: 'exact', costBasis: 200_000, expectedNetProceeds: 0 },
+    { label: 'legacy', costBasis: undefined, expectedNetProceeds: 200_000 },
+  ])('does not treat a fully HECM-encumbered $label sale as a general deposit', ({
+    costBasis,
+    expectedNetProceeds,
+  }) => {
+    const plan = buildExampleCouple()
+    const cash = plan.accounts.find((account) => account.type === 'cash')!
+    cash.balance = 0
+    cash.annualContribution = 0
+    cash.annualReturnPct = null
+    const property = plan.accounts.find((account) => account.type === 'property')!
+    property.value = 300_000
+    property.plannedSaleYear = context.startYear + 1
+    property.expectedNetProceeds = expectedNetProceeds
+    property.costBasis = costBasis
+    property.sellingCostPct = costBasis === undefined ? 0 : 25
+    property.primaryResidence = true
+    property.hecm = {
+      openYear: context.startYear,
+      principalLimitPct: 75,
+      growthRatePct: 7,
+      upfrontCostPct: 10,
+      drawPolicy: 'lastResort',
+    }
+    plan.accounts = [cash, property]
+    plan.incomes = []
+    plan.insurance = []
+    plan.expenses.baseAnnual = 500_000
+    plan.expenses.idealAnnual = 0
+    plan.expenses.excessAnnual = 0
+    plan.strategies.rothConversion = { mode: 'none' }
+
+    const encumbered = buildScenarioLever(
+      plan,
+      { id: 'defaultReturn', returnPct: 4 },
+      context,
+    )
+    delete property.hecm
+    const unencumbered = buildScenarioLever(
+      plan,
+      { id: 'defaultReturn', returnPct: 4 },
+      context,
+    )
+
+    expect(encumbered.ok).toBe(false)
+    expect(unencumbered.ok).toBe(true)
   })
 
   it('preserves each account stock-region split when changing total stocks', () => {

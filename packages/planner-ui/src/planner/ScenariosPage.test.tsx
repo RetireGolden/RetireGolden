@@ -40,12 +40,21 @@ vi.mock('@retiregolden/engine/scenarios/patch', async (importOriginal) => {
   }
 })
 
+vi.mock('../scenarioLevers', async (importOriginal) => {
+  const original = await importOriginal<typeof import('../scenarioLevers')>()
+  return {
+    ...original,
+    buildScenarioLever: vi.fn(original.buildScenarioLever),
+  }
+})
+
 vi.mock('../optimize/spendingRunner', () => ({ runSpendingSolve: vi.fn() }))
 
 import * as comparisonModule from '@retiregolden/engine/scenarios/comparison'
 import * as scenarioPatchModule from '@retiregolden/engine/scenarios/patch'
 import * as scenariosModule from '@retiregolden/engine/scenarios/scenarios'
 import { runSpendingSolve } from '../optimize/spendingRunner'
+import * as scenarioLeverModule from '../scenarioLevers'
 import { MetricTable, ScenariosPage } from './ScenariosPage'
 import {
   formatMetricValue,
@@ -63,6 +72,7 @@ const mockedCompareCapacity = vi.mocked(comparisonModule.compareScenarioSpending
 const mockedCompareScenarios = vi.mocked(scenariosModule.compareScenarios)
 const mockedSnapshotHash = vi.mocked(scenarioPatchModule.scenarioPlanSnapshotHash)
 const mockedRunSpendingSolve = vi.mocked(runSpendingSolve)
+const mockedBuildScenarioLever = vi.mocked(scenarioLeverModule.buildScenarioLever)
 
 function deferred<T>() {
   let resolve!: (value: T) => void
@@ -224,6 +234,7 @@ describe('ScenariosPage comparison lifecycle', () => {
     issues: string[] = [],
     readOnly = false,
     update?: PlanContextValue['update'],
+    settlePreview = true,
   ) {
     await act(async () => {
       root.render(
@@ -236,6 +247,7 @@ describe('ScenariosPage comparison lifecycle', () => {
         </MemoryRouter>,
       )
     })
+    if (settlePreview) await advanceLeverPreview()
     return plan
   }
 
@@ -251,6 +263,7 @@ describe('ScenariosPage comparison lifecycle', () => {
         </MemoryRouter>,
       )
     })
+    await advanceLeverPreview()
   }
 
   function planWithoutPerson(plan: Plan, personId: string): Plan {
@@ -275,6 +288,12 @@ describe('ScenariosPage comparison lifecycle', () => {
     })
   }
 
+  async function advanceLeverPreview() {
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(50)
+    })
+  }
+
   it('shows the exact canonical fields for a fast lever and disables unavailable choices', async () => {
     await mount()
     const select = container.querySelector<HTMLSelectElement>('select')
@@ -287,6 +306,7 @@ describe('ScenariosPage comparison lifecycle', () => {
       select!.value = 'pension'
       select!.dispatchEvent(new Event('change', { bubbles: true }))
     })
+    await advanceLeverPreview()
 
     const add = Array.from(container.querySelectorAll('button')).find(
       (button) => button.textContent?.includes('Add scenario'),
@@ -298,6 +318,77 @@ describe('ScenariosPage comparison lifecycle', () => {
     expect(unavailableStatus?.textContent).toContain('Add an existing pension')
     expect(container.querySelector('[role="alert"]')).toBeNull()
     expect(unavailableStatus?.getAttribute('aria-live')).toBe('polite')
+  })
+
+  it('defers previews, discards stale work, and revalidates the latest request on save', async () => {
+    const plan = createSamplePlan()
+    let updatedPlan: Plan | null = null
+    await mount(
+      plan,
+      [],
+      false,
+      (mutator) => {
+        const next = structuredClone(plan)
+        mutator(next)
+        updatedPlan = next
+      },
+      false,
+    )
+    const select = container.querySelector<HTMLSelectElement>('select')!
+    const add = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent?.includes('Add scenario'),
+    )!
+
+    expect(mockedBuildScenarioLever).not.toHaveBeenCalled()
+    expect(add.disabled).toBe(true)
+    expect(container.textContent).toContain('Checking this scenario against the projection')
+
+    await act(async () => {
+      select.value = 'pension'
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(25)
+    })
+    await act(async () => {
+      select.value = 'spending'
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(25)
+    })
+    expect(mockedBuildScenarioLever).not.toHaveBeenCalled()
+    expect(add.disabled).toBe(true)
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(25)
+    })
+    expect(mockedBuildScenarioLever).toHaveBeenCalledTimes(1)
+    expect(mockedBuildScenarioLever.mock.calls[0]![1]).toEqual({
+      id: 'spending',
+      percentChange: 15,
+    })
+    expect(mockedBuildScenarioLever.mock.calls[0]![2].taxCalculatorForPlan).toBe(
+      taxCalculatorFor,
+    )
+    expect(add.disabled).toBe(false)
+    expect(container.textContent).toContain('/expenses/baseAnnual')
+
+    await act(async () => add.click())
+
+    expect(mockedBuildScenarioLever).toHaveBeenCalledTimes(2)
+    expect(mockedBuildScenarioLever.mock.calls[1]![1]).toEqual({
+      id: 'spending',
+      percentChange: 15,
+    })
+    const savedPlan = updatedPlan as Plan | null
+    expect(savedPlan).not.toBeNull()
+    const applied = scenariosModule.applyScenarioPatch(
+      plan,
+      savedPlan!.scenarios.at(-1)!.patch,
+    )
+    expect(applied.ok).toBe(true)
+    if (applied.ok) expect(applied.plan.expenses.baseAnnual).toBe(110_400)
   })
 
   it('keeps lever explanations visible while native controls are read-only', async () => {
@@ -316,6 +407,7 @@ describe('ScenariosPage comparison lifecycle', () => {
       leverSelect!.value = 'care'
       leverSelect!.dispatchEvent(new Event('change', { bubbles: true }))
     })
+    await advanceLeverPreview()
 
     const recipientLabel = Array.from(container.querySelectorAll('label')).find(
       (label) => label.textContent === 'Care recipient',
@@ -332,6 +424,7 @@ describe('ScenariosPage comparison lifecycle', () => {
       recipient.value = plan.household.people[1]!.id
       recipient.dispatchEvent(new Event('change', { bubbles: true }))
     })
+    await advanceLeverPreview()
     expect(add?.disabled).toBe(false)
     expect(container.textContent).toContain('/careEvents')
 
@@ -552,6 +645,7 @@ describe('ScenariosPage comparison lifecycle', () => {
       inputValueSetter.call(moveMonth, '10')
       moveMonth.dispatchEvent(new Event('input', { bubbles: true }))
     })
+    await advanceLeverPreview()
     const add = Array.from(container.querySelectorAll('button')).find(
       (button) => button.textContent?.includes('Add scenario'),
     )!

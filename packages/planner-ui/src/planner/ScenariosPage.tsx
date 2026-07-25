@@ -33,6 +33,7 @@ import {
   buildScenarioLever,
   SCENARIO_LEVER_DEFINITIONS,
   supportedRothBracketTargets,
+  type ScenarioLeverBuildResult,
   type ScenarioLeverId,
   type ScenarioLeverRequest,
 } from '../scenarioLevers'
@@ -48,6 +49,7 @@ import { currentStartYear, seedFromPlanId, taxCalculatorFor } from './useProject
 import { US_STATES } from './usStates'
 
 const newId = () => crypto.randomUUID()
+const LEVER_PREVIEW_DEBOUNCE_MS = 50
 
 interface LeverParams {
   retireAgeDelta: number
@@ -260,20 +262,44 @@ function AddScenario() {
   ])
   const set = <K extends keyof LeverParams>(key: K, value: LeverParams[K]) =>
     setParams((current) => ({ ...current, [key]: value }))
-  const preview = useMemo(
-    () =>
-      buildScenarioLever(plan, leverRequest(kind, params, plan, startYear), {
+  const previewRequest = useMemo(
+    () => leverRequest(kind, params, plan, startYear),
+    [kind, params, plan, startYear],
+  )
+  const previewVersion = useRef(0)
+  const [previewState, setPreviewState] = useState<{
+    plan: Plan
+    request: ScenarioLeverRequest
+    startYear: number
+    result: ScenarioLeverBuildResult
+  } | null>(null)
+  useEffect(() => {
+    const version = ++previewVersion.current
+    const timer = window.setTimeout(() => {
+      const result = buildScenarioLever(plan, previewRequest, {
         createdAtIso: '2000-01-01T00:00:00.000Z',
         startYear,
         createId: () => 'preview-care-event',
-      }),
-    [kind, params, plan, startYear],
-  )
+        taxCalculatorForPlan: taxCalculatorFor,
+      })
+      if (previewVersion.current !== version) return
+      setPreviewState({ plan, request: previewRequest, startYear, result })
+    }, LEVER_PREVIEW_DEBOUNCE_MS)
+    return () => {
+      window.clearTimeout(timer)
+    }
+  }, [plan, previewRequest, startYear])
+  const preview =
+    previewState?.plan === plan &&
+    previewState.request === previewRequest &&
+    previewState.startYear === startYear
+      ? previewState.result
+      : null
   // The whole "Add a scenario" card is a plan-mutating form — disable it as a
   // unit when read-only, like the entry sections.
   return (
     <EditableFieldset>
-    <div className="card">
+    <div className="card" aria-busy={preview === null}>
       <h2>Add a scenario</h2>
       <p className="card-hint">Use a fast lever to create a reversible proposal. The exact modeled fields are shown before you add it.</p>
       <div className="form-grid">
@@ -361,33 +387,39 @@ function AddScenario() {
           </>
         ) : null}
       </div>
-      {preview.warnings.length > 0 ? (
+      {preview === null ? (
+        <p className="card-hint" role="status" aria-live="polite">
+          Checking this scenario against the projection…
+        </p>
+      ) : null}
+      {preview !== null && preview.warnings.length > 0 ? (
         <div className="callout callout--warn" role="status">
           <ul>{preview.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>
         </div>
       ) : null}
-      {!preview.ok ? (
+      {preview !== null && !preview.ok ? (
         <div className="callout callout--warn" role="status" aria-live="polite">
           <ul>{preview.issues.map((issue) => <li key={issue}>{issue}</li>)}</ul>
         </div>
-      ) : (
+      ) : preview?.ok ? (
         <p className="card-hint">
           <strong>Fields this scenario patches:</strong>{' '}
           <code>{preview.operationPaths.join(', ')}</code>
         </p>
-      )}
+      ) : null}
       {saveError ? <p className="card-hint" role="alert">{saveError}</p> : null}
       <div className="add-row">
         <button
           type="button"
           className="btn btn-primary btn-small"
-          disabled={!preview.ok}
+          disabled={preview === null || !preview.ok}
           onClick={() => {
             setSaveError(null)
-            const built = buildScenarioLever(plan, leverRequest(kind, params, plan, startYear), {
+            const built = buildScenarioLever(plan, previewRequest, {
               createdAtIso: new Date().toISOString(),
               startYear,
               createId: newId,
+              taxCalculatorForPlan: taxCalculatorFor,
             })
             if (!built.ok) {
               setSaveError(built.issues.join(' '))
