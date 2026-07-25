@@ -655,7 +655,7 @@ describe('scenario lever contract', () => {
       context,
     )
     expect(unavailable.ok).toBe(false)
-    if (!unavailable.ok) expect(unavailable.issues.join(' ')).toContain('owned annuity')
+    if (!unavailable.ok) expect(unavailable.issues.join(' ')).toContain('owned at projection start')
   })
 
   it('names Roth targets with their target and year window', () => {
@@ -1346,5 +1346,183 @@ describe('scenario lever contract', () => {
 
     const result = buildScenarioLever(plan, { id: 'defaultReturn', returnPct: 4 }, context)
     expect(result.ok).toBe(false)
+  })
+
+  it('offers Roth-none only for an effective conversion opportunity', () => {
+    const expiredManual = buildExampleCouple()
+    expiredManual.strategies.rothConversion = {
+      mode: 'manual',
+      conversions: [{ year: context.startYear - 1, amount: 25_000 }],
+    }
+    const manualResult = buildScenarioLever(expiredManual, { id: 'rothNone' }, context)
+
+    const expiredFill = buildExampleCouple()
+    expiredFill.strategies.rothConversion = {
+      mode: 'fillToTarget',
+      target: 'fixedMagi',
+      targetValue: 150_000,
+      startYear: context.startYear - 5,
+      endYear: context.startYear - 1,
+    }
+    const fillResult = buildScenarioLever(expiredFill, { id: 'rothNone' }, context)
+
+    const active = buildExampleCouple()
+    active.strategies.rothConversion = {
+      mode: 'manual',
+      conversions: [{ year: context.startYear, amount: 25_000 }],
+    }
+    const activeResult = buildScenarioLever(active, { id: 'rothNone' }, context)
+
+    expect(manualResult.ok).toBe(false)
+    expect(fillResult.ok).toBe(false)
+    expect(activeResult.ok).toBe(true)
+  })
+
+  it('requires a modeled survivor-only calendar year for survivor spending', () => {
+    const sameLastAliveYear = buildExampleCouple()
+    const [first, second] = sameLastAliveYear.household.people
+    second!.longevity.planningAge =
+      Number(first!.dob.slice(0, 4)) +
+      first!.longevity.planningAge -
+      Number(second!.dob.slice(0, 4))
+
+    const unavailable = buildScenarioLever(
+      sameLastAliveYear,
+      { id: 'survivorSpending', percent: 70 },
+      context,
+    )
+    const available = buildScenarioLever(
+      buildExampleCouple(),
+      { id: 'survivorSpending', percent: 70 },
+      context,
+    )
+
+    expect(unavailable.ok).toBe(false)
+    if (!unavailable.ok) expect(unavailable.issues.join(' ')).toContain('survivor-only year')
+    expect(available.ok).toBe(true)
+  })
+
+  it('normalizes Social Security cut schedules at the projection boundary', () => {
+    const equivalent = buildExampleCouple()
+    equivalent.assumptions.ssHaircut = { cutPct: 20, fromYear: context.startYear - 5 }
+    const equivalentResult = buildScenarioLever(
+      equivalent,
+      { id: 'socialSecurityCut', cutPct: 20, fromYear: context.startYear - 1 },
+      context,
+    )
+
+    const changed = buildExampleCouple()
+    changed.assumptions.ssHaircut = { cutPct: 20, fromYear: context.startYear + 2 }
+    const changedResult = buildScenarioLever(
+      changed,
+      { id: 'socialSecurityCut', cutPct: 20, fromYear: context.startYear + 3 },
+      context,
+    )
+
+    expect(equivalentResult.ok).toBe(false)
+    if (!equivalentResult.ok) expect(equivalentResult.issues.join(' ')).toContain('same effective')
+    expect(changedResult.ok).toBe(true)
+  })
+
+  it('recognizes an elected pension rollover as a Roth conversion source', () => {
+    const plan = planWithGuaranteedIncome()
+    for (const account of plan.accounts) {
+      if (account.type !== 'traditional') continue
+      account.balance = 0
+      account.annualContribution = 0
+      account.contributionSchedule = undefined
+    }
+    const rollover = plan.accounts.find((account) => account.type === 'traditional')!
+    const pension = plan.accounts.find((account) => account.type === 'pension')!
+    pension.lumpSumOffer = { amount: 250_000, electionYear: context.startYear }
+    pension.lumpSumElection = { rolloverAccountId: rollover.id }
+
+    const result = buildScenarioLever(
+      plan,
+      {
+        id: 'rothSchedule',
+        annualAmount: 25_000,
+        startYear: context.startYear,
+        endYear: context.startYear,
+      },
+      context,
+    )
+
+    expect(result.ok).toBe(true)
+  })
+
+  it('keeps effective pre-FRA SSDI claim ages available for former-spouse benefits', () => {
+    const plan = buildExampleCouple()
+    const stream = plan.incomes.find((income) => income.type === 'socialSecurity')!
+    stream.claimAge = { years: 62, months: 0 }
+    stream.disability = { onsetAge: 60 }
+    stream.formerSpouses = [
+      {
+        id: 'former-spouse',
+        relationship: 'deceased',
+        dob: '1955-01-02',
+        piaMonthly: 3_000,
+        marriageYears: 12,
+        remarriedAtAge: 60,
+      },
+    ]
+
+    const result = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityClaim', claimAge: 70 },
+      context,
+    )
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const applied = applyScenarioPatch(plan, result.patch)
+    expect(applied.ok).toBe(true)
+    if (!applied.ok) return
+    const changed = applied.plan.incomes.find((income) => income.id === stream.id)
+    expect(changed?.type === 'socialSecurity' ? changed.claimAge : undefined).toEqual({
+      years: 70,
+      months: 0,
+    })
+  })
+
+  it('changes pre-start annuity purchases but excludes purchases at projection start', () => {
+    const plan = planWithGuaranteedIncome()
+    const owned = plan.accounts.find((account) => account.type === 'annuity')!
+    const funding = plan.accounts.find((account) => account.type === 'taxable')!
+    owned.purchase = {
+      year: context.startYear - 1,
+      premium: 100_000,
+      fundingAccountId: funding.id,
+      taxQualification: 'nonQualified',
+    }
+    plan.accounts.push({
+      ...owned,
+      id: 'start-year-annuity',
+      name: 'Start-year annuity',
+      purchase: {
+        ...owned.purchase,
+        year: context.startYear,
+      },
+    })
+
+    const result = buildScenarioLever(
+      plan,
+      { id: 'annuity', monthlyChangePct: 10, startAgeDelta: 1 },
+      context,
+    )
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.name).toContain('owned at projection start')
+    const applied = applyScenarioPatch(plan, result.patch)
+    expect(applied.ok).toBe(true)
+    if (!applied.ok) return
+    expect(applied.plan.accounts.find((account) => account.id === owned.id)).toMatchObject({
+      startAge: owned.startAge + 1,
+      monthlyAmount: owned.monthlyAmount * 1.1,
+    })
+    expect(applied.plan.accounts.find((account) => account.id === 'start-year-annuity')).toEqual(
+      plan.accounts.find((account) => account.id === 'start-year-annuity'),
+    )
   })
 })

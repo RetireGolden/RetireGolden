@@ -14,6 +14,7 @@ import { relocationScenarioPatch } from '@retiregolden/engine/projection/relocat
 import type { ScenarioActor, ScenarioPatchV1 } from '@retiregolden/engine/scenarios/contract'
 import { createScenarioPatch } from '@retiregolden/engine/scenarios/patch'
 import { applyScenarioPatch } from '@retiregolden/engine/scenarios/scenarios'
+import { bestMaritalBenefit } from '@retiregolden/engine/socialSecurity/maritalBenefits'
 import { effectiveBirthYear, fraForBirthYear } from '@retiregolden/engine/socialSecurity/nra'
 import { isConvertibleToRoth } from '@retiregolden/engine/strategies/accountEligibility'
 
@@ -97,7 +98,7 @@ export const SCENARIO_LEVER_DEFINITIONS: readonly ScenarioLeverDefinition[] = [
   { id: 'allocation', label: 'All eligible account allocations', declaredPaths: ['/accounts'] },
   { id: 'defaultReturn', label: 'Default return assumption', declaredPaths: ['/assumptions/defaultReturnPct'] },
   { id: 'pension', label: 'All existing pensions', declaredPaths: ['/accounts'] },
-  { id: 'annuity', label: 'All existing owned annuities', declaredPaths: ['/accounts'] },
+  { id: 'annuity', label: 'All annuities owned at projection start', declaredPaths: ['/accounts'] },
   {
     id: 'relocation',
     label: 'Relocation',
@@ -306,12 +307,49 @@ function hasRothConversionSources(plan: Plan, startYear: number, endYear: number
   return plan.accounts.some(
     (account) =>
       isConvertibleToRoth(account) &&
-      (account.balance > 0 || traditionalReceivesContributionInWindow(plan, account, startYear, endYear)),
+      (account.balance > 0 ||
+        traditionalReceivesContributionInWindow(plan, account, startYear, endYear) ||
+        plan.accounts.some(
+          (candidate) =>
+            candidate.type === 'pension' &&
+            candidate.lumpSumOffer !== undefined &&
+            candidate.lumpSumOffer.amount > 0 &&
+            candidate.lumpSumOffer.electionYear >= startYear &&
+            candidate.lumpSumOffer.electionYear <= endYear &&
+            candidate.lumpSumElection?.rolloverAccountId === account.id,
+        )),
   )
 }
 
 function hasRothDestination(plan: Plan): boolean {
   return plan.accounts.some((account) => account.type === 'roth')
+}
+
+function hasEffectiveRothConversionOpportunity(
+  plan: Plan,
+  startYear: number,
+  endYear: number,
+): boolean {
+  if (!hasRothDestination(plan)) return false
+  const strategy = plan.strategies.rothConversion
+  if (strategy.mode === 'manual') {
+    return strategy.conversions.some(
+      (conversion) =>
+        conversion.amount > 0 &&
+        conversion.year >= startYear &&
+        conversion.year <= endYear &&
+        hasRothConversionSources(plan, conversion.year, conversion.year),
+    )
+  }
+  if (strategy.mode === 'fillToTarget') {
+    const effectiveStartYear = Math.max(startYear, strategy.startYear)
+    const effectiveEndYear = Math.min(endYear, strategy.endYear)
+    return (
+      effectiveStartYear <= effectiveEndYear &&
+      hasRothConversionSources(plan, effectiveStartYear, effectiveEndYear)
+    )
+  }
+  return false
 }
 
 type ProjectedBalanceAccount = Extract<
@@ -513,11 +551,28 @@ function claimChangeCanAffectProjection(
 ): boolean {
   const claimantWindow = claimPayableWindow(plan, income, claimAge, startYear, endYear)
   if (!claimantWindow) return false
-  if (
-    socialSecurityOwnBenefitPossible(income) ||
-    income.formerSpouses?.some((formerSpouse) => formerSpouse.piaMonthly > 0) === true
-  ) {
+  if (!disabilityControlsClaim(plan, income) && socialSecurityOwnBenefitPossible(income)) {
     return true
+  }
+  const person = personForSocialSecurity(plan, income)
+  if (person && income.formerSpouses?.length) {
+    const birthYear = Number(person.dob.slice(0, 4))
+    const claimantDob = {
+      year: birthYear,
+      month: Number(person.dob.slice(5, 7)),
+      day: Number(person.dob.slice(8, 10)),
+    }
+    for (let year = claimantWindow.startYear; year <= claimantWindow.endYear; year++) {
+      const benefit = bestMaritalBenefit(income.formerSpouses, {
+        claimantDob,
+        claimantClaimAge: claimAge,
+        claimantSurvivorClaimAge: claimAge,
+        claimantAge: year - birthYear,
+        year,
+        claimantIsSingle: plan.household.people.length === 1,
+      })
+      if (benefit && benefit.monthly > 0) return true
+    }
   }
   if (!socialSecurityClaimResolves(income) || plan.household.people.length !== 2) return false
   return plan.incomes.some(
@@ -796,11 +851,22 @@ export function buildScenarioLever(
       if (streams.length === 0) {
         return unavailable(definition, ['Add a Social Security income stream before changing claim age.'])
       }
-      const eligible = streams.filter((stream) => !disabilityControlsClaim(edited, stream))
+      const proposedClaimAge = { years: request.claimAge, months: 0 }
+      const projectionEndYear = householdPlanningHorizonYear(plan)
+      const eligible = streams.filter(
+        (stream) =>
+          !disabilityControlsClaim(edited, stream) ||
+          claimChangeCanAffectProjection(
+            plan,
+            stream,
+            proposedClaimAge,
+            context.startYear,
+            projectionEndYear,
+          ),
+      )
       if (eligible.length === 0) {
         return unavailable(definition, ['Disability streams use onset age instead of retirement claim age.'])
       }
-      const proposedClaimAge = { years: request.claimAge, months: 0 }
       if (
         !eligible.some((stream) =>
           claimChangeCanAffectProjection(
@@ -808,7 +874,7 @@ export function buildScenarioLever(
             stream,
             proposedClaimAge,
             context.startYear,
-            householdPlanningHorizonYear(plan),
+            projectionEndYear,
           ),
         )
       ) {
@@ -842,6 +908,17 @@ export function buildScenarioLever(
       }
       if (request.fromYear > householdPlanningHorizonYear(plan)) {
         return unavailable(definition, ['Social Security cut start year must be within the household planning horizon.'])
+      }
+      const currentHaircut = plan.assumptions.ssHaircut
+      if (
+        currentHaircut != null &&
+        currentHaircut.cutPct === request.cutPct &&
+        Math.max(context.startYear, currentHaircut.fromYear) ===
+          Math.max(context.startYear, request.fromYear)
+      ) {
+        return unavailable(definition, [
+          'This Social Security cut already has the same effective projection schedule.',
+        ])
       }
       if (
         !hasPayableSocialSecurityBenefit(
@@ -983,6 +1060,17 @@ export function buildScenarioLever(
     }
 
     case 'rothNone': {
+      if (
+        !hasEffectiveRothConversionOpportunity(
+          plan,
+          context.startYear,
+          householdPlanningHorizonYear(plan),
+        )
+      ) {
+        return unavailable(definition, [
+          'No Roth conversion opportunity is active during the projection.',
+        ])
+      }
       edited.strategies.rothConversion = { mode: 'none' }
       return finish(plan, edited, definition, 'No Roth conversions', warnings, context)
     }
@@ -1126,10 +1214,13 @@ export function buildScenarioLever(
         (
           account,
         ): account is Extract<Plan['accounts'][number], { type: 'annuity' }> =>
-          account.type === 'annuity' && account.purchase === undefined,
+          account.type === 'annuity' &&
+          (account.purchase === undefined || account.purchase.year < context.startYear),
       )
       if (accounts.length === 0) {
-        return unavailable(definition, ['Add an existing owned annuity before using this lever.'])
+        return unavailable(definition, [
+          'Add an annuity owned at projection start before using this lever.',
+        ])
       }
       for (const account of accounts) {
         const nextStartAge = account.startAge + request.startAgeDelta
@@ -1156,7 +1247,7 @@ export function buildScenarioLever(
         plan,
         edited,
         definition,
-        `All owned annuities: income ${request.monthlyChangePct >= 0 ? '+' : ''}${request.monthlyChangePct}%, start age ${request.startAgeDelta >= 0 ? '+' : ''}${request.startAgeDelta}y`,
+        `All annuities owned at projection start: income ${request.monthlyChangePct >= 0 ? '+' : ''}${request.monthlyChangePct}%, start age ${request.startAgeDelta >= 0 ? '+' : ''}${request.startAgeDelta}y`,
         warnings,
         context,
       )
@@ -1225,6 +1316,15 @@ export function buildScenarioLever(
       }
       if (edited.household.people.length < 2) {
         return unavailable(definition, ['Survivor spending applies only to a two-person household.'])
+      }
+      const [firstPerson, secondPerson] = edited.household.people
+      if (
+        Number(firstPerson!.dob.slice(0, 4)) + firstPerson!.longevity.planningAge ===
+        Number(secondPerson!.dob.slice(0, 4)) + secondPerson!.longevity.planningAge
+      ) {
+        return unavailable(definition, [
+          'The household has no modeled survivor-only year.',
+        ])
       }
       edited.expenses.survivorSpendingPct = request.percent
       return finish(plan, edited, definition, `${request.percent}% household spending in survivor years`, warnings, context)
