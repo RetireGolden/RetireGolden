@@ -154,7 +154,14 @@ function noFormatLimitations(displayName: string): readonly string[] {
   return [
     `Nothing is mapped automatically. RetireGolden has no substantiated ${displayName} export format — no documented machine-readable export this project holds a real sample of — and it does not bundle proprietary samples, so there is no format to sniff and no field mapping that could be justified.`,
     'A mapping invented from a format nobody here has seen is the failure mode that matters: it would land wrong numbers in a plan while looking like a successful import. Identification without mapping is the honest position, not a placeholder.',
-    'What IS brought across is the document itself: it is identified, and its text is carried over with page citations, so the values can be retyped beside the planner screens with the source in view. The data is not unimportant — the format is unsubstantiated.',
+    // What text comes across is decided per FILE, not per vendor, so it cannot
+    // be promised here: these strings are built once at module load, and a
+    // vendor identified from a CSV or a pasted export has no pages at all. This
+    // list used to promise "its text is carried over with page citations" for
+    // every identify-only vendor, which was simply untrue for every non-PDF
+    // source. `buildMigrationReview` says what actually came across, because it
+    // is the only place that can see it.
+    'The data is not unimportant — the format is unsubstantiated. What can be brought across from this file is stated separately below.',
     `What would change this: a real ${displayName} export from a trial account, checked in as a substantiated format with its own fixtures and version sniffing. Then — and only then — is field mapping in scope.`,
   ]
 }
@@ -270,8 +277,15 @@ export function migrationPageLocator(page: number): SourceLocator {
  * the innocuous word, so nothing on screen could explain why it matched. Soft
  * hyphen (U+00AD) is the case that arrives with no attacker at all, since PDF
  * text layers carry it wherever a word was hyphenated.
+ *
+ * `\p{Cf}` rather than a list of the invisible characters that came to mind:
+ * the first version of this guard enumerated U+00AD, U+200B-200D, U+2060 and
+ * U+FEFF, which left the bidi marks and isolates (U+200E, U+200F, U+2066-2069)
+ * and the override U+202E still able to defeat it — every one of them a
+ * character that renders as nothing. Enumerating a class whose whole point is
+ * that its members are invisible is a losing game; name the category instead.
  */
-const NAME_EDGE = '[\\p{L}\\p{N}\\p{M}_\\u00AD\\u200B-\\u200D\\u2060\\uFEFF]'
+const NAME_EDGE = '[\\p{L}\\p{N}\\p{M}\\p{Cf}_]'
 const VENDOR_NAME_PATTERN: Record<MigrationVendor, string> = {
   projectionlab: `(?<!${NAME_EDGE})projectionlab(?!${NAME_EDGE})`,
   rightcapital: `(?<!${NAME_EDGE})rightcapital(?!${NAME_EDGE})`,
@@ -292,8 +306,35 @@ function excerptAround(text: string, index: number, length: number): string {
   const context = Math.max(0, Math.floor((MAX_MIGRATION_EVIDENCE_CHARS - length) / 2))
   const start = Math.max(0, index - context)
   const end = Math.min(text.length, index + length + context)
-  const collapsed = text.slice(start, end).replace(/\s+/g, ' ').trim()
-  return clipWithMarkers(collapsed, start > 0, end < text.length)
+  return clipWithMarkers(printableEvidence(text.slice(start, end)), start > 0, end < text.length)
+}
+
+/**
+ * Make a fragment of someone else's file safe to publish AS EVIDENCE, which is
+ * a stricter job than making it safe to store.
+ *
+ * Whitespace runs collapse to single spaces — PDF text layers are full of layout
+ * padding, and an excerpt that is 90% spaces shows a human nothing. Everything
+ * left that renders as nothing or as something other than itself is then
+ * replaced by a VISIBLE `<U+XXXX>`: control characters (BEL rings a terminal,
+ * ESC begins an escape sequence) and format characters (the bidi override U+202E
+ * reverses the display order of the text after it, so an excerpt could be made
+ * to read as something it is not).
+ *
+ * Whitespace first, then escaping, deliberately: newline and tab are control
+ * characters too, and they want collapsing into a space, not rendering as
+ * `<U+000A>`.
+ *
+ * This is not only sanitisation — it is the evidence doing its job. The reason
+ * an identification can hinge on an invisible character is precisely that the
+ * character is invisible; showing it is what lets a reviewer see WHY something
+ * matched instead of staring at a word that looks ordinary.
+ */
+function printableEvidence(text: string): string {
+  return text
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/[\p{Cc}\p{Cf}]/gu, (ch) => `<U+${ch.codePointAt(0)!.toString(16).toUpperCase().padStart(4, '0')}>`)
 }
 
 /**
@@ -373,6 +414,14 @@ function resolve(found: Map<MigrationVendor, MigrationEvidence[]>): MigrationIde
  * text. Returns `null` when nothing matched — no vendor, no claims.
  */
 export function identifyMigrationExport(text: string): MigrationIdentification | null {
+  // The size ceiling governs the WHOLE function, not just the structural parse.
+  // With the check only inside `projectionLabStructure`, an oversized export
+  // fell through to the name scan and came back identified-by-name — so a
+  // ProjectionLab file the mapper had refused for its SIZE was reported as an
+  // unmapped file of unsubstantiated format, which is a different and untrue
+  // account of what happened. It also meant four regex passes over an input
+  // already known to be past the limit.
+  if (text.length > MAX_MIGRATION_TEXT_CHARS) return null
   const structural = projectionLabStructure(text)
   if (structural !== null) {
     // A structural match ends the scan: see `MigrationIdentification` on why a
@@ -407,11 +456,12 @@ function projectionLabStructure(text: string): MigrationEvidence[] | null {
   ]
   // Version evidence, reported and never gated on. This value comes out of a
   // file someone else wrote, so it gets the SAME treatment a name excerpt gets:
-  // whitespace collapsed, and clipped with a marker that says it was clipped.
-  // Published raw it could carry newlines and control characters into the
-  // quoted `detail` of a review item and fracture what a reviewer reads — and a
-  // long value was being cut at the bound with no marker at all, presenting a
-  // truncated version string as the whole of it.
+  // run through `printableEvidence`, and clipped with a marker that says it was
+  // clipped. Published raw it could carry control and format characters into the
+  // quoted `detail` of a review item — where they reach the provenance envelope
+  // and anything that renders it — and a long value was being cut at the bound
+  // with no marker at all, presenting a truncated version string as the whole
+  // of it.
   const meta = asRecord(root['meta'])
   if (meta !== null) {
     for (const key of ['app', 'exportVersion'] as const) {
@@ -427,7 +477,7 @@ function projectionLabStructure(text: string): MigrationEvidence[] | null {
               // does not contain. Say where the number came from instead.
               `${String(value)} (a number in the file, not text)`
             : null
-      const collapsed = shown === null ? '' : shown.replace(/\s+/g, ' ').trim()
+      const collapsed = shown === null ? '' : printableEvidence(shown)
       if (collapsed !== '') {
         evidence.push({
           strength: 'structure',
@@ -466,6 +516,18 @@ export interface MigrationReviewOptions {
    * human can read the values off, since nothing here maps them.
    */
   pages?: readonly DocumentPage[]
+  /**
+   * The vendor's own mapper ran on this file AND succeeded, so its checklist is
+   * being shown alongside this report.
+   *
+   * Nothing in this module invokes a mapper, so nothing in it can observe this;
+   * only the caller knows. Absent or `false` means the full report — limitations
+   * and the manual path — which is the safe default: it is never WRONG to show
+   * a user what could not be brought over, only longer. Claiming a successful
+   * mapping that did not happen is wrong, and worst exactly when the import
+   * failed.
+   */
+  mapped?: boolean
 }
 
 /** How many page numbers the "text carried over" item lists before it elides. */
@@ -538,15 +600,30 @@ export function buildMigrationReview(
         note: 'no tool was claimed for this file',
       }),
     )
-    if (options.pages !== undefined && options.pages.length > 0) items.push(pagesItem(sourceName, options.pages))
+    if (options.pages !== undefined && options.pages.length > 0) items.push(...pageItems(sourceName, options.pages))
     return items
   }
 
   const { adapter, evidence } = identification
-  // The mapper "ran" only on a STRUCTURAL match, not merely because the vendor
-  // HAS a mapper: a ProjectionLab PDF identified by name maps nothing, and
-  // pointing its reader at a mapper checklist that never ran would be a lie.
-  const mapper = adapter.mapper !== null && evidence.some((item) => item.strength === 'structure') ? adapter.mapper : null
+  // Three things must ALL be true before this report may point a reader at a
+  // mapper's checklist instead of its own limitations, and the third is the one
+  // that was missing: the vendor has a mapper, the file matched STRUCTURALLY
+  // (a ProjectionLab PDF identified by name maps nothing), and the caller says
+  // the mapper actually ran and SUCCEEDED.
+  //
+  // Structural recognition is not evidence that anything was mapped. Nothing
+  // here invokes the mapper; a host can call `buildMigrationReview` without ever
+  // calling it, and `mapProjectionLabExport` can refuse a file it recognises —
+  // its own size cap, or a draft that fails plan validation. In either case the
+  // old expression claimed the export "was mapped", then returned early and
+  // withheld the limitations and the manual path from the one user who most
+  // needed them: the one whose import had just failed. Defaulting `mapped` to
+  // false is the safe direction — a caller who says nothing gets the full
+  // report, which is never wrong, only longer.
+  const mapper =
+    adapter.mapper !== null && options.mapped === true && evidence.some((item) => item.strength === 'structure')
+      ? adapter.mapper
+      : null
 
   items.push(
     ...evidenceItems(
@@ -573,16 +650,58 @@ export function buildMigrationReview(
       note: `manual path for ${adapter.displayName}`,
     }),
   )
-  if (options.pages !== undefined && options.pages.length > 0) items.push(pagesItem(sourceName, options.pages))
+  if (options.pages !== undefined && options.pages.length > 0) items.push(...pageItems(sourceName, options.pages))
   return items
 }
 
-/** Only ever called with a non-empty page list — `buildMigrationReview` gates it. */
-function pagesItem(sourceName: string, pages: readonly DocumentPage[]): ImportReviewItem {
-  const one = pages.length === 1
-  return unmappedItem(
-    `${sourceName} — text carried over`,
-    `Text was read from ${one ? 'page' : 'pages'} ${listPages(pages)} and carried over as-is; no value on ${one ? 'it' : 'them'} was mapped into the plan. Read the page beside the planner screen you are filling in — these are the document's own page numbers, so a page that could not be extracted is simply missing from the list rather than shifting the rest of it.`,
-    { kind: 'none', note: `${one ? 'page' : 'pages'} ${listPages(pages)}` },
-  )
+/**
+ * What actually came across, page state by page state — never one list.
+ *
+ * `extractDocumentText` deliberately returns three kinds of page and they mean
+ * three different things to somebody about to retype values by hand. Listing
+ * them together said "text was read from these pages and carried over as-is"
+ * over a set that could include a scan carrying no text at all, and a page whose
+ * text was CLIPPED at the reader's cap. Both hide exactly what a manual
+ * migration needs to know — the first is the OCR case WS5 declined to scope, and
+ * the second means values are missing from a page that looks complete.
+ *
+ * Called only with a non-empty page list; `buildMigrationReview` gates it.
+ */
+function pageItems(sourceName: string, pages: readonly DocumentPage[]): ImportReviewItem[] {
+  const readable = pages.filter((page) => page.text !== '' && !page.truncated)
+  const clipped = pages.filter((page) => page.text !== '' && page.truncated)
+  const empty = pages.filter((page) => page.text === '')
+  const items: ImportReviewItem[] = []
+
+  if (readable.length > 0) {
+    const one = readable.length === 1
+    items.push(
+      unmappedItem(
+        `${sourceName} — text carried over`,
+        `Text was read from ${one ? 'page' : 'pages'} ${listPages(readable)} and carried over as-is; no value on ${one ? 'it' : 'them'} was mapped into the plan. Read the page beside the planner screen you are filling in — these are the document's own page numbers, so a page that could not be extracted is simply missing from the list rather than shifting the rest of it.`,
+        { kind: 'none', note: `${one ? 'page' : 'pages'} ${listPages(readable)}` },
+      ),
+    )
+  }
+  if (clipped.length > 0) {
+    const one = clipped.length === 1
+    items.push(
+      unmappedItem(
+        `${sourceName} — text cut short`,
+        `${one ? 'Page' : 'Pages'} ${listPages(clipped)} held more text than the reader carries per page, so what came across ${one ? 'stops' : 'stop'} partway. Open the original for ${one ? 'that page' : 'those pages'} rather than trusting what is here to be all of it.`,
+        { kind: 'none', note: `${one ? 'page' : 'pages'} ${listPages(clipped)}` },
+      ),
+    )
+  }
+  if (empty.length > 0) {
+    const one = empty.length === 1
+    items.push(
+      unmappedItem(
+        `${sourceName} — no text on the page`,
+        `${one ? 'Page' : 'Pages'} ${listPages(empty)} carried no text at all. A page like this is usually a scan or an image, and reading it needs OCR, which RetireGolden does not do — so nothing from ${one ? 'it' : 'them'} is here, and it is not blank. Type ${one ? 'its' : 'their'} figures in from the original.`,
+        { kind: 'none', note: `${one ? 'page' : 'pages'} ${listPages(empty)}` },
+      ),
+    )
+  }
+  return items
 }
