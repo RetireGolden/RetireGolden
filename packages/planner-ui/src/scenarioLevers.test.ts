@@ -1525,4 +1525,158 @@ describe('scenario lever contract', () => {
       plan.accounts.find((account) => account.id === 'start-year-annuity'),
     )
   })
+
+  it('keeps auxiliary claim-age levers available for SSDI streams without an own benefit', () => {
+    const currentSpousePlan = buildExampleCouple()
+    const currentSpouseStream = currentSpousePlan.incomes.find(
+      (income) => income.type === 'socialSecurity',
+    )!
+    currentSpouseStream.piaMonthly = null
+    currentSpouseStream.earnings = null
+    currentSpouseStream.claimAge = { years: 62, months: 0 }
+    currentSpouseStream.disability = { onsetAge: 60 }
+    currentSpouseStream.formerSpouses = []
+    const currentSpouseClaim = buildScenarioLever(
+      currentSpousePlan,
+      { id: 'socialSecurityClaim', claimAge: 70 },
+      context,
+    )
+    const currentSpouseCut = buildScenarioLever(
+      currentSpousePlan,
+      { id: 'socialSecurityCut', cutPct: 20, fromYear: context.startYear },
+      context,
+    )
+
+    const formerSpousePlan = buildExampleCouple()
+    const formerSpouseStream = formerSpousePlan.incomes.find(
+      (income) => income.type === 'socialSecurity',
+    )!
+    formerSpousePlan.incomes = formerSpousePlan.incomes.filter(
+      (income) => income.type !== 'socialSecurity' || income.id === formerSpouseStream.id,
+    )
+    formerSpouseStream.piaMonthly = null
+    formerSpouseStream.earnings = null
+    formerSpouseStream.claimAge = { years: 62, months: 0 }
+    formerSpouseStream.disability = { onsetAge: 60 }
+    formerSpouseStream.formerSpouses = [
+      {
+        id: 'deceased-former-spouse',
+        relationship: 'deceased',
+        dob: '1955-01-02',
+        piaMonthly: 3_000,
+        marriageYears: 12,
+        remarriedAtAge: 60,
+      },
+    ]
+    const formerSpouseClaim = buildScenarioLever(
+      formerSpousePlan,
+      { id: 'socialSecurityClaim', claimAge: 70 },
+      context,
+    )
+    const formerSpouseCut = buildScenarioLever(
+      formerSpousePlan,
+      { id: 'socialSecurityCut', cutPct: 20, fromYear: context.startYear },
+      context,
+    )
+
+    expect(currentSpouseClaim.ok).toBe(true)
+    expect(currentSpouseCut.ok).toBe(true)
+    expect(formerSpouseClaim.ok).toBe(true)
+    expect(formerSpouseCut.ok).toBe(true)
+  })
+
+  it('ignores inherited-account contribution fields in coast scenarios', () => {
+    const plan = buildExampleCouple()
+    plan.incomes = plan.incomes.filter((income) => income.type !== 'wages')
+    for (const account of plan.accounts) {
+      if (!('annualContribution' in account)) continue
+      account.annualContribution = 0
+      delete account.contributionSchedule
+    }
+    const inherited = plan.accounts.find(
+      (
+        account,
+      ): account is Extract<Plan['accounts'][number], { type: 'traditional' }> =>
+        account.type === 'traditional' && account.kind === 'ira',
+    )!
+    const owner = plan.household.people.find((person) => person.id === inherited.ownerPersonId)!
+    const ageAtStart = context.startYear - Number(owner.dob.slice(0, 4))
+    inherited.inherited = { ownerDeathYear: 2024, decedentHadStartedRmds: true }
+    inherited.annualContribution = 15_000
+    inherited.contributionSchedule = [
+      {
+        annualAmount: 15_000,
+        fromAge: ageAtStart,
+        toAge: ageAtStart + 2,
+        escalationPct: 0,
+      },
+    ]
+
+    const unavailable = buildScenarioLever(plan, { id: 'stopContributions' }, context)
+    expect(unavailable.ok).toBe(false)
+
+    const taxable = plan.accounts.find((account) => account.type === 'taxable')!
+    taxable.contributionSchedule = [
+      {
+        annualAmount: 10_000,
+        fromAge: ageAtStart,
+        toAge: ageAtStart + 2,
+        escalationPct: 0,
+      },
+    ]
+    const available = buildScenarioLever(plan, { id: 'stopContributions' }, context)
+    expect(available.ok).toBe(true)
+    if (!available.ok) return
+    const applied = applyScenarioPatch(plan, available.patch)
+    expect(applied.ok).toBe(true)
+    if (!applied.ok) return
+    expect(applied.plan.accounts.find((account) => account.id === inherited.id)).toEqual(inherited)
+  })
+
+  it('requires positive property value before sale proceeds fund a fallback-return account', () => {
+    const plan = buildExampleCouple()
+    const cash = plan.accounts.find((account) => account.type === 'cash')!
+    cash.balance = 0
+    cash.annualContribution = 0
+    cash.annualReturnPct = null
+    const property = plan.accounts.find((account) => account.type === 'property')!
+    property.value = 0
+    property.plannedSaleYear = context.startYear + 1
+    property.expectedNetProceeds = 250_000
+    plan.accounts = [cash, property]
+    plan.incomes = []
+    plan.insurance = []
+    plan.strategies.rothConversion = { mode: 'none' }
+
+    const unavailable = buildScenarioLever(
+      plan,
+      { id: 'defaultReturn', returnPct: 4 },
+      context,
+    )
+    property.value = 300_000
+    const available = buildScenarioLever(
+      plan,
+      { id: 'defaultReturn', returnPct: 4 },
+      context,
+    )
+
+    expect(unavailable.ok).toBe(false)
+    expect(available.ok).toBe(true)
+  })
+
+  it('offers Roth-none for an active optimized conversion schedule', () => {
+    const plan = buildExampleCouple()
+    plan.strategies.rothConversion = {
+      mode: 'optimized',
+      conversions: [
+        { year: context.startYear - 1, amount: 25_000 },
+        { year: context.startYear, amount: 30_000 },
+      ],
+      optimizedAtIso: context.createdAtIso,
+    }
+
+    const result = buildScenarioLever(plan, { id: 'rothNone' }, context)
+
+    expect(result.ok).toBe(true)
+  })
 })

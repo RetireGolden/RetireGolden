@@ -16,7 +16,10 @@ import { createScenarioPatch } from '@retiregolden/engine/scenarios/patch'
 import { applyScenarioPatch } from '@retiregolden/engine/scenarios/scenarios'
 import { bestMaritalBenefit } from '@retiregolden/engine/socialSecurity/maritalBenefits'
 import { effectiveBirthYear, fraForBirthYear } from '@retiregolden/engine/socialSecurity/nra'
-import { isConvertibleToRoth } from '@retiregolden/engine/strategies/accountEligibility'
+import {
+  acceptsContributions,
+  isConvertibleToRoth,
+} from '@retiregolden/engine/strategies/accountEligibility'
 
 export type ScenarioLeverId =
   | 'retirementAge'
@@ -332,7 +335,7 @@ function hasEffectiveRothConversionOpportunity(
 ): boolean {
   if (!hasRothDestination(plan)) return false
   const strategy = plan.strategies.rothConversion
-  if (strategy.mode === 'manual') {
+  if (strategy.mode === 'manual' || strategy.mode === 'optimized') {
     return strategy.conversions.some(
       (conversion) =>
         conversion.amount > 0 &&
@@ -373,6 +376,7 @@ function receivesContributionDuringProjection(
   account: ProjectedBalanceAccount,
   startYear: number,
 ): boolean {
+  if (!acceptsContributions(account)) return false
   const ownerId = account.ownerPersonId ?? plan.household.people[0]?.id
   const owner = plan.household.people.find((person) => person.id === ownerId)
   if (!owner) return false
@@ -470,10 +474,6 @@ function socialSecurityOwnBenefitPossible(income: SocialSecurityIncome): boolean
     (income.piaMonthly ?? 0) > 0 ||
     income.earnings?.some((earning) => earning.amount > 0) === true
   )
-}
-
-function socialSecurityClaimResolves(income: SocialSecurityIncome): boolean {
-  return income.piaMonthly !== null || (income.earnings !== null && income.earnings.length > 0)
 }
 
 function claimPayableWindow(
@@ -574,7 +574,7 @@ function claimChangeCanAffectProjection(
       if (benefit && benefit.monthly > 0) return true
     }
   }
-  if (!socialSecurityClaimResolves(income) || plan.household.people.length !== 2) return false
+  if (plan.household.people.length !== 2) return false
   return plan.incomes.some(
     (other) =>
       other.type === 'socialSecurity' &&
@@ -589,25 +589,11 @@ function hasPayableSocialSecurityBenefit(
   endYear: number,
 ): boolean {
   const streams = plan.incomes.filter((income) => income.type === 'socialSecurity')
-  return streams.some((income) => {
-    if (disabilityControlsClaim(plan, income)) {
-      return disabilityPaysDuringWindow(plan, income, startYear, endYear)
-    }
-    const claimantWindow = claimPayableWindow(plan, income, income.claimAge, startYear, endYear)
-    if (!claimantWindow) return false
-    if (
-      socialSecurityOwnBenefitPossible(income) ||
-      income.formerSpouses?.some((formerSpouse) => formerSpouse.piaMonthly > 0) === true
-    ) {
-      return true
-    }
-    if (!socialSecurityClaimResolves(income) || plan.household.people.length !== 2) return false
-    return streams.some(
-      (other) =>
-        other.personId !== income.personId &&
-        auxiliaryBenefitCanPay(plan, claimantWindow, other, startYear, endYear),
-    )
-  })
+  return streams.some(
+    (income) =>
+      disabilityPaysDuringWindow(plan, income, startYear, endYear) ||
+      claimChangeCanAffectProjection(plan, income, income.claimAge, startYear, endYear),
+  )
 }
 
 function hasPotentialGeneralDeposit(plan: Plan, startYear: number): boolean {
@@ -650,7 +636,8 @@ function hasPotentialGeneralDeposit(plan: Plan, startYear: number): boolean {
           account.plannedSaleYear !== null &&
           account.plannedSaleYear >= startYear &&
           account.plannedSaleYear <= endYear &&
-          (account.value > 0 || (account.expectedNetProceeds ?? 0) > 0),
+          account.value > 0 &&
+          (account.expectedNetProceeds ?? account.value) > 0,
     )
   ) {
     return true
@@ -690,7 +677,7 @@ function holdsProjectedAssets(plan: Plan, account: ProjectedBalanceAccount, star
     return false
   }
   const strategy = plan.strategies.rothConversion
-  if (strategy.mode === 'manual') {
+  if (strategy.mode === 'manual' || strategy.mode === 'optimized') {
     const activeConversions = strategy.conversions.filter(
       (conversion) =>
         conversion.amount > 0 &&
@@ -1419,7 +1406,7 @@ export function buildScenarioLever(
         return unavailable(definition, ['No account contributions are active during the projection.'])
       }
       for (const account of edited.accounts) {
-        if (!isProjectedBalanceAccount(account)) continue
+        if (!isProjectedBalanceAccount(account) || !acceptsContributions(account)) continue
         account.annualContribution = 0
         delete account.contributionSchedule
       }
