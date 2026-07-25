@@ -470,10 +470,9 @@ function disabilityControlsClaim(plan: Plan, income: SocialSecurityIncome): bool
 }
 
 function socialSecurityOwnBenefitPossible(income: SocialSecurityIncome): boolean {
-  return (
-    (income.piaMonthly ?? 0) > 0 ||
-    income.earnings?.some((earning) => earning.amount > 0) === true
-  )
+  return income.piaMonthly !== null
+    ? income.piaMonthly > 0
+    : income.earnings?.some((earning) => earning.amount > 0) === true
 }
 
 function claimPayableWindow(
@@ -624,7 +623,7 @@ function hasPotentialGeneralDeposit(plan: Plan, startYear: number): boolean {
   const hasActiveOwnedLadder =
     plan.incomeFloor?.ladders.some(
       (ladder) =>
-        ladder.purchase === undefined &&
+        (ladder.purchase === undefined || ladder.purchase.year < startYear) &&
         ladder.annualRealAmount > 0 &&
         ladder.endYear >= Math.max(ladder.startYear, startYear),
     ) === true
@@ -643,9 +642,19 @@ function hasPotentialGeneralDeposit(plan: Plan, startYear: number): boolean {
     return true
   }
   return plan.insurance.some(
-    (policy) =>
-      policy.kind === 'permanentLife' &&
-      (policy.deathBenefit > 0 || policy.cashValue > 0),
+    (policy) => {
+      if (
+        policy.kind !== 'permanentLife' ||
+        (policy.deathBenefit <= 0 && policy.cashValue <= 0)
+      ) {
+        return false
+      }
+      const insured = plan.household.people.find((person) => person.id === policy.insured)
+      if (!insured) return false
+      const settlementYear =
+        Number(insured.dob.slice(0, 4)) + insured.longevity.planningAge
+      return settlementYear >= startYear && settlementYear <= endYear
+    },
   )
 }
 
@@ -1303,6 +1312,15 @@ export function buildScenarioLever(
       }
       if (edited.household.people.length < 2) {
         return unavailable(definition, ['Survivor spending applies only to a two-person household.'])
+      }
+      if (
+        plan.expenses.baseAnnual === 0 &&
+        (plan.expenses.idealAnnual ?? 0) === 0 &&
+        (plan.expenses.excessAnnual ?? 0) === 0
+      ) {
+        return unavailable(definition, [
+          'No annual lifestyle spending is modeled for survivor scaling.',
+        ])
       }
       const [firstPerson, secondPerson] = edited.household.people
       if (

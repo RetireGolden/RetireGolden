@@ -1679,4 +1679,138 @@ describe('scenario lever contract', () => {
 
     expect(result.ok).toBe(true)
   })
+
+  it('counts permanent-life proceeds only when settlement occurs during the projection', () => {
+    const plan = buildExampleCouple()
+    const cash = plan.accounts.find((account) => account.type === 'cash')!
+    cash.balance = 0
+    cash.annualContribution = 0
+    cash.annualReturnPct = null
+    plan.accounts = [cash]
+    plan.incomes = []
+    plan.insurance = plan.insurance.filter((policy) => policy.kind === 'permanentLife')
+    plan.strategies.rothConversion = { mode: 'none' }
+    const policy = plan.insurance.find((candidate) => candidate.kind === 'permanentLife')!
+    const insured = plan.household.people.find((person) => person.id === policy.insured)!
+    const birthYear = Number(insured.dob.slice(0, 4))
+    insured.longevity.planningAge = context.startYear - birthYear - 1
+
+    const settledBeforeProjection = buildScenarioLever(
+      plan,
+      { id: 'defaultReturn', returnPct: 4 },
+      context,
+    )
+    insured.longevity.planningAge = context.startYear - birthYear
+    const settlesDuringProjection = buildScenarioLever(
+      plan,
+      { id: 'defaultReturn', returnPct: 4 },
+      context,
+    )
+
+    expect(settledBeforeProjection.ok).toBe(false)
+    expect(settlesDuringProjection.ok).toBe(true)
+  })
+
+  it('treats pre-start TIPS purchases as owned but excludes unfunded in-projection purchases', () => {
+    const plan = buildExampleCouple()
+    const cash = plan.accounts.find((account) => account.type === 'cash')!
+    cash.balance = 0
+    cash.annualContribution = 0
+    cash.annualReturnPct = null
+    plan.accounts = [cash]
+    plan.incomes = []
+    plan.insurance = []
+    plan.strategies.rothConversion = { mode: 'none' }
+    plan.incomeFloor = {
+      ladders: [
+        {
+          id: 'purchased-ladder',
+          name: 'Purchased ladder',
+          purpose: 'bridge',
+          startYear: context.startYear,
+          endYear: context.startYear + 4,
+          annualRealAmount: 30_000,
+          purchase: {
+            year: context.startYear - 1,
+            fundingAccountId: cash.id,
+          },
+        },
+      ],
+    }
+
+    const owned = buildScenarioLever(
+      plan,
+      { id: 'defaultReturn', returnPct: 4 },
+      context,
+    )
+    plan.incomeFloor.ladders[0]!.purchase!.year = context.startYear
+    const needsFunding = buildScenarioLever(
+      plan,
+      { id: 'defaultReturn', returnPct: 4 },
+      context,
+    )
+
+    expect(owned.ok).toBe(true)
+    expect(needsFunding.ok).toBe(false)
+  })
+
+  it('honors an explicit zero PIA instead of falling back to earnings', () => {
+    const plan = buildExampleCouple()
+    const stream = plan.incomes.find((income) => income.type === 'socialSecurity')!
+    plan.incomes = [stream]
+    stream.piaMonthly = 0
+    stream.earnings = [{ year: 2024, amount: 100_000 }]
+    stream.formerSpouses = []
+    delete stream.disability
+
+    const explicitZeroClaim = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityClaim', claimAge: 62 },
+      context,
+    )
+    const explicitZeroCut = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityCut', cutPct: 20, fromYear: context.startYear },
+      context,
+    )
+    stream.piaMonthly = null
+    const earningsClaim = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityClaim', claimAge: 62 },
+      context,
+    )
+    const earningsCut = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityCut', cutPct: 20, fromYear: context.startYear },
+      context,
+    )
+
+    expect(explicitZeroClaim.ok).toBe(false)
+    expect(explicitZeroCut.ok).toBe(false)
+    expect(earningsClaim.ok).toBe(true)
+    expect(earningsCut.ok).toBe(true)
+  })
+
+  it('rejects survivor scaling when no annual lifestyle spending is modeled', () => {
+    const plan = buildExampleCouple()
+    plan.expenses.baseAnnual = 0
+    plan.expenses.idealAnnual = 0
+    plan.expenses.excessAnnual = 0
+
+    const unavailable = buildScenarioLever(
+      plan,
+      { id: 'survivorSpending', percent: 70 },
+      context,
+    )
+    plan.expenses.idealAnnual = 1
+    const available = buildScenarioLever(
+      plan,
+      { id: 'survivorSpending', percent: 70 },
+      context,
+    )
+
+    expect(unavailable.ok).toBe(false)
+    if (!unavailable.ok) expect(unavailable.issues.join(' ')).toContain('annual lifestyle spending')
+    expect(available.ok).toBe(true)
+  })
 })
