@@ -676,4 +676,183 @@ describe('scenario lever contract', () => {
     if (bracket.ok) expect(bracket.name).toBe('Roth target: 24% federal bracket, 2027–2030')
     if (irmaa.ok) expect(irmaa.name).toBe('Roth target: IRMAA tier 2, 2031–2032')
   })
+
+  it('requires Roth conversion windows to overlap the household projection', () => {
+    const plan = buildExampleCouple()
+    const horizon = Math.max(
+      ...plan.household.people.map(
+        (person) => Number(person.dob.slice(0, 4)) + person.longevity.planningAge,
+      ),
+    )
+    const expiredTarget = buildScenarioLever(
+      plan,
+      {
+        id: 'rothTarget',
+        target: 'fixedMagi',
+        targetValue: 150_000,
+        startYear: context.startYear - 3,
+        endYear: context.startYear - 1,
+      },
+      context,
+    )
+    const expiredSchedule = buildScenarioLever(
+      plan,
+      {
+        id: 'rothSchedule',
+        annualAmount: 10_000,
+        startYear: context.startYear - 2,
+        endYear: context.startYear - 1,
+      },
+      context,
+    )
+    const afterHorizon = buildScenarioLever(
+      plan,
+      {
+        id: 'rothSchedule',
+        annualAmount: 10_000,
+        startYear: horizon + 1,
+        endYear: horizon + 2,
+      },
+      context,
+    )
+    const boundaryOverlap = buildScenarioLever(
+      plan,
+      {
+        id: 'rothSchedule',
+        annualAmount: 10_000,
+        startYear: context.startYear - 1,
+        endYear: context.startYear,
+      },
+      context,
+    )
+    const pastOnlySource = buildExampleCouple()
+    for (const account of pastOnlySource.accounts) {
+      if (account.type !== 'traditional') continue
+      account.balance = 0
+      account.annualContribution = 0
+      const owner = pastOnlySource.household.people.find(
+        (person) => person.id === account.ownerPersonId,
+      )
+      const pastAge = owner ? context.startYear - 1 - Number(owner.dob.slice(0, 4)) : 0
+      account.contributionSchedule =
+        account.kind === 'ira'
+          ? [{ annualAmount: 8_000, fromAge: pastAge, toAge: pastAge, escalationPct: 0 }]
+          : undefined
+    }
+    const sourceOutsideOverlap = buildScenarioLever(
+      pastOnlySource,
+      {
+        id: 'rothSchedule',
+        annualAmount: 10_000,
+        startYear: context.startYear - 1,
+        endYear: context.startYear,
+      },
+      context,
+    )
+
+    expect(expiredTarget.ok).toBe(false)
+    expect(expiredSchedule.ok).toBe(false)
+    expect(afterHorizon.ok).toBe(false)
+    expect(boundaryOverlap.ok).toBe(true)
+    expect(sourceOutsideOverlap.ok).toBe(false)
+    if (!expiredTarget.ok) expect(expiredTarget.issues.join(' ')).toContain('overlap')
+    if (!expiredSchedule.ok) expect(expiredSchedule.issues.join(' ')).toContain('overlap')
+    if (!afterHorizon.ok) expect(afterHorizon.issues.join(' ')).toContain('overlap')
+    if (!sourceOutsideOverlap.ok) expect(sourceOutsideOverlap.issues.join(' ')).toContain('funded traditional')
+    if (boundaryOverlap.ok) {
+      const applied = applyScenarioPatch(plan, boundaryOverlap.patch)
+      expect(applied.ok).toBe(true)
+      if (applied.ok && applied.plan.strategies.rothConversion.mode === 'manual') {
+        expect(applied.plan.strategies.rothConversion.conversions.map((conversion) => conversion.year)).toEqual([
+          context.startYear - 1,
+          context.startYear,
+        ])
+      }
+    }
+  })
+
+  it('requires relocation to occur during the projection', () => {
+    const plan = buildExampleCouple()
+    const beforeStart = buildScenarioLever(
+      plan,
+      { id: 'relocation', state: 'FL', moveYear: context.startYear - 1 },
+      context,
+    )
+    const atStart = buildScenarioLever(
+      plan,
+      { id: 'relocation', state: 'FL', moveYear: context.startYear },
+      context,
+    )
+
+    expect(beforeStart.ok).toBe(false)
+    expect(atStart.ok).toBe(true)
+    if (!beforeStart.ok) expect(beforeStart.issues.join(' ')).toContain('projection start')
+  })
+
+  it('excludes effective pension elections but preserves pre-election payments', () => {
+    const effective = planWithGuaranteedIncome()
+    const effectivePension = effective.accounts.find((account) => account.type === 'pension')!
+    const rollover = effective.accounts.find((account) => account.type === 'traditional')!
+    effectivePension.lumpSumOffer = { amount: 250_000, electionYear: context.startYear }
+    effectivePension.lumpSumElection = { rolloverAccountId: rollover.id }
+    const unavailable = buildScenarioLever(
+      effective,
+      { id: 'pension', monthlyChangePct: 10, startAgeDelta: 0 },
+      context,
+    )
+
+    const future = planWithGuaranteedIncome()
+    const futurePension = future.accounts.find((account) => account.type === 'pension')!
+    const futureRollover = future.accounts.find((account) => account.type === 'traditional')!
+    const owner = future.household.people.find((person) => person.id === futurePension.ownerPersonId)!
+    futurePension.startAge = context.startYear - Number(owner.dob.slice(0, 4))
+    futurePension.lumpSumOffer = { amount: 250_000, electionYear: context.startYear + 1 }
+    futurePension.lumpSumElection = { rolloverAccountId: futureRollover.id }
+    const available = buildScenarioLever(
+      future,
+      { id: 'pension', monthlyChangePct: 10, startAgeDelta: 0 },
+      context,
+    )
+
+    expect(unavailable.ok).toBe(false)
+    if (!unavailable.ok) expect(unavailable.issues.join(' ')).toContain('effective lump-sum election')
+    expect(available.ok).toBe(true)
+  })
+
+  it('recognizes active owned TIPS ladder cash flows as a future default-return balance source', () => {
+    const zeroCashPlan = buildExampleCouple()
+    zeroCashPlan.accounts = [
+      {
+        type: 'cash',
+        id: 'ladder-cash',
+        name: 'Ladder cash',
+        ownerPersonId: null,
+        annualReturnPct: null,
+        balance: 0,
+        annualContribution: 0,
+      },
+    ]
+    zeroCashPlan.incomes = []
+    zeroCashPlan.insurance = []
+    zeroCashPlan.incomeFloor = {
+      ladders: [
+        {
+          id: 'owned-ladder',
+          name: 'Owned bridge ladder',
+          purpose: 'bridge',
+          startYear: context.startYear + 3,
+          endYear: context.startYear + 7,
+          annualRealAmount: 30_000,
+        },
+      ],
+    }
+
+    const result = buildScenarioLever(
+      zeroCashPlan,
+      { id: 'defaultReturn', returnPct: 4 },
+      context,
+    )
+
+    expect(result.ok).toBe(true)
+  })
 })

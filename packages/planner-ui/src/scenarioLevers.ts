@@ -361,15 +361,38 @@ function hasPotentialGeneralDeposit(plan: Plan, startYear: number): boolean {
     }
   })
   if (hasIncome) return true
+  const hasGuaranteedIncome = plan.accounts.some((account) => {
+    if ((account.type !== 'pension' && account.type !== 'annuity') || account.monthlyAmount <= 0) return false
+    const ownerId = account.ownerPersonId ?? plan.household.people[0]?.id
+    const owner = plan.household.people.find((person) => person.id === ownerId)
+    if (!owner) return false
+    const firstPaymentYear = Math.max(
+      Number(owner.dob.slice(0, 4)) + account.startAge,
+      account.type === 'annuity' && account.purchase ? account.purchase.year : startYear,
+    )
+    const lastPaymentYear =
+      account.type === 'pension' && account.lumpSumElection && account.lumpSumOffer
+        ? Math.min(endYear, account.lumpSumOffer.electionYear - 1)
+        : endYear
+    return Math.max(firstPaymentYear, startYear) <= lastPaymentYear
+  })
+  if (hasGuaranteedIncome) return true
+  const hasActiveOwnedLadder =
+    plan.incomeFloor?.ladders.some(
+      (ladder) =>
+        ladder.purchase === undefined &&
+        ladder.annualRealAmount > 0 &&
+        ladder.endYear >= Math.max(ladder.startYear, startYear),
+    ) === true
+  if (hasActiveOwnedLadder) return true
   if (
     plan.accounts.some(
       (account) =>
-        ((account.type === 'pension' || account.type === 'annuity') && account.monthlyAmount > 0) ||
-        (account.type === 'property' &&
+        account.type === 'property' &&
           account.plannedSaleYear !== null &&
           account.plannedSaleYear >= startYear &&
           account.plannedSaleYear <= endYear &&
-          (account.value > 0 || (account.expectedNetProceeds ?? 0) > 0)),
+          (account.value > 0 || (account.expectedNetProceeds ?? 0) > 0),
     )
   ) {
     return true
@@ -646,14 +669,24 @@ export function buildScenarioLever(
         targetValueIssue,
       )
       if (inputIssue) return unavailable(definition, [inputIssue])
-      if (!hasRothConversionSources(plan, request.startYear, request.endYear)) {
+      if (request.startYear > request.endYear) {
+        return unavailable(definition, ['Roth target start year must be on or before its end year.'])
+      }
+      const projectionEndYear = householdPlanningHorizonYear(plan)
+      if (request.endYear < context.startYear || request.startYear > projectionEndYear) {
+        return unavailable(definition, ['Roth target window must overlap the household projection.'])
+      }
+      if (
+        !hasRothConversionSources(
+          plan,
+          Math.max(request.startYear, context.startYear),
+          Math.min(request.endYear, projectionEndYear),
+        )
+      ) {
         return unavailable(definition, ['Add a funded traditional account before modeling Roth conversions.'])
       }
       if (!hasRothDestination(plan)) {
         return unavailable(definition, ['Add a Roth destination account before modeling Roth conversions.'])
-      }
-      if (request.startYear > request.endYear) {
-        return unavailable(definition, ['Roth target start year must be on or before its end year.'])
       }
       edited.strategies.rothConversion = {
         mode: 'fillToTarget',
@@ -690,14 +723,24 @@ export function buildScenarioLever(
         }),
       )
       if (inputIssue) return unavailable(definition, [inputIssue])
-      if (!hasRothConversionSources(plan, request.startYear, request.endYear)) {
+      if (request.startYear > request.endYear) {
+        return unavailable(definition, ['Roth schedule start year must be on or before its end year.'])
+      }
+      const projectionEndYear = householdPlanningHorizonYear(plan)
+      if (request.endYear < context.startYear || request.startYear > projectionEndYear) {
+        return unavailable(definition, ['Roth schedule window must overlap the household projection.'])
+      }
+      if (
+        !hasRothConversionSources(
+          plan,
+          Math.max(request.startYear, context.startYear),
+          Math.min(request.endYear, projectionEndYear),
+        )
+      ) {
         return unavailable(definition, ['Add a funded traditional account before modeling Roth conversions.'])
       }
       if (!hasRothDestination(plan)) {
         return unavailable(definition, ['Add a Roth destination account before modeling Roth conversions.'])
-      }
-      if (request.startYear > request.endYear) {
-        return unavailable(definition, ['Roth schedule start year must be on or before its end year.'])
       }
       edited.strategies.rothConversion = {
         mode: 'manual',
@@ -789,9 +832,25 @@ export function buildScenarioLever(
         }),
       )
       if (inputIssue) return unavailable(definition, [inputIssue])
-      const accounts = edited.accounts.filter((account) => account.type === 'pension')
-      if (accounts.length === 0) {
+      const pensions = edited.accounts.filter((account) => account.type === 'pension')
+      if (pensions.length === 0) {
         return unavailable(definition, ['Add an existing pension before using this lever.'])
+      }
+      const accounts = pensions.filter(
+        (account) =>
+          !(
+            account.lumpSumElection &&
+            account.lumpSumOffer &&
+            account.lumpSumOffer.electionYear <= context.startYear
+          ),
+      )
+      if (accounts.length === 0) {
+        return unavailable(definition, [
+          'All existing pensions have an effective lump-sum election and no longer pay during the projection.',
+        ])
+      }
+      if (accounts.length !== pensions.length) {
+        warnings.push('Pensions with a lump-sum election already effective at projection start are left unchanged.')
       }
       for (const account of accounts) {
         const nextStartAge = account.startAge + request.startAgeDelta
@@ -863,6 +922,9 @@ export function buildScenarioLever(
           : validateNumber(request.moveMonth, 'Move month', { min: 1, max: 12, integer: true }),
       )
       if (inputIssue) return unavailable(definition, [inputIssue])
+      if (request.moveYear < context.startYear) {
+        return unavailable(definition, ['Move year must be on or after the projection start year.'])
+      }
       if (!MODELED_STATE_CODES.has(state)) {
         return unavailable(definition, ['Destination must be a modeled US state or the District of Columbia.'])
       }
