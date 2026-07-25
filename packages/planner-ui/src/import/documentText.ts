@@ -34,38 +34,84 @@
  * of this module is the Pro intake workbench. Importing this module is an
  * explicit act.
  *
- * **The pdfjs dependency is an OPTIONAL peer.** `pdfjs-dist` is declared in
- * `peerDependencies` with `peerDependenciesMeta.optional`, and the import
- * below is dynamic, so the module is never evaluated — and the peer never
- * needed — unless a caller actually extracts a document. A host that never
- * imports this subpath pays nothing: npm does not install the peer, and a
- * bundler never reaches the import. A host that DOES import it must install
- * `pdfjs-dist` itself; if it is missing at runtime the failure is reported as
- * `pdfjs_unavailable`, not thrown. Three separate host conditions get three
+ * **The pdfjs dependency is an OPTIONAL peer, and a host may hand it in.**
+ * `pdfjs-dist` is declared in `peerDependencies` with
+ * `peerDependenciesMeta.optional`, and the import below is dynamic, so the
+ * module is never evaluated — and the peer never needed — unless a caller
+ * actually extracts a document. A host that never imports this subpath pays
+ * nothing: npm does not install the peer, and a bundler never reaches the
+ * import. A host that DOES import it either installs `pdfjs-dist` and lets the
+ * dynamic import below find it, or imports pdfjs itself and passes the module
+ * as `options.pdfjs`; if neither happened the failure is reported as
+ * `pdfjs_unavailable`, not thrown.
+ *
+ * **Which of the two, and why the choice is not cosmetic.** The dynamic import
+ * below resolves a BARE package specifier, which only a runtime that does
+ * node-style resolution can do: Node, an SSR render, an Electron main process.
+ * A browser cannot resolve `pdfjs-dist/...` at all, and a bundler is not asked
+ * to (the specifier is deliberately opaque to it, so a host without the peer
+ * still BUILDS — see {@link PDFJS_ENTRY}). So in a browser bundle the import
+ * can only fail, and `options.pdfjs` is THE path: the host writes its own
+ * `import()` of `pdfjs-dist/legacy/build/pdf.mjs`, which its own bundler
+ * resolves and chunks correctly, and hands the module over. (Spelled with the
+ * specifier outside the call throughout this file, prose included: the
+ * source-scan test forbids a literal `import(` of the package name anywhere in
+ * this source, and a guard that has to reason about which occurrences are
+ * comments is a guard that can be argued with.) A library cannot resolve a
+ * bare specifier on its host's behalf; the host can. When `options.pdfjs` is
+ * given it is used exactly as supplied and no import is attempted here at all —
+ * including the worker import, so a host taking this path imports
+ * `pdf.worker.mjs` itself if it wants the worker-free main-thread mode
+ * described below. Three separate host conditions get three
  * separate reasons, because their remedies differ and because a wrong one is a
  * false statement: `pdfjs_unavailable` (the package is not installed — its
- * specifier would not RESOLVE), `pdfjs_worker_unavailable` (it is installed but
- * its main-thread worker module would not load), and `pdfjs_incompatible` (the
+ * specifier would not RESOLVE), `pdfjs_worker_unavailable` (a pdfjs is present
+ * but has no worker to run in: its worker module would not load, or — on the
+ * injected path — the host imported none), and `pdfjs_incompatible` (the
  * build present does not expose the API this module drives, or would not
  * evaluate at all — telling a host to install what it has already installed
  * points at a remedy that cannot work). None of the three is ever reported as a
  * problem with the user's document. (The package also keeps `pdfjs-dist` as a
  * devDependency purely so this repo's `tsc -b` and vitest can resolve it.)
  *
- * **Worker-free by construction.** pdfjs normally spawns a Web Worker from a
- * separately hosted `pdf.worker.mjs` asset. Importing that module on the main
- * thread instead sets `globalThis.pdfjsWorker`, which pdfjs checks first and
- * treats as a main-thread message handler — so no `new Worker(...)` call is
- * made and no worker asset has to be hosted, in Node, in an Electron
- * renderer, or in a browser alike. The cost is that extraction runs on the
- * calling thread; the caps below are what keep that bounded — bounded in
- * memory as well as in output, which is why a page's text is taken through
- * pdfjs's STREAMING text API and accumulated only up to the cap, rather than
- * materialized in full and then sliced (see `readPageText`). A content stream
- * that decompresses enormously is well inside the byte and page caps, so
- * anything that builds the whole page first bounds the answer and nothing
- * else. (In Node pdfjs disables the worker on its own, but the
+ * **Worker-free by construction — on the path where this module imports.**
+ * pdfjs normally spawns a Web Worker from a separately hosted `pdf.worker.mjs`
+ * asset. Importing that module on the main thread instead sets
+ * `globalThis.pdfjsWorker`, which pdfjs checks first and treats as a
+ * main-thread message handler — so no `new Worker(...)` call is made and no
+ * worker asset has to be hosted, in Node, in an Electron renderer, or in a
+ * browser alike. (In Node pdfjs disables the worker on its own, but the
  * explicit import is what makes the browser and Electron-renderer paths work.)
+ *
+ * **A supplied module opts out of that, so the condition is NAMED, not
+ * pre-empted.** When the host passes `options.pdfjs`, nothing is imported here
+ * — the worker module included — so a browser host that injected only `pdf.mjs`
+ * leaves pdfjs hunting for a worker asset. That is deliberately not refused up
+ * front on a "is `globalThis.pdfjsWorker` set?" test, because an unset one is
+ * not by itself a fault: in Node and in an Electron main process pdfjs disables
+ * the worker on its own and needs nothing, and a host that hosts the asset and
+ * sets `GlobalWorkerOptions.workerSrc` is correctly configured too. Refusing
+ * either would be a false failure about a setup that works. What IS the fault
+ * is pdfjs then failing to obtain any worker, and it says so in its own words —
+ * `No "GlobalWorkerOptions.workerSrc" specified.`, thrown synchronously out of
+ * `getDocument`, or `Setting up fake worker failed: …` from the loading task.
+ * Both are recognised and reported as `pdfjs_worker_unavailable`, with the
+ * injected path's remedy (import `pdf.worker.mjs` as well), instead of
+ * `pdfjs_incompatible` or `extraction_failed` — neither of which names the
+ * thing that went wrong. See {@link isWorkerSetupFailure}.
+ *
+ * **What the caps bound, precisely.** Extraction runs on the calling thread,
+ * and the caps below bound the text RETAINED and the peak of THIS module's own
+ * accumulation: a page's text is taken through pdfjs's streaming text API and
+ * appended only while it is inside the budget, so the high-water mark here is
+ * one batch of items plus a string no longer than the cap — rather than the
+ * whole page's items array that `getTextContent()` materializes before it
+ * resolves (see `readPageText`). They bound nothing INSIDE pdfjs. A content
+ * stream that decompresses enormously is still decompressed and its glyphs are
+ * still produced, and the CPU and the pdfjs-internal memory that costs are not
+ * governed by any number here — the document sits well inside the byte and page
+ * caps the whole time. Bounding that is follow-up work, not spike work; saying
+ * these caps already do it would be a stronger claim than this module can make.
  *
  * **Local-only, enforced not merely intended.** pdfjs can fetch character
  * maps, standard font data, ICC profiles, its WebAssembly helpers, and the
@@ -149,13 +195,27 @@ export interface DocumentTextSummary {
    * not a scanned page either (`imageOnly: true`, which sends a user to OCR
    * over something nobody has established is an image). Empty when every page
    * that was reached was read.
+   *
+   * Never every page the document declared, either: a document whose pages ALL
+   * failed is not a successful extraction of nothing, so it comes back as
+   * `corrupt` or `extraction_failed` instead of a result whose `pages` is empty
+   * and whose `unreadablePages` lists the lot.
    */
   readonly unreadablePages: readonly number[]
   /** How many extracted pages were image-only. */
   readonly imageOnlyPages: number
   /**
-   * True when the whole document yielded no text at all — a fully scanned
-   * document, the honest "this needs OCR" signal at document level.
+   * True when the whole document yielded no text at all AND at least one page
+   * is a scanned image — a fully scanned document, the honest "this needs OCR"
+   * signal at document level.
+   *
+   * False when every extracted page was genuinely BLANK
+   * ({@link imageOnlyPages} is zero): a run of empty separator pages also
+   * yielded no text, but there is no ink anywhere for an OCR pass to recover,
+   * so sending a user to OCR over it would waste their time on a document that
+   * was read correctly and is simply empty. `pagesExtracted` with
+   * `totalTextChars === 0` is what describes that document; this flag is
+   * narrower on purpose.
    *
    * False when no page was extracted at all (`pagesExtracted === 0`): a
    * document with no pages, or one the total-text cap stopped before the first
@@ -204,17 +264,26 @@ export type DocumentTextFailureReason =
   /** More pages than {@link MAX_DOCUMENT_PAGES}. */
   | 'too_many_pages'
   /**
-   * The optional `pdfjs-dist` peer is not installed in this host — its main
-   * entry point could not be RESOLVED at all. A peer that resolves and then
-   * fails is never reported here: "install pdfjs-dist" is a false instruction
-   * to a host that already did.
+   * No pdfjs was reachable: the host passed none as `options.pdfjs`, and the
+   * optional `pdfjs-dist` peer's main entry point could not be RESOLVED at all
+   * — either it is not installed, or this is a browser bundle, where a bare
+   * package specifier cannot be resolved at run time and injection is the only
+   * route. The message names both remedies for that reason. A peer that
+   * resolves and then fails is never reported here: "install pdfjs-dist" is a
+   * false instruction to a host that already did.
    */
   | 'pdfjs_unavailable'
   /**
-   * `pdfjs-dist` IS installed, but its main-thread worker module could not be
-   * loaded. Distinct from `pdfjs_unavailable` because the remedy is different
-   * and because "the optional pdfjs-dist package is not installed" would be a
-   * false sentence to show a host that installed it.
+   * A pdfjs is present, but it has no worker to run in: this module's own
+   * import of the main-thread worker module failed, or — on the injected path,
+   * where no import of ours runs at all — pdfjs itself reported that it could
+   * find no worker of any kind, which is what a host that passed `pdf.mjs`
+   * without `pdf.worker.mjs` gets. Distinct from `pdfjs_unavailable` because
+   * the remedy is different and because "the optional pdfjs-dist package is not
+   * installed" would be a false sentence to show a host that installed it, and
+   * distinct from `pdfjs_incompatible` because the build is fine — it is the
+   * worker that is missing. The message names the remedy for the path the call
+   * actually took.
    */
   | 'pdfjs_worker_unavailable'
   /**
@@ -270,16 +339,54 @@ export const MAX_PAGE_TEXT_CHARS = 100_000
 export const MAX_DOCUMENT_TEXT_CHARS = 2_000_000
 
 /**
- * Per-call limits. Every value may only make a cap *stricter*: a host may
- * tighten what it is willing to process, but the exported constants are the
- * ceiling this module promises, so a caller cannot raise them into territory
- * the module has never been exercised in.
+ * A pdfjs module supplied by the host — whatever the host's own `import()` of
+ * `pdfjs-dist/legacy/build/pdf.mjs` resolved to in its build.
+ *
+ * Deliberately structural and deliberately LOOSE. Naming
+ * `typeof import('pdfjs-dist/...')` here would tie a published type to one
+ * build of an OPTIONAL peer: a host on a different pdfjs major, or one that
+ * re-exports its own wrapper, would face a type error over a module this code
+ * can drive perfectly well, and a host that does not install the peer at all
+ * could not even typecheck against this signature. Every member is `unknown`
+ * because none of them is trusted on the strength of a type anyway —
+ * {@link pdfjsShapeProblem} inspects the real object before a byte of the
+ * document is parsed, so a structurally wrong module is answered with
+ * `pdfjs_incompatible` rather than crashing somewhere inside extraction.
+ */
+export interface HostPdfjsModule {
+  readonly getDocument?: unknown
+  readonly VerbosityLevel?: unknown
+  readonly OPS?: unknown
+}
+
+/**
+ * Per-call limits, and the host's own pdfjs if it has one. Every cap may only
+ * be made *stricter*: a host may tighten what it is willing to process, but the
+ * exported constants are the ceiling this module promises, so a caller cannot
+ * raise them into territory the module has never been exercised in.
  */
 export interface ExtractDocumentTextOptions {
   readonly maxBytes?: number
   readonly maxPages?: number
   readonly maxPageTextChars?: number
   readonly maxTotalTextChars?: number
+  /**
+   * The pdfjs module to use, instead of importing one. **This is the browser
+   * path** — see the module header: a bundled page cannot resolve the bare
+   * `pdfjs-dist` specifier this module would otherwise import, but the host's
+   * own `import()` of `pdfjs-dist/legacy/build/pdf.mjs` is resolved and chunked
+   * by the host's bundler, so the host is the only party that can produce the
+   * module at all. When it is present no import is attempted here, which also
+   * means the main-thread worker module is the host's to import — and if it
+   * did not, and pdfjs can find no worker, the call comes back as
+   * `pdfjs_worker_unavailable` naming that import rather than as a vague
+   * `extraction_failed` (see the worker paragraphs in the module header).
+   * Omit it in Node, SSR, or an
+   * Electron main process, where the bare specifier resolves at run time and
+   * the zero-config import below is what this repo's own tests and benchmark
+   * use.
+   */
+  readonly pdfjs?: HostPdfjsModule
 }
 
 /**
@@ -411,6 +518,14 @@ function throwReason(error: unknown): 'encrypted' | 'corrupt' | 'extraction_fail
 interface FailureContext {
   readonly detail?: string
   readonly limit?: number
+  /**
+   * The host supplied its own pdfjs, so a remedy naming this package's own
+   * import is not its remedy. Only `pdfjs_worker_unavailable` reads it: the
+   * host that let this module import pdfjs is told its worker subpath would not
+   * load, and the host that injected a module is told to import the worker
+   * module too — which is the whole of what it is missing.
+   */
+  readonly supplied?: boolean
 }
 
 /**
@@ -447,11 +562,21 @@ function failureMessage(reason: DocumentTextFailureReason, context: FailureConte
       return `This document has more than ${pages} ${pages === 1 ? 'page' : 'pages'}, which is past the limit. Extract the pages you need, or enter the values by hand.`
     }
     case 'pdfjs_unavailable':
-      return 'PDF reading is unavailable in this app because the optional "pdfjs-dist" package is not installed.'
-    case 'pdfjs_worker_unavailable':
-      return context.detail
-        ? `PDF reading is unavailable in this app: "pdfjs-dist" is installed, but its main-thread worker module could not be loaded (${context.detail}).`
-        : 'PDF reading is unavailable in this app: "pdfjs-dist" is installed, but its main-thread worker module could not be loaded.'
+      // Both remedies, because only one of them works in a browser. A message
+      // naming the install alone sends a bundled host to a fix that cannot
+      // work: the package may be installed already and a browser still cannot
+      // resolve its bare specifier at run time.
+      return 'PDF reading is unavailable in this app because the optional "pdfjs-dist" package is not installed. Install it, or — in a browser bundle, where the package name cannot be resolved at run time — import pdfjs in the app itself and pass it as options.pdfjs.'
+    case 'pdfjs_worker_unavailable': {
+      // A host that passed its own pdfjs in never reached this module's worker
+      // import at all, so "its main-thread worker module could not be loaded"
+      // would describe an import that never ran. What that host is missing is
+      // its OWN import of `pdf.worker.mjs`, and that is what it is told.
+      const because = context.detail ? ` (${context.detail})` : ''
+      return context.supplied === true
+        ? `PDF reading is unavailable in this app: the pdfjs module this app supplied has no main-thread worker, and pdfjs could not load a worker any other way${because}. Import "pdfjs-dist/legacy/build/pdf.worker.mjs" alongside it — that import is what makes pdfjs run worker-free.`
+        : `PDF reading is unavailable in this app: "pdfjs-dist" is installed, but its main-thread worker module could not be loaded${because}.`
+    }
     case 'pdfjs_incompatible':
       return context.detail
         ? `PDF reading is unavailable in this app because the installed "pdfjs-dist" build is not one this app can use (${context.detail}).`
@@ -485,6 +610,12 @@ type PdfjsModule = typeof import('pdfjs-dist/legacy/build/pdf.mjs')
  * deliberately unanalyzable), defers resolution to runtime and is what makes
  * the documented fallback reachable at all. The `typeof import(...)` above is a
  * TYPE position and is erased before any bundler sees it.
+ *
+ * Deferring to runtime is also why these are only HALF the story: a browser
+ * bundle then reaches a bare npm specifier it cannot resolve, and would report
+ * `pdfjs_unavailable` to a host that installed pdfjs perfectly well. That host
+ * passes its own module as `options.pdfjs` and none of this runs. Making the
+ * specifier opaque buys the build; injection is what buys the browser.
  */
 const PDFJS_ENTRY = 'pdfjs-dist/legacy/build/pdf.mjs'
 const PDFJS_WORKER_ENTRY = 'pdfjs-dist/legacy/build/pdf.worker.mjs'
@@ -501,9 +632,28 @@ type PdfjsLoad =
 /** Node's names for "that specifier resolves to nothing" (ESM, then CommonJS). */
 const MODULE_RESOLUTION_CODES: ReadonlySet<unknown> = new Set(['ERR_MODULE_NOT_FOUND', 'MODULE_NOT_FOUND'])
 
-/** What a loader that carries no code says instead. */
+/**
+ * What a loader that carries no `code` says instead — and in a BROWSER that is
+ * all there is, because no browser supplies `code` at all. So this list decides
+ * the reason single-handedly on the one platform where the remedy it points at
+ * (`options.pdfjs`) is the only one that can work, which is why it has to cover
+ * every engine rather than the one the first test happened to be written from.
+ * Each browser phrases an unresolvable bare specifier differently:
+ *
+ * - Chromium: `Failed to resolve module specifier 'pdfjs-dist/…'` —
+ * - Firefox: `The specifier “pdfjs-dist/…” was a bare specifier, but was not
+ *   remapped to anything.`
+ * - Safari: `Module name, 'pdfjs-dist/…' does not resolve to a valid URL.`
+ * - any of them, when the failure surfaces on the script rather than the
+ *   specifier: `Importing a module script failed.`
+ *
+ * Only the first matched a Chromium-shaped wording, so Firefox and Safari were
+ * told `pdfjs_incompatible` — "the installed pdfjs-dist build is not one this
+ * app can use" — about a package that was never installed, and never saw the
+ * remedy that works in a browser.
+ */
 const MODULE_RESOLUTION_MESSAGE =
-  /cannot find (?:module|package)|module not found|failed to resolve|cannot resolve/i
+  /cannot find (?:module|package)|module not found|failed to resolve|cannot resolve|does not resolve|bare specifier|importing a module script failed/i
 
 /**
  * Did this import fail because the module could not be RESOLVED — the peer is
@@ -535,9 +685,36 @@ function isModuleResolutionFailure(error: unknown): boolean {
 }
 
 /**
- * Load pdfjs and force its main-thread (worker-free) path. See the module
- * header: importing the worker module sets `globalThis.pdfjsWorker`, which
- * pdfjs consults before it would ever construct a `Worker`.
+ * pdfjs's own words for "I could not get a worker of any kind".
+ *
+ * `No "GlobalWorkerOptions.workerSrc" specified.` comes out of `getDocument`
+ * SYNCHRONOUSLY (pdfjs constructs its `PDFWorker` before it returns the loading
+ * task), and `Setting up fake worker failed: "…"` rejects the loading task's
+ * promise after the main-thread fallback's own import failed. Matched on
+ * wording because neither carries a distinguishing exception name — both are
+ * plain `Error`s — and matched narrowly, on strings that exist nowhere else in
+ * pdfjs, so nothing about the user's document can land here.
+ */
+const WORKER_SETUP_MESSAGE = /workerSrc|setting up fake worker/i
+
+/** Is this throw pdfjs saying it has no worker, rather than anything else? */
+function isWorkerSetupFailure(error: unknown): boolean {
+  return WORKER_SETUP_MESSAGE.test(exceptionMessage(error) ?? '')
+}
+
+/**
+ * Take the host's pdfjs, or load one and force its main-thread (worker-free)
+ * path. See the module header: importing the worker module sets
+ * `globalThis.pdfjsWorker`, which pdfjs consults before it would ever construct
+ * a `Worker`.
+ *
+ * **A supplied module short-circuits everything below.** It is already resolved
+ * — by the host's own bundler, which is the only party that could resolve it in
+ * a browser — so importing anything here would at best duplicate it and at
+ * worst fail on a specifier the host has already worked around. It is NOT
+ * trusted on arrival: `pdfjsShapeProblem` inspects it in the caller, before any
+ * document is parsed, so a wrong object is `pdfjs_incompatible` and never a
+ * verdict about the user's file.
  *
  * **`allSettled`, not `all`.** The two imports fail for different reasons and
  * deserve different answers. A single catch over both could only report one,
@@ -546,7 +723,10 @@ function isModuleResolutionFailure(error: unknown): boolean {
  * that relocated `pdf.worker.mjs`, a bundler that resolves the main entry and
  * not that one. They still run concurrently; only the reporting is split.
  */
-async function loadPdfjs(): Promise<PdfjsLoad> {
+async function loadPdfjs(supplied: HostPdfjsModule | undefined): Promise<PdfjsLoad> {
+  if (supplied !== undefined && supplied !== null) {
+    return { ok: true, pdfjs: supplied as unknown as PdfjsModule }
+  }
   const [core, worker] = await Promise.allSettled([
     import(/* @vite-ignore */ PDFJS_ENTRY) as Promise<PdfjsModule>,
     // Imported for its side effect (setting globalThis.pdfjsWorker); its
@@ -680,14 +860,15 @@ interface PageTextReading {
  * Accumulate one page's text items, batch by batch, into at most
  * `min(maxPageTextChars, remaining)` characters.
  *
- * **The caps bound the PEAK, not merely the result.** Concatenating every item
- * and slicing afterwards produces exactly the same string and bounds nothing:
- * the intermediate is as large as the page, built on the calling thread — the
- * thread this module deliberately runs pdfjs on — so a pathological page could
- * exhaust memory (or outgrow the engine's maximum string length) before any
- * cap was consulted. The module header claims the caps are what keep
- * main-thread work bounded; this is where that has to be true of memory and
- * not only of the return value.
+ * **The caps bound this module's PEAK, not merely its result.** Concatenating
+ * every item and slicing afterwards produces exactly the same string and bounds
+ * nothing about the accumulation: the intermediate is as large as the page,
+ * built on the calling thread — the thread this module deliberately runs pdfjs
+ * on — so a pathological page could exhaust memory (or outgrow the engine's
+ * maximum string length) before any cap was consulted. That is what this file
+ * can bound and does. What no cap here bounds is what pdfjs spends producing
+ * the page in the first place; the module header says so plainly rather than
+ * letting "the caps keep the work bounded" stand for more than it is.
  *
  * So the retained text never exceeds the budget, and the two things a caller
  * still needs to know about the text that was NOT retained are carried as
@@ -700,10 +881,25 @@ interface PageTextReading {
  *   is what sets `truncated`, and comparing it against zero is the
  *   pre-truncation `hadText` the image-only verdict is decided from.
  *
- * `push` answers false as soon as `trimmedLength` passes `maxPageTextChars`: at
- * that point every flag above is already decided and every further character
- * would be clipped away, so the rest of the page cannot change one byte of the
- * answer and need not be produced at all.
+ * `push` answers false as soon as `trimmedLength` passes the EFFECTIVE budget —
+ * `min(maxPageTextChars, remaining)`, the same number the retained text is
+ * clipped to. Stopping at the page cap alone would keep inspecting and copying
+ * up to `MAX_PAGE_TEXT_CHARS` characters of a page whose text was going to be
+ * discarded on arrival, which every document nearly out of its total budget
+ * pays on its last page. At the effective budget every flag below is already
+ * decided and every further character would be clipped away, so the rest of the
+ * page cannot change one byte of the answer and none of it is looked at again.
+ * (`readPageText` still READS the rest of the stream — dropping each chunk
+ * unopened — because abandoning it would hang the call. What stops here is the
+ * accumulating, which is what these caps are about.)
+ *
+ * Which cap gets the blame is unchanged by that, because each flag is still
+ * read off the cap it belongs to. When the PAGE cap is the smaller, the stop
+ * happens exactly where it always did and `clippedByPageCap` is decided on the
+ * same comparison as before. When the DOCUMENT budget is the smaller, it is the
+ * budget that clipped and `clippedByDocumentCap` says so; the page cap did not
+ * clip anything and is not claimed to have. Establishing that it *would* have
+ * clipped is counting nobody needs, and stopping here is what avoids it.
  */
 function createPageTextReader(maxPageTextChars: number, remaining: number) {
   const budget = Math.min(maxPageTextChars, remaining)
@@ -739,7 +935,9 @@ function createPageTextReader(maxPageTextChars: number, remaining: number) {
         if (!isGlyphItem(item)) continue
         append(item.str)
         if (item.hasEOL) append('\n')
-        if (trimmedLength > maxPageTextChars) return false
+        // The EFFECTIVE budget, not the page cap: past it nothing more is kept
+        // and nothing more can be learned, whichever cap supplied it.
+        if (trimmedLength > budget) return false
       }
       return true
     },
@@ -750,6 +948,10 @@ function createPageTextReader(maxPageTextChars: number, remaining: number) {
         // come off.
         text: trimmedLength > budget ? kept : kept.trimEnd(),
         hadText: trimmedLength > 0,
+        // True exactly when the text read passed the page cap. Reading stops at
+        // the effective budget, so when the document budget was the smaller one
+        // this stays false — the page cap clipped nothing, and the document cap
+        // below is what did.
         clippedByPageCap: trimmedLength > maxPageTextChars,
         // What the document budget sees is the already page-capped text, so the
         // page cap is the ceiling on what it can clip.
@@ -795,17 +997,36 @@ function openTextStream(page: PdfPageText): TextContentStreamReader | null {
  * so a build without the streaming API must still read a document rather than
  * fail one.
  *
- * **Stopping is the release — deliberately not `reader.cancel()`.** On pdfjs 6
- * cancelling a text stream rejects, and worse, it desynchronises pdfjs's own
- * bookkeeping: the cancel closes the web-stream controller without setting the
- * `isClosed` flag pdfjs guards on, so the producer's already-queued CLOSE
- * message calls `controller.close()` on a closed controller and throws inside a
- * pdfjs promise chain nobody owns — an UNHANDLED rejection in the host, raised
- * by a document that read perfectly. Guarding the `cancel()` call itself cannot
- * catch that one. Not reading again is what bounds the work instead: pdfjs's
- * sink is pull-driven, so an unread stream stops producing within its queuing
- * high-water mark, and `page.cleanup()` in the extraction loop's `finally`
- * releases the page either way.
+ * **The stream is DRAINED to completion; only the accumulating stops.** Once
+ * the caps have decided the answer, every further chunk is taken off the stream
+ * and dropped unopened — not one of its items is looked at — but the reading
+ * itself continues until the stream ends on its own. That is not politeness, it
+ * is the only ending that settles:
+ *
+ * - **Abandoning the stream hangs the call.** pdfjs's producer awaits its
+ *   sink's `ready` once the queue is full (it flushes every 100 items), so a
+ *   reader that stops mid-page leaves that await pending forever — and
+ *   `loadingTask.destroy()` in the extraction loop's `finally` waits on the
+ *   page's outstanding task, so the promise this module returns NEVER SETTLES.
+ *   `page.cleanup()` does release the page, which is what made this look safe;
+ *   `destroy()` is the one that does not. Measured on pdfjs 6 with a
+ *   many-item page: `maxTotalTextChars: 10` and `maxPageTextChars: 10` both
+ *   hang, and both settle once the stream is drained.
+ * - **`reader.cancel()` is not the alternative.** On pdfjs 6 the cancel closes
+ *   the web-stream controller without setting the `isClosed` flag pdfjs guards
+ *   on, so the producer's already-queued CLOSE calls `controller.close()` on a
+ *   closed controller and throws inside a pdfjs promise chain nobody owns — an
+ *   UNHANDLED rejection in the host, raised by a document that read perfectly,
+ *   and one no guard at this call site can catch. Draining needs no cancel at
+ *   all: there is nothing left to cancel when the stream closes itself.
+ *
+ * **What draining costs, and what it still buys.** It costs the production of
+ * the whole page: pdfjs decodes the content stream and builds every item either
+ * way, so the caps do not bound that and this module does not claim they do.
+ * What it buys is the memory the streaming change was for — the peak here is
+ * one batch plus a string no longer than the budget, instead of the entire
+ * items array `getTextContent()` assembles before it resolves, plus that
+ * string. See the caps paragraph in the module header.
  */
 async function readPageText(
   page: PdfPageText,
@@ -819,11 +1040,14 @@ async function readPageText(
     return reader.result()
   }
 
-  let wantMore = true
-  while (wantMore) {
+  let accumulating = true
+  for (;;) {
     const chunk = await stream.read()
     if (chunk.done === true) break
-    wantMore = reader.push(chunk.value?.items ?? [])
+    // Past the budget the chunk is dropped without being inspected — nothing in
+    // it can change the answer, and touching it would be the copying the caps
+    // exist to avoid. Reading itself continues; see above.
+    if (accumulating) accumulating = reader.push(chunk.value?.items ?? [])
   }
   return reader.result()
 }
@@ -871,7 +1095,7 @@ export async function extractDocumentText(
 
   let loaded: PdfjsLoad
   try {
-    loaded = await loadPdfjs()
+    loaded = await loadPdfjs(opts.pdfjs)
   } catch (error) {
     // `loadPdfjs` settles both imports rather than throwing, so this is only
     // reachable if the import machinery itself failed synchronously. The same
@@ -885,18 +1109,28 @@ export async function extractDocumentText(
   if (!loaded.ok) return failure(loaded.reason, { detail: loaded.detail })
   const pdfjs = loaded.pdfjs
 
-  // The peer is optional, so a host may supply its own pdfjs build. One that
-  // is shaped differently — a missing VerbosityLevel, no OPS table — is a HOST
-  // problem, and it is settled here, before a byte of the document is parsed,
-  // so it can never be mistaken for a finding about the document.
+  // The peer is optional, so a host may supply its own pdfjs build — through
+  // `options.pdfjs`, or by installing a version of its choosing for the import
+  // above. One that is shaped differently — a missing VerbosityLevel, no OPS
+  // table — is a HOST problem, and it is settled here, before a byte of the
+  // document is parsed, so it can never be mistaken for a finding about the
+  // document.
   const shapeProblem = pdfjsShapeProblem(pdfjs)
   if (shapeProblem !== undefined) return failure('pdfjs_incompatible', { detail: shapeProblem })
+
+  // Whether the host handed us the module. Only the worker reason reads it, and
+  // only to name the remedy that belongs to the path this call actually took.
+  const supplied = opts.pdfjs !== undefined && opts.pdfjs !== null
 
   // Opened before the extraction body rather than inside it. A conforming
   // getDocument returns a task whose PROMISE rejects for a bad document; a
   // synchronous throw means the parameter object was rejected outright, which
   // is the same host-build problem as a failed shape check and gets the same
-  // answer — never `corrupt`, which would blame the user's file for it.
+  // answer — never `corrupt`, which would blame the user's file for it. The one
+  // exception is pdfjs's own "I have no worker" throw: pdfjs constructs its
+  // PDFWorker inside `getDocument`, so a host that injected `pdf.mjs` without
+  // `pdf.worker.mjs` lands HERE, and calling that an incompatible build would
+  // name neither the condition nor its remedy.
   let opened: ReturnType<typeof pdfjs.getDocument>
   try {
     opened = pdfjs.getDocument({
@@ -911,7 +1145,10 @@ export async function extractDocumentText(
       verbosity: pdfjs.VerbosityLevel.ERRORS,
     })
   } catch (error) {
-    return failure('pdfjs_incompatible', { detail: exceptionMessage(error) })
+    const detail = exceptionMessage(error)
+    return isWorkerSetupFailure(error)
+      ? failure('pdfjs_worker_unavailable', { detail, supplied })
+      : failure('pdfjs_incompatible', { detail })
   }
   // Bound outside the try below so `finally` can always release it.
   const loadingTask = opened
@@ -934,6 +1171,14 @@ export async function extractDocumentText(
     // it. `totalTextChars` cannot answer that — it is the post-truncation count,
     // so a cap of zero would make a perfectly readable document look scanned.
     let anyPageHadText = false
+    // The first page fault of any kind, and the first that pdfjs itself called a
+    // fault in the DOCUMENT's bytes. Kept only for the all-pages-failed verdict
+    // after the loop, which owes the caller the same reason split the
+    // document-level handler makes — and can only make it from the throws it
+    // saw. One fault each, rather than every error a 300-page document could
+    // raise.
+    let firstFault: { readonly error: unknown } | null = null
+    let firstDocumentFault: { readonly error: unknown } | null = null
 
     for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
       if (totalTextChars >= maxTotalTextChars) {
@@ -983,6 +1228,10 @@ export async function extractDocumentText(
         // document-level handler.
         if (exceptionName(error) === 'PasswordException') throw error
         unreadablePages.push(pageNumber)
+        firstFault ??= { error }
+        if (firstDocumentFault === null && DOCUMENT_FAULT_EXCEPTIONS.has(exceptionName(error))) {
+          firstDocumentFault = { error }
+        }
       } finally {
         // Best-effort, and never allowed to mask the page's real outcome.
         try {
@@ -993,6 +1242,25 @@ export async function extractDocumentText(
       }
     }
 
+    // EVERY page the document declared failed. pdfjs opened the catalog and
+    // reported a page count, so none of the document-level handling below ever
+    // ran — and many damaged PDFs fail exactly here, only once their pages are
+    // touched. Returning `{ ok: true, pages: [] }` for that hands a consumer a
+    // successful extraction with nothing in it, which reads as "this document
+    // is empty" about a document nobody managed to read a page of. Partial
+    // success is preserved above (`pages` non-empty is a real result with
+    // `unreadablePages` naming the rest); total failure is a failure, and it
+    // gets the same reason split the document-level catch makes: `corrupt` only
+    // on pdfjs's own say-so about the bytes, `extraction_failed` otherwise.
+    if (totalPages > 0 && unreadablePages.length === totalPages) {
+      const fault = firstDocumentFault ?? firstFault
+      return failure(firstDocumentFault === null ? 'extraction_failed' : 'corrupt', {
+        detail: exceptionMessage(fault?.error),
+      })
+    }
+
+    const imageOnlyPages = pages.filter((page) => page.imageOnly).length
+
     return {
       ok: true,
       pages,
@@ -1000,14 +1268,18 @@ export async function extractDocumentText(
         totalPages,
         pagesExtracted: pages.length,
         unreadablePages,
-        imageOnlyPages: pages.filter((page) => page.imageOnly).length,
-        // "Every page we read had no text", never "we read no pages", never
-        // "a cap clipped everything away", and never "some page defeated us".
-        // A zero-page document, or one the total-text cap stopped before page
-        // 1, has no scanned page to send anyone to OCR over; text that was read
-        // and then truncated was still read; and a page that could not be read
-        // is not a page known to be text-free.
-        noTextExtracted: pages.length > 0 && !anyPageHadText && unreadablePages.length === 0,
+        imageOnlyPages,
+        // "Every page we read had no text AND at least one of them is a
+        // picture" — never "we read no pages", never "a cap clipped everything
+        // away", never "some page defeated us", and never "every page was
+        // blank". A zero-page document, or one the total-text cap stopped
+        // before page 1, has no scanned page to send anyone to OCR over; text
+        // that was read and then truncated was still read; a page that could
+        // not be read is not a page known to be text-free; and a stack of blank
+        // separator pages has no ink for OCR to recover, so telling someone to
+        // run one over it is a false lead. `imageOnlyPages > 0` also implies
+        // `pages` is non-empty.
+        noTextExtracted: imageOnlyPages > 0 && !anyPageHadText && unreadablePages.length === 0,
         totalTextChars,
         truncated: truncatedBy.size > 0,
         truncatedBy: [...truncatedBy],
@@ -1020,6 +1292,13 @@ export async function extractDocumentText(
     // said when pdfjs itself said so; anything else is `extraction_failed`,
     // which blames nobody's document. See `throwReason`.
     const reason = throwReason(error)
+    // …except pdfjs's own "I could not set up a worker", which arrives here
+    // when the fallback import inside pdfjs failed rather than at `getDocument`.
+    // `extraction_failed` would say "the document itself may be perfectly fine —
+    // try again", and trying again cannot help a host that is missing a module.
+    if (reason === 'extraction_failed' && isWorkerSetupFailure(error)) {
+      return failure('pdfjs_worker_unavailable', { detail: exceptionMessage(error), supplied })
+    }
     return reason === 'encrypted' ? failure('encrypted') : failure(reason, { detail: exceptionMessage(error) })
   } finally {
     // A throw from `finally` would replace the result we just computed, which

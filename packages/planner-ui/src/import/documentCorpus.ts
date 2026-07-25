@@ -34,6 +34,15 @@
  * bound on the same number measured against a real statement, and the
  * findings note says so.
  *
+ * **The corpus cannot say anything about OCR, and no longer pretends to.** An
+ * image-only page here paints a featureless stretched raster; it carries no
+ * glyphs, so it carries no values, and none may be planted on it. What the
+ * scanned documents measure is that such a page is *detected* as image-only
+ * instead of being reported as an empty success — the signal a UI needs in
+ * order to route the user to manual entry. What an OCR engine could recover
+ * from a real scan is not measurable from the bytes this file emits, and the
+ * plan's risk section forbids bundling the real documents it would take.
+ *
  * Not published: like `pdfFixtures.ts`, this module is excluded from the
  * package's `files`, so the `./*` wildcard cannot reach it and no consumer
  * ever receives it. Only `documentText.ts` ships from this spike.
@@ -118,8 +127,10 @@ export interface CorpusDocument {
    * planted value must appear in its page's authored text, so a declaration
    * quietly trimmed to whatever a detector happens to emit (the bare
    * `Brokerage` for a page printing `Individual Brokerage`) fails the suite.
-   * Empty for a page with no text layer — the scanned pages, whose planted
-   * values are on the paper and deliberately in no source line.
+   *
+   * Empty for a page that authors nothing: the statement's blank separator, and
+   * every image-only page. **No value may be planted on such a page** — see
+   * {@link CorpusDocument.expected}. A test enforces it.
    */
   readonly pageSources: readonly string[]
   /**
@@ -130,7 +141,17 @@ export interface CorpusDocument {
   readonly expectedOutcome: 'ok' | DocumentTextFailureReason
   /** Pages that carry no text layer but do paint a raster. */
   readonly expectedImageOnlyPages: readonly number[]
-  /** Every planted value. Empty for the documents that must be refused. */
+  /**
+   * Every planted value. Empty for the documents that must be refused.
+   *
+   * **Only pages this corpus actually renders may carry a planted value.** An
+   * image-only page here paints a constant-grey 1x1 raster stretched over the
+   * page; it contains no glyphs, so it contains no values, and declaring one
+   * there would make the oracle assert something the bytes do not say. Doing so
+   * once produced eight "missing" values that were never in the document, and
+   * a `0/8` OCR-recall column that was measuring their absence rather than any
+   * failure to read them. See {@link scannedStatement}.
+   */
   readonly expected: readonly CorpusExpectedField[]
 }
 
@@ -423,36 +444,56 @@ const formTenForty: CorpusDocument = {
 }
 
 // ---------------------------------------------------------------------------
-// 4-5. Scanned documents — the OCR question, stated as data.
+// 4-5. Scanned documents — what an image-only page can honestly be asked.
 // ---------------------------------------------------------------------------
 
 /**
- * A fully scanned statement. The values below are genuinely printed on the
- * paper; they are declared here precisely so the benchmark records them as
- * missed. Silently leaving them out would hide the size of the OCR gap, which
- * is the number this spike exists to produce.
+ * A fully scanned statement: two pages that paint a raster and author no text.
+ *
+ * **It plants no field values, and the empty `expected` is the point.** An
+ * earlier revision declared six — a name, an account number, a type, two
+ * balances and a date — on the theory that they were "printed on the paper".
+ * They were not. `buildSyntheticPdf`'s `image: true` paints a 1x1 constant-grey
+ * sample stretched across the page; there is no glyph anywhere in these bytes,
+ * so `ELEANOR J WHITFIELD` and `$214,006.71` exist only in the declaration.
+ * Scoring them as false negatives measured their ABSENCE from a document that
+ * never contained them, and the eight resulting "OCR gaps" were then quoted as
+ * the size of the OCR opportunity. That is the oracle asserting a fiction, and
+ * it is a worse failure than the one testing.md names: not the app grading
+ * itself, but the corpus grading a document that does not exist.
+ *
+ * **The fix is not to rasterize the text.** A crude bitmap font would emit a
+ * noise-free, perfectly-aligned, perfectly-contrasted raster whose OCR
+ * difficulty resembles nothing about a real scan — real difficulty is noise,
+ * skew, JPEG artifacts and a photocopier's gamma. A recall number taken against
+ * such a fixture would be optimistic in an unbounded and unmeasurable way,
+ * which is worse than having no number at all.
+ *
+ * **What this document still measures, and it is not small.** That an
+ * image-only page is DETECTED as image-only rather than reported as an empty
+ * success — the difference between a UI saying "these pages are scanned images,
+ * type these values in" and a UI showing a blank result and no explanation.
+ * That signal is scored by `imageOnly` in the report, and it is unaffected by
+ * any of the above. OCR *recoverability* is simply not measurable from a
+ * synthetic corpus, and the plan's risk section forbids bundling the real
+ * scanned documents it would take.
  */
 const scannedStatement: CorpusDocument = {
   id: 'scanned-statement',
   kind: 'scanned',
-  label: 'Statement scanned to image, no text layer on any page (2 pages)',
+  label: 'Statement scanned to image, no text layer on any page (2 pages, no planted values)',
   ...renderSpec({ pages: [{ image: true }, { image: true }] }),
   expectedOutcome: 'ok',
   expectedImageOnlyPages: [1, 2],
-  expected: [
-    { field: 'name', value: 'ELEANOR J WHITFIELD', page: 1 },
-    { field: 'account_number', value: '****3358', page: 1 },
-    { field: 'account_type', value: 'Rollover IRA', page: 1 },
-    { field: 'account_balance', value: '$214,006.71', page: 1 },
-    { field: 'date', value: '12/31/2025', page: 1 },
-    { field: 'account_balance', value: '$18,220.40', page: 2 },
-  ],
+  expected: [],
 }
 
 /**
- * The common real shape: a typed cover page in front of scanned inserts. Half
- * the fields are readable and half are not, which is the case a UI has to be
- * able to describe page by page rather than document by document.
+ * The common real shape: a typed cover page in front of a scanned insert. The
+ * cover page carries values and the insert carries none — which is exactly the
+ * case a UI has to describe page by page rather than document by document, and
+ * the same reason the fully scanned statement plants nothing: the insert paints
+ * a raster and authors no glyphs.
  */
 const mixedScanStatement: CorpusDocument = {
   id: 'mixed-scan-statement',
@@ -499,9 +540,11 @@ const mixedScanStatement: CorpusDocument = {
     { field: 'name', value: 'SAMUEL O BRENNAN', page: 1 },
     { field: 'account_number', value: '****6104', page: 1 },
     { field: 'account_type', value: 'Traditional IRA', page: 1 },
-    // Printed on the scanned insert: on the paper, not in any text layer.
-    { field: 'account_balance', value: '$76,540.18', page: 2 },
-    { field: 'date', value: '12/31/2025', page: 2 },
+    // Page 2 is the scanned insert and plants nothing. It used to carry a
+    // balance and a date "on the insert"; the insert is a grey rectangle, so
+    // those were two more values counted as missed that were never present.
+    // What page 2 is here to prove is that it is reported as image-only while
+    // page 1 is read normally — a per-page answer, not a per-document one.
   ],
 }
 

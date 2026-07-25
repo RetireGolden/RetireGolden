@@ -35,14 +35,27 @@
  * for the planted page first could not report a citation defect for any value
  * printed twice, and a number that cannot fall is not a measurement.
  *
- * **Every miss is diagnosed**, because only one kind of miss is an argument
- * for OCR. A planted value that does not appear in the extracted text at all
- * (`missesTextAbsent`) was never readable — a scanned page, and OCR is the
- * only fix. A planted value that IS in the text but that no detector produced
- * (`missesTextPresent`) is a mapper defect; OCR would not move it. Reporting a
- * single "accuracy" number would blur these together, which is exactly the
- * mistake the plan forbids: "no launch claim based only on aggregate
- * accuracy".
+ * **Every miss is diagnosed**, because "we did not get the value" has two very
+ * different causes. A planted value that IS in the extracted text but that no
+ * detector produced (`missesTextPresent`) is a selection defect — the
+ * characters arrived and the mapper failed. A planted value that does not
+ * appear in the extracted text at all (`missesTextAbsent`) is an extraction
+ * defect — the characters were authored on the page and did not survive.
+ * Reporting a single "accuracy" number would blur these together, which is
+ * exactly the mistake the plan forbids: "no launch claim based only on
+ * aggregate accuracy".
+ *
+ * **Neither of those is an OCR number, and this benchmark does not produce
+ * one.** It used to: image-only pages were declared to carry values, those
+ * values were counted as misses, and the total was reported as "the OCR gap".
+ * Nothing was printed on those pages — the corpus paints a featureless raster —
+ * so the count measured the absence of values from a document that never held
+ * them. Values are now planted only on pages the corpus renders, `coverage`
+ * asserts that invariant against what extraction actually returned, and what
+ * the scanned documents contribute is `imageOnly`: an image-only page is
+ * detected as such rather than reported as an empty success. **OCR
+ * recoverability is not measured here and cannot be** without real scanned
+ * documents, which the plan's risk section forbids bundling.
  *
  * Not published: this module, the corpus and the PDF emitter are excluded from
  * the package's `files`, so the `./*` wildcard cannot reach them and no
@@ -76,7 +89,10 @@ export interface BenchmarkMiss {
   readonly page: number
   /**
    * True when the value is present in the extracted text and only the detector
-   * failed. False means the text never existed — the OCR case.
+   * failed — a selection defect. False means the characters were authored on
+   * the page and did not survive extraction — an extraction defect. It is NOT
+   * a statement about OCR: every planted value is on a page the corpus renders,
+   * so an image-only page can produce neither kind of miss.
    */
   readonly textPresent: boolean
 }
@@ -96,9 +112,9 @@ export interface ScoreTotals {
   readonly citationsChecked: number
   readonly citationsCorrect: number
   readonly citationAccuracy: number | null
-  /** Misses whose text was there — a mapper gap, not an OCR gap. */
+  /** Misses whose characters arrived and the detector failed — a selection gap. */
   readonly missesTextPresent: number
-  /** Misses whose text was never extractable — the OCR gap. */
+  /** Misses whose characters were authored but did not survive extraction. */
   readonly missesTextAbsent: number
 }
 
@@ -131,19 +147,28 @@ export interface DocumentScore extends ScoreTotals {
 }
 
 /**
- * Recall split by whether the value was printed on a page that HAS a text
- * layer. This is the OCR decision, stated as two numbers instead of one: OCR
- * can only ever move the second row, so a low aggregate recall driven entirely
- * by the first row would be an argument for a better mapper, not for OCR.
+ * What surface the planted values actually live on — the guard that keeps every
+ * other number in this report honest.
+ *
+ * There used to be a `recallBySurface` table here instead, splitting recall into
+ * "where a text layer exists" and "where none does" and presenting the second
+ * column as the OCR decision. Its denominator was eight values declared on
+ * image-only pages that contain no glyphs at all, so `0/8` was the corpus
+ * failing to find things it had never written down. **Recall is only defined
+ * over pages that carry text**, this block asserts that it is measured over
+ * exactly those, and {@link DocumentBenchmarkReport.imageOnly} carries what the
+ * scanned documents can honestly say.
+ *
+ * `onPagesWithoutTextLayer` is computed from what extraction RETURNED, not from
+ * the corpus's own `expectedImageOnlyPages`, so it also catches a value planted
+ * on a page that failed to read or was never reached.
  */
-export interface SurfaceRecall {
-  readonly field: CorpusFieldName | 'all fields'
-  readonly textLayerExpected: number
-  readonly textLayerFound: number
-  readonly textLayerRecall: number | null
-  readonly noTextLayerExpected: number
-  readonly noTextLayerFound: number
-  readonly noTextLayerRecall: number | null
+export interface PlantedValueCoverage {
+  readonly plantedValues: number
+  /** Planted on a page extraction returned a readable text layer for. */
+  readonly onTextLayerPages: number
+  /** Planted where no text layer came back. Must be 0; a test pins it. */
+  readonly onPagesWithoutTextLayer: number
 }
 
 /** The whole run. */
@@ -151,8 +176,8 @@ export interface DocumentBenchmarkReport {
   readonly documents: readonly DocumentScore[]
   readonly fields: readonly FieldScore[]
   readonly byKind: readonly KindScore[]
-  /** Per field, then a final `all fields` row. */
-  readonly recallBySurface: readonly SurfaceRecall[]
+  /** Where the planted values live — the precondition for reading `fields`. */
+  readonly coverage: PlantedValueCoverage
   readonly aggregate: ScoreTotals
   /** Did every document that must be refused get refused for the right reason? */
   readonly outcomes: {
@@ -160,7 +185,12 @@ export interface DocumentBenchmarkReport {
     readonly asExpected: number
     readonly mismatches: readonly string[]
   }
-  /** Did image-only detection agree with what was planted? */
+  /**
+   * Did image-only detection agree with what was planted? This is the ONLY
+   * thing the scanned documents in this corpus measure, and it is a real
+   * measurement: it can fail in both directions, and one of its cases is the
+   * statement's blank separator page, which must NOT be called scanned.
+   */
   readonly imageOnly: {
     readonly pagesExpected: number
     readonly pagesDetected: number
@@ -499,43 +529,29 @@ async function scoreDocument(document: CorpusDocument): Promise<DocumentScore> {
   }
 }
 
-/** Split recall by whether the value's page had a text layer at all. */
-function recallBySurface(documents: readonly DocumentScore[]): SurfaceRecall[] {
-  const rows: SurfaceRecall[] = []
-  const slice = (field: CorpusFieldName | 'all fields'): SurfaceRecall => {
-    let textLayerExpected = 0
-    let textLayerFound = 0
-    let noTextLayerExpected = 0
-    let noTextLayerFound = 0
-    for (const document of documents) {
-      const withText = new Set(document.textLayerPages)
-      for (const entry of document.expectedFields) {
-        if (field !== 'all fields' && entry.field !== field) continue
-        const missed = document.misses.some(
-          (miss) => miss.field === entry.field && miss.value === entry.value && miss.page === entry.page,
-        )
-        if (withText.has(entry.page)) {
-          textLayerExpected += 1
-          if (!missed) textLayerFound += 1
-        } else {
-          noTextLayerExpected += 1
-          if (!missed) noTextLayerFound += 1
-        }
-      }
-    }
-    return {
-      field,
-      textLayerExpected,
-      textLayerFound,
-      textLayerRecall: ratio(textLayerFound, textLayerExpected),
-      noTextLayerExpected,
-      noTextLayerFound,
-      noTextLayerRecall: ratio(noTextLayerFound, noTextLayerExpected),
+/**
+ * Check every planted value against the surface it was planted on, using what
+ * extraction actually returned. A non-zero `onPagesWithoutTextLayer` means the
+ * oracle is claiming a value lives somewhere the reader found no text — which
+ * is either a corpus defect (a value declared on a page nothing renders) or an
+ * extraction defect, and in both cases every recall number below it is
+ * describing something other than what it says.
+ */
+function plantedValueCoverage(documents: readonly DocumentScore[]): PlantedValueCoverage {
+  let plantedValues = 0
+  let onTextLayerPages = 0
+  for (const document of documents) {
+    const withText = new Set(document.textLayerPages)
+    for (const entry of document.expectedFields) {
+      plantedValues += 1
+      if (withText.has(entry.page)) onTextLayerPages += 1
     }
   }
-  for (const field of CORPUS_FIELDS) rows.push(slice(field))
-  rows.push(slice('all fields'))
-  return rows
+  return {
+    plantedValues,
+    onTextLayerPages,
+    onPagesWithoutTextLayer: plantedValues - onTextLayerPages,
+  }
 }
 
 /** Run the whole corpus and score it. */
@@ -599,7 +615,7 @@ export async function runDocumentBenchmark(
     documents,
     fields,
     byKind,
-    recallBySurface: recallBySurface(documents),
+    coverage: plantedValueCoverage(documents),
     aggregate: totals(aggregateTally),
     outcomes: {
       documentsChecked: documents.length,
@@ -648,8 +664,8 @@ function header(label: string, width: number): string {
     padStart('prec', 8),
     padStart('recall', 8),
     padStart('cite acc', 10),
-    padStart('miss:txt', 8),
-    padStart('miss:img', 8),
+    padStart('miss:sel', 8),
+    padStart('miss:ext', 8),
   ].join(' ')
 }
 
@@ -669,8 +685,9 @@ export function formatDocumentBenchmarkReport(report: DocumentBenchmarkReport): 
   out.push('RetireGolden — WS5 document-parsing accuracy benchmark')
   out.push('Synthetic corpus, hand-built; expected values are declared in documentCorpus.ts.')
   out.push('')
-  out.push('miss:txt = value was in the extracted text but no detector produced it (a mapper gap).')
-  out.push('miss:img = value was never in any text layer (a scanned page — the OCR gap).')
+  out.push('miss:sel = value WAS in the extracted text and no detector produced it (a selection gap).')
+  out.push('miss:ext = value was authored on the page and did not survive extraction.')
+  out.push('Neither is an OCR number. This benchmark does not measure OCR — see LIMITATION below.')
   out.push('')
 
   out.push('PER FIELD')
@@ -696,7 +713,7 @@ export function formatDocumentBenchmarkReport(report: DocumentBenchmarkReport): 
   for (const miss of misses) {
     out.push(
       `  ${pad(miss.document, 24)} ${pad(miss.field, 16)} p${miss.page} ${pad(miss.value, 22)} ` +
-        `${miss.textPresent ? 'text present — detector gap' : 'no text layer — OCR gap'}`,
+        `${miss.textPresent ? 'text present — selection gap' : 'text lost — extraction gap'}`,
     )
   }
   out.push('')
@@ -711,33 +728,45 @@ export function formatDocumentBenchmarkReport(report: DocumentBenchmarkReport): 
   }
   out.push('')
 
-  out.push('RECALL BY SURFACE — the OCR decision, per field')
+  out.push('WHERE THE PLANTED VALUES LIVE — the precondition for every recall number above')
   out.push(
-    [
-      pad('field', width),
-      padStart('with text layer', 18),
-      padStart('recall', 8),
-      padStart('no text layer', 16),
-      padStart('recall', 8),
-    ].join(' '),
+    `  ${report.coverage.plantedValues} planted; ${report.coverage.onTextLayerPages} on a page extraction ` +
+      `returned a text layer for; ${report.coverage.onPagesWithoutTextLayer} on a page it did not.`,
   )
-  for (const row of report.recallBySurface) {
-    out.push(
-      [
-        pad(row.field, width),
-        padStart(`${row.textLayerFound}/${row.textLayerExpected}`, 18),
-        padStart(percent(row.textLayerRecall), 8),
-        padStart(`${row.noTextLayerFound}/${row.noTextLayerExpected}`, 16),
-        padStart(percent(row.noTextLayerRecall), 8),
-      ].join(' '),
-    )
-  }
+  out.push(
+    '  The second number must equal the first. Recall is defined only over pages that carry text;',
+  )
+  out.push(
+    '  a value declared where no text exists would be scored as missed without ever having been there.',
+  )
   out.push('')
 
-  out.push('IMAGE-ONLY PAGE DETECTION')
+  out.push('IMAGE-ONLY PAGE DETECTION — what the scanned documents in this corpus measure')
   out.push(
     `  planted ${report.imageOnly.pagesExpected}, detected ${report.imageOnly.pagesDetected}, ` +
       `false positives ${report.imageOnly.falsePositives}, false negatives ${report.imageOnly.falseNegatives}`,
+  )
+  out.push(
+    '  A page reported image-only lets a UI say "this page is a scanned image — type these values in"',
+  )
+  out.push('  instead of showing an empty result. A blank page must not be reported this way.')
+  out.push('')
+
+  out.push('LIMITATION — OCR recoverability is NOT measured here')
+  out.push(
+    '  Image-only pages in this corpus paint a featureless raster and carry no glyphs, so no value is',
+  )
+  out.push(
+    '  planted on one. How much of a REAL scan an OCR engine could recover is therefore unmeasured, and',
+  )
+  out.push(
+    '  it cannot be measured from generator-built bytes: a crude bitmap font would give a noise-free,',
+  )
+  out.push(
+    '  skew-free raster whose difficulty resembles no real scan, producing an optimistic number that is',
+  )
+  out.push(
+    '  worse than none. Measuring it needs real scanned documents, which the plan forbids bundling.',
   )
   out.push('')
 

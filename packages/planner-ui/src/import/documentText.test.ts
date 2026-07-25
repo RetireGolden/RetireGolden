@@ -11,6 +11,7 @@ import {
   MAX_DOCUMENT_TEXT_CHARS,
   MAX_PAGE_TEXT_CHARS,
   extractDocumentText,
+  type HostPdfjsModule,
 } from './documentText'
 import { buildSyntheticPdf } from './pdfFixtures'
 
@@ -84,6 +85,16 @@ const IMAGE_PAINT_OP = 85
  * whose own bookkeeping then raises an unhandled rejection. A reader that
  * cancels this stream unguarded fails the page, which is the point: the result
  * a page has already decided may never be replaced by the way it let go.
+ *
+ * **What this fake CANNOT show, and why the real-pdfjs tests at the bottom of
+ * this file exist.** Nothing here waits on the reader: `pull` produces a chunk
+ * whenever one is asked for and nothing is pending when nobody asks again, and
+ * the fake's `destroy` resolves immediately. So walking away from this stream
+ * costs nothing — while walking away from pdfjs's own leaves its producer
+ * awaiting a sink that will never drain, and `loadingTask.destroy()` waiting on
+ * that producer, so the call never settles at all. Every "the caps bound the
+ * work" assertion below was written against this fake, which is exactly how a
+ * deadlock shipped past a full green suite.
  */
 function fakeTextStream(chunks: () => Iterable<readonly FakeGlyphItem[]>): ReadableStream {
   const batches = chunks()[Symbol.iterator]()
@@ -233,7 +244,34 @@ describe('extractDocumentText — pages with no text layer', () => {
     expect(result.pages[0]!.text).toBe('')
     expect(result.pages[0]!.imageOnly).toBe(false)
     expect(result.summary.imageOnlyPages).toBe(0)
-    expect(result.summary.noTextExtracted).toBe(true)
+    // …and the document-level signal makes the same distinction. See the
+    // dedicated test below: `noTextExtracted` is the needs-OCR signal, and
+    // there is nothing on a blank page for an OCR pass to recover.
+    expect(result.summary.noTextExtracted).toBe(false)
+  })
+
+  it('does not send a blank document to OCR — nothing there is recoverable', async () => {
+    // Every page blank: no text anywhere, and every page `imageOnly: false`.
+    // `noTextExtracted` used to be true of exactly this, because "no page had
+    // text" was the whole test — so a stack of separator pages was reported as
+    // "fully scanned, needs OCR" when there is no ink on it at all. The flag
+    // documents itself as the needs-OCR signal, so it may only fire where OCR
+    // could actually recover something.
+    const result = expectOk(await extractDocumentText(buildSyntheticPdf({ pages: [{}, {}, {}] })))
+
+    expect(result.summary.totalPages).toBe(3)
+    expect(result.summary.pagesExtracted).toBe(3)
+    expect(result.summary.imageOnlyPages).toBe(0)
+    expect(result.summary.totalTextChars).toBe(0)
+    expect(result.summary.noTextExtracted).toBe(false)
+    // The document is still fully described: three pages, read, all empty.
+    expect(result.pages.every((page) => page.text === '' && !page.imageOnly)).toBe(true)
+
+    // …and one scanned page among the blanks is enough to make it true again:
+    // narrowing the flag must not have blunted the signal it exists for.
+    const mixed = expectOk(await extractDocumentText(buildSyntheticPdf({ pages: [{}, { image: true }] })))
+    expect(mixed.summary.imageOnlyPages).toBe(1)
+    expect(mixed.summary.noTextExtracted).toBe(true)
   })
 
   it('flags a fully scanned document as yielding no text at all', async () => {
@@ -577,6 +615,50 @@ describe('extractDocumentText — the optional pdfjs peer is missing', () => {
     expect(result.message).toMatch(/[.!]$/)
   })
 
+  it('names BOTH remedies in EVERY browser engine, not only the one Chromium words', async () => {
+    // Two things at once, because they are the same sentence.
+    //
+    // The message used to say only "the optional pdfjs-dist package is not
+    // installed". In a browser bundle that is a fix that cannot work: the
+    // package may be installed already and the page still cannot resolve a bare
+    // npm specifier at run time. The other remedy — `options.pdfjs` — is the
+    // only one that works there, so it has to be in the one sentence a UI shows.
+    //
+    // And a browser supplies no `error.code` at all, so the WORDING alone
+    // decides which reason is chosen. Only Chromium's phrasing matched, so a
+    // Firefox or Safari host that had installed nothing was told
+    // `pdfjs_incompatible` — "the installed pdfjs-dist build is not one this app
+    // can use" — a false sentence about a package that is not installed, and one
+    // that never shows the remedy that works. These are each engine's real text
+    // for an unresolvable bare specifier.
+    const wordings = [
+      ['Chromium', "Failed to resolve module specifier 'pdfjs-dist/legacy/build/pdf.mjs'"],
+      [
+        'Firefox',
+        'The specifier “pdfjs-dist/legacy/build/pdf.mjs” was a bare specifier, but was not remapped to anything.',
+      ],
+      ['Safari', "Module name, 'pdfjs-dist/legacy/build/pdf.mjs' does not resolve to a valid URL."],
+      ['any engine, when it blames the script', 'Importing a module script failed.'],
+    ] as const
+
+    for (const [engine, message] of wordings) {
+      vi.resetModules()
+      vi.doMock('pdfjs-dist/legacy/build/pdf.mjs', () => {
+        throw new Error(message)
+      })
+
+      const { extractDocumentText: extract } = await import('./documentText')
+      const result = expectFailed(await extract(REAL_PDF_BYTES))
+
+      expect(result.reason, `${engine}: ${message}`).toBe('pdfjs_unavailable')
+      expect(result.message, engine).toMatch(/is not installed/i)
+      expect(result.message, engine).toMatch(/options\.pdfjs/)
+      expect(result.message, engine).toMatch(/[.!]$/)
+      // …and never the sentence that describes a build the host does have.
+      expect(result.message, engine).not.toMatch(/is not one this app can use/i)
+    }
+  })
+
   it('imports the peer through a specifier a bundler will not resolve at build time', async () => {
     // A LITERAL specifier is resolved by Vite and Rollup during dependency
     // scanning, so a host that never installs the optional peer fails to BUILD —
@@ -593,6 +675,174 @@ describe('extractDocumentText — the optional pdfjs peer is missing', () => {
     // the peer through the same indirect specifier.
     const ok = expectOk(await extractDocumentText(buildSyntheticPdf({ pages: [{ text: 'resolved at run time' }] })))
     expect(ok.pages[0]!.text).toBe('resolved at run time')
+  })
+})
+
+describe('extractDocumentText — the host supplies pdfjs (the browser path)', () => {
+  afterEach(() => {
+    vi.doUnmock('pdfjs-dist/legacy/build/pdf.mjs')
+    vi.doUnmock('pdfjs-dist/legacy/build/pdf.worker.mjs')
+    vi.resetModules()
+  })
+
+  it('uses the module the host passes and never reaches for one itself', async () => {
+    // Making the specifier opaque to a bundler bought the BUILD and lost the
+    // browser: a bare `pdfjs-dist/...` specifier survives into the bundle, and
+    // no browser can resolve an npm package name at run time — so a host that
+    // installed the peer got `pdfjs_unavailable` at the first extraction. The
+    // host's own `import('pdfjs-dist/legacy/build/pdf.mjs')` IS resolved, by
+    // its own bundler, so the host hands the module in.
+    //
+    // Both specifiers are mocked to fail the way a browser fails them, and the
+    // import is counted: with a module supplied, this module must not attempt
+    // either import at all — reaching for one is what breaks in the browser.
+    let importsAttempted = 0
+    const unresolvable = (): never => {
+      importsAttempted += 1
+      throw new Error("Failed to resolve module specifier 'pdfjs-dist'")
+    }
+    vi.resetModules()
+    vi.doMock('pdfjs-dist/legacy/build/pdf.mjs', unresolvable)
+    vi.doMock('pdfjs-dist/legacy/build/pdf.worker.mjs', unresolvable)
+
+    const { extractDocumentText: extract } = await import('./documentText')
+    const hostPdfjs = fakePdfjs({
+      pages: [{ items: () => [{ str: 'read through the host-supplied build' }] }, { imagePainted: true }],
+    })
+    const result = expectOk(await extract(REAL_PDF_BYTES, { pdfjs: hostPdfjs }))
+
+    expect(result.pages[0]!.text).toBe('read through the host-supplied build')
+    expect(result.pages[1]!.imageOnly).toBe(true)
+    expect(result.summary.totalPages).toBe(2)
+    expect(importsAttempted).toBe(0)
+
+    // …and the same host, on the same bundle, without passing it: the honest
+    // failure, not a throw.
+    const without = expectFailed(await extract(REAL_PDF_BYTES))
+    expect(without.reason).toBe('pdfjs_unavailable')
+    expect(importsAttempted).toBeGreaterThan(0)
+  })
+
+  it('blames the host build, not the document, for a supplied module of the wrong shape', async () => {
+    // A host may pass anything — the wrong module, a CJS interop wrapper, a
+    // stub. The existing shape check has to catch it BEFORE a byte is parsed,
+    // so it lands on `pdfjs_incompatible` rather than crashing out of the
+    // result union or blaming the user's file.
+    const wrong = { getDocument: 'not a function' } as unknown as HostPdfjsModule
+    const result = expectFailed(await extractDocumentText(REAL_PDF_BYTES, { pdfjs: wrong }))
+
+    expect(result.reason).toBe('pdfjs_incompatible')
+    expect(result.reason).not.toBe('corrupt')
+    expect(result.message).not.toMatch(/damaged|partly downloaded/i)
+    expect(result.message).toMatch(/[.!]$/)
+
+    // An object with nothing on it at all is the same answer, not an exception.
+    const empty = expectFailed(await extractDocumentText(REAL_PDF_BYTES, { pdfjs: {} as HostPdfjsModule }))
+    expect(empty.reason).toBe('pdfjs_incompatible')
+  })
+
+  it('still takes the zero-config import path when no module is supplied', async () => {
+    // The convenience half of the design: in Node, SSR, and an Electron main
+    // process a bare specifier DOES resolve, and this repo's own tests and
+    // benchmark depend on it. Injection must not have become mandatory.
+    const ok = expectOk(await extractDocumentText(buildSyntheticPdf({ pages: [{ text: 'no injection needed' }] })))
+    expect(ok.pages[0]!.text).toBe('no injection needed')
+  })
+
+  it('drives the REAL pdfjs through the injected path, not only a hand-written fake', async () => {
+    // Every other test on this path passes a fake, so the only thing that ever
+    // reached the injected code with a real pdfjs was… nothing. A shape check
+    // this module might add, or an option it might come to require, that the
+    // fake satisfies and pdfjs 6 does not would pass the whole suite and fail
+    // every browser host — the ONLY hosts that take this path. The peer is
+    // already a devDependency, so injecting the genuine article costs one
+    // import. (The worker module is not imported here on purpose: this is the
+    // real injected-path configuration a browser host would have, and in Node
+    // pdfjs disables the worker on its own — which is precisely why a missing
+    // one is not refused up front.)
+    const realPdfjs = (await import('pdfjs-dist/legacy/build/pdf.mjs')) as unknown as HostPdfjsModule
+    const pdf = buildSyntheticPdf({
+      pages: [{ text: 'Injected pdfjs read this line' }, { image: true }, { text: '' }],
+    })
+    const ok = expectOk(await extractDocumentText(pdf, { pdfjs: realPdfjs }))
+
+    expect(ok.pages[0]!.text).toBe('Injected pdfjs read this line')
+    expect(ok.pages[1]!.imageOnly).toBe(true)
+    expect(ok.pages[2]!.text).toBe('')
+    expect(ok.pages[2]!.imageOnly).toBe(false)
+    expect(ok.summary.totalPages).toBe(3)
+    expect(ok.summary.unreadablePages).toEqual([])
+
+    // …and the caps behave the same way against the real build as against the
+    // fake, which is the other thing a fake alone cannot promise.
+    const capped = expectOk(await extractDocumentText(pdf, { pdfjs: realPdfjs, maxPageTextChars: 8 }))
+    expect(capped.pages[0]!.text).toBe('Injected')
+    expect(capped.summary.truncatedBy).toContain('page_text_cap')
+  })
+})
+
+describe('extractDocumentText — an injected pdfjs that has no main-thread worker', () => {
+  // The worker-free guarantee rests on THIS module importing `pdf.worker.mjs`
+  // for its side effect (`globalThis.pdfjsWorker`). On the injected path that
+  // import never runs, so a browser host that passed only `pdf.mjs` has pdfjs
+  // hunting for a worker asset. The README warned about it; the code has to
+  // NAME it, because the reason a UI shows is the only thing that host sees.
+  //
+  // Not refused up front: an unset `globalThis.pdfjsWorker` is normal in Node
+  // and in an Electron main process, and a host that hosts the worker asset and
+  // sets `GlobalWorkerOptions.workerSrc` is configured correctly too. What is
+  // recognised is pdfjs SAYING it could not get a worker — in its own words,
+  // both of which are quoted from pdfjs 6.1.200.
+
+  it('reports the worker reason for the synchronous "no workerSrc" throw', async () => {
+    // pdfjs builds its PDFWorker inside `getDocument`, before it returns the
+    // loading task, so this one is thrown synchronously — where this module
+    // used to answer `pdfjs_incompatible`, blaming a build that is fine.
+    const noWorker = fakePdfjs({})
+    noWorker.getDocument = () => {
+      throw new Error('No "GlobalWorkerOptions.workerSrc" specified.')
+    }
+    const result = expectFailed(await extractDocumentText(REAL_PDF_BYTES, { pdfjs: noWorker }))
+
+    expect(result.reason).toBe('pdfjs_worker_unavailable')
+    expect(result.reason).not.toBe('pdfjs_incompatible')
+    // The remedy is the host's own import, not an install and not a different
+    // build — and not this module's worker import, which never ran.
+    expect(result.message).toMatch(/pdf\.worker\.mjs/)
+    expect(result.message).not.toMatch(/main-thread worker module could not be loaded/)
+    expect(result.message).not.toMatch(/damaged|partly downloaded/i)
+    expect(result.message).toMatch(/[.!]$/)
+  })
+
+  it('reports the worker reason when pdfjs fails later, setting up its fallback', async () => {
+    // The other wording, and the other arrival: pdfjs's main-thread fallback
+    // imports the worker module itself and rejects the loading task when that
+    // fails. `extraction_failed` used to answer this with "the document itself
+    // may be perfectly fine — try again", and trying again cannot supply a
+    // module the host never imported.
+    const failing = fakePdfjs({
+      documentError: new Error('Setting up fake worker failed: "Cannot load script ./pdf.worker.mjs".'),
+    })
+    const result = expectFailed(await extractDocumentText(REAL_PDF_BYTES, { pdfjs: failing }))
+
+    expect(result.reason).toBe('pdfjs_worker_unavailable')
+    expect(result.reason).not.toBe('extraction_failed')
+    expect(result.message).toMatch(/pdf\.worker\.mjs/)
+    expect(result.message).not.toMatch(/try again/i)
+  })
+
+  it('does not claim the worker for every failure a supplied build can raise', async () => {
+    // The classification is narrow on purpose: a build that rejects the
+    // parameter object, and a document that really is damaged, must keep the
+    // reasons they had. A matcher that swallowed those would trade one wrong
+    // sentence for another.
+    const rejecting = fakePdfjs({ getDocumentThrows: new TypeError('unsupported parameter object') })
+    expect(expectFailed(await extractDocumentText(REAL_PDF_BYTES, { pdfjs: rejecting })).reason).toBe(
+      'pdfjs_incompatible',
+    )
+
+    const damaged = fakePdfjs({ documentError: named('InvalidPDFException', 'Invalid PDF structure.') })
+    expect(expectFailed(await extractDocumentText(REAL_PDF_BYTES, { pdfjs: damaged })).reason).toBe('corrupt')
   })
 })
 
@@ -807,29 +1057,38 @@ describe('extractDocumentText — the caps bound the work, not just the answer',
     expect(ok.summary.noTextExtracted).toBe(false)
   })
 
-  it('takes the page through the STREAMING text API so a text bomb is never built', async () => {
+  it('takes the page through the STREAMING text API so the whole page is never held', async () => {
     // Stopping early inside `getTextContent().items` bounds the ITERATION and
     // nothing else: pdfjs has already built the complete items array, with all its
     // strings, before that array is handed over. A content stream that decompresses
     // to a megabyte of glyphs sits well inside the 25 MB byte cap and the page cap,
     // so nothing refuses it and it materializes in full — on the calling thread this
-    // module deliberately runs pdfjs on, freezing it. The exported caps advertised a
-    // resource bound they did not deliver.
+    // module deliberately runs pdfjs on. Streaming is what keeps this module's own
+    // peak to one batch plus a capped string.
     //
-    // This page offers a megabyte in a thousand chunks behind a 50-character cap and
-    // counts what was actually produced. The fake's `getTextContent` materializes
-    // every chunk, exactly as a real build does, so taking that path is visible here.
-    let chunksBuilt = 0
-    let charsBuilt = 0
+    // Two different quantities, because they now have two different answers. The
+    // stream is DRAINED, so every chunk is produced — abandoning pdfjs's stream is
+    // what deadlocks the call (see the real-pdfjs tests at the bottom of this
+    // file). What must stop at the cap is the ACCUMULATING, so the items are
+    // counted as they are inspected: each item's `str` is a getter, and reading it
+    // is exactly the moment this module looks at a glyph it might keep.
+    let chunksProduced = 0
+    let itemsInspected = 0
+    const bigItem = (): FakeGlyphItem =>
+      ({
+        get str() {
+          itemsInspected += 1
+          return 'x'.repeat(1000)
+        },
+      }) as FakeGlyphItem
     const result = await extractWith(
       {
         pages: [
           {
             chunks: function* () {
               for (let index = 0; index < 1000; index++) {
-                chunksBuilt += 1
-                charsBuilt += 1000
-                yield [{ str: 'x'.repeat(1000) }]
+                chunksProduced += 1
+                yield [bigItem()]
               }
             },
           },
@@ -838,10 +1097,14 @@ describe('extractDocumentText — the caps bound the work, not just the answer',
       { maxPageTextChars: 50 },
     )
 
-    // One chunk answers all 50 characters; a ReadableStream keeps one more queued
-    // ahead of the reader, so two is the most that can have been built.
-    expect(chunksBuilt).toBeLessThanOrEqual(2)
-    expect(charsBuilt).toBeLessThanOrEqual(2000)
+    // Every chunk was read to the end — and exactly once. The fake's
+    // `getTextContent` materializes the same generator, so a second thousand
+    // would be the signature of the whole page having been built after all.
+    expect(chunksProduced).toBe(1000)
+    // One item settles all 50 characters: `isGlyphItem` looks at its `str` and
+    // then the accumulator takes it. Nothing after it is ever opened, however
+    // many chunks go past.
+    expect(itemsInspected).toBeLessThanOrEqual(2)
 
     // …and the answer is exactly what materializing the whole page produced. The
     // fake's stream REJECTS on cancel, as pdfjs 6 does, so a result reaching here
@@ -855,6 +1118,72 @@ describe('extractDocumentText — the caps bound the work, not just the answer',
     // page cut short after one chunk still had a text layer.
     expect(ok.pages[0]!.imageOnly).toBe(false)
     expect(ok.summary.noTextExtracted).toBe(false)
+  })
+
+  it('stops accumulating at the EFFECTIVE budget when the document cap is tighter', async () => {
+    // The retained text was correctly limited to what the document budget had
+    // left, but accumulating kept going until the PAGE cap was passed — so a
+    // caller asking for 10 characters of a document still had this module
+    // inspect and copy up to MAX_PAGE_TEXT_CHARS of that page. Every document
+    // nearly out of its total budget pays that on its last page.
+    let chunksProduced = 0
+    let itemsInspected = 0
+    const bigItem = (): FakeGlyphItem =>
+      ({
+        get str() {
+          itemsInspected += 1
+          return 'x'.repeat(1000)
+        },
+      }) as FakeGlyphItem
+    const result = await extractWith(
+      {
+        pages: [
+          {
+            chunks: function* () {
+              for (let index = 0; index < 1000; index++) {
+                chunksProduced += 1
+                yield [bigItem()]
+              }
+            },
+          },
+        ],
+      },
+      { maxTotalTextChars: 10 },
+    )
+
+    // Read to the end, as the stream must be; opened only until the 10
+    // characters were settled. Before the fix 101 chunks were inspected and
+    // 101,000 characters copied, to keep 10.
+    expect(chunksProduced).toBe(1000)
+    expect(itemsInspected).toBeLessThanOrEqual(2)
+
+    // …and the answer, and the attribution, are exactly what they were: the
+    // DOCUMENT cap clipped this, and the page cap — which never fired — is not
+    // credited with it.
+    const ok = expectOk(result)
+    expect(ok.pages[0]!.text).toBe('x'.repeat(10))
+    expect(ok.pages[0]!.truncated).toBe(true)
+    expect(ok.summary.truncatedBy).toEqual(['document_text_cap'])
+    expect(ok.summary.totalTextChars).toBe(10)
+    // Decided before truncation, so stopping sooner has not changed it.
+    expect(ok.pages[0]!.imageOnly).toBe(false)
+    expect(ok.summary.noTextExtracted).toBe(false)
+  })
+
+  it('still credits the page cap when IT is the tighter of the two', async () => {
+    // The other side of the same stop: attribution has to keep telling the two
+    // caps apart, so a caller tightening the page cap under a roomy document
+    // budget is still told which one clipped.
+    const page = { chunks: () => [[{ str: 'x'.repeat(1000) }]] }
+    const pageCapped = expectOk(await extractWith({ pages: [page] }, { maxPageTextChars: 20 }))
+    expect(pageCapped.pages[0]!.text).toBe('x'.repeat(20))
+    expect(pageCapped.summary.truncatedBy).toEqual(['page_text_cap'])
+
+    // Both caps at the same value: the page cap is the one that clipped, and
+    // the document cap only stops the run afterwards.
+    const both = expectOk(await extractWith({ pages: [page] }, { maxPageTextChars: 20, maxTotalTextChars: 20 }))
+    expect(both.pages[0]!.text).toBe('x'.repeat(20))
+    expect(both.summary.truncatedBy).toEqual(['page_text_cap'])
   })
 
   it('gives the same answer through the stream as through a build without one', async () => {
@@ -905,11 +1234,20 @@ describe('extractDocumentText — the caps bound the work, not just the answer',
     expect(clipped.pages[0]!.text).toBe('Ledger ')
     expect(clipped.pages[0]!.truncated).toBe(true)
 
-    // A page of nothing but whitespace is blank, not a page with text.
+    // A page of nothing but whitespace is blank, not a page with text — and
+    // blank is not scanned, so it is not a document to send to OCR either.
     const blank = expectOk(await extractWith({ pages: [{ items: () => [{ str: '   ' }, { str: '\n' }] }] }))
     expect(blank.pages[0]!.text).toBe('')
     expect(blank.pages[0]!.imageOnly).toBe(false)
-    expect(blank.summary.noTextExtracted).toBe(true)
+    expect(blank.summary.noTextExtracted).toBe(false)
+
+    // The same whitespace page WITH a raster painted on it is the scanned case,
+    // and that one does need OCR.
+    const scanned = expectOk(
+      await extractWith({ pages: [{ items: () => [{ str: '   ' }], imagePainted: true }] }),
+    )
+    expect(scanned.pages[0]!.imageOnly).toBe(true)
+    expect(scanned.summary.noTextExtracted).toBe(true)
   })
 
   it('does not call a document corrupt when it was the reading that failed', async () => {
@@ -993,6 +1331,70 @@ describe('extractDocumentText — the caps bound the work, not just the answer',
     expect(result.summary.noTextExtracted).toBe(false)
   })
 
+  it('fails the document when EVERY declared page fails, instead of an empty success', async () => {
+    // pdfjs opened the catalog and reported a page count, so the document-level
+    // handling never ran — and plenty of damaged PDFs fail only once their
+    // pages are touched. Every page went into `unreadablePages` and the call
+    // still returned `{ ok: true, pages: [] }`: a successful extraction of
+    // nothing, which a consumer reads as "this document is empty" about a
+    // document nobody read a page of. The split is the document-level one:
+    // `corrupt` only where pdfjs itself made a statement about the bytes.
+    const corrupt = expectFailed(
+      await extractWith({
+        pages: [
+          { failWith: named('FormatError', 'Bad (uncompressed) stream') },
+          { failWith: named('InvalidPDFException', 'Invalid PDF structure.') },
+        ],
+      }),
+    )
+    expect(corrupt.reason).toBe('corrupt')
+    expect(corrupt.message).toMatch(/damaged/i)
+    expect(corrupt.message).toMatch(/[.!]$/)
+
+    // A fault that is NOT pdfjs's verdict on the bytes may not become one just
+    // because it happened on every page: this process failed, and `corrupt`
+    // would tell someone to re-download a file that is perfectly good.
+    const unclassified = expectFailed(
+      await extractWith({
+        pages: [{ failWith: new RangeError('Invalid string length') }, { failWith: new TypeError('not a function') }],
+      }),
+    )
+    expect(unclassified.reason).toBe('extraction_failed')
+    expect(unclassified.reason).not.toBe('corrupt')
+    expect(unclassified.message).not.toMatch(/damaged|partly downloaded/i)
+    expect(unclassified.message).toMatch(/[.!]$/)
+
+    // A single page is a whole document too.
+    const only = expectFailed(await extractWith({ pages: [{ failWith: new Error('nothing readable here') }] }))
+    expect(only.reason).toBe('extraction_failed')
+  })
+
+  it('keeps partial success a success — the all-pages rule must not swallow it', async () => {
+    // The guard above may only fire when NOTHING was read. One page out of
+    // three is still a result, with the rest named in `unreadablePages`.
+    const partial = expectOk(
+      await extractWith({
+        pages: [
+          { failWith: named('FormatError', 'Bad (uncompressed) stream') },
+          { items: () => [{ str: 'Disclosures' }] },
+          { failWith: named('InvalidPDFException', 'Invalid PDF structure.') },
+        ],
+      }),
+    )
+    expect(partial.pages.map((page) => [page.page, page.text])).toEqual([[2, 'Disclosures']])
+    expect(partial.summary.unreadablePages).toEqual([1, 3])
+    expect(partial.summary.pagesExtracted).toBe(1)
+
+    // …and neither does a document the total-text cap stopped before page 1:
+    // no page failed, so nothing here applies to it.
+    const capped = expectOk(
+      await extractWith({ pages: [{ items: () => [{ str: 'Readable' }] }] }, { maxTotalTextChars: 0 }),
+    )
+    expect(capped.pages).toEqual([])
+    expect(capped.summary.unreadablePages).toEqual([])
+    expect(capped.summary.truncatedBy).toContain('document_text_cap')
+  })
+
   it('reports an empty unreadablePages when every page was read', async () => {
     const result = expectOk(await extractWith({ pages: [{ items: () => [{ str: 'All fine' }] }] }))
     expect(result.summary.unreadablePages).toEqual([])
@@ -1050,6 +1452,138 @@ describe('extractDocumentText — the pdfjs worker module will not load', () => 
     expect(result.message).not.toBe(result.reason)
     expect(result.message).toMatch(/[.!]$/)
   })
+})
+
+describe('extractDocumentText — a capped page must SETTLE against real pdfjs', () => {
+  // The gap these close, stated plainly: every "the caps bound the work"
+  // assertion above drives the fake pdfjs at the top of this file, whose
+  // `destroy` resolves immediately and whose stream has no producer waiting on
+  // anybody. Abandoning a stream is therefore free in the fake — and fatal in
+  // reality. pdfjs's text producer awaits its sink once the queue is full (it
+  // flushes every 100 items), and `loadingTask.destroy()` waits on that
+  // producer, so a reader that stops mid-page leaves the promise
+  // `extractDocumentText` returned pending FOREVER. Measured before the fix:
+  // `maxTotalTextChars: 10` and `maxPageTextChars: 10` both hang on the page
+  // below; both answer in single-digit milliseconds once the stream is drained.
+  //
+  // Every test here carries an explicit timeout so a regression FAILS rather
+  // than hanging the suite — the failure mode is a promise that never settles,
+  // which without a timeout is a run that never ends.
+  const SETTLE_TIMEOUT_MS = 15_000
+
+  /**
+   * A page with far more than pdfjs's 100-item flush threshold, so its stream
+   * arrives in several chunks and its producer is still mid-page when a small
+   * cap is satisfied by the first one. Ten columns per baseline keeps every run
+   * on the page, which a long single column would not.
+   */
+  function manyItemPage(baselines = 40) {
+    return {
+      fontSize: 5,
+      lines: Array.from({ length: baselines }, (_, row) =>
+        Array.from({ length: 10 }, (_, column) => ({ x: 20 + column * 55, text: `r${row}-c${column}` })),
+      ),
+    }
+  }
+
+  it('the fixture really does leave pdfjs mid-stream — the premise, pinned', async () => {
+    // If a future pdfjs (or a change to the fixture) delivered this page in one
+    // chunk, every test below would still pass while covering nothing at all:
+    // there would be no queued producer left to strand. So the premise is
+    // asserted directly, through the real streaming API.
+    const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
+    await import('pdfjs-dist/legacy/build/pdf.worker.mjs')
+    const task = pdfjs.getDocument({
+      data: buildSyntheticPdf({ pages: [manyItemPage()] }),
+      useWorkerFetch: false,
+      useSystemFonts: false,
+      disableFontFace: true,
+      verbosity: pdfjs.VerbosityLevel.ERRORS,
+    })
+    try {
+      const page = await (await task.promise).getPage(1)
+      const reader = page.streamTextContent().getReader()
+      let chunks = 0
+      for (;;) {
+        const next = await reader.read()
+        if (next.done === true) break
+        chunks += 1
+      }
+      expect(chunks).toBeGreaterThan(1)
+    } finally {
+      await task.destroy()
+    }
+  }, SETTLE_TIMEOUT_MS)
+
+  it(
+    'settles when the DOCUMENT cap is satisfied long before the page ends',
+    async () => {
+      const ok = expectOk(
+        await extractDocumentText(buildSyntheticPdf({ pages: [manyItemPage()] }), { maxTotalTextChars: 10 }),
+      )
+      expect(ok.pages[0]!.text).toHaveLength(10)
+      expect(ok.pages[0]!.truncated).toBe(true)
+      expect(ok.summary.truncatedBy).toEqual(['document_text_cap'])
+      expect(ok.summary.totalTextChars).toBe(10)
+      // Truncation is not a scanned page, however early it happened.
+      expect(ok.pages[0]!.imageOnly).toBe(false)
+      expect(ok.summary.noTextExtracted).toBe(false)
+    },
+    SETTLE_TIMEOUT_MS,
+  )
+
+  it(
+    'settles when the PAGE cap is satisfied long before the page ends',
+    async () => {
+      // This one hung BEFORE this round's change as well as after it, so it is
+      // a live bug on the branch and not only a regression guard.
+      const ok = expectOk(
+        await extractDocumentText(buildSyntheticPdf({ pages: [manyItemPage()] }), { maxPageTextChars: 10 }),
+      )
+      expect(ok.pages[0]!.text).toHaveLength(10)
+      expect(ok.pages[0]!.truncated).toBe(true)
+      expect(ok.summary.truncatedBy).toEqual(['page_text_cap'])
+      expect(ok.summary.totalTextChars).toBe(10)
+    },
+    SETTLE_TIMEOUT_MS,
+  )
+
+  it(
+    'settles when the budget runs out in the middle of a LATER page',
+    async () => {
+      // The commonest shape of all: pages read whole until the document budget
+      // is nearly spent, and the page that spends it is abandoned mid-stream.
+      // The cap is derived from the fixture rather than hard-coded, so this
+      // keeps landing mid-page whatever a pdfjs bump does to the spacing.
+      const pdf = buildSyntheticPdf({ pages: [manyItemPage(), manyItemPage(), manyItemPage()] })
+      const whole = expectOk(await extractDocumentText(pdf))
+      const firstPageChars = whole.pages[0]!.text.length
+      expect(firstPageChars).toBeGreaterThan(100)
+      expect(whole.summary.truncated).toBe(false)
+
+      const ok = expectOk(await extractDocumentText(pdf, { maxTotalTextChars: firstPageChars + 10 }))
+      expect(ok.pages).toHaveLength(2)
+      expect(ok.pages[0]!.truncated).toBe(false)
+      expect(ok.pages[1]!.text).toHaveLength(10)
+      expect(ok.pages[1]!.truncated).toBe(true)
+      expect(ok.summary.truncatedBy).toEqual(['document_text_cap'])
+      expect(ok.summary.totalTextChars).toBe(firstPageChars + 10)
+    },
+    SETTLE_TIMEOUT_MS,
+  )
+
+  it(
+    'reads a capped page and an uncapped one to the same text',
+    async () => {
+      // Draining must not change one character of the answer: the discarded
+      // chunks are discarded, not folded in late.
+      const pdf = buildSyntheticPdf({ pages: [manyItemPage(6)] })
+      const whole = expectOk(await extractDocumentText(pdf))
+      const capped = expectOk(await extractDocumentText(pdf, { maxPageTextChars: 25 }))
+      expect(capped.pages[0]!.text).toBe(whole.pages[0]!.text.slice(0, 25))
+    },
+    SETTLE_TIMEOUT_MS,
+  )
 })
 
 describe('buildSyntheticPdf', () => {

@@ -176,8 +176,9 @@ The supported product API is:
   new reasons may be added in a minor. Processing is
   local: the document is passed as bytes and pdfjs is configured with no cmap or
   standard-font URL to fetch. **This subpath alone needs the optional
-  `pdfjs-dist` peer** (see "Optional PDF support" below); everything else in
-  the package works without it. This is a spike — its numbers have not yet
+  `pdfjs-dist` peer**, and a browser host passes its own copy in as
+  `options.pdfjs` rather than letting the module import one (see "Optional PDF
+  support" below); everything else in the package works without it. This is a spike — its numbers have not yet
   justified promoting page citations into the `./import-provenance`
   `SourceLocator` union, and it is not wired into the free import wizard,
   which still takes no PDF upload;
@@ -554,10 +555,30 @@ older Node that installs `pdfjs-dist` anyway sees npm's `EBADENGINE` warning, an
 `extractDocumentText` reports `pdfjs_unavailable` or `pdfjs_incompatible` rather
 than failing obscurely.
 
+**In a browser bundle, pass pdfjs in.** This is the important half, and it is
+not optional. `extractDocumentText` can *import* pdfjs itself, but only through
+the bare specifier `pdfjs-dist/legacy/build/pdf.mjs` — and that specifier is
+deliberately opaque to your bundler (so your build does not fail when the
+optional peer is absent), which means it survives into the bundle as a bare npm
+package name. No browser can resolve one at run time. A bundled page that lets
+this module do its own importing therefore gets `pdfjs_unavailable` on the first
+extraction *even though pdfjs is installed*. Your own `import()` of the same
+module **is** resolved and chunked by your bundler, so your app is the only
+party that can produce the module — hand it over as `options.pdfjs`:
+
 ```ts
 import { extractDocumentText } from '@retiregolden/planner-ui/document-text'
 
-const result = await extractDocumentText(await file.arrayBuffer())
+// Your bundler resolves and chunks both of these; this module never could.
+const [pdfjs] = await Promise.all([
+  import('pdfjs-dist/legacy/build/pdf.mjs'),
+  // Side effect only: sets globalThis.pdfjsWorker, which pdfjs consults before
+  // it would construct a Worker — so no separate worker asset has to be hosted.
+  // Omit this and pdfjs will look for one.
+  import('pdfjs-dist/legacy/build/pdf.worker.mjs'),
+])
+
+const result = await extractDocumentText(await file.arrayBuffer(), { pdfjs })
 if (!result.ok) {
   showMessage(result.message) // encrypted / corrupt / not_pdf / too_large / …
 } else {
@@ -567,11 +588,24 @@ if (!result.ok) {
 }
 ```
 
-If the peer is missing at runtime the call resolves to
-`{ ok: false, reason: 'pdfjs_unavailable' }` rather than throwing, so a host
-can degrade to manual entry. Extraction runs on the calling thread — pdfjs is
-driven worker-free so no separate worker asset has to be hosted — and the
-exported caps bound that work.
+Load it once and reuse it — the module is stateless here, and passing it per
+call costs nothing. Anything may be passed: a different pdfjs major, a
+re-export, a wrapper. The module inspects the object before it parses a byte of
+the document, so a build it cannot drive is `pdfjs_incompatible` — a statement
+about the host's pdfjs, never about the user's file.
+
+**In Node, SSR, or an Electron main process, omit it.** There a bare specifier
+resolves at run time, so zero configuration is the shorter path and the option
+can be left off entirely:
+
+```ts
+const result = await extractDocumentText(await readFile(path))
+```
+
+With no `options.pdfjs` and no resolvable peer, the call resolves to
+`{ ok: false, reason: 'pdfjs_unavailable' }` rather than throwing — its message
+names both remedies — so a host can degrade to manual entry. Extraction runs on
+the calling thread, and the exported caps bound that work.
 
 **How well does it read a document?** Measured, not asserted. An accuracy
 benchmark runs a hand-built corpus of synthetic statements, plan printouts,
@@ -582,17 +616,23 @@ reports precision and recall **per field**, plus page-citation accuracy:
 npm run benchmark:documents -w @retiregolden/planner-ui
 ```
 
-Short version for a host deciding whether to offer PDF import: where a text
-layer exists, 28 of 30 planted values came back, and no value was attributed to
-a page it is not printed on; on scanned pages nothing came back at all, and
-those pages are flagged `imageOnly` so a UI can route the user to manual entry
-instead of showing an empty result. Field-selection precision is 17–75% —
-extraction is not the bottleneck, picking the right value out of a page that
+Short version for a host deciding whether to offer PDF import: 28 of 30 planted
+values came back — 93.3% — and no value was attributed to a page it is not
+printed on. Both misses are values whose characters extracted perfectly and
+whose *selection* failed, which is the whole finding: field-selection precision
+is 17–75%, so a naive reader proposes 35 wrong values for every 28 right ones.
+Extraction is not the bottleneck; picking the right value out of a page that
 also contains a fee schedule and a copyright year is, and a money scanner
-cannot tell an account balance from a tax-form line at all. The corpus is
+cannot tell an account balance from a tax-form line at all. Pages with no text
+layer are flagged `imageOnly` — 3 planted, 3 detected, no false positives in
+either direction, and a blank page is correctly not called scanned — so a UI can
+route the user to manual entry instead of showing an empty result. **What the
+benchmark does not measure is OCR**: its scanned pages paint a featureless
+raster and carry no glyphs, so how much of a real scan is recoverable is
+unknown, and a synthetic fixture cannot answer it. The corpus is also
 generator-clean, so every number is an upper bound on a real document. Full
-tables, caveats, what the citation number does and does not prove, and the OCR
-recommendation are in
+tables, caveats, what the citation number does and does not prove, and the
+re-derived OCR recommendation are in
 [DOCS/features/document-parsing-spike.md](https://github.com/RetireGolden/RetireGolden/blob/main/DOCS/features/document-parsing-spike.md).
 
 ### Storage

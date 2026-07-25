@@ -48,6 +48,26 @@ const document = (result: DocumentBenchmarkReport, id: string) =>
 /** Whitespace-insensitive comparison; a line's runs are joined with a space. */
 const collapse = (value: string): string => value.replace(/\s+/g, ' ').trim()
 
+/**
+ * A two-page throwaway document whose values the caller states independently.
+ * Used to prove the scorer and the formatter can report failures the real
+ * corpus does not contain — including a value the document never prints, which
+ * a corpus document is forbidden to declare.
+ */
+const oneOffProbe = (overrides: Partial<CorpusDocument>): CorpusDocument => ({
+  id: 'probe',
+  kind: 'broker_statement',
+  label: 'probe',
+  bytes: buildSyntheticPdf({
+    pages: [{ lines: ['Account number ****1111'], fontSize: 10 }, { lines: ['Nothing here'], fontSize: 10 }],
+  }),
+  pageSources: ['Account number ****1111', 'Nothing here'],
+  expectedOutcome: 'ok',
+  expectedImageOnlyPages: [],
+  expected: [],
+  ...overrides,
+})
+
 describe('the corpus is an independent oracle', () => {
   it('covers the document shapes WS5 names and the failure shapes it must refuse', () => {
     const kinds = buildDocumentCorpus().map((entry) => entry.kind)
@@ -97,9 +117,6 @@ describe('the corpus is an independent oracle', () => {
     for (const entry of buildDocumentCorpus()) {
       for (const planted of entry.expected) {
         const source = entry.pageSources[planted.page - 1] ?? ''
-        // A page with no text layer prints nothing; its values are on the paper
-        // and are covered by the next spec.
-        if (source === '') continue
         expect(
           collapse(source),
           `${entry.id} page ${planted.page} must print ${planted.field} "${planted.value}" verbatim`,
@@ -108,21 +125,44 @@ describe('the corpus is an independent oracle', () => {
     }
   })
 
-  it('declares the scanned pages values that are on the paper and in no source line', () => {
-    // The other half: the OCR gap is only a real measurement if those values
-    // genuinely are not in any text layer. A value planted on an image-only
-    // page must appear in no authored source at all.
+  it('plants NO value on a page the corpus does not render', () => {
+    // The other way the oracle got corrupted, and the more damaging one: values
+    // were declared on image-only pages on the theory that they were "on the
+    // paper". `buildSyntheticPdf`'s `image: true` paints a 1x1 constant-grey
+    // sample stretched over the page — there is no glyph in those bytes at all.
+    // Counting `ELEANOR J WHITFIELD` as a false negative measured its ABSENCE
+    // from a document that never held it, and the resulting eight "OCR gaps"
+    // were quoted as the size of the OCR opportunity. A planted value must sit
+    // on a page that authors text.
     for (const entry of buildDocumentCorpus()) {
       for (const planted of entry.expected) {
-        if (!entry.expectedImageOnlyPages.includes(planted.page)) continue
-        expect(entry.pageSources[planted.page - 1] ?? '', `${entry.id} page ${planted.page} is scanned`).toBe('')
-        for (const source of entry.pageSources) {
-          expect(collapse(source), `${entry.id}: ${planted.value} must be on the paper only`).not.toContain(
-            collapse(planted.value),
-          )
-        }
+        expect(
+          entry.expectedImageOnlyPages,
+          `${entry.id}: ${planted.field} "${planted.value}" is planted on image-only page ${planted.page}`,
+        ).not.toContain(planted.page)
+        expect(
+          entry.pageSources[planted.page - 1] ?? '',
+          `${entry.id} page ${planted.page} authors nothing, so it can hold no value`,
+        ).not.toBe('')
       }
     }
+  })
+
+  it('keeps the scanned documents, because image-only DETECTION is still a real measurement', () => {
+    // Removing the phantom values must not quietly remove the documents. A
+    // fully scanned document and a typed cover page in front of a scanned
+    // insert are the two shapes that prove a page is reported as scanned rather
+    // than as an empty success — the signal a UI routes manual entry from.
+    const corpus = buildDocumentCorpus()
+    const scanned = corpus.find((entry) => entry.id === 'scanned-statement')!
+    expect(scanned.expectedOutcome).toBe('ok')
+    expect(scanned.expectedImageOnlyPages).toEqual([1, 2])
+    expect(scanned.expected).toEqual([])
+
+    const mixed = corpus.find((entry) => entry.id === 'mixed-scan-statement')!
+    expect(mixed.expectedImageOnlyPages).toEqual([2])
+    // The cover page still carries values; only the insert stopped claiming any.
+    expect(mixed.expected.map((planted) => planted.page)).toEqual([1, 1, 1])
   })
 
   it('expects nothing from the documents that must be refused', () => {
@@ -167,24 +207,36 @@ describe('the floor today (characterization — measurements, not guarantees)', 
    * naive date scan proposes roughly two wrong dates for every three right
    * ones — that is the finding, and softening the assertion would erase it.
    *
-   * Three of these moved DOWN when the benchmark was made honest, and the
-   * lower numbers are the correct ones:
-   *  - `account_type` (was 66.7%/85.7%) — page 2 of the statement prints
-   *    "Individual Brokerage" and the corpus had declared the bare "Brokerage",
-   *    which is exactly the token the detector's vocabulary emits. Stated as
-   *    printed, it is a miss.
-   *  - `account_balance` / `form_amount` replace a single `balance` field that
-   *    averaged a custodian's account values together with a 1040's line
-   *    amounts. One money scanner feeds both, so a wrong amount is charged to
-   *    both — the honest cost of a detector that cannot tell them apart.
+   * **Every recall floor moved UP when the phantom values were removed, and
+   * none of it is an improvement in the extractor.** The corpus used to declare
+   * eight values on image-only pages that paint a featureless raster and hold no
+   * glyphs; all eight scored as false negatives, dragging five of the six recall
+   * numbers down. They were never in the documents. Removing them is a
+   * correction to the oracle — not one line of extraction changed — and the
+   * recalls below are what this extractor was achieving all along:
+   *  - `name` 60.0% → 75.0%, `account_number` 83.3% → 100%,
+   *    `account_type` 71.4% → 83.3%, `account_balance` 50.0% → 100%,
+   *    `date` 66.7% → 100%. `form_amount` was already 100%.
+   *  - **No precision moved at all** (75.0 / 71.4 / 55.6 / 16.7 / 44.4 / 57.1).
+   *    A value nothing detected claimed no detection, so removing it changed no
+   *    numerator and no denominator on that side. Selection is still the
+   *    bottleneck, exactly as before.
+   *
+   * Precision here is still lower than an earlier revision reported, for two
+   * reasons that stand: `account_type` at 55.6% because the statement's page 2
+   * prints "Individual Brokerage" where the corpus once declared the bare
+   * "Brokerage" (the token the detector emits); and `account_balance` /
+   * `form_amount` because they replaced a single `balance` field that averaged
+   * a custodian's account values with a 1040's line amounts, and one money
+   * scanner feeds both, so a wrong amount is charged to both.
    */
   const FLOORS: Record<CorpusFieldName, { precision: number; recall: number }> = {
-    name: { precision: 0.75, recall: 0.6 },
-    account_number: { precision: 0.71, recall: 0.83 },
-    account_type: { precision: 0.55, recall: 0.71 },
-    account_balance: { precision: 0.16, recall: 0.5 },
+    name: { precision: 0.75, recall: 0.75 },
+    account_number: { precision: 0.71, recall: 1 },
+    account_type: { precision: 0.55, recall: 0.83 },
+    account_balance: { precision: 0.16, recall: 1 },
     form_amount: { precision: 0.44, recall: 1 },
-    date: { precision: 0.57, recall: 0.66 },
+    date: { precision: 0.57, recall: 1 },
   }
 
   it('reports precision AND recall for every field — never one without the other', async () => {
@@ -206,20 +258,40 @@ describe('the floor today (characterization — measurements, not guarantees)', 
     }
   })
 
-  it('records honestly that a scanned document yields nothing at all', async () => {
+  it('scores no field on a scanned document, and reports n/a rather than a zero', async () => {
     const result = await report()
     const scanned = document(result, 'scanned-statement')
-    // Not a floor to improve on without OCR: zero is the true value, and the
-    // corpus deliberately declares the six values printed on that paper so
-    // the size of the gap is a number rather than an omission.
-    expect(scanned.recall).toBe(0)
-    expect(scanned.expected).toBe(6)
+    // The document is still in the corpus and still read. It just makes no
+    // field claim, because there is nothing on it to claim: `recall` is null
+    // (0/0 is not zero recall) rather than the 0% an empty oracle would have
+    // produced, and there are no misses to explain.
+    expect(scanned.expected).toBe(0)
+    expect(scanned.recall).toBeNull()
+    expect(scanned.precision).toBeNull()
+    expect(scanned.misses).toEqual([])
     expect(scanned.truePositives).toBe(0)
-    expect(scanned.missesTextAbsent).toBe(6)
-    expect(scanned.missesTextPresent).toBe(0)
+    expect(scanned.falsePositives).toBe(0)
+    // Its whole contribution is that both pages came back image-only, and
+    // neither came back as a page with a text layer.
+    expect(scanned.actualImageOnlyPages).toEqual([1, 2])
+    expect(scanned.textLayerPages).toEqual([])
   })
 
-  it('records the two misses that a text layer was present for', async () => {
+  it('reads the typed half of a mixed document and flags the scanned half', async () => {
+    const result = await report()
+    const mixed = document(result, 'mixed-scan-statement')
+    // Page 1 carries all three planted values; page 2 carries none and is
+    // reported image-only. The per-page answer is the product requirement.
+    expect(mixed.expected).toBe(3)
+    expect(mixed.textLayerPages).toEqual([1])
+    expect(mixed.actualImageOnlyPages).toEqual([2])
+    // The one miss is the abutted name on the TYPED page — a selection defect
+    // over text that extracted perfectly, which no OCR engine would touch.
+    expect(mixed.misses.map((miss) => miss.field)).toEqual(['name'])
+    expect(mixed.misses[0]!.textPresent).toBe(true)
+  })
+
+  it('has exactly two misses in the whole corpus, and both are selection defects', async () => {
     const result = await report()
     // 1. The mixed-scan cover page sets the account holder against a page
     //    counter with no gap, so pdfjs returns "…BRENNANPage 1 of 2" and the
@@ -228,7 +300,7 @@ describe('the floor today (characterization — measurements, not guarantees)', 
     expect(mixed.misses.find((miss) => miss.field === 'name')?.textPresent).toBe(true)
     // 2. The statement's second account is an "Individual Brokerage"; the
     //    detector's closed vocabulary can only ever emit "Brokerage". The
-    //    characters are all there, so this is a mapper gap, not an OCR gap —
+    //    characters are all there, so this is a selection gap —
     //    and it is only visible because the corpus states the printed value
     //    instead of the token the detector happens to produce.
     const statement = document(result, 'broker-statement')
@@ -236,7 +308,13 @@ describe('the floor today (characterization — measurements, not guarantees)', 
     expect(typeMiss?.value).toBe('Individual Brokerage')
     expect(typeMiss?.textPresent).toBe(true)
 
+    // And that is the lot. Every miss in this corpus is a value whose
+    // characters extracted perfectly and whose selection failed. Nothing is
+    // missed for want of OCR, because nothing is planted where OCR would be the
+    // question — the eight that used to be were never in the documents.
+    expect(result.aggregate.falseNegatives).toBe(2)
     expect(result.aggregate.missesTextPresent).toBe(2)
+    expect(result.aggregate.missesTextAbsent).toBe(0)
   })
 
   it('attributes every value it does find to the right page', async () => {
@@ -271,15 +349,35 @@ describe('the floor today (characterization — measurements, not guarantees)', 
     expect(repeats).toEqual(['broker-statement: account_type Roth IRA'])
   })
 
-  it('splits recall by whether the page had a text layer at all', async () => {
+  it('measures recall only over pages extraction returned a text layer for', async () => {
     const result = await report()
-    const all = result.recallBySurface.find((row) => row.field === 'all fields')!
-    // The whole OCR argument in two numbers: near-total recall where a text
-    // layer exists, and exactly nothing where one does not.
-    expect(all.textLayerRecall!).toBeGreaterThanOrEqual(0.93)
-    expect(all.noTextLayerRecall).toBe(0)
-    expect(all.noTextLayerExpected).toBeGreaterThan(0)
-    expect(result.recallBySurface.map((row) => row.field)).toEqual([...CORPUS_FIELDS, 'all fields'])
+    // The invariant that replaced the old "recall by surface" table. That table
+    // reported 0/8 in a "no text layer" column and the spike quoted it as the
+    // OCR gap; the eight were never printed on anything. Recall is meaningful
+    // only where text exists, so the corpus plants values only there — and this
+    // is checked against what extraction RETURNED, not against the corpus's own
+    // `expectedImageOnlyPages`, so it also catches a value planted on a page
+    // that failed to read or was never reached.
+    expect(result.coverage.onPagesWithoutTextLayer).toBe(0)
+    expect(result.coverage.onTextLayerPages).toBe(result.coverage.plantedValues)
+    expect(result.coverage.plantedValues).toBe(30)
+    // …and the aggregate recall is now a plain text-layer recall, needing no
+    // column to qualify it.
+    expect(result.aggregate.expected).toBe(30)
+    expect(result.aggregate.recall!).toBeGreaterThanOrEqual(0.93)
+  })
+
+  it('still detects every image-only page — the one thing the scanned documents prove', async () => {
+    const result = await report()
+    // Deliberately restated inside the floor block: when the phantom values
+    // came out, this became the entire measured contribution of the two scanned
+    // documents, and it must not be allowed to drift away unnoticed.
+    expect(result.imageOnly).toEqual({
+      pagesExpected: 3,
+      pagesDetected: 3,
+      falsePositives: 0,
+      falseNegatives: 0,
+    })
   })
 })
 
@@ -296,26 +394,48 @@ describe('the report cannot be quoted as a single number', () => {
 
   it('names every miss with the page it was expected on', async () => {
     const text = formatDocumentBenchmarkReport(await report())
-    expect(text).toContain('no text layer — OCR gap')
-    expect(text).toContain('text present — detector gap')
+    expect(text).toContain('text present — selection gap')
+    // Both surviving misses, named with their page.
+    expect(text).toContain('p2 Individual Brokerage')
+    expect(text).toContain('p1 SAMUEL O BRENNAN')
+  })
+
+  it('refuses to present anything in it as an OCR measurement', async () => {
+    const text = formatDocumentBenchmarkReport(await report())
+    // The report used to carry a "RECALL BY SURFACE — the OCR decision" table
+    // whose second column, 0/8, counted values declared on pages that paint a
+    // featureless raster and print nothing. A reader could quote that as the
+    // size of the OCR opportunity, and the spike did. It is gone, and the
+    // report now says outright what it cannot tell you.
+    expect(text).not.toContain('the OCR decision')
+    expect(text).not.toContain('OCR gap')
+    expect(text).toContain('LIMITATION — OCR recoverability is NOT measured here')
+    expect(text).toContain('Neither is an OCR number.')
+    // What DOES survive about scanned pages, stated as the measurement it is.
+    expect(text).toContain('IMAGE-ONLY PAGE DETECTION')
+    expect(text).toContain('planted 3, detected 3, false positives 0, false negatives 0')
+    // And the precondition every recall number above it depends on.
+    expect(text).toContain('30 on a page extraction returned a text layer for; 0 on a page it did not.')
+  })
+
+  it('can still render an extraction gap when there is one to render', async () => {
+    // `miss:ext` is zero on the real corpus, so the wording would rot unseen.
+    // A probe that plants a value the document does not print exercises the
+    // branch. (It deliberately breaks the corpus rule — a corpus document may
+    // only plant what its page authors — which is why it lives here and not
+    // there.)
+    const text = formatDocumentBenchmarkReport(
+      await runDocumentBenchmark([
+        oneOffProbe({ expected: [{ field: 'account_number', value: '****9999', page: 1 }] }),
+      ]),
+    )
+    expect(text).toContain('text lost — extraction gap')
+    expect(text).toContain('miss:ext')
   })
 })
 
 describe('the scorer can report a failure — otherwise it measures nothing', () => {
-  /** A two-page document whose values the test states independently. */
-  const oneOff = (overrides: Partial<CorpusDocument>): CorpusDocument => ({
-    id: 'probe',
-    kind: 'broker_statement',
-    label: 'probe',
-    bytes: buildSyntheticPdf({
-      pages: [{ lines: ['Account number ****1111'], fontSize: 10 }, { lines: ['Nothing here'], fontSize: 10 }],
-    }),
-    pageSources: ['Account number ****1111', 'Nothing here'],
-    expectedOutcome: 'ok',
-    expectedImageOnlyPages: [],
-    expected: [],
-    ...overrides,
-  })
+  const oneOff = oneOffProbe
 
   it('counts a wrong-page hit as found but mis-cited', async () => {
     // The value IS on page 1; the corpus claims page 2. Extraction did its job
@@ -362,6 +482,10 @@ describe('the scorer can report a failure — otherwise it measures nothing', ()
   })
 
   it('counts a value that is simply not there as a miss with the text absent', async () => {
+    // The extraction-gap branch. The real corpus can no longer produce one —
+    // every planted value is on a page that authors it — so this probe is the
+    // only thing keeping `missesTextAbsent` from being dead code, and it plants
+    // a value the document does not print on purpose.
     const result = await runDocumentBenchmark([
       oneOff({ expected: [{ field: 'account_number', value: '****9999', page: 1 }] }),
     ])
