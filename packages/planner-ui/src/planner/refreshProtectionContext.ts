@@ -35,6 +35,22 @@
  * fair game. This module never invents a protected set of its own; the seam is
  * the value the host supplies, mirroring how `refresh.ts` treats the argument.
  *
+ * **Why there is a `pending` flag.** A host that resolves protection
+ * asynchronously (reading its intake decisions from a store) has an interval
+ * where it knows nothing yet, and an empty `protectedAccounts` is
+ * indistinguishable from "nothing is protected" — so a refresh applied during
+ * that window could overwrite an advisor-frozen account. `pending` lets the host
+ * say "not known yet" instead of accidentally saying "nothing", and
+ * `UpdateBalancesPanel` refuses both the file and the apply while it is true —
+ * the apply because applying against an unknown set is unsafe, the file because a
+ * preview built then would draw every row as unprotected and rewrite itself when
+ * the real set arrived. (The preview is not unsafe, only untruthful: the panel
+ * recomputes every protection-derived value from the live context each render.)
+ * The DEFAULT is `false`, deliberately: the public web app mounts no provider at
+ * all, and defaulting to `true` would permanently disable its Apply. Absent a
+ * provider, protection is known — it is empty — so the no-provider path behaves
+ * exactly as before, unchanged.
+ *
  * This mirrors the sibling edition seam: the context, hook, and types live here
  * (`refreshProtectionContext.ts`) and the provider component in
  * `RefreshProtectionProvider.tsx`, exactly as `editionContext.ts` pairs with
@@ -80,9 +96,29 @@ export interface RefreshProtectionValue {
    * carry no ambiguity — there is no parsing.
    */
   protectedAccounts: readonly RefreshProtectionEntry[]
+  /**
+   * `true` while the host is still RESOLVING which accounts are protected, so
+   * `protectedAccounts` is not yet meaningful. An empty list cannot express
+   * "unknown" — it reads as "nothing is protected" — so a host that loads
+   * protection asynchronously sets this until its answer arrives, and
+   * `UpdateBalancesPanel` refuses to accept a file or apply balances meanwhile.
+   *
+   * **OPTIONAL, and absent means `false`** — everywhere it is not supplied,
+   * including the no-provider path: the public web app mounts no provider and
+   * its protection is genuinely known (empty), so it must never be gated.
+   * Optional rather than required because this interface is named in the
+   * README as part of the supported product API and the context module is
+   * importable through the exports wildcard, so a host that builds its own
+   * value object must keep compiling across this addition. Every read goes
+   * through {@link useRefreshProtectionPending}, which normalises the absent
+   * case, so nothing downstream ever sees `undefined`.
+   */
+  pending?: boolean
 }
 
-export const RefreshProtectionContext = createContext<RefreshProtectionValue>({ protectedAccounts: EMPTY_PROTECTED })
+export const RefreshProtectionContext = createContext<RefreshProtectionValue>({
+  protectedAccounts: EMPTY_PROTECTED,
+})
 
 /**
  * Reads the ambient list of refresh-protected account entries, defaulting to an
@@ -93,4 +129,22 @@ export const RefreshProtectionContext = createContext<RefreshProtectionValue>({ 
  */
 export function useRefreshProtection(): readonly RefreshProtectionEntry[] {
   return useContext(RefreshProtectionContext).protectedAccounts
+}
+
+/**
+ * Reads whether the host is still resolving its protected set, defaulting to
+ * `false` when no provider is mounted AND when a host's own value object omits
+ * the optional member (protection is known and empty — the public web app's
+ * unchanged behaviour). Normalising here is what lets `pending` be optional on
+ * the published interface without any consumer ever handling `undefined`.
+ *
+ * This is a SECOND hook rather than a widened return from
+ * `useRefreshProtection()`, which is a published API returning the entry array
+ * itself; changing its return type would break every existing caller. While it
+ * reports `true`, `UpdateBalancesPanel` gates both the file chooser and Apply —
+ * a file parsed against an unknown protection set would preview and pre-select
+ * rows that silently change once the real set lands.
+ */
+export function useRefreshProtectionPending(): boolean {
+  return useContext(RefreshProtectionContext).pending ?? false
 }

@@ -124,8 +124,8 @@ The supported product API is:
   `plannerHomeRoutes`), `ReportBrandingProvider`,
   `PlannerEditionProvider` (with `usePlannerEdition` /
   `PlannerEditionConfig`), and `RefreshProtectionProvider` (with
-  `useRefreshProtection` / `RefreshProtectionValue`) — see "Hosting the
-  workspace" below;
+  `useRefreshProtection` / `useRefreshProtectionPending` /
+  `RefreshProtectionValue`) — see "Hosting the workspace" below;
 - the **`./plan-format` subpath** — `serializeV2Backup`, `parseV2Backup`,
   the envelope types, and the kind/version constants. This is the plan
   interchange format (the same file the web app's backup download produces);
@@ -160,6 +160,28 @@ The supported product API is:
   operation paths emitted. Array roots are intentionally atomic. Exported
   names and signatures only change with a semver-major release; new lever ids
   may be added in minors;
+- the **`./document-text` subpath** — local PDF text extraction
+  (`extractDocumentText` and its result types, plus the `MAX_DOCUMENT_BYTES` /
+  `MAX_DOCUMENT_PAGES` / `MAX_PAGE_TEXT_CHARS` / `MAX_DOCUMENT_TEXT_CHARS`
+  caps). Returns text per page with a 1-based page number as the citation,
+  reports pages that have no text layer as `imageOnly` (the scanned page that
+  would need OCR), and fails as a result union rather than throwing, so a caller
+  may hand it arbitrary bytes, including a buffer or view a transfer already
+  detached. The reasons say whose problem it is: `encrypted`, `corrupt`,
+  `not_pdf`, `too_large`, `too_many_pages` and `unreadable_input` are about the
+  document or the call, while `extraction_failed`, `pdfjs_unavailable`,
+  `pdfjs_worker_unavailable` and `pdfjs_incompatible` are about this process or
+  the host's pdfjs build and must never be shown to a user as a problem with
+  their file. Treat an unrecognized reason as "could not read this document" —
+  new reasons may be added in a minor. Processing is
+  local: the document is passed as bytes and pdfjs is configured with no cmap or
+  standard-font URL to fetch. **This subpath alone needs the optional
+  `pdfjs-dist` peer**, and a browser host passes its own copy in as
+  `options.pdfjs` rather than letting the module import one (see "Optional PDF
+  support" below); everything else in the package works without it. This is a spike — its numbers have not yet
+  justified promoting page citations into the `./import-provenance`
+  `SourceLocator` union, and it is not wired into the free import wizard,
+  which still takes no PDF upload;
 - `./index.css`.
 
 The exports map also exposes wildcard `./*.ts` subpaths
@@ -394,9 +416,39 @@ releases the account for that panel instance only, and only for the row that ask
 is revoked if that row re-targets, and it never mutates the host's stored decision.
 The panel also fully resets whenever the workspace navigates to a different plan
 (keyed on `plan.id`), so no parsed file or release survives across plans.
-`useRefreshProtection()` reads the ambient list; `RefreshProtectionValue`
-(`{ protectedAccounts }`, a `readonly RefreshProtectionEntry[]`) is the context
-value shape.
+`useRefreshProtection()` reads the ambient list, `useRefreshProtectionPending()`
+reads the loading flag, and `RefreshProtectionValue`
+(`{ protectedAccounts: readonly RefreshProtectionEntry[]; pending?: boolean }`) is
+the context value shape. `pending` is **optional** on that interface, so a host
+that constructs its own context value — including one written before the flag
+existed — keeps compiling; an absent flag reads as `false`.
+
+**Hosts that resolve protection asynchronously: pass `pending`.** An empty
+`protectedAccounts` means "nothing is protected" — it cannot express "not known
+yet" — so a host reading its overrides from a store would otherwise leave a window
+in which a broker refresh can overwrite an advisor-frozen account. Pass
+`pending` while the answer is outstanding and the panel refuses **both** the
+file chooser and Apply, with a visible explanation naming that cause (distinct
+from the duplicate-collision block). The two gates answer different concerns:
+Apply is refused because applying against an unknown protected set is unsafe,
+while the file chooser is refused because a preview built during that window
+would draw every row as unprotected and then rewrite itself when the real set
+arrived. The preview is never unsafe — the panel recomputes every
+protection-derived value from the live context on each render — only untruthful,
+and the panel should not make a claim it is about to retract. If `pending` goes
+back to `true` after a file was parsed, the panel clears that parse for the same
+reason. `pending` **defaults to `false`**,
+so a host passing only `protectedAccounts` is unchanged, and — since the public
+web app mounts no provider at all — the no-provider path is never gated.
+
+```tsx
+<RefreshProtectionProvider
+  protectedAccounts={overrides ?? []}
+  pending={overrides === null} // still loading — hold the refresh
+>
+  {/* plannerWorkspaceRoutes */}
+</RefreshProtectionProvider>
+```
 
 ### Plan interchange
 
@@ -481,6 +533,109 @@ gold), and text fields are escaped-and-kept — so the report's no-script
 guarantee holds regardless of input. This branding
 applies to downloaded reports only; the in-app chrome is themed via the CSS
 tokens (above).
+
+### Optional PDF support
+
+`pdfjs-dist` is an **optional peer dependency**: it is declared in
+`peerDependencies` with `peerDependenciesMeta.optional`, so npm never
+installs it for you and never warns when it is absent. Only the
+`./document-text` subpath uses it, and only through a dynamic `import()`
+inside `extractDocumentText`, so a host that does not import that subpath
+never evaluates the module, never resolves the peer, and ships no pdfjs code.
+
+A host that *does* want PDF text extraction installs it alongside the package:
+
+```sh
+npm install @retiregolden/planner-ui pdfjs-dist
+```
+
+`pdfjs-dist@6` declares `node >=22.13.0`, which this package's own `node >=24`
+already satisfies, so there is no version split to reason about. A host on an
+older Node that installs `pdfjs-dist` anyway sees npm's `EBADENGINE` warning, and
+`extractDocumentText` reports `pdfjs_unavailable` or `pdfjs_incompatible` rather
+than failing obscurely.
+
+**In a browser bundle, pass pdfjs in.** This is the important half, and it is
+not optional. `extractDocumentText` can *import* pdfjs itself, but only through
+the bare specifier `pdfjs-dist/legacy/build/pdf.mjs` — and that specifier is
+deliberately opaque to your bundler (so your build does not fail when the
+optional peer is absent), which means it survives into the bundle as a bare npm
+package name. No browser can resolve one at run time. A bundled page that lets
+this module do its own importing therefore gets `pdfjs_unavailable` on the first
+extraction *even though pdfjs is installed*. Your own `import()` of the same
+module **is** resolved and chunked by your bundler, so your app is the only
+party that can produce the module — hand it over as `options.pdfjs`:
+
+```ts
+import { extractDocumentText } from '@retiregolden/planner-ui/document-text'
+
+// Your bundler resolves and chunks both of these; this module never could.
+const [pdfjs] = await Promise.all([
+  import('pdfjs-dist/legacy/build/pdf.mjs'),
+  // Side effect only: sets globalThis.pdfjsWorker, which pdfjs consults before
+  // it would construct a Worker — so no separate worker asset has to be hosted.
+  // Omit this and pdfjs will look for one.
+  import('pdfjs-dist/legacy/build/pdf.worker.mjs'),
+])
+
+const result = await extractDocumentText(await file.arrayBuffer(), { pdfjs })
+if (!result.ok) {
+  showMessage(result.message) // encrypted / corrupt / not_pdf / too_large / …
+} else {
+  for (const page of result.pages) {
+    // page.page is the citation; page.imageOnly means "scanned, needs OCR"
+  }
+}
+```
+
+Load it once and reuse it — the module is stateless here, and passing it per
+call costs nothing. Anything may be passed: a different pdfjs major, a
+re-export, a wrapper. The module inspects the object before it parses a byte of
+the document, so a build it cannot drive is `pdfjs_incompatible` — a statement
+about the host's pdfjs, never about the user's file.
+
+**In Node, SSR, or an Electron main process, omit it.** There a bare specifier
+resolves at run time, so zero configuration is the shorter path and the option
+can be left off entirely:
+
+```ts
+const result = await extractDocumentText(await readFile(path))
+```
+
+With no `options.pdfjs` and no resolvable peer, the call resolves to
+`{ ok: false, reason: 'pdfjs_unavailable' }` rather than throwing — its message
+names both remedies — so a host can degrade to manual entry. Extraction runs on
+the calling thread, and the exported caps bound that work.
+
+**How well does it read a document?** Measured, not asserted. An accuracy
+benchmark runs a hand-built corpus of synthetic statements, plan printouts,
+1040s, and scanned/encrypted/corrupt documents through the extractor and
+reports precision and recall **per field**, plus page-citation accuracy:
+
+```sh
+npm run benchmark:documents -w @retiregolden/planner-ui
+```
+
+Short version for a host deciding whether to offer PDF import: all 30 planted
+values were present in the extracted text, and no value was attributed to a page
+it is not printed on. The detectors then selected 28 of them — the 93.3% recall
+figure is theirs, not the extractor's, and both misses are values whose
+characters extracted perfectly and whose *selection* failed. That is the whole
+finding: field-selection precision
+is 17–75%, so a naive reader proposes 35 wrong values for every 28 right ones.
+Extraction is not the bottleneck; picking the right value out of a page that
+also contains a fee schedule and a copyright year is, and a money scanner
+cannot tell an account balance from a tax-form line at all. Pages with no text
+layer are flagged `imageOnly` — 3 planted, 3 detected, no false positives in
+either direction, and a blank page is correctly not called scanned — so a UI can
+route the user to manual entry instead of showing an empty result. **What the
+benchmark does not measure is OCR**: its scanned pages paint a featureless
+raster and carry no glyphs, so how much of a real scan is recoverable is
+unknown, and a synthetic fixture cannot answer it. The corpus is also
+generator-clean, so every number is an upper bound on a real document. Full
+tables, caveats, what the citation number does and does not prove, and the
+re-derived OCR recommendation are in
+[DOCS/features/document-parsing-spike.md](https://github.com/RetireGolden/RetireGolden/blob/main/DOCS/features/document-parsing-spike.md).
 
 ### Storage
 

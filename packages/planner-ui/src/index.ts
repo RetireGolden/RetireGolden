@@ -53,10 +53,14 @@ export { usePlannerEdition, type PlannerEditionConfig } from './planner/editionC
 // the accounts its intake decisions have frozen as structured entries (a stable
 // `accountId`, optionally narrowed to a `field`), and the panel resolves them to
 // the current `accounts[i]` positions and threads them into the broker-refresh
-// engine. Omit it and the panel protects nothing (public web behaviour).
+// engine. A host still loading that set passes `pending`, and the panel refuses
+// both the file chooser and Apply until it clears — an empty list would otherwise
+// read as "nothing is protected". Omit the provider and the panel protects
+// nothing and is never pending (public web behaviour).
 export { RefreshProtectionProvider } from './planner/RefreshProtectionProvider.tsx'
 export {
   useRefreshProtection,
+  useRefreshProtectionPending,
   type RefreshProtectionEntry,
   type RefreshProtectionValue,
 } from './planner/refreshProtectionContext.ts'

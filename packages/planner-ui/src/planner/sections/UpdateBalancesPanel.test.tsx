@@ -11,7 +11,11 @@ import { createRoot, type Root } from 'react-dom/client'
 import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
 import { PlanCtx } from '../planContextCore'
 import { RefreshProtectionProvider } from '../RefreshProtectionProvider'
-import type { RefreshProtectionEntry } from '../refreshProtectionContext'
+import {
+  RefreshProtectionContext,
+  type RefreshProtectionEntry,
+  type RefreshProtectionValue,
+} from '../refreshProtectionContext'
 import { UpdateBalancesPanel } from './UpdateBalancesPanel'
 
 let root: Root | null = null
@@ -37,12 +41,32 @@ function planWithAccounts(): Plan {
   return plan
 }
 
-function providerTree(plan: Plan, panel: ReactNode, protectedAccounts?: readonly RefreshProtectionEntry[]) {
+/**
+ * What the HOST supplies to the protection seam. An options object rather than
+ * positional arguments: the seam now carries two independent values
+ * (`protectedAccounts` and `pending`), and a second optional positional would make
+ * "pending with no protected accounts" — a real host state, the initial load —
+ * unexpressible without passing a placeholder list.
+ *
+ * A `RefreshProtectionProvider` is mounted only when at least one field is
+ * supplied. `renderPanel(plan)` therefore still mounts **no provider at all**,
+ * which is the public web app's shape and the empty-default guarantee every spec
+ * in the first describe block relies on.
+ */
+interface HostProtection {
+  protectedAccounts?: readonly RefreshProtectionEntry[]
+  pending?: boolean
+}
+
+function providerTree(plan: Plan, panel: ReactNode, host: HostProtection = {}) {
   const update = (mutator: (draft: Plan) => void) => mutator(plan)
+  const hasProvider = host.protectedAccounts !== undefined || host.pending !== undefined
   return (
     <PlanCtx.Provider value={{ plan, update, discardPendingSave: () => undefined, saveState: 'saved', issues: [] }}>
-      {protectedAccounts ? (
-        <RefreshProtectionProvider protectedAccounts={protectedAccounts}>{panel}</RefreshProtectionProvider>
+      {hasProvider ? (
+        <RefreshProtectionProvider protectedAccounts={host.protectedAccounts ?? []} pending={host.pending}>
+          {panel}
+        </RefreshProtectionProvider>
       ) : (
         panel
       )}
@@ -50,12 +74,12 @@ function providerTree(plan: Plan, panel: ReactNode, protectedAccounts?: readonly
   )
 }
 
-function renderPanel(plan: Plan, protectedAccounts?: readonly RefreshProtectionEntry[]) {
+function renderPanel(plan: Plan, host: HostProtection = {}) {
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
   act(() => {
-    root!.render(providerTree(plan, <UpdateBalancesPanel />, protectedAccounts))
+    root!.render(providerTree(plan, <UpdateBalancesPanel />, host))
   })
   return container
 }
@@ -151,6 +175,20 @@ function selects(el: HTMLElement): HTMLSelectElement[] {
 
 function applyButton(el: HTMLElement): HTMLButtonElement {
   return Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.includes('Apply selected'))!
+}
+
+/** Apply, or `null` — the control only exists once a file has been parsed. */
+function maybeApplyButton(el: HTMLElement): HTMLButtonElement | null {
+  return Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.includes('Apply selected')) ?? null
+}
+
+function chooseButton(el: HTMLElement): HTMLButtonElement {
+  return Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.includes('Choose broker CSV'))!
+}
+
+/** The protection-pending explanation's text, or `null` when it is not shown. */
+function pendingExplanation(el: HTMLElement): string | null {
+  return el.querySelector('.refresh-protection-pending')?.textContent ?? null
 }
 
 describe('UpdateBalancesPanel', () => {
@@ -298,7 +336,7 @@ describe('UpdateBalancesPanel', () => {
 describe('UpdateBalancesPanel refresh protection', () => {
   it('blocks a protected guess by default while an unprotected sibling applies normally', async () => {
     const plan = planWithAccounts()
-    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }))
+    const el = renderPanel(plan, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }) })
     await chooseFile(el, TWO_ACCOUNT_CSV)
 
     const [brokerageSel, rothSel] = selects(el)
@@ -329,7 +367,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     const plan = planWithAccounts()
     const protectedAccounts = protect(plan, { accountId: 'acct-brokerage' })
     plan.accounts.reverse() // [Roth, Brokerage] — indices swapped vs. classification order
-    const el = renderPanel(plan, protectedAccounts)
+    const el = renderPanel(plan, { protectedAccounts })
     await chooseFile(el, TWO_ACCOUNT_CSV)
 
     act(() => applyButton(el).click())
@@ -345,7 +383,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // protected field as locking the account. This pins the load-bearing conservative
     // behaviour so it can't regress.
     const plan = planWithAccounts()
-    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage', field: 'costBasis' }))
+    const el = renderPanel(plan, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage', field: 'costBasis' }) })
     await chooseFile(el, TWO_ACCOUNT_CSV)
     // Selected onto the protected account, the row renders blocked (not disabled).
     expect(selects(el)[0]!.value).toBe('acct-brokerage')
@@ -370,7 +408,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
       { id: 'a.b', type: 'taxable', name: 'Brokerage', ownerPersonId: null, annualReturnPct: null, balance: 1, costBasis: 1, annualContribution: 0 },
       { id: 'a', type: 'roth', name: 'Roth IRA', ownerPersonId: ownerId, annualReturnPct: null, kind: 'ira', balance: 1, annualContribution: 0 },
     )
-    const el = renderPanel(plan, protect(plan, { accountId: 'a.b' }, { accountId: 'a', field: 'costBasis' }))
+    const el = renderPanel(plan, { protectedAccounts: protect(plan, { accountId: 'a.b' }, { accountId: 'a', field: 'costBasis' }) })
     await chooseFile(el, TWO_ACCOUNT_CSV)
 
     // Brokerage guessed 'a.b' (whole-account protected); Roth guessed 'a' (costBasis
@@ -396,7 +434,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
       { id: 'acct-brokerage', type: 'taxable', name: 'Brokerage', ownerPersonId: null, annualReturnPct: null, balance: 1, costBasis: 1, annualContribution: 0 },
       { id: 'acct-hsa', type: 'hsa', name: 'Fidelity HSA', ownerPersonId: ownerId, annualReturnPct: null, balance: 4000, annualContribution: 0 },
     )
-    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }))
+    const el = renderPanel(plan, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }) })
     await chooseFile(el, UNMATCHED_CSV)
 
     // The file row matches nothing, so it starts on "Don't update" with no note.
@@ -426,7 +464,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
 
   it('releases one row with "Allow this refresh" while a protected sibling stays blocked', async () => {
     const plan = planWithAccounts()
-    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }, { accountId: 'acct-roth' }))
+    const el = renderPanel(plan, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }, { accountId: 'acct-roth' }) })
     await chooseFile(el, TWO_ACCOUNT_CSV)
 
     // Both guessed onto protected accounts: both selected but blocked, each with a note.
@@ -454,7 +492,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // Two file sections; row 0 guesses the protected Brokerage, row 1 guesses the
     // unprotected Roth (so its select applies and can be DOM-tampered).
     const plan = planWithAccounts()
-    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }))
+    const el = renderPanel(plan, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }) })
     await chooseFile(el, TWO_ACCOUNT_CSV)
 
     // Release Brokerage for row 0.
@@ -496,7 +534,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // sees them: no duplicate block, the Roth row applies, and BOTH protected rows
     // still surface as panel-synthesized skips.
     const plan = planWithAccounts() // Brokerage (protected below) + Roth IRA
-    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }))
+    const el = renderPanel(plan, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }) })
     await chooseFile(el, TWO_BROKERAGE_PLUS_ROTH_CSV)
 
     const [b0, b1, rothRow] = selects(el)
@@ -522,7 +560,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
 
   it('writes nothing to a released account once the releasing row is deselected', async () => {
     const plan = planWithAccounts()
-    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }))
+    const el = renderPanel(plan, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }) })
     await chooseFile(el, TWO_ACCOUNT_CSV)
 
     // Release Brokerage for row 0 (it was selected-but-blocked; now it applies).
@@ -543,7 +581,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
 
   it('restores protection when a new file is chosen (releases are transient)', async () => {
     const plan = planWithAccounts()
-    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }))
+    const el = renderPanel(plan, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }) })
     await chooseFile(el, TWO_ACCOUNT_CSV)
 
     // Release the Brokerage row, proving its note clears (it now applies).
@@ -562,7 +600,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // restored, and another row that then selects the account sees it blocked and can
     // release it itself.
     const plan = planWithAccounts()
-    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }))
+    const el = renderPanel(plan, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }) })
     await chooseFile(el, TWO_ACCOUNT_CSV)
 
     // Row 0 guessed Brokerage (protected → blocked). Release it for row 0.
@@ -597,7 +635,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // the engine sees it (so a duplicate on a protected account can't falsely block
     // Apply) and SYNTHESIZES the skip item itself, worded to match the engine's own.
     const plan = planWithAccounts()
-    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }))
+    const el = renderPanel(plan, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }) })
     await chooseFile(el, TWO_ACCOUNT_CSV)
 
     // Brokerage is the protected, blocked row; Roth applies normally.
@@ -625,7 +663,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
       // Genuinely absent from the file — this one SHOULD be reported stale.
       { id: 'acct-hsa', type: 'hsa', name: 'Fidelity HSA', ownerPersonId: ownerId, annualReturnPct: null, balance: 4000, annualContribution: 0 },
     )
-    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }))
+    const el = renderPanel(plan, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }) })
     await chooseFile(el, UNMATCHED_CSV)
 
     // The Windfall row matches nothing; hand-point it at the protected Brokerage.
@@ -651,7 +689,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // Both guesses land on protected accounts, so applying writes zero. The message
     // must name the advisor overrides rather than falsely claim nothing was assigned.
     const plan = planWithAccounts()
-    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }, { accountId: 'acct-roth' }))
+    const el = renderPanel(plan, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }, { accountId: 'acct-roth' }) })
     await chooseFile(el, TWO_ACCOUNT_CSV)
 
     expect(selects(el)[0]!.value).toBe('acct-brokerage')
@@ -694,7 +732,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     plan.accounts.push(
       { id: 'acct-brokerage', type: 'taxable', name: 'Brokerage', ownerPersonId: null, annualReturnPct: null, balance: 5000, costBasis: 3000, annualContribution: 0 },
     )
-    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }))
+    const el = renderPanel(plan, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }) })
     await chooseFile(el, TWO_BROKERAGE_CSV)
 
     // Both rows guessed the one protected Brokerage account; stripping keeps them from
@@ -716,7 +754,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // plan and bypass its protection. Render plan P1, parse + release, then swap the
     // context to a plan with a DIFFERENT id and assert the panel is back to initial.
     const p1 = planWithAccounts()
-    const el = renderPanel(p1, protect(p1, { accountId: 'acct-brokerage' }))
+    const el = renderPanel(p1, { protectedAccounts: protect(p1, { accountId: 'acct-brokerage' }) })
     await chooseFile(el, TWO_ACCOUNT_CSV)
     act(() => el.querySelector<HTMLButtonElement>('button[aria-label="Allow this refresh for Brokerage"]')!.click())
     // Parsed table is up and the release cleared the note.
@@ -727,7 +765,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     const p2 = planWithAccounts()
     expect(p2.id).not.toBe(p1.id)
     act(() => {
-      root!.render(providerTree(p2, <UpdateBalancesPanel />, protect(p2, { accountId: 'acct-brokerage' })))
+      root!.render(providerTree(p2, <UpdateBalancesPanel />, { protectedAccounts: protect(p2, { accountId: 'acct-brokerage' }) }))
     })
 
     // Back to the initial state: no parsed table.
@@ -749,7 +787,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // if its text() settles before any passive effect could run. Start a read whose
     // text() we resolve by hand, swap the plan context mid-read, then resolve: dropped.
     const p1 = planWithAccounts()
-    const el = renderPanel(p1, protect(p1, { accountId: 'acct-brokerage' }))
+    const el = renderPanel(p1, { protectedAccounts: protect(p1, { accountId: 'acct-brokerage' }) })
 
     let resolveText!: (value: string) => void
     const file = new File(['ignored'], 'positions.csv', { type: 'text/csv' })
@@ -768,7 +806,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     const p2 = planWithAccounts()
     expect(p2.id).not.toBe(p1.id)
     act(() => {
-      root!.render(providerTree(p2, <UpdateBalancesPanel />, protect(p2, { accountId: 'acct-brokerage' })))
+      root!.render(providerTree(p2, <UpdateBalancesPanel />, { protectedAccounts: protect(p2, { accountId: 'acct-brokerage' }) }))
     })
 
     // Resolve the OLD read now, with a CSV that would otherwise build a table. Because
@@ -795,7 +833,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // identity change — an ordinary render that concurrent React could discard), then
     // resolve: the read still builds its table rather than being falsely dropped.
     const plan = planWithAccounts()
-    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }))
+    const el = renderPanel(plan, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }) })
 
     let resolveText!: (value: string) => void
     const file = new File(['ignored'], 'positions.csv', { type: 'text/csv' })
@@ -812,7 +850,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // Plain re-render with the SAME plan id (no identity reset). This must not touch the
     // read epoch — a render-phase bump is exactly the removed bug.
     act(() => {
-      root!.render(providerTree(plan, <UpdateBalancesPanel />, protect(plan, { accountId: 'acct-brokerage' })))
+      root!.render(providerTree(plan, <UpdateBalancesPanel />, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }) }))
     })
 
     // Resolve: epoch unchanged and committed plan identity unchanged, so it lands.
@@ -831,7 +869,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // supersede the prior in-flight read: choose slow A, then fast B; resolve B, then A;
     // the panel shows B's rows, A is dropped, and a release made after B survives A.
     const plan = planWithAccounts()
-    const el = renderPanel(plan, protect(plan, { accountId: 'acct-brokerage' }))
+    const el = renderPanel(plan, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }) })
     const input = el.querySelector<HTMLInputElement>('input[type="file"]')!
 
     // File A: a slow read we resolve by hand. Its CSV would build a table if it won.
@@ -878,5 +916,317 @@ describe('UpdateBalancesPanel refresh protection', () => {
     expect(el.querySelector('[role="note"]')).toBeNull()
     act(() => applyButton(el).click())
     expect(plan.accounts.find((a) => a.id === 'acct-brokerage')!).toMatchObject({ balance: 55000, costBasis: 40000 })
+  })
+})
+
+/**
+ * The `pending` half of the seam: a host that resolves its protected set
+ * asynchronously has an interval where an empty `protectedAccounts` would read as
+ * "nothing is protected", and a refresh landing in that window could overwrite an
+ * advisor-frozen account. `pending` says "not known yet" instead, and the panel
+ * refuses BOTH the file and the apply while it is true, for two different
+ * reasons: applying against an unknown set is unsafe, while a preview built
+ * during the window is merely untruthful — it would draw every row as
+ * unprotected and then rewrite itself when the real set arrived. (Untruthful,
+ * not unsafe: the panel recomputes every protection-derived value from the live
+ * context each render, and the row seeding never consults protection at all.)
+ *
+ * The default is `false` everywhere it is not supplied, INCLUDING the no-provider
+ * path: the public web app mounts no provider and its protection is genuinely
+ * known (empty), so defaulting to `true` would permanently disable its Apply.
+ */
+describe('UpdateBalancesPanel protection pending', () => {
+  it('gates the file chooser and offers no apply control while protection is unknown', async () => {
+    const plan = planWithAccounts()
+    const el = renderPanel(plan, { protectedAccounts: [], pending: true })
+
+    // The chooser is refused, and says why in a visible explanation AND on the
+    // control itself — a greyed-out button with no reason is the thing to avoid.
+    expect(chooseButton(el).disabled).toBe(true)
+    const explanation = pendingExplanation(el)
+    expect(explanation).toContain('Checking which accounts your advisor has protected')
+    expect(chooseButton(el).title).toBe(explanation)
+    // Nothing is parsed, so there is no apply control at all — the strongest gate.
+    expect(maybeApplyButton(el)).toBeNull()
+    expect(el.querySelector('tbody')).toBeNull()
+  })
+
+  it('refuses a file driven straight at the hidden input while pending (belt, not just the button)', async () => {
+    // The chooser button is disabled, but the hidden <input type="file"> can still
+    // be dispatched at directly. `handleFile` must refuse it: parsing here would
+    // seed row selections from a protected set the host has not resolved.
+    const plan = planWithAccounts()
+    const el = renderPanel(plan, { protectedAccounts: [], pending: true })
+
+    await chooseFile(el, TWO_ACCOUNT_CSV)
+
+    expect(el.querySelector('tbody')).toBeNull()
+    expect(maybeApplyButton(el)).toBeNull()
+    // And nothing reached the plan.
+    expect(plan.accounts.find((a) => a.id === 'acct-brokerage')!).toMatchObject({ balance: 1, costBasis: 1 })
+    expect(plan.accounts.find((a) => a.id === 'acct-roth')!).toMatchObject({ balance: 1 })
+  })
+
+  it('tears down an already-parsed preview if the host goes back to pending', async () => {
+    // A table parsed while protection was KNOWN was classified, pre-selected and
+    // previewed against that set. If the host re-enters pending, that preview no
+    // longer describes a known protection state and would change under the user when
+    // the new answer lands — so it is cleared, and the panel is gated again.
+    const plan = planWithAccounts()
+    const el = renderPanel(plan, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }) })
+    await chooseFile(el, TWO_ACCOUNT_CSV)
+    expect(el.querySelector('tbody')).not.toBeNull()
+    expect(maybeApplyButton(el)).not.toBeNull()
+
+    act(() => {
+      root!.render(
+        providerTree(plan, <UpdateBalancesPanel />, {
+          protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }),
+          pending: true,
+        }),
+      )
+    })
+
+    expect(el.querySelector('tbody')).toBeNull()
+    expect(maybeApplyButton(el)).toBeNull()
+    expect(chooseButton(el).disabled).toBe(true)
+    expect(pendingExplanation(el)).toContain('Checking which accounts your advisor has protected')
+    // Neither account moved.
+    expect(plan.accounts.find((a) => a.id === 'acct-brokerage')!).toMatchObject({ balance: 1, costBasis: 1 })
+    expect(plan.accounts.find((a) => a.id === 'acct-roth')!).toMatchObject({ balance: 1 })
+  })
+
+  it('enables the panel with protection applied once pending clears', async () => {
+    // The transition a real host makes: mount pending with nothing resolved, then
+    // hand over the resolved set. The panel must come back to life AND honour the
+    // protection that just arrived — an enabled panel that forgot the set would be
+    // worse than the gate it replaced.
+    const plan = planWithAccounts()
+    const el = renderPanel(plan, { protectedAccounts: [], pending: true })
+    expect(chooseButton(el).disabled).toBe(true)
+
+    act(() => {
+      root!.render(
+        providerTree(plan, <UpdateBalancesPanel />, {
+          protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }),
+          pending: false,
+        }),
+      )
+    })
+
+    // Gate lifted: the explanation is gone and the chooser carries no leftover title.
+    expect(pendingExplanation(el)).toBeNull()
+    expect(chooseButton(el).disabled).toBe(false)
+    expect(chooseButton(el).title).toBe('')
+
+    // The now-known protection is in force: the Brokerage row is blocked, the Roth
+    // row applies.
+    await chooseFile(el, TWO_ACCOUNT_CSV)
+    expect(selects(el)[0]!.value).toBe('acct-brokerage')
+    expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected — advisor override')
+    expect(applyButton(el).disabled).toBe(false)
+
+    act(() => applyButton(el).click())
+    expect(plan.accounts.find((a) => a.id === 'acct-brokerage')!).toMatchObject({ balance: 1, costBasis: 1 })
+    expect(plan.accounts.find((a) => a.id === 'acct-roth')!).toMatchObject({ balance: 14000 })
+  })
+
+  it('behaves exactly as before when a provider passes pending: false', async () => {
+    // An explicit `pending: false` must be indistinguishable from the pre-`pending`
+    // provider: no explanation, no titles, protection enforced, apply writes.
+    const plan = planWithAccounts()
+    const el = renderPanel(plan, {
+      protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }),
+      pending: false,
+    })
+    expect(pendingExplanation(el)).toBeNull()
+    expect(chooseButton(el).disabled).toBe(false)
+
+    await chooseFile(el, TWO_ACCOUNT_CSV)
+    expect(applyButton(el).disabled).toBe(false)
+    expect(applyButton(el).title).toBe('')
+    expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected — advisor override')
+
+    act(() => applyButton(el).click())
+    expect(plan.accounts.find((a) => a.id === 'acct-brokerage')!).toMatchObject({ balance: 1, costBasis: 1 })
+    expect(plan.accounts.find((a) => a.id === 'acct-roth')!).toMatchObject({ balance: 14000 })
+  })
+
+  it('is never pending with no provider mounted (the public web app is not gated)', async () => {
+    // The load-bearing default. The public app renders no provider, so a `pending`
+    // that defaulted to `true` would permanently disable its Apply.
+    const plan = planWithAccounts()
+    const el = renderPanel(plan) // no provider at all
+
+    expect(pendingExplanation(el)).toBeNull()
+    expect(chooseButton(el).disabled).toBe(false)
+    expect(chooseButton(el).title).toBe('')
+
+    await chooseFile(el, TWO_ACCOUNT_CSV)
+    expect(applyButton(el).disabled).toBe(false)
+    act(() => applyButton(el).click())
+    // Both accounts refreshed — nothing is protected and nothing is gated.
+    expect(plan.accounts.find((a) => a.id === 'acct-brokerage')!).toMatchObject({ balance: 55000, costBasis: 40000 })
+    expect(plan.accounts.find((a) => a.id === 'acct-roth')!).toMatchObject({ balance: 14000 })
+  })
+
+  it('names the duplicate collision, not protection, when Apply is blocked by duplicates', async () => {
+    // `blocked` meant duplicates only before `pending` existed, and it still does:
+    // the disabled Apply must explain the cause that actually fired, or the two
+    // gates become indistinguishable to a user looking at one greyed-out button.
+    const plan = createEmptyPlan({ newId: testIds })
+    plan.accounts.push(
+      { id: 'acct-brokerage', type: 'taxable', name: 'Brokerage', ownerPersonId: null, annualReturnPct: null, balance: 5000, costBasis: 3000, annualContribution: 0 },
+    )
+    const el = renderPanel(plan)
+    await chooseFile(el, TWO_BROKERAGE_CSV)
+
+    expect(applyButton(el).disabled).toBe(true)
+    expect(applyButton(el).title).toContain('same plan account')
+    expect(applyButton(el).title).not.toContain('advisor')
+    expect(pendingExplanation(el)).toBeNull()
+  })
+
+  it('drops an in-flight read if the host goes pending while it is outstanding', async () => {
+    // The post-await continuation guard. `handleFile`'s entry check closed over
+    // the OLD `protectionPending`, so a read that began while protection was
+    // KNOWN cannot see the host withdraw it — and without a commit-synchronous
+    // guard the continuation would call setParsed right after the render-phase
+    // reset cleared it, rendering a full preview table (rows pre-selected, a
+    // delta computed) against a protection set the host no longer stands behind.
+    const plan = planWithAccounts()
+    const el = renderPanel(plan, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }) })
+
+    let resolveText!: (value: string) => void
+    const file = new File(['ignored'], 'positions.csv', { type: 'text/csv' })
+    Object.defineProperty(file, 'text', {
+      value: () => new Promise<string>((resolve) => { resolveText = resolve }),
+      configurable: true,
+    })
+    const input = el.querySelector<HTMLInputElement>('input[type="file"]')!
+    Object.defineProperty(input, 'files', { value: [file], configurable: true })
+    act(() => input.dispatchEvent(new Event('change', { bubbles: true })))
+    expect(el.querySelector('tbody')).toBeNull() // outstanding
+
+    // The host flips to pending mid-read.
+    act(() => {
+      root!.render(
+        providerTree(plan, <UpdateBalancesPanel />, {
+          protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }),
+          pending: true,
+        }),
+      )
+    })
+
+    // Resolve the read with a CSV that would otherwise build a table.
+    await act(async () => {
+      resolveText(TWO_ACCOUNT_CSV)
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+    expect(el.querySelector('tbody')).toBeNull()
+    expect(maybeApplyButton(el)).toBeNull()
+    expect(chooseButton(el).disabled).toBe(true)
+    expect(plan.accounts.find((a) => a.id === 'acct-brokerage')!).toMatchObject({ balance: 1, costBasis: 1 })
+
+    // Not stuck: once the host resolves, a fresh read builds its table again.
+    act(() => {
+      root!.render(
+        providerTree(plan, <UpdateBalancesPanel />, {
+          protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }),
+          pending: false,
+        }),
+      )
+    })
+    await chooseFile(el, TWO_ACCOUNT_CSV)
+    expect(el.querySelector('tbody')).not.toBeNull()
+  })
+
+  it('drops an in-flight read that spanned a whole pending cycle, not only one ending pending', async () => {
+    // The post-await guard used to sample whether protection is pending RIGHT NOW.
+    // A `file.text()` slow enough to span a full false→true→false cycle sees only
+    // the final false, so the continuation calls setParsed and restores the very
+    // preview the pending transition deliberately cleared — a table seeded, rows
+    // pre-selected and a delta computed against the set that was known before the
+    // host withdrew and re-issued it. What matters is whether pending was ENTERED
+    // during the read, which is a committed generation, not a current value.
+    const plan = planWithAccounts()
+    const el = renderPanel(plan, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }) })
+
+    let resolveText!: (value: string) => void
+    const file = new File(['ignored'], 'positions.csv', { type: 'text/csv' })
+    Object.defineProperty(file, 'text', {
+      value: () => new Promise<string>((resolve) => { resolveText = resolve }),
+      configurable: true,
+    })
+    const input = el.querySelector<HTMLInputElement>('input[type="file"]')!
+    Object.defineProperty(input, 'files', { value: [file], configurable: true })
+    act(() => input.dispatchEvent(new Event('change', { bubbles: true })))
+    expect(el.querySelector('tbody')).toBeNull() // outstanding
+
+    // The whole cycle, start to finish, while the read is still outstanding.
+    for (const pending of [true, false]) {
+      act(() => {
+        root!.render(
+          providerTree(plan, <UpdateBalancesPanel />, {
+            protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }),
+            pending,
+          }),
+        )
+      })
+    }
+    // Protection is known again, so the panel is usable — this is not the
+    // "still pending" case the current-value check already caught.
+    expect(pendingExplanation(el)).toBeNull()
+    expect(chooseButton(el).disabled).toBe(false)
+
+    // Resolve the read with a CSV that would otherwise build a table.
+    await act(async () => {
+      resolveText(TWO_ACCOUNT_CSV)
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+    expect(el.querySelector('tbody')).toBeNull()
+    expect(maybeApplyButton(el)).toBeNull()
+    expect(plan.accounts.find((a) => a.id === 'acct-brokerage')!).toMatchObject({ balance: 1, costBasis: 1 })
+
+    // Not stuck: a fresh read, started now that protection is known, still lands.
+    await chooseFile(el, TWO_ACCOUNT_CSV)
+    expect(el.querySelector('tbody')).not.toBeNull()
+    expect(selects(el)[0]!.value).toBe('acct-brokerage')
+  })
+
+  it('accepts a host-built context value that omits pending entirely', async () => {
+    // `RefreshProtectionValue` is named in the README as part of the supported
+    // product API and the context module is importable through the exports
+    // wildcard, so a host may construct its own value object. `pending` is
+    // therefore an OPTIONAL member: this object — which is exactly what a host
+    // written before `pending` existed produces — must still typecheck, and the
+    // absent flag must read as `false` rather than gating the panel forever.
+    const plan = planWithAccounts()
+    const value: RefreshProtectionValue = { protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }) }
+
+    container = window.document.createElement('div')
+    window.document.body.appendChild(container)
+    root = createRoot(container)
+    act(() => {
+      root!.render(
+        <PlanCtx.Provider
+          value={{ plan, update: (m) => m(plan), discardPendingSave: () => undefined, saveState: 'saved', issues: [] }}
+        >
+          <RefreshProtectionContext.Provider value={value}>
+            <UpdateBalancesPanel />
+          </RefreshProtectionContext.Provider>
+        </PlanCtx.Provider>,
+      )
+    })
+
+    expect(pendingExplanation(container)).toBeNull()
+    expect(chooseButton(container).disabled).toBe(false)
+
+    // …and the protection it DID supply is still enforced.
+    await chooseFile(container, TWO_ACCOUNT_CSV)
+    expect(container.querySelector('[role="note"]')?.textContent).toContain('Protected — advisor override')
+    act(() => applyButton(container!).click())
+    expect(plan.accounts.find((a) => a.id === 'acct-brokerage')!).toMatchObject({ balance: 1, costBasis: 1 })
+    expect(plan.accounts.find((a) => a.id === 'acct-roth')!).toMatchObject({ balance: 14000 })
   })
 })

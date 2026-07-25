@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useMemo, type ReactNode } from 'react'
 
 import { RefreshProtectionContext, type RefreshProtectionEntry } from './refreshProtectionContext'
 
@@ -10,9 +10,17 @@ import { RefreshProtectionContext, type RefreshProtectionEntry } from './refresh
  * position, since indices shift as accounts are added or removed. The public app
  * renders no provider and the panel gets the empty default (unchanged behaviour).
  *
+ * A host that loads its protected set asynchronously passes `pending` while the
+ * answer is outstanding: an empty `protectedAccounts` otherwise reads as "nothing
+ * is protected", and the panel would happily refresh a frozen account in that
+ * window. While `pending`, the panel refuses both the file and the apply. It
+ * defaults to `false`, so an existing host that passes only `protectedAccounts`
+ * is unchanged.
+ *
  * ```tsx
  * <RefreshProtectionProvider
- *   protectedAccounts={[{ accountId: 'acct-123' }, { accountId: 'acct-456', field: 'costBasis' }]}
+ *   protectedAccounts={overrides ?? []}
+ *   pending={overrides === null} // still loading — don't let a refresh through yet
  * >
  *   {workspace}
  * </RefreshProtectionProvider>
@@ -23,10 +31,17 @@ import { RefreshProtectionContext, type RefreshProtectionEntry } from './refresh
  */
 export function RefreshProtectionProvider({
   protectedAccounts,
+  pending = false,
   children,
 }: {
   protectedAccounts: readonly RefreshProtectionEntry[]
+  /** `true` while the host is still resolving `protectedAccounts`. Defaults to `false`. */
+  pending?: boolean
   children: ReactNode
 }) {
-  return <RefreshProtectionContext.Provider value={{ protectedAccounts }}>{children}</RefreshProtectionContext.Provider>
+  // Memoized so an unrelated re-render of the host does not hand every consumer
+  // a fresh context identity (the value was constructed inline before, which
+  // re-ran the panel's `protectedAccounts`-keyed memos on every host render).
+  const value = useMemo(() => ({ protectedAccounts, pending }), [protectedAccounts, pending])
+  return <RefreshProtectionContext.Provider value={value}>{children}</RefreshProtectionContext.Provider>
 }
