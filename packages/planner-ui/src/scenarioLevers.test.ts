@@ -855,4 +855,192 @@ describe('scenario lever contract', () => {
 
     expect(result.ok).toBe(true)
   })
+
+  it('stops only contributions that can occur during the projection', () => {
+    const inactive = buildExampleCouple()
+    inactive.incomes = inactive.incomes.filter((income) => income.type !== 'wages')
+    for (const account of inactive.accounts) {
+      if (!('annualContribution' in account)) continue
+      account.annualContribution = 0
+      delete account.contributionSchedule
+    }
+    const primary = inactive.household.people[0]!
+    const primaryAgeAtStart = context.startYear - Number(primary.dob.slice(0, 4))
+    const expired = inactive.accounts.find((account) => account.type === 'taxable')!
+    expired.contributionSchedule = [
+      {
+        annualAmount: 12_000,
+        fromAge: primaryAgeAtStart - 2,
+        toAge: primaryAgeAtStart - 1,
+        escalationPct: 0,
+      },
+    ]
+    const noWages = inactive.accounts.find((account) => account.type === 'traditional')!
+    noWages.annualContribution = 20_000
+
+    const unavailable = buildScenarioLever(inactive, { id: 'stopContributions' }, context)
+    expect(unavailable.ok).toBe(false)
+    if (!unavailable.ok) expect(unavailable.issues.join(' ')).toContain('active during the projection')
+
+    expired.contributionSchedule = [
+      {
+        annualAmount: 12_000,
+        fromAge: primaryAgeAtStart,
+        toAge: primaryAgeAtStart + 1,
+        escalationPct: 0,
+      },
+    ]
+    const available = buildScenarioLever(inactive, { id: 'stopContributions' }, context)
+    expect(available.ok).toBe(true)
+    if (!available.ok) return
+    const applied = applyScenarioPatch(inactive, available.patch)
+    expect(applied.ok).toBe(true)
+    if (!applied.ok) return
+    const stopped = applied.plan.accounts.find((account) => account.id === expired.id)
+    const clearedWithCoastScenario = applied.plan.accounts.find((account) => account.id === noWages.id)
+    expect(stopped).toMatchObject({ annualContribution: 0 })
+    expect(stopped && 'contributionSchedule' in stopped ? stopped.contributionSchedule : undefined).toBeUndefined()
+    expect(clearedWithCoastScenario).toMatchObject({ annualContribution: 0 })
+  })
+
+  it('allocates only eligible accounts that can hold projected assets', () => {
+    const plan = buildExampleCouple()
+    plan.accounts = [
+      {
+        type: 'taxable',
+        id: 'empty-taxable',
+        name: 'Empty taxable',
+        ownerPersonId: null,
+        annualReturnPct: null,
+        balance: 0,
+        costBasis: 0,
+        annualContribution: 0,
+      },
+      {
+        type: 'roth',
+        id: 'empty-roth',
+        name: 'Empty Roth',
+        ownerPersonId: plan.household.people[0]!.id,
+        annualReturnPct: null,
+        kind: 'ira',
+        balance: 0,
+        annualContribution: 0,
+      },
+    ]
+    plan.incomes = []
+    plan.insurance = []
+    plan.strategies.rothConversion = { mode: 'none' }
+
+    const unavailable = buildScenarioLever(plan, { id: 'allocation', stockPct: 60 }, context)
+    expect(unavailable.ok).toBe(false)
+
+    plan.incomes = [
+      {
+        type: 'oneTime',
+        id: 'future-cash',
+        label: 'Future cash',
+        year: context.startYear + 1,
+        amount: 50_000,
+        taxTreatment: 'none',
+      },
+    ]
+    const available = buildScenarioLever(plan, { id: 'allocation', stockPct: 60 }, context)
+    expect(available.ok).toBe(true)
+    if (!available.ok) return
+    const applied = applyScenarioPatch(plan, available.patch)
+    expect(applied.ok).toBe(true)
+    if (!applied.ok) return
+    const taxable = applied.plan.accounts.find((account) => account.id === 'empty-taxable')
+    const roth = applied.plan.accounts.find((account) => account.id === 'empty-roth')
+    expect(taxable && 'allocation' in taxable ? taxable.allocation : undefined).toBeDefined()
+    expect(roth && 'allocation' in roth ? roth.allocation : undefined).toBeDefined()
+  })
+
+  it('rejects remaining guaranteed no-op projection levers', () => {
+    const homePlan = buildExampleCouple()
+    const horizon = Math.max(
+      ...homePlan.household.people.map(
+        (person) => Number(person.dob.slice(0, 4)) + person.longevity.planningAge,
+      ),
+    )
+    const lateSale = buildScenarioLever(
+      homePlan,
+      { id: 'homeSale', saleYear: horizon + 1 },
+      context,
+    )
+
+    const noBenefit = buildExampleCouple()
+    for (const income of noBenefit.incomes) {
+      if (income.type !== 'socialSecurity') continue
+      income.piaMonthly = 0
+      income.earnings = null
+      income.earningsProjection = null
+      income.formerSpouses = []
+    }
+    const emptyClaim = buildScenarioLever(noBenefit, { id: 'socialSecurityClaim', claimAge: 70 }, context)
+    const emptyCut = buildScenarioLever(
+      noBenefit,
+      { id: 'socialSecurityCut', cutPct: 20, fromYear: context.startYear },
+      context,
+    )
+    const mixedBenefits = buildExampleCouple()
+    const mixedStreams = mixedBenefits.incomes.filter((income) => income.type === 'socialSecurity')
+    const disability = mixedStreams[0]!
+    disability.piaMonthly = 2_000
+    disability.disability = { onsetAge: 60 }
+    const emptyRetirement = mixedStreams[1]!
+    emptyRetirement.piaMonthly = 0
+    emptyRetirement.earnings = null
+    delete emptyRetirement.disability
+    mixedBenefits.incomes = [
+      ...mixedBenefits.incomes.filter((income) => income.type !== 'socialSecurity'),
+      disability,
+      emptyRetirement,
+    ]
+    const spousalClaim = buildScenarioLever(
+      mixedBenefits,
+      { id: 'socialSecurityClaim', claimAge: 70 },
+      context,
+    )
+
+    const noPayout = planWithGuaranteedIncome()
+    for (const person of noPayout.household.people) person.longevity.planningAge = 65
+    const pension = noPayout.accounts.find((account) => account.type === 'pension')!
+    const annuity = noPayout.accounts.find((account) => account.type === 'annuity')!
+    pension.startAge = 80
+    annuity.startAge = 80
+    const latePension = buildScenarioLever(
+      noPayout,
+      { id: 'pension', monthlyChangePct: 10, startAgeDelta: 0 },
+      context,
+    )
+    const lateAnnuity = buildScenarioLever(
+      noPayout,
+      { id: 'annuity', monthlyChangePct: 10, startAgeDelta: 0 },
+      context,
+    )
+    pension.monthlyAmount = 0
+    annuity.monthlyAmount = 0
+    pension.startAge = 65
+    annuity.startAge = 65
+    const zeroPension = buildScenarioLever(
+      noPayout,
+      { id: 'pension', monthlyChangePct: 10, startAgeDelta: 0 },
+      context,
+    )
+    const zeroAnnuity = buildScenarioLever(
+      noPayout,
+      { id: 'annuity', monthlyChangePct: 10, startAgeDelta: 0 },
+      context,
+    )
+
+    expect(lateSale.ok).toBe(false)
+    expect(emptyClaim.ok).toBe(false)
+    expect(emptyCut.ok).toBe(false)
+    expect(spousalClaim.ok).toBe(true)
+    expect(latePension.ok).toBe(false)
+    expect(lateAnnuity.ok).toBe(false)
+    expect(zeroPension.ok).toBe(false)
+    expect(zeroAnnuity.ok).toBe(false)
+  })
 })

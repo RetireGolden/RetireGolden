@@ -305,12 +305,25 @@ function hasRothDestination(plan: Plan): boolean {
   return plan.accounts.some((account) => account.type === 'roth')
 }
 
+type ProjectedBalanceAccount = Extract<
+  Plan['accounts'][number],
+  { type: 'cash' | 'taxable' | 'equityComp' | 'traditional' | 'roth' | 'hsa' }
+>
+
+function isProjectedBalanceAccount(account: Plan['accounts'][number]): account is ProjectedBalanceAccount {
+  return (
+    account.type === 'cash' ||
+    account.type === 'taxable' ||
+    account.type === 'equityComp' ||
+    account.type === 'traditional' ||
+    account.type === 'roth' ||
+    account.type === 'hsa'
+  )
+}
+
 function receivesContributionDuringProjection(
   plan: Plan,
-  account: Extract<
-    Plan['accounts'][number],
-    { type: 'cash' | 'taxable' | 'equityComp' | 'traditional' | 'roth' | 'hsa' }
-  >,
+  account: ProjectedBalanceAccount,
   startYear: number,
 ): boolean {
   const ownerId = account.ownerPersonId ?? plan.household.people[0]?.id
@@ -338,6 +351,49 @@ function receivesContributionDuringProjection(
   return false
 }
 
+type GuaranteedIncomeAccount = Extract<Plan['accounts'][number], { type: 'pension' | 'annuity' }>
+
+function hasGuaranteedIncomePayoutWindow(
+  plan: Plan,
+  account: GuaranteedIncomeAccount,
+  startYear: number,
+): boolean {
+  if (account.monthlyAmount <= 0) return false
+  const ownerId = account.ownerPersonId ?? plan.household.people[0]?.id
+  const owner = plan.household.people.find((person) => person.id === ownerId)
+  if (!owner) return false
+  if (
+    owner.longevity.planningAge < account.startAge &&
+    (account.type === 'pension' ||
+      account.payoutForm === undefined ||
+      account.payoutForm.kind === 'lifeOnly')
+  ) {
+    return false
+  }
+  const firstPaymentYear = Math.max(
+    Number(owner.dob.slice(0, 4)) + account.startAge,
+    account.type === 'annuity' && account.purchase ? account.purchase.year : startYear,
+  )
+  const projectionEndYear = householdPlanningHorizonYear(plan)
+  const lastPaymentYear =
+    account.type === 'pension' && account.lumpSumElection && account.lumpSumOffer
+      ? Math.min(projectionEndYear, account.lumpSumOffer.electionYear - 1)
+      : projectionEndYear
+  return Math.max(firstPaymentYear, startYear) <= lastPaymentYear
+}
+
+type SocialSecurityIncome = Extract<Plan['incomes'][number], { type: 'socialSecurity' }>
+
+function hasPotentialSocialSecurityBenefit(incomes: readonly SocialSecurityIncome[]): boolean {
+  return incomes.some(
+    (income) =>
+      ((income.piaMonthly ?? 0) > 0 ||
+        income.earnings?.some((earning) => earning.amount > 0) === true ||
+        (income.earningsProjection?.assumedAnnualEarnings ?? 0) > 0 ||
+        income.formerSpouses?.some((formerSpouse) => formerSpouse.piaMonthly > 0) === true),
+  )
+}
+
 function hasPotentialGeneralDeposit(plan: Plan, startYear: number): boolean {
   const endYear = householdPlanningHorizonYear(plan)
   const hasIncome = plan.incomes.some((income) => {
@@ -345,11 +401,7 @@ function hasPotentialGeneralDeposit(plan: Plan, startYear: number): boolean {
       case 'wages':
         return income.annualGross > 0 && hasWagesInYear(plan, income.personId, startYear)
       case 'socialSecurity':
-        return (
-          (income.piaMonthly ?? 0) > 0 ||
-          income.earnings?.some((earning) => earning.amount > 0) === true ||
-          (income.earningsProjection?.assumedAnnualEarnings ?? 0) > 0
-        )
+        return hasPotentialSocialSecurityBenefit([income])
       case 'recurring':
         return (
           income.annualAmount > 0 &&
@@ -361,21 +413,11 @@ function hasPotentialGeneralDeposit(plan: Plan, startYear: number): boolean {
     }
   })
   if (hasIncome) return true
-  const hasGuaranteedIncome = plan.accounts.some((account) => {
-    if ((account.type !== 'pension' && account.type !== 'annuity') || account.monthlyAmount <= 0) return false
-    const ownerId = account.ownerPersonId ?? plan.household.people[0]?.id
-    const owner = plan.household.people.find((person) => person.id === ownerId)
-    if (!owner) return false
-    const firstPaymentYear = Math.max(
-      Number(owner.dob.slice(0, 4)) + account.startAge,
-      account.type === 'annuity' && account.purchase ? account.purchase.year : startYear,
-    )
-    const lastPaymentYear =
-      account.type === 'pension' && account.lumpSumElection && account.lumpSumOffer
-        ? Math.min(endYear, account.lumpSumOffer.electionYear - 1)
-        : endYear
-    return Math.max(firstPaymentYear, startYear) <= lastPaymentYear
-  })
+  const hasGuaranteedIncome = plan.accounts.some(
+    (account) =>
+      (account.type === 'pension' || account.type === 'annuity') &&
+      hasGuaranteedIncomePayoutWindow(plan, account, startYear),
+  )
   if (hasGuaranteedIncome) return true
   const hasActiveOwnedLadder =
     plan.incomeFloor?.ladders.some(
@@ -404,29 +446,10 @@ function hasPotentialGeneralDeposit(plan: Plan, startYear: number): boolean {
   )
 }
 
-function usesDefaultReturn(
-  plan: Plan,
-  account: Plan['accounts'][number],
-  startYear: number,
-): boolean {
-  if (
-    account.type !== 'cash' &&
-    account.type !== 'taxable' &&
-    account.type !== 'equityComp' &&
-    account.type !== 'traditional' &&
-    account.type !== 'roth' &&
-    account.type !== 'hsa'
-  ) {
-    return false
-  }
-  if (
-    account.annualReturnPct !== null ||
-    ('allocation' in account && account.allocation !== undefined)
-  ) {
-    return false
-  }
+function holdsProjectedAssets(plan: Plan, account: ProjectedBalanceAccount, startYear: number): boolean {
   if (account.balance > 0 || receivesContributionDuringProjection(plan, account, startYear)) return true
 
+  const endYear = householdPlanningHorizonYear(plan)
   const depositTarget =
     plan.accounts.find((candidate) => candidate.type === 'cash') ??
     plan.accounts.find((candidate) => candidate.type === 'taxable')
@@ -440,42 +463,57 @@ function usesDefaultReturn(
         candidate.lumpSumOffer !== undefined &&
         candidate.lumpSumOffer.amount > 0 &&
         candidate.lumpSumOffer.electionYear >= startYear &&
-        candidate.lumpSumOffer.electionYear <= householdPlanningHorizonYear(plan) &&
+        candidate.lumpSumOffer.electionYear <= endYear &&
         candidate.lumpSumElection?.rolloverAccountId === account.id,
     )
   ) {
     return true
   }
 
-  if (account.type === 'roth' && plan.accounts.find((candidate) => candidate.type === 'roth')?.id === account.id) {
-    const strategy = plan.strategies.rothConversion
-    if (strategy.mode === 'manual') {
-      const activeConversions = strategy.conversions.filter(
-        (conversion) =>
-          conversion.amount > 0 &&
-          conversion.year >= startYear &&
-          conversion.year <= householdPlanningHorizonYear(plan),
-      )
-      if (
-        activeConversions.length > 0 &&
-        hasRothConversionSources(
-          plan,
-          Math.min(...activeConversions.map((conversion) => conversion.year)),
-          Math.max(...activeConversions.map((conversion) => conversion.year)),
-        )
-      ) {
-        return true
-      }
-    }
-    if (
-      strategy.mode === 'fillToTarget' &&
-      hasRothConversionSources(plan, strategy.startYear, strategy.endYear)
-    ) {
-      return true
-    }
+  if (account.type !== 'roth' || plan.accounts.find((candidate) => candidate.type === 'roth')?.id !== account.id) {
+    return false
   }
-
+  const strategy = plan.strategies.rothConversion
+  if (strategy.mode === 'manual') {
+    const activeConversions = strategy.conversions.filter(
+      (conversion) =>
+        conversion.amount > 0 &&
+        conversion.year >= startYear &&
+        conversion.year <= endYear,
+    )
+    return (
+      activeConversions.length > 0 &&
+      hasRothConversionSources(
+        plan,
+        Math.min(...activeConversions.map((conversion) => conversion.year)),
+        Math.max(...activeConversions.map((conversion) => conversion.year)),
+      )
+    )
+  }
+  if (strategy.mode === 'fillToTarget') {
+    const effectiveStartYear = Math.max(strategy.startYear, startYear)
+    const effectiveEndYear = Math.min(strategy.endYear, endYear)
+    return (
+      effectiveStartYear <= effectiveEndYear &&
+      hasRothConversionSources(plan, effectiveStartYear, effectiveEndYear)
+    )
+  }
   return false
+}
+
+function usesDefaultReturn(
+  plan: Plan,
+  account: Plan['accounts'][number],
+  startYear: number,
+): boolean {
+  if (!isProjectedBalanceAccount(account)) return false
+  if (
+    account.annualReturnPct !== null ||
+    ('allocation' in account && account.allocation !== undefined)
+  ) {
+    return false
+  }
+  return holdsProjectedAssets(plan, account, startYear)
 }
 
 function finish(
@@ -601,6 +639,9 @@ export function buildScenarioLever(
       if (eligible.length === 0) {
         return unavailable(definition, ['Disability streams use onset age instead of retirement claim age.'])
       }
+      if (!hasPotentialSocialSecurityBenefit(streams)) {
+        return unavailable(definition, ['No Social Security stream has a modeled benefit to change.'])
+      }
       if (eligible.length !== streams.length) {
         warnings.push('Social Security disability streams are left unchanged because onset age controls their start.')
       }
@@ -623,8 +664,12 @@ export function buildScenarioLever(
         validateCalendarYear(request.fromYear, 'Social Security cut start year'),
       )
       if (inputIssue) return unavailable(definition, [inputIssue])
-      if (!plan.incomes.some((income) => income.type === 'socialSecurity')) {
+      const streams = plan.incomes.filter((income) => income.type === 'socialSecurity')
+      if (streams.length === 0) {
         return unavailable(definition, ['Add a Social Security income stream before modeling a benefit cut.'])
+      }
+      if (!hasPotentialSocialSecurityBenefit(streams)) {
+        return unavailable(definition, ['No Social Security stream has a modeled benefit to cut.'])
       }
       if (request.fromYear > householdPlanningHorizonYear(plan)) {
         return unavailable(definition, ['Social Security cut start year must be within the household planning horizon.'])
@@ -774,8 +819,10 @@ export function buildScenarioLever(
           account.type === 'roth' ||
           account.type === 'hsa',
       )
-      if (eligible.length === 0) {
-        return unavailable(definition, ['Add an investable taxable, traditional, Roth, or HSA account first.'])
+      if (!eligible.some((account) => holdsProjectedAssets(plan, account, context.startYear))) {
+        return unavailable(definition, [
+          'No investable taxable, traditional, Roth, or HSA account can hold assets during the projection.',
+        ])
       }
       if (eligible.some((account) => account.allocation !== undefined && account.allocation.mode !== 'static')) {
         warnings.push('This replaces an existing glidepath with one static allocation.')
@@ -859,6 +906,20 @@ export function buildScenarioLever(
         account.startAge = nextStartAge
         account.monthlyAmount *= 1 + request.monthlyChangePct / 100
       }
+      if (
+        !accounts.some((account) => {
+          const original = plan.accounts.find(
+            (candidate): candidate is Extract<Plan['accounts'][number], { type: 'pension' }> =>
+              candidate.type === 'pension' && candidate.id === account.id,
+          )
+          return (
+            (original !== undefined && hasGuaranteedIncomePayoutWindow(plan, original, context.startYear)) ||
+            hasGuaranteedIncomePayoutWindow(edited, account, context.startYear)
+          )
+        })
+      ) {
+        return unavailable(definition, ['No pension payments can occur during the projection.'])
+      }
       return finish(
         plan,
         edited,
@@ -898,6 +959,20 @@ export function buildScenarioLever(
         if (ageIssue) return unavailable(definition, [ageIssue])
         account.startAge = nextStartAge
         account.monthlyAmount *= 1 + request.monthlyChangePct / 100
+      }
+      if (
+        !accounts.some((account) => {
+          const original = plan.accounts.find(
+            (candidate): candidate is Extract<Plan['accounts'][number], { type: 'annuity' }> =>
+              candidate.type === 'annuity' && candidate.id === account.id,
+          )
+          return (
+            (original !== undefined && hasGuaranteedIncomePayoutWindow(plan, original, context.startYear)) ||
+            hasGuaranteedIncomePayoutWindow(edited, account, context.startYear)
+          )
+        })
+      ) {
+        return unavailable(definition, ['No owned annuity payments can occur during the projection.'])
       }
       return finish(
         plan,
@@ -1043,20 +1118,28 @@ export function buildScenarioLever(
           (person) => Number(person.dob.slice(0, 4)) + person.longevity.planningAge,
         ),
       )
-      if (request.saleYear > horizonYear) warnings.push('The sale year is beyond the current planning horizon.')
+      if (request.saleYear > horizonYear) {
+        return unavailable(definition, ['Property sale year must be within the household planning horizon.'])
+      }
       property.plannedSaleYear = request.saleYear
       return finish(plan, edited, definition, `Sell ${property.name} in ${request.saleYear}`, warnings, context)
     }
 
     case 'stopContributions': {
-      let changed = false
+      if (
+        !plan.accounts.some(
+          (account) =>
+            isProjectedBalanceAccount(account) &&
+            receivesContributionDuringProjection(plan, account, context.startYear),
+        )
+      ) {
+        return unavailable(definition, ['No account contributions are active during the projection.'])
+      }
       for (const account of edited.accounts) {
-        if (!('annualContribution' in account)) continue
-        if (account.annualContribution !== 0 || account.contributionSchedule !== undefined) changed = true
+        if (!isProjectedBalanceAccount(account)) continue
         account.annualContribution = 0
         delete account.contributionSchedule
       }
-      if (!changed) return unavailable(definition, ['No scheduled account contributions are recorded.'])
       return finish(plan, edited, definition, 'Coast check: stop contributing', warnings, context)
     }
   }
