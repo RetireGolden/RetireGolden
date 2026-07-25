@@ -1098,6 +1098,11 @@ describe('scenario lever contract', () => {
     ]
     zeroCashPlan.incomes = []
     zeroCashPlan.insurance = []
+    zeroCashPlan.expenses.baseAnnual = 0
+    zeroCashPlan.expenses.phases = []
+    zeroCashPlan.expenses.oneTimeGoals = []
+    zeroCashPlan.expenses.healthcare.pre65MonthlyPremiumPerPerson = 0
+    zeroCashPlan.expenses.healthcare.medicareExtrasMonthlyPerPerson = 0
     zeroCashPlan.incomeFloor = {
       ladders: [
         {
@@ -1205,10 +1210,17 @@ describe('scenario lever contract', () => {
         label: 'Future cash',
         year: context.startYear + 1,
         amount: 50_000,
-        taxTreatment: 'none',
+        taxTreatment: 'ordinary',
       },
     ]
+    const consumed = buildScenarioLever(plan, { id: 'allocation', stockPct: 60 }, context)
+    plan.expenses.baseAnnual = 0
+    plan.expenses.phases = []
+    plan.expenses.oneTimeGoals = []
+    plan.expenses.healthcare.pre65MonthlyPremiumPerPerson = 0
+    plan.expenses.healthcare.medicareExtrasMonthlyPerPerson = 0
     const available = buildScenarioLever(plan, { id: 'allocation', stockPct: 60 }, context)
+    expect(consumed.ok).toBe(false)
     expect(available.ok).toBe(true)
     if (!available.ok) return
     const applied = applyScenarioPatch(plan, available.patch)
@@ -1688,6 +1700,71 @@ describe('scenario lever contract', () => {
     expect(manualResult.ok).toBe(false)
     expect(fillResult.ok).toBe(false)
     expect(activeResult.ok).toBe(true)
+  })
+
+  it.each([
+    {
+      label: 'manual',
+      strategy: {
+        mode: 'manual' as const,
+        conversions: [{ year: context.startYear + 1, amount: 25_000 }],
+      },
+    },
+    {
+      label: 'optimized',
+      strategy: {
+        mode: 'optimized' as const,
+        conversions: [{ year: context.startYear + 1, amount: 25_000 }],
+        optimizedAtIso: context.createdAtIso,
+      },
+    },
+    {
+      label: 'fill-to-target',
+      strategy: {
+        mode: 'fillToTarget' as const,
+        target: 'fixedMagi' as const,
+        targetValue: 200_000,
+        startYear: context.startYear + 1,
+        endYear: context.startYear + 1,
+      },
+    },
+  ])('requires actual current-ledger Roth output for $label Roth-none availability', ({
+    strategy,
+  }) => {
+    const depleted = buildExampleCouple()
+    depleted.incomes = []
+    depleted.insurance = []
+    depleted.careEvents = []
+    depleted.expenses.baseAnnual = 70_000
+    depleted.expenses.phases = []
+    depleted.expenses.oneTimeGoals = []
+    depleted.expenses.healthcare.pre65MonthlyPremiumPerPerson = 0
+    depleted.expenses.healthcare.medicareExtrasMonthlyPerPerson = 0
+    depleted.assumptions.stateEffectiveTaxPct = 20
+    const firstTraditional = depleted.accounts.find(
+      (account) => account.type === 'traditional',
+    )
+    for (const account of depleted.accounts) {
+      if (account.type !== 'traditional') continue
+      account.balance = account === firstTraditional ? 80_000 : 0
+      account.annualContribution = 0
+      delete account.contributionSchedule
+    }
+    depleted.accounts = depleted.accounts.filter(
+      (account) => account.type === 'traditional' || account.type === 'roth',
+    )
+    const roth = depleted.accounts.find((account) => account.type === 'roth')!
+    roth.balance = 0
+    roth.annualContribution = 0
+    depleted.strategies.rothConversion = strategy
+
+    const positive = structuredClone(depleted)
+    positive.expenses.baseAnnual = 0
+    const zeroOutput = buildScenarioLever(depleted, { id: 'rothNone' }, context)
+    const positiveOutput = buildScenarioLever(positive, { id: 'rothNone' }, context)
+
+    expect(zeroOutput.ok).toBe(false)
+    expect(positiveOutput.ok).toBe(true)
   })
 
   it('requires a modeled survivor-only calendar year for survivor spending', () => {
@@ -2177,6 +2254,11 @@ describe('scenario lever contract', () => {
     plan.incomes = []
     plan.insurance = []
     plan.strategies.rothConversion = { mode: 'none' }
+    plan.expenses.baseAnnual = 0
+    plan.expenses.phases = []
+    plan.expenses.oneTimeGoals = []
+    plan.expenses.healthcare.pre65MonthlyPremiumPerPerson = 0
+    plan.expenses.healthcare.medicareExtrasMonthlyPerPerson = 0
     plan.incomeFloor = {
       ladders: [
         {
@@ -2348,6 +2430,11 @@ describe('scenario lever contract', () => {
     ]
     plan.insurance = []
     plan.strategies.rothConversion = { mode: 'none' }
+    plan.expenses.baseAnnual = 0
+    plan.expenses.phases = []
+    plan.expenses.oneTimeGoals = []
+    plan.expenses.healthcare.pre65MonthlyPremiumPerPerson = 0
+    plan.expenses.healthcare.medicareExtrasMonthlyPerPerson = 0
 
     const finalReturn = buildScenarioLever(
       plan,
@@ -2668,9 +2755,18 @@ describe('scenario lever contract', () => {
     plan.accounts = [cash, property]
     plan.incomes = []
     plan.insurance = []
-    plan.expenses.baseAnnual = 500_000
-    plan.expenses.idealAnnual = 0
-    plan.expenses.excessAnnual = 0
+    plan.expenses.baseAnnual = 0
+    plan.expenses.phases = []
+    plan.expenses.oneTimeGoals = [
+      {
+        id: 'hecm-draw-goal',
+        label: 'HECM draw',
+        year: context.startYear,
+        amount: 500_000,
+      },
+    ]
+    plan.expenses.healthcare.pre65MonthlyPremiumPerPerson = 0
+    plan.expenses.healthcare.medicareExtrasMonthlyPerPerson = 0
     plan.strategies.rothConversion = { mode: 'none' }
 
     const encumbered = buildScenarioLever(

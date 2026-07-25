@@ -13,8 +13,7 @@ import {
   type Plan,
 } from '@retiregolden/engine/model/plan'
 import { targetWeightsAt } from '@retiregolden/engine/allocation/assetClasses'
-import { buildLadder } from '@retiregolden/engine/ladder/ladderMath'
-import { EMBEDDED_REAL_YIELD_CURVE, packForYear } from '@retiregolden/engine/params'
+import { packForYear } from '@retiregolden/engine/params'
 import { modeledStateCodes } from '@retiregolden/engine/params/state'
 import {
   annuityPayoutForm,
@@ -39,10 +38,8 @@ import {
 import {
   acceptsContributions,
   isConvertibleToRoth,
-  isSpendableInYear,
   traditionalWithdrawalPenaltyRate,
 } from '@retiregolden/engine/strategies/accountEligibility'
-import { propertySaleTax } from '@retiregolden/engine/tax/propertySale'
 import { taxCalculatorFor as standardTaxCalculatorForPlan } from './planTaxCalculator'
 
 export type ScenarioLeverId =
@@ -405,31 +402,28 @@ function hasPositiveRothScheduleOutput(
   }
 }
 
-function hasEffectiveRothConversionOpportunity(
+function hasPositiveCurrentRothConversionOutput(
   plan: Plan,
   startYear: number,
   endYear: number,
+  taxCalculatorForPlan: (plan: Plan) => TaxCalculator,
 ): boolean {
-  if (!hasRothDestination(plan)) return false
-  const strategy = plan.strategies.rothConversion
-  if (strategy.mode === 'manual' || strategy.mode === 'optimized') {
-    return strategy.conversions.some(
-      (conversion) =>
-        conversion.amount > 0 &&
-        conversion.year >= startYear &&
-        conversion.year <= endYear &&
-        hasRothConversionSources(plan, conversion.year, conversion.year),
+  if (plan.strategies.rothConversion.mode === 'none') return false
+  try {
+    const projection = simulatePlan(plan, {
+      startYear,
+      horizonEndYear: endYear,
+      taxCalculator: taxCalculatorForPlan(plan),
+    })
+    return projection.years.some(
+      (year) =>
+        year.year >= startYear &&
+        year.year <= endYear &&
+        year.rothConversion > 1e-8,
     )
+  } catch {
+    return false
   }
-  if (strategy.mode === 'fillToTarget') {
-    const effectiveStartYear = Math.max(startYear, strategy.startYear)
-    const effectiveEndYear = Math.min(endYear, strategy.endYear)
-    return (
-      effectiveStartYear <= effectiveEndYear &&
-      hasRothConversionSources(plan, effectiveStartYear, effectiveEndYear)
-    )
-  }
-  return false
 }
 
 type ProjectedBalanceAccount = Extract<
@@ -530,18 +524,6 @@ function guaranteedIncomeAnnualPayout(
       ? grown * (account.survivorPct / 100)
       : 0
   )
-}
-
-function hasGuaranteedIncomePayoutWindow(
-  plan: Plan,
-  account: GuaranteedIncomeAccount,
-  startYear: number,
-): boolean {
-  const endYear = householdPlanningHorizonYear(plan)
-  for (let year = startYear; year <= endYear; year++) {
-    if (guaranteedIncomeAnnualPayout(plan, account, year) > 0) return true
-  }
-  return false
 }
 
 function guaranteedIncomeSchedulesDiffer(
@@ -675,267 +657,42 @@ function claimChangeCanAffectProjection(
   )
 }
 
-function hasPayableSocialSecurityBenefit(
-  plan: Plan,
-  startYear: number,
-  endYear: number,
-  taxCalculatorForPlan: (plan: Plan) => TaxCalculator,
-): boolean {
-  return (
-    projectedSocialSecuritySchedule(
-      plan,
-      startYear,
-      endYear,
-      taxCalculatorForPlan,
-    )?.some((amount) => amount > 1e-8) === true
-  )
-}
-
-function interpolatedCashValueAtAge(
-  schedule: Array<{ age: number; value: number }>,
-  age: number,
-): number {
-  if (schedule.length === 0) return 0
-  const sorted = [...schedule].sort((first, second) => first.age - second.age)
-  if (age <= sorted[0]!.age) return sorted[0]!.value
-  if (age >= sorted[sorted.length - 1]!.age) {
-    return sorted[sorted.length - 1]!.value
-  }
-  for (let index = 0; index < sorted.length - 1; index++) {
-    const lower = sorted[index]!
-    const upper = sorted[index + 1]!
-    if (age < lower.age || age > upper.age) continue
-    const progress = (age - lower.age) / (upper.age - lower.age)
-    return lower.value + (upper.value - lower.value) * progress
-  }
-  return sorted[sorted.length - 1]!.value
-}
-
-function permanentLifeSettlementValue(
-  policy: Extract<Plan['insurance'][number], { kind: 'permanentLife' }>,
-  settlementYear: number,
-  startYear: number,
-  settlementAge: number,
-): number {
-  if (policy.deathBenefit > 0) return policy.deathBenefit
-  if (settlementYear === startYear) return policy.cashValue
-  if (policy.cashValueMode === 'schedule' && policy.cashValueSchedule) {
-    return interpolatedCashValueAtAge(policy.cashValueSchedule, settlementAge - 1)
-  }
-  return (
-    policy.cashValue *
-    Math.pow(
-      1 + (policy.cashValueGrowthPct ?? 0) / 100,
-      settlementYear - startYear,
-    )
-  )
-}
-
-type PropertyAccount = Extract<Plan['accounts'][number], { type: 'property' }>
-
-function projectedPropertySalePrice(
-  plan: Plan,
-  property: PropertyAccount,
-  startYear: number,
-  saleYear: number,
-): number {
-  return (
-    property.value *
-    Math.pow(
-      1 + plan.assumptions.inflationPct / 100,
-      saleYear - startYear + 1,
-    )
-  )
-}
-
-function projectedHecmPayoffBeforeSale(
-  plan: Plan,
-  property: PropertyAccount,
-  startYear: number,
-  saleYear: number,
-  taxCalculatorForPlan: (plan: Plan) => TaxCalculator,
-): number | null {
-  const hecm = property.hecm
-  if (!hecm || hecm.openYear > saleYear) return 0
-  if (saleYear === startYear) {
-    return (
-      property.value *
-      (Math.max(0, hecm.upfrontCostPct ?? 0) / 100)
-    )
-  }
-  try {
-    const projection = simulatePlan(plan, {
-      startYear,
-      horizonEndYear: saleYear - 1,
-      taxCalculator: taxCalculatorForPlan(plan),
-    })
-    // YearResult currently exposes the household HECM balance. A household
-    // with multiple open lines is therefore treated conservatively: attributing
-    // the total payoff to this sale can hide an available lever, but cannot
-    // advertise proceeds that the modeled liens may consume.
-    return projection.years.at(-1)?.hecmLoanBalance ?? 0
-  } catch {
-    return null
-  }
-}
-
-function modeledPropertySaleDeposit(
-  plan: Plan,
-  property: PropertyAccount,
-  startYear: number,
-  taxCalculatorForPlan: (plan: Plan) => TaxCalculator,
-): number | null {
-  const saleYear = property.plannedSaleYear
-  if (saleYear === null) return null
-  const salePrice = projectedPropertySalePrice(plan, property, startYear, saleYear)
-  const proceeds =
-    property.costBasis === undefined
-      ? Math.max(0, property.expectedNetProceeds ?? salePrice)
-      : propertySaleTax({
-          salePrice,
-          costBasis: property.costBasis,
-          sellingCostPct: property.sellingCostPct,
-          primaryResidence: property.primaryResidence,
-          depreciationRecapture: property.depreciationRecapture,
-          filingStatus: plan.household.filingStatus,
-          pack: packForYear(saleYear).pack,
-        }).netProceeds
-  const modeledLoan = projectedHecmPayoffBeforeSale(
-    plan,
-    property,
-    startYear,
-    saleYear,
-    taxCalculatorForPlan,
-  )
-  if (modeledLoan === null) return null
-  const nonRecoursePayoff = Math.min(modeledLoan, Math.max(0, proceeds))
-  return proceeds - nonRecoursePayoff
-}
-
-function hasPotentialGeneralDeposit(
+function createProjectedAccountBalanceProbe(
   plan: Plan,
   startYear: number,
   taxCalculatorForPlan: (plan: Plan) => TaxCalculator,
-): boolean {
-  const endYear = householdPlanningHorizonYear(plan)
-  const hasIncome = plan.incomes.some((income) => {
-    switch (income.type) {
-      case 'wages':
-        return income.annualGross > 0 && hasWagesInYear(plan, income.personId, startYear)
-      case 'socialSecurity':
-        return hasPayableSocialSecurityBenefit(
-          plan,
+): (accountId: string) => boolean {
+  let positiveAccountIds: Set<string> | null = null
+  let evaluated = false
+  return (accountId) => {
+    if (!evaluated) {
+      evaluated = true
+      try {
+        const projection = simulatePlan(plan, {
           startYear,
-          endYear,
-          taxCalculatorForPlan,
+          horizonEndYear: householdPlanningHorizonYear(plan),
+          taxCalculator: taxCalculatorForPlan(plan),
+        })
+        positiveAccountIds = new Set(
+          projection.years.flatMap((year) =>
+            Object.entries(year.balances)
+              .filter(([, balance]) => balance > 1e-8)
+              .map(([projectedAccountId]) => projectedAccountId),
+          ),
         )
-      case 'recurring':
-        return (
-          income.annualAmount > 0 &&
-          (income.endYear === null || income.endYear >= startYear) &&
-          (income.startYear === null || income.startYear <= endYear)
-        )
-      case 'oneTime':
-        return income.amount > 0 && income.year >= startYear && income.year <= endYear
+      } catch {
+        positiveAccountIds = null
+      }
     }
-  })
-  if (hasIncome) return true
-  const hasGuaranteedIncome = plan.accounts.some(
-    (account) =>
-      (account.type === 'pension' || account.type === 'annuity') &&
-      hasGuaranteedIncomePayoutWindow(plan, account, startYear),
-  )
-  if (hasGuaranteedIncome) return true
-  const hasFundedLadder =
-    plan.incomeFloor?.ladders.some(
-      (ladder) => {
-        if (
-          ladder.annualRealAmount <= 0 ||
-          ladder.endYear < Math.max(ladder.startYear, startYear)
-        ) {
-          return false
-        }
-        if (ladder.purchase === undefined || ladder.purchase.year < startYear) return true
-        if (ladder.purchase.year > endYear) return false
-        const funding = plan.accounts.find(
-          (account) => account.id === ladder.purchase!.fundingAccountId,
-        )
-        if (
-          !funding ||
-          (funding.type !== 'cash' &&
-            funding.type !== 'taxable' &&
-            funding.type !== 'equityComp') ||
-          !isSpendableInYear(funding, ladder.purchase.year)
-        ) {
-          return false
-        }
-        const effectiveStartYear = Math.max(
-          ladder.startYear,
-          ladder.purchase.year + 1,
-        )
-        if (ladder.endYear < effectiveStartYear || effectiveStartYear > endYear) {
-          return false
-        }
-        const quotedCost = buildLadder({
-          annualRealIncome: ladder.annualRealAmount,
-          firstPayoutOffset: effectiveStartYear - ladder.purchase.year,
-          payoutYears: ladder.endYear - effectiveStartYear + 1,
-          curve: EMBEDDED_REAL_YIELD_CURVE,
-        }).totalCost
-        const nominalCost =
-          quotedCost *
-          Math.pow(
-            1 + plan.assumptions.inflationPct / 100,
-            ladder.purchase.year - startYear,
-          )
-        return funding.balance >= nominalCost
-      },
-    ) === true
-  if (hasFundedLadder) return true
-  if (
-    plan.accounts.some(
-      (account) =>
-        account.type === 'property' &&
-          account.plannedSaleYear !== null &&
-          account.plannedSaleYear >= startYear &&
-          account.plannedSaleYear <= endYear &&
-          account.value > 0 &&
-          (modeledPropertySaleDeposit(
-            plan,
-            account,
-            startYear,
-            taxCalculatorForPlan,
-          ) ?? 0) > 1e-8,
-    )
-  ) {
-    return true
+    return positiveAccountIds?.has(accountId) === true
   }
-  return plan.insurance.some(
-    (policy) => {
-      if (policy.kind !== 'permanentLife') return false
-      const insured = plan.household.people.find((person) => person.id === policy.insured)
-      if (!insured) return false
-      const settlementYear =
-        Number(insured.dob.slice(0, 4)) + insured.longevity.planningAge
-      return (
-        settlementYear >= startYear &&
-        settlementYear <= endYear &&
-        permanentLifeSettlementValue(
-          policy,
-          settlementYear,
-          startYear,
-          insured.longevity.planningAge,
-        ) > 0
-      )
-    },
-  )
 }
 
 function holdsProjectedAssets(
   plan: Plan,
   account: ProjectedBalanceAccount,
   startYear: number,
-  taxCalculatorForPlan: (plan: Plan) => TaxCalculator,
+  hasPositiveProjectedBalance: (accountId: string) => boolean,
 ): boolean {
   const endYear = householdPlanningHorizonYear(plan)
   if (account.balance > 0 || receivesContributionDuringProjection(plan, account, startYear)) {
@@ -946,7 +703,7 @@ function holdsProjectedAssets(
     plan.accounts.find((candidate) => candidate.type === 'taxable')
   if (
     depositTarget?.id === account.id &&
-    hasPotentialGeneralDeposit(plan, startYear, taxCalculatorForPlan)
+    hasPositiveProjectedBalance(account.id)
   ) {
     return true
   }
@@ -966,35 +723,11 @@ function holdsProjectedAssets(
     return true
   }
 
-  if (account.type !== 'roth' || plan.accounts.find((candidate) => candidate.type === 'roth')?.id !== account.id) {
-    return false
-  }
-  const strategy = plan.strategies.rothConversion
-  if (strategy.mode === 'manual' || strategy.mode === 'optimized') {
-    const activeConversions = strategy.conversions.filter(
-      (conversion) =>
-        conversion.amount > 0 &&
-        conversion.year >= startYear &&
-        conversion.year <= endYear,
-    )
-    return (
-      activeConversions.length > 0 &&
-      hasRothConversionSources(
-        plan,
-        Math.min(...activeConversions.map((conversion) => conversion.year)),
-        Math.max(...activeConversions.map((conversion) => conversion.year)),
-      )
-    )
-  }
-  if (strategy.mode === 'fillToTarget') {
-    const effectiveStartYear = Math.max(strategy.startYear, startYear)
-    const effectiveEndYear = Math.min(strategy.endYear, endYear)
-    return (
-      effectiveStartYear <= effectiveEndYear &&
-      hasRothConversionSources(plan, effectiveStartYear, effectiveEndYear)
-    )
-  }
-  return false
+  return (
+    account.type === 'roth' &&
+    plan.accounts.find((candidate) => candidate.type === 'roth')?.id === account.id &&
+    hasPositiveProjectedBalance(account.id)
+  )
 }
 
 type AllocatableAccount = Extract<
@@ -1050,7 +783,7 @@ function retirementAgeChangeCanAffectProjection(
   person: Plan['household']['people'][number],
   nextAge: number,
   startYear: number,
-  taxCalculatorForPlan: (plan: Plan) => TaxCalculator,
+  hasPositiveProjectedBalance: (accountId: string) => boolean,
 ): boolean {
   if (person.retirementAge === null || person.retirementAge === nextAge) return false
   const birthYear = Number(person.dob.slice(0, 4))
@@ -1116,7 +849,7 @@ function retirementAgeChangeCanAffectProjection(
       account.type !== 'traditional' ||
       account.kind !== 'employer' ||
       (account.ownerPersonId ?? plan.household.people[0]?.id) !== person.id ||
-      !holdsProjectedAssets(plan, account, startYear, taxCalculatorForPlan)
+      !holdsProjectedAssets(plan, account, startYear, hasPositiveProjectedBalance)
     ) {
       continue
     }
@@ -1160,7 +893,7 @@ function usesDefaultReturn(
   plan: Plan,
   account: Plan['accounts'][number],
   startYear: number,
-  taxCalculatorForPlan: (plan: Plan) => TaxCalculator,
+  hasPositiveProjectedBalance: (accountId: string) => boolean,
 ): boolean {
   if (!isProjectedBalanceAccount(account)) return false
   if (
@@ -1169,7 +902,7 @@ function usesDefaultReturn(
   ) {
     return false
   }
-  return holdsProjectedAssets(plan, account, startYear, taxCalculatorForPlan)
+  return holdsProjectedAssets(plan, account, startYear, hasPositiveProjectedBalance)
 }
 
 function finish(
@@ -1217,6 +950,11 @@ export function buildScenarioLever(
   const warnings: string[] = []
   const taxCalculatorForPlan =
     context.taxCalculatorForPlan ?? standardTaxCalculatorForPlan
+  const hasPositiveProjectedBalance = createProjectedAccountBalanceProbe(
+    plan,
+    context.startYear,
+    taxCalculatorForPlan,
+  )
 
   switch (request.id) {
     case 'retirementAge': {
@@ -1244,7 +982,7 @@ export function buildScenarioLever(
             person,
             nextAge,
             context.startYear,
-            taxCalculatorForPlan,
+            hasPositiveProjectedBalance,
           )
         ) {
           overlapsProjection = true
@@ -1598,10 +1336,11 @@ export function buildScenarioLever(
 
     case 'rothNone': {
       if (
-        !hasEffectiveRothConversionOpportunity(
+        !hasPositiveCurrentRothConversionOutput(
           plan,
           context.startYear,
           householdPlanningHorizonYear(plan),
+          taxCalculatorForPlan,
         )
       ) {
         return unavailable(definition, [
@@ -1645,7 +1384,7 @@ export function buildScenarioLever(
               plan,
               original,
               context.startYear,
-              taxCalculatorForPlan,
+              hasPositiveProjectedBalance,
             ) &&
             !allocationMatches(original.allocation, proposed)
           )
@@ -1678,7 +1417,7 @@ export function buildScenarioLever(
             plan,
             account,
             context.startYear,
-            taxCalculatorForPlan,
+            hasPositiveProjectedBalance,
           ),
         )
       ) {
