@@ -426,12 +426,22 @@ function scoreField(
  */
 function dedupe(field: CorpusFieldName, detected: readonly DetectedField[]): DetectedField[] {
   const normalize = NORMALIZE[field]
-  const seen = new Set<string>()
+  // One set of values PER PAGE rather than one composite string key. A key built
+  // by concatenating a page number and a value needs a separator no value can
+  // contain, and the usual answer — a raw NUL — makes the source file itself
+  // hard to read and git treat it as binary. Nesting the maps needs no separator
+  // at all, so there is nothing for a value to collide with.
+  const seenByPage = new Map<number, Set<string>>()
   const kept: DetectedField[] = []
   for (const item of detected) {
-    const key = `${item.page} ${normalize(item.value)}`
-    if (seen.has(key)) continue
-    seen.add(key)
+    let seen = seenByPage.get(item.page)
+    if (!seen) {
+      seen = new Set<string>()
+      seenByPage.set(item.page, seen)
+    }
+    const value = normalize(item.value)
+    if (seen.has(value)) continue
+    seen.add(value)
     kept.push(item)
   }
   return kept

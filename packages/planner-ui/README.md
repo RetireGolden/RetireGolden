@@ -548,6 +548,15 @@ A host that *does* want PDF text extraction installs it alongside the package:
 npm install @retiregolden/planner-ui pdfjs-dist
 ```
 
+**`pdfjs-dist` requires a newer Node than this package does.** Its current major
+declares `node >=22.13.0`, while this package supports `node >=20` and continues
+to — every other subpath runs unchanged on Node 20. The higher floor applies only
+to a host that opts into PDF extraction, which is the point of keeping the peer
+optional: the dependency's requirements are not imposed on anyone who does not
+use it. A host on Node 20 that installs `pdfjs-dist` anyway will see npm's
+`EBADENGINE` warning, and `extractDocumentText` reports `pdfjs_unavailable` or
+`pdfjs_incompatible` rather than failing obscurely.
+
 ```ts
 import { extractDocumentText } from '@retiregolden/planner-ui/document-text'
 

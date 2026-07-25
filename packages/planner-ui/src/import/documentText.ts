@@ -300,7 +300,13 @@ function toBytes(data: ArrayBuffer | Uint8Array): Uint8Array | null {
       // zero. Reading it finds no header and would answer "this is not a PDF"
       // about bytes nobody read — a guess dressed up as a finding. It is
       // unreadable, and the reason says so.
-      return (data.buffer as { detached?: boolean }).detached === true ? null : data
+      //
+      // Detected by CONSTRUCTING a view rather than reading `ArrayBuffer.prototype
+      // .detached`: that accessor is ES2024, so on a runtime without it the check
+      // would read `undefined`, quietly fall through, and restore the very wrong
+      // answer above. Construction throws on a detached buffer everywhere.
+      new Uint8Array(data.buffer, 0, 0)
+      return data
     }
     return new Uint8Array(data)
   } catch {
