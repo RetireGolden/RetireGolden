@@ -1043,4 +1043,308 @@ describe('scenario lever contract', () => {
     expect(zeroPension.ok).toBe(false)
     expect(zeroAnnuity.ok).toBe(false)
   })
+
+  it('declares both canonical Social Security haircut patch shapes', () => {
+    const rootPlan = buildExampleCouple()
+    rootPlan.assumptions.ssHaircut = null
+    const root = buildScenarioLever(
+      rootPlan,
+      { id: 'socialSecurityCut', cutPct: 20, fromYear: context.startYear + 2 },
+      context,
+    )
+    expect(root.ok).toBe(true)
+    if (root.ok) expect(root.operationPaths).toEqual(['/assumptions/ssHaircut'])
+
+    const leafPlan = buildExampleCouple()
+    leafPlan.assumptions.ssHaircut = { cutPct: 10, fromYear: context.startYear + 1 }
+    const leaves = buildScenarioLever(
+      leafPlan,
+      { id: 'socialSecurityCut', cutPct: 20, fromYear: context.startYear + 2 },
+      context,
+    )
+    expect(leaves.ok).toBe(true)
+    if (leaves.ok) {
+      expect(leaves.operationPaths).toEqual([
+        '/assumptions/ssHaircut/cutPct',
+        '/assumptions/ssHaircut/fromYear',
+      ])
+    }
+  })
+
+  it('checks Social Security benefits against their actual payable projection window', () => {
+    const plan = buildExampleCouple()
+    for (const person of plan.household.people) person.longevity.planningAge = 65
+    for (const income of plan.incomes) {
+      if (income.type !== 'socialSecurity') continue
+      income.piaMonthly = 2_000
+      income.earnings = null
+      income.claimAge = { years: 70, months: 0 }
+      delete income.disability
+      income.formerSpouses = []
+    }
+
+    const lateClaim = buildScenarioLever(plan, { id: 'socialSecurityClaim', claimAge: 70 }, context)
+    const lateCut = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityCut', cutPct: 20, fromYear: context.startYear },
+      context,
+    )
+    const zeroCash = {
+      type: 'cash',
+      id: 'ss-cash',
+      name: 'SS cash',
+      ownerPersonId: null,
+      annualReturnPct: null,
+      balance: 0,
+      annualContribution: 0,
+    } as const
+    plan.accounts = [zeroCash]
+    plan.incomes = plan.incomes.filter((income) => income.type === 'socialSecurity')
+    plan.insurance = []
+    const lateDefaultReturn = buildScenarioLever(plan, { id: 'defaultReturn', returnPct: 4 }, context)
+
+    expect(lateClaim.ok).toBe(false)
+    expect(lateCut.ok).toBe(false)
+    expect(lateDefaultReturn.ok).toBe(false)
+  })
+
+  it('uses canonical FRA rules to decide whether disability controls claim age', () => {
+    const janFirst = buildExampleCouple()
+    const janFirstPerson = janFirst.household.people[0]!
+    janFirstPerson.dob = '1960-01-01'
+    janFirst.incomes = janFirst.incomes.filter(
+      (income) => income.type !== 'socialSecurity' || income.personId === janFirstPerson.id,
+    )
+    const janFirstStream = janFirst.incomes.find((income) => income.type === 'socialSecurity')!
+    janFirstStream.piaMonthly = 2_000
+    janFirstStream.disability = { onsetAge: 66 }
+    janFirstStream.claimAge = { years: 62, months: 0 }
+    const normalRetirement = buildScenarioLever(
+      janFirst,
+      { id: 'socialSecurityClaim', claimAge: 70 },
+      context,
+    )
+
+    const janSecond = structuredClone(janFirst)
+    janSecond.household.people[0]!.dob = '1960-01-02'
+    const disability = buildScenarioLever(
+      janSecond,
+      { id: 'socialSecurityClaim', claimAge: 70 },
+      context,
+    )
+
+    expect(normalRetirement.ok).toBe(true)
+    expect(disability.ok).toBe(false)
+    if (!disability.ok) expect(disability.issues.join(' ')).toContain('Disability streams')
+  })
+
+  it('preserves the effective pre-projection residence in relocation scenarios', () => {
+    const plan = buildExampleCouple()
+    plan.household.state = 'CA'
+    plan.household.stateMoves = [{ fromYear: 2024, fromMonth: 7, state: 'TX' }]
+
+    const result = buildScenarioLever(
+      plan,
+      { id: 'relocation', state: 'FL', moveYear: 2030 },
+      context,
+    )
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const applied = applyScenarioPatch(plan, result.patch)
+    expect(applied.ok).toBe(true)
+    if (!applied.ok) return
+    expect(applied.plan.household.state).toBe('TX')
+    expect(applied.plan.household.stateMoves).toEqual([{ fromYear: 2030, fromMonth: 7, state: 'FL' }])
+    expect(result.warnings.join(' ')).not.toContain('replaces the plan')
+
+    const sameState = buildScenarioLever(
+      plan,
+      { id: 'relocation', state: 'TX', moveYear: 2030 },
+      context,
+    )
+    expect(sameState.ok).toBe(false)
+  })
+
+  it('requires a living recipient for survivor-only pension and annuity windows', () => {
+    const plan = planWithGuaranteedIncome()
+    const pension = plan.accounts.find((account) => account.type === 'pension')!
+    const annuity = plan.accounts.find((account) => account.type === 'annuity')!
+    const owner = plan.household.people.find((person) => person.id === pension.ownerPersonId)!
+    const survivor = plan.household.people.find((person) => person.id !== owner.id)!
+    owner.longevity.planningAge = context.startYear - Number(owner.dob.slice(0, 4)) - 1
+    survivor.longevity.planningAge = 90
+    pension.startAge = 55
+    pension.survivorPct = 0
+    annuity.startAge = 55
+    annuity.payoutForm = { kind: 'lifeOnly' }
+
+    const noPension = buildScenarioLever(
+      plan,
+      { id: 'pension', monthlyChangePct: 10, startAgeDelta: 0 },
+      context,
+    )
+    const noAnnuity = buildScenarioLever(
+      plan,
+      { id: 'annuity', monthlyChangePct: 10, startAgeDelta: 0 },
+      context,
+    )
+    expect(noPension.ok).toBe(false)
+    expect(noAnnuity.ok).toBe(false)
+
+    pension.survivorPct = 50
+    annuity.payoutForm = { kind: 'jointSurvivor', survivorPct: 50 }
+    const survivorPension = buildScenarioLever(
+      plan,
+      { id: 'pension', monthlyChangePct: 10, startAgeDelta: 0 },
+      context,
+    )
+    const survivorAnnuity = buildScenarioLever(
+      plan,
+      { id: 'annuity', monthlyChangePct: 10, startAgeDelta: 0 },
+      context,
+    )
+    expect(survivorPension.ok).toBe(true)
+    expect(survivorAnnuity.ok).toBe(true)
+  })
+
+  it('does not fall through from an effective but unpayable SSDI window', () => {
+    const plan = buildExampleCouple()
+    const person = plan.household.people[0]!
+    person.dob = '1964-01-02'
+    person.longevity.planningAge = 65
+    plan.incomes = plan.incomes.filter(
+      (income) => income.type !== 'socialSecurity' || income.personId === person.id,
+    )
+    const stream = plan.incomes.find((income) => income.type === 'socialSecurity')!
+    stream.piaMonthly = 2_000
+    stream.claimAge = { years: 62, months: 0 }
+    stream.disability = { onsetAge: 66 }
+
+    const result = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityCut', cutPct: 20, fromYear: context.startYear },
+      context,
+    )
+
+    expect(result.ok).toBe(false)
+  })
+
+  it('requires overlapping spouse claim windows for auxiliary-only Social Security', () => {
+    const plan = buildExampleCouple()
+    const claimant = plan.household.people[0]!
+    const worker = plan.household.people[1]!
+    claimant.dob = '1964-01-02'
+    claimant.longevity.planningAge = 63
+    worker.dob = '1966-01-02'
+    worker.longevity.planningAge = 90
+    const streams = plan.incomes.filter((income) => income.type === 'socialSecurity')
+    const claimantStream = streams.find((income) => income.personId === claimant.id)!
+    const workerStream = streams.find((income) => income.personId === worker.id)!
+    claimantStream.piaMonthly = 0
+    claimantStream.earnings = null
+    claimantStream.claimAge = { years: 62, months: 0 }
+    claimantStream.formerSpouses = []
+    delete claimantStream.disability
+    workerStream.piaMonthly = 2_000
+    workerStream.earnings = null
+    workerStream.claimAge = { years: 70, months: 0 }
+    workerStream.formerSpouses = []
+    workerStream.disability = { onsetAge: 60 }
+    plan.incomes = [
+      ...plan.incomes.filter((income) => income.type !== 'socialSecurity'),
+      claimantStream,
+      workerStream,
+    ]
+
+    const result = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityClaim', claimAge: 62 },
+      context,
+    )
+
+    expect(result.ok).toBe(false)
+  })
+
+  it('keeps survivor-only Social Security claim and cut windows available', () => {
+    const plan = buildExampleCouple()
+    const worker = plan.household.people[0]!
+    const survivor = plan.household.people[1]!
+    worker.dob = '1964-01-02'
+    worker.longevity.planningAge = 65
+    survivor.dob = '1966-01-02'
+    survivor.longevity.planningAge = 90
+    const streams = plan.incomes.filter((income) => income.type === 'socialSecurity')
+    const workerStream = streams.find((income) => income.personId === worker.id)!
+    const survivorStream = streams.find((income) => income.personId === survivor.id)!
+    workerStream.piaMonthly = 2_000
+    workerStream.earnings = null
+    workerStream.claimAge = { years: 70, months: 0 }
+    workerStream.disability = { onsetAge: 60 }
+    survivorStream.piaMonthly = 0
+    survivorStream.earnings = null
+    survivorStream.claimAge = { years: 62, months: 0 }
+    survivorStream.formerSpouses = []
+    delete survivorStream.disability
+    plan.incomes = [
+      ...plan.incomes.filter((income) => income.type !== 'socialSecurity'),
+      workerStream,
+      survivorStream,
+    ]
+
+    const claim = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityClaim', claimAge: 70 },
+      context,
+    )
+    const cut = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityCut', cutPct: 20, fromYear: 2036 },
+      context,
+    )
+
+    expect(claim.ok).toBe(true)
+    expect(cut.ok).toBe(true)
+  })
+
+  it('anchors purchased period-certain guarantees to nominal annuity start', () => {
+    const plan = buildExampleCouple()
+    const owner = plan.household.people[0]!
+    owner.dob = '1960-01-02'
+    owner.longevity.planningAge = 65
+    plan.incomes = []
+    plan.insurance = []
+    plan.accounts = [
+      {
+        type: 'cash',
+        id: 'period-cash',
+        name: 'Period cash',
+        ownerPersonId: null,
+        annualReturnPct: null,
+        balance: 0,
+        annualContribution: 0,
+      },
+      {
+        type: 'annuity',
+        id: 'delayed-period',
+        name: 'Delayed period certain',
+        ownerPersonId: owner.id,
+        annualReturnPct: null,
+        startAge: 60,
+        monthlyAmount: 2_000,
+        colaPct: 0,
+        taxablePct: 100,
+        payoutForm: { kind: 'periodCertain', certainYears: 10 },
+        purchase: {
+          year: 2035,
+          premium: 0,
+          fundingAccountId: 'period-cash',
+          taxQualification: 'nonQualified',
+        },
+      },
+    ]
+
+    const result = buildScenarioLever(plan, { id: 'defaultReturn', returnPct: 4 }, context)
+    expect(result.ok).toBe(false)
+  })
 })
