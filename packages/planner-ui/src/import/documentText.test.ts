@@ -50,6 +50,13 @@ interface FakeGlyphItem {
 interface FakePdfPage {
   /** Called per `getTextContent`; may be lazy, so consumption can be counted. */
   readonly items?: () => Iterable<FakeGlyphItem>
+  /**
+   * Serve the page through pdfjs's STREAMING text API, one batch per chunk,
+   * pulled on demand. A page with `chunks` also answers `getTextContent`, the
+   * way a real build does — by materializing every chunk first, which is exactly
+   * the cost the streaming path exists to avoid.
+   */
+  readonly chunks?: () => Iterable<readonly FakeGlyphItem[]>
   /** Put an image paint operator in the page's operator list. */
   readonly imagePainted?: boolean
   /** Reject `getTextContent` — the page pdfjs cannot read. */
@@ -68,13 +75,42 @@ interface FakePdfjsSpec {
 
 const IMAGE_PAINT_OP = 85
 
+/**
+ * A page's text as pdfjs's `streamTextContent` serves it: a real
+ * `ReadableStream` whose chunks are produced on demand, so what the reader never
+ * asks for is never built.
+ *
+ * `cancel` THROWS, mirroring pdfjs 6.1.200 — whose `reader.cancel()` rejects and
+ * whose own bookkeeping then raises an unhandled rejection. A reader that
+ * cancels this stream unguarded fails the page, which is the point: the result
+ * a page has already decided may never be replaced by the way it let go.
+ */
+function fakeTextStream(chunks: () => Iterable<readonly FakeGlyphItem[]>): ReadableStream {
+  const batches = chunks()[Symbol.iterator]()
+  return new ReadableStream({
+    pull(controller) {
+      const next = batches.next()
+      if (next.done === true) controller.close()
+      else controller.enqueue({ items: next.value })
+    },
+    cancel() {
+      throw new Error('pdfjs rejects a text-stream cancel')
+    },
+  })
+}
+
 function fakePdfjs(spec: FakePdfjsSpec): Record<string, unknown> {
   const pages = spec.pages ?? []
   const makePage = (page: FakePdfPage) => ({
-    getTextContent: () =>
-      page.failWith === undefined
-        ? Promise.resolve({ items: page.items?.() ?? [] })
-        : Promise.reject(page.failWith),
+    ...(page.chunks === undefined ? {} : { streamTextContent: () => fakeTextStream(page.chunks!) }),
+    getTextContent: () => {
+      if (page.failWith !== undefined) return Promise.reject(page.failWith)
+      // A real `getTextContent` materializes the whole page before it resolves;
+      // a chunked page reproduces that so the cost of taking this path is
+      // observable to a test that counts what was built.
+      const items = page.chunks === undefined ? (page.items?.() ?? []) : [...page.chunks()].flat()
+      return Promise.resolve({ items })
+    },
     getOperatorList: () => Promise.resolve({ fnArray: page.imagePainted ? [IMAGE_PAINT_OP] : [] }),
     cleanup: () => undefined,
   })
@@ -391,6 +427,25 @@ describe('extractDocumentText — honest failure', () => {
     expect(result.message).toMatch(/[.!]$/)
   })
 
+  it('survives the caller transferring the buffer while the call is in flight', async () => {
+    // The owned copy used to be taken only AFTER `await loadPdfjs()`. A caller
+    // that transfers the buffer once the call has handed back its promise — a
+    // `structuredClone(buffer, { transfer })`, a worker handoff — left that later
+    // copy wrapping a now-DETACHED view, which throws a TypeError straight out of
+    // the result union this module promises, past every reason in the vocabulary.
+    // The snapshot has to be taken before the first await, not merely before the
+    // parse.
+    const pdf = buildSyntheticPdf({ pages: [{ text: 'Transferred mid-flight' }] })
+    const live = new Uint8Array(pdf) // its own buffer, so the transfer detaches only this
+    const pending = extractDocumentText(live)
+    // Synchronously after the call, while it is parked on its first await.
+    structuredClone(live.buffer, { transfer: [live.buffer] })
+    expect(live.byteLength).toBe(0) // detached out from under the call
+
+    const result = expectOk(await pending)
+    expect(result.pages[0]!.text).toBe('Transferred mid-flight')
+  })
+
   it('never throws on arbitrary bytes — every input comes back as a result', async () => {
     const inputs: Uint8Array[] = [
       new Uint8Array(0),
@@ -481,6 +536,63 @@ describe('extractDocumentText — the optional pdfjs peer is missing', () => {
     expect(result.message).toContain('pdfjs-dist')
     expect(result.message).not.toBe(result.reason)
     expect(result.message).toMatch(/[.!]$/)
+  })
+
+  it('still says "not installed" when a loader reports the failure only as a code', async () => {
+    // The half of the split that must keep working. Node names an unresolvable
+    // specifier with `ERR_MODULE_NOT_FOUND` and a bundler's loader wraps whatever
+    // it likes around it, so the code is looked for down the `cause` chain as well
+    // as the message — a message this one deliberately does not carry.
+    vi.resetModules()
+    vi.doMock('pdfjs-dist/legacy/build/pdf.mjs', () => {
+      throw Object.assign(new Error('nothing here to read'), { code: 'ERR_MODULE_NOT_FOUND' })
+    })
+
+    const { extractDocumentText: extract } = await import('./documentText')
+    const result = expectFailed(await extract(buildSyntheticPdf({ pages: [{ text: 'Statement' }] })))
+
+    expect(result.reason).toBe('pdfjs_unavailable')
+    expect(result.message).toMatch(/is not installed/i)
+  })
+
+  it('does not tell a host to install a package it HAS when that copy will not evaluate', async () => {
+    // A peer that RESOLVES and then throws while it evaluates — a fault at module
+    // scope, a runtime below its engine floor — came back as `pdfjs_unavailable`,
+    // telling a host to install a package it already installed. Each reason has to
+    // point at a different fix, and "npm install pdfjs-dist" is not this one's:
+    // the build present is not one this module can drive, which is what
+    // `pdfjs_incompatible` already says.
+    vi.resetModules()
+    vi.doMock('pdfjs-dist/legacy/build/pdf.mjs', () => {
+      throw new RangeError('pdfjs-dist requires a newer runtime than this one')
+    })
+
+    const { extractDocumentText: extract } = await import('./documentText')
+    const result = expectFailed(await extract(buildSyntheticPdf({ pages: [{ text: 'Statement' }] })))
+
+    expect(result.reason).toBe('pdfjs_incompatible')
+    expect(result.reason).not.toBe('pdfjs_unavailable')
+    expect(result.message).not.toMatch(/is not installed/i)
+    expect(result.message).toContain('pdfjs-dist')
+    expect(result.message).toMatch(/[.!]$/)
+  })
+
+  it('imports the peer through a specifier a bundler will not resolve at build time', async () => {
+    // A LITERAL specifier is resolved by Vite and Rollup during dependency
+    // scanning, so a host that never installs the optional peer fails to BUILD —
+    // before `extractDocumentText` could ever return `pdfjs_unavailable`. This
+    // package ships source for Vite-class bundlers, so a literal defeats the
+    // optional-peer design for exactly its target consumers.
+    const source = readSource()
+    // `typeof import(...)` is a TYPE position and is erased before any bundler
+    // sees it; only a value-position `import()` is a build-time resolution.
+    expect(source).not.toMatch(/(?<!typeof )import\(\s*['"]pdfjs-dist/)
+    expect(source).toMatch(/@vite-ignore/)
+
+    // …and deferring resolution has not broken it: this repo's own run resolves
+    // the peer through the same indirect specifier.
+    const ok = expectOk(await extractDocumentText(buildSyntheticPdf({ pages: [{ text: 'resolved at run time' }] })))
+    expect(ok.pages[0]!.text).toBe('resolved at run time')
   })
 })
 
@@ -693,6 +805,81 @@ describe('extractDocumentText — the caps bound the work, not just the answer',
     // image-only nor evidence that the document needs OCR.
     expect(ok.pages[0]!.imageOnly).toBe(false)
     expect(ok.summary.noTextExtracted).toBe(false)
+  })
+
+  it('takes the page through the STREAMING text API so a text bomb is never built', async () => {
+    // Stopping early inside `getTextContent().items` bounds the ITERATION and
+    // nothing else: pdfjs has already built the complete items array, with all its
+    // strings, before that array is handed over. A content stream that decompresses
+    // to a megabyte of glyphs sits well inside the 25 MB byte cap and the page cap,
+    // so nothing refuses it and it materializes in full — on the calling thread this
+    // module deliberately runs pdfjs on, freezing it. The exported caps advertised a
+    // resource bound they did not deliver.
+    //
+    // This page offers a megabyte in a thousand chunks behind a 50-character cap and
+    // counts what was actually produced. The fake's `getTextContent` materializes
+    // every chunk, exactly as a real build does, so taking that path is visible here.
+    let chunksBuilt = 0
+    let charsBuilt = 0
+    const result = await extractWith(
+      {
+        pages: [
+          {
+            chunks: function* () {
+              for (let index = 0; index < 1000; index++) {
+                chunksBuilt += 1
+                charsBuilt += 1000
+                yield [{ str: 'x'.repeat(1000) }]
+              }
+            },
+          },
+        ],
+      },
+      { maxPageTextChars: 50 },
+    )
+
+    // One chunk answers all 50 characters; a ReadableStream keeps one more queued
+    // ahead of the reader, so two is the most that can have been built.
+    expect(chunksBuilt).toBeLessThanOrEqual(2)
+    expect(charsBuilt).toBeLessThanOrEqual(2000)
+
+    // …and the answer is exactly what materializing the whole page produced. The
+    // fake's stream REJECTS on cancel, as pdfjs 6 does, so a result reaching here
+    // at all is also the proof that letting go of the stream cannot replace it.
+    const ok = expectOk(result)
+    expect(ok.pages[0]!.text).toBe('x'.repeat(50))
+    expect(ok.pages[0]!.truncated).toBe(true)
+    expect(ok.summary.truncatedBy).toContain('page_text_cap')
+    expect(ok.summary.totalTextChars).toBe(50)
+    // The signals decided from the PRE-truncation text survive the early exit: a
+    // page cut short after one chunk still had a text layer.
+    expect(ok.pages[0]!.imageOnly).toBe(false)
+    expect(ok.summary.noTextExtracted).toBe(false)
+  })
+
+  it('gives the same answer through the stream as through a build without one', async () => {
+    // The streaming path may not change one character of what a page says, and a
+    // build that has no `streamTextContent` — the peer is optional and
+    // host-supplied, so that is a real host — must still read the document rather
+    // than be reported as a broken one. Same text, same trim, both ways.
+    const batches: readonly (readonly FakeGlyphItem[])[] = [
+      [{ str: '   ' }, { str: '  Ledger' }],
+      [{ str: ' balance  ' }],
+      [{ str: '   ' }],
+    ]
+    const streamed = expectOk(await extractWith({ pages: [{ chunks: () => batches }] }))
+    const flat = expectOk(await extractWith({ pages: [{ items: () => batches.flat() }] }))
+    expect(streamed.pages[0]!.text).toBe('Ledger balance')
+    expect(flat.pages[0]!.text).toBe(streamed.pages[0]!.text)
+    expect(streamed.summary.truncated).toBe(false)
+
+    // Clipped inside the interior gap, both ways: the space is kept, because it is
+    // only trailing once nothing follows it.
+    const clippedStream = expectOk(await extractWith({ pages: [{ chunks: () => batches }] }, { maxPageTextChars: 7 }))
+    const clippedFlat = expectOk(await extractWith({ pages: [{ items: () => batches.flat() }] }, { maxPageTextChars: 7 }))
+    expect(clippedStream.pages[0]!.text).toBe('Ledger ')
+    expect(clippedFlat.pages[0]!.text).toBe(clippedStream.pages[0]!.text)
+    expect(clippedStream.pages[0]!.truncated).toBe(true)
   })
 
   it('reproduces trim() exactly while reading item by item', async () => {

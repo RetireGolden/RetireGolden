@@ -1141,6 +1141,59 @@ describe('UpdateBalancesPanel protection pending', () => {
     expect(el.querySelector('tbody')).not.toBeNull()
   })
 
+  it('drops an in-flight read that spanned a whole pending cycle, not only one ending pending', async () => {
+    // The post-await guard used to sample whether protection is pending RIGHT NOW.
+    // A `file.text()` slow enough to span a full false→true→false cycle sees only
+    // the final false, so the continuation calls setParsed and restores the very
+    // preview the pending transition deliberately cleared — a table seeded, rows
+    // pre-selected and a delta computed against the set that was known before the
+    // host withdrew and re-issued it. What matters is whether pending was ENTERED
+    // during the read, which is a committed generation, not a current value.
+    const plan = planWithAccounts()
+    const el = renderPanel(plan, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }) })
+
+    let resolveText!: (value: string) => void
+    const file = new File(['ignored'], 'positions.csv', { type: 'text/csv' })
+    Object.defineProperty(file, 'text', {
+      value: () => new Promise<string>((resolve) => { resolveText = resolve }),
+      configurable: true,
+    })
+    const input = el.querySelector<HTMLInputElement>('input[type="file"]')!
+    Object.defineProperty(input, 'files', { value: [file], configurable: true })
+    act(() => input.dispatchEvent(new Event('change', { bubbles: true })))
+    expect(el.querySelector('tbody')).toBeNull() // outstanding
+
+    // The whole cycle, start to finish, while the read is still outstanding.
+    for (const pending of [true, false]) {
+      act(() => {
+        root!.render(
+          providerTree(plan, <UpdateBalancesPanel />, {
+            protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }),
+            pending,
+          }),
+        )
+      })
+    }
+    // Protection is known again, so the panel is usable — this is not the
+    // "still pending" case the current-value check already caught.
+    expect(pendingExplanation(el)).toBeNull()
+    expect(chooseButton(el).disabled).toBe(false)
+
+    // Resolve the read with a CSV that would otherwise build a table.
+    await act(async () => {
+      resolveText(TWO_ACCOUNT_CSV)
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+    expect(el.querySelector('tbody')).toBeNull()
+    expect(maybeApplyButton(el)).toBeNull()
+    expect(plan.accounts.find((a) => a.id === 'acct-brokerage')!).toMatchObject({ balance: 1, costBasis: 1 })
+
+    // Not stuck: a fresh read, started now that protection is known, still lands.
+    await chooseFile(el, TWO_ACCOUNT_CSV)
+    expect(el.querySelector('tbody')).not.toBeNull()
+    expect(selects(el)[0]!.value).toBe('acct-brokerage')
+  })
+
   it('accepts a host-built context value that omits pending entirely', async () => {
     // `RefreshProtectionValue` is named in the README as part of the supported
     // product API and the context module is importable through the exports

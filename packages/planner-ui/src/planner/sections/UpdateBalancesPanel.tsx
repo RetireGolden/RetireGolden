@@ -198,14 +198,24 @@ export function UpdateBalancesPanel() {
     committedPlanId.current = plan.id
   }, [plan.id])
   // The same commit-synchronous treatment for protection going back to UNKNOWN
-  // mid-read. A read started while protection was known lands in a microtask
-  // that closed over the OLD `protectionPending`, so the handler's entry check
-  // cannot see the flip; without this the continuation would set `parsed` again
-  // right after the render-phase reset cleared it, and the panel would render a
-  // full preview table — rows pre-selected, a delta computed — against a
-  // protection set the host has withdrawn.
+  // mid-read — tracked as a GENERATION, not as the current value. A read started
+  // while protection was known lands in a microtask that closed over the OLD
+  // `protectionPending`, so the handler's entry check cannot see the flip; and a
+  // read slow enough to span a whole false→true→false cycle would find only the
+  // final `false`, then call `setParsed` and restore the very preview the pending
+  // transition deliberately cleared. Counting the false→true EDGES instead means a
+  // token captured before the await answers "did protection go unknown while I was
+  // reading?" rather than "is it unknown right now?".
+  //
+  // Advanced in a layout effect for the same reason as `committedPlanId`: layout
+  // effects run synchronously inside the commit task, so a pending `file.text()`
+  // microtask cannot interleave between the commit and this update, and a render
+  // React discards never runs effects — so a discarded concurrent render can
+  // neither mis-arm the counter nor invalidate a legitimate read.
   const committedProtectionPending = useRef(protectionPending)
+  const protectionUnknownEpoch = useRef(0)
   useLayoutEffect(() => {
+    if (protectionPending && !committedProtectionPending.current) protectionUnknownEpoch.current += 1
     committedProtectionPending.current = protectionPending
   }, [protectionPending])
   if (seenPlanId !== plan.id) {
@@ -290,22 +300,23 @@ export function UpdateBalancesPanel() {
     setReleased(new Map())
     // Claim the read epoch SYNCHRONOUSLY (in this handler, never in render): each file
     // selection supersedes any prior in-flight read, so two files chosen back-to-back
-    // can't let the OLDER read win. Also snapshot the plan identity this read belongs
-    // to. After the await, discard if ANY of three things moved: the epoch (a newer
-    // file choice), the committed plan identity (a `/plan/:id` navigation swap) — cloned
-    // plans share account ids, so a read started under the old plan must not repopulate
-    // the panel after the swap — or the committed protection-pending state, because a
-    // read that began while protection was known must not seed a table once the host has
-    // said it no longer knows. Both refs are advanced in layout effects that run
-    // synchronously at commit, so this microtask cannot slip in before the change is
-    // recorded.
+    // can't let the OLDER read win. Also snapshot the plan identity and the
+    // protection-unknown epoch this read belongs to. After the await, discard if ANY of
+    // three things moved: the read epoch (a newer file choice), the committed plan
+    // identity (a `/plan/:id` navigation swap) — cloned plans share account ids, so a
+    // read started under the old plan must not repopulate the panel after the swap — or
+    // the protection-unknown epoch, because a read that began while protection was known
+    // must not seed a table if the host has said, at any point since, that it no longer
+    // knows. Every one of the three refs is advanced in an event handler or a layout
+    // effect, so this microtask cannot slip in before the change is recorded.
     const token = ++readEpoch.current
     const capturedPlanId = plan.id
+    const capturedProtectionEpoch = protectionUnknownEpoch.current
     const text = await file.text()
     if (
       token !== readEpoch.current ||
       committedPlanId.current !== capturedPlanId ||
-      committedProtectionPending.current
+      protectionUnknownEpoch.current !== capturedProtectionEpoch
     ) {
       return // a newer file choice, a plan swap, or protection going unknown — drop it
     }
