@@ -230,9 +230,13 @@ whenever a page could not be read, since it is a claim about pages nobody manage
 
 ## What extraction handles well
 
-- **Getting the characters out.** 28 of 30 planted values came back — 93.3% — and both misses are
-  values whose characters extracted intact and whose *selection* failed. Nothing measured here was lost
-  by extraction. Line breaks survive and multi-column tables come
+- **Getting the characters out — 30 of 30.** Every planted value is present in the extracted text, by
+  the benchmark's own text-presence check. Nothing measured here was lost by extraction. (The 93.3%
+  reported as *recall* is a different quantity and belongs to the detectors, not the extractor: both of
+  its two misses are values whose characters came out intact and whose selection failed, which the
+  report labels "text present — selection gap". Quoting 28/30 as extraction coverage would understate
+  the extractor by counting detector failures against it — and this document said exactly that before a
+  reviewer caught it.) Line breaks survive and multi-column tables come
   back with their cells separated. (Not measured: `TJ` kerning arrays. The corpus emits `Tj` only, so
   whether kerned runs reassemble into whole words is untested here — a real statement is more likely to
   use `TJ` than this corpus is, so treat the numbers as an optimistic bound on that axis.)

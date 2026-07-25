@@ -616,10 +616,12 @@ reports precision and recall **per field**, plus page-citation accuracy:
 npm run benchmark:documents -w @retiregolden/planner-ui
 ```
 
-Short version for a host deciding whether to offer PDF import: 28 of 30 planted
-values came back — 93.3% — and no value was attributed to a page it is not
-printed on. Both misses are values whose characters extracted perfectly and
-whose *selection* failed, which is the whole finding: field-selection precision
+Short version for a host deciding whether to offer PDF import: all 30 planted
+values were present in the extracted text, and no value was attributed to a page
+it is not printed on. The detectors then selected 28 of them — the 93.3% recall
+figure is theirs, not the extractor's, and both misses are values whose
+characters extracted perfectly and whose *selection* failed. That is the whole
+finding: field-selection precision
 is 17–75%, so a naive reader proposes 35 wrong values for every 28 right ones.
 Extraction is not the bottleneck; picking the right value out of a page that
 also contains a fee schedule and a copyright year is, and a money scanner

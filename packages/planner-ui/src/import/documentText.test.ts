@@ -60,6 +60,8 @@ interface FakePdfPage {
   readonly chunks?: () => Iterable<readonly FakeGlyphItem[]>
   /** Put an image paint operator in the page's operator list. */
   readonly imagePainted?: boolean
+  /** Which raster operator pdfjs chose for this page; defaults to the plain one. */
+  readonly paintOp?: number
   /** Reject `getTextContent` — the page pdfjs cannot read. */
   readonly failWith?: unknown
 }
@@ -75,6 +77,8 @@ interface FakePdfjsSpec {
 }
 
 const IMAGE_PAINT_OP = 85
+/** A raster painted through one of pdfjs's grouped/optimized operators. */
+const GROUPED_PAINT_OP = 89
 
 /**
  * A page's text as pdfjs's `streamTextContent` serves it: a real
@@ -122,7 +126,8 @@ function fakePdfjs(spec: FakePdfjsSpec): Record<string, unknown> {
       const items = page.chunks === undefined ? (page.items?.() ?? []) : [...page.chunks()].flat()
       return Promise.resolve({ items })
     },
-    getOperatorList: () => Promise.resolve({ fnArray: page.imagePainted ? [IMAGE_PAINT_OP] : [] }),
+    getOperatorList: () =>
+      Promise.resolve({ fnArray: page.imagePainted ? [page.paintOp ?? IMAGE_PAINT_OP] : [] }),
     cleanup: () => undefined,
   })
   const module: Record<string, unknown> = {
@@ -131,6 +136,12 @@ function fakePdfjs(spec: FakePdfjsSpec): Record<string, unknown> {
       paintImageXObjectRepeat: 86,
       paintInlineImageXObject: 87,
       paintImageMaskXObject: 88,
+      // The grouped/optimized variants a real pdfjs also emits. Their absence
+      // here is what let a scanned page painted with one read as blank.
+      paintInlineImageXObjectGroup: GROUPED_PAINT_OP,
+      paintImageMaskXObjectGroup: 90,
+      paintImageMaskXObjectRepeat: 91,
+      paintSolidColorImageMask: 92,
     },
     getDocument: () => {
       if (spec.getDocumentThrows !== undefined) throw spec.getDocumentThrows
@@ -547,6 +558,52 @@ describe('extractDocumentText — honest failure', () => {
     expect(result.message).toContain('more than 1 page,')
     expect(result.message).not.toContain('1 pages')
   })
+})
+
+describe('extractDocumentText — which raster operator pdfjs chose', () => {
+  afterEach(() => {
+    vi.doUnmock('pdfjs-dist/legacy/build/pdf.mjs')
+  })
+
+  it('detects a scan whichever raster operator pdfjs chose for it', async () => {
+    // Which operator carries the raster is an internal pdfjs optimization — it
+    // groups repeated masks, batches inline images, folds a single-colour mask
+    // into its own operator. Recognising only the plain ones made the OCR signal
+    // depend on the file's encoding, and the failure direction is the bad one:
+    // a scanned page reported as blank tells the user their statement is empty.
+    const grouped = expectOk(
+      await extractWith({ pages: [{ imagePainted: true, paintOp: GROUPED_PAINT_OP }] }),
+    )
+    expect(grouped.pages[0]!.imageOnly).toBe(true)
+    expect(grouped.summary.imageOnlyPages).toBe(1)
+    expect(grouped.summary.noTextExtracted).toBe(true)
+
+    // The plain operator still works, and a page with no raster at all is still
+    // blank rather than scanned.
+    const plain = expectOk(await extractWith({ pages: [{ imagePainted: true }] }))
+    expect(plain.pages[0]!.imageOnly).toBe(true)
+    const empty = expectOk(await extractWith({ pages: [{ items: () => [] }] }))
+    expect(empty.pages[0]!.imageOnly).toBe(false)
+    expect(empty.summary.noTextExtracted).toBe(false)
+  })
+
+  it('accepts a build missing the optimized operators rather than calling it incompatible', async () => {
+    // The grouped variants have come and gone across pdfjs versions. A build
+    // without one is usable; refusing it would report a working pdfjs as broken.
+    const host = fakePdfjs({ pages: [{ imagePainted: true }] })
+    const ops = host['OPS'] as Record<string, number>
+    for (const op of [
+      'paintInlineImageXObjectGroup',
+      'paintImageMaskXObjectGroup',
+      'paintImageMaskXObjectRepeat',
+      'paintSolidColorImageMask',
+    ]) {
+      delete ops[op]
+    }
+    const result = expectOk(await extractDocumentText(REAL_PDF_BYTES, { pdfjs: host }))
+    expect(result.pages[0]!.imageOnly).toBe(true)
+  })
+
 })
 
 describe('extractDocumentText — the optional pdfjs peer is missing', () => {

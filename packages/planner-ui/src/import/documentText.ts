@@ -800,9 +800,34 @@ async function loadPdfjs(supplied: HostPdfjsModule | undefined): Promise<PdfjsLo
  * The operators that mean "a raster was painted here". Their presence on a
  * page that yielded no text is what separates a scanned page from a blank one.
  */
+/**
+ * Every operator pdfjs may use to paint a raster. All of them, not the obvious
+ * four: which one pdfjs emits is an internal optimization — it groups repeated
+ * masks, folds a single-colour mask into `paintSolidColorImageMask`, and batches
+ * inline images — so recognising only some makes image-only detection depend on
+ * a choice pdfjs makes about the file's encoding. Missing one reports a scanned
+ * page as BLANK, which is the wrong direction to be wrong in: it tells a user
+ * their statement is empty when it needs OCR.
+ */
 const IMAGE_PAINT_OPS = [
   'paintImageXObject',
   'paintImageXObjectRepeat',
+  'paintInlineImageXObject',
+  'paintInlineImageXObjectGroup',
+  'paintImageMaskXObject',
+  'paintImageMaskXObjectGroup',
+  'paintImageMaskXObjectRepeat',
+  'paintSolidColorImageMask',
+] as const
+
+/**
+ * The subset the shape check insists on. The grouped and optimized variants are
+ * recognised when present but not REQUIRED: they have come and gone across pdfjs
+ * versions, and refusing a host's build over one it does not happen to expose
+ * would report a perfectly usable pdfjs as incompatible.
+ */
+const REQUIRED_IMAGE_PAINT_OPS = [
+  'paintImageXObject',
   'paintInlineImageXObject',
   'paintImageMaskXObject',
 ] as const
@@ -838,7 +863,7 @@ function pdfjsShapeProblem(candidate: PdfjsModule): string | undefined {
     if (typeof api.VerbosityLevel?.ERRORS !== 'number') return 'it exports no VerbosityLevel.ERRORS'
     const ops = api.OPS
     if (!ops) return 'it exports no OPS table'
-    for (const op of IMAGE_PAINT_OPS) {
+    for (const op of REQUIRED_IMAGE_PAINT_OPS) {
       if (typeof ops[op] !== 'number') return `its OPS table has no ${op}`
     }
   } catch (error) {
@@ -1202,7 +1227,11 @@ export async function extractDocumentText(
     const totalPages = doc.numPages
     if (totalPages > maxPages) return failure('too_many_pages', { limit: maxPages })
 
-    const imagePaintOps = new Set<number>(IMAGE_PAINT_OPS.map((op) => pdfjs.OPS[op]))
+    // Whichever of the paint operators this build actually exposes; an absent one
+    // simply contributes nothing rather than a NaN that matches no operator.
+    const imagePaintOps = new Set<number>(
+      IMAGE_PAINT_OPS.map((op) => pdfjs.OPS[op]).filter((fn): fn is number => typeof fn === 'number'),
+    )
 
     const pages: DocumentPage[] = []
     // Pages pdfjs could not read. They are NOT pushed into `pages`: there is no
