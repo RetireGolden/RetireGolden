@@ -26,6 +26,9 @@
     "!src/**/*.test.ts",
     "!src/**/*.test.tsx",
     "!src/report/goldens",
+    "!src/import/documentBenchmark.ts",
+    "!src/import/documentCorpus.ts",
+    "!src/import/pdfFixtures.ts",
     "LICENSE",
     "README.md"
   ],
@@ -35,6 +38,7 @@
     "./plan-format": "./src/data/planFormat.ts",
     "./import-provenance": "./src/import/provenance.ts",
     "./import-refresh": "./src/import/refresh.ts",
+    "./document-text": "./src/import/documentText.ts",
     "./report-model": "./src/report/reportModel.ts",
     "./scenario-levers": "./src/scenarioLevers.ts",
     "./index.css": "./src/index.css",
@@ -45,7 +49,8 @@
     "build": "tsc -b",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "benchmark:documents": "node scripts/document-benchmark.mjs"
   },
   "dependencies": {
     "@retiregolden/engine": "^0.1.7",
@@ -54,9 +59,15 @@
     "recharts": "^3.8.1"
   },
   "peerDependencies": {
+    "pdfjs-dist": "^6.1.200",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.18.0"
+  },
+  "peerDependenciesMeta": {
+    "pdfjs-dist": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -73,6 +84,7 @@
     "fake-indexeddb": "^6.2.5",
     "globals": "^17.6.0",
     "jsdom": "^29.1.1",
+    "pdfjs-dist": "^6.1.200",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-router-dom": "^7.18.0",

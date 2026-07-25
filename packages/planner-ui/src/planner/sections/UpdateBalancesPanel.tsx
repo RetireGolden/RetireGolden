@@ -24,6 +24,17 @@
  * "Allow this refresh" frees the account for THIS panel instance and only for the
  * ROW that asked (a sibling row cannot then reach the same account), and it never
  * touches the advisor's stored override record.
+ *
+ * A host that resolves protection asynchronously reports `pending` through the
+ * same context, and the panel then refuses BOTH the file chooser and Apply. Both,
+ * not just Apply: `handleFile` seeds each row's initial selection from a
+ * classification against the protected set, and the classification/preview shown
+ * afterwards derive from it — so a file parsed while protection is unknown would
+ * default protected rows ON and render a preview that silently changes under the
+ * user the moment the real set arrives. Refusing the file until protection is
+ * known is the honest behaviour. This is a DIFFERENT cause from the
+ * duplicate-collision block below (`blocked`, two rows on one plan account), and
+ * the two say so separately.
  */
 
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
@@ -45,10 +56,28 @@ import {
 import type { ImportReviewItem } from '../../import/reviewChecklist'
 import { ReviewChecklist } from '../../import/ReviewChecklistView'
 import { usePlan } from '../planContextCore'
-import { useRefreshProtection, type RefreshProtectionEntry } from '../refreshProtectionContext'
+import {
+  useRefreshProtection,
+  useRefreshProtectionPending,
+  type RefreshProtectionEntry,
+} from '../refreshProtectionContext'
 import { fmtMoney } from '../format'
 
 const EMPTY_PROTECTED: ReadonlySet<string> = new Set()
+
+/**
+ * The one explanation for the protection-pending gate, shared by the visible
+ * callout and the `title` on both gated controls, so the tooltip and the prose
+ * can never drift. Deliberately worded around the CAUSE (protection is still
+ * being looked up) rather than the symptom, and distinct from the
+ * duplicate-collision wording so the user can tell the two blocks apart.
+ */
+const PENDING_EXPLANATION =
+  'Checking which accounts your advisor has protected. Balance updates are paused until that finishes, so a refresh cannot overwrite a protected account by mistake.'
+
+/** The duplicate-collision cause, as a `title` for the same disabled Apply control. */
+const DUPLICATE_EXPLANATION =
+  'Two rows are assigned to the same plan account, so nothing is applied until each plan account is assigned at most once.'
 /** A stable empty release map for the fresh-file seed (no allocation per parse). */
 const EMPTY_RELEASED: ReadonlyMap<string, number> = new Map()
 
@@ -113,6 +142,9 @@ function defaultTarget(candidate: RefreshCandidate): string {
 export function UpdateBalancesPanel() {
   const { plan, update } = usePlan()
   const protectedAccounts = useRefreshProtection()
+  // The host has not resolved its protected set yet, so `protectedAccounts` is
+  // not yet trustworthy — an empty list here would mean "unknown", not "nothing".
+  const protectionPending = useRefreshProtectionPending()
   const [parsed, setParsed] = useState<ParsedFile | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   // Accounts the user has transiently released from protection for THIS panel
@@ -158,6 +190,17 @@ export function UpdateBalancesPanel() {
   useLayoutEffect(() => {
     committedPlanId.current = plan.id
   }, [plan.id])
+  // The same commit-synchronous treatment for protection going back to UNKNOWN
+  // mid-read. A read started while protection was known lands in a microtask
+  // that closed over the OLD `protectionPending`, so the handler's entry check
+  // cannot see the flip; without this the continuation would set `parsed` again
+  // right after the render-phase reset cleared it, and the panel would render a
+  // full preview table — rows pre-selected, a delta computed — against a
+  // protection set the host has withdrawn.
+  const committedProtectionPending = useRef(protectionPending)
+  useLayoutEffect(() => {
+    committedProtectionPending.current = protectionPending
+  }, [protectionPending])
   if (seenPlanId !== plan.id) {
     // Render-phase STATE reset on a plan-identity change: this is the sanctioned
     // "adjust state while rendering" pattern (rollback-safe — React discards the
@@ -170,6 +213,23 @@ export function UpdateBalancesPanel() {
     setParsed(null)
     setReleased(new Map())
     setMessage(null)
+  }
+
+  // Protection going back to UNKNOWN gets the same render-phase reset. Anything
+  // already parsed had its row selections seeded — and its classification,
+  // preview and delta derived — from the set that was known a moment ago; keeping
+  // that table on screen would show a preview computed against a protection set
+  // that no longer applies, and it would silently change when the host's answer
+  // lands. Only the false→true edge resets: true→false (the host finishing its
+  // load) simply re-enables an already-empty panel.
+  const [seenPending, setSeenPending] = useState(protectionPending)
+  if (seenPending !== protectionPending) {
+    setSeenPending(protectionPending)
+    if (protectionPending) {
+      setParsed(null)
+      setReleased(new Map())
+      setMessage(null)
+    }
   }
 
   const updatable = plan.accounts.filter(isBalanceUpdatable).map((a) => ({ id: a.id, name: a.name }))
@@ -208,6 +268,10 @@ export function UpdateBalancesPanel() {
   }
 
   const handleFile = async (file: File) => {
+    // Belt against a file arriving while protection is unknown (the chooser is
+    // disabled, but the hidden input can still be driven directly). Parsing here
+    // would seed row selections from a protected set the host has not resolved.
+    if (protectionPending) return
     setMessage(null)
     // Clear the transient state SYNCHRONOUSLY, before the async read. `file.text()`
     // can take a while for a large file; if the old parsed table and its releases
@@ -220,17 +284,23 @@ export function UpdateBalancesPanel() {
     // Claim the read epoch SYNCHRONOUSLY (in this handler, never in render): each file
     // selection supersedes any prior in-flight read, so two files chosen back-to-back
     // can't let the OLDER read win. Also snapshot the plan identity this read belongs
-    // to. After the await, discard if EITHER the epoch moved (a newer file choice) OR
-    // the committed plan identity changed (a `/plan/:id` navigation swap) — cloned
+    // to. After the await, discard if ANY of three things moved: the epoch (a newer
+    // file choice), the committed plan identity (a `/plan/:id` navigation swap) — cloned
     // plans share account ids, so a read started under the old plan must not repopulate
-    // the panel after the swap. `committedPlanId` is advanced in a layout effect that
-    // runs synchronously at commit, so this microtask cannot slip in before the swap is
+    // the panel after the swap — or the committed protection-pending state, because a
+    // read that began while protection was known must not seed a table once the host has
+    // said it no longer knows. Both refs are advanced in layout effects that run
+    // synchronously at commit, so this microtask cannot slip in before the change is
     // recorded.
     const token = ++readEpoch.current
     const capturedPlanId = plan.id
     const text = await file.text()
-    if (token !== readEpoch.current || committedPlanId.current !== capturedPlanId) {
-      return // a newer file choice or a plan swap landed during the read — drop it
+    if (
+      token !== readEpoch.current ||
+      committedPlanId.current !== capturedPlanId ||
+      committedProtectionPending.current
+    ) {
+      return // a newer file choice, a plan swap, or protection going unknown — drop it
     }
     const r = parseBrokerPositionsCsv(text)
     if (!r.ok) {
@@ -377,7 +447,9 @@ export function UpdateBalancesPanel() {
   }
 
   const apply = () => {
-    if (!parsed || !delta || blocked) return
+    // `protectionPending` joins `blocked` as a refusal: applying against a set the
+    // host has not resolved is exactly the overwrite the seam exists to prevent.
+    if (!parsed || !delta || blocked || protectionPending) return
     // The UNIQUE protected accounts a selected-but-blocked row points at — the
     // accounts the user sees blocked. Counted before the apply so a zero-write result
     // can name protection as the cause instead of falsely claiming nothing was
@@ -443,6 +515,15 @@ export function UpdateBalancesPanel() {
       {message ? (
         <div className="callout callout--info" role="status">
           {message}
+        </div>
+      ) : null}
+      {/* The protection-pending explanation. Named by its own class so it is
+          addressable separately from the apply-status callout, and worded around
+          its own cause so it can never be mistaken for the duplicate-collision
+          alert further down. */}
+      {protectionPending ? (
+        <div className="callout callout--info refresh-protection-pending" role="status">
+          {PENDING_EXPLANATION}
         </div>
       ) : null}
       {parsed && delta ? (
@@ -559,7 +640,16 @@ export function UpdateBalancesPanel() {
               "refreshed the balance to $X" are read together. */}
           <ReviewChecklist items={[...delta.review, ...strippedAudit, ...parsed.review]} />
           <div className="picker-actions">
-            <button type="button" className="btn btn-primary" onClick={apply} disabled={blocked}>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={apply}
+              disabled={blocked || protectionPending}
+              // Two distinct causes can disable Apply; name whichever fired so the
+              // control never sits greyed out without saying why. Protection-pending
+              // wins the label because it also removed the table this button acts on.
+              title={protectionPending ? PENDING_EXPLANATION : blocked ? DUPLICATE_EXPLANATION : undefined}
+            >
               Apply selected balances
             </button>
             <button type="button" className="btn btn-secondary" onClick={resetPanel}>
@@ -569,7 +659,13 @@ export function UpdateBalancesPanel() {
         </>
       ) : (
         <div className="picker-actions" style={{ margin: 0 }}>
-          <button type="button" className="btn btn-secondary" onClick={() => fileInput.current?.click()}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => fileInput.current?.click()}
+            disabled={protectionPending}
+            title={protectionPending ? PENDING_EXPLANATION : undefined}
+          >
             Choose broker CSV
           </button>
         </div>

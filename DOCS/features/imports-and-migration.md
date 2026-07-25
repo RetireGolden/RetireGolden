@@ -84,6 +84,15 @@ else taxable-with-review-item). Negative or unreadable balances are skipped item
 Every prefilled value carries a "From your 1040 — line N" review item and is ordinary editable
 plan data afterward.
 
+### Not a wizard source: the PDF text-extraction spike
+
+`documentText.ts` reads a PDF's text layer locally, page by page, and ships as the
+`@retiregolden/planner-ui/document-text` subpath behind an optional `pdfjs-dist` peer. It is **not**
+reachable from `/import` — the wizard still takes no PDF upload, and the 1040 path above is still
+guided entry. Its intended consumer is the Pro intake workbench. What it recovers was measured rather
+than assumed, per field, against a hand-built synthetic corpus; the numbers and the "do not scope OCR
+yet" recommendation are in [document-parsing-spike.md](document-parsing-spike.md).
+
 ## Refresh & reconciliation
 
 New-plan imports build a plan from nothing; the **Update balances** panel does the harder, returning-user
@@ -167,6 +176,19 @@ verbatim and nested or dotted ids are unambiguous. The panel maps each entry's `
 **current** index fresh on every render and emits the `accounts[i]` / `accounts[i].<field>` paths the engine's
 `protectedTargets` contract expects (entries naming no live account are skipped). The public app renders no
 provider and the panel gets an empty list (every account is fair game, unchanged behaviour).
+
+**A host still loading its protected set passes `pending`.** An empty `protectedAccounts` means "nothing is
+protected" and cannot express "not known yet", so a host that reads its overrides from a store would otherwise
+leave a window in which a broker refresh can overwrite an advisor-frozen account. `RefreshProtectionValue`
+therefore carries a `pending: boolean` alongside the entries (read with `useRefreshProtectionPending()`;
+`useRefreshProtection()` still returns the entry array unchanged). While it is true the panel refuses **both**
+Apply and the file chooser, with a visible explanation naming that cause — distinct from the duplicate-collision
+block. Gating Apply alone would not be enough: choosing a file seeds each row's initial selection, and the
+classification, preview and delta all derive from it, so a file parsed against an unknown protected set would
+default protected rows ON and preview a write that changed once the real set landed. If a host re-enters
+`pending` after a file was parsed, the panel clears that parse for the same reason. `pending` defaults to
+**false** everywhere it is not supplied, including the no-provider path — the public app mounts no provider and
+its protection is genuinely known (empty), so defaulting to true would permanently disable its Apply.
 
 **Field-scoped entries are conservative today: they block the account's whole refresh.** A
 `{ accountId, field: 'costBasis' }` entry currently locks the *entire* account's refresh write, not just the
