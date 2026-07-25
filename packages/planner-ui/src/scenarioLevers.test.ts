@@ -210,6 +210,50 @@ describe('scenario lever contract', () => {
     },
   )
 
+  it.each([
+    Number.NaN,
+    Number.POSITIVE_INFINITY,
+    Number.NEGATIVE_INFINITY,
+    1899,
+    2201,
+  ])('rejects invalid projection start year %s before every lever dispatch', (startYear) => {
+    const requests: ScenarioLeverRequest[] = [
+      { id: 'retirementAge', yearsDelta: 1 },
+      { id: 'spending', percentChange: 10 },
+      { id: 'socialSecurityClaim', claimAge: 62 },
+      { id: 'socialSecurityCut', cutPct: 20, fromYear: 2030 },
+      {
+        id: 'rothTarget',
+        target: 'topOfBracket',
+        targetValue: 24,
+        startYear: 2026,
+        endYear: 2030,
+      },
+      { id: 'rothSchedule', annualAmount: 20_000, startYear: 2026, endYear: 2030 },
+      { id: 'rothNone' },
+      { id: 'allocation', stockPct: 60 },
+      { id: 'defaultReturn', returnPct: 4 },
+      { id: 'pension', monthlyChangePct: 10, startAgeDelta: 1 },
+      { id: 'annuity', monthlyChangePct: 10, startAgeDelta: 1 },
+      { id: 'relocation', state: 'FL', moveYear: 2030 },
+      { id: 'survivorSpending', percent: 70 },
+      { id: 'care', startAge: 85, durationYears: 3, annualCost: 100_000 },
+      { id: 'homeSale', saleYear: 2030 },
+      { id: 'stopContributions' },
+    ]
+
+    for (const request of requests) {
+      const result = buildScenarioLever(buildExampleCouple(), request, {
+        ...context,
+        startYear,
+      })
+      expect(result.ok, request.id).toBe(false)
+      if (!result.ok) {
+        expect(result.issues.join(' '), request.id).toContain('Projection start year')
+      }
+    }
+  })
+
   it('rejects unmodeled and no-op relocation destinations', () => {
     const plan = buildExampleCouple()
     const fake = buildScenarioLever(plan, { id: 'relocation', state: 'ZZ', moveYear: 2028 }, context)
@@ -1709,6 +1753,45 @@ describe('scenario lever contract', () => {
 
     expect(settledBeforeProjection.ok).toBe(false)
     expect(settlesDuringProjection.ok).toBe(true)
+  })
+
+  it('counts scheduled permanent-life cash value that becomes positive before settlement', () => {
+    const plan = buildExampleCouple()
+    const cash = plan.accounts.find((account) => account.type === 'cash')!
+    cash.balance = 0
+    cash.annualContribution = 0
+    cash.annualReturnPct = null
+    plan.accounts = [cash]
+    plan.incomes = []
+    plan.insurance = plan.insurance.filter((policy) => policy.kind === 'permanentLife')
+    plan.strategies.rothConversion = { mode: 'none' }
+    const policy = plan.insurance.find((candidate) => candidate.kind === 'permanentLife')!
+    const insured = plan.household.people.find((person) => person.id === policy.insured)!
+    const ageAtStart = context.startYear - Number(insured.dob.slice(0, 4))
+    insured.longevity.planningAge = ageAtStart + 2
+    policy.deathBenefit = 0
+    policy.cashValue = 0
+    policy.cashValueMode = 'schedule'
+    policy.cashValueGrowthPct = undefined
+    policy.cashValueSchedule = [
+      { age: ageAtStart, value: 0 },
+      { age: ageAtStart + 1, value: 25_000 },
+    ]
+
+    const scheduledValue = buildScenarioLever(
+      plan,
+      { id: 'defaultReturn', returnPct: 4 },
+      context,
+    )
+    policy.cashValueSchedule[1]!.value = 0
+    const noScheduledValue = buildScenarioLever(
+      plan,
+      { id: 'defaultReturn', returnPct: 4 },
+      context,
+    )
+
+    expect(scheduledValue.ok).toBe(true)
+    expect(noScheduledValue.ok).toBe(false)
   })
 
   it('treats pre-start TIPS purchases as owned and requires future purchases to be fully funded', () => {

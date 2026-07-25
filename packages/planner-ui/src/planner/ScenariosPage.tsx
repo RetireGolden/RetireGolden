@@ -101,7 +101,20 @@ function defaultLeverParams(startYear: number): LeverParams {
   }
 }
 
-function leverRequest(kind: ScenarioLeverId, p: LeverParams, plan: Plan): ScenarioLeverRequest {
+function eligibleHomeSaleProperties(accounts: Plan['accounts'], startYear: number) {
+  return accounts.filter(
+    (account) =>
+      account.type === 'property' &&
+      (account.plannedSaleYear === null || account.plannedSaleYear >= startYear),
+  )
+}
+
+function leverRequest(
+  kind: ScenarioLeverId,
+  p: LeverParams,
+  plan: Plan,
+  startYear: number,
+): ScenarioLeverRequest {
   switch (kind) {
     case 'retirementAge': return { id: kind, yearsDelta: p.retireAgeDelta }
     case 'spending': return { id: kind, percentChange: p.spendPct }
@@ -138,8 +151,18 @@ function leverRequest(kind: ScenarioLeverId, p: LeverParams, plan: Plan): Scenar
         durationYears: p.careYears,
         annualCost: p.careAnnual,
       }
-    case 'homeSale':
-      return { id: kind, saleYear: p.homeSaleYear, propertyId: p.homePropertyId || undefined }
+    case 'homeSale': {
+      const properties = eligibleHomeSaleProperties(plan.accounts, startYear)
+      return {
+        id: kind,
+        saleYear: p.homeSaleYear,
+        propertyId:
+          properties.length > 1 &&
+          properties.some((property) => property.id === p.homePropertyId)
+            ? p.homePropertyId
+            : undefined,
+      }
+    }
     case 'stopContributions': return { id: kind }
   }
 }
@@ -151,35 +174,56 @@ function AddScenario() {
   const [params, setParams] = useState<LeverParams>(() => defaultLeverParams(startYear))
   const [saveError, setSaveError] = useState<string | null>(null)
   const previousPlanId = useRef(plan.id)
-  const householdPersonIds = plan.household.people.map((person) => person.id).join('\u0000')
+  const householdPersonIds = useMemo(
+    () => new Set(plan.household.people.map((person) => person.id)),
+    [plan.household.people],
+  )
+  const homeSaleProperties = useMemo(
+    () => eligibleHomeSaleProperties(plan.accounts, startYear),
+    [plan.accounts, startYear],
+  )
+  const homeSalePropertyIds = useMemo(
+    () => new Set(homeSaleProperties.map((property) => property.id)),
+    [homeSaleProperties],
+  )
   useEffect(() => {
     const planChanged = previousPlanId.current !== plan.id
     previousPlanId.current = plan.id
     setParams((current) => {
-      if (!current.carePersonId) return current
       const recipientStillValid =
         plan.household.people.length > 1 &&
-        plan.household.people.some((person) => person.id === current.carePersonId)
-      return planChanged || !recipientStillValid
-        ? { ...current, carePersonId: '' }
-        : current
+        householdPersonIds.has(current.carePersonId)
+      const propertyStillValid =
+        homeSaleProperties.length > 1 &&
+        homeSalePropertyIds.has(current.homePropertyId)
+      const clearCareRecipient =
+        current.carePersonId !== '' && (planChanged || !recipientStillValid)
+      const clearHomeProperty =
+        current.homePropertyId !== '' && (planChanged || !propertyStillValid)
+      if (!clearCareRecipient && !clearHomeProperty) return current
+      return {
+        ...current,
+        carePersonId: clearCareRecipient ? '' : current.carePersonId,
+        homePropertyId: clearHomeProperty ? '' : current.homePropertyId,
+      }
     })
-  }, [householdPersonIds, plan.household.people, plan.id])
+  }, [
+    homeSaleProperties.length,
+    homeSalePropertyIds,
+    householdPersonIds,
+    plan.household.people.length,
+    plan.id,
+  ])
   const set = <K extends keyof LeverParams>(key: K, value: LeverParams[K]) =>
     setParams((current) => ({ ...current, [key]: value }))
   const preview = useMemo(
     () =>
-      buildScenarioLever(plan, leverRequest(kind, params, plan), {
+      buildScenarioLever(plan, leverRequest(kind, params, plan, startYear), {
         createdAtIso: '2000-01-01T00:00:00.000Z',
         startYear,
         createId: () => 'preview-care-event',
       }),
     [kind, params, plan, startYear],
-  )
-  const homeSaleProperties = plan.accounts.filter(
-    (account) =>
-      account.type === 'property' &&
-      (account.plannedSaleYear === null || account.plannedSaleYear >= startYear),
   )
   // The whole "Add a scenario" card is a plan-mutating form — disable it as a
   // unit when read-only, like the entry sections.
@@ -296,7 +340,7 @@ function AddScenario() {
           disabled={!preview.ok}
           onClick={() => {
             setSaveError(null)
-            const built = buildScenarioLever(plan, leverRequest(kind, params, plan), {
+            const built = buildScenarioLever(plan, leverRequest(kind, params, plan, startYear), {
               createdAtIso: new Date().toISOString(),
               startYear,
               createId: newId,

@@ -757,6 +757,46 @@ function hasPayableSocialSecurityBenefit(
   )
 }
 
+function interpolatedCashValueAtAge(
+  schedule: Array<{ age: number; value: number }>,
+  age: number,
+): number {
+  if (schedule.length === 0) return 0
+  const sorted = [...schedule].sort((first, second) => first.age - second.age)
+  if (age <= sorted[0]!.age) return sorted[0]!.value
+  if (age >= sorted[sorted.length - 1]!.age) {
+    return sorted[sorted.length - 1]!.value
+  }
+  for (let index = 0; index < sorted.length - 1; index++) {
+    const lower = sorted[index]!
+    const upper = sorted[index + 1]!
+    if (age < lower.age || age > upper.age) continue
+    const progress = (age - lower.age) / (upper.age - lower.age)
+    return lower.value + (upper.value - lower.value) * progress
+  }
+  return sorted[sorted.length - 1]!.value
+}
+
+function permanentLifeSettlementValue(
+  policy: Extract<Plan['insurance'][number], { kind: 'permanentLife' }>,
+  settlementYear: number,
+  startYear: number,
+  settlementAge: number,
+): number {
+  if (policy.deathBenefit > 0) return policy.deathBenefit
+  if (settlementYear === startYear) return policy.cashValue
+  if (policy.cashValueMode === 'schedule' && policy.cashValueSchedule) {
+    return interpolatedCashValueAtAge(policy.cashValueSchedule, settlementAge - 1)
+  }
+  return (
+    policy.cashValue *
+    Math.pow(
+      1 + (policy.cashValueGrowthPct ?? 0) / 100,
+      settlementYear - startYear,
+    )
+  )
+}
+
 function hasPotentialGeneralDeposit(plan: Plan, startYear: number): boolean {
   const endYear = householdPlanningHorizonYear(plan)
   const hasIncome = plan.incomes.some((income) => {
@@ -844,17 +884,21 @@ function hasPotentialGeneralDeposit(plan: Plan, startYear: number): boolean {
   }
   return plan.insurance.some(
     (policy) => {
-      if (
-        policy.kind !== 'permanentLife' ||
-        (policy.deathBenefit <= 0 && policy.cashValue <= 0)
-      ) {
-        return false
-      }
+      if (policy.kind !== 'permanentLife') return false
       const insured = plan.household.people.find((person) => person.id === policy.insured)
       if (!insured) return false
       const settlementYear =
         Number(insured.dob.slice(0, 4)) + insured.longevity.planningAge
-      return settlementYear >= startYear && settlementYear <= endYear
+      return (
+        settlementYear >= startYear &&
+        settlementYear <= endYear &&
+        permanentLifeSettlementValue(
+          policy,
+          settlementYear,
+          startYear,
+          insured.longevity.planningAge,
+        ) > 0
+      )
     },
   )
 }
@@ -1127,6 +1171,8 @@ export function buildScenarioLever(
   if (!definition) {
     return unavailable(null, [`Unknown scenario lever id "${String(requestId)}".`])
   }
+  const startYearIssue = validateCalendarYear(context.startYear, 'Projection start year')
+  if (startYearIssue) return unavailable(definition, [startYearIssue])
   const edited = clonePlan(plan)
   const warnings: string[] = []
 

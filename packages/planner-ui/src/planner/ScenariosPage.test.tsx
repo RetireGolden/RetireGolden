@@ -445,6 +445,88 @@ describe('ScenariosPage comparison lifecycle', () => {
     expect(add?.disabled).toBe(true)
   })
 
+  it('sanitizes retained property choices across plan switches, deletion, and a single-property view', async () => {
+    const original = createSamplePlan()
+    const originalHome = original.accounts.find((account) => account.type === 'property')!
+    original.accounts.push({
+      ...originalHome,
+      id: 'original-second-property',
+      name: 'Original second property',
+    })
+    await mount(original)
+    const leverSelect = container.querySelector<HTMLSelectElement>('select')!
+    await act(async () => {
+      leverSelect.value = 'homeSale'
+      leverSelect.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    const propertyLabel = Array.from(container.querySelectorAll('label')).find(
+      (label) => label.textContent === 'Property to sell',
+    )!
+    const propertySelect = document.getElementById(propertyLabel.htmlFor) as HTMLSelectElement
+    await act(async () => {
+      propertySelect.value = 'original-second-property'
+      propertySelect.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+
+    const differentPlan = createSamplePlan()
+    differentPlan.id = 'different-property-plan'
+    const differentHome = differentPlan.accounts.find((account) => account.type === 'property')!
+    differentPlan.accounts.push(
+      { ...differentHome, id: 'different-second-property', name: 'Different second property' },
+      { ...differentHome, id: 'different-third-property', name: 'Different third property' },
+    )
+    await rerenderWithPlan(differentPlan)
+
+    let currentPropertyLabel = Array.from(container.querySelectorAll('label')).find(
+      (label) => label.textContent === 'Property to sell',
+    )!
+    let currentPropertySelect = document.getElementById(
+      currentPropertyLabel.htmlFor,
+    ) as HTMLSelectElement
+    expect(currentPropertySelect.value).toBe('')
+    expect(container.textContent).toContain('Choose a property before modeling a sale')
+
+    await act(async () => {
+      currentPropertySelect.value = 'different-third-property'
+      currentPropertySelect.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    const afterDeletion = structuredClone(differentPlan)
+    afterDeletion.accounts = afterDeletion.accounts.filter(
+      (account) => account.id !== 'different-third-property',
+    )
+    await rerenderWithPlan(afterDeletion)
+
+    currentPropertyLabel = Array.from(container.querySelectorAll('label')).find(
+      (label) => label.textContent === 'Property to sell',
+    )!
+    currentPropertySelect = document.getElementById(
+      currentPropertyLabel.htmlFor,
+    ) as HTMLSelectElement
+    expect(currentPropertySelect.value).toBe('')
+    expect(container.textContent).toContain('Choose a property before modeling a sale')
+
+    await act(async () => {
+      currentPropertySelect.value = 'different-second-property'
+      currentPropertySelect.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    const singleProperty = structuredClone(afterDeletion)
+    singleProperty.accounts = singleProperty.accounts.filter(
+      (account) => account.id !== 'different-second-property',
+    )
+    await rerenderWithPlan(singleProperty)
+
+    expect(
+      Array.from(container.querySelectorAll('label')).some(
+        (label) => label.textContent === 'Property to sell',
+      ),
+    ).toBe(false)
+    expect(container.textContent).toContain('/accounts')
+    const add = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent?.includes('Add scenario'),
+    )
+    expect(add?.disabled).toBe(false)
+  })
+
   it('writes the selected relocation month into the scenario request', async () => {
     const plan = createSamplePlan()
     let updatedPlan: Plan | null = null
