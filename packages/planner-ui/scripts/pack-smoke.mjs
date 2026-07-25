@@ -76,6 +76,10 @@ import { parseV2Backup, serializeV2Backup } from '@retiregolden/planner-ui/plan-
 // pdfjs specifier in the shipped source would fail THIS build — which is the
 // regression that reached a release once already.
 import { MAX_DOCUMENT_BYTES, extractDocumentText } from '@retiregolden/planner-ui/document-text'
+// Every published subpath must be named here EXPLICITLY — the exports map's
+// wildcard would happily resolve a deep path this list forgot, so a subpath
+// that is not imported below is not covered by this smoke test at all.
+import { MIGRATION_ADAPTERS, identifyMigrationExport } from '@retiregolden/planner-ui/migration-source'
 
 // A host-shaped adapter (not the browser store) so both injection routes —
 // the planStore prop and a wrapping PlanStoreProvider — compile against a
@@ -99,6 +103,8 @@ console.debug(
   PlanStoreProvider.name,
   MAX_DOCUMENT_BYTES,
   extractDocumentText.name,
+  MIGRATION_ADAPTERS.projectionlab.displayName,
+  identifyMigrationExport('{}') === null,
 )
 
 createRoot(document.getElementById('root')!).render(

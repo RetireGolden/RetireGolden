@@ -182,6 +182,21 @@ The supported product API is:
   justified promoting page citations into the `./import-provenance`
   `SourceLocator` union, and it is not wired into the free import wizard,
   which still takes no PDF upload;
+- the **`./migration-source` subpath** — migration-source identification
+  (`identifyMigrationDocument` over extracted PDF pages, `identifyMigrationExport`
+  over a decoded text/JSON export, the `MIGRATION_ADAPTERS` registry, and
+  `buildMigrationReview`, which emits the unmapped report as ordinary
+  `ImportReviewItem`s). It says WHICH incumbent tool a file came from and
+  publishes what can and cannot be brought over; it maps no fields itself.
+  ProjectionLab is identified structurally and mapped by the existing
+  ProjectionLab import; RightCapital, eMoney and MoneyGuide are identified only
+  — there is no substantiated export format for them, so nothing is mapped and
+  the limitations are published instead of guessed around. Name matching is
+  word-bounded and every match carries its verbatim surrounding text and a page
+  citation; a file naming more than one tool is reported ambiguous rather than
+  guessed at. Browser-free and safe to run in Node; exported names and
+  signatures only change with a semver-major release, though new vendors may be
+  added in minors;
 - `./index.css`.
 
 The exports map also exposes wildcard `./*.ts` subpaths

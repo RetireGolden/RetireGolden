@@ -93,6 +93,66 @@ guided entry. Its intended consumer is the Pro intake workbench. What it recover
 than assumed, per field, against a hand-built synthetic corpus; the numbers and the "do not scope OCR
 yet" recommendation are in [document-parsing-spike.md](document-parsing-spike.md).
 
+## Migration from other planning tools
+
+Naming a user's incumbent tool is its own job, separate from mapping its data, and the two are
+deliberately not the same size here. `packages/planner-ui/src/import/migrationSource.ts` — published
+on the `@retiregolden/planner-ui/migration-source` subpath, browser-free like the rest of the
+provenance surface — says **which** tool a file came from, publishes **what can and cannot** be
+brought over from it, and emits the unmapped report. It maps no fields itself.
+
+| Tool | Identified by | Mapped | Not mapped, and why |
+| --- | --- | --- | --- |
+| **ProjectionLab** | The export's **structure** — a root object with a `currentFinances.accounts` array, the same shape `projectionLab.ts` gates on. `meta.app` / `meta.exportVersion` are reported as extra evidence when present, never gated on. | Accounts and balances, taxable cost basis, income sources, expenses summed into baseline spending, birth year, retirement milestone age — by `projectionLab.ts`, unchanged. | Strategies, assumptions, scenarios (modeling choices, not data); Social Security (needs a claim setup, not another tool's projected dollars); filing status and state (absent from the export). The mapper's own checklist reports these — the migration report adds the identification and defers the rest rather than doubling every line. |
+| **RightCapital** | Its **name** in the document or export text, word-bounded, quoted verbatim with a page citation. | **Nothing.** | Everything. There is no substantiated export format — see below. |
+| **eMoney** | Same. | **Nothing.** | Everything. Same reason. |
+| **MoneyGuide** | Same (`MoneyGuidePro` too, whose product name a bare word boundary would miss). | **Nothing.** | Everything. Same reason. |
+
+**For three of the four, we identify the document and carry its TEXT across with page citations while
+mapping nothing.** That is a statement about the format, not about the data. RetireGolden holds no
+documented machine-readable export from RightCapital, eMoney or MoneyGuide, and this project does not
+bundle proprietary samples — so there is no shape to sniff and no field mapping that could be
+justified. Inventing one is the failure mode that actually costs a user something: it lands wrong
+numbers in a plan while looking like a successful import. Identification plus the source text beside
+the planner screens is the honest position, not a placeholder. **What would change it:** a real
+export from a trial account, checked in as a substantiated format with its own fixtures and version
+sniffing. Then, and only then, field mapping is in scope.
+
+**Identification is conservative because [WS5's numbers](document-parsing-spike.md) say it has to
+be.** Field *selection* on extracted document text measured 17–75% precision — 35 false positives
+against 28 selections — and deciding "this is an eMoney report" from the same text is exposed to the
+same hazard. So: a product name matches only with **no letter, digit, mark or invisible joiner on
+either side** (`projectionlabs`, `rightcapitalization`, `telemoneyguidepro` and a plain "money guide"
+all match nothing). That guard is spelled with Unicode-aware lookarounds rather than `\b`, and the
+distinction is not pedantry — `\b` is defined over ASCII word characters alone, so a soft hyphen (PDF
+text layers carry one wherever a word was hyphenated) or a zero-width joiner manufactures a boundary
+and defeats it. `projectionlab`+ZWJ+`oratory` renders on screen exactly like the rejected decoy
+`projectionlaboratory`, so the published evidence would have shown a reviewer the innocuous word with
+nothing on screen to explain the match. Every match
+carries the **surrounding text verbatim**, length-bounded, so a human judges the claim instead of
+trusting it; evidence is graded on two tiers where the weaker one reads as weaker (a **structural**
+format match versus a mere **name** mention — "all a comparison sheet, a cover letter, or a
+screenshot caption would also do"); and a file naming **more than one** tool is reported as
+*ambiguous* with every candidate and its evidence, claiming no vendor at all. A comparison sheet is
+an ordinary document, and picking the first or most-frequent name would be a guess dressed as an
+answer. The one asymmetry: a structural match ends the scan, so a competitor's name inside a real
+ProjectionLab export cannot make that export ambiguous — a file's shape is evidence about the file, a
+name in its text is evidence about its subject.
+
+Page citations ride as `{ kind: 'none', note: 'page 4' }`. The `SourceLocator` union has exactly five
+kinds and no page kind (the WS5 spike did not earn one), and consumers validate it with a closed
+switch that rejects the whole payload on a sixth — so an honest "no precise coordinate in this
+vocabulary, here is where to look" is the right answer. Citations always come from the extractor's
+own `page.page`, never an array index: a page that failed extraction is **absent** from `pages`, so
+page numbers are routinely non-contiguous.
+
+The unmapped report (`buildMigrationReview`) reuses `ImportReviewItem` — the same type the free
+wizard and Pro's workbench already render, and the same one `reviewToProvenance` already consumes.
+Every item is `status: 'unmapped'`, `confidence: 'unmapped'`, with **no** `target`, because nothing
+lands in a plan; the colocated tests prove it by feeding the emitted items through
+`reviewToProvenance` **and** `serializeImportProvenance` and asserting they all land under
+`unresolved`, rather than eyeballing the fields.
+
 ## Refresh & reconciliation
 
 New-plan imports build a plan from nothing; the **Update balances** panel does the harder, returning-user
