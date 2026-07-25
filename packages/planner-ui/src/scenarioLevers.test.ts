@@ -481,7 +481,7 @@ describe('scenario lever contract', () => {
     if (!benefitCut.ok) expect(benefitCut.issues.join(' ')).toContain('Social Security income')
   })
 
-  it('rejects zero-value Roth schedules and Social Security cuts outside the projection', () => {
+  it('rejects zero-value Roth schedules, no-op Social Security cuts, and cuts outside the projection', () => {
     const plan = buildExampleCouple()
     const horizon = Math.max(
       ...plan.household.people.map(
@@ -508,7 +508,7 @@ describe('scenario lever contract', () => {
     expect(zeroCut.ok).toBe(false)
     expect(lateCut.ok).toBe(false)
     if (!zeroRoth.ok) expect(zeroRoth.issues.join(' ')).toContain('greater than 0')
-    if (!zeroCut.ok) expect(zeroCut.issues.join(' ')).toContain('greater than 0')
+    if (!zeroCut.ok) expect(zeroCut.issues.join(' ')).toContain('same effective')
     if (!lateCut.ok) expect(lateCut.issues.join(' ')).toContain('planning horizon')
   })
 
@@ -1252,6 +1252,54 @@ describe('scenario lever contract', () => {
     expect(survivorAnnuity.ok).toBe(true)
   })
 
+  it.each(['pension', 'annuity'] as const)(
+    'compares combined %s amount and start-age changes against the projected payout schedule',
+    (id) => {
+      const flatPlan = planWithGuaranteedIncome()
+      const flatAccount = flatPlan.accounts.find(
+        (
+          account,
+        ): account is Extract<
+          Plan['accounts'][number],
+          { type: 'pension' | 'annuity' }
+        > => account.type === id,
+      )!
+      flatAccount.startAge = 55
+      flatAccount.colaPct = 0
+      const flatEquivalent = buildScenarioLever(
+        flatPlan,
+        { id, monthlyChangePct: 0, startAgeDelta: 1 },
+        context,
+      )
+
+      const colaPlan = planWithGuaranteedIncome()
+      const colaAccount = colaPlan.accounts.find(
+        (
+          account,
+        ): account is Extract<
+          Plan['accounts'][number],
+          { type: 'pension' | 'annuity' }
+        > => account.type === id,
+      )!
+      colaAccount.startAge = 55
+      colaAccount.colaPct = 2
+      const combinedEquivalent = buildScenarioLever(
+        colaPlan,
+        { id, monthlyChangePct: 2, startAgeDelta: 1 },
+        context,
+      )
+      const changed = buildScenarioLever(
+        colaPlan,
+        { id, monthlyChangePct: 0, startAgeDelta: 1 },
+        context,
+      )
+
+      expect(flatEquivalent.ok).toBe(false)
+      expect(combinedEquivalent.ok).toBe(false)
+      expect(changed.ok).toBe(true)
+    },
+  )
+
   it('does not fall through from an effective but unpayable SSDI window', () => {
     const plan = buildExampleCouple()
     const person = plan.household.people[0]!
@@ -1465,7 +1513,27 @@ describe('scenario lever contract', () => {
 
     expect(equivalentResult.ok).toBe(false)
     if (!equivalentResult.ok) expect(equivalentResult.issues.join(' ')).toContain('same effective')
-    expect(changedResult.ok).toBe(true)
+    expect(changedResult.ok).toBe(false)
+    if (!changedResult.ok) expect(changedResult.issues.join(' ')).toContain('same effective')
+  })
+
+  it('allows a zero-percent Social Security cut to remove an effective haircut', () => {
+    const plan = buildExampleCouple()
+    plan.assumptions.ssHaircut = { cutPct: 20, fromYear: context.startYear }
+
+    const result = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityCut', cutPct: 0, fromYear: 2200 },
+      context,
+    )
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const applied = applyScenarioPatch(plan, result.patch)
+    expect(applied.ok).toBe(true)
+    if (!applied.ok) return
+    expect(applied.plan.assumptions.ssHaircut).toBeNull()
+    expect(result.operationPaths).toEqual(['/assumptions/ssHaircut'])
   })
 
   it('recognizes an elected pension rollover as a Roth conversion source', () => {
@@ -1527,6 +1595,87 @@ describe('scenario lever contract', () => {
       years: 70,
       months: 0,
     })
+  })
+
+  it('rejects projection-equivalent post-FRA former-spouse SSDI claim changes', () => {
+    const plan = buildExampleCouple()
+    const stream = plan.incomes.find((income) => income.type === 'socialSecurity')!
+    plan.incomes = [stream]
+    stream.piaMonthly = 2_000
+    stream.earnings = null
+    stream.claimAge = { years: 67, months: 0 }
+    stream.disability = { onsetAge: 60 }
+    stream.formerSpouses = [
+      {
+        id: 'deceased-former-spouse',
+        relationship: 'deceased',
+        dob: '1955-01-02',
+        piaMonthly: 8_000,
+        marriageYears: 12,
+        remarriedAtAge: 60,
+      },
+    ]
+    const lateContext = { ...context, startYear: 2040 }
+
+    const equivalent = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityClaim', claimAge: 70 },
+      lateContext,
+    )
+    stream.claimAge = { years: 62, months: 0 }
+    const factorChange = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityClaim', claimAge: 67 },
+      lateContext,
+    )
+
+    expect(equivalent.ok).toBe(false)
+    expect(factorChange.ok).toBe(true)
+  })
+
+  it('rejects projection-equivalent post-FRA current-spouse SSDI claim changes', () => {
+    const plan = buildExampleCouple()
+    const streams = plan.incomes.filter((income) => income.type === 'socialSecurity')
+    const claimant = streams[0]!
+    const spouse = streams[1]!
+    plan.incomes = streams
+    claimant.piaMonthly = 2_000
+    claimant.earnings = null
+    claimant.claimAge = { years: 67, months: 0 }
+    claimant.disability = { onsetAge: 60 }
+    claimant.formerSpouses = []
+    spouse.piaMonthly = 8_000
+    spouse.earnings = null
+    spouse.claimAge = { years: 70, months: 0 }
+    delete spouse.disability
+    spouse.formerSpouses = []
+
+    const result = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityClaim', claimAge: 70 },
+      { ...context, startYear: 2040 },
+    )
+
+    expect(result.ok).toBe(false)
+  })
+
+  it('preserves delayed-retirement factor changes for non-disability own benefits', () => {
+    const plan = buildExampleCouple()
+    const stream = plan.incomes.find((income) => income.type === 'socialSecurity')!
+    plan.incomes = [stream]
+    stream.piaMonthly = 2_000
+    stream.earnings = null
+    stream.claimAge = { years: 67, months: 0 }
+    delete stream.disability
+    stream.formerSpouses = []
+
+    const result = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityClaim', claimAge: 70 },
+      { ...context, startYear: 2040 },
+    )
+
+    expect(result.ok).toBe(true)
   })
 
   it('changes pre-start annuity purchases but excludes purchases at projection start', () => {

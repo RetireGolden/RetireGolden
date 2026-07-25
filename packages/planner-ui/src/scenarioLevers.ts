@@ -16,6 +16,10 @@ import { targetWeightsAt } from '@retiregolden/engine/allocation/assetClasses'
 import { buildLadder } from '@retiregolden/engine/ladder/ladderMath'
 import { EMBEDDED_REAL_YIELD_CURVE, packForYear } from '@retiregolden/engine/params'
 import { modeledStateCodes } from '@retiregolden/engine/params/state'
+import {
+  annuityPayoutForm,
+  annuityPayoutFraction,
+} from '@retiregolden/engine/projection/annuityForms'
 import { relocationScenarioPatch } from '@retiregolden/engine/projection/relocation'
 import type { ScenarioActor, ScenarioPatchV1 } from '@retiregolden/engine/scenarios/contract'
 import { createScenarioPatch } from '@retiregolden/engine/scenarios/patch'
@@ -428,51 +432,97 @@ function receivesContributionDuringProjection(
 
 type GuaranteedIncomeAccount = Extract<Plan['accounts'][number], { type: 'pension' | 'annuity' }>
 
+function guaranteedIncomeAnnualPayout(
+  plan: Plan,
+  account: GuaranteedIncomeAccount,
+  year: number,
+): number {
+  if (account.monthlyAmount <= 0) return 0
+  const ownerId = account.ownerPersonId ?? plan.household.people[0]?.id
+  const owner = plan.household.people.find((person) => person.id === ownerId)
+  if (!owner) return 0
+  const startCalendarYear = Number(owner.dob.slice(0, 4)) + account.startAge
+  if (year < startCalendarYear) return 0
+  if (account.type === 'annuity' && account.purchase && year < account.purchase.year) return 0
+  if (
+    account.type === 'pension' &&
+    account.lumpSumElection &&
+    account.lumpSumOffer &&
+    year >= account.lumpSumOffer.electionYear
+  ) {
+    return 0
+  }
+
+  const isAlive = (person: Plan['household']['people'][number]) =>
+    year - Number(person.dob.slice(0, 4)) <= person.longevity.planningAge
+  const ownerAlive = isAlive(owner)
+  const other = plan.household.people.find((person) => person.id !== owner.id)
+  const otherAlive = other ? isAlive(other) : false
+  const grown =
+    account.monthlyAmount *
+    12 *
+    Math.pow(1 + account.colaPct / 100, year - startCalendarYear)
+
+  if (account.type === 'annuity') {
+    return (
+      grown *
+      annuityPayoutFraction(annuityPayoutForm(account), {
+        ownerAlive,
+        otherAlive,
+        anyAlive: plan.household.people.some(isAlive),
+        yearsSinceStart: year - startCalendarYear,
+      })
+    )
+  }
+  if (ownerAlive) return grown
+  return (
+    otherAlive &&
+    account.startAge <= owner.longevity.planningAge
+      ? grown * (account.survivorPct / 100)
+      : 0
+  )
+}
+
 function hasGuaranteedIncomePayoutWindow(
   plan: Plan,
   account: GuaranteedIncomeAccount,
   startYear: number,
 ): boolean {
-  if (account.monthlyAmount <= 0) return false
-  const ownerId = account.ownerPersonId ?? plan.household.people[0]?.id
-  const owner = plan.household.people.find((person) => person.id === ownerId)
-  if (!owner) return false
-  const startCalendarYear = Number(owner.dob.slice(0, 4)) + account.startAge
-  const firstPaymentYear = Math.max(
-    startCalendarYear,
-    account.type === 'annuity' && account.purchase ? account.purchase.year : startYear,
-  )
-  const projectionEndYear = householdPlanningHorizonYear(plan)
-  const ownerLastAliveYear = Number(owner.dob.slice(0, 4)) + owner.longevity.planningAge
-  const lastPaymentYear =
-    account.type === 'pension' && account.lumpSumElection && account.lumpSumOffer
-      ? Math.min(projectionEndYear, account.lumpSumOffer.electionYear - 1)
-      : projectionEndYear
-  const ownerCanReceive =
-    Math.max(firstPaymentYear, startYear) <= Math.min(lastPaymentYear, ownerLastAliveYear)
-  if (ownerCanReceive) return true
+  const endYear = householdPlanningHorizonYear(plan)
+  for (let year = startYear; year <= endYear; year++) {
+    if (guaranteedIncomeAnnualPayout(plan, account, year) > 0) return true
+  }
+  return false
+}
 
-  const other = plan.household.people.find((person) => person.id !== owner.id)
-  if (!other) return false
-  const otherLastAliveYear = Number(other.dob.slice(0, 4)) + other.longevity.planningAge
-  const survivorStartYear = Math.max(firstPaymentYear, ownerLastAliveYear + 1, startYear)
-  if (account.type === 'pension') {
-    return (
-      account.startAge <= owner.longevity.planningAge &&
-      account.survivorPct > 0 &&
-      survivorStartYear <= Math.min(lastPaymentYear, otherLastAliveYear)
-    )
+function guaranteedIncomeSchedulesDiffer(
+  originalPlan: Plan,
+  editedPlan: Plan,
+  original: GuaranteedIncomeAccount,
+  proposed: GuaranteedIncomeAccount,
+  startYear: number,
+): boolean {
+  const endYear = Math.max(
+    householdPlanningHorizonYear(originalPlan),
+    householdPlanningHorizonYear(editedPlan),
+  )
+  let hasPayout = false
+  for (let year = startYear; year <= endYear; year++) {
+    const before = guaranteedIncomeAnnualPayout(originalPlan, original, year)
+    const after = guaranteedIncomeAnnualPayout(editedPlan, proposed, year)
+    hasPayout ||= before > 0 || after > 0
+    if (Math.abs(before - after) > 1e-8) return true
   }
-  const payoutForm = account.payoutForm ?? { kind: 'lifeOnly' as const }
-  if (payoutForm.kind === 'periodCertain') {
-    return (
-      survivorStartYear <=
-      Math.min(lastPaymentYear, otherLastAliveYear, startCalendarYear + payoutForm.certainYears - 1)
-    )
-  }
+
+  // A non-qualified purchased annuity's exclusion ratio is fixed from its
+  // start age, so equal gross payments can still have different taxable cash flow.
   return (
-    payoutForm.kind === 'jointSurvivor' &&
-    survivorStartYear <= Math.min(lastPaymentYear, otherLastAliveYear)
+    hasPayout &&
+    original.type === 'annuity' &&
+    proposed.type === 'annuity' &&
+    original.purchase?.taxQualification === 'nonQualified' &&
+    proposed.purchase?.taxQualification === 'nonQualified' &&
+    original.startAge !== proposed.startAge
   )
 }
 
@@ -688,7 +738,7 @@ function disabilityPaysDuringWindow(
   )
 }
 
-function claimChangeCanAffectProjection(
+function claimConfigurationCanPay(
   plan: Plan,
   income: SocialSecurityIncome,
   claimAge: { years: number; months: number },
@@ -744,6 +794,189 @@ function claimChangeCanAffectProjection(
   )
 }
 
+function payableMonthsAtAge(
+  ageAttained: number,
+  claimAge: { years: number; months: number },
+): number {
+  if (ageAttained < claimAge.years) return 0
+  if (ageAttained > claimAge.years) return 12
+  return Math.max(0, 12 - claimAge.months)
+}
+
+function socialSecurityActualMonthly(
+  plan: Plan,
+  income: SocialSecurityIncome,
+  claimAge: { years: number; months: number },
+  year: number,
+): number {
+  const person = personForSocialSecurity(plan, income)
+  const pia = resolvedSocialSecurityPia(plan, income)
+  if (!person || pia === null || pia <= 0) return 0
+  const birthYear = Number(person.dob.slice(0, 4))
+  const age = year - birthYear
+  if (disabilityControlsClaim(plan, income)) {
+    return age >= income.disability!.onsetAge ? pia : 0
+  }
+  if (payableMonthsAtAge(age, claimAge) <= 0) return 0
+  return (
+    pia *
+    claimFactor(
+      birthYear,
+      Number(person.dob.slice(5, 7)),
+      Number(person.dob.slice(8, 10)),
+      claimAge,
+    )
+  )
+}
+
+/**
+ * Annual benefit whose amount or payable window can change with this stream's
+ * retirement claim age. Common COLA/haircut factors are intentionally omitted:
+ * they cannot change whether the two claim-age schedules are equivalent.
+ */
+function claimSensitiveAnnualBenefit(
+  plan: Plan,
+  income: SocialSecurityIncome,
+  claimAge: { years: number; months: number },
+  year: number,
+): number {
+  const person = personForSocialSecurity(plan, income)
+  if (!person) return 0
+  const birthYear = Number(person.dob.slice(0, 4))
+  const age = year - birthYear
+  if (age > person.longevity.planningAge) return 0
+
+  const disabilityControlled = disabilityControlsClaim(plan, income)
+  const pia = resolvedSocialSecurityPia(plan, income) ?? 0
+  const payableMonths = payableMonthsAtAge(age, claimAge)
+  const ownMonthly = socialSecurityActualMonthly(plan, income, claimAge, year)
+  let annual = disabilityControlled
+    ? ownMonthly * 12
+    : ownMonthly * payableMonths
+
+  if (payableMonths > 0 && income.formerSpouses?.length) {
+    const claimantDob = {
+      year: birthYear,
+      month: Number(person.dob.slice(5, 7)),
+      day: Number(person.dob.slice(8, 10)),
+    }
+    const former = bestMaritalBenefit(income.formerSpouses, {
+      claimantDob,
+      claimantClaimAge: claimAge,
+      claimantSurvivorClaimAge: claimAge,
+      claimantAge: age,
+      year,
+      claimantIsSingle: plan.household.people.length === 1,
+    })
+    if (former) annual = Math.max(annual, former.monthly * payableMonths)
+  }
+
+  if (plan.household.people.length !== 2) return annual
+  const other = plan.incomes.find(
+    (candidate): candidate is SocialSecurityIncome =>
+      candidate.type === 'socialSecurity' && candidate.personId !== income.personId,
+  )
+  const otherPerson = other ? personForSocialSecurity(plan, other) : undefined
+  const otherPia = other ? (resolvedSocialSecurityPia(plan, other) ?? 0) : 0
+  if (!other || !otherPerson || otherPia <= 0 || payableMonths <= 0) return annual
+
+  const otherBirthYear = Number(otherPerson.dob.slice(0, 4))
+  const otherAge = year - otherBirthYear
+  const otherAlive = otherAge <= otherPerson.longevity.planningAge
+  const otherPayableMonths = payableMonthsAtAge(otherAge, other.claimAge)
+  const otherActualMonthly = socialSecurityActualMonthly(plan, other, other.claimAge, year)
+  const claimantIndex = plan.household.people.findIndex((candidate) => candidate.id === person.id)
+  const otherIndex = plan.household.people.findIndex((candidate) => candidate.id === otherPerson.id)
+  const claimantIsLower =
+    pia < otherPia || (pia === otherPia && claimantIndex > otherIndex)
+
+  if (otherAlive && claimantIsLower) {
+    const spousalPayableMonths = Math.min(payableMonths, otherPayableMonths)
+    if (spousalPayableMonths > 0) {
+      const rawSpousalMonthly =
+        0.5 *
+        otherPia *
+        spousalBenefitFactor(
+          birthYear,
+          Number(person.dob.slice(5, 7)),
+          Number(person.dob.slice(8, 10)),
+          claimAge,
+        )
+      const cappedExcessMonthly = capAuxiliaryForFamilyMaximum({
+        workerPiaMonthly: otherPia,
+        workerActualMonthly: otherActualMonthly,
+        workerDob: {
+          year: otherBirthYear,
+          month: Number(otherPerson.dob.slice(5, 7)),
+          day: Number(otherPerson.dob.slice(8, 10)),
+        },
+        auxiliaryMonthly: Math.max(0, rawSpousalMonthly - ownMonthly),
+      })
+      annual = Math.max(annual, (ownMonthly + cappedExcessMonthly) * spousalPayableMonths)
+    }
+  } else if (!otherAlive && otherActualMonthly > 0) {
+    const survivorFraMonths = fraTotalMonths(
+      survivorFraForBirthYear(
+        effectiveBirthYear(
+          birthYear,
+          Number(person.dob.slice(5, 7)),
+          Number(person.dob.slice(8, 10)),
+        ),
+      ),
+    )
+    const survivorMonthly = survivorBenefitMonthly({
+      deceasedPiaMonthly: otherPia,
+      deceasedActualMonthly: otherActualMonthly,
+      survivorClaimAge: claimAge,
+      survivorFraMonths,
+    })
+    annual = Math.max(annual, survivorMonthly * payableMonths)
+  }
+  return annual
+}
+
+function claimChangeCanAffectProjection(
+  plan: Plan,
+  income: SocialSecurityIncome,
+  claimAge: { years: number; months: number },
+  startYear: number,
+  endYear: number,
+): boolean {
+  if (
+    income.claimAge.years === claimAge.years &&
+    income.claimAge.months === claimAge.months
+  ) {
+    return false
+  }
+  if (
+    !disabilityControlsClaim(plan, income) &&
+    socialSecurityOwnBenefitPossible(income) &&
+    (resolvedSocialSecurityPia(plan, income) ?? 0) <= 0
+  ) {
+    const person = personForSocialSecurity(plan, income)
+    if (!person) return false
+    const birthYear = Number(person.dob.slice(0, 4))
+    const dobMonth = Number(person.dob.slice(5, 7))
+    const dobDay = Number(person.dob.slice(8, 10))
+    const currentFactor = claimFactor(birthYear, dobMonth, dobDay, income.claimAge)
+    const proposedFactor = claimFactor(birthYear, dobMonth, dobDay, claimAge)
+    for (let year = startYear; year <= endYear; year++) {
+      const age = year - birthYear
+      if (age > person.longevity.planningAge) continue
+      const before = payableMonthsAtAge(age, income.claimAge) * currentFactor
+      const after = payableMonthsAtAge(age, claimAge) * proposedFactor
+      if (Math.abs(before - after) > 1e-8) return true
+    }
+    return false
+  }
+  for (let year = startYear; year <= endYear; year++) {
+    const before = claimSensitiveAnnualBenefit(plan, income, income.claimAge, year)
+    const after = claimSensitiveAnnualBenefit(plan, income, claimAge, year)
+    if (Math.abs(before - after) > 1e-8) return true
+  }
+  return false
+}
+
 function hasPayableSocialSecurityBenefit(
   plan: Plan,
   startYear: number,
@@ -753,7 +986,7 @@ function hasPayableSocialSecurityBenefit(
   return streams.some(
     (income) =>
       disabilityPaysDuringWindow(plan, income, startYear, endYear) ||
-      claimChangeCanAffectProjection(plan, income, income.claimAge, startYear, endYear),
+      claimConfigurationCanPay(plan, income, income.claimAge, startYear, endYear),
   )
 }
 
@@ -1310,7 +1543,6 @@ export function buildScenarioLever(
         validateNumber(request.cutPct, 'Social Security benefit cut', {
           min: 0,
           max: 100,
-          minExclusive: true,
         }),
         validateCalendarYear(request.fromYear, 'Social Security cut start year'),
       )
@@ -1319,38 +1551,53 @@ export function buildScenarioLever(
       if (streams.length === 0) {
         return unavailable(definition, ['Add a Social Security income stream before modeling a benefit cut.'])
       }
-      if (request.fromYear > householdPlanningHorizonYear(plan)) {
+      const projectionEndYear = householdPlanningHorizonYear(plan)
+      if (request.cutPct > 0 && request.fromYear > projectionEndYear) {
         return unavailable(definition, ['Social Security cut start year must be within the household planning horizon.'])
       }
       const currentHaircut = plan.assumptions.ssHaircut
-      if (
-        currentHaircut != null &&
-        currentHaircut.cutPct === request.cutPct &&
-        Math.max(context.startYear, currentHaircut.fromYear) ===
-          Math.max(context.startYear, request.fromYear)
-      ) {
+      const proposedHaircut =
+        request.cutPct === 0
+          ? null
+          : {
+              fromYear: request.fromYear,
+              cutPct: request.cutPct,
+            }
+      const haircutFactor = (
+        haircut: Plan['assumptions']['ssHaircut'],
+        year: number,
+      ): number =>
+        haircut !== null && year >= haircut.fromYear ? 1 - haircut.cutPct / 100 : 1
+      let hasPayableBenefit = false
+      let changesPayableBenefit = false
+      for (let year = context.startYear; year <= projectionEndYear; year++) {
+        if (!hasPayableSocialSecurityBenefit(plan, year, year)) continue
+        hasPayableBenefit = true
+        if (
+          Math.abs(
+            haircutFactor(currentHaircut, year) - haircutFactor(proposedHaircut, year),
+          ) > 1e-8
+        ) {
+          changesPayableBenefit = true
+          break
+        }
+      }
+      if (!changesPayableBenefit && hasPayableBenefit) {
         return unavailable(definition, [
           'This Social Security cut already has the same effective projection schedule.',
         ])
       }
-      if (
-        !hasPayableSocialSecurityBenefit(
-          plan,
-          Math.max(context.startYear, request.fromYear),
-          householdPlanningHorizonYear(plan),
-        )
-      ) {
+      if (!hasPayableBenefit) {
         return unavailable(definition, ['No Social Security stream has a modeled benefit to cut.'])
       }
-      edited.assumptions.ssHaircut = {
-        fromYear: request.fromYear,
-        cutPct: request.cutPct,
-      }
+      edited.assumptions.ssHaircut = proposedHaircut
       return finish(
         plan,
         edited,
         definition,
-        `${request.cutPct}% Social Security cut from ${request.fromYear}`,
+        proposedHaircut === null
+          ? 'No Social Security benefit cut'
+          : `${request.cutPct}% Social Security cut from ${request.fromYear}`,
         warnings,
         context,
       )
@@ -1607,12 +1854,14 @@ export function buildScenarioLever(
               candidate.type === 'pension' && candidate.id === account.id,
           )
           return (
-            (original !== undefined && hasGuaranteedIncomePayoutWindow(plan, original, context.startYear)) ||
-            hasGuaranteedIncomePayoutWindow(edited, account, context.startYear)
+            original !== undefined &&
+            guaranteedIncomeSchedulesDiffer(plan, edited, original, account, context.startYear)
           )
         })
       ) {
-        return unavailable(definition, ['No pension payments can occur during the projection.'])
+        return unavailable(definition, [
+          'The requested pension changes do not alter any projected payments.',
+        ])
       }
       return finish(
         plan,
@@ -1664,12 +1913,14 @@ export function buildScenarioLever(
               candidate.type === 'annuity' && candidate.id === account.id,
           )
           return (
-            (original !== undefined && hasGuaranteedIncomePayoutWindow(plan, original, context.startYear)) ||
-            hasGuaranteedIncomePayoutWindow(edited, account, context.startYear)
+            original !== undefined &&
+            guaranteedIncomeSchedulesDiffer(plan, edited, original, account, context.startYear)
           )
         })
       ) {
-        return unavailable(definition, ['No owned annuity payments can occur during the projection.'])
+        return unavailable(definition, [
+          'The requested annuity changes do not alter any projected payments.',
+        ])
       }
       return finish(
         plan,
