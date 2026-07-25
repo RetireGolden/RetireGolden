@@ -7,19 +7,43 @@
  * emits the corresponding array-root operation.
  */
 
-import { stateForYear, type Plan } from '@retiregolden/engine/model/plan'
+import {
+  stateForYear,
+  stateResidencySegmentsForYear,
+  type Plan,
+} from '@retiregolden/engine/model/plan'
 import { targetWeightsAt } from '@retiregolden/engine/allocation/assetClasses'
-import { packForYear } from '@retiregolden/engine/params'
+import { buildLadder } from '@retiregolden/engine/ladder/ladderMath'
+import { EMBEDDED_REAL_YIELD_CURVE, packForYear } from '@retiregolden/engine/params'
 import { modeledStateCodes } from '@retiregolden/engine/params/state'
 import { relocationScenarioPatch } from '@retiregolden/engine/projection/relocation'
 import type { ScenarioActor, ScenarioPatchV1 } from '@retiregolden/engine/scenarios/contract'
 import { createScenarioPatch } from '@retiregolden/engine/scenarios/patch'
 import { applyScenarioPatch } from '@retiregolden/engine/scenarios/scenarios'
+import {
+  claimFactor,
+  spousalBenefitFactor,
+} from '@retiregolden/engine/socialSecurity/claimFactor'
+import { capAuxiliaryForFamilyMaximum } from '@retiregolden/engine/socialSecurity/familyMaximum'
 import { bestMaritalBenefit } from '@retiregolden/engine/socialSecurity/maritalBenefits'
-import { effectiveBirthYear, fraForBirthYear } from '@retiregolden/engine/socialSecurity/nra'
+import {
+  effectiveBirthYear,
+  fraForBirthYear,
+  fraTotalMonths,
+  survivorFraForBirthYear,
+} from '@retiregolden/engine/socialSecurity/nra'
+import {
+  computePiaFromEarnings,
+  isPiaFromEarningsError,
+  piaInputFromEarnings,
+  resolveEarningsProjection,
+} from '@retiregolden/engine/socialSecurity/piaFromEarnings'
+import { survivorBenefitMonthly } from '@retiregolden/engine/socialSecurity/survivorBenefit'
 import {
   acceptsContributions,
   isConvertibleToRoth,
+  isSpendableInYear,
+  traditionalWithdrawalPenaltyRate,
 } from '@retiregolden/engine/strategies/accountEligibility'
 
 export type ScenarioLeverId =
@@ -475,6 +499,31 @@ function socialSecurityOwnBenefitPossible(income: SocialSecurityIncome): boolean
     : income.earnings?.some((earning) => earning.amount > 0) === true
 }
 
+function resolvedSocialSecurityPia(
+  plan: Plan,
+  income: SocialSecurityIncome,
+  retirementAgeOverride?: number,
+): number | null {
+  if (income.piaMonthly !== null) return income.piaMonthly
+  if (!income.earnings || income.earnings.length === 0) return null
+  const person = personForSocialSecurity(plan, income)
+  if (!person) return null
+  const projection = resolveEarningsProjection(
+    income.earningsProjection,
+    retirementAgeOverride ?? person.retirementAge,
+  )
+  const result = computePiaFromEarnings(
+    piaInputFromEarnings(
+      Number(person.dob.slice(0, 4)),
+      Number(person.dob.slice(5, 7)),
+      Number(person.dob.slice(8, 10)),
+      income.earnings,
+      projection,
+    ),
+  )
+  return isPiaFromEarningsError(result) ? null : result.piaMonthly
+}
+
 function claimPayableWindow(
   plan: Plan,
   income: SocialSecurityIncome,
@@ -525,6 +574,104 @@ function auxiliaryBenefitCanPay(
   )
 }
 
+function currentSpouseBenefitCanExceed(
+  plan: Plan,
+  claimant: SocialSecurityIncome,
+  claimantClaimAge: { years: number; months: number },
+  claimantWindow: { startYear: number; endYear: number },
+  other: SocialSecurityIncome,
+  unchangedOwnMonthly: number,
+  startYear: number,
+  endYear: number,
+): boolean {
+  const claimantPerson = personForSocialSecurity(plan, claimant)
+  const otherPerson = personForSocialSecurity(plan, other)
+  const otherPia = resolvedSocialSecurityPia(plan, other)
+  if (!claimantPerson || !otherPerson || otherPia === null || otherPia <= 0) {
+    return false
+  }
+
+  const otherWindow = claimPayableWindow(plan, other, other.claimAge, startYear, endYear)
+  if (otherWindow !== null && claimWindowsOverlap(claimantWindow, otherWindow)) {
+    const claimantDobYear = Number(claimantPerson.dob.slice(0, 4))
+    const claimantDobMonth = Number(claimantPerson.dob.slice(5, 7))
+    const claimantDobDay = Number(claimantPerson.dob.slice(8, 10))
+    const spousalMonthly =
+      0.5 *
+      otherPia *
+      spousalBenefitFactor(
+        claimantDobYear,
+        claimantDobMonth,
+        claimantDobDay,
+        claimantClaimAge,
+      )
+    const otherDobYear = Number(otherPerson.dob.slice(0, 4))
+    const otherDobMonth = Number(otherPerson.dob.slice(5, 7))
+    const otherDobDay = Number(otherPerson.dob.slice(8, 10))
+    const otherActualMonthly = disabilityControlsClaim(plan, other)
+      ? otherPia
+      : otherPia *
+        claimFactor(
+          otherDobYear,
+          otherDobMonth,
+          otherDobDay,
+          other.claimAge,
+        )
+    const cappedTopUp = capAuxiliaryForFamilyMaximum({
+      workerPiaMonthly: otherPia,
+      workerActualMonthly: otherActualMonthly,
+      workerDob: {
+        year: otherDobYear,
+        month: otherDobMonth,
+        day: otherDobDay,
+      },
+      auxiliaryMonthly: Math.max(0, spousalMonthly - unchangedOwnMonthly),
+    })
+    if (cappedTopUp > 0) return true
+  }
+
+  const claimantBirthYear = Number(claimantPerson.dob.slice(0, 4))
+  const otherBirthYear = Number(otherPerson.dob.slice(0, 4))
+  const otherDeathYear = otherBirthYear + otherPerson.longevity.planningAge
+  const otherBenefitStartYear =
+    otherBirthYear +
+    (disabilityControlsClaim(plan, other)
+      ? other.disability!.onsetAge
+      : other.claimAge.years)
+  if (
+    Math.max(claimantWindow.startYear, otherDeathYear + 1, otherBenefitStartYear) >
+    claimantWindow.endYear
+  ) {
+    return false
+  }
+  const otherActualMonthly = disabilityControlsClaim(plan, other)
+    ? otherPia
+    : otherPia *
+      claimFactor(
+        otherBirthYear,
+        Number(otherPerson.dob.slice(5, 7)),
+        Number(otherPerson.dob.slice(8, 10)),
+        other.claimAge,
+      )
+  const survivorFraMonths = fraTotalMonths(
+    survivorFraForBirthYear(
+      effectiveBirthYear(
+        claimantBirthYear,
+        Number(claimantPerson.dob.slice(5, 7)),
+        Number(claimantPerson.dob.slice(8, 10)),
+      ),
+    ),
+  )
+  return (
+    survivorBenefitMonthly({
+      deceasedPiaMonthly: otherPia,
+      deceasedActualMonthly: otherActualMonthly,
+      survivorClaimAge: claimantClaimAge,
+      survivorFraMonths,
+    }) > unchangedOwnMonthly
+  )
+}
+
 function disabilityPaysDuringWindow(
   plan: Plan,
   income: SocialSecurityIncome,
@@ -550,9 +697,13 @@ function claimChangeCanAffectProjection(
 ): boolean {
   const claimantWindow = claimPayableWindow(plan, income, claimAge, startYear, endYear)
   if (!claimantWindow) return false
-  if (!disabilityControlsClaim(plan, income) && socialSecurityOwnBenefitPossible(income)) {
+  const disabilityControlled = disabilityControlsClaim(plan, income)
+  if (!disabilityControlled && socialSecurityOwnBenefitPossible(income)) {
     return true
   }
+  const unchangedSsdiMonthly = disabilityControlled
+    ? (resolvedSocialSecurityPia(plan, income) ?? 0)
+    : 0
   const person = personForSocialSecurity(plan, income)
   if (person && income.formerSpouses?.length) {
     const birthYear = Number(person.dob.slice(0, 4))
@@ -570,7 +721,7 @@ function claimChangeCanAffectProjection(
         year,
         claimantIsSingle: plan.household.people.length === 1,
       })
-      if (benefit && benefit.monthly > 0) return true
+      if (benefit && benefit.monthly > unchangedSsdiMonthly) return true
     }
   }
   if (plan.household.people.length !== 2) return false
@@ -578,7 +729,18 @@ function claimChangeCanAffectProjection(
     (other) =>
       other.type === 'socialSecurity' &&
       other.personId !== income.personId &&
-      auxiliaryBenefitCanPay(plan, claimantWindow, other, startYear, endYear),
+      (unchangedSsdiMonthly > 0
+        ? currentSpouseBenefitCanExceed(
+            plan,
+            income,
+            claimAge,
+            claimantWindow,
+            other,
+            unchangedSsdiMonthly,
+            startYear,
+            endYear,
+          )
+        : auxiliaryBenefitCanPay(plan, claimantWindow, other, startYear, endYear)),
   )
 }
 
@@ -620,14 +782,52 @@ function hasPotentialGeneralDeposit(plan: Plan, startYear: number): boolean {
       hasGuaranteedIncomePayoutWindow(plan, account, startYear),
   )
   if (hasGuaranteedIncome) return true
-  const hasActiveOwnedLadder =
+  const hasFundedLadder =
     plan.incomeFloor?.ladders.some(
-      (ladder) =>
-        (ladder.purchase === undefined || ladder.purchase.year < startYear) &&
-        ladder.annualRealAmount > 0 &&
-        ladder.endYear >= Math.max(ladder.startYear, startYear),
+      (ladder) => {
+        if (
+          ladder.annualRealAmount <= 0 ||
+          ladder.endYear < Math.max(ladder.startYear, startYear)
+        ) {
+          return false
+        }
+        if (ladder.purchase === undefined || ladder.purchase.year < startYear) return true
+        if (ladder.purchase.year > endYear) return false
+        const funding = plan.accounts.find(
+          (account) => account.id === ladder.purchase!.fundingAccountId,
+        )
+        if (
+          !funding ||
+          (funding.type !== 'cash' &&
+            funding.type !== 'taxable' &&
+            funding.type !== 'equityComp') ||
+          !isSpendableInYear(funding, ladder.purchase.year)
+        ) {
+          return false
+        }
+        const effectiveStartYear = Math.max(
+          ladder.startYear,
+          ladder.purchase.year + 1,
+        )
+        if (ladder.endYear < effectiveStartYear || effectiveStartYear > endYear) {
+          return false
+        }
+        const quotedCost = buildLadder({
+          annualRealIncome: ladder.annualRealAmount,
+          firstPayoutOffset: effectiveStartYear - ladder.purchase.year,
+          payoutYears: ladder.endYear - effectiveStartYear + 1,
+          curve: EMBEDDED_REAL_YIELD_CURVE,
+        }).totalCost
+        const nominalCost =
+          quotedCost *
+          Math.pow(
+            1 + plan.assumptions.inflationPct / 100,
+            ladder.purchase.year - startYear,
+          )
+        return funding.balance >= nominalCost
+      },
     ) === true
-  if (hasActiveOwnedLadder) return true
+  if (hasFundedLadder) return true
   if (
     plan.accounts.some(
       (account) =>
@@ -734,7 +934,7 @@ function proposedStaticAllocation(
   const usStocks = stockPct * usShare
   return {
     mode: 'static' as const,
-    rebalancing: 'annual' as const,
+    rebalancing: account.allocation?.rebalancing ?? ('annual' as const),
     weights: {
       usStocks,
       intlStocks: stockPct - usStocks,
@@ -763,17 +963,114 @@ function allocationMatches(
   )
 }
 
-function retirementShiftOverlapsProjection(
+function retirementAgeChangeCanAffectProjection(
+  plan: Plan,
   person: Plan['household']['people'][number],
   nextAge: number,
   startYear: number,
 ): boolean {
   if (person.retirementAge === null || person.retirementAge === nextAge) return false
   const birthYear = Number(person.dob.slice(0, 4))
-  const firstBoundaryYear = birthYear + Math.min(person.retirementAge, nextAge)
-  const lastBoundaryYear = birthYear + Math.max(person.retirementAge, nextAge)
+  const endYear = householdPlanningHorizonYear(plan)
   const lastAliveYear = birthYear + person.longevity.planningAge
-  return lastBoundaryYear >= startYear && firstBoundaryYear <= lastAliveYear
+  const firstChangedWorkYear = birthYear + Math.min(person.retirementAge, nextAge)
+  const lastChangedWorkYear = birthYear + Math.max(person.retirementAge, nextAge) - 1
+  if (
+    firstChangedWorkYear <= endYear &&
+    Math.min(lastChangedWorkYear, lastAliveYear) >= startYear &&
+    plan.incomes.some(
+      (income) =>
+        income.type === 'wages' &&
+        income.personId === person.id &&
+        income.endAge === null &&
+        income.annualGross > 0,
+    )
+  ) {
+    return true
+  }
+
+  if (plan.expenses.healthcare.ssa44?.retirementYears) {
+    const activeInYear = (year: number, proposedAge: number) => {
+      return plan.household.people.some((candidate) => {
+        const retirementAge =
+          candidate.id === person.id ? proposedAge : candidate.retirementAge
+        if (
+          retirementAge === null ||
+          retirementAge > candidate.longevity.planningAge
+        ) {
+          return false
+        }
+        const eventYear = Number(candidate.dob.slice(0, 4)) + retirementAge
+        return year > eventYear && year <= eventYear + 2
+      })
+    }
+    for (let year = startYear; year <= endYear; year++) {
+      if (activeInYear(year, person.retirementAge) !== activeInYear(year, nextAge)) {
+        return true
+      }
+    }
+  }
+
+  for (const income of plan.incomes) {
+    if (
+      income.type !== 'socialSecurity' ||
+      income.personId !== person.id ||
+      income.piaMonthly !== null ||
+      !income.earningsProjection ||
+      income.earningsProjection.throughAge !== null
+    ) {
+      continue
+    }
+    const currentPia = resolvedSocialSecurityPia(plan, income)
+    const proposedPia = resolvedSocialSecurityPia(plan, income, nextAge)
+    if (currentPia !== null && proposedPia !== null && currentPia !== proposedPia) {
+      return true
+    }
+  }
+
+  for (const account of plan.accounts) {
+    if (
+      account.type !== 'traditional' ||
+      account.kind !== 'employer' ||
+      (account.ownerPersonId ?? plan.household.people[0]?.id) !== person.id ||
+      !holdsProjectedAssets(plan, account, startYear)
+    ) {
+      continue
+    }
+    const firstYear = Math.max(startYear, birthYear)
+    const lastYear = Math.min(endYear, birthYear + person.longevity.planningAge)
+    for (let year = firstYear; year <= lastYear; year++) {
+      const ownerAgeAttained = year - birthYear
+      if (
+        traditionalWithdrawalPenaltyRate(account, {
+          ownerAgeAttained,
+          ownerRetirementAge: person.retirementAge,
+        }) !==
+        traditionalWithdrawalPenaltyRate(account, {
+          ownerAgeAttained,
+          ownerRetirementAge: nextAge,
+        })
+      ) {
+        return true
+      }
+    }
+  }
+
+  return false
+}
+
+function relocationSchedulesMatch(
+  plan: Plan,
+  proposed: Plan['household'],
+  startYear: number,
+): boolean {
+  const endYear = householdPlanningHorizonYear(plan)
+  for (let year = startYear; year <= endYear; year++) {
+    const currentSegments = stateResidencySegmentsForYear(plan.household, year)
+    const proposedSegments = stateResidencySegmentsForYear(proposed, year)
+    if (JSON.stringify(currentSegments) !== JSON.stringify(proposedSegments)) return false
+  }
+  return true
 }
 
 function usesDefaultReturn(
@@ -853,7 +1150,7 @@ export function buildScenarioLever(
         const nextAge = person.retirementAge! + request.yearsDelta
         const ageIssue = validateNumber(nextAge, `${person.name} retirement age`, { min: 30, max: 80 })
         if (ageIssue) return unavailable(definition, [ageIssue], warnings)
-        if (retirementShiftOverlapsProjection(person, nextAge, context.startYear)) {
+        if (retirementAgeChangeCanAffectProjection(plan, person, nextAge, context.startYear)) {
           overlapsProjection = true
         }
         person.retirementAge = nextAge
@@ -1358,9 +1655,6 @@ export function buildScenarioLever(
       }
       const effectiveStartState = stateForYear(plan.household, context.startYear - 1)
       const futureMoves = plan.household.stateMoves.filter((move) => move.fromYear >= context.startYear)
-      if (state === effectiveStartState && futureMoves.length === 0) {
-        return unavailable(definition, ['The household already lives in that state and has no future moves to replace.'])
-      }
       const planningHorizonYear = householdPlanningHorizonYear(plan)
       if (request.moveYear > planningHorizonYear) {
         return unavailable(definition, ['Move year must be within the household planning horizon.'])
@@ -1389,6 +1683,17 @@ export function buildScenarioLever(
       )
       const applied = applyScenarioPatch(relocationBase, loose)
       if (!applied.ok) return unavailable(definition, applied.issues, warnings)
+      const taxOverridesChange =
+        plan.assumptions.stateEffectiveTaxPct > 0 ||
+        plan.assumptions.localIncomeTaxPct > 0
+      if (
+        !taxOverridesChange &&
+        relocationSchedulesMatch(plan, applied.plan.household, context.startYear)
+      ) {
+        return unavailable(definition, [
+          'The household already lives under the requested effective projection residence schedule.',
+        ])
+      }
       return finish(
         plan,
         applied.plan,
@@ -1526,11 +1831,10 @@ export function buildScenarioLever(
       if (
         property.value === 0 &&
         (property.propertyTaxAnnual ?? 0) === 0 &&
-        (property.insuranceAnnual ?? 0) === 0 &&
-        property.hecm === undefined
+        (property.insuranceAnnual ?? 0) === 0
       ) {
         return unavailable(definition, [
-          'This zero-value property has no modeled sale proceeds, carrying costs, or HECM effect.',
+          'This zero-value property has no modeled sale proceeds or carrying costs; its HECM also has no value to draw.',
         ])
       }
       if (property.plannedSaleYear !== null) {

@@ -1711,13 +1711,17 @@ describe('scenario lever contract', () => {
     expect(settlesDuringProjection.ok).toBe(true)
   })
 
-  it('treats pre-start TIPS purchases as owned but excludes unfunded in-projection purchases', () => {
+  it('treats pre-start TIPS purchases as owned and requires future purchases to be fully funded', () => {
     const plan = buildExampleCouple()
     const cash = plan.accounts.find((account) => account.type === 'cash')!
     cash.balance = 0
     cash.annualContribution = 0
     cash.annualReturnPct = null
-    plan.accounts = [cash]
+    const funding = plan.accounts.find((account) => account.type === 'taxable')!
+    funding.balance = 0
+    funding.annualContribution = 0
+    funding.annualReturnPct = 3
+    plan.accounts = [cash, funding]
     plan.incomes = []
     plan.insurance = []
     plan.strategies.rothConversion = { mode: 'none' }
@@ -1727,12 +1731,12 @@ describe('scenario lever contract', () => {
           id: 'purchased-ladder',
           name: 'Purchased ladder',
           purpose: 'bridge',
-          startYear: context.startYear,
+          startYear: context.startYear + 1,
           endYear: context.startYear + 4,
           annualRealAmount: 30_000,
           purchase: {
             year: context.startYear - 1,
-            fundingAccountId: cash.id,
+            fundingAccountId: funding.id,
           },
         },
       ],
@@ -1749,9 +1753,16 @@ describe('scenario lever contract', () => {
       { id: 'defaultReturn', returnPct: 4 },
       context,
     )
+    funding.balance = 10_000_000
+    const fundedPurchase = buildScenarioLever(
+      plan,
+      { id: 'defaultReturn', returnPct: 4 },
+      context,
+    )
 
     expect(owned.ok).toBe(true)
     expect(needsFunding.ok).toBe(false)
+    expect(fundedPurchase.ok).toBe(true)
   })
 
   it('honors an explicit zero PIA instead of falling back to earnings', () => {
@@ -2207,6 +2218,248 @@ describe('scenario lever contract', () => {
     expect(rothAfter && 'allocation' in rothAfter ? rothAfter.allocation : undefined).toMatchObject({
       weights: { usStocks: 37.5, intlStocks: 12.5, bonds: 50, cash: 0 },
     })
+  })
+
+  it('preserves each existing allocation rebalancing policy and defaults only unallocated accounts', () => {
+    const plan = buildExampleCouple()
+    const taxable = plan.accounts.find((account) => account.type === 'taxable')!
+    taxable.allocation = {
+      mode: 'linear',
+      rebalancing: 'none',
+      from: { usStocks: 60, intlStocks: 20, bonds: 20, cash: 0 },
+      to: { usStocks: 30, intlStocks: 10, bonds: 60, cash: 0 },
+      startYear: context.startYear,
+      endYear: context.startYear + 10,
+    }
+    const roth = plan.accounts.find((account) => account.type === 'roth')!
+    roth.allocation = undefined
+
+    const result = buildScenarioLever(
+      plan,
+      { id: 'allocation', stockPct: 50 },
+      context,
+    )
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const applied = applyScenarioPatch(plan, result.patch)
+    expect(applied.ok).toBe(true)
+    if (!applied.ok) return
+    const taxableAfter = applied.plan.accounts.find((account) => account.id === taxable.id)
+    const rothAfter = applied.plan.accounts.find((account) => account.id === roth.id)
+    expect(taxableAfter && 'allocation' in taxableAfter ? taxableAfter.allocation?.rebalancing : undefined).toBe(
+      'none',
+    )
+    expect(rothAfter && 'allocation' in rothAfter ? rothAfter.allocation?.rebalancing : undefined).toBe(
+      'annual',
+    )
+  })
+
+  it('recognizes pre-projection SSA-44 retirement relief as a retirement-age effect', () => {
+    const plan = buildExampleCouple()
+    const person = plan.household.people[0]!
+    plan.household.people = [person]
+    plan.household.filingStatus = 'single'
+    person.retirementAge = context.startYear - Number(person.dob.slice(0, 4)) - 1
+    plan.accounts = []
+    plan.incomes = []
+    plan.insurance = []
+    plan.strategies.rothConversion = { mode: 'none' }
+    plan.expenses.healthcare.ssa44 = { survivorYears: false, retirementYears: true }
+
+    const withRelief = buildScenarioLever(
+      plan,
+      { id: 'retirementAge', yearsDelta: 1 },
+      context,
+    )
+    plan.expenses.healthcare.ssa44.retirementYears = false
+    const withoutRelief = buildScenarioLever(
+      plan,
+      { id: 'retirementAge', yearsDelta: 1 },
+      context,
+    )
+
+    expect(withRelief.ok).toBe(true)
+    expect(withoutRelief.ok).toBe(false)
+  })
+
+  it('recognizes retirement-age-defaulted Social Security earnings projections after the work boundary', () => {
+    const plan = buildExampleCouple()
+    const person = plan.household.people[0]!
+    plan.household.people = [person]
+    plan.household.filingStatus = 'single'
+    person.retirementAge = 60
+    plan.accounts = []
+    plan.insurance = []
+    plan.strategies.rothConversion = { mode: 'none' }
+    plan.expenses.healthcare.ssa44 = { survivorYears: false, retirementYears: false }
+    plan.incomes = [
+      {
+        type: 'socialSecurity',
+        id: 'earnings-ss',
+        personId: person.id,
+        piaMonthly: null,
+        earnings: [{ year: 2019, amount: 100_000 }],
+        earningsProjection: { assumedAnnualEarnings: 100_000, throughAge: null },
+        claimAge: { years: 70, months: 0 },
+      },
+    ]
+
+    const result = buildScenarioLever(
+      plan,
+      { id: 'retirementAge', yearsDelta: 1 },
+      context,
+    )
+
+    expect(result.ok).toBe(true)
+  })
+
+  it('recognizes employer-plan Rule-of-55 changes as retirement-age effects', () => {
+    const plan = buildExampleCouple()
+    const person = plan.household.people[0]!
+    plan.household.people = [person]
+    plan.household.filingStatus = 'single'
+    person.retirementAge = 55
+    plan.incomes = []
+    plan.insurance = []
+    plan.accounts = [
+      {
+        type: 'traditional',
+        id: 'employer-plan',
+        name: 'Employer plan',
+        ownerPersonId: person.id,
+        annualReturnPct: 4,
+        kind: 'employer',
+        balance: 100_000,
+        annualContribution: 0,
+      },
+    ]
+    plan.strategies.rothConversion = { mode: 'none' }
+    const ruleOf55Context = { ...context, startYear: 2017 }
+
+    const result = buildScenarioLever(
+      plan,
+      { id: 'retirementAge', yearsDelta: 1 },
+      ruleOf55Context,
+    )
+
+    expect(result.ok).toBe(true)
+  })
+
+  it('rejects relocation schedules that are already equivalent after pre-start moves', () => {
+    const plan = buildExampleCouple()
+    plan.household.stateMoves = [
+      { fromYear: context.startYear - 1, fromMonth: 7, state: 'TX' },
+      { fromYear: 2030, fromMonth: 4, state: 'FL' },
+    ]
+
+    const equivalent = buildScenarioLever(
+      plan,
+      { id: 'relocation', state: 'FL', moveYear: 2030, moveMonth: 4 },
+      context,
+    )
+    plan.assumptions.localIncomeTaxPct = 1
+    const clearsOverride = buildScenarioLever(
+      plan,
+      { id: 'relocation', state: 'FL', moveYear: 2030, moveMonth: 4 },
+      context,
+    )
+
+    expect(equivalent.ok).toBe(false)
+    if (!equivalent.ok) expect(equivalent.issues.join(' ')).toContain('effective projection residence')
+    expect(clearsOverride.ok).toBe(true)
+  })
+
+  it('requires former-spouse benefits to exceed unchanged SSDI before claim age is available', () => {
+    const plan = buildExampleCouple()
+    const person = plan.household.people[0]!
+    const stream = plan.incomes
+      .filter((income) => income.type === 'socialSecurity')
+      .find((income) => income.personId === person.id)!
+    plan.incomes = [stream]
+    stream.piaMonthly = 3_000
+    stream.claimAge = { years: 62, months: 0 }
+    stream.disability = { onsetAge: 60 }
+    stream.formerSpouses = [
+      {
+        id: 'former-spouse',
+        relationship: 'deceased',
+        dob: '1955-01-02',
+        piaMonthly: 1_000,
+        marriageYears: 12,
+        remarriedAtAge: 60,
+      },
+    ]
+
+    const smallerBenefit = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityClaim', claimAge: 70 },
+      context,
+    )
+    stream.formerSpouses[0]!.piaMonthly = 8_000
+    const largerBenefit = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityClaim', claimAge: 70 },
+      context,
+    )
+
+    expect(smallerBenefit.ok).toBe(false)
+    expect(largerBenefit.ok).toBe(true)
+  })
+
+  it('requires current-spouse auxiliary benefits to exceed unchanged SSDI before claim age is available', () => {
+    const plan = buildExampleCouple()
+    const streams = plan.incomes.filter((income) => income.type === 'socialSecurity')
+    const claimant = streams[0]!
+    const spouse = streams[1]!
+    plan.incomes = streams
+    claimant.piaMonthly = 3_000
+    claimant.claimAge = { years: 62, months: 0 }
+    claimant.disability = { onsetAge: 60 }
+    claimant.formerSpouses = []
+    spouse.piaMonthly = 1_000
+    spouse.claimAge = { years: 70, months: 0 }
+    spouse.formerSpouses = []
+
+    const smallerBenefit = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityClaim', claimAge: 70 },
+      context,
+    )
+    spouse.piaMonthly = 10_000
+    const largerBenefit = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityClaim', claimAge: 70 },
+      context,
+    )
+
+    expect(smallerBenefit.ok).toBe(false)
+    expect(largerBenefit.ok).toBe(true)
+  })
+
+  it('rejects zero-value HECM properties without sale proceeds or carrying costs', () => {
+    const plan = buildExampleCouple()
+    const property = plan.accounts.find((account) => account.type === 'property')!
+    property.value = 0
+    property.propertyTaxAnnual = 0
+    property.insuranceAnnual = 0
+    property.primaryResidence = true
+    property.hecm = {
+      openYear: context.startYear,
+      principalLimitPct: 50,
+      growthRatePct: 7,
+      upfrontCostPct: 2,
+      drawPolicy: 'coordinated',
+    }
+
+    const result = buildScenarioLever(
+      plan,
+      { id: 'homeSale', propertyId: property.id, saleYear: context.startYear + 1 },
+      context,
+    )
+
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.issues.join(' ')).toContain('zero-value property')
   })
 
   it('includes care duration and annual cost in the generated scenario name', () => {
