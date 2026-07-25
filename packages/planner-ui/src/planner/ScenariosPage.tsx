@@ -64,6 +64,7 @@ interface LeverParams {
   incomeStartAgeDelta: number
   destinationState: string
   moveYear: number
+  moveMonth: number
   survivorSpendingPct: number
   carePersonId: string
   careYears: number
@@ -89,6 +90,7 @@ function defaultLeverParams(startYear: number): LeverParams {
     incomeStartAgeDelta: 2,
     destinationState: 'FL',
     moveYear: startYear + 1,
+    moveMonth: 7,
     survivorSpendingPct: 70,
     carePersonId: '',
     careYears: 3,
@@ -116,7 +118,13 @@ function leverRequest(kind: ScenarioLeverId, p: LeverParams): ScenarioLeverReque
     case 'pension':
     case 'annuity':
       return { id: kind, monthlyChangePct: p.incomeChangePct, startAgeDelta: p.incomeStartAgeDelta }
-    case 'relocation': return { id: kind, state: p.destinationState, moveYear: p.moveYear }
+    case 'relocation':
+      return {
+        id: kind,
+        state: p.destinationState,
+        moveYear: p.moveYear,
+        moveMonth: p.moveMonth,
+      }
     case 'survivorSpending': return { id: kind, percent: p.survivorSpendingPct }
     case 'care':
       return {
@@ -199,6 +207,7 @@ function AddScenario() {
           <>
             <SelectField label="Destination state" value={params.destinationState} options={US_STATES} onCommit={(v) => set('destinationState', v)} />
             <NumberField label="Move year" value={params.moveYear} min={startYear} max={2200} onCommit={(v) => set('moveYear', Math.round(v ?? startYear))} />
+            <NumberField label="Move month (1â€“12)" value={params.moveMonth} min={1} max={12} onCommit={(v) => set('moveMonth', Math.round(v ?? 7))} />
           </>
         ) : null}
         {kind === 'survivorSpending' ? <PercentField label="Couple spending kept in survivor years" value={params.survivorSpendingPct} min={0} max={100} onCommit={(v) => set('survivorSpendingPct', v ?? 70)} /> : null}

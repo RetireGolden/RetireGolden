@@ -205,22 +205,31 @@ describe('ScenariosPage comparison lifecycle', () => {
     vi.useRealTimers()
   })
 
-  function contextFor(plan: Plan, issues: string[] = []): PlanContextValue {
+  function contextFor(
+    plan: Plan,
+    issues: string[] = [],
+    update: PlanContextValue['update'] = () => undefined,
+  ): PlanContextValue {
     return {
       plan,
-      update: () => undefined,
+      update,
       discardPendingSave: () => undefined,
       saveState: 'saved',
       issues,
     }
   }
 
-  async function mount(plan = createSamplePlan(), issues: string[] = [], readOnly = false) {
+  async function mount(
+    plan = createSamplePlan(),
+    issues: string[] = [],
+    readOnly = false,
+    update?: PlanContextValue['update'],
+  ) {
     await act(async () => {
       root.render(
         <MemoryRouter>
           <WorkspaceReadOnlyContext.Provider value={readOnly}>
-            <PlanCtx.Provider value={contextFor(plan, issues)}>
+            <PlanCtx.Provider value={contextFor(plan, issues, update)}>
               <ScenariosPage />
             </PlanCtx.Provider>
           </WorkspaceReadOnlyContext.Provider>
@@ -306,6 +315,11 @@ describe('ScenariosPage comparison lifecycle', () => {
     const states = document.getElementById(stateLabel!.htmlFor) as HTMLSelectElement
     expect(states.options).toHaveLength(51)
     expect(Array.from(states.options).some((option) => option.value === 'DC')).toBe(true)
+    const moveMonthLabel = Array.from(container.querySelectorAll('label')).find(
+      (label) => label.textContent?.startsWith('Move month'),
+    )
+    const moveMonth = document.getElementById(moveMonthLabel!.htmlFor) as HTMLInputElement
+    expect(moveMonth.value).toBe('7')
 
     await act(async () => {
       leverSelect!.value = 'rothTarget'
@@ -323,6 +337,47 @@ describe('ScenariosPage comparison lifecycle', () => {
       '32',
       '35',
     ])
+  })
+
+  it('writes the selected relocation month into the scenario request', async () => {
+    const plan = createSamplePlan()
+    let updatedPlan: Plan | null = null
+    await mount(plan, [], false, (mutator) => {
+      const next = structuredClone(plan)
+      mutator(next)
+      updatedPlan = next
+    })
+    const leverSelect = container.querySelector<HTMLSelectElement>('select')!
+    await act(async () => {
+      leverSelect.value = 'relocation'
+      leverSelect.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    const moveMonthLabel = Array.from(container.querySelectorAll('label')).find(
+      (label) => label.textContent?.startsWith('Move month'),
+    )!
+    const moveMonth = document.getElementById(moveMonthLabel.htmlFor) as HTMLInputElement
+    const inputValueSetter = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      'value',
+    )!.set!
+    await act(async () => {
+      inputValueSetter.call(moveMonth, '10')
+      moveMonth.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    const add = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent?.includes('Add scenario'),
+    )!
+    await act(async () => add.click())
+
+    expect(updatedPlan).not.toBeNull()
+    const scenario = updatedPlan!.scenarios.at(-1)!
+    const applied = scenariosModule.applyScenarioPatch(plan, scenario.patch)
+    expect(applied.ok).toBe(true)
+    if (applied.ok) {
+      expect(applied.plan.household.stateMoves).toEqual([
+        expect.objectContaining({ fromMonth: 10 }),
+      ])
+    }
   })
 
   it('shows recalculating and error states without ever labeling a failed detail comparison current', async () => {

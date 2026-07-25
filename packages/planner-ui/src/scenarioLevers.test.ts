@@ -1813,4 +1813,254 @@ describe('scenario lever contract', () => {
     if (!unavailable.ok) expect(unavailable.issues.join(' ')).toContain('annual lifestyle spending')
     expect(available.ok).toBe(true)
   })
+
+  it('requires a shifted retirement boundary to overlap the active projection', () => {
+    const plan = buildExampleCouple()
+    for (const person of plan.household.people) {
+      person.retirementAge = context.startYear - Number(person.dob.slice(0, 4)) - 2
+    }
+    const expired = buildScenarioLever(
+      plan,
+      { id: 'retirementAge', yearsDelta: 1 },
+      context,
+    )
+
+    plan.household.people[0]!.retirementAge =
+      context.startYear - Number(plan.household.people[0]!.dob.slice(0, 4))
+    const active = buildScenarioLever(
+      plan,
+      { id: 'retirementAge', yearsDelta: 1 },
+      context,
+    )
+
+    expect(expired.ok).toBe(false)
+    if (!expired.ok) expect(expired.issues.join(' ')).toContain('active projection')
+    expect(active.ok).toBe(true)
+  })
+
+  it('declares only relocation paths reachable from the fast lever', () => {
+    const relocation = SCENARIO_LEVER_DEFINITIONS.find(
+      (definition) => definition.id === 'relocation',
+    )!
+
+    expect(relocation.declaredPaths).not.toContain('/expenses/baseAnnual')
+    expect(relocation.declaredPaths).toEqual([
+      '/assumptions/localIncomeTaxPct',
+      '/assumptions/stateEffectiveTaxPct',
+      '/household/state',
+      '/household/stateMoves',
+    ])
+  })
+
+  it('excludes final-horizon-only inflows from return and allocation availability', () => {
+    const plan = buildExampleCouple()
+    const horizon = context.startYear + 2
+    for (const person of plan.household.people) {
+      person.longevity.planningAge = horizon - Number(person.dob.slice(0, 4))
+    }
+    plan.accounts = [
+      {
+        type: 'taxable',
+        id: 'future-deposit-target',
+        name: 'Future deposit target',
+        ownerPersonId: null,
+        annualReturnPct: null,
+        balance: 0,
+        costBasis: 0,
+        annualContribution: 0,
+      },
+    ]
+    plan.incomes = [
+      {
+        type: 'oneTime',
+        id: 'final-year-cash',
+        label: 'Final-year cash',
+        year: horizon,
+        amount: 100_000,
+        taxTreatment: 'none',
+      },
+    ]
+    plan.insurance = []
+    plan.strategies.rothConversion = { mode: 'none' }
+
+    const finalReturn = buildScenarioLever(
+      plan,
+      { id: 'defaultReturn', returnPct: 4 },
+      context,
+    )
+    const finalAllocation = buildScenarioLever(
+      plan,
+      { id: 'allocation', stockPct: 60 },
+      context,
+    )
+    const oneYearEarlier = plan.incomes[0]!
+    if (oneYearEarlier.type === 'oneTime') oneYearEarlier.year = horizon - 1
+    const activeReturn = buildScenarioLever(
+      plan,
+      { id: 'defaultReturn', returnPct: 4 },
+      context,
+    )
+    const activeAllocation = buildScenarioLever(
+      plan,
+      { id: 'allocation', stockPct: 60 },
+      context,
+    )
+
+    expect(finalReturn.ok).toBe(false)
+    expect(finalAllocation.ok).toBe(false)
+    expect(activeReturn.ok).toBe(true)
+    expect(activeAllocation.ok).toBe(true)
+  })
+
+  it('requires the changed allocation to belong to an account with projected assets', () => {
+    const plan = buildExampleCouple()
+    const funded = plan.accounts.find((account) => account.type === 'taxable')!
+    funded.allocation = {
+      mode: 'static',
+      rebalancing: 'annual',
+      weights: { usStocks: 45, intlStocks: 15, bonds: 40, cash: 0 },
+    }
+    const empty = {
+      ...funded,
+      id: 'empty-taxable',
+      name: 'Empty taxable',
+      balance: 0,
+      costBasis: 0,
+      annualContribution: 0,
+      contributionSchedule: undefined,
+      allocation: undefined,
+    }
+    plan.accounts = [funded, empty]
+    plan.incomes = []
+    plan.insurance = []
+    plan.strategies.rothConversion = { mode: 'none' }
+
+    const emptyOnlyChange = buildScenarioLever(
+      plan,
+      { id: 'allocation', stockPct: 60 },
+      context,
+    )
+    const fundedChange = buildScenarioLever(
+      plan,
+      { id: 'allocation', stockPct: 50 },
+      context,
+    )
+
+    expect(emptyOnlyChange.ok).toBe(false)
+    expect(fundedChange.ok).toBe(true)
+  })
+
+  it('requires one Social Security stream to both change and affect the projection', () => {
+    const plan = buildExampleCouple()
+    const streams = plan.incomes.filter((income) => income.type === 'socialSecurity')
+    const effective = streams[0]!
+    const inert = streams[1]!
+    effective.claimAge = { years: 70, months: 0 }
+    effective.piaMonthly = 2_000
+    inert.claimAge = { years: 62, months: 0 }
+    inert.piaMonthly = 0
+    inert.earnings = null
+    inert.formerSpouses = []
+    const inertPerson = plan.household.people.find((person) => person.id === inert.personId)!
+    inertPerson.longevity.planningAge = 65
+
+    const unrelatedChange = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityClaim', claimAge: 70 },
+      context,
+    )
+    effective.claimAge = { years: 67, months: 0 }
+    const effectiveChange = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityClaim', claimAge: 70 },
+      context,
+    )
+
+    expect(unrelatedChange.ok).toBe(false)
+    expect(effectiveChange.ok).toBe(true)
+  })
+
+  it('rejects a zero-value property sale without another modeled sale effect', () => {
+    const plan = buildExampleCouple()
+    const property = plan.accounts.find((account) => account.type === 'property')!
+    property.value = 0
+    property.expectedNetProceeds = 250_000
+    property.propertyTaxAnnual = 0
+    property.insuranceAnnual = 0
+    delete property.hecm
+
+    const inert = buildScenarioLever(
+      plan,
+      { id: 'homeSale', saleYear: context.startYear + 2 },
+      context,
+    )
+    property.propertyTaxAnnual = 1_000
+    const carryingCost = buildScenarioLever(
+      plan,
+      { id: 'homeSale', saleYear: context.startYear + 2 },
+      context,
+    )
+
+    expect(inert.ok).toBe(false)
+    if (!inert.ok) expect(inert.issues.join(' ')).toContain('zero-value property')
+    expect(carryingCost.ok).toBe(true)
+  })
+
+  it('preserves each account stock-region split when changing total stocks', () => {
+    const plan = buildExampleCouple()
+    const taxable = plan.accounts.find((account) => account.type === 'taxable')!
+    taxable.allocation = {
+      mode: 'static',
+      rebalancing: 'annual',
+      weights: { usStocks: 20, intlStocks: 60, bonds: 20, cash: 0 },
+    }
+    const roth = plan.accounts.find((account) => account.type === 'roth')!
+    roth.allocation = {
+      mode: 'static',
+      rebalancing: 'annual',
+      weights: { usStocks: 0, intlStocks: 0, bonds: 100, cash: 0 },
+    }
+
+    const result = buildScenarioLever(
+      plan,
+      { id: 'allocation', stockPct: 50 },
+      context,
+    )
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const applied = applyScenarioPatch(plan, result.patch)
+    expect(applied.ok).toBe(true)
+    if (!applied.ok) return
+    const taxableAfter = applied.plan.accounts.find((account) => account.id === taxable.id)
+    const rothAfter = applied.plan.accounts.find((account) => account.id === roth.id)
+    expect(taxableAfter && 'allocation' in taxableAfter ? taxableAfter.allocation : undefined).toMatchObject({
+      weights: { usStocks: 12.5, intlStocks: 37.5, bonds: 50, cash: 0 },
+    })
+    expect(rothAfter && 'allocation' in rothAfter ? rothAfter.allocation : undefined).toMatchObject({
+      weights: { usStocks: 37.5, intlStocks: 12.5, bonds: 50, cash: 0 },
+    })
+  })
+
+  it('includes care duration and annual cost in the generated scenario name', () => {
+    const plan = buildExampleCouple()
+    const person = plan.household.people[0]!
+    const result = buildScenarioLever(
+      plan,
+      {
+        id: 'care',
+        personId: person.id,
+        startAge: 85,
+        durationYears: 4,
+        annualCost: 125_000,
+      },
+      context,
+    )
+
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.name).toContain('4 years')
+      expect(result.name).toContain('125,000 per year')
+    }
+  })
 })

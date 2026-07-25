@@ -8,6 +8,7 @@
  */
 
 import { stateForYear, type Plan } from '@retiregolden/engine/model/plan'
+import { targetWeightsAt } from '@retiregolden/engine/allocation/assetClasses'
 import { packForYear } from '@retiregolden/engine/params'
 import { modeledStateCodes } from '@retiregolden/engine/params/state'
 import { relocationScenarioPatch } from '@retiregolden/engine/projection/relocation'
@@ -49,7 +50,7 @@ export interface ScenarioLeverDefinition {
 export const SCENARIO_LEVER_DEFINITIONS: readonly ScenarioLeverDefinition[] = [
   { id: 'retirementAge', label: 'All household retirement ages', declaredPaths: ['/household/people'] },
   { id: 'spending', label: 'Household base spending', declaredPaths: ['/expenses/baseAnnual'] },
-  { id: 'socialSecurityClaim', label: 'All Social Security claim ages', declaredPaths: ['/incomes'] },
+  { id: 'socialSecurityClaim', label: 'All eligible Social Security claim ages', declaredPaths: ['/incomes'] },
   {
     id: 'socialSecurityCut',
     label: 'Social Security benefit cut',
@@ -108,7 +109,6 @@ export const SCENARIO_LEVER_DEFINITIONS: readonly ScenarioLeverDefinition[] = [
     declaredPaths: [
       '/assumptions/localIncomeTaxPct',
       '/assumptions/stateEffectiveTaxPct',
-      '/expenses/baseAnnual',
       '/household/state',
       '/household/stateMoves',
     ],
@@ -375,12 +375,12 @@ function receivesContributionDuringProjection(
   plan: Plan,
   account: ProjectedBalanceAccount,
   startYear: number,
+  endYear = householdPlanningHorizonYear(plan),
 ): boolean {
   if (!acceptsContributions(account)) return false
   const ownerId = account.ownerPersonId ?? plan.household.people[0]?.id
   const owner = plan.household.people.find((person) => person.id === ownerId)
   if (!owner) return false
-  const endYear = householdPlanningHorizonYear(plan)
   for (let year = startYear; year <= endYear; year++) {
     const age = year - Number(owner.dob.slice(0, 4))
     if (age > owner.longevity.planningAge) continue
@@ -408,6 +408,7 @@ function hasGuaranteedIncomePayoutWindow(
   plan: Plan,
   account: GuaranteedIncomeAccount,
   startYear: number,
+  projectionEndYear = householdPlanningHorizonYear(plan),
 ): boolean {
   if (account.monthlyAmount <= 0) return false
   const ownerId = account.ownerPersonId ?? plan.household.people[0]?.id
@@ -418,7 +419,6 @@ function hasGuaranteedIncomePayoutWindow(
     startCalendarYear,
     account.type === 'annuity' && account.purchase ? account.purchase.year : startYear,
   )
-  const projectionEndYear = householdPlanningHorizonYear(plan)
   const ownerLastAliveYear = Number(owner.dob.slice(0, 4)) + owner.longevity.planningAge
   const lastPaymentYear =
     account.type === 'pension' && account.lumpSumElection && account.lumpSumOffer
@@ -596,7 +596,8 @@ function hasPayableSocialSecurityBenefit(
 }
 
 function hasPotentialGeneralDeposit(plan: Plan, startYear: number): boolean {
-  const endYear = householdPlanningHorizonYear(plan)
+  const endYear = householdPlanningHorizonYear(plan) - 1
+  if (endYear < startYear) return false
   const hasIncome = plan.incomes.some((income) => {
     switch (income.type) {
       case 'wages':
@@ -617,7 +618,7 @@ function hasPotentialGeneralDeposit(plan: Plan, startYear: number): boolean {
   const hasGuaranteedIncome = plan.accounts.some(
     (account) =>
       (account.type === 'pension' || account.type === 'annuity') &&
-      hasGuaranteedIncomePayoutWindow(plan, account, startYear),
+      hasGuaranteedIncomePayoutWindow(plan, account, startYear, endYear),
   )
   if (hasGuaranteedIncome) return true
   const hasActiveOwnedLadder =
@@ -659,9 +660,15 @@ function hasPotentialGeneralDeposit(plan: Plan, startYear: number): boolean {
 }
 
 function holdsProjectedAssets(plan: Plan, account: ProjectedBalanceAccount, startYear: number): boolean {
-  if (account.balance > 0 || receivesContributionDuringProjection(plan, account, startYear)) return true
-
   const endYear = householdPlanningHorizonYear(plan)
+  const lastGrowthYear = endYear - 1
+  if (
+    account.balance > 0 ||
+    (lastGrowthYear >= startYear &&
+      receivesContributionDuringProjection(plan, account, startYear, lastGrowthYear))
+  ) {
+    return true
+  }
   const depositTarget =
     plan.accounts.find((candidate) => candidate.type === 'cash') ??
     plan.accounts.find((candidate) => candidate.type === 'taxable')
@@ -675,7 +682,7 @@ function holdsProjectedAssets(plan: Plan, account: ProjectedBalanceAccount, star
         candidate.lumpSumOffer !== undefined &&
         candidate.lumpSumOffer.amount > 0 &&
         candidate.lumpSumOffer.electionYear >= startYear &&
-        candidate.lumpSumOffer.electionYear <= endYear &&
+        candidate.lumpSumOffer.electionYear <= lastGrowthYear &&
         candidate.lumpSumElection?.rolloverAccountId === account.id,
     )
   ) {
@@ -691,7 +698,7 @@ function holdsProjectedAssets(plan: Plan, account: ProjectedBalanceAccount, star
       (conversion) =>
         conversion.amount > 0 &&
         conversion.year >= startYear &&
-        conversion.year <= endYear,
+        conversion.year <= lastGrowthYear,
     )
     return (
       activeConversions.length > 0 &&
@@ -704,13 +711,74 @@ function holdsProjectedAssets(plan: Plan, account: ProjectedBalanceAccount, star
   }
   if (strategy.mode === 'fillToTarget') {
     const effectiveStartYear = Math.max(strategy.startYear, startYear)
-    const effectiveEndYear = Math.min(strategy.endYear, endYear)
+    const effectiveEndYear = Math.min(strategy.endYear, lastGrowthYear)
     return (
       effectiveStartYear <= effectiveEndYear &&
       hasRothConversionSources(plan, effectiveStartYear, effectiveEndYear)
     )
   }
   return false
+}
+
+type AllocatableAccount = Extract<
+  Plan['accounts'][number],
+  { type: 'taxable' | 'traditional' | 'roth' | 'hsa' }
+>
+
+function proposedStaticAllocation(
+  account: AllocatableAccount,
+  stockPct: number,
+  startYear: number,
+) {
+  let usShare = 0.75
+  if (account.allocation !== undefined) {
+    const currentWeights = targetWeightsAt(account.allocation, startYear)
+    const currentStockWeight = currentWeights[0]! + currentWeights[1]!
+    if (currentStockWeight > 0) usShare = currentWeights[0]! / currentStockWeight
+  }
+  const usStocks = stockPct * usShare
+  return {
+    mode: 'static' as const,
+    rebalancing: 'annual' as const,
+    weights: {
+      usStocks,
+      intlStocks: stockPct - usStocks,
+      bonds: 100 - stockPct,
+      cash: 0,
+    },
+  }
+}
+
+function allocationMatches(
+  current: AllocatableAccount['allocation'],
+  proposed: ReturnType<typeof proposedStaticAllocation>,
+): boolean {
+  if (
+    current === undefined ||
+    current.mode !== 'static' ||
+    current.rebalancing !== proposed.rebalancing
+  ) {
+    return false
+  }
+  return (
+    current.weights.usStocks === proposed.weights.usStocks &&
+    current.weights.intlStocks === proposed.weights.intlStocks &&
+    current.weights.bonds === proposed.weights.bonds &&
+    current.weights.cash === proposed.weights.cash
+  )
+}
+
+function retirementShiftOverlapsProjection(
+  person: Plan['household']['people'][number],
+  nextAge: number,
+  startYear: number,
+): boolean {
+  if (person.retirementAge === null || person.retirementAge === nextAge) return false
+  const birthYear = Number(person.dob.slice(0, 4))
+  const firstBoundaryYear = birthYear + Math.min(person.retirementAge, nextAge)
+  const lastBoundaryYear = birthYear + Math.max(person.retirementAge, nextAge)
+  const lastAliveYear = birthYear + person.longevity.planningAge
+  return lastBoundaryYear >= startYear && firstBoundaryYear <= lastAliveYear
 }
 
 function usesDefaultReturn(
@@ -785,11 +853,20 @@ export function buildScenarioLever(
       if (editablePeople.length !== edited.household.people.length) {
         warnings.push('People without a retirement age are left unchanged.')
       }
+      let overlapsProjection = false
       for (const person of editablePeople) {
         const nextAge = person.retirementAge! + request.yearsDelta
         const ageIssue = validateNumber(nextAge, `${person.name} retirement age`, { min: 30, max: 80 })
         if (ageIssue) return unavailable(definition, [ageIssue], warnings)
+        if (retirementShiftOverlapsProjection(person, nextAge, context.startYear)) {
+          overlapsProjection = true
+        }
         person.retirementAge = nextAge
+      }
+      if (!overlapsProjection) {
+        return unavailable(definition, [
+          'No shifted retirement boundary overlaps the active projection.',
+        ], warnings)
       }
       if (
         edited.incomes.some(
@@ -863,8 +940,10 @@ export function buildScenarioLever(
       if (eligible.length === 0) {
         return unavailable(definition, ['Disability streams use onset age instead of retirement claim age.'])
       }
-      if (
-        !eligible.some((stream) =>
+      const effectiveChange = eligible.some(
+        (stream) =>
+          (stream.claimAge.years !== proposedClaimAge.years ||
+            stream.claimAge.months !== proposedClaimAge.months) &&
           claimChangeCanAffectProjection(
             plan,
             stream,
@@ -872,8 +951,8 @@ export function buildScenarioLever(
             context.startYear,
             projectionEndYear,
           ),
-        )
-      ) {
+      )
+      if (!effectiveChange) {
         return unavailable(definition, ['No Social Security stream has a modeled benefit to change.'])
       }
       if (eligible.length !== streams.length) {
@@ -1075,32 +1154,47 @@ export function buildScenarioLever(
       const inputIssue = validateNumber(request.stockPct, 'Stock allocation', { min: 0, max: 100 })
       if (inputIssue) return unavailable(definition, [inputIssue])
       const eligible = edited.accounts.filter(
-        (account) =>
+        (account): account is AllocatableAccount =>
           account.type === 'taxable' ||
           account.type === 'traditional' ||
           account.type === 'roth' ||
           account.type === 'hsa',
       )
-      if (!eligible.some((account) => holdsProjectedAssets(plan, account, context.startYear))) {
+      const proposedById = new Map(
+        eligible.map((account) => [
+          account.id,
+          proposedStaticAllocation(account, request.stockPct, context.startYear),
+        ]),
+      )
+      if (
+        !eligible.some((account) => {
+          const original = plan.accounts.find(
+            (candidate): candidate is AllocatableAccount =>
+              candidate.id === account.id &&
+              (candidate.type === 'taxable' ||
+                candidate.type === 'traditional' ||
+                candidate.type === 'roth' ||
+                candidate.type === 'hsa'),
+          )
+          const proposed = proposedById.get(account.id)!
+          return (
+            original !== undefined &&
+            holdsProjectedAssets(plan, original, context.startYear) &&
+            !allocationMatches(original.allocation, proposed)
+          )
+        })
+      ) {
         return unavailable(definition, [
-          'No investable taxable, traditional, Roth, or HSA account can hold assets during the projection.',
+          'No projected investable account would receive a changed allocation.',
         ])
       }
       if (eligible.some((account) => account.allocation !== undefined && account.allocation.mode !== 'static')) {
         warnings.push('This replaces an existing glidepath with one static allocation.')
       }
-      const stocks = request.stockPct
-      const usStocks = stocks * 0.75
-      const intlStocks = stocks * 0.25
-      const bonds = 100 - stocks
       for (const account of eligible) {
-        account.allocation = {
-          mode: 'static',
-          rebalancing: 'annual',
-          weights: { usStocks, intlStocks, bonds, cash: 0 },
-        }
+        account.allocation = proposedById.get(account.id)!
       }
-      return finish(plan, edited, definition, `All eligible accounts: ${stocks}% stocks / ${100 - stocks}% bonds`, warnings, context)
+      return finish(plan, edited, definition, `All eligible accounts: ${request.stockPct}% stocks / ${100 - request.stockPct}% bonds`, warnings, context)
     }
 
     case 'defaultReturn': {
@@ -1254,12 +1348,11 @@ export function buildScenarioLever(
         return unavailable(definition, ['Destination state must be a state-code string.'])
       }
       const state = request.state.trim().toUpperCase()
+      const moveMonth = request.moveMonth ?? 7
       const inputIssue = firstIssue(
         validateCalendarYear(request.moveYear, 'Move year'),
         validateCalendarYear(context.startYear, 'Projection start year'),
-        request.moveMonth === undefined
-          ? null
-          : validateNumber(request.moveMonth, 'Move month', { min: 1, max: 12, integer: true }),
+        validateNumber(moveMonth, 'Move month', { min: 1, max: 12, integer: true }),
       )
       if (inputIssue) return unavailable(definition, [inputIssue])
       if (request.moveYear < context.startYear) {
@@ -1296,12 +1389,19 @@ export function buildScenarioLever(
       relocationBase.household.stateMoves = futureMoves
       const loose = relocationScenarioPatch(
         relocationBase,
-        { state, moveYear: request.moveYear, moveMonth: request.moveMonth },
+        { state, moveYear: request.moveYear, moveMonth },
         context.startYear,
       )
       const applied = applyScenarioPatch(relocationBase, loose)
       if (!applied.ok) return unavailable(definition, applied.issues, warnings)
-      return finish(plan, applied.plan, definition, `Move to ${state} in ${request.moveYear}`, warnings, context)
+      return finish(
+        plan,
+        applied.plan,
+        definition,
+        `Move to ${state} in ${request.moveYear}, month ${moveMonth}`,
+        warnings,
+        context,
+      )
     }
 
     case 'survivorSpending': {
@@ -1373,7 +1473,14 @@ export function buildScenarioLever(
       if (!edited.insurance.some((policy) => policy.kind === 'ltc' && policy.owner === person.id)) {
         warnings.push(`${person.name} has no matching long-term-care policy recorded.`)
       }
-      return finish(plan, edited, definition, `${person.name}: care at age ${request.startAge}`, warnings, context)
+      return finish(
+        plan,
+        edited,
+        definition,
+        `${person.name}: ${request.durationYears} years of care at age ${request.startAge}, ${request.annualCost.toLocaleString('en-US')} per year`,
+        warnings,
+        context,
+      )
     }
 
     case 'homeSale': {
@@ -1395,6 +1502,16 @@ export function buildScenarioLever(
           ? properties[0]
           : properties.find((candidate) => candidate.id === request.propertyId)
       if (!property) return unavailable(definition, [`No property has id "${request.propertyId}".`])
+      if (
+        property.value === 0 &&
+        (property.propertyTaxAnnual ?? 0) === 0 &&
+        (property.insuranceAnnual ?? 0) === 0 &&
+        property.hecm === undefined
+      ) {
+        return unavailable(definition, [
+          'This zero-value property has no modeled sale proceeds, carrying costs, or HECM effect.',
+        ])
+      }
       if (property.plannedSaleYear !== null) {
         warnings.push('This replaces an existing planned property sale year.')
       }
