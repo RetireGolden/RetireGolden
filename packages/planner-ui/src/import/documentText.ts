@@ -153,6 +153,17 @@ export interface DocumentPage {
    * is a picture we cannot read" are different answers and a UI must be able
    * to tell the user which one it got.
    *
+   * This is exactly what it measures, and no more: no text layer, and at least
+   * one raster paint operator. It does not judge how much of the page the
+   * raster covers, so a textless cover or separator page carrying only a logo,
+   * watermark or signature reads as image-only too. Deciding otherwise means
+   * reconstructing the CTM across the graphics-state stack — the paint
+   * operator's own arguments carry intrinsic pixel dimensions, not rendered
+   * size — and then choosing a coverage threshold that could only be validated
+   * against real scanned documents. A threshold guessed against synthetic
+   * fixtures would err toward calling a cropped or low-DPI scan blank, which is
+   * the direction that hurts. Left as follow-up rather than guessed at.
+   *
    * Decided from the text pdfjs actually read, BEFORE any cap clipped it. A
    * page with a full text layer and a logo, clipped to nothing by a tight
    * `maxPageTextChars`, is not a scanned page — reporting it as one would tell

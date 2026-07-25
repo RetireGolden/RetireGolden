@@ -314,6 +314,16 @@ And, stated once more because it used to be stated the other way: **it proves no
 OCR.** An image-only page here has no glyphs on it. The corpus can say that such a page is recognised as
 such; it cannot say what is on one, and therefore cannot say what recognising it would be worth.
 
+Nor does it exercise the other end of that signal. `imageOnly` means what it measures — no text layer,
+and at least one raster paint operator — and it does not weigh how much of the page the raster covers,
+so a textless cover or separator page carrying only a logo, watermark or signature is reported as
+image-only too. The corpus contains no such page, so the false-positive rate for decorative rasters is
+**unmeasured here**. Weighing coverage means reconstructing the CTM across the graphics-state stack and
+then picking a threshold, and a threshold is only honest once it has been checked against real scanned
+documents — which this corpus cannot contain. Guessed at instead, it would err toward calling a cropped
+or low-DPI scan blank, the same failure direction as missing a raster operator entirely. Recorded as
+follow-up rather than settled by a number nobody has validated.
+
 ## Recommendation: do not scope OCR now — re-derived
 
 The earlier version of this section argued partly from "OCR would buy exactly these eight values." That
