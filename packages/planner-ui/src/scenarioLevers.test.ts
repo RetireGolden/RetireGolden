@@ -1852,7 +1852,7 @@ describe('scenario lever contract', () => {
     ])
   })
 
-  it('excludes final-horizon-only inflows from return and allocation availability', () => {
+  it('includes final-horizon inflows that receive same-year growth', () => {
     const plan = buildExampleCouple()
     const horizon = context.startYear + 2
     for (const person of plan.household.people) {
@@ -1906,10 +1906,104 @@ describe('scenario lever contract', () => {
       context,
     )
 
-    expect(finalReturn.ok).toBe(false)
-    expect(finalAllocation.ok).toBe(false)
+    expect(finalReturn.ok).toBe(true)
+    expect(finalAllocation.ok).toBe(true)
     expect(activeReturn.ok).toBe(true)
     expect(activeAllocation.ok).toBe(true)
+  })
+
+  it('includes horizon-year contributions, rollovers, and Roth conversions in allocation availability', () => {
+    const contributionPlan = buildExampleCouple()
+    const horizon = context.startYear + 2
+    for (const person of contributionPlan.household.people) {
+      person.longevity.planningAge = horizon - Number(person.dob.slice(0, 4))
+    }
+    const contributionTarget = contributionPlan.accounts.find(
+      (account) => account.type === 'taxable',
+    )!
+    const owner = contributionPlan.household.people[0]!
+    contributionTarget.balance = 0
+    contributionTarget.annualContribution = 0
+    contributionTarget.annualReturnPct = null
+    contributionTarget.contributionSchedule = [
+      {
+        annualAmount: 25_000,
+        fromAge: horizon - Number(owner.dob.slice(0, 4)),
+        toAge: horizon - Number(owner.dob.slice(0, 4)),
+        escalationPct: 0,
+      },
+    ]
+    contributionPlan.accounts = [contributionTarget]
+    contributionPlan.incomes = []
+    contributionPlan.insurance = []
+    contributionPlan.strategies.rothConversion = { mode: 'none' }
+
+    const contributionReturn = buildScenarioLever(
+      contributionPlan,
+      { id: 'defaultReturn', returnPct: 4 },
+      context,
+    )
+    const contributionAllocation = buildScenarioLever(
+      contributionPlan,
+      { id: 'allocation', stockPct: 60 },
+      context,
+    )
+
+    const rolloverPlan = planWithGuaranteedIncome()
+    for (const person of rolloverPlan.household.people) {
+      person.longevity.planningAge = horizon - Number(person.dob.slice(0, 4))
+    }
+    const rolloverTarget = rolloverPlan.accounts.find(
+      (account) => account.type === 'traditional',
+    )!
+    rolloverTarget.balance = 0
+    rolloverTarget.annualContribution = 0
+    rolloverTarget.contributionSchedule = undefined
+    const pension = rolloverPlan.accounts.find((account) => account.type === 'pension')!
+    pension.lumpSumOffer = { amount: 250_000, electionYear: horizon }
+    pension.lumpSumElection = { rolloverAccountId: rolloverTarget.id }
+    rolloverPlan.accounts = [rolloverTarget, pension]
+    rolloverPlan.incomes = []
+    rolloverPlan.insurance = []
+    rolloverPlan.strategies.rothConversion = { mode: 'none' }
+    const rolloverAllocation = buildScenarioLever(
+      rolloverPlan,
+      { id: 'allocation', stockPct: 60 },
+      context,
+    )
+
+    const conversionPlan = buildExampleCouple()
+    for (const person of conversionPlan.household.people) {
+      person.longevity.planningAge = horizon - Number(person.dob.slice(0, 4))
+    }
+    const source = conversionPlan.accounts.find((account) => account.type === 'traditional')!
+    source.allocation = {
+      mode: 'static',
+      rebalancing: 'annual',
+      weights: { usStocks: 45, intlStocks: 15, bonds: 40, cash: 0 },
+    }
+    const destination = conversionPlan.accounts.find((account) => account.type === 'roth')!
+    destination.balance = 0
+    destination.annualContribution = 0
+    destination.contributionSchedule = undefined
+    destination.allocation = undefined
+    conversionPlan.accounts = [source, destination]
+    conversionPlan.incomes = []
+    conversionPlan.insurance = []
+    conversionPlan.strategies.rothConversion = {
+      mode: 'manual',
+      conversions: [{ year: horizon, amount: 25_000 }],
+    }
+    const conversionAllocation = buildScenarioLever(
+      conversionPlan,
+      { id: 'allocation', stockPct: 60 },
+      context,
+    )
+
+    expect(contributionReturn.ok).toBe(true)
+    expect(contributionAllocation.ok).toBe(true)
+    expect(rolloverAllocation.ok).toBe(true)
+    expect(conversionAllocation.ok).toBe(true)
   })
 
   it('requires the changed allocation to belong to an account with projected assets', () => {
@@ -2004,6 +2098,79 @@ describe('scenario lever contract', () => {
     expect(inert.ok).toBe(false)
     if (!inert.ok) expect(inert.issues.join(' ')).toContain('zero-value property')
     expect(carryingCost.ok).toBe(true)
+  })
+
+  it('ignores properties sold before the projection when selecting a home sale', () => {
+    const plan = buildExampleCouple()
+    const active = plan.accounts.find((account) => account.type === 'property')!
+    const expired = {
+      ...active,
+      id: 'expired-property',
+      name: 'Previously sold home',
+      plannedSaleYear: context.startYear - 1,
+    }
+    plan.accounts.push(expired)
+
+    const automatic = buildScenarioLever(
+      plan,
+      { id: 'homeSale', saleYear: context.startYear + 2 },
+      context,
+    )
+    const explicitExpired = buildScenarioLever(
+      plan,
+      {
+        id: 'homeSale',
+        propertyId: expired.id,
+        saleYear: context.startYear + 2,
+      },
+      context,
+    )
+
+    expect(automatic.ok).toBe(true)
+    if (automatic.ok) {
+      const applied = applyScenarioPatch(plan, automatic.patch)
+      expect(applied.ok).toBe(true)
+      if (applied.ok) {
+        const activeAfter = applied.plan.accounts.find((account) => account.id === active.id)
+        expect(activeAfter?.type === 'property' ? activeAfter.plannedSaleYear : null).toBe(
+          context.startYear + 2,
+        )
+      }
+    }
+    expect(explicitExpired.ok).toBe(false)
+    if (!explicitExpired.ok) expect(explicitExpired.issues.join(' ')).toContain('cannot be sold again')
+  })
+
+  it('uses the exact-tax property path when deciding whether a sale can fund returns', () => {
+    const plan = buildExampleCouple()
+    const cash = plan.accounts.find((account) => account.type === 'cash')!
+    cash.balance = 0
+    cash.annualContribution = 0
+    cash.annualReturnPct = null
+    const property = plan.accounts.find((account) => account.type === 'property')!
+    property.value = 300_000
+    property.plannedSaleYear = context.startYear + 1
+    property.expectedNetProceeds = 0
+    property.costBasis = 200_000
+    plan.accounts = [cash, property]
+    plan.incomes = []
+    plan.insurance = []
+    plan.strategies.rothConversion = { mode: 'none' }
+
+    const exactTaxSale = buildScenarioLever(
+      plan,
+      { id: 'defaultReturn', returnPct: 4 },
+      context,
+    )
+    delete property.costBasis
+    const zeroLegacyProceeds = buildScenarioLever(
+      plan,
+      { id: 'defaultReturn', returnPct: 4 },
+      context,
+    )
+
+    expect(exactTaxSale.ok).toBe(true)
+    expect(zeroLegacyProceeds.ok).toBe(false)
   })
 
   it('preserves each account stock-region split when changing total stocks', () => {

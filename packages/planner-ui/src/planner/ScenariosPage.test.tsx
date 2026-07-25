@@ -319,6 +319,7 @@ describe('ScenariosPage comparison lifecycle', () => {
       (label) => label.textContent?.startsWith('Move month'),
     )
     const moveMonth = document.getElementById(moveMonthLabel!.htmlFor) as HTMLInputElement
+    expect(moveMonthLabel!.textContent).toBe('Move month (1-12)')
     expect(moveMonth.value).toBe('7')
 
     await act(async () => {

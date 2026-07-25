@@ -157,6 +157,11 @@ function AddScenario() {
       }),
     [kind, params, plan, startYear],
   )
+  const homeSaleProperties = plan.accounts.filter(
+    (account) =>
+      account.type === 'property' &&
+      (account.plannedSaleYear === null || account.plannedSaleYear >= startYear),
+  )
   // The whole "Add a scenario" card is a plan-mutating form — disable it as a
   // unit when read-only, like the entry sections.
   return (
@@ -207,7 +212,7 @@ function AddScenario() {
           <>
             <SelectField label="Destination state" value={params.destinationState} options={US_STATES} onCommit={(v) => set('destinationState', v)} />
             <NumberField label="Move year" value={params.moveYear} min={startYear} max={2200} onCommit={(v) => set('moveYear', Math.round(v ?? startYear))} />
-            <NumberField label="Move month (1â€“12)" value={params.moveMonth} min={1} max={12} onCommit={(v) => set('moveMonth', Math.round(v ?? 7))} />
+            <NumberField label="Move month (1-12)" value={params.moveMonth} min={1} max={12} onCommit={(v) => set('moveMonth', Math.round(v ?? 7))} />
           </>
         ) : null}
         {kind === 'survivorSpending' ? <PercentField label="Couple spending kept in survivor years" value={params.survivorSpendingPct} min={0} max={100} onCommit={(v) => set('survivorSpendingPct', v ?? 70)} /> : null}
@@ -231,15 +236,16 @@ function AddScenario() {
         ) : null}
         {kind === 'homeSale' ? (
           <>
-            {plan.accounts.filter((account) => account.type === 'property').length > 1 ? (
+            {homeSaleProperties.length > 1 ? (
               <SelectField
                 label="Property to sell"
                 value={params.homePropertyId}
                 options={[
                   { value: '', label: 'Choose a property' },
-                  ...plan.accounts
-                    .filter((account) => account.type === 'property')
-                    .map((property) => ({ value: property.id, label: property.name })),
+                  ...homeSaleProperties.map((property) => ({
+                    value: property.id,
+                    label: property.name,
+                  })),
                 ]}
                 onCommit={(value) => set('homePropertyId', value)}
               />

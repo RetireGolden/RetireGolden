@@ -375,12 +375,12 @@ function receivesContributionDuringProjection(
   plan: Plan,
   account: ProjectedBalanceAccount,
   startYear: number,
-  endYear = householdPlanningHorizonYear(plan),
 ): boolean {
   if (!acceptsContributions(account)) return false
   const ownerId = account.ownerPersonId ?? plan.household.people[0]?.id
   const owner = plan.household.people.find((person) => person.id === ownerId)
   if (!owner) return false
+  const endYear = householdPlanningHorizonYear(plan)
   for (let year = startYear; year <= endYear; year++) {
     const age = year - Number(owner.dob.slice(0, 4))
     if (age > owner.longevity.planningAge) continue
@@ -408,7 +408,6 @@ function hasGuaranteedIncomePayoutWindow(
   plan: Plan,
   account: GuaranteedIncomeAccount,
   startYear: number,
-  projectionEndYear = householdPlanningHorizonYear(plan),
 ): boolean {
   if (account.monthlyAmount <= 0) return false
   const ownerId = account.ownerPersonId ?? plan.household.people[0]?.id
@@ -419,6 +418,7 @@ function hasGuaranteedIncomePayoutWindow(
     startCalendarYear,
     account.type === 'annuity' && account.purchase ? account.purchase.year : startYear,
   )
+  const projectionEndYear = householdPlanningHorizonYear(plan)
   const ownerLastAliveYear = Number(owner.dob.slice(0, 4)) + owner.longevity.planningAge
   const lastPaymentYear =
     account.type === 'pension' && account.lumpSumElection && account.lumpSumOffer
@@ -596,8 +596,7 @@ function hasPayableSocialSecurityBenefit(
 }
 
 function hasPotentialGeneralDeposit(plan: Plan, startYear: number): boolean {
-  const endYear = householdPlanningHorizonYear(plan) - 1
-  if (endYear < startYear) return false
+  const endYear = householdPlanningHorizonYear(plan)
   const hasIncome = plan.incomes.some((income) => {
     switch (income.type) {
       case 'wages':
@@ -618,7 +617,7 @@ function hasPotentialGeneralDeposit(plan: Plan, startYear: number): boolean {
   const hasGuaranteedIncome = plan.accounts.some(
     (account) =>
       (account.type === 'pension' || account.type === 'annuity') &&
-      hasGuaranteedIncomePayoutWindow(plan, account, startYear, endYear),
+      hasGuaranteedIncomePayoutWindow(plan, account, startYear),
   )
   if (hasGuaranteedIncome) return true
   const hasActiveOwnedLadder =
@@ -637,7 +636,8 @@ function hasPotentialGeneralDeposit(plan: Plan, startYear: number): boolean {
           account.plannedSaleYear >= startYear &&
           account.plannedSaleYear <= endYear &&
           account.value > 0 &&
-          (account.expectedNetProceeds ?? account.value) > 0,
+          (account.costBasis !== undefined ||
+            (account.expectedNetProceeds ?? account.value) > 0),
     )
   ) {
     return true
@@ -661,12 +661,7 @@ function hasPotentialGeneralDeposit(plan: Plan, startYear: number): boolean {
 
 function holdsProjectedAssets(plan: Plan, account: ProjectedBalanceAccount, startYear: number): boolean {
   const endYear = householdPlanningHorizonYear(plan)
-  const lastGrowthYear = endYear - 1
-  if (
-    account.balance > 0 ||
-    (lastGrowthYear >= startYear &&
-      receivesContributionDuringProjection(plan, account, startYear, lastGrowthYear))
-  ) {
+  if (account.balance > 0 || receivesContributionDuringProjection(plan, account, startYear)) {
     return true
   }
   const depositTarget =
@@ -682,7 +677,7 @@ function holdsProjectedAssets(plan: Plan, account: ProjectedBalanceAccount, star
         candidate.lumpSumOffer !== undefined &&
         candidate.lumpSumOffer.amount > 0 &&
         candidate.lumpSumOffer.electionYear >= startYear &&
-        candidate.lumpSumOffer.electionYear <= lastGrowthYear &&
+        candidate.lumpSumOffer.electionYear <= endYear &&
         candidate.lumpSumElection?.rolloverAccountId === account.id,
     )
   ) {
@@ -698,7 +693,7 @@ function holdsProjectedAssets(plan: Plan, account: ProjectedBalanceAccount, star
       (conversion) =>
         conversion.amount > 0 &&
         conversion.year >= startYear &&
-        conversion.year <= lastGrowthYear,
+        conversion.year <= endYear,
     )
     return (
       activeConversions.length > 0 &&
@@ -711,7 +706,7 @@ function holdsProjectedAssets(plan: Plan, account: ProjectedBalanceAccount, star
   }
   if (strategy.mode === 'fillToTarget') {
     const effectiveStartYear = Math.max(strategy.startYear, startYear)
-    const effectiveEndYear = Math.min(strategy.endYear, lastGrowthYear)
+    const effectiveEndYear = Math.min(strategy.endYear, endYear)
     return (
       effectiveStartYear <= effectiveEndYear &&
       hasRothConversionSources(plan, effectiveStartYear, effectiveEndYear)
@@ -1492,8 +1487,34 @@ export function buildScenarioLever(
       if (request.saleYear < context.startYear) {
         return unavailable(definition, ['Property sale year must be on or after the projection start year.'])
       }
-      const properties = edited.accounts.filter((account) => account.type === 'property')
-      if (properties.length === 0) return unavailable(definition, ['Add a property before modeling a home sale.'])
+      const allProperties = edited.accounts.filter((account) => account.type === 'property')
+      if (allProperties.length === 0) {
+        return unavailable(definition, ['Add a property before modeling a home sale.'])
+      }
+      const expiredProperty =
+        request.propertyId === undefined
+          ? undefined
+          : allProperties.find(
+              (property) =>
+                property.id === request.propertyId &&
+                property.plannedSaleYear !== null &&
+                property.plannedSaleYear < context.startYear,
+            )
+      if (expiredProperty) {
+        return unavailable(definition, [
+          `${expiredProperty.name} was sold before the active projection and cannot be sold again.`,
+        ])
+      }
+      const properties = allProperties.filter(
+        (property) =>
+          property.plannedSaleYear === null ||
+          property.plannedSaleYear >= context.startYear,
+      )
+      if (properties.length === 0) {
+        return unavailable(definition, [
+          'No property remains owned during the active projection.',
+        ])
+      }
       if (request.propertyId === undefined && properties.length > 1) {
         return unavailable(definition, ['Choose a property before modeling a sale when the plan has multiple properties.'])
       }
