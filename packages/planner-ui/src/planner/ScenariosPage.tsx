@@ -101,7 +101,7 @@ function defaultLeverParams(startYear: number): LeverParams {
   }
 }
 
-function leverRequest(kind: ScenarioLeverId, p: LeverParams): ScenarioLeverRequest {
+function leverRequest(kind: ScenarioLeverId, p: LeverParams, plan: Plan): ScenarioLeverRequest {
   switch (kind) {
     case 'retirementAge': return { id: kind, yearsDelta: p.retireAgeDelta }
     case 'spending': return { id: kind, percentChange: p.spendPct }
@@ -129,7 +129,11 @@ function leverRequest(kind: ScenarioLeverId, p: LeverParams): ScenarioLeverReque
     case 'care':
       return {
         id: kind,
-        personId: p.carePersonId || undefined,
+        personId:
+          plan.household.people.length > 1 &&
+          plan.household.people.some((person) => person.id === p.carePersonId)
+            ? p.carePersonId
+            : undefined,
         startAge: p.careStartAge,
         durationYears: p.careYears,
         annualCost: p.careAnnual,
@@ -146,11 +150,26 @@ function AddScenario() {
   const [kind, setKind] = useState<ScenarioLeverId>('retirementAge')
   const [params, setParams] = useState<LeverParams>(() => defaultLeverParams(startYear))
   const [saveError, setSaveError] = useState<string | null>(null)
+  const previousPlanId = useRef(plan.id)
+  const householdPersonIds = plan.household.people.map((person) => person.id).join('\u0000')
+  useEffect(() => {
+    const planChanged = previousPlanId.current !== plan.id
+    previousPlanId.current = plan.id
+    setParams((current) => {
+      if (!current.carePersonId) return current
+      const recipientStillValid =
+        plan.household.people.length > 1 &&
+        plan.household.people.some((person) => person.id === current.carePersonId)
+      return planChanged || !recipientStillValid
+        ? { ...current, carePersonId: '' }
+        : current
+    })
+  }, [householdPersonIds, plan.household.people, plan.id])
   const set = <K extends keyof LeverParams>(key: K, value: LeverParams[K]) =>
     setParams((current) => ({ ...current, [key]: value }))
   const preview = useMemo(
     () =>
-      buildScenarioLever(plan, leverRequest(kind, params), {
+      buildScenarioLever(plan, leverRequest(kind, params, plan), {
         createdAtIso: '2000-01-01T00:00:00.000Z',
         startYear,
         createId: () => 'preview-care-event',
@@ -277,7 +296,7 @@ function AddScenario() {
           disabled={!preview.ok}
           onClick={() => {
             setSaveError(null)
-            const built = buildScenarioLever(plan, leverRequest(kind, params), {
+            const built = buildScenarioLever(plan, leverRequest(kind, params, plan), {
               createdAtIso: new Date().toISOString(),
               startYear,
               createId: newId,

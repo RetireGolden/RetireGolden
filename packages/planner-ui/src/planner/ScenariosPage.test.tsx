@@ -239,6 +239,36 @@ describe('ScenariosPage comparison lifecycle', () => {
     return plan
   }
 
+  async function rerenderWithPlan(plan: Plan) {
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <WorkspaceReadOnlyContext.Provider value={false}>
+            <PlanCtx.Provider value={contextFor(plan)}>
+              <ScenariosPage />
+            </PlanCtx.Provider>
+          </WorkspaceReadOnlyContext.Provider>
+        </MemoryRouter>,
+      )
+    })
+  }
+
+  function planWithoutPerson(plan: Plan, personId: string): Plan {
+    const next = structuredClone(plan)
+    next.household.people = next.household.people.filter((person) => person.id !== personId)
+    next.accounts = next.accounts.filter(
+      (account) => account.ownerPersonId === null || account.ownerPersonId !== personId,
+    )
+    next.incomes = next.incomes.filter(
+      (income) => !('personId' in income) || income.personId !== personId,
+    )
+    next.insurance = next.insurance.filter((policy) =>
+      policy.kind === 'ltc' ? policy.owner !== personId : policy.insured !== personId,
+    )
+    next.careEvents = next.careEvents.filter((event) => event.personId !== personId)
+    return next
+  }
+
   async function advanceComparison() {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(200)
@@ -338,6 +368,81 @@ describe('ScenariosPage comparison lifecycle', () => {
       '32',
       '35',
     ])
+  })
+
+  it('omits a retained care recipient when route reuse navigates to a one-person plan', async () => {
+    const original = await mount()
+    const leverSelect = container.querySelector<HTMLSelectElement>('select')!
+    await act(async () => {
+      leverSelect.value = 'care'
+      leverSelect.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    const recipientLabel = Array.from(container.querySelectorAll('label')).find(
+      (label) => label.textContent === 'Care recipient',
+    )!
+    const recipient = document.getElementById(recipientLabel.htmlFor) as HTMLSelectElement
+    await act(async () => {
+      recipient.value = original.household.people[1]!.id
+      recipient.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+
+    const onePerson = planWithoutPerson(original, original.household.people[1]!.id)
+    onePerson.id = 'one-person-route-plan'
+    onePerson.household.filingStatus = 'single'
+    await rerenderWithPlan(onePerson)
+
+    expect(
+      Array.from(container.querySelectorAll('label')).some(
+        (label) => label.textContent === 'Care recipient',
+      ),
+    ).toBe(false)
+    expect(container.textContent).toContain('/careEvents')
+    const add = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent?.includes('Add scenario'),
+    )
+    expect(add?.disabled).toBe(false)
+    expect(container.textContent).not.toContain(original.household.people[1]!.id)
+  })
+
+  it('clears a retained care recipient when route reuse navigates to a different couple', async () => {
+    const original = await mount()
+    const leverSelect = container.querySelector<HTMLSelectElement>('select')!
+    await act(async () => {
+      leverSelect.value = 'care'
+      leverSelect.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    const recipientLabel = Array.from(container.querySelectorAll('label')).find(
+      (label) => label.textContent === 'Care recipient',
+    )!
+    const recipient = document.getElementById(recipientLabel.htmlFor) as HTMLSelectElement
+    const removedPerson = original.household.people[1]!
+    await act(async () => {
+      recipient.value = removedPerson.id
+      recipient.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+
+    const differentCouple = planWithoutPerson(original, removedPerson.id)
+    differentCouple.id = 'different-couple-route-plan'
+    differentCouple.household.people.push({
+      ...removedPerson,
+      id: 'replacement-household-member',
+      name: 'Replacement household member',
+    })
+    await rerenderWithPlan(differentCouple)
+
+    const nextRecipientLabel = Array.from(container.querySelectorAll('label')).find(
+      (label) => label.textContent === 'Care recipient',
+    )!
+    const nextRecipient = document.getElementById(nextRecipientLabel.htmlFor) as HTMLSelectElement
+    expect(nextRecipient.value).toBe('')
+    expect(Array.from(nextRecipient.options).some((option) => option.value === removedPerson.id)).toBe(
+      false,
+    )
+    expect(container.textContent).toContain('Choose which household member receives care')
+    const add = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent?.includes('Add scenario'),
+    )
+    expect(add?.disabled).toBe(true)
   })
 
   it('writes the selected relocation month into the scenario request', async () => {
