@@ -1560,7 +1560,11 @@ describe('extractDocumentText — a capped page must SETTLE against real pdfjs',
     // there would be no queued producer left to strand. So the premise is
     // asserted directly, through the real streaming API.
     const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
-    await import('pdfjs-dist/legacy/build/pdf.worker.mjs')
+    // Through an indirect specifier, as the module itself does: pdfjs ships no
+    // declaration for the worker entry, so a literal import is a `tsc` error
+    // (TS7016) even though the module resolves fine at run time.
+    const workerEntry = 'pdfjs-dist/legacy/build/pdf.worker.mjs'
+    await import(/* @vite-ignore */ workerEntry)
     const task = pdfjs.getDocument({
       data: buildSyntheticPdf({ pages: [manyItemPage()] }),
       useWorkerFetch: false,
