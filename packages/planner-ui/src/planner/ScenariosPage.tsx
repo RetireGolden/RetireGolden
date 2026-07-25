@@ -101,6 +101,39 @@ function defaultLeverParams(startYear: number): LeverParams {
   }
 }
 
+function rebaseYearRelativeParams(
+  current: LeverParams,
+  previousStartYear: number,
+  nextStartYear: number,
+): LeverParams {
+  if (previousStartYear === nextStartYear) return current
+  const previousDefaults = defaultLeverParams(previousStartYear)
+  const nextDefaults = defaultLeverParams(nextStartYear)
+  const startWasDefault = current.startYear === previousDefaults.startYear
+  const endWasDefault = current.endYear === previousDefaults.endYear
+  const nextRothStart = startWasDefault
+    ? nextDefaults.startYear
+    : Math.max(nextStartYear, current.startYear)
+  const nextRothEnd = endWasDefault
+    ? nextDefaults.endYear
+    : current.startYear < nextStartYear
+      ? Math.max(nextRothStart, nextRothStart + Math.max(0, current.endYear - current.startYear))
+      : Math.max(nextRothStart, current.endYear)
+  return {
+    ...current,
+    startYear: nextRothStart,
+    endYear: nextRothEnd,
+    moveYear:
+      current.moveYear === previousDefaults.moveYear
+        ? nextDefaults.moveYear
+        : Math.max(nextStartYear, current.moveYear),
+    homeSaleYear:
+      current.homeSaleYear === previousDefaults.homeSaleYear
+        ? nextDefaults.homeSaleYear
+        : Math.max(nextStartYear, current.homeSaleYear),
+  }
+}
+
 function eligibleHomeSaleProperties(accounts: Plan['accounts'], startYear: number) {
   return accounts.filter(
     (account) =>
@@ -174,6 +207,7 @@ function AddScenario() {
   const [params, setParams] = useState<LeverParams>(() => defaultLeverParams(startYear))
   const [saveError, setSaveError] = useState<string | null>(null)
   const previousPlanId = useRef(plan.id)
+  const previousStartYear = useRef(startYear)
   const householdPersonIds = useMemo(
     () => new Set(plan.household.people.map((person) => person.id)),
     [plan.household.people],
@@ -188,23 +222,32 @@ function AddScenario() {
   )
   useEffect(() => {
     const planChanged = previousPlanId.current !== plan.id
+    const priorStartYear = previousStartYear.current
     previousPlanId.current = plan.id
+    previousStartYear.current = startYear
     setParams((current) => {
+      const yearSafe = rebaseYearRelativeParams(current, priorStartYear, startYear)
       const recipientStillValid =
         plan.household.people.length > 1 &&
-        householdPersonIds.has(current.carePersonId)
+        householdPersonIds.has(yearSafe.carePersonId)
       const propertyStillValid =
         homeSaleProperties.length > 1 &&
-        homeSalePropertyIds.has(current.homePropertyId)
+        homeSalePropertyIds.has(yearSafe.homePropertyId)
       const clearCareRecipient =
-        current.carePersonId !== '' && (planChanged || !recipientStillValid)
+        yearSafe.carePersonId !== '' && (planChanged || !recipientStillValid)
       const clearHomeProperty =
-        current.homePropertyId !== '' && (planChanged || !propertyStillValid)
-      if (!clearCareRecipient && !clearHomeProperty) return current
+        yearSafe.homePropertyId !== '' && (planChanged || !propertyStillValid)
+      if (
+        yearSafe === current &&
+        !clearCareRecipient &&
+        !clearHomeProperty
+      ) {
+        return current
+      }
       return {
-        ...current,
-        carePersonId: clearCareRecipient ? '' : current.carePersonId,
-        homePropertyId: clearHomeProperty ? '' : current.homePropertyId,
+        ...yearSafe,
+        carePersonId: clearCareRecipient ? '' : yearSafe.carePersonId,
+        homePropertyId: clearHomeProperty ? '' : yearSafe.homePropertyId,
       }
     })
   }, [
@@ -213,6 +256,7 @@ function AddScenario() {
     householdPersonIds,
     plan.household.people.length,
     plan.id,
+    startYear,
   ])
   const set = <K extends keyof LeverParams>(key: K, value: LeverParams[K]) =>
     setParams((current) => ({ ...current, [key]: value }))

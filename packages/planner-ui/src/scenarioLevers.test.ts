@@ -573,6 +573,148 @@ describe('scenario lever contract', () => {
     expect(scheduleResult.ok).toBe(true)
   })
 
+  it('requires post-withholding Social Security benefits for cut and claim-age levers', () => {
+    const plan = buildExampleCouple()
+    const person = plan.household.people[0]!
+    person.dob = '1964-06-15'
+    person.retirementAge = 67
+    person.longevity.planningAge = 66
+    const stream = plan.incomes
+      .filter((income) => income.type === 'socialSecurity')
+      .find((income) => income.personId === person.id)!
+    stream.piaMonthly = 2_000
+    stream.earnings = null
+    stream.claimAge = { years: 62, months: 0 }
+    delete stream.disability
+    stream.formerSpouses = []
+    const wages = plan.incomes.find(
+      (income) => income.type === 'wages' && income.personId === person.id,
+    )!
+    if (wages.type !== 'wages') throw new Error('expected wages')
+    wages.annualGross = 200_000
+    wages.endAge = 67
+    plan.incomes = [wages, stream]
+
+    const withheldCut = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityCut', cutPct: 20, fromYear: context.startYear },
+      context,
+    )
+    const withheldClaim = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityClaim', claimAge: 63 },
+      context,
+    )
+
+    wages.annualGross = 0
+    const payableCut = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityCut', cutPct: 20, fromYear: context.startYear },
+      context,
+    )
+    const payableClaim = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityClaim', claimAge: 63 },
+      context,
+    )
+
+    expect(withheldCut.ok).toBe(false)
+    expect(withheldClaim.ok).toBe(false)
+    expect(payableCut.ok).toBe(true)
+    expect(payableClaim.ok).toBe(true)
+  })
+
+  it('does not expose a Social Security cut while SSDI is suspended by SGA through death', () => {
+    const plan = buildExampleCouple()
+    const person = plan.household.people[0]!
+    person.dob = '1960-06-15'
+    person.retirementAge = 67
+    person.longevity.planningAge = 66
+    const stream = plan.incomes
+      .filter((income) => income.type === 'socialSecurity')
+      .find((income) => income.personId === person.id)!
+    stream.piaMonthly = 2_000
+    stream.earnings = null
+    stream.claimAge = { years: 67, months: 0 }
+    stream.disability = { onsetAge: 55 }
+    stream.formerSpouses = []
+    const wages = plan.incomes.find(
+      (income) => income.type === 'wages' && income.personId === person.id,
+    )!
+    if (wages.type !== 'wages') throw new Error('expected wages')
+    wages.annualGross = 60_000
+    wages.endAge = 67
+    plan.incomes = [wages, stream]
+
+    const suspended = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityCut', cutPct: 20, fromYear: context.startYear },
+      context,
+    )
+    wages.annualGross = 0
+    const payable = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityCut', cutPct: 20, fromYear: context.startYear },
+      context,
+    )
+
+    expect(suspended.ok).toBe(false)
+    expect(payable.ok).toBe(true)
+  })
+
+  it.each([
+    { target: 'topOfBracket' as const, targetValue: 12 },
+    { target: 'irmaaTier' as const, targetValue: 1 },
+    { target: 'acaCliff' as const, targetValue: null },
+    { target: 'fixedMagi' as const, targetValue: 100_000 },
+  ])('requires positive Roth conversion headroom for $target targets', ({ target, targetValue }) => {
+    const plan = buildExampleCouple()
+    plan.incomes = []
+    plan.expenses.baseAnnual = 0
+    plan.expenses.idealAnnual = 0
+    plan.expenses.excessAnnual = 0
+    for (const account of plan.accounts) {
+      if (account.type === 'traditional') account.balance = 1_000_000
+    }
+    const available = buildScenarioLever(
+      plan,
+      {
+        id: 'rothTarget',
+        target,
+        targetValue,
+        startYear: context.startYear,
+        endYear: context.startYear + 2,
+      },
+      context,
+    )
+
+    const wages = buildExampleCouple()
+    for (const person of wages.household.people) {
+      person.retirementAge = 90
+    }
+    for (const income of wages.incomes) {
+      if (income.type === 'wages') {
+        income.annualGross = 500_000
+        income.endAge = 90
+      }
+    }
+    const unavailable = buildScenarioLever(
+      wages,
+      {
+        id: 'rothTarget',
+        target,
+        targetValue: target === 'fixedMagi' ? 10_000 : targetValue,
+        startYear: context.startYear,
+        endYear: context.startYear,
+      },
+      context,
+    )
+
+    expect(available.ok).toBe(true)
+    expect(unavailable.ok).toBe(false)
+    if (!unavailable.ok) expect(unavailable.issues.join(' ')).toContain('headroom')
+  })
+
   it('rejects zero-cost care and relocation after the household horizon', () => {
     const plan = buildExampleCouple()
     const care = buildScenarioLever(
@@ -1519,7 +1661,7 @@ describe('scenario lever contract', () => {
 
   it('allows a zero-percent Social Security cut to remove an effective haircut', () => {
     const plan = buildExampleCouple()
-    plan.assumptions.ssHaircut = { cutPct: 20, fromYear: context.startYear }
+    plan.assumptions.ssHaircut = { cutPct: 100, fromYear: context.startYear }
 
     const result = buildScenarioLever(
       plan,
@@ -2002,7 +2144,10 @@ describe('scenario lever contract', () => {
     const stream = plan.incomes.find((income) => income.type === 'socialSecurity')!
     plan.incomes = [stream]
     stream.piaMonthly = 0
-    stream.earnings = [{ year: 2024, amount: 100_000 }]
+    stream.earnings = Array.from({ length: 35 }, (_, index) => ({
+      year: 1990 + index,
+      amount: 100_000,
+    }))
     stream.formerSpouses = []
     delete stream.disability
 

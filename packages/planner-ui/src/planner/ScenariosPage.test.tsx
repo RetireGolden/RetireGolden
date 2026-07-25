@@ -597,23 +597,50 @@ describe('ScenariosPage comparison lifecycle', () => {
   it('starts a fresh comparison with the new calendar year after a rerender', async () => {
     vi.setSystemTime(new Date('2026-12-31T17:00:00Z'))
     const plan = await mount()
+    const leverSelect = container.querySelector<HTMLSelectElement>('select')!
+    await act(async () => {
+      leverSelect.value = 'rothSchedule'
+      leverSelect.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    const inputFor = (labelText: string) => {
+      const label = Array.from(container.querySelectorAll('label')).find(
+        (candidate) => candidate.textContent === labelText,
+      )!
+      return document.getElementById(label.htmlFor) as HTMLInputElement
+    }
+    expect(inputFor('Start year').value).toBe('2026')
+    expect(inputFor('End year').value).toBe('2030')
+    const inputValueSetter = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      'value',
+    )!.set!
+    await act(async () => {
+      inputValueSetter.call(inputFor('End year'), '2029')
+      inputFor('End year').dispatchEvent(new Event('input', { bubbles: true }))
+    })
     await advanceComparison()
     expect(mockedComparePlans.mock.calls.at(-1)![2].startYear).toBe(2026)
 
     vi.setSystemTime(new Date('2027-01-02T17:00:00Z'))
-    await act(async () => {
-      root.render(
-        <MemoryRouter>
-          <PlanCtx.Provider value={contextFor(plan)}>
-            <ScenariosPage />
-          </PlanCtx.Provider>
-        </MemoryRouter>,
-      )
-    })
+    await rerenderWithPlan(plan)
     await advanceComparison()
 
     expect(mockedComparePlans.mock.calls.at(-1)![2].startYear).toBe(2027)
     expect(mockedCompareScenarios.mock.calls.at(-1)![1].startYear).toBe(2027)
+    expect(inputFor('Start year').value).toBe('2027')
+    expect(inputFor('End year').value).toBe('2030')
+
+    await act(async () => {
+      leverSelect.value = 'relocation'
+      leverSelect.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    expect(inputFor('Move year').value).toBe('2028')
+
+    await act(async () => {
+      leverSelect.value = 'homeSale'
+      leverSelect.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    expect(inputFor('Property sale year').value).toBe('2032')
   })
 
   it('does not inspect or compare a draft that PlanContext marks invalid', async () => {
