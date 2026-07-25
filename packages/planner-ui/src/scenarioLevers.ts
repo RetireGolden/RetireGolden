@@ -88,7 +88,7 @@ export const SCENARIO_LEVER_DEFINITIONS: readonly ScenarioLeverDefinition[] = [
   { id: 'allocation', label: 'All eligible account allocations', declaredPaths: ['/accounts'] },
   { id: 'defaultReturn', label: 'Default return assumption', declaredPaths: ['/assumptions/defaultReturnPct'] },
   { id: 'pension', label: 'All existing pensions', declaredPaths: ['/accounts'] },
-  { id: 'annuity', label: 'All existing annuities', declaredPaths: ['/accounts'] },
+  { id: 'annuity', label: 'All existing owned annuities', declaredPaths: ['/accounts'] },
   {
     id: 'relocation',
     label: 'Relocation',
@@ -246,12 +246,213 @@ function firstIssue(...issues: Array<string | null>): string | null {
   return issues.find((issue): issue is string => issue !== null) ?? null
 }
 
-function hasRothConversionSources(plan: Plan): boolean {
-  return plan.accounts.some((account) => isConvertibleToRoth(account) && account.balance > 0)
+function householdPlanningHorizonYear(plan: Plan): number {
+  return Math.max(
+    ...plan.household.people.map(
+      (person) => Number(person.dob.slice(0, 4)) + person.longevity.planningAge,
+    ),
+  )
+}
+
+function hasWagesInYear(plan: Plan, personId: string, year: number): boolean {
+  const person = plan.household.people.find((candidate) => candidate.id === personId)
+  if (!person) return false
+  const age = year - Number(person.dob.slice(0, 4))
+  if (age > person.longevity.planningAge) return false
+  return plan.incomes.some((income) => {
+    if (income.type !== 'wages' || income.personId !== personId || income.annualGross <= 0) return false
+    const stopAge = income.endAge ?? person.retirementAge
+    return stopAge === null || age < stopAge
+  })
+}
+
+function traditionalReceivesContributionInWindow(
+  plan: Plan,
+  account: Extract<Plan['accounts'][number], { type: 'traditional' }>,
+  startYear: number,
+  endYear: number,
+): boolean {
+  const ownerId = account.ownerPersonId ?? plan.household.people[0]?.id
+  const owner = plan.household.people.find((person) => person.id === ownerId)
+  if (!owner) return false
+  for (let year = startYear; year <= endYear; year++) {
+    const age = year - Number(owner.dob.slice(0, 4))
+    if (age > owner.longevity.planningAge) continue
+    if (account.contributionSchedule && account.contributionSchedule.length > 0) {
+      const activePhase = account.contributionSchedule.some(
+        (phase) =>
+          phase.annualAmount > 0 &&
+          age >= (phase.fromAge ?? 0) &&
+          age <= (phase.toAge ?? 120),
+      )
+      if (activePhase && (account.kind !== 'employer' || hasWagesInYear(plan, owner.id, year))) return true
+    } else if (account.annualContribution > 0 && hasWagesInYear(plan, owner.id, year)) {
+      return true
+    }
+  }
+  return false
+}
+
+function hasRothConversionSources(plan: Plan, startYear: number, endYear: number): boolean {
+  return plan.accounts.some(
+    (account) =>
+      isConvertibleToRoth(account) &&
+      (account.balance > 0 || traditionalReceivesContributionInWindow(plan, account, startYear, endYear)),
+  )
 }
 
 function hasRothDestination(plan: Plan): boolean {
   return plan.accounts.some((account) => account.type === 'roth')
+}
+
+function receivesContributionDuringProjection(
+  plan: Plan,
+  account: Extract<
+    Plan['accounts'][number],
+    { type: 'cash' | 'taxable' | 'equityComp' | 'traditional' | 'roth' | 'hsa' }
+  >,
+  startYear: number,
+): boolean {
+  const ownerId = account.ownerPersonId ?? plan.household.people[0]?.id
+  const owner = plan.household.people.find((person) => person.id === ownerId)
+  if (!owner) return false
+  const endYear = householdPlanningHorizonYear(plan)
+  for (let year = startYear; year <= endYear; year++) {
+    const age = year - Number(owner.dob.slice(0, 4))
+    if (age > owner.longevity.planningAge) continue
+    if (account.contributionSchedule && account.contributionSchedule.length > 0) {
+      const activePhase = account.contributionSchedule.some(
+        (phase) =>
+          phase.annualAmount > 0 &&
+          age >= (phase.fromAge ?? 0) &&
+          age <= (phase.toAge ?? 120),
+      )
+      const isEmployer =
+        (account.type === 'traditional' || account.type === 'roth') &&
+        account.kind === 'employer'
+      if (activePhase && (!isEmployer || hasWagesInYear(plan, owner.id, year))) return true
+    } else if (account.annualContribution > 0 && hasWagesInYear(plan, owner.id, year)) {
+      return true
+    }
+  }
+  return false
+}
+
+function hasPotentialGeneralDeposit(plan: Plan, startYear: number): boolean {
+  const endYear = householdPlanningHorizonYear(plan)
+  const hasIncome = plan.incomes.some((income) => {
+    switch (income.type) {
+      case 'wages':
+        return income.annualGross > 0 && hasWagesInYear(plan, income.personId, startYear)
+      case 'socialSecurity':
+        return (
+          (income.piaMonthly ?? 0) > 0 ||
+          income.earnings?.some((earning) => earning.amount > 0) === true ||
+          (income.earningsProjection?.assumedAnnualEarnings ?? 0) > 0
+        )
+      case 'recurring':
+        return (
+          income.annualAmount > 0 &&
+          (income.endYear === null || income.endYear >= startYear) &&
+          (income.startYear === null || income.startYear <= endYear)
+        )
+      case 'oneTime':
+        return income.amount > 0 && income.year >= startYear && income.year <= endYear
+    }
+  })
+  if (hasIncome) return true
+  if (
+    plan.accounts.some(
+      (account) =>
+        ((account.type === 'pension' || account.type === 'annuity') && account.monthlyAmount > 0) ||
+        (account.type === 'property' &&
+          account.plannedSaleYear !== null &&
+          account.plannedSaleYear >= startYear &&
+          account.plannedSaleYear <= endYear &&
+          (account.value > 0 || (account.expectedNetProceeds ?? 0) > 0)),
+    )
+  ) {
+    return true
+  }
+  return plan.insurance.some(
+    (policy) =>
+      policy.kind === 'permanentLife' &&
+      (policy.deathBenefit > 0 || policy.cashValue > 0),
+  )
+}
+
+function usesDefaultReturn(
+  plan: Plan,
+  account: Plan['accounts'][number],
+  startYear: number,
+): boolean {
+  if (
+    account.type !== 'cash' &&
+    account.type !== 'taxable' &&
+    account.type !== 'equityComp' &&
+    account.type !== 'traditional' &&
+    account.type !== 'roth' &&
+    account.type !== 'hsa'
+  ) {
+    return false
+  }
+  if (
+    account.annualReturnPct !== null ||
+    ('allocation' in account && account.allocation !== undefined)
+  ) {
+    return false
+  }
+  if (account.balance > 0 || receivesContributionDuringProjection(plan, account, startYear)) return true
+
+  const depositTarget =
+    plan.accounts.find((candidate) => candidate.type === 'cash') ??
+    plan.accounts.find((candidate) => candidate.type === 'taxable')
+  if (depositTarget?.id === account.id && hasPotentialGeneralDeposit(plan, startYear)) return true
+
+  if (
+    account.type === 'traditional' &&
+    plan.accounts.some(
+      (candidate) =>
+        candidate.type === 'pension' &&
+        candidate.lumpSumOffer !== undefined &&
+        candidate.lumpSumOffer.amount > 0 &&
+        candidate.lumpSumOffer.electionYear >= startYear &&
+        candidate.lumpSumOffer.electionYear <= householdPlanningHorizonYear(plan) &&
+        candidate.lumpSumElection?.rolloverAccountId === account.id,
+    )
+  ) {
+    return true
+  }
+
+  if (account.type === 'roth' && plan.accounts.find((candidate) => candidate.type === 'roth')?.id === account.id) {
+    const strategy = plan.strategies.rothConversion
+    if (strategy.mode === 'manual') {
+      const activeConversions = strategy.conversions.filter(
+        (conversion) =>
+          conversion.amount > 0 &&
+          conversion.year >= startYear &&
+          conversion.year <= householdPlanningHorizonYear(plan),
+      )
+      if (
+        activeConversions.length > 0 &&
+        hasRothConversionSources(
+          plan,
+          Math.min(...activeConversions.map((conversion) => conversion.year)),
+          Math.max(...activeConversions.map((conversion) => conversion.year)),
+        )
+      ) {
+        return true
+      }
+    }
+    if (
+      strategy.mode === 'fillToTarget' &&
+      hasRothConversionSources(plan, strategy.startYear, strategy.endYear)
+    ) {
+      return true
+    }
+  }
+
+  return false
 }
 
 function finish(
@@ -391,12 +592,19 @@ export function buildScenarioLever(
 
     case 'socialSecurityCut': {
       const inputIssue = firstIssue(
-        validateNumber(request.cutPct, 'Social Security benefit cut', { min: 0, max: 100 }),
+        validateNumber(request.cutPct, 'Social Security benefit cut', {
+          min: 0,
+          max: 100,
+          minExclusive: true,
+        }),
         validateCalendarYear(request.fromYear, 'Social Security cut start year'),
       )
       if (inputIssue) return unavailable(definition, [inputIssue])
       if (!plan.incomes.some((income) => income.type === 'socialSecurity')) {
         return unavailable(definition, ['Add a Social Security income stream before modeling a benefit cut.'])
+      }
+      if (request.fromYear > householdPlanningHorizonYear(plan)) {
+        return unavailable(definition, ['Social Security cut start year must be within the household planning horizon.'])
       }
       edited.assumptions.ssHaircut = {
         fromYear: request.fromYear,
@@ -438,7 +646,7 @@ export function buildScenarioLever(
         targetValueIssue,
       )
       if (inputIssue) return unavailable(definition, [inputIssue])
-      if (!hasRothConversionSources(plan)) {
+      if (!hasRothConversionSources(plan, request.startYear, request.endYear)) {
         return unavailable(definition, ['Add a funded traditional account before modeling Roth conversions.'])
       }
       if (!hasRothDestination(plan)) {
@@ -454,17 +662,35 @@ export function buildScenarioLever(
         startYear: request.startYear,
         endYear: request.endYear,
       }
-      return finish(plan, edited, definition, 'Roth conversions: fill to target', warnings, context)
+      const targetName =
+        request.target === 'topOfBracket'
+          ? `${request.targetValue}% federal bracket`
+          : request.target === 'irmaaTier'
+            ? `IRMAA tier ${request.targetValue}`
+            : request.target === 'acaCliff'
+              ? 'ACA credit cliff'
+              : `fixed MAGI ${request.targetValue?.toLocaleString('en-US')}`
+      return finish(
+        plan,
+        edited,
+        definition,
+        `Roth target: ${targetName}, ${request.startYear}–${request.endYear}`,
+        warnings,
+        context,
+      )
     }
 
     case 'rothSchedule': {
       const inputIssue = firstIssue(
         validateCalendarYear(request.startYear, 'Roth schedule start year'),
         validateCalendarYear(request.endYear, 'Roth schedule end year'),
-        validateNumber(request.annualAmount, 'Annual Roth conversion', { min: 0 }),
+        validateNumber(request.annualAmount, 'Annual Roth conversion', {
+          min: 0,
+          minExclusive: true,
+        }),
       )
       if (inputIssue) return unavailable(definition, [inputIssue])
-      if (!hasRothConversionSources(plan)) {
+      if (!hasRothConversionSources(plan, request.startYear, request.endYear)) {
         return unavailable(definition, ['Add a funded traditional account before modeling Roth conversions.'])
       }
       if (!hasRothDestination(plan)) {
@@ -533,6 +759,12 @@ export function buildScenarioLever(
         maxExclusive: true,
       })
       if (inputIssue) return unavailable(definition, [inputIssue])
+      if (!plan.accounts.some((account) => usesDefaultReturn(plan, account, context.startYear))) {
+        return unavailable(
+          definition,
+          ['No cash or investment account currently uses the default-return assumption.'],
+        )
+      }
       edited.assumptions.defaultReturnPct = request.returnPct
       if (edited.accounts.some((account) => account.annualReturnPct !== null)) {
         warnings.push('Accounts with an explicit annual return are unaffected by the default-return assumption.')
@@ -592,9 +824,14 @@ export function buildScenarioLever(
         }),
       )
       if (inputIssue) return unavailable(definition, [inputIssue])
-      const accounts = edited.accounts.filter((account) => account.type === 'annuity')
+      const accounts = edited.accounts.filter(
+        (
+          account,
+        ): account is Extract<Plan['accounts'][number], { type: 'annuity' }> =>
+          account.type === 'annuity' && account.purchase === undefined,
+      )
       if (accounts.length === 0) {
-        return unavailable(definition, ['Add an existing annuity before using this lever.'])
+        return unavailable(definition, ['Add an existing owned annuity before using this lever.'])
       }
       for (const account of accounts) {
         const nextStartAge = account.startAge + request.startAgeDelta
@@ -607,7 +844,7 @@ export function buildScenarioLever(
         plan,
         edited,
         definition,
-        `All annuities: income ${request.monthlyChangePct >= 0 ? '+' : ''}${request.monthlyChangePct}%, start age ${request.startAgeDelta >= 0 ? '+' : ''}${request.startAgeDelta}y`,
+        `All owned annuities: income ${request.monthlyChangePct >= 0 ? '+' : ''}${request.monthlyChangePct}%, start age ${request.startAgeDelta >= 0 ? '+' : ''}${request.startAgeDelta}y`,
         warnings,
         context,
       )
@@ -631,6 +868,10 @@ export function buildScenarioLever(
       }
       if (state === plan.household.state && plan.household.stateMoves.length === 0) {
         return unavailable(definition, ['The household already lives in that state and has no future moves to replace.'])
+      }
+      const planningHorizonYear = householdPlanningHorizonYear(plan)
+      if (request.moveYear > planningHorizonYear) {
+        return unavailable(definition, ['Move year must be within the household planning horizon.'])
       }
       if (plan.household.stateMoves.length > 0) {
         warnings.push('This scenario replaces the plan’s existing future state moves.')
@@ -674,7 +915,7 @@ export function buildScenarioLever(
         validateCalendarYear(context.startYear, 'Projection start year'),
         validateNumber(request.startAge, 'Care start age', { min: 40, max: 110, integer: true }),
         validateNumber(request.durationYears, 'Care duration', { min: 1, max: 25, integer: true }),
-        validateNumber(request.annualCost, 'Annual care cost', { min: 0 }),
+        validateNumber(request.annualCost, 'Annual care cost', { min: 0, minExclusive: true }),
       )
       if (inputIssue) return unavailable(definition, [inputIssue])
       if (request.personId === undefined && edited.household.people.length > 1) {

@@ -437,6 +437,37 @@ describe('scenario lever contract', () => {
     if (!benefitCut.ok) expect(benefitCut.issues.join(' ')).toContain('Social Security income')
   })
 
+  it('rejects zero-value Roth schedules and Social Security cuts outside the projection', () => {
+    const plan = buildExampleCouple()
+    const horizon = Math.max(
+      ...plan.household.people.map(
+        (person) => Number(person.dob.slice(0, 4)) + person.longevity.planningAge,
+      ),
+    )
+    const zeroRoth = buildScenarioLever(
+      plan,
+      { id: 'rothSchedule', annualAmount: 0, startYear: 2027, endYear: 2029 },
+      context,
+    )
+    const zeroCut = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityCut', cutPct: 0, fromYear: 2034 },
+      context,
+    )
+    const lateCut = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityCut', cutPct: 20, fromYear: horizon + 1 },
+      context,
+    )
+
+    expect(zeroRoth.ok).toBe(false)
+    expect(zeroCut.ok).toBe(false)
+    expect(lateCut.ok).toBe(false)
+    if (!zeroRoth.ok) expect(zeroRoth.issues.join(' ')).toContain('greater than 0')
+    if (!zeroCut.ok) expect(zeroCut.issues.join(' ')).toContain('greater than 0')
+    if (!lateCut.ok) expect(lateCut.issues.join(' ')).toContain('planning horizon')
+  })
+
   it('disables base and survivor spending levers while ABW controls lifestyle spending', () => {
     const plan = buildExampleCouple()
     plan.expenses.spendingPolicy = { mode: 'abw' }
@@ -465,5 +496,184 @@ describe('scenario lever contract', () => {
     expect(result.warnings.join(' ')).toContain('5% flat state-tax override')
     expect(result.warnings.join(' ')).toContain('3% local income-tax rate')
     expect(result.warnings.join(' ')).toContain('including years before the move')
+  })
+
+  it('allows zero-opening-balance traditional sources with modeled contributions in the window', () => {
+    const annual = buildExampleCouple()
+    for (const account of annual.accounts) {
+      if (account.type === 'traditional') account.balance = 0
+    }
+    const annualResult = buildScenarioLever(
+      annual,
+      { id: 'rothSchedule', annualAmount: 10_000, startYear: 2026, endYear: 2026 },
+      context,
+    )
+
+    const scheduled = buildExampleCouple()
+    for (const account of scheduled.accounts) {
+      if (account.type !== 'traditional') continue
+      account.balance = 0
+      account.annualContribution = 0
+      account.contributionSchedule =
+        account.kind === 'ira'
+          ? [{ annualAmount: 8_000, fromAge: 60, toAge: 65, escalationPct: 0 }]
+          : undefined
+    }
+    const scheduleResult = buildScenarioLever(
+      scheduled,
+      { id: 'rothSchedule', annualAmount: 5_000, startYear: 2027, endYear: 2027 },
+      context,
+    )
+
+    expect(annualResult.ok).toBe(true)
+    expect(scheduleResult.ok).toBe(true)
+  })
+
+  it('rejects zero-cost care and relocation after the household horizon', () => {
+    const plan = buildExampleCouple()
+    const care = buildScenarioLever(
+      plan,
+      {
+        id: 'care',
+        personId: plan.household.people[0]!.id,
+        startAge: 85,
+        durationYears: 2,
+        annualCost: 0,
+      },
+      context,
+    )
+    const horizon = Math.max(
+      ...plan.household.people.map(
+        (person) => Number(person.dob.slice(0, 4)) + person.longevity.planningAge,
+      ),
+    )
+    const move = buildScenarioLever(
+      plan,
+      { id: 'relocation', state: 'FL', moveYear: horizon + 1 },
+      context,
+    )
+
+    expect(care.ok).toBe(false)
+    expect(move.ok).toBe(false)
+    if (!care.ok) expect(care.issues.join(' ')).toContain('greater than 0')
+    if (!move.ok) expect(move.issues.join(' ')).toContain('planning horizon')
+  })
+
+  it('enables default-return changes only when a projected balance account uses the fallback', () => {
+    const noFallback = buildExampleCouple()
+    noFallback.accounts = noFallback.accounts.filter(
+      (account) => account.type === 'property' || account.type === 'debt',
+    )
+    const unavailable = buildScenarioLever(
+      noFallback,
+      { id: 'defaultReturn', returnPct: 4 },
+      context,
+    )
+
+    const fallback = buildExampleCouple()
+    fallback.accounts = [
+      {
+        type: 'cash',
+        id: 'fallback-cash',
+        name: 'Fallback cash',
+        ownerPersonId: null,
+        annualReturnPct: null,
+        balance: 1_000,
+        annualContribution: 0,
+      },
+    ]
+    const available = buildScenarioLever(
+      fallback,
+      { id: 'defaultReturn', returnPct: 4 },
+      context,
+    )
+
+    const inert = buildExampleCouple()
+    inert.accounts = [
+      {
+        type: 'cash',
+        id: 'inert-cash',
+        name: 'Inert cash',
+        ownerPersonId: null,
+        annualReturnPct: null,
+        balance: 0,
+        annualContribution: 0,
+      },
+    ]
+    inert.incomes = []
+    inert.insurance = []
+    const inertResult = buildScenarioLever(
+      inert,
+      { id: 'defaultReturn', returnPct: 4 },
+      context,
+    )
+
+    expect(unavailable.ok).toBe(false)
+    if (!unavailable.ok) expect(unavailable.issues.join(' ')).toContain('uses the default-return')
+    expect(available.ok).toBe(true)
+    expect(inertResult.ok).toBe(false)
+    if (!inertResult.ok) expect(inertResult.issues.join(' ')).toContain('uses the default-return')
+  })
+
+  it('changes owned annuities without rewriting future purchase contracts', () => {
+    const plan = planWithGuaranteedIncome()
+    const owned = plan.accounts.find((account) => account.type === 'annuity')!
+    const funding = plan.accounts.find((account) => account.type === 'taxable')!
+    plan.accounts.push({
+      ...owned,
+      id: 'future-annuity',
+      name: 'Future annuity',
+      purchase: {
+        year: 2030,
+        premium: 100_000,
+        fundingAccountId: funding.id,
+        taxQualification: 'nonQualified',
+      },
+    })
+
+    const result = buildScenarioLever(
+      plan,
+      { id: 'annuity', monthlyChangePct: 10, startAgeDelta: 1 },
+      context,
+    )
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const applied = applyScenarioPatch(plan, result.patch)
+    expect(applied.ok).toBe(true)
+    if (!applied.ok) return
+    const ownedAfter = applied.plan.accounts.find((account) => account.id === owned.id)
+    const futureAfter = applied.plan.accounts.find((account) => account.id === 'future-annuity')
+    expect(ownedAfter).toMatchObject({ startAge: owned.startAge + 1, monthlyAmount: owned.monthlyAmount * 1.1 })
+    expect(futureAfter).toEqual(plan.accounts.find((account) => account.id === 'future-annuity'))
+
+    const purchaseOnly = buildExampleCouple()
+    purchaseOnly.accounts.push(plan.accounts.find((account) => account.id === 'future-annuity')!)
+    const unavailable = buildScenarioLever(
+      purchaseOnly,
+      { id: 'annuity', monthlyChangePct: 10, startAgeDelta: 1 },
+      context,
+    )
+    expect(unavailable.ok).toBe(false)
+    if (!unavailable.ok) expect(unavailable.issues.join(' ')).toContain('owned annuity')
+  })
+
+  it('names Roth targets with their target and year window', () => {
+    const plan = buildExampleCouple()
+    const bracket = buildScenarioLever(
+      plan,
+      { id: 'rothTarget', target: 'topOfBracket', targetValue: 24, startYear: 2027, endYear: 2030 },
+      context,
+    )
+    const irmaa = buildScenarioLever(
+      plan,
+      { id: 'rothTarget', target: 'irmaaTier', targetValue: 2, startYear: 2031, endYear: 2032 },
+      context,
+    )
+
+    expect(bracket.ok).toBe(true)
+    expect(irmaa.ok).toBe(true)
+    if (bracket.ok) expect(bracket.name).toBe('Roth target: 24% federal bracket, 2027–2030')
+    if (irmaa.ok) expect(irmaa.name).toBe('Roth target: IRMAA tier 2, 2031–2032')
   })
 })
