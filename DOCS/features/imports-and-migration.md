@@ -183,10 +183,12 @@ leave a window in which a broker refresh can overwrite an advisor-frozen account
 therefore carries a `pending: boolean` alongside the entries (read with `useRefreshProtectionPending()`;
 `useRefreshProtection()` still returns the entry array unchanged). While it is true the panel refuses **both**
 Apply and the file chooser, with a visible explanation naming that cause — distinct from the duplicate-collision
-block. Gating Apply alone would not be enough: choosing a file seeds each row's initial selection, and the
-classification, preview and delta all derive from it, so a file parsed against an unknown protected set would
-default protected rows ON and preview a write that changed once the real set landed. If a host re-enters
-`pending` after a file was parsed, the panel clears that parse for the same reason. `pending` defaults to
+block. The two gates answer different concerns. Apply is refused because applying against an unknown protected
+set is unsafe. The file chooser is refused because a preview built during that window would draw every row as
+unprotected, with none of the "Protected — advisor override" notes, and then rewrite itself when the real set
+arrived — untruthful rather than unsafe, since the panel recomputes every protection-derived value from the live
+context on each render. If a host re-enters `pending` after a file was parsed, the panel clears that parse for
+the same reason. `pending` defaults to
 **false** everywhere it is not supplied, including the no-provider path — the public app mounts no provider and
 its protection is genuinely known (empty), so defaulting to true would permanently disable its Apply.
 

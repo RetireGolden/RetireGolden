@@ -26,15 +26,22 @@
  * touches the advisor's stored override record.
  *
  * A host that resolves protection asynchronously reports `pending` through the
- * same context, and the panel then refuses BOTH the file chooser and Apply. Both,
- * not just Apply: `handleFile` seeds each row's initial selection from a
- * classification against the protected set, and the classification/preview shown
- * afterwards derive from it — so a file parsed while protection is unknown would
- * default protected rows ON and render a preview that silently changes under the
- * user the moment the real set arrives. Refusing the file until protection is
- * known is the honest behaviour. This is a DIFFERENT cause from the
- * duplicate-collision block below (`blocked`, two rows on one plan account), and
- * the two say so separately.
+ * same context, and the panel then refuses BOTH the file chooser and Apply.
+ *
+ * Apply is the SAFETY gate. The chooser is a HONESTY one, and the distinction is
+ * worth keeping straight: nothing about the preview is unsafe while protection is
+ * unknown, because every protection-derived value here — `hostProtectedIds`,
+ * `effective`, `classification`, `safeSelection`, `delta` — is recomputed from the
+ * live context on every render, and the row seeding in `handleFile` never consults
+ * protection at all (see `defaultTarget`, which defaults a protected guess ON on
+ * purpose so its row renders blocked). What a preview built during the window
+ * WOULD do is assert something false: every row drawn as unprotected, no
+ * "Protected — advisor override" notes, and then the table silently rewriting
+ * itself when the real set lands. Refusing the file until protection is known
+ * means the panel never makes a claim it is about to retract.
+ *
+ * This is a DIFFERENT cause from the duplicate-collision block below (`blocked`,
+ * two rows on one plan account), and the two say so separately.
  */
 
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'

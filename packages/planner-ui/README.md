@@ -428,12 +428,15 @@ yet" — so a host reading its overrides from a store would otherwise leave a wi
 in which a broker refresh can overwrite an advisor-frozen account. Pass
 `pending` while the answer is outstanding and the panel refuses **both** the
 file chooser and Apply, with a visible explanation naming that cause (distinct
-from the duplicate-collision block). Both are gated, not just Apply: choosing a
-file seeds each row's selection — and the classification, preview and delta that
-follow — from the protected set, so a file parsed while protection is unknown
-would default protected rows ON and show a preview that silently changed once the
-real set landed. If `pending` goes back to `true` after a file was parsed, the
-panel clears that parse for the same reason. `pending` **defaults to `false`**,
+from the duplicate-collision block). The two gates answer different concerns:
+Apply is refused because applying against an unknown protected set is unsafe,
+while the file chooser is refused because a preview built during that window
+would draw every row as unprotected and then rewrite itself when the real set
+arrived. The preview is never unsafe — the panel recomputes every
+protection-derived value from the live context on each render — only untruthful,
+and the panel should not make a claim it is about to retract. If `pending` goes
+back to `true` after a file was parsed, the panel clears that parse for the same
+reason. `pending` **defaults to `false`**,
 so a host passing only `protectedAccounts` is unchanged, and — since the public
 web app mounts no provider at all — the no-provider path is never gated.
 

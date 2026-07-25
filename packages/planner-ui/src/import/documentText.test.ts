@@ -20,6 +20,107 @@ function expectOk(result: Awaited<ReturnType<typeof extractDocumentText>>) {
   return result
 }
 
+/** Narrow to the failure arm, so a reason can be asserted without a bare `if`. */
+function expectFailed(result: Awaited<ReturnType<typeof extractDocumentText>>) {
+  if (result.ok) throw new Error('expected a failure result, got a successful extraction')
+  return result
+}
+
+/** This module's own source, for the assertions that are about what it says. */
+function readSource(): string {
+  return readFileSync(fileURLToPath(new URL('./documentText.ts', import.meta.url)), 'utf8') as string
+}
+
+// ---------------------------------------------------------------------------
+// An instrumented pdfjs build.
+//
+// Some conditions cannot be reached through the bytes of a document: a page
+// that pdfjs fails on halfway through a readable file, a RangeError raised by
+// the reader rather than by the file, a host that supplies a differently
+// shaped pdfjs. The peer is imported dynamically, so `vi.doMock` can stand a
+// controllable one in its place — the same lever the peer-missing test already
+// pulls — and drive those paths directly.
+// ---------------------------------------------------------------------------
+
+interface FakeGlyphItem {
+  readonly str: string
+  readonly hasEOL?: boolean
+}
+
+interface FakePdfPage {
+  /** Called per `getTextContent`; may be lazy, so consumption can be counted. */
+  readonly items?: () => Iterable<FakeGlyphItem>
+  /** Put an image paint operator in the page's operator list. */
+  readonly imagePainted?: boolean
+  /** Reject `getTextContent` — the page pdfjs cannot read. */
+  readonly failWith?: unknown
+}
+
+interface FakePdfjsSpec {
+  readonly pages?: readonly FakePdfPage[]
+  /** Reject the loading task's promise: a document-level failure. */
+  readonly documentError?: unknown
+  /** Throw synchronously out of `getDocument`, as a mismatched build would. */
+  readonly getDocumentThrows?: unknown
+  /** Ship a build with no `VerbosityLevel`, as a different major might. */
+  readonly omitVerbosityLevel?: boolean
+}
+
+const IMAGE_PAINT_OP = 85
+
+function fakePdfjs(spec: FakePdfjsSpec): Record<string, unknown> {
+  const pages = spec.pages ?? []
+  const makePage = (page: FakePdfPage) => ({
+    getTextContent: () =>
+      page.failWith === undefined
+        ? Promise.resolve({ items: page.items?.() ?? [] })
+        : Promise.reject(page.failWith),
+    getOperatorList: () => Promise.resolve({ fnArray: page.imagePainted ? [IMAGE_PAINT_OP] : [] }),
+    cleanup: () => undefined,
+  })
+  const module: Record<string, unknown> = {
+    OPS: {
+      paintImageXObject: IMAGE_PAINT_OP,
+      paintImageXObjectRepeat: 86,
+      paintInlineImageXObject: 87,
+      paintImageMaskXObject: 88,
+    },
+    getDocument: () => {
+      if (spec.getDocumentThrows !== undefined) throw spec.getDocumentThrows
+      return {
+        promise:
+          spec.documentError === undefined
+            ? Promise.resolve({
+                numPages: pages.length,
+                getPage: (pageNumber: number) => Promise.resolve(makePage(pages[pageNumber - 1]!)),
+              })
+            : Promise.reject(spec.documentError),
+        destroy: () => Promise.resolve(),
+      }
+    },
+  }
+  if (!spec.omitVerbosityLevel) module.VerbosityLevel = { ERRORS: 0 }
+  return module
+}
+
+/** Real PDF bytes, so every pre-parse check passes; the fake ignores them. */
+const REAL_PDF_BYTES = buildSyntheticPdf({ pages: [{ text: 'the fake pdfjs decides what this says' }] })
+
+async function extractWith(
+  spec: FakePdfjsSpec,
+  opts?: Parameters<typeof extractDocumentText>[1],
+): Promise<Awaited<ReturnType<typeof extractDocumentText>>> {
+  vi.resetModules()
+  vi.doMock('pdfjs-dist/legacy/build/pdf.mjs', () => fakePdfjs(spec))
+  const { extractDocumentText: extract } = await import('./documentText')
+  return extract(REAL_PDF_BYTES, opts)
+}
+
+/** An error carrying a pdfjs exception's `name`, which is how they are read. */
+function named(name: string, message: string): Error {
+  return Object.assign(new Error(message), { name })
+}
+
 describe('extractDocumentText — reading the text layer', () => {
   it('extracts a single page of text with its 1-based page number', async () => {
     const pdf = buildSyntheticPdf({ pages: [{ text: 'Vanguard Brokerage Account 1234' }] })
@@ -34,6 +135,7 @@ describe('extractDocumentText — reading the text layer', () => {
     expect(result.summary.noTextExtracted).toBe(false)
     expect(result.summary.truncated).toBe(false)
     expect(result.summary.truncatedBy).toEqual([])
+    expect(result.summary.unreadablePages).toEqual([])
   })
 
   it('cites the right page for each string in a multi-page document', async () => {
@@ -412,6 +514,32 @@ describe('extractDocumentText — caps', () => {
     expect(result.summary.truncatedBy).toContain('document_text_cap')
   })
 
+  it('documents BOTH of the causes that really set DocumentPage.truncated', async () => {
+    // The doc comment is part of a stability-promised surface, so it is held to
+    // the same standard as the code: it said "MAX_PAGE_TEXT_CHARS clipped this
+    // page's text" while the DOCUMENT cap set the same flag, which is a false
+    // description of the flag a consumer branches on.
+    //
+    // First the behaviour it has to describe — no per-page cap in play at all,
+    // and the flag is still set:
+    const pdf = buildSyntheticPdf({ pages: [{ text: 'First page text' }] })
+    const clipped = expectOk(await extractDocumentText(pdf, { maxTotalTextChars: 5 }))
+    expect(clipped.pages[0]!.truncated).toBe(true)
+    expect(clipped.summary.truncatedBy).toEqual(['document_text_cap'])
+    expect(clipped.summary.truncatedBy).not.toContain('page_text_cap')
+
+    // …and then the sentence, which has to name both causes.
+    const source = readSource()
+    const shape = source.slice(
+      source.indexOf('interface DocumentPage'),
+      source.indexOf('export type DocumentTextTruncation'),
+    )
+    const field = shape.indexOf('readonly truncated: boolean')
+    const doc = shape.slice(shape.lastIndexOf('/**', field), field)
+    expect(doc).toContain('MAX_PAGE_TEXT_CHARS')
+    expect(doc).toContain('MAX_DOCUMENT_TEXT_CHARS')
+  })
+
   it('reports no truncation when nothing was clipped', async () => {
     const pdf = buildSyntheticPdf({ pages: [{ text: 'Short enough' }] })
     const result = expectOk(await extractDocumentText(pdf))
@@ -501,7 +629,7 @@ describe('extractDocumentText — local-only, worker-free', () => {
   })
 
   it('never hands pdfjs a URL to fetch — the document is always bytes', () => {
-    const source = readFileSync(fileURLToPath(new URL('./documentText.ts', import.meta.url)), 'utf8') as string
+    const source = readSource()
     // Every pdfjs option that names a fetchable location is a way back onto
     // the network; none may ever be configured here. Local processing is a
     // product promise, so it gets a guard rather than a comment.
@@ -513,6 +641,227 @@ describe('extractDocumentText — local-only, worker-free', () => {
     expect(source).toMatch(/useWorkerFetch:\s*false/)
     expect(source).toMatch(/useSystemFonts:\s*false/)
     expect(source).toMatch(/disableFontFace:\s*true/)
+  })
+})
+
+describe('extractDocumentText — the caps bound the work, not just the answer', () => {
+  afterEach(() => {
+    vi.doUnmock('pdfjs-dist/legacy/build/pdf.mjs')
+    vi.resetModules()
+  })
+
+  it('stops reading a page once the cap is satisfied instead of concatenating all of it', async () => {
+    // The caps used to be applied to a string that had already been built:
+    // every text item on the page was concatenated, THEN sliced. That bounds
+    // the retained text and nothing else — the intermediate is as large as the
+    // page, on the calling thread this module deliberately runs pdfjs on, so
+    // the module header's claim that "the caps below are what keep that
+    // bounded" was not true of memory. This page offers a megabyte in a
+    // thousand items behind a 50-character cap.
+    let itemsRead = 0
+    let charsOffered = 0
+    const result = await extractWith(
+      {
+        pages: [
+          {
+            items: function* () {
+              for (let index = 0; index < 1000; index++) {
+                itemsRead += 1
+                charsOffered += 1000
+                yield { str: 'x'.repeat(1000) }
+              }
+            },
+          },
+        ],
+      },
+      { maxPageTextChars: 50 },
+    )
+
+    // A handful of items is all 50 characters can possibly need. Before the
+    // fix this read all 1000 and held 1,000,000 characters at once.
+    expect(itemsRead).toBeLessThanOrEqual(2)
+    expect(charsOffered).toBeLessThanOrEqual(2000)
+
+    // …and the answer is exactly what the concatenating version produced.
+    const ok = expectOk(result)
+    expect(ok.pages[0]!.text).toBe('x'.repeat(50))
+    expect(ok.pages[0]!.truncated).toBe(true)
+    expect(ok.summary.truncatedBy).toContain('page_text_cap')
+    expect(ok.summary.totalTextChars).toBe(50)
+    // The signals decided from the PRE-truncation text survive the early exit:
+    // a page cut short after one item still had a text layer, so it is neither
+    // image-only nor evidence that the document needs OCR.
+    expect(ok.pages[0]!.imageOnly).toBe(false)
+    expect(ok.summary.noTextExtracted).toBe(false)
+  })
+
+  it('reproduces trim() exactly while reading item by item', async () => {
+    // Applying `trim()` to a string assembled from every item is easy; getting
+    // the same answer while only ever holding a prefix is where a rewrite can
+    // quietly change what a page says. Leading whitespace must not count
+    // against the cap, trailing whitespace must come off, and whitespace that
+    // turns out to be interior must stay.
+    const items = () => [
+      { str: '   ' },
+      { str: '  Ledger' },
+      { str: ' balance  ' },
+      { str: '   ' },
+    ]
+    const whole = expectOk(await extractWith({ pages: [{ items }] }))
+    expect(whole.pages[0]!.text).toBe('Ledger balance')
+    expect(whole.pages[0]!.truncated).toBe(false)
+    expect(whole.summary.totalTextChars).toBe('Ledger balance'.length)
+
+    // Clipped inside the interior gap: the space is kept, because it is only
+    // trailing once nothing follows it.
+    const clipped = expectOk(await extractWith({ pages: [{ items }] }, { maxPageTextChars: 7 }))
+    expect(clipped.pages[0]!.text).toBe('Ledger ')
+    expect(clipped.pages[0]!.truncated).toBe(true)
+
+    // A page of nothing but whitespace is blank, not a page with text.
+    const blank = expectOk(await extractWith({ pages: [{ items: () => [{ str: '   ' }, { str: '\n' }] }] }))
+    expect(blank.pages[0]!.text).toBe('')
+    expect(blank.pages[0]!.imageOnly).toBe(false)
+    expect(blank.summary.noTextExtracted).toBe(true)
+  })
+
+  it('does not call a document corrupt when it was the reading that failed', async () => {
+    // `corrupt` tells the user their file "may be damaged or only partly
+    // downloaded". A RangeError, an allocation failure, or a pdfjs fault it
+    // could not classify itself is no evidence for that sentence, and saying it
+    // anyway sends someone to re-download a file that is perfectly good.
+    const range = expectFailed(await extractWith({ documentError: new RangeError('Invalid string length') }))
+    expect(range.reason).toBe('extraction_failed')
+    expect(range.reason).not.toBe('corrupt')
+    expect(range.message).not.toMatch(/damaged|partly downloaded/i)
+    expect(range.message).not.toBe(range.reason)
+    expect(range.message).toMatch(/[.!]$/)
+
+    // pdfjs's own wrapper for a throw IT could not identify is, by name, not a
+    // finding about the document either.
+    const unknown = expectFailed(
+      await extractWith({ documentError: named('UnknownErrorException', 'Failed to fetch') }),
+    )
+    expect(unknown.reason).toBe('extraction_failed')
+
+    // …and the reasons that ARE about the bytes still say so, in both the
+    // instrumented case and the real one, so the split has not simply moved
+    // every failure to the new reason.
+    const invalid = expectFailed(
+      await extractWith({ documentError: named('InvalidPDFException', 'Invalid PDF structure.') }),
+    )
+    expect(invalid.reason).toBe('corrupt')
+    expect(invalid.message).toMatch(/damaged/i)
+
+    const encrypted = expectFailed(
+      await extractWith({ documentError: named('PasswordException', 'No password given') }),
+    )
+    expect(encrypted.reason).toBe('encrypted')
+  })
+
+  it('keeps the pages it read when one page inside the document cannot be read', async () => {
+    // A damaged page in an otherwise readable statement used to discard the
+    // whole call: page 1's text was thrown away and the user was told the
+    // document was corrupt, which was false of pages 1 and 3.
+    const result = expectOk(
+      await extractWith({
+        pages: [
+          { items: () => [{ str: 'Summary of accounts' }] },
+          { failWith: named('FormatError', 'Bad (uncompressed) stream') },
+          { items: () => [{ str: 'Disclosures' }] },
+        ],
+      }),
+    )
+
+    expect(result.pages.map((page) => [page.page, page.text])).toEqual([
+      [1, 'Summary of accounts'],
+      [3, 'Disclosures'],
+    ])
+    expect(result.summary.totalPages).toBe(3)
+    expect(result.summary.pagesExtracted).toBe(2)
+    expect(result.summary.unreadablePages).toEqual([2])
+    // The failed page is not smuggled into `pages` wearing another page's
+    // clothes: an entry there would read as blank (`text: ''`) or as scanned
+    // (`imageOnly`), and it is neither.
+    expect(result.pages.some((page) => page.page === 2)).toBe(false)
+    expect(result.summary.imageOnlyPages).toBe(0)
+    expect(result.summary.noTextExtracted).toBe(false)
+  })
+
+  it('does not call a document "scanned" when a page nobody could read might have had text', async () => {
+    // Page 1 failed and page 2 is an image. "The whole document yielded no text
+    // at all" is the needs-OCR signal, and it is a claim about page 1 that
+    // nobody is in a position to make.
+    const result = expectOk(
+      await extractWith({
+        pages: [{ failWith: new Error('page 1 is unreadable') }, { imagePainted: true }],
+      }),
+    )
+
+    expect(result.summary.unreadablePages).toEqual([1])
+    expect(result.summary.pagesExtracted).toBe(1)
+    expect(result.pages[0]!.page).toBe(2)
+    expect(result.pages[0]!.imageOnly).toBe(true)
+    expect(result.summary.imageOnlyPages).toBe(1)
+    expect(result.summary.noTextExtracted).toBe(false)
+  })
+
+  it('reports an empty unreadablePages when every page was read', async () => {
+    const result = expectOk(await extractWith({ pages: [{ items: () => [{ str: 'All fine' }] }] }))
+    expect(result.summary.unreadablePages).toEqual([])
+  })
+
+  it('blames the host build, not the document, when the supplied pdfjs is shaped differently', async () => {
+    // The optional peer means a host may supply its own pdfjs. One missing an
+    // API this module uses threw inside the extraction body and came back as
+    // `corrupt` — a verdict about the user's document for what is entirely a
+    // host-integration problem.
+    const missingVerbosity = expectFailed(
+      await extractWith({ omitVerbosityLevel: true, pages: [{ items: () => [{ str: 'readable' }] }] }),
+    )
+    expect(missingVerbosity.reason).toBe('pdfjs_incompatible')
+    expect(missingVerbosity.reason).not.toBe('corrupt')
+    expect(missingVerbosity.message).not.toMatch(/damaged|partly downloaded/i)
+    expect(missingVerbosity.message).toContain('pdfjs-dist')
+    expect(missingVerbosity.message).toMatch(/[.!]$/)
+
+    // A getDocument that rejects the parameter object outright — the other half
+    // of the case the code comment already anticipated — lands the same way. A
+    // conforming build reports a bad document by rejecting the task's promise,
+    // never by throwing out of the call.
+    const rejectsParameters = expectFailed(
+      await extractWith({ getDocumentThrows: new TypeError('Invalid parameter object') }),
+    )
+    expect(rejectsParameters.reason).toBe('pdfjs_incompatible')
+    expect(rejectsParameters.reason).not.toBe('corrupt')
+  })
+})
+
+describe('extractDocumentText — the pdfjs worker module will not load', () => {
+  afterEach(() => {
+    vi.doUnmock('pdfjs-dist/legacy/build/pdf.worker.mjs')
+    vi.resetModules()
+  })
+
+  it('names the worker module rather than claiming pdfjs-dist is not installed', async () => {
+    // Both imports used to sit under one catch, so a build that relocated the
+    // worker subpath — or a bundler that resolves the main entry and not that
+    // one — was reported as "the optional pdfjs-dist package is not installed".
+    // The package IS installed here; only the worker import fails.
+    vi.resetModules()
+    vi.doMock('pdfjs-dist/legacy/build/pdf.worker.mjs', () => {
+      throw new Error("Cannot find module 'pdfjs-dist/legacy/build/pdf.worker.mjs'")
+    })
+
+    const { extractDocumentText: extract } = await import('./documentText')
+    const result = expectFailed(await extract(buildSyntheticPdf({ pages: [{ text: 'Statement' }] })))
+
+    expect(result.reason).toBe('pdfjs_worker_unavailable')
+    expect(result.reason).not.toBe('pdfjs_unavailable')
+    expect(result.message).not.toMatch(/is not installed/i)
+    expect(result.message).toContain('pdfjs-dist')
+    expect(result.message).not.toBe(result.reason)
+    expect(result.message).toMatch(/[.!]$/)
   })
 })
 

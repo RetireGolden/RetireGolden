@@ -924,10 +924,12 @@ describe('UpdateBalancesPanel refresh protection', () => {
  * asynchronously has an interval where an empty `protectedAccounts` would read as
  * "nothing is protected", and a refresh landing in that window could overwrite an
  * advisor-frozen account. `pending` says "not known yet" instead, and the panel
- * refuses BOTH the file and the apply while it is true — not apply alone, because
- * choosing a file seeds each row's selection (and everything derived from it) from
- * the protected set, so a file parsed against an unknown set would default
- * protected rows ON and preview a write that changes when the real set lands.
+ * refuses BOTH the file and the apply while it is true, for two different
+ * reasons: applying against an unknown set is unsafe, while a preview built
+ * during the window is merely untruthful — it would draw every row as
+ * unprotected and then rewrite itself when the real set arrived. (Untruthful,
+ * not unsafe: the panel recomputes every protection-derived value from the live
+ * context each render, and the row seeding never consults protection at all.)
  *
  * The default is `false` everywhere it is not supplied, INCLUDING the no-provider
  * path: the public web app mounts no provider and its protection is genuinely

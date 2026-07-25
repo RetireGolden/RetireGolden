@@ -132,11 +132,42 @@ Eight of the ten total misses are values on scanned pages. The other two are not
 more than their count: `SAMUEL O BRENNAN` abutting a page counter, and `Individual Brokerage` against a
 closed account-type vocabulary. OCR would move neither.
 
+## How it refuses, and who it blames
+
+Honest refusal is WS5's acceptance criterion, so the reason vocabulary distinguishes not just *what*
+went wrong but *whose* problem it is. Nothing here ever throws for a bad document, and nothing blames
+the user's file for a fault that is not in it.
+
+| Reason | What it means |
+|---|---|
+| `encrypted` | Password-protected. |
+| `corrupt` | The bytes are not a readable PDF — reported only on pdfjs's own say-so (an allowlist of its document-fault exceptions), never inferred from an unexplained failure. |
+| `not_pdf` | No `%PDF-` header in the first kilobyte. |
+| `too_large` / `too_many_pages` | A cap fired; the message states the cap that actually fired. |
+| `unreadable_input` | The buffer or view was detached before the call, so no byte was ever read — deliberately not `not_pdf`, which would be a guess dressed up as a finding. |
+| `extraction_failed` | Reading failed for a reason that is not about the document. The file may be perfectly fine. |
+| `pdfjs_unavailable` | The optional `pdfjs-dist` peer is not installed. |
+| `pdfjs_worker_unavailable` | pdfjs-dist **is** installed but its main-thread worker module would not load. |
+| `pdfjs_incompatible` | The host supplied a pdfjs build that does not expose the API this module drives. |
+
+The last three are host-integration problems and say so; none is ever presented to a user as a
+problem with their document. A consumer must treat an unrecognized reason as "could not read this
+document" — the union is open by design, and these three were added after review found the original
+code reporting all of them as `corrupt`.
+
+A page that throws mid-document no longer discards the pages already read. It is recorded in
+`summary.unreadablePages` and left **out** of `pages` entirely, because any entry there would assert
+something false: empty `text` reads as blank and `imageOnly` reads as scanned, and the page is
+neither. For the same reason `noTextExtracted` — the document-level "this needs OCR" signal — is false
+whenever a page could not be read, since it is a claim about pages nobody managed to look at.
+
 ## What extraction handles well
 
 - **Getting the characters out.** Where a text layer exists, 28 of 30 planted values came back and 8 of
-  10 misses were on pages that had no text layer at all. Line breaks survive, multi-column tables come
-  back with their cells separated, and `TJ` kerning arrays reassemble into whole words.
+  10 misses were on pages that had no text layer at all. Line breaks survive and multi-column tables come
+  back with their cells separated. (Not measured: `TJ` kerning arrays. The corpus emits `Tj` only, so
+  whether kerned runs reassemble into whole words is untested here — a real statement is more likely to
+  use `TJ` than this corpus is, so treat the numbers as an optimistic bound on that axis.)
 - **Page citation, within the limits below.** 100% — no value found was attributed to a page it is not
   printed on, across four-page and two-page documents. `DocumentPage.page` is a 1-based integer and
   nothing has to parse a string to recover it.

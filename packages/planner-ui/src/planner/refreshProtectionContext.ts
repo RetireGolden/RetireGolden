@@ -41,7 +41,11 @@
  * indistinguishable from "nothing is protected" — so a refresh applied during
  * that window could overwrite an advisor-frozen account. `pending` lets the host
  * say "not known yet" instead of accidentally saying "nothing", and
- * `UpdateBalancesPanel` refuses both the file and the apply while it is true.
+ * `UpdateBalancesPanel` refuses both the file and the apply while it is true —
+ * the apply because applying against an unknown set is unsafe, the file because a
+ * preview built then would draw every row as unprotected and rewrite itself when
+ * the real set arrived. (The preview is not unsafe, only untruthful: the panel
+ * recomputes every protection-derived value from the live context each render.)
  * The DEFAULT is `false`, deliberately: the public web app mounts no provider at
  * all, and defaulting to `true` would permanently disable its Apply. Absent a
  * provider, protection is known — it is empty — so the no-provider path behaves
