@@ -47,7 +47,7 @@ annual ledger, so a delta reflects optimization quality rather than model differ
 ## CI
 
 [`.github/workflows/owl-parity.yml`](../../.github/workflows/owl-parity.yml) runs the harness on demand
-(`workflow_dispatch`, Actions tab) with a `strict` input that defaults to `true`. It installs Node 22 +
+(`workflow_dispatch`, Actions tab) with a `strict` input that defaults to `true`. It installs Node 24 +
 Python 3.12, runs `npm run owl-parity -- --install-owl [--strict-owl]`, and uploads
 `app/artifacts/owl-parity` as a workflow artifact (14-day retention) — the report is the reviewable
 output.

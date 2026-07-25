@@ -594,8 +594,52 @@ function failure(reason: DocumentTextFailureReason, context?: FailureContext): D
   return { ok: false, reason, message: failureMessage(reason, context) }
 }
 
-/** The pdfjs API surface this module drives. */
-type PdfjsModule = typeof import('pdfjs-dist/legacy/build/pdf.mjs')
+/**
+ * The pdfjs API surface this module drives, described STRUCTURALLY rather than
+ * as `typeof import('pdfjs-dist/...')`.
+ *
+ * A type query would make the optional peer mandatory for TypeScript even
+ * though it is optional at run time: the compiler has to resolve the package to
+ * answer the query, so a consumer who imports this subpath without installing
+ * `pdfjs-dist` gets TS2307 while the code itself would have run and returned
+ * `pdfjs_unavailable`. This package ships `.ts` source, so `skipLibCheck` does
+ * not spare them either — the error lands in their own build. That is the same
+ * blind spot the bundler had, in a different tool: the import is erased at run
+ * time, and a type that names it is not.
+ *
+ * Nothing is lost by describing it here. Every member is validated on the real
+ * object by {@link pdfjsShapeProblem} before a byte is parsed, precisely because
+ * the peer is host-supplied and a type is not evidence about it.
+ */
+interface PdfjsModule {
+  getDocument: (params: {
+    data: Uint8Array
+    useWorkerFetch: boolean
+    useSystemFonts: boolean
+    disableFontFace: boolean
+    verbosity: unknown
+  }) => PdfLoadingTask
+  VerbosityLevel: { ERRORS: unknown }
+  OPS: Record<string, number>
+}
+
+/** The loading task `getDocument` returns, structurally. */
+interface PdfLoadingTask {
+  readonly promise: Promise<PdfDocument>
+  destroy: () => Promise<void>
+}
+
+/** The document API this module drives, structurally. */
+interface PdfDocument {
+  readonly numPages: number
+  getPage: (pageNumber: number) => Promise<PdfPage>
+}
+
+/** The page API, beyond the text members {@link PdfPageText} describes. */
+interface PdfPage extends PdfPageText {
+  getOperatorList: () => Promise<{ fnArray: readonly number[] }>
+  cleanup: () => void
+}
 
 /**
  * The peer's entry points, held in variables instead of being written as
