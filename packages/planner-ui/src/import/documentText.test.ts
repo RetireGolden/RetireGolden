@@ -587,6 +587,17 @@ describe('extractDocumentText — which raster operator pdfjs chose', () => {
     expect(empty.summary.noTextExtracted).toBe(false)
   })
 
+  it('honours a legacy operator an older host build emits', async () => {
+    // pdfjs 6 has no paintJpegXObject — a JPEG XObject is decoded and painted as
+    // an ordinary paintImageXObject there. But the peer is host-supplied, and an
+    // older build a host pins does emit it, so it is recognised when present.
+    const host = fakePdfjs({ pages: [{ imagePainted: true, paintOp: 93 }] })
+    ;(host['OPS'] as Record<string, number>)['paintJpegXObject'] = 93
+    const result = expectOk(await extractDocumentText(REAL_PDF_BYTES, { pdfjs: host }))
+    expect(result.pages[0]!.imageOnly).toBe(true)
+    expect(result.summary.noTextExtracted).toBe(true)
+  })
+
   it('accepts a build missing the optimized operators rather than calling it incompatible', async () => {
     // The grouped variants have come and gone across pdfjs versions. A build
     // without one is usable; refusing it would report a working pdfjs as broken.

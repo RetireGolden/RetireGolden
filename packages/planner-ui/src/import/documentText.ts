@@ -829,6 +829,12 @@ const IMAGE_PAINT_OPS = [
   'paintImageMaskXObjectGroup',
   'paintImageMaskXObjectRepeat',
   'paintSolidColorImageMask',
+  // Not in pdfjs 6 — a JPEG XObject there is decoded and painted as an ordinary
+  // `paintImageXObject` (verified against 6.1.200 with a real DCTDecode image).
+  // Listed because the peer is HOST-supplied: an older build a host pins does
+  // emit this, and a name the build does not expose costs nothing, since the
+  // lookup below keeps only the operators that resolve to a number.
+  'paintJpegXObject',
 ] as const
 
 /**
