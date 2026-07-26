@@ -791,6 +791,25 @@ describe('buildMigrationReview', () => {
     expect(items).toEqual([])
   })
 
+  it('a CONTRADICTION survives a successful map, because nothing else would raise it', () => {
+    // The mapped path emits nothing — except this. `projectionLab.ts` never
+    // reads `meta.app`, so a file whose SHAPE says ProjectionLab and whose own
+    // LABEL says eMoney would otherwise be mapped with nobody told about the
+    // conflict: the mapper's checklist cannot supply a warning about a field it
+    // does not look at. `unmapped` is the right status here, unlike the plain
+    // identification note — this is a question the reviewer has to answer.
+    const found = identifyMigrationExport(projectionLabExport({ meta: { app: 'eMoney' } }))
+    const items = buildMigrationReview(found, 'export.json', { mapped: true })
+    expect(items).toHaveLength(1)
+    expect(items[0]!.detail).toContain('does not name ProjectionLab')
+    expect(items[0]!.detail).toMatch(/never reads this field/)
+    expect(roundTrip(items).ok).toBe(true)
+
+    // A mapped file with NO conflict still says nothing at all.
+    const clean = identifyMigrationExport(projectionLabExport({ meta: { app: 'ProjectionLab' } }))
+    expect(buildMigrationReview(clean, 'export.json', { mapped: true })).toEqual([])
+  })
+
   it('THE CLAIM MUST BE EARNED: recognising the shape is not evidence the mapper ran', () => {
     // Nothing in this module invokes a mapper. A host can identify a file and
     // build the report without ever calling mapProjectionLabExport, and that

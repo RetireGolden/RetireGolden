@@ -784,9 +784,12 @@ export interface MigrationReviewOptions {
    * multi-source envelope has to say. Single-source callers leave it off, which
    * is what the default already means.
    *
-   * Only leaf locators can carry it: `{ kind: 'none' }` has no `sourceIndex`
-   * field in the contract, so page citations cannot be attributed this way, and
-   * a document is a single source in every flow that exists today.
+   * EVERY leaf carries it, `none` included — page citations, limitations and
+   * manual-path entries all get structural attribution. That was not true when
+   * this option was introduced (the contract had no field for it on `none`, so
+   * the majority of this module's output went unattributed); the contract was
+   * extended rather than the gap papered over. `derived` is the one exception,
+   * because the contract puts the index on the leaves it is built from.
    */
   sourceIndex?: number
 }
@@ -794,10 +797,8 @@ export interface MigrationReviewOptions {
 /**
  * Stamp a provenance source index onto a leaf locator that can hold one.
  *
- * `none` is deliberately untouched: the contract gives it no `sourceIndex`, and
- * adding one would put a field on a locator that downstream validators do not
- * expect. `derived` is untouched too — the contract puts the index on the leaves
- * it is built from, not on the wrapper.
+ * `derived` is the only kind left alone: the contract puts the index on the
+ * leaves a derivation is built from, not on the wrapper.
  */
 function withSourceIndex(locator: SourceLocator, sourceIndex?: number): SourceLocator {
   if (sourceIndex === undefined) return locator
@@ -831,23 +832,25 @@ function unmappedItem(source: string, detail: string, locator: SourceLocator): I
 
 function evidenceItems(candidate: MigrationCandidate, sourceName: string, lead: string): ImportReviewItem[] {
   return candidate.evidence.map((evidence, index) =>
-    unmappedItem(
-      `${sourceName} — ${candidate.adapter.displayName}`,
-      index === 0
-        ? // The closing sentence has to differ between the two paths or it
-          // contradicts the one it does not fit. On the identify-only path
-          // "nothing was mapped on the strength of it" is the point of the whole
-          // report; on the mapped path the lead has just said the file WAS
-          // mapped, so the same words read as a denial of the sentence before
-          // them. What is true in both cases is narrower: this identification
-          // item is not itself a mapped value.
-          `${lead} The claim rests on this: ${MIGRATION_EVIDENCE_CLAIM[evidence.strength]}. Matched: “${evidence.matched}”. Check it — nothing was mapped on the strength of it.`
-        : evidence.contradicts === true
-          ? `Against it: the file's own label says “${evidence.matched}”, which does not name ${candidate.adapter.displayName}. The identification stands on the file's structure — a shape is far harder to have by accident than a label — but this is here because you should see it.`
-          : `Also matched: “${evidence.matched}”.`,
-      evidence.locator,
-    ),
+    unmappedItem(`${sourceName} — ${candidate.adapter.displayName}`, `${index === 0 ? `${lead} ` : ''}${evidenceBody(evidence, candidate)}`, evidence.locator),
   )
+}
+
+/**
+ * What one piece of evidence SAYS, independent of where it sits in the list.
+ *
+ * The two used to be tangled: contradiction wording was reachable only from
+ * index > 0, so the moment a contradiction became the FIRST item — which is
+ * exactly what happens on the mapped path, where it is the only item — it was
+ * rendered as though it supported the identification, and closed with "nothing
+ * was mapped on the strength of it" on a file that had just been mapped.
+ * Position decides whether the lead sentence is prepended; nothing else.
+ */
+function evidenceBody(evidence: MigrationEvidence, candidate: MigrationCandidate): string {
+  if (evidence.contradicts === true) {
+    return `Against it: the file's own label says “${evidence.matched}”, which does not name ${candidate.adapter.displayName}. The identification stands on the file's structure — a shape is far harder to have by accident than a label — but this is here because you should see it.`
+  }
+  return `The claim rests on this: ${MIGRATION_EVIDENCE_CLAIM[evidence.strength]}. Matched: “${evidence.matched}”. Check it — nothing was mapped on the strength of it.`
 }
 
 /**
@@ -972,7 +975,27 @@ export function buildMigrationReview(
   // sentence. So when a real mapper handled the file, ITS checklist is the
   // report and this module has nothing to add. The unmapped report exists for
   // what did not map.
-  if (mapper !== null) return []
+  if (mapper !== null) {
+    // Almost nothing — but not nothing. A CONTRADICTION survives, because it is
+    // the one thing here that is genuinely outstanding and the one thing the
+    // mapper's checklist cannot supply: `projectionLab.ts` never reads
+    // `meta.app`, so a file whose SHAPE says ProjectionLab and whose own LABEL
+    // says eMoney would be mapped with nobody told about the conflict.
+    //
+    // Returning a flat `[]` was right about the identification note — no value
+    // landed and nothing is outstanding, so no status in the vocabulary fits it
+    // — and wrong about this, where `unmapped` is exactly right: a question the
+    // reviewer has to answer before trusting what was mapped.
+    const conflicts = evidence.filter((item) => item.contradicts === true)
+    if (conflicts.length === 0) return []
+    return stamp(
+      evidenceItems(
+        { ...identification, evidence: conflicts },
+        sourceName,
+        `Identified as a ${adapter.displayName} export by its structure and mapped by the ${mapper} import — but the file says something else about itself, and that import never reads this field, so it is raised here.`,
+      ),
+    )
+  }
 
   items.push(
     ...evidenceItems(identification, sourceName, `Identified as a ${adapter.displayName} file. Nothing was mapped from it.`),
