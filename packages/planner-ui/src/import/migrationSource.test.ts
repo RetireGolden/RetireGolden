@@ -8,6 +8,7 @@ import {
   MAX_MIGRATION_TEXT_CHARS,
   MIGRATION_ADAPTERS,
   MIGRATION_VENDORS,
+  NO_FORMAT_MANUAL_PATH,
   type MigrationIdentification,
   type PageReadState,
   buildMigrationReview,
@@ -185,6 +186,28 @@ describe('published evidence contains only characters the file contained', () =>
     const pages = [docPage(1, 'Generated with RightCapital')]
     const items = buildMigrationReview(identifyMigrationDocument(pages), `${String.fromCharCode(0xdc00)}report.pdf`, { pages })
     expect(items[0]!.source).toContain('<U+DC00>')
+  })
+})
+
+describe('an oversized export', () => {
+  it('says it is too large rather than saying nothing, and still offers a way in', () => {
+    // Two earlier answers were both wrong, in opposite directions. Scanning the
+    // oversized body for names reported a file the ProjectionLab mapper had
+    // refused ON SIZE as a file of unsubstantiated format — true sentence, wrong
+    // problem. Then returning null produced no report at all, which made the
+    // manual path for "the mapper would not take it" unreachable for the very
+    // input that reaches it most.
+    const huge = `{"currentFinances":{"accounts":[]},"pad":"${'x'.repeat(MAX_MIGRATION_TEXT_CHARS)}"}`
+    const found = identifyMigrationExport(huge)
+    expect(found?.outcome).toBe('too-large')
+
+    const items = buildMigrationReview(found, 'big-export.json')
+    expect(items).toHaveLength(1)
+    // No vendor is claimed, because none was looked for.
+    for (const vendor of MIGRATION_VENDORS) expect(items[0]!.detail).not.toContain(MIGRATION_ADAPTERS[vendor].displayName)
+    expect(items[0]!.detail).toMatch(/nothing about it was examined/)
+    expect(items[0]!.detail).toContain(NO_FORMAT_MANUAL_PATH)
+    expect(roundTrip(items).ok).toBe(true)
   })
 })
 
@@ -689,9 +712,12 @@ describe('identifyMigrationExport', () => {
   it('does not throw on hostile or malformed input', () => {
     expect(() => identifyMigrationExport('{"currentFinances":')).not.toThrow()
     expect(identifyMigrationExport(`{"currentFinances":{"accounts":[]}} ${'x'.repeat(10)}`)).toBeNull()
-    // Past the cap, the file is not parsed at all — identification must not
-    // claim a file the mapper would refuse on size alone.
-    expect(identifyMigrationExport('x'.repeat(MAX_MIGRATION_TEXT_CHARS + 1))).toBeNull()
+    // Past the cap the file is neither parsed nor scanned, so no vendor can be
+    // claimed — but the answer is `too-large` rather than `null`, because "we
+    // did not look" is a different fact from "we looked and found nothing", and
+    // only the first still owes the reader a way in. See the oversized-export
+    // suite for the report it produces.
+    expect(identifyMigrationExport('x'.repeat(MAX_MIGRATION_TEXT_CHARS + 1))?.outcome).toBe('too-large')
   })
 })
 

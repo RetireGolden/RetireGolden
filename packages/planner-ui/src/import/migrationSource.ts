@@ -276,6 +276,23 @@ export interface MigrationCandidate {
 export type MigrationIdentification =
   | ({ outcome: 'identified' } & MigrationCandidate)
   | { outcome: 'ambiguous'; candidates: readonly MigrationCandidate[] }
+  /**
+   * The file is past {@link MAX_MIGRATION_TEXT_CHARS}, so NOTHING was inspected
+   * — not its shape, not its text, not which tool made it.
+   *
+   * A third outcome rather than `null`, because the two earlier answers were
+   * both wrong and in opposite directions. Scanning an oversized body for names
+   * reported a file the ProjectionLab mapper had refused ON SIZE as a file of
+   * unsubstantiated format — a true sentence about a different problem. Then
+   * returning `null` produced no report at all, which left the manual path for
+   * "the mapper ran and would not take it" unreachable for the one input that
+   * reaches it most.
+   *
+   * "Too large to look at" is its own fact and the only honest one available
+   * here. It claims no vendor, costs a length check, and still carries the
+   * manual path.
+   */
+  | { outcome: 'too-large'; chars: number }
 
 /**
  * A page citation as the provenance contract can express it. See the module
@@ -620,7 +637,7 @@ export function identifyMigrationExport(text: string): MigrationIdentification |
   // unmapped file of unsubstantiated format, which is a different and untrue
   // account of what happened. It also meant four regex passes over an input
   // already known to be past the limit.
-  if (text.length > MAX_MIGRATION_TEXT_CHARS) return null
+  if (text.length > MAX_MIGRATION_TEXT_CHARS) return { outcome: 'too-large', chars: text.length }
   const structural = projectionLabStructure(text)
   if (structural !== null) {
     // A structural match ends the scan: see `MigrationIdentification` on why a
@@ -880,6 +897,20 @@ export function buildMigrationReview(
           item.locator === undefined ? item : { ...item, locator: withSourceIndex(item.locator, options.sourceIndex) },
         )
   const items: ImportReviewItem[] = []
+
+  if (identification.outcome === 'too-large') {
+    // No vendor is claimed, because none was looked for. The manual path is the
+    // whole point of still emitting something: this is precisely the file the
+    // ProjectionLab mapper refuses on size, and the report is where the reader
+    // finds out there is another way in.
+    return stamp([
+      unmappedItem(
+        `${sourceName} — too large to inspect`,
+        `This file is ${identification.chars.toLocaleString('en-US')} characters, past the ${MAX_MIGRATION_TEXT_CHARS.toLocaleString('en-US')} this reader will look at, so nothing about it was examined — not its structure, not its text, not which tool produced it. That is a statement about its size and nothing else. ${NO_FORMAT_MANUAL_PATH}`,
+        { kind: 'none', note: `${identification.chars.toLocaleString('en-US')} characters` },
+      ),
+    ])
+  }
 
   if (identification.outcome === 'ambiguous') {
     const names = identification.candidates.map((candidate) => candidate.adapter.displayName)

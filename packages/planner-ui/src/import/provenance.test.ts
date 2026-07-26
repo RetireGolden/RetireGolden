@@ -186,6 +186,30 @@ describe('serializeImportProvenance / parseImportProvenance', () => {
     expect(parseImportProvenance(JSON.stringify(none)).ok).toBe(true)
   })
 
+  it('a none locator can name its source, and says so when described', () => {
+    // Added for reports built mostly of `none` locators: without an index every
+    // page citation resolves to sources[0], so two files both file their notes
+    // against the first. The display helper must render it too — otherwise a
+    // consumer shows "page 1" for both and the attribution is undone on screen.
+    const input = sampleInput()
+    const two = {
+      ...input,
+      sources: [...input.sources, { file: 'second.pdf', sha256: 'b'.repeat(64), bytes: 10, mapper: 'migrationSource' }],
+      unresolved: [
+        { source: 'x', detail: 'y', locator: { kind: 'none' as const, note: 'page 1', sourceIndex: 1 }, confidence: 'unmapped' as const },
+      ],
+    }
+    const parsed = parseImportProvenance(serializeImportProvenance(two))
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) throw new Error('expected a parse')
+    expect(parsed.provenance.unresolved[0]!.locator).toMatchObject({ kind: 'none', note: 'page 1', sourceIndex: 1 })
+    expect(describeSourceLocator(parsed.provenance.unresolved[0]!.locator)).toBe('page 1 (source 1)')
+
+    // An index naming no entry is still refused, exactly like a coordinate leaf.
+    const dangling = { ...two, unresolved: [{ ...two.unresolved[0]!, locator: { kind: 'none' as const, note: 'p', sourceIndex: 9 } }] }
+    expect(() => serializeImportProvenance(dangling)).toThrow()
+  })
+
   it('rejects misfiled entries and malformed envelope metadata', () => {
     const valid = JSON.parse(serializeImportProvenance(sampleInput())) as Record<string, unknown>
     const corruptions: Array<Record<string, unknown>> = [

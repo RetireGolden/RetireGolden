@@ -108,13 +108,17 @@ brought over from it, and emits the unmapped report. It maps no fields itself.
 | **eMoney** | Same. | **Nothing.** | Everything. Same reason. |
 | **MoneyGuide** | Same (`MoneyGuidePro` too, whose product name a bare word boundary would miss). | **Nothing.** | Everything. Same reason. |
 
-**For three of the four, we identify the document and carry its TEXT across with page citations while
-mapping nothing.** That is a statement about the format, not about the data. RetireGolden holds no
+**For three of the four, we identify the document and name the pages worth reading, while mapping
+nothing.** Note what the migration report does NOT do: it never carries the page text. Only bounded
+name excerpts and page numbers become review items — the extracted `DocumentPage[]` is the caller's
+to keep, and a host that discards it after building the review has nothing left to show beside the
+planner screens. (Pro keeps it: WS5's document reader emits the per-page notes separately.) Mapping
+nothing is a statement about the format, not about the data. RetireGolden holds no
 documented machine-readable export from RightCapital, eMoney or MoneyGuide, and this project does not
 bundle proprietary samples — so there is no shape to sniff and no field mapping that could be
 justified. Inventing one is the failure mode that actually costs a user something: it lands wrong
-numbers in a plan while looking like a successful import. Identification plus the source text beside
-the planner screens is the honest position, not a placeholder. **What would change it:** a real
+numbers in a plan while looking like a successful import. Identification, plus the pages named so the source can be read
+beside the planner screens, is the honest position — not a placeholder. **What would change it:** a real
 export from a trial account, checked in as a substantiated format with its own fixtures and version
 sniffing. Then, and only then, field mapping is in scope.
 

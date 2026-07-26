@@ -548,6 +548,9 @@ export function describeSourceLocator(locator: SourceLocator): string {
       return locator.note ? `derived from ${parts} (${locator.note})` : `derived from ${parts}`
     }
     case 'none':
-      return locator.note
+      // `none` renders the index too, now that it can carry one. Without this a
+      // page citation from two different files both read "page 1" — the public
+      // display helper quietly undoing the attribution the field exists for.
+      return `${locator.note}${inSource}`
   }
 }
