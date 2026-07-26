@@ -57,6 +57,11 @@ export interface ScenarioPlanComparisonOptions {
     seed: number
     stochasticLongevity?: boolean
     ltcShock?: LtcShockParams | null
+    /**
+     * Reports actual completed plan-path simulations across baseline and
+     * proposal. The total is always `2 * pathCount`.
+     */
+    onProgress?: (completed: number, total: number) => void
   }
   /**
    * Optional because the exact-ledger bisection is intentionally much more
@@ -584,6 +589,7 @@ export function compareScenarioPlans(
       seed: options.stochastic.seed,
       stochasticLongevity: options.stochastic.stochasticLongevity,
       ltcShock: options.stochastic.ltcShock,
+      onProgress: options.stochastic.onProgress,
     }
     const shared = comparePlansOnSharedMarketPaths(
       [

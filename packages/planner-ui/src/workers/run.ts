@@ -12,6 +12,14 @@ export type WorkerMessageOutcome<TResult> =
   /** Keep listening (e.g. progress messages). */
   | { kind: 'progress' }
 
+const WORKER_REQUEST_ABORT_MESSAGE = 'Worker request was aborted.'
+
+export function createWorkerRequestAbortError(): Error {
+  const error = new Error(WORKER_REQUEST_ABORT_MESSAGE)
+  error.name = 'AbortError'
+  return error
+}
+
 export function runWorkerRequest<TReq, TMsg, TResult>(options: {
   request: TReq
   /**
@@ -24,22 +32,74 @@ export function runWorkerRequest<TReq, TMsg, TResult>(options: {
   errorLabel: string
   /** Observe the spawned worker (e.g. so a pool can terminate siblings). */
   onSpawn?: (worker: Worker) => void
+  /** Abort terminates an active worker and rejects with an `AbortError`. */
+  signal?: AbortSignal
 }): Promise<TResult> {
-  const { request, createWorker, interpret, errorLabel, onSpawn } = options
+  const { request, createWorker, interpret, errorLabel, onSpawn, signal } = options
   return new Promise((resolve, reject) => {
-    const worker = createWorker()
-    onSpawn?.(worker)
-    worker.onmessage = (event: MessageEvent<TMsg>) => {
-      const outcome = interpret(event.data)
-      if (outcome.kind === 'progress') return
+    if (signal?.aborted) {
+      reject(createWorkerRequestAbortError())
+      return
+    }
+
+    let settled = false
+    let worker: Worker
+    const cleanup = () => {
+      signal?.removeEventListener('abort', abort)
+      worker.onmessage = null
+      worker.onerror = null
+    }
+    const rejectOnce = (error: Error) => {
+      if (settled) return
+      settled = true
+      cleanup()
       worker.terminate()
-      if (outcome.kind === 'done') resolve(outcome.result)
-      else reject(new Error(outcome.message))
+      reject(error)
+    }
+    const resolveOnce = (result: TResult) => {
+      if (settled) return
+      settled = true
+      cleanup()
+      worker.terminate()
+      resolve(result)
+    }
+    function abort() {
+      rejectOnce(createWorkerRequestAbortError())
+    }
+
+    try {
+      worker = createWorker()
+    } catch (error) {
+      reject(error)
+      return
+    }
+    worker.onmessage = (event: MessageEvent<TMsg>) => {
+      if (settled) return
+      let outcome: WorkerMessageOutcome<TResult>
+      try {
+        outcome = interpret(event.data)
+      } catch (error) {
+        rejectOnce(error instanceof Error ? error : new Error(String(error)))
+        return
+      }
+      if (outcome.kind === 'progress') return
+      if (outcome.kind === 'done') resolveOnce(outcome.result)
+      else rejectOnce(new Error(outcome.message))
     }
     worker.onerror = (event) => {
-      worker.terminate()
-      reject(new Error(event.message || errorLabel))
+      rejectOnce(new Error(event.message || errorLabel))
     }
-    worker.postMessage(request)
+    signal?.addEventListener('abort', abort, { once: true })
+    if (signal?.aborted) {
+      abort()
+      return
+    }
+    try {
+      onSpawn?.(worker)
+      if (settled) return
+      worker.postMessage(request)
+    } catch (error) {
+      rejectOnce(error instanceof Error ? error : new Error(String(error)))
+    }
   })
 }

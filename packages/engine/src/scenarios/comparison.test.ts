@@ -74,6 +74,38 @@ describe('compareScenarioPlans', () => {
     )
   })
 
+  it('threads exact shared-path progress without adding callbacks to provenance', () => {
+    const baseline = comparisonPlan()
+    const proposal = structuredClone(baseline)
+    proposal.expenses.baseAnnual += 10_000
+    const seen: Array<[completed: number, total: number]> = []
+    const result = compareScenarioPlans(baseline, proposal, {
+      startYear: 2026,
+      taxCalculatorForPlan: () => noTax,
+      stochastic: {
+        ...stochastic,
+        pathCount: 3,
+        onProgress: (completed, total) => seen.push([completed, total]),
+      },
+    })
+
+    expect(seen).toEqual([
+      [1, 6],
+      [2, 6],
+      [3, 6],
+      [4, 6],
+      [5, 6],
+      [6, 6],
+    ])
+    expect(result.risk?.provenance).toEqual({
+      seed: stochastic.seed,
+      pathCount: 3,
+      model: stochastic.model,
+      stochasticLongevity: false,
+      ltcShock: null,
+    })
+  })
+
   it('aggregates deterministic income, spending, withdrawals, and annual ledger rows consistently', () => {
     const baseline = comparisonPlan()
     const proposal = structuredClone(baseline)

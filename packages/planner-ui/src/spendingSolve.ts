@@ -1,4 +1,4 @@
-export { runSpendingSolve } from './optimize/spendingRunner'
+export { runSpendingSolve, type SpendingSolveRunOptions } from './optimize/spendingRunner'
 export type {
   SpendingSolveEvidence,
   SpendingSolveRequest,
