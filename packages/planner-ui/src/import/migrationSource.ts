@@ -114,6 +114,19 @@ export interface MigrationEvidence {
    */
   matched: string
   locator: SourceLocator
+  /**
+   * This value argues AGAINST the identification rather than for it, and is
+   * published anyway.
+   *
+   * A file whose shape matches ProjectionLab but whose own `meta.app` says
+   * "eMoney" is the case: the structural conclusion stands (a shape is a much
+   * harder thing to have by accident than a label), but listing that label
+   * silently among the supporting evidence would read as corroboration of the
+   * opposite of what it says. Dropping it would be worse still — a reviewer who
+   * later opened the file would find the one detail this report had chosen not
+   * to mention.
+   */
+  contradicts?: boolean
 }
 
 /**
@@ -303,10 +316,63 @@ function asRecord(value: unknown): Record<string, unknown> | null {
  * of layout padding, and an excerpt that is 90% spaces shows a human nothing.
  */
 function excerptAround(text: string, index: number, length: number): string {
-  const context = Math.max(0, Math.floor((MAX_MIGRATION_EVIDENCE_CHARS - length) / 2))
-  const start = Math.max(0, index - context)
-  const end = Math.min(text.length, index + length + context)
-  return clipWithMarkers(printableEvidence(text.slice(start, end)), start > 0, end < text.length)
+  // THE MATCH IS RESERVED FIRST, and the context gets whatever is left. Built
+  // the other way round — window the raw text, sanitise, then clip from the
+  // right — the quotation could lose the very thing it is quoting: thirty
+  // control characters ahead of `RightCapital` each expand to an eight-character
+  // `<U+0007>` during sanitising, and the clip then cut the name off the end. An
+  // excerpt labelled "Matched:" that does not contain the match is worse than no
+  // excerpt, because it reads as though that is what the file says.
+  const matched = printableFragment(text.slice(index, index + length))
+  if (matched.length >= MAX_MIGRATION_EVIDENCE_CHARS) {
+    // The match alone fills the budget. Nothing else can be shown, and the
+    // marker says the quotation is not the whole of it.
+    return clipWithMarkers(matched, false, false)
+  }
+
+  // Split what is left between the two sides, then sanitise each side
+  // separately so an expansion on one cannot eat the other or the match.
+  const room = MAX_MIGRATION_EVIDENCE_CHARS - matched.length
+  const context = Math.max(0, Math.floor(room / 2))
+  const start = wholeCharacterBoundary(text, Math.max(0, index - context))
+  const end = wholeCharacterBoundary(text, Math.min(text.length, index + length + context))
+  // `printableFragment`, not `printableEvidence`: trimming each side would eat
+  // the spaces ADJACENT to the match and glue the excerpt together —
+  // "Generated withRightCapitalon March 14" — which stops it being verbatim at
+  // exactly the two positions a reader looks at first. Only the outer edges are
+  // trimmed, below.
+  const before = printableFragment(text.slice(start, index))
+  const after = printableFragment(text.slice(index + length, end))
+
+  // Each side is trimmed toward the match — the left from its left, the right
+  // from its right — so the match keeps its immediate surroundings, which is the
+  // part that lets a reader judge the claim.
+  const half = Math.max(0, Math.floor((room - 2) / 2))
+  const leftClipped = before.length > half
+  const rightClipped = after.length > half
+  // Trim the OUTER edges only — a leading space after the ellipsis, or a
+  // trailing one before it, shows a reader nothing.
+  const left = (leftClipped ? sliceTailWholeCharacters(before, half) : before).replace(/^\s+/, '')
+  const right = (rightClipped ? sliceWholeCharacters(after, half) : after).replace(/\s+$/, '')
+
+  const leadingMarker = start > 0 || leftClipped
+  const trailingMarker = end < text.length || rightClipped
+  return `${leadingMarker ? '…' : ''}${left}${matched}${right}${trailingMarker ? '…' : ''}`
+}
+
+/**
+ * Nudge a raw index off the middle of a surrogate pair.
+ *
+ * The window boundaries are computed in code units, so either end can land
+ * between the two halves of an astral character — one emoji near the edge of the
+ * context and the slice begins or ends with half of it. Sanitising cannot repair
+ * that (a lone surrogate is not a control character), so it has to not happen.
+ */
+function wholeCharacterBoundary(text: string, index: number): number {
+  if (index <= 0 || index >= text.length) return index
+  const code = text.charCodeAt(index)
+  // A LOW surrogate here means the character started at index - 1.
+  return code >= 0xdc00 && code <= 0xdfff ? index - 1 : index
 }
 
 /**
@@ -331,9 +397,18 @@ function excerptAround(text: string, index: number, length: number): string {
  * matched instead of staring at a word that looks ordinary.
  */
 function printableEvidence(text: string): string {
+  return printableFragment(text).trim()
+}
+
+/**
+ * {@link printableEvidence} without the trim, for a piece that will be joined to
+ * another piece. The spaces at a fragment's edges are real text when the
+ * fragment sits next to the matched name, and dropping them makes the quotation
+ * say something the file does not.
+ */
+function printableFragment(text: string): string {
   return text
     .replace(/\s+/g, ' ')
-    .trim()
     .replace(/[\p{Cc}\p{Cf}]/gu, (ch) => `<U+${ch.codePointAt(0)!.toString(16).toUpperCase().padStart(4, '0')}>`)
 }
 
@@ -375,6 +450,25 @@ function clipWithMarkers(body: string, leading: boolean, trailing: boolean): str
  * string's length, and `length` is in code units) — this only steps the cut back
  * by one when it would split a pair.
  */
+/**
+ * {@link sliceWholeCharacters} from the other end — the last `room` code units,
+ * never beginning on the second half of a character.
+ *
+ * The left side of an excerpt is trimmed from its LEFT so the text nearest the
+ * match survives, and that cut has exactly the same hazard as the one at the far
+ * end: land it one unit inside an emoji and the excerpt opens with an orphaned
+ * low surrogate. Three separate cuts in this function needed the same care, and
+ * this was the last of them to get it.
+ */
+function sliceTailWholeCharacters(body: string, room: number): string {
+  if (room <= 0) return ''
+  if (body.length <= room) return body
+  const start = body.length - room
+  const code = body.charCodeAt(start)
+  // A LOW surrogate first means its high half was just cut off; drop it too.
+  return body.slice(code >= 0xdc00 && code <= 0xdfff ? start + 1 : start)
+}
+
 function sliceWholeCharacters(body: string, room: number): string {
   if (room <= 0) return ''
   const code = body.charCodeAt(room - 1)
@@ -501,10 +595,25 @@ function projectionLabStructure(text: string): MigrationEvidence[] | null {
             : null
       const collapsed = shown === null ? '' : printableEvidence(shown)
       if (collapsed !== '') {
+        // `meta.app` is the file's claim about which program wrote it, and it
+        // is not automatically evidence FOR ProjectionLab: a structurally
+        // matching file carrying `meta.app: "eMoney"` was being listed as
+        // additional support for the ProjectionLab identification, which reads
+        // as corroboration of the opposite of what it says. A value that names
+        // the tool corroborates; one that names something else CONTRADICTS, and
+        // is reported as such — dropping it would be worse, since a reviewer
+        // seeing it might well conclude the shape check was fooled.
+        //
+        // The structural conclusion stands either way: the shape is the claim,
+        // and a label is not a shape. `exportVersion` is never a vendor claim in
+        // the first place, so it is only ever supporting detail.
+        const contradicts =
+          key === 'app' && !new RegExp(VENDOR_NAME_PATTERN.projectionlab, 'iu').test(collapsed)
         evidence.push({
           strength: 'structure',
           matched: clipWithMarkers(collapsed, false, false),
           locator: jsonPath(`meta.${key}`),
+          ...(contradicts ? { contradicts: true } : {}),
         })
       }
     }
@@ -595,7 +704,9 @@ function evidenceItems(
               ? 'this identification is a note about the file, not one of the values that transferred.'
               : 'nothing was mapped on the strength of it.'
           }`
-        : `Also matched: “${evidence.matched}”.`,
+        : evidence.contradicts === true
+          ? `Against it: the file's own label says “${evidence.matched}”, which does not name ${candidate.adapter.displayName}. The identification stands on the file's structure — a shape is far harder to have by accident than a label — but this is here because you should see it.`
+          : `Also matched: “${evidence.matched}”.`,
       evidence.locator,
     ),
   )
@@ -755,17 +866,32 @@ function pageItems(sourceName: string, pages: readonly DocumentPage[]): ImportRe
     items.push(
       unmappedItem(
         `${sourceName} — text cut short`,
-        `${one ? 'Page' : 'Pages'} ${listPages(clipped)} held more text than the reader carries per page, so what came across ${one ? 'stops' : 'stop'} partway. Open the original for ${one ? 'that page' : 'those pages'} rather than trusting what is here to be all of it.`,
+        // Deliberately does not name WHICH cap. `DocumentPage.truncated` is set
+        // by the per-page cap and by the document-wide budget running out
+        // partway through a page, and the page itself cannot tell them apart —
+        // so attributing it to the per-page limit was a guess that would be
+        // wrong on exactly the long documents where it matters. What the reader
+        // needs to do is the same either way.
+        `${one ? 'Page' : 'Pages'} ${listPages(clipped)} held more text than the reader kept, so what came across ${one ? 'stops' : 'stop'} partway. Open the original for ${one ? 'that page' : 'those pages'} rather than trusting what is here to be all of it.`,
         { kind: 'none', note: `${one ? 'page' : 'pages'} ${listPages(clipped)}` },
       ),
     )
   }
+  // Both sentences below are written to the LIMIT of what `imageOnly` can
+  // support, which is less than it sounds like. The reader sets it when it sees
+  // any raster paint operation and measures no page coverage at all — WS5's own
+  // findings note records this — so it cannot tell a full-page scan from a
+  // corner logo, and it says nothing whatever about vector drawing. Claiming
+  // "this is a scan" or "this page is empty" from it is claiming more than the
+  // signal carries, and the second is the more dangerous of the two: a financial
+  // report whose text was converted to outlines has no text layer and no raster
+  // image, and would have been reported as nothing worth checking.
   if (scanned.length > 0) {
     const one = scanned.length === 1
     items.push(
       unmappedItem(
-        `${sourceName} — scanned, not readable`,
-        `${one ? 'Page' : 'Pages'} ${listPages(scanned)} ${one ? 'is an image' : 'are images'} rather than text — a scan or a photograph. Reading ${one ? 'it' : 'them'} needs OCR, which RetireGolden does not do, so nothing from ${one ? 'it' : 'them'} is here and ${one ? 'it is' : 'they are'} not blank. Type ${one ? 'its' : 'their'} figures in from the original.`,
+        `${sourceName} — an image the reader cannot read`,
+        `${one ? 'Page' : 'Pages'} ${listPages(scanned)} carried no text, only an image the reader cannot read — commonly a scan or a photograph of a statement, though it can also be something as small as a logo or a watermark on an otherwise empty page. Reading an image needs OCR, which RetireGolden does not do. Open ${one ? 'it' : 'them'} in the original to see which, and type in anything that matters.`,
         { kind: 'none', note: `${one ? 'page' : 'pages'} ${listPages(scanned)}` },
       ),
     )
@@ -774,8 +900,8 @@ function pageItems(sourceName: string, pages: readonly DocumentPage[]): ImportRe
     const one = blank.length === 1
     items.push(
       unmappedItem(
-        `${sourceName} — nothing on the page`,
-        `${one ? 'Page' : 'Pages'} ${listPages(blank)} held no text and no image either — as far as the reader could tell ${one ? 'it is' : 'they are'} genuinely empty, a separator or a spacer. Nothing is missing from this report on ${one ? 'its' : 'their'} account, so there is nothing to look for in the original.`,
+        `${sourceName} — nothing the reader could read`,
+        `${one ? 'Page' : 'Pages'} ${listPages(blank)} gave up no text and no image the reader recognised. That is usually a genuinely blank page — a separator or a spacer — but the reader only looks for text and for raster images, so a page drawn as vector graphics, or one whose text was converted to outlines, looks exactly the same to it. Glance at ${one ? 'it' : 'them'} in the original before assuming ${one ? 'it holds' : 'they hold'} nothing.`,
         { kind: 'none', note: `${one ? 'page' : 'pages'} ${listPages(blank)}` },
       ),
     )
@@ -815,13 +941,20 @@ function omittedPageItems(sourceName: string, summary: DocumentTextSummary): Imp
       ),
     )
   }
-  const stoppedShort = summary.pagesExtracted < summary.totalPages && unreadable.length === 0
-  if (stoppedShort) {
+  // Early stopping is read off `truncatedBy`, which is what actually records it,
+  // rather than inferred from the page counts. The inference was doubly wrong:
+  // it required ZERO unreadable pages, so one failed page anywhere silenced the
+  // warning that every LATER page was never opened at all — the report then
+  // named the failed page and said nothing about the rest of the document. And
+  // `pagesExtracted` is not "the last page reached" when extraction failed on
+  // some, so it could not be used to say where the reading stopped either.
+  if (summary.truncatedBy.includes('document_text_cap')) {
+    const seen = summary.pagesExtracted + unreadable.length
     items.push(
       unmappedItem(
         `${sourceName} — reading stopped early`,
-        `The reader stopped after ${summary.pagesExtracted} of ${summary.totalPages} pages, so pages beyond that point were never opened and nothing from them is in this report. Work through the rest of the document by hand, or split it and bring the remainder in separately.`,
-        { kind: 'none', note: `${summary.pagesExtracted} of ${summary.totalPages} pages read` },
+        `The reader ran out of its text budget partway through this document: ${seen} of ${summary.totalPages} pages were opened, and the rest were never looked at, so nothing from them is in this report — not even a note saying a page was unreadable. Work through the remainder by hand, or split the document and bring the rest in separately.`,
+        { kind: 'none', note: `${seen} of ${summary.totalPages} pages opened` },
       ),
     )
   }

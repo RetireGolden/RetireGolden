@@ -141,6 +141,45 @@ describe('identifyMigrationDocument', () => {
     expect(matched.length).toBeLessThanOrEqual(MAX_MIGRATION_EVIDENCE_CHARS)
   })
 
+  it('THE QUOTATION ALWAYS CONTAINS THE MATCH, whatever precedes it', () => {
+    // The excerpt is assembled around the match rather than windowed and then
+    // clipped, because sanitising happens after the window is chosen: thirty
+    // control characters ahead of the name each expand to an eight-character
+    // <U+0007>, and a clip from the right then cut off the very name being
+    // quoted. An excerpt labelled "Matched:" that does not contain the match is
+    // worse than no excerpt — it reads as if that is what the file says.
+    const noisy = `${'\u0007'.repeat(30)}RightCapital retirement analysis`
+    const found = identifyMigrationDocument([docPage(1, noisy)])
+    if (found?.outcome !== 'identified') throw new Error('expected an identification')
+    const matched = found.evidence[0]!.matched
+    expect(matched).toContain('RightCapital')
+    expect(matched.length).toBeLessThanOrEqual(MAX_MIGRATION_EVIDENCE_CHARS)
+  })
+
+  it('never splits a character at the CONTEXT boundary either', () => {
+    // The clip at the end was made surrogate-safe first; the window boundaries
+    // that select the context are computed the same way and were not. Two
+    // padding characters put the left boundary inside an emoji rather than
+    // between two — the excerpt then began with half a character, which renders
+    // as a replacement character in evidence described as verbatim.
+    const found = identifyMigrationDocument([docPage(1, `xx${'😀'.repeat(40)}RightCapital and more text after it`)])
+    if (found?.outcome !== 'identified') throw new Error('expected an identification')
+    const matched = found.evidence[0]!.matched
+    const loneSurrogate = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/
+    expect(loneSurrogate.test(matched)).toBe(false)
+    expect(matched).toContain('RightCapital')
+  })
+
+  it('keeps the spaces on either side of the match', () => {
+    // Trimming each fragment separately glued the excerpt together —
+    // "Generated withRightCapitalon March 14" — which stops it being verbatim at
+    // the two positions a reader looks at first. Only the outer edges are
+    // trimmed.
+    const found = identifyMigrationDocument([docPage(1, 'Report generated with RightCapital on 14 March.')])
+    if (found?.outcome !== 'identified') throw new Error('expected an identification')
+    expect(found.evidence[0]!.matched).toContain('with RightCapital on')
+  })
+
   it('bounds how many excerpts one vendor may contribute', () => {
     const pages = Array.from({ length: 40 }, (_, index) => docPage(index + 1, 'eMoney Advisor — page footer'))
     const found = identifyMigrationDocument(pages)
@@ -239,6 +278,28 @@ describe('identifyMigrationExport', () => {
     expect(unheardOf?.outcome === 'identified' && unheardOf.vendor).toBe('projectionlab')
     if (unheardOf?.outcome !== 'identified') throw new Error('expected an identification')
     expect(unheardOf.evidence[1]!.matched).toBe('99.0.0-canary')
+  })
+
+  it("reports a meta.app naming a DIFFERENT tool as evidence against, not for", () => {
+    // A structurally matching file whose own label says "eMoney" was listing
+    // that label among the evidence SUPPORTING a ProjectionLab identification —
+    // corroboration of the opposite of what it says. The structural conclusion
+    // stands (a shape is far harder to have by accident than a label) but the
+    // contradiction is shown, because dropping it would leave a reviewer to find
+    // it later as the one detail the report chose not to mention.
+    const found = identifyMigrationExport(projectionLabExport({ meta: { app: 'eMoney' } }))
+    if (found?.outcome !== 'identified') throw new Error('expected an identification')
+    expect(found.vendor).toBe('projectionlab')
+    const label = found.evidence.find((item) => item.locator.kind === 'jsonPath' && item.locator.path === 'meta.app')
+    expect(label?.contradicts).toBe(true)
+
+    const items = buildMigrationReview(found, 'export.json', { mapped: true })
+    expect(items.some((item) => item.detail.includes('does not name ProjectionLab'))).toBe(true)
+
+    // A label that DOES name the tool is ordinary supporting evidence.
+    const agreeing = identifyMigrationExport(projectionLabExport({ meta: { app: 'ProjectionLab' } }))
+    if (agreeing?.outcome !== 'identified') throw new Error('expected an identification')
+    expect(agreeing.evidence.every((item) => item.contradicts !== true)).toBe(true)
   })
 
   it('published evidence never misrepresents itself: no silent truncation, no invented version string', () => {
@@ -454,10 +515,23 @@ describe('buildMigrationReview', () => {
     expect(carried?.detail).toContain('page 1')
     for (const absent of ['2', '3', '4']) expect(carried?.detail).not.toContain(absent)
 
+    // Must not blame the PER-PAGE cap: `truncated` is set by that cap and by the
+    // document-wide budget running out partway through a page, and the page
+    // cannot tell them apart — so naming one would be a guess, wrong on exactly
+    // the long documents where it matters. The remedy is the same either way.
     expect(find('text cut short')?.detail).toContain('3')
-    expect(find('scanned, not readable')?.detail).toMatch(/OCR/)
-    expect(find('nothing on the page')?.detail).toMatch(/nothing to look for/)
-    expect(find('nothing on the page')?.detail).not.toMatch(/OCR/)
+    expect(find('text cut short')?.detail).not.toMatch(/per page/)
+    expect(find('an image the reader cannot read')?.detail).toMatch(/OCR/)
+    // Neither sentence may out-claim `imageOnly`, which is set by ANY raster
+    // paint operation and measures no page coverage: it cannot tell a full-page
+    // scan from a corner logo, and it says nothing at all about vector drawing.
+    // So the image page must not assert "this is a scan", and the textless page
+    // must not assert "there is nothing here" — a report whose text was
+    // converted to outlines looks identical to a blank page from where the
+    // reader stands.
+    expect(find('an image the reader cannot read')?.detail).toMatch(/logo or a watermark/)
+    expect(find('nothing the reader could read')?.detail).toMatch(/outlines/)
+    expect(find('nothing the reader could read')?.detail).not.toMatch(/OCR/)
     expect(roundTrip(items).ok).toBe(true)
   })
 
@@ -474,11 +548,16 @@ describe('buildMigrationReview', () => {
       imageOnlyPages: 0,
       noTextExtracted: false,
       totalTextChars: 27,
-      truncated: false,
-      truncatedBy: [],
+      truncated: true,
+      truncatedBy: ['document_text_cap'],
     }
     const items = buildMigrationReview(identifyMigrationDocument(pages), 'rc.pdf', { pages, summary })
     expect(items.find((item) => item.source.includes('could not be read'))?.detail).toContain('4, 6')
+    // BOTH, together. Deciding early stopping from the page counts required zero
+    // unreadable pages, so a single failed page anywhere silenced the warning
+    // that every LATER page was never opened at all — the report then named the
+    // one failure and said nothing about the rest of the document.
+    expect(items.find((item) => item.source.includes('stopped early'))).toBeDefined()
     expect(roundTrip(items).ok).toBe(true)
 
     const stopped = buildMigrationReview(identifyMigrationDocument(pages), 'rc.pdf', {
