@@ -79,6 +79,7 @@ import {
   type SpendingSolveRequest,
   type SpendingSolveResponse,
   type SpendingSolveResult,
+  type SpendingSolveRunOptions,
 } from '@retiregolden/planner-ui/spending-solve'
 // The optional-peer subpath. Nothing here installs pdfjs-dist, so a literal
 // pdfjs specifier in the shipped source would fail THIS build — which is the
@@ -113,6 +114,7 @@ function WorkspaceOnlyHost() {
 
 type SpendingSolveContract = {
   request: SpendingSolveRequest
+  options: SpendingSolveRunOptions
   result: SpendingSolveResult
   evidence: SpendingSolveEvidence
   response: SpendingSolveResponse

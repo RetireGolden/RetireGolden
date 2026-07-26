@@ -69,6 +69,31 @@ describe('shared-path stochastic helpers', () => {
     )
   })
 
+  it('reports monotonic completed work across every compared plan', () => {
+    const plan = basePlan()
+    const seen: Array<[completed: number, total: number]> = []
+    comparePlansOnSharedMarketPaths(
+      [
+        { id: 'a', label: 'A', plan },
+        { id: 'b', label: 'B', plan },
+      ],
+      {
+        ...opts,
+        pathCount: 3,
+        onProgress: (completed, total) => seen.push([completed, total]),
+      },
+    )
+
+    expect(seen).toEqual([
+      [1, 6],
+      [2, 6],
+      [3, 6],
+      [4, 6],
+      [5, 6],
+      [6, 6],
+    ])
+  })
+
   it('builds a bounded spending frontier whose success curve is monotone on the fixture', () => {
     const points = buildSpendingSuccessFrontier(basePlan(), opts, [0.8, 1, 1.2])
     expect(points).toHaveLength(3)

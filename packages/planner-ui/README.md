@@ -140,11 +140,14 @@ The supported product API is:
   running shared engine comparisons can use it without importing React or
   planner screens;
 - the **`./spending-solve` subpath** — `runSpendingSolve` plus
-  `SpendingSolveRequest`, `SpendingSolveResult`, `SpendingSolveEvidence`, and
-  `SpendingSolveResponse`. It runs the exact-ledger sustainable-spending solve
-  in a Vite-emitted Worker when available and falls back to the identical
-  synchronous solver where `Worker` is unavailable, while retaining a Promise
-  result in both environments;
+  `SpendingSolveRequest`, `SpendingSolveRunOptions`, `SpendingSolveResult`,
+  `SpendingSolveEvidence`, and `SpendingSolveResponse`. It runs the exact-ledger
+  sustainable-spending solve in a Vite-emitted Worker when available and falls
+  back to the identical synchronous solver where `Worker` is unavailable,
+  while retaining a Promise result in both environments. A host may pass an
+  `AbortSignal` in the runner options to terminate active worker work; an
+  already-aborted signal rejects with an `AbortError` before a worker is
+  spawned;
 - the **`./report-model` subpath** — the edition-neutral report data model:
   `ReportModel` and its block types, `buildReportModel`, the stable
   `REPORT_BLOCK_IDS`, `serializeReportModel` (deterministic JSON), and the

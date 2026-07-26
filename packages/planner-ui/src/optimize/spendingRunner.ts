@@ -7,11 +7,21 @@
 
 import type { SpendingSolveRequest, SpendingSolveResponse, SpendingSolveResult } from './spendingMessages'
 import { runSpendingSolveRequest } from './runSpendingSolve'
-import { runWorkerRequest } from '../workers/run'
+import { createWorkerRequestAbortError, runWorkerRequest } from '../workers/run'
 
-export function runSpendingSolve(req: SpendingSolveRequest): Promise<SpendingSolveResult> {
+export interface SpendingSolveRunOptions {
+  signal?: AbortSignal
+}
+
+export function runSpendingSolve(
+  req: SpendingSolveRequest,
+  options: SpendingSolveRunOptions = {},
+): Promise<SpendingSolveResult> {
   if (typeof Worker === 'undefined') {
-    return Promise.resolve().then(() => runSpendingSolveRequest(req))
+    return Promise.resolve().then(() => {
+      if (options.signal?.aborted) throw createWorkerRequestAbortError()
+      return runSpendingSolveRequest(req)
+    })
   }
   return runWorkerRequest<SpendingSolveRequest, SpendingSolveResponse, SpendingSolveResult>({
     request: req,
@@ -19,5 +29,6 @@ export function runSpendingSolve(req: SpendingSolveRequest): Promise<SpendingSol
     interpret: (msg) =>
       msg.type === 'done' ? { kind: 'done', result: msg.result } : { kind: 'error', message: msg.message },
     errorLabel: 'Spending solver worker failed',
+    signal: options.signal,
   })
 }

@@ -33,6 +33,11 @@ export interface SharedPathComparisonOptions {
   seed: number
   stochasticLongevity?: boolean
   ltcShock?: LtcShockParams | null
+  /**
+   * Reports actual completed plan-path simulations across every compared plan.
+   * The total is `plans.length * pathCount`.
+   */
+  onProgress?: (completed: number, total: number) => void
 }
 
 export interface SharedPathComparisonRow {
@@ -51,10 +56,11 @@ export function comparePlansOnSharedMarketPaths(
   plans: SharedPathPlan[],
   opts: SharedPathComparisonOptions,
 ): SharedPathComparison {
+  const totalWork = plans.length * opts.pathCount
   return {
     seed: opts.seed,
     pathCount: opts.pathCount,
-    rows: plans.map((entry) => ({
+    rows: plans.map((entry, planIndex) => ({
       id: entry.id,
       label: entry.label,
       summary: aggregateMonteCarlo(
@@ -66,6 +72,7 @@ export function comparePlansOnSharedMarketPaths(
           pathCount: opts.pathCount,
           stochasticLongevity: opts.stochasticLongevity,
           ltcShock: opts.ltcShock,
+          onPathDone: (completed) => opts.onProgress?.(planIndex * opts.pathCount + completed, totalWork),
         }),
       ),
     })),
