@@ -20,4 +20,19 @@ describe('runSpendingSolve', () => {
 
     await expect(runSpendingSolve(request)).resolves.toEqual(runSpendingSolveRequest(request))
   })
+
+  it('turns synchronous fallback errors into Promise rejections', async () => {
+    vi.stubGlobal('Worker', undefined)
+    const invalidRequest: SpendingSolveRequest = {
+      plan: {} as SpendingSolveRequest['plan'],
+      startYear: 2026,
+    }
+    let returned!: ReturnType<typeof runSpendingSolve>
+
+    expect(() => {
+      returned = runSpendingSolve(invalidRequest)
+    }).not.toThrow()
+    expect(returned).toBeInstanceOf(Promise)
+    await expect(returned).rejects.toThrow()
+  })
 })
