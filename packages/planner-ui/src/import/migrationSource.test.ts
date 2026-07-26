@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { DocumentPage } from './documentText'
+import type { DocumentPage, DocumentTextSummary } from './documentText'
 import {
   MAX_MIGRATION_EVIDENCE_CHARS,
   MAX_MIGRATION_EVIDENCE_PER_VENDOR,
@@ -398,6 +398,13 @@ describe('buildMigrationReview', () => {
     })
     expect(items).toHaveLength(1)
     expect(items[0]!.detail).toContain('mapped by the projectionLab import')
+    // The closing sentence must not deny the opening one. The identify-only path
+    // ends "nothing was mapped on the strength of it", which is the point of that
+    // report — and a flat contradiction here, in the only path where something
+    // WAS mapped. What is true in both cases is narrower: this identification
+    // item is not itself one of the mapped values.
+    expect(items[0]!.detail).not.toContain('nothing was mapped on the strength of it')
+    expect(items[0]!.detail).toContain('not one of the values that transferred')
     const details = items.map((item) => item.detail)
     for (const limitation of MIGRATION_ADAPTERS.projectionlab.limitations) expect(details).not.toContain(limitation)
     expect(roundTrip(items).ok).toBe(true)
@@ -429,22 +436,90 @@ describe('buildMigrationReview', () => {
     // text and a page clipped at the reader's cap both read as complete — hiding
     // the OCR case WS5 declined to scope, and hiding missing values on a page
     // that looks whole.
+    // FOUR states, and `text === ''` alone names none of them: a page with no
+    // text is a SCAN when imageOnly says so and genuinely EMPTY when it does
+    // not, and the remediation is opposite. Sending a reader hunting for figures
+    // on a blank page is the same defect as letting a scan read as blank, just
+    // pointed the other way.
     const pages: DocumentPage[] = [
       { page: 1, text: 'Prepared using eMoney Advisor', imageOnly: false, truncated: false },
       { page: 2, text: '', imageOnly: true, truncated: false },
       { page: 3, text: 'Holdings detail continues', imageOnly: false, truncated: true },
+      { page: 4, text: '', imageOnly: false, truncated: false },
     ]
     const items = buildMigrationReview(identifyMigrationDocument(pages), 'emoney-report.pdf', { pages })
     const find = (fragment: string): ImportReviewItem | undefined => items.find((item) => item.source.includes(fragment))
 
     const carried = find('text carried over')
     expect(carried?.detail).toContain('page 1')
-    expect(carried?.detail).not.toContain('page 2')
-    expect(carried?.detail).not.toContain('page 3')
+    for (const absent of ['2', '3', '4']) expect(carried?.detail).not.toContain(absent)
 
     expect(find('text cut short')?.detail).toContain('3')
-    expect(find('no text on the page')?.detail).toMatch(/OCR/)
+    expect(find('scanned, not readable')?.detail).toMatch(/OCR/)
+    expect(find('nothing on the page')?.detail).toMatch(/nothing to look for/)
+    expect(find('nothing on the page')?.detail).not.toMatch(/OCR/)
     expect(roundTrip(items).ok).toBe(true)
+  })
+
+  it('names the pages that never reached the report at all', () => {
+    // A page pdfjs failed on is ABSENT from `pages`, and so is every page beyond
+    // a document-wide cap. "A page that could not be extracted is simply missing
+    // from the list" was true and useless — it told a reader something might be
+    // absent without telling them what to go and open.
+    const pages: DocumentPage[] = [{ page: 1, text: 'Generated with RightCapital', imageOnly: false, truncated: false }]
+    const summary: DocumentTextSummary = {
+      totalPages: 9,
+      pagesExtracted: 1,
+      unreadablePages: [4, 6],
+      imageOnlyPages: 0,
+      noTextExtracted: false,
+      totalTextChars: 27,
+      truncated: false,
+      truncatedBy: [],
+    }
+    const items = buildMigrationReview(identifyMigrationDocument(pages), 'rc.pdf', { pages, summary })
+    expect(items.find((item) => item.source.includes('could not be read'))?.detail).toContain('4, 6')
+    expect(roundTrip(items).ok).toBe(true)
+
+    const stopped = buildMigrationReview(identifyMigrationDocument(pages), 'rc.pdf', {
+      pages,
+      summary: { ...summary, unreadablePages: [] },
+    })
+    expect(stopped.find((item) => item.source.includes('stopped early'))?.detail).toContain('1 of 9 pages')
+  })
+
+  it('sanitises the FILE NAME as well as the file contents', () => {
+    // The name is attacker-controlled in exactly the sense the contents are — a
+    // browser hands over whatever the file is called — and it is interpolated
+    // into every label and locator note. A bidi override in it reorders the
+    // displayed evidence line; a newline fractures exported provenance text.
+    const items = buildMigrationReview(
+      identifyMigrationDocument([docPage(1, 'Generated with RightCapital')]),
+      'statement\u202Efdp.pdf\nSECOND LINE',
+      {},
+    )
+    expect(items.length).toBeGreaterThan(0)
+    for (const item of items) {
+      expect(item.source).not.toMatch(/[\p{Cc}\p{Cf}]/u)
+      expect(item.source).toContain('<U+202E>')
+    }
+    expect(roundTrip(items).ok).toBe(true)
+  })
+
+  it('never clips an evidence excerpt through the middle of a character', () => {
+    // slice() counts UTF-16 code units and every astral character is two of
+    // them, so a cut between the halves leaves a lone surrogate that renders as
+    // a replacement character — a character this module invented, published as a
+    // verbatim quotation of the file.
+    const long = identifyMigrationExport(projectionLabExport({ meta: { app: '😀'.repeat(200) } }))
+    if (long?.outcome !== 'identified') throw new Error('expected an identification')
+    const matched = long.evidence[1]!.matched
+    expect(matched.length).toBeLessThanOrEqual(MAX_MIGRATION_EVIDENCE_CHARS)
+    // A LONE surrogate, not any surrogate — every emoji here is a well-formed
+    // pair of them, so testing for surrogates at all would fail on correct output.
+    const loneSurrogate = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/
+    expect(loneSurrogate.test(matched)).toBe(false)
+    expect([...matched].every((ch) => ch === '😀' || ch === '…')).toBe(true)
   })
 
   it('gives a name-only ProjectionLab file the full report, because no mapper ran on it', () => {

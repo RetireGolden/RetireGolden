@@ -46,7 +46,7 @@
  * and published as the `@retiregolden/planner-ui/migration-source` subpath.
  */
 
-import type { DocumentPage } from './documentText'
+import type { DocumentPage, DocumentTextSummary } from './documentText'
 import { jsonPathLocator as jsonPath, type SourceLocator } from './provenance'
 import type { ImportReviewItem } from './reviewChecklist'
 
@@ -357,8 +357,30 @@ function clipWithMarkers(body: string, leading: boolean, trailing: boolean): str
     marked = true
     room = MAX_MIGRATION_EVIDENCE_CHARS - lead - 1
   }
-  const clipped = body.length > room ? body.slice(0, Math.max(0, room)) : body
+  const clipped = body.length > room ? sliceWholeCharacters(body, Math.max(0, room)) : body
   return `${leading ? '…' : ''}${clipped}${marked ? '…' : ''}`
+}
+
+/**
+ * `slice`, but never through the middle of a character.
+ *
+ * `String.prototype.slice` counts UTF-16 code units, and every astral character
+ * — emoji, and a great deal of CJK — is two of them. A cut that lands between
+ * the two halves leaves a lone surrogate, which renders as `` and is not a
+ * faithful excerpt of anything. That matters more here than it would elsewhere:
+ * the excerpt is published as EVIDENCE, quoted back to a reviewer as what the
+ * file says, so a character this module invented has no business in it.
+ *
+ * The bound stays a code-unit bound (it is a promise about the published
+ * string's length, and `length` is in code units) — this only steps the cut back
+ * by one when it would split a pair.
+ */
+function sliceWholeCharacters(body: string, room: number): string {
+  if (room <= 0) return ''
+  const code = body.charCodeAt(room - 1)
+  // A high surrogate in the last kept position means its partner was next.
+  const splitsPair = code >= 0xd800 && code <= 0xdbff
+  return body.slice(0, splitsPair ? room - 1 : room)
 }
 
 /**
@@ -517,6 +539,13 @@ export interface MigrationReviewOptions {
    */
   pages?: readonly DocumentPage[]
   /**
+   * The extraction summary that came back with those pages. Supplies what the
+   * page list cannot: which pages are ABSENT from it and why. Without this the
+   * report can only say that something might be missing, which tells a reader
+   * nothing they can act on.
+   */
+  summary?: DocumentTextSummary
+  /**
    * The vendor's own mapper ran on this file AND succeeded, so its checklist is
    * being shown alongside this report.
    *
@@ -544,12 +573,28 @@ function unmappedItem(source: string, detail: string, locator: SourceLocator): I
   return { status: 'unmapped', source, detail, locator, confidence: 'unmapped' }
 }
 
-function evidenceItems(candidate: MigrationCandidate, sourceName: string, lead: string): ImportReviewItem[] {
+function evidenceItems(
+  candidate: MigrationCandidate,
+  sourceName: string,
+  lead: string,
+  mapped: boolean,
+): ImportReviewItem[] {
   return candidate.evidence.map((evidence, index) =>
     unmappedItem(
       `${sourceName} — ${candidate.adapter.displayName}`,
       index === 0
-        ? `${lead} The claim rests on this: ${MIGRATION_EVIDENCE_CLAIM[evidence.strength]}. Matched: “${evidence.matched}”. Check it — nothing was mapped on the strength of it.`
+        ? // The closing sentence has to differ between the two paths or it
+          // contradicts the one it does not fit. On the identify-only path
+          // "nothing was mapped on the strength of it" is the point of the whole
+          // report; on the mapped path the lead has just said the file WAS
+          // mapped, so the same words read as a denial of the sentence before
+          // them. What is true in both cases is narrower: this identification
+          // item is not itself a mapped value.
+          `${lead} The claim rests on this: ${MIGRATION_EVIDENCE_CLAIM[evidence.strength]}. Matched: “${evidence.matched}”. Check it — ${
+            mapped
+              ? 'this identification is a note about the file, not one of the values that transferred.'
+              : 'nothing was mapped on the strength of it.'
+          }`
         : `Also matched: “${evidence.matched}”.`,
       evidence.locator,
     ),
@@ -576,10 +621,20 @@ function evidenceItems(candidate: MigrationCandidate, sourceName: string, lead: 
  */
 export function buildMigrationReview(
   identification: MigrationIdentification | null,
-  sourceName: string,
+  rawSourceName: string,
   options: MigrationReviewOptions = {},
 ): ImportReviewItem[] {
   if (identification === null) return []
+  // The FILE NAME gets the same treatment the file's contents get, and for the
+  // same reason. It is attacker-controlled in the identical sense — a browser
+  // will hand over a name containing U+202E or a newline — and it is
+  // interpolated into every label and locator note below, so a bidi override in
+  // it reorders the displayed evidence line and a newline fractures the exported
+  // provenance text. Sanitising the contents and then rendering them under an
+  // unsanitised name would defeat the whole exercise. Callers keep the raw name
+  // for identity (`ImportSourceRef.file` is where it belongs); what appears in
+  // human-facing prose is this.
+  const sourceName = printableEvidence(rawSourceName)
   const items: ImportReviewItem[] = []
 
   if (identification.outcome === 'ambiguous') {
@@ -592,7 +647,7 @@ export function buildMigrationReview(
       ),
     )
     for (const candidate of identification.candidates) {
-      items.push(...evidenceItems(candidate, sourceName, `${candidate.adapter.displayName} is one of the tools named in this file.`))
+      items.push(...evidenceItems(candidate, sourceName, `${candidate.adapter.displayName} is one of the tools named in this file.`, false))
     }
     items.push(
       unmappedItem(`${sourceName} — what to do instead`, NO_FORMAT_MANUAL_PATH, {
@@ -601,6 +656,7 @@ export function buildMigrationReview(
       }),
     )
     if (options.pages !== undefined && options.pages.length > 0) items.push(...pageItems(sourceName, options.pages))
+    if (options.summary !== undefined) items.push(...omittedPageItems(sourceName, options.summary))
     return items
   }
 
@@ -632,6 +688,7 @@ export function buildMigrationReview(
       mapper !== null
         ? `Identified as a ${adapter.displayName} export, and mapped by the ${mapper} import — what transferred, what was assumed, and what did not transfer are on that import's own checklist and are not repeated here.`
         : `Identified as a ${adapter.displayName} file. Nothing was mapped from it.`,
+      mapper !== null,
     ),
   )
   if (mapper !== null) return items
@@ -651,6 +708,7 @@ export function buildMigrationReview(
     }),
   )
   if (options.pages !== undefined && options.pages.length > 0) items.push(...pageItems(sourceName, options.pages))
+    if (options.summary !== undefined) items.push(...omittedPageItems(sourceName, options.summary))
   return items
 }
 
@@ -668,9 +726,18 @@ export function buildMigrationReview(
  * Called only with a non-empty page list; `buildMigrationReview` gates it.
  */
 function pageItems(sourceName: string, pages: readonly DocumentPage[]): ImportReviewItem[] {
-  const readable = pages.filter((page) => page.text !== '' && !page.truncated)
-  const clipped = pages.filter((page) => page.text !== '' && page.truncated)
-  const empty = pages.filter((page) => page.text === '')
+  // FOUR states, and `text === ''` alone does not name any of them. A page with
+  // no text is a SCAN when `imageOnly` says so and genuinely BLANK when it does
+  // not, and the remediation is opposite: one says find OCR or retype from the
+  // original, the other says there is nothing on this page to look for. Telling
+  // a reader to hunt for figures on an empty page is the same failure as letting
+  // a scan read as blank, pointed the other way. `truncated` is checked first
+  // because a zero-character cap can empty a page that really did hold text.
+  const clipped = pages.filter((page) => page.truncated)
+  const rest = pages.filter((page) => !page.truncated)
+  const readable = rest.filter((page) => page.text !== '')
+  const scanned = rest.filter((page) => page.text === '' && page.imageOnly)
+  const blank = rest.filter((page) => page.text === '' && !page.imageOnly)
   const items: ImportReviewItem[] = []
 
   if (readable.length > 0) {
@@ -693,13 +760,68 @@ function pageItems(sourceName: string, pages: readonly DocumentPage[]): ImportRe
       ),
     )
   }
-  if (empty.length > 0) {
-    const one = empty.length === 1
+  if (scanned.length > 0) {
+    const one = scanned.length === 1
     items.push(
       unmappedItem(
-        `${sourceName} — no text on the page`,
-        `${one ? 'Page' : 'Pages'} ${listPages(empty)} carried no text at all. A page like this is usually a scan or an image, and reading it needs OCR, which RetireGolden does not do — so nothing from ${one ? 'it' : 'them'} is here, and it is not blank. Type ${one ? 'its' : 'their'} figures in from the original.`,
-        { kind: 'none', note: `${one ? 'page' : 'pages'} ${listPages(empty)}` },
+        `${sourceName} — scanned, not readable`,
+        `${one ? 'Page' : 'Pages'} ${listPages(scanned)} ${one ? 'is an image' : 'are images'} rather than text — a scan or a photograph. Reading ${one ? 'it' : 'them'} needs OCR, which RetireGolden does not do, so nothing from ${one ? 'it' : 'them'} is here and ${one ? 'it is' : 'they are'} not blank. Type ${one ? 'its' : 'their'} figures in from the original.`,
+        { kind: 'none', note: `${one ? 'page' : 'pages'} ${listPages(scanned)}` },
+      ),
+    )
+  }
+  if (blank.length > 0) {
+    const one = blank.length === 1
+    items.push(
+      unmappedItem(
+        `${sourceName} — nothing on the page`,
+        `${one ? 'Page' : 'Pages'} ${listPages(blank)} held no text and no image either — as far as the reader could tell ${one ? 'it is' : 'they are'} genuinely empty, a separator or a spacer. Nothing is missing from this report on ${one ? 'its' : 'their'} account, so there is nothing to look for in the original.`,
+        { kind: 'none', note: `${one ? 'page' : 'pages'} ${listPages(blank)}` },
+      ),
+    )
+  }
+  return items
+}
+
+/**
+ * The pages that never reached `options.pages` at all — named, rather than left
+ * to be inferred from a gap in a list.
+ *
+ * Two ways a page goes missing, and a manual migration needs both spelled out,
+ * because the whole point of this report is telling somebody which originals
+ * still need their eyes on them:
+ *
+ *  - `summary.unreadablePages` — pdfjs failed on that page specifically.
+ *  - the DOCUMENT-wide text cap stopped extraction partway, so every page after
+ *    some point was never looked at. Those page numbers are not enumerated
+ *    anywhere, so this reports the count and where the reading stopped.
+ *
+ * Saying "a page that could not be extracted is simply missing from the list"
+ * was true and useless: it told a reader that something might be absent without
+ * telling them what.
+ */
+function omittedPageItems(sourceName: string, summary: DocumentTextSummary): ImportReviewItem[] {
+  const items: ImportReviewItem[] = []
+  const unreadable = summary.unreadablePages
+  if (unreadable.length > 0) {
+    const one = unreadable.length === 1
+    const shown = unreadable.slice(0, MAX_LISTED_PAGES).join(', ')
+    const list = unreadable.length > MAX_LISTED_PAGES ? `${shown}, … (${unreadable.length} pages)` : shown
+    items.push(
+      unmappedItem(
+        `${sourceName} — could not be read`,
+        `${one ? 'Page' : 'Pages'} ${list} could not be read at all — not blank, not a scan, but a page the reader failed on. Nothing is known about what ${one ? 'it holds' : 'they hold'}, so open ${one ? 'it' : 'them'} in the original.`,
+        { kind: 'none', note: `${one ? 'page' : 'pages'} ${list}` },
+      ),
+    )
+  }
+  const stoppedShort = summary.pagesExtracted < summary.totalPages && unreadable.length === 0
+  if (stoppedShort) {
+    items.push(
+      unmappedItem(
+        `${sourceName} — reading stopped early`,
+        `The reader stopped after ${summary.pagesExtracted} of ${summary.totalPages} pages, so pages beyond that point were never opened and nothing from them is in this report. Work through the rest of the document by hand, or split it and bring the remainder in separately.`,
+        { kind: 'none', note: `${summary.pagesExtracted} of ${summary.totalPages} pages read` },
       ),
     )
   }
