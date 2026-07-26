@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import type { DocumentPage, DocumentTextSummary } from './documentText'
+import {
+  MAX_DOCUMENT_PAGES,
+  MAX_DOCUMENT_TEXT_CHARS,
+  MAX_PAGE_TEXT_CHARS,
+  type DocumentPage,
+  type DocumentTextSummary,
+} from './documentText'
 import {
   MAX_MIGRATION_EVIDENCE_CHARS,
   MAX_MIGRATION_EVIDENCE_PER_VENDOR,
@@ -384,6 +390,24 @@ describe('omitted pages: counted, not case-analysed', () => {
 })
 
 describe('identifyMigrationDocument', () => {
+  it('refuses direct callers that bypass the document reader budgets', () => {
+    expect(
+      identifyMigrationDocument([
+        docPage(1, `RightCapital${'x'.repeat(MAX_PAGE_TEXT_CHARS)}`),
+      ]),
+    ).toBeNull()
+
+    const overTotal = Array.from({ length: Math.floor(MAX_DOCUMENT_TEXT_CHARS / MAX_PAGE_TEXT_CHARS) + 1 }, (_, index) =>
+      docPage(index + 1, `${index === 0 ? 'eMoney' : ''}${'x'.repeat(MAX_PAGE_TEXT_CHARS - (index === 0 ? 6 : 0))}`),
+    )
+    expect(identifyMigrationDocument(overTotal)).toBeNull()
+
+    const overPages = Array.from({ length: MAX_DOCUMENT_PAGES + 1 }, (_, index) =>
+      docPage(index + 1, index === 0 ? 'MoneyGuidePro' : ''),
+    )
+    expect(identifyMigrationDocument(overPages)).toBeNull()
+  })
+
   it('identifies each incumbent tool from its own cover page', () => {
     const cases: [string, string][] = [
       [RIGHTCAPITAL_COVER, 'rightcapital'],

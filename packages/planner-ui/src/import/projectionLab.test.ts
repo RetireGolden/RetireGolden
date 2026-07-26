@@ -7,7 +7,12 @@
 import { describe, expect, it } from 'vitest'
 
 import { parsePlan } from '@retiregolden/engine/model/plan'
-import { mapProjectionLabAccountType, mapProjectionLabExport } from './projectionLab'
+import {
+  MAX_IMPORT_JSON_CHARS,
+  MAX_PROJECTIONLAB_RECORDS,
+  mapProjectionLabAccountType,
+  mapProjectionLabExport,
+} from './projectionLab'
 
 let n = 0
 const testIds = () => `pl-${++n}`
@@ -103,7 +108,48 @@ describe('mapProjectionLabExport', () => {
 
   it('refuses non-JSON and oversized files without throwing', () => {
     expect(mapProjectionLabExport('not json {', testIds).ok).toBe(false)
-    expect(mapProjectionLabExport('x'.repeat(10_000_001), testIds).ok).toBe(false)
+    expect(mapProjectionLabExport('x'.repeat(MAX_IMPORT_JSON_CHARS + 1), testIds).ok).toBe(false)
+  })
+
+  it('refuses dense record bombs before constructing a draft', () => {
+    let idsRequested = 0
+    const hostile = JSON.stringify({
+      currentFinances: {
+        // Nulls are the densest legal JSON records and used to drive the whole
+        // account loop despite producing no plan rows.
+        accounts: Array.from({ length: MAX_PROJECTIONLAB_RECORDS + 1 }, () => null),
+      },
+    })
+    expect(hostile.length).toBeLessThan(MAX_IMPORT_JSON_CHARS)
+
+    const r = mapProjectionLabExport(hostile, () => `unused-${++idsRequested}`)
+    expect(r.ok).toBe(false)
+    if (r.ok) return
+    expect(r.message).toContain(MAX_PROJECTIONLAB_RECORDS.toLocaleString('en-US'))
+    expect(r.message).toMatch(/records|split|simplify/i)
+    // The structural refusal happens before createEmptyPlan allocates ids and
+    // before any mapper/review loop starts.
+    expect(idsRequested).toBe(0)
+  })
+
+  it('applies one deterministic budget across accounts, incomes, expenses, plans, and milestones', () => {
+    const quarter = MAX_PROJECTIONLAB_RECORDS / 4
+    const hostile = JSON.stringify({
+      currentFinances: {
+        accounts: Array.from({ length: quarter }, () => null),
+        incomeSources: Array.from({ length: quarter }, () => null),
+        expenses: Array.from({ length: quarter }, () => null),
+      },
+      plans: [
+        {
+          milestones: Array.from({ length: quarter + 1 }, () => null),
+        },
+      ],
+    })
+    expect(hostile.length).toBeLessThan(MAX_IMPORT_JSON_CHARS)
+    const r = mapProjectionLabExport(hostile, testIds)
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.message).toContain('records')
   })
 
   it('skips hostile balances (negative, absurd, non-numeric) with review items instead of importing them', () => {
