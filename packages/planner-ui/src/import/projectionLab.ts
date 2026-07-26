@@ -18,6 +18,13 @@ import { jsonPathLocator as jsonPath, type ImportConfidence, type SourceLocator 
 import type { ImportReviewItem } from './reviewChecklist'
 
 export const MAX_IMPORT_JSON_CHARS = 10_000_000
+/**
+ * Largest total number of records the mapper will walk across the collections
+ * it consumes. A dense JSON export can stay well below the character cap while
+ * carrying hundreds of thousands of tiny records, so the text cap alone does
+ * not bound mapper work or the draft/review arrays it creates.
+ */
+export const MAX_PROJECTIONLAB_RECORDS = 20_000
 
 export type ProjectionLabImportResult =
   | { ok: true; plan: Plan; review: ImportReviewItem[] }
@@ -26,6 +33,9 @@ export type ProjectionLabImportResult =
 const UNRECOGNIZED_MESSAGE =
   'This file does not match a ProjectionLab data export we recognize (expected a "currentFinances" section with accounts). ' +
   'ProjectionLab may have changed its format — you can still bring balances over with the broker CSV or spreadsheet import.'
+const TOO_MANY_RECORDS_MESSAGE =
+  `This ProjectionLab export contains more than ${MAX_PROJECTIONLAB_RECORDS.toLocaleString('en-US')} records in the sections this importer reads. ` +
+  'Split or simplify the export, or bring balances over with the broker CSV or spreadsheet import.'
 
 function asRecord(v: unknown): Record<string, unknown> | null {
   return typeof v === 'object' && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : null
@@ -118,6 +128,25 @@ export function mapProjectionLabExport(
   const rawAccounts = currentFinances ? asArray(currentFinances['accounts']) : null
   if (!currentFinances || !rawAccounts) return { ok: false, message: UNRECOGNIZED_MESSAGE }
 
+  const incomesFromSources = asArray(currentFinances['incomeSources'])
+  const rawIncomes = incomesFromSources ?? asArray(currentFinances['incomes']) ?? []
+  const rawExpenses = asArray(currentFinances['expenses']) ?? []
+  const plansArray = asArray(root['plans']) ?? []
+  let structuralRecords = rawAccounts.length + rawIncomes.length + rawExpenses.length + plansArray.length
+  if (structuralRecords > MAX_PROJECTIONLAB_RECORDS) {
+    return { ok: false, message: TOO_MANY_RECORDS_MESSAGE }
+  }
+
+  // Only the first object-shaped plan can supply a retirement milestone, but
+  // its milestone array is still attacker-controlled and is walked below.
+  const firstPlanIndex = plansArray.findIndex((p) => asRecord(p) !== null)
+  const firstPlan = firstPlanIndex === -1 ? null : asRecord(plansArray[firstPlanIndex])
+  const milestones = firstPlan ? (asArray(firstPlan['milestones']) ?? []) : []
+  structuralRecords += milestones.length
+  if (structuralRecords > MAX_PROJECTIONLAB_RECORDS) {
+    return { ok: false, message: TOO_MANY_RECORDS_MESSAGE }
+  }
+
   const review: ImportReviewItem[] = []
   const plan = createEmptyPlan({ newId, name: 'Imported from ProjectionLab' })
   const person = plan.household.people[0]!
@@ -159,10 +188,6 @@ export function mapProjectionLabExport(
   })
 
   // Retirement milestone age, when present on the first plan.
-  const plansArray = asArray(root['plans']) ?? []
-  const firstPlanIndex = plansArray.findIndex((p) => asRecord(p) !== null)
-  const firstPlan = firstPlanIndex === -1 ? null : asRecord(plansArray[firstPlanIndex])
-  const milestones = firstPlan ? (asArray(firstPlan['milestones']) ?? []) : []
   for (let mi = 0; mi < milestones.length; mi++) {
     const rec = asRecord(milestones[mi])
     if (!rec) continue
@@ -356,9 +381,7 @@ export function mapProjectionLabExport(
   }
 
   // --- Income sources ---------------------------------------------------------
-  const incomesFromSources = asArray(currentFinances['incomeSources'])
   const incomeKey = incomesFromSources ? 'incomeSources' : 'incomes'
-  const rawIncomes = incomesFromSources ?? asArray(currentFinances['incomes']) ?? []
   for (let ii = 0; ii < rawIncomes.length; ii++) {
     const rec = asRecord(rawIncomes[ii])
     if (!rec) continue
@@ -421,7 +444,6 @@ export function mapProjectionLabExport(
   }
 
   // --- Expenses ----------------------------------------------------------------
-  const rawExpenses = asArray(currentFinances['expenses']) ?? []
   let expenseTotal = 0
   const expenseNames: string[] = []
   const expenseLocators: SourceLocator[] = []

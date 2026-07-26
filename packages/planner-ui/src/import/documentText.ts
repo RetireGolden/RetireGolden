@@ -137,6 +137,19 @@
  * declines to decode) is follow-up work, not spike work.
  */
 
+import {
+  MAX_DOCUMENT_BYTES,
+  MAX_DOCUMENT_PAGES,
+  MAX_DOCUMENT_TEXT_CHARS,
+  MAX_PAGE_TEXT_CHARS,
+} from './documentLimits'
+export {
+  MAX_DOCUMENT_BYTES,
+  MAX_DOCUMENT_PAGES,
+  MAX_DOCUMENT_TEXT_CHARS,
+  MAX_PAGE_TEXT_CHARS,
+} from './documentLimits'
+
 /**
  * A single page's extracted text. `page` is the citation: a 1-based page
  * number, always present, never encoded in a string.
@@ -328,26 +341,6 @@ export type DocumentTextFailureReason =
 export type DocumentTextResult =
   | { ok: true; pages: readonly DocumentPage[]; summary: DocumentTextSummary }
   | { ok: false; reason: DocumentTextFailureReason; message: string }
-
-/**
- * Largest document accepted, in bytes. Oversized input is rejected before the
- * bytes are inspected at all — it is the cheapest possible refusal, and it
- * takes precedence over every other reason including `not_pdf`.
- */
-export const MAX_DOCUMENT_BYTES = 25 * 1024 * 1024
-
-/** Largest page count accepted. Checked once the document reports its length. */
-export const MAX_DOCUMENT_PAGES = 300
-
-/** Largest text kept from any one page. */
-export const MAX_PAGE_TEXT_CHARS = 100_000
-
-/**
- * Largest text kept from the whole document. A host that embeds extracted
- * text has its own limits; these are ours, exported so the two can be
- * reconciled rather than discovered.
- */
-export const MAX_DOCUMENT_TEXT_CHARS = 2_000_000
 
 /**
  * A pdfjs module supplied by the host — whatever the host's own `import()` of

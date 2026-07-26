@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { singlePersonPlan, taxableAccount, validatePlan } from '@retiregolden/engine/testing/planFixtures'
 import type { Plan } from '@retiregolden/engine/model/plan'
+import { draftPlanFromBrokerAccounts, parseBrokerPositionsCsv } from '../import/brokerCsv'
 import { projectPlan } from '../planner/useProjection'
 import { renderStandaloneReportHtml } from './reportHtml'
 import {
@@ -202,6 +203,31 @@ describe('table export helpers', () => {
     // Apostrophe-prefixed so Excel/Sheets render text instead of evaluating.
     expect(csv).toContain(`"'=HYPERLINK(""https://attacker.example"",""Open"")"`)
     expect(csv).not.toMatch(/^=|[\n,]=/m)
+  })
+
+  it('neutralizes formula-like account names that came through the broker importer', () => {
+    const parsed = parseBrokerPositionsCsv(`"Positions for account =1+1 as of 07/07/2026"
+"Symbol","Description","Mkt Val (Market Value)","Cost Basis"
+"VTI","Fund","+not-a-number","$400.00"
+"VXUS","Fund","$500.00","$400.00"
+
+"Positions for account @SUM(A1) as of 07/07/2026"
+"Symbol","Description","Mkt Val (Market Value)","Cost Basis"
+"BND","Fund","$250.00","$200.00"
+`)
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) return
+    let nextId = 0
+    const draft = draftPlanFromBrokerAccounts(parsed.broker, parsed.accounts, () => `broker-${++nextId}`)
+    expect(draft.ok).toBe(true)
+    if (!draft.ok) return
+
+    const csv = accountsCsv(modelFor(draft.plan).blocks['accounts'])
+    expect(csv).toContain("'=1+1")
+    expect(csv).toContain("'@SUM(A1)")
+    for (const line of csv.split('\n').slice(1)) {
+      expect(line).not.toMatch(/^[=+\-@]/)
+    }
   })
 })
 

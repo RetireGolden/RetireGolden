@@ -46,6 +46,7 @@
  * and published as the `@retiregolden/planner-ui/migration-source` subpath.
  */
 
+import { MAX_DOCUMENT_PAGES, MAX_DOCUMENT_TEXT_CHARS, MAX_PAGE_TEXT_CHARS } from './documentLimits'
 import type { DocumentPage, DocumentTextSummary } from './documentText'
 import { jsonPathLocator as jsonPath, type SourceLocator } from './provenance'
 import type { ImportReviewItem } from './reviewChecklist'
@@ -741,6 +742,28 @@ function projectionLabStructure(text: string): MigrationEvidence[] | null {
  * is. Returns `null` when nothing matched.
  */
 export function identifyMigrationDocument(pages: readonly DocumentPage[]): MigrationIdentification | null {
+  // This is a published pure function, so callers can bypass
+  // extractDocumentText and hand it arbitrary records. Refuse the whole scan
+  // when those records exceed the reader's ceilings: scanning only a prefix
+  // could hide a second vendor mention in the omitted suffix and turn an
+  // ambiguous document into a false identification.
+  if (!Array.isArray(pages) || pages.length > MAX_DOCUMENT_PAGES) return null
+  let totalTextChars = 0
+  for (const page of pages) {
+    if (
+      typeof page !== 'object' ||
+      page === null ||
+      !Number.isSafeInteger(page.page) ||
+      page.page < 1 ||
+      typeof page.text !== 'string'
+    ) {
+      return null
+    }
+    if (page.text.length > MAX_PAGE_TEXT_CHARS) return null
+    totalTextChars += page.text.length
+    if (totalTextChars > MAX_DOCUMENT_TEXT_CHARS) return null
+  }
+
   const found = new Map<MigrationVendor, MigrationEvidence[]>()
   for (const page of pages) {
     collectNameEvidence(page.text, migrationPageLocator(page.page), found)

@@ -1017,7 +1017,12 @@ describe('extractDocumentText — caps', () => {
   })
 
   it('exports caps as constants a host can reconcile against its own limits', () => {
-    for (const value of [MAX_DOCUMENT_BYTES, MAX_DOCUMENT_PAGES, MAX_PAGE_TEXT_CHARS, MAX_DOCUMENT_TEXT_CHARS]) {
+    for (const value of [
+      MAX_DOCUMENT_BYTES,
+      MAX_DOCUMENT_PAGES,
+      MAX_PAGE_TEXT_CHARS,
+      MAX_DOCUMENT_TEXT_CHARS,
+    ]) {
       expect(Number.isInteger(value)).toBe(true)
       expect(value).toBeGreaterThan(0)
     }

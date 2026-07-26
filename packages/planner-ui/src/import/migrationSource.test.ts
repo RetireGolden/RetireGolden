@@ -1,5 +1,17 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
+// The migration-source subpath must stay lightweight and browser-free. Type
+// imports from documentText are erased; any future runtime import evaluates
+// this factory and fails the suite before identification tests can run.
+vi.mock('./documentText', () => {
+  throw new Error('migrationSource loaded the PDF implementation at run time')
+})
+
+import {
+  MAX_DOCUMENT_PAGES,
+  MAX_DOCUMENT_TEXT_CHARS,
+  MAX_PAGE_TEXT_CHARS,
+} from './documentLimits'
 import type { DocumentPage, DocumentTextSummary } from './documentText'
 import {
   MAX_MIGRATION_EVIDENCE_CHARS,
@@ -384,6 +396,43 @@ describe('omitted pages: counted, not case-analysed', () => {
 })
 
 describe('identifyMigrationDocument', () => {
+  it('refuses direct callers that bypass the document reader budgets', () => {
+    expect(
+      identifyMigrationDocument([
+        docPage(1, `RightCapital${'x'.repeat(MAX_PAGE_TEXT_CHARS)}`),
+      ]),
+    ).toBeNull()
+
+    const overTotal = Array.from({ length: Math.floor(MAX_DOCUMENT_TEXT_CHARS / MAX_PAGE_TEXT_CHARS) + 1 }, (_, index) =>
+      docPage(index + 1, `${index === 0 ? 'eMoney' : ''}${'x'.repeat(MAX_PAGE_TEXT_CHARS - (index === 0 ? 6 : 0))}`),
+    )
+    expect(identifyMigrationDocument(overTotal)).toBeNull()
+
+    const overPages = Array.from({ length: MAX_DOCUMENT_PAGES + 1 }, (_, index) =>
+      docPage(index + 1, index === 0 ? 'MoneyGuidePro' : ''),
+    )
+    expect(identifyMigrationDocument(overPages)).toBeNull()
+  })
+
+  it('fails closed for malformed page records from untyped callers', () => {
+    for (const malformed of [
+      null,
+      { page: 1, text: null },
+      { page: 0, text: 'RightCapital' },
+      { page: Number.NaN, text: 'eMoney' },
+    ]) {
+      expect(identifyMigrationDocument([malformed] as unknown as DocumentPage[])).toBeNull()
+    }
+  })
+
+  it('fails closed instead of throwing when an untyped caller passes a non-array', () => {
+    for (const malformed of [null, undefined, {}, 'RightCapital', { 0: docPage(1, 'eMoney'), length: 1 }]) {
+      const call = () => identifyMigrationDocument(malformed as unknown as DocumentPage[])
+      expect(call).not.toThrow()
+      expect(call()).toBeNull()
+    }
+  })
+
   it('identifies each incumbent tool from its own cover page', () => {
     const cases: [string, string][] = [
       [RIGHTCAPITAL_COVER, 'rightcapital'],
