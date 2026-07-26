@@ -5,6 +5,14 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 ## 2026-07 (July 2026 Depth Wave)
 
 **2026-07-26**
+- Prepared **`@retiregolden/engine` 0.1.8** and **`@retiregolden/planner-ui` 0.6.2**
+  (patches — additive Advisor meeting WS8 performance seams, with no calculation changes).
+  Engine scenario comparisons can now report genuine completed shared-path work across baseline
+  and proposal while keeping callbacks out of result provenance. Planner UI's public
+  `./spending-solve` facade now accepts an optional `AbortSignal`; aborting terminates active
+  worker work, removes listeners, settles once with `AbortError`, and ignores late events.
+  Regression coverage pins monotonic `1..2N` comparison progress, already-aborted behavior,
+  active-worker termination, and late-message safety. Calculation cases remain unchanged.
 - Prepared **`@retiregolden/planner-ui` 0.6.1** (patch — additive, browser-free intake refresh contract; no public planner UI behavior change). The new supported **`./intake-refresh`** subpath lets a professional host classify, preview, and apply narrowly allowlisted updates from a later intake to the same saved plan. It recognizes only annual wages, recurring annual income, one-time income amounts, and recent annual MAGI, and it requires provenance-backed semantic identity before a candidate can update anything. Stable current-plan IDs and semantic bindings flow through classification, delta construction, and application; Unicode-aware matching prevents visually deceptive names from becoming accidental identities.
 
   Refreshes are fail-closed. Duplicate matches, stale or malformed deltas, changed target values, missing targets, and protected paths cannot be applied. Accepted candidates write only their single supported money leaf; rejected or merely unmatched candidates leave the plan unchanged. The contract never adds or removes records and does not refresh Social Security, accounts, household or filing status, historical MAGI, timing, growth, tax treatment, or strategy fields. A Pro host remains responsible for sealing the base snapshot, authorizing the saved-plan target, collecting explicit review decisions, and committing the exact preview atomically.
