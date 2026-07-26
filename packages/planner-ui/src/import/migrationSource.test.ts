@@ -408,6 +408,17 @@ describe('identifyMigrationDocument', () => {
     expect(identifyMigrationDocument(overPages)).toBeNull()
   })
 
+  it('fails closed for malformed page records from untyped callers', () => {
+    for (const malformed of [
+      null,
+      { page: 1, text: null },
+      { page: 0, text: 'RightCapital' },
+      { page: Number.NaN, text: 'eMoney' },
+    ]) {
+      expect(identifyMigrationDocument([malformed] as unknown as DocumentPage[])).toBeNull()
+    }
+  })
+
   it('identifies each incumbent tool from its own cover page', () => {
     const cases: [string, string][] = [
       [RIGHTCAPITAL_COVER, 'rightcapital'],

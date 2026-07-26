@@ -755,6 +755,15 @@ export function identifyMigrationDocument(pages: readonly DocumentPage[]): Migra
   if (pages.length > MAX_DOCUMENT_PAGES) return null
   let totalTextChars = 0
   for (const page of pages) {
+    if (
+      typeof page !== 'object' ||
+      page === null ||
+      !Number.isSafeInteger(page.page) ||
+      page.page < 1 ||
+      typeof page.text !== 'string'
+    ) {
+      return null
+    }
     if (page.text.length > MAX_PAGE_TEXT_CHARS) return null
     totalTextChars += page.text.length
     if (totalTextChars > MAX_DOCUMENT_TEXT_CHARS) return null

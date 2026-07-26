@@ -7,7 +7,6 @@ import { fileURLToPath } from 'node:url'
 
 import {
   MAX_DOCUMENT_BYTES,
-  MAX_DOCUMENT_IMAGE_PIXELS,
   MAX_DOCUMENT_PAGES,
   MAX_DOCUMENT_TEXT_CHARS,
   MAX_PAGE_TEXT_CHARS,
@@ -69,8 +68,6 @@ interface FakePdfPage {
 
 interface FakePdfjsSpec {
   readonly pages?: readonly FakePdfPage[]
-  /** Observe the exact parser controls passed to getDocument. */
-  readonly onGetDocument?: (params: Record<string, unknown>) => void
   /** Reject the loading task's promise: a document-level failure. */
   readonly documentError?: unknown
   /** Throw synchronously out of `getDocument`, as a mismatched build would. */
@@ -146,8 +143,7 @@ function fakePdfjs(spec: FakePdfjsSpec): Record<string, unknown> {
       paintImageMaskXObjectRepeat: 91,
       paintSolidColorImageMask: 92,
     },
-    getDocument: (params: Record<string, unknown>) => {
-      spec.onGetDocument?.(params)
+    getDocument: () => {
       if (spec.getDocumentThrows !== undefined) throw spec.getDocumentThrows
       return {
         promise:
@@ -1026,30 +1022,11 @@ describe('extractDocumentText — caps', () => {
       MAX_DOCUMENT_PAGES,
       MAX_PAGE_TEXT_CHARS,
       MAX_DOCUMENT_TEXT_CHARS,
-      MAX_DOCUMENT_IMAGE_PIXELS,
     ]) {
       expect(Number.isInteger(value)).toBe(true)
       expect(value).toBeGreaterThan(0)
     }
     expect(MAX_DOCUMENT_TEXT_CHARS).toBeGreaterThanOrEqual(MAX_PAGE_TEXT_CHARS)
-  })
-
-  it('forwards a raster-pixel ceiling to pdfjs and lets callers only tighten it', async () => {
-    const seen: number[] = []
-    const spec: FakePdfjsSpec = {
-      pages: [{ items: () => [{ str: 'bounded image decode' }] }],
-      onGetDocument: (params) => seen.push(params['maxImageSize'] as number),
-    }
-
-    expectOk(await extractWith(spec))
-    expectOk(await extractWith(spec, { maxImagePixels: 1_000_000 }))
-    expectOk(await extractWith(spec, { maxImagePixels: MAX_DOCUMENT_IMAGE_PIXELS * 10 }))
-
-    expect(seen).toEqual([
-      MAX_DOCUMENT_IMAGE_PIXELS,
-      1_000_000,
-      MAX_DOCUMENT_IMAGE_PIXELS,
-    ])
   })
 })
 

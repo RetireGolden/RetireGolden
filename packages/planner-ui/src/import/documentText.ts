@@ -350,16 +350,6 @@ export const MAX_PAGE_TEXT_CHARS = 100_000
 export const MAX_DOCUMENT_TEXT_CHARS = 2_000_000
 
 /**
- * Largest raster image pdfjs may decode, measured in total pixels.
- *
- * This constrains one parser-exposed source of PDF memory amplification. It
- * does not bound content-stream decompression, font work, or every allocation
- * inside pdfjs; callers that need a hard time/memory boundary must still run
- * extraction in an isolatable worker/process.
- */
-export const MAX_DOCUMENT_IMAGE_PIXELS = 16_000_000
-
-/**
  * A pdfjs module supplied by the host — whatever the host's own `import()` of
  * `pdfjs-dist/legacy/build/pdf.mjs` resolved to in its build.
  *
@@ -391,11 +381,6 @@ export interface ExtractDocumentTextOptions {
   readonly maxPages?: number
   readonly maxPageTextChars?: number
   readonly maxTotalTextChars?: number
-  /**
-   * Largest raster image pdfjs may decode, in total pixels. A caller may only
-   * tighten {@link MAX_DOCUMENT_IMAGE_PIXELS}, never raise it.
-   */
-  readonly maxImagePixels?: number
   /**
    * The pdfjs module to use, instead of importing one. **This is the browser
    * path** — see the module header: a bundled page cannot resolve the bare
@@ -640,7 +625,6 @@ function failure(reason: DocumentTextFailureReason, context?: FailureContext): D
 interface PdfjsModule {
   getDocument: (params: {
     data: Uint8Array
-    maxImageSize: number
     useWorkerFetch: boolean
     useSystemFonts: boolean
     disableFontFace: boolean
@@ -1175,7 +1159,6 @@ export async function extractDocumentText(
   const maxPages = cap(opts.maxPages, MAX_DOCUMENT_PAGES)
   const maxPageTextChars = cap(opts.maxPageTextChars, MAX_PAGE_TEXT_CHARS)
   const maxTotalTextChars = cap(opts.maxTotalTextChars, MAX_DOCUMENT_TEXT_CHARS)
-  const maxImagePixels = cap(opts.maxImagePixels, MAX_DOCUMENT_IMAGE_PIXELS)
 
   const bytes = toBytes(data)
   if (bytes === null) return failure('unreadable_input')
@@ -1238,10 +1221,6 @@ export async function extractDocumentText(
   try {
     opened = pdfjs.getDocument({
       data: owned,
-      // pdfjs enforces this before decoding a raster whose pixel dimensions
-      // would otherwise amplify a small compressed object into a large bitmap.
-      // It is one parser control, not a claim to bound all parser work.
-      maxImageSize: maxImagePixels,
       // See the local-only paragraph in the module header. Every option naming
       // a fetchable location — url, docBaseUrl, cMapUrl, standardFontDataUrl,
       // iccUrl, wasmUrl — is omitted on purpose; these three close the paths
