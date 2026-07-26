@@ -10,7 +10,9 @@ import { runSpendingSolveRequest } from './runSpendingSolve'
 import { runWorkerRequest } from '../workers/run'
 
 export function runSpendingSolve(req: SpendingSolveRequest): Promise<SpendingSolveResult> {
-  if (typeof Worker === 'undefined') return Promise.resolve(runSpendingSolveRequest(req))
+  if (typeof Worker === 'undefined') {
+    return Promise.resolve().then(() => runSpendingSolveRequest(req))
+  }
   return runWorkerRequest<SpendingSolveRequest, SpendingSolveResponse, SpendingSolveResult>({
     request: req,
     createWorker: () => new Worker(new URL('./spendingSolve.worker.ts', import.meta.url), { type: 'module' }),

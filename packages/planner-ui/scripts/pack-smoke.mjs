@@ -72,6 +72,14 @@ import {
   type PlanStore,
 } from '@retiregolden/planner-ui'
 import { parseV2Backup, serializeV2Backup } from '@retiregolden/planner-ui/plan-format'
+import { taxCalculatorFor } from '@retiregolden/planner-ui/plan-tax-calculator'
+import {
+  runSpendingSolve,
+  type SpendingSolveEvidence,
+  type SpendingSolveRequest,
+  type SpendingSolveResponse,
+  type SpendingSolveResult,
+} from '@retiregolden/planner-ui/spending-solve'
 // The optional-peer subpath. Nothing here installs pdfjs-dist, so a literal
 // pdfjs specifier in the shipped source would fail THIS build — which is the
 // regression that reached a release once already.
@@ -93,12 +101,23 @@ function WorkspaceOnlyHost() {
   return useRoutes([...plannerWorkspaceRoutes, ...plannerContentRoutes])
 }
 
+type SpendingSolveContract = {
+  request: SpendingSolveRequest
+  result: SpendingSolveResult
+  evidence: SpendingSolveEvidence
+  response: SpendingSolveResponse
+}
+const spendingSolveContract: SpendingSolveContract | undefined = undefined
+
 console.debug(
   parseV2Backup(serializeV2Backup([])).ok,
   WorkspaceOnlyHost.name,
   PlanStoreProvider.name,
   MAX_DOCUMENT_BYTES,
   extractDocumentText.name,
+  taxCalculatorFor.name,
+  runSpendingSolve.name,
+  spendingSolveContract,
 )
 
 createRoot(document.getElementById('root')!).render(

@@ -18,12 +18,22 @@ import { runSpendingSolveRequest } from './runSpendingSolve'
 
 describe('runSpendingSolveRequest', () => {
   it('matches a direct engine call and is deterministic across reruns', () => {
-    const plan = noTraditionalPlan()
+    const fixture = noTraditionalPlan()
+    const plan = {
+      ...fixture,
+      assumptions: {
+        ...fixture.assumptions,
+        stateEffectiveTaxPct: 6.25,
+        localIncomeTaxPct: 1.5,
+      },
+    }
     const first = runSpendingSolveRequest({ plan, startYear: 2026 })
     const second = runSpendingSolveRequest({ plan, startYear: 2026 })
     expect(second).toEqual(first)
 
     // Same tax stack the executor builds — the answers must agree exactly.
+    // Construct this independently from the helper used by the executor, so
+    // nonzero state and local override drift cannot agree by construction.
     const taxCalculator = combineTaxCalculators(
       createFederalTaxCalculator(),
       createStateTaxCalculator({
