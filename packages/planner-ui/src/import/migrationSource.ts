@@ -356,7 +356,7 @@ function excerptAround(text: string, index: number, length: number): string {
   const context = Math.max(0, Math.floor(room / 2))
   const start = wholeCharacterBoundary(text, Math.max(0, index - context))
   const end = wholeCharacterBoundary(text, Math.min(text.length, index + length + context))
-  // `printableFragment`, not `printableEvidence`: trimming each side would eat
+  // Fragments, joined UNTRIMMED: trimming each side would eat
   // the spaces ADJACENT to the match and glue the excerpt together —
   // "Generated withRightCapitalon March 14" — which stops it being verbatim at
   // exactly the two positions a reader looks at first. Only the outer edges are
@@ -416,32 +416,17 @@ function wholeCharacterBoundary(text: string, index: number): number {
  * character is invisible; showing it is what lets a reviewer see WHY something
  * matched instead of staring at a word that looks ordinary.
  */
-function printableEvidence(text: string): string {
-  return printableFragment(text).trim()
-}
-
 /**
- * {@link printableEvidence} without the trim, for a piece that will be joined to
- * another piece. The spaces at a fragment's edges are real text when the
- * fragment sits next to the matched name, and dropping them makes the quotation
- * say something the file does not.
+ * Collapse whitespace and escape every control or format character, WITHOUT
+ * trimming — the edges belong to whoever joins this to something else. The
+ * spaces either side of a matched name are real text, and dropping them makes
+ * the quotation say something the file does not.
  */
 function printableFragment(text: string): string {
   return text
     .replace(/\s+/g, ' ')
     .replace(/[\p{Cc}\p{Cf}]/gu, (ch) => `<U+${ch.codePointAt(0)!.toString(16).toUpperCase().padStart(4, '0')}>`)
 }
-
-/**
- * The widest a single character can get once escaped: `<U+FFFF>`.
- *
- * Sanitising EXPANDS, and that has to be budgeted for before the input is
- * touched rather than after. A 10 MB `meta.app` of zero-width joiners becomes
- * ~80 MB of `<U+200D>` tokens plus intermediate copies, all to publish a
- * 160-character excerpt — enough to stall a browser tab over a file whose every
- * documented cap was respected.
- */
-const MAX_ESCAPE_WIDTH = 8
 
 /**
  * Sanitise a value under an OUTPUT budget, stopping as soon as it is spent.
@@ -649,7 +634,7 @@ function projectionLabStructure(text: string): MigrationEvidence[] | null {
   ]
   // Version evidence, reported and never gated on. This value comes out of a
   // file someone else wrote, so it gets the SAME treatment a name excerpt gets:
-  // run through `printableEvidence`, and clipped with a marker that says it was
+  // run through the same budgeted sanitiser, and clipped with a marker that says it was
   // clipped. Published raw it could carry control and format characters into the
   // quoted `detail` of a review item — where they reach the provenance envelope
   // and anything that renders it — and a long value was being cut at the bound
