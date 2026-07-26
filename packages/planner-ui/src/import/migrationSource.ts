@@ -100,6 +100,18 @@ export const MAX_MIGRATION_EVIDENCE_CHARS = 160
  */
 export const MAX_MIGRATION_EVIDENCE_PER_VENDOR = 3
 
+/**
+ * Longest file name this report will print, in characters.
+ *
+ * The name is not evidence and gets no excerpt budget, but it IS duplicated into
+ * the label and locator note of nearly every item — so an unbounded one is
+ * multiplied by the number of items before it reaches the envelope. A megabyte
+ * of file name could push a report past the provenance limit and make
+ * `serializeImportProvenance` throw over a file whose contents and excerpts had
+ * all respected their caps. Generous enough that no real name is touched.
+ */
+export const MAX_MIGRATION_SOURCE_NAME_CHARS = 200
+
 /** One thing that matched, quoted rather than summarized, plus where it was. */
 export interface MigrationEvidence {
   strength: MigrationEvidenceStrength
@@ -421,6 +433,31 @@ function printableFragment(text: string): string {
 }
 
 /**
+ * The widest a single character can get once escaped: `<U+FFFF>`.
+ *
+ * Sanitising EXPANDS, and that has to be budgeted for before the input is
+ * touched rather than after. A 10 MB `meta.app` of zero-width joiners becomes
+ * ~80 MB of `<U+200D>` tokens plus intermediate copies, all to publish a
+ * 160-character excerpt — enough to stall a browser tab over a file whose every
+ * documented cap was respected.
+ */
+const MAX_ESCAPE_WIDTH = 8
+
+/**
+ * Sanitise a value that is about to be clipped anyway, without expanding the
+ * whole of it first.
+ *
+ * Takes only as much raw input as could possibly survive the bound — `room`
+ * characters, each of which might grow eightfold — then sanitises that. The
+ * clip afterwards is what actually enforces the bound; this only stops the work
+ * from being unbounded on the way there.
+ */
+function printableWithin(text: string, room: number): string {
+  const window = Math.max(0, room) * MAX_ESCAPE_WIDTH
+  return printableEvidence(text.length > window ? sliceWholeCharacters(text, window) : text)
+}
+
+/**
  * Put the published bound and the truncation markers in the right order.
  *
  * The markers are budgeted for BEFORE the body is clipped, because clipping the
@@ -429,16 +466,16 @@ function printableFragment(text: string): string {
  * that produced this function published an excerpt that read as though it ran to
  * the end of the source, in the one case where it did not.
  */
-function clipWithMarkers(body: string, leading: boolean, trailing: boolean): string {
+function clipWithMarkers(body: string, leading: boolean, trailing: boolean, max = MAX_MIGRATION_EVIDENCE_CHARS): string {
   const lead = leading ? 1 : 0
-  let room = MAX_MIGRATION_EVIDENCE_CHARS - lead - (trailing ? 1 : 0)
+  let room = max - lead - (trailing ? 1 : 0)
   let marked = trailing
   // A body this bound is about to cut needs a marker whether or not the SLICE
   // was cut — and the marker has to be budgeted for before the cut, or the
   // published string comes out one character over the promise.
   if (body.length > room) {
     marked = true
-    room = MAX_MIGRATION_EVIDENCE_CHARS - lead - 1
+    room = max - lead - 1
   }
   const clipped = body.length > room ? sliceWholeCharacters(body, Math.max(0, room)) : body
   return `${leading ? '…' : ''}${clipped}${marked ? '…' : ''}`
@@ -601,7 +638,7 @@ function projectionLabStructure(text: string): MigrationEvidence[] | null {
               // does not contain. Say where the number came from instead.
               `${String(value)} (a number in the file, not text)`
             : null
-      const collapsed = shown === null ? '' : printableEvidence(shown)
+      const collapsed = shown === null ? '' : printableWithin(shown, MAX_MIGRATION_EVIDENCE_CHARS)
       if (collapsed !== '') {
         // `meta.app` is the file's claim about which program wrote it, and it
         // is not automatically evidence FOR ProjectionLab: a structurally
@@ -680,6 +717,35 @@ export interface MigrationReviewOptions {
    * failed.
    */
   mapped?: boolean
+  /**
+   * Which entry of a multi-source provenance envelope this file is.
+   *
+   * The contract reads an omitted `sourceIndex` as `sources[0]`, so in a session
+   * that combined several files every locator here silently pointed at the
+   * first of them — evidence quoted from one file, filed against another. There
+   * is no way for this module to know its own position, so a caller assembling a
+   * multi-source envelope has to say. Single-source callers leave it off, which
+   * is what the default already means.
+   *
+   * Only leaf locators can carry it: `{ kind: 'none' }` has no `sourceIndex`
+   * field in the contract, so page citations cannot be attributed this way, and
+   * a document is a single source in every flow that exists today.
+   */
+  sourceIndex?: number
+}
+
+/**
+ * Stamp a provenance source index onto a leaf locator that can hold one.
+ *
+ * `none` is deliberately untouched: the contract gives it no `sourceIndex`, and
+ * adding one would put a field on a locator that downstream validators do not
+ * expect. `derived` is untouched too — the contract puts the index on the leaves
+ * it is built from, not on the wrapper.
+ */
+function withSourceIndex(locator: SourceLocator, sourceIndex?: number): SourceLocator {
+  if (sourceIndex === undefined) return locator
+  if (locator.kind === 'none' || locator.kind === 'derived') return locator
+  return { ...locator, sourceIndex }
 }
 
 /** How many page numbers the "text carried over" item lists before it elides. */
@@ -696,12 +762,7 @@ function unmappedItem(source: string, detail: string, locator: SourceLocator): I
   return { status: 'unmapped', source, detail, locator, confidence: 'unmapped' }
 }
 
-function evidenceItems(
-  candidate: MigrationCandidate,
-  sourceName: string,
-  lead: string,
-  mapped: boolean,
-): ImportReviewItem[] {
+function evidenceItems(candidate: MigrationCandidate, sourceName: string, lead: string, sourceIndex?: number): ImportReviewItem[] {
   return candidate.evidence.map((evidence, index) =>
     unmappedItem(
       `${sourceName} — ${candidate.adapter.displayName}`,
@@ -713,15 +774,11 @@ function evidenceItems(
           // mapped, so the same words read as a denial of the sentence before
           // them. What is true in both cases is narrower: this identification
           // item is not itself a mapped value.
-          `${lead} The claim rests on this: ${MIGRATION_EVIDENCE_CLAIM[evidence.strength]}. Matched: “${evidence.matched}”. Check it — ${
-            mapped
-              ? 'this identification is a note about the file, not one of the values that transferred.'
-              : 'nothing was mapped on the strength of it.'
-          }`
+          `${lead} The claim rests on this: ${MIGRATION_EVIDENCE_CLAIM[evidence.strength]}. Matched: “${evidence.matched}”. Check it — nothing was mapped on the strength of it.`
         : evidence.contradicts === true
           ? `Against it: the file's own label says “${evidence.matched}”, which does not name ${candidate.adapter.displayName}. The identification stands on the file's structure — a shape is far harder to have by accident than a label — but this is here because you should see it.`
           : `Also matched: “${evidence.matched}”.`,
-      evidence.locator,
+      withSourceIndex(evidence.locator, sourceIndex),
     ),
   )
 }
@@ -759,7 +816,7 @@ export function buildMigrationReview(
   // unsanitised name would defeat the whole exercise. Callers keep the raw name
   // for identity (`ImportSourceRef.file` is where it belongs); what appears in
   // human-facing prose is this.
-  const sourceName = printableEvidence(rawSourceName)
+  const sourceName = clipWithMarkers(printableWithin(rawSourceName, MAX_MIGRATION_SOURCE_NAME_CHARS), false, false, MAX_MIGRATION_SOURCE_NAME_CHARS)
   const items: ImportReviewItem[] = []
 
   if (identification.outcome === 'ambiguous') {
@@ -772,7 +829,7 @@ export function buildMigrationReview(
       ),
     )
     for (const candidate of identification.candidates) {
-      items.push(...evidenceItems(candidate, sourceName, `${candidate.adapter.displayName} is one of the tools named in this file.`, false))
+      items.push(...evidenceItems(candidate, sourceName, `${candidate.adapter.displayName} is one of the tools named in this file.`, options.sourceIndex))
     }
     items.push(
       unmappedItem(`${sourceName} — what to do instead`, NO_FORMAT_MANUAL_PATH, {
@@ -806,17 +863,27 @@ export function buildMigrationReview(
       ? adapter.mapper
       : null
 
+  // A MAPPED file gets no items at all, and that is the honest answer rather
+  // than a shorter report.
+  //
+  // Every status in this vocabulary means something: `mapped`/`defaulted` file
+  // under provenance `mappings` and claim a value landed; `unmapped`/`skipped`
+  // file under `unresolved`. An identification note is none of those — no value
+  // landed, and nothing is outstanding either. Emitting it as `unmapped` put it
+  // under the checklist's "Not imported — add by hand" heading and recorded it
+  // in the envelope as an unresolved import problem, directly contradicting its
+  // own text, which said it was informational and needed nothing.
+  //
+  // There is no third option to reach for: the vocabulary has no informational
+  // status, and inventing one here would change a published contract for one
+  // sentence. So when a real mapper handled the file, ITS checklist is the
+  // report and this module has nothing to add. The unmapped report exists for
+  // what did not map.
+  if (mapper !== null) return []
+
   items.push(
-    ...evidenceItems(
-      identification,
-      sourceName,
-      mapper !== null
-        ? `Identified as a ${adapter.displayName} export, and mapped by the ${mapper} import — what transferred, what was assumed, and what did not transfer are on that import's own checklist and are not repeated here.`
-        : `Identified as a ${adapter.displayName} file. Nothing was mapped from it.`,
-      mapper !== null,
-    ),
+    ...evidenceItems(identification, sourceName, `Identified as a ${adapter.displayName} file. Nothing was mapped from it.`, options.sourceIndex),
   )
-  if (mapper !== null) return items
 
   for (const limitation of adapter.limitations) {
     items.push(

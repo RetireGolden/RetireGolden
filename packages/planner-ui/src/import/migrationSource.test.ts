@@ -4,6 +4,7 @@ import type { DocumentPage, DocumentTextSummary } from './documentText'
 import {
   MAX_MIGRATION_EVIDENCE_CHARS,
   MAX_MIGRATION_EVIDENCE_PER_VENDOR,
+  MAX_MIGRATION_SOURCE_NAME_CHARS,
   MAX_MIGRATION_TEXT_CHARS,
   MIGRATION_ADAPTERS,
   MIGRATION_VENDORS,
@@ -101,6 +102,71 @@ describe('the migration registry', () => {
  * a new field on `DocumentPage`, and if one does, `classifyPage` returning a
  * closed union means the compiler is involved rather than a bot.
  */
+describe('nothing unbounded reaches the envelope', () => {
+  it('bounds the file NAME, which is copied into every item', () => {
+    // Not evidence, so no excerpt budget — but duplicated into the label and
+    // locator note of nearly every item, so an unbounded one is multiplied
+    // before it reaches the envelope. A megabyte of name could push a report
+    // past the provenance limit and make serialization throw over a file whose
+    // contents and excerpts had all respected their caps.
+    const pages = [docPage(1, 'Generated with RightCapital')]
+    const items = buildMigrationReview(identifyMigrationDocument(pages), `${'n'.repeat(1_000_000)}.pdf`, { pages })
+    expect(items.length).toBeGreaterThan(0)
+    for (const item of items) expect(item.source.length).toBeLessThanOrEqual(MAX_MIGRATION_SOURCE_NAME_CHARS + 40)
+    expect(roundTrip(items).ok).toBe(true)
+  })
+
+  it('does not expand a huge metadata value just to publish 160 characters of it', () => {
+    // Sanitising EXPANDS: every zero-width joiner becomes an eight-character
+    // <U+200D>. Expanding a permitted 10 MB value in full, to then clip it to
+    // 160, is ~80 MB of intermediate string for a file that respected every
+    // documented cap. The raw window is bounded first.
+    //
+    // Asserted by CONTENT, not by a clock. A timing bound is the obvious test
+    // and it is a bad one \u2014 it passed with the fix reverted, because 400k
+    // characters expand fast enough to beat any threshold loose enough not to
+    // flake. This distinguishes the two behaviours exactly: whitespace collapses,
+    // so a window of pure spaces sanitises to nothing at all, and the marker
+    // sitting past the window can only appear in the output if the whole value
+    // was read.
+    const beyond = `${' '.repeat(MAX_MIGRATION_EVIDENCE_CHARS * 8 + 500)}BEYOND_THE_WINDOW`
+    const found = identifyMigrationExport(projectionLabExport({ meta: { app: beyond } }))
+    if (found?.outcome !== 'identified') throw new Error('expected an identification')
+    const value = found.evidence.find((item) => item.locator.kind === 'jsonPath' && item.locator.path === 'meta.app')
+    expect(value?.matched ?? '').not.toContain('BEYOND_THE_WINDOW')
+
+    // And the ordinary bound still holds on a value that survives the window.
+    const long = identifyMigrationExport(projectionLabExport({ meta: { app: '\u200D'.repeat(50_000) } }))
+    if (long?.outcome !== 'identified') throw new Error('expected an identification')
+    const escaped = long.evidence.find((item) => item.locator.kind === 'jsonPath' && item.locator.path === 'meta.app')
+    expect(escaped?.matched.length).toBeLessThanOrEqual(MAX_MIGRATION_EVIDENCE_CHARS)
+  })
+})
+
+describe('multi-source envelopes', () => {
+  it('attributes structural evidence to the right file when asked', () => {
+    // The contract reads an omitted sourceIndex as sources[0], so in a session
+    // combining several files every locator here silently pointed at the first
+    // of them — evidence quoted from one file, filed against another.
+    const identification = identifyMigrationExport(projectionLabExport())
+    const items = buildMigrationReview(identification, 'second.json', { sourceIndex: 2 })
+    const jsonLocators = items.map((item) => item.locator).filter((l) => l?.kind === 'jsonPath')
+    expect(jsonLocators.length).toBeGreaterThan(0)
+    for (const locator of jsonLocators) expect(locator).toMatchObject({ sourceIndex: 2 })
+  })
+
+  it('leaves page citations alone, because the contract gives them nowhere to put it', () => {
+    // `{ kind: 'none' }` has no sourceIndex field; inventing one would put a
+    // property on a locator downstream validators do not expect.
+    const pages = [docPage(3, 'Generated with RightCapital')]
+    const items = buildMigrationReview(identifyMigrationDocument(pages), 'doc.pdf', { pages, sourceIndex: 2 })
+    for (const item of items) {
+      if (item.locator?.kind === 'none') expect(Object.keys(item.locator).sort()).toEqual(['kind', 'note'])
+    }
+    expect(roundTrip(items).ok).toBe(true)
+  })
+})
+
 describe('classifyPage: all eight combinations of the three signals', () => {
   const CASES: ReadonlyArray<{ text: string; imageOnly: boolean; truncated: boolean; state: PageReadState }> = [
     { text: 'x', imageOnly: false, truncated: false, state: 'text' },
@@ -431,7 +497,7 @@ describe('identifyMigrationExport', () => {
     const label = found.evidence.find((item) => item.locator.kind === 'jsonPath' && item.locator.path === 'meta.app')
     expect(label?.contradicts).toBe(true)
 
-    const items = buildMigrationReview(found, 'export.json', { mapped: true })
+    const items = buildMigrationReview(found, 'export.json')
     expect(items.some((item) => item.detail.includes('does not name ProjectionLab'))).toBe(true)
 
     // A label that DOES name the tool is ordinary supporting evidence.
@@ -618,21 +684,18 @@ describe('buildMigrationReview', () => {
     // mapProjectionLabExport already pushes unmapped items for the
     // categorically non-transferable tail; repeating them here would double
     // every line in the wizard.
+    // NOTHING, not a shorter report. Every status in this vocabulary means
+    // something: mapped/defaulted claim a value landed, unmapped/skipped file
+    // under `unresolved`. An identification note is neither — no value landed,
+    // and nothing is outstanding — so emitting it as `unmapped` put it under the
+    // checklist's "Not imported — add by hand" heading and recorded it in the
+    // envelope as an unresolved import problem, contradicting its own text. The
+    // vocabulary has no informational status, so when a real mapper handled the
+    // file, ITS checklist is the report and this module has nothing to add.
     const items = buildMigrationReview(identifyMigrationExport(projectionLabExport()), 'projectionlab-export.json', {
       mapped: true,
     })
-    expect(items).toHaveLength(1)
-    expect(items[0]!.detail).toContain('mapped by the projectionLab import')
-    // The closing sentence must not deny the opening one. The identify-only path
-    // ends "nothing was mapped on the strength of it", which is the point of that
-    // report — and a flat contradiction here, in the only path where something
-    // WAS mapped. What is true in both cases is narrower: this identification
-    // item is not itself one of the mapped values.
-    expect(items[0]!.detail).not.toContain('nothing was mapped on the strength of it')
-    expect(items[0]!.detail).toContain('not one of the values that transferred')
-    const details = items.map((item) => item.detail)
-    for (const limitation of MIGRATION_ADAPTERS.projectionlab.limitations) expect(details).not.toContain(limitation)
-    expect(roundTrip(items).ok).toBe(true)
+    expect(items).toEqual([])
   })
 
   it('THE CLAIM MUST BE EARNED: recognising the shape is not evidence the mapper ran', () => {
@@ -651,7 +714,7 @@ describe('buildMigrationReview', () => {
     expect(unclaimed.length).toBeGreaterThan(1)
     // Saying so explicitly is the only thing that shortens the report.
     expect(buildMigrationReview(identification, 'projectionlab-export.json', { mapped: false })).toEqual(unclaimed)
-    expect(buildMigrationReview(identification, 'projectionlab-export.json', { mapped: true })).toHaveLength(1)
+    expect(buildMigrationReview(identification, 'projectionlab-export.json', { mapped: true })).toEqual([])
   })
 
   it('reports a scanned page and a clipped page as their own states, never as text that came across', () => {
