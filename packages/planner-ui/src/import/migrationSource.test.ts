@@ -8,7 +8,9 @@ import {
   MIGRATION_ADAPTERS,
   MIGRATION_VENDORS,
   type MigrationIdentification,
+  type PageReadState,
   buildMigrationReview,
+  classifyPage,
   identifyMigrationDocument,
   identifyMigrationExport,
 } from './migrationSource'
@@ -86,6 +88,142 @@ describe('the migration registry', () => {
     // The cap is duplicated rather than imported (see the constant's comment);
     // this is the guard that the duplication cannot drift.
     expect(MAX_MIGRATION_TEXT_CHARS).toBe(MAX_IMPORT_JSON_CHARS)
+  })
+})
+
+/**
+ * THE STATE SPACE, enumerated.
+ *
+ * Every page-state defect in this module was found one cell at a time, by a
+ * reviewer, because the code picked cases off with a filter each and nothing
+ * asked whether the cases covered the space. Three signals make eight
+ * combinations; this walks all eight. A ninth combination cannot appear without
+ * a new field on `DocumentPage`, and if one does, `classifyPage` returning a
+ * closed union means the compiler is involved rather than a bot.
+ */
+describe('classifyPage: all eight combinations of the three signals', () => {
+  const CASES: ReadonlyArray<{ text: string; imageOnly: boolean; truncated: boolean; state: PageReadState }> = [
+    { text: 'x', imageOnly: false, truncated: false, state: 'text' },
+    { text: 'x', imageOnly: true, truncated: false, state: 'text' },
+    { text: '', imageOnly: false, truncated: false, state: 'no-marks' },
+    { text: '', imageOnly: true, truncated: false, state: 'image' },
+    // `truncated` wins over everything: it is the only signal that says the
+    // reader stopped partway, and a zero-character cap can empty a page that
+    // really did hold text — so an empty truncated page is NOT a blank page.
+    { text: 'x', imageOnly: false, truncated: true, state: 'clipped' },
+    { text: 'x', imageOnly: true, truncated: true, state: 'clipped' },
+    { text: '', imageOnly: false, truncated: true, state: 'clipped' },
+    { text: '', imageOnly: true, truncated: true, state: 'clipped' },
+  ]
+
+  it('classifies every combination, and the table really is exhaustive', () => {
+    expect(CASES).toHaveLength(8)
+    expect(new Set(CASES.map((c) => `${c.text !== ''}|${c.imageOnly}|${c.truncated}`)).size).toBe(8)
+    for (const c of CASES) {
+      expect(classifyPage({ page: 1, text: c.text, imageOnly: c.imageOnly, truncated: c.truncated })).toBe(c.state)
+    }
+  })
+
+  it('gives every state its own item, and every page lands in exactly one', () => {
+    // One page per combination. Whatever the states are, no page may be silently
+    // dropped from the report and none may be counted twice.
+    const pages: DocumentPage[] = CASES.map((c, i) => ({
+      page: i + 1,
+      text: c.text,
+      imageOnly: c.imageOnly,
+      truncated: c.truncated,
+    }))
+    const withName: DocumentPage[] = [{ page: 99, text: 'Generated with RightCapital', imageOnly: false, truncated: false }, ...pages]
+    const items = buildMigrationReview(identifyMigrationDocument(withName), 'all-states.pdf', { pages: withName })
+
+    const cited = items
+      .filter((item) => /— (text carried over|text cut short|an image the reader cannot read|nothing the reader could read)$/.test(item.source))
+      .flatMap((item) => (item.detail.match(/\b\d+\b/g) ?? []).map(Number))
+    for (const page of withName) expect(cited.filter((n) => n === page.page)).toHaveLength(1)
+  })
+
+  it('no page-state sentence claims more than its signal carries', () => {
+    // The claims that were wrong were always interpretations laid over a signal:
+    // `imageOnly` is set by ANY raster paint operation and measures no coverage,
+    // and its absence says nothing about vector drawing. These assertions pin
+    // the ceiling on what each sentence may assert.
+    const page = (over: Partial<DocumentPage>): DocumentPage[] => [
+      { page: 1, text: 'Generated with RightCapital', imageOnly: false, truncated: false },
+      { page: 2, text: '', imageOnly: false, truncated: false, ...over },
+    ]
+    const detailFor = (over: Partial<DocumentPage>, fragment: string): string => {
+      const pages = page(over)
+      const items = buildMigrationReview(identifyMigrationDocument(pages), 'x.pdf', { pages })
+      return items.find((item) => item.source.includes(fragment))?.detail ?? ''
+    }
+
+    // An image page may not assert it IS a scan, because a corner logo sets the
+    // same flag.
+    const image = detailFor({ imageOnly: true }, 'an image the reader cannot read')
+    expect(image).toMatch(/logo or a watermark/)
+    expect(image).not.toMatch(/\bis a scan\b/)
+
+    // A textless page may not assert there is nothing to find, because outlined
+    // text and vector drawing look identical to this reader.
+    const none = detailFor({}, 'nothing the reader could read')
+    expect(none).toMatch(/outlines/)
+    expect(none).not.toMatch(/nothing to look for|genuinely empty\./)
+
+    // A clipped page may not name which cap fired; both set the same boolean.
+    const clipped = detailFor({ text: 'a', truncated: true }, 'text cut short')
+    expect(clipped).not.toMatch(/per page/)
+  })
+})
+
+/**
+ * The other place case analysis kept being wrong: which pages never reached the
+ * report. Three versions of that condition shipped, each wrong in a different
+ * direction, so it is arithmetic now — and this enumerates the arithmetic.
+ */
+describe('omitted pages: counted, not case-analysed', () => {
+  const summaryOf = (over: Partial<DocumentTextSummary>): DocumentTextSummary => ({
+    totalPages: 1,
+    pagesExtracted: 1,
+    unreadablePages: [],
+    imageOnlyPages: 0,
+    noTextExtracted: false,
+    totalTextChars: 10,
+    truncated: false,
+    truncatedBy: [],
+    ...over,
+  })
+
+  const earlyStopFor = (summary: DocumentTextSummary): string | undefined => {
+    const pages: DocumentPage[] = [{ page: 1, text: 'Generated with RightCapital', imageOnly: false, truncated: false }]
+    const items = buildMigrationReview(identifyMigrationDocument(pages), 'x.pdf', { pages, summary })
+    return items.find((item) => item.source.includes('stopped early'))?.detail
+  }
+
+  it('fires exactly when pages are unaccounted for, whatever the cause', () => {
+    const CASES: ReadonlyArray<{ what: string; summary: DocumentTextSummary; fires: boolean }> = [
+      { what: 'everything opened', summary: summaryOf({ totalPages: 3, pagesExtracted: 3 }), fires: false },
+      // The over-fire: the cap clipped the LAST page, so it tripped while every
+      // page had in fact been opened.
+      { what: 'cap clipped the final page', summary: summaryOf({ totalPages: 1, pagesExtracted: 1, truncated: true, truncatedBy: ['document_text_cap'] }), fires: false },
+      // The under-fire: one page failed, which used to silence the warning that
+      // the other six were never reached at all.
+      { what: 'one failed AND the rest never reached', summary: summaryOf({ totalPages: 9, pagesExtracted: 1, unreadablePages: [4] }), fires: true },
+      // 1 extracted + 2 unreadable === 3 total: every page accounted for, so
+      // there is no remainder to warn about even though two of them failed.
+      { what: 'all accounted for as extracted or unreadable', summary: summaryOf({ totalPages: 3, pagesExtracted: 1, unreadablePages: [2, 3] }), fires: false },
+      { what: 'pages missing with no cause recorded', summary: summaryOf({ totalPages: 5, pagesExtracted: 2 }), fires: true },
+    ]
+    for (const c of CASES) expect(`${c.what}: ${earlyStopFor(c.summary) !== undefined}`).toBe(`${c.what}: ${c.fires}`)
+  })
+
+  it('states the cause only when one was recorded', () => {
+    // The count is what the arithmetic knows. Naming the text budget when
+    // nothing recorded it is the same habit that made the condition wrong.
+    const withCause = earlyStopFor(summaryOf({ totalPages: 9, pagesExtracted: 1, truncated: true, truncatedBy: ['document_text_cap'] }))
+    expect(withCause).toMatch(/text budget/)
+    const withoutCause = earlyStopFor(summaryOf({ totalPages: 9, pagesExtracted: 1 }))
+    expect(withoutCause).toBeDefined()
+    expect(withoutCause).not.toMatch(/text budget/)
   })
 })
 

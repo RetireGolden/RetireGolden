@@ -850,19 +850,45 @@ export function buildMigrationReview(
  *
  * Called only with a non-empty page list; `buildMigrationReview` gates it.
  */
+/**
+ * What the reader could tell about ONE page, as a closed set.
+ *
+ * This exists because the alternative did not work. The three signals a
+ * `DocumentPage` carries — whether `text` is empty, `imageOnly`, `truncated` —
+ * make eight combinations, and picking them off with a filter per case meant
+ * reasoning about one cell at a time and getting a different cell wrong on each
+ * pass: a scan read as blank, then a blank page was told it needed OCR, then a
+ * page emptied by a zero-character cap fell into whichever bucket was tested
+ * first. A total function over the whole space, with a test that enumerates all
+ * eight, is what makes "is every case handled?" a question with an answer.
+ */
+export type PageReadState =
+  /** Text came across, and the reader was not cut off mid-page. */
+  | 'text'
+  /** A cap stopped the reader partway through this page, whatever it had so far. */
+  | 'clipped'
+  /** No text, and the reader saw a raster image it cannot read. */
+  | 'image'
+  /** No text and no image the reader recognises. Says nothing about vectors. */
+  | 'no-marks'
+
+/**
+ * `truncated` is tested FIRST and on its own: it is the only signal that says
+ * the reader stopped early on this page, and it can be set with text present or
+ * absent. Everything after it describes a page the reader saw all of.
+ */
+export function classifyPage(page: DocumentPage): PageReadState {
+  if (page.truncated) return 'clipped'
+  if (page.text !== '') return 'text'
+  return page.imageOnly ? 'image' : 'no-marks'
+}
+
 function pageItems(sourceName: string, pages: readonly DocumentPage[]): ImportReviewItem[] {
-  // FOUR states, and `text === ''` alone does not name any of them. A page with
-  // no text is a SCAN when `imageOnly` says so and genuinely BLANK when it does
-  // not, and the remediation is opposite: one says find OCR or retype from the
-  // original, the other says there is nothing on this page to look for. Telling
-  // a reader to hunt for figures on an empty page is the same failure as letting
-  // a scan read as blank, pointed the other way. `truncated` is checked first
-  // because a zero-character cap can empty a page that really did hold text.
-  const clipped = pages.filter((page) => page.truncated)
-  const rest = pages.filter((page) => !page.truncated)
-  const readable = rest.filter((page) => page.text !== '')
-  const scanned = rest.filter((page) => page.text === '' && page.imageOnly)
-  const blank = rest.filter((page) => page.text === '' && !page.imageOnly)
+  const byState = (state: PageReadState): DocumentPage[] => pages.filter((page) => classifyPage(page) === state)
+  const readable = byState('text')
+  const clipped = byState('clipped')
+  const scanned = byState('image')
+  const blank = byState('no-marks')
   const items: ImportReviewItem[] = []
 
   if (readable.length > 0) {
@@ -962,20 +988,26 @@ function omittedPageItems(sourceName: string, summary: DocumentTextSummary): Imp
   // named the failed page and said nothing about the rest of the document. And
   // `pagesExtracted` is not "the last page reached" when extraction failed on
   // some, so it could not be used to say where the reading stopped either.
-  // BOTH conditions, and this is the third version of them — each earlier one
-  // was wrong in one direction. Inferring from page counts alone under-fired
-  // (one unreadable page silenced the warning entirely); `truncatedBy` alone
-  // over-fires, because the document cap also trips when it clips the LAST page,
-  // and every page has then been opened — the item announced "1 of 1 pages were
-  // opened, and the rest were never looked at" and sent a reader off after a
-  // remainder that does not exist. The cap must have fired AND pages must
-  // actually be missing.
+  // COUNTED, not case-analysed. Three versions of this were written as
+  // conditions over `truncatedBy`, `unreadablePages` and the page counts, and
+  // each was wrong in a different direction: one unreadable page silenced the
+  // warning entirely; then the document cap clipping the LAST page announced a
+  // remainder that does not exist. The question is arithmetic — how many pages
+  // did the reader never open — and arithmetic cannot be wrong in a direction.
+  // A page was either extracted, or recorded unreadable, or never reached.
   const seen = summary.pagesExtracted + unreadable.length
-  if (summary.truncatedBy.includes('document_text_cap') && seen < summary.totalPages) {
+  const neverOpened = Math.max(0, summary.totalPages - seen)
+  if (neverOpened > 0) {
     items.push(
       unmappedItem(
         `${sourceName} — reading stopped early`,
-        `The reader ran out of its text budget partway through this document: ${seen} of ${summary.totalPages} pages were opened, and the rest were never looked at, so nothing from them is in this report — not even a note saying a page was unreadable. Work through the remainder by hand, or split the document and bring the rest in separately.`,
+        // The COUNT is what this knows; the CAUSE is only stated when
+        // `truncatedBy` recorded one. Naming the text budget unconditionally
+        // would be asserting a reason the arithmetic cannot see — the same habit
+        // that made the surrounding condition wrong three times.
+        `${seen} of ${summary.totalPages} pages were opened${
+          summary.truncatedBy.includes('document_text_cap') ? ', the reader having run out of its text budget partway through' : ''
+        }. The remaining ${neverOpened} ${neverOpened === 1 ? 'page was' : 'pages were'} never looked at, so nothing from ${neverOpened === 1 ? 'it' : 'them'} is in this report — not even a note saying a page was unreadable. Work through the remainder by hand, or split the document and bring the rest in separately.`,
         { kind: 'none', note: `${seen} of ${summary.totalPages} pages opened` },
       ),
     )
