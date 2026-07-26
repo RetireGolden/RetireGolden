@@ -96,6 +96,29 @@ export {
   type RefreshFieldDelta,
   type RefreshMatchKind,
 } from './import/refresh.ts'
+
+// The existing-plan intake-refresh contract (also published at the
+// `./intake-refresh` subpath): provenance-gated semantic matching and exact
+// previews for a deliberately narrow income/MAGI leaf allowlist. Browser-free;
+// it never adds/deletes records or copies whole intake objects into a plan.
+export {
+  applyIntakeRefresh,
+  buildIntakeRefreshDelta,
+  classifyIntakeRefresh,
+  defaultIntakeRefreshSelection,
+  type ClassifyIntakeRefreshOptions,
+  type IntakeRefreshCandidate,
+  type IntakeRefreshClassification,
+  type IntakeRefreshDelta,
+  type IntakeRefreshDuplicateGroup,
+  type IntakeRefreshExcludedItem,
+  type IntakeRefreshExclusionReason,
+  type IntakeRefreshField,
+  type IntakeRefreshFieldDelta,
+  type IntakeRefreshMatchKind,
+  type IntakeRefreshSource,
+  type IntakeRefreshTargetBinding,
+} from './import/intakeRefresh.ts'
 export type {
   DecisionState,
   ImportConfidence,

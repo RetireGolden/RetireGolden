@@ -54,6 +54,7 @@
 
 import type { Account, Plan } from '@retiregolden/engine/model/plan'
 import { applyBrokerBalance, isBalanceUpdatable, type BrokerAccountBalance } from './brokerCsv'
+import { isProtectedPath } from './refreshCore'
 import type { ImportReviewItem } from './reviewChecklist'
 import type { SourceLocator } from './provenance'
 
@@ -250,16 +251,6 @@ function matchStrength(sourceNorm: string, nameNorm: string): MatchTier | null {
   const hits = nameNorm.split(' ').filter((w) => w.length > 2 && sourceNorm.includes(w))
   if (hits.length === 0) return null
   return hits.some((w) => !GENERIC_WORDS.has(w)) ? 'fuzzy' : 'weak'
-}
-
-function isProtectedPath(targetPath: string, protectedTargets: ReadonlySet<string>): boolean {
-  if (protectedTargets.size === 0) return false
-  for (const p of protectedTargets) {
-    // The account itself, a protected field OF the account, or a protected
-    // ancestor of it — any of the three puts this target off-limits.
-    if (p === targetPath || p.startsWith(`${targetPath}.`) || targetPath.startsWith(`${p}.`)) return true
-  }
-  return false
 }
 
 interface UpdatableRef {

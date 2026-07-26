@@ -161,6 +161,21 @@ The supported product API is:
   names and signatures only change with a semver-major release, and the module
   is browser-free and safe to run in Node (a caller supplies the protected-path
   set; the web planner passes none);
+- the **`./intake-refresh` subpath** — the existing-plan intake refresh
+  contract (`classifyIntakeRefresh`, `defaultIntakeRefreshSelection`,
+  `buildIntakeRefreshDelta`, `applyIntakeRefresh` and their types). It compares
+  a mapped intake plan plus its review/provenance checklist with a current plan,
+  using generated-id-independent, Unicode-aware semantic matches, and can write
+  only wages, recurring-income and one-time-income amount leaves plus recent
+  annual MAGI. A selected current income is bound to its stable id and
+  identity-bearing fields from classification through apply, so a reorder,
+  insertion, deletion, or semantic edit requires reclassification.
+  It reports unmatched/ambiguous source facts, stale addressed income, excluded
+  mappings, exact before-to-after deltas, duplicate collisions, and protected
+  targets. It never adds/deletes records or changes Social Security, accounts,
+  household/filing facts, historical MAGI, timing, growth, tax treatment, or
+  strategy fields. Like the broker contract, it is browser-free and its
+  exported names/signatures only change with a semver-major release;
 - the **`./scenario-levers` subpath** — the browser-free fast-lever contract
   (`SCENARIO_LEVER_DEFINITIONS`, `buildScenarioLever`,
   `supportedRothBracketTargets`, `supportedRothIrmaaTiers`, and their
