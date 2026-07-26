@@ -529,6 +529,19 @@ describe('existing-plan intake refresh', () => {
     )
     expect(delta.changes).toEqual([])
     expect(applyIntakeRefresh(current, delta)).toBe(0)
+
+    const unprovenPerson = classifyIntakeRefresh(current, incoming, [mapped('incomes[0]')])
+    expect(unprovenPerson.candidates[0]).toMatchObject({
+      reason: 'person_not_proven',
+      source: { field: 'annualGross' },
+    })
+    const unprovenDelta = buildIntakeRefreshDelta(
+      current,
+      unprovenPerson,
+      new Map([[0, 'incomes[0].annualGross']]),
+    )
+    expect(unprovenDelta.changes).toEqual([])
+    expect(applyIntakeRefresh(current, unprovenDelta)).toBe(0)
   })
 
   it('requires record provenance for label/year identity and ignores invalid candidates in duplicate blocking', () => {

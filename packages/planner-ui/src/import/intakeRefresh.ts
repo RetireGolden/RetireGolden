@@ -490,7 +490,8 @@ function candidateIsSelectable(candidate: IntakeRefreshCandidate): boolean {
     candidate.source.provenance !== null &&
     candidate.reason !== 'missing_provenance' &&
     candidate.reason !== 'ambiguous_provenance' &&
-    candidate.reason !== 'unreviewed_assumption'
+    candidate.reason !== 'unreviewed_assumption' &&
+    candidate.reason !== 'person_not_proven'
   )
 }
 
