@@ -203,9 +203,11 @@ The supported product API is:
   ProjectionLab import; RightCapital, eMoney and MoneyGuide are identified only
   — there is no substantiated export format for them, so nothing is mapped and
   the limitations are published instead of guessed around. Name matching is
-  word-bounded and every match carries its verbatim surrounding text and a page
-  citation; a file naming more than one tool is reported ambiguous rather than
-  guessed at. Browser-free and safe to run in Node; exported names and
+  word-bounded and every match carries its verbatim surrounding text; a match
+  found in a PDF's extracted pages also cites its page number, while one found
+  in a CSV or JSON export cites the export text or a JSON path, there being no
+  page to cite. A file naming more than one tool is reported ambiguous rather
+  than guessed at. Browser-free and safe to run in Node; exported names and
   signatures only change with a semver-major release, though new vendors may be
   added in minors;
 - `./index.css`.

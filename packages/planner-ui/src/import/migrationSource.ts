@@ -444,17 +444,49 @@ function printableFragment(text: string): string {
 const MAX_ESCAPE_WIDTH = 8
 
 /**
- * Sanitise a value that is about to be clipped anyway, without expanding the
- * whole of it first.
+ * Sanitise a value under an OUTPUT budget, stopping as soon as it is spent.
  *
- * Takes only as much raw input as could possibly survive the bound — `room`
- * characters, each of which might grow eightfold — then sanitises that. The
- * clip afterwards is what actually enforces the bound; this only stops the work
- * from being unbounded on the way there.
+ * Sanitising both expands and contracts, which is why bounding it by slicing the
+ * raw input first does not work — and the first version of this did exactly
+ * that, taking `room * 8` raw characters on the grounds that nothing could grow
+ * more than eightfold. True, and irrelevant: whitespace COLLAPSES. A value of
+ * 1,281 spaces followed by `eMoney` had its window filled entirely by spaces,
+ * which then collapsed to nothing, so the evidence came out empty and the part
+ * that mattered was silently dropped. On a contradicting `meta.app` that is the
+ * whole finding thrown away.
+ *
+ * Budgeting the OUTPUT instead is right in both directions: the loop allocates
+ * at most `room` characters however large the input, and it keeps reading until
+ * that budget is filled, so a long collapsible prefix costs a scan rather than
+ * the content behind it. It reports `truncated` so the caller can mark the
+ * clip — the raw length cannot say, since the value may have shrunk.
  */
-function printableWithin(text: string, room: number): string {
-  const window = Math.max(0, room) * MAX_ESCAPE_WIDTH
-  return printableEvidence(text.length > window ? sliceWholeCharacters(text, window) : text)
+function printableWithin(text: string, room: number): { text: string; truncated: boolean } {
+  const max = Math.max(0, room)
+  let out = ''
+  let pendingSpace = false
+  let started = false
+  // Iterating the string yields whole code points, so a surrogate pair is never
+  // split and no lone half can reach the output.
+  for (const ch of text) {
+    // Whitespace first, exactly as the non-streaming form does it: newline and
+    // tab are control characters too, and they collapse to a space rather than
+    // rendering as `<U+000A>`. Leading runs are skipped and a trailing run is
+    // simply never flushed, which is what the trim used to do.
+    if (/\s/u.test(ch)) {
+      if (started) pendingSpace = true
+      continue
+    }
+    const piece = /[\p{Cc}\p{Cf}]/u.test(ch)
+      ? `<U+${ch.codePointAt(0)!.toString(16).toUpperCase().padStart(4, '0')}>`
+      : ch
+    const addition = `${pendingSpace ? ' ' : ''}${piece}`
+    if (out.length + addition.length > max) return { text: out, truncated: true }
+    out += addition
+    pendingSpace = false
+    started = true
+  }
+  return { text: out, truncated: false }
 }
 
 /**
@@ -638,7 +670,9 @@ function projectionLabStructure(text: string): MigrationEvidence[] | null {
               // does not contain. Say where the number came from instead.
               `${String(value)} (a number in the file, not text)`
             : null
-      const collapsed = shown === null ? '' : printableWithin(shown, MAX_MIGRATION_EVIDENCE_CHARS)
+      const budgeted =
+        shown === null ? { text: '', truncated: false } : printableWithin(shown, MAX_MIGRATION_EVIDENCE_CHARS)
+      const collapsed = budgeted.text
       if (collapsed !== '') {
         // `meta.app` is the file's claim about which program wrote it, and it
         // is not automatically evidence FOR ProjectionLab: a structurally
@@ -662,7 +696,7 @@ function projectionLabStructure(text: string): MigrationEvidence[] | null {
         const contradicts = key === 'app' && !new RegExp(VENDOR_NAME_PATTERN.projectionlab, 'iu').test(String(value))
         evidence.push({
           strength: 'structure',
-          matched: clipWithMarkers(collapsed, false, false),
+          matched: clipWithMarkers(collapsed, false, budgeted.truncated),
           locator: jsonPath(`meta.${key}`),
           ...(contradicts ? { contradicts: true } : {}),
         })
@@ -744,7 +778,22 @@ export interface MigrationReviewOptions {
  */
 function withSourceIndex(locator: SourceLocator, sourceIndex?: number): SourceLocator {
   if (sourceIndex === undefined) return locator
-  if (locator.kind === 'none' || locator.kind === 'derived') return locator
+  if (locator.kind === 'derived') return locator
+  // `none` has no `sourceIndex` in the contract, and this module cannot add one:
+  // consumers validate locators with a closed switch and reject the whole
+  // payload on an unexpected shape. But `none` is the MAJORITY of what this
+  // module emits — every page citation, every limitation, every manual-path
+  // entry, and all name-tier evidence — so silently dropping the index there
+  // left the option working for one vendor's structural evidence and doing
+  // nothing at all for the three identify-only vendors it was added for.
+  //
+  // `note` is free text and exists to say "no precise coordinate, here is where
+  // to look". The association goes there: not structured, but stated, which is
+  // strictly better than an envelope that attributes this to whichever file
+  // happens to be first. The structured fix is a `sourceIndex` on `none` in the
+  // provenance contract — a change to a published surface and to Pro's
+  // validator, so not this PR's to make.
+  if (locator.kind === 'none') return { kind: 'none', note: `${locator.note} · source ${sourceIndex}` }
   return { ...locator, sourceIndex }
 }
 
@@ -762,7 +811,7 @@ function unmappedItem(source: string, detail: string, locator: SourceLocator): I
   return { status: 'unmapped', source, detail, locator, confidence: 'unmapped' }
 }
 
-function evidenceItems(candidate: MigrationCandidate, sourceName: string, lead: string, sourceIndex?: number): ImportReviewItem[] {
+function evidenceItems(candidate: MigrationCandidate, sourceName: string, lead: string): ImportReviewItem[] {
   return candidate.evidence.map((evidence, index) =>
     unmappedItem(
       `${sourceName} — ${candidate.adapter.displayName}`,
@@ -778,7 +827,7 @@ function evidenceItems(candidate: MigrationCandidate, sourceName: string, lead: 
         : evidence.contradicts === true
           ? `Against it: the file's own label says “${evidence.matched}”, which does not name ${candidate.adapter.displayName}. The identification stands on the file's structure — a shape is far harder to have by accident than a label — but this is here because you should see it.`
           : `Also matched: “${evidence.matched}”.`,
-      withSourceIndex(evidence.locator, sourceIndex),
+      evidence.locator,
     ),
   )
 }
@@ -816,7 +865,19 @@ export function buildMigrationReview(
   // unsanitised name would defeat the whole exercise. Callers keep the raw name
   // for identity (`ImportSourceRef.file` is where it belongs); what appears in
   // human-facing prose is this.
-  const sourceName = clipWithMarkers(printableWithin(rawSourceName, MAX_MIGRATION_SOURCE_NAME_CHARS), false, false, MAX_MIGRATION_SOURCE_NAME_CHARS)
+  const budgetedName = printableWithin(rawSourceName, MAX_MIGRATION_SOURCE_NAME_CHARS)
+  const sourceName = clipWithMarkers(budgetedName.text, false, budgetedName.truncated, MAX_MIGRATION_SOURCE_NAME_CHARS)
+  // ONE place stamps the source index, at the exit, because there are a dozen
+  // sites that emit an item and threading an argument through all of them is a
+  // guarantee that the next one added will forget. The first version stamped
+  // only the evidence items, which left every limitation, manual-path entry and
+  // page citation unattributed.
+  const stamp = (list: ImportReviewItem[]): ImportReviewItem[] =>
+    options.sourceIndex === undefined
+      ? list
+      : list.map((item) =>
+          item.locator === undefined ? item : { ...item, locator: withSourceIndex(item.locator, options.sourceIndex) },
+        )
   const items: ImportReviewItem[] = []
 
   if (identification.outcome === 'ambiguous') {
@@ -829,7 +890,7 @@ export function buildMigrationReview(
       ),
     )
     for (const candidate of identification.candidates) {
-      items.push(...evidenceItems(candidate, sourceName, `${candidate.adapter.displayName} is one of the tools named in this file.`, options.sourceIndex))
+      items.push(...evidenceItems(candidate, sourceName, `${candidate.adapter.displayName} is one of the tools named in this file.`))
     }
     items.push(
       unmappedItem(`${sourceName} — what to do instead`, NO_FORMAT_MANUAL_PATH, {
@@ -839,7 +900,7 @@ export function buildMigrationReview(
     )
     if (options.pages !== undefined && options.pages.length > 0) items.push(...pageItems(sourceName, options.pages))
     if (options.summary !== undefined) items.push(...omittedPageItems(sourceName, options.summary))
-    return items
+    return stamp(items)
   }
 
   const { adapter, evidence } = identification
@@ -882,7 +943,7 @@ export function buildMigrationReview(
   if (mapper !== null) return []
 
   items.push(
-    ...evidenceItems(identification, sourceName, `Identified as a ${adapter.displayName} file. Nothing was mapped from it.`, options.sourceIndex),
+    ...evidenceItems(identification, sourceName, `Identified as a ${adapter.displayName} file. Nothing was mapped from it.`),
   )
 
   for (const limitation of adapter.limitations) {
@@ -901,7 +962,7 @@ export function buildMigrationReview(
   )
   if (options.pages !== undefined && options.pages.length > 0) items.push(...pageItems(sourceName, options.pages))
     if (options.summary !== undefined) items.push(...omittedPageItems(sourceName, options.summary))
-  return items
+  return stamp(items)
 }
 
 /**

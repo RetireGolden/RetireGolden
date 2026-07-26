@@ -129,11 +129,19 @@ describe('nothing unbounded reaches the envelope', () => {
     // so a window of pure spaces sanitises to nothing at all, and the marker
     // sitting past the window can only appear in the output if the whole value
     // was read.
-    const beyond = `${' '.repeat(MAX_MIGRATION_EVIDENCE_CHARS * 8 + 500)}BEYOND_THE_WINDOW`
+    // THE CONTENT SURVIVES A COLLAPSIBLE PREFIX. This assertion previously ran
+    // the other way — it demanded the marker be ABSENT — which pinned a data
+    // loss as if it were the bound working. Slicing the raw input first looks
+    // like a bound and is not one, because sanitising CONTRACTS as well as
+    // expanding: a window filled with whitespace collapses to nothing and takes
+    // the content behind it with it. On a contradicting `meta.app` that is the
+    // whole finding thrown away.
+    const beyond = `${' '.repeat(MAX_MIGRATION_EVIDENCE_CHARS * 8 + 500)}eMoney`
     const found = identifyMigrationExport(projectionLabExport({ meta: { app: beyond } }))
     if (found?.outcome !== 'identified') throw new Error('expected an identification')
     const value = found.evidence.find((item) => item.locator.kind === 'jsonPath' && item.locator.path === 'meta.app')
-    expect(value?.matched ?? '').not.toContain('BEYOND_THE_WINDOW')
+    expect(value?.matched).toContain('eMoney')
+    expect(value?.contradicts).toBe(true)
 
     // And the ordinary bound still holds on a value that survives the window.
     const long = identifyMigrationExport(projectionLabExport({ meta: { app: '\u200D'.repeat(50_000) } }))
@@ -155,15 +163,36 @@ describe('multi-source envelopes', () => {
     for (const locator of jsonLocators) expect(locator).toMatchObject({ sourceIndex: 2 })
   })
 
-  it('leaves page citations alone, because the contract gives them nowhere to put it', () => {
-    // `{ kind: 'none' }` has no sourceIndex field; inventing one would put a
-    // property on a locator downstream validators do not expect.
+  it('associates EVERY item with the source, including the identify-only vendors', () => {
+    // The first version stamped only the evidence items, and only leaf locators.
+    // But `none` is the majority of what this module emits — every page
+    // citation, every limitation, every manual-path entry, and all name-tier
+    // evidence — so for RightCapital, eMoney and MoneyGuide, which produce
+    // nothing BUT `none`, the option did nothing whatever. It was added for
+    // exactly those vendors.
     const pages = [docPage(3, 'Generated with RightCapital')]
     const items = buildMigrationReview(identifyMigrationDocument(pages), 'doc.pdf', { pages, sourceIndex: 2 })
+    expect(items.length).toBeGreaterThan(3)
     for (const item of items) {
-      if (item.locator?.kind === 'none') expect(Object.keys(item.locator).sort()).toEqual(['kind', 'note'])
+      expect(item.locator).toBeDefined()
+      if (item.locator?.kind === 'none') {
+        // Stated in the note, not structured: the contract gives `none` no
+        // sourceIndex field, and adding one would put a property on a locator
+        // that downstream validators reject outright. The structured fix is a
+        // change to the provenance contract itself.
+        expect(Object.keys(item.locator).sort()).toEqual(['kind', 'note'])
+        expect(item.locator.note).toMatch(/source 2$/)
+      } else {
+        expect(item.locator).toMatchObject({ sourceIndex: 2 })
+      }
     }
     expect(roundTrip(items).ok).toBe(true)
+  })
+
+  it('says nothing about a source when no index was given', () => {
+    const pages = [docPage(3, 'Generated with RightCapital')]
+    const items = buildMigrationReview(identifyMigrationDocument(pages), 'doc.pdf', { pages })
+    for (const item of items) expect(item.locator?.kind === 'none' && item.locator.note).not.toMatch(/source \d/)
   })
 })
 
