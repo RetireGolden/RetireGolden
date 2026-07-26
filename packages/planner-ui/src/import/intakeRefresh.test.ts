@@ -638,4 +638,43 @@ describe('existing-plan intake refresh', () => {
     expect(applyIntakeRefresh(current, delta)).toBe(0)
     expect(current).toEqual(staleBefore)
   })
+
+  it('keeps runtime-invalid source money out of both preview and apply', () => {
+    const current = empty('Current')
+    const incoming = empty('Incoming')
+    addCurrentFacts(current)
+    const review = addIncomingFacts(incoming)
+    const recurring = incoming.incomes[1] as Extract<
+      (typeof incoming.incomes)[number],
+      { type: 'recurring' }
+    >
+    recurring.annualAmount = Number.NaN
+    const classification = classifyIntakeRefresh(current, incoming, review)
+    const delta = buildIntakeRefreshDelta(
+      current,
+      classification,
+      defaultIntakeRefreshSelection(classification),
+    )
+    expect(delta.changes.some((change) => change.field === 'annualAmount')).toBe(false)
+    expect(delta.review.some((item) => item.detail.includes('finite, non-negative amount'))).toBe(
+      true,
+    )
+    const before = structuredClone(current)
+    expect(applyIntakeRefresh(current, delta)).toBe(3)
+    expect(
+      (
+        current.incomes[1] as Extract<
+          (typeof current.incomes)[number],
+          { type: 'recurring' }
+        >
+      ).annualAmount,
+    ).toBe(
+      (
+        before.incomes[1] as Extract<
+          (typeof before.incomes)[number],
+          { type: 'recurring' }
+        >
+      ).annualAmount,
+    )
+  })
 })

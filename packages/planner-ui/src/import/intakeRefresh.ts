@@ -529,6 +529,21 @@ export function buildIntakeRefreshDelta(
       }
       const before = readTarget(current, path, item.source.field)
       if (before === null) return
+      if (
+        !Number.isFinite(before) ||
+        before < 0 ||
+        !Number.isFinite(item.source.value) ||
+        item.source.value < 0
+      ) {
+        review.push({
+          status: 'skipped',
+          source: item.source.provenance!.source,
+          detail: 'This fact is not a finite, non-negative amount, so intake refresh left it unchanged.',
+          locator: item.source.provenance!.locator ?? { kind: 'none', note: item.source.path },
+          confidence: 'unmapped',
+        })
+        return
+      }
       changes.push({
         path,
         field: item.source.field,
