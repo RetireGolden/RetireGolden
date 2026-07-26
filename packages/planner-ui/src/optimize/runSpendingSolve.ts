@@ -6,18 +6,11 @@
  */
 
 import { createDecisionContext, solveMaxSustainableSpending, SPENDING_SOLVER_UI_BUDGET } from '@retiregolden/engine/decisions'
-import { combineTaxCalculators, createFederalTaxCalculator } from '@retiregolden/engine/tax/federalTax'
-import { createStateTaxCalculator } from '@retiregolden/engine/tax/stateTax'
+import { taxCalculatorFor } from '../planTaxCalculator'
 import type { SpendingSolveRequest, SpendingSolveResult } from './spendingMessages'
 
 export function runSpendingSolveRequest(req: SpendingSolveRequest): SpendingSolveResult {
-  const taxCalculator = combineTaxCalculators(
-    createFederalTaxCalculator(),
-    createStateTaxCalculator({
-      overridePct: req.plan.assumptions.stateEffectiveTaxPct,
-      localPct: req.plan.assumptions.localIncomeTaxPct,
-    }),
-  )
+  const taxCalculator = taxCalculatorFor(req.plan)
   const ctx = createDecisionContext(req.plan, { startYear: req.startYear, taxCalculator })
   const estateFloorTodayDollars = req.plan.expenses.bequestTargetDollars ?? 0
   const solved = solveMaxSustainableSpending(ctx, {
