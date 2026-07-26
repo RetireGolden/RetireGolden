@@ -423,9 +423,29 @@ function wholeCharacterBoundary(text: string, index: number): number {
  * the quotation say something the file does not.
  */
 function printableFragment(text: string): string {
-  return text
-    .replace(/\s+/g, ' ')
-    .replace(/[\p{Cc}\p{Cf}]/gu, (ch) => `<U+${ch.codePointAt(0)!.toString(16).toUpperCase().padStart(4, '0')}>`)
+  return text.replace(/\s+/g, ' ').replace(new RegExp(UNPRINTABLE.source, 'gu'), escapeCodeUnit)
+}
+
+/**
+ * Everything that must not reach a reader as itself: control characters, format
+ * characters, and LONE surrogates.
+ *
+ * `Cs` is neither `Cc` nor `Cf`, so escaping only those let an unpaired
+ * surrogate straight through — and JSON can legally decode one, since a lone
+ * `\uD800` escape is a valid JSON string that produces an invalid Unicode
+ * scalar. Renderers show it as a replacement glyph, so evidence advertised as
+ * verbatim would display a character that is not in the file and cannot be
+ * matched back to it. That is the same failure as the clipping bug this module
+ * already fixed, arriving from the input side instead of the output side.
+ *
+ * Valid PAIRS are untouched: the two surrogate alternatives match only a half
+ * with no partner, so an emoji stays an emoji.
+ */
+const UNPRINTABLE = /[\p{Cc}\p{Cf}]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/u
+
+/** `<U+XXXX>` for one code unit — the visible stand-in for something unprintable. */
+function escapeCodeUnit(ch: string): string {
+  return `<U+${(ch.codePointAt(0) ?? 0).toString(16).toUpperCase().padStart(4, '0')}>`
 }
 
 /**
@@ -462,9 +482,10 @@ function printableWithin(text: string, room: number): { text: string; truncated:
       if (started) pendingSpace = true
       continue
     }
-    const piece = /[\p{Cc}\p{Cf}]/u.test(ch)
-      ? `<U+${ch.codePointAt(0)!.toString(16).toUpperCase().padStart(4, '0')}>`
-      : ch
+    // The same test the non-streaming form uses, lone surrogates included —
+    // iterating by code point keeps valid pairs whole, so a half reaching here
+    // genuinely has no partner.
+    const piece = UNPRINTABLE.test(ch) ? escapeCodeUnit(ch) : ch
     const addition = `${pendingSpace ? ' ' : ''}${piece}`
     if (out.length + addition.length > max) return { text: out, truncated: true }
     out += addition
@@ -764,21 +785,16 @@ export interface MigrationReviewOptions {
 function withSourceIndex(locator: SourceLocator, sourceIndex?: number): SourceLocator {
   if (sourceIndex === undefined) return locator
   if (locator.kind === 'derived') return locator
-  // `none` has no `sourceIndex` in the contract, and this module cannot add one:
-  // consumers validate locators with a closed switch and reject the whole
-  // payload on an unexpected shape. But `none` is the MAJORITY of what this
-  // module emits — every page citation, every limitation, every manual-path
-  // entry, and all name-tier evidence — so silently dropping the index there
-  // left the option working for one vendor's structural evidence and doing
-  // nothing at all for the three identify-only vendors it was added for.
-  //
-  // `note` is free text and exists to say "no precise coordinate, here is where
-  // to look". The association goes there: not structured, but stated, which is
-  // strictly better than an envelope that attributes this to whichever file
-  // happens to be first. The structured fix is a `sourceIndex` on `none` in the
-  // provenance contract — a change to a published surface and to Pro's
-  // validator, so not this PR's to make.
-  if (locator.kind === 'none') return { kind: 'none', note: `${locator.note} · source ${sourceIndex}` }
+  // `none` carries the index STRUCTURALLY now, like every other leaf. It could
+  // not before: the contract had no field for it, so the first attempt appended
+  // "source 2" to the free-text note — which reads as attribution to a human and
+  // is none at all to a consumer, since the contract still resolved an omitted
+  // index to `sources[0]`. Evidence filed against the wrong file while appearing
+  // to name the right one is the exact defect this module exists to prevent,
+  // committed by the module itself. `none` is also the MAJORITY of what it emits
+  // — every page citation, limitation, manual-path entry and name-tier match —
+  // so for the three identify-only vendors that note suffix was the whole of it.
+  // `./import-provenance` carries the field as of this change.
   return { ...locator, sourceIndex }
 }
 
@@ -1009,7 +1025,7 @@ function pageItems(sourceName: string, pages: readonly DocumentPage[]): ImportRe
     items.push(
       unmappedItem(
         `${sourceName} — text carried over`,
-        `Text was read from ${one ? 'page' : 'pages'} ${listPages(readable)} and carried over as-is; no value on ${one ? 'it' : 'them'} was mapped into the plan. Read the page beside the planner screen you are filling in — these are the document's own page numbers, so a page that could not be extracted is simply missing from the list rather than shifting the rest of it.`,
+        `The reader got text from ${one ? 'page' : 'pages'} ${listPages(readable)}, and no value on ${one ? 'it' : 'them'} was mapped into the plan. This report names those pages rather than carrying their text — the text itself lives in the document reader's own notes. Read the page beside the planner screen you are filling in — these are the document's own page numbers, so a page that could not be extracted is simply missing from the list rather than shifting the rest of it.`,
         { kind: 'none', note: `${one ? 'page' : 'pages'} ${listPages(readable)}` },
       ),
     )
@@ -1089,7 +1105,7 @@ function omittedPageItems(sourceName: string, summary: DocumentTextSummary): Imp
     items.push(
       unmappedItem(
         `${sourceName} — could not be read`,
-        `${one ? 'Page' : 'Pages'} ${list} could not be read at all — not blank, not a scan, but a page the reader failed on. Nothing is known about what ${one ? 'it holds' : 'they hold'}, so open ${one ? 'it' : 'them'} in the original.`,
+        `${one ? 'Page' : 'Pages'} ${list} could not be read at all: the reader failed on ${one ? 'it' : 'them'} before it could tell whether ${one ? 'it held' : 'they held'} text, an image, or nothing. Nothing whatever is known about what ${one ? 'it holds' : 'they hold'} — including whether OCR would help — so open ${one ? 'it' : 'them'} in the original.`,
         { kind: 'none', note: `${one ? 'page' : 'pages'} ${list}` },
       ),
     )

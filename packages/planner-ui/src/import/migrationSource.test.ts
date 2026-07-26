@@ -57,11 +57,25 @@ const projectionLabExport = (extra: Record<string, unknown> = {}): string =>
 
 /** Feeds a report through the real envelope, which is the only proof that matters. */
 function roundTrip(items: ImportReviewItem[]): ReturnType<typeof parseImportProvenance> {
+  return roundTripWithSources(items, 1)
+}
+
+/**
+ * The same, with `count` source entries — a multi-source envelope bounds-checks
+ * every `sourceIndex` it finds, so this is what proves an attribution is real
+ * rather than merely present on the object.
+ */
+function roundTripWithSources(items: ImportReviewItem[], count: number): ReturnType<typeof parseImportProvenance> {
   const { mappings, unresolved } = reviewToProvenance(items)
   const json = serializeImportProvenance({
     planSchemaVersion: 7,
     engineVersion: '0.1.7',
-    sources: [{ file: 'source.pdf', sha256: 'a'.repeat(64), bytes: 4096, mapper: 'migrationSource' }],
+    sources: Array.from({ length: count }, (_, i) => ({
+      file: `source-${i}.pdf`,
+      sha256: 'a'.repeat(64),
+      bytes: 4096,
+      mapper: 'migrationSource',
+    })),
     mappings,
     unresolved,
   })
@@ -151,6 +165,29 @@ describe('nothing unbounded reaches the envelope', () => {
   })
 })
 
+describe('published evidence contains only characters the file contained', () => {
+  it('escapes a LONE surrogate, and leaves valid pairs alone', () => {
+    // `Cs` is neither `Cc` nor `Cf`, so escaping only those let an unpaired
+    // surrogate through — and JSON can legally decode one. A renderer shows it
+    // as a replacement glyph, so evidence advertised as verbatim would display a
+    // character that is not in the file and cannot be matched back to it. Same
+    // failure as the clipping bug, arriving from the input side.
+    const lone = String.fromCharCode(0xd800)
+    const found = identifyMigrationExport(projectionLabExport({ meta: { app: `${lone}Acme 😀` } }))
+    if (found?.outcome !== 'identified') throw new Error('expected an identification')
+    const value = found.evidence.find((item) => item.locator.kind === 'jsonPath' && item.locator.path === 'meta.app')
+    expect(value?.matched).toContain('<U+D800>')
+    expect(value?.matched).toContain('😀')
+    expect(value?.matched).not.toContain(lone)
+  })
+
+  it('escapes one in the file NAME too', () => {
+    const pages = [docPage(1, 'Generated with RightCapital')]
+    const items = buildMigrationReview(identifyMigrationDocument(pages), `${String.fromCharCode(0xdc00)}report.pdf`, { pages })
+    expect(items[0]!.source).toContain('<U+DC00>')
+  })
+})
+
 describe('multi-source envelopes', () => {
   it('attributes structural evidence to the right file when asked', () => {
     // The contract reads an omitted sourceIndex as sources[0], so in a session
@@ -173,26 +210,27 @@ describe('multi-source envelopes', () => {
     const pages = [docPage(3, 'Generated with RightCapital')]
     const items = buildMigrationReview(identifyMigrationDocument(pages), 'doc.pdf', { pages, sourceIndex: 2 })
     expect(items.length).toBeGreaterThan(3)
+    // STRUCTURALLY, on every locator kind. The first attempt put "source 2" in
+    // the free-text note of `none` locators, which reads as attribution to a
+    // human and is none at all to a consumer — the contract still resolved the
+    // omitted index to sources[0]. `./import-provenance` carries the field now.
     for (const item of items) {
       expect(item.locator).toBeDefined()
-      if (item.locator?.kind === 'none') {
-        // Stated in the note, not structured: the contract gives `none` no
-        // sourceIndex field, and adding one would put a property on a locator
-        // that downstream validators reject outright. The structured fix is a
-        // change to the provenance contract itself.
-        expect(Object.keys(item.locator).sort()).toEqual(['kind', 'note'])
-        expect(item.locator.note).toMatch(/source 2$/)
-      } else {
-        expect(item.locator).toMatchObject({ sourceIndex: 2 })
-      }
+      expect(item.locator).toMatchObject({ sourceIndex: 2 })
+      if (item.locator?.kind === 'none') expect(item.locator.note).not.toMatch(/source \d/)
     }
-    expect(roundTrip(items).ok).toBe(true)
+    // And it survives the real envelope, which bounds-checks every index it finds.
+    const parsed = roundTripWithSources(items, 3)
+    expect(parsed.ok).toBe(true)
+    if (parsed.ok) {
+      for (const entry of parsed.provenance.unresolved) expect(entry.locator).toMatchObject({ sourceIndex: 2 })
+    }
   })
 
-  it('says nothing about a source when no index was given', () => {
+  it('names no source when no index was given', () => {
     const pages = [docPage(3, 'Generated with RightCapital')]
     const items = buildMigrationReview(identifyMigrationDocument(pages), 'doc.pdf', { pages })
-    for (const item of items) expect(item.locator?.kind === 'none' && item.locator.note).not.toMatch(/source \d/)
+    for (const item of items) expect(item.locator).not.toHaveProperty('sourceIndex')
   })
 })
 
@@ -775,6 +813,14 @@ describe('buildMigrationReview', () => {
     // document-wide budget running out partway through a page, and the page
     // cannot tell them apart — so naming one would be a guess, wrong on exactly
     // the long documents where it matters. The remedy is the same either way.
+    // The report NAMES pages worth reading; it does not carry their text. It
+    // used to say the text was "carried over as-is", which a consumer of
+    // buildMigrationReview cannot act on — page text never enters an
+    // ImportReviewItem, only the capped evidence excerpts do.
+    expect(carried).toBeDefined()
+    expect(carried?.detail).not.toMatch(/carried over as-is/)
+    expect(carried?.detail).toMatch(/does not carry|names those pages/)
+
     expect(find('text cut short')?.detail).toContain('3')
     expect(find('text cut short')?.detail).not.toMatch(/per page/)
     expect(find('an image the reader cannot read')?.detail).toMatch(/OCR/)
@@ -808,7 +854,13 @@ describe('buildMigrationReview', () => {
       truncatedBy: ['document_text_cap'],
     }
     const items = buildMigrationReview(identifyMigrationDocument(pages), 'rc.pdf', { pages, summary })
-    expect(items.find((item) => item.source.includes('could not be read'))?.detail).toContain('4, 6')
+    const unreadable = items.find((item) => item.source.includes('could not be read'))
+    expect(unreadable?.detail).toContain('4, 6')
+    // An unreadable page is UNCLASSIFIED. pdfjs threw before anything could be
+    // learned, so the report may not rule out a scan — doing so steers a reader
+    // away from OCR on the one page where nothing at all is known.
+    expect(unreadable?.detail).not.toMatch(/not a scan|not blank/)
+    expect(unreadable?.detail).toMatch(/whether OCR would help/)
     // BOTH, together. Deciding early stopping from the page counts required zero
     // unreadable pages, so a single failed page anywhere silenced the warning
     // that every LATER page was never opened at all — the report then named the

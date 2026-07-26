@@ -39,7 +39,12 @@
  * Where a single imported value came from. The file name is NOT part of a
  * locator — it lives once on the `ImportSourceRef` at the session/source level,
  * so a locator stays small and a value that fuses two files points at both via
- * `derived` without repeating names. In a multi-source envelope, `sourceIndex`
+ * `derived` without repeating names. Every LEAF kind carries an optional
+ * `sourceIndex`, `none` included — a note about a file still has a file behind
+ * it — but it defaults differently there: on a coordinate leaf an omitted index
+ * means `sources[0]`, while on `none` it means no source is named at all, which
+ * is what lets a `none` locator live in an envelope with an empty `sources[]`.
+ * In a multi-source envelope, `sourceIndex`
  * names the entry in `ImportProvenanceExport.sources` a leaf locator addresses;
  * omitted means `sources[0]` (every single-source flow can leave it off).
  */
@@ -48,7 +53,22 @@ export type SourceLocator =
   | { kind: 'jsonPath'; path: string; sourceIndex?: number }
   | { kind: 'form1040'; line: string; sourceIndex?: number }
   | { kind: 'derived'; from: SourceLocator[]; note?: string }
-  | { kind: 'none'; note: string }
+  | {
+      kind: 'none'
+      note: string
+      /**
+       * Which `sources[]` entry this note belongs to.
+       *
+       * `none` means "no precise coordinate in this vocabulary", not "no source"
+       * — a page citation from a PDF, or a checklist entry about a file as a
+       * whole, has a perfectly definite file behind it. Without this field a
+       * multi-source envelope silently filed every such entry against
+       * `sources[0]`, which for a report built mostly of `none` locators means
+       * most of it was attributed to the wrong file. Added in a minor: reading
+       * code that ignores it behaves exactly as before.
+       */
+      sourceIndex?: number
+    }
 
 /** A CSV-row locator; row numbers are 1-based indices into the parsed rows. */
 export function csvRowLocator(row: number, column?: string): SourceLocator {
@@ -182,8 +202,18 @@ export const MAX_LOCATOR_DEPTH = 32
  */
 function cleanLocator(locator: SourceLocator, depth: number, sourceCount: number): SourceLocator {
   if (depth > MAX_LOCATOR_DEPTH) throw new Error(`locator nesting exceeds ${MAX_LOCATOR_DEPTH}`)
-  if (locator.kind === 'csvRow' || locator.kind === 'jsonPath' || locator.kind === 'form1040') {
-    const index = locator.sourceIndex ?? 0
+  // A coordinate leaf always names a source — omitted means `sources[0]` — so it
+  // is bounds-checked whether or not the field is present. `none` is different:
+  // omitting it there means NO source is named at all, which is what lets a
+  // `none` locator sit in an envelope with an empty `sources[]`. Only bound it
+  // when a caller actually supplied one.
+  const namesASource =
+    locator.kind === 'csvRow' ||
+    locator.kind === 'jsonPath' ||
+    locator.kind === 'form1040' ||
+    (locator.kind === 'none' && locator.sourceIndex !== undefined)
+  if (namesASource) {
+    const index = (locator as { sourceIndex?: number }).sourceIndex ?? 0
     if (!Number.isInteger(index) || index < 0 || index >= sourceCount) {
       throw new Error(`locator sourceIndex ${String(locator.sourceIndex)} does not name an entry in sources[] (length ${sourceCount})`)
     }
@@ -214,7 +244,7 @@ function cleanLocator(locator: SourceLocator, depth: number, sourceCount: number
         ...(locator.note !== undefined ? { note: locator.note } : {}),
       }
     case 'none':
-      return { kind: 'none', note: locator.note }
+      return { kind: 'none', note: locator.note, ...(locator.sourceIndex !== undefined ? { sourceIndex: locator.sourceIndex } : {}) }
   }
 }
 
@@ -360,9 +390,15 @@ function parseLocator(value: unknown, sourceCount: number, depth: number): Sourc
       }
       return { kind: 'derived', from, ...(note.value !== undefined ? { note: note.value } : {}) }
     }
-    case 'none':
+    case 'none': {
       if (typeof rec['note'] !== 'string') return null
-      return { kind: 'none', note: rec['note'] }
+      // Only demanded when actually supplied: an omitted index on `none` names
+      // no source, which is what lets one sit in an envelope with an empty
+      // `sources[]`. `parseLeafSourceIndex` refuses absence when there are no
+      // sources, because for a COORDINATE leaf absence still means `sources[0]`.
+      if (rec['sourceIndex'] !== undefined && !sourceIndex.ok) return null
+      return { kind: 'none', note: rec['note'], ...withIndex }
+    }
     default:
       return null
   }
