@@ -46,13 +46,8 @@
  * and published as the `@retiregolden/planner-ui/migration-source` subpath.
  */
 
-import {
-  MAX_DOCUMENT_PAGES,
-  MAX_DOCUMENT_TEXT_CHARS,
-  MAX_PAGE_TEXT_CHARS,
-  type DocumentPage,
-  type DocumentTextSummary,
-} from './documentText'
+import { MAX_DOCUMENT_PAGES, MAX_DOCUMENT_TEXT_CHARS, MAX_PAGE_TEXT_CHARS } from './documentLimits'
+import type { DocumentPage, DocumentTextSummary } from './documentText'
 import { jsonPathLocator as jsonPath, type SourceLocator } from './provenance'
 import type { ImportReviewItem } from './reviewChecklist'
 
@@ -752,7 +747,7 @@ export function identifyMigrationDocument(pages: readonly DocumentPage[]): Migra
   // when those records exceed the reader's ceilings: scanning only a prefix
   // could hide a second vendor mention in the omitted suffix and turn an
   // ambiguous document into a false identification.
-  if (pages.length > MAX_DOCUMENT_PAGES) return null
+  if (!Array.isArray(pages) || pages.length > MAX_DOCUMENT_PAGES) return null
   let totalTextChars = 0
   for (const page of pages) {
     if (

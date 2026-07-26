@@ -1,12 +1,18 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+// The migration-source subpath must stay lightweight and browser-free. Type
+// imports from documentText are erased; any future runtime import evaluates
+// this factory and fails the suite before identification tests can run.
+vi.mock('./documentText', () => {
+  throw new Error('migrationSource loaded the PDF implementation at run time')
+})
 
 import {
   MAX_DOCUMENT_PAGES,
   MAX_DOCUMENT_TEXT_CHARS,
   MAX_PAGE_TEXT_CHARS,
-  type DocumentPage,
-  type DocumentTextSummary,
-} from './documentText'
+} from './documentLimits'
+import type { DocumentPage, DocumentTextSummary } from './documentText'
 import {
   MAX_MIGRATION_EVIDENCE_CHARS,
   MAX_MIGRATION_EVIDENCE_PER_VENDOR,
@@ -416,6 +422,14 @@ describe('identifyMigrationDocument', () => {
       { page: Number.NaN, text: 'eMoney' },
     ]) {
       expect(identifyMigrationDocument([malformed] as unknown as DocumentPage[])).toBeNull()
+    }
+  })
+
+  it('fails closed instead of throwing when an untyped caller passes a non-array', () => {
+    for (const malformed of [null, undefined, {}, 'RightCapital', { 0: docPage(1, 'eMoney'), length: 1 }]) {
+      const call = () => identifyMigrationDocument(malformed as unknown as DocumentPage[])
+      expect(call).not.toThrow()
+      expect(call()).toBeNull()
     }
   })
 
