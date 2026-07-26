@@ -202,8 +202,16 @@ export const MIGRATION_ADAPTERS: Record<MigrationVendor, MigrationAdapter> = {
       'Filing status and state are not in the export and are defaulted, so both need setting on the Household screen.',
       'Account types the keyword map does not recognize (crypto, collectibles, business interests) are reported unmapped rather than guessed into the nearest bucket.',
     ],
+    // This text is reached in TWO situations that look the same from here and
+    // are not: the mapper was never run (a printed report, or a host that only
+    // identified the file), and the mapper ran and refused it — its own size cap,
+    // or a draft that failed plan validation. The old wording assumed the first
+    // and told the second to run the import that had just failed, while offering
+    // the broker/spreadsheet fallback only to PDFs. So the fallback is offered
+    // unconditionally: it is the answer in both situations, and a reader who has
+    // already tried the import needs somewhere to go rather than a loop.
     manualPath:
-      'The JSON data export is the file that maps — run it through the ProjectionLab import. A PDF or printed report from ProjectionLab maps nothing; bring balances over with the broker CSV or spreadsheet import instead.',
+      'The JSON data export is the file that maps: if it has not been through the ProjectionLab import yet, start there. If it has already been tried and would not go through — or all you have is a PDF or a printed report, which maps nothing — bring balances over with the broker CSV or spreadsheet import instead, seed income and taxes from last year’s Form 1040, and type the rest on the planner screens.',
   },
   rightcapital: {
     vendor: 'rightcapital',
@@ -607,8 +615,14 @@ function projectionLabStructure(text: string): MigrationEvidence[] | null {
         // The structural conclusion stands either way: the shape is the claim,
         // and a label is not a shape. `exportVersion` is never a vendor claim in
         // the first place, so it is only ever supporting detail.
-        const contradicts =
-          key === 'app' && !new RegExp(VENDOR_NAME_PATTERN.projectionlab, 'iu').test(collapsed)
+        // Tested against the RAW value, never the sanitised one. Sanitising
+        // turns an invisible character into visible punctuation, and punctuation
+        // is a legal name edge — so `ProjectionLab<ZWJ>oratory`, which the raw
+        // pattern correctly rejects for the same reason it rejects
+        // `ProjectionLaboratory`, became `ProjectionLab<U+200D>oratory` and
+        // matched. The display transform would have been manufacturing the
+        // boundary that the check then found: decide first, render second.
+        const contradicts = key === 'app' && !new RegExp(VENDOR_NAME_PATTERN.projectionlab, 'iu').test(String(value))
         evidence.push({
           strength: 'structure',
           matched: clipWithMarkers(collapsed, false, false),
@@ -948,8 +962,16 @@ function omittedPageItems(sourceName: string, summary: DocumentTextSummary): Imp
   // named the failed page and said nothing about the rest of the document. And
   // `pagesExtracted` is not "the last page reached" when extraction failed on
   // some, so it could not be used to say where the reading stopped either.
-  if (summary.truncatedBy.includes('document_text_cap')) {
-    const seen = summary.pagesExtracted + unreadable.length
+  // BOTH conditions, and this is the third version of them — each earlier one
+  // was wrong in one direction. Inferring from page counts alone under-fired
+  // (one unreadable page silenced the warning entirely); `truncatedBy` alone
+  // over-fires, because the document cap also trips when it clips the LAST page,
+  // and every page has then been opened — the item announced "1 of 1 pages were
+  // opened, and the rest were never looked at" and sent a reader off after a
+  // remainder that does not exist. The cap must have fired AND pages must
+  // actually be missing.
+  const seen = summary.pagesExtracted + unreadable.length
+  if (summary.truncatedBy.includes('document_text_cap') && seen < summary.totalPages) {
     items.push(
       unmappedItem(
         `${sourceName} — reading stopped early`,

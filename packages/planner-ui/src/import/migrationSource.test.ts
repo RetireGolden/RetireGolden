@@ -302,6 +302,32 @@ describe('identifyMigrationExport', () => {
     expect(agreeing.evidence.every((item) => item.contradicts !== true)).toBe(true)
   })
 
+  it('decides contradiction on the RAW label, before sanitising manufactures a boundary', () => {
+    // Sanitising turns an invisible character into visible punctuation, and
+    // punctuation is a legal name edge. So `ProjectionLab<ZWJ>oratory` — which
+    // the raw pattern rejects for exactly the reason it rejects
+    // `ProjectionLaboratory` — became `ProjectionLab<U+200D>oratory` and matched,
+    // and a label naming a different product was published as SUPPORTING the
+    // identification. The display transform was manufacturing the boundary the
+    // check then found.
+    const found = identifyMigrationExport(projectionLabExport({ meta: { app: 'ProjectionLab\u200Doratory' } }))
+    if (found?.outcome !== 'identified') throw new Error('expected an identification')
+    const label = found.evidence.find((item) => item.locator.kind === 'jsonPath' && item.locator.path === 'meta.app')
+    expect(label?.contradicts).toBe(true)
+    // And the reader can see WHY, because the escape is rendered.
+    expect(label?.matched).toContain('<U+200D>')
+  })
+
+  it('offers a way forward when the ProjectionLab mapper ran and refused the file', () => {
+    // The manual path is reached both when no mapper ran and when one ran and
+    // failed — its own size cap, or a draft that fails plan validation. It used
+    // to assume the first and tell the second to run the import that had just
+    // failed, offering the broker/spreadsheet fallback only to PDFs.
+    const path = MIGRATION_ADAPTERS.projectionlab.manualPath
+    expect(path).toMatch(/already been tried/)
+    expect(path).toMatch(/broker CSV or spreadsheet import/)
+  })
+
   it('published evidence never misrepresents itself: no silent truncation, no invented version string', () => {
     // The whole safety argument of this module is "we identify, we show you the
     // evidence, you judge". Evidence that quietly lies about its own extent or
@@ -565,6 +591,19 @@ describe('buildMigrationReview', () => {
       summary: { ...summary, unreadablePages: [] },
     })
     expect(stopped.find((item) => item.source.includes('stopped early'))?.detail).toContain('1 of 9 pages')
+
+    // ...but NOT when the cap clipped the last page and every page was opened.
+    // `truncatedBy` trips in that case too, and the item then announced a
+    // remainder that does not exist ("1 of 1 pages were opened, and the rest
+    // were never looked at"). The clipped-page item already reports what was
+    // lost off the end of that page. This condition has now been wrong in both
+    // directions — inferring from page counts under-fired, `truncatedBy` alone
+    // over-fires — so it takes both.
+    const clippedLastPage = buildMigrationReview(identifyMigrationDocument(pages), 'rc.pdf', {
+      pages,
+      summary: { ...summary, totalPages: 1, pagesExtracted: 1, unreadablePages: [] },
+    })
+    expect(clippedLastPage.find((item) => item.source.includes('stopped early'))).toBeUndefined()
   })
 
   it('sanitises the FILE NAME as well as the file contents', () => {
