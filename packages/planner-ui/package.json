@@ -39,6 +39,7 @@
     "./plan-tax-calculator": "./src/planTaxCalculator.ts",
     "./import-provenance": "./src/import/provenance.ts",
     "./import-refresh": "./src/import/refresh.ts",
+    "./intake-refresh": "./src/import/intakeRefresh.ts",
     "./document-text": "./src/import/documentText.ts",
     "./migration-source": "./src/import/migrationSource.ts",
     "./report-model": "./src/report/reportModel.ts",

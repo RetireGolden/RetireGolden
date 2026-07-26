@@ -88,6 +88,12 @@ import { MAX_DOCUMENT_BYTES, extractDocumentText } from '@retiregolden/planner-u
 // wildcard would happily resolve a deep path this list forgot, so a subpath
 // that is not imported below is not covered by this smoke test at all.
 import { MIGRATION_ADAPTERS, identifyMigrationExport } from '@retiregolden/planner-ui/migration-source'
+import {
+  applyIntakeRefresh,
+  buildIntakeRefreshDelta,
+  classifyIntakeRefresh,
+  defaultIntakeRefreshSelection,
+} from '@retiregolden/planner-ui/intake-refresh'
 
 // A host-shaped adapter (not the browser store) so both injection routes —
 // the planStore prop and a wrapping PlanStoreProvider — compile against a
@@ -121,6 +127,10 @@ console.debug(
   extractDocumentText.name,
   MIGRATION_ADAPTERS.projectionlab.displayName,
   identifyMigrationExport('{}') === null,
+  classifyIntakeRefresh.name,
+  defaultIntakeRefreshSelection.name,
+  buildIntakeRefreshDelta.name,
+  applyIntakeRefresh.name,
   taxCalculatorFor.name,
   runSpendingSolve.name,
   spendingSolveContract,
