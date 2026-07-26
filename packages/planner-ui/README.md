@@ -134,6 +134,17 @@ The supported product API is:
   may extend the envelope with their own top-level keys and the file still
   imports everywhere. The module is browser-free (no IndexedDB/DOM) and safe
   to run in Node — e.g. an Electron main process assembling backups;
+- the **`./plan-tax-calculator` subpath** — `taxCalculatorFor(plan)`, the
+  edition-neutral adapter that constructs the same federal, state-override,
+  and local-income-tax stack used by planner projections and solvers. Hosts
+  running shared engine comparisons can use it without importing React or
+  planner screens;
+- the **`./spending-solve` subpath** — `runSpendingSolve` plus
+  `SpendingSolveRequest`, `SpendingSolveResult`, `SpendingSolveEvidence`, and
+  `SpendingSolveResponse`. It runs the exact-ledger sustainable-spending solve
+  in a Vite-emitted Worker when available and falls back to the identical
+  synchronous solver where `Worker` is unavailable, while retaining a Promise
+  result in both environments;
 - the **`./report-model` subpath** — the edition-neutral report data model:
   `ReportModel` and its block types, `buildReportModel`, the stable
   `REPORT_BLOCK_IDS`, `serializeReportModel` (deterministic JSON), and the
