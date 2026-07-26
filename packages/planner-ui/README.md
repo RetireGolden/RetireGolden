@@ -165,8 +165,11 @@ The supported product API is:
   contract (`classifyIntakeRefresh`, `defaultIntakeRefreshSelection`,
   `buildIntakeRefreshDelta`, `applyIntakeRefresh` and their types). It compares
   a mapped intake plan plus its review/provenance checklist with a current plan,
-  using generated-id-independent semantic matches, and can write only wages,
-  recurring-income and one-time-income amount leaves plus recent annual MAGI.
+  using generated-id-independent, Unicode-aware semantic matches, and can write
+  only wages, recurring-income and one-time-income amount leaves plus recent
+  annual MAGI. A selected current income is bound to its stable id and
+  identity-bearing fields from classification through apply, so a reorder,
+  insertion, deletion, or semantic edit requires reclassification.
   It reports unmatched/ambiguous source facts, stale addressed income, excluded
   mappings, exact before-to-after deltas, duplicate collisions, and protected
   targets. It never adds/deletes records or changes Social Security, accounts,

@@ -133,6 +133,10 @@ describe('existing-plan intake refresh', () => {
         before: 100_000,
         after: 112_000,
         sourcePath: 'incomes[0].annualGross',
+        targetBinding: expect.objectContaining({
+          path: 'incomes[0].annualGross',
+          incomeId: current.incomes[0]!.id,
+        }),
       },
       {
         path: 'incomes[1].annualAmount',
@@ -140,6 +144,10 @@ describe('existing-plan intake refresh', () => {
         before: 24_000,
         after: 30_000,
         sourcePath: 'incomes[1].annualAmount',
+        targetBinding: expect.objectContaining({
+          path: 'incomes[1].annualAmount',
+          incomeId: current.incomes[1]!.id,
+        }),
       },
       {
         path: 'incomes[2].amount',
@@ -147,6 +155,10 @@ describe('existing-plan intake refresh', () => {
         before: 300_000,
         after: 450_000,
         sourcePath: 'incomes[2].amount',
+        targetBinding: expect.objectContaining({
+          path: 'incomes[2].amount',
+          incomeId: current.incomes[2]!.id,
+        }),
       },
       {
         path: 'assumptions.recentAnnualMagi',
@@ -154,6 +166,7 @@ describe('existing-plan intake refresh', () => {
         before: 180_000,
         after: 205_000,
         sourcePath: 'assumptions.recentAnnualMagi',
+        targetBinding: null,
       },
     ])
 
@@ -263,6 +276,146 @@ describe('existing-plan intake refresh', () => {
       mapped('assumptions.recentAnnualMagi'),
     ])
     expect(classification.candidates.slice(0, 3).map((item) => item.reason)).toEqual([
+      'no_target',
+      'no_target',
+      'no_target',
+    ])
+  })
+
+  it('preserves Unicode identity without matching distinct marks or stripped symbols', () => {
+    const current = empty('Current')
+    const incoming = empty('Incoming')
+    current.incomes.push(
+      {
+        type: 'recurring',
+        id: nextId(),
+        label: '\u5bb6\u8cc3\u53ce\u5165',
+        annualAmount: 10_000,
+        startYear: null,
+        endYear: null,
+        inflationAdjusted: false,
+        taxTreatment: 'ordinary',
+      },
+      {
+        type: 'oneTime',
+        id: nextId(),
+        label: '\u58f2\u5374\u76ca\uff12\uff10\uff13\uff10',
+        year: 2030,
+        amount: 50_000,
+        taxTreatment: 'ordinary',
+      },
+    )
+    incoming.incomes.push(
+      {
+        type: 'recurring',
+        id: nextId(),
+        label: '\u5bb6\u8cc3\u53ce\u5165',
+        annualAmount: 12_000,
+        startYear: null,
+        endYear: null,
+        inflationAdjusted: false,
+        taxTreatment: 'ordinary',
+      },
+      {
+        type: 'oneTime',
+        id: nextId(),
+        label: '\u58f2\u5374\u76ca2030',
+        year: 2030,
+        amount: 55_000,
+        taxTreatment: 'ordinary',
+      },
+    )
+    const classification = classifyIntakeRefresh(current, incoming, [
+      mapped('incomes[0]'),
+      mapped('incomes[1]'),
+    ])
+    expect(classification.candidates.slice(0, 2).map((item) => item.match)).toEqual([
+      'exact',
+      'exact',
+    ])
+    const delta = buildIntakeRefreshDelta(
+      current,
+      classification,
+      defaultIntakeRefreshSelection(classification),
+    )
+    expect(delta.changes.map((change) => change.path)).toEqual([
+      'incomes[0].annualAmount',
+      'incomes[1].amount',
+    ])
+    expect(applyIntakeRefresh(current, delta)).toBe(2)
+
+    const distinctCurrent = empty('Distinct current')
+    const distinctIncoming = empty('Distinct incoming')
+    distinctCurrent.incomes.push(
+      {
+        type: 'recurring',
+        id: nextId(),
+        label: '\u0915\u093e',
+        annualAmount: 10_000,
+        startYear: null,
+        endYear: null,
+        inflationAdjusted: false,
+        taxTreatment: 'ordinary',
+      },
+      {
+        type: 'recurring',
+        id: nextId(),
+        label: '\u0645\u064e\u0631',
+        annualAmount: 20_000,
+        startYear: null,
+        endYear: null,
+        inflationAdjusted: false,
+        taxTreatment: 'ordinary',
+      },
+      {
+        type: 'recurring',
+        id: nextId(),
+        label: '\u{1f600}\ufe0f',
+        annualAmount: 30_000,
+        startYear: null,
+        endYear: null,
+        inflationAdjusted: false,
+        taxTreatment: 'ordinary',
+      },
+    )
+    distinctIncoming.incomes.push(
+      {
+        type: 'recurring',
+        id: nextId(),
+        label: '\u0915\u093f',
+        annualAmount: 12_000,
+        startYear: null,
+        endYear: null,
+        inflationAdjusted: false,
+        taxTreatment: 'ordinary',
+      },
+      {
+        type: 'recurring',
+        id: nextId(),
+        label: '\u0645\u064f\u0631',
+        annualAmount: 22_000,
+        startYear: null,
+        endYear: null,
+        inflationAdjusted: false,
+        taxTreatment: 'ordinary',
+      },
+      {
+        type: 'recurring',
+        id: nextId(),
+        label: '\u{1f603}\ufe0f',
+        annualAmount: 32_000,
+        startYear: null,
+        endYear: null,
+        inflationAdjusted: false,
+        taxTreatment: 'ordinary',
+      },
+    )
+    const distinct = classifyIntakeRefresh(distinctCurrent, distinctIncoming, [
+      mapped('incomes[0]'),
+      mapped('incomes[1]'),
+      mapped('incomes[2]'),
+    ])
+    expect(distinct.candidates.slice(0, 3).map((item) => item.reason)).toEqual([
       'no_target',
       'no_target',
       'no_target',
@@ -627,6 +780,87 @@ describe('existing-plan intake refresh', () => {
     ])
   })
 
+  it('requires reclassification when current income identities reorder or change semantically', () => {
+    const make = () => {
+      const current = empty('Current')
+      const incoming = empty('Incoming')
+      current.incomes.push(
+        {
+          type: 'recurring',
+          id: nextId(),
+          label: 'Rental A',
+          annualAmount: 10_000,
+          startYear: null,
+          endYear: null,
+          inflationAdjusted: false,
+          taxTreatment: 'ordinary',
+        },
+        {
+          type: 'recurring',
+          id: nextId(),
+          label: 'Rental B',
+          annualAmount: 10_000,
+          startYear: null,
+          endYear: null,
+          inflationAdjusted: false,
+          taxTreatment: 'ordinary',
+        },
+      )
+      incoming.incomes.push({
+        type: 'recurring',
+        id: nextId(),
+        label: 'Rental A',
+        annualAmount: 12_000,
+        startYear: null,
+        endYear: null,
+        inflationAdjusted: false,
+        taxTreatment: 'ordinary',
+      })
+      const classification = classifyIntakeRefresh(current, incoming, [mapped('incomes[0]')])
+      return { current, classification }
+    }
+
+    const reordered = make()
+    const selection = defaultIntakeRefreshSelection(reordered.classification)
+    reordered.current.incomes.reverse()
+    const reorderedPreview = buildIntakeRefreshDelta(
+      reordered.current,
+      reordered.classification,
+      selection,
+    )
+    expect(reorderedPreview.changes).toEqual([])
+    expect(reorderedPreview.review[0]!.detail).toContain('requires reclassification')
+
+    const changed = make()
+    const changedSelection = defaultIntakeRefreshSelection(changed.classification)
+    ;(
+      changed.current.incomes[0] as Extract<
+        (typeof changed.current.incomes)[number],
+        { type: 'recurring' }
+      >
+    ).label = 'Rental B'
+    expect(
+      buildIntakeRefreshDelta(changed.current, changed.classification, changedSelection).changes,
+    ).toEqual([])
+
+    const afterPreview = make()
+    const delta = buildIntakeRefreshDelta(
+      afterPreview.current,
+      afterPreview.classification,
+      defaultIntakeRefreshSelection(afterPreview.classification),
+    )
+    const retargeted = structuredClone(delta)
+    retargeted.changes[0]!.path = 'incomes[1].annualAmount'
+    const beforeRetarget = structuredClone(afterPreview.current)
+    expect(applyIntakeRefresh(afterPreview.current, retargeted)).toBe(0)
+    expect(afterPreview.current).toEqual(beforeRetarget)
+
+    afterPreview.current.incomes.reverse()
+    const beforeApply = structuredClone(afterPreview.current)
+    expect(applyIntakeRefresh(afterPreview.current, delta)).toBe(0)
+    expect(afterPreview.current).toEqual(beforeApply)
+  })
+
   it('fails a forged or stale delta as a whole before writing any field', () => {
     const current = empty('Current')
     const incoming = empty('Incoming')
@@ -642,6 +876,32 @@ describe('existing-plan intake refresh', () => {
     forged.changes[1]!.after = Number.NaN
     expect(applyIntakeRefresh(current, forged)).toBe(0)
     expect(current).toEqual(before)
+
+    const omittedBinding = structuredClone(delta)
+    delete (omittedBinding.changes[0] as unknown as { targetBinding?: unknown }).targetBinding
+    const primitiveBinding = structuredClone(delta)
+    ;(primitiveBinding.changes[0] as unknown as { targetBinding: unknown }).targetBinding = 7
+    const partialBinding = structuredClone(delta)
+    ;(partialBinding.changes[0] as unknown as { targetBinding: unknown }).targetBinding = {
+      path: 'incomes[0].annualGross',
+    }
+    const omittedBindings = structuredClone(delta)
+    delete (omittedBindings.candidates[0] as unknown as { targetBindings?: unknown })
+      .targetBindings
+    const nullBindingEntry = structuredClone(delta)
+    ;(nullBindingEntry.candidates[0] as unknown as { targetBindings: unknown }).targetBindings = [
+      null,
+    ]
+    for (const malformed of [
+      omittedBinding,
+      primitiveBinding,
+      partialBinding,
+      omittedBindings,
+      nullBindingEntry,
+    ]) {
+      expect(applyIntakeRefresh(current, malformed)).toBe(0)
+      expect(current).toEqual(before)
+    }
 
     current.incomes[0] = {
       ...(current.incomes[0] as Extract<(typeof current.incomes)[number], { type: 'wages' }>),

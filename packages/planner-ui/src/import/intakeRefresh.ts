@@ -45,6 +45,15 @@ export interface IntakeRefreshSource {
   provenance: ImportReviewItem | null
 }
 
+export interface IntakeRefreshTargetBinding {
+  /** Canonical allowlisted leaf path at classification time. */
+  path: string
+  /** Stable current-plan income identity; incoming generated ids are never used. */
+  incomeId: string
+  /** Snapshot of the target's identity-bearing fields, excluding its amount. */
+  semanticKey: string
+}
+
 export interface IntakeRefreshCandidate {
   source: IntakeRefreshSource
   /** Allowlisted leaf in the current plan; never a generated incoming id. */
@@ -52,6 +61,8 @@ export interface IntakeRefreshCandidate {
   match: IntakeRefreshMatchKind
   /** Other semantically compatible targets when uniqueness fails. */
   alternativeTargetPaths: string[]
+  /** Stable target identities that a manual or automatic selection may use. */
+  targetBindings: IntakeRefreshTargetBinding[]
   reason: IntakeRefreshExclusionReason | null
   isProtected: boolean
 }
@@ -84,6 +95,8 @@ export interface IntakeRefreshFieldDelta {
   before: number
   after: number
   sourcePath: string
+  /** Exact current-plan income identity selected during preview; MAGI has no record binding. */
+  targetBinding: IntakeRefreshTargetBinding | null
 }
 
 export interface IntakeRefreshDuplicateGroup {
@@ -128,11 +141,50 @@ function parseIncomeLeafPath(
 }
 
 function normalizeLabel(label: string): string {
-  return label
-    .toLowerCase()
-    .replace(/[^a-z0-9 ]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
+  let normalized = ''
+  let hasRetainedBase = false
+  for (const character of label.normalize('NFKC').toLowerCase()) {
+    if (/[\p{L}\p{N}]/u.test(character)) {
+      normalized += character
+      hasRetainedBase = true
+    } else if (/\p{M}/u.test(character)) {
+      if (hasRetainedBase) normalized += character
+    } else {
+      normalized += ' '
+      hasRetainedBase = false
+    }
+  }
+  return normalized.replace(/\s+/g, ' ').trim()
+}
+
+function incomeSemanticKey(current: Plan, income: Wages | Recurring | OneTime): string {
+  if (income.type === 'wages') {
+    const person = current.household.people.find((candidate) => candidate.id === income.personId)
+    return `wages\u0000${income.personId}\u0000${person?.dob ?? ''}`
+  }
+  if (income.type === 'recurring') return `recurring\u0000${normalizeLabel(income.label)}`
+  return `oneTime\u0000${normalizeLabel(income.label)}\u0000${income.year}`
+}
+
+function targetBindingsForField(
+  current: Plan,
+  field: IntakeRefreshField,
+): IntakeRefreshTargetBinding[] {
+  if (field === 'recentAnnualMagi') return []
+  const bindings: IntakeRefreshTargetBinding[] = []
+  current.incomes.forEach((income, index) => {
+    const matches =
+      (field === 'annualGross' && income.type === 'wages') ||
+      (field === 'annualAmount' && income.type === 'recurring') ||
+      (field === 'amount' && income.type === 'oneTime')
+    if (!matches) return
+    bindings.push({
+      path: `incomes[${index}].${field}`,
+      incomeId: income.id,
+      semanticKey: incomeSemanticKey(current, income),
+    })
+  })
+  return bindings
 }
 
 function landed(item: ImportReviewItem): boolean {
@@ -205,6 +257,7 @@ function sourceOf(
 function candidate(
   source: IntakeRefreshSource,
   targetPaths: string[],
+  targetBindings: IntakeRefreshTargetBinding[],
   reason: IntakeRefreshExclusionReason | null,
   protectedTargets: ReadonlySet<string>,
 ): IntakeRefreshCandidate {
@@ -226,6 +279,7 @@ function candidate(
     targetPath,
     match,
     alternativeTargetPaths: unique ? [] : targetPaths,
+    targetBindings,
     reason,
     isProtected: targetPath !== null && isProtectedPath(targetPath, protectedTargets),
   }
@@ -239,6 +293,7 @@ function wageCandidates(
 ): { candidates: IntakeRefreshCandidate[]; addressed: Set<string> } {
   const candidates: IntakeRefreshCandidate[] = []
   const addressed = new Set<string>()
+  const targetBindings = targetBindingsForField(current, 'annualGross')
   const incomingWages = incoming.incomes.filter((income): income is Wages => income.type === 'wages')
   const currentWages = current.incomes.filter((income): income is Wages => income.type === 'wages')
 
@@ -252,18 +307,18 @@ function wageCandidates(
     const provenance = reviewForPath(review, recordPath, recordPath)
     const source = sourceOf(leafPath, 'annualGross', income.annualGross, provenance.item)
     if (provenance.reason !== null) {
-      candidates.push(candidate(source, [], provenance.reason, protectedTargets))
+      candidates.push(candidate(source, [], targetBindings, provenance.reason, protectedTargets))
       return
     }
 
     const personProof = personDobProvenance(incoming, income.personId, review)
     if (personProof === null) {
-      candidates.push(candidate(source, [], 'person_not_proven', protectedTargets))
+      candidates.push(candidate(source, [], targetBindings, 'person_not_proven', protectedTargets))
       return
     }
     const currentPersonIndex = matchingCurrentPersonIndex(current, personProof.dob)
     if (currentPersonIndex === null) {
-      candidates.push(candidate(source, [], 'no_target', protectedTargets))
+      candidates.push(candidate(source, [], targetBindings, 'no_target', protectedTargets))
       return
     }
     const currentPersonId = current.household.people[currentPersonIndex]!.id
@@ -274,7 +329,7 @@ function wageCandidates(
     for (const path of targetPaths) addressed.add(path)
     const reason =
       sourceCount !== 1 ? 'ambiguous_source' : targetPaths.length > 1 ? 'ambiguous_target' : targetPaths.length === 0 ? 'no_target' : null
-    candidates.push(candidate(source, targetPaths, reason, protectedTargets))
+    candidates.push(candidate(source, targetPaths, targetBindings, reason, protectedTargets))
   })
   return { candidates, addressed }
 }
@@ -287,6 +342,7 @@ function recurringCandidates(
 ): { candidates: IntakeRefreshCandidate[]; addressed: Set<string> } {
   const candidates: IntakeRefreshCandidate[] = []
   const addressed = new Set<string>()
+  const targetBindings = targetBindingsForField(current, 'annualAmount')
   const sources = incoming.incomes.filter((income): income is Recurring => income.type === 'recurring')
   const targets = current.incomes.filter((income): income is Recurring => income.type === 'recurring')
   sources.forEach((income) => {
@@ -298,7 +354,7 @@ function recurringCandidates(
     const provenance = reviewForPath(review, recordPath, recordPath)
     const source = sourceOf(leafPath, 'annualAmount', income.annualAmount, provenance.item)
     if (provenance.reason !== null) {
-      candidates.push(candidate(source, [], provenance.reason, protectedTargets))
+      candidates.push(candidate(source, [], targetBindings, provenance.reason, protectedTargets))
       return
     }
     const key = normalizeLabel(income.label)
@@ -315,7 +371,7 @@ function recurringCandidates(
           : targetPaths.length !== 1
             ? 'ambiguous_target'
             : null
-    candidates.push(candidate(source, targetPaths, reason, protectedTargets))
+    candidates.push(candidate(source, targetPaths, targetBindings, reason, protectedTargets))
   })
   return { candidates, addressed }
 }
@@ -328,6 +384,7 @@ function oneTimeCandidates(
 ): { candidates: IntakeRefreshCandidate[]; addressed: Set<string> } {
   const candidates: IntakeRefreshCandidate[] = []
   const addressed = new Set<string>()
+  const targetBindings = targetBindingsForField(current, 'amount')
   const sources = incoming.incomes.filter((income): income is OneTime => income.type === 'oneTime')
   const targets = current.incomes.filter((income): income is OneTime => income.type === 'oneTime')
   sources.forEach((income) => {
@@ -339,7 +396,7 @@ function oneTimeCandidates(
     const provenance = reviewForPath(review, recordPath, recordPath)
     const source = sourceOf(leafPath, 'amount', income.amount, provenance.item)
     if (provenance.reason !== null) {
-      candidates.push(candidate(source, [], provenance.reason, protectedTargets))
+      candidates.push(candidate(source, [], targetBindings, provenance.reason, protectedTargets))
       return
     }
     const key = `${normalizeLabel(income.label)}\u0000${income.year}`
@@ -356,7 +413,7 @@ function oneTimeCandidates(
           : targetPaths.length !== 1
             ? 'ambiguous_target'
             : null
-    candidates.push(candidate(source, targetPaths, reason, protectedTargets))
+    candidates.push(candidate(source, targetPaths, targetBindings, reason, protectedTargets))
   })
   return { candidates, addressed }
 }
@@ -369,7 +426,13 @@ function magiCandidate(
   const path = 'assumptions.recentAnnualMagi'
   const provenance = reviewForPath(review, path, path)
   const source = sourceOf(path, 'recentAnnualMagi', incoming.assumptions.recentAnnualMagi, provenance.item)
-  return candidate(source, provenance.reason === null ? [path] : [], provenance.reason, protectedTargets)
+  return candidate(
+    source,
+    provenance.reason === null ? [path] : [],
+    [],
+    provenance.reason,
+    protectedTargets,
+  )
 }
 
 function allowlistedReviewTarget(incoming: Plan, target: string | undefined): boolean {
@@ -463,6 +526,50 @@ function effectiveProtected(
   return effective
 }
 
+function isTargetBinding(value: unknown): value is IntakeRefreshTargetBinding {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as { path?: unknown }).path === 'string' &&
+    typeof (value as { incomeId?: unknown }).incomeId === 'string' &&
+    typeof (value as { semanticKey?: unknown }).semanticKey === 'string'
+  )
+}
+
+function sameTargetBinding(left: unknown, right: unknown): boolean {
+  return (
+    isTargetBinding(left) &&
+    isTargetBinding(right) &&
+    left.path === right.path &&
+    left.incomeId === right.incomeId &&
+    left.semanticKey === right.semanticKey
+  )
+}
+
+function candidateSelectionStillBound(
+  current: Plan,
+  candidate: IntakeRefreshCandidate,
+  path: string,
+): boolean {
+  if (candidate.source.field === 'recentAnnualMagi') {
+    return path === 'assumptions.recentAnnualMagi'
+  }
+  if (!Array.isArray(candidate.targetBindings)) return false
+  const currentBindings = targetBindingsForField(current, candidate.source.field)
+  if (currentBindings.length !== candidate.targetBindings.length) return false
+  if (
+    currentBindings.some((binding, index) => {
+      const classified = candidate.targetBindings[index]
+      return !sameTargetBinding(binding, classified)
+    })
+  ) {
+    return false
+  }
+  return candidate.targetBindings.some(
+    (binding) => isTargetBinding(binding) && binding.path === path,
+  )
+}
+
 function duplicateGroups(
   current: Plan,
   candidates: readonly IntakeRefreshCandidate[],
@@ -471,7 +578,14 @@ function duplicateGroups(
   const byTarget = new Map<string, number[]>()
   candidates.forEach((item, index) => {
     const path = selection.get(index)
-    if (!path || !candidateIsSelectable(item) || !compatibleTarget(current, item.source, path)) return
+    if (
+      !path ||
+      !candidateIsSelectable(item) ||
+      !candidateSelectionStillBound(current, item, path) ||
+      !compatibleTarget(current, item.source, path)
+    ) {
+      return
+    }
     const indexes = byTarget.get(path) ?? []
     indexes.push(index)
     byTarget.set(path, indexes)
@@ -517,7 +631,21 @@ export function buildIntakeRefreshDelta(
   if (duplicates.length === 0) {
     classification.candidates.forEach((item, index) => {
       const path = selection.get(index)
-      if (!path || !candidateIsSelectable(item) || !compatibleTarget(current, item.source, path)) return
+      if (!path || !candidateIsSelectable(item)) return
+      if (
+        !candidateSelectionStillBound(current, item, path) ||
+        !compatibleTarget(current, item.source, path)
+      ) {
+        review.push({
+          status: 'skipped',
+          source: item.source.provenance!.source,
+          detail:
+            'The current plan identities changed after classification, so intake refresh requires reclassification.',
+          locator: item.source.provenance!.locator ?? { kind: 'none', note: item.source.path },
+          confidence: 'unmapped',
+        })
+        return
+      }
       if (isProtectedPath(path, effective)) {
         review.push({
           status: 'skipped',
@@ -551,6 +679,10 @@ export function buildIntakeRefreshDelta(
         before,
         after: item.source.value,
         sourcePath: item.source.path,
+        targetBinding:
+          item.source.field === 'recentAnnualMagi'
+            ? null
+            : (item.targetBindings.find((binding) => binding.path === path) ?? null),
       })
       review.push({
         status: 'mapped',
@@ -565,7 +697,21 @@ export function buildIntakeRefreshDelta(
     const collidingIndexes = new Set(duplicates.flatMap((group) => group.sourceIndexes))
     classification.candidates.forEach((item, index) => {
       const path = selection.get(index)
-      if (!path || !candidateIsSelectable(item) || !compatibleTarget(current, item.source, path)) return
+      if (!path || !candidateIsSelectable(item)) return
+      if (
+        !candidateSelectionStillBound(current, item, path) ||
+        !compatibleTarget(current, item.source, path)
+      ) {
+        review.push({
+          status: 'skipped',
+          source: item.source.provenance!.source,
+          detail:
+            'The current plan identities changed after classification, so intake refresh requires reclassification.',
+          locator: item.source.provenance!.locator ?? { kind: 'none', note: item.source.path },
+          confidence: 'unmapped',
+        })
+        return
+      }
       review.push({
         status: 'skipped',
         source: item.source.provenance!.source,
@@ -629,12 +775,34 @@ export function applyIntakeRefresh(
   // preview/apply agreement when the target changed after preview.
   if (
     delta.changes.some(
-      (change) =>
-        !Number.isFinite(change.before) ||
-        change.before < 0 ||
-        !Number.isFinite(change.after) ||
-        change.after < 0 ||
-        readTarget(draft, change.path, change.field) !== change.before,
+      (change) => {
+        const candidate = delta.candidates.find(
+          (item) => item.source.path === change.sourcePath && item.source.field === change.field,
+        )
+        const candidateBindings = Array.isArray(candidate?.targetBindings)
+          ? candidate.targetBindings
+          : []
+        const selectedBinding = candidateBindings.find(
+          (binding) => isTargetBinding(binding) && binding.path === change.path,
+        )
+        const targetBindingIsInvalid =
+          candidate?.source.field === 'recentAnnualMagi'
+            ? change.targetBinding !== null
+            : change.targetBinding === null ||
+              !sameTargetBinding(change.targetBinding, selectedBinding)
+        return (
+          candidate === undefined ||
+          !candidateIsSelectable(candidate) ||
+          candidate.source.value !== change.after ||
+          !candidateSelectionStillBound(draft, candidate, change.path) ||
+          targetBindingIsInvalid ||
+          !Number.isFinite(change.before) ||
+          change.before < 0 ||
+          !Number.isFinite(change.after) ||
+          change.after < 0 ||
+          readTarget(draft, change.path, change.field) !== change.before
+        )
+      },
     )
   ) {
     return 0

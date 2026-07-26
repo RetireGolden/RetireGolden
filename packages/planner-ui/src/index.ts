@@ -117,6 +117,7 @@ export {
   type IntakeRefreshFieldDelta,
   type IntakeRefreshMatchKind,
   type IntakeRefreshSource,
+  type IntakeRefreshTargetBinding,
 } from './import/intakeRefresh.ts'
 export type {
   DecisionState,
