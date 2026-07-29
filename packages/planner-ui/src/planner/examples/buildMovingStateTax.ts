@@ -1,7 +1,7 @@
 /** Moving in retirement — mid-plan relocation changes state tax. */
 
-import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
-import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory } from './buildContext'
+import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
+import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'moving-state-tax'
 
@@ -47,7 +47,7 @@ export function buildMovingStateTax(): Plan {
     heirTaxRatePct: 22,
     safeWithdrawalRatePct: 4,
   }
-  const parsed = parsePlan(plan)
+  const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`moving state tax invalid: ${parsed.issues.join('; ')}`)
   return parsed.plan
 }

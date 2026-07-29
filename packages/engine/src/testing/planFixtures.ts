@@ -98,6 +98,63 @@ export function couplePlan(opts: CouplePlanOptions = {}): Plan {
   return plan
 }
 
+export function setAcaYearContract(
+  plan: Plan,
+  {
+    year = 2026,
+    monthlyEnrollment = 1_000,
+    monthlySlcsp = monthlyEnrollment,
+    coveredMonths = 12,
+    coveredPersonIds = plan.household.people.map((person) => person.id),
+    fplRegion = 'contiguous',
+  }: {
+    year?: number
+    monthlyEnrollment?: number
+    monthlySlcsp?: number
+    coveredMonths?: number
+    coveredPersonIds?: string[]
+    fplRegion?: 'contiguous' | 'alaska' | 'hawaii'
+  } = {},
+): void {
+  plan.expenses.healthcare = {
+    pre65MonthlyPremiumPerPerson: monthlyEnrollment,
+    applyAcaCredit: true,
+    medicareExtrasMonthlyPerPerson: 0,
+    acaYears: [
+      ...(plan.expenses.healthcare.acaYears ?? []),
+      {
+        year,
+        fplRegion,
+        taxFamilyMembers: plan.household.people.map((person, index) => ({
+          personId: person.id,
+          relationship: index === 0 ? 'primary' as const : 'spouse' as const,
+          requiredToFile: 'required' as const,
+          magi: 0,
+        })),
+        coveredMembers: coveredPersonIds.map((personId) => ({
+          personId,
+          enrollmentPremiumByMonth: Array.from({ length: 12 }, (_, month) =>
+            month < coveredMonths ? monthlyEnrollment : 0,
+          ),
+          slcspBenchmarkPremiumByMonth: Array.from({ length: 12 }, (_, month) =>
+            month < coveredMonths ? monthlySlcsp : 0,
+          ),
+        })),
+        taxExemptInterest: { state: 'notApplicable', amount: null },
+        foreignExclusionAddback: { state: 'notApplicable', amount: null },
+        assertions: {
+          coverageEligibility: 'supported',
+          form8814: 'notApplicable',
+          specialAllocation: 'notApplicable',
+          marriedFilingSeparatelyException: 'notApplicable',
+          selfEmployedHealthInsuranceDeduction: 'notApplicable',
+          otherMaterialFacts: 'none',
+        },
+      },
+    ],
+  }
+}
+
 export function cashAccount(id: string, balance: number): Account {
   return { type: 'cash', id, name: id, ownerPersonId: null, annualReturnPct: 0, balance, annualContribution: 0 }
 }

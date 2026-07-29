@@ -86,7 +86,13 @@ import {
   type GuardrailPolicy,
 } from '../spending/guardrails.js'
 import { createGoalScheduler, toSchedulableGoal, type GoalScheduler } from '../spending/flexibleGoals.js'
-import { acaNetAnnualPremiumByMonth } from '../tax/aca.js'
+import {
+  acaEconomicPremiumByMonth,
+  acaFederalPovertyLine,
+  buildAcaHouseholdMagi,
+  type AcaHouseholdMagiResult,
+  type AcaResult,
+} from '../tax/aca.js'
 import { applyCapitalLossCarryforward, computeFederalTax, taxableSocialSecurity } from '../tax/federalTax.js'
 import { medicareAnnualPremiumPerPerson } from '../tax/medicare.js'
 import {
@@ -98,6 +104,8 @@ import {
   type ProjectionResult,
   type TaxCalculator,
   type YearExpenses,
+  type YearAcaResult,
+  type AcaSupportCode,
   type YearIncomes,
   type YearResult,
   type YearWithdrawals,
@@ -130,6 +138,7 @@ export interface SimulateOptions {
 
 const EPSILON = 0.005
 const MAX_TAX_ITERATIONS = 8
+const MAX_ACA_FIXED_POINT_EVALUATIONS = 160
 
 interface BalanceState {
   account: Extract<Account, { type: 'cash' | 'taxable' | 'equityComp' | 'traditional' | 'roth' | 'hsa' }>
@@ -1388,7 +1397,25 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // max(0, premium − expectedContribution/12) — so a transition-year member
     // covered five months owes 5/12 of the household expected contribution,
     // not all of it, and the contribution is never subtracted per person.
-    const acaMonthlyPremiums: number[] = new Array<number>(12).fill(0)
+    const legacyAcaMonthlyPremiums: number[] = new Array<number>(12).fill(0)
+    const acaEnrollmentPremiums: number[] = new Array<number>(12).fill(0)
+    const acaSlcspBenchmarkPremiums: number[] = new Array<number>(12).fill(0)
+    const acaContractsForYear = hc.acaYears?.filter((contract) => contract.year === year) ?? []
+    const acaContract = acaContractsForYear.length === 1 ? acaContractsForYear[0] : undefined
+    const grossPremiumForContract = (contract: (typeof acaContractsForYear)[number]) =>
+      contract.coveredMembers.reduce(
+        (total, member) => total + member.enrollmentPremiumByMonth.reduce((sum, premium) => sum + premium, 0),
+        0,
+      )
+    const acaDisplayContract =
+      acaContract ??
+      acaContractsForYear.reduce<(typeof acaContractsForYear)[number] | undefined>(
+        (largest, contract) =>
+          largest === undefined || grossPremiumForContract(contract) > grossPremiumForContract(largest)
+            ? contract
+            : largest,
+        undefined,
+      )
     // SSA-44 (see setup above): in the two years after a qualifying event, the
     // premium MAGI is the lower of the lookback and the prior-year stand-in.
     const irmaaMagi = ssa44ActiveInYear(year)
@@ -1408,9 +1435,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const medicareMonths = 12 - acaMonths
       if (acaMonths > 0 && hc.pre65MonthlyPremiumPerPerson > 0) {
         if (hc.applyAcaCredit) {
-          for (let m = 0; m < acaMonths; m++) acaMonthlyPremiums[m]! += hc.pre65MonthlyPremiumPerPerson * healthInflFactor
+          for (let m = 0; m < acaMonths; m++) {
+            legacyAcaMonthlyPremiums[m]! += hc.pre65MonthlyPremiumPerPerson * healthInflFactor
+          }
         } else {
-          healthcare += hc.pre65MonthlyPremiumPerPerson * acaMonths * healthInflFactor
+          if (!hc.applyAcaCredit) healthcare += hc.pre65MonthlyPremiumPerPerson * acaMonths * healthInflFactor
         }
       }
       if (medicareMonths > 0) {
@@ -1431,15 +1460,163 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         healthcare += premium + hc.medicareExtrasMonthlyPerPerson * medicareMonths * healthInflFactor
       }
     }
-    if (acaMonthlyPremiums.some((premium) => premium > 0)) {
-      // Credit estimated against last year's MAGI (current-year MAGI would
-      // be circular with withdrawals; reconciliation differences ignored).
-      const fplScale = inflFactorFrom(pack.year, year)
-      const aca = acaNetAnnualPremiumByMonth(pack, aliveCount, magiFor(year - 1), acaMonthlyPremiums, fplScale)
-      if (aca.overCliff) {
-        warnings.add('Some pre-65 years exceed 400% of the federal poverty line: no ACA credit (the cliff).')
+    const exampleContractInputMismatch =
+      plan.exampleSourceId !== undefined &&
+      acaContract !== undefined &&
+      (() => {
+        const exampleResidenceState = stateForYear(plan.household, year)
+        const expectedRegion =
+          exampleResidenceState === 'AK' ? 'alaska' : exampleResidenceState === 'HI' ? 'hawaii' : 'contiguous'
+        const expectedMonthlyPremium = hc.pre65MonthlyPremiumPerPerson * healthInflFactor
+        return (
+          acaContract.fplRegion !== expectedRegion ||
+          acaContract.coveredMembers.some((member) => {
+            const person = peopleStates.find((state) => state.personId === member.personId)
+            const expectedMonths =
+              person === undefined || !person.alive
+                ? 0
+                : person.ageAttained < 65
+                  ? 12
+                  : person.ageAttained === 65
+                    ? (birthMonthByPerson.get(person.personId) ?? 1) - 1
+                    : 0
+            return member.enrollmentPremiumByMonth.some((premium, month) => {
+              const expected = month < expectedMonths ? expectedMonthlyPremium : 0
+              return Math.abs(premium - expected) > EPSILON
+            })
+          })
+        )
+      })()
+    if (hc.applyAcaCredit && acaContract && !exampleContractInputMismatch) {
+      for (const member of acaContract.coveredMembers) {
+        for (let month = 0; month < 12; month++) {
+          const enrollmentPremium = member.enrollmentPremiumByMonth[month] ?? 0
+          acaEnrollmentPremiums[month]! += enrollmentPremium
+          if (enrollmentPremium > 0) {
+            acaSlcspBenchmarkPremiums[month]! += member.slcspBenchmarkPremiumByMonth[month] ?? 0
+          }
+        }
       }
-      healthcare += aca.netAnnualPremium
+    } else if (hc.applyAcaCredit && acaContractsForYear.length > 1) {
+      // Duplicate contracts are not reconcilable evidence, but their known
+      // enrollment premiums must not disappear. Fund the largest monthly
+      // aggregate across the conflicting contracts (never a hidden zero and
+      // never double-counting an accidental duplicate).
+      for (let month = 0; month < 12; month++) {
+        acaEnrollmentPremiums[month] = Math.max(
+          ...acaContractsForYear.map((contract) =>
+            contract.coveredMembers.reduce(
+              (sum, member) => sum + (member.enrollmentPremiumByMonth[month] ?? 0),
+              0,
+            ),
+          ),
+        )
+      }
+    } else if (hc.applyAcaCredit) {
+      for (let month = 0; month < 12; month++) {
+        acaEnrollmentPremiums[month] = legacyAcaMonthlyPremiums[month]!
+        acaSlcspBenchmarkPremiums[month] = legacyAcaMonthlyPremiums[month]!
+      }
+    }
+    const acaGrossEnrollmentPremium = acaEnrollmentPremiums.reduce((sum, premium) => sum + premium, 0)
+    const acaActive = hc.applyAcaCredit && acaGrossEnrollmentPremium > 0
+    // Begin conservatively at gross premium. A supported current-year result
+    // can reduce this only inside the exact tax/withdrawal fixed point below.
+    healthcare += acaGrossEnrollmentPremium
+    const healthcareExcludingAcaEnrollment = healthcare - acaGrossEnrollmentPremium
+    const acaInitialSupportCodes: AcaSupportCode[] = []
+    if (acaActive) {
+      if (isStandIn) acaInitialSupportCodes.push('tax-year-parameters-unsupported')
+      if (spendingPolicy !== undefined) acaInitialSupportCodes.push('guardrail-interaction-unsupported')
+      if (acaContractsForYear.length === 0) acaInitialSupportCodes.push('missing-year-contract')
+      if (acaContractsForYear.length > 1) acaInitialSupportCodes.push('duplicate-year-contract')
+      if (acaContract) {
+        const taxFamilyIds = new Set(acaContract.taxFamilyMembers.map((member) => member.personId))
+        const coveredIds = new Set(acaContract.coveredMembers.map((member) => member.personId))
+        const primaryCount = acaContract.taxFamilyMembers.filter(
+          (member) => member.relationship === 'primary',
+        ).length
+        const spouseCount = acaContract.taxFamilyMembers.filter(
+          (member) => member.relationship === 'spouse',
+        ).length
+        const expectedSpouseCount = filingStatusForYear === 'marriedFilingJointly' ? 1 : 0
+        if (
+          primaryCount !== 1 ||
+          spouseCount !== expectedSpouseCount ||
+          taxFamilyIds.size !== acaContract.taxFamilyMembers.length
+        ) {
+          acaInitialSupportCodes.push('tax-family-structure-unsupported')
+        }
+        if (coveredIds.size !== acaContract.coveredMembers.length) {
+          acaInitialSupportCodes.push('covered-member-duplicate')
+        }
+        if (
+          acaContract.taxFamilyMembers.some(
+            (member) =>
+              member.relationship !== 'dependent' &&
+              (
+                !personById.has(member.personId) ||
+                !stateOf(member.personId).alive ||
+                member.requiredToFile === 'unknown'
+              ),
+          )
+          || acaContract.coveredMembers.some((member) => !taxFamilyIds.has(member.personId))
+        ) {
+          acaInitialSupportCodes.push('tax-family-member-unknown')
+        }
+        if (
+          acaContract.taxFamilyMembers.some(
+            (member) =>
+              member.relationship === 'dependent' &&
+              member.requiredToFile === 'unknown',
+          )
+        ) {
+          acaInitialSupportCodes.push('dependent-filing-status-unknown')
+        }
+        if (acaContract.taxExemptInterest.state === 'unknown') {
+          acaInitialSupportCodes.push('tax-exempt-interest-unknown')
+        }
+        if (acaContract.foreignExclusionAddback.state === 'unknown') {
+          acaInitialSupportCodes.push('foreign-exclusion-addback-unknown')
+        }
+        if (
+          acaContract.coveredMembers.some((member) =>
+            member.enrollmentPremiumByMonth.some(
+              (premium, month) =>
+                premium > 0 && (member.slcspBenchmarkPremiumByMonth[month] ?? 0) <= 0,
+            ),
+          )
+        ) {
+          acaInitialSupportCodes.push('slcsp-benchmark-missing')
+        }
+        if (
+          acaContract.coveredMembers.some((member) =>
+            member.slcspBenchmarkPremiumByMonth.some(
+              (benchmark, month) =>
+                benchmark > 0 && (member.enrollmentPremiumByMonth[month] ?? 0) <= 0,
+            ),
+          )
+        ) {
+          acaInitialSupportCodes.push('benchmark-only-coverage-unsupported')
+        }
+        if (exampleContractInputMismatch) acaInitialSupportCodes.push('example-contract-input-mismatch')
+        if (acaContract.assertions.coverageEligibility !== 'supported') {
+          acaInitialSupportCodes.push('coverage-eligibility-unsupported')
+        }
+        if (acaContract.assertions.form8814 !== 'notApplicable') acaInitialSupportCodes.push('form-8814-unsupported')
+        if (acaContract.assertions.specialAllocation !== 'notApplicable') {
+          acaInitialSupportCodes.push('special-allocation-unsupported')
+        }
+        if (acaContract.assertions.marriedFilingSeparatelyException !== 'notApplicable') {
+          acaInitialSupportCodes.push('mfs-exception-unsupported')
+        }
+        if (acaContract.assertions.selfEmployedHealthInsuranceDeduction !== 'notApplicable') {
+          acaInitialSupportCodes.push('self-employed-deduction-unsupported')
+        }
+        if (acaContract.assertions.otherMaterialFacts !== 'none') {
+          acaInitialSupportCodes.push('other-material-facts-unsupported')
+        }
+      }
     }
 
     // Insurance premiums: level (fixed nominal), charged while the insured/owner
@@ -1510,8 +1687,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // costs this year (healthcare premiums + net care costs), plus the
     // accumulated reimburse-later pool when any HSA opts in. Cap-mode HSA
     // withdrawals are tax- and penalty-free only up to this.
-    const qualifiedMedicalThisYear = healthcare + netCare
-    const hsaQualifiedCap = qualifiedMedicalThisYear + (hsaReimburseLaterActive ? hsaReimbursablePool : 0)
+    // Ordinary Marketplace premiums are not HSA-qualified medical expenses
+    // under Pub. 969's general rule. (The narrow COBRA, unemployment, Medicare,
+    // and qualified-LTC exceptions are not represented by an ACA contract.)
+    let qualifiedMedicalThisYear = healthcare - acaGrossEnrollmentPremium + netCare
+    let hsaQualifiedCap = qualifiedMedicalThisYear + (hsaReimburseLaterActive ? hsaReimbursablePool : 0)
 
     // Withdrawal-rate guardrail decision (before funding). The signal is this
     // year's recurring target spending over the start-of-year portfolio, compared
@@ -1655,8 +1835,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // Base layers are funding-consistent (they exclude skipped goals) so the
     // shortfall attribution below stays clean; skipped goals are folded back into
     // the *reported* required/target totals and the shortfalls as explicit deltas.
-    const requiredSpendingBase = systemRequired + requiredLifestyle + requiredGoalsFunded
-    const targetSpendingBase = systemRequired + requiredLifestyle + targetLifestyle + targetGoalsFunded + requiredGoalsFunded
+    let requiredSpendingBase = systemRequired + requiredLifestyle + requiredGoalsFunded
+    let targetSpendingBase = systemRequired + requiredLifestyle + targetLifestyle + targetGoalsFunded + requiredGoalsFunded
     const idealSpendingBase = idealLifestyle + idealGoalsFunded
     const excessSpendingBase = excessLifestyle + excessGoalsFunded
 
@@ -2107,6 +2287,36 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
 
     let rothConversion = 0
     const rc = plan.strategies.rothConversion
+    const acaSizingInput = acaActive
+      ? acaContract
+        ? {
+          actionable: acaActive && acaInitialSupportCodes.length === 0,
+          taxFamilySize: acaContract.taxFamilyMembers.length,
+          fplRegion: acaContract.fplRegion,
+          fixedMagiAddbacks:
+            (acaContract.foreignExclusionAddback.state === 'known'
+              ? (acaContract.foreignExclusionAddback.amount ?? 0)
+              : 0) +
+            acaContract.taxFamilyMembers
+              .filter(
+                (member) =>
+                  member.relationship === 'dependent' &&
+                  member.requiredToFile === 'required',
+              )
+              .reduce((sum, member) => sum + member.magi, 0),
+          taxExemptInterest:
+            acaContract.taxExemptInterest.state === 'known'
+              ? (acaContract.taxExemptInterest.amount ?? 0)
+              : 0,
+          }
+        : {
+            actionable: false,
+            taxFamilySize: aliveCount,
+            fplRegion: 'contiguous' as const,
+            fixedMagiAddbacks: 0,
+            taxExemptInterest: 0,
+          }
+      : undefined
     if (rc.mode !== 'none' && anyAlive) {
       let desired = 0
       if (rc.mode === 'manual' || rc.mode === 'optimized') {
@@ -2124,6 +2334,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           ssBenefits: incomes.socialSecurity,
           peopleAged65Plus,
           householdSize: aliveCount,
+          aca: acaSizingInput,
           inflationScale: inflFactorFrom(pack.year, year),
           itemizedDeductions,
         })
@@ -2132,6 +2343,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           if (desired > 0.01 && safetyNetFloorToday > 0) desired = trimConversionForFloor(desired)
         } else if (sized.reason === 'bad_target') {
           warnings.add('The Roth-conversion target is invalid for this plan (unknown bracket or tier); no conversion made.')
+        } else if (sized.reason === 'aca_nonactionable') {
+          warnings.add('The ACA-cliff Roth-conversion target was skipped because current-year ACA evidence is non-actionable.')
         }
       }
       if (desired > 0.01) {
@@ -2237,6 +2450,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           ssBenefits: incomes.socialSecurity,
           peopleAged65Plus,
           householdSize: aliveCount,
+          aca: acaSizingInput,
           inflationScale: inflFactorFrom(pack.year, year),
           itemizedDeductions,
         },
@@ -2341,12 +2555,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // once, after the final plan. Cap consumption runs in balances order.
     const hsaEffect = (
       byAccountId: Map<string, number>,
+      qualifiedCap = hsaQualifiedCap,
     ): { taxableOrdinary: number; penalty: number; qualified: number; nonQualified: number; capConsumed: number } => {
       let taxableOrdinary = 0
       let penalty = 0
       let qualified = 0
       let nonQualified = 0
-      let capLeft = hsaQualifiedCap
+      let capLeft = qualifiedCap
       for (const state of balances) {
         if (state.account.type !== 'hsa') continue
         const taken = byAccountId.get(state.account.id) ?? 0
@@ -2370,7 +2585,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           penalty += taken * hsaNonQualifiedPenaltyRate(ownerAge)
         }
       }
-      return { taxableOrdinary, penalty, qualified, nonQualified, capConsumed: hsaQualifiedCap - capLeft }
+      return { taxableOrdinary, penalty, qualified, nonQualified, capConsumed: qualifiedCap - capLeft }
     }
 
     // Pro-rata (Form 8606) return-of-basis in a candidate's need-based IRA
@@ -2399,42 +2614,135 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // tax so the AGI cascade (taxable SS, IRMAA, ACA, state) falls out for free.
     const lossOffsetLimit = pack.federalTax.capitalLossOrdinaryOffsetLimit
     const spendingNeedBeforeTax = Math.max(0, expenses.total + contributions - cashInflows)
-    const evaluateWithdrawalNeed = (need: number) => {
+    const acaTaxExemptInterest =
+      acaActive && acaContract?.taxExemptInterest.state === 'known'
+        ? Math.max(0, acaContract.taxExemptInterest.amount ?? 0)
+        : 0
+    let acaEvaluationCount = 0
+    const evaluateWithdrawalNeed = (need: number, forceGrossAca = false) => {
+      acaEvaluationCount++
       const withdrawalPlan = planWithdrawals(need, balances, withdrawalStrategy, year, floorReserveNominal)
       const rothEffect = rothEarlyEffect(withdrawalPlan.byAccountId)
-      const hsaProbe = hsaEffect(withdrawalPlan.byAccountId)
       const iraNontaxableProbe = iraBasisEffect(withdrawalPlan.byAccountId)
-      const nettedProbe = applyCapitalLossCarryforward(
-        capitalLossPool,
-        ordinaryBase + withdrawalPlan.byCategory.traditional - iraNontaxableProbe + rothEffect.taxableOrdinary + hsaProbe.taxableOrdinary,
-        oneTimeGains + rebalanceRealizedGains + withdrawalPlan.realizedGains,
-        lossOffsetLimit,
-      )
-      const tax = taxCalculator.compute({
-        year,
-        filingStatus: filingStatusForYear,
-        ordinaryIncome: nettedProbe.ordinaryAfter,
-        capitalGains: nettedProbe.netCapitalGain,
-        realizedCapitalGainsBeforeCarryforward: oneTimeGains + rebalanceRealizedGains + withdrawalPlan.realizedGains,
-        taxableInterestIncome: incomes.taxableInterest + ladderTaxableInterest,
-        usGovernmentInterest: ladderTaxableInterest,
-        ordinaryDividends: incomes.ordinaryDividends,
-        qualifiedDividends: incomes.qualifiedDividends,
-        ssBenefits: incomes.socialSecurity,
-        peopleAged65Plus,
-        state: residenceState,
-        stateResidency,
-        privateRetirementIncome: privateRetirementBase + withdrawalPlan.byCategory.traditional - iraNontaxableProbe,
-        publicPensionIncome: publicPensionBase,
-        agesAlive,
-        itemizedDeductions,
-      })
+      let candidateHsaCap = hsaQualifiedCap
+      let hsaProbe = hsaEffect(withdrawalPlan.byAccountId, candidateHsaCap)
+      let nettedProbe!: ReturnType<typeof applyCapitalLossCarryforward>
+      let tax = 0
+      let acaMagiProbe: AcaHouseholdMagiResult | null = null
+      let acaQuote: AcaResult | null = null
+      let acaSupportCodes: AcaSupportCode[] = [...acaInitialSupportCodes]
+      let candidateHealthcare = healthcare
+      let hsaCapConverged = false
+      // Reconcile HSA taxability explicitly. ACA enrollment premiums are
+      // excluded from the qualified-expense cap, so the supported model is
+      // normally stable immediately; the bound remains defensive.
+      for (let hsaPass = 0; hsaPass < 16; hsaPass++) {
+        nettedProbe = applyCapitalLossCarryforward(
+          capitalLossPool,
+          ordinaryBase +
+            withdrawalPlan.byCategory.traditional -
+            iraNontaxableProbe +
+            rothEffect.taxableOrdinary +
+            hsaProbe.taxableOrdinary,
+          oneTimeGains + rebalanceRealizedGains + withdrawalPlan.realizedGains,
+          lossOffsetLimit,
+        )
+        const taxInput = {
+          year,
+          filingStatus: filingStatusForYear,
+          ordinaryIncome: nettedProbe.ordinaryAfter,
+          capitalGains: nettedProbe.netCapitalGain,
+          realizedCapitalGainsBeforeCarryforward:
+            oneTimeGains + rebalanceRealizedGains + withdrawalPlan.realizedGains,
+          taxableInterestIncome: incomes.taxableInterest + ladderTaxableInterest,
+          taxExemptInterest: acaTaxExemptInterest,
+          usGovernmentInterest: ladderTaxableInterest,
+          ordinaryDividends: incomes.ordinaryDividends,
+          qualifiedDividends: incomes.qualifiedDividends,
+          ssBenefits: incomes.socialSecurity,
+          peopleAged65Plus,
+          state: residenceState,
+          stateResidency,
+          privateRetirementIncome:
+            privateRetirementBase + withdrawalPlan.byCategory.traditional - iraNontaxableProbe,
+          publicPensionIncome: publicPensionBase,
+          agesAlive,
+          itemizedDeductions,
+        }
+        tax = taxCalculator.compute(taxInput)
+        acaMagiProbe = null
+        acaQuote = null
+        acaSupportCodes = [...acaInitialSupportCodes]
+        candidateHealthcare = healthcareExcludingAcaEnrollment + acaGrossEnrollmentPremium
+        if (acaActive && acaContract) {
+          acaMagiProbe = buildAcaHouseholdMagi({
+            federalAgi: computeFederalTax(taxInput).agi,
+            grossSocialSecurity: incomes.socialSecurity,
+            taxableSocialSecurity: computeFederalTax(taxInput).taxableSocialSecurity,
+            taxExemptInterest: acaContract.taxExemptInterest,
+            foreignExclusionAddback: acaContract.foreignExclusionAddback,
+            dependents: acaContract.taxFamilyMembers
+              .filter((member) => member.relationship === 'dependent')
+              .map((member) => ({
+                personId: member.personId,
+                requiredToFile: member.requiredToFile,
+                magi: member.magi,
+              })),
+          })
+          acaSupportCodes.push(...acaMagiProbe.blockers)
+          if (acaSupportCodes.length === 0 && acaMagiProbe.magi !== null && !forceGrossAca) {
+            const priced = acaEconomicPremiumByMonth(
+              pack,
+              acaContract.taxFamilyMembers.length,
+              acaMagiProbe.magi,
+              acaEnrollmentPremiums,
+              acaSlcspBenchmarkPremiums,
+              acaContract.fplRegion,
+              inflFactorFrom(pack.year, year),
+            )
+            if (priced.belowEligibilityFloor) {
+              acaQuote = priced
+              acaSupportCodes.push('below-100-fpl-exception-unsupported')
+            } else {
+              acaQuote = priced
+              candidateHealthcare = healthcareExcludingAcaEnrollment + priced.economicNetPremium
+            }
+          }
+        }
+        const nextHsaCap =
+          healthcareExcludingAcaEnrollment +
+          netCare +
+          (hsaReimburseLaterActive ? hsaReimbursablePool : 0)
+        if (Math.abs(nextHsaCap - candidateHsaCap) <= EPSILON) {
+          hsaCapConverged = true
+          break
+        }
+        candidateHsaCap = nextHsaCap
+        hsaProbe = hsaEffect(withdrawalPlan.byAccountId, candidateHsaCap)
+      }
+      if (!hsaCapConverged && acaActive) {
+        acaSupportCodes.push('hsa-cap-fixed-point-nonconvergent')
+        candidateHealthcare = healthcareExcludingAcaEnrollment + acaGrossEnrollmentPremium
+      }
       const penalties = penaltiesFor(withdrawalPlan.byAccountId) + rothEffect.penalty + hsaProbe.penalty
       return {
         withdrawalPlan,
         tax,
         penalties,
-        requiredNeed: Math.max(0, expenses.total + contributions + tax + penalties - cashInflows),
+        requiredNeed: Math.max(
+          0,
+          expenses.total +
+            (candidateHealthcare - healthcare) +
+            contributions +
+            tax +
+            penalties -
+            cashInflows,
+        ),
+        acaMagiProbe,
+        acaQuote,
+        acaSupportCodes: [...new Set(acaSupportCodes)],
+        healthcare: candidateHealthcare,
+        hsaQualifiedCap: candidateHsaCap,
       }
     }
 
@@ -2444,7 +2752,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     let need = spendingNeedBeforeTax
     let evaluation = evaluateWithdrawalNeed(need)
     let converged = Math.abs(evaluation.requiredNeed - need) <= EPSILON
-    for (let i = 1; i < MAX_TAX_ITERATIONS && !converged; i++) {
+    let acaFixedPointFailed = false
+    for (
+      let i = 1;
+      i < MAX_TAX_ITERATIONS && !converged && acaEvaluationCount < MAX_ACA_FIXED_POINT_EVALUATIONS;
+      i++
+    ) {
       need = evaluation.requiredNeed
       evaluation = evaluateWithdrawalNeed(need)
       converged = Math.abs(evaluation.requiredNeed - need) <= EPSILON
@@ -2461,7 +2774,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       let upperNeed = Math.max(1, need, evaluation.requiredNeed)
       let upper = evaluateWithdrawalNeed(upperNeed)
       let upperResidual = upper.requiredNeed - upperNeed
-      for (let i = 0; i < 64 && upperResidual > EPSILON && upper.withdrawalPlan.shortfall <= EPSILON; i++) {
+      for (
+        let i = 0;
+        i < 64 &&
+        upperResidual > EPSILON &&
+        upper.withdrawalPlan.shortfall <= EPSILON &&
+        acaEvaluationCount < MAX_ACA_FIXED_POINT_EVALUATIONS;
+        i++
+      ) {
         upperNeed *= 2
         upper = evaluateWithdrawalNeed(upperNeed)
         upperResidual = upper.requiredNeed - upperNeed
@@ -2470,7 +2790,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // Once withdrawals are exhausted, requiredNeed is bounded by this
       // evaluation. Jump to that bound instead of doubling through nonsense
       // inputs; the saturated withdrawal mix makes this a useful endpoint.
-      if (upperResidual > EPSILON && upper.withdrawalPlan.shortfall > EPSILON) {
+      if (
+        upperResidual > EPSILON &&
+        upper.withdrawalPlan.shortfall > EPSILON &&
+        acaEvaluationCount < MAX_ACA_FIXED_POINT_EVALUATIONS
+      ) {
         upperNeed = Math.max(upperNeed, upper.requiredNeed)
         upper = evaluateWithdrawalNeed(upperNeed)
         upperResidual = upper.requiredNeed - upperNeed
@@ -2484,7 +2808,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // Bisection needs a true sign-change bracket. Tax rules can contain hard
       // steps, so also stop when the interval collapses and retain the endpoint
       // with the smallest funding residual instead of aborting the projection.
-      for (let i = 0; i < 64 && !converged && upperResidual <= 0; i++) {
+      for (
+        let i = 0;
+        i < 64 &&
+        !converged &&
+        upperResidual <= 0 &&
+        acaEvaluationCount < MAX_ACA_FIXED_POINT_EVALUATIONS;
+        i++
+      ) {
         const midpointNeed = (lowerNeed + upperNeed) / 2
         const midpoint = evaluateWithdrawalNeed(midpointNeed)
         const residual = midpoint.requiredNeed - midpointNeed
@@ -2509,12 +2840,93 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         const lowerResidual = Math.abs(lower.requiredNeed - lowerNeed)
         const closestResidual = Math.min(lowerResidual, Math.abs(upperResidual))
         evaluation = lowerResidual <= Math.abs(upperResidual) ? lower : upper
+        if (acaActive) {
+          // A discontinuous cliff can leave no subsidized fixed point. Never
+          // retain the cheaper provisional credit: restart from gross premium,
+          // bounded and conservative, and make the ACA result non-actionable.
+          acaFixedPointFailed = true
+          let grossNeed = Math.max(0, evaluation.requiredNeed)
+          let grossEvaluation = evaluateWithdrawalNeed(grossNeed, true)
+          let grossConverged = Math.abs(grossEvaluation.requiredNeed - grossNeed) <= EPSILON
+          for (
+            let i = 1;
+            i < MAX_TAX_ITERATIONS &&
+            !grossConverged &&
+            acaEvaluationCount < MAX_ACA_FIXED_POINT_EVALUATIONS;
+            i++
+          ) {
+            grossNeed = grossEvaluation.requiredNeed
+            grossEvaluation = evaluateWithdrawalNeed(grossNeed, true)
+            grossConverged = Math.abs(grossEvaluation.requiredNeed - grossNeed) <= EPSILON
+          }
+          evaluation = grossEvaluation
+          converged = grossConverged
+          warnings.add(
+            `ACA premium, tax, and withdrawals did not reach a stable subsidized fixed point for ${year}; gross enrollment premium was funded.`,
+          )
+        } else {
+          warnings.add(
+            `Tax and withdrawal funding could not reconcile within half a cent for ${year}; the closest result differs by $${closestResidual.toFixed(2)}.`,
+          )
+        }
+      }
+    }
+
+    // The ACA cliff can create two self-consistent funding basins: a gross
+    // premium draw that pushes MAGI over the cliff, and a subsidized draw that
+    // remains below it. A single locally stable root is not enough evidence to
+    // choose between them. Probe the low-premium basin deterministically and
+    // fail closed to the already-computed gross result when both roots exist.
+    let acaConflictingCliffBasins = false
+    if (
+      acaActive &&
+      converged &&
+      !acaFixedPointFailed &&
+      acaInitialSupportCodes.length === 0 &&
+      evaluation.acaQuote?.overCliff &&
+      acaEvaluationCount < MAX_ACA_FIXED_POINT_EVALUATIONS
+    ) {
+      let lowNeed = Math.max(0, spendingNeedBeforeTax - acaGrossEnrollmentPremium)
+      let lowEvaluation = evaluateWithdrawalNeed(lowNeed)
+      let lowConverged = Math.abs(lowEvaluation.requiredNeed - lowNeed) <= EPSILON
+      for (
+        let i = 1;
+        i < MAX_TAX_ITERATIONS &&
+        !lowConverged &&
+        acaEvaluationCount < MAX_ACA_FIXED_POINT_EVALUATIONS;
+        i++
+      ) {
+        lowNeed = lowEvaluation.requiredNeed
+        lowEvaluation = evaluateWithdrawalNeed(lowNeed)
+        lowConverged = Math.abs(lowEvaluation.requiredNeed - lowNeed) <= EPSILON
+      }
+      if (
+        lowConverged &&
+        lowEvaluation.acaSupportCodes.length === 0 &&
+        lowEvaluation.acaQuote !== null &&
+        !lowEvaluation.acaQuote.overCliff &&
+        lowEvaluation.healthcare + EPSILON < evaluation.healthcare
+      ) {
+        acaConflictingCliffBasins = true
         warnings.add(
-          `Tax and withdrawal funding could not reconcile within half a cent for ${year}; the closest result differs by $${closestResidual.toFixed(2)}.`,
+          `ACA funding has conflicting subsidized and gross-premium fixed points for ${year}; gross enrollment premium was funded.`,
         )
       }
     }
 
+    const healthcareDelta = evaluation.healthcare - healthcare
+    if (Math.abs(healthcareDelta) > 0) {
+      healthcare = evaluation.healthcare
+      qualifiedMedicalThisYear = healthcareExcludingAcaEnrollment + netCare
+      hsaQualifiedCap = evaluation.hsaQualifiedCap
+      requiredSpendingBase += healthcareDelta
+      targetSpendingBase += healthcareDelta
+      expenses.healthcare = healthcare
+      expenses.requiredSpending += healthcareDelta
+      expenses.targetSpending += healthcareDelta
+      expenses.intendedSpending += healthcareDelta
+      expenses.total += healthcareDelta
+    }
     const { withdrawalPlan, tax, penalties } = evaluation
     // Any open HECM line backstops a true portfolio shortfall regardless of
     // draw policy — no borrower defaults on spending with credit available.
@@ -2591,8 +3003,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       taxFilingStatusForYear,
       ordinaryRealized + gainsRealized + incomes.qualifiedDividends,
       incomes.socialSecurity,
+      acaTaxExemptInterest,
     )
-    magiHistory.set(year, Math.max(0, ordinaryRealized + gainsRealized + incomes.qualifiedDividends + taxableSs))
+    magiHistory.set(
+      year,
+      Math.max(
+        0,
+        ordinaryRealized +
+          gainsRealized +
+          incomes.qualifiedDividends +
+          taxableSs +
+          acaTaxExemptInterest,
+      ),
+    )
 
     // Gain-harvesting advisory: room left in the 0% LTCG bracket this year, given
     // the realized income and deductions (roadmap V8 §4). Advisory only — the
@@ -2604,6 +3027,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       capitalGains: gainsRealized,
       realizedCapitalGainsBeforeCarryforward,
       taxableInterestIncome: incomes.taxableInterest + ladderTaxableInterest,
+      taxExemptInterest: acaTaxExemptInterest,
       usGovernmentInterest: ladderTaxableInterest,
       ordinaryDividends: incomes.ordinaryDividends,
       qualifiedDividends: incomes.qualifiedDividends,
@@ -2614,6 +3038,129 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const ltcgZeroHeadroom = federalDetail.zeroRateLtcgHeadroom
     if (federalDetail.alternativeMinimumTax > EPSILON) {
       warnings.add('The planning-grade AMT screen bound in at least one year; tax includes the AMT excess.')
+    }
+
+    let yearAcaResult: YearAcaResult | undefined
+    if (acaActive) {
+      const supportCodes = [...evaluation.acaSupportCodes]
+      if (acaFixedPointFailed || !converged) supportCodes.push('fixed-point-nonconvergent')
+      if (acaConflictingCliffBasins) supportCodes.push('conflicting-cliff-fixed-points')
+      const uniqueSupportCodes = [...new Set(supportCodes)]
+      const actionable = uniqueSupportCodes.length === 0 && evaluation.acaQuote !== null
+      const pricedQuote = evaluation.acaQuote
+      const quote = actionable ? pricedQuote : null
+      if (quote?.overCliff) {
+        warnings.add('Some pre-65 years exceed 400% of the federal poverty line: no ACA credit (the cliff).')
+      }
+      const dependentEvidence = new Map(
+        (evaluation.acaMagiProbe?.dependents ?? []).map((dependent) => [dependent.personId, dependent]),
+      )
+      const taxFamilyMembers =
+        acaContract?.taxFamilyMembers.map((member) => ({
+          ...member,
+          includedMagi:
+            member.relationship === 'dependent'
+              ? (dependentEvidence.get(member.personId)?.includedMagi ?? 0)
+              : 0,
+        })) ?? []
+      const coveredMembers = acaDisplayContract && !exampleContractInputMismatch
+        ? acaDisplayContract.coveredMembers.map((member) => ({
+            personId: member.personId,
+            coveredMonths: member.enrollmentPremiumByMonth
+              .map((premium, month) => (premium > 0 ? month + 1 : 0))
+              .filter((month) => month > 0),
+            grossEnrollmentPremium: member.enrollmentPremiumByMonth.reduce((sum, premium) => sum + premium, 0),
+            applicableSlcspPremium: member.slcspBenchmarkPremiumByMonth.reduce(
+              (sum, premium, month) =>
+                sum + ((member.enrollmentPremiumByMonth[month] ?? 0) > 0 ? premium : 0),
+              0,
+            ),
+          }))
+        : peopleStates
+            .filter((person) => {
+              const months =
+                person.ageAttained < 65
+                  ? 12
+                  : person.ageAttained === 65
+                    ? (birthMonthByPerson.get(person.personId) ?? 1) - 1
+                    : 0
+              return person.alive && months > 0 && hc.pre65MonthlyPremiumPerPerson > 0
+            })
+            .map((person) => {
+              const months =
+                person.ageAttained < 65
+                  ? 12
+                  : (birthMonthByPerson.get(person.personId) ?? 1) - 1
+              const premium = hc.pre65MonthlyPremiumPerPerson * healthInflFactor
+              return {
+                personId: person.personId,
+                coveredMonths: Array.from({ length: months }, (_, month) => month + 1),
+                grossEnrollmentPremium: premium * months,
+                applicableSlcspPremium: premium * months,
+              }
+            })
+      const fpl =
+        acaContract && !isStandIn && acaContract.taxFamilyMembers.length > 0
+          ? acaFederalPovertyLine(
+              pack,
+              acaContract.taxFamilyMembers.length,
+              acaContract.fplRegion,
+              inflFactorFrom(pack.year, year),
+            )
+          : null
+      const fplPct = pricedQuote?.fplPct ?? null
+      const cliffState: YearAcaResult['cliffState'] =
+        uniqueSupportCodes.includes('below-100-fpl-exception-unsupported')
+          ? 'below-eligibility-floor'
+          : !actionable || fplPct === null
+            ? 'unsupported'
+            : quote!.overCliff
+              ? 'above-cliff'
+              : Math.abs(fplPct - pack.aca.maxFplPctForCredit) <= 1e-9
+                ? 'at-cliff'
+                : 'below-cliff'
+      yearAcaResult = {
+        readiness: actionable ? 'actionable' : 'nonActionable',
+        supportCodes: actionable ? ['actionable'] : uniqueSupportCodes,
+        householdMagi: actionable ? evaluation.acaMagiProbe?.magi ?? null : null,
+        magiComponents: evaluation.acaMagiProbe?.components ?? {
+          federalAgi: federalDetail.agi,
+          nontaxableSocialSecurity: Math.max(0, incomes.socialSecurity - federalDetail.taxableSocialSecurity),
+          taxExemptInterest: acaTaxExemptInterest,
+          foreignExclusionAddback: 0,
+          requiredFilerDependentMagi: 0,
+        },
+        fplRegion: acaContract?.fplRegion ?? null,
+        federalPovertyLine: fpl,
+        fplPct,
+        taxFamilySize: acaContract?.taxFamilyMembers.length ?? null,
+        taxFamilyMembers,
+        coveredMembers,
+        grossEnrollmentPremium: acaGrossEnrollmentPremium,
+        applicableSlcspPremium: acaContract && !exampleContractInputMismatch
+          ? acaSlcspBenchmarkPremiums.reduce((sum, premium) => sum + premium, 0)
+          : null,
+        modeledAllowablePtc: quote?.modeledAllowablePtc ?? null,
+        economicNetPremium: healthcare - healthcareExcludingAcaEnrollment,
+        aptcModeled: false,
+        form8962ReconciliationSupported: false,
+        cliffState,
+        convergence: {
+          converged: actionable && converged && !acaFixedPointFailed,
+          iterations: Math.min(acaEvaluationCount, MAX_ACA_FIXED_POINT_EVALUATIONS),
+          maxIterations: MAX_ACA_FIXED_POINT_EVALUATIONS,
+          residualDollars: Math.abs(
+            evaluation.requiredNeed -
+              (evaluation.withdrawalPlan.byCategory.total + evaluation.withdrawalPlan.shortfall),
+          ),
+          grossPremiumFallback: !actionable,
+        },
+      }
+      if (!actionable) {
+        warnings.add(
+          'Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported.',
+        )
+      }
     }
 
     // V8 optimizer linearization probe (no-op unless a sink is supplied). The
@@ -2648,6 +3195,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         // (Pre-netting components; capital-loss carryforward refinement is
         // left to the exact ledger.)
         capitalGainsBase: Math.max(0, oneTimeGains + rebalanceRealizedGains) + incomes.qualifiedDividends,
+        acaConversionMagiHeadroom:
+          yearAcaResult?.readiness === 'actionable' &&
+          yearAcaResult.federalPovertyLine !== null &&
+          yearAcaResult.householdMagi !== null
+            ? Math.max(
+                0,
+                yearAcaResult.federalPovertyLine * (pack.aca.maxFplPctForCredit / 100) -
+                  yearAcaResult.householdMagi,
+              )
+            : null,
+        acaModeledAllowablePtc: yearAcaResult?.modeledAllowablePtc ?? null,
+        acaCliffState: yearAcaResult?.cliffState ?? null,
+        incumbentRothConversion: rothConversion,
         rmd: rmdTotal,
         startTraditional,
         inheritedDistribution: inheritedTotal,
@@ -2878,6 +3438,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       rothConversion,
       penalties,
       magi: magiHistory.get(year)!,
+      ...(yearAcaResult ? { aca: yearAcaResult } : {}),
       medicarePremiums,
       irmaaSurcharge,
       irmaaTier,

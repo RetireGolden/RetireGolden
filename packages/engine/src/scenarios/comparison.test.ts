@@ -4,6 +4,7 @@ import { createFlatTaxCalculator } from '../projection/flatTax.js'
 import {
   cashAccount,
   recurringOrdinaryIncome,
+  setAcaYearContract,
   singlePersonPlan,
   validatePlan,
 } from '../testing/planFixtures.js'
@@ -125,6 +126,36 @@ describe('compareScenarioPlans', () => {
       result.annual.reduce((total, row) => total + (row.values.withdrawals.proposal ?? 0), 0),
     )
     expect(result.spending.intended.delta).toBeGreaterThan(0)
+  })
+
+  it('reconciles annual and lifetime ACA values from ledger facts only', () => {
+    const baseline = singlePersonPlan({ dob: '1964-01-01', planningAge: 62 })
+    baseline.accounts = [cashAccount('cash', 100_000)]
+    baseline.incomes = [recurringOrdinaryIncome('income', 50_000, 2026)]
+    setAcaYearContract(baseline)
+    const proposal = structuredClone(baseline)
+    proposal.incomes = [recurringOrdinaryIncome('income-2', 60_000, 2026)]
+
+    const result = compareScenarioPlans(validatePlan(baseline), validatePlan(proposal), {
+      startYear: 2026,
+      taxCalculatorForPlan: () => noTax,
+    })
+    const annual = result.annual[0]!.values
+
+    expect(result.aca.grossEnrollmentPremium.baseline).toBe(annual.acaGrossEnrollmentPremium.baseline)
+    expect(result.aca.modeledAllowablePtc.baseline).toBe(annual.acaModeledAllowablePtc.baseline)
+    expect(result.aca.economicNetPremium.proposal).toBe(annual.acaEconomicNetPremium.proposal)
+    expect(result.aca.modeledAllowablePtc.delta).toBe(
+      result.aca.modeledAllowablePtc.proposal - result.aca.modeledAllowablePtc.baseline,
+    )
+
+    const identical = compareScenarioPlans(validatePlan(baseline), validatePlan(structuredClone(baseline)), {
+      startYear: 2026,
+      taxCalculatorForPlan: () => noTax,
+    })
+    expect(identical.aca.grossEnrollmentPremium.delta).toBe(0)
+    expect(identical.aca.modeledAllowablePtc.delta).toBe(0)
+    expect(identical.aca.economicNetPremium.delta).toBe(0)
   })
 
   it('aligns annual rows by calendar year and uses null when only one horizon contains a year', () => {

@@ -117,9 +117,10 @@ describe('candidate generators', () => {
   it('candidate generators produce bounded candidates', () => {
     for (const plan of [tradHeavyPlan(), noTraditionalPlan(), inheritedOnlyPlan(), ssTaxabilityPlan()]) {
       const ctx = createDecisionContext(plan, simOptions())
-      // 6 whole-horizon fills + up to 5 income-boundary windows × 3 brackets.
+      // 5 whole-horizon fills (ACA requires actionable baseline evidence) +
+      // up to 5 income-boundary windows × 3 brackets.
       const fills = simpleRothConversionGenerator.generate(ctx)
-      expect(fills.length).toBeGreaterThanOrEqual(6)
+      expect(fills.length).toBeGreaterThanOrEqual(5)
       expect(fills.length).toBeLessThanOrEqual(21)
       expect(withdrawalOrderGenerator.generate(ctx).length).toBeLessThanOrEqual(4)
       expect(socialSecurityClaimGenerator.generate(ctx).length).toBeLessThanOrEqual(6)
@@ -256,6 +257,28 @@ describe('objective policies and ranking', () => {
     const rich = fakeEvaluation('rich', { moneyLastsYears: 0, endingAfterTaxEstate: 80_000 }, 'beneficial')
     const { winner } = rankEvaluations([rich, durable], fakeCtx, maximizeSpendingDurability)
     expect(winner!.evaluation.candidate.id).toBe('durable')
+  })
+
+  it('never lets a diagnostic-only rich candidate win under a policy objective', () => {
+    const diagnosticRich = fakeEvaluation(
+      'diagnostic-rich',
+      { moneyLastsYears: 20, endingAfterTaxEstate: 1_000_000 },
+      'diagnostic',
+    )
+    const executable = fakeEvaluation(
+      'executable',
+      { moneyLastsYears: 2, endingAfterTaxEstate: 10_000 },
+      'beneficial',
+    )
+    const { ranked, winner } = rankEvaluations(
+      [diagnosticRich, executable],
+      fakeCtx,
+      maximizeSpendingDurability,
+    )
+    expect(winner?.evaluation.candidate.id).toBe('executable')
+    const diagnosticRow = ranked.find((row) => row.evaluation.candidate.id === 'diagnostic-rich')!
+    expect(diagnosticRow.eligible).toBe(false)
+    expect(diagnosticRow.constraintViolations).toContain('exact-ledger evidence is diagnostic-only')
   })
 
   it('robust ranking requires stochastic metrics over the success target', () => {

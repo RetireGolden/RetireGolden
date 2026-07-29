@@ -23,6 +23,7 @@
 import type { Plan } from '../model/plan.js'
 import type { FilingStatus, ParameterPack } from '../params/types.js'
 import type { TaxYearInput } from '../projection/types.js'
+import { acaFederalPovertyLine, type AcaFplRegion } from '../tax/aca.js'
 import { computeFederalTax, type FederalTaxDetail } from '../tax/federalTax.js'
 
 export type FillTarget = Extract<Plan['strategies']['rothConversion'], { mode: 'fillToTarget' }>
@@ -41,6 +42,15 @@ export interface ConversionSizingInput {
   peopleAged65Plus: number
   /** Living household size (FPL). */
   householdSize: number
+  /** Required for ACA-cliff sizing; absent/non-actionable fails closed. */
+  aca?: {
+    actionable: boolean
+    taxFamilySize: number
+    fplRegion: AcaFplRegion
+    /** Foreign exclusion + required-filer dependent MAGI. */
+    fixedMagiAddbacks: number
+    taxExemptInterest: number
+  }
   /** Scale applied to IRMAA thresholds / FPL for years beyond the pack. */
   inflationScale: number
   /** Itemized deductions (nominal) so bracket/MAGI targets use the right deduction. */
@@ -49,10 +59,19 @@ export interface ConversionSizingInput {
 
 export type SizingResult =
   | { ok: true; amount: number }
-  | { ok: false; reason: 'bad_target' | 'already_over_ceiling' }
+  | { ok: false; reason: 'bad_target' | 'already_over_ceiling' | 'aca_nonactionable' }
 
-function metricFor(target: FillTarget['target'], detail: FederalTaxDetail): number {
-  return target === 'topOfBracket' ? detail.taxableIncome : detail.magi
+function metricFor(target: FillTarget['target'], detail: FederalTaxDetail, input: ConversionSizingInput): number {
+  if (target === 'topOfBracket') return detail.taxableIncome
+  if (target === 'acaCliff') {
+    return (
+      detail.agi +
+      Math.max(0, input.ssBenefits - detail.taxableSocialSecurity) +
+      (input.aca?.taxExemptInterest ?? 0) +
+      (input.aca?.fixedMagiAddbacks ?? 0)
+    )
+  }
+  return detail.magi
 }
 
 function ceilingFor(strategy: FillTarget, input: ConversionSizingInput): number | null {
@@ -70,10 +89,14 @@ function ceilingFor(strategy: FillTarget, input: ConversionSizingInput): number 
       return pack.medicare.irmaaTiers[tier - 1]!.magiOver[filingStatus] * input.inflationScale
     }
     case 'acaCliff': {
-      const fpl =
-        pack.federalPovertyLine.firstPerson +
-        pack.federalPovertyLine.perAdditionalPerson * Math.max(0, input.householdSize - 1)
-      return fpl * input.inflationScale * (pack.aca.maxFplPctForCredit / 100)
+      if (!input.aca?.actionable) return null
+      const fpl = acaFederalPovertyLine(
+        pack,
+        input.aca.taxFamilySize,
+        input.aca.fplRegion,
+        input.inflationScale,
+      )
+      return fpl * (pack.aca.maxFplPctForCredit / 100)
     }
     case 'fixedMagi':
       return strategy.targetValue !== null && strategy.targetValue > 0 ? strategy.targetValue : null
@@ -82,6 +105,9 @@ function ceilingFor(strategy: FillTarget, input: ConversionSizingInput): number 
 
 /** Largest conversion keeping the strategy's metric at or under its ceiling. */
 export function sizeRothConversion(strategy: FillTarget, input: ConversionSizingInput): SizingResult {
+  if (strategy.target === 'acaCliff' && !input.aca?.actionable) {
+    return { ok: false, reason: 'aca_nonactionable' }
+  }
   const ceiling = ceilingFor(strategy, input)
   if (ceiling === null) return { ok: false, reason: 'bad_target' }
 
@@ -94,10 +120,12 @@ export function sizeRothConversion(strategy: FillTarget, input: ConversionSizing
         ordinaryIncome: input.ordinaryIncomeBase + conversion,
         capitalGains: input.capitalGains,
         qualifiedDividends: input.qualifiedDividends ?? 0,
+        taxExemptInterest: input.aca?.taxExemptInterest,
         ssBenefits: input.ssBenefits,
         peopleAged65Plus: input.peopleAged65Plus,
         itemizedDeductions: input.itemizedDeductions,
       }),
+      input,
     )
 
   const base = metricAt(0)

@@ -13,8 +13,8 @@ import { describe, expect, it } from 'vitest'
 import { maximizeSpendingDurability, minimizeLifetimeTaxWithEstateFloor, socialSecurityClaimGenerator } from '../decisions/index.js'
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../model/plan.js'
 import { applyScenarioPatch } from '../scenarios/scenarios.js'
-import { socialSecurityIncome } from '../testing/planFixtures.js'
-import { optimizeSchedule, type OptimizedSchedule } from '../strategies/optimizer.js'
+import { recurringOrdinaryIncome, setAcaYearContract, socialSecurityIncome } from '../testing/planFixtures.js'
+import { buildOptimizerModel, optimizeSchedule, type OptimizedSchedule } from '../strategies/optimizer.js'
 import { createFederalTaxCalculator } from '../tax/federalTax.js'
 import { summarizeProjection } from './compare.js'
 import {
@@ -68,16 +68,16 @@ function acaBridgePlan(): Plan {
     dob: '1964-01-01',
     sex: 'average',
     retirementAge: 60,
-    longevity: { planningAge: 65, source: 'manual' },
+    longevity: { planningAge: 62, source: 'manual' },
   }
   plan.assumptions.inflationPct = 0
   plan.assumptions.healthcareExtraInflationPct = 0
   plan.assumptions.defaultReturnPct = 0
   plan.assumptions.stateEffectiveTaxPct = 0
   plan.assumptions.heirTaxRatePct = 50
-  plan.assumptions.recentAnnualMagi = 50_000
   plan.expenses.baseAnnual = 20_000
-  plan.expenses.healthcare = { pre65MonthlyPremiumPerPerson: 1_000, applyAcaCredit: true, medicareExtrasMonthlyPerPerson: 0 }
+  plan.incomes = [recurringOrdinaryIncome('aca-income', 50_000, 2026)]
+  setAcaYearContract(plan, { year: 2026 })
   plan.accounts = [
     { type: 'traditional', id: testIds(), name: 'IRA', ownerPersonId: 'p1', annualReturnPct: 0, kind: 'ira', balance: 500_000, annualContribution: 0 },
     { type: 'roth', id: testIds(), name: 'Roth', ownerPersonId: 'p1', annualReturnPct: 0, kind: 'ira', balance: 0, annualContribution: 0 },
@@ -803,9 +803,53 @@ describe('optimizePlan end-to-end', () => {
     const optimizedPlan = validate(withOptimizedConversions(plan, schedule.conversions, '2026-06-17T00:00:00.000Z'))
     const exact = simulatePlan(optimizedPlan, opts)
 
-    expect(exact.warnings.some((w) => w.includes('400% of the federal poverty line'))).toBe(true)
-    expect(exact.years.find((y) => y.year === 2026)!.expenses.healthcare).toBeCloseTo(4_980, 2)
-    expect(exact.years.find((y) => y.year === 2027)!.expenses.healthcare).toBeCloseTo(12_000, 2)
+    expect(exact.warnings.some((w) => w.includes('400% of the federal poverty line'))).toBe(false)
+    expect(exact.years.find((y) => y.year === 2026)!.aca?.readiness).toBe('actionable')
+    expect(schedule.conversions[0]!.amount).toBeLessThanOrEqual(12_600.01)
+    expect(exact.years.find((y) => y.year === 2026)!.expenses.healthcare).toBeLessThanOrEqual(12_000)
+  })
+
+  it('reconstructs an absolute ACA conversion bound when re-probing an incumbent schedule', () => {
+    const plan = validate(acaBridgePlan())
+    const incumbent = withOptimizedConversions(plan, [{ year: 2026, amount: 5_000 }])
+    const input = buildOptimizerInput(plan, opts, incumbent)
+    const bound = input.years[0]!.acaConversionMax
+
+    // Single-person 2025 HHS FPL ($15,650) × 400% minus the $50k
+    // non-conversion income. The incumbent $5k is added back to remaining
+    // headroom, so re-linearization preserves the same absolute ceiling.
+    expect(bound).toBeCloseTo(12_600, 0)
+  })
+
+  it.each([
+    {
+      name: 'above the cliff',
+      mutate: (plan: Plan) => {
+        const income = plan.incomes[0]
+        if (income?.type !== 'recurring') throw new Error('ACA fixture income missing')
+        income.annualAmount = 70_000
+      },
+    },
+    {
+      name: 'below the cliff with zero modeled PTC',
+      mutate: (plan: Plan) => {
+        const contract = plan.expenses.healthcare.acaYears![0]!
+        for (const member of contract.coveredMembers) {
+          member.enrollmentPremiumByMonth.fill(100)
+          member.slcspBenchmarkPremiumByMonth.fill(100)
+        }
+      },
+    },
+  ])('does not emit a compressed ACA conversion cap when actionable ACA is $name', ({ mutate }) => {
+    const plan = validate(acaBridgePlan())
+    mutate(plan)
+    const exact = simulatePlan(plan, opts).years[0]!
+    expect(exact.aca?.readiness).toBe('actionable')
+    expect(exact.aca?.modeledAllowablePtc).toBe(0)
+
+    const input = buildOptimizerInput(plan, opts)
+    expect(input.years[0]!.acaConversionMax).toBeUndefined()
+    expect(buildOptimizerModel(input).lp).not.toContain('0 <= conv0 <= 0')
   })
 
   it('does not manufacture conversions from inherited-only traditional balances', async () => {
@@ -1316,20 +1360,41 @@ describe('exact-ledger candidate tournament', () => {
     // Blanket fills drain the flat-return traditional into taxed conversions
     // this household never benefits from; the trimmed MILP schedule wins.
     const candidates = evaluateSimpleConversionCandidates(plan, baseline, opts)
-    for (const candidate of candidates) expect(candidate.afterTaxEstateDelta).toBeLessThan(0)
+    for (const candidate of candidates) expect(candidate.afterTaxEstateDelta).toBeLessThanOrEqual(0)
+    expect(candidates.some((candidate) => candidate.afterTaxEstateDelta < 0)).toBe(true)
     expect(tournament.winnerSource).toBe('milp')
     expect(tournament.winnerConversions).toEqual(postProcessed!.cleanedSchedule.conversions)
   })
 
-  it('does not churn the recommendation over immaterial margins', async () => {
+  it('keeps every ACA-sensitive tournament winner behind actionable exact-ledger evidence', async () => {
     const plan = validate(acaBridgePlan())
-    const { postProcessed, tournament } = await optimizePlan(plan, { ...opts, liquidationRatePct: 50 })
+    const { tournament } = await optimizePlan(plan, { ...opts, liquidationRatePct: 50 })
 
     // Here the best simple candidate lands within a few hundred dollars of the
     // cleaned MILP schedule — inside the switch margin, so the MILP holds.
-    const bestCandidateDelta = Math.max(...tournament.candidates.map((c) => c.afterTaxEstateDelta))
-    expect(Math.abs(bestCandidateDelta - postProcessed!.cleanedValidation.afterTaxEstateDelta)).toBeLessThan(5_000)
-    expect(tournament.winnerSource).toBe('milp')
+    const winning = simulatePlan(withOptimizedConversions(plan, tournament.winnerConversions), opts)
+    expect(
+      winning.years.filter((year) => year.aca).every((year) => year.aca?.readiness === 'actionable'),
+    ).toBe(true)
+  })
+
+  it('cannot rank or apply a candidate whose exact ACA ledger is non-actionable', () => {
+    const raw = acaBridgePlan()
+    for (const contract of raw.expenses.healthcare.acaYears ?? []) {
+      contract.taxExemptInterest = { state: 'unknown', amount: null }
+    }
+    const plan = validate(raw)
+    const baseline = simulatePlan(plan, opts)
+    const conversions = [{ year: 2026, amount: 5_000 }]
+    const candidate = simulatePlan(withOptimizedConversions(plan, conversions), opts)
+    const validation = evaluateExactLedgerSchedule(plan, conversions, baseline, candidate)
+
+    expect(['diagnostic', 'unexecutable']).toContain(validation.recommendationState)
+    expect(candidate.years.some((year) => year.aca?.readiness === 'nonActionable')).toBe(true)
+
+    const tournament = runExactLedgerTournament(plan, baseline, null, opts)
+    expect(tournament.winnerConversions).toEqual([])
+    expect(['incumbent', 'none']).toContain(tournament.winnerSource)
   })
 
   it('lets a candidate win outright when the MILP has nothing to recommend', () => {

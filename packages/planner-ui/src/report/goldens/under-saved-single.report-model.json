@@ -1,5 +1,17 @@
 {
   "blocks": {
+    "aca-ledger": {
+      "rows": [
+        {
+          "applicableSlcspPremium": 7800,
+          "economicNetPremium": 420,
+          "grossEnrollmentPremium": 7800,
+          "modeledAllowablePtc": 7380,
+          "readiness": "actionable",
+          "year": 2026
+        }
+      ]
+    },
     "accounts": {
       "rows": [
         {
@@ -47,12 +59,12 @@
     "chart-data": {
       "rows": [
         {
-          "cash": 20395,
+          "cash": 22634,
           "equityComp": 0,
           "hsa": 0,
           "income": 20000,
           "roth": 0,
-          "spendingPlusTax": 75005,
+          "spendingPlusTax": 72810,
           "taxable": 262500,
           "traditional": 315000,
           "year": 2026
@@ -64,7 +76,7 @@
           "income": 20500,
           "roth": 0,
           "spendingPlusTax": 78901,
-          "taxable": 235719,
+          "taxable": 238070,
           "traditional": 330750,
           "year": 2027
         },
@@ -75,7 +87,7 @@
           "income": 21013,
           "roth": 0,
           "spendingPlusTax": 81026,
-          "taxable": 184491,
+          "taxable": 186959,
           "traditional": 347288,
           "year": 2028
         },
@@ -86,7 +98,7 @@
           "income": 53845,
           "roth": 0,
           "spendingPlusTax": 85509,
-          "taxable": 160467,
+          "taxable": 163059,
           "traditional": 364652,
           "year": 2029
         },
@@ -97,7 +109,7 @@
           "income": 55191,
           "roth": 0,
           "spendingPlusTax": 88067,
-          "taxable": 133971,
+          "taxable": 136692,
           "traditional": 382884,
           "year": 2030
         },
@@ -108,7 +120,7 @@
           "income": 56570,
           "roth": 0,
           "spendingPlusTax": 90698,
-          "taxable": 104835,
+          "taxable": 107692,
           "traditional": 402029,
           "year": 2031
         },
@@ -119,7 +131,7 @@
           "income": 57985,
           "roth": 0,
           "spendingPlusTax": 93406,
-          "taxable": 72885,
+          "taxable": 75885,
           "traditional": 422130,
           "year": 2032
         },
@@ -130,7 +142,7 @@
           "income": 59434,
           "roth": 0,
           "spendingPlusTax": 96255,
-          "taxable": 37868,
+          "taxable": 41018,
           "traditional": 443237,
           "year": 2033
         },
@@ -140,9 +152,9 @@
           "hsa": 0,
           "income": 60920,
           "roth": 0,
-          "spendingPlusTax": 100659,
-          "taxable": 0,
-          "traditional": 463434,
+          "spendingPlusTax": 99951,
+          "taxable": 2086,
+          "traditional": 465398,
           "year": 2034
         },
         {
@@ -151,9 +163,9 @@
           "hsa": 0,
           "income": 62443,
           "roth": 0,
-          "spendingPlusTax": 111832,
+          "spendingPlusTax": 111458,
           "taxable": 0,
-          "traditional": 434747,
+          "traditional": 439393,
           "year": 2035
         },
         {
@@ -164,7 +176,7 @@
           "roth": 0,
           "spendingPlusTax": 115226,
           "taxable": 0,
-          "traditional": 402702,
+          "traditional": 407580,
           "year": 2036
         },
         {
@@ -175,7 +187,7 @@
           "roth": 0,
           "spendingPlusTax": 118722,
           "taxable": 0,
-          "traditional": 367063,
+          "traditional": 372185,
           "year": 2037
         },
         {
@@ -186,7 +198,7 @@
           "roth": 0,
           "spendingPlusTax": 122322,
           "taxable": 0,
-          "traditional": 327585,
+          "traditional": 332963,
           "year": 2038
         },
         {
@@ -197,7 +209,7 @@
           "roth": 0,
           "spendingPlusTax": 126032,
           "taxable": 0,
-          "traditional": 284003,
+          "traditional": 289649,
           "year": 2039
         },
         {
@@ -208,7 +220,7 @@
           "roth": 0,
           "spendingPlusTax": 129853,
           "taxable": 0,
-          "traditional": 236038,
+          "traditional": 241968,
           "year": 2040
         },
         {
@@ -219,7 +231,7 @@
           "roth": 0,
           "spendingPlusTax": 133880,
           "taxable": 0,
-          "traditional": 183302,
+          "traditional": 189528,
           "year": 2041
         },
         {
@@ -230,7 +242,7 @@
           "roth": 0,
           "spendingPlusTax": 138040,
           "taxable": 0,
-          "traditional": 125462,
+          "traditional": 131999,
           "year": 2042
         },
         {
@@ -241,7 +253,7 @@
           "roth": 0,
           "spendingPlusTax": 142327,
           "taxable": 0,
-          "traditional": 62176,
+          "traditional": 69040,
           "year": 2043
         },
         {
@@ -250,9 +262,9 @@
           "hsa": 0,
           "income": 77983,
           "roth": 0,
-          "spendingPlusTax": 145165,
+          "spendingPlusTax": 146746,
           "taxable": 0,
-          "traditional": 0,
+          "traditional": 290,
           "year": 2044
         },
         {
@@ -261,7 +273,7 @@
           "hsa": 0,
           "income": 79933,
           "roth": 0,
-          "spendingPlusTax": 132664,
+          "spendingPlusTax": 132729,
           "taxable": 0,
           "traditional": 0,
           "year": 2045
@@ -352,16 +364,16 @@
     },
     "headline-results": {
       "averagePreRetirementSavingsRatePct": 0,
-      "coastFireNumber": 1875113,
-      "depletionYear": 2044,
+      "coastFireNumber": 1820250,
+      "depletionYear": 2045,
       "endingAfterTaxEstate": 0,
       "endingInvestable": 0,
       "endingNetWorth": 0,
       "fiAge": null,
-      "fiNumber": 1875113,
+      "fiNumber": 1820250,
       "fiYear": null,
       "lifetimeRothConversions": 0,
-      "lifetimeTaxesAndPenalties": 236526
+      "lifetimeTaxesAndPenalties": 237090
     },
     "household": {
       "filingStatus": "single",
@@ -494,24 +506,24 @@
       "rows": [
         {
           "contributions": 0,
-          "expenses": 74615,
+          "expenses": 72420,
           "income": 20000,
-          "investable": 597895,
+          "investable": 600134,
           "magi": 20000,
-          "netWorth": 597895,
+          "netWorth": 600134,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 390,
-          "withdrawals": 55005,
+          "withdrawals": 52810,
           "year": 2026
         },
         {
           "contributions": 0,
           "expenses": 78901,
           "income": 20500,
-          "investable": 566469,
-          "magi": 32445,
-          "netWorth": 566469,
+          "investable": 568820,
+          "magi": 31741,
+          "netWorth": 568820,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
@@ -522,9 +534,9 @@
           "contributions": 0,
           "expenses": 81026,
           "income": 21013,
-          "investable": 531778,
+          "investable": 534246,
           "magi": 41834,
-          "netWorth": 531778,
+          "netWorth": 534246,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
@@ -535,9 +547,9 @@
           "contributions": 0,
           "expenses": 83213,
           "income": 53845,
-          "investable": 525119,
+          "investable": 527711,
           "magi": 51321,
-          "netWorth": 525119,
+          "netWorth": 527711,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 2296,
@@ -548,9 +560,9 @@
           "contributions": 0,
           "expenses": 85464,
           "income": 55191,
-          "investable": 516855,
+          "investable": 519576,
           "magi": 55309,
-          "netWorth": 516855,
+          "netWorth": 519576,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 2603,
@@ -561,9 +573,9 @@
           "contributions": 0,
           "expenses": 87780,
           "income": 56570,
-          "investable": 506864,
+          "investable": 509721,
           "magi": 59406,
-          "netWorth": 506864,
+          "netWorth": 509721,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 2918,
@@ -574,9 +586,9 @@
           "contributions": 0,
           "expenses": 90164,
           "income": 57985,
-          "investable": 495015,
+          "investable": 498015,
           "magi": 63616,
-          "netWorth": 495015,
+          "netWorth": 498015,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 3241,
@@ -587,9 +599,9 @@
           "contributions": 0,
           "expenses": 92618,
           "income": 59434,
-          "investable": 481105,
+          "investable": 484254,
           "magi": 68000,
-          "netWorth": 481105,
+          "netWorth": 484254,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 3636,
@@ -600,35 +612,35 @@
           "contributions": 0,
           "expenses": 95145,
           "income": 60920,
-          "investable": 463434,
-          "magi": 75593,
-          "netWorth": 463434,
+          "investable": 467485,
+          "magi": 73234,
+          "netWorth": 467485,
           "rmd": 0,
           "rothConversion": 0,
-          "taxAndPenalties": 5515,
-          "withdrawals": 39739,
+          "taxAndPenalties": 4806,
+          "withdrawals": 39031,
           "year": 2034
         },
         {
           "contributions": 0,
           "expenses": 97746,
           "income": 62443,
-          "investable": 434747,
-          "magi": 106212,
-          "netWorth": 434747,
+          "investable": 439393,
+          "magi": 104870,
+          "netWorth": 439393,
           "rmd": 0,
           "rothConversion": 0,
-          "taxAndPenalties": 14086,
-          "withdrawals": 49389,
+          "taxAndPenalties": 13712,
+          "withdrawals": 49015,
           "year": 2035
         },
         {
           "contributions": 0,
           "expenses": 100425,
           "income": 64004,
-          "investable": 402702,
+          "investable": 407580,
           "magi": 109466,
-          "netWorth": 402702,
+          "netWorth": 407580,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 14801,
@@ -639,10 +651,10 @@
           "contributions": 0,
           "expenses": 103183,
           "income": 65604,
-          "investable": 367063,
+          "investable": 372185,
           "magi": 112817,
-          "netWorth": 367063,
-          "rmd": 16370,
+          "netWorth": 372185,
+          "rmd": 16568,
           "rothConversion": 0,
           "taxAndPenalties": 15539,
           "withdrawals": 53118,
@@ -652,10 +664,10 @@
           "contributions": 0,
           "expenses": 106024,
           "income": 67244,
-          "investable": 327585,
+          "investable": 332963,
           "magi": 116270,
-          "netWorth": 327585,
-          "rmd": 15488,
+          "netWorth": 332963,
+          "rmd": 15704,
           "rothConversion": 0,
           "taxAndPenalties": 16299,
           "withdrawals": 55078,
@@ -665,10 +677,10 @@
           "contributions": 0,
           "expenses": 108950,
           "income": 68926,
-          "investable": 284003,
+          "investable": 289649,
           "magi": 119828,
-          "netWorth": 284003,
-          "rmd": 14305,
+          "netWorth": 289649,
+          "rmd": 14540,
           "rothConversion": 0,
           "taxAndPenalties": 17081,
           "withdrawals": 57106,
@@ -678,10 +690,10 @@
           "contributions": 0,
           "expenses": 111965,
           "income": 70649,
-          "investable": 236038,
+          "investable": 241968,
           "magi": 123494,
-          "netWorth": 236038,
-          "rmd": 12909,
+          "netWorth": 241968,
+          "rmd": 13166,
           "rothConversion": 0,
           "taxAndPenalties": 17888,
           "withdrawals": 59204,
@@ -691,10 +703,10 @@
           "contributions": 0,
           "expenses": 115071,
           "income": 72415,
-          "investable": 183302,
+          "investable": 189528,
           "magi": 127363,
-          "netWorth": 183302,
-          "rmd": 11187,
+          "netWorth": 189528,
+          "rmd": 11468,
           "rothConversion": 0,
           "taxAndPenalties": 18809,
           "withdrawals": 61465,
@@ -704,10 +716,10 @@
           "contributions": 0,
           "expenses": 118272,
           "income": 74225,
-          "investable": 125462,
+          "investable": 131999,
           "magi": 131360,
-          "netWorth": 125462,
-          "rmd": 9074,
+          "netWorth": 131999,
+          "rmd": 9383,
           "rothConversion": 0,
           "taxAndPenalties": 19768,
           "withdrawals": 63815,
@@ -717,10 +729,10 @@
           "contributions": 0,
           "expenses": 121570,
           "income": 76081,
-          "investable": 62176,
+          "investable": 69040,
           "magi": 135480,
-          "netWorth": 62176,
-          "rmd": 6467,
+          "netWorth": 69040,
+          "rmd": 6804,
           "rothConversion": 0,
           "taxAndPenalties": 20757,
           "withdrawals": 66246,
@@ -730,13 +742,13 @@
           "contributions": 0,
           "expenses": 124970,
           "income": 77983,
-          "investable": 0,
-          "magi": 133141,
-          "netWorth": 0,
-          "rmd": 3361,
+          "investable": 290,
+          "magi": 139728,
+          "netWorth": 290,
+          "rmd": 3732,
           "rothConversion": 0,
-          "taxAndPenalties": 20196,
-          "withdrawals": 62176,
+          "taxAndPenalties": 21777,
+          "withdrawals": 68763,
           "year": 2044
         },
         {
@@ -744,12 +756,12 @@
           "expenses": 128474,
           "income": 79933,
           "investable": 0,
-          "magi": 55133,
+          "magi": 55670,
           "netWorth": 0,
-          "rmd": 0,
+          "rmd": 16,
           "rothConversion": 0,
-          "taxAndPenalties": 4190,
-          "withdrawals": 0,
+          "taxAndPenalties": 4254,
+          "withdrawals": 290,
           "year": 2045
         },
         {
@@ -859,5 +871,5 @@
     "stateParameterPackYear": 2026
   },
   "startYear": 2026,
-  "version": 1
+  "version": 2
 }

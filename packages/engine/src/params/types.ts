@@ -212,6 +212,10 @@ export interface ParameterPack {
      * credit at all (the cliff).
      */
     applicablePctBreakpoints: Array<{ fplPct: number; applicablePct: number }>
+    /** Flat applicable percentage strictly below the first breakpoint. */
+    applicablePctBelowFirstBreakpoint: number
+    /** Ordinary eligibility floor; lower-income exceptions are not modeled. */
+    minFplPctForCredit: number
     maxFplPctForCredit: number
   }
 }

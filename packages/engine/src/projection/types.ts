@@ -57,6 +57,11 @@ export interface TaxYearInput {
   /** Taxable interest generated in taxable brokerage accounts (already included in ordinaryIncome). */
   taxableInterestIncome?: number
   /**
+   * Federally tax-exempt interest. Not ordinary income, but included in Social
+   * Security provisional income and program-specific ACA household MAGI.
+   */
+  taxExemptInterest?: number
+  /**
    * Interest on U.S. government obligations (TIPS ladder coupons + inflation
    * accretion), already included in ordinaryIncome AND taxableInterestIncome.
    * Federal tax applies in full (incl. NIIT); every state exempts it, so the
@@ -194,6 +199,17 @@ export interface OptimizerYearProbe {
    */
   capitalGainsBase: number
   /**
+   * Remaining actionable ACA MAGI room at the exact-ledger probe. Null when
+   * no supported current-year ACA ceiling exists.
+   */
+  acaConversionMagiHeadroom: number | null
+  /** Allowable PTC actually preserved by the exact-ledger probe, if modeled. */
+  acaModeledAllowablePtc: number | null
+  /** Exact-ledger cliff position used to decide whether a preservation bound is meaningful. */
+  acaCliffState: YearAcaResult['cliffState'] | null
+  /** Conversion already executed in the probe schedule for absolute-bound reconstruction. */
+  incumbentRothConversion: number
+  /**
    * True when the ledger priced this premium year's IRMAA under an SSA-44
    * redetermination (the two years after a qualifying life-changing event, see
    * `healthcareConfigSchema.ssa44`). The optimizer's lookback treatment shifts
@@ -267,6 +283,78 @@ export interface YearWithdrawals {
   total: number
 }
 
+export type AcaSupportCode =
+  | 'actionable'
+  | 'missing-year-contract'
+  | 'duplicate-year-contract'
+  | 'tax-family-member-unknown'
+  | 'tax-family-structure-unsupported'
+  | 'covered-member-duplicate'
+  | 'slcsp-benchmark-missing'
+  | 'benchmark-only-coverage-unsupported'
+  | 'example-contract-input-mismatch'
+  | 'dependent-filing-status-unknown'
+  | 'tax-exempt-interest-unknown'
+  | 'foreign-exclusion-addback-unknown'
+  | 'coverage-eligibility-unsupported'
+  | 'form-8814-unsupported'
+  | 'special-allocation-unsupported'
+  | 'mfs-exception-unsupported'
+  | 'self-employed-deduction-unsupported'
+  | 'other-material-facts-unsupported'
+  | 'below-100-fpl-exception-unsupported'
+  | 'tax-year-parameters-unsupported'
+  | 'guardrail-interaction-unsupported'
+  | 'hsa-cap-fixed-point-nonconvergent'
+  | 'conflicting-cliff-fixed-points'
+  | 'fixed-point-nonconvergent'
+
+export interface YearAcaResult {
+  readiness: 'actionable' | 'nonActionable'
+  supportCodes: AcaSupportCode[]
+  /** Final return-year ACA household MAGI; null when material facts are unsupported. */
+  householdMagi: number | null
+  magiComponents: {
+    federalAgi: number
+    nontaxableSocialSecurity: number
+    taxExemptInterest: number
+    foreignExclusionAddback: number
+    requiredFilerDependentMagi: number
+  }
+  fplRegion: 'contiguous' | 'alaska' | 'hawaii' | null
+  federalPovertyLine: number | null
+  fplPct: number | null
+  taxFamilySize: number | null
+  taxFamilyMembers: Array<{
+    personId: string
+    relationship: 'primary' | 'spouse' | 'dependent'
+    requiredToFile: 'required' | 'notRequired' | 'unknown'
+    magi: number
+    includedMagi: number
+  }>
+  coveredMembers: Array<{
+    personId: string
+    coveredMonths: number[]
+    grossEnrollmentPremium: number
+    applicableSlcspPremium: number
+  }>
+  grossEnrollmentPremium: number
+  applicableSlcspPremium: number | null
+  /** Current-year planning result; not actual APTC cash/refund/balance-due reconciliation. */
+  modeledAllowablePtc: number | null
+  economicNetPremium: number
+  aptcModeled: false
+  form8962ReconciliationSupported: false
+  cliffState: 'below-eligibility-floor' | 'below-cliff' | 'at-cliff' | 'above-cliff' | 'unsupported'
+  convergence: {
+    converged: boolean
+    iterations: number
+    maxIterations: number
+    residualDollars: number
+    grossPremiumFallback: boolean
+  }
+}
+
 export interface YearResult {
   year: number
   people: PersonYearState[]
@@ -292,6 +380,8 @@ export interface YearResult {
   penalties: number
   /** MAGI realized this year (drives IRMAA two years later and the ACA credit). */
   magi: number
+  /** Present only in years with a credit-enabled Marketplace premium. */
+  aca?: YearAcaResult
   /** Medicare premiums charged this year (Part B incl. IRMAA + Part D surcharge, all covered people; excludes the user's "extras"). */
   medicarePremiums: number
   /** IRMAA-only portion of medicarePremiums (Part B and Part D surcharges above standard Part B). */

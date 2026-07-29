@@ -1,8 +1,8 @@
 /** Example couple — the full picture: accounts, SS, Roth strategy, insurance, scenarios. */
 
-import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
+import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
 import { TRUSTEES_DEFAULT_SS_HAIRCUT } from '@retiregolden/engine/params'
-import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory } from './buildContext'
+import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'example-couple'
 
@@ -97,7 +97,7 @@ export function buildExampleCouple(): Plan {
     },
     { id: exampleEntityId(EXAMPLE_ID, 'spend-more'), name: 'Spend 15% more', patch: { expenses: { baseAnnual: Math.round(96_000 * 1.15) } } },
   ]
-  const parsed = parsePlan(plan)
+  const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`example couple invalid: ${parsed.issues.join('; ')}`)
   return parsed.plan
 }

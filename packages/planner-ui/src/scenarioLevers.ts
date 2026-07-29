@@ -23,8 +23,7 @@ import { relocationScenarioPatch } from '@retiregolden/engine/projection/relocat
 import { simulatePlan } from '@retiregolden/engine/projection/simulate'
 import type { TaxCalculator } from '@retiregolden/engine/projection/types'
 import type { ScenarioActor, ScenarioPatchV1 } from '@retiregolden/engine/scenarios/contract'
-import { createScenarioPatch } from '@retiregolden/engine/scenarios/patch'
-import { applyScenarioPatch } from '@retiregolden/engine/scenarios/scenarios'
+import { applyScenarioPatchInput, createScenarioPatch } from '@retiregolden/engine/scenarios/patch'
 import {
   effectiveBirthYear,
   fraForBirthYear,
@@ -1608,7 +1607,11 @@ export function buildScenarioLever(
         { state, moveYear: request.moveYear, moveMonth },
         context.startYear,
       )
-      const applied = applyScenarioPatch(relocationBase, loose)
+      // This is an internal probe used to construct the final canonical patch,
+      // so apply the loose relocation without the public scenario wrapper's
+      // ACA-evidence invalidation. The final patch is invalidated when it is
+      // applied to a plan, after its canonical preconditions have succeeded.
+      const applied = applyScenarioPatchInput(relocationBase, loose)
       if (!applied.ok) return unavailable(definition, applied.issues, warnings)
       const taxOverridesChange =
         plan.assumptions.stateEffectiveTaxPct > 0 ||

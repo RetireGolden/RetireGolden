@@ -24,6 +24,7 @@ import type { Account, IncomeStream, Plan } from '@retiregolden/engine/model/pla
 import type { YearResult } from '@retiregolden/engine/projection/types'
 import { downloadStandaloneReport } from '../report/downloadReport'
 import { useReportBranding } from '../report/brandingContext'
+import { acaLedgerSummary, acaReportStatus } from './acaReportStatus'
 import { PlanProvider } from './PlanContext'
 import { usePlan } from './planContextCore'
 import { fmtMoney, fmtMoneyCompact, fmtPct } from './format'
@@ -109,6 +110,7 @@ function ReportBody() {
   const reportBranding = useReportBranding()
   const view = useProjection(plan)
   const { result, summary } = view
+  const acaLedgerRows = acaLedgerSummary(result.years)
   const hasCarryforward = plan.household.capitalLossCarryforward > 0
   const depleted = summary.depletionYear !== null
 
@@ -279,13 +281,43 @@ function ReportBody() {
             <tr><td style={td}>Baseline annual spending</td><td style={{ ...td, textAlign: 'right' }}>{fmtMoney(plan.expenses.baseAnnual)} (today's $)</td></tr>
             <tr><td style={td}>Retirement phases</td><td style={{ ...td, textAlign: 'right' }}>{plan.expenses.phases.length ? plan.expenses.phases.map((p) => `${p.multiplier}× from ${p.fromAge}`).join(', ') : 'none'}</td></tr>
             <tr><td style={td}>One-time goals</td><td style={{ ...td, textAlign: 'right' }}>{plan.expenses.oneTimeGoals.length}</td></tr>
-            <tr><td style={td}>Pre-65 premium / person</td><td style={{ ...td, textAlign: 'right' }}>{fmtMoney(plan.expenses.healthcare.pre65MonthlyPremiumPerPerson)}/mo{plan.expenses.healthcare.applyAcaCredit ? ', ACA credit applied' : ''}</td></tr>
+            <tr><td style={td}>Legacy pre-65 premium input / person</td><td style={{ ...td, textAlign: 'right' }}>{fmtMoney(plan.expenses.healthcare.pre65MonthlyPremiumPerPerson)}/mo{acaReportStatus(plan, result.years)}</td></tr>
             <tr><td style={td}>Withdrawal order</td><td style={{ ...td, textAlign: 'right' }}>{withdrawalSummary(plan)}</td></tr>
             <tr><td style={td}>Roth conversions</td><td style={{ ...td, textAlign: 'right' }}>{conversionSummary(plan)}</td></tr>
             <tr><td style={td}>QCD per year</td><td style={{ ...td, textAlign: 'right' }}>{fmtMoney(plan.strategies.qcdAnnual)}</td></tr>
           </tbody>
         </table>
       </section>
+
+      {acaLedgerRows.length > 0 ? (
+        <section className="report-section">
+          <h2>ACA current-year ledger</h2>
+          <table className="report-table">
+            <thead>
+              <tr>
+                <th>Year</th>
+                <th>Gross enrollment premium</th>
+                <th>Applicable SLCSP</th>
+                <th>Modeled allowable PTC</th>
+                <th>Economic net premium</th>
+                <th>Readiness</th>
+              </tr>
+            </thead>
+            <tbody>
+              {acaLedgerRows.map((row) => (
+                <tr key={row.year}>
+                  <td style={td}>{row.year}</td>
+                  <td style={td}>{fmtMoney(row.grossEnrollmentPremium)}</td>
+                  <td style={td}>{row.applicableSlcspPremium === null ? 'Not modeled' : fmtMoney(row.applicableSlcspPremium)}</td>
+                  <td style={td}>{row.modeledAllowablePtc === null ? 'Not modeled' : fmtMoney(row.modeledAllowablePtc)}</td>
+                  <td style={td}>{fmtMoney(row.economicNetPremium)}</td>
+                  <td style={td}>{row.readiness === 'actionable' ? 'Actionable' : 'Non-actionable'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      ) : null}
 
       <section className="report-section">
         <h2>Assumptions</h2>

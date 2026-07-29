@@ -50,8 +50,10 @@ late-career accumulator whose solvency depends on future deposits is not misread
 floors once age-eligible; non-negativity; balances ≥ 0.
 
 **The kink problem:** federal tax, taxable-SS phase-in, IRMAA tiers, and the ACA cliff are
-piecewise-linear / step, not linear — handled with piecewise-linear tax (SOS2 / binary segment selection)
-and binary threshold indicators. This is the bulk of the engineering and why the optimizer was spiked
+piecewise-linear / step, not linear. The MILP handles federal tax with convex segments and IRMAA with
+binary thresholds. For each actionable ACA probe year it also applies a conservative absolute conversion
+bound equal to the incumbent conversion plus remaining exact-ledger MAGI room to the cliff. Withdrawals
+and premium reconciliation remain nonlinear and are refined by the exact ledger. This is the bulk of the engineering and why the optimizer was spiked
 before commit. If the MILP had proven impractical, the strategy-provider seam allowed a multi-year
 heuristic fallback (forward search / local improvement over the bisection sizers).
 
@@ -256,7 +258,8 @@ Each sharpens the same withdrawal/conversion engine:
 - Piecewise tax is modeled to the engine's existing "big levers" depth. Federal ordinary brackets, the
   taxable-SS phase-in, IRMAA tiers (on the two-year MAGI lookback, Step 4), taxable capital-gain realization
   (Step 2), progressive state brackets (Step 3), and the OBBBA senior deduction with its 6% MAGI phase-out
-  (ground-truth 2026 law sync) are all modeled in-solve. A single LTCG rate and a single
+  (ground-truth 2026 law sync) are all modeled in-solve. Actionable ACA years add a bounded conversion
+  ceiling, but the compressed solve does not reproduce the full premium/withdrawal fixed point. A single LTCG rate and a single
   opening basis ratio linearize the taxable stack, and the taxable-SS and senior-deduction PWLs omit their
   concave caps (conservative for cap-blowing conversions); the exact ledger, convergence loop, and tournament
   refine all of these. State retirement-income exclusions are left to the exact ledger.

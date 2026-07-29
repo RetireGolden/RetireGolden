@@ -14,10 +14,11 @@ import { PlanWorkspace } from './PlanWorkspace'
 import { PlanCtx, usePlan } from './planContextCore'
 import { fmtMoneyCompact, parseAmount } from './format'
 import { createSamplePlan } from '../testSupport/samplePlan'
-import { removePartner } from './householdActions'
+import { invalidateAcaEvidence, removePartner } from './householdActions'
 import { projectPlan } from './useProjection'
 import { AccountsSection, AssumptionsSection, HouseholdSection, InsuranceSection, SpendingSection, StrategySection } from './sections'
 import { InsightsPage } from './insights/InsightsPage'
+import { acaReportStatus } from './acaReportStatus'
 
 beforeEach(() => {
   globalThis.indexedDB = new IDBFactory()
@@ -82,6 +83,29 @@ describe('sample plan', () => {
     for (const s of plan.scenarios) {
       expect(applyScenarioPatch(plan, s.patch).ok).toBe(true)
     }
+  })
+})
+
+describe('ACA annual evidence invalidation', () => {
+  it('clears exact annual evidence after a topology, region, or premium edit', () => {
+    const plan = createSamplePlan()
+    plan.expenses.healthcare.acaYears = []
+    invalidateAcaEvidence(plan)
+    expect(plan.expenses.healthcare.acaYears).toBeUndefined()
+  })
+})
+
+describe('report ACA wording', () => {
+  it('does not describe a requested credit as applied without actionable annual evidence', () => {
+    const plan = createSamplePlan()
+    plan.expenses.healthcare.applyAcaCredit = true
+    expect(acaReportStatus(plan, [])).toContain('requested; annual evidence required')
+    expect(
+      acaReportStatus(plan, [{ aca: { readiness: 'nonActionable' } } as never]),
+    ).toContain('requested; annual evidence required')
+    expect(
+      acaReportStatus(plan, [{ aca: { readiness: 'actionable' } } as never]),
+    ).toContain('modeled for evidenced years')
   })
 })
 

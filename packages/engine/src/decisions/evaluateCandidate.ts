@@ -253,6 +253,23 @@ export function evaluateCandidate(
   if (candidateResult.depletionYear !== null && ctx.baselineResult.depletionYear === null) {
     diagnostics.push(`Introduces portfolio depletion in ${candidateResult.depletionYear}.`)
   }
+  const unsafeBaselineAcaYears = ctx.baselineResult.years
+    .filter((year) => year.aca?.readiness === 'nonActionable')
+    .map((year) => year.year)
+  const unsafeCandidateAcaYears = candidateResult.years
+    .filter((year) => year.aca?.readiness === 'nonActionable')
+    .map((year) => year.year)
+  if (unsafeBaselineAcaYears.length > 0) {
+    diagnostics.push(
+      `ACA exact-ledger evidence is non-actionable in the baseline for ${unsafeBaselineAcaYears.join(', ')}; no candidate can be applied as executable.`,
+    )
+  }
+  if (unsafeCandidateAcaYears.length > 0) {
+    diagnostics.push(
+      `ACA exact-ledger evidence is non-actionable in the candidate for ${unsafeCandidateAcaYears.join(', ')}; this candidate cannot be applied as executable.`,
+    )
+  }
+  const hasUnsafeAcaEvidence = unsafeBaselineAcaYears.length > 0 || unsafeCandidateAcaYears.length > 0
 
   return {
     candidate,
@@ -263,13 +280,16 @@ export function evaluateCandidate(
     conversionExecution,
     traditionalDepletionYear: findTraditionalDepletionYear(built.plan, candidateResult, neutralToleranceDollars),
     diagnostics,
-    recommendationState: classifyRecommendationState({
-      afterTaxEstateDelta: deltas.endingAfterTaxEstate,
-      conversionExecution,
-      neutralToleranceDollars,
-      minimumRequestedConversionDollars,
-      materialConversionShortfallDollars,
-      materialConversionShortfallPct,
-    }),
+    recommendationState:
+      hasUnsafeAcaEvidence
+        ? 'diagnostic'
+        : classifyRecommendationState({
+            afterTaxEstateDelta: deltas.endingAfterTaxEstate,
+            conversionExecution,
+            neutralToleranceDollars,
+            minimumRequestedConversionDollars,
+            materialConversionShortfallDollars,
+            materialConversionShortfallPct,
+          }),
   }
 }

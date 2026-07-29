@@ -297,6 +297,11 @@ should not route users to empty pages unless the article is marked `ready`.
   - "today's dollars" before "real dollars", then define real dollars.
 - Define acronyms: required minimum distribution (RMD), modified adjusted gross
   income (MAGI), premium tax credit (PTC).
+- ACA lessons must distinguish gross enrollment premium, the SLCSP benchmark,
+  modeled allowable PTC, and economic net premium. Say that the model uses
+  current-year household MAGI and is not advance-credit cash timing or a
+  filing-grade Form 8962 reconciliation; non-actionable evidence is not advice
+  to convert, realize gains, or withdraw up to a cliff.
 - Do not assume users know brokerage, IRA, Roth, marginal tax rate, or COLA.
 
 ### 8.3 Article anatomy

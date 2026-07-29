@@ -87,11 +87,12 @@ export function zeroRateLtcgHeadroom(
   currentQualifiedDividends: number,
   ssBenefits: number,
   deduction: number,
+  taxExemptInterest = 0,
 ): number {
   const threshold = pack.capitalGains.rate15StartsAbove[filingStatus]
   const taxableIncomeAt = (extraGains: number): number => {
     const agiExcludingSs = ordinaryExcludingSs + currentGains + currentQualifiedDividends + extraGains
-    const taxableSs = taxableSocialSecurity(pack, filingStatus, agiExcludingSs, ssBenefits)
+    const taxableSs = taxableSocialSecurity(pack, filingStatus, agiExcludingSs, ssBenefits, taxExemptInterest)
     return Math.max(0, agiExcludingSs + taxableSs - deduction)
   }
   if (taxableIncomeAt(0) >= threshold) return 0
@@ -121,18 +122,19 @@ function bracketTax(brackets: TaxBracket[], taxable: number): number {
 
 /**
  * Taxable share of Social Security benefits (IRC §86).
- * Provisional income = AGI excluding SS + 50% of benefits (tax-exempt interest not modeled).
+ * Provisional income = AGI excluding SS + tax-exempt interest + 50% of benefits.
  */
 export function taxableSocialSecurity(
   pack: ParameterPack,
   filingStatus: FilingStatus,
   agiExcludingSs: number,
   ssBenefits: number,
+  taxExemptInterest = 0,
 ): number {
   if (ssBenefits <= 0) return 0
   const t50 = pack.ssBenefitTaxation.tier50Start[filingStatus]
   const t85 = pack.ssBenefitTaxation.tier85Start[filingStatus]
-  const provisional = agiExcludingSs + 0.5 * ssBenefits
+  const provisional = agiExcludingSs + Math.max(0, taxExemptInterest) + 0.5 * ssBenefits
 
   if (provisional <= t50) return 0
   if (provisional <= t85) return Math.min(0.5 * ssBenefits, 0.5 * (provisional - t50))
@@ -274,7 +276,7 @@ export function computeFederalTax(input: TaxYearInput): FederalTaxDetail {
   const { pack, isStandIn } = packForYear(year)
 
   const agiExcludingSs = ordinary + netCapital + qualifiedDividends // a net capital loss can drive this below zero
-  const taxableSs = taxableSocialSecurity(pack, taxStatus, agiExcludingSs, ss)
+  const taxableSs = taxableSocialSecurity(pack, taxStatus, agiExcludingSs, ss, input.taxExemptInterest)
   const agi = Math.max(0, agiExcludingSs + taxableSs) // floor for reporting / MAGI / IRMAA / ACA
   const magi = agi
 
@@ -337,6 +339,7 @@ export function computeFederalTax(input: TaxYearInput): FederalTaxDetail {
       qualifiedDividends,
       ss,
       deduction,
+      input.taxExemptInterest,
     ),
   }
 }

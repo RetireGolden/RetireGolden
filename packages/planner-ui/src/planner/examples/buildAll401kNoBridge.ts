@@ -3,12 +3,12 @@
  * brokerage-bridge-401k, but every savings dollar goes into pre-tax 401(k)s.
  * Retiring at 52 leaves nearly all wealth inaccessible before 59½: once cash
  * and the small brokerage run dry, penalized traditional withdrawals carry the
- * bridge, their MAGI wipes out ACA credits, and the identical savings budget
+ * bridge, their MAGI can wipe out credits in sourced ACA years, and the identical savings budget
  * depletes years before the bridge version does.
  */
 
-import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
-import { exampleEntityId, exampleFixedNow, exampleIdFactory } from './buildContext'
+import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
+import { exampleEntityId, exampleFixedNow, exampleIdFactory, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'all-401k-no-bridge'
 
@@ -102,7 +102,7 @@ export function buildAll401kNoBridge(): Plan {
     safeWithdrawalRatePct: 3.8,
   }
 
-  const parsed = parsePlan(plan)
+  const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`all-401k-no-bridge invalid: ${parsed.issues.join('; ')}`)
   return parsed.plan
 }

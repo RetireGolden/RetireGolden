@@ -93,7 +93,10 @@ export function rankEvaluations(
   minimumImprovement: number = DEFAULT_MINIMUM_IMPROVEMENT,
 ): { ranked: RankedDecision[]; winner: RankedDecision | null } {
   const rows = evaluations.map((evaluation) => {
-    const constraintViolations = policy.constraintViolations(evaluation, ctx)
+    const constraintViolations = [
+      ...(evaluation.recommendationState === 'diagnostic' ? ['exact-ledger evidence is diagnostic-only'] : []),
+      ...policy.constraintViolations(evaluation, ctx),
+    ]
     return {
       evaluation,
       primaryValue: policy.primaryMetric(evaluation, ctx),

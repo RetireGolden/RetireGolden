@@ -12,9 +12,8 @@ describe('ACA pack arithmetic fixtures', () => {
     // returns the encoded applicable percentage. External validation of the
     // 2026 table itself is tracked separately as ORACLE-003.
     const breakpoints = [
-      [0, 2.1],
-      [133, 2.1],
-      [134, 3.14],
+      [132.999, 2.1],
+      [133, 3.14],
       [150, 4.19],
       [200, 6.6],
       [250, 8.44],
@@ -29,11 +28,11 @@ describe('ACA pack arithmetic fixtures', () => {
 
   it('linearly interpolates inside each non-flat band', () => {
     // Independent worksheets:
-    // 133.5% FPL is halfway from 133@2.10 to 134@3.14 -> 2.62.
+    // 141.5% FPL is halfway from 133@3.14 to 150@4.19 -> 3.665.
     // 175% FPL is halfway from 150@4.19 to 200@6.60 -> 5.395.
     // 225% FPL is halfway from 200@6.60 to 250@8.44 -> 7.52.
     // 275% FPL is halfway from 250@8.44 to 300@9.96 -> 9.20.
-    expectPercent(acaApplicablePct(pack, 133.5), 2.62)
+    expectPercent(acaApplicablePct(pack, 141.5), 3.665)
     expectPercent(acaApplicablePct(pack, 175), 5.395)
     expectPercent(acaApplicablePct(pack, 225), 7.52)
     expectPercent(acaApplicablePct(pack, 275), 9.2)

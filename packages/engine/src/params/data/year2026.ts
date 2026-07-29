@@ -197,12 +197,12 @@ export const year2026: ParameterPack = {
     // Percentage Table for 2026): 2.10% below 133% FPL, then 3.14→4.19 (133–150),
     // 4.19→6.60 (150–200), 6.60→8.44 (200–250), 8.44→9.96 (250–300), 9.96 flat
     // through 400%.
+    applicablePctBelowFirstBreakpoint: 2.1,
+    minFplPctForCredit: 100,
     applicablePctBreakpoints: [
-      // Flat 2.1% through 133% FPL, stepping to the 133–150 band (the step is
-      // encoded as a 1-point ramp because the engine interpolates linearly).
-      { fplPct: 0, applicablePct: 2.1 },
-      { fplPct: 133, applicablePct: 2.1 },
-      { fplPct: 134, applicablePct: 3.14 },
+      // Rev. Proc. 2025-25 has a real step at exactly 133%: income strictly
+      // below uses 2.10%; the 133–150 band opens at 3.14%.
+      { fplPct: 133, applicablePct: 3.14 },
       { fplPct: 150, applicablePct: 4.19 },
       { fplPct: 200, applicablePct: 6.6 },
       { fplPct: 250, applicablePct: 8.44 },

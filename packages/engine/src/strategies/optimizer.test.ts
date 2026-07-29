@@ -46,6 +46,28 @@ function year(over: Partial<OptimizerYear> = {}): OptimizerYear {
 }
 
 describe('optimizer model builder', () => {
+  it('changes the raw compressed schedule when actionable ACA headroom binds', async () => {
+    const base: OptimizerInput = {
+      years: [year()],
+      openingTrad: 100_000,
+      openingInheritedTrad: 0,
+      openingOther: 0,
+      liquidationRate: 0.5,
+    }
+    const unconstrained = await optimizeSchedule(base)
+    const acaBounded = await optimizeSchedule({
+      ...base,
+      years: [year({ acaConversionMax: 5_000 })],
+    })
+
+    expect(unconstrained.schedule[0]!.conversion).toBeGreaterThan(5_000)
+    expect(acaBounded.schedule[0]!.conversion).toBeCloseTo(5_000, 0)
+    expect(buildOptimizerModel(acaBounded.status ? {
+      ...base,
+      years: [year({ acaConversionMax: 5_000 })],
+    } : base).lp).toContain('0 <= conv0 <= 5000')
+  })
+
   it('emits a well-formed LP with one binary per IRMAA tier per year', () => {
     const input: OptimizerInput = {
       years: [year(), year()],

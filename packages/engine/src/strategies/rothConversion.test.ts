@@ -16,6 +16,13 @@ function input(partial: Partial<ConversionSizingInput> = {}): ConversionSizingIn
     ssBenefits: 0,
     peopleAged65Plus: 0,
     householdSize: 1,
+    aca: {
+      actionable: true,
+      taxFamilySize: 1,
+      fplRegion: 'contiguous',
+      fixedMagiAddbacks: 0,
+      taxExemptInterest: 0,
+    },
     inflationScale: 1,
     ...partial,
   }
@@ -62,6 +69,33 @@ describe('sizeRothConversion', () => {
     expect(r.ok).toBe(true)
     if (!r.ok) return
     expect(r.amount).toBeCloseTo(15_650 * 4, 1)
+  })
+
+  it('uses ACA addbacks and refuses non-actionable cliff sizing', () => {
+    const withAddbacks = sizeRothConversion(
+      fill('acaCliff', null),
+      input({
+        aca: {
+          actionable: true,
+          taxFamilySize: 1,
+          fplRegion: 'contiguous',
+          fixedMagiAddbacks: 7_000,
+          taxExemptInterest: 3_000,
+        },
+      }),
+    )
+    expect(withAddbacks.ok).toBe(true)
+    if (withAddbacks.ok) expect(withAddbacks.amount).toBeCloseTo(15_650 * 4 - 10_000, 1)
+    expect(
+      sizeRothConversion(
+        fill('acaCliff', null),
+        input({ aca: { actionable: false, taxFamilySize: 1, fplRegion: 'contiguous', fixedMagiAddbacks: 0, taxExemptInterest: 0 } }),
+      ),
+    ).toEqual({ ok: false, reason: 'aca_nonactionable' })
+    expect(sizeRothConversion(fill('acaCliff', null), input({ aca: undefined }))).toEqual({
+      ok: false,
+      reason: 'aca_nonactionable',
+    })
   })
 
   it('honors a fixed MAGI ceiling', () => {

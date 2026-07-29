@@ -159,6 +159,12 @@ export interface OptimizerYear {
    */
   capitalGainsBase?: number
   /**
+   * Maximum total conversion at the actionable current-year ACA cliff,
+   * reconstructed as incumbent conversion plus remaining MAGI headroom. The
+   * exact ledger still prices withdrawals and nonlinear premium reconciliation.
+   */
+  acaConversionMax?: number
+  /**
    * SSA-44 IRMAA redetermination applies to this premium year (the exact
    * ledger prices its IRMAA on min(year t−2, year t−1 MAGI); see
    * `healthcareConfigSchema.ssa44`). Under `irmaaLookback`, the year's IRMAA
@@ -590,7 +596,17 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
       constraints.push(` inhrmd${t}: + 1 ${wi} >= ${fmt(y.inheritedDistribution)}`)
     }
 
-    if (maxConv !== undefined) segBounds.push(` 0 <= ${conv} <= ${fmt(maxConv)}`)
+    const acaMaxConv =
+      y.acaConversionMax === undefined
+        ? undefined
+        : Math.max(0, y.acaConversionMax)
+    const yearMaxConv =
+      maxConv === undefined
+        ? acaMaxConv
+        : acaMaxConv === undefined
+          ? maxConv
+          : Math.min(maxConv, acaMaxConv)
+    if (yearMaxConv !== undefined) segBounds.push(` 0 <= ${conv} <= ${fmt(yearMaxConv)}`)
 
     // Balance recursions (next start = growth × (this start ± activity)).
     // Scheduled contribution / employer-match inflows land in their bucket the

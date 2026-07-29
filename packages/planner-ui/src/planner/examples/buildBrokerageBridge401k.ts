@@ -4,12 +4,12 @@
  * the employer match (slightly above the 6%-of-pay cap so the match stays
  * identical to the control as wages grow 1% real), and the remaining $30,600/yr
  * builds a taxable brokerage "bridge" that funds ages 52–59½ at low MAGI —
- * keeping ACA credits and avoiding penalties, which is enough to turn the
+ * preserving credit room in sourced ACA years and avoiding penalties, which is enough to turn the
  * control's depletion into a plan that lasts to the planning horizon.
  */
 
-import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
-import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory } from './buildContext'
+import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
+import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'brokerage-bridge-401k'
 
@@ -109,7 +109,7 @@ export function buildBrokerageBridge401k(): Plan {
   // Conversion levers stay OFF in the base plan so Compare isolates the
   // savings-location decision alone. This scenario is the honest stress test of
   // the popular "convert during the bridge" advice: for this lean plan the
-  // conversion tax plus the ACA credits the extra MAGI forfeits drain the
+  // conversion tax plus any actionable ACA credit the extra MAGI forfeits drain the
   // bridge fund and hand back most of the strategy's advantage.
   plan.scenarios = [
     {
@@ -123,7 +123,7 @@ export function buildBrokerageBridge401k(): Plan {
     },
   ]
 
-  const parsed = parsePlan(plan)
+  const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`brokerage-bridge-401k invalid: ${parsed.issues.join('; ')}`)
   return parsed.plan
 }

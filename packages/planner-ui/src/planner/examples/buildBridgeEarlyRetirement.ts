@@ -1,5 +1,5 @@
-import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
-import { exampleEntityId, exampleFixedNow, exampleIdFactory } from './buildContext'
+import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
+import { exampleEntityId, exampleFixedNow, exampleIdFactory, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'bridge-early-retirement'
 
@@ -88,7 +88,7 @@ export function buildBridgeEarlyRetirement(): Plan {
     heirTaxRatePct: 25,
     safeWithdrawalRatePct: 4,
   }
-  const parsed = parsePlan(plan)
+  const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`bridge-early-retirement invalid: ${parsed.issues.join('; ')}`)
   return parsed.plan
 }

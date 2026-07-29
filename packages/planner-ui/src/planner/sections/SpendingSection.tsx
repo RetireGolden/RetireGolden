@@ -6,6 +6,7 @@ import type { GoalFlexibility, SpendingClassification, SpendingPolicy } from '@r
 import { annualDeltaPhases, spendingShapePhases, type SpendingShapeId } from '@retiregolden/engine/spending/shapePresets'
 import { startingInvestableOf, type RiskBasedGuardrailSolution } from '@retiregolden/engine/montecarlo/riskBasedGuardrails'
 import { runRiskBasedGuardrailSolve } from '../../mc/pool'
+import { invalidateAcaEvidence } from '../householdActions'
 import { usePlan } from '../planContextCore'
 import { CheckboxField, MoneyField, NumberField, PercentField, SelectField, TextField } from '../fields'
 import { fmtMoney } from '../format'
@@ -844,7 +845,12 @@ export function SpendingSection() {
             learn={LEARN.healthcareBefore65}
             hint="Full (unsubsidized) marketplace premium."
             value={e.healthcare.pre65MonthlyPremiumPerPerson}
-            onCommit={(v) => update((d) => void (d.expenses.healthcare.pre65MonthlyPremiumPerPerson = v ?? 0))}
+            onCommit={(v) =>
+              update((d) => {
+                d.expenses.healthcare.pre65MonthlyPremiumPerPerson = v ?? 0
+                invalidateAcaEvidence(d)
+              })
+            }
           />
           <MoneyField
             label="Medicare extras / person / month"
@@ -856,9 +862,9 @@ export function SpendingSection() {
           />
           <CheckboxField
             label="Apply ACA premium credit"
-            help="Applies a simplified ACA premium tax credit before Medicare eligibility, based on household size and MAGI. Use only for Marketplace coverage that can receive the credit."
+            help="Requests current-year ACA reconciliation before Medicare. The standard planner cannot yet author the required annual tax-family, enrollment-premium, and SLCSP evidence; enabling this alone funds the gross premium and marks the year non-actionable."
             learn={LEARN.acaCredit}
-            hint="Models the 400% FPL cliff against your MAGI."
+            hint="Annual evidence is required before any credit is modeled."
             value={e.healthcare.applyAcaCredit}
             onCommit={(v) => update((d) => void (d.expenses.healthcare.applyAcaCredit = v))}
           />

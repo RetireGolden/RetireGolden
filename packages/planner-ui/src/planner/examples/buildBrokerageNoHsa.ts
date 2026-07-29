@@ -5,8 +5,8 @@
  * advantage vs ordinary taxable growth/withdrawals.
  */
 
-import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
-import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory } from './buildContext'
+import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
+import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'brokerage-no-hsa'
 
@@ -103,7 +103,7 @@ export function buildBrokerageNoHsa(): Plan {
     safeWithdrawalRatePct: 3.6,
   }
 
-  const parsed = parsePlan(plan)
+  const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`brokerage-no-hsa invalid: ${parsed.issues.join('; ')}`)
   return parsed.plan
 }

@@ -993,11 +993,109 @@ export const oneTimeGoalSchema = z.object({
 })
 export type OneTimeGoal = z.infer<typeof oneTimeGoalSchema>
 
+const acaCharacterizedAmountSchema = z.discriminatedUnion('state', [
+  z.object({ state: z.literal('known'), amount: nonNegative }),
+  z.object({ state: z.literal('notApplicable'), amount: z.null() }),
+  z.object({ state: z.literal('unknown'), amount: z.null() }),
+])
+
+export const acaYearContractSchema = z
+  .object({
+    year: calendarYear,
+    /** HHS poverty-guideline table used for this tax family. */
+    fplRegion: z.enum(['contiguous', 'alaska', 'hawaii']),
+    /**
+     * Tax-family membership is deliberately independent of Marketplace coverage.
+     * The return's primary/spouse income is already in federal AGI; only a
+     * required-filer dependent's MAGI is added separately.
+     */
+    taxFamilyMembers: z.array(
+      z.object({
+        personId: idSchema,
+        relationship: z.enum(['primary', 'spouse', 'dependent']),
+        requiredToFile: z.enum(['required', 'notRequired', 'unknown']),
+        magi: nonNegative,
+      }),
+    ).min(1),
+    /**
+     * Actual enrollment premium and applicable SLCSP benchmark, by calendar
+     * month. Zero means no Marketplace coverage in that month.
+     */
+    coveredMembers: z.array(
+      z.object({
+        personId: idSchema,
+        enrollmentPremiumByMonth: z.array(nonNegative).length(12),
+        slcspBenchmarkPremiumByMonth: z.array(nonNegative).length(12),
+      }),
+    ).min(1),
+    taxExemptInterest: acaCharacterizedAmountSchema,
+    foreignExclusionAddback: acaCharacterizedAmountSchema,
+    /**
+     * Filing/eligibility mechanics intentionally outside this planning model must
+     * be affirmatively ruled out. `unsupported` fails closed; there are no silent
+     * defaults for an ACA-actionable year.
+     */
+    assertions: z.object({
+      coverageEligibility: z.enum(['supported', 'unsupported']),
+      form8814: z.enum(['notApplicable', 'unsupported']),
+      specialAllocation: z.enum(['notApplicable', 'unsupported']),
+      marriedFilingSeparatelyException: z.enum(['notApplicable', 'unsupported']),
+      selfEmployedHealthInsuranceDeduction: z.enum(['notApplicable', 'unsupported']),
+      otherMaterialFacts: z.enum(['none', 'unsupported']),
+    }),
+  })
+  .superRefine((contract, ctx) => {
+    const taxFamilyIds = new Set<string>()
+    contract.taxFamilyMembers.forEach((member, index) => {
+      if (taxFamilyIds.has(member.personId)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['taxFamilyMembers', index, 'personId'],
+          message: 'tax-family member ids must be unique',
+        })
+      }
+      taxFamilyIds.add(member.personId)
+    })
+    const primaryCount = contract.taxFamilyMembers.filter((member) => member.relationship === 'primary').length
+    if (primaryCount !== 1) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['taxFamilyMembers'],
+        message: 'an ACA tax family requires exactly one primary',
+      })
+    }
+    const coveredIds = new Set<string>()
+    contract.coveredMembers.forEach((member, index) => {
+      if (coveredIds.has(member.personId)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['coveredMembers', index, 'personId'],
+          message: 'covered member ids must be unique',
+        })
+      }
+      coveredIds.add(member.personId)
+      if (!taxFamilyIds.has(member.personId)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['coveredMembers', index, 'personId'],
+          message: 'a covered member must belong to the ACA tax family',
+        })
+      }
+    })
+  })
+export type AcaYearContract = z.infer<typeof acaYearContractSchema>
+
 export const healthcareConfigSchema = z.object({
   /** Full (unsubsidized) monthly marketplace premium per pre-65 person, today's dollars. */
   pre65MonthlyPremiumPerPerson: nonNegative,
   /** Model the ACA premium tax credit against MAGI, including the 400% FPL cliff. */
   applyAcaCredit: z.boolean(),
+  /**
+   * Optional current-year ACA reconciliation contracts. A credit-enabled year
+   * with Marketplace premiums but no matching contract funds the gross premium
+   * and emits typed non-actionable evidence.
+   */
+  acaYears: z.array(acaYearContractSchema).optional(),
   /** Part D / Medigap / Advantage base premium per person 65+, today's dollars (Part B + IRMAA added automatically). */
   medicareExtrasMonthlyPerPerson: nonNegative,
   /**

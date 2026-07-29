@@ -90,7 +90,13 @@ export function computeStateTaxableIncome(
       taxable += Math.max(0, opts.taxableSocialSecurityOverride)
     } else {
       const { pack } = packForYear(input.year)
-      taxable += taxableSocialSecurity(pack, taxStatus, ordinary + qualifiedDividends + netCapital, ss)
+      taxable += taxableSocialSecurity(
+        pack,
+        taxStatus,
+        ordinary + qualifiedDividends + netCapital,
+        ss,
+        input.taxExemptInterest,
+      )
     }
   }
   const privateRetirement = input.privateRetirementIncome ?? input.retirementIncome ?? 0
@@ -161,6 +167,7 @@ function prorateInput(input: TaxYearInput, scale: number, state: string): TaxYea
         ? undefined
         : input.realizedCapitalGainsBeforeCarryforward * scale,
     taxableInterestIncome: (input.taxableInterestIncome ?? 0) * scale,
+    taxExemptInterest: (input.taxExemptInterest ?? 0) * scale,
     usGovernmentInterest: input.usGovernmentInterest === undefined ? undefined : input.usGovernmentInterest * scale,
     ordinaryDividends: (input.ordinaryDividends ?? 0) * scale,
     qualifiedDividends: (input.qualifiedDividends ?? 0) * scale,
@@ -223,6 +230,7 @@ export function computeStateTaxYearTotal(input: TaxYearInput, opts: StateTaxYear
         taxParameterFilingStatus(input.filingStatus),
         Math.max(0, input.ordinaryIncome) + Math.max(0, input.qualifiedDividends ?? 0) + input.capitalGains,
         input.ssBenefits,
+        input.taxExemptInterest,
       )
     }
     return input.stateResidency.reduce((sum, segment) => {

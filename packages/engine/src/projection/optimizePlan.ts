@@ -50,6 +50,10 @@ import type { OptimizerYearProbe, ProjectionResult } from './types.js'
 
 const OTHER_TYPES = new Set(['cash', 'taxable', 'equityComp', 'roth', 'hsa'])
 
+function hasNonActionableAca(result: ProjectionResult): boolean {
+  return result.years.some((year) => year.aca?.readiness === 'nonActionable')
+}
+
 /**
  * Single preferential LTCG rate the optimizer uses to price taxable-bucket gains
  * inside the solve (Step 2). 15% is the modal federal preferential bracket for
@@ -280,6 +284,12 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
       // feed provisional income and the IRMAA MAGI base.
       ssTaxability: p.ssBenefits > 0 ? { ssBenefits: p.ssBenefits, taxableSsBase: p.taxableSsBase } : undefined,
       capitalGainsBase: p.capitalGainsBase,
+      acaConversionMax:
+        p.acaConversionMagiHeadroom === null ||
+        (p.acaModeledAllowablePtc ?? 0) <= 0 ||
+        (p.acaCliffState !== 'below-cliff' && p.acaCliffState !== 'at-cliff')
+          ? undefined
+          : p.incumbentRothConversion + p.acaConversionMagiHeadroom,
       // SSA-44 (opt-in): shift this premium year's IRMAA trigger to (t−1)'s
       // MAGI so the solve prices the redetermination the exact ledger applies.
       ssa44Redetermination: p.ssa44IrmaaRedetermination || undefined,
@@ -477,7 +487,13 @@ export function runExactLedgerTournament(
   const margin = options.switchMarginDollars ?? DEFAULT_TOURNAMENT_SWITCH_MARGIN_DOLLARS
   const rich = buildRichCandidates(plan, baselineResult, simulateOptions)
   const candidates = rich.map((candidate) => candidate.evaluation)
-  const milpRecommended = postProcessed !== null && postProcessed.recommendationSchedule === 'cleaned' ? postProcessed : null
+  const milpRecommended =
+    postProcessed !== null &&
+    postProcessed.recommendationSchedule === 'cleaned' &&
+    !hasNonActionableAca(baselineResult) &&
+    !hasNonActionableAca(postProcessed.cleanedResult)
+      ? postProcessed
+      : null
   const milpDelta = milpRecommended ? milpRecommended.cleanedValidation.afterTaxEstateDelta : 0
   const guardrailResult = milpRecommended?.cleanedResult ?? baselineResult
   const guardrailLastsThroughYear = lastsThroughYear(guardrailResult)
@@ -669,7 +685,13 @@ function runPolicyRankedTournament(
   const ctx = decisionContext(plan, baselineResult, simulateOptions)
   const rich = buildRichCandidates(plan, baselineResult, simulateOptions)
   const candidates = rich.map((candidate) => candidate.evaluation)
-  const milpRecommended = postProcessed !== null && postProcessed.recommendationSchedule === 'cleaned' ? postProcessed : null
+  const milpRecommended =
+    postProcessed !== null &&
+    postProcessed.recommendationSchedule === 'cleaned' &&
+    !hasNonActionableAca(baselineResult) &&
+    !hasNonActionableAca(postProcessed.cleanedResult)
+      ? postProcessed
+      : null
 
   const evaluations = rich.map((candidate) => candidate.fullEvaluation)
   let milpEvaluation: ExactDecisionEvaluation | null = null

@@ -31,11 +31,12 @@ import {
 import { LATEST_STATE_PACK_YEAR } from '@retiregolden/engine/params/state'
 import type { ProjectionSummary } from '@retiregolden/engine/projection/compare'
 import type { ProjectionResult, YearResult } from '@retiregolden/engine/projection/types'
+import { acaLedgerSummary } from '../planner/acaReportStatus'
 import { fmtMoney } from '../planner/format'
 import { isPlanIncomplete } from '../planner/planCompleteness'
 
 export const REPORT_MODEL_KIND = 'retiregolden.report-model'
-export const REPORT_MODEL_VERSION = 1
+export const REPORT_MODEL_VERSION = 2
 
 /**
  * Stable identities of every block the model carries. Downstream templates
@@ -49,6 +50,7 @@ export const REPORT_BLOCK_IDS = [
   'accounts',
   'income-sources',
   'assumptions',
+  'aca-ledger',
   'modeling-notes',
   'year-ledger',
   'chart-data',
@@ -215,6 +217,17 @@ export interface ReportAssumptionsBlock {
 }
 
 /** Engine warnings for this run — model limitations the report must surface. */
+export interface ReportAcaLedgerBlock {
+  rows: Array<{
+    year: number
+    grossEnrollmentPremium: number
+    applicableSlcspPremium: number | null
+    modeledAllowablePtc: number | null
+    economicNetPremium: number
+    readiness: 'actionable' | 'nonActionable'
+  }>
+}
+
 export interface ReportModelingNotesBlock {
   warnings: string[]
 }
@@ -326,6 +339,7 @@ export interface ReportModel {
     'accounts': ReportAccountsBlock
     'income-sources': ReportIncomeSourcesBlock
     'assumptions': ReportAssumptionsBlock
+    'aca-ledger': ReportAcaLedgerBlock
     'modeling-notes': ReportModelingNotesBlock
     'year-ledger': ReportYearLedgerBlock
     'chart-data': ReportChartDataBlock
@@ -593,6 +607,18 @@ export function buildReportModel(input: ReportModelInput): ReportModel {
         rothConversionSummary: conversionSummary(plan),
         withdrawalOrderSummary: withdrawalSummary(plan),
         spendingPolicySummary: spendingPolicySummary(plan),
+      },
+      'aca-ledger': {
+        rows: acaLedgerSummary(result.years).map((row) => ({
+          year: row.year,
+          grossEnrollmentPremium: roundDollar(row.grossEnrollmentPremium),
+          applicableSlcspPremium:
+            row.applicableSlcspPremium === null ? null : roundDollar(row.applicableSlcspPremium),
+          modeledAllowablePtc:
+            row.modeledAllowablePtc === null ? null : roundDollar(row.modeledAllowablePtc),
+          economicNetPremium: roundDollar(row.economicNetPremium),
+          readiness: row.readiness,
+        })),
       },
       'modeling-notes': { warnings: [...result.warnings] },
       'year-ledger': { rows: result.years.map(yearLedgerRow) },

@@ -1,7 +1,7 @@
 /** Long-term-care shock — a care episode and how LTC insurance offsets it. */
 
-import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
-import { exampleEntityId, exampleFixedNow, exampleIdFactory } from './buildContext'
+import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
+import { exampleEntityId, exampleFixedNow, exampleIdFactory, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'ltc-shock'
 
@@ -56,7 +56,7 @@ export function buildLtcShock(): Plan {
     heirTaxRatePct: 22,
     safeWithdrawalRatePct: 4,
   }
-  const parsed = parsePlan(plan)
+  const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`ltc shock invalid: ${parsed.issues.join('; ')}`)
   return parsed.plan
 }
