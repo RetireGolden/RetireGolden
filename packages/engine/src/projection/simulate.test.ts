@@ -1280,6 +1280,26 @@ describe('federal tax integration', () => {
     expect(year.expenses.healthcare).toBe(12_000)
   })
 
+  it('probes and funds the gross basin when the first accepted root is subsidized', () => {
+    const plan = basePlan()
+    currentYearAca(plan)
+    plan.expenses.baseAnnual = 45_000
+    plan.accounts = [traditional(500_000)]
+    const year = simulatePlan(validate(plan), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: createFlatTaxCalculator(10),
+    }).years[0]!
+
+    expect(year.aca?.readiness).toBe('nonActionable')
+    expect(year.aca?.supportCodes).toContain('conflicting-cliff-fixed-points')
+    expect(year.aca?.convergence.iterations).toBeLessThanOrEqual(
+      year.aca?.convergence.maxIterations ?? 0,
+    )
+    expect(year.expenses.healthcare).toBe(12_000)
+    expect(year.withdrawals.traditional).toBeCloseTo(63_333.33, 1)
+  })
+
   it('fully solves the tax-bearing subsidized basin before accepting a gross cliff root', () => {
     const plan = basePlan()
     currentYearAca(plan)
@@ -1511,8 +1531,11 @@ describe('healthcare and penalties', () => {
   it('preserves known gross premiums when same-year contracts conflict', () => {
     const plan = basePlan()
     currentYearAca(plan)
+    const original = plan.expenses.healthcare.acaYears![0]!
+    original.coveredMembers[0]!.enrollmentPremiumByMonth.fill(0, 6)
     const duplicate = structuredClone(plan.expenses.healthcare.acaYears![0]!)
-    duplicate.coveredMembers[0]!.enrollmentPremiumByMonth.fill(800)
+    duplicate.coveredMembers[0]!.enrollmentPremiumByMonth.fill(0, 0, 6)
+    duplicate.coveredMembers[0]!.enrollmentPremiumByMonth.fill(800, 6)
     plan.expenses.healthcare.acaYears!.push(duplicate)
     plan.expenses.healthcare.pre65MonthlyPremiumPerPerson = 0
     plan.accounts = [cash(200_000)]
@@ -1522,9 +1545,9 @@ describe('healthcare and penalties', () => {
       taxCalculator: noTax,
     }).years[0]!
     expect(year.aca?.supportCodes).toContain('duplicate-year-contract')
-    expect(year.aca?.grossEnrollmentPremium).toBe(12_000)
-    expect(year.expenses.healthcare).toBe(12_000)
-    expect(year.aca?.coveredMembers[0]?.grossEnrollmentPremium).toBe(12_000)
+    expect(year.aca?.grossEnrollmentPremium).toBe(10_800)
+    expect(year.expenses.healthcare).toBe(10_800)
+    expect(year.aca?.coveredMembers).toEqual([])
   })
 
   it('treats benchmark-only months as unsupported and excludes them from coverage evidence', () => {
@@ -1562,6 +1585,50 @@ describe('healthcare and penalties', () => {
     }).years[0]!
     expect(year.aca?.readiness).toBe('nonActionable')
     expect(year.aca?.supportCodes).toContain('tax-family-member-unknown')
+  })
+
+  it('requires explicit dependent tax-family evidence in a qualifying-surviving-spouse ACA year', () => {
+    const plan = basePlan()
+    plan.household.filingStatus = 'marriedFilingJointly'
+    plan.household.hasQualifyingDependent = true
+    plan.household.people.push({
+      id: 'p2',
+      name: 'Sam',
+      dob: '1965-06-15',
+      sex: 'average',
+      retirementAge: null,
+      longevity: { planningAge: 60, source: 'manual' },
+    })
+    currentYearAca(plan, { coveredPersonIds: ['p1'] })
+    const contract = plan.expenses.healthcare.acaYears![0]!
+    contract.taxFamilyMembers = [contract.taxFamilyMembers[0]!]
+    plan.incomes = [
+      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 40_000, taxTreatment: 'ordinary' },
+    ]
+    plan.accounts = [cash(200_000)]
+
+    const unsupported = simulatePlan(validate(plan), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: noTax,
+    }).years[0]!
+    expect(unsupported.filingStatus).toBe('qualifyingSurvivingSpouse')
+    expect(unsupported.aca?.readiness).toBe('nonActionable')
+    expect(unsupported.aca?.supportCodes).toContain('tax-family-structure-unsupported')
+
+    contract.taxFamilyMembers.push({
+      personId: 'qualifying-dependent',
+      relationship: 'dependent',
+      requiredToFile: 'notRequired',
+      magi: 0,
+    })
+    const supported = simulatePlan(validate(plan), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: noTax,
+    }).years[0]!
+    expect(supported.aca?.readiness).toBe('actionable')
+    expect(supported.aca?.supportCodes).toEqual(['actionable'])
   })
 
   it('fails closed when the annual primary does not exist in the modeled household', () => {

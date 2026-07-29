@@ -148,6 +148,8 @@ export interface OptimizerYear {
     ssBenefits: number
     /** Taxable-SS portion already folded into `ordinaryIncomeBase` (subtracted out when the PWL is active). */
     taxableSsBase: number
+    /** Fixed §86 provisional-income addbacks (tax-exempt interest + foreign exclusions). */
+    provisionalIncomeAddbacks?: number
   }
   /**
    * Baseline realized capital gains + qualified dividends this year, EXCLUDING
@@ -159,11 +161,11 @@ export interface OptimizerYear {
    */
   capitalGainsBase?: number
   /**
-   * Maximum total conversion at the actionable current-year ACA cliff,
-   * reconstructed as incumbent conversion plus remaining MAGI headroom. The
-   * exact ledger still prices withdrawals and nonlinear premium reconciliation.
+   * Maximum modeled total MAGI that preserves the actionable current-year ACA
+   * result. This constrains the same MAGI expression used by the optimizer's
+   * IRMAA model, including taxable-SS phase-in and taxable withdrawals.
    */
-  acaConversionMax?: number
+  acaMagiMax?: number
   /**
    * SSA-44 IRMAA redetermination applies to this premium year (the exact
    * ledger prices its IRMAA on min(year t−2, year t−1 MAGI); see
@@ -466,7 +468,11 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
       const t1 = y.pack.ssBenefitTaxation.tier50Start[y.filingStatus]
       const t2 = y.pack.ssBenefitTaxation.tier85Start[y.filingStatus]
       // Provisional income: ordinary (excl. taxable SS) + gains + half the benefit.
-      const pi0 = ordinaryBase + (y.capitalGainsBase ?? 0) + 0.5 * B
+      const pi0 =
+        ordinaryBase +
+        (y.capitalGainsBase ?? 0) +
+        (ssB.provisionalIncomeAddbacks ?? 0) +
+        0.5 * B
       const piVars: Terms = { [conv]: 1, [wt]: 1, [wi]: 1 }
       if (hasTaxable && taxableGainWeight > 0) piVars[wtax] = taxableGainWeight
       // taxSS ≥ max(0, 0.5·(PI−T1), tier1Cap + 0.85·(PI−T2)) — the convex
@@ -596,17 +602,12 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
       constraints.push(` inhrmd${t}: + 1 ${wi} >= ${fmt(y.inheritedDistribution)}`)
     }
 
-    const acaMaxConv =
-      y.acaConversionMax === undefined
-        ? undefined
-        : Math.max(0, y.acaConversionMax)
-    const yearMaxConv =
-      maxConv === undefined
-        ? acaMaxConv
-        : acaMaxConv === undefined
-          ? maxConv
-          : Math.min(maxConv, acaMaxConv)
-    if (yearMaxConv !== undefined) segBounds.push(` 0 <= ${conv} <= ${fmt(yearMaxConv)}`)
+    if (y.acaMagiMax !== undefined) {
+      constraints.push(
+        ` acamagi${t}: ${expr(myMagiTerms)} <= ${fmt(Math.max(0, y.acaMagiMax) - magiBase[t]!)}`,
+      )
+    }
+    if (maxConv !== undefined) segBounds.push(` 0 <= ${conv} <= ${fmt(maxConv)}`)
 
     // Balance recursions (next start = growth × (this start ± activity)).
     // Scheduled contribution / employer-match inflows land in their bucket the

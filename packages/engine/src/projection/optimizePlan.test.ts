@@ -17,6 +17,7 @@ import { recurringOrdinaryIncome, setAcaYearContract, socialSecurityIncome } fro
 import { buildOptimizerModel, optimizeSchedule, type OptimizedSchedule } from '../strategies/optimizer.js'
 import { createFederalTaxCalculator } from '../tax/federalTax.js'
 import { summarizeProjection } from './compare.js'
+import type { OptimizerYearProbe } from './types.js'
 import {
   buildOptimizerInput,
   evaluateExactLedgerSchedule,
@@ -83,6 +84,15 @@ function acaBridgePlan(): Plan {
     { type: 'roth', id: testIds(), name: 'Roth', ownerPersonId: 'p1', annualReturnPct: 0, kind: 'ira', balance: 0, annualContribution: 0 },
     { type: 'cash', id: testIds(), name: 'Cash', ownerPersonId: null, annualReturnPct: 0, balance: 150_000, annualContribution: 0 },
   ]
+  return plan
+}
+
+/** One ACA year funded only by discretionary traditional withdrawals. */
+function acaTraditionalSpendingPlan(): Plan {
+  const plan = acaBridgePlan()
+  plan.expenses.baseAnnual = 30_000
+  plan.incomes = []
+  plan.accounts = plan.accounts.filter((account) => account.type === 'traditional' || account.type === 'roth')
   return plan
 }
 
@@ -532,6 +542,38 @@ describe('buildOptimizerInput', () => {
 
     expect(y2026.ordinaryIncomeBase).toBeCloseTo(27_000, 0)
   })
+
+  it('captures discretionary traditional and taxable draws in the incumbent MAGI coordinate', () => {
+    const raw = acaTraditionalSpendingPlan()
+    raw.accounts.splice(1, 0, {
+      type: 'taxable',
+      id: testIds(),
+      name: 'Zero-basis brokerage',
+      ownerPersonId: null,
+      annualReturnPct: 0,
+      balance: 10_000,
+      costBasis: 0,
+      annualContribution: 0,
+    })
+    const plan = validate(raw)
+    let probe: OptimizerYearProbe | undefined
+    const result = simulatePlan(plan, {
+      ...opts,
+      captureOptimizerInputs: (captured) => {
+        if (captured.year === 2026) probe = captured
+      },
+    })
+    const year = result.years[0]!
+
+    expect(probe).toBeDefined()
+    expect(year.withdrawals.traditional).toBeGreaterThan(0)
+    expect(year.realizedGains).toBeCloseTo(10_000, 2)
+    expect(probe!.incumbentModeledMagiBeforeTaxableWithdrawalGains).toBeCloseTo(
+      year.withdrawals.traditional,
+      2,
+    )
+    expect(probe!.incumbentTaxableWithdrawal).toBeCloseTo(10_000, 2)
+  })
 })
 
 describe('evaluateExactLedgerSchedule', () => {
@@ -809,16 +851,186 @@ describe('optimizePlan end-to-end', () => {
     expect(exact.years.find((y) => y.year === 2026)!.expenses.healthcare).toBeLessThanOrEqual(12_000)
   })
 
-  it('reconstructs an absolute ACA conversion bound when re-probing an incumbent schedule', () => {
+  it('reconstructs a modeled ACA MAGI ceiling when re-probing an incumbent schedule', () => {
     const plan = validate(acaBridgePlan())
     const incumbent = withOptimizedConversions(plan, [{ year: 2026, amount: 5_000 }])
     const input = buildOptimizerInput(plan, opts, incumbent)
-    const bound = input.years[0]!.acaConversionMax
+    const bound = input.years[0]!.acaMagiMax
 
     // Single-person 2025 HHS FPL ($15,650) × 400% minus the $50k
-    // non-conversion income. The incumbent $5k is added back to remaining
-    // headroom, so re-linearization preserves the same absolute ceiling.
-    expect(bound).toBeCloseTo(12_600, 0)
+    // non-conversion income. Re-linearization translates the exact ledger's
+    // remaining headroom onto the optimizer's modeled total-MAGI expression.
+    expect(bound).toBeCloseTo(62_600, 0)
+  })
+
+  it('keeps a traditional-only ACA spending baseline feasible under the modeled MAGI cap', async () => {
+    const plan = validate(acaTraditionalSpendingPlan())
+    let probe: OptimizerYearProbe | undefined
+    const baseline = simulatePlan(plan, {
+      ...opts,
+      captureOptimizerInputs: (captured) => {
+        if (captured.year === 2026) probe = captured
+      },
+    }).years[0]!
+    const input = buildOptimizerInput(plan, opts)
+    const modeledYear = input.years[0]!
+    const cap = modeledYear.acaMagiMax
+
+    expect(baseline.aca?.readiness).toBe('actionable')
+    expect(baseline.aca?.modeledAllowablePtc).toBeGreaterThan(0)
+    expect(probe).toBeDefined()
+    expect(probe!.incumbentModeledMagiBeforeTaxableWithdrawalGains).toBeCloseTo(
+      baseline.withdrawals.traditional,
+      2,
+    )
+    expect(cap).toBeCloseTo(62_600, 0)
+    expect(cap).toBeCloseTo(
+      probe!.incumbentModeledMagiBeforeTaxableWithdrawalGains +
+        probe!.acaConversionMagiHeadroom!,
+      6,
+    )
+    expect(buildOptimizerModel(input).lp).toContain(
+      ' acamagi0: + 1 conv0 + 1 wt0 + 1 wi0 <= 62600',
+    )
+
+    const optimized = await optimizeSchedule(input)
+    expect(optimized.status).toBe('optimal')
+    const schedule = optimized.schedule[0]!
+    const modeledMagi =
+      modeledYear.ordinaryIncomeBase +
+      (modeledYear.capitalGainsBase ?? 0) +
+      schedule.conversion +
+      schedule.withdrawTraditional +
+      schedule.withdrawInheritedTraditional +
+      schedule.taxableGainRealized
+    expect(modeledMagi).toBeGreaterThan(0)
+    expect(modeledMagi).toBeLessThanOrEqual(cap! + 0.01)
+    expect(cap! - modeledMagi).toBeGreaterThanOrEqual(-0.01)
+  })
+
+  it('anchors ACA MAGI with the LP aggregate gain weight for heterogeneous taxable basis', async () => {
+    const raw = acaBridgePlan()
+    raw.expenses.baseAnnual = 80_000
+    raw.accounts = [
+      {
+        type: 'taxable',
+        id: testIds(),
+        name: 'Full-basis first',
+        ownerPersonId: null,
+        annualReturnPct: 0,
+        balance: 50_000,
+        costBasis: 50_000,
+        annualContribution: 0,
+      },
+      {
+        type: 'taxable',
+        id: testIds(),
+        name: 'Zero-basis second',
+        ownerPersonId: null,
+        annualReturnPct: 0,
+        balance: 50_000,
+        costBasis: 0,
+        annualContribution: 0,
+      },
+      {
+        type: 'traditional',
+        id: testIds(),
+        name: 'IRA',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 500_000,
+        annualContribution: 0,
+      },
+      {
+        type: 'roth',
+        id: testIds(),
+        name: 'Roth',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 0,
+        annualContribution: 0,
+      },
+    ]
+    const plan = validate(raw)
+    let probe: OptimizerYearProbe | undefined
+    const baseline = simulatePlan(plan, {
+      ...opts,
+      captureOptimizerInputs: (captured) => {
+        if (captured.year === 2026) probe = captured
+      },
+    }).years[0]!
+    const input = buildOptimizerInput(plan, opts)
+    const modeledYear = input.years[0]!
+
+    expect(baseline.aca?.readiness).toBe('actionable')
+    expect(baseline.aca?.modeledAllowablePtc).toBeGreaterThan(0)
+    expect(baseline.realizedGains).toBeCloseTo(0, 2)
+    expect(probe).toBeDefined()
+    expect(probe!.incumbentTaxableWithdrawal).toBeGreaterThan(0)
+    expect(input.taxableBasisRatio).toBeCloseTo(0.5, 6)
+    expect(modeledYear.acaMagiMax).toBeCloseTo(
+      probe!.incumbentModeledMagiBeforeTaxableWithdrawalGains +
+        0.5 * probe!.incumbentTaxableWithdrawal +
+        probe!.acaConversionMagiHeadroom!,
+      6,
+    )
+
+    const optimized = await optimizeSchedule(input)
+    expect(optimized.status).toBe('optimal')
+    const schedule = optimized.schedule[0]!
+    const modeledMagi =
+      modeledYear.ordinaryIncomeBase +
+      (modeledYear.capitalGainsBase ?? 0) +
+      schedule.conversion +
+      schedule.withdrawTraditional +
+      schedule.withdrawInheritedTraditional +
+      schedule.taxableGainRealized
+    expect(modeledMagi).toBeLessThanOrEqual(modeledYear.acaMagiMax! + 0.01)
+  })
+
+  it('calibrates taxable Social Security with ACA provisional-income addbacks', async () => {
+    const raw = acaBridgePlan()
+    raw.expenses.baseAnnual = 20_000
+    raw.incomes = [socialSecurityIncome('ss', 3_572, 62)]
+    raw.assumptions.ssCola = { mode: 'fixed', annualPct: 0 }
+    raw.assumptions.ssHaircut = null
+    raw.expenses.healthcare.acaYears![0]!.taxExemptInterest = {
+      state: 'known',
+      amount: 25_000,
+    }
+    const plan = validate(raw)
+    let probe: OptimizerYearProbe | undefined
+    const baseline = simulatePlan(plan, {
+      ...opts,
+      captureOptimizerInputs: (captured) => {
+        if (captured.year === 2026) probe = captured
+      },
+    }).years[0]!
+    const input = buildOptimizerInput(plan, opts)
+    const modeledYear = input.years[0]!
+
+    expect(baseline.incomes.socialSecurity).toBeCloseTo(30_004.8, 2)
+    expect(baseline.aca?.readiness).toBe('actionable')
+    expect(baseline.aca?.householdMagi).toBeCloseTo(55_004.8, 2)
+    expect(baseline.aca?.modeledAllowablePtc).toBeGreaterThan(0)
+    expect(probe).toBeDefined()
+    expect(probe!.taxableSsBase).toBeCloseTo(9_602.04, 2)
+    expect(probe!.ssProvisionalIncomeAddbacks).toBeCloseTo(25_000, 2)
+    expect(probe!.acaConversionMagiHeadroom).toBeCloseTo(7_595.2, 2)
+    expect(modeledYear.ssTaxability?.provisionalIncomeAddbacks).toBeCloseTo(25_000, 2)
+
+    const optimized = await optimizeSchedule(input)
+    expect(optimized.status).toBe('optimal')
+    expect(optimized.schedule[0]!.conversion).toBeLessThanOrEqual(7_595.21)
+    const exact = simulatePlan(
+      validate(withOptimizedConversions(plan, optimized.conversions)),
+      opts,
+    ).years[0]!
+    expect(exact.aca?.readiness).toBe('actionable')
+    expect(exact.aca?.modeledAllowablePtc).toBeGreaterThan(0)
+    expect(exact.aca?.householdMagi).toBeLessThanOrEqual(62_600.01)
   })
 
   it.each([
@@ -848,7 +1060,7 @@ describe('optimizePlan end-to-end', () => {
     expect(exact.aca?.modeledAllowablePtc).toBe(0)
 
     const input = buildOptimizerInput(plan, opts)
-    expect(input.years[0]!.acaConversionMax).toBeUndefined()
+    expect(input.years[0]!.acaMagiMax).toBeUndefined()
     expect(buildOptimizerModel(input).lp).not.toContain('0 <= conv0 <= 0')
   })
 

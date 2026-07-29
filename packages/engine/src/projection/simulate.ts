@@ -1403,20 +1403,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     let legacyMarketplacePremiumPaidDirectly = 0
     const acaContractsForYear = hc.acaYears?.filter((contract) => contract.year === year) ?? []
     const acaContract = acaContractsForYear.length === 1 ? acaContractsForYear[0] : undefined
-    const grossPremiumForContract = (contract: (typeof acaContractsForYear)[number]) =>
-      contract.coveredMembers.reduce(
-        (total, member) => total + member.enrollmentPremiumByMonth.reduce((sum, premium) => sum + premium, 0),
-        0,
-      )
-    const acaDisplayContract =
-      acaContract ??
-      acaContractsForYear.reduce<(typeof acaContractsForYear)[number] | undefined>(
-        (largest, contract) =>
-          largest === undefined || grossPremiumForContract(contract) > grossPremiumForContract(largest)
-            ? contract
-            : largest,
-        undefined,
-      )
     // SSA-44 (see setup above): in the two years after a qualifying event, the
     // premium MAGI is the lower of the lookback and the prior-year stand-in.
     const irmaaMagi = ssa44ActiveInYear(year)
@@ -1553,6 +1539,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         if (
           primaryCount !== 1 ||
           spouseCount !== expectedSpouseCount ||
+          (
+            filingStatusForYear === 'qualifyingSurvivingSpouse' &&
+            !acaContract.taxFamilyMembers.some((member) => member.relationship === 'dependent')
+          ) ||
           taxFamilyIds.size !== acaContract.taxFamilyMembers.length
         ) {
           acaInitialSupportCodes.push('tax-family-structure-unsupported')
@@ -2811,7 +2801,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         converged = Math.abs(evaluation.requiredNeed - need) <= EPSILON
       }
       if (converged) {
-        return { evaluation, converged, closestResidual: 0 }
+        return { evaluation, need, converged, closestResidual: 0 }
       }
 
       // A finite portfolio brackets the root: once all spendable balances are
@@ -2847,7 +2837,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
 
       if (Math.abs(upperResidual) <= EPSILON) {
-        return { evaluation: upper, converged: true, closestResidual: 0 }
+        return { evaluation: upper, need: upperNeed, converged: true, closestResidual: 0 }
       }
 
       // Tax rules can contain hard steps. Bisection therefore requires a true
@@ -2863,7 +2853,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         const midpoint = evaluateWithdrawalNeed(midpointNeed, forceGrossAca)
         const residual = midpoint.requiredNeed - midpointNeed
         if (Math.abs(residual) <= EPSILON) {
-          return { evaluation: midpoint, converged: true, closestResidual: 0 }
+          return { evaluation: midpoint, need: midpointNeed, converged: true, closestResidual: 0 }
         }
         if (residual > 0) {
           lowerNeed = midpointNeed
@@ -2880,6 +2870,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const closestResidual = Math.min(lowerResidual, Math.abs(upperResidual))
       return {
         evaluation: lowerResidual <= Math.abs(upperResidual) ? lower : upper,
+        need: lowerResidual <= Math.abs(upperResidual) ? lowerNeed : upperNeed,
         converged: false,
         closestResidual,
       }
@@ -2952,31 +2943,60 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // The ACA cliff can create two self-consistent funding basins: a gross
     // premium draw that pushes MAGI over the cliff, and a subsidized draw that
     // remains below it. A single locally stable root is not enough evidence to
-    // choose between them. Probe the low-premium basin deterministically and
-    // fail closed to the already-computed gross result when both roots exist.
+    // choose between them. Probe the opposite basin deterministically and fail
+    // closed to the gross result when both roots exist.
     let acaConflictingCliffBasins = false
     if (
       acaActive &&
       converged &&
       !acaFixedPointFailed &&
       acaInitialSupportCodes.length === 0 &&
-      evaluation.acaQuote?.overCliff
+      evaluation.acaQuote !== null
     ) {
-      const lowRoot = solveFundingRoot(
-        Math.max(0, spendingNeedBeforeTax - acaGrossEnrollmentPremium),
-        false,
-        MAX_ACA_FIXED_POINT_EVALUATIONS,
-        MAX_ACA_FIXED_POINT_EVALUATIONS,
-      )
-      const lowEvaluation = lowRoot.evaluation
-      if (
-        lowRoot.converged &&
-        lowEvaluation.acaSupportCodes.length === 0 &&
-        lowEvaluation.acaQuote !== null &&
-        !lowEvaluation.acaQuote.overCliff &&
-        lowEvaluation.healthcare + EPSILON < evaluation.healthcare
-      ) {
-        acaConflictingCliffBasins = true
+      if (evaluation.acaQuote.overCliff) {
+        const lowRoot = solveFundingRoot(
+          Math.max(0, spendingNeedBeforeTax - acaGrossEnrollmentPremium),
+          false,
+          MAX_ACA_FIXED_POINT_EVALUATIONS,
+          MAX_ACA_FIXED_POINT_EVALUATIONS,
+        )
+        const lowEvaluation = lowRoot.evaluation
+        if (
+          lowRoot.converged &&
+          lowEvaluation.acaSupportCodes.length === 0 &&
+          lowEvaluation.acaQuote !== null &&
+          !lowEvaluation.acaQuote.overCliff &&
+          lowEvaluation.healthcare + EPSILON < evaluation.healthcare
+        ) {
+          acaConflictingCliffBasins = true
+        }
+      } else {
+        // A forced-gross solve locates the high-premium candidate without
+        // letting the provisional credit pull it back into the subsidized
+        // basin. Re-evaluate the exact same candidate need under normal ACA
+        // pricing before accepting it: only a state-paired, independently
+        // self-consistent over-cliff result proves the second basin exists.
+        const grossRoot = solveFundingRoot(
+          spendingNeedBeforeTax,
+          true,
+          MAX_ACA_FIXED_POINT_EVALUATIONS,
+          MAX_ACA_FIXED_POINT_EVALUATIONS,
+        )
+        if (grossRoot.converged) {
+          const grossEvaluation = evaluateWithdrawalNeed(grossRoot.need)
+          if (
+            Math.abs(grossEvaluation.requiredNeed - grossRoot.need) <= EPSILON &&
+            grossEvaluation.acaSupportCodes.length === 0 &&
+            grossEvaluation.acaQuote?.overCliff &&
+            grossEvaluation.healthcare > evaluation.healthcare + EPSILON
+          ) {
+            evaluation = grossEvaluation
+            converged = true
+            acaConflictingCliffBasins = true
+          }
+        }
+      }
+      if (acaConflictingCliffBasins) {
         warnings.add(
           `ACA funding has conflicting subsidized and gross-premium fixed points for ${year}; gross enrollment premium was funded.`,
         )
@@ -3147,8 +3167,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               ? (dependentEvidence.get(member.personId)?.includedMagi ?? 0)
               : 0,
         })) ?? []
-      const coveredMembers = acaDisplayContract && !exampleContractInputMismatch
-        ? acaDisplayContract.coveredMembers.map((member) => ({
+      const coveredMembers = acaContract && !exampleContractInputMismatch
+        ? acaContract.coveredMembers.map((member) => ({
             personId: member.personId,
             coveredMonths: member.enrollmentPremiumByMonth
               .map((premium, month) => (premium > 0 ? month + 1 : 0))
@@ -3160,7 +3180,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               0,
             ),
           }))
-        : peopleStates
+        : acaContractsForYear.length > 1
+          ? []
+          : peopleStates
             .filter((person) => {
               const months = marketplaceMonthsBeforeMedicare(person)
               return person.alive && months > 0 && hc.pre65MonthlyPremiumPerPerson > 0
@@ -3254,9 +3276,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           startInheritedTraditional += startOfYearBalance.get(state.account.id) ?? 0
         }
       }
+      const optimizerOrdinaryIncomeBase =
+        Math.max(0, incomeBeforeConversion - rmdTotal - inheritedTotal) + taxableSs
+      const optimizerCapitalGainsBase =
+        Math.max(0, oneTimeGains + rebalanceRealizedGains) + incomes.qualifiedDividends
       opts.captureOptimizerInputs({
         year,
-        ordinaryIncomeBase: Math.max(0, incomeBeforeConversion - rmdTotal - inheritedTotal) + taxableSs,
+        ordinaryIncomeBase: optimizerOrdinaryIncomeBase,
         spendingNeed: expenses.total + contributions,
         exogenousCash: incomes.total - taxableYieldReinvested,
         traditionalInflow,
@@ -3264,13 +3290,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         taxableInflow,
         ssBenefits: incomes.socialSecurity,
         taxableSsBase: taxableSs,
+        ssProvisionalIncomeAddbacks: acaTaxExemptInterest + acaForeignExclusionAddback,
         // Gains EXCLUDING taxable-withdrawal realizations: the optimizer
         // re-decides taxable draws as its own `wtax` variable and adds their
         // gain share to provisional income / MAGI itself, so including the
         // baseline's withdrawal-driven gains here would double-count them.
         // (Pre-netting components; capital-loss carryforward refinement is
         // left to the exact ledger.)
-        capitalGainsBase: Math.max(0, oneTimeGains + rebalanceRealizedGains) + incomes.qualifiedDividends,
+        capitalGainsBase: optimizerCapitalGainsBase,
         acaConversionMagiHeadroom:
           yearAcaResult?.readiness === 'actionable' &&
           yearAcaResult.federalPovertyLine !== null &&
@@ -3281,6 +3308,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
                   yearAcaResult.householdMagi,
               )
             : null,
+        incumbentModeledMagiBeforeTaxableWithdrawalGains:
+          optimizerOrdinaryIncomeBase +
+          optimizerCapitalGainsBase +
+          rmdTotal +
+          inheritedTotal +
+          rothConversion +
+          withdrawalPlan.byCategory.traditional,
+        incumbentTaxableWithdrawal: withdrawalPlan.byCategory.taxable,
         acaModeledAllowablePtc: yearAcaResult?.modeledAllowablePtc ?? null,
         acaCliffState: yearAcaResult?.cliffState ?? null,
         incumbentRothConversion: rothConversion,

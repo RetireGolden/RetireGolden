@@ -73,7 +73,11 @@ function metricFor(target: FillTarget['target'], detail: FederalTaxDetail, input
       (input.aca?.fixedMagiAddbacks ?? 0)
     )
   }
-  return detail.magi
+  // Match the projection's realized MAGI history used for IRMAA lookback and
+  // fixed-MAGI reporting: signed pre-floor AGI plus characterized tax-exempt
+  // interest, floored only after the addition. Foreign-exclusion addback can
+  // affect taxable Social Security, but is not itself part of this metric.
+  return Math.max(0, detail.agiBeforeFloor + (input.aca?.taxExemptInterest ?? 0))
 }
 
 function ceilingFor(strategy: FillTarget, input: ConversionSizingInput): number | null {

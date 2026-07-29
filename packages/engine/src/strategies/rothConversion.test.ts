@@ -92,6 +92,26 @@ describe('sizeRothConversion', () => {
     expect(r.amount).toBeCloseTo(59_000, 1) // 109,000 − 50,000
   })
 
+  it('includes characterized tax-exempt interest in the IRMAA metric', () => {
+    const r = sizeRothConversion(
+      fill('irmaaTier', 1),
+      input({
+        ordinaryIncomeBase: 50_000,
+        aca: {
+          actionable: true,
+          taxFamilySize: 1,
+          fplRegion: 'contiguous',
+          fixedMagiAddbacks: 0,
+          taxExemptInterest: 4_000,
+          foreignExclusionAddback: 0,
+        },
+      }),
+    )
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.amount).toBeCloseTo(55_000, 1)
+  })
+
   it('caps MAGI under the ACA 400% FPL cliff', () => {
     const r = sizeRothConversion(fill('acaCliff', null), input())
     expect(r.ok).toBe(true)
@@ -160,6 +180,28 @@ describe('sizeRothConversion', () => {
     expect(r.ok).toBe(true)
     if (!r.ok) return
     expect(r.amount).toBeCloseTo(50_000, 1)
+  })
+
+  it('uses signed pre-floor AGI plus tax-exempt interest for a fixed MAGI ceiling', () => {
+    const r = sizeRothConversion(
+      fill('fixedMagi', 80_000),
+      input({
+        capitalGains: -3_000,
+        aca: {
+          actionable: true,
+          taxFamilySize: 1,
+          fplRegion: 'contiguous',
+          fixedMagiAddbacks: 20_000,
+          taxExemptInterest: 5_000,
+          foreignExclusionAddback: 20_000,
+        },
+      }),
+    )
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    // Foreign-exclusion addback is not added to IRMAA/fixed MAGI; the signed
+    // capital loss offsets $3k of the characterized $5k tax-exempt interest.
+    expect(r.amount).toBeCloseTo(78_000, 1)
   })
 
   it('reports when income already exceeds the ceiling', () => {

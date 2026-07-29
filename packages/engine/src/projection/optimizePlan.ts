@@ -238,6 +238,7 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
   // Aggregate opening basis fraction; gain fraction = 1 − this. A single opening
   // ratio is the v1 linearization (the exact ledger prices true depletion).
   const taxableBasisRatio = openingTaxable > 0 ? Math.min(1, Math.max(0, openingTaxableBasis / openingTaxable)) : 1
+  const taxableGainWeight = Math.min(1, Math.max(0, 1 - taxableBasisRatio))
 
   const growth = blendedGrowth(plan, opts.startYear)
   const infl = plan.assumptions.inflationPct / 100
@@ -282,14 +283,22 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
       // Step 3: in-solve taxable-SS PWL so the solver sees the marginal tax
       // torpedo instead of the probe-time constant; baseline gains/dividends
       // feed provisional income and the IRMAA MAGI base.
-      ssTaxability: p.ssBenefits > 0 ? { ssBenefits: p.ssBenefits, taxableSsBase: p.taxableSsBase } : undefined,
+      ssTaxability: p.ssBenefits > 0
+        ? {
+            ssBenefits: p.ssBenefits,
+            taxableSsBase: p.taxableSsBase,
+            provisionalIncomeAddbacks: p.ssProvisionalIncomeAddbacks,
+          }
+        : undefined,
       capitalGainsBase: p.capitalGainsBase,
-      acaConversionMax:
+      acaMagiMax:
         p.acaConversionMagiHeadroom === null ||
         (p.acaModeledAllowablePtc ?? 0) <= 0 ||
         (p.acaCliffState !== 'below-cliff' && p.acaCliffState !== 'at-cliff')
           ? undefined
-          : p.incumbentRothConversion + p.acaConversionMagiHeadroom,
+          : p.incumbentModeledMagiBeforeTaxableWithdrawalGains +
+            taxableGainWeight * p.incumbentTaxableWithdrawal +
+            p.acaConversionMagiHeadroom,
       // SSA-44 (opt-in): shift this premium year's IRMAA trigger to (t−1)'s
       // MAGI so the solve prices the redetermination the exact ledger applies.
       ssa44Redetermination: p.ssa44IrmaaRedetermination || undefined,

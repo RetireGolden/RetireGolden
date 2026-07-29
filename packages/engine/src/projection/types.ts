@@ -196,6 +196,11 @@ export interface OptimizerYearProbe {
    */
   taxableSsBase: number
   /**
+   * Fixed non-taxable amounts included in §86 provisional income: characterized
+   * ACA tax-exempt interest plus foreign earned-income/housing exclusions.
+   */
+  ssProvisionalIncomeAddbacks: number
+  /**
    * Realized capital gains + qualified dividends at the probe run, EXCLUDING
    * gains from taxable-account withdrawals (the optimizer re-decides those as
    * its own variable, so including them would double-count). Counts toward the
@@ -208,6 +213,15 @@ export interface OptimizerYearProbe {
    * no supported current-year ACA ceiling exists.
    */
   acaConversionMagiHeadroom: number | null
+  /**
+   * Incumbent value of the optimizer's modeled MAGI expression before the
+   * gain-weighted taxable-withdrawal term. `buildOptimizerInput` applies the
+   * same aggregate opening-basis coefficient used by the LP, rather than the
+   * exact ledger's account-order-dependent realized gain.
+   */
+  incumbentModeledMagiBeforeTaxableWithdrawalGains: number
+  /** Incumbent taxable/equity-comp withdrawal dollars (`wtax` in the LP). */
+  incumbentTaxableWithdrawal: number
   /** Allowable PTC actually preserved by the exact-ledger probe, if modeled. */
   acaModeledAllowablePtc: number | null
   /** Exact-ledger cliff position used to decide whether a preservation bound is meaningful. */
