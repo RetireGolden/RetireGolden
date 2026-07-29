@@ -15,7 +15,11 @@ import {
   revertScenarioPatch,
   scenarioPlanSnapshotHash,
 } from './patch.js'
-import { applyScenarioPatch, diffScenarioPatch } from './scenarios.js'
+import {
+  applyScenarioPatch,
+  canonicalOperationSuppliesCompleteAcaEvidence,
+  diffScenarioPatch,
+} from './scenarios.js'
 
 const metadata: ScenarioPatchMetadata = {
   title: 'Meeting proposal',
@@ -225,6 +229,65 @@ describe('canonical scenario patch documents', () => {
     if (withoutEvidenceApplied.ok) {
       expect(withoutEvidenceApplied.plan.expenses.healthcare.pre65MonthlyPremiumPerPerson).toBe(750)
       expect(withoutEvidenceApplied.plan.expenses.healthcare.acaYears).toBeUndefined()
+    }
+  })
+
+  it('recognizes only complete canonical ACA evidence replacements', () => {
+    expect(
+      canonicalOperationSuppliesCompleteAcaEvidence({
+        op: 'set',
+        path: '/expenses/healthcare/acaYears',
+        before: { present: false },
+        value: [],
+      }),
+    ).toBe(true)
+    expect(
+      canonicalOperationSuppliesCompleteAcaEvidence({
+        op: 'remove',
+        path: '/expenses/healthcare/acaYears',
+        before: { present: true, value: [] },
+      }),
+    ).toBe(false)
+    expect(
+      canonicalOperationSuppliesCompleteAcaEvidence({
+        op: 'set',
+        path: '/expenses/healthcare/acaYears/0/coveredMembers',
+        before: { present: true, value: [] },
+        value: [],
+      }),
+    ).toBe(false)
+  })
+
+  it('clears ACA evidence when a canonical household change removes the contracts', () => {
+    const base = plan()
+    setAcaYearContract(base)
+    const edited = clonePlan(base)
+    edited.household.state = 'FL'
+    const generated = build(base, edited)
+    const applied = applyScenarioPatch(base, {
+      ...generated,
+      operations: [
+        {
+          op: 'set' as const,
+          path: '/household',
+          before: { present: true as const, value: base.household },
+          value: edited.household,
+        },
+        {
+          op: 'remove' as const,
+          path: '/expenses/healthcare/acaYears',
+          before: {
+            present: true as const,
+            value: base.expenses.healthcare.acaYears!,
+          },
+        },
+      ],
+    })
+
+    expect(applied.ok).toBe(true)
+    if (applied.ok) {
+      expect(applied.plan.household.state).toBe('FL')
+      expect(applied.plan.expenses.healthcare.acaYears).toBeUndefined()
     }
   })
 

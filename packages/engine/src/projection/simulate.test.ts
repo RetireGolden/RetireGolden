@@ -1631,6 +1631,44 @@ describe('healthcare and penalties', () => {
     expect(supported.aca?.supportCodes).toEqual(['actionable'])
   })
 
+  it('requires the ACA tax family to include every living modeled person whose income is aggregated', () => {
+    const plan = basePlan()
+    plan.household.filingStatus = 'marriedFilingJointly'
+    plan.household.people.push({
+      id: 'p2',
+      name: 'Sam',
+      dob: '1966-09-15',
+      sex: 'average',
+      retirementAge: null,
+      longevity: { planningAge: 90, source: 'manual' },
+    })
+    currentYearAca(plan, { coveredPersonIds: ['p1'] })
+    plan.incomes = [wages(20_000, 'p1'), wages(20_000, 'p2')]
+    plan.accounts = [cash(200_000)]
+
+    const joint = simulatePlan(validate(plan), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: noTax,
+    }).years[0]!
+    expect(joint.aca?.readiness).toBe('actionable')
+    expect(joint.aca?.supportCodes).toEqual(['actionable'])
+
+    plan.household.filingStatus = 'single'
+    plan.expenses.healthcare.acaYears![0]!.taxFamilyMembers =
+      plan.expenses.healthcare.acaYears![0]!.taxFamilyMembers.filter(
+        (member) => member.relationship === 'primary',
+      )
+    const incomplete = simulatePlan(validate(plan), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: noTax,
+    }).years[0]!
+    expect(incomplete.aca?.readiness).toBe('nonActionable')
+    expect(incomplete.aca?.supportCodes).toContain('tax-family-structure-unsupported')
+    expect(incomplete.aca?.magiComponents.federalAgi).toBeCloseTo(40_000, 2)
+  })
+
   it('fails closed when the annual primary does not exist in the modeled household', () => {
     const plan = basePlan()
     currentYearAca(plan)

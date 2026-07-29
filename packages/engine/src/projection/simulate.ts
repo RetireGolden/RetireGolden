@@ -1536,9 +1536,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           (member) => member.relationship === 'spouse',
         ).length
         const expectedSpouseCount = filingStatusForYear === 'marriedFilingJointly' ? 1 : 0
+        const omitsLivingModeledPerson = peopleStates.some(
+          (person) => person.alive && !taxFamilyIds.has(person.personId),
+        )
         if (
           primaryCount !== 1 ||
           spouseCount !== expectedSpouseCount ||
+          omitsLivingModeledPerson ||
           (
             filingStatusForYear === 'qualifyingSurvivingSpouse' &&
             !acaContract.taxFamilyMembers.some((member) => member.relationship === 'dependent')

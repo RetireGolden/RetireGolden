@@ -35,12 +35,11 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v)
 }
 
-function canonicalOperationSuppliesAcaEvidence(operation: ScenarioOperation): boolean {
+export function canonicalOperationSuppliesCompleteAcaEvidence(operation: ScenarioOperation): boolean {
   const evidencePath = '/expenses/healthcare/acaYears'
-  if (operation.path === evidencePath || operation.path.startsWith(`${evidencePath}/`)) {
-    return true
-  }
   if (operation.op !== 'set') return false
+  if (operation.path === evidencePath) return true
+  if (operation.path.startsWith(`${evidencePath}/`)) return false
   if (operation.path === '/expenses/healthcare') {
     return isPlainObject(operation.value) && Object.hasOwn(operation.value, 'acaYears')
   }
@@ -64,7 +63,7 @@ export function applyScenarioPatch(plan: Plan, patch: ScenarioPatchInput): Parse
     ? (() => {
         const parsed = parseScenarioPatch(patch)
         if (!parsed.ok) return false
-        const changesEvidence = parsed.patch.operations.some(canonicalOperationSuppliesAcaEvidence)
+        const changesEvidence = parsed.patch.operations.some(canonicalOperationSuppliesCompleteAcaEvidence)
         const paths = parsed.patch.operations.map((operation) => operation.path)
         return (
           !changesEvidence &&
