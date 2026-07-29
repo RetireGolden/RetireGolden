@@ -5,6 +5,9 @@ Social-Security taxation → IRMAA → ACA cliff → NIIT → senior-deduction p
 of Roth-conversion and withdrawal planning. It targets **planning-grade**, not filing-grade, accuracy.
 Current-year figures and citations live in [domain-rules-reference.md](../domain/domain-rules-reference.md);
 all dollar values come from versioned parameter packs, never hardcoded.
+The dated [tax-strategy coverage and claim-control inventory](../domain/tax-strategy-coverage-inventory.md)
+states which modeled results can support cockpit-v1 comparisons or actions and which require narrower wording
+or prerequisite engine work.
 
 **Code:** [engine/tax/federalTax.ts](../../packages/engine/src/tax/federalTax.ts),
 [engine/tax/stateTax.ts](../../packages/engine/src/tax/stateTax.ts),
@@ -225,6 +228,20 @@ need.
   treated as fully pre-tax.
 - Capital-loss: single pool, opening balance only, no wash-sale / section 1256 / section 1212-worksheet preservation;
   state conformity is modeled only for the encoded high-impact cases, not every per-state worksheet nuance.
+- **Charitable and NUA scope:** generic itemized-charitable, QCD, and charitable-estate fields do not model a
+  donor-advised fund. There is no DAF contribution/bunching/grant workflow and no appreciated-property
+  transfer or DAF-specific deduction treatment. Net unrealized appreciation (NUA) is also absent: equity-comp
+  aggregate basis is not a qualified-plan employer-stock NUA election. Neither DAF nor NUA may be presented as
+  a modeled opportunity or action.
+- **Implementation actions:** annual ledger outputs are household planning estimates, not custodian-ready
+  instructions. In particular, Roth-conversion schedules do not identify an owner, source account, or
+  destination account, and the QCD input does not identify the eligible person, IRA, charity, or direct
+  transfer. Withdrawal-order results report account-category totals; sequential and bracket-targeted draws
+  consume same-category accounts in plan-array order, so those totals do not identify an implementation-ready
+  owner/account source either. The engine does not select security lots, establish deadlines or legal
+  eligibility, populate tax forms, transmit an instruction, or record professional confirmation. See the
+  [claim-control inventory](../domain/tax-strategy-coverage-inventory.md) before turning any result into cockpit
+  copy or an implementation checklist.
 
 ## Related
 
