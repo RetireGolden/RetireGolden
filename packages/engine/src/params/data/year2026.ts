@@ -187,8 +187,10 @@ export const year2026: ParameterPack = {
   },
 
   federalPovertyLine: {
-    firstPerson: 15_650,
-    perAdditionalPerson: 5_500,
+    // HHS 2025 poverty guidelines used for 2026 Marketplace coverage.
+    contiguous: { firstPerson: 15_650, perAdditionalPerson: 5_500 },
+    alaska: { firstPerson: 19_550, perAdditionalPerson: 6_880 },
+    hawaii: { firstPerson: 17_990, perAdditionalPerson: 6_330 },
   },
 
   aca: {

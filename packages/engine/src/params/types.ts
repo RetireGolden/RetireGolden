@@ -198,11 +198,14 @@ export interface ParameterPack {
     oasdiEmployeeRatePct: number
   }
 
-  /** HHS poverty guideline (48 contiguous states) used for ACA in this coverage year. */
-  federalPovertyLine: {
-    firstPerson: number
-    perAdditionalPerson: number
-  }
+  /** HHS poverty guidelines used for ACA in this coverage year. */
+  federalPovertyLine: Record<
+    'contiguous' | 'alaska' | 'hawaii',
+    {
+      firstPerson: number
+      perAdditionalPerson: number
+    }
+  >
 
   /** ACA premium-tax-credit scale (post-2025: enhanced credits expired, 400% FPL cliff restored). */
   aca: {

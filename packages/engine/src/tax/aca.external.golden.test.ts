@@ -32,13 +32,25 @@ const pack = packForYear(2026).pack
 
 describe('ORACLE-003: ACA premium tax credit vs IRS Rev. Proc. 2025-25 + HHS 2025 FPL', () => {
   it('poverty-line parameters match the 2025 HHS guidelines and produce the published 2026 cliffs', () => {
-    expect(pack.federalPovertyLine.firstPerson).toBe(15_650)
-    expect(pack.federalPovertyLine.perAdditionalPerson).toBe(5_500)
+    expect(pack.federalPovertyLine.contiguous).toEqual({
+      firstPerson: 15_650,
+      perAdditionalPerson: 5_500,
+    })
+    expect(pack.federalPovertyLine.alaska).toEqual({
+      firstPerson: 19_550,
+      perAdditionalPerson: 6_880,
+    })
+    expect(pack.federalPovertyLine.hawaii).toEqual({
+      firstPerson: 17_990,
+      perAdditionalPerson: 6_330,
+    })
     expect(pack.aca.maxFplPctForCredit).toBe(400)
 
     // 400% FPL cliff dollar amounts published for 2026 (48 states), from these guidelines:
-    const fplSingle = pack.federalPovertyLine.firstPerson
-    const fplFamily4 = pack.federalPovertyLine.firstPerson + 3 * pack.federalPovertyLine.perAdditionalPerson
+    const fplSingle = pack.federalPovertyLine.contiguous.firstPerson
+    const fplFamily4 =
+      pack.federalPovertyLine.contiguous.firstPerson +
+      3 * pack.federalPovertyLine.contiguous.perAdditionalPerson
     expectMoney(fplSingle * 4, 62_600) // single cliff
     expectMoney(fplFamily4 * 4, 128_600) // family-of-four cliff
   })

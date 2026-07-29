@@ -26,12 +26,32 @@ import {
   decodeScenarioPointer,
   isScenarioPatchEnvelope,
   parseScenarioPatch,
+  type ScenarioOperation,
   type ScenarioPatchInput,
 } from './contract.js'
 import { applyScenarioPatchInput, canonicalScenarioJson, readScenarioValueState } from './patch.js'
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v)
+}
+
+function canonicalOperationSuppliesAcaEvidence(operation: ScenarioOperation): boolean {
+  const evidencePath = '/expenses/healthcare/acaYears'
+  if (operation.path === evidencePath || operation.path.startsWith(`${evidencePath}/`)) {
+    return true
+  }
+  if (operation.op !== 'set') return false
+  if (operation.path === '/expenses/healthcare') {
+    return isPlainObject(operation.value) && Object.hasOwn(operation.value, 'acaYears')
+  }
+  if (operation.path === '/expenses') {
+    return (
+      isPlainObject(operation.value) &&
+      isPlainObject(operation.value['healthcare']) &&
+      Object.hasOwn(operation.value['healthcare'], 'acaYears')
+    )
+  }
+  return false
 }
 
 /**
@@ -44,8 +64,8 @@ export function applyScenarioPatch(plan: Plan, patch: ScenarioPatchInput): Parse
     ? (() => {
         const parsed = parseScenarioPatch(patch)
         if (!parsed.ok) return false
+        const changesEvidence = parsed.patch.operations.some(canonicalOperationSuppliesAcaEvidence)
         const paths = parsed.patch.operations.map((operation) => operation.path)
-        const changesEvidence = paths.some((path) => path.startsWith('/expenses/healthcare/acaYears'))
         return (
           !changesEvidence &&
           paths.some(

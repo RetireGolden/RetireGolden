@@ -14,7 +14,7 @@ import { PlanWorkspace } from './PlanWorkspace'
 import { PlanCtx, usePlan } from './planContextCore'
 import { fmtMoneyCompact, parseAmount } from './format'
 import { createSamplePlan } from '../testSupport/samplePlan'
-import { invalidateAcaEvidence, removePartner } from './householdActions'
+import { invalidateAcaEvidence, removePartner, updatePersonLongevity } from './householdActions'
 import { projectPlan } from './useProjection'
 import { AccountsSection, AssumptionsSection, HouseholdSection, InsuranceSection, SpendingSection, StrategySection } from './sections'
 import { InsightsPage } from './insights/InsightsPage'
@@ -91,6 +91,16 @@ describe('ACA annual evidence invalidation', () => {
     const plan = createSamplePlan()
     plan.expenses.healthcare.acaYears = []
     invalidateAcaEvidence(plan)
+    expect(plan.expenses.healthcare.acaYears).toBeUndefined()
+  })
+
+  it('clears exact annual evidence after a planning-age change', () => {
+    const plan = createSamplePlan()
+    plan.expenses.healthcare.acaYears = []
+
+    updatePersonLongevity(plan, 0, { planningAge: 88, source: 'model' })
+
+    expect(plan.household.people[0]!.longevity).toEqual({ planningAge: 88, source: 'model' })
     expect(plan.expenses.healthcare.acaYears).toBeUndefined()
   })
 })

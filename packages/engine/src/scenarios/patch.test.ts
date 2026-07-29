@@ -128,6 +128,106 @@ describe('canonical scenario patch documents', () => {
     }
   })
 
+  it('recognizes refreshed ACA evidence supplied by direct and ancestor canonical sets', () => {
+    const base = plan()
+    setAcaYearContract(base)
+    const edited = clonePlan(base)
+    edited.household.state = 'FL'
+    edited.expenses.healthcare.pre65MonthlyPremiumPerPerson = 750
+    const refreshedContracts = structuredClone(edited.expenses.healthcare.acaYears!)
+    refreshedContracts[0]!.coveredMembers[0]!.enrollmentPremiumByMonth =
+      new Array<number>(12).fill(750)
+    refreshedContracts[0]!.coveredMembers[0]!.slcspBenchmarkPremiumByMonth =
+      new Array<number>(12).fill(750)
+    edited.expenses.healthcare.acaYears = refreshedContracts
+    const generated = build(base, edited)
+    const householdOperation = {
+      op: 'set' as const,
+      path: '/household',
+      before: { present: true as const, value: base.household },
+      value: edited.household,
+    }
+
+    const ancestorPatch = {
+      ...generated,
+      operations: [
+        householdOperation,
+        {
+          op: 'set' as const,
+          path: '/expenses/healthcare',
+          before: { present: true as const, value: base.expenses.healthcare },
+          value: edited.expenses.healthcare,
+        },
+      ],
+    }
+    const ancestorApplied = applyScenarioPatch(base, ancestorPatch)
+    expect(ancestorApplied.ok).toBe(true)
+    if (ancestorApplied.ok) {
+      expect(ancestorApplied.plan.household.state).toBe('FL')
+      expect(ancestorApplied.plan.expenses.healthcare.pre65MonthlyPremiumPerPerson).toBe(750)
+      expect(ancestorApplied.plan.expenses.healthcare.acaYears).toEqual(refreshedContracts)
+    }
+
+    const expensesAncestorApplied = applyScenarioPatch(base, {
+      ...generated,
+      operations: [
+        householdOperation,
+        {
+          op: 'set' as const,
+          path: '/expenses',
+          before: { present: true as const, value: base.expenses },
+          value: edited.expenses,
+        },
+      ],
+    })
+    expect(expensesAncestorApplied.ok).toBe(true)
+    if (expensesAncestorApplied.ok) {
+      expect(expensesAncestorApplied.plan.expenses.healthcare.acaYears).toEqual(refreshedContracts)
+    }
+
+    const directPatch = {
+      ...generated,
+      operations: [
+        householdOperation,
+        {
+          op: 'set' as const,
+          path: '/expenses/healthcare/acaYears',
+          before: {
+            present: true as const,
+            value: base.expenses.healthcare.acaYears!,
+          },
+          value: refreshedContracts,
+        },
+      ],
+    }
+    const directApplied = applyScenarioPatch(base, directPatch)
+    expect(directApplied.ok).toBe(true)
+    if (directApplied.ok) {
+      expect(directApplied.plan.expenses.healthcare.acaYears).toEqual(refreshedContracts)
+    }
+
+    const healthcareWithoutEvidence = structuredClone(edited.expenses.healthcare)
+    delete healthcareWithoutEvidence.acaYears
+    const withoutEvidencePatch = {
+      ...generated,
+      operations: [
+        householdOperation,
+        {
+          op: 'set' as const,
+          path: '/expenses/healthcare',
+          before: { present: true as const, value: base.expenses.healthcare },
+          value: healthcareWithoutEvidence,
+        },
+      ],
+    }
+    const withoutEvidenceApplied = applyScenarioPatch(base, withoutEvidencePatch)
+    expect(withoutEvidenceApplied.ok).toBe(true)
+    if (withoutEvidenceApplied.ok) {
+      expect(withoutEvidenceApplied.plan.expenses.healthcare.pre65MonthlyPremiumPerPerson).toBe(750)
+      expect(withoutEvidenceApplied.plan.expenses.healthcare.acaYears).toBeUndefined()
+    }
+  })
+
   it('holds apply/revert and empty-diff invariants across deterministic generated edits', () => {
     for (let index = 0; index < 40; index++) {
       const base = plan()

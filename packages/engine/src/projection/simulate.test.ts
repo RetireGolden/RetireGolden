@@ -1280,6 +1280,30 @@ describe('federal tax integration', () => {
     expect(year.expenses.healthcare).toBe(12_000)
   })
 
+  it('fully solves the tax-bearing subsidized basin before accepting a gross cliff root', () => {
+    const plan = basePlan()
+    currentYearAca(plan)
+    plan.expenses.baseAnnual = 51_000
+    plan.expenses.healthcare.acaYears![0]!.taxExemptInterest = {
+      state: 'known',
+      amount: 50_000,
+    }
+    // Cash covers the first $50k of either root. The lower basin still needs a
+    // tax-bearing traditional draw, whose 30% feedback takes more than the
+    // quick pass to settle; the gross basin needs a larger draw and crosses the
+    // cliff once the known tax-exempt-interest addback is included in ACA MAGI.
+    plan.accounts = [cash(50_000), traditional(500_000)]
+    const year = simulatePlan(validate(plan), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: createFlatTaxCalculator(30),
+    }).years[0]!
+
+    expect(year.aca?.readiness).toBe('nonActionable')
+    expect(year.aca?.supportCodes).toContain('conflicting-cliff-fixed-points')
+    expect(year.expenses.healthcare).toBe(12_000)
+  })
+
   it('self-consistently grosses up traditional withdrawals under real brackets', () => {
     const plan = basePlan()
     plan.household.people[0]!.dob = '1960-06-15' // 66 in 2026
@@ -1578,6 +1602,36 @@ describe('healthcare and penalties', () => {
     expect(year.withdrawals.hsa).toBeGreaterThan(year.expenses.healthcare)
     expect(year.penalties).toBeGreaterThan(0)
     expect(year.expenses.healthcare).toBeGreaterThan(0)
+  })
+
+  it('excludes Marketplace premiums from the HSA cap when ACA credit modeling is disabled', () => {
+    const plan = basePlan()
+    plan.expenses.baseAnnual = 0
+    plan.expenses.healthcare = {
+      pre65MonthlyPremiumPerPerson: 1_000,
+      applyAcaCredit: false,
+      medicareExtrasMonthlyPerPerson: 0,
+    }
+    plan.accounts = [{
+      type: 'hsa',
+      id: 'hsa',
+      name: 'HSA',
+      ownerPersonId: 'p1',
+      annualReturnPct: 0,
+      balance: 50_000,
+      annualContribution: 0,
+      withdrawalTreatment: 'capByMedicalExpenses',
+    }]
+
+    const year = simulatePlan(validate(plan), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: createFederalTaxCalculator(),
+    }).years[0]!
+
+    expect(year.expenses.healthcare).toBe(12_000)
+    expect(year.withdrawals.hsa).toBeGreaterThan(12_000)
+    expect(year.penalties).toBeGreaterThan(0)
   })
 
   it('uses the default healthcare spread of inflation plus 3 percentage points', () => {

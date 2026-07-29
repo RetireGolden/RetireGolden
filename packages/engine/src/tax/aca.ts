@@ -115,23 +115,13 @@ export function buildAcaHouseholdMagi(input: AcaHouseholdMagiInput): AcaHousehol
   }
 }
 
-/** HHS 2025 poverty guidelines used for 2026 Marketplace coverage. */
-const HHS_2025_FPL: Record<AcaFplRegion, { firstPerson: number; perAdditionalPerson: number }> = {
-  contiguous: { firstPerson: 15_650, perAdditionalPerson: 5_500 },
-  alaska: { firstPerson: 19_550, perAdditionalPerson: 6_880 },
-  hawaii: { firstPerson: 17_990, perAdditionalPerson: 6_330 },
-}
-
 export function acaFederalPovertyLine(
   pack: ParameterPack,
   householdSize: number,
   region: AcaFplRegion = 'contiguous',
   fplScale = 1,
 ): number {
-  const table =
-    region === 'contiguous'
-      ? pack.federalPovertyLine
-      : HHS_2025_FPL[region]
+  const table = pack.federalPovertyLine[region]
   return (
     (table.firstPerson + table.perAdditionalPerson * Math.max(0, householdSize - 1)) *
     fplScale

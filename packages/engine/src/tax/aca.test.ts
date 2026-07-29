@@ -152,6 +152,15 @@ describe('ACA current-year contract math', () => {
     expect(acaFederalPovertyLine(pack, 4, 'hawaii')).toBe(36_980)
   })
 
+  it('resolves every regional poverty guideline from the versioned parameter pack', () => {
+    const regionalPack = structuredClone(pack)
+    regionalPack.federalPovertyLine.alaska.firstPerson = 20_000
+    regionalPack.federalPovertyLine.hawaii.perAdditionalPerson = 7_000
+
+    expect(acaFederalPovertyLine(regionalPack, 1, 'alaska')).toBe(20_000)
+    expect(acaFederalPovertyLine(regionalPack, 2, 'hawaii')).toBe(24_990)
+  })
+
   it('builds household MAGI from AGI, addbacks, and required-filer dependents', () => {
     const result = buildAcaHouseholdMagi({
       federalAgi: 30_000,

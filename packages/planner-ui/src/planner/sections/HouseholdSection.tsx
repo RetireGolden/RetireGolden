@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import { invalidateAcaEvidence, removePartner } from '../householdActions'
+import { invalidateAcaEvidence, removePartner, updatePersonLongevity } from '../householdActions'
 import { usePlan } from '../planContextCore'
 import { CheckboxField, DateField, NumberField, SelectField, TextField } from '../fields'
 import { LEARN } from '../learnLinks'
@@ -124,7 +124,14 @@ export function HouseholdSection() {
                   value={person.longevity.planningAge}
                   min={60}
                   max={120}
-                  onCommit={(v) => update((d) => void (d.household.people[i]!.longevity = { planningAge: Math.round(v ?? 95), source: 'manual' }))}
+                  onCommit={(v) =>
+                    update((d) =>
+                      updatePersonLongevity(d, i, {
+                        planningAge: Math.round(v ?? 95),
+                        source: 'manual',
+                      }),
+                    )
+                  }
                 />
                 <button type="button" className="btn btn-secondary btn-small" onClick={() => setLongevityFor(i)}>
                   Calculate
@@ -154,7 +161,7 @@ export function HouseholdSection() {
             personIndex={longevityFor}
             onApply={(age) =>
               update((d) => {
-                d.household.people[longevityFor]!.longevity = { planningAge: age, source: 'model' }
+                updatePersonLongevity(d, longevityFor, { planningAge: age, source: 'model' })
               })
             }
             onClose={() => setLongevityFor(null)}
@@ -167,7 +174,7 @@ export function HouseholdSection() {
             partner={plan.household.people[1 - percentileFor] ?? null}
             onApply={(longevity) =>
               update((d) => {
-                d.household.people[percentileFor]!.longevity = longevity
+                updatePersonLongevity(d, percentileFor, longevity)
               })
             }
             onClose={() => setPercentileFor(null)}

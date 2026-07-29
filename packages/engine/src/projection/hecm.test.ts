@@ -243,6 +243,42 @@ describe('coordinated draw policy (Pfau direction fixture)', () => {
     expect(lastResort.years.find((y) => y.year === 2027)!.hecmDraw).toBe(0)
   })
 
+  it('fully reconciles taxable withdrawal feedback while sizing a coordinated draw', () => {
+    const plan = basePlan(63)
+    plan.expenses.baseAnnual = 40_000
+    plan.accounts = [
+      {
+        type: 'traditional',
+        id: 'trad1',
+        name: '401k',
+        ownerPersonId: 'p1',
+        annualReturnPct: null,
+        kind: 'employer',
+        balance: 500_000,
+        annualContribution: 0,
+      },
+      home({
+        openYear: 2025,
+        principalLimitPct: 40,
+        growthRatePct: 0,
+        upfrontCostPct: 0,
+        drawPolicy: 'coordinated',
+      }, 600_000),
+    ]
+
+    const result = simulatePlan(validate(plan), {
+      startYear: 2026,
+      horizonEndYear: 2027,
+      taxCalculator: createFlatTaxCalculator(50),
+      market: { returnShockPct: [-10, 0] },
+    })
+    const year = result.years.find((candidate) => candidate.year === 2027)!
+
+    expect(year.hecmDraw).toBeCloseTo(40_000, 2)
+    expect(year.withdrawals.total).toBeCloseTo(0, 2)
+    expect(year.tax).toBeCloseTo(0, 2)
+  })
+
   it('sizes a coordinated draw to converged post-ACA-credit need without creating surplus debt', () => {
     const plan = basePlan(63)
     plan.household.people[0]!.dob = '1963-01-01'
