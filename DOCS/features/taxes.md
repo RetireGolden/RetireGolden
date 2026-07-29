@@ -5,7 +5,7 @@ Social-Security taxation → IRMAA → ACA cliff → NIIT → senior-deduction p
 of Roth-conversion and withdrawal planning. It targets **planning-grade**, not filing-grade, accuracy.
 Current-year figures and citations live in [domain-rules-reference.md](../domain/domain-rules-reference.md);
 all dollar values come from versioned parameter packs, never hardcoded.
-The dated [tax-strategy coverage and claim-control inventory](../domain/tax-strategy-coverage-inventory.md)
+The source-verified [tax-strategy coverage and claim-control inventory](../domain/tax-strategy-coverage-inventory.md)
 states which modeled results can support cockpit-v1 comparisons or actions and which require narrower wording
 or prerequisite engine work.
 
