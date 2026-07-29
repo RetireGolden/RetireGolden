@@ -1588,6 +1588,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         ) {
           acaInitialSupportCodes.push('dependent-filing-status-unknown')
         }
+        if (
+          acaContract.taxFamilyMembers.some(
+            (member) =>
+              member.relationship === 'dependent' &&
+              personById.has(member.personId),
+          )
+        ) {
+          acaInitialSupportCodes.push('dependent-modeled-person-overlap')
+        }
         if (acaContract.taxExemptInterest.state === 'unknown') {
           acaInitialSupportCodes.push('tax-exempt-interest-unknown')
         }
@@ -2236,6 +2245,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       acaActive && acaContract?.taxExemptInterest.state === 'known'
         ? Math.max(0, acaContract.taxExemptInterest.amount ?? 0)
         : 0
+    const acaForeignExclusionAddback =
+      acaActive && acaContract?.foreignExclusionAddback.state === 'known'
+        ? Math.max(0, acaContract.foreignExclusionAddback.amount ?? 0)
+        : 0
 
     // Taxable safety-net floor, conversion side (step 7): trim a fill-to-target
     // conversion so its estimated tax bill stays payable from liquid dollars
@@ -2275,6 +2288,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           realizedCapitalGainsBeforeCarryforward: oneTimeGains,
           taxableInterestIncome: incomes.taxableInterest + ladderTaxableInterest,
           taxExemptInterest: acaTaxExemptInterest,
+          foreignExclusionAddback: acaForeignExclusionAddback,
           usGovernmentInterest: ladderTaxableInterest,
           ordinaryDividends: incomes.ordinaryDividends,
           qualifiedDividends: incomes.qualifiedDividends,
@@ -2328,6 +2342,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             acaContract.taxExemptInterest.state === 'known'
               ? (acaContract.taxExemptInterest.amount ?? 0)
               : 0,
+          foreignExclusionAddback:
+            acaContract.foreignExclusionAddback.state === 'known'
+              ? (acaContract.foreignExclusionAddback.amount ?? 0)
+              : 0,
           }
         : {
             actionable: false,
@@ -2335,6 +2353,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             fplRegion: 'contiguous' as const,
             fixedMagiAddbacks: 0,
             taxExemptInterest: 0,
+            foreignExclusionAddback: 0,
           }
       : undefined
     if (rc.mode !== 'none' && anyAlive) {
@@ -2670,6 +2689,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             oneTimeGains + rebalanceRealizedGains + withdrawalPlan.realizedGains,
           taxableInterestIncome: incomes.taxableInterest + ladderTaxableInterest,
           taxExemptInterest: acaTaxExemptInterest,
+          foreignExclusionAddback: acaForeignExclusionAddback,
           usGovernmentInterest: ladderTaxableInterest,
           ordinaryDividends: incomes.ordinaryDividends,
           qualifiedDividends: incomes.qualifiedDividends,
@@ -2689,10 +2709,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         acaSupportCodes = [...acaInitialSupportCodes]
         candidateHealthcare = healthcareExcludingAcaEnrollment + acaGrossEnrollmentPremium
         if (acaActive && acaContract) {
+          const federalProbe = computeFederalTax(taxInput)
           acaMagiProbe = buildAcaHouseholdMagi({
-            federalAgi: computeFederalTax(taxInput).agi,
+            federalAgi: federalProbe.agiBeforeFloor,
             grossSocialSecurity: incomes.socialSecurity,
-            taxableSocialSecurity: computeFederalTax(taxInput).taxableSocialSecurity,
+            taxableSocialSecurity: federalProbe.taxableSocialSecurity,
             taxExemptInterest: acaContract.taxExemptInterest,
             foreignExclusionAddback: acaContract.foreignExclusionAddback,
             dependents: acaContract.taxFamilyMembers
@@ -3071,6 +3092,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       ordinaryRealized + gainsRealized + incomes.qualifiedDividends,
       incomes.socialSecurity,
       acaTaxExemptInterest,
+      acaForeignExclusionAddback,
     )
     magiHistory.set(
       year,
@@ -3095,6 +3117,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       realizedCapitalGainsBeforeCarryforward,
       taxableInterestIncome: incomes.taxableInterest + ladderTaxableInterest,
       taxExemptInterest: acaTaxExemptInterest,
+      foreignExclusionAddback: acaForeignExclusionAddback,
       usGovernmentInterest: ladderTaxableInterest,
       ordinaryDividends: incomes.ordinaryDividends,
       qualifiedDividends: incomes.qualifiedDividends,
@@ -3183,10 +3206,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         supportCodes: actionable ? ['actionable'] : uniqueSupportCodes,
         householdMagi: actionable ? evaluation.acaMagiProbe?.magi ?? null : null,
         magiComponents: evaluation.acaMagiProbe?.components ?? {
-          federalAgi: federalDetail.agi,
+          federalAgi: federalDetail.agiBeforeFloor,
           nontaxableSocialSecurity: Math.max(0, incomes.socialSecurity - federalDetail.taxableSocialSecurity),
           taxExemptInterest: acaTaxExemptInterest,
-          foreignExclusionAddback: 0,
+          foreignExclusionAddback: acaForeignExclusionAddback,
           requiredFilerDependentMagi: 0,
         },
         fplRegion: acaContract?.fplRegion ?? null,

@@ -22,6 +22,7 @@ function input(partial: Partial<ConversionSizingInput> = {}): ConversionSizingIn
       fplRegion: 'contiguous',
       fixedMagiAddbacks: 0,
       taxExemptInterest: 0,
+      foreignExclusionAddback: 0,
     },
     inflationScale: 1,
     ...partial,
@@ -57,6 +58,33 @@ describe('sizeRothConversion', () => {
     expect(detail.taxableIncome).toBeCloseTo(105_700, 0) // top of 22%
   })
 
+  it('includes a foreign exclusion in Social Security phase-in while filling a bracket', () => {
+    const without = sizeRothConversion(
+      fill('topOfBracket', 12),
+      input({ ssBenefits: 100_000, ordinaryIncomeBase: 0 }),
+    )
+    const withForeignExclusion = sizeRothConversion(
+      fill('topOfBracket', 12),
+      input({
+        ssBenefits: 100_000,
+        ordinaryIncomeBase: 0,
+        aca: {
+          actionable: true,
+          taxFamilySize: 1,
+          fplRegion: 'contiguous',
+          fixedMagiAddbacks: 10_000,
+          taxExemptInterest: 0,
+          foreignExclusionAddback: 10_000,
+        },
+      }),
+    )
+    expect(without.ok).toBe(true)
+    expect(withForeignExclusion.ok).toBe(true)
+    if (without.ok && withForeignExclusion.ok) {
+      expect(withForeignExclusion.amount).toBeLessThan(without.amount)
+    }
+  })
+
   it('caps MAGI under an IRMAA tier threshold', () => {
     const r = sizeRothConversion(fill('irmaaTier', 1), input({ ordinaryIncomeBase: 50_000 }))
     expect(r.ok).toBe(true)
@@ -71,6 +99,25 @@ describe('sizeRothConversion', () => {
     expect(r.amount).toBeCloseTo(15_650 * 4, 1)
   })
 
+  it('nets signed AGI against ACA addbacks before sizing to the cliff', () => {
+    const r = sizeRothConversion(
+      fill('acaCliff', null),
+      input({
+        capitalGains: -3_000,
+        aca: {
+          actionable: true,
+          taxFamilySize: 1,
+          fplRegion: 'contiguous',
+          fixedMagiAddbacks: 20_000,
+          taxExemptInterest: 0,
+          foreignExclusionAddback: 20_000,
+        },
+      }),
+    )
+    expect(r.ok).toBe(true)
+    if (r.ok) expect(r.amount).toBeCloseTo(15_650 * 4 - 17_000, 1)
+  })
+
   it('uses ACA addbacks and refuses non-actionable cliff sizing', () => {
     const withAddbacks = sizeRothConversion(
       fill('acaCliff', null),
@@ -81,6 +128,7 @@ describe('sizeRothConversion', () => {
           fplRegion: 'contiguous',
           fixedMagiAddbacks: 7_000,
           taxExemptInterest: 3_000,
+          foreignExclusionAddback: 0,
         },
       }),
     )
@@ -89,7 +137,16 @@ describe('sizeRothConversion', () => {
     expect(
       sizeRothConversion(
         fill('acaCliff', null),
-        input({ aca: { actionable: false, taxFamilySize: 1, fplRegion: 'contiguous', fixedMagiAddbacks: 0, taxExemptInterest: 0 } }),
+        input({
+          aca: {
+            actionable: false,
+            taxFamilySize: 1,
+            fplRegion: 'contiguous',
+            fixedMagiAddbacks: 0,
+            taxExemptInterest: 0,
+            foreignExclusionAddback: 0,
+          },
+        }),
       ),
     ).toEqual({ ok: false, reason: 'aca_nonactionable' })
     expect(sizeRothConversion(fill('acaCliff', null), input({ aca: undefined }))).toEqual({

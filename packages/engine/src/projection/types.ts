@@ -62,6 +62,11 @@ export interface TaxYearInput {
    */
   taxExemptInterest?: number
   /**
+   * Foreign earned income excluded from AGI. It is not ordinary taxable
+   * income, but IRC §86 includes it in Social Security provisional income.
+   */
+  foreignExclusionAddback?: number
+  /**
    * Interest on U.S. government obligations (TIPS ladder coupons + inflation
    * accretion), already included in ordinaryIncome AND taxableInterestIncome.
    * Federal tax applies in full (incl. NIIT); every state exempts it, so the
@@ -295,6 +300,7 @@ export type AcaSupportCode =
   | 'benchmark-only-coverage-unsupported'
   | 'example-contract-input-mismatch'
   | 'dependent-filing-status-unknown'
+  | 'dependent-modeled-person-overlap'
   | 'tax-exempt-interest-unknown'
   | 'foreign-exclusion-addback-unknown'
   | 'coverage-eligibility-unsupported'

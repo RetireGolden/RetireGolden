@@ -1739,14 +1739,40 @@ describe('healthcare and penalties', () => {
     )
   })
 
-  it('uses known tax-exempt interest when floor-trimming a conversion tax torpedo', () => {
-    const make = (taxExemptInterest: number): Plan => {
+  it('preserves signed federal AGI until ACA household addbacks are assembled', () => {
+    const plan = basePlan()
+    currentYearAca(plan)
+    plan.household.capitalLossCarryforward = 10_000
+    plan.expenses.healthcare.acaYears![0]!.foreignExclusionAddback = {
+      state: 'known',
+      amount: 20_000,
+    }
+    plan.accounts = [cash(100_000)]
+    const year = simulatePlan(validate(plan), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: createFederalTaxCalculator(),
+    }).years[0]!
+
+    expect(year.tax).toBe(0)
+    expect(year.aca?.readiness).toBe('actionable')
+    expect(year.aca?.magiComponents.federalAgi).toBe(-3_000)
+    expect(year.aca?.magiComponents.foreignExclusionAddback).toBe(20_000)
+    expect(year.aca?.householdMagi).toBe(17_000)
+  })
+
+  it('uses known ACA non-taxable addbacks when floor-trimming a conversion tax torpedo', () => {
+    const make = (taxExemptInterest: number, foreignExclusionAddback = 0): Plan => {
       const plan = basePlan()
       plan.household.people[0]!.dob = '1964-01-01'
       currentYearAca(plan)
       plan.expenses.healthcare.acaYears![0]!.taxExemptInterest = {
         state: 'known',
         amount: taxExemptInterest,
+      }
+      plan.expenses.healthcare.acaYears![0]!.foreignExclusionAddback = {
+        state: 'known',
+        amount: foreignExclusionAddback,
       }
       plan.expenses.baseAnnual = 10_000
       plan.incomes = [
@@ -1793,14 +1819,15 @@ describe('healthcare and penalties', () => {
       }
       return plan
     }
-    const project = (amount: number) =>
-      simulatePlan(validate(make(amount)), {
+    const project = (taxExemptInterest: number, foreignExclusionAddback = 0) =>
+      simulatePlan(validate(make(taxExemptInterest, foreignExclusionAddback)), {
         startYear: 2026,
         horizonEndYear: 2026,
         taxCalculator: createFederalTaxCalculator(),
       }).years[0]!
     const withoutInterest = project(0)
     const withInterest = project(10_000)
+    const withForeignExclusion = project(0, 10_000)
     const taxableSocialSecurity = (year: typeof withInterest) =>
       year.aca!.magiComponents.federalAgi - 15_000 - year.rothConversion
 
@@ -1814,6 +1841,23 @@ describe('healthcare and penalties', () => {
     )
     expect(withInterest.tax).toBeGreaterThan(withoutInterest.tax)
     expect(withInterest.rothConversion).toBeLessThan(withoutInterest.rothConversion - 100)
+    expect(taxableSocialSecurity(withForeignExclusion)).toBeGreaterThan(
+      taxableSocialSecurity(withoutInterest) + 1_000,
+    )
+    expect(withForeignExclusion.tax).toBeCloseTo(withInterest.tax, 6)
+    expect(withForeignExclusion.rothConversion).toBeCloseTo(withInterest.rothConversion, 6)
+    expect(withForeignExclusion.magi).toBeCloseTo(
+      withForeignExclusion.aca!.magiComponents.federalAgi,
+      6,
+    )
+    expect(withForeignExclusion.aca?.magiComponents.foreignExclusionAddback).toBe(10_000)
+    expect(withForeignExclusion.aca?.householdMagi).toBeCloseTo(
+      Object.values(withForeignExclusion.aca!.magiComponents).reduce(
+        (sum, value) => sum + value,
+        0,
+      ),
+      6,
+    )
   })
 
   it('separates required-filer dependent MAGI from covered members and months', () => {
@@ -1848,6 +1892,38 @@ describe('healthcare and penalties', () => {
     expect(required.aca!.householdMagi! - notRequired.aca!.householdMagi!).toBe(10_000)
     expect(required.aca?.magiComponents.requiredFilerDependentMagi).toBe(10_000)
     expect(notRequired.aca?.magiComponents.requiredFilerDependentMagi).toBe(0)
+  })
+
+  it('fails closed when a dependent id overlaps a modeled household person', () => {
+    const plan = basePlan()
+    plan.household.people.push({
+      id: 'p2',
+      name: 'Robin',
+      dob: '1968-01-01',
+      sex: 'average',
+      retirementAge: 67,
+      longevity: { planningAge: 90, source: 'manual' },
+    })
+    currentYearAca(plan, { coveredPersonIds: ['p1'] })
+    const dependent = plan.expenses.healthcare.acaYears![0]!.taxFamilyMembers[1]!
+    dependent.relationship = 'dependent'
+    dependent.requiredToFile = 'required'
+    dependent.magi = 30_000
+    plan.incomes = [
+      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 30_000, taxTreatment: 'ordinary' },
+    ]
+    plan.accounts = [cash(100_000)]
+    const year = simulatePlan(validate(plan), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: createFederalTaxCalculator(),
+    }).years[0]!
+
+    expect(year.aca?.readiness).toBe('nonActionable')
+    expect(year.aca?.supportCodes).toContain('dependent-modeled-person-overlap')
+    expect(year.aca?.householdMagi).toBeNull()
+    expect(year.aca?.modeledAllowablePtc).toBeNull()
+    expect(year.expenses.healthcare).toBe(year.aca?.grossEnrollmentPremium)
   })
 
   it('funds gross premium and emits typed evidence when material ACA facts are unknown', () => {

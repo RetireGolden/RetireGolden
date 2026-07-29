@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, parsePlan, type Plan } from '../model/plan.js'
+import { setAcaYearContract } from '../testing/planFixtures.js'
 import { isScenarioPatchDocument, parseScenarioPatch, type ScenarioPatchMetadata } from './contract.js'
 import {
   applyLegacyScenarioPatch,
@@ -98,6 +99,32 @@ describe('canonical scenario patch documents', () => {
     if (reverted.ok) {
       expect(reverted.baseSnapshotMatches).toBe(true)
       expect(canonicalScenarioJson(reverted.plan)).toBe(canonicalScenarioJson(base))
+    }
+  })
+
+  it('invalidates stale ACA evidence when a canonical operation replaces the household root', () => {
+    const base = plan()
+    setAcaYearContract(base)
+    const edited = clonePlan(base)
+    edited.household.state = 'FL'
+    const generated = build(base, edited)
+    const rootPatch = {
+      ...generated,
+      operations: [
+        {
+          op: 'set' as const,
+          path: '/household',
+          before: { present: true as const, value: base.household },
+          value: edited.household,
+        },
+      ],
+    }
+
+    const applied = applyScenarioPatch(base, rootPatch)
+    expect(applied.ok).toBe(true)
+    if (applied.ok) {
+      expect(applied.plan.household.state).toBe('FL')
+      expect(applied.plan.expenses.healthcare.acaYears).toBeUndefined()
     }
   })
 

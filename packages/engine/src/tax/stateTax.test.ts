@@ -112,6 +112,25 @@ describe('computeStateTax — code paths', () => {
     expect(withSs).toBeGreaterThan(withoutSs)
   })
 
+  it('threads foreign-exclusion provisional income into a state federal-SS base', () => {
+    const mn = pack('MN')
+    const without = computeStateTaxDetail(
+      mn,
+      input({ ordinaryIncome: 20_000, ssBenefits: 20_000, agesAlive: [68] }),
+    )
+    const withForeignExclusion = computeStateTaxDetail(
+      mn,
+      input({
+        ordinaryIncome: 20_000,
+        ssBenefits: 20_000,
+        foreignExclusionAddback: 10_000,
+        agesAlive: [68],
+      }),
+    )
+    expect(withForeignExclusion.taxableIncome).toBeGreaterThan(without.taxableIncome)
+    expect(withForeignExclusion.totalTax).toBeGreaterThan(without.totalTax)
+  })
+
   it('taxes capital gains as ordinary income in CA, MN, and NJ spot fixtures', () => {
     for (const code of ['CA', 'MN', 'NJ']) {
       const params = pack(code)

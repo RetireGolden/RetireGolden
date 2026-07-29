@@ -175,6 +175,30 @@ describe('ACA current-year contract math', () => {
     expect(result.magi).toBe(51_000)
   })
 
+  it('preserves signed federal AGI until applying the final household-income floor', () => {
+    const positiveAfterAddbacks = buildAcaHouseholdMagi({
+      federalAgi: -10_000,
+      grossSocialSecurity: 0,
+      taxableSocialSecurity: 0,
+      taxExemptInterest: { state: 'known', amount: 3_000 },
+      foreignExclusionAddback: { state: 'known', amount: 8_000 },
+      dependents: [{ personId: 'dependent', requiredToFile: 'required', magi: 4_000 }],
+    })
+    expect(positiveAfterAddbacks.components.federalAgi).toBe(-10_000)
+    expect(positiveAfterAddbacks.magi).toBe(5_000)
+
+    const flooredHousehold = buildAcaHouseholdMagi({
+      federalAgi: -20_000,
+      grossSocialSecurity: 0,
+      taxableSocialSecurity: 0,
+      taxExemptInterest: { state: 'known', amount: 3_000 },
+      foreignExclusionAddback: { state: 'known', amount: 8_000 },
+      dependents: [{ personId: 'dependent', requiredToFile: 'required', magi: 4_000 }],
+    })
+    expect(flooredHousehold.components.federalAgi).toBe(-20_000)
+    expect(flooredHousehold.magi).toBe(0)
+  })
+
   it('fails closed when a required ACA-MAGI fact is unknown', () => {
     const result = buildAcaHouseholdMagi({
       federalAgi: 30_000,

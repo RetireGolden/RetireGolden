@@ -3,8 +3,9 @@
  *
  * Computation order per year:
  *   1. Taxable Social Security via provisional income (unindexed thresholds)
- *   2. AGI = ordinary + capital gains + taxable SS; MAGI ≈ AGI (no foreign
- *      exclusions or tax-exempt interest modeled)
+ *   2. AGI = ordinary + capital gains + taxable SS. Tax-exempt interest and
+ *      excluded foreign earned income affect §86 provisional income without
+ *      becoming ordinary income or entering AGI directly.
  *   3. Deductions: standard + age-65 additions + OBBBA senior deduction
  *      (2025–2028, 6%-of-MAGI phase-out); itemized not modeled in v1
  *   4. Ordinary brackets on non-preferential taxable income
@@ -30,6 +31,8 @@ export interface FederalTaxDetail {
   /** True when this year's figures use a stand-in parameter pack. */
   usesStandInPack: boolean
   taxableSocialSecurity: number
+  /** Signed AGI before the return-level zero floor; used by ACA household MAGI assembly. */
+  agiBeforeFloor: number
   agi: number
   magi: number
   deduction: number
@@ -88,11 +91,19 @@ export function zeroRateLtcgHeadroom(
   ssBenefits: number,
   deduction: number,
   taxExemptInterest = 0,
+  foreignExclusionAddback = 0,
 ): number {
   const threshold = pack.capitalGains.rate15StartsAbove[filingStatus]
   const taxableIncomeAt = (extraGains: number): number => {
     const agiExcludingSs = ordinaryExcludingSs + currentGains + currentQualifiedDividends + extraGains
-    const taxableSs = taxableSocialSecurity(pack, filingStatus, agiExcludingSs, ssBenefits, taxExemptInterest)
+    const taxableSs = taxableSocialSecurity(
+      pack,
+      filingStatus,
+      agiExcludingSs,
+      ssBenefits,
+      taxExemptInterest,
+      foreignExclusionAddback,
+    )
     return Math.max(0, agiExcludingSs + taxableSs - deduction)
   }
   if (taxableIncomeAt(0) >= threshold) return 0
@@ -122,7 +133,8 @@ function bracketTax(brackets: TaxBracket[], taxable: number): number {
 
 /**
  * Taxable share of Social Security benefits (IRC §86).
- * Provisional income = AGI excluding SS + tax-exempt interest + 50% of benefits.
+ * Provisional income = AGI excluding SS + tax-exempt interest + excluded
+ * foreign earned income + 50% of benefits.
  */
 export function taxableSocialSecurity(
   pack: ParameterPack,
@@ -130,11 +142,16 @@ export function taxableSocialSecurity(
   agiExcludingSs: number,
   ssBenefits: number,
   taxExemptInterest = 0,
+  foreignExclusionAddback = 0,
 ): number {
   if (ssBenefits <= 0) return 0
   const t50 = pack.ssBenefitTaxation.tier50Start[filingStatus]
   const t85 = pack.ssBenefitTaxation.tier85Start[filingStatus]
-  const provisional = agiExcludingSs + Math.max(0, taxExemptInterest) + 0.5 * ssBenefits
+  const provisional =
+    agiExcludingSs +
+    Math.max(0, taxExemptInterest) +
+    Math.max(0, foreignExclusionAddback) +
+    0.5 * ssBenefits
 
   if (provisional <= t50) return 0
   if (provisional <= t85) return Math.min(0.5 * ssBenefits, 0.5 * (provisional - t50))
@@ -276,8 +293,16 @@ export function computeFederalTax(input: TaxYearInput): FederalTaxDetail {
   const { pack, isStandIn } = packForYear(year)
 
   const agiExcludingSs = ordinary + netCapital + qualifiedDividends // a net capital loss can drive this below zero
-  const taxableSs = taxableSocialSecurity(pack, taxStatus, agiExcludingSs, ss, input.taxExemptInterest)
-  const agi = Math.max(0, agiExcludingSs + taxableSs) // floor for reporting / MAGI / IRMAA / ACA
+  const taxableSs = taxableSocialSecurity(
+    pack,
+    taxStatus,
+    agiExcludingSs,
+    ss,
+    input.taxExemptInterest,
+    input.foreignExclusionAddback,
+  )
+  const agiBeforeFloor = agiExcludingSs + taxableSs
+  const agi = Math.max(0, agiBeforeFloor) // return-level floor for tax / MAGI / IRMAA
   const magi = agi
 
   const senior = seniorDeductionAmount(pack, year, taxStatus, input.peopleAged65Plus, magi)
@@ -314,6 +339,7 @@ export function computeFederalTax(input: TaxYearInput): FederalTaxDetail {
     year,
     usesStandInPack: isStandIn,
     taxableSocialSecurity: taxableSs,
+    agiBeforeFloor,
     agi,
     magi,
     deduction,
@@ -340,6 +366,7 @@ export function computeFederalTax(input: TaxYearInput): FederalTaxDetail {
       ss,
       deduction,
       input.taxExemptInterest,
+      input.foreignExclusionAddback,
     ),
   }
 }

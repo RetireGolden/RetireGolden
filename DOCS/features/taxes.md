@@ -51,7 +51,9 @@ Computed each year inside the projection loop:
   cash need, withdrawals, tax, and ACA household MAGI before reporting a result
   ([aca.ts](../../packages/engine/src/tax/aca.ts)). ACA MAGI is final federal AGI plus nontaxable Social
   Security, characterized tax-exempt interest, explicit foreign-exclusion addbacks, and required-filer
-  dependent MAGI. Addbacks affect ACA MAGI without becoming ordinary taxable income.
+  dependent MAGI. Addbacks affect ACA MAGI without becoming ordinary taxable income; the foreign-exclusion
+  amount also participates in Social Security provisional income under §86. Signed federal AGI is preserved
+  through ACA component assembly and only the final household total is floored at zero.
 - An explicit per-year contract separates the tax family and required-filer dependents from covered members
   and months, carries the 48/DC versus Alaska/Hawaii poverty table, and supplies separate enrollment and
   SLCSP benchmark premiums. The result labels gross enrollment premium, applicable SLCSP, modeled allowable

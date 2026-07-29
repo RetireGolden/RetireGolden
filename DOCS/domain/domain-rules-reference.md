@@ -42,7 +42,7 @@ LTCG + qualified dividends stack **on top of** ordinary taxable income:
 
 ## 3. Social Security benefit taxation
 
-Provisional income = AGI (excl. SS) + tax-exempt interest + 50% of SS benefits.
+Provisional income = AGI (excl. SS) + tax-exempt interest + excluded foreign earned income + 50% of SS benefits.
 
 | Filing | 50% tier begins | 85% tier begins |
 |--------|-----------------|-----------------|
@@ -124,7 +124,7 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
 ## 8. ACA premium tax credit (pre-65 retirees)
 
 - Enhanced (ARPA/IRA) credits **expired Dec 31, 2025**. As of 2026: credits available only up to **400% FPL — a hard cliff** ($1 over forfeits the entire credit), with pre-ARPA applicable-percentage scale below it.
-- The exact ledger uses **current-year ACA household MAGI**: final federal AGI + nontaxable Social Security + characterized tax-exempt interest + an explicit foreign earned-income/housing exclusion addback + MAGI of dependents the contract marks required to file. Tax-family size is separate from Marketplace-covered members and months.
+- The exact ledger uses **current-year ACA household MAGI**: signed federal AGI before its return-level zero floor + nontaxable Social Security + characterized tax-exempt interest + an explicit foreign earned-income/housing exclusion addback + MAGI of dependents the contract marks required to file, with the household total then floored at zero. Tax-family size is separate from Marketplace-covered members and months. The foreign exclusion remains non-taxable but participates in Social Security provisional income.
 - The annual result distinguishes gross enrollment premium, applicable second-lowest-cost Silver plan (SLCSP) benchmark, modeled allowable PTC, and economic net premium. The SLCSP drives the preliminary credit and enrollment premium caps it.
 - Premium, tax, withdrawals, and ACA MAGI are solved together on the current-year ledger. Ordinary Marketplace premiums are excluded from HSA-qualified medical-expense capacity. A same-year conversion, gain, or induced taxable withdrawal can reduce or eliminate the modeled credit. The solver is deterministic and hard-bounded; a conflicting subsidized/gross root, unsupported input, or unstable fixed point funds gross premium and emits non-actionable evidence.
 - The 2026 applicable-percentage schedule has a real step at exactly 133% FPL. The 2025 HHS poverty tables are separate for the 48 contiguous states/DC, Alaska, and Hawaii. Exactly 400% remains eligible; above 400% is over the cliff. Below 100% is non-actionable because the exception pathways are not modeled.

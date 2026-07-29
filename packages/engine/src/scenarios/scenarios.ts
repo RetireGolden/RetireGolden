@@ -50,21 +50,27 @@ export function applyScenarioPatch(plan: Plan, patch: ScenarioPatchInput): Parse
           !changesEvidence &&
           paths.some(
             (path) =>
+              path === '/household' ||
               path.startsWith('/household/') ||
               path.startsWith('/expenses/healthcare/pre65MonthlyPremiumPerPerson'),
           )
         )
       })()
     : isPlainObject(patch) &&
-      (
-        Object.hasOwn(patch, 'household') ||
-        (
-          isPlainObject(patch['expenses']) &&
-          isPlainObject(patch['expenses']['healthcare']) &&
-          Object.hasOwn(patch['expenses']['healthcare'], 'pre65MonthlyPremiumPerPerson') &&
-          !Object.hasOwn(patch['expenses']['healthcare'], 'acaYears')
+      (() => {
+        const healthcare =
+          isPlainObject(patch['expenses']) && isPlainObject(patch['expenses']['healthcare'])
+            ? patch['expenses']['healthcare']
+            : null
+        const changesEvidence = healthcare !== null && Object.hasOwn(healthcare, 'acaYears')
+        return (
+          !changesEvidence &&
+          (
+            Object.hasOwn(patch, 'household') ||
+            (healthcare !== null && Object.hasOwn(healthcare, 'pre65MonthlyPremiumPerPerson'))
+          )
         )
-      )
+      })()
   const applied = applyScenarioPatchInput(plan, patch)
   if (
     !applied.ok ||

@@ -47,9 +47,11 @@ export interface ConversionSizingInput {
     actionable: boolean
     taxFamilySize: number
     fplRegion: AcaFplRegion
-    /** Foreign exclusion + required-filer dependent MAGI. */
+    /** Foreign exclusion + required-filer dependent MAGI, added once to the ACA metric. */
     fixedMagiAddbacks: number
     taxExemptInterest: number
+    /** Foreign exclusion also participates in §86 provisional income without becoming ordinary income. */
+    foreignExclusionAddback: number
   }
   /** Scale applied to IRMAA thresholds / FPL for years beyond the pack. */
   inflationScale: number
@@ -65,7 +67,7 @@ function metricFor(target: FillTarget['target'], detail: FederalTaxDetail, input
   if (target === 'topOfBracket') return detail.taxableIncome
   if (target === 'acaCliff') {
     return (
-      detail.agi +
+      detail.agiBeforeFloor +
       Math.max(0, input.ssBenefits - detail.taxableSocialSecurity) +
       (input.aca?.taxExemptInterest ?? 0) +
       (input.aca?.fixedMagiAddbacks ?? 0)
@@ -121,6 +123,7 @@ export function sizeRothConversion(strategy: FillTarget, input: ConversionSizing
         capitalGains: input.capitalGains,
         qualifiedDividends: input.qualifiedDividends ?? 0,
         taxExemptInterest: input.aca?.taxExemptInterest,
+        foreignExclusionAddback: input.aca?.foreignExclusionAddback,
         ssBenefits: input.ssBenefits,
         peopleAged65Plus: input.peopleAged65Plus,
         itemizedDeductions: input.itemizedDeductions,

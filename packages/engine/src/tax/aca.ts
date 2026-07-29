@@ -85,7 +85,10 @@ export function buildAcaHouseholdMagi(input: AcaHouseholdMagiInput): AcaHousehol
     }
   })
   const components = {
-    federalAgi: Math.max(0, input.federalAgi),
+    // Preserve signed return AGI until all household addbacks are assembled.
+    // A capital-loss deduction can make AGI negative and must offset positive
+    // ACA addbacks before the final household-income floor is applied.
+    federalAgi: input.federalAgi,
     nontaxableSocialSecurity: Math.max(0, input.grossSocialSecurity - input.taxableSocialSecurity),
     taxExemptInterest:
       input.taxExemptInterest.state === 'known' ? Math.max(0, input.taxExemptInterest.amount ?? 0) : 0,
@@ -97,11 +100,14 @@ export function buildAcaHouseholdMagi(input: AcaHouseholdMagiInput): AcaHousehol
   return {
     actionable,
     magi: actionable
-      ? components.federalAgi +
-        components.nontaxableSocialSecurity +
-        components.taxExemptInterest +
-        components.foreignExclusionAddback +
-        components.requiredFilerDependentMagi
+      ? Math.max(
+          0,
+          components.federalAgi +
+            components.nontaxableSocialSecurity +
+            components.taxExemptInterest +
+            components.foreignExclusionAddback +
+            components.requiredFilerDependentMagi,
+        )
       : null,
     blockers: [...new Set(blockers)],
     components,
