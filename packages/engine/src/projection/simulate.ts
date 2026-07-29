@@ -1528,7 +1528,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const acaInitialSupportCodes: AcaSupportCode[] = []
     if (acaActive) {
       if (isStandIn) acaInitialSupportCodes.push('tax-year-parameters-unsupported')
-      if (spendingPolicy !== undefined) acaInitialSupportCodes.push('guardrail-interaction-unsupported')
+      if (spendingPolicy !== undefined && spendingPolicy.mode !== 'fixedTarget') {
+        acaInitialSupportCodes.push('guardrail-interaction-unsupported')
+      }
       if (acaContractsForYear.length === 0) acaInitialSupportCodes.push('missing-year-contract')
       if (acaContractsForYear.length > 1) acaInitialSupportCodes.push('duplicate-year-contract')
       if (acaContract) {
@@ -2230,6 +2232,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         )
       }
     }
+    const acaTaxExemptInterest =
+      acaActive && acaContract?.taxExemptInterest.state === 'known'
+        ? Math.max(0, acaContract.taxExemptInterest.amount ?? 0)
+        : 0
 
     // Taxable safety-net floor, conversion side (step 7): trim a fill-to-target
     // conversion so its estimated tax bill stays payable from liquid dollars
@@ -2268,6 +2274,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           capitalGains: netted.netCapitalGain,
           realizedCapitalGainsBeforeCarryforward: oneTimeGains,
           taxableInterestIncome: incomes.taxableInterest + ladderTaxableInterest,
+          taxExemptInterest: acaTaxExemptInterest,
           usGovernmentInterest: ladderTaxableInterest,
           ordinaryDividends: incomes.ordinaryDividends,
           qualifiedDividends: incomes.qualifiedDividends,
@@ -2414,35 +2421,33 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // covering allocated and single-return accounts alike — not the raw
     // additive shock, which can be negative in a year the portfolio still
     // gained), fund spending from the line's tax-free loan proceeds instead of
-    // selling depressed assets. The draw covers this year's pre-tax cash need
-    // up to available credit; the year's taxes still ride the normal
+    // selling depressed assets. Eligibility and capacity are established here;
+    // the ACA/tax fixed point below sizes and commits the draw against the
+    // post-credit pre-tax need. The year's taxes still ride the normal
     // withdrawal flow. Deterministic runs (no market series) never have a
     // losing year, so coordinated draws are Monte Carlo / scenario behavior;
     // the last-resort backstop below works everywhere.
     let hecmDraw = 0
-    {
-      const baseInflows =
-        incomes.total - taxableYieldReinvested + rmdTotal - qcd + seppTotal + inheritedTotal + propertySaleProceedsTotal
-      let coordinatedNeed = Math.max(0, expenses.total + contributions - baseInflows)
-      if (anyAlive && year > startYear && priorYearPortfolioReturnPct < 0 && coordinatedNeed > 0) {
-        for (const account of plan.accounts) {
-          if (account.type !== 'property' || account.hecm?.drawPolicy !== 'coordinated') continue
-          const line = hecmStates.get(account.id)
-          if (!line) continue
-          const draw = Math.min(coordinatedNeed, Math.max(0, line.principalLimit - line.loanBalance))
-          if (draw <= 0) continue
-          line.loanBalance += draw
-          hecmDraw += draw
-          coordinatedNeed -= draw
-        }
+    const coordinatedHecmAccounts: Extract<Account, { type: 'property' }>[] = []
+    let coordinatedHecmCapacity = 0
+    if (anyAlive && year > startYear && priorYearPortfolioReturnPct < 0) {
+      for (const account of plan.accounts) {
+        if (account.type !== 'property' || account.hecm?.drawPolicy !== 'coordinated') continue
+        const line = hecmStates.get(account.id)
+        if (!line) continue
+        const available = Math.max(0, line.principalLimit - line.loanBalance)
+        if (available <= 0) continue
+        coordinatedHecmAccounts.push(account)
+        coordinatedHecmCapacity += available
       }
     }
 
     // Exact-taxed property sale proceeds enter the cash flow here (their gains
     // are already in the tax base above), so a sale can fund its own tax bill.
     // HECM draws are loan proceeds — cash in, never income.
-    const cashInflows =
-      incomes.total - taxableYieldReinvested + rmdTotal - qcd + seppTotal + inheritedTotal + propertySaleProceedsTotal + hecmDraw
+    const baseCashInflows =
+      incomes.total - taxableYieldReinvested + rmdTotal - qcd + seppTotal + inheritedTotal + propertySaleProceedsTotal
+    let cashInflows = baseCashInflows
 
     // Resolve the year's withdrawal strategy. Bracket targeting reuses the
     // conversion solver to size remaining ordinary-income headroom.
@@ -2626,11 +2631,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // iteration); netting reduces ordinary + gains before both federal and state
     // tax so the AGI cascade (taxable SS, IRMAA, ACA, state) falls out for free.
     const lossOffsetLimit = pack.federalTax.capitalLossOrdinaryOffsetLimit
-    const spendingNeedBeforeTax = Math.max(0, expenses.total + contributions - cashInflows)
-    const acaTaxExemptInterest =
-      acaActive && acaContract?.taxExemptInterest.state === 'known'
-        ? Math.max(0, acaContract.taxExemptInterest.amount ?? 0)
-        : 0
+    let spendingNeedBeforeTax = Math.max(0, expenses.total + contributions - cashInflows)
     let acaEvaluationCount = 0
     const evaluateWithdrawalNeed = (need: number, forceGrossAca = false) => {
       acaEvaluationCount++
@@ -2757,6 +2758,46 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         healthcare: candidateHealthcare,
         hsaQualifiedCap: candidateHsaCap,
       }
+    }
+
+    // A coordinated HECM draw changes withdrawals, withdrawals change ACA
+    // MAGI, and the reconciled premium changes the pre-tax cash need the draw
+    // is intended to cover. Solve that small outer fixed point with the same
+    // evaluator used by the final ledger. The line itself remains untouched
+    // during probing, so failed or oscillating probes cannot create debt.
+    if (coordinatedHecmCapacity > EPSILON && spendingNeedBeforeTax > EPSILON) {
+      let candidateDraw = 0
+      let coordinatedDrawConverged = false
+      for (let drawPass = 0; drawPass < 16; drawPass++) {
+        cashInflows = baseCashInflows + candidateDraw
+        let probeNeed = Math.max(0, expenses.total + contributions - cashInflows)
+        let probe = evaluateWithdrawalNeed(probeNeed)
+        let probeConverged = Math.abs(probe.requiredNeed - probeNeed) <= EPSILON
+        for (let i = 1; i < MAX_TAX_ITERATIONS && !probeConverged; i++) {
+          probeNeed = probe.requiredNeed
+          probe = evaluateWithdrawalNeed(probeNeed)
+          probeConverged = Math.abs(probe.requiredNeed - probeNeed) <= EPSILON
+        }
+        if (!probeConverged) break
+
+        const postCreditPreTaxNeed = Math.max(
+          0,
+          expenses.total + (probe.healthcare - healthcare) + contributions - baseCashInflows,
+        )
+        const nextDraw = Math.min(coordinatedHecmCapacity, postCreditPreTaxNeed)
+        if (Math.abs(nextDraw - candidateDraw) <= EPSILON) {
+          hecmDraw = nextDraw
+          coordinatedDrawConverged = true
+          break
+        }
+        candidateDraw = nextDraw
+      }
+      if (!coordinatedDrawConverged) hecmDraw = 0
+      cashInflows = baseCashInflows + hecmDraw
+      spendingNeedBeforeTax = Math.max(0, expenses.total + contributions - cashInflows)
+      // Probes are implementation detail; convergence diagnostics describe the
+      // accepted final funding solve only.
+      acaEvaluationCount = 0
     }
 
     // The quick fixed-point pass covers the usual case.  Crucially, its
@@ -2941,6 +2982,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       expenses.total += healthcareDelta
     }
     const { withdrawalPlan, tax, penalties } = evaluation
+    // Commit only the coordinated draw accepted by the converged ACA/tax
+    // funding solve. Capacity was measured before probing and no line balance
+    // has changed since, so allocation is deterministic across multiple lines.
+    let remainingCoordinatedDraw = hecmDraw
+    for (const account of coordinatedHecmAccounts) {
+      if (remainingCoordinatedDraw <= EPSILON) break
+      const line = hecmStates.get(account.id)
+      if (!line) continue
+      const draw = Math.min(remainingCoordinatedDraw, Math.max(0, line.principalLimit - line.loanBalance))
+      if (draw <= 0) continue
+      line.loanBalance += draw
+      remainingCoordinatedDraw -= draw
+    }
     // Any open HECM line backstops a true portfolio shortfall regardless of
     // draw policy — no borrower defaults on spending with credit available.
     // The policy only controls proactive (coordinated) draws above.

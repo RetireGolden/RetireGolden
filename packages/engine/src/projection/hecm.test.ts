@@ -8,6 +8,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../model/plan.js'
+import { setAcaYearContract } from '../testing/planFixtures.js'
 import { createFlatTaxCalculator } from './flatTax.js'
 import { simulatePlan, type SimulateOptions } from './simulate.js'
 
@@ -240,6 +241,69 @@ describe('coordinated draw policy (Pfau direction fixture)', () => {
     const lastResort = run(marketPlan('lastResort'), { market: crash })
     expect(coordinated.years.find((y) => y.year === 2027)!.hecmDraw).toBeCloseTo(40_000, 0)
     expect(lastResort.years.find((y) => y.year === 2027)!.hecmDraw).toBe(0)
+  })
+
+  it('sizes a coordinated draw to converged post-ACA-credit need without creating surplus debt', () => {
+    const plan = basePlan(63)
+    plan.household.people[0]!.dob = '1963-01-01'
+    plan.expenses.baseAnnual = 40_000
+    plan.incomes = [
+      {
+        type: 'recurring',
+        id: 'pension1',
+        label: 'Pension',
+        annualAmount: 30_000,
+        startYear: 2026,
+        endYear: 2026,
+        inflationAdjusted: false,
+        taxTreatment: 'ordinary',
+      },
+    ]
+    plan.accounts = [
+      {
+        type: 'taxable',
+        id: 'brok1',
+        name: 'Brokerage',
+        ownerPersonId: null,
+        annualReturnPct: null,
+        balance: 400_000,
+        costBasis: 400_000,
+        annualContribution: 0,
+      },
+      home(
+        {
+          openYear: 2025,
+          principalLimitPct: 40,
+          growthRatePct: 0,
+          upfrontCostPct: 0,
+          drawPolicy: 'coordinated',
+        },
+        600_000,
+      ),
+    ]
+    setAcaYearContract(plan, { year: 2026 })
+    // Keep 2025 free of a legacy premium while preserving the explicit 2026
+    // enrollment contract that participates in the funding fixed point.
+    plan.expenses.healthcare.pre65MonthlyPremiumPerPerson = 0
+
+    const result = simulatePlan(validate(plan), {
+      startYear: 2025,
+      horizonEndYear: 2026,
+      taxCalculator: noTax,
+      market: { returnShockPct: [-10, 0] },
+    })
+    const prior = result.years.find((y) => y.year === 2025)!
+    const year = result.years.find((y) => y.year === 2026)!
+    const postCreditNeed = 40_000 + year.aca!.economicNetPremium - 30_000
+    const grossPremiumNeed = 40_000 + year.aca!.grossEnrollmentPremium - 30_000
+
+    expect(year.aca?.readiness).toBe('actionable')
+    expect(year.aca?.modeledAllowablePtc).toBeGreaterThan(0)
+    expect(year.hecmDraw).toBeCloseTo(postCreditNeed, 2)
+    expect(year.hecmDraw).toBeLessThan(grossPremiumNeed - 1_000)
+    expect(year.withdrawals.total).toBeCloseTo(0, 2)
+    expect(year.surplusInvested).toBeCloseTo(0, 2)
+    expect(year.balances['brok1']).toBeCloseTo(prior.balances['brok1']!, 2)
   })
 
   it('coordinated preserves more wealth than last-resort, which beats no HECM (Pfau direction)', () => {

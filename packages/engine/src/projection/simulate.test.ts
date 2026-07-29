@@ -1363,6 +1363,29 @@ describe('healthcare and penalties', () => {
     expect(year.expenses.healthcare).toBe(12_000)
   })
 
+  it('keeps an explicit fixed-target spending policy actionable with complete ACA evidence', () => {
+    const plan = basePlan()
+    currentYearAca(plan)
+    plan.expenses.spendingPolicy = { mode: 'fixedTarget' }
+    plan.incomes = [
+      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 30_000, taxTreatment: 'ordinary' },
+    ]
+    plan.accounts = [cash(200_000)]
+    const year = simulatePlan(validate(plan), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: noTax,
+    }).years[0]!
+    expect(year.aca?.readiness).toBe('actionable')
+    expect(year.aca?.supportCodes).toEqual(['actionable'])
+    expect(year.aca?.modeledAllowablePtc).toBeGreaterThan(0)
+    expect(year.aca?.economicNetPremium).toBeCloseTo(
+      year.aca!.grossEnrollmentPremium - year.aca!.modeledAllowablePtc!,
+      6,
+    )
+    expect(year.expenses.healthcare).toBeCloseTo(year.aca!.economicNetPremium, 6)
+  })
+
   it('keeps valid pre-Medicare enrollment months actionable in the age-65 transition year', () => {
     const plan = basePlan()
     plan.household.people[0]!.dob = '1961-06-15'
@@ -1714,6 +1737,83 @@ describe('healthcare and penalties', () => {
       Object.values(components).reduce((sum, value) => sum + value, 0),
       6,
     )
+  })
+
+  it('uses known tax-exempt interest when floor-trimming a conversion tax torpedo', () => {
+    const make = (taxExemptInterest: number): Plan => {
+      const plan = basePlan()
+      plan.household.people[0]!.dob = '1964-01-01'
+      currentYearAca(plan)
+      plan.expenses.healthcare.acaYears![0]!.taxExemptInterest = {
+        state: 'known',
+        amount: taxExemptInterest,
+      }
+      plan.expenses.baseAnnual = 10_000
+      plan.incomes = [
+        {
+          type: 'recurring',
+          id: testIds(),
+          label: 'Pension',
+          annualAmount: 15_000,
+          startYear: 2026,
+          endYear: 2026,
+          inflationAdjusted: false,
+          taxTreatment: 'ordinary',
+        },
+        {
+          type: 'socialSecurity',
+          id: testIds(),
+          personId: 'p1',
+          piaMonthly: 1_500,
+          earnings: null,
+          claimAge: { years: 62, months: 0 },
+        },
+      ]
+      plan.accounts = [
+        cash(50_000),
+        traditional(1_000_000),
+        {
+          type: 'roth',
+          id: testIds(),
+          name: 'Roth',
+          ownerPersonId: 'p1',
+          annualReturnPct: null,
+          kind: 'ira',
+          balance: 0,
+          annualContribution: 0,
+        },
+      ]
+      plan.strategies.taxableSafetyNetFloor = 55_000
+      plan.strategies.rothConversion = {
+        mode: 'fillToTarget',
+        target: 'topOfBracket',
+        targetValue: 12,
+        startYear: 2026,
+        endYear: 2026,
+      }
+      return plan
+    }
+    const project = (amount: number) =>
+      simulatePlan(validate(make(amount)), {
+        startYear: 2026,
+        horizonEndYear: 2026,
+        taxCalculator: createFederalTaxCalculator(),
+      }).years[0]!
+    const withoutInterest = project(0)
+    const withInterest = project(10_000)
+    const taxableSocialSecurity = (year: typeof withInterest) =>
+      year.aca!.magiComponents.federalAgi - 15_000 - year.rothConversion
+
+    expect(withInterest.aca?.readiness).toBe('actionable')
+    expect(withInterest.magi).toBeCloseTo(
+      withInterest.aca!.magiComponents.federalAgi + 10_000,
+      6,
+    )
+    expect(taxableSocialSecurity(withInterest)).toBeGreaterThan(
+      taxableSocialSecurity(withoutInterest) + 1_000,
+    )
+    expect(withInterest.tax).toBeGreaterThan(withoutInterest.tax)
+    expect(withInterest.rothConversion).toBeLessThan(withoutInterest.rothConversion - 100)
   })
 
   it('separates required-filer dependent MAGI from covered members and months', () => {
