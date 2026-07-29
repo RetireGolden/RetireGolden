@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import { removePartner } from '../householdActions'
+import { invalidateAcaEvidence, removePartner, updatePersonLongevity } from '../householdActions'
 import { usePlan } from '../planContextCore'
 import { CheckboxField, DateField, NumberField, SelectField, TextField } from '../fields'
 import { LEARN } from '../learnLinks'
@@ -39,7 +39,12 @@ export function HouseholdSection() {
               { value: 'single', label: 'Single' },
               { value: 'marriedFilingJointly', label: 'Married filing jointly' },
             ]}
-            onCommit={(v) => update((d) => void (d.household.filingStatus = v))}
+            onCommit={(v) =>
+              update((d) => {
+                d.household.filingStatus = v
+                invalidateAcaEvidence(d)
+              })
+            }
           />
           {couple && plan.household.filingStatus === 'marriedFilingJointly' ? (
             <CheckboxField
@@ -54,7 +59,12 @@ export function HouseholdSection() {
             help="Drives state income tax. Several states are modeled with real brackets and retirement-income rules; others fall back to the flat effective-rate override under Assumptions. Add a move below to change states mid-retirement."
             value={plan.household.state}
             options={US_STATES}
-            onCommit={(v) => update((d) => void (d.household.state = v))}
+            onCommit={(v) =>
+              update((d) => {
+                d.household.state = v
+                invalidateAcaEvidence(d)
+              })
+            }
           />
         </div>
         {plan.household.people.map((person, i) => (
@@ -76,7 +86,16 @@ export function HouseholdSection() {
             </div>
             <div className="form-grid">
               <TextField label="Name" value={person.name} onCommit={(v) => update((d) => void (d.household.people[i]!.name = v || 'Person'))} />
-              <DateField label="Date of birth" value={person.dob} onCommit={(v) => update((d) => void (d.household.people[i]!.dob = v))} />
+              <DateField
+                label="Date of birth"
+                value={person.dob}
+                onCommit={(v) =>
+                  update((d) => {
+                    d.household.people[i]!.dob = v
+                    invalidateAcaEvidence(d)
+                  })
+                }
+              />
               <SelectField
                 label="Sex"
                 help="Only used as the baseline for the life-expectancy estimate (SSA period life tables differ by sex). Pick 'Average' to use a blended table."
@@ -105,7 +124,14 @@ export function HouseholdSection() {
                   value={person.longevity.planningAge}
                   min={60}
                   max={120}
-                  onCommit={(v) => update((d) => void (d.household.people[i]!.longevity = { planningAge: Math.round(v ?? 95), source: 'manual' }))}
+                  onCommit={(v) =>
+                    update((d) =>
+                      updatePersonLongevity(d, i, {
+                        planningAge: Math.round(v ?? 95),
+                        source: 'manual',
+                      }),
+                    )
+                  }
                 />
                 <button type="button" className="btn btn-secondary btn-small" onClick={() => setLongevityFor(i)}>
                   Calculate
@@ -135,7 +161,7 @@ export function HouseholdSection() {
             personIndex={longevityFor}
             onApply={(age) =>
               update((d) => {
-                d.household.people[longevityFor]!.longevity = { planningAge: age, source: 'model' }
+                updatePersonLongevity(d, longevityFor, { planningAge: age, source: 'model' })
               })
             }
             onClose={() => setLongevityFor(null)}
@@ -148,7 +174,7 @@ export function HouseholdSection() {
             partner={plan.household.people[1 - percentileFor] ?? null}
             onApply={(longevity) =>
               update((d) => {
-                d.household.people[percentileFor]!.longevity = longevity
+                updatePersonLongevity(d, percentileFor, longevity)
               })
             }
             onClose={() => setPercentileFor(null)}
@@ -170,6 +196,7 @@ export function HouseholdSection() {
                     longevity: { planningAge: 95, source: 'manual' },
                   })
                   d.household.filingStatus = 'marriedFilingJointly'
+                  invalidateAcaEvidence(d)
                 })
               }
             >
@@ -188,7 +215,16 @@ export function HouseholdSection() {
               <span className="item-row-title">
                 <span className="type-chip">Move</span>to {US_STATES.find((s) => s.value === move.state)?.label ?? move.state} in {MONTH_OPTIONS.find((m) => m.value === String(move.fromMonth))?.label ?? 'July'} {move.fromYear}
               </span>
-              <button type="button" className="btn-ghost btn-ghost-danger" onClick={() => update((d) => void d.household.stateMoves.splice(i, 1))}>
+              <button
+                type="button"
+                className="btn-ghost btn-ghost-danger"
+                onClick={() =>
+                  update((d) => {
+                    d.household.stateMoves.splice(i, 1)
+                    invalidateAcaEvidence(d)
+                  })
+                }
+              >
                 Remove
               </button>
             </div>
@@ -199,19 +235,34 @@ export function HouseholdSection() {
                 value={move.fromYear}
                 min={1900}
                 max={2200}
-                onCommit={(v) => update((d) => void (d.household.stateMoves[i]!.fromYear = Math.round(v ?? move.fromYear)))}
+                onCommit={(v) =>
+                  update((d) => {
+                    d.household.stateMoves[i]!.fromYear = Math.round(v ?? move.fromYear)
+                    invalidateAcaEvidence(d)
+                  })
+                }
               />
               <SelectField
                 label="Move month"
                 value={String(move.fromMonth)}
                 options={MONTH_OPTIONS}
-                onCommit={(v) => update((d) => void (d.household.stateMoves[i]!.fromMonth = Number(v)))}
+                onCommit={(v) =>
+                  update((d) => {
+                    d.household.stateMoves[i]!.fromMonth = Number(v)
+                    invalidateAcaEvidence(d)
+                  })
+                }
               />
               <SelectField
                 label="New state"
                 value={move.state}
                 options={US_STATES}
-                onCommit={(v) => update((d) => void (d.household.stateMoves[i]!.state = v))}
+                onCommit={(v) =>
+                  update((d) => {
+                    d.household.stateMoves[i]!.state = v
+                    invalidateAcaEvidence(d)
+                  })
+                }
               />
             </div>
           </div>
@@ -224,6 +275,7 @@ export function HouseholdSection() {
               update((d) => {
                 const lastYear = d.household.stateMoves[d.household.stateMoves.length - 1]?.fromYear
                 d.household.stateMoves.push({ fromYear: (lastYear ?? new Date().getFullYear()) + 1, fromMonth: 7, state: d.household.state })
+                invalidateAcaEvidence(d)
               })
             }
           >

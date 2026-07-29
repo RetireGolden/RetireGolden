@@ -132,6 +132,14 @@ export interface ScenarioIrmaaComparison {
   maxTier: ScalarComparison
 }
 
+export interface ScenarioAcaComparison {
+  grossEnrollmentPremium: ScalarComparison
+  modeledAllowablePtc: ScalarComparison
+  economicNetPremium: ScalarComparison
+  actionableYears: ScalarComparison
+  nonActionableYears: ScalarComparison
+}
+
 export interface ScenarioEstateComparison {
   grossNetWorth: ScalarComparison
   afterTaxEstate: ScalarComparison
@@ -190,6 +198,9 @@ export interface AnnualComparisonValues {
   rothConversion: number
   rmd: number
   qcd: number
+  acaGrossEnrollmentPremium: number
+  acaModeledAllowablePtc: number
+  acaEconomicNetPremium: number
 }
 
 export type AnnualComparisonValue = {
@@ -222,6 +233,9 @@ const ANNUAL_VALUE_KEYS: Array<keyof AnnualComparisonValues> = [
   'rothConversion',
   'rmd',
   'qcd',
+  'acaGrossEnrollmentPremium',
+  'acaModeledAllowablePtc',
+  'acaEconomicNetPremium',
 ]
 
 export interface ScenarioRiskComparison {
@@ -262,6 +276,7 @@ export interface ScenarioPlanComparison {
   income: ScenarioIncomeComparison
   withdrawals: ScenarioWithdrawalComparison
   irmaa: ScenarioIrmaaComparison
+  aca: ScenarioAcaComparison
   estate: ScenarioEstateComparison
   annual: AnnualScenarioComparisonRow[]
   spendingCapacity: ScenarioSpendingCapacityComparison | null
@@ -393,6 +408,9 @@ function annualValues(year: YearResult): AnnualComparisonValues {
     rothConversion: year.rothConversion,
     rmd: year.rmd,
     qcd: year.qcd,
+    acaGrossEnrollmentPremium: year.aca?.grossEnrollmentPremium ?? 0,
+    acaModeledAllowablePtc: year.aca?.modeledAllowablePtc ?? 0,
+    acaEconomicNetPremium: year.aca?.economicNetPremium ?? 0,
   }
 }
 
@@ -646,6 +664,28 @@ export function compareScenarioPlans(
       maxTier: scalar(
         Math.max(0, ...baselineResult.years.map((y) => y.irmaaTier)),
         Math.max(0, ...proposalResult.years.map((y) => y.irmaaTier)),
+      ),
+    },
+    aca: {
+      grossEnrollmentPremium: scalar(
+        sum(baselineResult.years, (y) => y.aca?.grossEnrollmentPremium ?? 0),
+        sum(proposalResult.years, (y) => y.aca?.grossEnrollmentPremium ?? 0),
+      ),
+      modeledAllowablePtc: scalar(
+        sum(baselineResult.years, (y) => y.aca?.modeledAllowablePtc ?? 0),
+        sum(proposalResult.years, (y) => y.aca?.modeledAllowablePtc ?? 0),
+      ),
+      economicNetPremium: scalar(
+        sum(baselineResult.years, (y) => y.aca?.economicNetPremium ?? 0),
+        sum(proposalResult.years, (y) => y.aca?.economicNetPremium ?? 0),
+      ),
+      actionableYears: scalar(
+        baselineResult.years.filter((y) => y.aca?.readiness === 'actionable').length,
+        proposalResult.years.filter((y) => y.aca?.readiness === 'actionable').length,
+      ),
+      nonActionableYears: scalar(
+        baselineResult.years.filter((y) => y.aca?.readiness === 'nonActionable').length,
+        proposalResult.years.filter((y) => y.aca?.readiness === 'nonActionable').length,
       ),
     },
     estate: {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, parsePlan, stateForYear, stateResidencySegmentsForYear, type Plan } from './plan.js'
+import { setAcaYearContract } from '../testing/planFixtures.js'
 
 let counter = 0
 const testIds = () => `id-${++counter}`
@@ -80,6 +81,49 @@ describe('createEmptyPlan', () => {
 })
 
 describe('parsePlan', () => {
+  it('rejects malformed ACA family and coverage identity structure', () => {
+    const duplicateFamily = validCouplePlan()
+    setAcaYearContract(duplicateFamily)
+    duplicateFamily.expenses.healthcare.acaYears![0]!.taxFamilyMembers[1]!.personId = 'p1'
+    let parsed = parsePlan(duplicateFamily)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) expect(parsed.issues.join(' ')).toContain('tax-family member ids must be unique')
+
+    const noPrimary = validCouplePlan()
+    setAcaYearContract(noPrimary)
+    noPrimary.expenses.healthcare.acaYears![0]!.taxFamilyMembers[0]!.relationship = 'dependent'
+    parsed = parsePlan(noPrimary)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) expect(parsed.issues.join(' ')).toContain('exactly one primary')
+
+    const duplicateCovered = validCouplePlan()
+    setAcaYearContract(duplicateCovered)
+    duplicateCovered.expenses.healthcare.acaYears![0]!.coveredMembers[1]!.personId = 'p1'
+    parsed = parsePlan(duplicateCovered)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) expect(parsed.issues.join(' ')).toContain('covered member ids must be unique')
+
+  })
+
+  it('allows a covered external dependent only when that id belongs to the tax family', () => {
+    const plan = validCouplePlan()
+    setAcaYearContract(plan)
+    const contract = plan.expenses.healthcare.acaYears![0]!
+    contract.taxFamilyMembers.push({
+      personId: 'dependent',
+      relationship: 'dependent',
+      requiredToFile: 'notRequired',
+      magi: 0,
+    })
+    contract.coveredMembers[1]!.personId = 'dependent'
+    expect(parsePlan(plan).ok).toBe(true)
+
+    contract.coveredMembers[1]!.personId = 'not-in-tax-family'
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) expect(parsed.issues.join(' ')).toContain('must belong to the ACA tax family')
+  })
+
   it('accepts a populated couple plan', () => {
     expect(parsePlan(validCouplePlan()).ok).toBe(true)
   })

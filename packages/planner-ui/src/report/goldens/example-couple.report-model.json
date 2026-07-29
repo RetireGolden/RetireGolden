@@ -1,5 +1,41 @@
 {
   "blocks": {
+    "aca-ledger": {
+      "rows": [
+        {
+          "applicableSlcspPremium": 22800,
+          "economicNetPremium": 22800,
+          "grossEnrollmentPremium": 22800,
+          "modeledAllowablePtc": 0,
+          "readiness": "actionable",
+          "year": 2026
+        },
+        {
+          "applicableSlcspPremium": 15034,
+          "economicNetPremium": 15034,
+          "grossEnrollmentPremium": 15034,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2027
+        },
+        {
+          "applicableSlcspPremium": 12688,
+          "economicNetPremium": 12688,
+          "grossEnrollmentPremium": 12688,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2028
+        },
+        {
+          "applicableSlcspPremium": 8924,
+          "economicNetPremium": 8924,
+          "grossEnrollmentPremium": 8924,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2029
+        }
+      ]
+    },
     "accounts": {
       "rows": [
         {
@@ -572,6 +608,7 @@
     "modeling-notes": {
       "warnings": [
         "Some pre-65 years exceed 400% of the federal poverty line: no ACA credit (the cliff).",
+        "Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported.",
         "Spending withdrawals from traditional accounts pushed income above the Roth-conversion target in some years.",
         "A requested Roth conversion exceeded the available traditional balance and was reduced."
       ]
@@ -1130,5 +1167,5 @@
     "stateParameterPackYear": 2026
   },
   "startYear": 2026,
-  "version": 1
+  "version": 2
 }

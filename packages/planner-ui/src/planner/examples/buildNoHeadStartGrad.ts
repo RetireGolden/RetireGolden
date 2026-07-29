@@ -4,8 +4,8 @@
  * starts at $0 aside from the shared emergency fund — no seeded IRA.
  */
 
-import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
-import { exampleEntityId, exampleFixedNow, exampleIdFactory } from './buildContext'
+import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
+import { exampleEntityId, exampleFixedNow, exampleIdFactory, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'no-head-start-grad'
 
@@ -74,7 +74,7 @@ export function buildNoHeadStartGrad(): Plan {
     safeWithdrawalRatePct: 4,
   }
 
-  const parsed = parsePlan(plan)
+  const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`no-head-start-grad invalid: ${parsed.issues.join('; ')}`)
   return parsed.plan
 }

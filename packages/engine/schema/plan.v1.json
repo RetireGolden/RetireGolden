@@ -3610,6 +3610,272 @@
             "applyAcaCredit": {
               "type": "boolean"
             },
+            "acaYears": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "year": {
+                    "type": "integer",
+                    "minimum": 1900,
+                    "maximum": 2200
+                  },
+                  "fplRegion": {
+                    "type": "string",
+                    "enum": [
+                      "contiguous",
+                      "alaska",
+                      "hawaii"
+                    ]
+                  },
+                  "taxFamilyMembers": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "personId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "relationship": {
+                          "type": "string",
+                          "enum": [
+                            "primary",
+                            "spouse",
+                            "dependent"
+                          ]
+                        },
+                        "requiredToFile": {
+                          "type": "string",
+                          "enum": [
+                            "required",
+                            "notRequired",
+                            "unknown"
+                          ]
+                        },
+                        "magi": {
+                          "type": "number",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "personId",
+                        "relationship",
+                        "requiredToFile",
+                        "magi"
+                      ]
+                    }
+                  },
+                  "coveredMembers": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "personId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "enrollmentPremiumByMonth": {
+                          "minItems": 12,
+                          "maxItems": 12,
+                          "type": "array",
+                          "items": {
+                            "type": "number",
+                            "minimum": 0
+                          }
+                        },
+                        "slcspBenchmarkPremiumByMonth": {
+                          "minItems": 12,
+                          "maxItems": 12,
+                          "type": "array",
+                          "items": {
+                            "type": "number",
+                            "minimum": 0
+                          }
+                        }
+                      },
+                      "required": [
+                        "personId",
+                        "enrollmentPremiumByMonth",
+                        "slcspBenchmarkPremiumByMonth"
+                      ]
+                    }
+                  },
+                  "taxExemptInterest": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "state": {
+                            "type": "string",
+                            "const": "known"
+                          },
+                          "amount": {
+                            "type": "number",
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "state",
+                          "amount"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "state": {
+                            "type": "string",
+                            "const": "notApplicable"
+                          },
+                          "amount": {
+                            "type": "null"
+                          }
+                        },
+                        "required": [
+                          "state",
+                          "amount"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "state": {
+                            "type": "string",
+                            "const": "unknown"
+                          },
+                          "amount": {
+                            "type": "null"
+                          }
+                        },
+                        "required": [
+                          "state",
+                          "amount"
+                        ]
+                      }
+                    ]
+                  },
+                  "foreignExclusionAddback": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "state": {
+                            "type": "string",
+                            "const": "known"
+                          },
+                          "amount": {
+                            "type": "number",
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "state",
+                          "amount"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "state": {
+                            "type": "string",
+                            "const": "notApplicable"
+                          },
+                          "amount": {
+                            "type": "null"
+                          }
+                        },
+                        "required": [
+                          "state",
+                          "amount"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "state": {
+                            "type": "string",
+                            "const": "unknown"
+                          },
+                          "amount": {
+                            "type": "null"
+                          }
+                        },
+                        "required": [
+                          "state",
+                          "amount"
+                        ]
+                      }
+                    ]
+                  },
+                  "assertions": {
+                    "type": "object",
+                    "properties": {
+                      "coverageEligibility": {
+                        "type": "string",
+                        "enum": [
+                          "supported",
+                          "unsupported"
+                        ]
+                      },
+                      "form8814": {
+                        "type": "string",
+                        "enum": [
+                          "notApplicable",
+                          "unsupported"
+                        ]
+                      },
+                      "specialAllocation": {
+                        "type": "string",
+                        "enum": [
+                          "notApplicable",
+                          "unsupported"
+                        ]
+                      },
+                      "marriedFilingSeparatelyException": {
+                        "type": "string",
+                        "enum": [
+                          "notApplicable",
+                          "unsupported"
+                        ]
+                      },
+                      "selfEmployedHealthInsuranceDeduction": {
+                        "type": "string",
+                        "enum": [
+                          "notApplicable",
+                          "unsupported"
+                        ]
+                      },
+                      "otherMaterialFacts": {
+                        "type": "string",
+                        "enum": [
+                          "none",
+                          "unsupported"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "coverageEligibility",
+                      "form8814",
+                      "specialAllocation",
+                      "marriedFilingSeparatelyException",
+                      "selfEmployedHealthInsuranceDeduction",
+                      "otherMaterialFacts"
+                    ]
+                  }
+                },
+                "required": [
+                  "year",
+                  "fplRegion",
+                  "taxFamilyMembers",
+                  "coveredMembers",
+                  "taxExemptInterest",
+                  "foreignExclusionAddback",
+                  "assertions"
+                ]
+              }
+            },
             "medicareExtrasMonthlyPerPerson": {
               "type": "number",
               "minimum": 0

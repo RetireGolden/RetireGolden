@@ -3,8 +3,8 @@
  * Exercises spending guardrails enhancement + MC/Insights surfaces.
  */
 
-import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
-import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory } from './buildContext'
+import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
+import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'guardrails-flex-goals'
 
@@ -114,7 +114,7 @@ export function buildGuardrailsFlex(): Plan {
     },
   ]
 
-  const parsed = parsePlan(plan)
+  const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`guardrails-flex-goals invalid: ${parsed.issues.join('; ')}`)
   return parsed.plan
 }

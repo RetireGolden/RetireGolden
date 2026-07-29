@@ -35,6 +35,31 @@ function rothCandidate(overrides: Partial<DecisionCandidate>): DecisionCandidate
 }
 
 describe('evaluateCandidate', () => {
+  it('makes non-actionable ACA evidence diagnostic on either side of the comparison', () => {
+    const plan = tradHeavyPlan()
+    const opts = simOptions()
+    const safeBaseline = simulatePlan(plan, opts)
+    const unsafeCandidate = structuredClone(safeBaseline)
+    unsafeCandidate.years[0]!.aca = { readiness: 'nonActionable' } as never
+    const candidateSide = evaluateCandidate(
+      createDecisionContext(plan, opts, { result: safeBaseline }),
+      rothCandidate({}),
+      { candidateResult: unsafeCandidate },
+    )
+    expect(candidateSide.recommendationState).toBe('diagnostic')
+    expect(candidateSide.diagnostics.join(' ')).toContain('candidate')
+
+    const unsafeBaseline = structuredClone(safeBaseline)
+    unsafeBaseline.years[0]!.aca = { readiness: 'nonActionable' } as never
+    const baselineSide = evaluateCandidate(
+      createDecisionContext(plan, opts, { result: unsafeBaseline }),
+      rothCandidate({}),
+      { candidateResult: safeBaseline },
+    )
+    expect(baselineSide.recommendationState).toBe('diagnostic')
+    expect(baselineSide.diagnostics.join(' ')).toContain('baseline')
+  })
+
   it('evaluates plan patch candidates through the exact ledger', () => {
     const plan = tradHeavyPlan()
     const opts = simOptions()

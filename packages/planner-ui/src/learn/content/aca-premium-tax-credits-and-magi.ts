@@ -12,7 +12,7 @@ export const acaPremiumTaxCreditsAndMagiArticle: LearningArticle = {
   tags: ['aca', 'premium tax credit', 'magi', 'marketplace', 'healthcare before 65', 'tax cliff'],
   audience: 'beginner',
   status: 'ready',
-  lastReviewed: '2026-06-19',
+  lastReviewed: '2026-07-29',
   reviewCadence: 'annual',
   sourceUrls: [
     'https://www.healthcare.gov/lower-costs/',
@@ -82,7 +82,7 @@ export const acaPremiumTaxCreditsAndMagiArticle: LearningArticle = {
     { type: 'heading', text: 'Why it matters in RetireGolden' },
     {
       type: 'prose',
-      md: 'RetireGolden lets you enter a full pre-65 monthly premium per person and choose whether to apply the ACA credit. The projection estimates the credit using MAGI and the parameter pack. To avoid circular math, the current model estimates the credit from the prior year\'s MAGI.',
+      md: 'RetireGolden reconciles an evidenced Marketplace year against that same year\'s final household MAGI, including withdrawals, conversions, gains, and required ACA add-backs. The standard planner can request ACA modeling but cannot yet author the annual tax-family, enrollment-premium, and SLCSP evidence contract. Without complete evidence—or when tax-year parameters are not sourced—the projection funds the gross enrollment premium and marks the year non-actionable.',
     },
     { type: 'heading', text: 'Common mistakes' },
     {
@@ -97,7 +97,7 @@ export const acaPremiumTaxCreditsAndMagiArticle: LearningArticle = {
     { type: 'heading', text: 'Where to use this in the app' },
     {
       type: 'prose',
-      md: 'Use **Spending** to set pre-65 premiums and the ACA credit option. Use **Results** to watch MAGI and healthcare costs by year. Use **Strategy** when conversion targets should avoid a healthcare cliff.',
+      md: 'Use **Spending** to enter the gross pre-65 premium and request ACA modeling. Use **Results** to verify annual evidence readiness, MAGI, and healthcare cost; a requested credit is not an applied credit. Use **Strategy** only when the exact ledger shows an actionable ACA year.',
     },
   ],
 }

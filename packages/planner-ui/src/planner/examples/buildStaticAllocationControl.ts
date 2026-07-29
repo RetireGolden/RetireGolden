@@ -5,8 +5,8 @@
  * the effect of glidepath + rebalancing + class MC on risk metrics and ending values.
  */
 
-import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
-import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory } from './buildContext'
+import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
+import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'static-allocation-control'
 
@@ -90,7 +90,7 @@ export function buildStaticAllocationControl(): Plan {
     // No special assetClassParams needed for the control
   }
 
-  const parsed = parsePlan(plan)
+  const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`static-allocation-control invalid: ${parsed.issues.join('; ')}`)
   return parsed.plan
 }

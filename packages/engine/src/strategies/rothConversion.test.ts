@@ -16,6 +16,14 @@ function input(partial: Partial<ConversionSizingInput> = {}): ConversionSizingIn
     ssBenefits: 0,
     peopleAged65Plus: 0,
     householdSize: 1,
+    aca: {
+      actionable: true,
+      taxFamilySize: 1,
+      fplRegion: 'contiguous',
+      fixedMagiAddbacks: 0,
+      taxExemptInterest: 0,
+      foreignExclusionAddback: 0,
+    },
     inflationScale: 1,
     ...partial,
   }
@@ -50,11 +58,58 @@ describe('sizeRothConversion', () => {
     expect(detail.taxableIncome).toBeCloseTo(105_700, 0) // top of 22%
   })
 
+  it('includes a foreign exclusion in Social Security phase-in while filling a bracket', () => {
+    const without = sizeRothConversion(
+      fill('topOfBracket', 12),
+      input({ ssBenefits: 100_000, ordinaryIncomeBase: 0 }),
+    )
+    const withForeignExclusion = sizeRothConversion(
+      fill('topOfBracket', 12),
+      input({
+        ssBenefits: 100_000,
+        ordinaryIncomeBase: 0,
+        aca: {
+          actionable: true,
+          taxFamilySize: 1,
+          fplRegion: 'contiguous',
+          fixedMagiAddbacks: 10_000,
+          taxExemptInterest: 0,
+          foreignExclusionAddback: 10_000,
+        },
+      }),
+    )
+    expect(without.ok).toBe(true)
+    expect(withForeignExclusion.ok).toBe(true)
+    if (without.ok && withForeignExclusion.ok) {
+      expect(withForeignExclusion.amount).toBeLessThan(without.amount)
+    }
+  })
+
   it('caps MAGI under an IRMAA tier threshold', () => {
     const r = sizeRothConversion(fill('irmaaTier', 1), input({ ordinaryIncomeBase: 50_000 }))
     expect(r.ok).toBe(true)
     if (!r.ok) return
     expect(r.amount).toBeCloseTo(59_000, 1) // 109,000 − 50,000
+  })
+
+  it('includes characterized tax-exempt interest in the IRMAA metric', () => {
+    const r = sizeRothConversion(
+      fill('irmaaTier', 1),
+      input({
+        ordinaryIncomeBase: 50_000,
+        aca: {
+          actionable: true,
+          taxFamilySize: 1,
+          fplRegion: 'contiguous',
+          fixedMagiAddbacks: 0,
+          taxExemptInterest: 4_000,
+          foreignExclusionAddback: 0,
+        },
+      }),
+    )
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.amount).toBeCloseTo(55_000, 1)
   })
 
   it('caps MAGI under the ACA 400% FPL cliff', () => {
@@ -64,11 +119,89 @@ describe('sizeRothConversion', () => {
     expect(r.amount).toBeCloseTo(15_650 * 4, 1)
   })
 
+  it('nets signed AGI against ACA addbacks before sizing to the cliff', () => {
+    const r = sizeRothConversion(
+      fill('acaCliff', null),
+      input({
+        capitalGains: -3_000,
+        aca: {
+          actionable: true,
+          taxFamilySize: 1,
+          fplRegion: 'contiguous',
+          fixedMagiAddbacks: 20_000,
+          taxExemptInterest: 0,
+          foreignExclusionAddback: 20_000,
+        },
+      }),
+    )
+    expect(r.ok).toBe(true)
+    if (r.ok) expect(r.amount).toBeCloseTo(15_650 * 4 - 17_000, 1)
+  })
+
+  it('uses ACA addbacks and refuses non-actionable cliff sizing', () => {
+    const withAddbacks = sizeRothConversion(
+      fill('acaCliff', null),
+      input({
+        aca: {
+          actionable: true,
+          taxFamilySize: 1,
+          fplRegion: 'contiguous',
+          fixedMagiAddbacks: 7_000,
+          taxExemptInterest: 3_000,
+          foreignExclusionAddback: 0,
+        },
+      }),
+    )
+    expect(withAddbacks.ok).toBe(true)
+    if (withAddbacks.ok) expect(withAddbacks.amount).toBeCloseTo(15_650 * 4 - 10_000, 1)
+    expect(
+      sizeRothConversion(
+        fill('acaCliff', null),
+        input({
+          aca: {
+            actionable: false,
+            taxFamilySize: 1,
+            fplRegion: 'contiguous',
+            fixedMagiAddbacks: 0,
+            taxExemptInterest: 0,
+            foreignExclusionAddback: 0,
+          },
+        }),
+      ),
+    ).toEqual({ ok: false, reason: 'aca_nonactionable' })
+    expect(sizeRothConversion(fill('acaCliff', null), input({ aca: undefined }))).toEqual({
+      ok: false,
+      reason: 'aca_nonactionable',
+    })
+  })
+
   it('honors a fixed MAGI ceiling', () => {
     const r = sizeRothConversion(fill('fixedMagi', 80_000), input({ ordinaryIncomeBase: 30_000 }))
     expect(r.ok).toBe(true)
     if (!r.ok) return
     expect(r.amount).toBeCloseTo(50_000, 1)
+  })
+
+  it('uses signed pre-floor AGI plus tax-exempt interest for a fixed MAGI ceiling', () => {
+    const r = sizeRothConversion(
+      fill('fixedMagi', 80_000),
+      input({
+        capitalGains: -3_000,
+        aca: {
+          actionable: true,
+          taxFamilySize: 1,
+          fplRegion: 'contiguous',
+          fixedMagiAddbacks: 20_000,
+          taxExemptInterest: 5_000,
+          foreignExclusionAddback: 20_000,
+        },
+      }),
+    )
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    // Foreign-exclusion addback is not added to IRMAA/fixed MAGI; the signed
+    // capital loss offsets $3k of the characterized $5k tax-exempt interest.
+    expect(r.amount).toBeCloseTo(78_000, 1)
   })
 
   it('reports when income already exceeds the ceiling', () => {

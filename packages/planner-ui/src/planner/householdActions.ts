@@ -3,6 +3,23 @@
 
 import type { Plan } from '@retiregolden/engine/model/plan'
 
+/** Clear exact annual ACA facts after an edit that can stale their family,
+ * coverage, region, or premium assumptions. */
+export function invalidateAcaEvidence(d: Plan) {
+  delete d.expenses.healthcare.acaYears
+}
+
+/** Apply a planning-horizon change and clear annual ACA evidence whose living
+ * tax-family and coverage roster may no longer match the plan horizon. */
+export function updatePersonLongevity(
+  d: Plan,
+  personIndex: number,
+  longevity: Plan['household']['people'][number]['longevity'],
+) {
+  d.household.people[personIndex]!.longevity = longevity
+  invalidateAcaEvidence(d)
+}
+
 /**
  * Remove a partner and re-home everything that referenced them so the plan stays
  * valid: accounts move to the primary, the removed person's incomes and policies
@@ -19,4 +36,9 @@ export function removePartner(d: Plan, removedId: string) {
     .filter((p) => (p.kind === 'ltc' ? p.owner : p.insured) !== removedId)
     .map((p) => (p.kind === 'permanentLife' && p.beneficiary === removedId ? { ...p, beneficiary: 'estate' as const } : p))
   d.careEvents = d.careEvents.filter((c) => c.personId !== removedId)
+  // Annual ACA evidence names an exact tax family and coverage roster. It
+  // cannot be safely rewritten after a household member is removed; clearing
+  // it makes a still-enabled ACA request fail closed to the visible gross
+  // premium until fresh evidence is supplied.
+  invalidateAcaEvidence(d)
 }

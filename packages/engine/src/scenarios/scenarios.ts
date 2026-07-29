@@ -14,7 +14,7 @@
  * reorders accounts).
  */
 
-import type { Plan, Scenario } from '../model/plan.js'
+import { parsePlan, type Plan, type Scenario } from '../model/plan.js'
 import type { ParsePlanResult } from '../model/plan.js'
 import type { MarketModelConfig } from '../montecarlo/marketModels.js'
 import { createMarketModel } from '../montecarlo/marketModels.js'
@@ -26,6 +26,7 @@ import {
   decodeScenarioPointer,
   isScenarioPatchEnvelope,
   parseScenarioPatch,
+  type ScenarioOperation,
   type ScenarioPatchInput,
 } from './contract.js'
 import { applyScenarioPatchInput, canonicalScenarioJson, readScenarioValueState } from './patch.js'
@@ -34,13 +35,72 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v)
 }
 
+export function canonicalOperationSuppliesCompleteAcaEvidence(operation: ScenarioOperation): boolean {
+  const evidencePath = '/expenses/healthcare/acaYears'
+  if (operation.op !== 'set') return false
+  if (operation.path === evidencePath) return true
+  if (operation.path.startsWith(`${evidencePath}/`)) return false
+  if (operation.path === '/expenses/healthcare') {
+    return isPlainObject(operation.value) && Object.hasOwn(operation.value, 'acaYears')
+  }
+  if (operation.path === '/expenses') {
+    return (
+      isPlainObject(operation.value) &&
+      isPlainObject(operation.value['healthcare']) &&
+      Object.hasOwn(operation.value['healthcare'], 'acaYears')
+    )
+  }
+  return false
+}
+
 /**
  * Apply either a historical deep-merge patch or the canonical versioned
  * operation document. Legacy patches retain their original behavior; v1
  * documents add atomic precondition/conflict checks.
  */
 export function applyScenarioPatch(plan: Plan, patch: ScenarioPatchInput): ParsePlanResult {
-  return applyScenarioPatchInput(plan, patch)
+  const invalidatesAcaEvidence = isScenarioPatchEnvelope(patch)
+    ? (() => {
+        const parsed = parseScenarioPatch(patch)
+        if (!parsed.ok) return false
+        const changesEvidence = parsed.patch.operations.some(canonicalOperationSuppliesCompleteAcaEvidence)
+        const paths = parsed.patch.operations.map((operation) => operation.path)
+        return (
+          !changesEvidence &&
+          paths.some(
+            (path) =>
+              path === '/household' ||
+              path.startsWith('/household/') ||
+              path.startsWith('/expenses/healthcare/pre65MonthlyPremiumPerPerson'),
+          )
+        )
+      })()
+    : isPlainObject(patch) &&
+      (() => {
+        const healthcare =
+          isPlainObject(patch['expenses']) && isPlainObject(patch['expenses']['healthcare'])
+            ? patch['expenses']['healthcare']
+            : null
+        const changesEvidence = healthcare !== null && Object.hasOwn(healthcare, 'acaYears')
+        return (
+          !changesEvidence &&
+          (
+            Object.hasOwn(patch, 'household') ||
+            (healthcare !== null && Object.hasOwn(healthcare, 'pre65MonthlyPremiumPerPerson'))
+          )
+        )
+      })()
+  const applied = applyScenarioPatchInput(plan, patch)
+  if (
+    !applied.ok ||
+    !invalidatesAcaEvidence ||
+    applied.plan.expenses.healthcare.acaYears === undefined
+  ) {
+    return applied
+  }
+  const evidenceFreePlan = structuredClone(applied.plan)
+  delete evidenceFreePlan.expenses.healthcare.acaYears
+  return parsePlan(evidenceFreePlan)
 }
 
 export interface ScenarioDiffEntry {

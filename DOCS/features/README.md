@@ -145,8 +145,11 @@ the projected balances re-read as "next N years of net spending" buckets, reconc
 every year, with the Estrada/Kitces evidence note — the plan is always simulated total-return.
 One-time goals (amount + year). Healthcare:
 
-- **Pre-65:** ACA marketplace premium estimate; plan MAGI feeds the premium tax credit including the
-  restored **400% FPL cliff** — a first-class Roth-conversion constraint for early retirees.
+- **Pre-65:** explicit per-year ACA contracts feed current-year household MAGI, tax-family/dependent facts,
+  covered months, enrollment premium, and SLCSP benchmark into the exact tax/withdrawal fixed point. The
+  ledger reports gross premium, modeled allowable credit, economic net premium, the restored **400% FPL
+  cliff**, and typed readiness. Missing or unsupported facts fund gross premium; this is not APTC cash timing
+  or a filing-grade Form 8962 reconciliation.
 - **65+:** Medicare Part B/D premiums from parameter tables **plus IRMAA** from MAGI two years prior (§6).
   Opt-in **SSA-44 redetermination** (`expenses.healthcare.ssa44`) models Form SSA-44 relief after a
   qualifying life-changing event (a couple's first death; optionally each retirement year): affected premium
@@ -185,7 +188,7 @@ Annual computation inside the projection loop ([tax/federalTax.ts](../../package
   ordinary income, lowering AGI (and the SS/IRMAA/ACA cascade); shown depleting per year.
 - Early-withdrawal penalty (10% pre-59½), with Rule-of-55 / 72(t) SEPP exceptions.
 - **IRMAA** from MAGI(year−2) applied to Medicare premiums, with cliff-edge warnings. **ACA PTC** pre-65
-  from MAGI vs FPL with the 400% cliff.
+  from reconciled current-year ACA household MAGI, explicit tax-family/coverage facts, and the 400% cliff.
 - **State income tax**: per-state brackets and retirement-income exclusions for all 50 states + DC, plus
   mid-plan state moves ([domain/state-tax-research/](../domain/state-tax-research/) holds the per-state research).
 - Output: full year-by-year tax detail (AGI, MAGI variants, taxable income, marginal + effective rates,

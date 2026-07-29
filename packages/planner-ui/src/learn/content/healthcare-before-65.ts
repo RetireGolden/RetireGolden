@@ -83,7 +83,7 @@ export const healthcareBefore65Article: LearningArticle = {
     { type: 'heading', text: 'Why it matters in RetireGolden' },
     {
       type: 'prose',
-      md: 'RetireGolden lets you enter the full pre-65 monthly premium per person and decide whether to apply the ACA credit. The model estimates premiums annually, not plan-by-plan. It does not choose networks, deductibles, providers, or drug coverage.',
+      md: 'RetireGolden lets you enter the full pre-65 monthly premium per person and request ACA credit modeling. The standard planner cannot yet author the annual tax-family, enrollment-premium, and SLCSP evidence needed to reconcile a credit. A year without complete, sourced evidence uses the gross premium and is marked non-actionable. The model does not choose networks, deductibles, providers, or drug coverage.',
     },
     { type: 'heading', text: 'Common mistakes' },
     {
@@ -98,7 +98,7 @@ export const healthcareBefore65Article: LearningArticle = {
     { type: 'heading', text: 'Where to use this in the app' },
     {
       type: 'prose',
-      md: 'Use **Spending** to enter pre-65 premiums and ACA credit settings. Use **Assumptions** for healthcare inflation and recent MAGI. Use **Results** to inspect healthcare costs year by year.',
+      md: 'Use **Spending** to enter gross pre-65 premiums and request ACA modeling. Use **Assumptions** for healthcare inflation. Use **Results** to inspect annual evidence readiness, current-year MAGI, and healthcare costs.',
     },
   ],
 }

@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
-import { singlePersonPlan, taxableAccount, validatePlan } from '@retiregolden/engine/testing/planFixtures'
+import {
+  recurringOrdinaryIncome,
+  setAcaYearContract,
+  singlePersonPlan,
+  taxableAccount,
+  validatePlan,
+} from '@retiregolden/engine/testing/planFixtures'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import { draftPlanFromBrokerAccounts, parseBrokerPositionsCsv } from '../import/brokerCsv'
 import { projectPlan } from '../planner/useProjection'
+import { fmtMoney } from '../planner/format'
 import { renderStandaloneReportHtml } from './reportHtml'
 import {
   REPORT_BLOCK_IDS,
@@ -41,7 +48,7 @@ describe('buildReportModel', () => {
   it('stamps identity, span, and provenance', () => {
     const model = modelFor(fixturePlan())
     expect(model.kind).toBe('retiregolden.report-model')
-    expect(model.version).toBe(1)
+    expect(model.version).toBe(2)
     expect(model.planName).toBe('Test plan')
     expect(model.generatedAtIso).toBe(GENERATED_AT)
     expect(model.startYear).toBe(START_YEAR)
@@ -94,6 +101,49 @@ describe('buildReportModel', () => {
   it('always carries the educational disclosure', () => {
     const model = modelFor(fixturePlan())
     expect(model.blocks['disclosures'].statements).toContain(REPORT_EDUCATIONAL_DISCLAIMER)
+  })
+
+  it('reports exact ACA ledger economics when annual contracts override a zero legacy premium', () => {
+    const plan = fixturePlan((candidate) => {
+      candidate.incomes = [recurringOrdinaryIncome('income', 30_000, 2026)]
+      setAcaYearContract(candidate, {
+        year: 2026,
+        monthlyEnrollment: 1_000,
+        monthlySlcsp: 1_000,
+        coveredPersonIds: ['p1'],
+      })
+      candidate.expenses.healthcare.pre65MonthlyPremiumPerPerson = 0
+    })
+    const { result, summary } = projectPlan(plan, START_YEAR)
+    const model = buildReportModel({
+      plan,
+      result,
+      summary,
+      startYear: START_YEAR,
+      generatedAtIso: GENERATED_AT,
+    })
+    const exact = result.years[0]!.aca!
+    const row = model.blocks['aca-ledger'].rows[0]!
+
+    expect(exact.readiness).toBe('actionable')
+    expect(exact.grossEnrollmentPremium).toBe(12_000)
+    expect(exact.modeledAllowablePtc).toBeGreaterThan(0)
+    expect(exact.economicNetPremium).toBeCloseTo(12_000 - exact.modeledAllowablePtc!, 6)
+    expect(row).toEqual({
+      year: 2026,
+      grossEnrollmentPremium: 12_000,
+      applicableSlcspPremium: 12_000,
+      modeledAllowablePtc: Math.round(exact.modeledAllowablePtc!),
+      economicNetPremium: Math.round(exact.economicNetPremium),
+      readiness: 'actionable',
+    })
+
+    const html = renderStandaloneReportHtml(model)
+    expect(html).toContain('ACA current-year ledger')
+    expect(html).toContain(fmtMoney(row.grossEnrollmentPremium))
+    expect(html).toContain(fmtMoney(row.modeledAllowablePtc!))
+    expect(html).toContain(fmtMoney(row.economicNetPremium))
+    expect(html).toContain('Actionable')
   })
 
   it('leaves modeled findings and advisor content null unless supplied', () => {
@@ -163,7 +213,7 @@ describe('serializeReportModel', () => {
     expect(first.endsWith('\n')).toBe(true)
     // Sorted keys: "blocks" precedes "kind" precedes "version".
     expect(first.indexOf('"blocks"')).toBeLessThan(first.indexOf('"kind"'))
-    expect(JSON.parse(first)).toMatchObject({ kind: 'retiregolden.report-model', version: 1 })
+    expect(JSON.parse(first)).toMatchObject({ kind: 'retiregolden.report-model', version: 2 })
   })
 })
 

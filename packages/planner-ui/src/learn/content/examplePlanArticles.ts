@@ -515,7 +515,7 @@ export const exampleAll401kNoBridgeArticle = exampleArticle(
 
 The deduction feels great every year. The problem surfaces at 52: nearly everything they own is inaccessible before 59½ without a 10% penalty (or a rigid SEPP program).
 
-Once their cash and small brokerage run dry, penalized 401(k) withdrawals carry the bridge years. Each withdrawal is ordinary income, so MAGI jumps — and the ACA premium credits that subsidize marketplace coverage disappear, adding tens of thousands a year in health premiums.
+Once their cash and small brokerage run dry, penalized 401(k) withdrawals carry the bridge years. Each withdrawal is ordinary income, so MAGI jumps. In a year with sourced ACA parameters and complete annual evidence, that can reduce or eliminate the modeled credit; unsourced future years stay at gross premium.
 
 The identical savings budget, placed differently, avoids all of this. That comparison is the point of the pair.`,
   'Watch Results ages 52–59: penalties once the taxable money is gone, marketplace premiums jumping when MAGI clears the ACA cliff, and a depletion year the bridge version avoids.',
@@ -530,7 +530,7 @@ The identical savings budget, placed differently, avoids all of this. That compa
       { label: 'Wages', value: '$105,000 + $75,000, 1% real growth' },
       { label: 'Savings', value: '$45,000/yr, all traditional 401(k) + 50%-to-6% match' },
       { label: 'Starting balances', value: '$210k + $85k in 401(k)s, $40k brokerage, $30k cash' },
-      { label: 'Healthcare', value: 'Marketplace pre-65 with ACA credits enabled' },
+      { label: 'Healthcare', value: 'Marketplace pre-65; ACA modeling requested, with annual evidence required' },
     ],
     summary: 'Control case: identical budget and household to the bridge version — only the destination of the savings differs.',
   }
@@ -545,9 +545,9 @@ export const exampleBrokerageBridge401kArticle = exampleArticle(
 
 Because the gross budget is held constant, this plan pays more income tax during the accumulation years — the contributions above the match lose their deduction. That honesty is the tradeoff being taught.
 
-At 52 the brokerage is large and mostly basis. Selling it to fund the bridge years realizes modest capital gains, so MAGI stays low: ACA credits keep net marketplace premiums tiny while the control pays full price, and no early-withdrawal penalties ever apply.
+At 52 the brokerage is large and mostly basis. Selling it to fund the bridge years realizes modest capital gains, so MAGI stays lower than in the control and no early-withdrawal penalties apply. In sourced, fully evidenced ACA years that lower MAGI can preserve more credit; unsourced future years remain gross in both plans.
 
-The built-in scenario stress-tests the popular "convert to Roth during the bridge" advice. For this lean plan it backfires: the conversion tax plus the forfeited ACA credits drain the bridge fund and hand back most of the strategy's advantage. Cheap conversions need spare money — this household's bridge fund is the spending money.`,
+The built-in scenario stress-tests the popular "convert to Roth during the bridge" advice. For this lean plan the conversion tax can drain the bridge fund, and an actionable ACA year can add a lost-credit cost. Cheap conversions need spare money — this household's bridge fund is the spending money.`,
   'Compare bridge-year MAGI, net healthcare premiums, penalties, and the depletion year against the all-401(k) control; then run the conversion scenario and watch the advantage evaporate.',
   ['aca-premium-tax-credits-and-magi', 'why-roth-conversions-raise-other-costs', 'withdrawal-order-basics'],
   ['/plan/:planId/results', '/plan/:planId/accounts', '/plan/:planId/scenarios'],
@@ -562,7 +562,7 @@ The built-in scenario stress-tests the popular "convert to Roth during the bridg
       { label: 'Key difference', value: 'Savings destination only — budget, balances, and household identical' },
       { label: 'Built-in scenario', value: 'Bracket-fill Roth conversions during the bridge (a cautionary tale here)' },
     ],
-    summary: 'Feature case: the taxable bridge keeps MAGI low through 52–59½, preserving ACA credits and avoiding penalties.',
+    summary: 'Feature case: the taxable bridge keeps MAGI lower through 52–59½, avoids penalties, and preserves credit room only in sourced, actionable ACA years.',
   }
 )
 

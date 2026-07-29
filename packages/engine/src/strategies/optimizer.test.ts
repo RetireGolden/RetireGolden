@@ -46,6 +46,73 @@ function year(over: Partial<OptimizerYear> = {}): OptimizerYear {
 }
 
 describe('optimizer model builder', () => {
+  it('changes the raw compressed schedule when actionable ACA MAGI binds', async () => {
+    const base: OptimizerInput = {
+      years: [year()],
+      openingTrad: 100_000,
+      openingInheritedTrad: 0,
+      openingOther: 0,
+      liquidationRate: 0.5,
+    }
+    const unconstrained = await optimizeSchedule(base)
+    const acaBounded = await optimizeSchedule({
+      ...base,
+      years: [year({ acaMagiMax: 5_000 })],
+    })
+
+    expect(unconstrained.schedule[0]!.conversion).toBeGreaterThan(5_000)
+    expect(acaBounded.schedule[0]!.conversion).toBeCloseTo(5_000, 0)
+    expect(buildOptimizerModel(base).lp).not.toContain(' acamagi0:')
+    expect(buildOptimizerModel(acaBounded.status ? {
+      ...base,
+      years: [year({ acaMagiMax: 5_000 })],
+    } : base).lp).toContain(' acamagi0: + 1 conv0 + 1 wt0 + 1 wi0 <= 5000')
+  })
+
+  it('constrains total modeled ACA MAGI when Social Security phases in', async () => {
+    const base: OptimizerInput = {
+      years: [year({
+        ordinaryIncomeBase: 10_000,
+        ssTaxability: { ssBenefits: 30_000, taxableSsBase: 0 },
+        acaMagiMax: 30_000,
+      })],
+      openingTrad: 100_000,
+      openingInheritedTrad: 0,
+      openingOther: 0,
+      liquidationRate: 0.5,
+    }
+    const result = await optimizeSchedule(base)
+    const conversion = result.schedule[0]!.conversion
+    const lp = buildOptimizerModel(base).lp
+
+    expect(conversion).toBeLessThan(20_000)
+    expect(lp).toContain(' acamagi0: + 1 conv0 + 1 wt0 + 1 wi0 + 1 taxss0 <= 20000')
+  })
+
+  it('includes fixed §86 addbacks in the taxable-Social-Security intercept', () => {
+    const model = buildOptimizerModel({
+      years: [year({
+        ordinaryIncomeBase: 9_602.04,
+        ssTaxability: {
+          ssBenefits: 30_004.8,
+          taxableSsBase: 9_602.04,
+          provisionalIncomeAddbacks: 25_000,
+        },
+        acaMagiMax: 17_197.24,
+      })],
+      openingTrad: 100_000,
+      openingInheritedTrad: 0,
+      openingOther: 100_000,
+      liquidationRate: 0.5,
+    })
+    const upperPhaseIn = model.lp.split('\n').find((line) => line.includes(' taxss0b:'))
+
+    expect(upperPhaseIn).toContain('>= 9602.04')
+    expect(model.lp).toContain(
+      ' acamagi0: + 1 conv0 + 1 wt0 + 1 wi0 + 1 taxss0 <= 17197.24',
+    )
+  })
+
   it('emits a well-formed LP with one binary per IRMAA tier per year', () => {
     const input: OptimizerInput = {
       years: [year(), year()],

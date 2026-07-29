@@ -1,14 +1,22 @@
 import { describe, expect, it } from 'vitest'
 
 import { packForYear } from '../params/index.js'
-import { acaApplicablePct, acaNetAnnualPremium, acaNetAnnualPremiumByMonth } from './aca.js'
+import {
+  acaApplicablePct,
+  acaEconomicPremiumByMonth,
+  acaFederalPovertyLine,
+  acaNetAnnualPremium,
+  acaNetAnnualPremiumByMonth,
+  buildAcaHouseholdMagi,
+} from './aca.js'
 
 const pack = packForYear(2026).pack
 
 describe('acaApplicablePct', () => {
-  it('is flat at the floor below 133% FPL', () => {
+  it('has the sourced step at exactly 133% FPL', () => {
     expect(acaApplicablePct(pack, 50)).toBe(2.1)
-    expect(acaApplicablePct(pack, 133)).toBe(2.1)
+    expect(acaApplicablePct(pack, 132.999)).toBe(2.1)
+    expect(acaApplicablePct(pack, 133)).toBe(3.14)
   })
 
   it('interpolates within bands', () => {
@@ -95,5 +103,126 @@ describe('acaNetAnnualPremiumByMonth', () => {
     expect(r.overCliff).toBe(true)
     expect(r.credit).toBe(0)
     expect(r.netAnnualPremium).toBe(3_000)
+  })
+})
+
+describe('ACA current-year contract math', () => {
+  it('pins every 2026 applicable-percentage boundary just below, at, and above', () => {
+    // IRS Rev. Proc. 2025-25 §3.01.
+    const boundaries = [100, 133, 150, 200, 250, 300, 400]
+    for (const boundary of boundaries) {
+      const values = [
+        acaApplicablePct(pack, boundary - 0.001),
+        acaApplicablePct(pack, boundary),
+        acaApplicablePct(pack, boundary + 0.001),
+      ]
+      expect(values.every(Number.isFinite)).toBe(true)
+    }
+    expect(acaApplicablePct(pack, 132.999)).toBe(2.1)
+    expect(acaApplicablePct(pack, 133)).toBe(3.14)
+  })
+
+  it('uses the separate SLCSP while capping allowable PTC at enrollment premium', () => {
+    // Form 8962 instructions: benchmark drives the preliminary credit, but the
+    // allowable credit cannot exceed the enrollment premium.
+    const enrollment = new Array<number>(12).fill(500)
+    const benchmark = new Array<number>(12).fill(1_000)
+    const result = acaEconomicPremiumByMonth(pack, 1, 31_300, enrollment, benchmark)
+    expect(result.grossEnrollmentPremium).toBe(6_000)
+    expect(result.applicableSlcspPremium).toBe(12_000)
+    expect(result.modeledAllowablePtc).toBe(6_000)
+    expect(result.economicNetPremium).toBe(0)
+  })
+
+  it('excludes SLCSP amounts from months without enrollment', () => {
+    const enrollment = [500, ...new Array<number>(11).fill(0)]
+    const benchmark = new Array<number>(12).fill(1_000)
+    const result = acaEconomicPremiumByMonth(pack, 1, 31_300, enrollment, benchmark)
+    expect(result.grossEnrollmentPremium).toBe(500)
+    expect(result.applicableSlcspPremium).toBe(1_000)
+    expect(result.modeledAllowablePtc).toBe(500)
+  })
+
+  it('uses the separate 2025 HHS poverty tables for Alaska and Hawaii', () => {
+    // https://aspe.hhs.gov/topics/poverty-economic-mobility/poverty-guidelines
+    expect(acaFederalPovertyLine(pack, 1, 'contiguous')).toBe(15_650)
+    expect(acaFederalPovertyLine(pack, 1, 'alaska')).toBe(19_550)
+    expect(acaFederalPovertyLine(pack, 1, 'hawaii')).toBe(17_990)
+    expect(acaFederalPovertyLine(pack, 4, 'alaska')).toBe(40_190)
+    expect(acaFederalPovertyLine(pack, 4, 'hawaii')).toBe(36_980)
+  })
+
+  it('resolves every regional poverty guideline from the versioned parameter pack', () => {
+    const regionalPack = structuredClone(pack)
+    regionalPack.federalPovertyLine.alaska.firstPerson = 20_000
+    regionalPack.federalPovertyLine.hawaii.perAdditionalPerson = 7_000
+
+    expect(acaFederalPovertyLine(regionalPack, 1, 'alaska')).toBe(20_000)
+    expect(acaFederalPovertyLine(regionalPack, 2, 'hawaii')).toBe(24_990)
+  })
+
+  it('builds household MAGI from AGI, addbacks, and required-filer dependents', () => {
+    const result = buildAcaHouseholdMagi({
+      federalAgi: 30_000,
+      grossSocialSecurity: 20_000,
+      taxableSocialSecurity: 5_000,
+      taxExemptInterest: { state: 'known', amount: 1_000 },
+      foreignExclusionAddback: { state: 'known', amount: 2_000 },
+      dependents: [
+        { personId: 'required', requiredToFile: 'required', magi: 3_000 },
+        { personId: 'not-required', requiredToFile: 'notRequired', magi: 4_000 },
+      ],
+    })
+    expect(result.actionable).toBe(true)
+    expect(result.components).toEqual({
+      federalAgi: 30_000,
+      nontaxableSocialSecurity: 15_000,
+      taxExemptInterest: 1_000,
+      foreignExclusionAddback: 2_000,
+      requiredFilerDependentMagi: 3_000,
+    })
+    expect(result.magi).toBe(51_000)
+  })
+
+  it('preserves signed federal AGI until applying the final household-income floor', () => {
+    const positiveAfterAddbacks = buildAcaHouseholdMagi({
+      federalAgi: -10_000,
+      grossSocialSecurity: 0,
+      taxableSocialSecurity: 0,
+      taxExemptInterest: { state: 'known', amount: 3_000 },
+      foreignExclusionAddback: { state: 'known', amount: 8_000 },
+      dependents: [{ personId: 'dependent', requiredToFile: 'required', magi: 4_000 }],
+    })
+    expect(positiveAfterAddbacks.components.federalAgi).toBe(-10_000)
+    expect(positiveAfterAddbacks.magi).toBe(5_000)
+
+    const flooredHousehold = buildAcaHouseholdMagi({
+      federalAgi: -20_000,
+      grossSocialSecurity: 0,
+      taxableSocialSecurity: 0,
+      taxExemptInterest: { state: 'known', amount: 3_000 },
+      foreignExclusionAddback: { state: 'known', amount: 8_000 },
+      dependents: [{ personId: 'dependent', requiredToFile: 'required', magi: 4_000 }],
+    })
+    expect(flooredHousehold.components.federalAgi).toBe(-20_000)
+    expect(flooredHousehold.magi).toBe(0)
+  })
+
+  it('fails closed when a required ACA-MAGI fact is unknown', () => {
+    const result = buildAcaHouseholdMagi({
+      federalAgi: 30_000,
+      grossSocialSecurity: 0,
+      taxableSocialSecurity: 0,
+      taxExemptInterest: { state: 'unknown', amount: null },
+      foreignExclusionAddback: { state: 'unknown', amount: null },
+      dependents: [{ personId: 'dep', requiredToFile: 'unknown', magi: 5_000 }],
+    })
+    expect(result.actionable).toBe(false)
+    expect(result.magi).toBeNull()
+    expect(result.blockers).toEqual([
+      'tax-exempt-interest-unknown',
+      'foreign-exclusion-addback-unknown',
+      'dependent-filing-status-unknown',
+    ])
   })
 })

@@ -9,6 +9,7 @@ import {
   productionTaxCalculator,
   recurringOrdinaryIncome,
   runPlan,
+  setAcaYearContract,
   singlePersonPlan,
   socialSecurityIncome,
   taxableAccount,
@@ -106,15 +107,11 @@ describe('full-plan golden fixtures', () => {
     expectMoney(year.balances['cash']!, 133_260)
   })
 
-  it('Plan E: first-year ACA credit uses recent MAGI and honors the cliff', () => {
+  it('Plan E: first-year ACA credit uses current-year MAGI and honors the cliff', () => {
     const below = singlePersonPlan({ dob: '1964-01-01', planningAge: 62 })
     below.accounts = [cashAccount('cash', 100_000)]
-    below.assumptions.recentAnnualMagi = 50_000
-    below.expenses.healthcare = {
-      pre65MonthlyPremiumPerPerson: 1_000,
-      applyAcaCredit: true,
-      medicareExtrasMonthlyPerPerson: 0,
-    }
+    below.incomes = [recurringOrdinaryIncome('income', 50_000, 2026)]
+    setAcaYearContract(below)
 
     const belowResult = runPlan(below, noTax)
 
@@ -127,14 +124,14 @@ describe('full-plan golden fixtures', () => {
 
     const above = singlePersonPlan({ dob: '1964-01-01', planningAge: 62 })
     above.accounts = [cashAccount('cash', 100_000)]
-    above.assumptions.recentAnnualMagi = 62_601
-    above.expenses.healthcare = below.expenses.healthcare
+    above.incomes = [recurringOrdinaryIncome('income', 62_601, 2026)]
+    setAcaYearContract(above)
 
     const aboveResult = runPlan(above, noTax)
 
     // 400% FPL = 15,650 * 4 = 62,600. One dollar over gets no credit.
     expectMoney(aboveResult.years[0]!.expenses.healthcare, 12_000)
-    expect(aboveResult.warnings.some((w) => w.includes('ACA credit'))).toBe(true)
+    expect(aboveResult.warnings.some((w) => w.includes('400%'))).toBe(true)
   })
 
   it('Plan F: RMD and QCD separate distribution from taxable income', () => {

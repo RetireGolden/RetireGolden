@@ -14,10 +14,11 @@ import { PlanWorkspace } from './PlanWorkspace'
 import { PlanCtx, usePlan } from './planContextCore'
 import { fmtMoneyCompact, parseAmount } from './format'
 import { createSamplePlan } from '../testSupport/samplePlan'
-import { removePartner } from './householdActions'
+import { invalidateAcaEvidence, removePartner, updatePersonLongevity } from './householdActions'
 import { projectPlan } from './useProjection'
 import { AccountsSection, AssumptionsSection, HouseholdSection, InsuranceSection, SpendingSection, StrategySection } from './sections'
 import { InsightsPage } from './insights/InsightsPage'
+import { acaReportStatus } from './acaReportStatus'
 
 beforeEach(() => {
   globalThis.indexedDB = new IDBFactory()
@@ -82,6 +83,72 @@ describe('sample plan', () => {
     for (const s of plan.scenarios) {
       expect(applyScenarioPatch(plan, s.patch).ok).toBe(true)
     }
+  })
+})
+
+describe('ACA annual evidence invalidation', () => {
+  it('clears exact annual evidence after a topology, region, or premium edit', () => {
+    const plan = createSamplePlan()
+    plan.expenses.healthcare.acaYears = []
+    invalidateAcaEvidence(plan)
+    expect(plan.expenses.healthcare.acaYears).toBeUndefined()
+  })
+
+  it('clears exact annual evidence after a planning-age change', () => {
+    const plan = createSamplePlan()
+    plan.expenses.healthcare.acaYears = []
+
+    updatePersonLongevity(plan, 0, { planningAge: 88, source: 'model' })
+
+    expect(plan.household.people[0]!.longevity).toEqual({ planningAge: 88, source: 'model' })
+    expect(plan.expenses.healthcare.acaYears).toBeUndefined()
+  })
+})
+
+describe('report ACA wording', () => {
+  it('shows no ACA status when credit modeling is disabled', () => {
+    const plan = createSamplePlan()
+    plan.expenses.healthcare.applyAcaCredit = false
+    expect(acaReportStatus(plan, [{ aca: { readiness: 'actionable' } } as never])).toBe('')
+  })
+
+  it('describes all-actionable years as modeled', () => {
+    const plan = createSamplePlan()
+    plan.expenses.healthcare.applyAcaCredit = true
+    expect(
+      acaReportStatus(plan, [
+        { aca: { readiness: 'actionable' } } as never,
+        { aca: { readiness: 'actionable' } } as never,
+      ]),
+    ).toBe(', ACA credit modeled for evidenced years')
+  })
+
+  it('distinguishes mixed actionable and non-actionable years', () => {
+    const plan = createSamplePlan()
+    plan.expenses.healthcare.applyAcaCredit = true
+    expect(
+      acaReportStatus(plan, [
+        { aca: { readiness: 'actionable' } } as never,
+        { aca: { readiness: 'nonActionable' } } as never,
+      ]),
+    ).toBe(', ACA credit modeled for supported years; unsupported years use gross premium')
+  })
+
+  it('describes all non-actionable years as unsupported gross-premium years', () => {
+    const plan = createSamplePlan()
+    plan.expenses.healthcare.applyAcaCredit = true
+    expect(
+      acaReportStatus(plan, [
+        { aca: { readiness: 'nonActionable' } } as never,
+        { aca: { readiness: 'nonActionable' } } as never,
+      ]),
+    ).toBe(', ACA credit not modeled; unsupported years use gross premium')
+  })
+
+  it('requests annual evidence when no ACA ledger year exists', () => {
+    const plan = createSamplePlan()
+    plan.expenses.healthcare.applyAcaCredit = true
+    expect(acaReportStatus(plan, [])).toBe(', ACA credit requested; annual evidence required')
   })
 })
 

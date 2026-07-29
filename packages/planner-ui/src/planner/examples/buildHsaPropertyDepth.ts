@@ -3,8 +3,8 @@
  * sale with basis/exclusion/recapture, and pro-rata on IRA conversions.
  */
 
-import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
-import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory } from './buildContext'
+import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
+import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'hsa-property-depth'
 
@@ -103,7 +103,7 @@ export function buildHsaPropertyDepth(): Plan {
     safeWithdrawalRatePct: 3.6,
   }
 
-  const parsed = parsePlan(plan)
+  const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`hsa-property-depth invalid: ${parsed.issues.join('; ')}`)
   return parsed.plan
 }

@@ -32,13 +32,25 @@ const pack = packForYear(2026).pack
 
 describe('ORACLE-003: ACA premium tax credit vs IRS Rev. Proc. 2025-25 + HHS 2025 FPL', () => {
   it('poverty-line parameters match the 2025 HHS guidelines and produce the published 2026 cliffs', () => {
-    expect(pack.federalPovertyLine.firstPerson).toBe(15_650)
-    expect(pack.federalPovertyLine.perAdditionalPerson).toBe(5_500)
+    expect(pack.federalPovertyLine.contiguous).toEqual({
+      firstPerson: 15_650,
+      perAdditionalPerson: 5_500,
+    })
+    expect(pack.federalPovertyLine.alaska).toEqual({
+      firstPerson: 19_550,
+      perAdditionalPerson: 6_880,
+    })
+    expect(pack.federalPovertyLine.hawaii).toEqual({
+      firstPerson: 17_990,
+      perAdditionalPerson: 6_330,
+    })
     expect(pack.aca.maxFplPctForCredit).toBe(400)
 
     // 400% FPL cliff dollar amounts published for 2026 (48 states), from these guidelines:
-    const fplSingle = pack.federalPovertyLine.firstPerson
-    const fplFamily4 = pack.federalPovertyLine.firstPerson + 3 * pack.federalPovertyLine.perAdditionalPerson
+    const fplSingle = pack.federalPovertyLine.contiguous.firstPerson
+    const fplFamily4 =
+      pack.federalPovertyLine.contiguous.firstPerson +
+      3 * pack.federalPovertyLine.contiguous.perAdditionalPerson
     expectMoney(fplSingle * 4, 62_600) // single cliff
     expectMoney(fplFamily4 * 4, 128_600) // family-of-four cliff
   })
@@ -62,17 +74,9 @@ describe('ORACLE-003: ACA premium tax credit vs IRS Rev. Proc. 2025-25 + HHS 202
     expectPercent(acaApplicablePct(pack, 275), 9.2)
   })
 
-  /**
-   * Documented modeling nuance — the 133% boundary.
-   * The IRS table is a step: < 133% is a flat 2.10% and the 133–150% band opens
-   * at 3.14%. The pack encodes the jump as a 1-point ramp (133% → 2.10%, 134% →
-   * 3.14%) because the engine interpolates linearly, so values strictly between
-   * 133% and 134% FPL differ slightly from the IRS step. Outside that sub-1%-FPL
-   * sliver the schedule matches IRS exactly. Intentional encoding simplification.
-   */
-  it('treats the 133% boundary as a 1-point ramp (documented approximation)', () => {
-    expectPercent(acaApplicablePct(pack, 133), 2.1) // pack: end of the flat <133 segment
-    expectPercent(acaApplicablePct(pack, 134), 3.14) // pack: start of the 133–150 band
+  it('matches the real applicable-percentage step at exactly 133% FPL', () => {
+    expectPercent(acaApplicablePct(pack, 132.999), 2.1)
+    expectPercent(acaApplicablePct(pack, 133), 3.14)
   })
 
   it('applies the credit below the cliff and forfeits it one dollar above (single, 2026)', () => {

@@ -8,6 +8,7 @@ import {
   productionTaxCalculator,
   recurringOrdinaryIncome,
   runPlan,
+  setAcaYearContract,
   singlePersonPlan,
   socialSecurityIncome,
   taxableAccount,
@@ -230,20 +231,16 @@ describe('full-plan characterization fixtures', () => {
     ]
     plan.incomes = [recurringOrdinaryIncome('consulting', 55_000, 2026)]
     plan.expenses.baseAnnual = 30_000
-    plan.expenses.healthcare = {
-      pre65MonthlyPremiumPerPerson: 1_000,
-      applyAcaCredit: true,
-      medicareExtrasMonthlyPerPerson: 0,
-    }
-    plan.assumptions.recentAnnualMagi = 50_000
+    setAcaYearContract(plan, { year: 2026 })
+    setAcaYearContract(plan, { year: 2027 })
+    setAcaYearContract(plan, { year: 2028 })
     plan.strategies.rothConversion = { mode: 'manual', conversions: [{ year: 2026, amount: 10_000 }] }
 
     const result = runPlan(plan, federal)
 
     // Characterization review note: this fixture pins the ACA bridge behavior
-    // where first-year healthcare uses recent MAGI, then a deliberate Roth
-    // conversion pushes the following year over the subsidy cliff. Keep the
-    // warning assertion because it is part of the user-facing calculation story.
+    // where a deliberate Roth conversion crosses the sourced 2026 cliff and
+    // the future stand-in year fails closed to gross premium.
     const summary = {
       depletionYear: result.depletionYear,
       endingInvestable: dollars(result.endingInvestable),
@@ -255,20 +252,23 @@ describe('full-plan characterization fixtures', () => {
 
     expect(summary).toEqual({
       depletionYear: null,
-      endingInvestable: 456_473.2,
-      warnings: ['Some pre-65 years exceed 400% of the federal poverty line: no ACA credit (the cliff).'],
+      endingInvestable: 442_931.2,
+      warnings: [
+        'Some pre-65 years exceed 400% of the federal poverty line: no ACA credit (the cliff).',
+        'Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported.',
+      ],
       y2026: {
         year: 2026,
         income: 55_000,
         socialSecurity: 0,
-        healthcare: 4_980,
+        healthcare: 12_000,
         withdrawals: 0,
         rmd: 0,
         qcd: 0,
         rothConversion: 10_000,
         tax: 5_620,
         magi: 65_000,
-        investable: 414_400,
+        investable: 407_380,
         shortfall: 0,
       },
       y2027: {
@@ -282,7 +282,7 @@ describe('full-plan characterization fixtures', () => {
         rothConversion: 0,
         tax: 4_420,
         magi: 55_000,
-        investable: 422_980,
+        investable: 415_960,
         shortfall: 0,
       },
       y2029: {
@@ -296,7 +296,7 @@ describe('full-plan characterization fixtures', () => {
         rothConversion: 0,
         tax: 4_174,
         magi: 55_000,
-        investable: 456_473.2,
+        investable: 442_931.2,
         shortfall: 0,
       },
     })

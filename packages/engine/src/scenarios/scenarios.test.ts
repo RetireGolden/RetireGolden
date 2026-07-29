@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, parsePlan, type Account, type Plan, type Scenario } from '../model/plan.js'
 import { createFlatTaxCalculator } from '../projection/flatTax.js'
+import { setAcaYearContract } from '../testing/planFixtures.js'
 import { applyScenarioPatch, compareScenarios, diffScenarioPatch } from './scenarios.js'
 
 let counter = 0
@@ -84,6 +85,30 @@ describe('applyScenarioPatch', () => {
     if (!r.ok) return
     expect(r.plan.id).toBe(plan.id)
     expect(r.plan.scenarios).toEqual(plan.scenarios)
+  })
+
+  it('keeps explicitly refreshed ACA evidence in a legacy household patch and clears stale evidence otherwise', () => {
+    const plan = basePlan()
+    setAcaYearContract(plan)
+    const base = validate(plan)
+    const refreshed = structuredClone(base.expenses.healthcare.acaYears!)
+    refreshed[0]!.coveredMembers[0]!.enrollmentPremiumByMonth = new Array<number>(12).fill(750)
+
+    const withEvidence = applyScenarioPatch(base, {
+      household: { state: 'FL' },
+      expenses: { healthcare: { acaYears: refreshed } },
+    })
+    expect(withEvidence.ok).toBe(true)
+    if (withEvidence.ok) {
+      expect(withEvidence.plan.household.state).toBe('FL')
+      expect(withEvidence.plan.expenses.healthcare.acaYears).toEqual(refreshed)
+    }
+
+    const withoutEvidence = applyScenarioPatch(base, { household: { state: 'FL' } })
+    expect(withoutEvidence.ok).toBe(true)
+    if (withoutEvidence.ok) {
+      expect(withoutEvidence.plan.expenses.healthcare.acaYears).toBeUndefined()
+    }
   })
 })
 

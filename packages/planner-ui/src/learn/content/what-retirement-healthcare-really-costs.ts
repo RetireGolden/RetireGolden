@@ -88,10 +88,10 @@ export const whatRetirementHealthcareReallyCostsArticle: LearningArticle = {
         { label: 'Ages', value: '63 and 61, not yet on Medicare' },
         { label: 'Marketplace quote', value: '$1,850 per month for both before credits' },
         { label: 'Subsidized estimate', value: '$620 per month after projected premium tax credit' },
-        { label: 'Planning entry', value: '$925 per person per month, with Apply ACA premium credit turned on' },
+        { label: 'Planning entry', value: '$925 per person per month gross, with ACA modeling requested and annual evidence still required' },
       ],
       summary:
-        'They enter the full premium so RetireGolden can test the credit against MAGI. The subsidized premium is useful for budgeting, but the full premium is the right input for the field.',
+        'They enter the full premium because a requested credit is not an applied credit. RetireGolden only reduces the gross cost for a year with complete annual evidence and sourced tax-year parameters.',
     },
     { type: 'heading', text: 'How this fits healthcare inflation' },
     {
@@ -111,7 +111,7 @@ export const whatRetirementHealthcareReallyCostsArticle: LearningArticle = {
     { type: 'heading', text: 'Where to use this in the app' },
     {
       type: 'prose',
-      md: 'Use **Spending** for pre-65 premiums, the ACA credit switch, and Medicare extras. Use **Assumptions** for healthcare inflation and recent MAGI. Use **Results** to inspect annual healthcare costs, taxes, and MAGI-sensitive premiums together.',
+      md: 'Use **Spending** for gross pre-65 premiums, the ACA modeling request, and Medicare extras. Use **Assumptions** for healthcare inflation. Use **Results** to verify ACA evidence readiness and inspect annual healthcare costs, taxes, and current-year MAGI together.',
     },
   ],
 }

@@ -47,16 +47,34 @@ Computed each year inside the projection loop:
   estimate Form SSA-44 lets a beneficiary submit (domain rules §7). The optimizer shifts those years'
   IRMAA-binary source to (t−1) in-solve. Off/absent = the plain lookback; the couples' **Survivor
   transition** view shows the with/without delta per death timing.
-- **ACA premium tax credit** (pre-65): computed from MAGI vs FPL with the restored **400% FPL cliff** — a
-  first-class constraint for early retirees managing MAGI ([aca.ts](../../packages/engine/src/tax/aca.ts)). The
-  credit is a **household** calculation: covered members' premiums pool and the MAGI-based expected
-  contribution is subtracted once per household, not per person.
+- **ACA planning-year premium tax credit** (pre-65): the exact ledger reconciles current-year healthcare
+  cash need, withdrawals, tax, and ACA household MAGI before reporting a result
+  ([aca.ts](../../packages/engine/src/tax/aca.ts)). ACA MAGI is final federal AGI plus nontaxable Social
+  Security, characterized tax-exempt interest, explicit foreign-exclusion addbacks, and required-filer
+  dependent MAGI. Addbacks affect ACA MAGI without becoming ordinary taxable income; the foreign-exclusion
+  amount also participates in Social Security provisional income under §86. Signed federal AGI is preserved
+  through ACA component assembly and only the final household total is floored at zero.
+- An explicit per-year contract separates the tax family and required-filer dependents from covered members
+  and months, carries the 48/DC versus Alaska/Hawaii poverty table, and supplies separate enrollment and
+  SLCSP benchmark premiums. The result labels gross enrollment premium, applicable SLCSP, modeled allowable
+  PTC, and economic net premium.
+- The modeled 2026 schedule has the exact 133% step and treats exactly 400% FPL as eligible and above 400%
+  as the cliff. Below 100%, missing/unknown material facts, unsupported filing/eligibility mechanics, and
+  non-convergence fund gross premium with typed non-actionable evidence.
 - **Age-65 transition:** Medicare eligibility starts in the birth month of the year a member turns 65, so
   that year is prorated — `birthMonth − 1` marketplace months feed the household ACA pool and the remaining
   months carry Part B/D (and Medicare extras). The credit itself is computed **monthly**
-  (`acaNetAnnualPremiumByMonth`): each covered month earns `max(0, premium − expectedContribution/12)`, so a
+  (`acaEconomicPremiumByMonth`): each covered month compares its SLCSP with
+  `expectedContribution/12`, capped by enrollment premium, so a
   five-month transition owes five-twelfths of the expected contribution, not a full year of it.
   Planning-grade: the born-on-the-1st prior-month rule is not modeled.
+- This is not APTC cash timing and does not calculate a Form 8962 refund, repayment, or balance due. APTC
+  transaction detail, Form 8814, special allocation/MFS exceptions, and self-employed deduction interactions
+  remain outside the model and must be asserted not applicable or the result is non-actionable.
+- The standard planner UI does not yet author the additive `expenses.healthcare.acaYears` contract; it can
+  only set the legacy monthly-premium and credit toggle. Plans created or saved through that UI with the
+  toggle enabled therefore intentionally fail closed to gross premium and `missing-year-contract` evidence.
+  Actionable current-year ACA pricing currently requires a schema/API/import-authored contract.
 - **Survivor filing status:** married-couple projections retain MFJ treatment in the year one spouse dies.
   After that, survivor years file single unless `household.hasQualifyingDependent` is enabled, in which case
   the next two years use qualifying-surviving-spouse treatment (MFJ brackets/deduction for tax parameters).
@@ -208,7 +226,7 @@ projection ledger prices. Do not rebuild a simplified income model inside a reco
 
 The developer checklist lives in [standards.md](../standards.md#recommendation-income-coverage-checklist). The
 named fixture suite
-[`engine/decisions/incomeCoverage.test.ts`](../../packages/engine/src/decisions/incomeCoverage.test.ts) proves that
+[`packages/planner-ui/src/integration/incomeCoverage.test.ts`](../../packages/planner-ui/src/integration/incomeCoverage.test.ts) proves that
 candidate generators and detectors preserve one-time income, contributions and employer match, taxable gains
 and qualified dividends, and Social Security taxability when those sources change the recommendation. Add or
 update a fixture whenever a new recommendation path touches AGI, MAGI, taxable income, balances, or spending

@@ -198,11 +198,14 @@ export interface ParameterPack {
     oasdiEmployeeRatePct: number
   }
 
-  /** HHS poverty guideline (48 contiguous states) used for ACA in this coverage year. */
-  federalPovertyLine: {
-    firstPerson: number
-    perAdditionalPerson: number
-  }
+  /** HHS poverty guidelines used for ACA in this coverage year. */
+  federalPovertyLine: Record<
+    'contiguous' | 'alaska' | 'hawaii',
+    {
+      firstPerson: number
+      perAdditionalPerson: number
+    }
+  >
 
   /** ACA premium-tax-credit scale (post-2025: enhanced credits expired, 400% FPL cliff restored). */
   aca: {
@@ -212,6 +215,10 @@ export interface ParameterPack {
      * credit at all (the cliff).
      */
     applicablePctBreakpoints: Array<{ fplPct: number; applicablePct: number }>
+    /** Flat applicable percentage strictly below the first breakpoint. */
+    applicablePctBelowFirstBreakpoint: number
+    /** Ordinary eligibility floor; lower-income exceptions are not modeled. */
+    minFplPctForCredit: number
     maxFplPctForCredit: number
   }
 }

@@ -117,9 +117,11 @@ export const simpleRothConversionGenerator: CandidateGenerator = {
       make('bracket-12', 'Fill the 12% bracket', 'topOfBracket', 12, 'roth'),
       make('bracket-22', 'Fill the 22% bracket', 'topOfBracket', 22, 'roth'),
       make('bracket-24', 'Fill the 24% bracket', 'topOfBracket', 24, 'roth'),
-      make('aca-cliff-cap', 'Convert up to the ACA cliff', 'acaCliff', null, 'tax-cliff'),
       make('irmaa-tier-1-cap', 'Convert up to the first IRMAA tier', 'irmaaTier', 1, 'tax-cliff'),
     ]
+    if (ctx.baselineResult.years.some((year) => year.aca?.readiness === 'actionable')) {
+      candidates.push(make('aca-cliff-cap', 'Convert up to the ACA cliff', 'acaCliff', null, 'tax-cliff'))
+    }
     for (const window of conversionWindowBoundaries(ctx, startYear, endYear)) {
       for (const bracket of [12, 22, 24]) {
         candidates.push(

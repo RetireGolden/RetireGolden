@@ -68,6 +68,29 @@ describe('Social Security taxation (provisional income)', () => {
     expect(d.taxableSocialSecurity).toBeCloseTo(3_500, 6)
     expect(d.agi).toBeCloseTo(23_500, 6)
   })
+
+  it('includes a foreign exclusion in provisional income without taxing the exclusion itself', () => {
+    const d = computeFederalTax(
+      input({
+        ordinaryIncome: 10_000,
+        ssBenefits: 20_000,
+        foreignExclusionAddback: 10_000,
+      }),
+    )
+    // Provisional income is 30,000, so $2,500 of SS becomes taxable. The
+    // excluded $10,000 itself never enters AGI.
+    expect(d.taxableSocialSecurity).toBeCloseTo(2_500, 6)
+    expect(d.agi).toBeCloseTo(12_500, 6)
+  })
+
+  it('preserves signed pre-floor AGI without changing ordinary tax behavior', () => {
+    const d = computeFederalTax(input({ capitalGains: -3_000 }))
+    expect(d.agiBeforeFloor).toBe(-3_000)
+    expect(d.agi).toBe(0)
+    expect(d.magi).toBe(0)
+    expect(d.taxableIncome).toBe(0)
+    expect(d.totalTax).toBe(0)
+  })
 })
 
 describe('capital gains stacking', () => {

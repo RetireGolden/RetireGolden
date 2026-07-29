@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, parsePlan, type Plan } from '../model/plan.js'
+import { setAcaYearContract } from '../testing/planFixtures.js'
 import { isScenarioPatchDocument, parseScenarioPatch, type ScenarioPatchMetadata } from './contract.js'
 import {
   applyLegacyScenarioPatch,
@@ -14,7 +15,11 @@ import {
   revertScenarioPatch,
   scenarioPlanSnapshotHash,
 } from './patch.js'
-import { applyScenarioPatch, diffScenarioPatch } from './scenarios.js'
+import {
+  applyScenarioPatch,
+  canonicalOperationSuppliesCompleteAcaEvidence,
+  diffScenarioPatch,
+} from './scenarios.js'
 
 const metadata: ScenarioPatchMetadata = {
   title: 'Meeting proposal',
@@ -98,6 +103,191 @@ describe('canonical scenario patch documents', () => {
     if (reverted.ok) {
       expect(reverted.baseSnapshotMatches).toBe(true)
       expect(canonicalScenarioJson(reverted.plan)).toBe(canonicalScenarioJson(base))
+    }
+  })
+
+  it('invalidates stale ACA evidence when a canonical operation replaces the household root', () => {
+    const base = plan()
+    setAcaYearContract(base)
+    const edited = clonePlan(base)
+    edited.household.state = 'FL'
+    const generated = build(base, edited)
+    const rootPatch = {
+      ...generated,
+      operations: [
+        {
+          op: 'set' as const,
+          path: '/household',
+          before: { present: true as const, value: base.household },
+          value: edited.household,
+        },
+      ],
+    }
+
+    const applied = applyScenarioPatch(base, rootPatch)
+    expect(applied.ok).toBe(true)
+    if (applied.ok) {
+      expect(applied.plan.household.state).toBe('FL')
+      expect(applied.plan.expenses.healthcare.acaYears).toBeUndefined()
+    }
+  })
+
+  it('recognizes refreshed ACA evidence supplied by direct and ancestor canonical sets', () => {
+    const base = plan()
+    setAcaYearContract(base)
+    const edited = clonePlan(base)
+    edited.household.state = 'FL'
+    edited.expenses.healthcare.pre65MonthlyPremiumPerPerson = 750
+    const refreshedContracts = structuredClone(edited.expenses.healthcare.acaYears!)
+    refreshedContracts[0]!.coveredMembers[0]!.enrollmentPremiumByMonth =
+      new Array<number>(12).fill(750)
+    refreshedContracts[0]!.coveredMembers[0]!.slcspBenchmarkPremiumByMonth =
+      new Array<number>(12).fill(750)
+    edited.expenses.healthcare.acaYears = refreshedContracts
+    const generated = build(base, edited)
+    const householdOperation = {
+      op: 'set' as const,
+      path: '/household',
+      before: { present: true as const, value: base.household },
+      value: edited.household,
+    }
+
+    const ancestorPatch = {
+      ...generated,
+      operations: [
+        householdOperation,
+        {
+          op: 'set' as const,
+          path: '/expenses/healthcare',
+          before: { present: true as const, value: base.expenses.healthcare },
+          value: edited.expenses.healthcare,
+        },
+      ],
+    }
+    const ancestorApplied = applyScenarioPatch(base, ancestorPatch)
+    expect(ancestorApplied.ok).toBe(true)
+    if (ancestorApplied.ok) {
+      expect(ancestorApplied.plan.household.state).toBe('FL')
+      expect(ancestorApplied.plan.expenses.healthcare.pre65MonthlyPremiumPerPerson).toBe(750)
+      expect(ancestorApplied.plan.expenses.healthcare.acaYears).toEqual(refreshedContracts)
+    }
+
+    const expensesAncestorApplied = applyScenarioPatch(base, {
+      ...generated,
+      operations: [
+        householdOperation,
+        {
+          op: 'set' as const,
+          path: '/expenses',
+          before: { present: true as const, value: base.expenses },
+          value: edited.expenses,
+        },
+      ],
+    })
+    expect(expensesAncestorApplied.ok).toBe(true)
+    if (expensesAncestorApplied.ok) {
+      expect(expensesAncestorApplied.plan.expenses.healthcare.acaYears).toEqual(refreshedContracts)
+    }
+
+    const directPatch = {
+      ...generated,
+      operations: [
+        householdOperation,
+        {
+          op: 'set' as const,
+          path: '/expenses/healthcare/acaYears',
+          before: {
+            present: true as const,
+            value: base.expenses.healthcare.acaYears!,
+          },
+          value: refreshedContracts,
+        },
+      ],
+    }
+    const directApplied = applyScenarioPatch(base, directPatch)
+    expect(directApplied.ok).toBe(true)
+    if (directApplied.ok) {
+      expect(directApplied.plan.expenses.healthcare.acaYears).toEqual(refreshedContracts)
+    }
+
+    const healthcareWithoutEvidence = structuredClone(edited.expenses.healthcare)
+    delete healthcareWithoutEvidence.acaYears
+    const withoutEvidencePatch = {
+      ...generated,
+      operations: [
+        householdOperation,
+        {
+          op: 'set' as const,
+          path: '/expenses/healthcare',
+          before: { present: true as const, value: base.expenses.healthcare },
+          value: healthcareWithoutEvidence,
+        },
+      ],
+    }
+    const withoutEvidenceApplied = applyScenarioPatch(base, withoutEvidencePatch)
+    expect(withoutEvidenceApplied.ok).toBe(true)
+    if (withoutEvidenceApplied.ok) {
+      expect(withoutEvidenceApplied.plan.expenses.healthcare.pre65MonthlyPremiumPerPerson).toBe(750)
+      expect(withoutEvidenceApplied.plan.expenses.healthcare.acaYears).toBeUndefined()
+    }
+  })
+
+  it('recognizes only complete canonical ACA evidence replacements', () => {
+    expect(
+      canonicalOperationSuppliesCompleteAcaEvidence({
+        op: 'set',
+        path: '/expenses/healthcare/acaYears',
+        before: { present: false },
+        value: [],
+      }),
+    ).toBe(true)
+    expect(
+      canonicalOperationSuppliesCompleteAcaEvidence({
+        op: 'remove',
+        path: '/expenses/healthcare/acaYears',
+        before: { present: true, value: [] },
+      }),
+    ).toBe(false)
+    expect(
+      canonicalOperationSuppliesCompleteAcaEvidence({
+        op: 'set',
+        path: '/expenses/healthcare/acaYears/0/coveredMembers',
+        before: { present: true, value: [] },
+        value: [],
+      }),
+    ).toBe(false)
+  })
+
+  it('clears ACA evidence when a canonical household change removes the contracts', () => {
+    const base = plan()
+    setAcaYearContract(base)
+    const edited = clonePlan(base)
+    edited.household.state = 'FL'
+    const generated = build(base, edited)
+    const applied = applyScenarioPatch(base, {
+      ...generated,
+      operations: [
+        {
+          op: 'set' as const,
+          path: '/household',
+          before: { present: true as const, value: base.household },
+          value: edited.household,
+        },
+        {
+          op: 'remove' as const,
+          path: '/expenses/healthcare/acaYears',
+          before: {
+            present: true as const,
+            value: base.expenses.healthcare.acaYears!,
+          },
+        },
+      ],
+    })
+
+    expect(applied.ok).toBe(true)
+    if (applied.ok) {
+      expect(applied.plan.household.state).toBe('FL')
+      expect(applied.plan.expenses.healthcare.acaYears).toBeUndefined()
     }
   })
 

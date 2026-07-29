@@ -224,6 +224,22 @@ function assumptionsSection(model: ReportModel): string {
   return `<section><h2>Assumptions and provenance</h2>${table(['Assumption', 'Value'], rows)}</section>`
 }
 
+function acaLedgerSection(model: ReportModel): string {
+  const rows = model.blocks['aca-ledger'].rows
+  if (rows.length === 0) return ''
+  return `<section><h2>ACA current-year ledger</h2>${table(
+    ['Year', 'Gross enrollment premium', 'Applicable SLCSP', 'Modeled allowable PTC', 'Economic net premium', 'Readiness'],
+    rows.map((row) => [
+      `${row.year}`,
+      fmtMoney(row.grossEnrollmentPremium),
+      row.applicableSlcspPremium === null ? 'Not modeled' : fmtMoney(row.applicableSlcspPremium),
+      row.modeledAllowablePtc === null ? 'Not modeled' : fmtMoney(row.modeledAllowablePtc),
+      fmtMoney(row.economicNetPremium),
+      row.readiness === 'actionable' ? 'Actionable' : 'Non-actionable',
+    ]),
+  )}</section>`
+}
+
 function warningsSection(model: ReportModel): string {
   const warnings = model.blocks['modeling-notes'].warnings
   if (warnings.length === 0) return ''
@@ -395,6 +411,7 @@ ${householdSection(model)}
 ${accountsSection(model)}
 ${incomeSection(model)}
 ${assumptionsSection(model)}
+${acaLedgerSection(model)}
 ${warningsSection(model)}
 ${appendixSection(model)}
 ${provenanceSection(model)}

@@ -5,8 +5,8 @@
  * to see success rate / depletion differences.
  */
 
-import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
-import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory } from './buildContext'
+import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
+import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'fixed-target-spending'
 
@@ -68,7 +68,7 @@ export function buildFixedTargetSpending(): Plan {
     safeWithdrawalRatePct: 3.8,
   }
 
-  const parsed = parsePlan(plan)
+  const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`fixed-target-spending invalid: ${parsed.issues.join('; ')}`)
   return parsed.plan
 }

@@ -1,5 +1,5 @@
-import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
-import { exampleEntityId, exampleFixedNow, exampleIdFactory } from './buildContext'
+import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
+import { exampleEntityId, exampleFixedNow, exampleIdFactory, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'lean-fat-fire'
 
@@ -103,7 +103,7 @@ export function buildLeanFatFire(): Plan {
       },
     },
   ]
-  const parsed = parsePlan(plan)
+  const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`lean-fat-fire invalid: ${parsed.issues.join('; ')}`)
   return parsed.plan
 }

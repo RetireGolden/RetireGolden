@@ -6,9 +6,27 @@ import { createDecisionContext, evaluateCandidate } from './evaluateCandidate.js
 import {
   assetLocationGenerator,
   probabilityBandSpendingGuardrailGenerator,
+  simpleRothConversionGenerator,
   socialSecurityClaimGridGenerator,
 } from './generators.js'
 import { assetLocationPlan, noTraditionalPlan, simOptions } from './decisionFixtures.js'
+
+describe('simpleRothConversionGenerator ACA evidence gate', () => {
+  it('emits the ACA-cliff candidate only when a baseline year is actionable', () => {
+    const absent = createDecisionContext(noTraditionalPlan(), simOptions())
+    expect(simpleRothConversionGenerator.generate(absent).some((candidate) => candidate.id === 'aca-cliff-cap')).toBe(false)
+
+    const nonActionable = createDecisionContext(noTraditionalPlan(), simOptions())
+    nonActionable.baselineResult.years[0]!.aca = { readiness: 'nonActionable' } as never
+    expect(
+      simpleRothConversionGenerator.generate(nonActionable).some((candidate) => candidate.id === 'aca-cliff-cap'),
+    ).toBe(false)
+
+    const actionable = createDecisionContext(noTraditionalPlan(), simOptions())
+    actionable.baselineResult.years[0]!.aca = { readiness: 'actionable' } as never
+    expect(simpleRothConversionGenerator.generate(actionable).some((candidate) => candidate.id === 'aca-cliff-cap')).toBe(true)
+  })
+})
 
 describe('probabilityBandSpendingGuardrailGenerator', () => {
   it('emits a ledger-native guardrail patch with probability-band metadata', () => {

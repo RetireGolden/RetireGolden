@@ -1,5 +1,329 @@
 {
   "blocks": {
+    "aca-ledger": {
+      "rows": [
+        {
+          "applicableSlcspPremium": 4200,
+          "economicNetPremium": 4200,
+          "grossEnrollmentPremium": 4200,
+          "modeledAllowablePtc": 0,
+          "readiness": "actionable",
+          "year": 2026
+        },
+        {
+          "applicableSlcspPremium": 4389,
+          "economicNetPremium": 4389,
+          "grossEnrollmentPremium": 4389,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2027
+        },
+        {
+          "applicableSlcspPremium": 4587,
+          "economicNetPremium": 4587,
+          "grossEnrollmentPremium": 4587,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2028
+        },
+        {
+          "applicableSlcspPremium": 4793,
+          "economicNetPremium": 4793,
+          "grossEnrollmentPremium": 4793,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2029
+        },
+        {
+          "applicableSlcspPremium": 5009,
+          "economicNetPremium": 5009,
+          "grossEnrollmentPremium": 5009,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2030
+        },
+        {
+          "applicableSlcspPremium": 5234,
+          "economicNetPremium": 5234,
+          "grossEnrollmentPremium": 5234,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2031
+        },
+        {
+          "applicableSlcspPremium": 5469,
+          "economicNetPremium": 5469,
+          "grossEnrollmentPremium": 5469,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2032
+        },
+        {
+          "applicableSlcspPremium": 5716,
+          "economicNetPremium": 5716,
+          "grossEnrollmentPremium": 5716,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2033
+        },
+        {
+          "applicableSlcspPremium": 5973,
+          "economicNetPremium": 5973,
+          "grossEnrollmentPremium": 5973,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2034
+        },
+        {
+          "applicableSlcspPremium": 6242,
+          "economicNetPremium": 6242,
+          "grossEnrollmentPremium": 6242,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2035
+        },
+        {
+          "applicableSlcspPremium": 6522,
+          "economicNetPremium": 6522,
+          "grossEnrollmentPremium": 6522,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2036
+        },
+        {
+          "applicableSlcspPremium": 6816,
+          "economicNetPremium": 6816,
+          "grossEnrollmentPremium": 6816,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2037
+        },
+        {
+          "applicableSlcspPremium": 7123,
+          "economicNetPremium": 7123,
+          "grossEnrollmentPremium": 7123,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2038
+        },
+        {
+          "applicableSlcspPremium": 7443,
+          "economicNetPremium": 7443,
+          "grossEnrollmentPremium": 7443,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2039
+        },
+        {
+          "applicableSlcspPremium": 7778,
+          "economicNetPremium": 7778,
+          "grossEnrollmentPremium": 7778,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2040
+        },
+        {
+          "applicableSlcspPremium": 8128,
+          "economicNetPremium": 8128,
+          "grossEnrollmentPremium": 8128,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2041
+        },
+        {
+          "applicableSlcspPremium": 8494,
+          "economicNetPremium": 8494,
+          "grossEnrollmentPremium": 8494,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2042
+        },
+        {
+          "applicableSlcspPremium": 8876,
+          "economicNetPremium": 8876,
+          "grossEnrollmentPremium": 8876,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2043
+        },
+        {
+          "applicableSlcspPremium": 9276,
+          "economicNetPremium": 9276,
+          "grossEnrollmentPremium": 9276,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2044
+        },
+        {
+          "applicableSlcspPremium": 9693,
+          "economicNetPremium": 9693,
+          "grossEnrollmentPremium": 9693,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2045
+        },
+        {
+          "applicableSlcspPremium": 10129,
+          "economicNetPremium": 10129,
+          "grossEnrollmentPremium": 10129,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2046
+        },
+        {
+          "applicableSlcspPremium": 10585,
+          "economicNetPremium": 10585,
+          "grossEnrollmentPremium": 10585,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2047
+        },
+        {
+          "applicableSlcspPremium": 11061,
+          "economicNetPremium": 11061,
+          "grossEnrollmentPremium": 11061,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2048
+        },
+        {
+          "applicableSlcspPremium": 11559,
+          "economicNetPremium": 11559,
+          "grossEnrollmentPremium": 11559,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2049
+        },
+        {
+          "applicableSlcspPremium": 12079,
+          "economicNetPremium": 12079,
+          "grossEnrollmentPremium": 12079,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2050
+        },
+        {
+          "applicableSlcspPremium": 12623,
+          "economicNetPremium": 12623,
+          "grossEnrollmentPremium": 12623,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2051
+        },
+        {
+          "applicableSlcspPremium": 13191,
+          "economicNetPremium": 13191,
+          "grossEnrollmentPremium": 13191,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2052
+        },
+        {
+          "applicableSlcspPremium": 13784,
+          "economicNetPremium": 13784,
+          "grossEnrollmentPremium": 13784,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2053
+        },
+        {
+          "applicableSlcspPremium": 14405,
+          "economicNetPremium": 14405,
+          "grossEnrollmentPremium": 14405,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2054
+        },
+        {
+          "applicableSlcspPremium": 15053,
+          "economicNetPremium": 15053,
+          "grossEnrollmentPremium": 15053,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2055
+        },
+        {
+          "applicableSlcspPremium": 15730,
+          "economicNetPremium": 15730,
+          "grossEnrollmentPremium": 15730,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2056
+        },
+        {
+          "applicableSlcspPremium": 16438,
+          "economicNetPremium": 16438,
+          "grossEnrollmentPremium": 16438,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2057
+        },
+        {
+          "applicableSlcspPremium": 17178,
+          "economicNetPremium": 17178,
+          "grossEnrollmentPremium": 17178,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2058
+        },
+        {
+          "applicableSlcspPremium": 17951,
+          "economicNetPremium": 17951,
+          "grossEnrollmentPremium": 17951,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2059
+        },
+        {
+          "applicableSlcspPremium": 18759,
+          "economicNetPremium": 18759,
+          "grossEnrollmentPremium": 18759,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2060
+        },
+        {
+          "applicableSlcspPremium": 19603,
+          "economicNetPremium": 19603,
+          "grossEnrollmentPremium": 19603,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2061
+        },
+        {
+          "applicableSlcspPremium": 20485,
+          "economicNetPremium": 20485,
+          "grossEnrollmentPremium": 20485,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2062
+        },
+        {
+          "applicableSlcspPremium": 21407,
+          "economicNetPremium": 21407,
+          "grossEnrollmentPremium": 21407,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2063
+        },
+        {
+          "applicableSlcspPremium": 22370,
+          "economicNetPremium": 22370,
+          "grossEnrollmentPremium": 22370,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2064
+        },
+        {
+          "applicableSlcspPremium": 23377,
+          "economicNetPremium": 23377,
+          "grossEnrollmentPremium": 23377,
+          "modeledAllowablePtc": null,
+          "readiness": "nonActionable",
+          "year": 2065
+        }
+      ]
+    },
     "accounts": {
       "rows": [
         {
@@ -443,51 +767,51 @@
           "year": 2061
         },
         {
-          "cash": 2190050,
+          "cash": 2168950,
           "equityComp": 0,
           "hsa": 0,
           "income": 0,
           "roth": 702580,
-          "spendingPlusTax": 109464,
+          "spendingPlusTax": 129949,
           "taxable": 0,
           "traditional": 2300123,
           "year": 2062
         },
         {
-          "cash": 2140185,
+          "cash": 2096403,
           "equityComp": 0,
           "hsa": 0,
           "income": 0,
           "roth": 751761,
-          "spendingPlusTax": 112201,
+          "spendingPlusTax": 133608,
           "taxable": 0,
           "traditional": 2461132,
           "year": 2063
         },
         {
-          "cash": 2085934,
+          "cash": 2017798,
           "equityComp": 0,
           "hsa": 0,
           "income": 0,
           "roth": 804384,
-          "spendingPlusTax": 115006,
+          "spendingPlusTax": 137376,
           "taxable": 0,
           "traditional": 2633411,
           "year": 2064
         },
         {
-          "cash": 2027095,
+          "cash": 1932837,
           "equityComp": 0,
           "hsa": 0,
           "income": 0,
           "roth": 860691,
-          "spendingPlusTax": 117881,
+          "spendingPlusTax": 141258,
           "taxable": 0,
           "traditional": 2817750,
           "year": 2065
         },
         {
-          "cash": 1938085,
+          "cash": 1840999,
           "equityComp": 0,
           "hsa": 0,
           "income": 0,
@@ -498,7 +822,7 @@
           "year": 2066
         },
         {
-          "cash": 1842152,
+          "cash": 1742153,
           "equityComp": 0,
           "hsa": 0,
           "income": 0,
@@ -509,7 +833,7 @@
           "year": 2067
         },
         {
-          "cash": 1808694,
+          "cash": 1705695,
           "equityComp": 0,
           "hsa": 0,
           "income": 67704,
@@ -520,7 +844,7 @@
           "year": 2068
         },
         {
-          "cash": 1771459,
+          "cash": 1665371,
           "equityComp": 0,
           "hsa": 0,
           "income": 69396,
@@ -531,7 +855,7 @@
           "year": 2069
         },
         {
-          "cash": 1730242,
+          "cash": 1620970,
           "equityComp": 0,
           "hsa": 0,
           "income": 71131,
@@ -542,7 +866,7 @@
           "year": 2070
         },
         {
-          "cash": 1684823,
+          "cash": 1572274,
           "equityComp": 0,
           "hsa": 0,
           "income": 72910,
@@ -553,7 +877,7 @@
           "year": 2071
         },
         {
-          "cash": 1634977,
+          "cash": 1519051,
           "equityComp": 0,
           "hsa": 0,
           "income": 74732,
@@ -564,7 +888,7 @@
           "year": 2072
         },
         {
-          "cash": 1580465,
+          "cash": 1461061,
           "equityComp": 0,
           "hsa": 0,
           "income": 76601,
@@ -575,7 +899,7 @@
           "year": 2073
         },
         {
-          "cash": 1521038,
+          "cash": 1398052,
           "equityComp": 0,
           "hsa": 0,
           "income": 78516,
@@ -586,7 +910,7 @@
           "year": 2074
         },
         {
-          "cash": 1456435,
+          "cash": 1329760,
           "equityComp": 0,
           "hsa": 0,
           "income": 80479,
@@ -597,7 +921,7 @@
           "year": 2075
         },
         {
-          "cash": 1533287,
+          "cash": 1402811,
           "equityComp": 0,
           "hsa": 0,
           "income": 82491,
@@ -608,7 +932,7 @@
           "year": 2076
         },
         {
-          "cash": 1616646,
+          "cash": 1482256,
           "equityComp": 0,
           "hsa": 0,
           "income": 84553,
@@ -619,7 +943,7 @@
           "year": 2077
         },
         {
-          "cash": 1706455,
+          "cash": 1568033,
           "equityComp": 0,
           "hsa": 0,
           "income": 86667,
@@ -630,7 +954,7 @@
           "year": 2078
         },
         {
-          "cash": 1803921,
+          "cash": 1661346,
           "equityComp": 0,
           "hsa": 0,
           "income": 88833,
@@ -641,7 +965,7 @@
           "year": 2079
         },
         {
-          "cash": 1909709,
+          "cash": 1762857,
           "equityComp": 0,
           "hsa": 0,
           "income": 91054,
@@ -652,7 +976,7 @@
           "year": 2080
         },
         {
-          "cash": 2024529,
+          "cash": 1873272,
           "equityComp": 0,
           "hsa": 0,
           "income": 93331,
@@ -663,7 +987,7 @@
           "year": 2081
         },
         {
-          "cash": 2148170,
+          "cash": 1992375,
           "equityComp": 0,
           "hsa": 0,
           "income": 95664,
@@ -674,7 +998,7 @@
           "year": 2082
         },
         {
-          "cash": 2282321,
+          "cash": 2121853,
           "equityComp": 0,
           "hsa": 0,
           "income": 98055,
@@ -685,7 +1009,7 @@
           "year": 2083
         },
         {
-          "cash": 2426638,
+          "cash": 2261355,
           "equityComp": 0,
           "hsa": 0,
           "income": 100507,
@@ -696,7 +1020,7 @@
           "year": 2084
         },
         {
-          "cash": 2582980,
+          "cash": 2412739,
           "equityComp": 0,
           "hsa": 0,
           "income": 103019,
@@ -707,7 +1031,7 @@
           "year": 2085
         },
         {
-          "cash": 2750708,
+          "cash": 2575360,
           "equityComp": 0,
           "hsa": 0,
           "income": 105595,
@@ -718,7 +1042,7 @@
           "year": 2086
         },
         {
-          "cash": 2930509,
+          "cash": 2749900,
           "equityComp": 0,
           "hsa": 0,
           "income": 108235,
@@ -729,7 +1053,7 @@
           "year": 2087
         },
         {
-          "cash": 3122995,
+          "cash": 2936968,
           "equityComp": 0,
           "hsa": 0,
           "income": 110941,
@@ -740,7 +1064,7 @@
           "year": 2088
         },
         {
-          "cash": 3307798,
+          "cash": 3116191,
           "equityComp": 0,
           "hsa": 0,
           "income": 113714,
@@ -751,7 +1075,7 @@
           "year": 2089
         },
         {
-          "cash": 3504913,
+          "cash": 3307557,
           "equityComp": 0,
           "hsa": 0,
           "income": 116557,
@@ -762,7 +1086,7 @@
           "year": 2090
         },
         {
-          "cash": 3712479,
+          "cash": 3509202,
           "equityComp": 0,
           "hsa": 0,
           "income": 119471,
@@ -783,9 +1107,9 @@
       "averagePreRetirementSavingsRatePct": 33,
       "coastFireNumber": 399420,
       "depletionYear": null,
-      "endingAfterTaxEstate": 13458647,
-      "endingInvestable": 15041258,
-      "endingNetWorth": 15041258,
+      "endingAfterTaxEstate": 13255370,
+      "endingInvestable": 14837981,
+      "endingNetWorth": 14837981,
       "fiAge": 52,
       "fiNumber": 1331502,
       "fiYear": 2053,
@@ -824,7 +1148,7 @@
     "modeled-findings": null,
     "modeling-notes": {
       "warnings": [
-        "Some pre-65 years exceed 400% of the federal poverty line: no ACA credit (the cliff)."
+        "Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported."
       ]
     },
     "parameter-sources": {
@@ -1393,63 +1717,63 @@
         },
         {
           "contributions": 0,
-          "expenses": 109464,
+          "expenses": 129949,
           "income": 0,
-          "investable": 5192753,
+          "investable": 5171654,
           "magi": 0,
-          "netWorth": 5192753,
+          "netWorth": 5171654,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
-          "withdrawals": 109464,
+          "withdrawals": 129949,
           "year": 2062
         },
         {
           "contributions": 0,
-          "expenses": 112201,
+          "expenses": 133608,
           "income": 0,
-          "investable": 5353077,
+          "investable": 5309296,
           "magi": 0,
-          "netWorth": 5353077,
+          "netWorth": 5309296,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
-          "withdrawals": 112201,
+          "withdrawals": 133608,
           "year": 2063
         },
         {
           "contributions": 0,
-          "expenses": 115006,
+          "expenses": 137376,
           "income": 0,
-          "investable": 5523729,
+          "investable": 5455593,
           "magi": 0,
-          "netWorth": 5523729,
+          "netWorth": 5455593,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
-          "withdrawals": 115006,
+          "withdrawals": 137376,
           "year": 2064
         },
         {
           "contributions": 0,
-          "expenses": 117881,
+          "expenses": 141258,
           "income": 0,
-          "investable": 5705536,
+          "investable": 5611277,
           "magi": 0,
-          "netWorth": 5705536,
+          "netWorth": 5611277,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
-          "withdrawals": 117881,
+          "withdrawals": 141258,
           "year": 2065
         },
         {
           "contributions": 0,
           "expenses": 145459,
           "income": 0,
-          "investable": 5874017,
+          "investable": 5776931,
           "magi": 0,
-          "netWorth": 5874017,
+          "netWorth": 5776931,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
@@ -1460,9 +1784,9 @@
           "contributions": 0,
           "expenses": 149588,
           "income": 0,
-          "investable": 6053599,
+          "investable": 5953600,
           "magi": 0,
-          "netWorth": 6053599,
+          "netWorth": 5953600,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
@@ -1473,9 +1797,9 @@
           "contributions": 0,
           "expenses": 153843,
           "income": 67704,
-          "investable": 6314942,
+          "investable": 6211943,
           "magi": 4426,
-          "netWorth": 6314942,
+          "netWorth": 6211943,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
@@ -1486,9 +1810,9 @@
           "contributions": 0,
           "expenses": 158227,
           "income": 69396,
-          "investable": 6593145,
+          "investable": 6487056,
           "magi": 5094,
-          "netWorth": 6593145,
+          "netWorth": 6487056,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
@@ -1499,9 +1823,9 @@
           "contributions": 0,
           "expenses": 162744,
           "income": 71131,
-          "investable": 6889445,
+          "investable": 6780174,
           "magi": 5831,
-          "netWorth": 6889445,
+          "netWorth": 6780174,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
@@ -1512,9 +1836,9 @@
           "contributions": 0,
           "expenses": 167401,
           "income": 72910,
-          "investable": 7205171,
+          "investable": 7092622,
           "magi": 6587,
-          "netWorth": 7205171,
+          "netWorth": 7092622,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
@@ -1525,9 +1849,9 @@
           "contributions": 0,
           "expenses": 172199,
           "income": 74732,
-          "investable": 7541749,
+          "investable": 7425823,
           "magi": 7361,
-          "netWorth": 7541749,
+          "netWorth": 7425823,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
@@ -1538,9 +1862,9 @@
           "contributions": 0,
           "expenses": 177146,
           "income": 76601,
-          "investable": 7900711,
+          "investable": 7781307,
           "magi": 8155,
-          "netWorth": 7900711,
+          "netWorth": 7781307,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
@@ -1551,9 +1875,9 @@
           "contributions": 0,
           "expenses": 182245,
           "income": 78516,
-          "investable": 8283701,
+          "investable": 8160715,
           "magi": 8969,
-          "netWorth": 8283701,
+          "netWorth": 8160715,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
@@ -1564,9 +1888,9 @@
           "contributions": 0,
           "expenses": 187502,
           "income": 80479,
-          "investable": 8692485,
+          "investable": 8565809,
           "magi": 9803,
-          "netWorth": 8692485,
+          "netWorth": 8565809,
           "rmd": 0,
           "rothConversion": 0,
           "taxAndPenalties": 0,
@@ -1577,9 +1901,9 @@
           "contributions": 0,
           "expenses": 192921,
           "income": 82491,
-          "investable": 9034765,
+          "investable": 8904289,
           "magi": 295440,
-          "netWorth": 9034765,
+          "netWorth": 8904289,
           "rmd": 225323,
           "rothConversion": 0,
           "taxAndPenalties": 82699,
@@ -1590,9 +1914,9 @@
           "contributions": 0,
           "expenses": 198509,
           "income": 84553,
-          "investable": 9386344,
+          "investable": 9251954,
           "magi": 311948,
-          "netWorth": 9386344,
+          "netWorth": 9251954,
           "rmd": 240078,
           "rothConversion": 0,
           "taxAndPenalties": 89849,
@@ -1603,9 +1927,9 @@
           "contributions": 0,
           "expenses": 204272,
           "income": 86667,
-          "investable": 9747567,
+          "investable": 9609145,
           "magi": 328307,
-          "netWorth": 9747567,
+          "netWorth": 9609145,
           "rmd": 254640,
           "rothConversion": 0,
           "taxAndPenalties": 96929,
@@ -1616,9 +1940,9 @@
           "contributions": 0,
           "expenses": 210214,
           "income": 88833,
-          "investable": 10117698,
+          "investable": 9975124,
           "magi": 346735,
-          "netWorth": 10117698,
+          "netWorth": 9975124,
           "rmd": 271226,
           "rothConversion": 0,
           "taxAndPenalties": 104921,
@@ -1629,9 +1953,9 @@
           "contributions": 0,
           "expenses": 216342,
           "income": 91054,
-          "investable": 10496395,
+          "investable": 10349544,
           "magi": 366233,
-          "netWorth": 10496395,
+          "netWorth": 10349544,
           "rmd": 288837,
           "rothConversion": 0,
           "taxAndPenalties": 113384,
@@ -1642,9 +1966,9 @@
           "contributions": 0,
           "expenses": 222663,
           "income": 93331,
-          "investable": 10883231,
+          "investable": 10731974,
           "magi": 386856,
-          "netWorth": 10883231,
+          "netWorth": 10731974,
           "rmd": 307525,
           "rothConversion": 0,
           "taxAndPenalties": 122340,
@@ -1655,9 +1979,9 @@
           "contributions": 0,
           "expenses": 229183,
           "income": 95664,
-          "investable": 11278525,
+          "investable": 11122731,
           "magi": 406974,
-          "netWorth": 11278525,
+          "netWorth": 11122731,
           "rmd": 325660,
           "rothConversion": 0,
           "taxAndPenalties": 131067,
@@ -1668,9 +1992,9 @@
           "contributions": 0,
           "expenses": 235909,
           "income": 98055,
-          "investable": 11680969,
+          "investable": 11520500,
           "magi": 429920,
-          "netWorth": 11680969,
+          "netWorth": 11520500,
           "rmd": 346573,
           "rothConversion": 0,
           "taxAndPenalties": 141043,
@@ -1681,9 +2005,9 @@
           "contributions": 0,
           "expenses": 242848,
           "income": 100507,
-          "investable": 12090884,
+          "investable": 11925601,
           "magi": 452073,
-          "netWorth": 12090884,
+          "netWorth": 11925601,
           "rmd": 366642,
           "rothConversion": 0,
           "taxAndPenalties": 150664,
@@ -1694,9 +2018,9 @@
           "contributions": 0,
           "expenses": 250007,
           "income": 103019,
-          "investable": 12506452,
+          "investable": 12336211,
           "magi": 477539,
-          "netWorth": 12506452,
+          "netWorth": 12336211,
           "rmd": 389972,
           "rothConversion": 0,
           "taxAndPenalties": 161876,
@@ -1707,9 +2031,9 @@
           "contributions": 0,
           "expenses": 257394,
           "income": 105595,
-          "investable": 12927925,
+          "investable": 12752577,
           "magi": 501810,
-          "netWorth": 12927925,
+          "netWorth": 12752577,
           "rmd": 412054,
           "rothConversion": 0,
           "taxAndPenalties": 172645,
@@ -1720,9 +2044,9 @@
           "contributions": 0,
           "expenses": 265017,
           "income": 108235,
-          "investable": 13354578,
+          "investable": 13173969,
           "magi": 527097,
-          "netWorth": 13354578,
+          "netWorth": 13173969,
           "rmd": 435097,
           "rothConversion": 0,
           "taxAndPenalties": 183869,
@@ -1733,9 +2057,9 @@
           "contributions": 0,
           "expenses": 272884,
           "income": 110941,
-          "investable": 13785525,
+          "investable": 13599498,
           "magi": 553387,
-          "netWorth": 13785525,
+          "netWorth": 13599498,
           "rmd": 459088,
           "rothConversion": 0,
           "taxAndPenalties": 195619,
@@ -1746,9 +2070,9 @@
           "contributions": 0,
           "expenses": 299379,
           "income": 113714,
-          "investable": 14202606,
+          "investable": 14010998,
           "magi": 577124,
-          "netWorth": 14202606,
+          "netWorth": 14010998,
           "rmd": 480467,
           "rothConversion": 0,
           "taxAndPenalties": 206343,
@@ -1759,9 +2083,9 @@
           "contributions": 0,
           "expenses": 308586,
           "income": 116557,
-          "investable": 14620798,
+          "investable": 14423442,
           "magi": 605203,
-          "netWorth": 14620798,
+          "netWorth": 14423442,
           "rmd": 506129,
           "rothConversion": 0,
           "taxAndPenalties": 219070,
@@ -1772,9 +2096,9 @@
           "contributions": 0,
           "expenses": 318102,
           "income": 119471,
-          "investable": 15041258,
+          "investable": 14837981,
           "magi": 629792,
-          "netWorth": 15041258,
+          "netWorth": 14837981,
           "rmd": 528241,
           "rothConversion": 0,
           "taxAndPenalties": 230175,
@@ -1797,5 +2121,5 @@
     "stateParameterPackYear": 2026
   },
   "startYear": 2026,
-  "version": 1
+  "version": 2
 }

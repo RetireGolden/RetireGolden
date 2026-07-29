@@ -4,8 +4,8 @@
  * Also surfaces asset-location opportunities via Insights.
  */
 
-import { createEmptyPlan, parsePlan, type Account, type Plan } from '@retiregolden/engine/model/plan'
-import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory } from './buildContext'
+import { createEmptyPlan, type Account, type Plan } from '@retiregolden/engine/model/plan'
+import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'glidepath-allocation'
 
@@ -125,7 +125,7 @@ export function buildGlidepathAllocation(): Plan {
     },
   ]
 
-  const parsed = parsePlan(plan)
+  const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`glidepath-allocation invalid: ${parsed.issues.join('; ')}`)
   return parsed.plan
 }
