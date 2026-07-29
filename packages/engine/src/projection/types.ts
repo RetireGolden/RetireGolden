@@ -290,6 +290,7 @@ export type AcaSupportCode =
   | 'tax-family-member-unknown'
   | 'tax-family-structure-unsupported'
   | 'covered-member-duplicate'
+  | 'medicare-overlap-unsupported'
   | 'slcsp-benchmark-missing'
   | 'benchmark-only-coverage-unsupported'
   | 'example-contract-input-mismatch'

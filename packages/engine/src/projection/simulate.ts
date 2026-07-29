@@ -1429,9 +1429,17 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     let medicarePremiums = 0
     let irmaaSurcharge = 0
     let irmaaTier = 0
+    const marketplaceMonthsBeforeMedicare = (person: PersonYearState): number =>
+      !person.alive
+        ? 0
+        : person.ageAttained < 65
+          ? 12
+          : person.ageAttained === 65
+            ? (birthMonthByPerson.get(person.personId) ?? 1) - 1
+            : 0
     for (const s of peopleStates) {
       if (!s.alive) continue
-      const acaMonths = s.ageAttained < 65 ? 12 : s.ageAttained === 65 ? (birthMonthByPerson.get(s.personId) ?? 1) - 1 : 0
+      const acaMonths = marketplaceMonthsBeforeMedicare(s)
       const medicareMonths = 12 - acaMonths
       if (acaMonths > 0 && hc.pre65MonthlyPremiumPerPerson > 0) {
         if (hc.applyAcaCredit) {
@@ -1472,14 +1480,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           acaContract.fplRegion !== expectedRegion ||
           acaContract.coveredMembers.some((member) => {
             const person = peopleStates.find((state) => state.personId === member.personId)
-            const expectedMonths =
-              person === undefined || !person.alive
-                ? 0
-                : person.ageAttained < 65
-                  ? 12
-                  : person.ageAttained === 65
-                    ? (birthMonthByPerson.get(person.personId) ?? 1) - 1
-                    : 0
+            const expectedMonths = person === undefined ? 0 : marketplaceMonthsBeforeMedicare(person)
             return member.enrollmentPremiumByMonth.some((premium, month) => {
               const expected = month < expectedMonths ? expectedMonthlyPremium : 0
               return Math.abs(premium - expected) > EPSILON
@@ -1549,6 +1550,18 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         }
         if (coveredIds.size !== acaContract.coveredMembers.length) {
           acaInitialSupportCodes.push('covered-member-duplicate')
+        }
+        if (
+          acaContract.coveredMembers.some((member) => {
+            const person = peopleStates.find((state) => state.personId === member.personId)
+            if (person === undefined || !person.alive) return false
+            const marketplaceMonths = marketplaceMonthsBeforeMedicare(person)
+            return member.enrollmentPremiumByMonth.some(
+              (premium, month) => premium > 0 && month >= marketplaceMonths,
+            )
+          })
+        ) {
+          acaInitialSupportCodes.push('medicare-overlap-unsupported')
         }
         if (
           acaContract.taxFamilyMembers.some(
@@ -3078,19 +3091,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           }))
         : peopleStates
             .filter((person) => {
-              const months =
-                person.ageAttained < 65
-                  ? 12
-                  : person.ageAttained === 65
-                    ? (birthMonthByPerson.get(person.personId) ?? 1) - 1
-                    : 0
+              const months = marketplaceMonthsBeforeMedicare(person)
               return person.alive && months > 0 && hc.pre65MonthlyPremiumPerPerson > 0
             })
             .map((person) => {
-              const months =
-                person.ageAttained < 65
-                  ? 12
-                  : (birthMonthByPerson.get(person.personId) ?? 1) - 1
+              const months = marketplaceMonthsBeforeMedicare(person)
               const premium = hc.pre65MonthlyPremiumPerPerson * healthInflFactor
               return {
                 personId: person.personId,

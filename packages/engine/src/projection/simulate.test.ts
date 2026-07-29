@@ -1363,6 +1363,104 @@ describe('healthcare and penalties', () => {
     expect(year.expenses.healthcare).toBe(12_000)
   })
 
+  it('keeps valid pre-Medicare enrollment months actionable in the age-65 transition year', () => {
+    const plan = basePlan()
+    plan.household.people[0]!.dob = '1961-06-15'
+    currentYearAca(plan, { coveredMonths: 5 })
+    plan.incomes = [
+      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 30_000, taxTreatment: 'ordinary' },
+    ]
+    plan.accounts = [cash(200_000)]
+
+    const year = simulatePlan(validate(plan), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: noTax,
+    }).years[0]!
+    expect(year.aca?.readiness).toBe('actionable')
+    expect(year.aca?.supportCodes).toEqual(['actionable'])
+    expect(year.aca?.grossEnrollmentPremium).toBe(5_000)
+    expect(year.medicarePremiums).toBeGreaterThan(0)
+  })
+
+  it('fails closed when age-65 enrollment reaches the first Medicare month', () => {
+    const plan = basePlan()
+    plan.household.people[0]!.dob = '1961-06-15'
+    currentYearAca(plan, { coveredMonths: 6 })
+    plan.incomes = [
+      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 30_000, taxTreatment: 'ordinary' },
+    ]
+    plan.accounts = [cash(200_000)]
+
+    const year = simulatePlan(validate(plan), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: noTax,
+    }).years[0]!
+    expect(year.aca?.readiness).toBe('nonActionable')
+    expect(year.aca?.supportCodes).toContain('medicare-overlap-unsupported')
+    expect(year.aca?.grossEnrollmentPremium).toBe(6_000)
+    expect(year.expenses.healthcare).toBeCloseTo(6_000 + year.medicarePremiums, 6)
+  })
+
+  it('fails closed for Marketplace enrollment in any fully post-65 month', () => {
+    const plan = basePlan()
+    plan.household.people[0]!.dob = '1960-06-15'
+    currentYearAca(plan)
+    plan.incomes = [
+      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 30_000, taxTreatment: 'ordinary' },
+    ]
+    plan.accounts = [cash(200_000)]
+
+    const year = simulatePlan(validate(plan), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: noTax,
+    }).years[0]!
+    expect(year.aca?.readiness).toBe('nonActionable')
+    expect(year.aca?.supportCodes).toContain('medicare-overlap-unsupported')
+    expect(year.aca?.grossEnrollmentPremium).toBe(12_000)
+    expect(year.expenses.healthcare).toBeCloseTo(12_000 + year.medicarePremiums, 6)
+  })
+
+  it('checks Medicare overlap against the covered spouse rather than the primary age', () => {
+    const plan = basePlan()
+    plan.household.filingStatus = 'marriedFilingJointly'
+    plan.household.people.push({
+      id: 'p2',
+      name: 'Sam',
+      dob: '1961-09-15',
+      sex: 'average',
+      retirementAge: null,
+      longevity: { planningAge: 90, source: 'manual' },
+    })
+    currentYearAca(plan, { coveredPersonIds: ['p1', 'p2'] })
+    plan.incomes = [
+      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 40_000, taxTreatment: 'ordinary' },
+    ]
+    plan.accounts = [cash(200_000)]
+
+    const overlapping = simulatePlan(validate(plan), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: noTax,
+    }).years[0]!
+    expect(overlapping.aca?.supportCodes).toContain('medicare-overlap-unsupported')
+
+    const spouse = plan.expenses.healthcare.acaYears![0]!.coveredMembers.find(
+      (member) => member.personId === 'p2',
+    )!
+    spouse.enrollmentPremiumByMonth.fill(0, 8)
+    spouse.slcspBenchmarkPremiumByMonth.fill(0, 8)
+    const valid = simulatePlan(validate(plan), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: noTax,
+    }).years[0]!
+    expect(valid.aca?.readiness).toBe('actionable')
+    expect(valid.aca?.supportCodes).toEqual(['actionable'])
+  })
+
   it('preserves known gross premiums when same-year contracts conflict', () => {
     const plan = basePlan()
     currentYearAca(plan)
