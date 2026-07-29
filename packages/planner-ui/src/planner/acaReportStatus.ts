@@ -29,7 +29,11 @@ export function acaLedgerSummary(years: YearResult[]): AcaLedgerSummaryRow[] {
 export function acaReportStatus(plan: Plan, years: YearResult[]): string {
   if (!plan.expenses.healthcare.applyAcaCredit) return ''
   const acaYears = acaLedgerSummary(years)
-  return acaYears.length > 0 && acaYears.every((year) => year.readiness === 'actionable')
-    ? ', ACA credit modeled for evidenced years'
-    : ', ACA credit requested; annual evidence required'
+  if (acaYears.length === 0) return ', ACA credit requested; annual evidence required'
+  const actionableYears = acaYears.filter((year) => year.readiness === 'actionable').length
+  if (actionableYears === acaYears.length) return ', ACA credit modeled for evidenced years'
+  if (actionableYears > 0) {
+    return ', ACA credit modeled for supported years; unsupported years use gross premium'
+  }
+  return ', ACA credit not modeled; unsupported years use gross premium'
 }

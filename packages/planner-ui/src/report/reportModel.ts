@@ -216,7 +216,7 @@ export interface ReportAssumptionsBlock {
   spendingPolicySummary: string
 }
 
-/** Engine warnings for this run — model limitations the report must surface. */
+/** Exact annual ACA reconciliation facts copied from the projection ledger. */
 export interface ReportAcaLedgerBlock {
   rows: Array<{
     year: number
@@ -228,6 +228,7 @@ export interface ReportAcaLedgerBlock {
   }>
 }
 
+/** Engine warnings for this run — model limitations the report must surface. */
 export interface ReportModelingNotesBlock {
   warnings: string[]
 }

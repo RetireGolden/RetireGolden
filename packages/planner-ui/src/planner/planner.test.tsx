@@ -96,16 +96,49 @@ describe('ACA annual evidence invalidation', () => {
 })
 
 describe('report ACA wording', () => {
-  it('does not describe a requested credit as applied without actionable annual evidence', () => {
+  it('shows no ACA status when credit modeling is disabled', () => {
+    const plan = createSamplePlan()
+    plan.expenses.healthcare.applyAcaCredit = false
+    expect(acaReportStatus(plan, [{ aca: { readiness: 'actionable' } } as never])).toBe('')
+  })
+
+  it('describes all-actionable years as modeled', () => {
     const plan = createSamplePlan()
     plan.expenses.healthcare.applyAcaCredit = true
-    expect(acaReportStatus(plan, [])).toContain('requested; annual evidence required')
     expect(
-      acaReportStatus(plan, [{ aca: { readiness: 'nonActionable' } } as never]),
-    ).toContain('requested; annual evidence required')
+      acaReportStatus(plan, [
+        { aca: { readiness: 'actionable' } } as never,
+        { aca: { readiness: 'actionable' } } as never,
+      ]),
+    ).toBe(', ACA credit modeled for evidenced years')
+  })
+
+  it('distinguishes mixed actionable and non-actionable years', () => {
+    const plan = createSamplePlan()
+    plan.expenses.healthcare.applyAcaCredit = true
     expect(
-      acaReportStatus(plan, [{ aca: { readiness: 'actionable' } } as never]),
-    ).toContain('modeled for evidenced years')
+      acaReportStatus(plan, [
+        { aca: { readiness: 'actionable' } } as never,
+        { aca: { readiness: 'nonActionable' } } as never,
+      ]),
+    ).toBe(', ACA credit modeled for supported years; unsupported years use gross premium')
+  })
+
+  it('describes all non-actionable years as unsupported gross-premium years', () => {
+    const plan = createSamplePlan()
+    plan.expenses.healthcare.applyAcaCredit = true
+    expect(
+      acaReportStatus(plan, [
+        { aca: { readiness: 'nonActionable' } } as never,
+        { aca: { readiness: 'nonActionable' } } as never,
+      ]),
+    ).toBe(', ACA credit not modeled; unsupported years use gross premium')
+  })
+
+  it('requests annual evidence when no ACA ledger year exists', () => {
+    const plan = createSamplePlan()
+    plan.expenses.healthcare.applyAcaCredit = true
+    expect(acaReportStatus(plan, [])).toBe(', ACA credit requested; annual evidence required')
   })
 })
 
