@@ -16,7 +16,7 @@ import { PlanCtx, usePlan } from './planContextCore'
 import { fmtMoneyCompact, parseAmount } from './format'
 import { createSamplePlan } from '../testSupport/samplePlan'
 import { invalidateAcaEvidence, removePartner, updatePersonLongevity } from './householdActions'
-import { updateAccountField, updatePersonDob } from './eligibilityFactActions'
+import { removeAccount, updateAccountField, updatePersonDob } from './eligibilityFactActions'
 import { projectPlan } from './useProjection'
 import { AccountsSection, AssumptionsSection, HouseholdSection, InsuranceSection, SpendingSection, StrategySection } from './sections'
 import { InsightsPage } from './insights/InsightsPage'
@@ -127,6 +127,21 @@ describe('eligibility fact edit integrity', () => {
     expect(parsePlan(plan).ok).toBe(true)
   })
 
+  it('removes the selected account row when an imported plan has duplicate IDs', () => {
+    const plan = createSamplePlan()
+    const original = plan.accounts.find((account) => account.type === 'cash')
+    if (original?.type !== 'cash') throw new Error('expected cash account')
+    plan.accounts.push({ ...original, name: 'Later duplicate row' })
+    expect(parsePlan(plan).ok).toBe(true)
+
+    removeAccount(plan, plan.accounts.length - 1)
+
+    expect(
+      plan.accounts.filter((account) => account.id === original.id),
+    ).toEqual([expect.objectContaining({ name: original.name })])
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+
   it('clears only contribution facts invalidated by a corrected donor DOB', () => {
     const plan = createSamplePlan()
     const [primary, partner] = plan.household.people
@@ -151,6 +166,9 @@ describe('eligibility fact edit integrity', () => {
         },
       ],
     }
+
+    updatePersonDob(plan, 0, '')
+    expect(plan.retirementActionEligibilityFacts.deductibleIraContributions).toHaveLength(2)
 
     updatePersonDob(plan, 0, '1962-01-01')
 

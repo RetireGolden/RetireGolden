@@ -561,6 +561,15 @@ describe('planJsonSchema — embeds the unrepresentable-constraints catalog', ()
     expect(shippedPlanJsonSchema[UNREPRESENTABLE_CONSTRAINTS_KEY]).toEqual([...PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS])
   })
 
+  it('catalogs eligibility refinements dropped by JSON Schema generation', () => {
+    expect(PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS).toEqual(
+      expect.arrayContaining([
+        'retirement-action eligibility evidenceId and provenance.sourceId values must contain at least one non-whitespace character.',
+        'SIMPLE participation start dates must be real canonical civil dates when present.',
+      ]),
+    )
+  })
+
   it('treats the annotation as a non-validating keyword (a valid plan still passes)', () => {
     expect(validate(accept(tradHeavyPlan(), 'tradHeavyPlan'))).toBe(true)
   })

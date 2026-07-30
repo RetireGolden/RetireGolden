@@ -1,13 +1,13 @@
 /** Accounts section: add/edit accounts. */
 
-import type { Account, Plan } from '@retiregolden/engine/model/plan'
+import type { Account } from '@retiregolden/engine/model/plan'
 import { AccountFields } from './AccountFields'
 import { ACCOUNT_LABEL, isIndividuallyOwnedAccount } from './sectionHelpers'
 import { usePlan } from '../planContextCore'
 import { Issues } from './shared'
 import { newId } from './sectionHelpers'
 import { UpdateBalancesPanel } from './UpdateBalancesPanel'
-import { clearAccountEligibilityFacts } from '../eligibilityFactActions'
+import { removeAccount } from '../eligibilityFactActions'
 
 function makeAccount(type: Account['type'], primaryPersonId: string): Account {
   const base = { id: newId(), ownerPersonId: isIndividuallyOwnedAccount(type) ? primaryPersonId : null, annualReturnPct: null }
@@ -46,13 +46,6 @@ function makeAccount(type: Account['type'], primaryPersonId: string): Account {
   }
 }
 
-function removeAccount(plan: Plan, accountId: string): void {
-  const index = plan.accounts.findIndex((account) => account.id === accountId)
-  if (index < 0) return
-  plan.accounts.splice(index, 1)
-  clearAccountEligibilityFacts(plan, accountId)
-}
-
 export function AccountsSection() {
   const { plan, update } = usePlan()
   const primaryPersonId = plan.household.people[0]!.id
@@ -69,7 +62,7 @@ export function AccountsSection() {
                 <span className="type-chip">{ACCOUNT_LABEL[a.type]}</span>
                 {a.name}
               </span>
-              <button type="button" className="btn-ghost btn-ghost-danger" onClick={() => update((d) => removeAccount(d, a.id))}>
+              <button type="button" className="btn-ghost btn-ghost-danger" onClick={() => update((d) => removeAccount(d, i))}>
                 Remove
               </button>
             </div>
