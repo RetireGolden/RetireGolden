@@ -40,7 +40,12 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   'example-couple': { depletionYear: null, endingInvestable: 2_230_556.28, lifetimeTax: 466_877.85, lifetimeRoth: 1_351_214.42 },
   'under-saved-single': { depletionYear: 2045, endingInvestable: 0, lifetimeTax: 237_089.71, lifetimeRoth: 0 },
   'bracket-fill-roth': { depletionYear: null, endingInvestable: 601_058.9, lifetimeTax: 222_517.35, lifetimeRoth: 819_102.78 },
-  'early-retiree-aca': { depletionYear: null, endingInvestable: 2_205_656.78, lifetimeTax: 464_950.3, lifetimeRoth: 47_501.93 },
+  // early-retiree-aca retuned 2026-07-30: the old baseline (55k consulting,
+  // fill to the 12% bracket) had its only actionable ACA year above 400% FPL,
+  // so the example could not show a credit at all. It now converts to the 10%
+  // bracket on smaller consulting income, holding the current year below the
+  // cliff with a positive credit that a one-bracket raise visibly forfeits.
+  'early-retiree-aca': { depletionYear: null, endingInvestable: 456_642.15, lifetimeTax: 153_792.57, lifetimeRoth: 51_986.09 },
   'rmd-irmaa': { depletionYear: null, endingInvestable: 1_404_004.34, lifetimeTax: 606_966.14, lifetimeRoth: 0 },
   'survivor-years': { depletionYear: 2043, endingInvestable: 0, lifetimeTax: 120_668.41, lifetimeRoth: 0 },
   'moving-state-tax': { depletionYear: null, endingInvestable: 3_688_834.11, lifetimeTax: 889_265.16, lifetimeRoth: 0 },
