@@ -107,6 +107,7 @@ export function buildAnnuityEstate(): Plan {
     withdrawalOrder: { mode: 'sequential' },
     rothConversion: { mode: 'fillToTarget', target: 'topOfBracket', targetValue: 24, startYear: EXAMPLE_FIXED_YEAR + 1, endYear: EXAMPLE_FIXED_YEAR + 7 },
     qcdAnnual: 5000,
+    retirementActions: [],
   }
 
   plan.assumptions = {

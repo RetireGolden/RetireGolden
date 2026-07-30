@@ -1,7 +1,17 @@
 import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan } from './plan.js'
-import { migratePlanToCurrent, type MigrationStep } from './migrations.js'
+import {
+  applyScenarioPatchDocument,
+  revertScenarioPatch,
+  scenarioPlanSnapshotHash,
+} from '../scenarios/patch.js'
+import { parseScenarioPatch } from '../scenarios/contract.js'
+import {
+  migratePlanToCurrent,
+  migratePlanV1ToV2,
+  type MigrationStep,
+} from './migrations.js'
 
 const fixedNow = () => new Date('2026-06-11T00:00:00.000Z')
 let counter = 0
@@ -71,16 +81,247 @@ describe('migratePlanToCurrent', () => {
       return { ...rest, name: title }
     }
     const result = migratePlanToCurrent(old, { 1: step1to2 }, 2)
-    expect(result.ok).toBe(false)
-    if (!result.ok) expect(result.reason).toBe('invalid_after_migration')
+    expect(result.ok).toBe(true)
+    if (result.ok) expect(result.plan.name).toBe('Renamed plan')
   })
 
   it('reports validation issues for corrupt current-version data', () => {
-    const result = migratePlanToCurrent({ schemaVersion: 1, id: '', name: '' })
+    const result = migratePlanToCurrent({ schemaVersion: 2, id: '', name: '' })
     expect(result.ok).toBe(false)
     if (!result.ok) {
       expect(result.reason).toBe('invalid_after_migration')
       expect(result.issues).toBeDefined()
     }
+  })
+})
+
+describe('v1 -> v2 retirement-action migration', () => {
+  function rawV1Plan(): Record<string, unknown> {
+    const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
+    return { ...JSON.parse(JSON.stringify(plan)), schemaVersion: 1 } as Record<string, unknown>
+  }
+
+  const legacyWithdrawal = {
+    kind: 'legacyAggregateWithdrawal',
+    year: 2030,
+    requestedAmount: 50_000,
+    legacyCategory: 'traditional',
+    provenance: { source: 'migration', sourceId: 'withdrawalOrder' },
+  } as const
+  const legacyConversion = {
+    kind: 'legacyAggregateRothConversion',
+    year: 2031,
+    requestedAmount: 25_000,
+    provenance: { source: 'migration', sourceId: 'rothConversion' },
+  } as const
+  const legacyQcd = {
+    kind: 'legacyAggregateQcd',
+    year: 2032,
+    requestedAmount: 10_000,
+    legacyField: 'qcdAnnual',
+    provenance: { source: 'migration', sourceId: 'qcdAnnual' },
+  } as const
+
+  function withActions(
+    raw: Record<string, unknown>,
+    retirementActions: readonly unknown[],
+  ): Record<string, unknown> {
+    const strategies = raw['strategies'] as Record<string, unknown>
+    return { ...raw, strategies: { ...strategies, retirementActions } }
+  }
+
+  function migratedActions(raw: Record<string, unknown>): Array<Record<string, unknown>> {
+    const migrated = migratePlanV1ToV2(raw)
+    const strategies = migrated['strategies'] as Record<string, unknown>
+    return strategies['retirementActions'] as Array<Record<string, unknown>>
+  }
+
+  it('adds an empty action schedule without changing legacy scalar strategies', () => {
+    const raw = rawV1Plan()
+    const strategies = raw['strategies'] as Record<string, unknown>
+    delete strategies['retirementActions']
+    strategies['withdrawalOrder'] = { mode: 'bracketTargeted', bracketPct: 24 }
+    strategies['rothConversion'] = {
+      mode: 'manual',
+      conversions: [{ year: 2030, amount: 12_345.67 }],
+    }
+    strategies['qcdAnnual'] = 4_321.09
+    const scalarSnapshot = JSON.parse(JSON.stringify(strategies)) as Record<string, unknown>
+
+    const result = migratePlanToCurrent(raw)
+
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.plan.schemaVersion).toBe(2)
+      expect(result.plan.strategies.retirementActions).toEqual([])
+      expect(result.plan.strategies.withdrawalOrder).toEqual(scalarSnapshot['withdrawalOrder'])
+      expect(result.plan.strategies.rothConversion).toEqual(scalarSnapshot['rothConversion'])
+      expect(result.plan.strategies.qcdAnnual).toBe(scalarSnapshot['qcdAnnual'])
+    }
+  })
+
+  it('rebinds canonical scenario patches to the migrated v2 plan snapshot', () => {
+    const raw = rawV1Plan()
+    raw['scenarios'] = [
+      {
+        id: 'scenario-1',
+        name: 'Higher inflation',
+        patch: {
+          kind: 'retiregolden.scenario-patch',
+          version: 1,
+          base: {
+            planId: raw['id'],
+            planSchemaVersion: 1,
+            snapshotHash: 'fnv1a64:0000000000000000',
+          },
+          title: 'Higher inflation',
+          rationale: null,
+          createdAtIso: '2026-06-11T00:00:00.000Z',
+          actor: { kind: 'user' },
+          operations: [
+            {
+              op: 'set',
+              path: '/assumptions/inflationPct',
+              before: { present: true, value: 2.5 },
+              value: 3,
+            },
+          ],
+        },
+      },
+    ]
+
+    const migrated = migratePlanToCurrent(raw)
+    expect(migrated.ok).toBe(true)
+    if (!migrated.ok) return
+    const parsedPatch = parseScenarioPatch(migrated.plan.scenarios[0]!.patch)
+    expect(parsedPatch.ok).toBe(true)
+    if (!parsedPatch.ok) return
+    expect(parsedPatch.patch.base).toEqual({
+      planId: migrated.plan.id,
+      planSchemaVersion: 2,
+      snapshotHash: scenarioPlanSnapshotHash(migrated.plan),
+    })
+
+    const applied = applyScenarioPatchDocument(migrated.plan, parsedPatch.patch)
+    expect(applied.ok).toBe(true)
+    if (!applied.ok) return
+    expect(applied.plan.assumptions.inflationPct).toBe(3)
+    const reverted = revertScenarioPatch(applied.plan, parsedPatch.patch)
+    expect(reverted.ok).toBe(true)
+    if (reverted.ok) expect(reverted.plan.assumptions.inflationPct).toBe(2.5)
+  })
+
+  it('assigns stable IDs to only genuinely ID-less typed legacy records', () => {
+    const raw = withActions(rawV1Plan(), [
+      legacyWithdrawal,
+      { ...legacyConversion, actionId: 'preserved-byte-for-byte' },
+      legacyQcd,
+    ])
+    const first = migratedActions(raw)
+    const second = migratedActions(raw)
+
+    expect(first).toEqual(second)
+    expect(first[0]?.['actionId']).toMatch(/^legacy-withdrawal-2030-/)
+    expect(first[1]?.['actionId']).toBe('preserved-byte-for-byte')
+    expect(first[2]?.['actionId']).toMatch(/^legacy-qcd-2032-/)
+    expect(new Set(first.map((action) => action['actionId'])).size).toBe(3)
+
+    const forbiddenInventedFields = [
+      'personId',
+      'donorPersonId',
+      'allocations',
+      'allocation',
+      'destinationRothAccountId',
+      'executionDate',
+      'executionSequence',
+      'purpose',
+      'charity',
+      'taxFunding',
+    ]
+    for (const action of first) {
+      for (const field of forbiddenInventedFields) {
+        expect(action).not.toHaveProperty(field)
+      }
+    }
+
+    const fullyMigrated = migratePlanToCurrent(raw)
+    expect(fullyMigrated.ok).toBe(true)
+  })
+
+  it('is independent of action input ordering', () => {
+    const forward = migratedActions(
+      withActions(rawV1Plan(), [legacyWithdrawal, legacyConversion, legacyQcd]),
+    )
+    const reverse = migratedActions(
+      withActions(rawV1Plan(), [legacyQcd, legacyConversion, legacyWithdrawal]),
+    )
+    const idByKind = (actions: Array<Record<string, unknown>>) =>
+      Object.fromEntries(actions.map((action) => [action['kind'], action['actionId']]))
+
+    expect(idByKind(reverse)).toEqual(idByKind(forward))
+  })
+
+  it('reserves supplied IDs and suffixes a generated collision deterministically', () => {
+    const seed = migratedActions(withActions(rawV1Plan(), [legacyWithdrawal]))[0]?.[
+      'actionId'
+    ] as string
+    const actions = migratedActions(
+      withActions(rawV1Plan(), [
+        { ...legacyConversion, actionId: seed },
+        legacyWithdrawal,
+      ]),
+    )
+
+    expect(actions[0]?.['actionId']).toBe(seed)
+    expect(actions[1]?.['actionId']).toBe(`${seed}-2`)
+  })
+
+  it('is copy-on-change and idempotent once all legacy records have IDs', () => {
+    const raw = withActions(rawV1Plan(), [
+      { ...legacyWithdrawal, actionId: 'legacy-withdrawal-fixed' },
+    ])
+    expect(migratePlanV1ToV2(raw)).toBe(raw)
+
+    const missing = withActions(rawV1Plan(), [legacyWithdrawal])
+    const normalized = migratePlanV1ToV2(missing)
+    expect(normalized).not.toBe(missing)
+    expect(migratePlanV1ToV2(normalized)).toBe(normalized)
+  })
+
+  it.each([
+    ['blank', ''],
+    ['blank whitespace', '  '],
+    ['null', null],
+  ])('never replaces a supplied %s action ID; final parsing rejects it', (_label, actionId) => {
+    const raw = withActions(rawV1Plan(), [{ ...legacyQcd, actionId }])
+    expect(migratedActions(raw)[0]?.['actionId']).toBe(actionId)
+    const result = migratePlanToCurrent(raw)
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.reason).toBe('invalid_after_migration')
+  })
+
+  it('does not normalize unknown/current records that omit an action ID', () => {
+    const raw = withActions(rawV1Plan(), [
+      {
+        kind: 'ordinaryWithdrawal',
+        personId: 'missing',
+        year: 2030,
+        requestedAmount: 100,
+      },
+    ])
+    expect(migratePlanV1ToV2(raw)).toBe(raw)
+  })
+
+  it('does not normalize a malformed legacy-looking record', () => {
+    const raw = withActions(rawV1Plan(), [
+      {
+        kind: 'legacyAggregateQcd',
+        year: 2030,
+        requestedAmount: 100,
+        legacyField: 'not-qcdAnnual',
+        provenance: { source: 'migration' },
+      },
+    ])
+    expect(migratePlanV1ToV2(raw)).toBe(raw)
   })
 })

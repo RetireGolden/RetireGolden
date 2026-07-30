@@ -90,6 +90,7 @@ export function buildGuardrailsFlex(): Plan {
     withdrawalOrder: { mode: 'sequential' },
     rothConversion: { mode: 'none' },
     qcdAnnual: 0,
+    retirementActions: [],
   }
 
   plan.assumptions = {

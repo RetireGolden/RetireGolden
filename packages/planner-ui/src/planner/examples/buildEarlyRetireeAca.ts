@@ -42,6 +42,7 @@ export function buildEarlyRetireeAca(): Plan {
       endYear: EXAMPLE_FIXED_YEAR + 4,
     },
     qcdAnnual: 0,
+    retirementActions: [],
   }
   plan.assumptions = {
     inflationPct: 2.5,

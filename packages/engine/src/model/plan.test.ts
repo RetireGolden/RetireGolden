@@ -468,7 +468,7 @@ describe('parsePlan', () => {
   })
 
   it('reports a path for each issue', () => {
-    const result = parsePlan({ schemaVersion: 1 })
+    const result = parsePlan({ schemaVersion: 2 })
     expect(result.ok).toBe(false)
     if (!result.ok) {
       expect(result.issues.length).toBeGreaterThan(0)
@@ -537,5 +537,292 @@ describe('guaranteed-income and estate-depth fields', () => {
     plan.strategies.survivorReserveTarget = 300_000
     plan.assumptions.heirTaxByClass = { traditional: 32, hsa: 12 }
     expect(parsePlan(plan).ok).toBe(true)
+  })
+})
+
+describe('Plan retirement-action persistence', () => {
+  function actionPlanRaw(): Record<string, unknown> {
+    const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
+    const personId = plan.household.people[0]!.id
+    const raw = JSON.parse(JSON.stringify(plan)) as Record<string, unknown>
+    raw['accounts'] = [
+      {
+        type: 'traditional',
+        id: 'traditional-1',
+        name: 'Traditional IRA',
+        ownerPersonId: personId,
+        annualReturnPct: null,
+        kind: 'ira',
+        balance: 100_000,
+        annualContribution: 0,
+      },
+      {
+        type: 'roth',
+        id: 'roth-1',
+        name: 'Roth IRA',
+        ownerPersonId: personId,
+        annualReturnPct: null,
+        kind: 'ira',
+        balance: 50_000,
+        annualContribution: 0,
+      },
+      {
+        type: 'traditional',
+        id: 'other-owner-traditional',
+        name: 'Other owner IRA',
+        ownerPersonId: 'other-person',
+        annualReturnPct: null,
+        kind: 'ira',
+        balance: 50_000,
+        annualContribution: 0,
+      },
+    ]
+    ;(raw['household'] as Record<string, unknown>)['people'] = [
+      ...(plan.household.people as unknown[]),
+      {
+        id: 'other-person',
+        name: 'Other',
+        dob: '1971-01-01',
+        sex: 'average',
+        retirementAge: 65,
+        longevity: { planningAge: 95, source: 'manual' },
+      },
+    ]
+    const strategies = raw['strategies'] as Record<string, unknown>
+    strategies['retirementActions'] = [
+      {
+        actionId: 'withdrawal-1',
+        kind: 'ordinaryWithdrawal',
+        personId,
+        year: 2030,
+        executionDate: 'malformed-but-preserved',
+        executionSequence: 1,
+        requestedAmount: 1_000,
+        allocations: [
+          {
+            allocationId: 'withdrawal-allocation',
+            sourceAccountId: 'traditional-1',
+            requestedAmount: 1_000,
+          },
+        ],
+        purpose: { kind: 'taxPayment', referenceId: 'conversion-1' },
+        provenance: { source: 'manual' },
+      },
+      {
+        actionId: 'conversion-1',
+        kind: 'rothConversion',
+        personId,
+        year: 2030,
+        executionSequence: 2,
+        requestedAmount: 10_000,
+        allocations: [
+          {
+            allocationId: 'conversion-allocation',
+            sourceAccountId: 'traditional-1',
+            requestedAmount: 10_000,
+          },
+        ],
+        destinationRothAccountId: 'roth-1',
+        taxFunding: { kind: 'linkedWithdrawal', withdrawalActionId: 'withdrawal-1' },
+        provenance: { source: 'generator', sourceId: 'conversion-generator' },
+      },
+      {
+        actionId: 'qcd-1',
+        kind: 'qcd',
+        donorPersonId: personId,
+        year: 2030,
+        executionDate: '2030-12-15',
+        executionSequence: 3,
+        requestedAmount: 5_000,
+        allocation: {
+          allocationId: 'qcd-allocation',
+          sourceAccountId: 'traditional-1',
+          requestedAmount: 5_000,
+        },
+        charity: {
+          designationId: 'charity-1',
+          name: 'Community Foundation',
+          designationKind: 'eligiblePublicCharity',
+          directFromCustodianAttested: true,
+          eligibleOrganizationAttested: true,
+          notDonorAdvisedFundOrSupportingOrganizationAttested: true,
+          notSplitInterestEntityAttested: true,
+          entireDistributionOtherwiseDeductibleAttested: true,
+        },
+        provenance: { source: 'optimizer', sourceId: 'qcd-optimizer' },
+      },
+      {
+        actionId: 'legacy-withdrawal',
+        kind: 'legacyAggregateWithdrawal',
+        year: 2027,
+        requestedAmount: 30_000,
+        legacyCategory: 'traditional',
+        provenance: { source: 'migration' },
+      },
+      {
+        actionId: 'legacy-conversion',
+        kind: 'legacyAggregateRothConversion',
+        year: 2028,
+        requestedAmount: 20_000,
+        provenance: { source: 'migration' },
+      },
+      {
+        actionId: 'legacy-qcd',
+        kind: 'legacyAggregateQcd',
+        year: 2029,
+        requestedAmount: 8_000,
+        legacyField: 'qcdAnnual',
+        provenance: { source: 'migration' },
+      },
+    ]
+    return raw
+  }
+
+  function actions(raw: Record<string, unknown>): Array<Record<string, unknown>> {
+    return (raw['strategies'] as Record<string, unknown>)[
+      'retirementActions'
+    ] as Array<Record<string, unknown>>
+  }
+
+  it('round-trips all current and legacy arms without normalizing submitted facts', () => {
+    const raw = actionPlanRaw()
+    const result = parsePlan(JSON.parse(JSON.stringify(raw)))
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.plan.strategies.retirementActions).toEqual(actions(raw))
+      expect(result.plan.household.people).toEqual(
+        (raw['household'] as Record<string, unknown>)['people'],
+      )
+      expect(result.plan.accounts).toEqual(raw['accounts'])
+      const withdrawal = result.plan.strategies.retirementActions[0]
+      expect(
+        withdrawal?.kind === 'ordinaryWithdrawal' ? withdrawal.executionDate : undefined,
+      ).toBe('malformed-but-preserved')
+    }
+  })
+
+  it('defaults an omitted v2 action schedule to empty', () => {
+    const raw = actionPlanRaw()
+    delete (raw['strategies'] as Record<string, unknown>)['retirementActions']
+    const result = parsePlan(raw)
+    expect(result.ok).toBe(true)
+    if (result.ok) expect(result.plan.strategies.retirementActions).toEqual([])
+  })
+
+  it('rejects empty and mixed-kind duplicate action IDs before linked diagnostics', () => {
+    const empty = actionPlanRaw()
+    actions(empty)[0]!['actionId'] = ''
+    expect(parsePlan(empty).ok).toBe(false)
+
+    const duplicate = actionPlanRaw()
+    actions(duplicate)[3]!['actionId'] = 'conversion-1'
+    ;(actions(duplicate)[1]!['taxFunding'] as Record<string, unknown>)[
+      'withdrawalActionId'
+    ] = 'missing'
+    const duplicateResult = parsePlan(duplicate)
+    expect(duplicateResult.ok).toBe(false)
+    if (!duplicateResult.ok) {
+      expect(
+        duplicateResult.issues.some((issue) =>
+          issue.includes('duplicate retirement action id'),
+        ),
+      ).toBe(true)
+      expect(
+        duplicateResult.issues.some((issue) =>
+          issue.includes('linked withdrawal must resolve'),
+        ),
+      ).toBe(false)
+    }
+  })
+
+  it('rejects missing person, source, destination, and cross-owner references', () => {
+    const mutations: Array<(raw: Record<string, unknown>) => void> = [
+      (raw) => {
+        actions(raw)[0]!['personId'] = 'missing-person'
+      },
+      (raw) => {
+        const allocation = (
+          actions(raw)[0]!['allocations'] as Array<Record<string, unknown>>
+        )[0]!
+        allocation['sourceAccountId'] = 'missing-account'
+      },
+      (raw) => {
+        actions(raw)[1]!['destinationRothAccountId'] = 'missing-roth'
+      },
+      (raw) => {
+        actions(raw)[1]!['destinationRothAccountId'] = 'traditional-1'
+      },
+      (raw) => {
+        const allocation = actions(raw)[2]!['allocation'] as Record<string, unknown>
+        allocation['sourceAccountId'] = 'other-owner-traditional'
+      },
+    ]
+
+    for (const mutate of mutations) {
+      const raw = actionPlanRaw()
+      mutate(raw)
+      expect(parsePlan(raw).ok).toBe(false)
+    }
+  })
+
+  it('rejects duplicate account IDs before action references can depend on array order', () => {
+    const first = actionPlanRaw()
+    const firstAccounts = first['accounts'] as Array<Record<string, unknown>>
+    firstAccounts.push({
+      ...firstAccounts[0],
+      ownerPersonId: 'other-person',
+    })
+
+    const second = actionPlanRaw()
+    const secondAccounts = second['accounts'] as Array<Record<string, unknown>>
+    secondAccounts.unshift({
+      ...secondAccounts[0],
+      ownerPersonId: 'other-person',
+    })
+
+    for (const raw of [first, second]) {
+      const result = parsePlan(raw)
+      expect(result.ok).toBe(false)
+      if (!result.ok) {
+        expect(result.issues.some((issue) => issue.includes('duplicate account id'))).toBe(
+          true,
+        )
+      }
+    }
+  })
+
+  it('requires linked tax funding to resolve the exact same-person/year back-reference', () => {
+    const cases: Array<(raw: Record<string, unknown>) => void> = [
+      (raw) => {
+        ;(actions(raw)[1]!['taxFunding'] as Record<string, unknown>)[
+          'withdrawalActionId'
+        ] = 'qcd-1'
+      },
+      (raw) => {
+        actions(raw)[0]!['year'] = 2031
+      },
+      (raw) => {
+        actions(raw)[0]!['purpose'] = { kind: 'spending' }
+      },
+      (raw) => {
+        actions(raw)[0]!['purpose'] = {
+          kind: 'taxPayment',
+          referenceId: 'other-conversion',
+        }
+      },
+    ]
+    for (const mutate of cases) {
+      const raw = actionPlanRaw()
+      mutate(raw)
+      const result = parsePlan(raw)
+      expect(result.ok).toBe(false)
+      if (!result.ok) {
+        expect(
+          result.issues.some((issue) =>
+            issue.includes('linked withdrawal must resolve'),
+          ),
+        ).toBe(true)
+      }
+    }
   })
 })

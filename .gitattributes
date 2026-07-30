@@ -1,3 +1,5 @@
 # Report goldens are compared byte-for-byte (vitest toMatchFileSnapshot);
 # pin them to LF so Windows autocrlf checkouts don't break the comparison.
 packages/planner-ui/src/report/goldens/** text eol=lf
+packages/engine/schema/plan.v*.json linguist-generated=true
+packages/engine/src/schema/plan.v*.generated.ts linguist-generated=true

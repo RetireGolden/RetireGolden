@@ -88,6 +88,7 @@ export function buildHsaPropertyDepth(): Plan {
     withdrawalOrder: { mode: 'sequential' },
     rothConversion: { mode: 'fillToTarget', target: 'topOfBracket', targetValue: 24, startYear: EXAMPLE_FIXED_YEAR + 3, endYear: EXAMPLE_FIXED_YEAR + 11 },
     qcdAnnual: 0,
+    retirementActions: [],
   }
 
   plan.assumptions = {

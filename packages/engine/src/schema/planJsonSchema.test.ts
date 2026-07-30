@@ -42,10 +42,11 @@ import {
 // Import the public data surface through the zod-free barrel, and the whole
 // namespace so a test can assert the barrel does not re-expose the zod generator.
 import * as schemaBarrel from './index.js'
-import { planJsonSchema } from './index.js'
+import { planJsonSchema, planV1JsonSchema } from './index.js'
 // The shipped offline artifact, imported through the bundler as a plain module so
 // this parity check needs no node fs types (keeps the engine's pure typing).
-import shippedPlanJsonSchema from '../../schema/plan.v1.json' with { type: 'json' }
+import shippedPlanJsonSchema from '../../schema/plan.v2.json' with { type: 'json' }
+import shippedPlanV1JsonSchema from '../../schema/plan.v1.json' with { type: 'json' }
 
 function compileSchema(): ValidateFunction {
   // `strict: false` — the derived schema is plain draft-2020-12 with no custom
@@ -80,7 +81,7 @@ function kitchenSinkPlanRaw(): Record<string, unknown> {
     weights: { usStocks: 60, intlStocks: 20, bonds: 15, cash: 5 },
   }
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     id: 'plan-kitchen',
     name: 'Kitchen sink',
     origin: 'user',
@@ -334,6 +335,76 @@ function kitchenSinkPlanRaw(): Record<string, unknown> {
       withdrawalOrder: { mode: 'bracketTargeted', bracketPct: 24 },
       rothConversion: { mode: 'optimized', conversions: [{ year: 2027, amount: 20000 }], optimizedAtIso: '2026-01-01T00:00:00.000Z' },
       qcdAnnual: 0,
+      retirementActions: [
+        {
+          actionId: 'action-withdrawal',
+          kind: 'ordinaryWithdrawal',
+          personId: 'p1',
+          year: 2030,
+          executionDate: '2030-04-15',
+          executionSequence: 1,
+          requestedAmount: 100_000,
+          allocations: [{ allocationId: 'allocation-withdrawal', sourceAccountId: 'acct-trad-ira', requestedAmount: 100_000 }],
+          purpose: { kind: 'taxPayment', referenceId: 'action-conversion' },
+          provenance: { source: 'manual' },
+        },
+        {
+          actionId: 'action-conversion',
+          kind: 'rothConversion',
+          personId: 'p1',
+          year: 2030,
+          executionSequence: 2,
+          requestedAmount: 500_000,
+          allocations: [{ allocationId: 'allocation-conversion', sourceAccountId: 'acct-trad-ira', requestedAmount: 500_000 }],
+          destinationRothAccountId: 'acct-roth',
+          taxFunding: { kind: 'linkedWithdrawal', withdrawalActionId: 'action-withdrawal' },
+          provenance: { source: 'generator', sourceId: 'fill-bracket' },
+        },
+        {
+          actionId: 'action-qcd',
+          kind: 'qcd',
+          donorPersonId: 'p1',
+          year: 2030,
+          executionDate: '2030-06-01',
+          executionSequence: 3,
+          requestedAmount: 250_000,
+          allocation: { allocationId: 'allocation-qcd', sourceAccountId: 'acct-trad-ira', requestedAmount: 250_000 },
+          charity: {
+            designationId: 'charity-1',
+            name: 'Community Foundation',
+            designationKind: 'eligiblePublicCharity',
+            directFromCustodianAttested: true,
+            eligibleOrganizationAttested: true,
+            notDonorAdvisedFundOrSupportingOrganizationAttested: true,
+            notSplitInterestEntityAttested: true,
+            entireDistributionOtherwiseDeductibleAttested: true,
+          },
+          provenance: { source: 'optimizer', sourceId: 'qcd-run' },
+        },
+        {
+          actionId: 'legacy-withdrawal',
+          kind: 'legacyAggregateWithdrawal',
+          year: 2027,
+          requestedAmount: 300_000,
+          legacyCategory: 'traditional',
+          provenance: { source: 'migration' },
+        },
+        {
+          actionId: 'legacy-conversion',
+          kind: 'legacyAggregateRothConversion',
+          year: 2028,
+          requestedAmount: 200_000,
+          provenance: { source: 'migration' },
+        },
+        {
+          actionId: 'legacy-qcd',
+          kind: 'legacyAggregateQcd',
+          year: 2029,
+          requestedAmount: 100_000,
+          legacyField: 'qcdAnnual',
+          provenance: { source: 'migration' },
+        },
+      ],
       itemizedDeductions: { stateAndLocalTaxes: 10000, mortgageInterest: 8000, charitable: 4000 },
       taxableSafetyNetFloor: 20000,
       survivorReserveTarget: 50000,
@@ -365,7 +436,7 @@ function kitchenSinkPlanRaw(): Record<string, unknown> {
  */
 function sparseAuthoringPlanRaw(): Record<string, unknown> {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     id: 'sparse',
     name: 'Sparse authoring plan',
     createdAtIso: '2026-01-01T00:00:00.000Z',
@@ -425,10 +496,15 @@ function acceptedFixtures(): Array<[string, Plan]> {
 
 describe('planJsonSchema — version', () => {
   it('carries the plan schema version at the document root', () => {
-    expect(PLAN_SCHEMA_VERSION).toBe(1)
+    expect(PLAN_SCHEMA_VERSION).toBe(2)
     expect(planJsonSchema.properties.schemaVersion).toMatchObject({ const: PLAN_SCHEMA_VERSION })
     expect(planJsonSchema.$id).toBe(PLAN_SCHEMA_ID)
     expect(planJsonSchema.$id).toContain(`/v${PLAN_SCHEMA_VERSION}.json`)
+  })
+
+  it('keeps the historical v1 schema available under an explicit export', () => {
+    expect(planV1JsonSchema.properties.schemaVersion).toMatchObject({ const: 1 })
+    expect(planV1JsonSchema).toEqual(shippedPlanV1JsonSchema)
   })
 
   it('keeps the zod-free PLAN_SCHEMA_VERSION in lockstep with the plan model', () => {
@@ -442,7 +518,13 @@ describe('schema barrel — zero-dependency data surface', () => {
     // re-exporting it here would drag zod + the plan model into every importer of
     // the barrel, breaking the MCP's "data-only" story. Guard against a regression.
     expect(Object.keys(schemaBarrel).sort()).toEqual(
-      ['PLAN_SCHEMA_ID', 'PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS', 'PLAN_SCHEMA_VERSION', 'planJsonSchema'].sort(),
+      [
+        'PLAN_SCHEMA_ID',
+        'PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS',
+        'PLAN_SCHEMA_VERSION',
+        'planJsonSchema',
+        'planV1JsonSchema',
+      ].sort(),
     )
     expect('generatePlanJsonSchema' in schemaBarrel).toBe(false)
     expect(typeof planJsonSchema).toBe('object')
@@ -502,6 +584,20 @@ describe('planJsonSchema — rejects invalid plans with a pointed path', () => {
       validate.errors?.some((e) => e.keyword === 'required' && e.params?.missingProperty === 'household'),
     ).toBe(true)
   })
+
+  it('represents positive-cent action amounts instead of advertising zero as valid', () => {
+    const plan = kitchenSinkPlanRaw()
+    const strategies = plan.strategies as Record<string, unknown>
+    const actions = strategies.retirementActions as Array<Record<string, unknown>>
+    actions[0]!.requestedAmount = 0
+    expect(validate(plan)).toBe(false)
+    expect(
+      validate.errors?.some(
+        (error) =>
+          error.instancePath === '/strategies/retirementActions/0/requestedAmount',
+      ),
+    ).toBe(true)
+  })
 })
 
 describe('planJsonSchema — structural, not a full validator', () => {
@@ -525,7 +621,7 @@ describe('planJsonSchema — sync with planSchema', () => {
     expect(planJsonSchema).toEqual(generatePlanJsonSchema())
   })
 
-  it('the shipped schema/plan.v1.json equals the checked-in constant', () => {
+  it('the shipped schema/plan.v2.json equals the checked-in constant', () => {
     expect(shippedPlanJsonSchema).toEqual(planJsonSchema)
   })
 })

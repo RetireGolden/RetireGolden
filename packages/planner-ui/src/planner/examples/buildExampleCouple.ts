@@ -76,6 +76,7 @@ export function buildExampleCouple(): Plan {
       endYear: EXAMPLE_FIXED_YEAR + 10,
     },
     qcdAnnual: 0,
+    retirementActions: [],
   }
   plan.assumptions = {
     inflationPct: 2.5,

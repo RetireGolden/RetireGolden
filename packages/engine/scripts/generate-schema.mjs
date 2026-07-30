@@ -5,10 +5,10 @@
  * Regenerates, from the engine's `planSchema` (the single source of truth), the
  * two checked-in outputs this package ships:
  *
- *   - schema/plan.v1.json            the diffable static artifact, shipped in the
+ *   - schema/plan.v<N>.json          the diffable static artifact, shipped in the
  *                                    npm tarball (package.json `files`) so the MCP
  *                                    can read the schema OFFLINE, no import needed.
- *   - src/schema/plan.v1.generated.ts  the same object as a typed constant, compiled
+ *   - src/schema/plan.v<N>.generated.ts  the same object as a typed constant, compiled
  *                                    into dist and re-exported as `planJsonSchema`
  *                                    (a plain literal — importing it pulls no zod).
  *
@@ -27,16 +27,16 @@ const scriptDir = dirname(fileURLToPath(import.meta.url))
 const pkgDir = resolve(scriptDir, '..')
 
 // Bump this in lockstep with a Plan schema-version bump AFTER retargeting every
-// place that hardcodes `v1`:
-//   - package.json `exports` key (`./schema/plan.v1.json`) and `files` entry
-//   - src/schema/index.ts barrel import (`./plan.v1.generated.js`)
+// place that hardcodes the current version:
+//   - package.json current `exports` key and `files` entry
+//   - src/schema/index.ts current barrel import
 //   - src/schema/planSchemaMeta.ts (`PLAN_SCHEMA_VERSION`)
 //   - scripts/pack-smoke.mjs (the `@retiregolden/engine/schema/plan.v<N>.json` read)
 //   - README.md usage examples / subpath table
 // This guard fails generation loudly if the model's version moves ahead of those
-// static paths, so a future v2 can't silently overwrite the v1 artifact (the sync
+// static paths, so a future bump can't silently overwrite an older artifact (the sync
 // test would otherwise compare the overwritten file against the new object and pass).
-const EXPECTED_VERSION = 1
+const EXPECTED_VERSION = 2
 
 const generatorUrl = pathToFileURL(join(pkgDir, 'dist', 'schema', 'generate.js')).href
 let generatePlanJsonSchema

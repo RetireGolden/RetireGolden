@@ -98,7 +98,7 @@ A plan is the complete household model: `household` (people, filing status, stat
 IndexedDB reads, JSON imports, and migration output, so there is no separate (drifting) file spec.
 Field-level semantics are documented inline on the schema as doc comments.
 
-`schemaVersion` is currently **1**.
+`schemaVersion` is currently **2**.
 
 Scenario entries written by older versions continue to carry a loose deep-override object in `patch`.
 The plan schema still accepts and preserves that representation. A newer scenario may carry the

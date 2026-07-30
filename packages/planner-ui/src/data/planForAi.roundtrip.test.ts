@@ -105,7 +105,9 @@ describe('copied plan → build_plan', () => {
 
     // Re-project the REBUILT plan at the REBUILT start year. Same ledger, year
     // for year, not just the same headline number.
-    const rebuilt = projectPlan(built.plan!, built.startYear)
+    const currentPlan = parsePlan(built.plan)
+    expect(currentPlan.ok, currentPlan.ok ? '' : currentPlan.issues.join('; ')).toBe(true)
+    const rebuilt = projectPlan(currentPlan.ok ? currentPlan.plan : plan, built.startYear)
     expect(rebuilt.result).toEqual(shown.result)
     expect(rebuilt.summary).toEqual(shown.summary)
   })
