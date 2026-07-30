@@ -565,7 +565,7 @@ describe('scenario patch validation and hostile paths', () => {
     version: 1,
     base: {
       planId: 'plan-1',
-      planSchemaVersion: 1,
+      planSchemaVersion: 2,
       snapshotHash: 'fnv1a64:0000000000000000',
     },
     title: 'Hostile path',

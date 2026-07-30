@@ -36,6 +36,7 @@ export function buildRmdIrmaa(): Plan {
     withdrawalOrder: { mode: 'sequential' },
     rothConversion: { mode: 'none' },
     qcdAnnual: 15_000,
+    retirementActions: [],
   }
   plan.assumptions = {
     inflationPct: 2.5,

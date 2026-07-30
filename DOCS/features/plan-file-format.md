@@ -20,7 +20,7 @@ assistant). The plan object inside them is identical and is the single source of
   "kind": "retiregolden.v2.backup",
   "backupVersion": 1,
   "exportedAtIso": "2026-07-08T12:00:00.000Z",
-  "plans": [ { "schemaVersion": 1, "id": "…", "name": "…", "…": "…" } ]
+  "plans": [ { "schemaVersion": 2, "id": "…", "name": "…", "…": "…" } ]
 }
 ```
 
@@ -44,9 +44,9 @@ assistant", and an assistant's tool takes a single plan, not a library:
 
 ```json
 {
-  "plan": { "schemaVersion": 1, "id": "…", "name": "…", "…": "…" },
+  "plan": { "schemaVersion": 2, "id": "…", "name": "…", "…": "…" },
   "startYear": 2026,
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "engineVersion": "0.1.5"
 }
 ```
@@ -98,7 +98,7 @@ A plan is the complete household model: `household` (people, filing status, stat
 IndexedDB reads, JSON imports, and migration output, so there is no separate (drifting) file spec.
 Field-level semantics are documented inline on the schema as doc comments.
 
-`schemaVersion` is currently **1**.
+`schemaVersion` is currently **2**.
 
 Scenario entries written by older versions continue to carry a loose deep-override object in `patch`.
 The plan schema still accepts and preserves that representation. A newer scenario may carry the

@@ -322,6 +322,7 @@ function singleFixture(
       withdrawalOrder: { mode: 'sequential' },
       rothConversion: { mode: 'none' },
       qcdAnnual: 0,
+      retirementActions: [],
     },
     assumptions: {
       inflationPct: 2.6,
@@ -394,6 +395,7 @@ function marriedFixture(
       withdrawalOrder: { mode: 'sequential' },
       rothConversion: { mode: 'none' },
       qcdAnnual: 0,
+      retirementActions: [],
     },
     assumptions: {
       inflationPct: 2.6,

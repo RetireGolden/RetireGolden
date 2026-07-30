@@ -158,7 +158,7 @@ capped exclusion there applies once to the combined private + public retirement 
   tax. Taxable Social Security is the exception: it is computed **once** from full-year income against
   full-year federal thresholds and then apportioned to each segment by months (recomputing it per slice would
   understate it). Future years use the new state for all 12 months. (`stateMoves` was added with Zod defaults
-  and **no migration** - the plan schema version stays 1.)
+  and required **no migration** for that field.)
 - **Flat-rate override:** `assumptions.stateEffectiveTaxPct` remains a per-plan manual override; when a
   real pack exists and the override is 0, the pack is used. A results warning shows when a state falls back
   to the flat override.

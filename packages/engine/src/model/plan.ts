@@ -1,5 +1,5 @@
 /**
- * Plan schema v1 — the v2 domain model of a household's finances.
+ * Plan schema v2 — the household financial domain model.
  *
  * Zod schemas are the source of truth: types are inferred from them, and the
  * same schemas validate IndexedDB reads, JSON imports, and migration output.
@@ -11,8 +11,9 @@
  */
 
 import { z } from 'zod'
+import { persistedRetirementActionRequestSchema } from '../actions/contract.js'
 
-export const CURRENT_PLAN_SCHEMA_VERSION = 1
+export const CURRENT_PLAN_SCHEMA_VERSION = 2
 
 const isoDateRe = /^\d{4}-\d{2}-\d{2}$/
 
@@ -1293,6 +1294,12 @@ export const strategiesSchema = z.object({
   rothConversion: rothConversionStrategySchema,
   /** Qualified charitable distributions per year (today's dollars), routed from RMDs when age-eligible. */
   qcdAnnual: nonNegative,
+  /**
+   * Identity-complete retirement action requests. The legacy scalar strategies
+   * above remain independently calculable; migration does not fabricate the
+   * people, accounts, dates, or purposes needed to turn them into actions.
+   */
+  retirementActions: z.array(persistedRetirementActionRequestSchema).default([]),
   /** Optional itemized deductions; federal tax uses the greater of these vs. the standard deduction. */
   itemizedDeductions: itemizedDeductionsSchema.optional(),
   /**
@@ -1428,6 +1435,25 @@ export const planSchema = z
     scenarios: z.array(scenarioSchema),
   })
   .superRefine((plan, ctx) => {
+    const actionIndexesById = new Map<string, number[]>()
+    plan.strategies.retirementActions.forEach((action, index) => {
+      const indexes = actionIndexesById.get(action.actionId)
+      if (indexes === undefined) actionIndexesById.set(action.actionId, [index])
+      else indexes.push(index)
+    })
+    let hasDuplicateActionIds = false
+    for (const [actionId, indexes] of actionIndexesById) {
+      if (indexes.length < 2) continue
+      hasDuplicateActionIds = true
+      indexes.forEach((index) => {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['strategies', 'retirementActions', index, 'actionId'],
+          message: `duplicate retirement action id "${actionId}"`,
+        })
+      })
+    }
+
     if (plan.household.filingStatus === 'marriedFilingJointly' && plan.household.people.length !== 2) {
       ctx.addIssue({
         code: 'custom',
@@ -1436,7 +1462,186 @@ export const planSchema = z
       })
     }
     const personIds = new Set(plan.household.people.map((p) => p.id))
+    const actionReferencedPersonIds = new Set<string>()
+    const actionReferencedAccountIds = new Set<string>()
+    plan.strategies.retirementActions.forEach((action) => {
+      if (
+        action.kind === 'legacyAggregateWithdrawal' ||
+        action.kind === 'legacyAggregateRothConversion' ||
+        action.kind === 'legacyAggregateQcd'
+      ) {
+        return
+      }
+      if (action.kind === 'qcd') {
+        actionReferencedPersonIds.add(action.donorPersonId)
+        actionReferencedAccountIds.add(action.allocation.sourceAccountId)
+        return
+      }
+      actionReferencedPersonIds.add(action.personId)
+      action.allocations.forEach((allocation) => {
+        actionReferencedAccountIds.add(allocation.sourceAccountId)
+      })
+      if (action.kind === 'rothConversion') {
+        actionReferencedAccountIds.add(action.destinationRothAccountId)
+      }
+    })
+    const personIndexesById = new Map<string, number[]>()
+    plan.household.people.forEach((person, index) => {
+      const indexes = personIndexesById.get(person.id)
+      if (indexes === undefined) personIndexesById.set(person.id, [index])
+      else indexes.push(index)
+    })
+    let hasAmbiguousActionPersonIds = false
+    for (const [personId, indexes] of personIndexesById) {
+      if (indexes.length < 2 || !actionReferencedPersonIds.has(personId)) continue
+      hasAmbiguousActionPersonIds = true
+      indexes.forEach((index) => {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['household', 'people', index, 'id'],
+          message: `duplicate person id "${personId}"`,
+        })
+      })
+    }
+    const accountIndexesById = new Map<string, number[]>()
+    plan.accounts.forEach((account, index) => {
+      const indexes = accountIndexesById.get(account.id)
+      if (indexes === undefined) accountIndexesById.set(account.id, [index])
+      else indexes.push(index)
+    })
+    let hasAmbiguousActionAccountIds = false
+    for (const [accountId, indexes] of accountIndexesById) {
+      if (indexes.length < 2 || !actionReferencedAccountIds.has(accountId)) continue
+      hasAmbiguousActionAccountIds = true
+      indexes.forEach((index) => {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['accounts', index, 'id'],
+          message: `duplicate account id "${accountId}"`,
+        })
+      })
+    }
     const accountTypeById = new Map(plan.accounts.map((a) => [a.id, a.type]))
+    const accountById = new Map(plan.accounts.map((account) => [account.id, account]))
+
+    if (
+      !hasDuplicateActionIds &&
+      !hasAmbiguousActionPersonIds &&
+      !hasAmbiguousActionAccountIds
+    ) {
+      const validateOwnedAccount = (
+        actionIndex: number,
+        personId: string,
+        accountId: string,
+        path: (string | number)[],
+      ): void => {
+        const account = accountById.get(accountId)
+        if (account === undefined) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['strategies', 'retirementActions', actionIndex, ...path],
+            message: `unknown account id "${accountId}"`,
+          })
+        } else if (account.ownerPersonId !== null && account.ownerPersonId !== personId) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['strategies', 'retirementActions', actionIndex, ...path],
+            message: `account "${accountId}" is owned by a different person`,
+          })
+        }
+      }
+
+      plan.strategies.retirementActions.forEach((action, actionIndex) => {
+        if (
+          action.kind === 'legacyAggregateWithdrawal' ||
+          action.kind === 'legacyAggregateRothConversion' ||
+          action.kind === 'legacyAggregateQcd'
+        ) {
+          return
+        }
+
+        const personId =
+          action.kind === 'qcd' ? action.donorPersonId : action.personId
+        const personPath = action.kind === 'qcd' ? 'donorPersonId' : 'personId'
+        if (!personIds.has(personId)) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['strategies', 'retirementActions', actionIndex, personPath],
+            message: `unknown person id "${personId}"`,
+          })
+        }
+
+        if (action.kind === 'qcd') {
+          validateOwnedAccount(
+            actionIndex,
+            action.donorPersonId,
+            action.allocation.sourceAccountId,
+            ['allocation', 'sourceAccountId'],
+          )
+          return
+        }
+
+        action.allocations.forEach((allocation, allocationIndex) => {
+          validateOwnedAccount(
+            actionIndex,
+            action.personId,
+            allocation.sourceAccountId,
+            ['allocations', allocationIndex, 'sourceAccountId'],
+          )
+        })
+
+        if (action.kind !== 'rothConversion') return
+        validateOwnedAccount(
+          actionIndex,
+          action.personId,
+          action.destinationRothAccountId,
+          ['destinationRothAccountId'],
+        )
+        const destination = accountById.get(action.destinationRothAccountId)
+        if (destination !== undefined && destination.type !== 'roth') {
+          ctx.addIssue({
+            code: 'custom',
+            path: [
+              'strategies',
+              'retirementActions',
+              actionIndex,
+              'destinationRothAccountId',
+            ],
+            message: `conversion destination "${action.destinationRothAccountId}" must be a Roth account`,
+          })
+        }
+
+        if (action.taxFunding.kind !== 'linkedWithdrawal') return
+        const withdrawalActionId = action.taxFunding.withdrawalActionId
+        const linkedIndexes = actionIndexesById.get(withdrawalActionId)
+        const withdrawal =
+          linkedIndexes?.length === 1
+            ? plan.strategies.retirementActions[linkedIndexes[0]!]
+            : undefined
+        if (
+          withdrawal === undefined ||
+          withdrawal.kind !== 'ordinaryWithdrawal' ||
+          withdrawal.personId !== action.personId ||
+          withdrawal.year !== action.year ||
+          withdrawal.purpose.kind !== 'taxPayment' ||
+          withdrawal.purpose.referenceId !== action.actionId
+        ) {
+          ctx.addIssue({
+            code: 'custom',
+            path: [
+              'strategies',
+              'retirementActions',
+              actionIndex,
+              'taxFunding',
+              'withdrawalActionId',
+            ],
+            message:
+              'linked withdrawal must resolve to exactly one same-person/year ordinary withdrawal whose taxPayment purpose references this conversion',
+          })
+        }
+      })
+    }
+
     plan.accounts.forEach((a, i) => {
       if (a.type === 'equityComp' && a.vestingMode === 'cliff' && a.vestDate === null) {
         ctx.addIssue({
@@ -1736,7 +1941,12 @@ export function createEmptyPlan(opts: CreatePlanOptions = {}): Plan {
       oneTimeGoals: [],
       healthcare: { pre65MonthlyPremiumPerPerson: 0, applyAcaCredit: false, medicareExtrasMonthlyPerPerson: 0 },
     },
-    strategies: { withdrawalOrder: { mode: 'sequential' }, rothConversion: { mode: 'none' }, qcdAnnual: 0 },
+    strategies: {
+      withdrawalOrder: { mode: 'sequential' },
+      rothConversion: { mode: 'none' },
+      qcdAnnual: 0,
+      retirementActions: [],
+    },
     assumptions: {
       inflationPct: 2.5,
       healthcareExtraInflationPct: 3,

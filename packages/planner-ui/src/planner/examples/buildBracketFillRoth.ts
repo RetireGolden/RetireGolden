@@ -46,6 +46,7 @@ export function buildBracketFillRoth(): Plan {
       endYear: EXAMPLE_FIXED_YEAR + 8,
     },
     qcdAnnual: 10_000,
+    retirementActions: [],
   }
   plan.assumptions = {
     inflationPct: 2.5,

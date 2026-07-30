@@ -20,8 +20,8 @@ ledger, so an LTC shock is one more per-path event alongside the return draws.
 
 ## Data model
 
-`plan.insurance` is a top-level list (Zod default `[]`, no migration — `CURRENT_PLAN_SCHEMA_VERSION` stays
-1, following the `stateMoves` pattern), discriminated by `kind`. Premiums share a shape across kinds:
+`plan.insurance` is a top-level list (Zod default `[]`; it did not itself require a migration),
+discriminated by `kind`. Premiums share a shape across kinds:
 `premiumMode` is `lifetime` (charge `annualPremium` every year), `paidUp` (charge nothing), or `untilAge`
 (charge through `premiumEndAge`).
 

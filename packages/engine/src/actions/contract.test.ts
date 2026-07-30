@@ -3,9 +3,14 @@ import { describe, expect, it } from 'vitest'
 import {
   actionExecutionDispositionSchema,
   actionProvenanceSchema,
+  ordinaryWithdrawalRequestSchema,
   parseActionExecutionDisposition,
+  parseRetirementActionRequest,
   personRetirementActionRequestBaseSchema,
+  qualifiedCharitableDistributionRequestSchema,
   retirementActionRequestBaseSchema,
+  retirementActionRequestSchema,
+  rothConversionRequestSchema,
   sourceAllocationRequestSchema,
   type ParseActionExecutionDispositionResult,
 } from './contract.js'
@@ -120,6 +125,185 @@ describe('foundation request contracts', () => {
     ).toBe(false)
     expect(
       sourceAllocationRequestSchema.safeParse({ ...allocation, rank: 1 }).success,
+    ).toBe(false)
+  })
+})
+
+describe('retirement action request contracts', () => {
+  const provenance = { source: 'manual' } as const
+  const migrationProvenance = { source: 'migration', sourceId: 'plan-v1-actions' } as const
+  const charity = {
+    designationId: 'charity-1',
+    name: 'Community Foundation',
+    designationKind: 'eligiblePublicCharity',
+    directFromCustodianAttested: true,
+    eligibleOrganizationAttested: true,
+    notDonorAdvisedFundOrSupportingOrganizationAttested: true,
+    notSplitInterestEntityAttested: true,
+    entireDistributionOtherwiseDeductibleAttested: true,
+  } as const
+  const requests = [
+    {
+      actionId: 'withdrawal-1',
+      kind: 'ordinaryWithdrawal',
+      personId: 'person-1',
+      year: 2030,
+      executionDate: 'submitted-date-is-preserved',
+      executionSequence: 1,
+      requestedAmount: 10_000,
+      allocations: [
+        { allocationId: 'allocation-1', sourceAccountId: 'traditional-1', requestedAmount: 6_000 },
+        { allocationId: 'allocation-2', sourceAccountId: 'traditional-2', requestedAmount: 4_000 },
+      ],
+      purpose: { kind: 'taxPayment', referenceId: 'conversion-1' },
+      provenance,
+    },
+    {
+      actionId: 'conversion-1',
+      kind: 'rothConversion',
+      personId: 'person-1',
+      year: 2030,
+      executionDate: '',
+      executionSequence: 2,
+      requestedAmount: 20_000,
+      allocations: [
+        { allocationId: 'allocation-3', sourceAccountId: 'traditional-1', requestedAmount: 20_000 },
+      ],
+      destinationRothAccountId: 'roth-1',
+      taxFunding: { kind: 'linkedWithdrawal', withdrawalActionId: 'withdrawal-1' },
+      provenance,
+    },
+    {
+      actionId: 'qcd-1',
+      kind: 'qcd',
+      donorPersonId: 'person-1',
+      year: 2030,
+      executionDate: '2030-02-30',
+      executionSequence: 3,
+      requestedAmount: 5_000,
+      allocation: {
+        allocationId: 'allocation-4',
+        sourceAccountId: 'traditional-1',
+        requestedAmount: 5_000,
+      },
+      charity,
+      provenance,
+    },
+    {
+      actionId: 'legacy-withdrawal-1',
+      kind: 'legacyAggregateWithdrawal',
+      year: 2028,
+      requestedAmount: 30_000,
+      legacyCategory: 'traditional',
+      provenance: migrationProvenance,
+    },
+    {
+      actionId: 'legacy-conversion-1',
+      kind: 'legacyAggregateRothConversion',
+      year: 2029,
+      requestedAmount: 25_000,
+      provenance: migrationProvenance,
+    },
+    {
+      actionId: 'legacy-qcd-1',
+      kind: 'legacyAggregateQcd',
+      year: 2030,
+      requestedAmount: 8_000,
+      legacyField: 'qcdAnnual',
+      provenance: migrationProvenance,
+    },
+  ] as const
+
+  it('round-trips all three current and all three legacy request arms', () => {
+    for (const request of requests) {
+      expect(parseRetirementActionRequest(JSON.parse(JSON.stringify(request)))).toEqual({
+        ok: true,
+        request,
+      })
+    }
+  })
+
+  it('preserves arbitrary submitted execution-date strings without normalizing them', () => {
+    expect(ordinaryWithdrawalRequestSchema.parse(requests[0]).executionDate).toBe(
+      'submitted-date-is-preserved',
+    )
+    expect(rothConversionRequestSchema.parse(requests[1]).executionDate).toBe('')
+    expect(qualifiedCharitableDistributionRequestSchema.parse(requests[2]).executionDate).toBe(
+      '2030-02-30',
+    )
+  })
+
+  it('keeps legacy arms aggregate-only and rejects invented execution identities', () => {
+    for (const request of requests.slice(3)) {
+      expect(
+        retirementActionRequestSchema.safeParse({
+          ...request,
+          personId: 'invented-person',
+          executionDate: `${request.year}-12-31`,
+        }).success,
+      ).toBe(false)
+    }
+  })
+
+  it('requires exact allocation conservation and unique allocation/source IDs', () => {
+    const ordinary = requests[0]
+    expect(
+      ordinaryWithdrawalRequestSchema.safeParse({
+        ...ordinary,
+        allocations: [
+          ordinary.allocations[0],
+          { ...ordinary.allocations[1], requestedAmount: 3_999 },
+        ],
+      }).success,
+    ).toBe(false)
+    expect(
+      ordinaryWithdrawalRequestSchema.safeParse({
+        ...ordinary,
+        allocations: [
+          ordinary.allocations[0],
+          { ...ordinary.allocations[1], allocationId: ordinary.allocations[0].allocationId },
+        ],
+      }).success,
+    ).toBe(false)
+    expect(
+      rothConversionRequestSchema.safeParse({
+        ...requests[1],
+        allocations: [
+          requests[1].allocations[0],
+          {
+            allocationId: 'allocation-other',
+            sourceAccountId: requests[1].allocations[0].sourceAccountId,
+            requestedAmount: 1,
+          },
+        ],
+      }).success,
+    ).toBe(false)
+    expect(
+      qualifiedCharitableDistributionRequestSchema.safeParse({
+        ...requests[2],
+        allocation: { ...requests[2].allocation, requestedAmount: 4_999 },
+      }).success,
+    ).toBe(false)
+  })
+
+  it('keeps purpose, tax-funding, and charity objects strict', () => {
+    expect(
+      ordinaryWithdrawalRequestSchema.safeParse({
+        ...requests[0],
+        purpose: { ...requests[0].purpose, memo: 'not in contract' },
+      }).success,
+    ).toBe(false)
+    expect(
+      rothConversionRequestSchema.safeParse({
+        ...requests[1],
+        taxFunding: { kind: 'externalCash', amount: 100, attested: false },
+      }).success,
+    ).toBe(false)
+    expect(
+      qualifiedCharitableDistributionRequestSchema.safeParse({
+        ...requests[2],
+        charity: { ...charity, verifiedByEngine: true },
+      }).success,
     ).toBe(false)
   })
 })

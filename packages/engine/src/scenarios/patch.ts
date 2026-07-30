@@ -460,11 +460,25 @@ export function readScenarioValueState(plan: Plan, path: string): ScenarioValueS
  * Rebind valid canonical scenarios after an explicit containing-plan re-key.
  * Legacy and malformed documents are preserved byte-for-byte.
  */
-export function rebindScenarioPatchesToPlan(plan: Plan): Plan {
+export function rebindScenarioPatchesToPlan(
+  plan: Plan,
+  options: {
+    matchingPlanIdOnly?: boolean
+    matchingPlanSchemaVersion?: number
+  } = {},
+): Plan {
   const canonical = plan.scenarios.map((scenario) => {
     if (!isScenarioPatchEnvelope(scenario.patch)) return null
     const parsed = parseScenarioPatch(scenario.patch)
-    return parsed.ok ? parsed.patch : null
+    if (!parsed.ok) return null
+    if (options.matchingPlanIdOnly && parsed.patch.base.planId !== plan.id) return null
+    if (
+      options.matchingPlanSchemaVersion !== undefined &&
+      parsed.patch.base.planSchemaVersion !== options.matchingPlanSchemaVersion
+    ) {
+      return null
+    }
+    return parsed.patch
   })
   if (canonical.every((patch) => patch === null)) return plan
   if (!parsePlan(plan).ok) return plan

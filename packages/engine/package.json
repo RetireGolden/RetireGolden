@@ -25,6 +25,7 @@
   "files": [
     "dist",
     "schema/plan.v1.json",
+    "schema/plan.v2.json",
     "LICENSE",
     "README.md"
   ],
@@ -56,6 +57,7 @@
       "default": "./dist/schema/index.js"
     },
     "./schema/plan.v1.json": "./schema/plan.v1.json",
+    "./schema/plan.v2.json": "./schema/plan.v2.json",
     "./*": {
       "types": "./dist/*.d.ts",
       "default": "./dist/*.js"

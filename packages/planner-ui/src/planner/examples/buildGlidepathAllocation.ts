@@ -94,6 +94,7 @@ export function buildGlidepathAllocation(): Plan {
     withdrawalOrder: { mode: 'sequential' },
     rothConversion: { mode: 'fillToTarget', target: 'topOfBracket', targetValue: 22, startYear: EXAMPLE_FIXED_YEAR + 1, endYear: EXAMPLE_FIXED_YEAR + 9 },
     qcdAnnual: 3000,
+    retirementActions: [],
   }
 
   plan.assumptions = {
