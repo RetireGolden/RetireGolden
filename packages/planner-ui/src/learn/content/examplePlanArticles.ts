@@ -130,8 +130,8 @@ export const exampleEarlyRetireeAcaArticle = exampleArticle(
   'Early retiree and the ACA cliff',
   'Pre-65 healthcare premiums driven by MAGI — and why conversions have a hidden cost.',
   'early-retiree-aca',
-  'Casey retired before Medicare with marketplace coverage and ACA credits. Consulting income and Roth conversions both flow into MAGI, which can push premiums over the subsidy cliff.',
-  'Read healthcare expense lines before 65 and any ACA cliff warnings on Results.',
+  'Casey retired before Medicare with marketplace coverage, part-time consulting income, and Roth conversions sized to stay below the subsidy cliff. Both income sources flow into MAGI, so converting one bracket higher can forfeit the entire credit.',
+  'Check the current-year premium credit in the printable report\'s ACA ledger, then raise the conversion bracket on Strategy and watch it go to zero.',
   ['aca-premium-tax-credits-and-magi', 'healthcare-before-65', 'why-roth-conversions-raise-other-costs'],
   ['/plan/:planId/spending', '/plan/:planId/results', '/plan/:planId/strategy'],
 )

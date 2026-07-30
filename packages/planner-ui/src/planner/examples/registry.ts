@@ -100,7 +100,7 @@ export const EXAMPLE_PLANS: ExamplePlan[] = [
     teaches: 'How MAGI affects ACA credits — and why a Roth conversion can cost more than the tax bill.',
     themeTags: ['aca'],
     learnSlug: 'example-early-retiree-aca',
-    lookFor: 'Healthcare premiums before Medicare and warnings when MAGI crosses the subsidy cliff.',
+    lookFor: 'A positive premium credit in the current-year ACA ledger — then raise the conversion bracket and watch the cliff erase it.',
     build: buildEarlyRetireeAca,
   },
   {

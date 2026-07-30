@@ -24,20 +24,24 @@ export function buildEarlyRetireeAca(): Plan {
     { type: 'roth', id: exampleEntityId(EXAMPLE_ID, 'roth'), name: 'Roth IRA', ownerPersonId: p1, annualReturnPct: null, kind: 'ira', balance: 120_000, annualContribution: 0 },
   ]
   plan.incomes = [
-    { type: 'recurring', id: exampleEntityId(EXAMPLE_ID, 'consulting'), label: 'Consulting', annualAmount: 55_000, startYear: EXAMPLE_FIXED_YEAR, endYear: null, inflationAdjusted: true, taxTreatment: 'ordinary' },
+    { type: 'recurring', id: exampleEntityId(EXAMPLE_ID, 'consulting'), label: 'Consulting', annualAmount: 18_000, startYear: EXAMPLE_FIXED_YEAR, endYear: null, inflationAdjusted: true, taxTreatment: 'ordinary' },
   ]
   plan.expenses = {
-    baseAnnual: 48_000,
+    baseAnnual: 40_000,
     phases: [],
     oneTimeGoals: [],
     healthcare: { pre65MonthlyPremiumPerPerson: 1_000, applyAcaCredit: true, medicareExtrasMonthlyPerPerson: 0 },
   }
   plan.strategies = {
     withdrawalOrder: { mode: 'sequential' },
+    // The baseline must keep MAGI under 400% FPL for a single filer so the
+    // current year shows a positive credit; filling the 12% bracket lands MAGI
+    // above the cliff regardless of other income, so the demo (raise the
+    // bracket, watch the credit vanish) only works from the 10% baseline.
     rothConversion: {
       mode: 'fillToTarget',
       target: 'topOfBracket',
-      targetValue: 12,
+      targetValue: 10,
       startYear: EXAMPLE_FIXED_YEAR,
       endYear: EXAMPLE_FIXED_YEAR + 4,
     },
