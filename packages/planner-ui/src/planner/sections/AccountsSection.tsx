@@ -7,6 +7,7 @@ import { usePlan } from '../planContextCore'
 import { Issues } from './shared'
 import { newId } from './sectionHelpers'
 import { UpdateBalancesPanel } from './UpdateBalancesPanel'
+import { clearAccountEligibilityFacts } from '../eligibilityFactActions'
 
 function makeAccount(type: Account['type'], primaryPersonId: string): Account {
   const base = { id: newId(), ownerPersonId: isIndividuallyOwnedAccount(type) ? primaryPersonId : null, annualReturnPct: null }
@@ -49,14 +50,7 @@ function removeAccount(plan: Plan, accountId: string): void {
   const index = plan.accounts.findIndex((account) => account.id === accountId)
   if (index < 0) return
   plan.accounts.splice(index, 1)
-  const facts = plan.retirementActionEligibilityFacts
-  if (facts === undefined) return
-  facts.iraClassifications = facts.iraClassifications.filter(
-    (classification) => classification.sourceAccountId !== accountId,
-  )
-  facts.sepSimpleActivities = facts.sepSimpleActivities.filter(
-    (activity) => activity.sourceAccountId !== accountId,
-  )
+  clearAccountEligibilityFacts(plan, accountId)
 }
 
 export function AccountsSection() {

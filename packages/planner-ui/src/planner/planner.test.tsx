@@ -16,6 +16,7 @@ import { PlanCtx, usePlan } from './planContextCore'
 import { fmtMoneyCompact, parseAmount } from './format'
 import { createSamplePlan } from '../testSupport/samplePlan'
 import { invalidateAcaEvidence, removePartner, updatePersonLongevity } from './householdActions'
+import { updateAccountField, updatePersonDob } from './eligibilityFactActions'
 import { projectPlan } from './useProjection'
 import { AccountsSection, AssumptionsSection, HouseholdSection, InsuranceSection, SpendingSection, StrategySection } from './sections'
 import { InsightsPage } from './insights/InsightsPage'
@@ -58,14 +59,14 @@ describe('removePartner', () => {
           evidenceId: 'primary-contribution',
           provenance: { source: 'manual' },
           donorPersonId: primary!.id,
-          taxYear: 2033,
+          taxYear: 2036,
           amountCents: asUsdCents(100_000),
         },
         {
           evidenceId: 'partner-contribution',
           provenance: { source: 'manual' },
           donorPersonId: partner!.id,
-          taxYear: 2033,
+          taxYear: 2036,
           amountCents: asUsdCents(200_000),
         },
       ],
@@ -83,6 +84,79 @@ describe('removePartner', () => {
       expect.objectContaining({ evidenceId: 'primary-contribution' }),
     ])
     // No dangling references — the plan still parses.
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+})
+
+describe('eligibility fact edit integrity', () => {
+  it('clears account-bound facts when an IRA becomes an employer account', () => {
+    const plan = createSamplePlan()
+    const accountIndex = plan.accounts.findIndex(
+      (account) => account.type === 'traditional',
+    )
+    const account = plan.accounts[accountIndex]
+    if (account?.type !== 'traditional') throw new Error('expected traditional account')
+    account.kind = 'ira'
+    delete account.inherited
+    plan.retirementActionEligibilityFacts = {
+      iraClassifications: [
+        {
+          evidenceId: 'classification',
+          provenance: { source: 'manual' },
+          sourceAccountId: account.id,
+          subtype: 'sep',
+        },
+      ],
+      sepSimpleActivities: [
+        {
+          evidenceId: 'activity',
+          provenance: { source: 'manual' },
+          sourceAccountId: account.id,
+          actionTaxYear: 2033,
+          planYearEndDate: '2033-12-31',
+          employerContributionMadeForPlanYear: false,
+        },
+      ],
+      deductibleIraContributions: [],
+    }
+
+    updateAccountField(plan, accountIndex, 'kind', 'employer')
+
+    expect(plan.retirementActionEligibilityFacts.iraClassifications).toEqual([])
+    expect(plan.retirementActionEligibilityFacts.sepSimpleActivities).toEqual([])
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+
+  it('clears only contribution facts invalidated by a corrected donor DOB', () => {
+    const plan = createSamplePlan()
+    const [primary, partner] = plan.household.people
+    primary!.dob = '1960-01-01'
+    plan.retirementActionEligibilityFacts = {
+      iraClassifications: [],
+      sepSimpleActivities: [],
+      deductibleIraContributions: [
+        {
+          evidenceId: 'primary-contribution',
+          provenance: { source: 'manual' },
+          donorPersonId: primary!.id,
+          taxYear: 2031,
+          amountCents: asUsdCents(100_000),
+        },
+        {
+          evidenceId: 'partner-contribution',
+          provenance: { source: 'manual' },
+          donorPersonId: partner!.id,
+          taxYear: 2036,
+          amountCents: asUsdCents(200_000),
+        },
+      ],
+    }
+
+    updatePersonDob(plan, 0, '1962-01-01')
+
+    expect(plan.retirementActionEligibilityFacts.deductibleIraContributions).toEqual([
+      expect.objectContaining({ evidenceId: 'partner-contribution' }),
+    ])
     expect(parsePlan(plan).ok).toBe(true)
   })
 })

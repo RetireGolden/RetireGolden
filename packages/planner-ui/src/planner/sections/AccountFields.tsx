@@ -12,6 +12,7 @@ import { CheckboxField, MoneyField, NumberField, PercentField, ReadonlyField, Se
 import { fmtMoney } from '../format'
 import { currentStartYear } from '../useProjection'
 import { LEARN } from '../learnLinks'
+import { updateAccountField } from '../eligibilityFactActions'
 
 function ownerOptions(plan: Plan, type: Account['type']) {
   const peopleOptions = plan.household.people.map((p) => ({ value: p.id, label: p.name }))
@@ -23,7 +24,7 @@ export function AccountFields({ account, index }: { account: Account; index: num
   const [estimating, setEstimating] = useState(false)
   const set = <K extends string>(key: K, value: unknown) =>
     update((d) => {
-      ;(d.accounts[index] as unknown as Record<string, unknown>)[key] = value
+      updateAccountField(d, index, key, value)
     })
   return (
     <div className="form-grid">

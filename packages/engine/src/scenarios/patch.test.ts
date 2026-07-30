@@ -516,6 +516,52 @@ describe('canonical scenario patch documents', () => {
     }
   })
 
+  it('reports a protected-fact conflict when an older scenario invalidates later eligibility evidence', () => {
+    const base = plan()
+    base.accounts.push({
+      type: 'traditional',
+      id: 'ira-1',
+      name: 'IRA',
+      ownerPersonId: 'person-1',
+      annualReturnPct: null,
+      kind: 'ira',
+      balance: 10_000,
+      annualContribution: 0,
+    })
+    const edited = clonePlan(base)
+    const editedIra = edited.accounts.find((account) => account.id === 'ira-1')
+    if (editedIra?.type !== 'traditional') throw new Error('expected traditional IRA')
+    editedIra.kind = 'employer'
+    const patch = build(base, edited)
+
+    base.retirementActionEligibilityFacts = {
+      iraClassifications: [
+        {
+          evidenceId: 'classification-1',
+          provenance: { source: 'manual' },
+          sourceAccountId: 'ira-1',
+          subtype: 'traditional',
+        },
+      ],
+      sepSimpleActivities: [],
+      deductibleIraContributions: [],
+    }
+
+    const applied = applyScenarioPatchDocument(base, patch)
+    expect(applied.ok).toBe(false)
+    if (!applied.ok) {
+      expect(applied.conflicts).toEqual([
+        expect.objectContaining({
+          kind: 'value',
+          path: '/retirementActionEligibilityFacts',
+        }),
+      ])
+    }
+    expect(base.accounts.find((account) => account.id === 'ira-1')).toMatchObject({
+      kind: 'ira',
+    })
+  })
+
   it('persists through the plan schema and excludes scenario history from the baseline fingerprint', () => {
     const base = plan()
     const edited = clonePlan(base)

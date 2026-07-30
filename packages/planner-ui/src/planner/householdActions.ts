@@ -2,6 +2,7 @@
  *  they're testable and don't trip react-refresh's only-export-components rule). */
 
 import type { Plan } from '@retiregolden/engine/model/plan'
+import { clearDonorEligibilityFacts } from './eligibilityFactActions'
 
 /** Clear exact annual ACA facts after an edit that can stale their family,
  * coverage, region, or premium assumptions. */
@@ -37,12 +38,7 @@ export function removePartner(d: Plan, removedId: string) {
     .filter((p) => (p.kind === 'ltc' ? p.owner : p.insured) !== removedId)
     .map((p) => (p.kind === 'permanentLife' && p.beneficiary === removedId ? { ...p, beneficiary: 'estate' as const } : p))
   d.careEvents = d.careEvents.filter((c) => c.personId !== removedId)
-  if (d.retirementActionEligibilityFacts) {
-    d.retirementActionEligibilityFacts.deductibleIraContributions =
-      d.retirementActionEligibilityFacts.deductibleIraContributions.filter(
-        (fact) => fact.donorPersonId !== removedId,
-      )
-  }
+  clearDonorEligibilityFacts(d, removedId)
   // Annual ACA evidence names an exact tax family and coverage roster. It
   // cannot be safely rewritten after a household member is removed; clearing
   // it makes a still-enabled ACA request fail closed to the visible gross
