@@ -10,7 +10,10 @@
     "packages/*"
   ],
   "overrides": {
-    "sharp": "^0.35.0"
+    "sharp": "^0.35.0",
+    "ejs": {
+      "jake": "^12.10.1"
+    }
   },
   "scripts": {
     "lint": "npm run lint -w @retiregolden/engine && npm run lint -w @retiregolden/planner-ui && npm run lint -w retiregolden-web",
