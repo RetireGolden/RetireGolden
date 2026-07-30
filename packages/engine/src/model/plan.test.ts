@@ -791,6 +791,30 @@ describe('Plan retirement-action persistence', () => {
     }
   })
 
+  it('rejects duplicate person IDs before action references can depend on array order', () => {
+    const first = actionPlanRaw()
+    const firstPeople = (
+      first['household'] as Record<string, unknown>
+    )['people'] as Array<Record<string, unknown>>
+    firstPeople.push({ ...firstPeople[0], name: 'Ambiguous duplicate' })
+
+    const second = actionPlanRaw()
+    const secondPeople = (
+      second['household'] as Record<string, unknown>
+    )['people'] as Array<Record<string, unknown>>
+    secondPeople.unshift({ ...secondPeople[0], name: 'Ambiguous duplicate' })
+
+    for (const raw of [first, second]) {
+      const result = parsePlan(raw)
+      expect(result.ok).toBe(false)
+      if (!result.ok) {
+        expect(result.issues.some((issue) => issue.includes('duplicate person id'))).toBe(
+          true,
+        )
+      }
+    }
+  })
+
   it('requires linked tax funding to resolve the exact same-person/year back-reference', () => {
     const cases: Array<(raw: Record<string, unknown>) => void> = [
       (raw) => {

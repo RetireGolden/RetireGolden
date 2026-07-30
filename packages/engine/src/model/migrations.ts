@@ -14,6 +14,7 @@ import {
   legacyAggregateRothConversionRequestSchema,
   legacyAggregateWithdrawalRequestSchema,
 } from '../actions/contract.js'
+import { parseScenarioPatch } from '../scenarios/contract.js'
 import { rebindScenarioPatchesToPlan } from '../scenarios/patch.js'
 
 export type MigrationStep = (raw: Record<string, unknown>) => Record<string, unknown>
@@ -68,23 +69,8 @@ function compareCanonicalStrings(left: string, right: string): number {
   return 0
 }
 
-/**
- * Pure v1 -> v2 migration. Legacy scalar strategies remain untouched and no
- * action is synthesized from them. Only already-present typed legacy action
- * records that genuinely omitted actionId receive a deterministic ID.
- */
-export const migratePlanV1ToV2: MigrationStep = (raw) => {
-  const strategies = raw['strategies']
-  if (typeof strategies !== 'object' || strategies === null || Array.isArray(strategies)) {
-    return raw
-  }
-  const strategiesRecord = strategies as Record<string, unknown>
-  const retirementActions = strategiesRecord['retirementActions']
-
-  if (retirementActions === undefined) {
-    return { ...raw, strategies: { ...strategiesRecord, retirementActions: [] } }
-  }
-  if (!Array.isArray(retirementActions)) return raw
+function migrateLegacyActionSchedule(retirementActions: unknown): unknown {
+  if (!Array.isArray(retirementActions)) return retirementActions
 
   const suppliedIds = new Set<string>()
   retirementActions.forEach((action) => {
@@ -111,7 +97,7 @@ export const migratePlanV1ToV2: MigrationStep = (raw) => {
       seed: readableLegacyIdSeed(record, canonical),
     })
   })
-  if (candidates.length === 0) return raw
+  if (candidates.length === 0) return retirementActions
 
   const assignedByIndex = new Map<number, string>()
   const usedIds = new Set(suppliedIds)
@@ -134,14 +120,102 @@ export const migratePlanV1ToV2: MigrationStep = (raw) => {
       assignedByIndex.set(candidate.index, actionId)
     })
 
-  const normalizedActions = retirementActions.map((action, index) => {
+  return retirementActions.map((action, index) => {
     const actionId = assignedByIndex.get(index)
     if (actionId === undefined) return action
     return { ...(action as Record<string, unknown>), actionId }
   })
+}
+
+function migrateScenarioOperationValue(path: string, value: unknown): unknown {
+  if (path === '/strategies/retirementActions') {
+    return migrateLegacyActionSchedule(value)
+  }
+  if (
+    path !== '/strategies' ||
+    typeof value !== 'object' ||
+    value === null ||
+    Array.isArray(value)
+  ) {
+    return value
+  }
+  const strategies = value as Record<string, unknown>
+  const retirementActions = strategies['retirementActions']
+  const migrated = migrateLegacyActionSchedule(retirementActions)
+  return migrated === retirementActions
+    ? value
+    : { ...strategies, retirementActions: migrated }
+}
+
+function migrateCanonicalScenarioPatch(patch: unknown): unknown {
+  if (!parseScenarioPatch(patch).ok) return patch
+  const patchRecord = patch as Record<string, unknown>
+  const operations = patchRecord['operations'] as unknown[]
+  let changed = false
+  const migratedOperations = operations.map((operation) => {
+    const operationRecord = operation as Record<string, unknown>
+    const path = operationRecord['path'] as string
+    let migratedOperation = operationRecord
+    const before = operationRecord['before'] as Record<string, unknown>
+    if (before['present'] === true) {
+      const migratedBeforeValue = migrateScenarioOperationValue(path, before['value'])
+      if (migratedBeforeValue !== before['value']) {
+        migratedOperation = {
+          ...migratedOperation,
+          before: { ...before, value: migratedBeforeValue },
+        }
+      }
+    }
+    if (operationRecord['op'] === 'set') {
+      const migratedValue = migrateScenarioOperationValue(path, operationRecord['value'])
+      if (migratedValue !== operationRecord['value']) {
+        migratedOperation = { ...migratedOperation, value: migratedValue }
+      }
+    }
+    if (migratedOperation !== operationRecord) changed = true
+    return migratedOperation
+  })
+  return changed ? { ...patchRecord, operations: migratedOperations } : patch
+}
+
+function migrateCanonicalScenarioActionArrays(scenarios: unknown): unknown {
+  if (!Array.isArray(scenarios)) return scenarios
+  let changed = false
+  const migratedScenarios = scenarios.map((scenario) => {
+    if (typeof scenario !== 'object' || scenario === null || Array.isArray(scenario)) {
+      return scenario
+    }
+    const scenarioRecord = scenario as Record<string, unknown>
+    const patch = scenarioRecord['patch']
+    const migratedPatch = migrateCanonicalScenarioPatch(patch)
+    if (migratedPatch === patch) return scenario
+    changed = true
+    return { ...scenarioRecord, patch: migratedPatch }
+  })
+  return changed ? migratedScenarios : scenarios
+}
+
+/**
+ * Pure v1 -> v2 migration. Legacy scalar strategies remain untouched and no
+ * action is synthesized from them. Only already-present typed legacy action
+ * records that genuinely omitted actionId receive a deterministic ID.
+ */
+export const migratePlanV1ToV2: MigrationStep = (raw) => {
+  const strategies = raw['strategies']
+  if (typeof strategies !== 'object' || strategies === null || Array.isArray(strategies)) {
+    return raw
+  }
+  const strategiesRecord = strategies as Record<string, unknown>
+  const retirementActions = strategiesRecord['retirementActions']
+  const normalizedActions =
+    retirementActions === undefined ? [] : migrateLegacyActionSchedule(retirementActions)
+  const scenarios = raw['scenarios']
+  const migratedScenarios = migrateCanonicalScenarioActionArrays(scenarios)
+  if (normalizedActions === retirementActions && migratedScenarios === scenarios) return raw
   return {
     ...raw,
     strategies: { ...strategiesRecord, retirementActions: normalizedActions },
+    ...(migratedScenarios === scenarios ? {} : { scenarios: migratedScenarios }),
   }
 }
 

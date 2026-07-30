@@ -211,6 +211,68 @@ describe('v1 -> v2 retirement-action migration', () => {
     if (reverted.ok) expect(reverted.plan.assumptions.inflationPct).toBe(2.5)
   })
 
+  it('migrates legacy IDs inside canonical action-array operations', () => {
+    const raw = withActions(rawV1Plan(), [legacyWithdrawal])
+    raw['scenarios'] = [
+      {
+        id: 'scenario-actions',
+        name: 'Add legacy QCD',
+        patch: {
+          kind: 'retiregolden.scenario-patch',
+          version: 1,
+          base: {
+            planId: raw['id'],
+            planSchemaVersion: 1,
+            snapshotHash: 'fnv1a64:0000000000000000',
+          },
+          title: 'Add legacy QCD',
+          rationale: null,
+          createdAtIso: '2026-06-11T00:00:00.000Z',
+          actor: { kind: 'legacy' },
+          operations: [
+            {
+              op: 'set',
+              path: '/strategies/retirementActions',
+              before: { present: true, value: [legacyWithdrawal] },
+              value: [legacyWithdrawal, legacyQcd],
+            },
+          ],
+        },
+      },
+    ]
+
+    const migrated = migratePlanToCurrent(raw)
+    expect(migrated.ok).toBe(true)
+    if (!migrated.ok) return
+    const parsedPatch = parseScenarioPatch(migrated.plan.scenarios[0]!.patch)
+    expect(parsedPatch.ok).toBe(true)
+    if (!parsedPatch.ok) return
+    const operation = parsedPatch.patch.operations[0]
+    expect(operation?.before.present).toBe(true)
+    if (operation?.before.present !== true || operation.op !== 'set') return
+    const beforeActions = operation.before.value as Array<Record<string, unknown>>
+    const valueActions = operation.value as Array<Record<string, unknown>>
+    expect(beforeActions[0]?.['actionId']).toBe(
+      migrated.plan.strategies.retirementActions[0]?.actionId,
+    )
+    expect(valueActions.map((action) => action['actionId'])).toEqual([
+      beforeActions[0]?.['actionId'],
+      expect.stringMatching(/^legacy-qcd-2032-/),
+    ])
+
+    const applied = applyScenarioPatchDocument(migrated.plan, parsedPatch.patch)
+    expect(applied.ok).toBe(true)
+    if (!applied.ok) return
+    expect(applied.plan.strategies.retirementActions).toHaveLength(2)
+    const reverted = revertScenarioPatch(applied.plan, parsedPatch.patch)
+    expect(reverted.ok).toBe(true)
+    if (reverted.ok) {
+      expect(reverted.plan.strategies.retirementActions).toEqual(
+        migrated.plan.strategies.retirementActions,
+      )
+    }
+  })
+
   it('assigns stable IDs to only genuinely ID-less typed legacy records', () => {
     const raw = withActions(rawV1Plan(), [
       legacyWithdrawal,

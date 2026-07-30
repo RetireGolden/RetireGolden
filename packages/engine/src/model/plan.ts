@@ -1462,6 +1462,7 @@ export const planSchema = z
       })
     }
     const personIds = new Set(plan.household.people.map((p) => p.id))
+    const actionReferencedPersonIds = new Set<string>()
     const actionReferencedAccountIds = new Set<string>()
     plan.strategies.retirementActions.forEach((action) => {
       if (
@@ -1472,9 +1473,11 @@ export const planSchema = z
         return
       }
       if (action.kind === 'qcd') {
+        actionReferencedPersonIds.add(action.donorPersonId)
         actionReferencedAccountIds.add(action.allocation.sourceAccountId)
         return
       }
+      actionReferencedPersonIds.add(action.personId)
       action.allocations.forEach((allocation) => {
         actionReferencedAccountIds.add(allocation.sourceAccountId)
       })
@@ -1482,6 +1485,24 @@ export const planSchema = z
         actionReferencedAccountIds.add(action.destinationRothAccountId)
       }
     })
+    const personIndexesById = new Map<string, number[]>()
+    plan.household.people.forEach((person, index) => {
+      const indexes = personIndexesById.get(person.id)
+      if (indexes === undefined) personIndexesById.set(person.id, [index])
+      else indexes.push(index)
+    })
+    let hasAmbiguousActionPersonIds = false
+    for (const [personId, indexes] of personIndexesById) {
+      if (indexes.length < 2 || !actionReferencedPersonIds.has(personId)) continue
+      hasAmbiguousActionPersonIds = true
+      indexes.forEach((index) => {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['household', 'people', index, 'id'],
+          message: `duplicate person id "${personId}"`,
+        })
+      })
+    }
     const accountIndexesById = new Map<string, number[]>()
     plan.accounts.forEach((account, index) => {
       const indexes = accountIndexesById.get(account.id)
@@ -1503,7 +1524,11 @@ export const planSchema = z
     const accountTypeById = new Map(plan.accounts.map((a) => [a.id, a.type]))
     const accountById = new Map(plan.accounts.map((account) => [account.id, account]))
 
-    if (!hasDuplicateActionIds && !hasAmbiguousActionAccountIds) {
+    if (
+      !hasDuplicateActionIds &&
+      !hasAmbiguousActionPersonIds &&
+      !hasAmbiguousActionAccountIds
+    ) {
       const validateOwnedAccount = (
         actionIndex: number,
         personId: string,
