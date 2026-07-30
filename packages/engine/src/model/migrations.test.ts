@@ -274,6 +274,57 @@ describe('v1 -> v2 retirement-action migration', () => {
     }
   })
 
+  it('normalizes an absent direct action-schedule precondition to the v2 default', () => {
+    const raw = rawV1Plan()
+    const strategies = raw['strategies'] as Record<string, unknown>
+    delete strategies['retirementActions']
+    raw['scenarios'] = [
+      {
+        id: 'scenario-add-actions',
+        name: 'Introduce action schedule',
+        patch: {
+          kind: 'retiregolden.scenario-patch',
+          version: 1,
+          base: {
+            planId: raw['id'],
+            planSchemaVersion: 1,
+            snapshotHash: 'fnv1a64:0000000000000000',
+          },
+          title: 'Introduce action schedule',
+          rationale: null,
+          createdAtIso: '2026-06-11T00:00:00.000Z',
+          actor: { kind: 'legacy' },
+          operations: [
+            {
+              op: 'set',
+              path: '/strategies/retirementActions',
+              before: { present: false },
+              value: [legacyQcd],
+            },
+          ],
+        },
+      },
+    ]
+
+    const migrated = migratePlanToCurrent(raw)
+    expect(migrated.ok).toBe(true)
+    if (!migrated.ok) return
+    const parsedPatch = parseScenarioPatch(migrated.plan.scenarios[0]!.patch)
+    expect(parsedPatch.ok).toBe(true)
+    if (!parsedPatch.ok) return
+    expect(parsedPatch.patch.operations[0]?.before).toEqual({
+      present: true,
+      value: [],
+    })
+    const applied = applyScenarioPatchDocument(migrated.plan, parsedPatch.patch)
+    expect(applied.ok).toBe(true)
+    if (applied.ok) {
+      expect(applied.plan.strategies.retirementActions[0]?.actionId).toMatch(
+        /^legacy-qcd-2032-/,
+      )
+    }
+  })
+
   it('adds the empty schedule inside whole-strategies scenario operations', () => {
     const raw = rawV1Plan()
     const strategies = raw['strategies'] as Record<string, unknown>
@@ -403,6 +454,54 @@ describe('v1 -> v2 retirement-action migration', () => {
       expect(applied.conflicts.some((conflict) => conflict.kind === 'plan-id')).toBe(
         true,
       )
+    }
+  })
+
+  it('preserves a canonical scenario that targets a different schema version', () => {
+    const raw = rawV1Plan()
+    raw['scenarios'] = [
+      {
+        id: 'foreign-version-scenario',
+        name: 'Foreign schema scenario',
+        patch: {
+          kind: 'retiregolden.scenario-patch',
+          version: 1,
+          base: {
+            planId: raw['id'],
+            planSchemaVersion: 99,
+            snapshotHash: 'fnv1a64:0000000000000000',
+          },
+          title: 'Foreign schema scenario',
+          rationale: null,
+          createdAtIso: '2026-06-11T00:00:00.000Z',
+          actor: { kind: 'legacy' },
+          operations: [
+            {
+              op: 'set',
+              path: '/assumptions/inflationPct',
+              before: { present: true, value: 2.5 },
+              value: 3,
+            },
+          ],
+        },
+      },
+    ]
+
+    const migrated = migratePlanToCurrent(raw)
+    expect(migrated.ok).toBe(true)
+    if (!migrated.ok) return
+    const parsedPatch = parseScenarioPatch(migrated.plan.scenarios[0]!.patch)
+    expect(parsedPatch.ok).toBe(true)
+    if (!parsedPatch.ok) return
+    expect(parsedPatch.patch.base.planSchemaVersion).toBe(99)
+    const applied = applyScenarioPatchDocument(migrated.plan, parsedPatch.patch)
+    expect(applied.ok).toBe(false)
+    if (!applied.ok) {
+      expect(
+        applied.conflicts.some(
+          (conflict) => conflict.kind === 'plan-schema-version',
+        ),
+      ).toBe(true)
     }
   })
 

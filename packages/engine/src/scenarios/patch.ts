@@ -462,13 +462,22 @@ export function readScenarioValueState(plan: Plan, path: string): ScenarioValueS
  */
 export function rebindScenarioPatchesToPlan(
   plan: Plan,
-  options: { matchingPlanIdOnly?: boolean } = {},
+  options: {
+    matchingPlanIdOnly?: boolean
+    matchingPlanSchemaVersion?: number
+  } = {},
 ): Plan {
   const canonical = plan.scenarios.map((scenario) => {
     if (!isScenarioPatchEnvelope(scenario.patch)) return null
     const parsed = parseScenarioPatch(scenario.patch)
     if (!parsed.ok) return null
     if (options.matchingPlanIdOnly && parsed.patch.base.planId !== plan.id) return null
+    if (
+      options.matchingPlanSchemaVersion !== undefined &&
+      parsed.patch.base.planSchemaVersion !== options.matchingPlanSchemaVersion
+    ) {
+      return null
+    }
     return parsed.patch
   })
   if (canonical.every((patch) => patch === null)) return plan

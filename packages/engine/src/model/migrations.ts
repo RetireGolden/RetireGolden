@@ -161,7 +161,15 @@ function migrateCanonicalScenarioPatch(patch: unknown): unknown {
     const path = operationRecord['path'] as string
     let migratedOperation = operationRecord
     const before = operationRecord['before'] as Record<string, unknown>
-    if (before['present'] === true) {
+    if (
+      path === '/strategies/retirementActions' &&
+      before['present'] === false
+    ) {
+      migratedOperation = {
+        ...migratedOperation,
+        before: { present: true, value: [] },
+      }
+    } else if (before['present'] === true) {
       const migratedBeforeValue = migrateScenarioOperationValue(path, before['value'])
       if (migratedBeforeValue !== before['value']) {
         migratedOperation = {
@@ -318,7 +326,10 @@ export function migratePlanToCurrent(
     ok: true,
     plan:
       v < currentVersion
-        ? rebindScenarioPatchesToPlan(parsed.plan, { matchingPlanIdOnly: true })
+        ? rebindScenarioPatchesToPlan(parsed.plan, {
+            matchingPlanIdOnly: true,
+            matchingPlanSchemaVersion: v,
+          })
         : parsed.plan,
   }
 }
