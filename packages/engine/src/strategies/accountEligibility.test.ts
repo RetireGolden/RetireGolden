@@ -425,6 +425,56 @@ describe('retirement-action physical eligibility preflight', () => {
     ).toEqual(['source-owner-mismatch'])
   })
 
+  it('retains distinct diagnostics when identifier tuples contain delimiters', () => {
+    const base = ordinaryRequest()
+    const request = {
+      ...base,
+      requestedAmount: ordinaryWithdrawalRequestSchema.shape.requestedAmount.parse(2),
+      allocations: [
+        {
+          allocationId: asAllocationId('c'),
+          sourceAccountId: asAccountId('a|b'),
+          requestedAmount: ordinaryWithdrawalRequestSchema.shape.requestedAmount.parse(1),
+        },
+        {
+          allocationId: asAllocationId('b|c'),
+          sourceAccountId: asAccountId('a'),
+          requestedAmount: ordinaryWithdrawalRequestSchema.shape.requestedAmount.parse(1),
+        },
+      ],
+    } as OrdinaryWithdrawalRequest
+    const decision = evaluateRetirementActionEligibility(
+      request,
+      { people: [person('p1')], accounts: [] },
+      withAlive(request),
+    )
+    expect(decision.reasons.map((reason) => [
+      reason.accountId,
+      reason.allocationId,
+    ])).toEqual([
+      ['a', 'b|c'],
+      ['a|b', 'c'],
+    ])
+  })
+
+  it('validates supplied ordinary execution dates while allowing omission when unnecessary', () => {
+    const base = ordinaryRequest()
+    const plan = { people: [person('p1')], accounts: [ira, cash] }
+    for (const executionDate of ['2026-02-30', '2026-2-01', '2027-01-01']) {
+      const request = { ...base, executionDate } as OrdinaryWithdrawalRequest
+      expect(
+        evaluateRetirementActionEligibility(request, plan, withAlive(request)),
+      ).toMatchObject({
+        status: 'unsupported',
+        reasons: [{ code: 'required-facts-missing' }],
+      })
+    }
+    const withoutDate = { ...base, executionDate: undefined } as OrdinaryWithdrawalRequest
+    expect(
+      evaluateRetirementActionEligibility(withoutDate, plan, withAlive(withoutDate)),
+    ).toEqual({ status: 'accepted', reasons: [] })
+  })
+
   it('fails closed for joint sources until exact joint-owner evidence exists', () => {
     const base = ordinaryRequest()
     const request = {
@@ -774,6 +824,16 @@ describe('retirement-action physical eligibility preflight', () => {
         withAlive(invalid, traditionalContext()),
       ).reasons[0]?.code,
     ).toBe('qcd-date-invalid')
+    const invalidBeforeThresholdYear = qcdRequest({ executionDate: '2026-02-30' })
+    expect(
+      evaluateRetirementActionEligibility(
+        invalidBeforeThresholdYear,
+        { people: [person('p1', '1956-08-31')], accounts: [ira] },
+        withAlive(invalidBeforeThresholdYear, {
+          iraFacts: traditionalContext().iraFacts,
+        }),
+      ).reasons.map((reason) => reason.code),
+    ).toEqual(['qcd-date-invalid'])
     const missingDate = qcdRequest({ executionDate: undefined })
     expect(
       evaluateRetirementActionEligibility(

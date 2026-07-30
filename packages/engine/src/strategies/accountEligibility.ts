@@ -229,7 +229,12 @@ function uniqueIndex<T>(
 }
 
 function reasonKey(reason: ActionReason): string {
-  return `${reason.code}|${reason.personId ?? ''}|${reason.accountId ?? ''}|${reason.allocationId ?? ''}`
+  return JSON.stringify([
+    reason.code,
+    reason.personId ?? null,
+    reason.accountId ?? null,
+    reason.allocationId ?? null,
+  ])
 }
 
 function compareUtf16CodeUnits(left: string, right: string): number {
@@ -428,6 +433,14 @@ function evaluateOrdinaryWithdrawal(
   context: NonpersistedRetirementActionEligibilityContext,
 ): RetirementActionEligibilityDecision {
   const reasons = reconcileAllocations(request.requestedAmount, request.allocations)
+  if (request.executionDate !== undefined) {
+    const executionDate = parseCivilIsoDate(request.executionDate)
+    if (executionDate === null || executionDate.year !== request.year) {
+      reasons.push(
+        createActionReason('required-facts-missing', { personId: request.personId }),
+      )
+    }
+  }
   const people = uniqueIndex(plan.people, (person) => person.id)
   const accounts = uniqueIndex(plan.accounts, (account) => account.id)
   appendActionPersonReasons(request, request.personId, people, context, reasons)
@@ -788,7 +801,12 @@ function evaluateQcd(
     thresholdDate !== null &&
     validExecutionDate !== null &&
     compareCivilIsoDates(formatCivilDate(validExecutionDate), thresholdDate) < 0
-  if (thresholdDate !== null && !isKnownPreThreshold) {
+  const hasValidInYearEligibleDate =
+    thresholdDate !== null &&
+    validExecutionDate !== null &&
+    validExecutionDate.year === request.year &&
+    !isKnownPreThreshold
+  if (hasValidInYearEligibleDate && thresholdDate !== null) {
     const history = histories.get(request.donorPersonId)
     const complete = completeContributionHistory(
       history,
