@@ -71,6 +71,15 @@ describe('reloadOnceForStaleChunk', () => {
     expect(reload).toHaveBeenCalledTimes(2)
   })
 
+  it('treats a future timestamp (clock stepped backward) as invalid and still reloads', () => {
+    const reload = spyOnReload()
+    sessionStorage.setItem('retiregolden.staleChunkReloadedAt', String(2_000_000))
+    expect(reloadOnceForStaleChunk(1_000_000)).toBe(true)
+    expect(reload).toHaveBeenCalledTimes(1)
+    // The bogus timestamp was replaced, so the cooldown works from now on.
+    expect(sessionStorage.getItem('retiregolden.staleChunkReloadedAt')).toBe('1000000')
+  })
+
   it('treats a corrupted timestamp as absent', () => {
     const reload = spyOnReload()
     sessionStorage.setItem('retiregolden.staleChunkReloadedAt', 'garbage')

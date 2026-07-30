@@ -52,7 +52,10 @@ export function reloadOnceForStaleChunk(now: number = Date.now()): boolean {
   try {
     const raw = sessionStorage.getItem(RELOADED_AT_KEY)
     const last = raw === null ? Number.NaN : Number(raw)
-    if (Number.isFinite(last) && now - last < RELOAD_COOLDOWN_MS) return false
+    const elapsed = now - last
+    // A future timestamp (system clock stepped backward) is invalid, not a
+    // cooldown — treating it as one could suppress recovery indefinitely.
+    if (Number.isFinite(last) && elapsed >= 0 && elapsed < RELOAD_COOLDOWN_MS) return false
     sessionStorage.setItem(RELOADED_AT_KEY, String(now))
   } catch {
     return false

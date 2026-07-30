@@ -6,13 +6,14 @@
  */
 import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { act } from 'react'
+import { act, isValidElement } from 'react'
 import { createRoot } from 'react-dom/client'
 import { renderToString } from 'react-dom/server'
 import { MemoryRouter, useRoutes, type RouteObject } from 'react-router-dom'
 import { IDBFactory } from 'fake-indexeddb'
 
 import { _resetPlanStoreForTests, savePlan } from '../data/planStore'
+import { RouteErrorBoundary } from '../RouteErrorBoundary'
 import { plannerContentRoutes, plannerHomeRoutes, plannerWorkspaceRoutes } from './groups'
 import { createSamplePlan } from '../testSupport/samplePlan'
 
@@ -142,6 +143,24 @@ describe('content group mounted alone', () => {
     )
     expect(container.innerHTML).toContain('Example library')
     await unmount()
+  })
+})
+
+describe('lazy route elements', () => {
+  it('each ships its own RouteErrorBoundary, so bare route-group hosts get stale-chunk recovery', () => {
+    // A host mounting the groups without <PlannerApp/> has no outer boundary;
+    // a lazy chunk that vanished under a deploy must still recover per-route
+    // (staleChunkReload.ts) instead of surfacing an uncaught rejection.
+    const lazyPaths = ['plan/*', 'compare', 'examples', 'learn/*', 'how-tested', 'import']
+    const all = [...plannerHomeRoutes, ...plannerWorkspaceRoutes, ...plannerContentRoutes]
+    for (const path of lazyPaths) {
+      const route = all.find((r) => r.path === path)
+      expect(route, `route ${path} exists`).toBeDefined()
+      expect(
+        isValidElement(route!.element) && route!.element.type === RouteErrorBoundary,
+        `route ${path} wraps in RouteErrorBoundary`,
+      ).toBe(true)
+    }
   })
 })
 

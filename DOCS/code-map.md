@@ -92,8 +92,10 @@ home; `/plan/*` via lazy `routes/PlanRoutes` + `/compare` in workspace; `/exampl
 via lazy `routes/LearnRoutes`, `/disclaimer`, `/how-tested` in content; retired v1 routes redirect
 to `/`), `RouteErrorBoundary.tsx`, `staleChunkReload.ts` (stale-deployment recovery: a
 `vite:preloadError` listener the web host installs before render, plus the loop-guarded one-shot
-reload the error boundary uses as a backstop, so a deploy that replaces hashed chunks under an
-open tab reloads once instead of dead-ending on "Failed to fetch dynamically imported module"),
+reload the error boundary uses as a backstop — the exported route groups mount that boundary
+per lazy route, so bare route-group hosts recover too — so a deploy that replaces hashed chunks
+under an open tab reloads once instead of dead-ending on "Failed to fetch dynamically imported
+module"),
 `index.css` (the design-token layer, exported as
 `@retiregolden/planner-ui/index.css`), plus the `staticGuards` / `tokenContrast` / `appShell.smoke`
 test files.

@@ -129,8 +129,9 @@ The supported product API is:
   before render in web hosts that deploy hashed assets: when a new deploy
   removes a lazy route chunk under an open tab, the app reloads once —
   guarded against loops — instead of surfacing "Failed to fetch dynamically
-  imported module"; the route error boundary backstops hosts that skip it) —
-  see "Hosting the workspace" below;
+  imported module"; the exported route groups carry the same one-shot
+  recovery in their per-route error boundary, so hosts that skip the call
+  still recover) — see "Hosting the workspace" below;
 - the **`./plan-format` subpath** — `serializeV2Backup`, `parseV2Backup`,
   the envelope types, and the kind/version constants. This is the plan
   interchange format (the same file the web app's backup download produces);

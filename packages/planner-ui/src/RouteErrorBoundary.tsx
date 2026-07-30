@@ -26,8 +26,9 @@ export class RouteErrorBoundary extends Component<Props, State> {
     // deploy replaced the hashed assets under this tab (see
     // staleChunkReload.ts). One reload picks up the new index; while it's in
     // flight the route just looks like it's still loading. The web host also
-    // catches this earlier via `vite:preloadError`, but route-group hosts
-    // that skip `installStaleChunkReloadHandler()` recover here instead.
+    // catches this earlier via `vite:preloadError`; this boundary ships
+    // inside the exported route groups (routes/groups.tsx), so hosts that
+    // skip `installStaleChunkReloadHandler()` recover here instead.
     if (isStaleChunkError(error) && reloadOnceForStaleChunk()) {
       this.setState({ reloading: true })
       return
