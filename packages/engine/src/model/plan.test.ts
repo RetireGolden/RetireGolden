@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { asUsdCents } from '../actions/money.js'
 import { createEmptyPlan, parsePlan, stateForYear, stateResidencySegmentsForYear, type Plan } from './plan.js'
 import { setAcaYearContract } from '../testing/planFixtures.js'
 
@@ -915,7 +916,7 @@ describe('Plan v3 retirement-action eligibility facts', () => {
           provenance: { source: 'manual' },
           donorPersonId: 'p1',
           taxYear: 2033,
-          amount: 0 as never,
+          amount: asUsdCents(0),
         },
       ],
     }
