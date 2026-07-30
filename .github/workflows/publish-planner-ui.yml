@@ -118,6 +118,11 @@ jobs:
       # exports map resolves, the source compiles under a consumer's Vite,
       # and the dep-internal worker chunks + HiGHS wasm are emitted.
       - name: Smoke test the packed artifact
+        env:
+          # A planner release must prove its exact supported engine minimum is
+          # already consumable from npm; the ordinary PR build may use the
+          # version-matched local tarball while that engine release is pending.
+          PLANNER_PACK_SMOKE_ENGINE_SOURCE: registry
         run: node packages/planner-ui/scripts/pack-smoke.mjs
 
       - name: Publish to npm

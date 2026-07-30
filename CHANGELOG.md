@@ -4,6 +4,13 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## 2026-07 (July 2026 Depth Wave)
 
+**2026-07-30**
+- Prepared **`@retiregolden/engine` 0.1.9** (patch — additive Plan v3 retirement-action
+  eligibility-fact persistence and schema support). Planner UI source that reads those facts now
+  requires `@retiregolden/engine ^0.1.9`; its packed-consumer smoke installs and compiles against
+  the exact supported minimum, using the local 0.1.9 tarball only until that version is available
+  from the registry.
+
 **2026-07-26**
 - Prepared **`@retiregolden/engine` 0.1.8** and **`@retiregolden/planner-ui` 0.6.2**
   (patches — additive Advisor meeting WS8 performance seams, with no calculation changes).
