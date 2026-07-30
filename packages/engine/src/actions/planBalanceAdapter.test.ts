@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { asUsdCents } from './money.js'
 import {
+  ledgerCentTotalToPlanDollars,
   ledgerCentsToPlanDollars,
   planDollarsToLedgerCents,
 } from './planBalanceAdapter.js'
@@ -39,6 +40,15 @@ describe('Plan dollar / exact-cent adapter', () => {
   it('rejects safe integer cents that lose precision as Plan dollars', () => {
     expect(() =>
       ledgerCentsToPlanDollars(asUsdCents(Number.MAX_SAFE_INTEGER)),
+    ).toThrow(RangeError)
+  })
+
+  it('round-trips representable aggregate cents and rejects a one-cent loss', () => {
+    expect(ledgerCentTotalToPlanDollars(10_000_000_000_000_000n)).toBe(
+      100_000_000_000_000,
+    )
+    expect(() =>
+      ledgerCentTotalToPlanDollars(18_014_398_509_481_979n),
     ).toThrow(RangeError)
   })
 })

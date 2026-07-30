@@ -71,6 +71,7 @@ import { propertySaleTax } from '../tax/propertySale.js'
 import {
   asAccountId,
   executeCashOrdinaryWithdrawals,
+  ledgerCentTotalToPlanDollars,
   ledgerCentsToPlanDollars,
   planDollarsToLedgerCents,
   type ExecuteCashOrdinaryWithdrawalsResult,
@@ -2295,10 +2296,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           total + BigInt(evidence.disposition.executedAmount),
         0n,
       )
-      retirementActionCash = Number(retirementActionCashCents) / 100
-      if (!Number.isFinite(retirementActionCash)) {
-        throw new RangeError('annual retirement-action cash exceeds the Plan-dollar range')
-      }
+      retirementActionCash = ledgerCentTotalToPlanDollars(
+        retirementActionCashCents,
+      )
     }
 
     // --- Roth conversions (after RMDs — RMDs must be satisfied first) -------

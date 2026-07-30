@@ -33,6 +33,7 @@ export {
   type UsdCents,
 } from './money.js'
 export {
+  ledgerCentTotalToPlanDollars,
   ledgerCentsToPlanDollars,
   planDollarsToLedgerCents,
 } from './planBalanceAdapter.js'
