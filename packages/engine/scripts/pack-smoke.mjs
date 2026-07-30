@@ -35,6 +35,7 @@ assert.equal(typeof globalThis.localStorage, 'undefined')
 // module, and the testing fixtures.
 const { simulatePlan, planSchema, CURRENT_PLAN_SCHEMA_VERSION } = await import('@retiregolden/engine')
 const { packForYear } = await import('@retiregolden/engine/params')
+const { addUsdCents, asActionId, asUsdCents } = await import('@retiregolden/engine/actions')
 const simulate = await import('@retiregolden/engine/projection/simulate')
 const { singlePersonPlan, cashAccount, productionTaxCalculator, runPlan } = await import(
   '@retiregolden/engine/testing/planFixtures'
@@ -55,6 +56,8 @@ const shippedSchema = JSON.parse(readFileSync(shippedPath, 'utf8'))
 
 assert.equal(typeof simulatePlan, 'function')
 assert.equal(simulate.simulatePlan, simulatePlan)
+assert.equal(asActionId('smoke-action'), 'smoke-action')
+assert.equal(addUsdCents(asUsdCents(125), asUsdCents(75)), 200)
 assert.equal(CURRENT_PLAN_SCHEMA_VERSION, 1)
 assert.ok(packForYear(2026) && typeof packForYear(2026) === 'object')
 
