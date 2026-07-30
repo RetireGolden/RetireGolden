@@ -242,6 +242,32 @@ describe('retirement-action cash execution in the annual ledger', () => {
     expect(year.balances).toMatchObject({ 'cash-a': 0, 'cash-b': 0 })
   })
 
+  it('returns non-actionable evidence when exact closing cents cannot be Plan dollars', () => {
+    const plan = basePlan()
+    plan.accounts = [cash('cash-a', 90_071_992_547_409.9)]
+    plan.strategies.retirementActions = [
+      withdrawal({
+        actionId: 'unrepresentable-closing',
+        accountId: 'cash-a',
+        dollars: 0.03,
+      }),
+    ]
+
+    const year = run(plan).years[0]!
+
+    expect(year.retirementActionExecution?.evidence[0]?.disposition).toMatchObject({
+      outcome: 'unsupported',
+      executedAmount: 0,
+    })
+    expect(
+      year.retirementActionExecution?.evidence[0]?.disposition.reasons.map(
+        (reason) => reason.code,
+      ),
+    ).toContain('required-facts-missing')
+    expect(year.balances['cash-a']).toBe(90_071_992_547_409.9)
+    expect(year.withdrawals.total).toBe(0)
+  })
+
   it('keeps explicit cash proceeds available when sizing a floor-limited conversion', () => {
     const make = (withAction: boolean): Plan => {
       const plan = basePlan()

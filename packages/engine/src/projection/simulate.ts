@@ -2232,7 +2232,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             : [],
         ),
       )
-      const openingBalances = [...balances]
+      let openingBalances = [...balances]
         .filter((state) => ordinaryCashSourceAccountIds.has(state.account.id))
         .sort((left, right) =>
           left.account.id < right.account.id ? -1 : left.account.id > right.account.id ? 1 : 0,
@@ -2267,13 +2267,38 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           }]
         },
       )
-      retirementActionExecution = executeCashOrdinaryWithdrawals({
-        year,
-        plan,
-        requests: currentYearActions,
-        openingBalances,
-        runtimeEvidence: { personAliveEvidence },
-      })
+      while (true) {
+        retirementActionExecution = executeCashOrdinaryWithdrawals({
+          year,
+          plan,
+          requests: currentYearActions,
+          openingBalances,
+          runtimeEvidence: { personAliveEvidence },
+        })
+        const unrepresentableClosingAccountIds = new Set(
+          retirementActionExecution.balances
+            .filter((snapshot) => snapshot.closingBalance !== snapshot.openingBalance)
+            .filter((snapshot) => {
+              try {
+                ledgerCentsToPlanDollars(snapshot.closingBalance)
+                return false
+              } catch {
+                return true
+              }
+            })
+            .map((snapshot) => String(snapshot.accountId)),
+        )
+        if (unrepresentableClosingAccountIds.size === 0) break
+
+        // The action ledger is exact-cent while Plan balances are numbers. If
+        // a committed closing value cannot cross that boundary losslessly,
+        // rerun without that source so the executor returns non-actionable
+        // evidence and the Plan balance remains untouched.
+        openingBalances = openingBalances.filter(
+          (snapshot) =>
+            !unrepresentableClosingAccountIds.has(String(snapshot.accountId)),
+        )
+      }
 
       if (retirementActionExecution.committed) {
         const closingCentsByAccountId = new Map(

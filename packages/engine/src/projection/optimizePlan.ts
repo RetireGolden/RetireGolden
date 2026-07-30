@@ -208,6 +208,14 @@ function blendedGrowth(plan: Plan, startYear: number): number {
  * optimum by iteration (see `optimizePlan`).
  */
 export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probeSourcePlan?: Plan): OptimizerInput {
+  if (
+    plan.strategies.retirementActions.length > 0 ||
+    (probeSourcePlan?.strategies.retirementActions.length ?? 0) > 0
+  ) {
+    throw new Error(
+      'The optimizer does not yet support identity-bearing retirement actions',
+    )
+  }
   // Strip conversions so the probe reflects no-conversion income/RMD/spending,
   // unless the caller supplies an incumbent-schedule plan to re-linearize around.
   const probeSource: Plan = probeSourcePlan ?? { ...plan, strategies: { ...plan.strategies, rothConversion: { mode: 'none' } } }
