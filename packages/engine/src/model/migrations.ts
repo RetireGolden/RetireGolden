@@ -14,7 +14,10 @@ import {
   legacyAggregateRothConversionRequestSchema,
   legacyAggregateWithdrawalRequestSchema,
 } from '../actions/contract.js'
-import { parseScenarioPatch } from '../scenarios/contract.js'
+import {
+  isScenarioPatchEnvelope,
+  parseScenarioPatch,
+} from '../scenarios/contract.js'
 import { rebindScenarioPatchesToPlan } from '../scenarios/patch.js'
 
 export type MigrationStep = (raw: Record<string, unknown>) => Record<string, unknown>
@@ -141,7 +144,8 @@ function migrateScenarioOperationValue(path: string, value: unknown): unknown {
   }
   const strategies = value as Record<string, unknown>
   const retirementActions = strategies['retirementActions']
-  const migrated = migrateLegacyActionSchedule(retirementActions)
+  const migrated =
+    retirementActions === undefined ? [] : migrateLegacyActionSchedule(retirementActions)
   return migrated === retirementActions
     ? value
     : { ...strategies, retirementActions: migrated }
@@ -178,7 +182,31 @@ function migrateCanonicalScenarioPatch(patch: unknown): unknown {
   return changed ? { ...patchRecord, operations: migratedOperations } : patch
 }
 
-function migrateCanonicalScenarioActionArrays(scenarios: unknown): unknown {
+function migrateLegacyScenarioPatch(patch: unknown): unknown {
+  if (
+    isScenarioPatchEnvelope(patch) ||
+    typeof patch !== 'object' ||
+    patch === null ||
+    Array.isArray(patch)
+  ) {
+    return patch
+  }
+  const patchRecord = patch as Record<string, unknown>
+  const strategies = patchRecord['strategies']
+  if (typeof strategies !== 'object' || strategies === null || Array.isArray(strategies)) {
+    return patch
+  }
+  const strategiesRecord = strategies as Record<string, unknown>
+  const retirementActions = strategiesRecord['retirementActions']
+  const migratedActions = migrateLegacyActionSchedule(retirementActions)
+  if (migratedActions === retirementActions) return patch
+  return {
+    ...patchRecord,
+    strategies: { ...strategiesRecord, retirementActions: migratedActions },
+  }
+}
+
+function migrateScenarioActionArrays(scenarios: unknown): unknown {
   if (!Array.isArray(scenarios)) return scenarios
   let changed = false
   const migratedScenarios = scenarios.map((scenario) => {
@@ -187,7 +215,9 @@ function migrateCanonicalScenarioActionArrays(scenarios: unknown): unknown {
     }
     const scenarioRecord = scenario as Record<string, unknown>
     const patch = scenarioRecord['patch']
-    const migratedPatch = migrateCanonicalScenarioPatch(patch)
+    const canonicalPatch = migrateCanonicalScenarioPatch(patch)
+    const migratedPatch =
+      canonicalPatch === patch ? migrateLegacyScenarioPatch(patch) : canonicalPatch
     if (migratedPatch === patch) return scenario
     changed = true
     return { ...scenarioRecord, patch: migratedPatch }
@@ -210,7 +240,7 @@ export const migratePlanV1ToV2: MigrationStep = (raw) => {
   const normalizedActions =
     retirementActions === undefined ? [] : migrateLegacyActionSchedule(retirementActions)
   const scenarios = raw['scenarios']
-  const migratedScenarios = migrateCanonicalScenarioActionArrays(scenarios)
+  const migratedScenarios = migrateScenarioActionArrays(scenarios)
   if (normalizedActions === retirementActions && migratedScenarios === scenarios) return raw
   return {
     ...raw,
@@ -286,6 +316,9 @@ export function migratePlanToCurrent(
   }
   return {
     ok: true,
-    plan: v < currentVersion ? rebindScenarioPatchesToPlan(parsed.plan) : parsed.plan,
+    plan:
+      v < currentVersion
+        ? rebindScenarioPatchesToPlan(parsed.plan, { matchingPlanIdOnly: true })
+        : parsed.plan,
   }
 }

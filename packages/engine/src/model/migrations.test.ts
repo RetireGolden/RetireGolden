@@ -6,6 +6,7 @@ import {
   revertScenarioPatch,
   scenarioPlanSnapshotHash,
 } from '../scenarios/patch.js'
+import { applyScenarioPatch } from '../scenarios/scenarios.js'
 import { parseScenarioPatch } from '../scenarios/contract.js'
 import {
   migratePlanToCurrent,
@@ -269,6 +270,138 @@ describe('v1 -> v2 retirement-action migration', () => {
     if (reverted.ok) {
       expect(reverted.plan.strategies.retirementActions).toEqual(
         migrated.plan.strategies.retirementActions,
+      )
+    }
+  })
+
+  it('adds the empty schedule inside whole-strategies scenario operations', () => {
+    const raw = rawV1Plan()
+    const strategies = raw['strategies'] as Record<string, unknown>
+    delete strategies['retirementActions']
+    const beforeStrategies = JSON.parse(JSON.stringify(strategies)) as Record<
+      string,
+      unknown
+    >
+    const valueStrategies = {
+      ...beforeStrategies,
+      qcdAnnual: 2_500,
+    }
+    raw['scenarios'] = [
+      {
+        id: 'scenario-strategies',
+        name: 'Change strategies',
+        patch: {
+          kind: 'retiregolden.scenario-patch',
+          version: 1,
+          base: {
+            planId: raw['id'],
+            planSchemaVersion: 1,
+            snapshotHash: 'fnv1a64:0000000000000000',
+          },
+          title: 'Change strategies',
+          rationale: null,
+          createdAtIso: '2026-06-11T00:00:00.000Z',
+          actor: { kind: 'legacy' },
+          operations: [
+            {
+              op: 'set',
+              path: '/strategies',
+              before: { present: true, value: beforeStrategies },
+              value: valueStrategies,
+            },
+          ],
+        },
+      },
+    ]
+
+    const migrated = migratePlanToCurrent(raw)
+    expect(migrated.ok).toBe(true)
+    if (!migrated.ok) return
+    const parsedPatch = parseScenarioPatch(migrated.plan.scenarios[0]!.patch)
+    expect(parsedPatch.ok).toBe(true)
+    if (!parsedPatch.ok) return
+    const operation = parsedPatch.patch.operations[0]
+    expect(operation?.before.present).toBe(true)
+    if (operation?.before.present !== true || operation.op !== 'set') return
+    expect(operation.before.value).toMatchObject({ retirementActions: [] })
+    expect(operation.value).toMatchObject({ retirementActions: [] })
+
+    const applied = applyScenarioPatchDocument(migrated.plan, parsedPatch.patch)
+    expect(applied.ok).toBe(true)
+    if (applied.ok) expect(applied.plan.strategies.qcdAnnual).toBe(2_500)
+  })
+
+  it('migrates ID-less actions inside loose legacy scenario patches', () => {
+    const raw = rawV1Plan()
+    raw['scenarios'] = [
+      {
+        id: 'legacy-scenario-actions',
+        name: 'Legacy action patch',
+        patch: {
+          strategies: {
+            retirementActions: [legacyQcd],
+          },
+        },
+      },
+    ]
+
+    const migrated = migratePlanToCurrent(raw)
+    expect(migrated.ok).toBe(true)
+    if (!migrated.ok) return
+    const applied = applyScenarioPatch(
+      migrated.plan,
+      migrated.plan.scenarios[0]!.patch,
+    )
+    expect(applied.ok).toBe(true)
+    if (applied.ok) {
+      expect(applied.plan.strategies.retirementActions[0]?.actionId).toMatch(
+        /^legacy-qcd-2032-/,
+      )
+    }
+  })
+
+  it('preserves a canonical scenario that targets a different plan ID', () => {
+    const raw = rawV1Plan()
+    raw['scenarios'] = [
+      {
+        id: 'foreign-scenario',
+        name: 'Foreign scenario',
+        patch: {
+          kind: 'retiregolden.scenario-patch',
+          version: 1,
+          base: {
+            planId: 'another-plan',
+            planSchemaVersion: 1,
+            snapshotHash: 'fnv1a64:0000000000000000',
+          },
+          title: 'Foreign scenario',
+          rationale: null,
+          createdAtIso: '2026-06-11T00:00:00.000Z',
+          actor: { kind: 'legacy' },
+          operations: [
+            {
+              op: 'set',
+              path: '/assumptions/inflationPct',
+              before: { present: true, value: 2.5 },
+              value: 3,
+            },
+          ],
+        },
+      },
+    ]
+
+    const migrated = migratePlanToCurrent(raw)
+    expect(migrated.ok).toBe(true)
+    if (!migrated.ok) return
+    const parsedPatch = parseScenarioPatch(migrated.plan.scenarios[0]!.patch)
+    expect(parsedPatch.ok).toBe(true)
+    if (!parsedPatch.ok) return
+    expect(parsedPatch.patch.base.planId).toBe('another-plan')
+    const applied = applyScenarioPatchDocument(migrated.plan, parsedPatch.patch)
+    expect(applied.ok).toBe(false)
+    if (!applied.ok) {
+      expect(applied.conflicts.some((conflict) => conflict.kind === 'plan-id')).toBe(
+        true,
       )
     }
   })
