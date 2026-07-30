@@ -206,8 +206,8 @@ try {
         type: 'module',
         dependencies: {
           '@retiregolden/planner-ui': `file:./${tarball}`,
-          react: '^19.2.6',
-          'react-dom': '^19.2.6',
+          react: '^19.2.7',
+          'react-dom': '^19.2.7',
           'react-router': '^8.3.0',
         },
         devDependencies: {
