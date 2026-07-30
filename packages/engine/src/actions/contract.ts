@@ -275,6 +275,107 @@ export const retirementActionRequestSchema = z.discriminatedUnion('kind', [
   legacyAggregateQcdRequestSchema,
 ])
 export type RetirementActionRequest = z.infer<typeof retirementActionRequestSchema>
+
+const persistedConversionTaxFundingSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('linkedWithdrawal'),
+    withdrawalActionId: actionIdSchema,
+  }),
+  z.object({
+    kind: z.literal('externalCash'),
+    amount: positiveUsdCentsSchema,
+    attested: z.literal(true),
+  }),
+  z.object({ kind: z.literal('noneExpected') }),
+  z.object({
+    kind: z.literal('conversionPrincipalWithholding'),
+    amount: positiveUsdCentsSchema,
+  }),
+])
+
+const persistedRetirementActionRequestBaseShape = {
+  ...retirementActionRequestBaseShape,
+  provenance: actionProvenanceSchema.strip(),
+}
+
+const persistedLegacyAggregateActionRequestBaseShape = {
+  ...legacyAggregateActionRequestBaseShape,
+  provenance: migrationActionProvenanceSchema.strip(),
+}
+
+const persistedOrdinaryWithdrawalRequestSchema = z
+  .object({
+    ...persistedRetirementActionRequestBaseShape,
+    kind: z.literal('ordinaryWithdrawal'),
+    personId: personIdSchema,
+    allocations: z.array(sourceAllocationRequestSchema.strip()).min(1),
+    purpose: withdrawalPurposeSchema.strip(),
+  })
+  .superRefine((request, ctx) => {
+    validateAllocations(request.allocations, request.requestedAmount, ctx)
+  })
+
+const persistedRothConversionRequestSchema = z
+  .object({
+    ...persistedRetirementActionRequestBaseShape,
+    kind: z.literal('rothConversion'),
+    personId: personIdSchema,
+    allocations: z.array(sourceAllocationRequestSchema.strip()).min(1),
+    destinationRothAccountId: accountIdSchema,
+    taxFunding: persistedConversionTaxFundingSchema,
+  })
+  .superRefine((request, ctx) => {
+    validateAllocations(request.allocations, request.requestedAmount, ctx)
+  })
+
+const persistedQualifiedCharitableDistributionRequestSchema = z
+  .object({
+    ...persistedRetirementActionRequestBaseShape,
+    kind: z.literal('qcd'),
+    donorPersonId: personIdSchema,
+    allocation: sourceAllocationRequestSchema.strip(),
+    charity: qcdCharityDesignationSchema.strip(),
+  })
+  .superRefine((request, ctx) => {
+    if (request.allocation.requestedAmount !== request.requestedAmount) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['allocation', 'requestedAmount'],
+        message: 'QCD allocation cents must exactly equal the action requested amount',
+      })
+    }
+  })
+
+/**
+ * Persisted Plan objects follow the Plan contract's forward-compatible
+ * unknown-key stripping, while direct action API parsing remains strict.
+ */
+export const persistedLegacyAggregateWithdrawalRequestSchema = z.object({
+  ...persistedLegacyAggregateActionRequestBaseShape,
+  kind: z.literal('legacyAggregateWithdrawal'),
+  legacyCategory: nonBlankStringSchema,
+})
+
+export const persistedLegacyAggregateRothConversionRequestSchema = z.object({
+  ...persistedLegacyAggregateActionRequestBaseShape,
+  kind: z.literal('legacyAggregateRothConversion'),
+})
+
+export const persistedLegacyAggregateQcdRequestSchema = z.object({
+  ...persistedLegacyAggregateActionRequestBaseShape,
+  kind: z.literal('legacyAggregateQcd'),
+  legacyField: z.literal('qcdAnnual'),
+})
+
+export const persistedRetirementActionRequestSchema = z.discriminatedUnion('kind', [
+  persistedOrdinaryWithdrawalRequestSchema,
+  persistedRothConversionRequestSchema,
+  persistedQualifiedCharitableDistributionRequestSchema,
+  persistedLegacyAggregateWithdrawalRequestSchema,
+  persistedLegacyAggregateRothConversionRequestSchema,
+  persistedLegacyAggregateQcdRequestSchema,
+])
+
 export type LegacyAggregateRetirementActionRequest =
   | LegacyAggregateWithdrawalRequest
   | LegacyAggregateRothConversionRequest

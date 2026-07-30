@@ -10,9 +10,9 @@
 
 import { CURRENT_PLAN_SCHEMA_VERSION, parsePlan, type Plan } from './plan.js'
 import {
-  legacyAggregateQcdRequestSchema,
-  legacyAggregateRothConversionRequestSchema,
-  legacyAggregateWithdrawalRequestSchema,
+  persistedLegacyAggregateQcdRequestSchema,
+  persistedLegacyAggregateRothConversionRequestSchema,
+  persistedLegacyAggregateWithdrawalRequestSchema,
 } from '../actions/contract.js'
 import {
   isScenarioPatchEnvelope,
@@ -28,13 +28,19 @@ const legacyAggregateKinds = new Set([
   'legacyAggregateQcd',
 ])
 const legacyAggregateWithoutIdSchemas = [
-  legacyAggregateWithdrawalRequestSchema.omit({ actionId: true }),
-  legacyAggregateRothConversionRequestSchema.omit({ actionId: true }),
-  legacyAggregateQcdRequestSchema.omit({ actionId: true }),
+  persistedLegacyAggregateWithdrawalRequestSchema.omit({ actionId: true }),
+  persistedLegacyAggregateRothConversionRequestSchema.omit({ actionId: true }),
+  persistedLegacyAggregateQcdRequestSchema.omit({ actionId: true }),
 ] as const
 
-function isTypedLegacyAggregateWithoutId(record: Record<string, unknown>): boolean {
-  return legacyAggregateWithoutIdSchemas.some((schema) => schema.safeParse(record).success)
+function parseTypedLegacyAggregateWithoutId(
+  record: Record<string, unknown>,
+): Record<string, unknown> | null {
+  for (const schema of legacyAggregateWithoutIdSchemas) {
+    const parsed = schema.safeParse(record)
+    if (parsed.success) return parsed.data as Record<string, unknown>
+  }
+  return null
 }
 
 function canonicalJson(value: unknown): string {
@@ -72,47 +78,76 @@ function compareCanonicalStrings(left: string, right: string): number {
   return 0
 }
 
-function migrateLegacyActionSchedule(retirementActions: unknown): unknown {
-  if (!Array.isArray(retirementActions)) return retirementActions
+interface LegacyActionCandidate {
+  canonical: string
+  seed: string
+}
 
+type LegacyActionIdContext = ReadonlyMap<string, readonly string[]>
+
+function legacyActionCandidate(action: unknown): LegacyActionCandidate | null {
+  if (typeof action !== 'object' || action === null || Array.isArray(action)) return null
+  const record = action as Record<string, unknown>
+  if (!legacyAggregateKinds.has(String(record['kind']))) return null
+  if (Object.prototype.hasOwnProperty.call(record, 'actionId')) return null
+  const normalized = parseTypedLegacyAggregateWithoutId(record)
+  if (normalized === null) return null
+  const canonical = canonicalJson(normalized)
+  return {
+    canonical,
+    seed: readableLegacyIdSeed(normalized, canonical),
+  }
+}
+
+function createLegacyActionIdContext(
+  schedules: readonly unknown[],
+): LegacyActionIdContext {
   const suppliedIds = new Set<string>()
-  retirementActions.forEach((action) => {
-    if (typeof action !== 'object' || action === null || Array.isArray(action)) return
-    const actionId = (action as Record<string, unknown>)['actionId']
-    if (typeof actionId === 'string') suppliedIds.add(actionId)
-  })
-
-  const candidates: Array<{
-    index: number
-    canonical: string
-    seed: string
-  }> = []
-  retirementActions.forEach((action, index) => {
-    if (typeof action !== 'object' || action === null || Array.isArray(action)) return
-    const record = action as Record<string, unknown>
-    if (!legacyAggregateKinds.has(String(record['kind']))) return
-    if (Object.prototype.hasOwnProperty.call(record, 'actionId')) return
-    if (!isTypedLegacyAggregateWithoutId(record)) return
-    const canonical = canonicalJson(record)
-    candidates.push({
-      index,
-      canonical,
-      seed: readableLegacyIdSeed(record, canonical),
+  const candidatesByCanonical = new Map<
+    string,
+    { seed: string; maxOccurrences: number }
+  >()
+  schedules.forEach((schedule) => {
+    if (!Array.isArray(schedule)) return
+    const occurrences = new Map<string, number>()
+    schedule.forEach((action) => {
+      if (typeof action === 'object' && action !== null && !Array.isArray(action)) {
+        const actionId = (action as Record<string, unknown>)['actionId']
+        if (typeof actionId === 'string') suppliedIds.add(actionId)
+      }
+      const candidate = legacyActionCandidate(action)
+      if (candidate === null) return
+      occurrences.set(
+        candidate.canonical,
+        (occurrences.get(candidate.canonical) ?? 0) + 1,
+      )
+      const current = candidatesByCanonical.get(candidate.canonical)
+      if (current === undefined) {
+        candidatesByCanonical.set(candidate.canonical, {
+          seed: candidate.seed,
+          maxOccurrences: 0,
+        })
+      }
+    })
+    occurrences.forEach((count, canonical) => {
+      const candidate = candidatesByCanonical.get(canonical)!
+      candidate.maxOccurrences = Math.max(candidate.maxOccurrences, count)
     })
   })
-  if (candidates.length === 0) return retirementActions
 
-  const assignedByIndex = new Map<number, string>()
   const usedIds = new Set(suppliedIds)
-  candidates
-    .sort((left, right) => {
+  const assignedIds = new Map<string, string[]>()
+  const sortedCandidates = [...candidatesByCanonical.entries()].sort(
+    ([leftCanonical, left], [rightCanonical, right]) => {
       const seedOrder = compareCanonicalStrings(left.seed, right.seed)
-      if (seedOrder !== 0) return seedOrder
-      const contentOrder = compareCanonicalStrings(left.canonical, right.canonical)
-      if (contentOrder !== 0) return contentOrder
-      return left.index - right.index
-    })
-    .forEach((candidate) => {
+      return seedOrder !== 0
+        ? seedOrder
+        : compareCanonicalStrings(leftCanonical, rightCanonical)
+    },
+  )
+  sortedCandidates.forEach(([canonical, candidate]) => {
+    const ids: string[] = []
+    for (let occurrence = 0; occurrence < candidate.maxOccurrences; occurrence++) {
       let actionId = candidate.seed
       let suffix = 2
       while (usedIds.has(actionId)) {
@@ -120,19 +155,40 @@ function migrateLegacyActionSchedule(retirementActions: unknown): unknown {
         suffix++
       }
       usedIds.add(actionId)
-      assignedByIndex.set(candidate.index, actionId)
-    })
-
-  return retirementActions.map((action, index) => {
-    const actionId = assignedByIndex.get(index)
-    if (actionId === undefined) return action
-    return { ...(action as Record<string, unknown>), actionId }
+      ids.push(actionId)
+    }
+    assignedIds.set(canonical, ids)
   })
+  return assignedIds
 }
 
-function migrateScenarioOperationValue(path: string, value: unknown): unknown {
+function migrateLegacyActionSchedule(
+  retirementActions: unknown,
+  context: LegacyActionIdContext = createLegacyActionIdContext([retirementActions]),
+): unknown {
+  if (!Array.isArray(retirementActions)) return retirementActions
+  let changed = false
+  const occurrences = new Map<string, number>()
+  const migrated = retirementActions.map((action) => {
+    const candidate = legacyActionCandidate(action)
+    if (candidate === null) return action
+    const occurrence = occurrences.get(candidate.canonical) ?? 0
+    occurrences.set(candidate.canonical, occurrence + 1)
+    const actionId = context.get(candidate.canonical)?.[occurrence]
+    if (actionId === undefined) return action
+    changed = true
+    return { ...(action as Record<string, unknown>), actionId }
+  })
+  return changed ? migrated : retirementActions
+}
+
+function migrateScenarioOperationValue(
+  path: string,
+  value: unknown,
+  context: LegacyActionIdContext,
+): unknown {
   if (path === '/strategies/retirementActions') {
-    return migrateLegacyActionSchedule(value)
+    return migrateLegacyActionSchedule(value, context)
   }
   if (
     path !== '/strategies' ||
@@ -145,13 +201,18 @@ function migrateScenarioOperationValue(path: string, value: unknown): unknown {
   const strategies = value as Record<string, unknown>
   const retirementActions = strategies['retirementActions']
   const migrated =
-    retirementActions === undefined ? [] : migrateLegacyActionSchedule(retirementActions)
+    retirementActions === undefined
+      ? []
+      : migrateLegacyActionSchedule(retirementActions, context)
   return migrated === retirementActions
     ? value
     : { ...strategies, retirementActions: migrated }
 }
 
-function migrateCanonicalScenarioPatch(patch: unknown): unknown {
+function migrateCanonicalScenarioPatch(
+  patch: unknown,
+  context: LegacyActionIdContext,
+): unknown {
   if (!parseScenarioPatch(patch).ok) return patch
   const patchRecord = patch as Record<string, unknown>
   const operations = patchRecord['operations'] as unknown[]
@@ -170,7 +231,11 @@ function migrateCanonicalScenarioPatch(patch: unknown): unknown {
         before: { present: true, value: [] },
       }
     } else if (before['present'] === true) {
-      const migratedBeforeValue = migrateScenarioOperationValue(path, before['value'])
+      const migratedBeforeValue = migrateScenarioOperationValue(
+        path,
+        before['value'],
+        context,
+      )
       if (migratedBeforeValue !== before['value']) {
         migratedOperation = {
           ...migratedOperation,
@@ -178,8 +243,22 @@ function migrateCanonicalScenarioPatch(patch: unknown): unknown {
         }
       }
     }
-    if (operationRecord['op'] === 'set') {
-      const migratedValue = migrateScenarioOperationValue(path, operationRecord['value'])
+    if (
+      operationRecord['op'] === 'remove' &&
+      path === '/strategies/retirementActions'
+    ) {
+      migratedOperation = {
+        op: 'set',
+        path,
+        before: migratedOperation['before'],
+        value: [],
+      }
+    } else if (operationRecord['op'] === 'set') {
+      const migratedValue = migrateScenarioOperationValue(
+        path,
+        operationRecord['value'],
+        context,
+      )
       if (migratedValue !== operationRecord['value']) {
         migratedOperation = { ...migratedOperation, value: migratedValue }
       }
@@ -190,7 +269,10 @@ function migrateCanonicalScenarioPatch(patch: unknown): unknown {
   return changed ? { ...patchRecord, operations: migratedOperations } : patch
 }
 
-function migrateLegacyScenarioPatch(patch: unknown): unknown {
+function migrateLegacyScenarioPatch(
+  patch: unknown,
+  context: LegacyActionIdContext,
+): unknown {
   if (
     isScenarioPatchEnvelope(patch) ||
     typeof patch !== 'object' ||
@@ -206,7 +288,7 @@ function migrateLegacyScenarioPatch(patch: unknown): unknown {
   }
   const strategiesRecord = strategies as Record<string, unknown>
   const retirementActions = strategiesRecord['retirementActions']
-  const migratedActions = migrateLegacyActionSchedule(retirementActions)
+  const migratedActions = migrateLegacyActionSchedule(retirementActions, context)
   if (migratedActions === retirementActions) return patch
   return {
     ...patchRecord,
@@ -214,7 +296,10 @@ function migrateLegacyScenarioPatch(patch: unknown): unknown {
   }
 }
 
-function migrateScenarioActionArrays(scenarios: unknown): unknown {
+function migrateScenarioActionArrays(
+  scenarios: unknown,
+  context: LegacyActionIdContext,
+): unknown {
   if (!Array.isArray(scenarios)) return scenarios
   let changed = false
   const migratedScenarios = scenarios.map((scenario) => {
@@ -223,14 +308,80 @@ function migrateScenarioActionArrays(scenarios: unknown): unknown {
     }
     const scenarioRecord = scenario as Record<string, unknown>
     const patch = scenarioRecord['patch']
-    const canonicalPatch = migrateCanonicalScenarioPatch(patch)
+    const canonicalPatch = migrateCanonicalScenarioPatch(patch, context)
     const migratedPatch =
-      canonicalPatch === patch ? migrateLegacyScenarioPatch(patch) : canonicalPatch
+      canonicalPatch === patch
+        ? migrateLegacyScenarioPatch(patch, context)
+        : canonicalPatch
     if (migratedPatch === patch) return scenario
     changed = true
     return { ...scenarioRecord, patch: migratedPatch }
   })
   return changed ? migratedScenarios : scenarios
+}
+
+function collectScenarioOperationSchedule(
+  path: string,
+  value: unknown,
+  schedules: unknown[],
+): void {
+  if (path === '/strategies/retirementActions') {
+    if (Array.isArray(value)) schedules.push(value)
+    return
+  }
+  if (
+    path !== '/strategies' ||
+    typeof value !== 'object' ||
+    value === null ||
+    Array.isArray(value)
+  ) {
+    return
+  }
+  const retirementActions = (value as Record<string, unknown>)['retirementActions']
+  if (Array.isArray(retirementActions)) schedules.push(retirementActions)
+}
+
+function collectScenarioActionSchedules(scenarios: unknown): unknown[] {
+  if (!Array.isArray(scenarios)) return []
+  const schedules: unknown[] = []
+  scenarios.forEach((scenario) => {
+    if (typeof scenario !== 'object' || scenario === null || Array.isArray(scenario)) {
+      return
+    }
+    const patch = (scenario as Record<string, unknown>)['patch']
+    if (parseScenarioPatch(patch).ok) {
+      const operations = (patch as Record<string, unknown>)['operations'] as unknown[]
+      operations.forEach((operation) => {
+        const operationRecord = operation as Record<string, unknown>
+        const path = operationRecord['path'] as string
+        const before = operationRecord['before'] as Record<string, unknown>
+        if (before['present'] === true) {
+          collectScenarioOperationSchedule(path, before['value'], schedules)
+        }
+        if (operationRecord['op'] === 'set') {
+          collectScenarioOperationSchedule(path, operationRecord['value'], schedules)
+        }
+      })
+      return
+    }
+    if (
+      isScenarioPatchEnvelope(patch) ||
+      typeof patch !== 'object' ||
+      patch === null ||
+      Array.isArray(patch)
+    ) {
+      return
+    }
+    const strategies = (patch as Record<string, unknown>)['strategies']
+    if (typeof strategies !== 'object' || strategies === null || Array.isArray(strategies)) {
+      return
+    }
+    const retirementActions = (strategies as Record<string, unknown>)[
+      'retirementActions'
+    ]
+    if (Array.isArray(retirementActions)) schedules.push(retirementActions)
+  })
+  return schedules
 }
 
 /**
@@ -245,10 +396,16 @@ export const migratePlanV1ToV2: MigrationStep = (raw) => {
   }
   const strategiesRecord = strategies as Record<string, unknown>
   const retirementActions = strategiesRecord['retirementActions']
-  const normalizedActions =
-    retirementActions === undefined ? [] : migrateLegacyActionSchedule(retirementActions)
   const scenarios = raw['scenarios']
-  const migratedScenarios = migrateScenarioActionArrays(scenarios)
+  const actionIdContext = createLegacyActionIdContext([
+    retirementActions,
+    ...collectScenarioActionSchedules(scenarios),
+  ])
+  const normalizedActions =
+    retirementActions === undefined
+      ? []
+      : migrateLegacyActionSchedule(retirementActions, actionIdContext)
+  const migratedScenarios = migrateScenarioActionArrays(scenarios, actionIdContext)
   if (normalizedActions === retirementActions && migratedScenarios === scenarios) return raw
   return {
     ...raw,

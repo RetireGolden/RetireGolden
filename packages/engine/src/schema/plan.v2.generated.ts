@@ -4270,8 +4270,7 @@ export const planJsonSchema: JsonSchemaDocument = {
                     },
                     "required": [
                       "source"
-                    ],
-                    "additionalProperties": false
+                    ]
                   },
                   "personId": {
                     "type": "string",
@@ -4301,8 +4300,7 @@ export const planJsonSchema: JsonSchemaDocument = {
                         "allocationId",
                         "sourceAccountId",
                         "requestedAmount"
-                      ],
-                      "additionalProperties": false
+                      ]
                     }
                   },
                   "purpose": {
@@ -4324,8 +4322,7 @@ export const planJsonSchema: JsonSchemaDocument = {
                     },
                     "required": [
                       "kind"
-                    ],
-                    "additionalProperties": false
+                    ]
                   }
                 },
                 "required": [
@@ -4338,8 +4335,7 @@ export const planJsonSchema: JsonSchemaDocument = {
                   "personId",
                   "allocations",
                   "purpose"
-                ],
-                "additionalProperties": false
+                ]
               },
               {
                 "type": "object",
@@ -4393,8 +4389,7 @@ export const planJsonSchema: JsonSchemaDocument = {
                     },
                     "required": [
                       "source"
-                    ],
-                    "additionalProperties": false
+                    ]
                   },
                   "personId": {
                     "type": "string",
@@ -4424,8 +4419,7 @@ export const planJsonSchema: JsonSchemaDocument = {
                         "allocationId",
                         "sourceAccountId",
                         "requestedAmount"
-                      ],
-                      "additionalProperties": false
+                      ]
                     }
                   },
                   "destinationRothAccountId": {
@@ -4449,8 +4443,7 @@ export const planJsonSchema: JsonSchemaDocument = {
                         "required": [
                           "kind",
                           "withdrawalActionId"
-                        ],
-                        "additionalProperties": false
+                        ]
                       },
                       {
                         "type": "object",
@@ -4473,8 +4466,7 @@ export const planJsonSchema: JsonSchemaDocument = {
                           "kind",
                           "amount",
                           "attested"
-                        ],
-                        "additionalProperties": false
+                        ]
                       },
                       {
                         "type": "object",
@@ -4486,8 +4478,7 @@ export const planJsonSchema: JsonSchemaDocument = {
                         },
                         "required": [
                           "kind"
-                        ],
-                        "additionalProperties": false
+                        ]
                       },
                       {
                         "type": "object",
@@ -4505,8 +4496,7 @@ export const planJsonSchema: JsonSchemaDocument = {
                         "required": [
                           "kind",
                           "amount"
-                        ],
-                        "additionalProperties": false
+                        ]
                       }
                     ]
                   }
@@ -4522,8 +4512,7 @@ export const planJsonSchema: JsonSchemaDocument = {
                   "allocations",
                   "destinationRothAccountId",
                   "taxFunding"
-                ],
-                "additionalProperties": false
+                ]
               },
               {
                 "type": "object",
@@ -4577,8 +4566,7 @@ export const planJsonSchema: JsonSchemaDocument = {
                     },
                     "required": [
                       "source"
-                    ],
-                    "additionalProperties": false
+                    ]
                   },
                   "donorPersonId": {
                     "type": "string",
@@ -4605,8 +4593,7 @@ export const planJsonSchema: JsonSchemaDocument = {
                       "allocationId",
                       "sourceAccountId",
                       "requestedAmount"
-                    ],
-                    "additionalProperties": false
+                    ]
                   },
                   "charity": {
                     "type": "object",
@@ -4654,8 +4641,7 @@ export const planJsonSchema: JsonSchemaDocument = {
                       "notDonorAdvisedFundOrSupportingOrganizationAttested",
                       "notSplitInterestEntityAttested",
                       "entireDistributionOtherwiseDeductibleAttested"
-                    ],
-                    "additionalProperties": false
+                    ]
                   }
                 },
                 "required": [
@@ -4668,8 +4654,7 @@ export const planJsonSchema: JsonSchemaDocument = {
                   "donorPersonId",
                   "allocation",
                   "charity"
-                ],
-                "additionalProperties": false
+                ]
               },
               {
                 "type": "object",
@@ -4706,8 +4691,7 @@ export const planJsonSchema: JsonSchemaDocument = {
                     },
                     "required": [
                       "source"
-                    ],
-                    "additionalProperties": false
+                    ]
                   },
                   "kind": {
                     "type": "string",
@@ -4725,8 +4709,7 @@ export const planJsonSchema: JsonSchemaDocument = {
                   "provenance",
                   "kind",
                   "legacyCategory"
-                ],
-                "additionalProperties": false
+                ]
               },
               {
                 "type": "object",
@@ -4763,8 +4746,7 @@ export const planJsonSchema: JsonSchemaDocument = {
                     },
                     "required": [
                       "source"
-                    ],
-                    "additionalProperties": false
+                    ]
                   },
                   "kind": {
                     "type": "string",
@@ -4777,8 +4759,7 @@ export const planJsonSchema: JsonSchemaDocument = {
                   "requestedAmount",
                   "provenance",
                   "kind"
-                ],
-                "additionalProperties": false
+                ]
               },
               {
                 "type": "object",
@@ -4815,8 +4796,7 @@ export const planJsonSchema: JsonSchemaDocument = {
                     },
                     "required": [
                       "source"
-                    ],
-                    "additionalProperties": false
+                    ]
                   },
                   "kind": {
                     "type": "string",
@@ -4834,8 +4814,7 @@ export const planJsonSchema: JsonSchemaDocument = {
                   "provenance",
                   "kind",
                   "legacyField"
-                ],
-                "additionalProperties": false
+                ]
               }
             ]
           }

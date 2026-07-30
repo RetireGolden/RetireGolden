@@ -11,7 +11,7 @@
  */
 
 import { z } from 'zod'
-import { retirementActionRequestSchema } from '../actions/contract.js'
+import { persistedRetirementActionRequestSchema } from '../actions/contract.js'
 
 export const CURRENT_PLAN_SCHEMA_VERSION = 2
 
@@ -1299,7 +1299,7 @@ export const strategiesSchema = z.object({
    * above remain independently calculable; migration does not fabricate the
    * people, accounts, dates, or purposes needed to turn them into actions.
    */
-  retirementActions: z.array(retirementActionRequestSchema).default([]),
+  retirementActions: z.array(persistedRetirementActionRequestSchema).default([]),
   /** Optional itemized deductions; federal tax uses the greater of these vs. the standard deduction. */
   itemizedDeductions: itemizedDeductionsSchema.optional(),
   /**
@@ -1613,10 +1613,11 @@ export const planSchema = z
 
         if (action.taxFunding.kind !== 'linkedWithdrawal') return
         const withdrawalActionId = action.taxFunding.withdrawalActionId
-        const linked = plan.strategies.retirementActions.filter(
-          (candidate) => candidate.actionId === withdrawalActionId,
-        )
-        const withdrawal = linked.length === 1 ? linked[0] : undefined
+        const linkedIndexes = actionIndexesById.get(withdrawalActionId)
+        const withdrawal =
+          linkedIndexes?.length === 1
+            ? plan.strategies.retirementActions[linkedIndexes[0]!]
+            : undefined
         if (
           withdrawal === undefined ||
           withdrawal.kind !== 'ordinaryWithdrawal' ||

@@ -274,6 +274,72 @@ describe('v1 -> v2 retirement-action migration', () => {
     }
   })
 
+  it('keeps retained legacy IDs stable across scenario collision states', () => {
+    const standalone = migratedActions(
+      withActions(rawV1Plan(), [legacyWithdrawal]),
+    )
+    const generatedSeed = standalone[0]?.['actionId'] as string
+    const collidingSuppliedAction = {
+      ...legacyConversion,
+      actionId: generatedSeed,
+    }
+    const raw = withActions(rawV1Plan(), [
+      legacyWithdrawal,
+      collidingSuppliedAction,
+    ])
+    raw['scenarios'] = [
+      {
+        id: 'scenario-remove-collision',
+        name: 'Remove colliding action',
+        patch: {
+          kind: 'retiregolden.scenario-patch',
+          version: 1,
+          base: {
+            planId: raw['id'],
+            planSchemaVersion: 1,
+            snapshotHash: 'fnv1a64:0000000000000000',
+          },
+          title: 'Remove colliding action',
+          rationale: null,
+          createdAtIso: '2026-06-11T00:00:00.000Z',
+          actor: { kind: 'legacy' },
+          operations: [
+            {
+              op: 'set',
+              path: '/strategies/retirementActions',
+              before: {
+                present: true,
+                value: [legacyWithdrawal, collidingSuppliedAction],
+              },
+              value: [legacyWithdrawal],
+            },
+          ],
+        },
+      },
+    ]
+
+    const migrated = migratePlanToCurrent(raw)
+    expect(migrated.ok).toBe(true)
+    if (!migrated.ok) return
+    const retainedActionId =
+      migrated.plan.strategies.retirementActions[0]?.actionId
+    expect(retainedActionId).toBe(`${generatedSeed}-2`)
+    const parsedPatch = parseScenarioPatch(migrated.plan.scenarios[0]!.patch)
+    expect(parsedPatch.ok).toBe(true)
+    if (!parsedPatch.ok) return
+    const operation = parsedPatch.patch.operations[0]
+    if (operation?.op !== 'set') return
+    const valueActions = operation.value as Array<Record<string, unknown>>
+    expect(valueActions[0]?.['actionId']).toBe(retainedActionId)
+    const applied = applyScenarioPatchDocument(migrated.plan, parsedPatch.patch)
+    expect(applied.ok).toBe(true)
+    if (applied.ok) {
+      expect(applied.plan.strategies.retirementActions[0]?.actionId).toBe(
+        retainedActionId,
+      )
+    }
+  })
+
   it('normalizes an absent direct action-schedule precondition to the v2 default', () => {
     const raw = rawV1Plan()
     const strategies = raw['strategies'] as Record<string, unknown>
@@ -320,6 +386,59 @@ describe('v1 -> v2 retirement-action migration', () => {
     expect(applied.ok).toBe(true)
     if (applied.ok) {
       expect(applied.plan.strategies.retirementActions[0]?.actionId).toMatch(
+        /^legacy-qcd-2032-/,
+      )
+    }
+  })
+
+  it('normalizes removal of the action schedule to the v2 empty default', () => {
+    const raw = withActions(rawV1Plan(), [legacyQcd])
+    raw['scenarios'] = [
+      {
+        id: 'scenario-remove-actions',
+        name: 'Remove action schedule',
+        patch: {
+          kind: 'retiregolden.scenario-patch',
+          version: 1,
+          base: {
+            planId: raw['id'],
+            planSchemaVersion: 1,
+            snapshotHash: 'fnv1a64:0000000000000000',
+          },
+          title: 'Remove action schedule',
+          rationale: null,
+          createdAtIso: '2026-06-11T00:00:00.000Z',
+          actor: { kind: 'legacy' },
+          operations: [
+            {
+              op: 'remove',
+              path: '/strategies/retirementActions',
+              before: { present: true, value: [legacyQcd] },
+            },
+          ],
+        },
+      },
+    ]
+
+    const migrated = migratePlanToCurrent(raw)
+    expect(migrated.ok).toBe(true)
+    if (!migrated.ok) return
+    const parsedPatch = parseScenarioPatch(migrated.plan.scenarios[0]!.patch)
+    expect(parsedPatch.ok).toBe(true)
+    if (!parsedPatch.ok) return
+    expect(parsedPatch.patch.operations[0]).toMatchObject({
+      op: 'set',
+      path: '/strategies/retirementActions',
+      value: [],
+    })
+    const applied = applyScenarioPatchDocument(migrated.plan, parsedPatch.patch)
+    expect(applied.ok).toBe(true)
+    if (!applied.ok) return
+    expect(applied.plan.strategies.retirementActions).toEqual([])
+    const reverted = revertScenarioPatch(applied.plan, parsedPatch.patch)
+    expect(reverted.ok).toBe(true)
+    if (reverted.ok) {
+      expect(reverted.plan.strategies.retirementActions[0]?.actionId).toMatch(
         /^legacy-qcd-2032-/,
       )
     }
@@ -604,6 +723,29 @@ describe('v1 -> v2 retirement-action migration', () => {
       },
     ])
     expect(migratePlanV1ToV2(raw)).toBe(raw)
+  })
+
+  it('strips unknown persisted legacy fields while assigning a missing ID', () => {
+    const raw = withActions(rawV1Plan(), [
+      {
+        ...legacyQcd,
+        thirdPartyMetadata: 'ignored',
+        provenance: {
+          ...legacyQcd.provenance,
+          importNote: 'ignored',
+        },
+      },
+    ])
+    const result = migratePlanToCurrent(raw)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const action = result.plan.strategies.retirementActions[0] as unknown as Record<
+      string,
+      unknown
+    >
+    expect(action['actionId']).toMatch(/^legacy-qcd-2032-/)
+    expect(action).not.toHaveProperty('thirdPartyMetadata')
+    expect(action['provenance']).not.toHaveProperty('importNote')
   })
 
   it('does not normalize a malformed legacy-looking record', () => {

@@ -4261,8 +4261,7 @@
                     },
                     "required": [
                       "source"
-                    ],
-                    "additionalProperties": false
+                    ]
                   },
                   "personId": {
                     "type": "string",
@@ -4292,8 +4291,7 @@
                         "allocationId",
                         "sourceAccountId",
                         "requestedAmount"
-                      ],
-                      "additionalProperties": false
+                      ]
                     }
                   },
                   "purpose": {
@@ -4315,8 +4313,7 @@
                     },
                     "required": [
                       "kind"
-                    ],
-                    "additionalProperties": false
+                    ]
                   }
                 },
                 "required": [
@@ -4329,8 +4326,7 @@
                   "personId",
                   "allocations",
                   "purpose"
-                ],
-                "additionalProperties": false
+                ]
               },
               {
                 "type": "object",
@@ -4384,8 +4380,7 @@
                     },
                     "required": [
                       "source"
-                    ],
-                    "additionalProperties": false
+                    ]
                   },
                   "personId": {
                     "type": "string",
@@ -4415,8 +4410,7 @@
                         "allocationId",
                         "sourceAccountId",
                         "requestedAmount"
-                      ],
-                      "additionalProperties": false
+                      ]
                     }
                   },
                   "destinationRothAccountId": {
@@ -4440,8 +4434,7 @@
                         "required": [
                           "kind",
                           "withdrawalActionId"
-                        ],
-                        "additionalProperties": false
+                        ]
                       },
                       {
                         "type": "object",
@@ -4464,8 +4457,7 @@
                           "kind",
                           "amount",
                           "attested"
-                        ],
-                        "additionalProperties": false
+                        ]
                       },
                       {
                         "type": "object",
@@ -4477,8 +4469,7 @@
                         },
                         "required": [
                           "kind"
-                        ],
-                        "additionalProperties": false
+                        ]
                       },
                       {
                         "type": "object",
@@ -4496,8 +4487,7 @@
                         "required": [
                           "kind",
                           "amount"
-                        ],
-                        "additionalProperties": false
+                        ]
                       }
                     ]
                   }
@@ -4513,8 +4503,7 @@
                   "allocations",
                   "destinationRothAccountId",
                   "taxFunding"
-                ],
-                "additionalProperties": false
+                ]
               },
               {
                 "type": "object",
@@ -4568,8 +4557,7 @@
                     },
                     "required": [
                       "source"
-                    ],
-                    "additionalProperties": false
+                    ]
                   },
                   "donorPersonId": {
                     "type": "string",
@@ -4596,8 +4584,7 @@
                       "allocationId",
                       "sourceAccountId",
                       "requestedAmount"
-                    ],
-                    "additionalProperties": false
+                    ]
                   },
                   "charity": {
                     "type": "object",
@@ -4645,8 +4632,7 @@
                       "notDonorAdvisedFundOrSupportingOrganizationAttested",
                       "notSplitInterestEntityAttested",
                       "entireDistributionOtherwiseDeductibleAttested"
-                    ],
-                    "additionalProperties": false
+                    ]
                   }
                 },
                 "required": [
@@ -4659,8 +4645,7 @@
                   "donorPersonId",
                   "allocation",
                   "charity"
-                ],
-                "additionalProperties": false
+                ]
               },
               {
                 "type": "object",
@@ -4697,8 +4682,7 @@
                     },
                     "required": [
                       "source"
-                    ],
-                    "additionalProperties": false
+                    ]
                   },
                   "kind": {
                     "type": "string",
@@ -4716,8 +4700,7 @@
                   "provenance",
                   "kind",
                   "legacyCategory"
-                ],
-                "additionalProperties": false
+                ]
               },
               {
                 "type": "object",
@@ -4754,8 +4737,7 @@
                     },
                     "required": [
                       "source"
-                    ],
-                    "additionalProperties": false
+                    ]
                   },
                   "kind": {
                     "type": "string",
@@ -4768,8 +4750,7 @@
                   "requestedAmount",
                   "provenance",
                   "kind"
-                ],
-                "additionalProperties": false
+                ]
               },
               {
                 "type": "object",
@@ -4806,8 +4787,7 @@
                     },
                     "required": [
                       "source"
-                    ],
-                    "additionalProperties": false
+                    ]
                   },
                   "kind": {
                     "type": "string",
@@ -4825,8 +4805,7 @@
                   "provenance",
                   "kind",
                   "legacyField"
-                ],
-                "additionalProperties": false
+                ]
               }
             ]
           }

@@ -701,6 +701,31 @@ describe('Plan retirement-action persistence', () => {
     }
   })
 
+  it('strips unknown persisted action fields while the direct action contract stays strict', () => {
+    const raw = actionPlanRaw()
+    const action = actions(raw)[0]!
+    action['thirdPartyMetadata'] = { source: 'advisor' }
+    ;(action['provenance'] as Record<string, unknown>)['note'] = 'unknown'
+    ;(
+      (action['allocations'] as Array<Record<string, unknown>>)[0]!
+    )['custodianMemo'] = 'unknown'
+    ;(action['purpose'] as Record<string, unknown>)['memo'] = 'unknown'
+
+    const result = parsePlan(raw)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const persisted = result.plan.strategies.retirementActions[0] as unknown as Record<
+      string,
+      unknown
+    >
+    expect(persisted).not.toHaveProperty('thirdPartyMetadata')
+    expect(persisted['provenance']).not.toHaveProperty('note')
+    expect(
+      (persisted['allocations'] as Array<Record<string, unknown>>)[0],
+    ).not.toHaveProperty('custodianMemo')
+    expect(persisted['purpose']).not.toHaveProperty('memo')
+  })
+
   it('defaults an omitted v2 action schedule to empty', () => {
     const raw = actionPlanRaw()
     delete (raw['strategies'] as Record<string, unknown>)['retirementActions']
