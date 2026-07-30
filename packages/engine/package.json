@@ -35,6 +35,10 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./actions": {
+      "types": "./dist/actions/index.d.ts",
+      "default": "./dist/actions/index.js"
+    },
     "./decisions": {
       "types": "./dist/decisions/index.d.ts",
       "default": "./dist/decisions/index.js"

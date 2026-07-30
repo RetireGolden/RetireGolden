@@ -19,7 +19,7 @@ export default defineConfig({
         // detectors through app harnesses (useProjection, the learning
         // registry, the spending solver), so package-local coverage there is
         // not meaningful.
-        'src/{allocation,decisions,ladder,model,montecarlo,params,projection,rmd,scenarios,spending,strategies,tax}/**': {
+        'src/{actions,allocation,decisions,ladder,model,montecarlo,params,projection,rmd,scenarios,spending,strategies,tax}/**': {
           statements: 90,
           branches: 75,
           functions: 90,
