@@ -42,6 +42,7 @@ const {
   asAllocationId,
   asPersonId,
   asUsdCents,
+  classifyIndividuallyOwnedTaxableWithdrawal,
   executeCashOrdinaryWithdrawals,
   ledgerCentsToPlanDollars,
   parseRetirementActionRequest,
@@ -180,6 +181,38 @@ assert.equal(smokeExecution.scheduleIssues.length, 0)
 assert.equal(smokeExecution.evidence[0].disposition.executedAmount, 100)
 assert.equal(smokeExecution.evidence[0].taxCharacter[0].kind, 'cashPrincipal')
 assert.equal(smokeExecution.balances[0].closingBalance, 0)
+
+const taxableCharacter = classifyIndividuallyOwnedTaxableWithdrawal({
+  actionId: asActionId('smoke-taxable-withdrawal'),
+  allocationId: asAllocationId('smoke-taxable-allocation'),
+  sourceAccountId: asAccountId('smoke-taxable'),
+  actingPersonId: asPersonId('smoke-person'),
+  evaluationDate: '2030-12-31',
+  executedAmount: asUsdCents(100),
+  preExecutionFairMarketValue: asUsdCents(200),
+  remainingCostBasisBeforeExecution: asUsdCents(100),
+  ownership: {
+    accountOwnerPersonIds: [asPersonId('smoke-person')],
+    accountOwnershipEvidenceId: 'smoke-ownership',
+    beneficialOwnershipShare: {
+      representation: 'exactRational',
+      numerator: 1,
+      denominator: 1,
+      intermediateArithmetic: 'bigintRational',
+    },
+    attributionEvidenceId: 'smoke-attribution',
+  },
+  taxUnit: {
+    taxUnitId: 'smoke-tax-unit',
+    taxUnitMemberPersonIds: [asPersonId('smoke-person')],
+    federalFilingStatus: 'single',
+    stateFilingStatusId: 'smoke-state-single',
+    taxUnitEvidenceId: 'smoke-tax-unit-evidence',
+    taxYear: 2030,
+  },
+})
+assert.equal(taxableCharacter.taxCharacter[0].kind, 'basisReturn')
+assert.equal(taxableCharacter.taxCharacter[1].kind, 'capitalGain')
 
 const plan = singlePersonPlan({ planningAge: 90 })
 plan.accounts = [cashAccount('cash', 500_000)]
