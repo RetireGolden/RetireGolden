@@ -24,7 +24,7 @@
  */
 
 import { Suspense, type ReactNode } from 'react'
-import { Navigate, type RouteObject } from 'react-router-dom'
+import { Navigate, type RouteObject } from 'react-router'
 
 import { PlanPickerPage } from '../planner/PlanPickerPage'
 import { DisclaimerPage } from '../planner/DisclaimerPage'

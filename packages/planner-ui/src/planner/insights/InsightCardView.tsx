@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import { usePlan } from '../planContextCore'
 import { useWorkspaceReadOnly } from '../../data/workspaceReadOnly'

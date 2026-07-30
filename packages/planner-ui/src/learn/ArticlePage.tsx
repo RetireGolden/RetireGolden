@@ -6,7 +6,7 @@
  * state for unknown slugs. Stubs and unknown slugs never render an empty page.
  */
 
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router'
 import { getArticle, getCategory, isReadable, type LearningArticle } from './learningRegistry'
 import { ArticleShell, BackLink } from './components/ArticleShell'
 

@@ -1,5 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 
 import { RouteFallback } from './routes/RouteFallback'
 import { isStaleChunkError, reloadOnceForStaleChunk } from './staleChunkReload'

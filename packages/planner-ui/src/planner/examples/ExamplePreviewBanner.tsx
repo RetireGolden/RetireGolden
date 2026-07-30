@@ -3,7 +3,7 @@
  */
 
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router'
 
 import { LearnLink } from '../../learn/LearnLink'
 import { usePlanStore } from '../../data/planStoreContext'

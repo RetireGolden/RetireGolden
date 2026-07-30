@@ -9,7 +9,7 @@
  */
 
 import { useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router'
 
 import { savePlanVia, usePlanStore } from '../data/planStoreContext'
 import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'

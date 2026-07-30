@@ -8,7 +8,7 @@
  */
 
 import { useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 
 import { PARAMETER_PROVENANCE } from '@retiregolden/engine/params'
 import { CopyButton } from './CopyButton'

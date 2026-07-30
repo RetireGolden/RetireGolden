@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { NavLink, useLocation, useRoutes } from 'react-router-dom'
+import { NavLink, useLocation, useRoutes } from 'react-router'
 import { RouteErrorBoundary } from './RouteErrorBoundary.tsx'
 import { plannerContentRoutes, plannerHomeRoutes, plannerWorkspaceRoutes } from './routes/groups'
 import { readLocal, STORAGE_KEYS, writeLocal } from './data/localStore'

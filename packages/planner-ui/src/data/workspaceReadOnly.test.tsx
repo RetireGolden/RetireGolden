@@ -11,7 +11,7 @@ import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { act, type ReactNode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter } from 'react-router'
 import { IDBFactory } from 'fake-indexeddb'
 
 import type { Plan } from '@retiregolden/engine/model/plan'

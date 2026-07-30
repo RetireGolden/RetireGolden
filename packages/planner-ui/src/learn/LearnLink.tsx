@@ -15,7 +15,7 @@
  * and logs in dev rather than producing a dead link.
  */
 
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router'
 import { getArticle } from './learningRegistry'
 
 export type LearnHook = {

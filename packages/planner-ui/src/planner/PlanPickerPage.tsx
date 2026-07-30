@@ -3,7 +3,7 @@
  * Composes section components from ./home/.
  */
 
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router'
 
 import { createEmptyPlan } from '@retiregolden/engine/model/plan'
 import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'

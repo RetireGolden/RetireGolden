@@ -9,6 +9,9 @@
     "app",
     "packages/*"
   ],
+  "overrides": {
+    "sharp": "^0.35.0"
+  },
   "scripts": {
     "lint": "npm run lint -w @retiregolden/engine && npm run lint -w @retiregolden/planner-ui && npm run lint -w retiregolden-web",
     "test": "npm run test -w @retiregolden/engine && npm run test -w @retiregolden/planner-ui && npm run test -w retiregolden-web",

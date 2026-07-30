@@ -1,6 +1,6 @@
 /** The full disclaimer, linked from the navigation and the plan picker. */
 
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 
 import { PARAMETER_DATA_AS_OF, PARAMETER_DATA_BASIS } from '@retiregolden/engine/params'
 import { ProvenancePanel } from './ProvenancePanel'

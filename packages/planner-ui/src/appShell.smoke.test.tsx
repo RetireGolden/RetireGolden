@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { act } from 'react'
 import { renderToString } from 'react-dom/server'
 import { createRoot } from 'react-dom/client'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter } from 'react-router'
 import { App } from './App.tsx'
 
 describe('App shell smoke', () => {

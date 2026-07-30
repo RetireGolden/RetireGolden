@@ -59,7 +59,7 @@ export default defineConfig({
 const mainTsx = `
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, useRoutes } from 'react-router-dom'
+import { BrowserRouter, useRoutes } from 'react-router'
 import '@retiregolden/planner-ui/index.css'
 // The 0.2.0 host surface: the seam, the route groups, and the stable
 // plan-format subpath must all resolve from the tarball's exports map.
@@ -208,7 +208,7 @@ try {
           '@retiregolden/planner-ui': `file:./${tarball}`,
           react: '^19.2.6',
           'react-dom': '^19.2.6',
-          'react-router-dom': '^7.18.0',
+          'react-router': '^8.3.0',
         },
         devDependencies: {
           '@vitejs/plugin-react': '^6.0.1',

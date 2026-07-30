@@ -7,7 +7,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 
 import { parsePlan, type Plan } from '@retiregolden/engine/model/plan'
 import { loadPlanVia, savePlanVia, usePlanStore } from '../data/planStoreContext'

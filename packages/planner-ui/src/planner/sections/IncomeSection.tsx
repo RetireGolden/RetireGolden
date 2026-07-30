@@ -1,6 +1,6 @@
 /** Income section: wages, pensions, annuities, other streams. */
 
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 
 import type { IncomeStream } from '@retiregolden/engine/model/plan'
 import { usePlan } from '../planContextCore'

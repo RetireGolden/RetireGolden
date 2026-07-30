@@ -6,7 +6,7 @@
  * over existing payloads; no engine work happens here.
  */
 
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 
 import type { MonteCarloSummary } from '@retiregolden/engine/montecarlo/run'
 import type { ExactLedgerTournament } from '@retiregolden/engine/projection/optimizePlan'
