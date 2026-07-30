@@ -20,7 +20,7 @@ assistant). The plan object inside them is identical and is the single source of
   "kind": "retiregolden.v2.backup",
   "backupVersion": 1,
   "exportedAtIso": "2026-07-08T12:00:00.000Z",
-  "plans": [ { "schemaVersion": 1, "id": "…", "name": "…", "…": "…" } ]
+  "plans": [ { "schemaVersion": 2, "id": "…", "name": "…", "…": "…" } ]
 }
 ```
 
@@ -44,9 +44,9 @@ assistant", and an assistant's tool takes a single plan, not a library:
 
 ```json
 {
-  "plan": { "schemaVersion": 1, "id": "…", "name": "…", "…": "…" },
+  "plan": { "schemaVersion": 2, "id": "…", "name": "…", "…": "…" },
   "startYear": 2026,
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "engineVersion": "0.1.5"
 }
 ```
