@@ -389,6 +389,42 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
     expect(year.balances.unrelated).toBe(90_071_992_547_410)
   })
 
+  it('does not report a present unsupported source balance as missing facts', () => {
+    const plan = basePlan()
+    plan.accounts = [{
+      type: 'taxable',
+      id: 'taxable-a',
+      name: 'Taxable',
+      ownerPersonId: 'p1',
+      annualReturnPct: 0,
+      balance: 100,
+      costBasis: 50,
+      interestYieldPct: 0,
+      dividendYieldPct: 0,
+      qualifiedRatio: 0,
+      reinvestDividends: true,
+      annualContribution: 0,
+    }]
+    plan.strategies.retirementActions = [
+      withdrawal({
+        actionId: 'unsupported-taxable',
+        accountId: 'taxable-a',
+        dollars: 25,
+      }),
+    ]
+
+    const year = run(plan).years[0]!
+    const reasonCodes =
+      year.retirementActionExecution?.evidence[0]?.disposition.reasons.map(
+        (reason) => reason.code,
+      ) ?? []
+
+    expect(reasonCodes).toContain('withdrawal-source-type-unsupported')
+    expect(reasonCodes).not.toContain('required-facts-missing')
+    expect(year.balances['taxable-a']).toBe(100)
+    expect(year.withdrawals.total).toBe(0)
+  })
+
   it('uses only a partial action execution and lets legacy planning fund the residual', () => {
     const plan = basePlan()
     plan.accounts = [cash('action-source', 20), cash('residual-source', 100)]

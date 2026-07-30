@@ -2238,22 +2238,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     let retirementActionOrdinaryIncome = 0
     let retirementActionProceeds = 0
     if (currentYearActions.length > 0) {
-      const executableOrdinarySourceAccountIds = new Set(
-        plan.accounts
-          .filter(
-            (account) =>
-              account.type === 'cash' || account.type === 'equityComp',
-          )
-          .map((account) => account.id),
-      )
       const ordinarySourceAccountIds = new Set<string>(
         currentYearActions.flatMap((request) =>
           request.kind === 'ordinaryWithdrawal'
             ? request.allocations
               .map((allocation) => allocation.sourceAccountId)
-              .filter((accountId) =>
-                executableOrdinarySourceAccountIds.has(accountId),
-              )
             : [],
         ),
       )
