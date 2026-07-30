@@ -6,6 +6,7 @@ import {
   actionReasonCodes,
   actionReasonSchema,
   createActionReason,
+  parseActionReason,
   partialActionReasonCodes,
   refusedActionReasonCodes,
   taxTreatmentAdjustmentReasonCodes,
@@ -121,5 +122,14 @@ describe('action reason registry', () => {
       }).success,
     ).toBe(false)
     expect(() => createActionReason('person-not-found', { personId: '' as never })).toThrow()
+  })
+
+  it('parses reasons without throwing and reports explicit issue paths', () => {
+    const valid = createActionReason('person-not-found', { personId: 'person-1' as never })
+    expect(parseActionReason(valid)).toEqual({ ok: true, reason: valid })
+
+    const invalid = parseActionReason({ ...valid, message: 'forged' })
+    expect(invalid.ok).toBe(false)
+    if (!invalid.ok) expect(invalid.issues).toContain('message: message must match the registry entry for person-not-found')
   })
 })

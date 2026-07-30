@@ -516,6 +516,19 @@ export function createActionReason<C extends ActionReasonCode>(
   } as ActionReason<C>
 }
 
-export function parseActionReason(input: unknown): ActionReason {
-  return actionReasonSchema.parse(input) as ActionReason
+export type ParseActionReasonResult =
+  | { ok: true; reason: ActionReason }
+  | { ok: false; issues: string[] }
+
+export function parseActionReason(input: unknown): ParseActionReasonResult {
+  const result = actionReasonSchema.safeParse(input)
+  if (result.success) return { ok: true, reason: result.data as ActionReason }
+
+  return {
+    ok: false,
+    issues: result.error.issues.map((issue) => {
+      const path = issue.path.length === 0 ? '$' : issue.path.join('.')
+      return `${path}: ${issue.message}`
+    }),
+  }
 }

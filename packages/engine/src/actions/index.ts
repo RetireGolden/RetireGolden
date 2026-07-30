@@ -45,6 +45,7 @@ export {
   type ActionReasonOutcome,
   type BlockingActionReasonCode,
   type PartialActionReasonCode,
+  type ParseActionReasonResult,
   type RefusedActionReasonCode,
   type TaxTreatmentAdjustmentReasonCode,
   type UnsupportedActionReasonCode,
