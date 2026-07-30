@@ -41,6 +41,7 @@ const {
   asAccountId,
   asAllocationId,
   asPersonId,
+  asPositiveUsdCents,
   asUsdCents,
   classifyIndividuallyOwnedTaxableWithdrawal,
   executeCashOrdinaryWithdrawals,
@@ -189,7 +190,7 @@ const taxableCharacter = classifyIndividuallyOwnedTaxableWithdrawal({
   actingPersonId: asPersonId('smoke-person'),
   evaluationDate: '2030-12-31',
   executedAmount: asUsdCents(100),
-  preExecutionFairMarketValue: asUsdCents(200),
+  preExecutionFairMarketValue: asPositiveUsdCents(200),
   remainingCostBasisBeforeExecution: asUsdCents(100),
   ownership: {
     accountOwnerPersonIds: [asPersonId('smoke-person')],
