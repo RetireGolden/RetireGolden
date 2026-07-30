@@ -42,6 +42,7 @@ const {
   asAllocationId,
   asPersonId,
   asUsdCents,
+  executeCashOrdinaryWithdrawals,
   parseRetirementActionRequest,
 } = await import('@retiregolden/engine/actions')
 const {
@@ -156,6 +157,25 @@ const typedRefusal = evaluateRetirementActionEligibility(
 )
 assert.equal(typedRefusal.status, 'refused')
 assert.equal(typedRefusal.reasons[0].code, 'source-account-not-found')
+
+const smokeExecutionPlan = singlePersonPlan({ planningAge: 100 })
+smokeExecutionPlan.household.people = [smokePerson]
+smokeExecutionPlan.accounts = [smokeCash]
+const smokeExecution = executeCashOrdinaryWithdrawals({
+  year: 2030,
+  plan: smokeExecutionPlan,
+  requests: [smokeWithdrawal],
+  openingBalances: [{
+    accountId: smokeWithdrawal.allocations[0].sourceAccountId,
+    openingBalance: asUsdCents(100),
+  }],
+  runtimeEvidence: smokeEligibilityContext,
+})
+assert.equal(smokeExecution.committed, true)
+assert.equal(smokeExecution.scheduleIssues.length, 0)
+assert.equal(smokeExecution.evidence[0].disposition.executedAmount, 100)
+assert.equal(smokeExecution.evidence[0].taxCharacter[0].kind, 'cashPrincipal')
+assert.equal(smokeExecution.balances[0].closingBalance, 0)
 
 const plan = singlePersonPlan({ planningAge: 90 })
 plan.accounts = [cashAccount('cash', 500_000)]

@@ -105,3 +105,20 @@ export {
   type UnsupportedActionDisposition,
   type WithdrawalPurpose,
 } from './contract.js'
+export {
+  executeCashOrdinaryWithdrawals,
+  type AcceptedCashSourceEligibilityEvidence,
+  type AccountBalanceExecutionEvidence,
+  type AccountOpeningBalanceSnapshot,
+  type CashActionableExecutionDisposition,
+  type CashExecutionScheduleIssue,
+  type CashExecutedActionDisposition,
+  type CashOrdinaryWithdrawalExecutionEvidence,
+  type CashPartialActionDisposition,
+  type CashPrincipalTaxCharacter,
+  type CashSourcePenaltyCoverageEvidence,
+  type ExecuteCashOrdinaryWithdrawalsInput,
+  type ExecuteCashOrdinaryWithdrawalsResult,
+  type ResolvedCashSourceAllocationExecutionEvidence,
+  type SourceAllocationExecutionEvidence,
+} from './execution.js'
