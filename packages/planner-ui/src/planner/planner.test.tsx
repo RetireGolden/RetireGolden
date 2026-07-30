@@ -50,6 +50,26 @@ describe('removePartner', () => {
       { kind: 'permanentLife', id: 'life-primary', name: 'Primary life', insured: primary!.id, beneficiary: partner!.id, annualPremium: 1_000, premiumMode: 'lifetime', deathBenefit: 100_000, cashValue: 0, cashValueMode: 'flatRate', cashValueGrowthPct: 0 },
     ]
     plan.careEvents = [{ id: 'care-partner', personId: partner!.id, startAge: 85, durationYears: 3, annualCost: 90_000 }]
+    plan.retirementActionEligibilityFacts = {
+      iraClassifications: [],
+      sepSimpleActivities: [],
+      deductibleIraContributions: [
+        {
+          evidenceId: 'primary-contribution',
+          provenance: { source: 'manual' },
+          donorPersonId: primary!.id,
+          taxYear: 2033,
+          amountCents: asUsdCents(100_000),
+        },
+        {
+          evidenceId: 'partner-contribution',
+          provenance: { source: 'manual' },
+          donorPersonId: partner!.id,
+          taxYear: 2033,
+          amountCents: asUsdCents(200_000),
+        },
+      ],
+    }
 
     removePartner(plan, partner!.id)
 
@@ -59,6 +79,9 @@ describe('removePartner', () => {
     expect(life.kind === 'permanentLife' && life.beneficiary).toBe('estate')
     // The partner's care event is dropped too.
     expect(plan.careEvents).toEqual([])
+    expect(plan.retirementActionEligibilityFacts.deductibleIraContributions).toEqual([
+      expect.objectContaining({ evidenceId: 'primary-contribution' }),
+    ])
     // No dangling references — the plan still parses.
     expect(parsePlan(plan).ok).toBe(true)
   })
