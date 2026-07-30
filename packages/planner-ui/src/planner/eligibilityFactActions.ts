@@ -1,5 +1,38 @@
-import { addCalendarMonths } from '@retiregolden/engine/actions'
 import type { Plan } from '@retiregolden/engine/model/plan'
+
+const CIVIL_ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/
+
+function isLeapYear(year: number): boolean {
+  return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)
+}
+
+function daysInMonth(year: number, month: number): number {
+  if (month === 2) return isLeapYear(year) ? 29 : 28
+  return [4, 6, 9, 11].includes(month) ? 30 : 31
+}
+
+/** Return the calendar year containing this DOB's age-70½ date. Kept local so
+ * the published planner remains compatible with its declared registry-engine
+ * range, which predates the engine's public civil-date helpers. */
+function age70HalfThresholdYear(value: string): number | null {
+  const match = CIVIL_ISO_DATE.exec(value)
+  if (match === null) return null
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+  if (
+    year < 1 ||
+    year > 9999 ||
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > daysInMonth(year, month)
+  ) {
+    return null
+  }
+  const thresholdYear = year + (month <= 6 ? 70 : 71)
+  return thresholdYear <= 9999 ? thresholdYear : null
+}
 
 /** Remove durable facts whose source account no longer exists or is no longer
  * an owned, non-inherited traditional IRA. */
@@ -67,9 +100,8 @@ export function updatePersonDob(
   person.dob = dob
   const facts = plan.retirementActionEligibilityFacts
   if (facts === undefined) return
-  const thresholdDate = addCalendarMonths(dob, 846)
-  if (thresholdDate === null) return
-  const thresholdYear = Number(thresholdDate.slice(0, 4))
+  const thresholdYear = age70HalfThresholdYear(dob)
+  if (thresholdYear === null) return
   facts.deductibleIraContributions = facts.deductibleIraContributions.filter(
     (contribution) =>
       contribution.donorPersonId !== person.id ||
