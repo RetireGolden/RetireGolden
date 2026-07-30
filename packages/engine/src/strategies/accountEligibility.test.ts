@@ -416,14 +416,14 @@ describe('Plan v3 retirement-action eligibility adapter', () => {
           provenance: { source: 'manual' },
           donorPersonId: 'p1',
           taxYear: 2025,
-          amount: asUsdCents(500),
+          amountCents: asUsdCents(500),
         },
         {
           evidenceId: 'contribution-2026',
           provenance: { source: 'manual' },
           donorPersonId: 'p1',
           taxYear: 2026,
-          amount: asUsdCents(250),
+          amountCents: asUsdCents(250),
         },
       ],
     }

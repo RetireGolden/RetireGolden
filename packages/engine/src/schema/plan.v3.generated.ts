@@ -5352,10 +5352,11 @@ export const planJsonSchema: JsonSchemaDocument = {
                 "minimum": 1900,
                 "maximum": 2200
               },
-              "amount": {
+              "amountCents": {
                 "type": "integer",
                 "minimum": 0,
-                "maximum": 9007199254740991
+                "maximum": 9007199254740991,
+                "description": "Deductible IRA contribution amount in nonnegative integer US-dollar cents."
               }
             },
             "required": [
@@ -5363,7 +5364,7 @@ export const planJsonSchema: JsonSchemaDocument = {
               "provenance",
               "donorPersonId",
               "taxYear",
-              "amount"
+              "amountCents"
             ],
             "additionalProperties": false
           }

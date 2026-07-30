@@ -1491,7 +1491,9 @@ export const retirementActionDeductibleIraContributionSchema = z
     ...eligibilityEvidenceBaseShape,
     donorPersonId: idSchema,
     taxYear: calendarYear,
-    amount: usdCentsSchema,
+    amountCents: usdCentsSchema.describe(
+      'Deductible IRA contribution amount in nonnegative integer US-dollar cents.',
+    ),
   })
   .strict()
 export type RetirementActionDeductibleIraContribution = z.infer<

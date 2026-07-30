@@ -101,9 +101,11 @@ Field-level semantics are documented inline on the schema as doc comments.
 `schemaVersion` is currently **3**. Plan v3 adds the optional
 `retirementActionEligibilityFacts` root for explicitly authored IRA
 classification, action-year SEP/SIMPLE activity, and deductible-IRA
-contribution evidence. It remains absent by default. Execution-time alive
-status and prior-QCD offset evidence are intentionally not persisted there;
-they must be supplied for the specific action request.
+contribution evidence. Deductible-contribution records use `amountCents`, a
+nonnegative integer count of US-dollar cents (for example, `$5,000.00` is
+`500000`). The root remains absent by default. Execution-time alive status and
+prior-QCD offset evidence are intentionally not persisted there; they must be
+supplied for the specific action request.
 
 Scenario entries written by older versions continue to carry a loose deep-override object in `patch`.
 The plan schema still accepts and preserves that representation. A newer scenario may carry the

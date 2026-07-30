@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { asUsdCents } from '@retiregolden/engine/actions/money'
 import { createEmptyPlan } from '@retiregolden/engine/model/plan'
 import { MAX_BACKUP_JSON_CHARS, parseV2Backup, serializeV2Backup } from './v2Backup'
 
@@ -50,7 +51,15 @@ describe('v2 backup envelope', () => {
         },
       ],
       sepSimpleActivities: [],
-      deductibleIraContributions: [],
+      deductibleIraContributions: [
+        {
+          evidenceId: 'contribution-1',
+          provenance: { source: 'manual' },
+          donorPersonId: personId,
+          taxYear: 2041,
+          amountCents: asUsdCents(500_000),
+        },
+      ],
     }
 
     const result = parseV2Backup(serializeV2Backup([plan], fixedNow))

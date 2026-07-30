@@ -1,6 +1,6 @@
 /** Accounts section: add/edit accounts. */
 
-import type { Account } from '@retiregolden/engine/model/plan'
+import type { Account, Plan } from '@retiregolden/engine/model/plan'
 import { AccountFields } from './AccountFields'
 import { ACCOUNT_LABEL, isIndividuallyOwnedAccount } from './sectionHelpers'
 import { usePlan } from '../planContextCore'
@@ -45,6 +45,19 @@ function makeAccount(type: Account['type'], primaryPersonId: string): Account {
   }
 }
 
+function removeAccount(plan: Plan, accountId: string): void {
+  const index = plan.accounts.findIndex((account) => account.id === accountId)
+  if (index < 0) return
+  plan.accounts.splice(index, 1)
+  const facts = plan.retirementActionEligibilityFacts
+  if (facts === undefined) return
+  facts.iraClassifications = facts.iraClassifications.filter(
+    (classification) => classification.sourceAccountId !== accountId,
+  )
+  facts.sepSimpleActivities = facts.sepSimpleActivities.filter(
+    (activity) => activity.sourceAccountId !== accountId,
+  )
+}
 
 export function AccountsSection() {
   const { plan, update } = usePlan()
@@ -55,14 +68,14 @@ export function AccountsSection() {
         <h2>Accounts</h2>
         <p className="card-hint">Balances as of today. Investable accounts grow at their expected return (or the default assumption) and are drained per your withdrawal strategy.</p>
         {plan.accounts.length === 0 ? <div className="empty-state"><p>No accounts yet — add your first below.</p></div> : null}
-        {plan.accounts.map((a, i) => (
+        {plan.accounts.map((a) => (
           <div className="item-row" key={a.id} data-testid="account-row" data-account-type={a.type} data-account-name={a.name}>
             <div className="item-row-head">
               <span className="item-row-title">
                 <span className="type-chip">{ACCOUNT_LABEL[a.type]}</span>
                 {a.name}
               </span>
-              <button type="button" className="btn-ghost btn-ghost-danger" onClick={() => update((d) => void d.accounts.splice(i, 1))}>
+              <button type="button" className="btn-ghost btn-ghost-danger" onClick={() => update((d) => removeAccount(d, a.id))}>
                 Remove
               </button>
             </div>

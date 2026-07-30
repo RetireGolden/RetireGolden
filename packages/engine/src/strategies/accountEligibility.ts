@@ -925,7 +925,7 @@ export function buildRetirementActionEligibilityContextFromPlan(
         }
         taxYears.push({
           taxYear,
-          deductibleContributionAmount: contribution.amount,
+          deductibleContributionAmount: contribution.amountCents,
         })
       }
       if (completePrefix) {

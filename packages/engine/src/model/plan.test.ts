@@ -916,7 +916,7 @@ describe('Plan v3 retirement-action eligibility facts', () => {
           provenance: { source: 'manual' },
           donorPersonId: 'p1',
           taxYear: 2033,
-          amount: asUsdCents(0),
+          amountCents: asUsdCents(0),
         },
       ],
     }
@@ -996,7 +996,7 @@ describe('Plan v3 retirement-action eligibility facts', () => {
       },
       (plan) => {
         plan.retirementActionEligibilityFacts!.deductibleIraContributions[0]!
-          .amount = 1.5 as never
+          .amountCents = 1.5 as never
       },
       (plan) => {
         plan.retirementActionEligibilityFacts!.deductibleIraContributions[0]!

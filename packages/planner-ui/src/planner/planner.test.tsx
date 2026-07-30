@@ -8,6 +8,7 @@ import { IDBFactory } from 'fake-indexeddb'
 
 import { _resetPlanStoreForTests, loadPlan, savePlan } from '../data/planStore'
 import { parsePlan } from '@retiregolden/engine/model/plan'
+import { asUsdCents } from '@retiregolden/engine/actions/money'
 import { applyScenarioPatch } from '@retiregolden/engine/scenarios/scenarios'
 import { PlanProvider } from './PlanContext'
 import { PlanWorkspace } from './PlanWorkspace'
@@ -153,6 +154,108 @@ describe('report ACA wording', () => {
 })
 
 describe('AccountsSection', () => {
+  it('removes account-bound eligibility facts with an imported IRA account', async () => {
+    const plan = createSamplePlan()
+    const ownerPersonId = plan.household.people[0]!.id
+    plan.accounts = [
+      {
+        type: 'traditional',
+        id: 'removed-ira',
+        name: 'Removed SEP IRA',
+        ownerPersonId,
+        annualReturnPct: null,
+        kind: 'ira',
+        balance: 1,
+        annualContribution: 0,
+      },
+      {
+        type: 'traditional',
+        id: 'retained-ira',
+        name: 'Retained IRA',
+        ownerPersonId,
+        annualReturnPct: null,
+        kind: 'ira',
+        balance: 1,
+        annualContribution: 0,
+      },
+    ]
+    plan.retirementActionEligibilityFacts = {
+      iraClassifications: [
+        {
+          evidenceId: 'removed-classification',
+          provenance: { source: 'manual' },
+          sourceAccountId: 'removed-ira',
+          subtype: 'sep',
+        },
+        {
+          evidenceId: 'retained-classification',
+          provenance: { source: 'manual' },
+          sourceAccountId: 'retained-ira',
+          subtype: 'traditional',
+        },
+      ],
+      sepSimpleActivities: [
+        {
+          evidenceId: 'removed-activity',
+          provenance: { source: 'manual' },
+          sourceAccountId: 'removed-ira',
+          actionTaxYear: 2033,
+          planYearEndDate: '2033-12-31',
+          employerContributionMadeForPlanYear: false,
+        },
+      ],
+      deductibleIraContributions: [
+        {
+          evidenceId: 'retained-contribution',
+          provenance: { source: 'manual' },
+          donorPersonId: ownerPersonId,
+          taxYear: 2033,
+          amountCents: asUsdCents(0),
+        },
+      ],
+    }
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={['/plan/x/accounts']}>
+          <PlanCtx.Provider
+            value={{
+              plan,
+              update: (mutator) => mutator(plan),
+              discardPendingSave: () => undefined,
+              saveState: 'saved',
+              issues: [],
+            }}
+          >
+            <AccountsSection />
+          </PlanCtx.Provider>
+        </MemoryRouter>,
+      )
+    })
+
+    const removeButton = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Remove',
+    )
+    expect(removeButton).toBeDefined()
+    await act(async () => removeButton!.click())
+
+    expect(plan.accounts.map((account) => account.id)).toEqual(['retained-ira'])
+    expect(
+      plan.retirementActionEligibilityFacts?.iraClassifications.map(
+        (classification) => classification.sourceAccountId,
+      ),
+    ).toEqual(['retained-ira'])
+    expect(plan.retirementActionEligibilityFacts?.sepSimpleActivities).toEqual([])
+    expect(plan.retirementActionEligibilityFacts?.deductibleIraContributions).toHaveLength(1)
+    expect(parsePlan(plan).ok).toBe(true)
+
+    await act(async () => root.unmount())
+    container.remove()
+  })
+
   it('does not offer Joint ownership for 401(k), IRA/Roth, or HSA accounts', async () => {
     const plan = createSamplePlan()
     plan.accounts = [
