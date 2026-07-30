@@ -76,6 +76,14 @@ export type ResolvedCashSourceAllocationExecutionEvidence = Readonly<
   }
 >
 
+export type ResolvedIndividuallyOwnedSourceAllocationExecutionEvidence = Readonly<
+  SourceAllocationExecutionEvidenceBase & {
+    resolution: 'resolved'
+    ownerPersonIds: readonly [PersonId]
+    actingPersonId: PersonId
+  }
+>
+
 export interface AcceptedCashSourceEligibilityEvidence {
   predicate: 'isSpendableInYear'
   allocationId: AllocationId
@@ -84,6 +92,46 @@ export interface AcceptedCashSourceEligibilityEvidence {
   sourceClass: 'cash'
   availabilityEvidence: Readonly<{ kind: 'intrinsicallySpendable' }>
 }
+
+export interface EquityCompensationCharacterEvidence {
+  rule: 'fullyTaxableCompensationAtExecution'
+  allocationId: AllocationId
+  sourceAccountId: AccountId
+  actingPersonId: PersonId
+  evaluationDate: string
+  vestingEvidenceId: string
+  executedAmount: UsdCents
+  ordinaryIncomeAmount: UsdCents
+  characterEvidenceId: string
+}
+
+export interface AcceptedEquityCompensationSourceEligibilityEvidence {
+  predicate: 'isSpendableInYear'
+  allocationId: AllocationId
+  sourceAccountId: AccountId
+  evaluationDate: string
+  sourceClass: 'equityCompensation'
+  availabilityEvidence: Readonly<
+    | {
+        kind: 'alreadyVested'
+        vestingMode: 'final'
+        vestingEvidenceId: string
+        vestedOnEvaluationDate: true
+      }
+    | {
+        kind: 'vested'
+        vestingMode: 'cliff'
+        vestingDate: string
+        vestingEvidenceId: string
+        vestedOnEvaluationDate: true
+      }
+  >
+  characterEvidence: Readonly<EquityCompensationCharacterEvidence>
+}
+
+export type AcceptedOrdinaryWithdrawalSourceEligibilityEvidence =
+  | AcceptedCashSourceEligibilityEvidence
+  | AcceptedEquityCompensationSourceEligibilityEvidence
 
 export interface CashPrincipalTaxCharacter {
   actionId: ActionId
@@ -97,6 +145,40 @@ export interface CashPrincipalTaxCharacter {
     allocationId: AllocationId
     segmentAmount: PositiveUsdCents
   }>
+}
+
+export interface EquityCompensationOrdinaryIncomeTaxCharacter {
+  actionId: ActionId
+  allocationId: AllocationId
+  sourceAccountId: AccountId
+  sourceClass: 'equityCompensation'
+  kind: 'ordinaryIncome'
+  amount: PositiveUsdCents
+  characterEvidence: Readonly<{
+    rule: 'fullyTaxableCompensationAtExecution'
+    sourceCharacterEvidenceId: string
+    segmentAmount: PositiveUsdCents
+  }>
+}
+
+export type OrdinaryWithdrawalTaxCharacter =
+  | CashPrincipalTaxCharacter
+  | EquityCompensationOrdinaryIncomeTaxCharacter
+
+export interface NonRetirementSourcePenaltyCoverageEvidence {
+  coverageEvidenceId: string
+  actionId: ActionId
+  allocationId: AllocationId
+  sourceAccountId: AccountId
+  applicability: 'notApplicable'
+  sourceClass: 'cash' | 'equityCompensation'
+  reason: 'nonRetirementSource'
+  executedAmount: UsdCents
+  penaltyRelevantCharacterAmount: 0
+  nonPenaltyRelevantCharacterAmount: UsdCents
+  coveredPenaltyExposureAmount: 0
+  coverageDifferenceAmount: 0
+  segments: readonly []
 }
 
 export interface CashSourcePenaltyCoverageEvidence {
@@ -115,7 +197,12 @@ export interface CashSourcePenaltyCoverageEvidence {
   segments: readonly []
 }
 
-interface CashOrdinaryWithdrawalExecutionEvidenceBase {
+export type EquityCompensationSourcePenaltyCoverageEvidence =
+  Omit<NonRetirementSourcePenaltyCoverageEvidence, 'sourceClass'> & {
+    sourceClass: 'equityCompensation'
+  }
+
+interface OrdinaryWithdrawalExecutionEvidenceBase {
   request: Readonly<RetirementActionRequest>
   actionId: ActionId
   kind: RetirementActionRequest['kind']
@@ -130,6 +217,104 @@ interface CashOrdinaryWithdrawalExecutionEvidenceBase {
   disposition: ActionExecutionDisposition
 }
 
+export type OrdinaryWithdrawalExecutedActionDisposition = Readonly<
+  Omit<ExecutedActionDisposition, 'executedAmount' | 'reasons'> & {
+    executedAmount: PositiveUsdCents
+    reasons: readonly []
+  }
+>
+
+export type OrdinaryWithdrawalPartialActionDisposition = Readonly<
+  Omit<PartialActionDisposition, 'executedAmount' | 'reasons'> & {
+    executedAmount: PositiveUsdCents
+    reasons: readonly [ActionReason<'source-balance-trimmed'>]
+  }
+>
+
+export type OrdinaryWithdrawalActionableExecutionDisposition =
+  | OrdinaryWithdrawalExecutedActionDisposition
+  | OrdinaryWithdrawalPartialActionDisposition
+
+export type OrdinaryWithdrawalExecutionEvidence =
+  | Readonly<
+      Omit<
+        OrdinaryWithdrawalExecutionEvidenceBase,
+        'request' | 'kind' | 'personId' | 'purpose' | 'allocations' | 'disposition'
+      > & {
+        readiness: 'actionable'
+        request: Readonly<OrdinaryWithdrawalRequest>
+        kind: 'ordinaryWithdrawal'
+        personId: PersonId
+        purpose: Readonly<WithdrawalPurpose>
+        allocations: readonly [
+          ResolvedIndividuallyOwnedSourceAllocationExecutionEvidence,
+          ...ResolvedIndividuallyOwnedSourceAllocationExecutionEvidence[],
+        ]
+        disposition: OrdinaryWithdrawalActionableExecutionDisposition
+        executedDate: string
+        executedSequence: number
+        acceptedSourceEligibility: readonly [
+          AcceptedOrdinaryWithdrawalSourceEligibilityEvidence,
+          ...AcceptedOrdinaryWithdrawalSourceEligibilityEvidence[],
+        ]
+        taxCharacter: readonly [
+          OrdinaryWithdrawalTaxCharacter,
+          ...OrdinaryWithdrawalTaxCharacter[],
+        ]
+        penalty: readonly []
+        penaltyCoverage: readonly [
+          NonRetirementSourcePenaltyCoverageEvidence,
+          ...NonRetirementSourcePenaltyCoverageEvidence[],
+        ]
+      }
+    >
+  | Readonly<
+      OrdinaryWithdrawalExecutionEvidenceBase & {
+        readiness: 'nonActionable'
+        executedDate: null
+        executedSequence: null
+        taxCharacter: readonly []
+        penalty: readonly []
+      }
+    >
+
+export interface ExecuteOrdinaryWithdrawalsInput {
+  year: number
+  plan: Plan
+  requests: readonly RetirementActionRequest[]
+  openingBalances: readonly AccountOpeningBalanceSnapshot[]
+  runtimeEvidence?: RetirementActionEligibilityRuntimeEvidence
+}
+
+export interface ExecuteOrdinaryWithdrawalsResult {
+  committed: boolean
+  scheduleIssues: readonly OrdinaryWithdrawalExecutionScheduleIssue[]
+  balances: readonly AccountBalanceExecutionEvidence[]
+  evidence: readonly OrdinaryWithdrawalExecutionEvidence[]
+}
+
+export type OrdinaryWithdrawalExecutionScheduleIssue =
+  | Readonly<{
+      kind: 'actionYearMismatch'
+      actionId: ActionId
+      expectedYear: number
+      actualYear: number
+    }>
+  | Readonly<{
+      kind: 'duplicateActionId'
+      actionId: ActionId
+      inputIndexes: readonly [number, number, ...number[]]
+    }>
+  | Readonly<{
+      kind: 'executionSequenceConflict'
+      year: number
+      scheduledDate: string | null
+      executionSequence: number
+      collidingActionIds: readonly [ActionId, ActionId, ...ActionId[]]
+      reason: ActionReason<'action-sequence-conflict'>
+    }>
+
+/** The original WS3.1 cash-only compatibility contract. */
 export type CashExecutedActionDisposition = Readonly<
   Omit<ExecutedActionDisposition, 'executedAmount' | 'reasons'> & {
     executedAmount: PositiveUsdCents
@@ -151,7 +336,7 @@ export type CashActionableExecutionDisposition =
 export type CashOrdinaryWithdrawalExecutionEvidence =
   | Readonly<
       Omit<
-        CashOrdinaryWithdrawalExecutionEvidenceBase,
+        OrdinaryWithdrawalExecutionEvidenceBase,
         'request' | 'kind' | 'personId' | 'purpose' | 'allocations' | 'disposition'
       > & {
         readiness: 'actionable'
@@ -182,7 +367,7 @@ export type CashOrdinaryWithdrawalExecutionEvidence =
       }
     >
   | Readonly<
-      CashOrdinaryWithdrawalExecutionEvidenceBase & {
+      OrdinaryWithdrawalExecutionEvidenceBase & {
         readiness: 'nonActionable'
         executedDate: null
         executedSequence: null
@@ -197,13 +382,6 @@ export interface ExecuteCashOrdinaryWithdrawalsInput {
   requests: readonly RetirementActionRequest[]
   openingBalances: readonly AccountOpeningBalanceSnapshot[]
   runtimeEvidence?: RetirementActionEligibilityRuntimeEvidence
-}
-
-export interface ExecuteCashOrdinaryWithdrawalsResult {
-  committed: boolean
-  scheduleIssues: readonly CashExecutionScheduleIssue[]
-  balances: readonly AccountBalanceExecutionEvidence[]
-  evidence: readonly CashOrdinaryWithdrawalExecutionEvidence[]
 }
 
 export type CashExecutionScheduleIssue =
@@ -226,6 +404,13 @@ export type CashExecutionScheduleIssue =
       collidingActionIds: readonly [ActionId, ActionId, ...ActionId[]]
       reason: ActionReason<'action-sequence-conflict'>
     }>
+
+export interface ExecuteCashOrdinaryWithdrawalsResult {
+  committed: boolean
+  scheduleIssues: readonly CashExecutionScheduleIssue[]
+  balances: readonly AccountBalanceExecutionEvidence[]
+  evidence: readonly CashOrdinaryWithdrawalExecutionEvidence[]
+}
 
 interface ScheduledRequest {
   inputIndex: number
@@ -419,8 +604,8 @@ function requestPurpose(request: RetirementActionRequest): WithdrawalPurpose | n
 function scheduleIssues(
   year: number,
   scheduled: readonly ScheduledRequest[],
-): readonly CashExecutionScheduleIssue[] {
-  const issues: CashExecutionScheduleIssue[] = []
+): readonly OrdinaryWithdrawalExecutionScheduleIssue[] {
+  const issues: OrdinaryWithdrawalExecutionScheduleIssue[] = []
   const ids = new Map<ActionId, number[]>()
   for (const item of scheduled) {
     if (item.request.year !== year) {
@@ -542,20 +727,53 @@ function unresolvedAllocationEvidence(
   })
 }
 
-function cashCoverageEvidenceId(
+function nonRetirementCoverageEvidenceId(
   actionId: ActionId,
   allocationId: AllocationId,
+  sourceClass: 'cash' | 'equityCompensation',
 ): string {
-  return `cash-penalty-coverage:${JSON.stringify([actionId, allocationId])}`
+  const prefix =
+    sourceClass === 'cash'
+      ? 'cash-penalty-coverage'
+      : 'equity-compensation-penalty-coverage'
+  return `${prefix}:${JSON.stringify([actionId, allocationId])}`
 }
 
-function assertCashExecutionEvidence(
-  evidence: CashOrdinaryWithdrawalExecutionEvidence,
+function equityCompensationVestingEvidenceId(
+  sourceAccountId: AccountId,
+  vestingMode: 'final' | 'cliff',
+  vestingDate: string | null,
+): string {
+  return `equity-compensation-vesting:${JSON.stringify([
+    sourceAccountId,
+    vestingMode,
+    vestingDate,
+  ])}`
+}
+
+function equityCompensationCharacterEvidenceId(
+  actionId: ActionId,
+  allocationId: AllocationId,
+  evaluationDate: string,
+  vestingEvidenceId: string,
+): string {
+  return `equity-compensation-character:${JSON.stringify([
+    actionId,
+    allocationId,
+    evaluationDate,
+    vestingEvidenceId,
+  ])}`
+}
+
+function assertOrdinaryWithdrawalExecutionEvidence(
+  evidence: OrdinaryWithdrawalExecutionEvidence,
 ): void {
   const fail = (message: string): never => {
-    throw new Error(`Invalid cash execution evidence: ${message}`)
+    throw new Error(`Invalid ordinary-withdrawal execution evidence: ${message}`)
   }
-  if (evidence.penalty.length !== 0) fail('cash penalty evidence must be empty')
+  if (evidence.penalty.length !== 0) {
+    fail('non-retirement source penalty evidence must be empty')
+  }
   if (evidence.readiness === 'nonActionable') {
     if (evidence.disposition.readiness !== 'nonActionable') {
       fail('wrapper and disposition readiness differ')
@@ -579,14 +797,14 @@ function assertCashExecutionEvidence(
     evidence.disposition.outcome === 'executed' &&
     evidence.disposition.reasons.length !== 0
   ) {
-    fail('executed cash withdrawal reasons must be empty')
+    fail('executed ordinary withdrawal reasons must be empty')
   }
   if (
     evidence.disposition.outcome === 'partial' &&
     (evidence.disposition.reasons.length !== 1 ||
       evidence.disposition.reasons[0]?.code !== 'source-balance-trimmed')
   ) {
-    fail('partial cash withdrawal requires exactly source-balance-trimmed')
+    fail('partial ordinary withdrawal requires exactly source-balance-trimmed')
   }
   if (
     evidence.acceptedSourceEligibility.length !== evidence.allocations.length ||
@@ -628,26 +846,34 @@ function assertCashExecutionEvidence(
       fail('allocation cents do not conserve')
     }
     executedTotal += BigInt(allocation.executedAmount)
-    const accepted = eligibilityByAllocation.get(allocation.allocationId)
+    const acceptedCandidate = eligibilityByAllocation.get(allocation.allocationId)
+    if (acceptedCandidate == null) {
+      throw new Error(
+        'Invalid ordinary-withdrawal execution evidence: accepted source eligibility is missing',
+      )
+    }
+    const accepted: AcceptedOrdinaryWithdrawalSourceEligibilityEvidence =
+      acceptedCandidate
     if (
-      accepted == null ||
       accepted.sourceAccountId !== allocation.sourceAccountId ||
       accepted.evaluationDate !== evidence.executedDate ||
-      accepted.predicate !== 'isSpendableInYear' ||
-      accepted.sourceClass !== 'cash' ||
-      accepted.availabilityEvidence.kind !== 'intrinsicallySpendable'
+      accepted.predicate !== 'isSpendableInYear'
     ) {
-      fail('accepted cash eligibility is missing or mismatched')
+      fail('accepted source eligibility is missing or mismatched')
     }
     const coverage = coverageByAllocation.get(allocation.allocationId)
     if (
       coverage == null ||
       coverage.coverageEvidenceId !==
-        cashCoverageEvidenceId(evidence.actionId, allocation.allocationId) ||
+        nonRetirementCoverageEvidenceId(
+          evidence.actionId,
+          allocation.allocationId,
+          coverage.sourceClass,
+        ) ||
       coverage.actionId !== evidence.actionId ||
       coverage.sourceAccountId !== allocation.sourceAccountId ||
       coverage.applicability !== 'notApplicable' ||
-      coverage.sourceClass !== 'cash' ||
+      coverage.sourceClass !== accepted.sourceClass ||
       coverage.reason !== 'nonRetirementSource' ||
       coverage.executedAmount !== allocation.executedAmount ||
       coverage.nonPenaltyRelevantCharacterAmount !== allocation.executedAmount ||
@@ -656,23 +882,64 @@ function assertCashExecutionEvidence(
       coverage.coverageDifferenceAmount !== 0 ||
       coverage.segments.length !== 0
     ) {
-      fail('cash penalty coverage is missing or mismatched')
+      fail('non-retirement penalty coverage is missing or mismatched')
     }
     const character = characterByAllocation.get(allocation.allocationId)
-    if (allocation.executedAmount === 0) {
-      if (character !== undefined) fail('zero execution cannot emit tax character')
-    } else if (
-      character == null ||
-      character.actionId !== evidence.actionId ||
-      character.sourceAccountId !== allocation.sourceAccountId ||
-      character.sourceClass !== 'cash' ||
-      character.kind !== 'cashPrincipal' ||
-      character.amount !== allocation.executedAmount ||
-      character.characterEvidence.rule !== 'intrinsicCashPrincipal' ||
-      character.characterEvidence.allocationId !== allocation.allocationId ||
-      character.characterEvidence.segmentAmount !== allocation.executedAmount
-    ) {
-      fail('cash principal character is missing or mismatched')
+    if (accepted.sourceClass === 'cash') {
+      if (accepted.availabilityEvidence.kind !== 'intrinsicallySpendable') {
+        fail('cash availability evidence is mismatched')
+      }
+      if (allocation.executedAmount === 0) {
+        if (character !== undefined) fail('zero execution cannot emit tax character')
+        continue
+      }
+      if (
+        character == null ||
+        character.actionId !== evidence.actionId ||
+        character.sourceAccountId !== allocation.sourceAccountId ||
+        character.sourceClass !== 'cash' ||
+        character.kind !== 'cashPrincipal' ||
+        character.amount !== allocation.executedAmount ||
+        character.characterEvidence.rule !== 'intrinsicCashPrincipal' ||
+        character.characterEvidence.allocationId !== allocation.allocationId ||
+        character.characterEvidence.segmentAmount !== allocation.executedAmount
+      ) {
+        fail('cash principal character is missing or mismatched')
+      }
+    } else {
+      const sourceEvidence = accepted.characterEvidence
+      if (
+        sourceEvidence.allocationId !== allocation.allocationId ||
+        sourceEvidence.sourceAccountId !== allocation.sourceAccountId ||
+        sourceEvidence.actingPersonId !== evidence.personId ||
+        sourceEvidence.evaluationDate !== evidence.executedDate ||
+        sourceEvidence.vestingEvidenceId !==
+          accepted.availabilityEvidence.vestingEvidenceId ||
+        sourceEvidence.executedAmount !== allocation.executedAmount ||
+        sourceEvidence.ordinaryIncomeAmount !== allocation.executedAmount
+      ) {
+        fail('equity-compensation source character evidence is mismatched')
+      }
+      if (allocation.executedAmount === 0) {
+        if (character !== undefined) fail('zero execution cannot emit tax character')
+        continue
+      }
+      if (
+        character == null ||
+        character.actionId !== evidence.actionId ||
+        character.sourceAccountId !== allocation.sourceAccountId ||
+        character.sourceClass !== 'equityCompensation' ||
+        character.kind !== 'ordinaryIncome' ||
+        character.amount !== allocation.executedAmount ||
+        character.characterEvidence.rule !==
+          'fullyTaxableCompensationAtExecution' ||
+        character.characterEvidence.sourceCharacterEvidenceId !==
+          sourceEvidence.characterEvidenceId ||
+        character.characterEvidence.segmentAmount !== allocation.executedAmount ||
+        sourceEvidence.characterEvidenceId.length === 0
+      ) {
+        fail('equity-compensation character is missing or mismatched')
+      }
     }
   }
   if (executedTotal !== BigInt(evidence.disposition.executedAmount)) {
@@ -682,7 +949,7 @@ function assertCashExecutionEvidence(
     evidence.taxCharacter.length !==
     evidence.allocations.filter((allocation) => allocation.executedAmount > 0).length
   ) {
-    fail('cash character must be bijective with positive allocations')
+    fail('tax character must be bijective with positive allocations')
   }
 }
 
@@ -690,10 +957,10 @@ function executionEvidence(
   item: ScheduledRequest,
   disposition: ActionExecutionDisposition,
   allocations: readonly SourceAllocationExecutionEvidence[],
-  taxCharacter: readonly CashPrincipalTaxCharacter[] = [],
-  penaltyCoverage: readonly CashSourcePenaltyCoverageEvidence[] = [],
-  acceptedSourceEligibility: readonly AcceptedCashSourceEligibilityEvidence[] = [],
-): CashOrdinaryWithdrawalExecutionEvidence {
+  taxCharacter: readonly OrdinaryWithdrawalTaxCharacter[] = [],
+  penaltyCoverage: readonly NonRetirementSourcePenaltyCoverageEvidence[] = [],
+  acceptedSourceEligibility: readonly AcceptedOrdinaryWithdrawalSourceEligibilityEvidence[] = [],
+): OrdinaryWithdrawalExecutionEvidence {
   const requestCopy = structuredClone(item.request)
   if (
     requestCopy.kind === 'ordinaryWithdrawal' ||
@@ -702,7 +969,7 @@ function executionEvidence(
     requestCopy.allocations = [...canonicalAllocations(requestCopy)]
   }
   const request = deepFreeze(requestCopy)
-  const base: CashOrdinaryWithdrawalExecutionEvidenceBase = {
+  const base: OrdinaryWithdrawalExecutionEvidenceBase = {
     request,
     actionId: item.request.actionId,
     kind: item.request.kind,
@@ -717,7 +984,7 @@ function executionEvidence(
     disposition,
   }
   if (disposition.readiness === 'nonActionable') {
-    const evidence: CashOrdinaryWithdrawalExecutionEvidence = {
+    const evidence: OrdinaryWithdrawalExecutionEvidence = {
       ...base,
       readiness: 'nonActionable',
       executedDate: null,
@@ -725,7 +992,7 @@ function executionEvidence(
       taxCharacter: [],
       penalty: [],
     }
-    assertCashExecutionEvidence(evidence)
+    assertOrdinaryWithdrawalExecutionEvidence(evidence)
     return deepFreeze(evidence)
   }
   if (item.executionDate === null || item.sequence === null) {
@@ -740,9 +1007,9 @@ function executionEvidence(
     penaltyCoverage.length === 0 ||
     disposition.executedAmount === 0
   ) {
-    throw new Error('Actionable cash evidence is incomplete')
+    throw new Error('Actionable ordinary-withdrawal evidence is incomplete')
   }
-  const evidence: CashOrdinaryWithdrawalExecutionEvidence = {
+  const evidence: OrdinaryWithdrawalExecutionEvidence = {
     ...base,
     readiness: 'actionable',
     request,
@@ -750,37 +1017,36 @@ function executionEvidence(
     personId: request.personId,
     purpose: request.purpose,
     allocations: allocations as [
-      ResolvedCashSourceAllocationExecutionEvidence,
-      ...ResolvedCashSourceAllocationExecutionEvidence[],
+      ResolvedIndividuallyOwnedSourceAllocationExecutionEvidence,
+      ...ResolvedIndividuallyOwnedSourceAllocationExecutionEvidence[],
     ],
-    disposition: disposition as CashActionableExecutionDisposition,
+    disposition: disposition as OrdinaryWithdrawalActionableExecutionDisposition,
     executedDate: item.executionDate,
     executedSequence: item.sequence,
     acceptedSourceEligibility: acceptedSourceEligibility as [
-      AcceptedCashSourceEligibilityEvidence,
-      ...AcceptedCashSourceEligibilityEvidence[],
+      AcceptedOrdinaryWithdrawalSourceEligibilityEvidence,
+      ...AcceptedOrdinaryWithdrawalSourceEligibilityEvidence[],
     ],
     taxCharacter: taxCharacter as [
-      CashPrincipalTaxCharacter,
-      ...CashPrincipalTaxCharacter[],
+      OrdinaryWithdrawalTaxCharacter,
+      ...OrdinaryWithdrawalTaxCharacter[],
     ],
     penalty: [],
     penaltyCoverage: penaltyCoverage as [
-      CashSourcePenaltyCoverageEvidence,
-      ...CashSourcePenaltyCoverageEvidence[],
+      NonRetirementSourcePenaltyCoverageEvidence,
+      ...NonRetirementSourcePenaltyCoverageEvidence[],
     ],
   }
-  assertCashExecutionEvidence(evidence)
+  assertOrdinaryWithdrawalExecutionEvidence(evidence)
   return deepFreeze(evidence)
 }
 
-/**
- * Pure WS3.1 exact-cent execution for individually owned cash withdrawals.
- * Plan dollar balances are identity metadata only; all movement uses snapshots.
- */
-export function executeCashOrdinaryWithdrawals(
-  input: ExecuteCashOrdinaryWithdrawalsInput,
-): ExecuteCashOrdinaryWithdrawalsResult {
+type OrdinaryWithdrawalExecutionScope = 'cashOnly' | 'cashAndEquityCompensation'
+
+function executeOrdinaryWithdrawalsInScope(
+  input: ExecuteOrdinaryWithdrawalsInput,
+  scope: OrdinaryWithdrawalExecutionScope,
+): ExecuteOrdinaryWithdrawalsResult {
   const requests = input.requests.map((request) =>
     retirementActionRequestSchema.parse(request),
   )
@@ -837,7 +1103,7 @@ export function executeCashOrdinaryWithdrawals(
     if (snapshot !== null) workingBalances.set(accountId, snapshot.openingBalance)
   }
 
-  const evidence: CashOrdinaryWithdrawalExecutionEvidence[] = []
+  const evidence: OrdinaryWithdrawalExecutionEvidence[] = []
   for (const item of scheduled) {
     const request = item.request
     const allocations = canonicalAllocations(request)
@@ -871,7 +1137,10 @@ export function executeCashOrdinaryWithdrawals(
             }),
           )
         } else {
-          if (account.type !== 'cash') {
+          if (
+            account.type !== 'cash' &&
+            (scope === 'cashOnly' || account.type !== 'equityComp')
+          ) {
             blockingReasons.push(
               createActionReason('withdrawal-source-type-unsupported', {
                 accountId: allocation.sourceAccountId,
@@ -929,18 +1198,29 @@ export function executeCashOrdinaryWithdrawals(
       continue
     }
     if (request.kind !== 'ordinaryWithdrawal') {
-      throw new Error('Unsupported action scope reached cash movement')
+      throw new Error('Unsupported action scope reached ordinary-withdrawal movement')
     }
 
     const stagedBalances = new Map(workingBalances)
     const allocationEvidence: SourceAllocationExecutionEvidence[] = []
-    const taxCharacter: CashPrincipalTaxCharacter[] = []
-    const penaltyCoverage: CashSourcePenaltyCoverageEvidence[] = []
-    const acceptedSourceEligibility: AcceptedCashSourceEligibilityEvidence[] = []
+    const taxCharacter: OrdinaryWithdrawalTaxCharacter[] = []
+    const penaltyCoverage: NonRetirementSourcePenaltyCoverageEvidence[] = []
+    const acceptedSourceEligibility: AcceptedOrdinaryWithdrawalSourceEligibilityEvidence[] =
+      []
     let executedTotal = 0n
     for (const allocation of allocations) {
       const before = stagedBalances.get(allocation.sourceAccountId)
-      if (before === undefined) throw new Error('Validated cash snapshot disappeared')
+      if (before === undefined) {
+        throw new Error('Validated ordinary-withdrawal snapshot disappeared')
+      }
+      const account = accounts.get(allocation.sourceAccountId)
+      if (
+        account == null ||
+        (account.type !== 'cash' &&
+          (scope === 'cashOnly' || account.type !== 'equityComp'))
+      ) {
+        throw new Error('Validated ordinary-withdrawal source disappeared')
+      }
       const executedAmount = centsFromBigInt(
         BigInt(before) < BigInt(allocation.requestedAmount)
           ? BigInt(before)
@@ -964,30 +1244,74 @@ export function executeCashOrdinaryWithdrawals(
       })
       if (executedAmount > 0) {
         const positiveExecutedAmount = asPositiveUsdCents(executedAmount)
+        if (account.type === 'cash') {
+          taxCharacter.push({
+            actionId: request.actionId,
+            allocationId: allocation.allocationId,
+            sourceAccountId: allocation.sourceAccountId,
+            sourceClass: 'cash',
+            kind: 'cashPrincipal',
+            amount: positiveExecutedAmount,
+            characterEvidence: {
+              rule: 'intrinsicCashPrincipal',
+              allocationId: allocation.allocationId,
+              segmentAmount: positiveExecutedAmount,
+            },
+          })
+        }
+      }
+      if (item.executionDate === null) {
+        throw new Error('Validated ordinary-withdrawal schedule disappeared')
+      }
+      const sourceClass =
+        account.type === 'cash' ? 'cash' : 'equityCompensation'
+      const vestingEvidenceId =
+        account.type === 'equityComp'
+          ? equityCompensationVestingEvidenceId(
+              allocation.sourceAccountId,
+              account.vestingMode,
+              account.vestDate,
+            )
+          : null
+      const characterEvidenceId =
+        vestingEvidenceId === null
+          ? null
+          : equityCompensationCharacterEvidenceId(
+              request.actionId,
+              allocation.allocationId,
+              item.executionDate,
+              vestingEvidenceId,
+            )
+      if (account.type === 'equityComp' && executedAmount > 0) {
+        const positiveExecutedAmount = asPositiveUsdCents(executedAmount)
+        if (characterEvidenceId === null) {
+          throw new Error('Equity-compensation character identity disappeared')
+        }
         taxCharacter.push({
           actionId: request.actionId,
           allocationId: allocation.allocationId,
           sourceAccountId: allocation.sourceAccountId,
-          sourceClass: 'cash',
-          kind: 'cashPrincipal',
+          sourceClass: 'equityCompensation',
+          kind: 'ordinaryIncome',
           amount: positiveExecutedAmount,
           characterEvidence: {
-            rule: 'intrinsicCashPrincipal',
-            allocationId: allocation.allocationId,
+            rule: 'fullyTaxableCompensationAtExecution',
+            sourceCharacterEvidenceId: characterEvidenceId,
             segmentAmount: positiveExecutedAmount,
           },
         })
       }
       penaltyCoverage.push({
-        coverageEvidenceId: cashCoverageEvidenceId(
+        coverageEvidenceId: nonRetirementCoverageEvidenceId(
           request.actionId,
           allocation.allocationId,
+          sourceClass,
         ),
         actionId: request.actionId,
         allocationId: allocation.allocationId,
         sourceAccountId: allocation.sourceAccountId,
         applicability: 'notApplicable',
-        sourceClass: 'cash',
+        sourceClass,
         reason: 'nonRetirementSource',
         executedAmount,
         penaltyRelevantCharacterAmount: 0,
@@ -996,17 +1320,54 @@ export function executeCashOrdinaryWithdrawals(
         coverageDifferenceAmount: 0,
         segments: [],
       })
-      if (item.executionDate === null) {
-        throw new Error('Validated cash schedule disappeared')
+      if (account.type === 'cash') {
+        acceptedSourceEligibility.push({
+          predicate: 'isSpendableInYear',
+          allocationId: allocation.allocationId,
+          sourceAccountId: allocation.sourceAccountId,
+          evaluationDate: item.executionDate,
+          sourceClass: 'cash',
+          availabilityEvidence: { kind: 'intrinsicallySpendable' },
+        })
+      } else {
+        if (vestingEvidenceId === null || characterEvidenceId === null) {
+          throw new Error('Equity-compensation evidence identity disappeared')
+        }
+        const availabilityEvidence =
+          account.vestingMode === 'final'
+            ? {
+                kind: 'alreadyVested' as const,
+                vestingMode: 'final' as const,
+                vestingEvidenceId,
+                vestedOnEvaluationDate: true as const,
+              }
+            : {
+                kind: 'vested' as const,
+                vestingMode: 'cliff' as const,
+                vestingDate: account.vestDate!,
+                vestingEvidenceId,
+                vestedOnEvaluationDate: true as const,
+              }
+        acceptedSourceEligibility.push({
+          predicate: 'isSpendableInYear',
+          allocationId: allocation.allocationId,
+          sourceAccountId: allocation.sourceAccountId,
+          evaluationDate: item.executionDate,
+          sourceClass: 'equityCompensation',
+          availabilityEvidence,
+          characterEvidence: {
+            rule: 'fullyTaxableCompensationAtExecution',
+            allocationId: allocation.allocationId,
+            sourceAccountId: allocation.sourceAccountId,
+            actingPersonId: request.personId,
+            evaluationDate: item.executionDate,
+            vestingEvidenceId,
+            executedAmount,
+            ordinaryIncomeAmount: executedAmount,
+            characterEvidenceId,
+          },
+        })
       }
-      acceptedSourceEligibility.push({
-        predicate: 'isSpendableInYear',
-        allocationId: allocation.allocationId,
-        sourceAccountId: allocation.sourceAccountId,
-        evaluationDate: item.executionDate,
-        sourceClass: 'cash',
-        availabilityEvidence: { kind: 'intrinsicallySpendable' },
-      })
     }
     const disposition = actionableDisposition(
       request.requestedAmount,
@@ -1045,4 +1406,44 @@ export function executeCashOrdinaryWithdrawals(
     balances,
     evidence,
   })
+}
+
+/**
+ * Pure exact-cent execution for individually owned cash and vested
+ * equity-compensation ordinary withdrawals. Plan dollar balances are identity
+ * metadata only; all movement uses snapshots.
+ */
+export function executeOrdinaryWithdrawals(
+  input: ExecuteOrdinaryWithdrawalsInput,
+): ExecuteOrdinaryWithdrawalsResult {
+  return executeOrdinaryWithdrawalsInScope(input, 'cashAndEquityCompensation')
+}
+
+function assertCashOnlyExecutionResult(
+  result: ExecuteOrdinaryWithdrawalsResult,
+): asserts result is ExecuteCashOrdinaryWithdrawalsResult {
+  for (const evidence of result.evidence) {
+    if (evidence.readiness === 'nonActionable') continue
+    if (
+      evidence.acceptedSourceEligibility.some(
+        (accepted) => accepted.sourceClass !== 'cash',
+      ) ||
+      evidence.taxCharacter.some((character) => character.sourceClass !== 'cash') ||
+      evidence.penaltyCoverage.some((coverage) => coverage.sourceClass !== 'cash')
+    ) {
+      throw new Error('Cash-only compatibility execution emitted noncash evidence')
+    }
+  }
+}
+
+/**
+ * Original WS3.1 cash-only entry point. Equity-compensation and every other
+ * noncash source remain typed zero-movement evidence through this wrapper.
+ */
+export function executeCashOrdinaryWithdrawals(
+  input: ExecuteCashOrdinaryWithdrawalsInput,
+): ExecuteCashOrdinaryWithdrawalsResult {
+  const result = executeOrdinaryWithdrawalsInScope(input, 'cashOnly')
+  assertCashOnlyExecutionResult(result)
+  return result
 }
