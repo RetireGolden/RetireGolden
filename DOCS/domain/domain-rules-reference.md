@@ -454,6 +454,13 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   spent this year (equity-comp vesting), and what early-withdrawal penalty applies. The ledger, the optimizer
   input builder, and the decision generators all consume it, so the inherited-IRA convertibility rule (and the
   Rule-of-55 / pre-59½ penalty logic) lives in exactly one place.
+- **Explicit equity-compensation actions.** An individually owned equity-compensation ordinary withdrawal
+  executes only when its persisted `final` status proves it already vested or its exact action date is on or
+  after the persisted cliff vest date. `final` evidence deliberately carries no invented vest date. Under the
+  supported planning boundary the full executed amount is compensation ordinary income
+  (`fullyTaxableCompensationAtExecution`), with no capital-gain character and no retirement additional tax.
+  A later sale of already-taxed shares belongs in a taxable account instead. Exact-cent action proceeds,
+  ordinary income, and balance movement each enter the annual ledger once.
 - **HSA medical-expense subledger.** Per HSA account, `withdrawalTreatment`:
   `assumeAllQualified` (every withdrawal tax- and penalty-free), `capByMedicalExpenses` (qualified only up to
   the household's modeled healthcare premiums + net care costs this year; the excess is ordinary income,

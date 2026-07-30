@@ -26,12 +26,19 @@ import type {
 } from './contract.js'
 import {
   executeCashOrdinaryWithdrawals,
+  executeOrdinaryWithdrawals,
   type AcceptedCashSourceEligibilityEvidence,
+  type AcceptedOrdinaryWithdrawalSourceEligibilityEvidence,
   type AccountOpeningBalanceSnapshot,
   type CashActionableExecutionDisposition,
   type CashPrincipalTaxCharacter,
   type CashSourcePenaltyCoverageEvidence,
+  type ExecuteCashOrdinaryWithdrawalsResult,
+  type NonRetirementSourcePenaltyCoverageEvidence,
+  type OrdinaryWithdrawalActionableExecutionDisposition,
+  type OrdinaryWithdrawalTaxCharacter,
   type ResolvedCashSourceAllocationExecutionEvidence,
+  type ResolvedIndividuallyOwnedSourceAllocationExecutionEvidence,
 } from './execution.js'
 
 function cash(id: string, ownerPersonId: string | null = 'p1'): Account {
@@ -56,6 +63,32 @@ function taxable(id: string, ownerPersonId = 'p1'): Account {
     balance: 1,
     costBasis: 1,
     annualContribution: 0,
+  }
+}
+
+function equityComp(
+  id: string,
+  {
+    ownerPersonId = 'p1',
+    vestingMode = 'final',
+    vestDate = null,
+  }: {
+    ownerPersonId?: string | null
+    vestingMode?: 'final' | 'cliff'
+    vestDate?: string | null
+  } = {},
+): Account {
+  return {
+    type: 'equityComp',
+    id,
+    name: id,
+    ownerPersonId,
+    annualReturnPct: null,
+    balance: 1,
+    costBasis: 0,
+    annualContribution: 0,
+    vestingMode,
+    vestDate,
   }
 }
 
@@ -154,7 +187,7 @@ function run(
   openingBalances: readonly AccountOpeningBalanceSnapshot[],
   runtimeEvidence = aliveEvidence(requests),
 ) {
-  return executeCashOrdinaryWithdrawals({
+  return executeOrdinaryWithdrawals({
     year: 2030,
     plan,
     requests,
@@ -163,26 +196,27 @@ function run(
   })
 }
 
-describe('cash ordinary-withdrawal execution', () => {
-  it('narrows the public actionable evidence contract to cash guarantees', () => {
+describe('ordinary-withdrawal execution', () => {
+  it('retains the original narrow cash-only compile-time contract', () => {
     const request = withdrawal({
-      actionId: 'typed',
+      actionId: 'cash-compatibility-contract',
       sequence: 1,
       allocations: [allocation('allocation', 'cash', 1)],
     })
-    const evidence = run(
-      planWith(cash('cash')),
-      [request],
-      balances([['cash', 1]]),
-    ).evidence[0]!
-    if (evidence.readiness !== 'actionable') throw new Error('expected actionable evidence')
+    const result = executeCashOrdinaryWithdrawals({
+      year: 2030,
+      plan: planWith(cash('cash')),
+      requests: [request],
+      openingBalances: balances([['cash', 1]]),
+      runtimeEvidence: aliveEvidence([request]),
+    })
+    const evidence = result.evidence[0]!
 
-    expectTypeOf(evidence.kind).toEqualTypeOf<'ordinaryWithdrawal'>()
-    expectTypeOf(evidence.request).toEqualTypeOf<Readonly<OrdinaryWithdrawalRequest>>()
-    expectTypeOf(evidence.personId).toEqualTypeOf<PersonId>()
-    expectTypeOf(evidence.purpose).toEqualTypeOf<Readonly<WithdrawalPurpose>>()
+    expectTypeOf(result).toEqualTypeOf<ExecuteCashOrdinaryWithdrawalsResult>()
+    if (evidence.readiness !== 'actionable') {
+      throw new Error('expected actionable cash compatibility evidence')
+    }
     expectTypeOf(evidence.disposition).toEqualTypeOf<CashActionableExecutionDisposition>()
-    expectTypeOf(evidence.disposition.executedAmount).toEqualTypeOf<PositiveUsdCents>()
     expectTypeOf(evidence.allocations).toEqualTypeOf<
       readonly [
         ResolvedCashSourceAllocationExecutionEvidence,
@@ -204,6 +238,117 @@ describe('cash ordinary-withdrawal execution', () => {
         ...CashSourcePenaltyCoverageEvidence[],
       ]
     >()
+  })
+
+  it('keeps the compatibility executor cash-only at runtime', () => {
+    const cashRequest = withdrawal({
+      actionId: 'cash-supported',
+      sequence: 1,
+      allocations: [allocation('cash-allocation', 'cash', 25)],
+    })
+    const equityRequest = withdrawal({
+      actionId: 'equity-unsupported',
+      sequence: 2,
+      allocations: [allocation('equity-allocation', 'equity', 25)],
+    })
+    const result = executeCashOrdinaryWithdrawals({
+      year: 2030,
+      plan: planWith(cash('cash'), equityComp('equity')),
+      requests: [cashRequest, equityRequest],
+      openingBalances: balances([['cash', 50], ['equity', 50]]),
+      runtimeEvidence: aliveEvidence([cashRequest, equityRequest]),
+    })
+
+    expect(result.evidence[0]).toMatchObject({
+      actionId: 'cash-supported',
+      disposition: { outcome: 'executed', executedAmount: 25 },
+    })
+    expect(result.evidence[1]).toMatchObject({
+      actionId: 'equity-unsupported',
+      readiness: 'nonActionable',
+      disposition: {
+        outcome: 'unsupported',
+        executedAmount: 0,
+        reasons: [{ code: 'withdrawal-source-type-unsupported' }],
+      },
+    })
+    expect(result.balances).toMatchObject([
+      { accountId: 'cash', openingBalance: 50, closingBalance: 25 },
+      { accountId: 'equity', openingBalance: 50, closingBalance: 50 },
+    ])
+  })
+
+  it('keeps mixed cash and noncash compatibility requests atomic', () => {
+    const request = withdrawal({
+      actionId: 'mixed-unsupported',
+      sequence: 1,
+      allocations: [
+        allocation('cash-allocation', 'cash', 25),
+        allocation('equity-allocation', 'equity', 25),
+      ],
+    })
+    const result = executeCashOrdinaryWithdrawals({
+      year: 2030,
+      plan: planWith(cash('cash'), equityComp('equity')),
+      requests: [request],
+      openingBalances: balances([['cash', 50], ['equity', 50]]),
+      runtimeEvidence: aliveEvidence([request]),
+    })
+
+    expect(result.evidence[0]).toMatchObject({
+      readiness: 'nonActionable',
+      disposition: {
+        outcome: 'unsupported',
+        executedAmount: 0,
+        reasons: [{ code: 'withdrawal-source-type-unsupported' }],
+      },
+    })
+    expect(result.balances).toMatchObject([
+      { accountId: 'cash', openingBalance: 50, closingBalance: 50 },
+      { accountId: 'equity', openingBalance: 50, closingBalance: 50 },
+    ])
+  })
+
+  it('narrows the public actionable evidence contract to supported-source guarantees', () => {
+    const request = withdrawal({
+      actionId: 'typed',
+      sequence: 1,
+      allocations: [allocation('allocation', 'cash', 1)],
+    })
+    const evidence = run(
+      planWith(cash('cash')),
+      [request],
+      balances([['cash', 1]]),
+    ).evidence[0]!
+    if (evidence.readiness !== 'actionable') throw new Error('expected actionable evidence')
+
+    expectTypeOf(evidence.kind).toEqualTypeOf<'ordinaryWithdrawal'>()
+    expectTypeOf(evidence.request).toEqualTypeOf<Readonly<OrdinaryWithdrawalRequest>>()
+    expectTypeOf(evidence.personId).toEqualTypeOf<PersonId>()
+    expectTypeOf(evidence.purpose).toEqualTypeOf<Readonly<WithdrawalPurpose>>()
+    expectTypeOf(evidence.disposition).toEqualTypeOf<OrdinaryWithdrawalActionableExecutionDisposition>()
+    expectTypeOf(evidence.disposition.executedAmount).toEqualTypeOf<PositiveUsdCents>()
+    expectTypeOf(evidence.allocations).toEqualTypeOf<
+      readonly [
+        ResolvedIndividuallyOwnedSourceAllocationExecutionEvidence,
+        ...ResolvedIndividuallyOwnedSourceAllocationExecutionEvidence[],
+      ]
+    >()
+    expectTypeOf(evidence.acceptedSourceEligibility).toEqualTypeOf<
+      readonly [
+        AcceptedOrdinaryWithdrawalSourceEligibilityEvidence,
+        ...AcceptedOrdinaryWithdrawalSourceEligibilityEvidence[],
+      ]
+    >()
+    expectTypeOf(evidence.taxCharacter).toEqualTypeOf<
+      readonly [OrdinaryWithdrawalTaxCharacter, ...OrdinaryWithdrawalTaxCharacter[]]
+    >()
+    expectTypeOf(evidence.penaltyCoverage).toEqualTypeOf<
+      readonly [
+        NonRetirementSourcePenaltyCoverageEvidence,
+        ...NonRetirementSourcePenaltyCoverageEvidence[],
+      ]
+    >()
     if (evidence.disposition.outcome === 'executed') {
       expectTypeOf(evidence.disposition.reasons).toEqualTypeOf<readonly []>()
     } else {
@@ -211,6 +356,230 @@ describe('cash ordinary-withdrawal execution', () => {
         'source-balance-trimmed'
       >()
     }
+  })
+
+  it('executes final equity compensation with explicit already-vested evidence', () => {
+    const request = withdrawal({
+      actionId: 'final-equity',
+      sequence: 1,
+      allocations: [allocation('equity-allocation', 'equity', 75)],
+    })
+
+    const result = run(
+      planWith(equityComp('equity')),
+      [request],
+      balances([['equity', 100]]),
+    )
+    const evidence = result.evidence[0]!
+
+    expect(evidence).toMatchObject({
+      readiness: 'actionable',
+      disposition: { outcome: 'executed', executedAmount: 75 },
+      acceptedSourceEligibility: [{
+        sourceClass: 'equityCompensation',
+        availabilityEvidence: {
+          kind: 'alreadyVested',
+          vestingMode: 'final',
+          vestedOnEvaluationDate: true,
+        },
+        characterEvidence: {
+          rule: 'fullyTaxableCompensationAtExecution',
+          executedAmount: 75,
+          ordinaryIncomeAmount: 75,
+        },
+      }],
+      taxCharacter: [{
+        sourceClass: 'equityCompensation',
+        kind: 'ordinaryIncome',
+        amount: 75,
+        characterEvidence: {
+          rule: 'fullyTaxableCompensationAtExecution',
+          segmentAmount: 75,
+        },
+      }],
+      penalty: [],
+      penaltyCoverage: [{
+        sourceClass: 'equityCompensation',
+        reason: 'nonRetirementSource',
+        executedAmount: 75,
+        nonPenaltyRelevantCharacterAmount: 75,
+      }],
+    })
+    const accepted =
+      evidence.readiness === 'actionable'
+        ? evidence.acceptedSourceEligibility[0]
+        : undefined
+    expect(accepted?.availabilityEvidence).not.toHaveProperty('vestingDate')
+    expect(result.balances[0]?.closingBalance).toBe(25)
+  })
+
+  it('uses the exact cliff vesting boundary and never invents a vest date', () => {
+    const account = equityComp('equity', {
+      vestingMode: 'cliff',
+      vestDate: '2030-06-15',
+    })
+    const before = withdrawal({
+      actionId: 'before-vest',
+      sequence: 1,
+      executionDate: '2030-06-14',
+      allocations: [allocation('before-allocation', 'equity', 50)],
+    })
+    const onDate = withdrawal({
+      actionId: 'on-vest',
+      sequence: 1,
+      executionDate: '2030-06-15',
+      allocations: [allocation('on-allocation', 'equity', 50)],
+    })
+    const undated = withdrawal({
+      actionId: 'undated-cliff',
+      sequence: 1,
+      allocations: [allocation('undated-allocation', 'equity', 50)],
+    })
+
+    const refused = run(
+      planWith(account),
+      [before],
+      balances([['equity', 100]]),
+    )
+    expect(refused.evidence[0]).toMatchObject({
+      disposition: {
+        outcome: 'refused',
+        executedAmount: 0,
+        reasons: [{ code: 'withdrawal-source-not-spendable' }],
+      },
+    })
+    const accepted = run(
+      planWith(account),
+      [onDate],
+      balances([['equity', 100]]),
+    ).evidence[0]
+    expect(accepted).toMatchObject({
+      disposition: { outcome: 'executed', executedAmount: 50 },
+      acceptedSourceEligibility: [{
+        availabilityEvidence: {
+          kind: 'vested',
+          vestingMode: 'cliff',
+          vestingDate: '2030-06-15',
+          vestedOnEvaluationDate: true,
+        },
+      }],
+    })
+    const missingDate = run(
+      planWith(account),
+      [undated],
+      balances([['equity', 100]]),
+    )
+    expect(missingDate.evidence[0]).toMatchObject({
+      disposition: {
+        outcome: 'unsupported',
+        executedAmount: 0,
+        reasons: [{ code: 'required-facts-missing' }],
+      },
+    })
+  })
+
+  it('executes a mixed cash and equity action atomically with zero-allocation evidence', () => {
+    const request = withdrawal({
+      actionId: 'mixed-supported',
+      sequence: 1,
+      allocations: [
+        allocation('zero-equity', 'equity', 50),
+        allocation('funded-cash', 'cash', 50),
+      ],
+    })
+    const result = run(
+      planWith(equityComp('equity'), cash('cash')),
+      [request],
+      balances([['equity', 0], ['cash', 50]]),
+    )
+    const evidence = result.evidence[0]!
+
+    expect(evidence.disposition).toMatchObject({
+      outcome: 'partial',
+      executedAmount: 50,
+      unexecutedAmount: 50,
+      reasons: [{ code: 'source-balance-trimmed' }],
+    })
+    expect(evidence.taxCharacter).toEqual([
+      expect.objectContaining({
+        allocationId: 'funded-cash',
+        sourceClass: 'cash',
+        amount: 50,
+      }),
+    ])
+    expect(
+      evidence.readiness === 'actionable'
+        ? evidence.acceptedSourceEligibility.find(
+            (item) => item.allocationId === 'zero-equity',
+          )
+        : undefined,
+    ).toMatchObject({
+      sourceClass: 'equityCompensation',
+      characterEvidence: { executedAmount: 0, ordinaryIncomeAmount: 0 },
+    })
+    expect(
+      evidence.readiness === 'actionable' ? evidence.penaltyCoverage : [],
+    ).toHaveLength(2)
+    expect(result.balances).toMatchObject([
+      { accountId: 'cash', closingBalance: 0 },
+      { accountId: 'equity', closingBalance: 0 },
+    ])
+  })
+
+  it('characterizes only the executed portion of a partial equity withdrawal', () => {
+    const request = withdrawal({
+      actionId: 'partial-equity',
+      sequence: 1,
+      allocations: [allocation('equity-allocation', 'equity', 50)],
+    })
+    const evidence = run(
+      planWith(equityComp('equity')),
+      [request],
+      balances([['equity', 25]]),
+    ).evidence[0]!
+
+    expect(evidence).toMatchObject({
+      disposition: {
+        outcome: 'partial',
+        executedAmount: 25,
+        unexecutedAmount: 25,
+      },
+      acceptedSourceEligibility: [{
+        characterEvidence: {
+          executedAmount: 25,
+          ordinaryIncomeAmount: 25,
+        },
+      }],
+      taxCharacter: [{ amount: 25, characterEvidence: { segmentAmount: 25 } }],
+      penaltyCoverage: [{ executedAmount: 25 }],
+    })
+  })
+
+  it('keeps mixed-source execution invariant to every input array order', () => {
+    const request = withdrawal({
+      actionId: 'mixed-order',
+      sequence: 1,
+      allocations: [
+        allocation('equity-allocation', 'equity', 40),
+        allocation('cash-allocation', 'cash', 60),
+      ],
+    })
+    const forward = run(
+      planWith(cash('cash'), equityComp('equity')),
+      [request],
+      balances([['cash', 60], ['equity', 40]]),
+    )
+    const reversedRequest = {
+      ...request,
+      allocations: [...request.allocations].reverse(),
+    }
+    const reversed = run(
+      planWith(equityComp('equity'), cash('cash')),
+      [reversedRequest],
+      balances([['equity', 40], ['cash', 60]]),
+    )
+
+    expect(reversed).toEqual(forward)
   })
 
   it('is invariant to account, action, snapshot, and allocation array order', () => {
@@ -593,18 +962,6 @@ describe('cash ordinary-withdrawal execution', () => {
 
   it.each([
     taxable('taxable'),
-    {
-      type: 'equityComp',
-      id: 'equityComp',
-      name: 'equityComp',
-      ownerPersonId: 'p1',
-      annualReturnPct: null,
-      balance: 1,
-      costBasis: 1,
-      annualContribution: 0,
-      vestingMode: 'final',
-      vestDate: null,
-    },
     {
       type: 'traditional',
       id: 'traditional',

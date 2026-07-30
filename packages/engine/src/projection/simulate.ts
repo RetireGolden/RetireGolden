@@ -70,11 +70,11 @@ import { openIraProRataYear, splitIraDistribution, type IraProRataYear } from '.
 import { propertySaleTax } from '../tax/propertySale.js'
 import {
   asAccountId,
-  executeCashOrdinaryWithdrawals,
+  executeOrdinaryWithdrawals,
   ledgerCentTotalToPlanDollars,
   ledgerCentsToPlanDollars,
   planDollarsToLedgerCents,
-  type ExecuteCashOrdinaryWithdrawalsResult,
+  type ExecuteOrdinaryWithdrawalsResult,
 } from '../actions/index.js'
 import { effectiveBirthYear, fraForBirthYear, fraTotalMonths, survivorFraForBirthYear } from '../socialSecurity/nra.js'
 import {
@@ -598,10 +598,27 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     plan.assumptions.historicalAnnualMagiByYear?.[String(y)] ??
     plan.assumptions.recentAnnualMagi
 
+  const stableDepositTarget = (
+    type: 'cash' | 'taxable',
+  ): BalanceState | undefined =>
+    balances
+      .filter((state) => state.account.type === type)
+      .sort((left, right) =>
+        left.account.id < right.account.id
+          ? -1
+          : left.account.id > right.account.id
+            ? 1
+            : 0,
+      )[0]
+
+  // Preserve cash-before-taxable legacy priority while removing plan-array
+  // order as the tie-breaker within either category.
+  const surplusDepositTarget =
+    stableDepositTarget('cash') ?? stableDepositTarget('taxable')
+
   const deposit = (amount: number) => {
     if (amount <= 0) return
-    const target =
-      balances.find((b) => b.account.type === 'cash') ?? balances.find((b) => b.account.type === 'taxable')
+    const target = surplusDepositTarget
     if (!target) {
       warnings.add('Surplus cash had no cash/taxable account to land in; tracked as unassigned (0% growth).')
       unassignedCash += amount
@@ -2208,32 +2225,40 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
     }
 
-    // --- exact-cent identity-bearing cash actions ---------------------------
+    // --- exact-cent identity-bearing ordinary withdrawals ------------------
     // The exact-cent executor owns current-year action ordering and debits named
     // sources here. Its movement remains outside the legacy withdrawal map so
     // the final legacy apply loop cannot debit an action source a second time.
     const currentYearActions = plan.strategies.retirementActions.filter(
       (request) => request.year === year,
     )
-    let retirementActionExecution: ExecuteCashOrdinaryWithdrawalsResult | undefined
+    let retirementActionExecution: ExecuteOrdinaryWithdrawalsResult | undefined
     let retirementActionCash = 0
+    let retirementActionEquityCompensation = 0
+    let retirementActionOrdinaryIncome = 0
+    let retirementActionProceeds = 0
     if (currentYearActions.length > 0) {
-      const cashAccountIds = new Set(
+      const executableOrdinarySourceAccountIds = new Set(
         plan.accounts
-          .filter((account) => account.type === 'cash')
+          .filter(
+            (account) =>
+              account.type === 'cash' || account.type === 'equityComp',
+          )
           .map((account) => account.id),
       )
-      const ordinaryCashSourceAccountIds = new Set<string>(
+      const ordinarySourceAccountIds = new Set<string>(
         currentYearActions.flatMap((request) =>
           request.kind === 'ordinaryWithdrawal'
             ? request.allocations
               .map((allocation) => allocation.sourceAccountId)
-              .filter((accountId) => cashAccountIds.has(accountId))
+              .filter((accountId) =>
+                executableOrdinarySourceAccountIds.has(accountId),
+              )
             : [],
         ),
       )
       let openingBalances = [...balances]
-        .filter((state) => ordinaryCashSourceAccountIds.has(state.account.id))
+        .filter((state) => ordinarySourceAccountIds.has(state.account.id))
         .sort((left, right) =>
           left.account.id < right.account.id ? -1 : left.account.id > right.account.id ? 1 : 0,
         )
@@ -2277,7 +2302,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         },
       )
       while (true) {
-        retirementActionExecution = executeCashOrdinaryWithdrawals({
+        retirementActionExecution = executeOrdinaryWithdrawals({
           year,
           plan,
           requests: currentYearActions,
@@ -2318,7 +2343,16 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         for (const state of balances) {
           const closingCents = closingCentsByAccountId.get(state.account.id)
           if (closingCents !== undefined) {
-            state.balance = ledgerCentsToPlanDollars(closingCents)
+            const closingBalance = ledgerCentsToPlanDollars(closingCents)
+            if (state.account.type === 'equityComp' && state.balance > 0) {
+              const executed = state.balance - closingBalance
+              const basisRatio = Math.min(1, state.costBasis / state.balance)
+              state.costBasis = Math.max(
+                0,
+                state.costBasis - executed * basisRatio,
+              )
+            }
+            state.balance = closingBalance
           }
         }
       }
@@ -2327,11 +2361,44 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // safe integers, but their annual sum need not fit the branded cent type.
       const retirementActionCashCents = retirementActionExecution.evidence.reduce(
         (total, evidence) =>
-          total + BigInt(evidence.disposition.executedAmount),
+          total +
+          evidence.taxCharacter.reduce(
+            (characterTotal, character) =>
+              characterTotal +
+              (character.sourceClass === 'cash' ? BigInt(character.amount) : 0n),
+            0n,
+          ),
         0n,
       )
       retirementActionCash = ledgerCentTotalToPlanDollars(
         retirementActionCashCents,
+      )
+      const retirementActionEquityCompensationCents =
+        retirementActionExecution.evidence.reduce(
+          (total, evidence) =>
+            total +
+            evidence.taxCharacter.reduce(
+              (characterTotal, character) =>
+                characterTotal +
+                (character.sourceClass === 'equityCompensation'
+                  ? BigInt(character.amount)
+                  : 0n),
+              0n,
+            ),
+          0n,
+        )
+      retirementActionEquityCompensation = ledgerCentTotalToPlanDollars(
+        retirementActionEquityCompensationCents,
+      )
+      retirementActionOrdinaryIncome = retirementActionEquityCompensation
+      const retirementActionProceedsCents =
+        retirementActionExecution.evidence.reduce(
+          (total, evidence) =>
+            total + BigInt(evidence.disposition.executedAmount),
+          0n,
+        )
+      retirementActionProceeds = ledgerCentTotalToPlanDollars(
+        retirementActionProceedsCents,
       )
     }
 
@@ -2341,7 +2408,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // as ordinary income; QCD stays a full subtraction (planning-grade — the
     // IRS actually sources QCDs from pre-tax dollars first).
     const incomeBeforeConversion =
-      ordinaryIncome - preTaxContributions + rmdTotal - rmdNontaxable - qcd + seppTotal - seppNontaxable + inheritedTotal
+      ordinaryIncome -
+      preTaxContributions +
+      rmdTotal -
+      rmdNontaxable -
+      qcd +
+      seppTotal -
+      seppNontaxable +
+      inheritedTotal +
+      retirementActionOrdinaryIncome
 
     // Itemized deductions (today's $ → nominal). The user's SALT estimate grows
     // with general inflation, like spending; federal tax takes the greater of
@@ -2409,7 +2484,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         seppTotal +
         inheritedTotal +
         propertySaleProceedsTotal +
-        retirementActionCash
+        retirementActionProceeds
       // Liquid dollars available above the floor to pay a conversion's tax:
       // existing spendable liquid plus this year's surplus inflows, net of the
       // pre-tax cash need. Surplus inflows (inflows above expenses+contributions)
@@ -2616,7 +2691,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       seppTotal +
       inheritedTotal +
       propertySaleProceedsTotal +
-      retirementActionCash
+      retirementActionProceeds
     let cashInflows = baseCashInflows
 
     // Resolve the year's withdrawal strategy. Bracket targeting reuses the
@@ -3669,13 +3744,16 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const reportedWithdrawals = {
       ...withdrawalPlan.byCategory,
       cash: withdrawalPlan.byCategory.cash + retirementActionCash,
+      taxable:
+        withdrawalPlan.byCategory.taxable +
+        retirementActionEquityCompensation,
       traditional: withdrawalPlan.byCategory.traditional + rmdTotal + seppTotal + inheritedTotal,
       total:
         withdrawalPlan.byCategory.total +
         rmdTotal +
         seppTotal +
         inheritedTotal +
-        retirementActionCash,
+        retirementActionProceeds,
     }
     // Attribute any portfolio shortfall across the spending layers: a deliberate
     // guardrail cut is a target-lifestyle miss, a genuine shortfall reaches the

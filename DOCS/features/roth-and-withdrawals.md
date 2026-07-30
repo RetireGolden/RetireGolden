@@ -63,6 +63,23 @@ account opts into the cap treatment, and an optional **taxable safety-net floor*
 account types first, and fill-to-target conversions are trimmed so their tax bill never forces a breach. See
 [taxes.md § Account depth](taxes.md#account-depth-hsa-nondeductible-basis-property-sales).
 
+### Identity-bearing ordinary withdrawals
+
+`strategies.retirementActions` can name a person, stable source account, exact-cent allocation, year,
+optional execution date, and same-day sequence. The annual ledger currently executes individually owned
+cash and vested equity-compensation sources in one deterministic chronological stream. Cash produces cash
+principal; equity compensation uses the explicit planning boundary
+`fullyTaxableCompensationAtExecution`, so the complete executed amount is ordinary income and never a
+capital gain. A `final` equity-comp account supplies explicit already-vested evidence without inventing a
+historical vest date; a cliff account requires an exact execution date on or after its recorded vest date.
+
+The executor stages a whole action before movement, preserves partial and zero-allocation evidence, debits
+each stable source ID once, and feeds proceeds and equity ordinary income once into the same
+tax/ACA/conversion fixed point. Taxable, traditional, Roth, HSA, conversion, QCD, and legacy aggregate
+requests remain typed non-actionable zero-movement inputs until their source-character subledgers are
+implemented. Conversion-linked tax-payment withdrawals also remain fail-closed until the enclosing atomic
+conversion-funding group exists.
+
 ## The tax / withdrawal circularity
 
 Withdrawing to cover spending generates tax, which raises the amount that must be withdrawn — a circular

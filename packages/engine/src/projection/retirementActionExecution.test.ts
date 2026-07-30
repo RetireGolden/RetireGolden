@@ -48,6 +48,34 @@ function cash(id: string, balance: number, ownerPersonId = 'p1'): Account {
   }
 }
 
+function equityComp(
+  id: string,
+  balance: number,
+  costBasis: number,
+  {
+    ownerPersonId = 'p1',
+    vestingMode = 'final',
+    vestDate = null,
+  }: {
+    ownerPersonId?: string
+    vestingMode?: 'final' | 'cliff'
+    vestDate?: string | null
+  } = {},
+): Account {
+  return {
+    type: 'equityComp',
+    id,
+    name: id,
+    ownerPersonId,
+    annualReturnPct: 0,
+    balance,
+    costBasis,
+    annualContribution: 0,
+    vestingMode,
+    vestDate,
+  }
+}
+
 function parsedAction(input: unknown): RetirementActionRequest {
   const parsed = parseRetirementActionRequest(input)
   if (!parsed.ok) throw new Error(parsed.issues.join('; '))
@@ -104,7 +132,7 @@ function run(plan: Plan, endYear = 2026) {
   })
 }
 
-describe('retirement-action cash execution in the annual ledger', () => {
+describe('retirement-action ordinary-withdrawal execution in the annual ledger', () => {
   it('funds spending without double-debiting the named action source', () => {
     const plan = basePlan()
     plan.accounts = [cash('cash-a', 100)]
@@ -121,6 +149,212 @@ describe('retirement-action cash execution in the annual ledger', () => {
       outcome: 'executed',
       executedAmount: 5_000,
     })
+  })
+
+  it('prices final equity compensation once as ordinary income, never as gain', () => {
+    const plan = basePlan()
+    plan.accounts = [
+      equityComp('equity', 100, 40),
+      cash('cash', 0),
+    ]
+    plan.expenses.baseAnnual = 50
+    plan.strategies.retirementActions = [
+      withdrawal({
+        actionId: 'equity-income',
+        accountId: 'equity',
+        dollars: 100,
+      }),
+    ]
+
+    const year = simulatePlan(validate(plan), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: createFlatTaxCalculator(10),
+    }).years[0]!
+
+    expect(year.retirementActionExecution?.evidence[0]).toMatchObject({
+      disposition: { outcome: 'executed', executedAmount: 10_000 },
+      acceptedSourceEligibility: [{
+        sourceClass: 'equityCompensation',
+        availabilityEvidence: { kind: 'alreadyVested' },
+      }],
+      taxCharacter: [{
+        sourceClass: 'equityCompensation',
+        kind: 'ordinaryIncome',
+        amount: 10_000,
+      }],
+    })
+    expect(year.tax).toBeCloseTo(10, 8)
+    expect(year.magi).toBeCloseTo(100, 8)
+    expect(year.realizedGains).toBe(0)
+    expect(year.withdrawals).toMatchObject({
+      cash: 0,
+      taxable: 100,
+      total: 100,
+    })
+    expect(year.balances).toMatchObject({ equity: 0, cash: 40 })
+    expect(year.surplusInvested).toBeCloseTo(40, 8)
+  })
+
+  it('honors a dated equity cliff at the exact execution-date boundary', () => {
+    const make = (executionDate: string): Plan => {
+      const plan = basePlan()
+      plan.accounts = [
+        equityComp('equity', 100, 0, {
+          vestingMode: 'cliff',
+          vestDate: '2026-06-15',
+        }),
+      ]
+      plan.strategies.retirementActions = [
+        withdrawal({
+          actionId: `equity-${executionDate}`,
+          accountId: 'equity',
+          dollars: 50,
+          executionDate,
+        }),
+      ]
+      return plan
+    }
+
+    const before = run(make('2026-06-14')).years[0]!
+    const onDate = run(make('2026-06-15')).years[0]!
+
+    expect(before.retirementActionExecution?.evidence[0]).toMatchObject({
+      disposition: {
+        outcome: 'refused',
+        executedAmount: 0,
+        reasons: [{ code: 'withdrawal-source-not-spendable' }],
+      },
+    })
+    expect(before.balances.equity).toBe(100)
+    expect(onDate.retirementActionExecution?.evidence[0]).toMatchObject({
+      disposition: { outcome: 'executed', executedAmount: 5_000 },
+      acceptedSourceEligibility: [{
+        availabilityEvidence: {
+          kind: 'vested',
+          vestingDate: '2026-06-15',
+        },
+      }],
+    })
+    expect(onDate.balances.equity).toBe(50)
+    expect(onDate.surplusInvested).toBe(50)
+  })
+
+  it('combines mixed cash and equity proceeds exactly once at cent precision', () => {
+    const plan = basePlan()
+    plan.accounts = [
+      cash('cash', 1),
+      equityComp('equity', 1, 0.4),
+    ]
+    plan.expenses.baseAnnual = 0.3
+    plan.strategies.retirementActions = [
+      withdrawal({
+        actionId: 'cash-ten-cents',
+        accountId: 'cash',
+        dollars: 0.1,
+      }),
+      withdrawal({
+        actionId: 'equity-twenty-cents',
+        accountId: 'equity',
+        dollars: 0.2,
+        sequence: 2,
+      }),
+    ]
+
+    const year = run(plan).years[0]!
+
+    expect(year.withdrawals).toMatchObject({
+      cash: 0.1,
+      taxable: 0.2,
+      total: 0.3,
+    })
+    expect(year.balances).toMatchObject({ cash: 0.9, equity: 0.8 })
+    expect(year.magi).toBeCloseTo(0.2, 8)
+    expect(year.realizedGains).toBe(0)
+  })
+
+  it('preserves equity basis proportionally for later legacy sales', () => {
+    const plan = basePlan()
+    plan.accounts = [equityComp('equity', 100, 40)]
+    plan.expenses.baseAnnual = 75
+    plan.strategies.retirementActions = [
+      withdrawal({
+        actionId: 'equity-first-half',
+        accountId: 'equity',
+        dollars: 50,
+      }),
+    ]
+
+    const [first, second] = run(plan, 2027).years
+
+    expect(first?.withdrawals).toMatchObject({ taxable: 75, total: 75 })
+    expect(first?.realizedGains).toBeCloseTo(15, 8)
+    expect(first?.balances.equity).toBeCloseTo(25, 8)
+    expect(second?.withdrawals).toMatchObject({ taxable: 25, total: 25 })
+    expect(second?.realizedGains).toBeCloseTo(15, 8)
+    expect(second?.balances.equity).toBe(0)
+  })
+
+  it('includes equity action income when sizing a fill-to-target conversion', () => {
+    const make = (withAction: boolean): Plan => {
+      const plan = basePlan()
+      plan.accounts = [
+        cash('cash', 0),
+        equityComp('equity', 20_000, 0),
+        {
+          type: 'traditional',
+          id: 'traditional',
+          name: 'Traditional',
+          ownerPersonId: 'p1',
+          annualReturnPct: 0,
+          kind: 'ira',
+          balance: 1_000_000,
+          annualContribution: 0,
+        },
+        {
+          type: 'roth',
+          id: 'roth',
+          name: 'Roth',
+          ownerPersonId: 'p1',
+          annualReturnPct: 0,
+          kind: 'ira',
+          balance: 0,
+          annualContribution: 0,
+        },
+      ]
+      plan.strategies.rothConversion = {
+        mode: 'fillToTarget',
+        target: 'topOfBracket',
+        targetValue: 24,
+        startYear: 2026,
+        endYear: 2026,
+      }
+      if (withAction) {
+        plan.strategies.retirementActions = [
+          withdrawal({
+            actionId: 'equity-headroom',
+            accountId: 'equity',
+            dollars: 10_000,
+          }),
+        ]
+      }
+      return plan
+    }
+    const withoutAction = simulatePlan(validate(make(false)), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: createFederalTaxCalculator(),
+    }).years[0]!
+    const withAction = simulatePlan(validate(make(true)), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: createFederalTaxCalculator(),
+    }).years[0]!
+
+    expect(withAction.rothConversion).toBeCloseTo(
+      withoutAction.rothConversion - 10_000,
+      2,
+    )
   })
 
   it('does not quantize or brand unrelated balances outside the exact-cent boundary', () => {
@@ -190,6 +424,48 @@ describe('retirement-action cash execution in the annual ledger', () => {
     expect(year.surplusInvested).toBe(30)
     expect(year.balances['cash-a']).toBe(80)
     expect(year.withdrawals).toMatchObject({ cash: 50, total: 50 })
+  })
+
+  it('uses stable account identity for surplus deposits across plan-order permutations', () => {
+    const make = (reverseAccounts: boolean): Plan => {
+      const plan = basePlan()
+      const accounts = [
+        cash('a-surplus-target', 0),
+        cash('z-first-source', 50),
+      ]
+      plan.accounts = reverseAccounts ? accounts.reverse() : accounts
+      plan.strategies.retirementActions = [
+        withdrawal({
+          actionId: 'create-surplus',
+          accountId: 'z-first-source',
+          dollars: 50,
+        }),
+        withdrawal({
+          actionId: 'consume-surplus-next-year',
+          accountId: 'a-surplus-target',
+          dollars: 50,
+          year: 2027,
+        }),
+      ]
+      return plan
+    }
+
+    const forward = run(make(false), 2027)
+    const reversed = run(make(true), 2027)
+    const summarize = (result: ReturnType<typeof run>) =>
+      result.years.map((year) => ({
+        balances: year.balances,
+        evidence: year.retirementActionExecution?.evidence.map((entry) => ({
+          actionId: entry.actionId,
+          disposition: entry.disposition,
+        })),
+      }))
+
+    expect(summarize(reversed)).toEqual(summarize(forward))
+    expect(forward.years[1]?.retirementActionExecution?.evidence[0]).toMatchObject({
+      actionId: 'consume-surplus-next-year',
+      disposition: { outcome: 'executed', executedAmount: 5_000 },
+    })
   })
 
   it('sums executed proceeds as cents before crossing back to Plan dollars', () => {
