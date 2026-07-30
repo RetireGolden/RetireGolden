@@ -14,6 +14,7 @@ import type { ProjectionSummary } from '@retiregolden/engine/projection/compare'
 import type { ProjectionResult } from '@retiregolden/engine/projection/types'
 import type { ExactLedgerTournament, ExactLedgerValidation } from '@retiregolden/engine/projection/optimizePlan'
 import type { OptimizeResult } from '../optimize/messages'
+import { acaVetoYears, formatYearList } from '../planner/acaVetoCopy'
 import { fmtMoney } from '../planner/format'
 import {
   buildReportModel,
@@ -443,6 +444,13 @@ function lossReasonForCandidate(
 ): string {
   if (tournament.winnerCandidateId === candidate.id) return 'Selected exact-ledger winner.'
   if (candidate.afterTaxEstateDelta <= 1) return 'Did not improve after-tax estate over the current plan.'
+  if (tournament.acaActionabilityVeto?.vetoedCandidateIds.includes(candidate.id)) {
+    const years = acaVetoYears(tournament.acaActionabilityVeto)
+    return (
+      `Not presented as actionable: the projection's ACA evidence for ${formatYearList(years)} could not be ` +
+      `priced, so this estate delta omits the ACA effect in ${years.length === 1 ? 'that year' : 'those years'}.`
+    )
+  }
   const benchmark = validation?.afterTaxEstateDelta ?? Math.max(0, ...tournament.candidates.map((row) => row.afterTaxEstateDelta))
   if (benchmark > candidate.afterTaxEstateDelta) return `Trailed the selected recommendation by ${fmtMoney(benchmark - candidate.afterTaxEstateDelta)}.`
   if (tournament.winnerSource === 'incumbent') return 'The current conversion strategy remained the best result found.'

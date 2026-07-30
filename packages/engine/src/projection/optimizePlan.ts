@@ -46,7 +46,7 @@ import { expectedAccountReturnPct } from '../allocation/assetClasses.js'
 import { buildLognormalModelConfigForPlan } from '../montecarlo/marketModels.js'
 import { summarizeProjection, type ProjectionSummary } from './compare.js'
 import { simulatePlan, type SimulateOptions } from './simulate.js'
-import type { OptimizerYearProbe, ProjectionResult } from './types.js'
+import type { AcaSupportCode, OptimizerYearProbe, ProjectionResult } from './types.js'
 
 const OTHER_TYPES = new Set(['cash', 'taxable', 'equityComp', 'roth', 'hsa'])
 
@@ -350,6 +350,51 @@ export interface SimpleCandidateEvaluation {
   moneyLastsYearsDelta: number
 }
 
+/**
+ * Structured explanation for a tournament that fell back to 'incumbent'/'none'
+ * because the ACA actionability veto blocked schedules, rather than because
+ * nothing improved the plan. Without it the candidate table can show a
+ * positive raw after-tax-estate delta next to "no change" with no visible
+ * reason: that delta is ACA-blind in the non-actionable years (the exact
+ * ledger cannot price how the schedule's extra MAGI would change the premium
+ * tax credit there), so the doctrine refuses to present any schedule as
+ * executable (DOCS/domain/domain-rules-reference.md). Plain sorted arrays of
+ * numbers and strings only, so the tournament stays structured-clone safe
+ * across the worker boundary.
+ */
+export interface AcaActionabilityVeto {
+  /**
+   * Baseline projection years whose ACA exact-ledger evidence is
+   * non-actionable (these veto every schedule, the solver's included).
+   */
+  baselineNonActionableYears: number[]
+  /**
+   * Non-actionable ACA years seen only on vetoed schedules' projections — a
+   * candidate's or the solver's income change can push an ACA year past what
+   * the ledger can price; empty when the baseline years already tell the
+   * whole story.
+   */
+  candidateNonActionableYears: number[]
+  /** Distinct ACA support codes on those years (e.g. 'tax-year-parameters-unsupported'). */
+  supportCodes: AcaSupportCode[]
+  /**
+   * Candidate rows the veto kept from being presented as executable even
+   * though they otherwise read as an improvement under the tournament's
+   * active objective (estate delta under the default objective, the policy's
+   * primary metric otherwise) — the rows that would show an unexplained
+   * "improvement nobody recommended".
+   */
+  vetoedCandidateIds: string[]
+  /**
+   * True when the solver's post-processed schedule was itself blocked by the
+   * veto: its exact run (or the baseline) has non-actionable ACA years while
+   * its raw estate delta was positive (the after-tax estate is the solver's
+   * own objective). Covers the case where the baseline and every simple
+   * candidate are actionable but the cleaned MILP projection alone is not.
+   */
+  vetoedMilp: boolean
+}
+
 export interface ExactLedgerTournament {
   /** Objective policy that ranked this tournament (default `max-after-tax-estate`). */
   policyId: ObjectivePolicyId
@@ -378,6 +423,14 @@ export interface ExactLedgerTournament {
   searchRefined: boolean
   /** Exact-ledger simulations spent by local search (0 when search was off or skipped). */
   searchSimulations: number
+  /**
+   * Why an 'incumbent'/'none' fallback happened when the ACA actionability
+   * veto was involved: which years the exact ledger could not price as
+   * actionable and which positive-delta candidate rows that blocked. Null on
+   * won tournaments and on fallbacks with no ACA involvement (an ordinary
+   * "nothing improved the plan").
+   */
+  acaActionabilityVeto: AcaActionabilityVeto | null
 }
 
 /** A candidate only replaces the MILP schedule when it wins by more than this. */
@@ -426,6 +479,85 @@ function decisionContext(plan: Plan, baselineResult: ProjectionResult, simulateO
     baselineResult,
     baselineSummary: summarizeProjection(plan, baselineResult),
     simulateOptions,
+  }
+}
+
+/** Non-actionable ACA years of one projection, with the codes that said so. */
+function nonActionableAcaEvidence(result: ProjectionResult): { years: number[]; codes: AcaSupportCode[] } {
+  const years: number[] = []
+  const codes = new Set<AcaSupportCode>()
+  for (const year of result.years) {
+    if (year.aca?.readiness !== 'nonActionable') continue
+    years.push(year.year)
+    for (const code of year.aca.supportCodes) codes.add(code)
+  }
+  return { years, codes: [...codes] }
+}
+
+/** One evaluated schedule's veto evidence: its exact run and whether it otherwise read as an improvement. */
+export interface AcaVetoScheduleEvidence {
+  /** Improvement under the tournament's active objective (estate delta by default, policy metric otherwise). */
+  improves: boolean
+  result: ProjectionResult
+}
+
+/**
+ * Collect the ACA actionability evidence that explains an incumbent/none
+ * fallback, mirroring the veto `evaluateCandidate` applies: which years are
+ * non-actionable (baseline, candidate, and post-processed solver runs), the
+ * support codes that said so, and which improving schedules were blocked.
+ * Null when no non-actionable ACA year touched the tournament — the fallback
+ * is then an ordinary "nothing improved the plan" — and null when candidate-
+ * only evidence fails to cover every improving row (an actionable improving
+ * candidate that still lost was blocked by something other than ACA, so
+ * claiming "nothing was actionable" would be false). Exported for direct
+ * unit tests of those rules; production callers are the two tournament paths.
+ */
+export function buildAcaActionabilityVeto(
+  baselineResult: ProjectionResult,
+  candidates: (AcaVetoScheduleEvidence & { id: string })[],
+  milp: AcaVetoScheduleEvidence | null,
+): AcaActionabilityVeto | null {
+  const baseline = nonActionableAcaEvidence(baselineResult)
+  const baselineVetoesEverything = baseline.years.length > 0
+  const baselineYearSet = new Set(baseline.years)
+  const codes = new Set<AcaSupportCode>(baseline.codes)
+  const scheduleOnlyYears = new Set<number>()
+  const admit = (evidence: { years: number[]; codes: AcaSupportCode[] }): void => {
+    for (const year of evidence.years) if (!baselineYearSet.has(year)) scheduleOnlyYears.add(year)
+    for (const code of evidence.codes) codes.add(code)
+  }
+
+  const vetoedCandidateIds: string[] = []
+  let improvingActionableCandidate = false
+  for (const candidate of candidates) {
+    const own = nonActionableAcaEvidence(candidate.result)
+    if (!baselineVetoesEverything && own.years.length === 0) {
+      if (candidate.improves) improvingActionableCandidate = true
+      continue
+    }
+    if (!candidate.improves) continue
+    vetoedCandidateIds.push(candidate.id)
+    admit(own)
+  }
+
+  const milpEvidence = milp === null ? null : nonActionableAcaEvidence(milp.result)
+  const vetoedMilp =
+    milp !== null && milp.improves && (baselineVetoesEverything || milpEvidence!.years.length > 0)
+  if (vetoedMilp) admit(milpEvidence!)
+
+  if (!baselineVetoesEverything) {
+    // Candidate-only evidence must cover every improving row, and something
+    // must actually have been blocked, before ACA becomes the fallback story.
+    if (improvingActionableCandidate) return null
+    if (vetoedCandidateIds.length === 0 && !vetoedMilp) return null
+  }
+  return {
+    baselineNonActionableYears: [...baseline.years].sort((a, b) => a - b),
+    candidateNonActionableYears: [...scheduleOnlyYears].sort((a, b) => a - b),
+    supportCodes: [...codes].sort(),
+    vetoedCandidateIds,
+    vetoedMilp,
   }
 }
 
@@ -597,6 +729,7 @@ export function runExactLedgerTournament(
         marginOverMilpDollars: milpRecommended ? winner.estateDelta - milpDelta : 0,
         searchRefined,
         searchSimulations,
+        acaActionabilityVeto: null,
       }
     }
   }
@@ -644,9 +777,29 @@ export function runExactLedgerTournament(
       marginOverMilpDollars: 0,
       searchRefined,
       searchSimulations,
+      acaActionabilityVeto: null,
     }
   }
-  return fallbackTournament(plan, baselineResult, candidates, 'max-after-tax-estate')
+  return fallbackTournament(
+    plan,
+    baselineResult,
+    candidates,
+    'max-after-tax-estate',
+    buildAcaActionabilityVeto(
+      baselineResult,
+      rich.map((candidate) => ({
+        id: candidate.evaluation.id,
+        improves: candidate.evaluation.afterTaxEstateDelta > DECISION_NEUTRAL_TOLERANCE_DOLLARS,
+        result: candidate.result,
+      })),
+      postProcessed
+        ? {
+            improves: postProcessed.cleanedValidation.afterTaxEstateDelta > DECISION_NEUTRAL_TOLERANCE_DOLLARS,
+            result: postProcessed.cleanedResult,
+          }
+        : null,
+    ),
+  )
 }
 
 /** Shared incumbent/none fallback when nothing evaluated beats the current plan. */
@@ -655,6 +808,7 @@ function fallbackTournament(
   baselineResult: ProjectionResult,
   candidates: SimpleCandidateEvaluation[],
   policyId: ObjectivePolicyId,
+  acaActionabilityVeto: AcaActionabilityVeto | null,
 ): ExactLedgerTournament {
   const incumbent = incumbentExecutedConversions(plan, baselineResult)
   if (incumbent) {
@@ -669,6 +823,7 @@ function fallbackTournament(
       marginOverMilpDollars: 0,
       searchRefined: false,
       searchSimulations: 0,
+      acaActionabilityVeto,
     }
   }
   return {
@@ -682,6 +837,7 @@ function fallbackTournament(
     marginOverMilpDollars: 0,
     searchRefined: false,
     searchSimulations: 0,
+    acaActionabilityVeto,
   }
 }
 
@@ -772,6 +928,7 @@ function runPolicyRankedTournament(
       marginOverMilpDollars: 0,
       searchRefined: false,
       searchSimulations: 0,
+      acaActionabilityVeto: null,
     }
   }
   if (winner) {
@@ -791,10 +948,35 @@ function runPolicyRankedTournament(
           : 0,
         searchRefined: false,
         searchSimulations: 0,
+        acaActionabilityVeto: null,
       }
     }
   }
-  return fallbackTournament(plan, baselineResult, candidates, policy.id)
+  return fallbackTournament(
+    plan,
+    baselineResult,
+    candidates,
+    policy.id,
+    // "Improves" here is the policy's own primary metric, not the estate
+    // delta — under a non-estate objective a blocked would-be winner can be
+    // estate-neutral (e.g. a pure lifetime-tax saver) and must still be
+    // reported as vetoed. The solver's schedule keeps the estate test: the
+    // after-tax estate is the MILP's own objective.
+    buildAcaActionabilityVeto(
+      baselineResult,
+      rich.map((candidate) => ({
+        id: candidate.evaluation.id,
+        improves: policy.primaryMetric(candidate.fullEvaluation, ctx) > minimumImprovement,
+        result: candidate.result,
+      })),
+      postProcessed
+        ? {
+            improves: postProcessed.cleanedValidation.afterTaxEstateDelta > DECISION_NEUTRAL_TOLERANCE_DOLLARS,
+            result: postProcessed.cleanedResult,
+          }
+        : null,
+    ),
+  )
 }
 
 export type ExactLedgerRecommendationState = 'beneficial' | 'neutral' | 'rejected' | 'unexecutable'

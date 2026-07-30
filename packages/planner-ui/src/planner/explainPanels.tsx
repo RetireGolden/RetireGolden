@@ -10,6 +10,7 @@ import { Link } from 'react-router'
 
 import type { MonteCarloSummary } from '@retiregolden/engine/montecarlo/run'
 import type { ExactLedgerTournament } from '@retiregolden/engine/projection/optimizePlan'
+import { ACA_VETO_ROW_NOTE, acaVetoExplanation } from './acaVetoCopy'
 import { fmtMoney, fmtMoneyCompact } from './format'
 
 function fmtSignedMoney(v: number): string {
@@ -169,6 +170,11 @@ export function WhyRecommendationPanel({
           .{tournament.searchRefined ? ` A bounded local search (${tournament.searchSimulations} extra full-projection runs) then fine-tuned the winning schedule's per-year amounts.` : ''}
         </p>
       )}
+      {tournament.acaActionabilityVeto ? (
+        <p>
+          <strong>Why nothing qualified.</strong> {acaVetoExplanation(tournament.acaActionabilityVeto)}
+        </p>
+      ) : null}
       <div className="year-table-wrap" style={{ border: 'none' }}>
         <table className="compare-table">
           <thead>
@@ -211,6 +217,9 @@ export function WhyRecommendationPanel({
                 <td>
                   {c.label}
                   {c.id === tournament.winnerCandidateId ? <strong> — winner</strong> : ''}
+                  {tournament.acaActionabilityVeto?.vetoedCandidateIds.includes(c.id) ? (
+                    <em className="muted"> — {ACA_VETO_ROW_NOTE}</em>
+                  ) : null}
                 </td>
                 <td>{fmtMoneyCompact(c.executedConversionTotal)}</td>
                 <td>{fmtSignedMoney(c.afterTaxEstateDelta)}</td>

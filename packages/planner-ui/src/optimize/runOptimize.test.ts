@@ -164,6 +164,21 @@ describe('runOptimizeRequest', () => {
     expect(result.tournament.winnerSource).toBe('incumbent')
     expect(result.tournament.winnerLabel).toBe('your current conversion strategy')
 
+    // The fallback explains itself: the veto diagnostic names the years the
+    // exact ledger could not price and flags every positive-delta row it
+    // blocked, so the UI never shows "no change recommended" beside an
+    // unexplained positive number.
+    const veto = result.tournament.acaActionabilityVeto
+    expect(veto).not.toBeNull()
+    expect(veto!.baselineNonActionableYears.length).toBeGreaterThan(0)
+    expect(veto!.supportCodes).toContain('tax-year-parameters-unsupported')
+    expect(veto!.vetoedCandidateIds).toContain('bracket-10')
+    expect(veto!.vetoedCandidateIds).toEqual(
+      result.tournament.candidates.filter((c) => c.afterTaxEstateDelta > 1).map((c) => c.id),
+    )
+    // The diagnostic crosses the worker's structured-clone boundary intact.
+    expect(() => structuredClone(result)).not.toThrow()
+
     // The veto's trigger: baseline ACA years past the sourced-pack horizon.
     const taxCalculator = combineTaxCalculators(
       createFederalTaxCalculator(),
