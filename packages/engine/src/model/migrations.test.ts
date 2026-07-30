@@ -340,6 +340,73 @@ describe('v1 -> v2 retirement-action migration', () => {
     }
   })
 
+  it('strips unknown legacy metadata consistently inside canonical scenario arrays', () => {
+    const baseAction = {
+      ...legacyQcd,
+      thirdPartyMetadata: 'base-only',
+      provenance: {
+        ...legacyQcd.provenance,
+        importNote: 'base-only',
+      },
+    }
+    const scenarioAction = {
+      ...legacyQcd,
+      thirdPartyMetadata: 'scenario-only',
+      provenance: {
+        ...legacyQcd.provenance,
+        importNote: 'scenario-only',
+      },
+    }
+    const raw = withActions(rawV1Plan(), [baseAction])
+    raw['scenarios'] = [
+      {
+        id: 'scenario-strip-action-metadata',
+        name: 'Strip action metadata',
+        patch: {
+          kind: 'retiregolden.scenario-patch',
+          version: 1,
+          base: {
+            planId: raw['id'],
+            planSchemaVersion: 1,
+            snapshotHash: 'fnv1a64:0000000000000000',
+          },
+          title: 'Strip action metadata',
+          rationale: null,
+          createdAtIso: '2026-06-11T00:00:00.000Z',
+          actor: { kind: 'legacy' },
+          operations: [
+            {
+              op: 'set',
+              path: '/strategies/retirementActions',
+              before: { present: true, value: [baseAction] },
+              value: [scenarioAction],
+            },
+          ],
+        },
+      },
+    ]
+
+    const migrated = migratePlanToCurrent(raw)
+    expect(migrated.ok).toBe(true)
+    if (!migrated.ok) return
+    const parsedPatch = parseScenarioPatch(migrated.plan.scenarios[0]!.patch)
+    expect(parsedPatch.ok).toBe(true)
+    if (!parsedPatch.ok) return
+    const operation = parsedPatch.patch.operations[0]
+    if (operation?.op !== 'set' || operation.before.present !== true) return
+    const beforeAction = (
+      operation.before.value as Array<Record<string, unknown>>
+    )[0]!
+    const valueAction = (operation.value as Array<Record<string, unknown>>)[0]!
+    for (const action of [beforeAction, valueAction]) {
+      expect(action).not.toHaveProperty('thirdPartyMetadata')
+      expect(action['provenance']).not.toHaveProperty('importNote')
+    }
+    expect(valueAction['actionId']).toBe(beforeAction['actionId'])
+    const applied = applyScenarioPatchDocument(migrated.plan, parsedPatch.patch)
+    expect(applied.ok).toBe(true)
+  })
+
   it('normalizes an absent direct action-schedule precondition to the v2 default', () => {
     const raw = rawV1Plan()
     const strategies = raw['strategies'] as Record<string, unknown>

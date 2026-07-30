@@ -13,6 +13,7 @@ import {
   persistedLegacyAggregateQcdRequestSchema,
   persistedLegacyAggregateRothConversionRequestSchema,
   persistedLegacyAggregateWithdrawalRequestSchema,
+  persistedRetirementActionRequestSchema,
 } from '../actions/contract.js'
 import {
   isScenarioPatchEnvelope,
@@ -81,6 +82,7 @@ function compareCanonicalStrings(left: string, right: string): number {
 interface LegacyActionCandidate {
   canonical: string
   seed: string
+  normalized: Record<string, unknown>
 }
 
 type LegacyActionIdContext = ReadonlyMap<string, readonly string[]>
@@ -96,6 +98,7 @@ function legacyActionCandidate(action: unknown): LegacyActionCandidate | null {
   return {
     canonical,
     seed: readableLegacyIdSeed(normalized, canonical),
+    normalized,
   }
 }
 
@@ -136,6 +139,7 @@ function createLegacyActionIdContext(
   })
 
   const usedIds = new Set(suppliedIds)
+  const nextSuffixBySeed = new Map<string, number>()
   const assignedIds = new Map<string, string[]>()
   const sortedCandidates = [...candidatesByCanonical.entries()].sort(
     ([leftCanonical, left], [rightCanonical, right]) => {
@@ -148,14 +152,16 @@ function createLegacyActionIdContext(
   sortedCandidates.forEach(([canonical, candidate]) => {
     const ids: string[] = []
     for (let occurrence = 0; occurrence < candidate.maxOccurrences; occurrence++) {
-      let actionId = candidate.seed
-      let suffix = 2
+      let suffix = nextSuffixBySeed.get(candidate.seed) ?? 1
+      let actionId =
+        suffix === 1 ? candidate.seed : `${candidate.seed}-${suffix}`
       while (usedIds.has(actionId)) {
+        suffix = suffix === 1 ? 2 : suffix + 1
         actionId = `${candidate.seed}-${suffix}`
-        suffix++
       }
       usedIds.add(actionId)
       ids.push(actionId)
+      nextSuffixBySeed.set(candidate.seed, suffix === 1 ? 2 : suffix + 1)
     }
     assignedIds.set(canonical, ids)
   })
@@ -171,13 +177,20 @@ function migrateLegacyActionSchedule(
   const occurrences = new Map<string, number>()
   const migrated = retirementActions.map((action) => {
     const candidate = legacyActionCandidate(action)
-    if (candidate === null) return action
-    const occurrence = occurrences.get(candidate.canonical) ?? 0
-    occurrences.set(candidate.canonical, occurrence + 1)
-    const actionId = context.get(candidate.canonical)?.[occurrence]
-    if (actionId === undefined) return action
+    if (candidate !== null) {
+      const occurrence = occurrences.get(candidate.canonical) ?? 0
+      occurrences.set(candidate.canonical, occurrence + 1)
+      const actionId = context.get(candidate.canonical)?.[occurrence]
+      if (actionId === undefined) return action
+      changed = true
+      return { ...candidate.normalized, actionId }
+    }
+    const parsed = persistedRetirementActionRequestSchema.safeParse(action)
+    if (!parsed.success || canonicalJson(parsed.data) === canonicalJson(action)) {
+      return action
+    }
     changed = true
-    return { ...(action as Record<string, unknown>), actionId }
+    return parsed.data
   })
   return changed ? migrated : retirementActions
 }
