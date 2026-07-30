@@ -38,9 +38,15 @@ const { packForYear } = await import('@retiregolden/engine/params')
 const {
   addUsdCents,
   asActionId,
+  asAccountId,
+  asAllocationId,
+  asPersonId,
   asUsdCents,
   parseRetirementActionRequest,
 } = await import('@retiregolden/engine/actions')
+const {
+  evaluateRetirementActionEligibility,
+} = await import('@retiregolden/engine/strategies/accountEligibility')
 const simulate = await import('@retiregolden/engine/projection/simulate')
 const { singlePersonPlan, cashAccount, productionTaxCalculator, runPlan } = await import(
   '@retiregolden/engine/testing/planFixtures'
@@ -86,6 +92,70 @@ assert.equal(
   }).ok,
   true,
 )
+
+const smokePerson = {
+  id: 'smoke-person',
+  name: 'Smoke Person',
+  dob: '1955-08-31',
+  sex: 'average',
+  retirementAge: 65,
+  longevity: { planningAge: 95, source: 'manual' },
+}
+const smokeCash = {
+  id: 'smoke-cash',
+  name: 'Smoke Cash',
+  type: 'cash',
+  ownerPersonId: 'smoke-person',
+  annualReturnPct: null,
+  balance: 10_000,
+  annualContribution: 0,
+}
+const smokeWithdrawal = {
+  actionId: asActionId('smoke-withdrawal'),
+  kind: 'ordinaryWithdrawal',
+  personId: asPersonId('smoke-person'),
+  year: 2030,
+  executionSequence: 1,
+  requestedAmount: asUsdCents(100),
+  allocations: [{
+    allocationId: asAllocationId('smoke-allocation'),
+    sourceAccountId: asAccountId('smoke-cash'),
+    requestedAmount: asUsdCents(100),
+  }],
+  purpose: { kind: 'spending' },
+  provenance: { source: 'manual' },
+}
+const smokeEligibilityContext = {
+  personAliveEvidence: [{
+    evidenceId: 'smoke-alive-evidence',
+    actionId: smokeWithdrawal.actionId,
+    personId: smokeWithdrawal.personId,
+    actionYear: smokeWithdrawal.year,
+    actionDate: null,
+    alive: true,
+  }],
+}
+assert.equal(
+  evaluateRetirementActionEligibility(
+    smokeWithdrawal,
+    { people: [smokePerson], accounts: [smokeCash] },
+    smokeEligibilityContext,
+  ).status,
+  'accepted',
+)
+const typedRefusal = evaluateRetirementActionEligibility(
+  {
+    ...smokeWithdrawal,
+    allocations: [{
+      ...smokeWithdrawal.allocations[0],
+      sourceAccountId: asAccountId('missing-account'),
+    }],
+  },
+  { people: [smokePerson], accounts: [smokeCash] },
+  smokeEligibilityContext,
+)
+assert.equal(typedRefusal.status, 'refused')
+assert.equal(typedRefusal.reasons[0].code, 'source-account-not-found')
 
 const plan = singlePersonPlan({ planningAge: 90 })
 plan.accounts = [cashAccount('cash', 500_000)]
