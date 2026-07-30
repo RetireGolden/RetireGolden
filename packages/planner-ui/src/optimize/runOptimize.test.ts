@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, parsePlan, type Account, type IncomeStream, type Plan } from '@retiregolden/engine/model/plan'
 import { socialSecurityIncome } from '@retiregolden/engine/testing/planFixtures'
+import { buildEarlyRetireeAca } from '../planner/examples/buildEarlyRetireeAca'
 import { runOptimizeRequest } from './runOptimize'
 
 let counter = 0
@@ -124,6 +125,35 @@ describe('runOptimizeRequest', () => {
       expect(ss!.claimAge.years).not.toBe(62)
     }
     // The whole result must survive the worker's structured-clone boundary.
+    expect(() => structuredClone(result)).not.toThrow()
+  })
+
+  it('explains the ACA actionability veto behind an incumbent fallback on the ACA example', async () => {
+    // The curated early-retiree ACA example keeps marketplace coverage through
+    // 2028, but only years with a sourced tax parameter pack are actionable —
+    // later ACA years report `tax-year-parameters-unsupported`, so the
+    // tournament vetoes every candidate and holds the incumbent even though a
+    // candidate row (bracket-10) shows a large positive raw estate delta. The
+    // result must say WHY, or the UI renders "no change recommended" beside an
+    // unexplained positive number.
+    const plan = buildEarlyRetireeAca()
+    const result = await runOptimizeRequest({ plan, startYear: 2026, liquidationRatePct: 22 })
+
+    expect(result.tournament.winnerSource).toBe('incumbent')
+    const bracket10 = result.tournament.candidates.find((c) => c.id === 'bracket-10')
+    expect(bracket10).toBeDefined()
+    expect(bracket10!.afterTaxEstateDelta).toBeGreaterThan(1_000)
+
+    const veto = result.tournament.acaActionabilityVeto
+    expect(veto).not.toBeNull()
+    expect(veto!.baselineNonActionableYears.length).toBeGreaterThan(0)
+    expect(veto!.supportCodes).toContain('tax-year-parameters-unsupported')
+    // Every positive-delta row is flagged as vetoed — bracket-10 included.
+    expect(veto!.vetoedCandidateIds).toContain('bracket-10')
+    expect(veto!.vetoedCandidateIds).toEqual(
+      result.tournament.candidates.filter((c) => c.afterTaxEstateDelta > 1).map((c) => c.id),
+    )
+    // The diagnostic crosses the worker's structured-clone boundary intact.
     expect(() => structuredClone(result)).not.toThrow()
   })
 

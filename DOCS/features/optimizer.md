@@ -80,7 +80,14 @@ break-even: on the trad-heavy test fixture a plain 10%-bracket fill beats the cl
 **+$77.3k vs +$38.1k** of exact estate gain, while on the Coast-FIRE fixture every blanket fill is
 estate-negative and the trimmed MILP wins — so both paths earn their keep. The tournament also runs when
 the MILP is infeasible or empty, so those households can still get a simple beneficial recommendation.
-Cost: six extra deterministic `simulatePlan` runs per optimize.
+Cost: six extra deterministic `simulatePlan` runs per optimize. When the tournament falls back to
+`'incumbent'`/`'none'` because the **ACA actionability veto** blocked schedules (non-actionable ACA years —
+e.g. `tax-year-parameters-unsupported` past the sourced-pack horizon — make every candidate's exact
+evaluation non-executable even when its raw estate delta is positive, since that delta is ACA-blind in the
+unpriced years), the result carries a structured `acaActionabilityVeto` diagnostic: the non-actionable
+baseline/candidate years, the ACA support codes, and the positive-delta candidate rows the veto blocked.
+The Optimize page, the "why this recommendation" panel, and the report's candidate loss reasons all render
+it, so a "no change" verdict next to a positive candidate row always explains itself.
 
 **Exact-ledger convergence loop (surpass-Owl Track 1, Step 1):** the MILP is a *linearization*, so its
 exogenous inputs (the taxable Social-Security portion, IRMAA/ACA-priced spending) are only exact at the

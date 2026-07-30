@@ -1607,6 +1607,15 @@ describe('exact-ledger candidate tournament', () => {
     const tournament = runExactLedgerTournament(plan, baseline, null, opts)
     expect(tournament.winnerConversions).toEqual([])
     expect(['incumbent', 'none']).toContain(tournament.winnerSource)
+
+    // The fallback explains itself: the veto diagnostic names the years whose
+    // ACA evidence blocked every schedule and the codes that said so.
+    const veto = tournament.acaActionabilityVeto
+    expect(veto).not.toBeNull()
+    expect(veto!.baselineNonActionableYears).toContain(2026)
+    expect(veto!.supportCodes.length).toBeGreaterThan(0)
+    // Structured-clone safe: the diagnostic crosses the worker boundary as-is.
+    expect(() => structuredClone(tournament)).not.toThrow()
   })
 
   it('lets a candidate win outright when the MILP has nothing to recommend', () => {
@@ -1639,6 +1648,9 @@ describe('exact-ledger candidate tournament', () => {
     expect(rerun.winnerSource).toBe('incumbent')
     expect(rerun.winnerLabel).toBe('your applied optimizer schedule')
     expect(rerun.winnerValidation).toBeNull()
+    // An ordinary "nothing beats the incumbent" fallback carries no ACA veto
+    // diagnostic — the field must not cry wolf on non-ACA plans.
+    expect(rerun.acaActionabilityVeto).toBeNull()
     // The reported schedule is the plan's own exact-executed conversions.
     const executedTotal = appliedBaseline.years.reduce((sum, y) => sum + y.rothConversion, 0)
     expect(rerun.winnerConversions.reduce((sum, c) => sum + c.amount, 0)).toBeCloseTo(executedTotal, 0)

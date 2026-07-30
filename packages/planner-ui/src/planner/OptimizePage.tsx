@@ -25,6 +25,7 @@ import { runOptimize } from '../optimize/runner'
 import { downloadStandaloneReport } from '../report/downloadReport'
 import { useReportBranding } from '../report/brandingContext'
 import { reportEvidenceFromOptimizeResult } from '../report/reportHtml'
+import { acaVetoExplanation } from './acaVetoCopy'
 import { usePlan } from './planContextCore'
 import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
 import { WhyRecommendationPanel } from './explainPanels'
@@ -425,11 +426,20 @@ export function OptimizePage() {
             </h2>
             <p className="muted" style={{ margin: 0 }}>
               RetireGolden compared {tournament.candidates.length} simple candidate strategies and a fresh solver
-              schedule against your current plan on your full year-by-year projection; none improved it. Your current schedule (
+              schedule against your current plan on your full year-by-year projection;{' '}
+              {tournament.acaActionabilityVeto
+                ? 'none qualified as actionable (see the ACA note below)'
+                : 'none improved it'}
+              . Your current schedule (
               {fmtMoney(tournament.winnerConversions.reduce((sum, c) => sum + c.amount, 0))} of conversions across{' '}
               {tournament.winnerConversions.length} year{tournament.winnerConversions.length === 1 ? '' : 's'}) stays
               in place{claimChangeRecommended ? ' — only the claim change above is left to apply.' : ' — nothing to apply.'}
             </p>
+            {tournament.acaActionabilityVeto ? (
+              <p className="field-hint" style={{ margin: '0.6rem 0 0' }}>
+                {acaVetoExplanation(tournament.acaActionabilityVeto)}
+              </p>
+            ) : null}
             {postProcessed?.cleanedValidation ? (
               <p className="field-hint" style={{ margin: '0.6rem 0 0' }}>
                 Diagnostic: the solver's latest cleaned schedule would move the projected after-tax estate by{' '}
@@ -461,6 +471,11 @@ export function OptimizePage() {
               For this plan the optimizer didn't find conversions that improve the after-tax estate (often because there
               is little pre-tax balance to convert, or the current strategy already captures the opportunity).
             </p>
+            {tournament?.acaActionabilityVeto ? (
+              <p className="field-hint" style={{ margin: '0.6rem 0 0' }}>
+                {acaVetoExplanation(tournament.acaActionabilityVeto)}
+              </p>
+            ) : null}
             <div style={{ marginTop: '0.75rem' }}>{rerunButton()}</div>
           </div>
         ) : (
@@ -493,6 +508,11 @@ export function OptimizePage() {
                     {tournament.searchRefined
                       ? ' A bounded search on your full projection then fine-tuned the winning schedule’s per-year amounts.'
                       : ''}
+                  </p>
+                ) : null}
+                {tournament?.acaActionabilityVeto ? (
+                  <p className="field-hint" style={{ margin: '0.45rem 0 0' }}>
+                    {acaVetoExplanation(tournament.acaActionabilityVeto)}
                   </p>
                 ) : null}
                 {tournament && tournament.policyId !== 'max-after-tax-estate' ? (

@@ -141,6 +141,7 @@ function fakeTournament(overrides: Partial<ExactLedgerTournament> = {}): ExactLe
     marginOverMilpDollars: 9_000,
     searchRefined: true,
     searchSimulations: 64,
+    acaActionabilityVeto: null,
     ...overrides,
   }
 }
@@ -238,6 +239,46 @@ describe('WhyRecommendationPanel', () => {
     )
     const text = container.textContent!
     expect(text).toContain('ahead of the next-best eligible alternative by $24,000')
+    unmount()
+  })
+
+  it('explains an ACA actionability veto and marks the blocked positive-delta row', () => {
+    // The incumbent holds only because the ACA veto blocked bracket-10, whose
+    // row shows +$10,289 — the panel must say why that row did not win.
+    const { container, unmount } = render(
+      <WhyRecommendationPanel
+        tournament={fakeTournament({
+          winnerSource: 'incumbent',
+          winnerCandidateId: null,
+          winnerLabel: 'your current conversion strategy',
+          winnerValidation: null,
+          marginOverMilpDollars: 0,
+          searchRefined: false,
+          searchSimulations: 0,
+          candidates: [
+            { id: 'bracket-10', label: 'Fill the 10% bracket', executedConversionTotal: 60_000, afterTaxEstateDelta: 10_289, lifetimeTaxDelta: 4_000, moneyLastsYearsDelta: 0 },
+            { id: 'bracket-12', label: 'Fill the 12% bracket', executedConversionTotal: 90_000, afterTaxEstateDelta: -2_000, lifetimeTaxDelta: 9_000, moneyLastsYearsDelta: 0 },
+          ],
+          acaActionabilityVeto: {
+            baselineNonActionableYears: [2027, 2028],
+            candidateNonActionableYears: [],
+            supportCodes: ['tax-year-parameters-unsupported'],
+            vetoedCandidateIds: ['bracket-10'],
+          },
+        })}
+        objectiveLabel="Maximize after-tax estate"
+      />,
+    )
+    const text = container.textContent!
+    expect(text).toContain('Why nothing qualified.')
+    expect(text).toContain('marketplace (ACA) coverage in 2027 and 2028')
+    expect(text).toContain('sourced ACA tax parameters for those years are not yet published')
+    expect(text).toContain('no conversion schedule is presented as actionable')
+    // The blocked row is annotated; the merely-negative row is not.
+    expect(text).toContain('Fill the 10% bracket — not actionable (unpriced ACA years)')
+    expect(text).not.toContain('Fill the 12% bracket — not actionable')
+    // No fabricated "ahead by" margin against a vetoed positive row.
+    expect(text).not.toContain('ahead of the next-best')
     unmount()
   })
 

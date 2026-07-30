@@ -46,7 +46,7 @@ import { expectedAccountReturnPct } from '../allocation/assetClasses.js'
 import { buildLognormalModelConfigForPlan } from '../montecarlo/marketModels.js'
 import { summarizeProjection, type ProjectionSummary } from './compare.js'
 import { simulatePlan, type SimulateOptions } from './simulate.js'
-import type { OptimizerYearProbe, ProjectionResult } from './types.js'
+import type { AcaSupportCode, OptimizerYearProbe, ProjectionResult } from './types.js'
 
 const OTHER_TYPES = new Set(['cash', 'taxable', 'equityComp', 'roth', 'hsa'])
 
@@ -350,6 +350,40 @@ export interface SimpleCandidateEvaluation {
   moneyLastsYearsDelta: number
 }
 
+/**
+ * Structured explanation for a tournament that fell back to 'incumbent'/'none'
+ * because the ACA actionability veto blocked schedules, rather than because
+ * nothing improved the plan. Without it the candidate table can show a
+ * positive raw after-tax-estate delta next to "no change" with no visible
+ * reason: that delta is ACA-blind in the non-actionable years (the exact
+ * ledger cannot price how the schedule's extra MAGI would change the premium
+ * tax credit there), so the doctrine refuses to present any schedule as
+ * executable (DOCS/domain/domain-rules-reference.md). Plain sorted arrays of
+ * numbers and strings only, so the tournament stays structured-clone safe
+ * across the worker boundary.
+ */
+export interface AcaActionabilityVeto {
+  /**
+   * Baseline projection years whose ACA exact-ledger evidence is
+   * non-actionable (these veto every schedule, the solver's included).
+   */
+  baselineNonActionableYears: number[]
+  /**
+   * Non-actionable ACA years seen only on candidate projections (a candidate's
+   * income change can push an ACA year past what the ledger can price); empty
+   * when the baseline years already tell the whole story.
+   */
+  candidateNonActionableYears: number[]
+  /** Distinct ACA support codes on those years (e.g. 'tax-year-parameters-unsupported'). */
+  supportCodes: AcaSupportCode[]
+  /**
+   * Candidate rows whose positive raw estate delta the veto kept from being
+   * presented as executable — the rows that would otherwise read as an
+   * unexplained "improvement nobody recommended".
+   */
+  vetoedCandidateIds: string[]
+}
+
 export interface ExactLedgerTournament {
   /** Objective policy that ranked this tournament (default `max-after-tax-estate`). */
   policyId: ObjectivePolicyId
@@ -378,6 +412,14 @@ export interface ExactLedgerTournament {
   searchRefined: boolean
   /** Exact-ledger simulations spent by local search (0 when search was off or skipped). */
   searchSimulations: number
+  /**
+   * Why an 'incumbent'/'none' fallback happened when the ACA actionability
+   * veto was involved: which years the exact ledger could not price as
+   * actionable and which positive-delta candidate rows that blocked. Null on
+   * won tournaments and on fallbacks with no ACA involvement (an ordinary
+   * "nothing improved the plan").
+   */
+  acaActionabilityVeto: AcaActionabilityVeto | null
 }
 
 /** A candidate only replaces the MILP schedule when it wins by more than this. */
@@ -424,6 +466,50 @@ function decisionContext(plan: Plan, baselineResult: ProjectionResult, simulateO
     baselineResult,
     baselineSummary: summarizeProjection(plan, baselineResult),
     simulateOptions,
+  }
+}
+
+/**
+ * Collect the ACA actionability evidence that explains an incumbent/none
+ * fallback, mirroring the veto `evaluateCandidate` applies: which years are
+ * non-actionable (baseline and candidate runs), the support codes that said
+ * so, and which positive-delta candidate rows were blocked. Null when no
+ * non-actionable ACA year touched the tournament — the fallback is then an
+ * ordinary "nothing improved the plan" and needs no explanation.
+ */
+function buildAcaActionabilityVeto(
+  baselineResult: ProjectionResult,
+  rich: RichCandidate[],
+): AcaActionabilityVeto | null {
+  const codes = new Set<AcaSupportCode>()
+  const collectNonActionableYears = (result: ProjectionResult): number[] => {
+    const years: number[] = []
+    for (const year of result.years) {
+      if (year.aca?.readiness !== 'nonActionable') continue
+      years.push(year.year)
+      for (const code of year.aca.supportCodes) codes.add(code)
+    }
+    return years
+  }
+  const baselineYears = collectNonActionableYears(baselineResult)
+  const candidateOnlyYears = new Set<number>()
+  const vetoedCandidateIds: string[] = []
+  for (const candidate of rich) {
+    const candidateYears = collectNonActionableYears(candidate.result)
+    if (baselineYears.length === 0 && candidateYears.length === 0) continue
+    for (const year of candidateYears) if (!baselineYears.includes(year)) candidateOnlyYears.add(year)
+    if (candidate.evaluation.afterTaxEstateDelta > DECISION_NEUTRAL_TOLERANCE_DOLLARS) {
+      vetoedCandidateIds.push(candidate.evaluation.id)
+    }
+  }
+  // Candidate-only non-actionable years matter to the fallback story only when
+  // they blocked a row that would otherwise read as an improvement.
+  if (baselineYears.length === 0 && vetoedCandidateIds.length === 0) return null
+  return {
+    baselineNonActionableYears: baselineYears,
+    candidateNonActionableYears: [...candidateOnlyYears].sort((a, b) => a - b),
+    supportCodes: [...codes].sort(),
+    vetoedCandidateIds,
   }
 }
 
@@ -586,6 +672,7 @@ export function runExactLedgerTournament(
         marginOverMilpDollars: milpRecommended ? winner.estateDelta - milpDelta : 0,
         searchRefined,
         searchSimulations,
+        acaActionabilityVeto: null,
       }
     }
   }
@@ -633,9 +720,10 @@ export function runExactLedgerTournament(
       marginOverMilpDollars: 0,
       searchRefined,
       searchSimulations,
+      acaActionabilityVeto: null,
     }
   }
-  return fallbackTournament(plan, baselineResult, candidates, 'max-after-tax-estate')
+  return fallbackTournament(plan, baselineResult, candidates, 'max-after-tax-estate', buildAcaActionabilityVeto(baselineResult, rich))
 }
 
 /** Shared incumbent/none fallback when nothing evaluated beats the current plan. */
@@ -644,6 +732,7 @@ function fallbackTournament(
   baselineResult: ProjectionResult,
   candidates: SimpleCandidateEvaluation[],
   policyId: ObjectivePolicyId,
+  acaActionabilityVeto: AcaActionabilityVeto | null,
 ): ExactLedgerTournament {
   const incumbent = incumbentExecutedConversions(plan, baselineResult)
   if (incumbent) {
@@ -658,6 +747,7 @@ function fallbackTournament(
       marginOverMilpDollars: 0,
       searchRefined: false,
       searchSimulations: 0,
+      acaActionabilityVeto,
     }
   }
   return {
@@ -671,6 +761,7 @@ function fallbackTournament(
     marginOverMilpDollars: 0,
     searchRefined: false,
     searchSimulations: 0,
+    acaActionabilityVeto,
   }
 }
 
@@ -761,6 +852,7 @@ function runPolicyRankedTournament(
       marginOverMilpDollars: 0,
       searchRefined: false,
       searchSimulations: 0,
+      acaActionabilityVeto: null,
     }
   }
   if (winner) {
@@ -780,10 +872,11 @@ function runPolicyRankedTournament(
           : 0,
         searchRefined: false,
         searchSimulations: 0,
+        acaActionabilityVeto: null,
       }
     }
   }
-  return fallbackTournament(plan, baselineResult, candidates, policy.id)
+  return fallbackTournament(plan, baselineResult, candidates, policy.id, buildAcaActionabilityVeto(baselineResult, rich))
 }
 
 export type ExactLedgerRecommendationState = 'beneficial' | 'neutral' | 'rejected' | 'unexecutable'
