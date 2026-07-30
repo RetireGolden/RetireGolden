@@ -8,6 +8,9 @@
 import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, parsePlan, type Account, type IncomeStream, type Plan } from '@retiregolden/engine/model/plan'
+import { simulatePlan } from '@retiregolden/engine/projection/simulate'
+import { combineTaxCalculators, createFederalTaxCalculator } from '@retiregolden/engine/tax/federalTax'
+import { createStateTaxCalculator } from '@retiregolden/engine/tax/stateTax'
 import { socialSecurityIncome } from '@retiregolden/engine/testing/planFixtures'
 import { buildEarlyRetireeAca } from '../planner/examples/buildEarlyRetireeAca'
 import { runOptimizeRequest } from './runOptimize'
@@ -128,33 +131,71 @@ describe('runOptimizeRequest', () => {
     expect(() => structuredClone(result)).not.toThrow()
   })
 
-  it('explains the ACA actionability veto behind an incumbent fallback on the ACA example', async () => {
+  it('vetoes tournament candidates on the ACA example while its ACA years are non-actionable', async () => {
     // The curated early-retiree ACA example keeps marketplace coverage through
-    // 2028, but only years with a sourced tax parameter pack are actionable —
-    // later ACA years report `tax-year-parameters-unsupported`, so the
-    // tournament vetoes every candidate and holds the incumbent even though a
-    // candidate row (bracket-10) shows a large positive raw estate delta. The
-    // result must say WHY, or the UI renders "no change recommended" beside an
-    // unexplained positive number.
+    // 2028 (Casey turns 65 in 2029), but only years with a sourced tax
+    // parameter pack are ACA-actionable — later ACA years run on a stand-in
+    // pack and report `tax-year-parameters-unsupported`. The decision doctrine
+    // (DOCS/domain/domain-rules-reference.md) then refuses to present ANY
+    // conversion schedule as executable: the exact ledger cannot price how a
+    // candidate's extra pre-65 MAGI would erode the ACA credit in those years,
+    // so a candidate's raw estate delta is ACA-blind and is not evidence to
+    // act on. The tournament must hold the incumbent even though a candidate
+    // row beats it on paper by far more than the $1k switch margin.
+    //
+    // If the sourced-pack premise below ever fails (packs published through
+    // every ACA year of the example), the veto legitimately lifts and the
+    // winner assertions should be revisited rather than patched around.
     const plan = buildEarlyRetireeAca()
-    const result = await runOptimizeRequest({ plan, startYear: 2026, liquidationRatePct: 22 })
+    // Minimal budgets: the veto fires before search runs and nulls whatever
+    // the convergence loop would re-solve, so production budgets only add
+    // MILP solve time without changing the pinned behavior.
+    const result = await runOptimizeRequest({
+      plan,
+      startYear: 2026,
+      liquidationRatePct: 22,
+      searchSimulationBudget: 0,
+      convergenceIterations: 1,
+    })
 
-    expect(result.tournament.winnerSource).toBe('incumbent')
     const bracket10 = result.tournament.candidates.find((c) => c.id === 'bracket-10')
     expect(bracket10).toBeDefined()
     expect(bracket10!.afterTaxEstateDelta).toBeGreaterThan(1_000)
+    expect(result.tournament.winnerSource).toBe('incumbent')
+    expect(result.tournament.winnerLabel).toBe('your current conversion strategy')
 
+    // The fallback explains itself: the veto diagnostic names the years the
+    // exact ledger could not price and flags every positive-delta row it
+    // blocked, so the UI never shows "no change recommended" beside an
+    // unexplained positive number.
     const veto = result.tournament.acaActionabilityVeto
     expect(veto).not.toBeNull()
     expect(veto!.baselineNonActionableYears.length).toBeGreaterThan(0)
     expect(veto!.supportCodes).toContain('tax-year-parameters-unsupported')
-    // Every positive-delta row is flagged as vetoed — bracket-10 included.
     expect(veto!.vetoedCandidateIds).toContain('bracket-10')
     expect(veto!.vetoedCandidateIds).toEqual(
       result.tournament.candidates.filter((c) => c.afterTaxEstateDelta > 1).map((c) => c.id),
     )
     // The diagnostic crosses the worker's structured-clone boundary intact.
     expect(() => structuredClone(result)).not.toThrow()
+
+    // The veto's trigger: baseline ACA years past the sourced-pack horizon.
+    const taxCalculator = combineTaxCalculators(
+      createFederalTaxCalculator(),
+      createStateTaxCalculator({
+        overridePct: plan.assumptions.stateEffectiveTaxPct,
+        localPct: plan.assumptions.localIncomeTaxPct,
+      }),
+    )
+    const baseline = simulatePlan(plan, { startYear: 2026, taxCalculator })
+    const acaYears = baseline.years.filter((y) => y.aca)
+    expect(acaYears.length).toBeGreaterThan(0)
+    expect(
+      acaYears.some(
+        (y) =>
+          y.aca!.readiness === 'nonActionable' && y.aca!.supportCodes.includes('tax-year-parameters-unsupported'),
+      ),
+    ).toBe(true)
   })
 
   it('treats a non-positive search budget as search disabled', async () => {

@@ -432,6 +432,8 @@ const DEFAULT_TOURNAMENT_SWITCH_MARGIN_DOLLARS = 1_000
  * incumbent is the best known schedule and the tournament reports it as the
  * holder instead of a scary "nothing recommended" diagnostic (the common case
  * right after applying a winning schedule and re-running the optimizer).
+ * "Beats" means exact-ledger 'beneficial': a candidate with a positive raw
+ * estate delta that is vetoed as non-actionable (ACA evidence) also lands here.
  */
 function incumbentExecutedConversions(plan: Plan, baselineResult: ProjectionResult): { year: number; amount: number }[] | null {
   if (plan.strategies.rothConversion.mode === 'none') return null
@@ -562,6 +564,15 @@ export function evaluateSimpleConversionCandidates(
  * ties, must never shorten money-lasts relative to the schedule it would
  * replace, and its schedule is exact-ledger executed amounts by construction.
  * Cost: six extra deterministic `simulatePlan` runs.
+ *
+ * ACA actionability veto: a candidate also needs `evaluateExactLedgerSchedule`
+ * to price it 'beneficial', and that evaluation goes 'unexecutable' whenever
+ * the baseline or candidate has a non-actionable ACA year (e.g. marketplace
+ * coverage past the sourced tax-parameter horizon: `tax-year-parameters-
+ * unsupported`). Such a plan gets NO recommendation — the candidate table can
+ * then show a positive raw estate delta while the winner stays the incumbent,
+ * because that delta is ACA-blind in the unpriced years and is not evidence
+ * the doctrine allows acting on (DOCS/domain/domain-rules-reference.md).
  */
 export function runExactLedgerTournament(
   plan: Plan,
