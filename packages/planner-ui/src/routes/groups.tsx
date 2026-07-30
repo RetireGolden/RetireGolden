@@ -28,11 +28,22 @@ import { Navigate, type RouteObject } from 'react-router-dom'
 
 import { PlanPickerPage } from '../planner/PlanPickerPage'
 import { DisclaimerPage } from '../planner/DisclaimerPage'
+import { RouteErrorBoundary } from '../RouteErrorBoundary'
 import { RouteFallback } from './RouteFallback'
 import { ComparePlansPage, ExamplesPage, HowTestedPage, ImportPage, LearnRoutes, PlanRoutes } from './lazyPages'
 
+/**
+ * Lazy routes carry their own error boundary, not just Suspense, so every
+ * host of these groups — not only `<PlannerApp/>`, which adds an outer
+ * boundary around the whole tree — gets the stale-chunk auto-reload backstop
+ * and a recoverable fallback when a route fails (see ../staleChunkReload.ts).
+ */
 function suspended(children: ReactNode) {
-  return <Suspense fallback={<RouteFallback />}>{children}</Suspense>
+  return (
+    <RouteErrorBoundary>
+      <Suspense fallback={<RouteFallback />}>{children}</Suspense>
+    </RouteErrorBoundary>
+  )
 }
 
 /**

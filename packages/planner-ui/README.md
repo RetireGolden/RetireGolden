@@ -123,9 +123,15 @@ The supported product API is:
   route groups (`plannerWorkspaceRoutes`, `plannerContentRoutes`,
   `plannerHomeRoutes`), `ReportBrandingProvider`,
   `PlannerEditionProvider` (with `usePlannerEdition` /
-  `PlannerEditionConfig`), and `RefreshProtectionProvider` (with
+  `PlannerEditionConfig`), `RefreshProtectionProvider` (with
   `useRefreshProtection` / `useRefreshProtectionPending` /
-  `RefreshProtectionValue`) — see "Hosting the workspace" below;
+  `RefreshProtectionValue`), and `installStaleChunkReloadHandler` (call once
+  before render in web hosts that deploy hashed assets: when a new deploy
+  removes a lazy route chunk under an open tab, the app reloads once —
+  guarded against loops — instead of surfacing "Failed to fetch dynamically
+  imported module"; the exported route groups carry the same one-shot
+  recovery in their per-route error boundary, so hosts that skip the call
+  still recover) — see "Hosting the workspace" below;
 - the **`./plan-format` subpath** — `serializeV2Backup`, `parseV2Backup`,
   the envelope types, and the kind/version constants. This is the plan
   interchange format (the same file the web app's backup download produces);

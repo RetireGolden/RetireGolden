@@ -15,6 +15,12 @@
 export { App as PlannerApp, type PlannerAppProps } from './App.tsx'
 export type { ReportBranding } from './report/reportHtml'
 
+// Stale-deployment recovery: call before render so a deploy that replaces
+// the hashed chunks under an open tab auto-reloads once instead of surfacing
+// "Failed to fetch dynamically imported module". `RouteErrorBoundary` also
+// backstops this for hosts that skip the call — see staleChunkReload.ts.
+export { installStaleChunkReloadHandler } from './staleChunkReload.ts'
+
 // The plan-persistence seam: implement `PlanStore` and wrap the planner in
 // `<PlanStoreProvider>` (or pass `planStore` to `<PlannerApp/>`) to supply
 // host storage; omit both and plans persist in the browser via IndexedDB.
