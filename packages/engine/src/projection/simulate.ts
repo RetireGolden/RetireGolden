@@ -2237,10 +2237,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         .sort((left, right) =>
           left.account.id < right.account.id ? -1 : left.account.id > right.account.id ? 1 : 0,
         )
-        .map((state) => ({
-          accountId: asAccountId(state.account.id),
-          openingBalance: planDollarsToLedgerCents(state.balance),
-        }))
+        .flatMap((state) => {
+          try {
+            return [{
+              accountId: asAccountId(state.account.id),
+              openingBalance: planDollarsToLedgerCents(state.balance),
+            }]
+          } catch {
+            // A schema-valid Plan balance can exceed the exact-cent ledger's
+            // safe range. Omit it so the executor reports required facts
+            // missing instead of aborting the whole projection.
+            return []
+          }
+        })
       const personAliveEvidence = currentYearActions.flatMap(
         (request): NonpersistedActionPersonAliveEvidence[] => {
           if (

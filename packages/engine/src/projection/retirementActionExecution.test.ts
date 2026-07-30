@@ -268,6 +268,32 @@ describe('retirement-action cash execution in the annual ledger', () => {
     expect(year.withdrawals.total).toBe(0)
   })
 
+  it('returns non-actionable evidence when opening cash exceeds the cent ledger', () => {
+    const plan = basePlan()
+    plan.accounts = [cash('cash-a', 90_071_992_547_410)]
+    plan.strategies.retirementActions = [
+      withdrawal({
+        actionId: 'out-of-range-opening',
+        accountId: 'cash-a',
+        dollars: 1,
+      }),
+    ]
+
+    const year = run(plan).years[0]!
+
+    expect(year.retirementActionExecution?.evidence[0]?.disposition).toMatchObject({
+      outcome: 'unsupported',
+      executedAmount: 0,
+    })
+    expect(
+      year.retirementActionExecution?.evidence[0]?.disposition.reasons.map(
+        (reason) => reason.code,
+      ),
+    ).toContain('required-facts-missing')
+    expect(year.balances['cash-a']).toBe(90_071_992_547_410)
+    expect(year.withdrawals.total).toBe(0)
+  })
+
   it('keeps explicit cash proceeds available when sizing a floor-limited conversion', () => {
     const make = (withAction: boolean): Plan => {
       const plan = basePlan()
