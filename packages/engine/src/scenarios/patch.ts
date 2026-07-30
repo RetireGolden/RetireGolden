@@ -41,6 +41,7 @@ const protectedFields = [
   'exampleSourceId',
   'createdAtIso',
   'updatedAtIso',
+  'retirementActionEligibilityFacts',
   'scenarios',
 ] as const
 
@@ -278,6 +279,11 @@ export function applyLegacyScenarioPatch(plan: Plan, patch: LegacyScenarioPatch)
   const merged = deepMerge(plan, patch) as Record<string, unknown>
   merged['schemaVersion'] = plan.schemaVersion
   merged['id'] = plan.id
+  if (plan.retirementActionEligibilityFacts === undefined) {
+    Reflect.deleteProperty(merged, 'retirementActionEligibilityFacts')
+  } else {
+    merged['retirementActionEligibilityFacts'] = cloneJson(plan.retirementActionEligibilityFacts)
+  }
   merged['scenarios'] = plan.scenarios
   return parsePlan(merged)
 }
@@ -407,7 +413,28 @@ function mutateOperations(
     }
   }
   const parsedPlan = parsePlan(draft)
-  if (!parsedPlan.ok) return { ok: false, issues: parsedPlan.issues, conflicts: [] }
+  if (!parsedPlan.ok) {
+    if (ownValue(draft, 'retirementActionEligibilityFacts') !== undefined) {
+      const withoutEligibilityFacts = structuredClone(draft)
+      Reflect.deleteProperty(withoutEligibilityFacts, 'retirementActionEligibilityFacts')
+      if (parsePlan(withoutEligibilityFacts).ok) {
+        const message =
+          'scenario operations conflict with protected retirement-action eligibility facts'
+        return {
+          ok: false,
+          issues: [message, ...parsedPlan.issues],
+          conflicts: [
+            {
+              kind: 'value',
+              path: '/retirementActionEligibilityFacts',
+              message,
+            },
+          ],
+        }
+      }
+    }
+    return { ok: false, issues: parsedPlan.issues, conflicts: [] }
+  }
   const parsedRecord = parsedPlan.plan as unknown as Record<string, unknown>
   for (const operation of parsedPatch.patch.operations) {
     const segments = decodeScenarioPointer(operation.path)!

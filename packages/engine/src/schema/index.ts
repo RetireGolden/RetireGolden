@@ -15,7 +15,7 @@
  * plan model. The zod-backed generator is deliberately NOT re-exported here — it
  * lives at `@retiregolden/engine/schema/generate` (and dist/schema/generate.js
  * for the build script). Read `planJsonSchema` as a constant here, or read the
- * same bytes offline from the shipped `schema/plan.v2.json` file in the package
+ * same bytes offline from the shipped `schema/plan.v3.json` file in the package
  * root.
  */
 export {
@@ -26,4 +26,5 @@ export {
 } from './planSchemaMeta.js'
 
 export { planJsonSchema as planV1JsonSchema } from './plan.v1.generated.js'
-export { planJsonSchema } from './plan.v2.generated.js'
+export { planJsonSchema as planV2JsonSchema } from './plan.v2.generated.js'
+export { planJsonSchema } from './plan.v3.generated.js'

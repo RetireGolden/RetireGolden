@@ -7,6 +7,7 @@ import { usePlan } from '../planContextCore'
 import { Issues } from './shared'
 import { newId } from './sectionHelpers'
 import { UpdateBalancesPanel } from './UpdateBalancesPanel'
+import { removeAccount } from '../eligibilityFactActions'
 
 function makeAccount(type: Account['type'], primaryPersonId: string): Account {
   const base = { id: newId(), ownerPersonId: isIndividuallyOwnedAccount(type) ? primaryPersonId : null, annualReturnPct: null }
@@ -45,7 +46,6 @@ function makeAccount(type: Account['type'], primaryPersonId: string): Account {
   }
 }
 
-
 export function AccountsSection() {
   const { plan, update } = usePlan()
   const primaryPersonId = plan.household.people[0]!.id
@@ -62,7 +62,7 @@ export function AccountsSection() {
                 <span className="type-chip">{ACCOUNT_LABEL[a.type]}</span>
                 {a.name}
               </span>
-              <button type="button" className="btn-ghost btn-ghost-danger" onClick={() => update((d) => void d.accounts.splice(i, 1))}>
+              <button type="button" className="btn-ghost btn-ghost-danger" onClick={() => update((d) => removeAccount(d, i))}>
                 Remove
               </button>
             </div>

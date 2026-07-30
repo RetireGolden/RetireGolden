@@ -3,6 +3,7 @@
 import { useState } from 'react'
 
 import { invalidateAcaEvidence, removePartner, updatePersonLongevity } from '../householdActions'
+import { updatePersonDob } from '../eligibilityFactActions'
 import { usePlan } from '../planContextCore'
 import { CheckboxField, DateField, NumberField, SelectField, TextField } from '../fields'
 import { LEARN } from '../learnLinks'
@@ -91,7 +92,7 @@ export function HouseholdSection() {
                 value={person.dob}
                 onCommit={(v) =>
                   update((d) => {
-                    d.household.people[i]!.dob = v
+                    updatePersonDob(d, i, v)
                     invalidateAcaEvidence(d)
                   })
                 }

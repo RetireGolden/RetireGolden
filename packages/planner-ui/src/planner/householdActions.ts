@@ -2,6 +2,7 @@
  *  they're testable and don't trip react-refresh's only-export-components rule). */
 
 import type { Plan } from '@retiregolden/engine/model/plan'
+import { clearDonorEligibilityFacts } from './eligibilityFactActions'
 
 /** Clear exact annual ACA facts after an edit that can stale their family,
  * coverage, region, or premium assumptions. */
@@ -22,9 +23,10 @@ export function updatePersonLongevity(
 
 /**
  * Remove a partner and re-home everything that referenced them so the plan stays
- * valid: accounts move to the primary, the removed person's incomes and policies
- * drop, and any permanent-life beneficiary pointing at them falls back to the
- * estate. Pure mutator (works on an Immer draft or a plain Plan).
+ * valid: accounts move to the primary, the removed person's incomes, policies,
+ * and donor-bound eligibility facts drop, and any permanent-life beneficiary
+ * pointing at them falls back to the estate. Pure mutator (works on an Immer
+ * draft or a plain Plan).
  */
 export function removePartner(d: Plan, removedId: string) {
   d.household.people = d.household.people.filter((p) => p.id !== removedId)
@@ -36,6 +38,7 @@ export function removePartner(d: Plan, removedId: string) {
     .filter((p) => (p.kind === 'ltc' ? p.owner : p.insured) !== removedId)
     .map((p) => (p.kind === 'permanentLife' && p.beneficiary === removedId ? { ...p, beneficiary: 'estate' as const } : p))
   d.careEvents = d.careEvents.filter((c) => c.personId !== removedId)
+  clearDonorEligibilityFacts(d, removedId)
   // Annual ACA evidence names an exact tax family and coverage roster. It
   // cannot be safely rewritten after a household member is removed; clearing
   // it makes a still-enabled ACA request fail closed to the visible gross

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { asUsdCents } from '@retiregolden/engine/actions/money'
 import { createEmptyPlan } from '@retiregolden/engine/model/plan'
 import { MAX_BACKUP_JSON_CHARS, parseV2Backup, serializeV2Backup } from './v2Backup'
 
@@ -19,6 +20,51 @@ describe('v2 backup envelope', () => {
       expect(result.plans).toEqual([a, b])
       expect(result.warnings).toHaveLength(0)
     }
+  })
+
+  it('round-trips Plan v3 retirement-action eligibility facts', () => {
+    const plan = createEmptyPlan({
+      newId: testIds,
+      now: fixedNow,
+      name: 'Eligibility evidence',
+    })
+    const personId = plan.household.people[0]!.id
+    plan.accounts = [
+      {
+        type: 'traditional',
+        id: 'ira-1',
+        name: 'IRA',
+        ownerPersonId: personId,
+        annualReturnPct: null,
+        kind: 'ira',
+        balance: 10_000,
+        annualContribution: 0,
+      },
+    ]
+    plan.retirementActionEligibilityFacts = {
+      iraClassifications: [
+        {
+          evidenceId: 'classification-1',
+          provenance: { source: 'manual' },
+          sourceAccountId: 'ira-1',
+          subtype: 'traditional',
+        },
+      ],
+      sepSimpleActivities: [],
+      deductibleIraContributions: [
+        {
+          evidenceId: 'contribution-1',
+          provenance: { source: 'manual' },
+          donorPersonId: personId,
+          taxYear: 2041,
+          amountCents: asUsdCents(500_000),
+        },
+      ],
+    }
+
+    const result = parseV2Backup(serializeV2Backup([plan], fixedNow))
+    expect(result.ok).toBe(true)
+    if (result.ok) expect(result.plans).toEqual([plan])
   })
 
   it('accepts the legacy retirecalc.v2.backup kind from before the rebrand', () => {

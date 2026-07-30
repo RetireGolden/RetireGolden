@@ -86,10 +86,13 @@ them (break-even, expected PV, explain, mySSA XML import) stay in the planner-ui
 
 - A **`Plan`** is the whole household model (people, accounts, income streams, expenses, strategies,
   assumptions, scenarios). Zod schemas define it and infer the types; the same schemas validate imports and
-  storage reads. `CURRENT_PLAN_SCHEMA_VERSION` is **2**.
+  storage reads. `CURRENT_PLAN_SCHEMA_VERSION` is **3**.
 - **Migrations** are a pure `migratePlanToCurrent` step chain (`engine/model/migrations.ts`); the harness
   exists and is tested. The v1 -> v2 step adds the retirement-action schedule and deterministic IDs to
-  already-present typed legacy actions; earlier additive fields (`stateMoves`,
+  already-present typed legacy actions. The v2 -> v3 step advances to the optional durable IRA
+  classification, per-year SEP/SIMPLE activity, and per-donor/year deductible-contribution facts;
+  it never infers or promotes them, and explicitly discards a same-named root smuggled into a v1/v2
+  input. Earlier additive fields (`stateMoves`,
   `insurance`, `capitalLossCarryforward`, and the July 2026 wave: `incomeFloor`, `spendingPolicy`,
   `expenses.healthcare.ssa44`, annuity payout forms, pension `lumpSumOffer`, HECM) shipped via Zod defaults
   rather than migrations. The plan backup JSON is a documented contract

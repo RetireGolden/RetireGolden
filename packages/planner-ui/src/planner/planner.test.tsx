@@ -8,6 +8,7 @@ import { IDBFactory } from 'fake-indexeddb'
 
 import { _resetPlanStoreForTests, loadPlan, savePlan } from '../data/planStore'
 import { parsePlan } from '@retiregolden/engine/model/plan'
+import { asUsdCents } from '@retiregolden/engine/actions/money'
 import { applyScenarioPatch } from '@retiregolden/engine/scenarios/scenarios'
 import { PlanProvider } from './PlanContext'
 import { PlanWorkspace } from './PlanWorkspace'
@@ -15,6 +16,7 @@ import { PlanCtx, usePlan } from './planContextCore'
 import { fmtMoneyCompact, parseAmount } from './format'
 import { createSamplePlan } from '../testSupport/samplePlan'
 import { invalidateAcaEvidence, removePartner, updatePersonLongevity } from './householdActions'
+import { removeAccount, updateAccountField, updatePersonDob } from './eligibilityFactActions'
 import { projectPlan } from './useProjection'
 import { AccountsSection, AssumptionsSection, HouseholdSection, InsuranceSection, SpendingSection, StrategySection } from './sections'
 import { InsightsPage } from './insights/InsightsPage'
@@ -49,6 +51,26 @@ describe('removePartner', () => {
       { kind: 'permanentLife', id: 'life-primary', name: 'Primary life', insured: primary!.id, beneficiary: partner!.id, annualPremium: 1_000, premiumMode: 'lifetime', deathBenefit: 100_000, cashValue: 0, cashValueMode: 'flatRate', cashValueGrowthPct: 0 },
     ]
     plan.careEvents = [{ id: 'care-partner', personId: partner!.id, startAge: 85, durationYears: 3, annualCost: 90_000 }]
+    plan.retirementActionEligibilityFacts = {
+      iraClassifications: [],
+      sepSimpleActivities: [],
+      deductibleIraContributions: [
+        {
+          evidenceId: 'primary-contribution',
+          provenance: { source: 'manual' },
+          donorPersonId: primary!.id,
+          taxYear: 2036,
+          amountCents: asUsdCents(100_000),
+        },
+        {
+          evidenceId: 'partner-contribution',
+          provenance: { source: 'manual' },
+          donorPersonId: partner!.id,
+          taxYear: 2036,
+          amountCents: asUsdCents(200_000),
+        },
+      ],
+    }
 
     removePartner(plan, partner!.id)
 
@@ -58,7 +80,101 @@ describe('removePartner', () => {
     expect(life.kind === 'permanentLife' && life.beneficiary).toBe('estate')
     // The partner's care event is dropped too.
     expect(plan.careEvents).toEqual([])
+    expect(plan.retirementActionEligibilityFacts.deductibleIraContributions).toEqual([
+      expect.objectContaining({ evidenceId: 'primary-contribution' }),
+    ])
     // No dangling references — the plan still parses.
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+})
+
+describe('eligibility fact edit integrity', () => {
+  it('clears account-bound facts when an IRA becomes an employer account', () => {
+    const plan = createSamplePlan()
+    const accountIndex = plan.accounts.findIndex(
+      (account) => account.type === 'traditional',
+    )
+    const account = plan.accounts[accountIndex]
+    if (account?.type !== 'traditional') throw new Error('expected traditional account')
+    account.kind = 'ira'
+    delete account.inherited
+    plan.retirementActionEligibilityFacts = {
+      iraClassifications: [
+        {
+          evidenceId: 'classification',
+          provenance: { source: 'manual' },
+          sourceAccountId: account.id,
+          subtype: 'sep',
+        },
+      ],
+      sepSimpleActivities: [
+        {
+          evidenceId: 'activity',
+          provenance: { source: 'manual' },
+          sourceAccountId: account.id,
+          actionTaxYear: 2033,
+          planYearEndDate: '2033-12-31',
+          employerContributionMadeForPlanYear: false,
+        },
+      ],
+      deductibleIraContributions: [],
+    }
+
+    updateAccountField(plan, accountIndex, 'kind', 'employer')
+
+    expect(plan.retirementActionEligibilityFacts.iraClassifications).toEqual([])
+    expect(plan.retirementActionEligibilityFacts.sepSimpleActivities).toEqual([])
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+
+  it('removes the selected account row when an imported plan has duplicate IDs', () => {
+    const plan = createSamplePlan()
+    const original = plan.accounts.find((account) => account.type === 'cash')
+    if (original?.type !== 'cash') throw new Error('expected cash account')
+    plan.accounts.push({ ...original, name: 'Later duplicate row' })
+    expect(parsePlan(plan).ok).toBe(true)
+
+    removeAccount(plan, plan.accounts.length - 1)
+
+    expect(
+      plan.accounts.filter((account) => account.id === original.id),
+    ).toEqual([expect.objectContaining({ name: original.name })])
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+
+  it('clears only contribution facts invalidated by a corrected donor DOB', () => {
+    const plan = createSamplePlan()
+    const [primary, partner] = plan.household.people
+    primary!.dob = '1960-01-01'
+    plan.retirementActionEligibilityFacts = {
+      iraClassifications: [],
+      sepSimpleActivities: [],
+      deductibleIraContributions: [
+        {
+          evidenceId: 'primary-contribution',
+          provenance: { source: 'manual' },
+          donorPersonId: primary!.id,
+          taxYear: 2031,
+          amountCents: asUsdCents(100_000),
+        },
+        {
+          evidenceId: 'partner-contribution',
+          provenance: { source: 'manual' },
+          donorPersonId: partner!.id,
+          taxYear: 2036,
+          amountCents: asUsdCents(200_000),
+        },
+      ],
+    }
+
+    updatePersonDob(plan, 0, '')
+    expect(plan.retirementActionEligibilityFacts.deductibleIraContributions).toHaveLength(2)
+
+    updatePersonDob(plan, 0, '1962-01-01')
+
+    expect(plan.retirementActionEligibilityFacts.deductibleIraContributions).toEqual([
+      expect.objectContaining({ evidenceId: 'partner-contribution' }),
+    ])
     expect(parsePlan(plan).ok).toBe(true)
   })
 })
@@ -153,6 +269,108 @@ describe('report ACA wording', () => {
 })
 
 describe('AccountsSection', () => {
+  it('removes account-bound eligibility facts with an imported IRA account', async () => {
+    const plan = createSamplePlan()
+    const ownerPersonId = plan.household.people[0]!.id
+    plan.accounts = [
+      {
+        type: 'traditional',
+        id: 'removed-ira',
+        name: 'Removed SEP IRA',
+        ownerPersonId,
+        annualReturnPct: null,
+        kind: 'ira',
+        balance: 1,
+        annualContribution: 0,
+      },
+      {
+        type: 'traditional',
+        id: 'retained-ira',
+        name: 'Retained IRA',
+        ownerPersonId,
+        annualReturnPct: null,
+        kind: 'ira',
+        balance: 1,
+        annualContribution: 0,
+      },
+    ]
+    plan.retirementActionEligibilityFacts = {
+      iraClassifications: [
+        {
+          evidenceId: 'removed-classification',
+          provenance: { source: 'manual' },
+          sourceAccountId: 'removed-ira',
+          subtype: 'sep',
+        },
+        {
+          evidenceId: 'retained-classification',
+          provenance: { source: 'manual' },
+          sourceAccountId: 'retained-ira',
+          subtype: 'traditional',
+        },
+      ],
+      sepSimpleActivities: [
+        {
+          evidenceId: 'removed-activity',
+          provenance: { source: 'manual' },
+          sourceAccountId: 'removed-ira',
+          actionTaxYear: 2033,
+          planYearEndDate: '2033-12-31',
+          employerContributionMadeForPlanYear: false,
+        },
+      ],
+      deductibleIraContributions: [
+        {
+          evidenceId: 'retained-contribution',
+          provenance: { source: 'manual' },
+          donorPersonId: ownerPersonId,
+          taxYear: 2033,
+          amountCents: asUsdCents(0),
+        },
+      ],
+    }
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={['/plan/x/accounts']}>
+          <PlanCtx.Provider
+            value={{
+              plan,
+              update: (mutator) => mutator(plan),
+              discardPendingSave: () => undefined,
+              saveState: 'saved',
+              issues: [],
+            }}
+          >
+            <AccountsSection />
+          </PlanCtx.Provider>
+        </MemoryRouter>,
+      )
+    })
+
+    const removeButton = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Remove',
+    )
+    expect(removeButton).toBeDefined()
+    await act(async () => removeButton!.click())
+
+    expect(plan.accounts.map((account) => account.id)).toEqual(['retained-ira'])
+    expect(
+      plan.retirementActionEligibilityFacts?.iraClassifications.map(
+        (classification) => classification.sourceAccountId,
+      ),
+    ).toEqual(['retained-ira'])
+    expect(plan.retirementActionEligibilityFacts?.sepSimpleActivities).toEqual([])
+    expect(plan.retirementActionEligibilityFacts?.deductibleIraContributions).toHaveLength(1)
+    expect(parsePlan(plan).ok).toBe(true)
+
+    await act(async () => root.unmount())
+    container.remove()
+  })
+
   it('does not offer Joint ownership for 401(k), IRA/Roth, or HSA accounts', async () => {
     const plan = createSamplePlan()
     plan.accounts = [

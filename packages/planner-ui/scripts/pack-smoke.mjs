@@ -29,14 +29,58 @@
  * Run from anywhere: `node packages/planner-ui/scripts/pack-smoke.mjs`.
  */
 import { execFileSync } from 'node:child_process'
-import { copyFileSync, mkdtempSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  copyFileSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const scriptsDir = dirname(fileURLToPath(import.meta.url))
 const pkgDir = resolve(scriptsDir, '..')
+const enginePkgDir = resolve(pkgDir, '..', 'engine')
 const shell = process.platform === 'win32' // npm/npx are .cmd files on Windows
+const engineSourceMode = process.env.PLANNER_PACK_SMOKE_ENGINE_SOURCE ?? 'auto'
+if (!['auto', 'local', 'registry'].includes(engineSourceMode)) {
+  throw new Error(
+    'pack smoke FAILED: PLANNER_PACK_SMOKE_ENGINE_SOURCE must be auto, local, or registry',
+  )
+}
+
+const plannerPackage = JSON.parse(readFileSync(join(pkgDir, 'package.json'), 'utf8'))
+const engineRange = plannerPackage.dependencies?.['@retiregolden/engine']
+const minimumEngineMatch = typeof engineRange === 'string' ? /^\^(\d+\.\d+\.\d+)$/.exec(engineRange) : null
+if (minimumEngineMatch === null) {
+  throw new Error(
+    `pack smoke FAILED: expected planner-ui to declare a caret engine range, got ${JSON.stringify(engineRange)}`,
+  )
+}
+const minimumEngineVersion = minimumEngineMatch[1]
+
+const registryHasMinimumEngine = () => {
+  try {
+    const found = JSON.parse(
+      execFileSync(
+        'npm',
+        ['view', `@retiregolden/engine@${minimumEngineVersion}`, 'version', '--json'],
+        {
+          encoding: 'utf8',
+          shell,
+          stdio: ['ignore', 'pipe', 'ignore'],
+        },
+      ),
+    )
+    return found === minimumEngineVersion
+  } catch {
+    return false
+  }
+}
 
 const viteConfig = `
 import react from '@vitejs/plugin-react'
@@ -197,6 +241,40 @@ try {
     .split('\n')
     .at(-1)
 
+  const registryMinimumAvailable =
+    engineSourceMode === 'local' ? false : registryHasMinimumEngine()
+  if (engineSourceMode === 'registry' && !registryMinimumAvailable) {
+    throw new Error(
+      `pack smoke FAILED: required registry engine ${minimumEngineVersion} is unavailable; ` +
+        'publish the engine minimum before planner-ui',
+    )
+  }
+
+  const useLocalEngine =
+    engineSourceMode === 'local' || (engineSourceMode === 'auto' && !registryMinimumAvailable)
+  let engineSpec = minimumEngineVersion
+  let engineSource = `registry minimum ${minimumEngineVersion}`
+  if (useLocalEngine) {
+    const localEnginePackage = JSON.parse(readFileSync(join(enginePkgDir, 'package.json'), 'utf8'))
+    if (localEnginePackage.version !== minimumEngineVersion) {
+      throw new Error(
+        `pack smoke FAILED: registry lacks engine ${minimumEngineVersion}, but local engine is ` +
+          `${String(localEnginePackage.version)}; publish the supported minimum or align the local package version`,
+      )
+    }
+    console.log(`pack smoke: packing the exact local engine minimum ${minimumEngineVersion} ...`)
+    const engineTarball = execFileSync('npm', ['pack', '--pack-destination', scratchDir], {
+      cwd: enginePkgDir,
+      encoding: 'utf8',
+      shell,
+    })
+      .trim()
+      .split('\n')
+      .at(-1)
+    engineSpec = `file:./${engineTarball}`
+    engineSource = `local minimum ${minimumEngineVersion}`
+  }
+
   writeFileSync(
     join(scratchDir, 'package.json'),
     JSON.stringify(
@@ -205,6 +283,7 @@ try {
         private: true,
         type: 'module',
         dependencies: {
+          '@retiregolden/engine': engineSpec,
           '@retiregolden/planner-ui': `file:./${tarball}`,
           react: '^19.2.7',
           'react-dom': '^19.2.7',
@@ -227,12 +306,22 @@ try {
   writeFileSync(join(scratchDir, 'src', 'main.tsx'), mainTsx)
   writeFileSync(join(scratchDir, 'src', 'documentTextSmoke.ts'), documentTextSmoke)
 
-  console.log('pack smoke: installing the scratch consumer (registry engine, tarball planner-ui) ...')
+  console.log(`pack smoke: installing the scratch consumer (${engineSource}, tarball planner-ui) ...`)
   execFileSync('npm', ['install', '--no-audit', '--no-fund', '--ignore-scripts'], {
     cwd: scratchDir,
     stdio: 'inherit',
     shell,
   })
+
+  const installedEngine = JSON.parse(
+    readFileSync(join(scratchDir, 'node_modules', '@retiregolden', 'engine', 'package.json'), 'utf8'),
+  )
+  if (installedEngine.version !== minimumEngineVersion) {
+    throw new Error(
+      `pack smoke FAILED: expected engine minimum ${minimumEngineVersion}, installed ` +
+        `${String(installedEngine.version)}`,
+    )
+  }
 
   console.log('pack smoke: vite build ...')
   execFileSync('npx', ['vite', 'build'], { cwd: scratchDir, stdio: 'inherit', shell })
@@ -278,7 +367,8 @@ try {
   process.stdout.write(smokeOutput)
 
   console.log(
-    `pack smoke OK: scratch Vite consumer built from ${tarball}; worker chunks + wasm emitted; ` +
+    `pack smoke OK: scratch Vite consumer built from ${tarball} against ${engineSource}; ` +
+      'worker chunks + wasm emitted; ' +
       'document-text builds and answers without the optional peer',
   )
 } finally {
