@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, expectTypeOf, it } from 'vitest'
 
 import {
   ACTION_REASON_REGISTRY,
@@ -11,6 +11,7 @@ import {
   refusedActionReasonCodes,
   taxTreatmentAdjustmentReasonCodes,
   unsupportedActionReasonCodes,
+  type ActionReason,
   type UnsupportedActionReasonCode,
 } from './reasons.js'
 
@@ -121,7 +122,19 @@ describe('action reason registry', () => {
         additionalCopy: 'drift',
       }).success,
     ).toBe(false)
+    expect(() => createActionReason('not-a-reason' as never)).toThrow()
     expect(() => createActionReason('person-not-found', { personId: '' as never })).toThrow()
+  })
+
+  it('keeps each reason code correlated with its canonical metadata at compile time', () => {
+    type ForgedReason = Readonly<{
+      code: 'person-not-found'
+      predicate: 'qcdEligibilityDate'
+      outcome: 'refused'
+      message: (typeof ACTION_REASON_REGISTRY)['qcd-date-invalid']['message']
+    }>
+
+    expectTypeOf<ForgedReason>().not.toMatchTypeOf<ActionReason>()
   })
 
   it('parses reasons without throwing and reports explicit issue paths', () => {

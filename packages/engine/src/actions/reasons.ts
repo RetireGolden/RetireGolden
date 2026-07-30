@@ -462,14 +462,17 @@ export interface ActionReasonIdentifiers {
   allocationId?: AllocationId
 }
 
-export type ActionReason<C extends ActionReasonCode = ActionReasonCode> = Readonly<
-  {
-    code: C
-    predicate: (typeof ACTION_REASON_REGISTRY)[C]['predicate']
-    outcome: ActionReasonOutcome<C>
-    message: (typeof ACTION_REASON_REGISTRY)[C]['message']
-  } & ActionReasonIdentifiers
->
+export type ActionReason<C extends ActionReasonCode = ActionReasonCode> =
+  C extends ActionReasonCode
+    ? Readonly<
+        {
+          code: C
+          predicate: (typeof ACTION_REASON_REGISTRY)[C]['predicate']
+          outcome: ActionReasonOutcome<C>
+          message: (typeof ACTION_REASON_REGISTRY)[C]['message']
+        } & ActionReasonIdentifiers
+      >
+    : never
 
 const reasonIdentifiersSchema = z
   .object({
@@ -508,12 +511,13 @@ export function createActionReason<C extends ActionReasonCode>(
   code: C,
   identifiers: ActionReasonIdentifiers = {},
 ): ActionReason<C> {
+  const parsedCode = actionReasonCodeSchema.parse(code) as C
   const parsedIdentifiers = reasonIdentifiersSchema.parse(identifiers)
   return {
-    code,
-    ...ACTION_REASON_REGISTRY[code],
+    code: parsedCode,
+    ...ACTION_REASON_REGISTRY[parsedCode],
     ...parsedIdentifiers,
-  } as ActionReason<C>
+  } as unknown as ActionReason<C>
 }
 
 export type ParseActionReasonResult =
