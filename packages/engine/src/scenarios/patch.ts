@@ -41,6 +41,7 @@ const protectedFields = [
   'exampleSourceId',
   'createdAtIso',
   'updatedAtIso',
+  'retirementActionEligibilityFacts',
   'scenarios',
 ] as const
 
@@ -278,6 +279,11 @@ export function applyLegacyScenarioPatch(plan: Plan, patch: LegacyScenarioPatch)
   const merged = deepMerge(plan, patch) as Record<string, unknown>
   merged['schemaVersion'] = plan.schemaVersion
   merged['id'] = plan.id
+  if (plan.retirementActionEligibilityFacts === undefined) {
+    Reflect.deleteProperty(merged, 'retirementActionEligibilityFacts')
+  } else {
+    merged['retirementActionEligibilityFacts'] = cloneJson(plan.retirementActionEligibilityFacts)
+  }
   merged['scenarios'] = plan.scenarios
   return parsePlan(merged)
 }

@@ -1,4 +1,10 @@
 export {
+  addCalendarMonths,
+  formatCivilDate,
+  parseCivilIsoDate,
+  type CivilDate,
+} from './civilDate.js'
+export {
   accountIdSchema,
   actionIdSchema,
   allocationIdSchema,

@@ -875,3 +875,179 @@ describe('Plan retirement-action persistence', () => {
     }
   })
 })
+
+describe('Plan v3 retirement-action eligibility facts', () => {
+  function factsPlan(): Plan {
+    const plan = validCouplePlan()
+    plan.accounts.push({
+      type: 'traditional',
+      id: 'ira-facts',
+      name: 'IRA facts source',
+      ownerPersonId: 'p1',
+      annualReturnPct: null,
+      kind: 'ira',
+      balance: 25_000,
+      annualContribution: 0,
+    })
+    plan.retirementActionEligibilityFacts = {
+      iraClassifications: [
+        {
+          evidenceId: 'class-1',
+          provenance: { source: 'manual' },
+          sourceAccountId: 'ira-facts',
+          subtype: 'simple',
+          simpleParticipationStartDate: '2024-02-29',
+        },
+      ],
+      sepSimpleActivities: [
+        {
+          evidenceId: 'activity-1',
+          provenance: { source: 'import', sourceId: 'custodian-1' },
+          sourceAccountId: 'ira-facts',
+          actionTaxYear: 2033,
+          planYearEndDate: '2033-12-31',
+          employerContributionMadeForPlanYear: false,
+        },
+      ],
+      deductibleIraContributions: [
+        {
+          evidenceId: 'contribution-1',
+          provenance: { source: 'manual' },
+          donorPersonId: 'p1',
+          taxYear: 2033,
+          amount: 0 as never,
+        },
+      ],
+    }
+    return plan
+  }
+
+  it('is absent by default and round-trips explicitly authored facts', () => {
+    expect(createEmptyPlan({ newId: testIds, now: fixedNow })).not.toHaveProperty(
+      'retirementActionEligibilityFacts',
+    )
+    const plan = factsPlan()
+    const parsed = parsePlan(JSON.parse(JSON.stringify(plan)))
+    expect(parsed.ok).toBe(true)
+    if (parsed.ok) {
+      expect(parsed.plan.retirementActionEligibilityFacts).toEqual(
+        plan.retirementActionEligibilityFacts,
+      )
+    }
+  })
+
+  it('does not permit runtime alive or prior-QCD-offset evidence in the durable root', () => {
+    for (const runtimeField of [
+      'personAliveEvidence',
+      'priorQcdOffsetEvidence',
+    ]) {
+      const plan = factsPlan() as unknown as Record<string, unknown>
+      const facts = plan['retirementActionEligibilityFacts'] as Record<
+        string,
+        unknown
+      >
+      facts[runtimeField] = []
+      expect(parsePlan(plan).ok).toBe(false)
+    }
+  })
+
+  it('rejects duplicate evidence, source, activity-year, and donor-year identities at records', () => {
+    const plan = factsPlan()
+    const facts = plan.retirementActionEligibilityFacts!
+    facts.iraClassifications.push({
+      ...facts.iraClassifications[0]!,
+      evidenceId: 'class-2',
+    })
+    facts.sepSimpleActivities.push({
+      ...facts.sepSimpleActivities[0]!,
+      evidenceId: 'activity-2',
+    })
+    facts.deductibleIraContributions.push({
+      ...facts.deductibleIraContributions[0]!,
+      evidenceId: 'activity-1',
+    })
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      const issues = parsed.issues.join('\n')
+      expect(issues).toContain('duplicate eligibility evidence id')
+      expect(issues).toContain('duplicate IRA classification source')
+      expect(issues).toContain('duplicate SEP/SIMPLE activity source and action tax year')
+      expect(issues).toContain('duplicate deductible IRA contribution donor and tax year')
+    }
+  })
+
+  it('requires real bound dates, exact cents, and contribution years at/after age 70½', () => {
+    const mutations: Array<(plan: Plan) => void> = [
+      (plan) => {
+        ;(
+          plan.retirementActionEligibilityFacts!
+            .iraClassifications[0]! as { simpleParticipationStartDate: string }
+        ).simpleParticipationStartDate = '2023-02-29'
+      },
+      (plan) => {
+        plan.retirementActionEligibilityFacts!.sepSimpleActivities[0]!
+          .planYearEndDate = '2033-02-29'
+      },
+      (plan) => {
+        plan.retirementActionEligibilityFacts!.sepSimpleActivities[0]!
+          .planYearEndDate = '2032-12-31'
+      },
+      (plan) => {
+        plan.retirementActionEligibilityFacts!.deductibleIraContributions[0]!
+          .amount = 1.5 as never
+      },
+      (plan) => {
+        plan.retirementActionEligibilityFacts!.deductibleIraContributions[0]!
+          .taxYear = 2031
+      },
+    ]
+    for (const mutate of mutations) {
+      const plan = factsPlan()
+      mutate(plan)
+      expect(parsePlan(plan).ok).toBe(false)
+    }
+  })
+
+  it('requires classifications and contributions to resolve uniquely and activities to match SEP/SIMPLE', () => {
+    const missingSource = factsPlan()
+    missingSource.retirementActionEligibilityFacts!.iraClassifications[0]!
+      .sourceAccountId = 'missing'
+    expect(parsePlan(missingSource).ok).toBe(false)
+
+    const traditionalActivity = factsPlan()
+    traditionalActivity.retirementActionEligibilityFacts!.iraClassifications[0] = {
+      evidenceId: 'class-1',
+      provenance: { source: 'manual' },
+      sourceAccountId: 'ira-facts',
+      subtype: 'traditional',
+    }
+    expect(parsePlan(traditionalActivity).ok).toBe(false)
+
+    const missingDonor = factsPlan()
+    missingDonor.retirementActionEligibilityFacts!.deductibleIraContributions[0]!
+      .donorPersonId = 'missing'
+    expect(parsePlan(missingDonor).ok).toBe(false)
+  })
+
+  it('does not let account array order choose a duplicate classification source', () => {
+    for (const duplicateFirst of [false, true]) {
+      const plan = factsPlan()
+      const duplicate = {
+        ...plan.accounts.find((account) => account.id === 'ira-facts')!,
+        type: 'cash' as const,
+      }
+      if (duplicateFirst) plan.accounts.unshift(duplicate as never)
+      else plan.accounts.push(duplicate as never)
+      const parsed = parsePlan(plan)
+      expect(parsed.ok).toBe(false)
+      if (!parsed.ok) {
+        expect(
+          parsed.issues.some((issue) =>
+            issue.includes('IRA classification source "ira-facts" must resolve uniquely'),
+          ),
+        ).toBe(true)
+      }
+    }
+  })
+})

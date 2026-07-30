@@ -20,7 +20,7 @@ assistant). The plan object inside them is identical and is the single source of
   "kind": "retiregolden.v2.backup",
   "backupVersion": 1,
   "exportedAtIso": "2026-07-08T12:00:00.000Z",
-  "plans": [ { "schemaVersion": 2, "id": "…", "name": "…", "…": "…" } ]
+  "plans": [ { "schemaVersion": 3, "id": "…", "name": "…", "…": "…" } ]
 }
 ```
 
@@ -44,9 +44,9 @@ assistant", and an assistant's tool takes a single plan, not a library:
 
 ```json
 {
-  "plan": { "schemaVersion": 2, "id": "…", "name": "…", "…": "…" },
+  "plan": { "schemaVersion": 3, "id": "…", "name": "…", "…": "…" },
   "startYear": 2026,
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "engineVersion": "0.1.5"
 }
 ```
@@ -98,7 +98,12 @@ A plan is the complete household model: `household` (people, filing status, stat
 IndexedDB reads, JSON imports, and migration output, so there is no separate (drifting) file spec.
 Field-level semantics are documented inline on the schema as doc comments.
 
-`schemaVersion` is currently **2**.
+`schemaVersion` is currently **3**. Plan v3 adds the optional
+`retirementActionEligibilityFacts` root for explicitly authored IRA
+classification, action-year SEP/SIMPLE activity, and deductible-IRA
+contribution evidence. It remains absent by default. Execution-time alive
+status and prior-QCD offset evidence are intentionally not persisted there;
+they must be supplied for the specific action request.
 
 Scenario entries written by older versions continue to carry a loose deep-override object in `patch`.
 The plan schema still accepts and preserves that representation. A newer scenario may carry the

@@ -21,6 +21,43 @@ describe('v2 backup envelope', () => {
     }
   })
 
+  it('round-trips Plan v3 retirement-action eligibility facts', () => {
+    const plan = createEmptyPlan({
+      newId: testIds,
+      now: fixedNow,
+      name: 'Eligibility evidence',
+    })
+    const personId = plan.household.people[0]!.id
+    plan.accounts = [
+      {
+        type: 'traditional',
+        id: 'ira-1',
+        name: 'IRA',
+        ownerPersonId: personId,
+        annualReturnPct: null,
+        kind: 'ira',
+        balance: 10_000,
+        annualContribution: 0,
+      },
+    ]
+    plan.retirementActionEligibilityFacts = {
+      iraClassifications: [
+        {
+          evidenceId: 'classification-1',
+          provenance: { source: 'manual' },
+          sourceAccountId: 'ira-1',
+          subtype: 'traditional',
+        },
+      ],
+      sepSimpleActivities: [],
+      deductibleIraContributions: [],
+    }
+
+    const result = parseV2Backup(serializeV2Backup([plan], fixedNow))
+    expect(result.ok).toBe(true)
+    if (result.ok) expect(result.plans).toEqual([plan])
+  })
+
   it('accepts the legacy retirecalc.v2.backup kind from before the rebrand', () => {
     const plan = createEmptyPlan({ newId: testIds, now: fixedNow, name: 'Legacy' })
     const json = JSON.stringify({

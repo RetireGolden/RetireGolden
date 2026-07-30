@@ -14,7 +14,7 @@
  */
 
 /** The Plan document's schema version. Kept in lockstep with `CURRENT_PLAN_SCHEMA_VERSION`. */
-export const PLAN_SCHEMA_VERSION = 2
+export const PLAN_SCHEMA_VERSION = 3
 
 /** Stable, versioned identifier for the emitted schema (embeds the version). */
 export const PLAN_SCHEMA_ID = `https://retiregolden.org/schemas/plan/v${PLAN_SCHEMA_VERSION}.json`
@@ -42,6 +42,9 @@ export const PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS: readonly string[] = [
   'ordinary-withdrawal and conversion allocation IDs/source-account IDs must be unique per action, and their exact-cent allocation sums must equal requestedAmount; a QCD allocation amount must equal its requestedAmount.',
   'current retirement-action person/donor, allocation source, and conversion destination IDs must resolve; a structurally known individual account owner must match the action person, and a conversion destination must be a Roth account.',
   'a conversion linkedWithdrawal must resolve to exactly one same-person/year ordinary withdrawal whose taxPayment purpose references the conversion.',
+  'retirement-action eligibility evidence IDs are globally unique; IRA classifications are unique per source account, SEP/SIMPLE activities per source account/action tax year, and deductible IRA contributions per donor/tax year.',
+  'retirement-action IRA classifications must reference a uniquely resolved, individually owned, non-inherited traditional IRA; SEP/SIMPLE activities require exactly one matching SEP or SIMPLE classification.',
+  'SEP/SIMPLE activity planYearEndDate must be a real date in actionTaxYear; deductible IRA contribution donors must resolve uniquely and contribution years cannot precede the donor’s age-70½ threshold year.',
   'traditional/roth/hsa accounts must have an individual owner (ownerPersonId not null).',
   'annuity.purchase.fundingAccountId, pension.lumpSumElection.rolloverAccountId, and incomeFloor ladder purchase fundingAccountId must reference another existing account.',
   // Account-level discriminated rules

@@ -1,5 +1,5 @@
 /**
- * Plan schema v2 — the household financial domain model.
+ * Plan schema v3 — the household financial domain model.
  *
  * Zod schemas are the source of truth: types are inferred from them, and the
  * same schemas validate IndexedDB reads, JSON imports, and migration output.
@@ -12,8 +12,10 @@
 
 import { z } from 'zod'
 import { persistedRetirementActionRequestSchema } from '../actions/contract.js'
+import { addCalendarMonths, parseCivilIsoDate } from '../actions/civilDate.js'
+import { usdCentsSchema } from '../actions/money.js'
 
-export const CURRENT_PLAN_SCHEMA_VERSION = 2
+export const CURRENT_PLAN_SCHEMA_VERSION = 3
 
 const isoDateRe = /^\d{4}-\d{2}-\d{2}$/
 
@@ -1409,6 +1411,104 @@ export type Scenario = z.infer<typeof scenarioSchema>
 export const planOriginSchema = z.enum(['user', 'example']).default('user')
 export type PlanOrigin = z.infer<typeof planOriginSchema>
 
+const eligibilityEvidenceIdSchema = z
+  .string()
+  .min(1)
+  .refine((value) => value.trim().length > 0, { message: 'evidenceId must not be blank' })
+const eligibilityEvidenceProvenanceSchema = z
+  .object({
+    source: z.enum(['manual', 'import']),
+    sourceId: z
+      .string()
+      .min(1)
+      .refine((value) => value.trim().length > 0, { message: 'sourceId must not be blank' })
+      .optional(),
+  })
+  .strict()
+const eligibilityEvidenceBaseShape = {
+  evidenceId: eligibilityEvidenceIdSchema,
+  provenance: eligibilityEvidenceProvenanceSchema,
+}
+
+export const retirementActionIraClassificationSchema = z.discriminatedUnion('subtype', [
+  z
+    .object({
+      ...eligibilityEvidenceBaseShape,
+      sourceAccountId: idSchema,
+      subtype: z.literal('traditional'),
+    })
+    .strict(),
+  z
+    .object({
+      ...eligibilityEvidenceBaseShape,
+      sourceAccountId: idSchema,
+      subtype: z.literal('sep'),
+    })
+    .strict(),
+  z
+    .object({
+      ...eligibilityEvidenceBaseShape,
+      sourceAccountId: idSchema,
+      subtype: z.literal('simple'),
+      simpleParticipationStartDate: isoDate
+        .refine((value) => parseCivilIsoDate(value) !== null, {
+          message: 'expected a real canonical civil date',
+        })
+        .optional(),
+    })
+    .strict(),
+])
+export type RetirementActionIraClassification = z.infer<
+  typeof retirementActionIraClassificationSchema
+>
+
+export const retirementActionSepSimpleActivitySchema = z
+  .object({
+    ...eligibilityEvidenceBaseShape,
+    sourceAccountId: idSchema,
+    actionTaxYear: calendarYear,
+    planYearEndDate: isoDate.refine((value) => parseCivilIsoDate(value) !== null, {
+      message: 'expected a real canonical civil date',
+    }),
+    employerContributionMadeForPlanYear: z.boolean(),
+  })
+  .strict()
+  .superRefine((activity, ctx) => {
+    if (Number(activity.planYearEndDate.slice(0, 4)) !== activity.actionTaxYear) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['planYearEndDate'],
+        message: 'planYearEndDate must be in actionTaxYear',
+      })
+    }
+  })
+export type RetirementActionSepSimpleActivity = z.infer<
+  typeof retirementActionSepSimpleActivitySchema
+>
+
+export const retirementActionDeductibleIraContributionSchema = z
+  .object({
+    ...eligibilityEvidenceBaseShape,
+    donorPersonId: idSchema,
+    taxYear: calendarYear,
+    amount: usdCentsSchema,
+  })
+  .strict()
+export type RetirementActionDeductibleIraContribution = z.infer<
+  typeof retirementActionDeductibleIraContributionSchema
+>
+
+export const retirementActionEligibilityFactsSchema = z
+  .object({
+    iraClassifications: z.array(retirementActionIraClassificationSchema),
+    sepSimpleActivities: z.array(retirementActionSepSimpleActivitySchema),
+    deductibleIraContributions: z.array(retirementActionDeductibleIraContributionSchema),
+  })
+  .strict()
+export type RetirementActionEligibilityFacts = z.infer<
+  typeof retirementActionEligibilityFactsSchema
+>
+
 export const planSchema = z
   .object({
     schemaVersion: z.literal(CURRENT_PLAN_SCHEMA_VERSION),
@@ -1432,6 +1532,8 @@ export const planSchema = z
     expenses: expensePlanSchema,
     strategies: strategiesSchema,
     assumptions: assumptionsSchema,
+    /** Durable action eligibility evidence; intentionally absent until explicitly authored. */
+    retirementActionEligibilityFacts: retirementActionEligibilityFactsSchema.optional(),
     scenarios: z.array(scenarioSchema),
   })
   .superRefine((plan, ctx) => {
@@ -1523,6 +1625,203 @@ export const planSchema = z
     }
     const accountTypeById = new Map(plan.accounts.map((a) => [a.id, a.type]))
     const accountById = new Map(plan.accounts.map((account) => [account.id, account]))
+
+    const eligibilityFacts = plan.retirementActionEligibilityFacts
+    if (eligibilityFacts !== undefined) {
+      type EvidenceRecord = {
+        evidenceId: string
+        path: ['iraClassifications' | 'sepSimpleActivities' | 'deductibleIraContributions', number]
+      }
+      const evidenceRecords: EvidenceRecord[] = [
+        ...eligibilityFacts.iraClassifications.map((record, index) => ({
+          evidenceId: record.evidenceId,
+          path: ['iraClassifications' as const, index] as EvidenceRecord['path'],
+        })),
+        ...eligibilityFacts.sepSimpleActivities.map((record, index) => ({
+          evidenceId: record.evidenceId,
+          path: ['sepSimpleActivities' as const, index] as EvidenceRecord['path'],
+        })),
+        ...eligibilityFacts.deductibleIraContributions.map((record, index) => ({
+          evidenceId: record.evidenceId,
+          path: ['deductibleIraContributions' as const, index] as EvidenceRecord['path'],
+        })),
+      ]
+      const evidenceById = new Map<string, EvidenceRecord[]>()
+      evidenceRecords.forEach((record) => {
+        const matches = evidenceById.get(record.evidenceId)
+        if (matches === undefined) evidenceById.set(record.evidenceId, [record])
+        else matches.push(record)
+      })
+      evidenceById.forEach((records, evidenceId) => {
+        if (records.length < 2) return
+        records.forEach((record) => {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['retirementActionEligibilityFacts', ...record.path, 'evidenceId'],
+            message: `duplicate eligibility evidence id "${evidenceId}"`,
+          })
+        })
+      })
+
+      const classificationsBySource = new Map<
+        string,
+        { record: RetirementActionIraClassification; index: number }[]
+      >()
+      eligibilityFacts.iraClassifications.forEach((record, index) => {
+        const matches = classificationsBySource.get(record.sourceAccountId)
+        if (matches === undefined) {
+          classificationsBySource.set(record.sourceAccountId, [{ record, index }])
+        } else {
+          matches.push({ record, index })
+        }
+      })
+      classificationsBySource.forEach((records, sourceAccountId) => {
+        if (records.length < 2) return
+        records.forEach(({ index }) => {
+          ctx.addIssue({
+            code: 'custom',
+            path: [
+              'retirementActionEligibilityFacts',
+              'iraClassifications',
+              index,
+              'sourceAccountId',
+            ],
+            message: `duplicate IRA classification source "${sourceAccountId}"`,
+          })
+        })
+      })
+      eligibilityFacts.iraClassifications.forEach((record, index) => {
+        const accountIndexes = accountIndexesById.get(record.sourceAccountId)
+        const account =
+          accountIndexes?.length === 1 ? plan.accounts[accountIndexes[0]!] : undefined
+        if (account === undefined) {
+          ctx.addIssue({
+            code: 'custom',
+            path: [
+              'retirementActionEligibilityFacts',
+              'iraClassifications',
+              index,
+              'sourceAccountId',
+            ],
+            message: `IRA classification source "${record.sourceAccountId}" must resolve uniquely`,
+          })
+        } else if (
+          account.type !== 'traditional' ||
+          account.kind !== 'ira' ||
+          account.ownerPersonId === null ||
+          account.inherited !== undefined
+        ) {
+          ctx.addIssue({
+            code: 'custom',
+            path: [
+              'retirementActionEligibilityFacts',
+              'iraClassifications',
+              index,
+              'sourceAccountId',
+            ],
+            message: 'IRA classification requires an owned non-inherited traditional IRA',
+          })
+        }
+      })
+
+      const activitiesBySourceYear = new Map<string, number[]>()
+      eligibilityFacts.sepSimpleActivities.forEach((record, index) => {
+        const key = JSON.stringify([record.sourceAccountId, record.actionTaxYear])
+        const indexes = activitiesBySourceYear.get(key)
+        if (indexes === undefined) activitiesBySourceYear.set(key, [index])
+        else indexes.push(index)
+      })
+      activitiesBySourceYear.forEach((indexes) => {
+        if (indexes.length < 2) return
+        indexes.forEach((index) => {
+          ctx.addIssue({
+            code: 'custom',
+            path: [
+              'retirementActionEligibilityFacts',
+              'sepSimpleActivities',
+              index,
+              'sourceAccountId',
+            ],
+            message: 'duplicate SEP/SIMPLE activity source and action tax year',
+          })
+        })
+      })
+      eligibilityFacts.sepSimpleActivities.forEach((record, index) => {
+        const classifications = classificationsBySource.get(record.sourceAccountId)
+        if (
+          classifications?.length !== 1 ||
+          classifications[0]!.record.subtype === 'traditional'
+        ) {
+          ctx.addIssue({
+            code: 'custom',
+            path: [
+              'retirementActionEligibilityFacts',
+              'sepSimpleActivities',
+              index,
+              'sourceAccountId',
+            ],
+            message: 'SEP/SIMPLE activity requires exactly one SEP or SIMPLE classification',
+          })
+        }
+      })
+
+      const contributionsByDonorYear = new Map<string, number[]>()
+      eligibilityFacts.deductibleIraContributions.forEach((record, index) => {
+        const key = JSON.stringify([record.donorPersonId, record.taxYear])
+        const indexes = contributionsByDonorYear.get(key)
+        if (indexes === undefined) contributionsByDonorYear.set(key, [index])
+        else indexes.push(index)
+      })
+      contributionsByDonorYear.forEach((indexes) => {
+        if (indexes.length < 2) return
+        indexes.forEach((index) => {
+          ctx.addIssue({
+            code: 'custom',
+            path: [
+              'retirementActionEligibilityFacts',
+              'deductibleIraContributions',
+              index,
+              'donorPersonId',
+            ],
+            message: 'duplicate deductible IRA contribution donor and tax year',
+          })
+        })
+      })
+      eligibilityFacts.deductibleIraContributions.forEach((record, index) => {
+        const personIndexes = personIndexesById.get(record.donorPersonId)
+        const donor =
+          personIndexes?.length === 1
+            ? plan.household.people[personIndexes[0]!]
+            : undefined
+        const thresholdDate = donor === undefined ? null : addCalendarMonths(donor.dob, 846)
+        if (donor === undefined) {
+          ctx.addIssue({
+            code: 'custom',
+            path: [
+              'retirementActionEligibilityFacts',
+              'deductibleIraContributions',
+              index,
+              'donorPersonId',
+            ],
+            message: `deductible IRA contribution donor "${record.donorPersonId}" must resolve uniquely`,
+          })
+        } else if (
+          thresholdDate === null ||
+          record.taxYear < Number(thresholdDate.slice(0, 4))
+        ) {
+          ctx.addIssue({
+            code: 'custom',
+            path: [
+              'retirementActionEligibilityFacts',
+              'deductibleIraContributions',
+              index,
+              'taxYear',
+            ],
+            message: 'deductible IRA contribution tax year precedes the donor age-70½ threshold year',
+          })
+        }
+      })
+    }
 
     if (
       !hasDuplicateActionIds &&

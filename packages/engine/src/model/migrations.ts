@@ -468,8 +468,28 @@ export const migratePlanV1ToV2: MigrationStep = (raw) => {
   }
 }
 
+/**
+ * Pure v2 -> v3 migration. Eligibility facts are never inferred. Any
+ * same-named root supplied to an older schema is untrusted and explicitly
+ * discarded rather than promoted across the version boundary.
+ */
+export const migratePlanV2ToV3: MigrationStep = (raw) => {
+  if (!Object.prototype.hasOwnProperty.call(raw, 'retirementActionEligibilityFacts')) {
+    return raw
+  }
+  const withoutEligibilityFacts = { ...raw }
+  Reflect.deleteProperty(
+    withoutEligibilityFacts,
+    'retirementActionEligibilityFacts',
+  )
+  return withoutEligibilityFacts
+}
+
 /** Keyed by the version the step migrates FROM. */
-const defaultRegistry: Record<number, MigrationStep> = { 1: migratePlanV1ToV2 }
+const defaultRegistry: Record<number, MigrationStep> = {
+  1: migratePlanV1ToV2,
+  2: migratePlanV2ToV3,
+}
 
 function normalizeCurrentPlan(raw: Record<string, unknown>): Record<string, unknown> {
   const household = raw['household']

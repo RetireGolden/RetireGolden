@@ -42,11 +42,12 @@ import {
 // Import the public data surface through the zod-free barrel, and the whole
 // namespace so a test can assert the barrel does not re-expose the zod generator.
 import * as schemaBarrel from './index.js'
-import { planJsonSchema, planV1JsonSchema } from './index.js'
+import { planJsonSchema, planV1JsonSchema, planV2JsonSchema } from './index.js'
 // The shipped offline artifact, imported through the bundler as a plain module so
 // this parity check needs no node fs types (keeps the engine's pure typing).
-import shippedPlanJsonSchema from '../../schema/plan.v2.json' with { type: 'json' }
+import shippedPlanJsonSchema from '../../schema/plan.v3.json' with { type: 'json' }
 import shippedPlanV1JsonSchema from '../../schema/plan.v1.json' with { type: 'json' }
+import shippedPlanV2JsonSchema from '../../schema/plan.v2.json' with { type: 'json' }
 
 function compileSchema(): ValidateFunction {
   // `strict: false` — the derived schema is plain draft-2020-12 with no custom
@@ -81,7 +82,7 @@ function kitchenSinkPlanRaw(): Record<string, unknown> {
     weights: { usStocks: 60, intlStocks: 20, bonds: 15, cash: 5 },
   }
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     id: 'plan-kitchen',
     name: 'Kitchen sink',
     origin: 'user',
@@ -436,7 +437,7 @@ function kitchenSinkPlanRaw(): Record<string, unknown> {
  */
 function sparseAuthoringPlanRaw(): Record<string, unknown> {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     id: 'sparse',
     name: 'Sparse authoring plan',
     createdAtIso: '2026-01-01T00:00:00.000Z',
@@ -496,7 +497,7 @@ function acceptedFixtures(): Array<[string, Plan]> {
 
 describe('planJsonSchema — version', () => {
   it('carries the plan schema version at the document root', () => {
-    expect(PLAN_SCHEMA_VERSION).toBe(2)
+    expect(PLAN_SCHEMA_VERSION).toBe(3)
     expect(planJsonSchema.properties.schemaVersion).toMatchObject({ const: PLAN_SCHEMA_VERSION })
     expect(planJsonSchema.$id).toBe(PLAN_SCHEMA_ID)
     expect(planJsonSchema.$id).toContain(`/v${PLAN_SCHEMA_VERSION}.json`)
@@ -505,6 +506,11 @@ describe('planJsonSchema — version', () => {
   it('keeps the historical v1 schema available under an explicit export', () => {
     expect(planV1JsonSchema.properties.schemaVersion).toMatchObject({ const: 1 })
     expect(planV1JsonSchema).toEqual(shippedPlanV1JsonSchema)
+  })
+
+  it('keeps the historical v2 schema available under an explicit export', () => {
+    expect(planV2JsonSchema.properties.schemaVersion).toMatchObject({ const: 2 })
+    expect(planV2JsonSchema).toEqual(shippedPlanV2JsonSchema)
   })
 
   it('keeps the zod-free PLAN_SCHEMA_VERSION in lockstep with the plan model', () => {
@@ -524,6 +530,7 @@ describe('schema barrel — zero-dependency data surface', () => {
         'PLAN_SCHEMA_VERSION',
         'planJsonSchema',
         'planV1JsonSchema',
+        'planV2JsonSchema',
       ].sort(),
     )
     expect('generatePlanJsonSchema' in schemaBarrel).toBe(false)
@@ -621,7 +628,7 @@ describe('planJsonSchema — sync with planSchema', () => {
     expect(planJsonSchema).toEqual(generatePlanJsonSchema())
   })
 
-  it('the shipped schema/plan.v2.json equals the checked-in constant', () => {
+  it('the shipped schema/plan.v3.json equals the checked-in constant', () => {
     expect(shippedPlanJsonSchema).toEqual(planJsonSchema)
   })
 })

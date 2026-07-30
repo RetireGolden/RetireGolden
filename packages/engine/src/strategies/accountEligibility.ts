@@ -32,8 +32,19 @@ import type {
   RothConversionRequest,
   SourceAllocationRequest,
 } from '../actions/contract.js'
-import type { AccountId, ActionId, PersonId } from '../actions/identity.js'
+import {
+  asAccountId,
+  asPersonId,
+  type AccountId,
+  type ActionId,
+  type PersonId,
+} from '../actions/identity.js'
 import type { UsdCents } from '../actions/money.js'
+import {
+  addCalendarMonths,
+  formatCivilDate,
+  parseCivilIsoDate,
+} from '../actions/civilDate.js'
 import {
   createActionReason,
   type ActionReason,
@@ -42,16 +53,15 @@ import {
   type TaxTreatmentAdjustmentReasonCode,
   type UnsupportedActionReasonCode,
 } from '../actions/reasons.js'
-import type { Account, Person } from '../model/plan.js'
+import type { Account, Person, Plan } from '../model/plan.js'
 
 export type TraditionalAccount = Extract<Account, { type: 'traditional' }>
 export type EquityCompAccount = Extract<Account, { type: 'equityComp' }>
 
 /**
- * Facts needed by retirement-action eligibility that are deliberately not
- * persisted in Plan v2. Keeping this boundary explicit prevents older v2
- * strip-mode parsers from silently erasing facts and later treating the
- * resulting action as eligible.
+ * Evaluator-facing IRA facts. Plan v3 can supply the durable classification
+ * and year-bound activity records through the request adapter below; the
+ * evaluator contract stays explicit so missing evidence remains fail-closed.
  */
 export type NonpersistedIraEligibilityFact =
   | Readonly<{
@@ -62,7 +72,7 @@ export type NonpersistedIraEligibilityFact =
   | Readonly<{
       sourceAccountId: AccountId
       subtype: 'sep'
-      qcdActivity: Readonly<{
+      qcdActivity?: Readonly<{
         kind: 'employerContribution'
         actionTaxYear: number
         planYearEndDate: string
@@ -74,7 +84,7 @@ export type NonpersistedIraEligibilityFact =
       sourceAccountId: AccountId
       subtype: 'simple'
       simpleParticipationStartDate?: string
-      qcdActivity: Readonly<{
+      qcdActivity?: Readonly<{
         kind: 'employerContribution'
         actionTaxYear: number
         planYearEndDate: string
@@ -108,6 +118,22 @@ export interface NonpersistedActionPersonAliveEvidence {
   /** Exact submitted execution date, or null when the request has no date. */
   actionDate: string | null
   alive: boolean
+}
+
+export interface NonpersistedPriorQcdOffsetEvidence {
+  evidenceId: string
+  actionId: ActionId
+  donorPersonId: PersonId
+  actionYear: number
+  /** Exact submitted execution date, or null when the request has no date. */
+  actionDate: string | null
+  /** Donor-specific deductible-contribution offset consumed by earlier QCDs. */
+  priorOffsetApplied: UsdCents
+}
+
+export interface RetirementActionEligibilityRuntimeEvidence {
+  personAliveEvidence?: readonly NonpersistedActionPersonAliveEvidence[]
+  priorQcdOffsetEvidence?: readonly NonpersistedPriorQcdOffsetEvidence[]
 }
 
 export interface NonpersistedRetirementActionEligibilityContext {
@@ -153,64 +179,11 @@ export type RetirementActionEligibilityDecision =
   | RefusedActionEligibilityDecision
   | UnsupportedActionEligibilityDecision
 
-export interface CivilDate {
-  year: number
-  month: number
-  day: number
-}
-
-const CIVIL_ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/
-
-function isLeapYear(year: number): boolean {
-  return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)
-}
-
-function daysInMonth(year: number, month: number): number {
-  if (month === 2) return isLeapYear(year) ? 29 : 28
-  return [4, 6, 9, 11].includes(month) ? 30 : 31
-}
-
-/** Parse an ISO civil date without permitting JavaScript Date rollover. */
-export function parseCivilIsoDate(value: string): CivilDate | null {
-  const match = CIVIL_ISO_DATE.exec(value)
-  if (match === null) return null
-  const year = Number(match[1])
-  const month = Number(match[2])
-  const day = Number(match[3])
-  if (
-    year < 1 ||
-    year > 9999 ||
-    month < 1 ||
-    month > 12 ||
-    day < 1 ||
-    day > daysInMonth(year, month)
-  ) {
-    return null
-  }
-  return { year, month, day }
-}
-
-function formatCivilDate(date: CivilDate): string {
-  return `${String(date.year).padStart(4, '0')}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`
-}
-
-/**
- * Add proleptic-Gregorian calendar months, preserving the day when possible
- * and otherwise clamping to the target month's final civil day.
- */
-export function addCalendarMonths(value: string, months: number): string | null {
-  const date = parseCivilIsoDate(value)
-  if (date === null || !Number.isSafeInteger(months)) return null
-  const zeroBasedMonth = date.year * 12 + date.month - 1 + months
-  const year = Math.floor(zeroBasedMonth / 12)
-  const month = ((zeroBasedMonth % 12) + 12) % 12 + 1
-  if (year < 1 || year > 9999) return null
-  return formatCivilDate({
-    year,
-    month,
-    day: Math.min(date.day, daysInMonth(year, month)),
-  })
-}
+export {
+  addCalendarMonths,
+  parseCivilIsoDate,
+  type CivilDate,
+} from '../actions/civilDate.js'
 
 function compareCivilIsoDates(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0
@@ -749,7 +722,8 @@ function evaluateQcd(
         fact == null ||
         (fact.subtype === 'traditional' && fact.qcdActivity.kind !== 'notApplicable') ||
         (fact.subtype !== 'traditional' &&
-          (fact.qcdActivity.kind !== 'employerContribution' ||
+          (fact.qcdActivity === undefined ||
+            fact.qcdActivity.kind !== 'employerContribution' ||
             !Number.isSafeInteger(fact.qcdActivity.actionTaxYear) ||
             fact.qcdActivity.actionTaxYear !== request.year ||
             typeof fact.qcdActivity.evidenceId !== 'string' ||
@@ -764,6 +738,7 @@ function evaluateQcd(
         )
       } else if (
         fact.subtype !== 'traditional' &&
+        fact.qcdActivity !== undefined &&
         fact.qcdActivity.employerContributionMadeForPlanYear
       ) {
         reasons.push(
@@ -825,6 +800,154 @@ function evaluateQcd(
   return canonicalDecision(reasons)
 }
 
+function referencedIraSourceAccountIds(
+  request: RetirementActionRequest,
+): readonly AccountId[] {
+  const ids =
+    request.kind === 'qcd'
+      ? [request.allocation.sourceAccountId]
+      : request.kind === 'rothConversion'
+        ? request.allocations.map((allocation) => allocation.sourceAccountId)
+        : []
+  return [...new Set(ids)].sort(compareUtf16CodeUnits)
+}
+
+/**
+ * Bind durable Plan v3 eligibility evidence to one action request while keeping
+ * execution-time facts outside the Plan. Missing or ambiguous evidence is
+ * omitted so the evaluator retains its unsupported/refused fail-closed paths.
+ */
+export function buildRetirementActionEligibilityContextFromPlan(
+  plan: Plan,
+  request: RetirementActionRequest,
+  runtimeEvidence: RetirementActionEligibilityRuntimeEvidence = {},
+): NonpersistedRetirementActionEligibilityContext {
+  const aliveEvidence = uniqueIndex(
+    runtimeEvidence.personAliveEvidence ?? [],
+    (evidence) => evidence.actionId,
+  ).get(request.actionId)
+  const personAliveEvidence =
+    aliveEvidence == null ? [] : [aliveEvidence]
+  const facts = plan.retirementActionEligibilityFacts
+  const classifications = uniqueIndex(
+    facts?.iraClassifications ?? [],
+    (classification) => classification.sourceAccountId,
+  )
+  const activities = uniqueIndex(
+    facts?.sepSimpleActivities ?? [],
+    (activity) => JSON.stringify([activity.sourceAccountId, activity.actionTaxYear]),
+  )
+  const iraFacts: NonpersistedIraEligibilityFact[] = []
+  for (const sourceAccountId of referencedIraSourceAccountIds(request)) {
+    const classification = classifications.get(sourceAccountId)
+    if (classification == null) continue
+    const brandedSourceAccountId = asAccountId(classification.sourceAccountId)
+    if (classification.subtype === 'traditional') {
+      iraFacts.push({
+        sourceAccountId: brandedSourceAccountId,
+        subtype: 'traditional',
+        qcdActivity: { kind: 'notApplicable' },
+      })
+      continue
+    }
+    const activity = activities.get(
+      JSON.stringify([classification.sourceAccountId, request.year]),
+    )
+    const qcdActivity =
+      activity == null
+        ? undefined
+        : {
+            kind: 'employerContribution' as const,
+            actionTaxYear: activity.actionTaxYear,
+            planYearEndDate: activity.planYearEndDate,
+            employerContributionMadeForPlanYear:
+              activity.employerContributionMadeForPlanYear,
+            evidenceId: activity.evidenceId,
+          }
+    if (classification.subtype === 'sep') {
+      iraFacts.push({
+        sourceAccountId: brandedSourceAccountId,
+        subtype: 'sep',
+        ...(qcdActivity === undefined ? {} : { qcdActivity }),
+      })
+    } else {
+      iraFacts.push({
+        sourceAccountId: brandedSourceAccountId,
+        subtype: 'simple',
+        ...(classification.simpleParticipationStartDate === undefined
+          ? {}
+          : {
+              simpleParticipationStartDate:
+                classification.simpleParticipationStartDate,
+            }),
+        ...(qcdActivity === undefined ? {} : { qcdActivity }),
+      })
+    }
+  }
+
+  const qcdContributionHistories: NonpersistedQcdContributionHistoryFact[] = []
+  if (request.kind === 'qcd') {
+    const donors = uniqueIndex(plan.household.people, (person) => person.id)
+    const donor = donors.get(request.donorPersonId)
+    const thresholdDate = donor == null ? null : addCalendarMonths(donor.dob, 846)
+    const expectedActionDate = request.executionDate ?? null
+    const offsetEvidence = uniqueIndex(
+      runtimeEvidence.priorQcdOffsetEvidence ?? [],
+      (evidence) => evidence.actionId,
+    ).get(request.actionId)
+    if (
+      donor != null &&
+      thresholdDate !== null &&
+      offsetEvidence != null &&
+      typeof offsetEvidence.evidenceId === 'string' &&
+      offsetEvidence.evidenceId.trim().length > 0 &&
+      offsetEvidence.donorPersonId === request.donorPersonId &&
+      Number.isSafeInteger(offsetEvidence.actionYear) &&
+      offsetEvidence.actionYear === request.year &&
+      offsetEvidence.actionDate === expectedActionDate &&
+      Number.isSafeInteger(offsetEvidence.priorOffsetApplied) &&
+      offsetEvidence.priorOffsetApplied >= 0 &&
+      !Object.is(offsetEvidence.priorOffsetApplied, -0)
+    ) {
+      const thresholdYear = Number(thresholdDate.slice(0, 4))
+      const contributions = uniqueIndex(
+        facts?.deductibleIraContributions.filter(
+          (contribution) => contribution.donorPersonId === request.donorPersonId,
+        ) ?? [],
+        (contribution) => String(contribution.taxYear),
+      )
+      const taxYears: NonpersistedQcdContributionYearFact[] = []
+      let completePrefix = request.year >= thresholdYear
+      for (let taxYear = thresholdYear; taxYear <= request.year; taxYear += 1) {
+        const contribution = contributions.get(String(taxYear))
+        if (contribution == null) {
+          completePrefix = false
+          break
+        }
+        taxYears.push({
+          taxYear,
+          deductibleContributionAmount: contribution.amount,
+        })
+      }
+      if (completePrefix) {
+        qcdContributionHistories.push({
+          donorPersonId: asPersonId(request.donorPersonId),
+          taxYears,
+          priorOffsetApplied: offsetEvidence.priorOffsetApplied,
+        })
+      }
+    }
+  }
+
+  return {
+    ...(personAliveEvidence.length === 0 ? {} : { personAliveEvidence }),
+    ...(iraFacts.length === 0 ? {} : { iraFacts }),
+    ...(qcdContributionHistories.length === 0
+      ? {}
+      : { qcdContributionHistories }),
+  }
+}
+
 /**
  * Evaluate the bounded WS2 action-eligibility predicates without mutating the
  * plan or deriving execution/tax results. Except for refusing principal
@@ -848,6 +971,19 @@ export function evaluateRetirementActionEligibility(
     case 'legacyAggregateQcd':
       return legacyDecision(request)
   }
+}
+
+/** Evaluate one request directly against a Plan plus explicit runtime evidence. */
+export function evaluateRetirementActionEligibilityFromPlan(
+  request: RetirementActionRequest,
+  plan: Plan,
+  runtimeEvidence: RetirementActionEligibilityRuntimeEvidence = {},
+): RetirementActionEligibilityDecision {
+  return evaluateRetirementActionEligibility(
+    request,
+    { people: plan.household.people, accounts: plan.accounts },
+    buildRetirementActionEligibilityContextFromPlan(plan, request, runtimeEvidence),
+  )
 }
 
 /** Traditional pre-59½ early-withdrawal penalty rate (age approximated annually). */

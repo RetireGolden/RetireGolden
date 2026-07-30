@@ -455,6 +455,67 @@ describe('canonical scenario patch documents', () => {
     if (!applied.ok) expect(applied.conflicts.map((conflict) => conflict.kind)).toContain('plan-id')
   })
 
+  it('protects durable eligibility facts from canonical and legacy scenario patches', () => {
+    const base = plan()
+    base.accounts.push({
+      type: 'traditional',
+      id: 'ira-1',
+      name: 'IRA',
+      ownerPersonId: 'person-1',
+      annualReturnPct: null,
+      kind: 'ira',
+      balance: 10_000,
+      annualContribution: 0,
+    })
+    base.retirementActionEligibilityFacts = {
+      iraClassifications: [
+        {
+          evidenceId: 'classification-1',
+          provenance: { source: 'manual' },
+          sourceAccountId: 'ira-1',
+          subtype: 'traditional',
+        },
+      ],
+      sepSimpleActivities: [],
+      deductibleIraContributions: [],
+    }
+
+    const edited = clonePlan(base)
+    edited.retirementActionEligibilityFacts!.iraClassifications[0]!.subtype = 'sep'
+    const canonical = createScenarioPatch(base, edited, metadata)
+    expect(canonical.ok).toBe(false)
+    if (!canonical.ok) {
+      expect(canonical.issues).toContain(
+        'protected field "retirementActionEligibilityFacts" differs',
+      )
+    }
+
+    const replaced = applyLegacyScenarioPatch(base, {
+      retirementActionEligibilityFacts: {
+        iraClassifications: [],
+        sepSimpleActivities: [],
+        deductibleIraContributions: [],
+      },
+    })
+    expect(replaced.ok).toBe(true)
+    if (replaced.ok) {
+      expect(replaced.plan.retirementActionEligibilityFacts).toEqual(
+        base.retirementActionEligibilityFacts,
+      )
+    }
+
+    const withoutFacts = plan()
+    const injected = applyLegacyScenarioPatch(withoutFacts, {
+      retirementActionEligibilityFacts: base.retirementActionEligibilityFacts,
+    })
+    expect(injected.ok).toBe(true)
+    if (injected.ok) {
+      expect(injected.plan).not.toHaveProperty(
+        'retirementActionEligibilityFacts',
+      )
+    }
+  })
+
   it('persists through the plan schema and excludes scenario history from the baseline fingerprint', () => {
     const base = plan()
     const edited = clonePlan(base)
@@ -565,7 +626,7 @@ describe('scenario patch validation and hostile paths', () => {
     version: 1,
     base: {
       planId: 'plan-1',
-      planSchemaVersion: 2,
+      planSchemaVersion: 3,
       snapshotHash: 'fnv1a64:0000000000000000',
     },
     title: 'Hostile path',

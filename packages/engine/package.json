@@ -26,6 +26,7 @@
     "dist",
     "schema/plan.v1.json",
     "schema/plan.v2.json",
+    "schema/plan.v3.json",
     "LICENSE",
     "README.md"
   ],
@@ -58,6 +59,7 @@
     },
     "./schema/plan.v1.json": "./schema/plan.v1.json",
     "./schema/plan.v2.json": "./schema/plan.v2.json",
+    "./schema/plan.v3.json": "./schema/plan.v3.json",
     "./*": {
       "types": "./dist/*.d.ts",
       "default": "./dist/*.js"

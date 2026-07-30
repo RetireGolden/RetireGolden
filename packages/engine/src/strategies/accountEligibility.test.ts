@@ -15,11 +15,13 @@ import {
   type RetirementActionRequest,
   type RothConversionRequest,
 } from '../actions/index.js'
-import type { Account, Person } from '../model/plan.js'
+import { createEmptyPlan, type Account, type Person, type Plan } from '../model/plan.js'
 import {
   addCalendarMonths,
   acceptsContributions,
+  buildRetirementActionEligibilityContextFromPlan,
   evaluateRetirementActionEligibility,
+  evaluateRetirementActionEligibilityFromPlan,
   followsOwnerRmds,
   hsaNonQualifiedPenaltyRate,
   isAggregatedIra,
@@ -31,6 +33,7 @@ import {
   traditionalWithdrawalPenaltyRate,
   type EquityCompAccount,
   type NonpersistedRetirementActionEligibilityContext,
+  type RetirementActionEligibilityRuntimeEvidence,
   type TraditionalAccount,
 } from './accountEligibility.js'
 
@@ -358,6 +361,254 @@ describe('civil-date action eligibility helpers', () => {
     }
     expect(canonicalPairs(allocations)).toEqual(expected)
     expect(canonicalPairs([...allocations].reverse())).toEqual(expected)
+  })
+})
+
+describe('Plan v3 retirement-action eligibility adapter', () => {
+  function planWithEligibilityFacts(subtype: 'traditional' | 'sep' | 'simple'): Plan {
+    const plan = createEmptyPlan({
+      newId: () => 'generated',
+      now: () => new Date('2026-01-01T00:00:00.000Z'),
+    })
+    plan.household.people[0] = person('p1', '1954-08-31')
+    plan.accounts = [ownedIra(), rothIra()]
+    plan.retirementActionEligibilityFacts = {
+      iraClassifications: [
+        subtype === 'simple'
+          ? {
+              evidenceId: 'classification-1',
+              provenance: { source: 'manual' },
+              sourceAccountId: 'ira',
+              subtype,
+              simpleParticipationStartDate: '2020-01-01',
+            }
+          : {
+              evidenceId: 'classification-1',
+              provenance: { source: 'manual' },
+              sourceAccountId: 'ira',
+              subtype,
+            },
+      ],
+      sepSimpleActivities:
+        subtype === 'traditional'
+          ? []
+          : [
+              {
+                evidenceId: 'activity-2025',
+                provenance: { source: 'manual' },
+                sourceAccountId: 'ira',
+                actionTaxYear: 2025,
+                planYearEndDate: '2025-12-31',
+                employerContributionMadeForPlanYear: true,
+              },
+              {
+                evidenceId: 'activity-2026',
+                provenance: { source: 'manual' },
+                sourceAccountId: 'ira',
+                actionTaxYear: 2026,
+                planYearEndDate: '2026-12-31',
+                employerContributionMadeForPlanYear: false,
+              },
+            ],
+      deductibleIraContributions: [
+        {
+          evidenceId: 'contribution-2025',
+          provenance: { source: 'manual' },
+          donorPersonId: 'p1',
+          taxYear: 2025,
+          amount: asUsdCents(500),
+        },
+        {
+          evidenceId: 'contribution-2026',
+          provenance: { source: 'manual' },
+          donorPersonId: 'p1',
+          taxYear: 2026,
+          amount: asUsdCents(250),
+        },
+      ],
+    }
+    return plan
+  }
+
+  function runtimeFor(
+    request: QualifiedCharitableDistributionRequest | RothConversionRequest,
+    priorOffsetApplied = 0,
+  ): RetirementActionEligibilityRuntimeEvidence {
+    const personId = request.kind === 'qcd' ? request.donorPersonId : request.personId
+    return {
+      personAliveEvidence: [
+        {
+          evidenceId: 'alive-1',
+          actionId: request.actionId,
+          personId,
+          actionYear: request.year,
+          actionDate: request.executionDate ?? null,
+          alive: true,
+        },
+      ],
+      priorQcdOffsetEvidence:
+        request.kind === 'qcd'
+          ? [
+              {
+                evidenceId: 'offset-1',
+                actionId: request.actionId,
+                donorPersonId: request.donorPersonId,
+                actionYear: request.year,
+                actionDate: request.executionDate ?? null,
+                priorOffsetApplied: asUsdCents(priorOffsetApplied),
+              },
+            ]
+          : [],
+    }
+  }
+
+  it('uses only matching-year SEP/SIMPLE activity and the exact threshold-through-action contribution prefix', () => {
+    const request = qcdRequest({ executionDate: '2026-03-01' })
+    const plan = planWithEligibilityFacts('sep')
+    const context = buildRetirementActionEligibilityContextFromPlan(
+      plan,
+      request,
+      runtimeFor(request, 100),
+    )
+    expect(context.iraFacts).toEqual([
+      {
+        sourceAccountId: asAccountId('ira'),
+        subtype: 'sep',
+        qcdActivity: {
+          kind: 'employerContribution',
+          actionTaxYear: 2026,
+          planYearEndDate: '2026-12-31',
+          employerContributionMadeForPlanYear: false,
+          evidenceId: 'activity-2026',
+        },
+      },
+    ])
+    expect(context.qcdContributionHistories?.[0]?.taxYears).toEqual([
+      { taxYear: 2025, deductibleContributionAmount: asUsdCents(500) },
+      { taxYear: 2026, deductibleContributionAmount: asUsdCents(250) },
+    ])
+    expect(
+      evaluateRetirementActionEligibilityFromPlan(
+        request,
+        plan,
+        runtimeFor(request, 100),
+      ),
+    ).toEqual({ status: 'accepted', reasons: [] })
+  })
+
+  it('classifies a conversion without requiring unrelated QCD activity', () => {
+    const request = conversionRequest()
+    const plan = planWithEligibilityFacts('simple')
+    plan.retirementActionEligibilityFacts!.sepSimpleActivities = []
+    expect(
+      evaluateRetirementActionEligibilityFromPlan(
+        request,
+        plan,
+        runtimeFor(request),
+      ),
+    ).toEqual({ status: 'accepted', reasons: [] })
+  })
+
+  it('omits incomplete or unbound runtime facts so missing alive/offset evidence stays nonactionable', () => {
+    const request = qcdRequest({ executionDate: '2026-03-01' })
+    const plan = planWithEligibilityFacts('traditional')
+    expect(
+      evaluateRetirementActionEligibilityFromPlan(request, plan).reasons.map(
+        (reason) => reason.code,
+      ),
+    ).toEqual(['required-facts-missing', 'qcd-contribution-history-unknown'])
+
+    const aliveOnly = runtimeFor(request)
+    delete aliveOnly.priorQcdOffsetEvidence
+    expect(
+      evaluateRetirementActionEligibilityFromPlan(
+        request,
+        plan,
+        aliveOnly,
+      ).reasons.map((reason) => reason.code),
+    ).toEqual(['qcd-contribution-history-unknown'])
+
+    plan.retirementActionEligibilityFacts!.deductibleIraContributions =
+      plan.retirementActionEligibilityFacts!.deductibleIraContributions.filter(
+        (contribution) => contribution.taxYear !== 2025,
+      )
+    expect(
+      buildRetirementActionEligibilityContextFromPlan(
+        plan,
+        request,
+        runtimeFor(request),
+      ),
+    ).not.toHaveProperty('qcdContributionHistories')
+
+    const ambiguous = runtimeFor(request)
+    ambiguous.personAliveEvidence = [
+      ...ambiguous.personAliveEvidence!,
+      {
+        ...ambiguous.personAliveEvidence![0]!,
+        evidenceId: 'alive-duplicate',
+      },
+    ]
+    ambiguous.priorQcdOffsetEvidence = [
+      ...ambiguous.priorQcdOffsetEvidence!,
+      {
+        ...ambiguous.priorQcdOffsetEvidence![0]!,
+        evidenceId: 'offset-duplicate',
+      },
+    ]
+    const ambiguousContext = buildRetirementActionEligibilityContextFromPlan(
+      planWithEligibilityFacts('traditional'),
+      request,
+      ambiguous,
+    )
+    expect(ambiguousContext).not.toHaveProperty('personAliveEvidence')
+    expect(ambiguousContext).not.toHaveProperty('qcdContributionHistories')
+  })
+
+  it('binds a prior-QCD offset to the exact action/donor/year/date and is account-order invariant', () => {
+    const request = qcdRequest({
+      actionId: asActionId('qcd-2'),
+      executionDate: '2026-03-01',
+    })
+    const plan = planWithEligibilityFacts('traditional')
+    const runtime = runtimeFor(request, 100)
+    runtime.priorQcdOffsetEvidence = [
+      {
+        evidenceId: 'other-action',
+        actionId: asActionId('qcd-1'),
+        donorPersonId: request.donorPersonId,
+        actionYear: request.year,
+        actionDate: request.executionDate ?? null,
+        priorOffsetApplied: asUsdCents(50),
+      },
+      ...runtime.priorQcdOffsetEvidence!,
+    ]
+    const forward = evaluateRetirementActionEligibilityFromPlan(
+      request,
+      plan,
+      runtime,
+    )
+    const reversed = {
+      ...plan,
+      accounts: [...plan.accounts].reverse(),
+    }
+    expect(
+      evaluateRetirementActionEligibilityFromPlan(request, reversed, runtime),
+    ).toEqual(forward)
+    expect(forward).toEqual({ status: 'accepted', reasons: [] })
+
+    runtime.priorQcdOffsetEvidence = runtime.priorQcdOffsetEvidence!.map(
+      (evidence) =>
+        evidence.actionId === request.actionId
+          ? { ...evidence, actionDate: '2026-03-02' }
+          : evidence,
+    )
+    expect(
+      evaluateRetirementActionEligibilityFromPlan(
+        request,
+        plan,
+        runtime,
+      ).reasons.map((reason) => reason.code),
+    ).toContain('qcd-contribution-history-unknown')
   })
 })
 
