@@ -2218,7 +2218,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     let retirementActionExecution: ExecuteCashOrdinaryWithdrawalsResult | undefined
     let retirementActionCash = 0
     if (currentYearActions.length > 0) {
+      const ordinarySourceAccountIds = new Set(
+        currentYearActions.flatMap((request) =>
+          request.kind === 'ordinaryWithdrawal'
+            ? request.allocations.map((allocation) => allocation.sourceAccountId)
+            : [],
+        ),
+      )
       const openingBalances = [...balances]
+        .filter((state) => ordinarySourceAccountIds.has(asAccountId(state.account.id)))
         .sort((left, right) =>
           left.account.id < right.account.id ? -1 : left.account.id > right.account.id ? 1 : 0,
         )

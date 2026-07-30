@@ -1,6 +1,6 @@
 import type { AssetClassId } from '../model/plan.js'
 import type { FilingStatus } from '../params/types.js'
-import type { ExecuteCashOrdinaryWithdrawalsResult } from '../actions/execution.js'
+import type { ExecuteCashOrdinaryWithdrawalsResult } from '../actions/index.js'
 
 /**
  * Projection engine types. The deterministic annual ledger is the core v2

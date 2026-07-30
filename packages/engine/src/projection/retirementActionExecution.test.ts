@@ -123,6 +123,36 @@ describe('retirement-action cash execution in the annual ledger', () => {
     })
   })
 
+  it('does not quantize an unrelated balance outside the exact-cent boundary', () => {
+    const plan = basePlan()
+    plan.accounts = [
+      cash('cash-a', 100),
+      {
+        type: 'taxable',
+        id: 'unrelated',
+        name: 'Unrelated',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        balance: 90_071_992_547_410,
+        costBasis: 0,
+        interestYieldPct: 0,
+        dividendYieldPct: 0,
+        qualifiedRatio: 0,
+        reinvestDividends: true,
+        annualContribution: 0,
+      },
+    ]
+    plan.expenses.baseAnnual = 50
+    plan.strategies.retirementActions = [
+      withdrawal({ actionId: 'withdraw-50', accountId: 'cash-a', dollars: 50 }),
+    ]
+
+    const year = run(plan).years[0]!
+
+    expect(year.balances['cash-a']).toBe(50)
+    expect(year.balances.unrelated).toBe(90_071_992_547_410)
+  })
+
   it('uses only a partial action execution and lets legacy planning fund the residual', () => {
     const plan = basePlan()
     plan.accounts = [cash('action-source', 20), cash('residual-source', 100)]
