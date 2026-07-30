@@ -552,14 +552,19 @@ function evaluateConversion(
       const participationDate = fact.simpleParticipationStartDate
       const periodEnd =
         participationDate === undefined ? null : addCalendarMonths(participationDate, 24)
-      if (periodEnd === null || request.executionDate === undefined) {
+      const executionDate =
+        request.executionDate === undefined ? null : parseCivilIsoDate(request.executionDate)
+      if (periodEnd === null) {
         reasons.push(
           createActionReason('conversion-simple-two-year-rule-unknown', {
             accountId: allocation.sourceAccountId,
             allocationId: allocation.allocationId,
           }),
         )
-      } else if (compareCivilIsoDates(request.executionDate, periodEnd) < 0) {
+      } else if (
+        executionDate !== null &&
+        compareCivilIsoDates(formatCivilDate(executionDate), periodEnd) < 0
+      ) {
         reasons.push(
           createActionReason('conversion-simple-two-year-period-open', {
             accountId: allocation.sourceAccountId,

@@ -688,6 +688,33 @@ describe('retirement-action physical eligibility preflight', () => {
     ).toBe('conversion-date-outside-action-year')
   })
 
+  it('does not compare malformed SIMPLE conversion dates to the two-year boundary', () => {
+    const base = conversionRequest()
+    const plan = { people: [person('p1')], accounts: [ira, rothIra()] }
+    for (const executionDate of ['2026-02-30', '2026-2-01']) {
+      const request = { ...base, executionDate } as RothConversionRequest
+      const context: NonpersistedRetirementActionEligibilityContext = {
+        ...withAlive(request),
+        iraFacts: [{
+          sourceAccountId: asAccountId('ira'),
+          subtype: 'simple',
+          simpleParticipationStartDate: '2025-08-31',
+          qcdActivity: {
+            kind: 'employerContribution',
+            actionTaxYear: 2026,
+            planYearEndDate: '2026-12-31',
+            employerContributionMadeForPlanYear: false,
+            evidenceId: 'activity-1',
+          },
+        }],
+      }
+      expect(
+        evaluateRetirementActionEligibility(request, plan, context)
+          .reasons.map((reason) => reason.code),
+      ).toEqual(['conversion-date-invalid'])
+    }
+  })
+
   it('keeps principal withholding unsupported while other funding sufficiency stays deferred', () => {
     const base = conversionRequest()
     const request = {
