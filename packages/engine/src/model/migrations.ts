@@ -199,6 +199,7 @@ function migrateScenarioOperationValue(
   path: string,
   value: unknown,
   context: LegacyActionIdContext,
+  defaultRetirementActions: unknown,
 ): unknown {
   if (path === '/strategies/retirementActions') {
     return migrateLegacyActionSchedule(value, context)
@@ -215,7 +216,7 @@ function migrateScenarioOperationValue(
   const retirementActions = strategies['retirementActions']
   const migrated =
     retirementActions === undefined
-      ? []
+      ? defaultRetirementActions
       : migrateLegacyActionSchedule(retirementActions, context)
   return migrated === retirementActions
     ? value
@@ -225,6 +226,7 @@ function migrateScenarioOperationValue(
 function migrateCanonicalScenarioPatch(
   patch: unknown,
   context: LegacyActionIdContext,
+  defaultRetirementActions: unknown,
 ): unknown {
   if (!parseScenarioPatch(patch).ok) return patch
   const patchRecord = patch as Record<string, unknown>
@@ -248,6 +250,7 @@ function migrateCanonicalScenarioPatch(
         path,
         before['value'],
         context,
+        defaultRetirementActions,
       )
       if (migratedBeforeValue !== before['value']) {
         migratedOperation = {
@@ -271,6 +274,7 @@ function migrateCanonicalScenarioPatch(
         path,
         operationRecord['value'],
         context,
+        defaultRetirementActions,
       )
       if (migratedValue !== operationRecord['value']) {
         migratedOperation = { ...migratedOperation, value: migratedValue }
@@ -312,6 +316,9 @@ function migrateLegacyScenarioPatch(
 function migrateScenarioActionArrays(
   scenarios: unknown,
   context: LegacyActionIdContext,
+  defaultRetirementActions: unknown,
+  sourcePlanId: unknown,
+  sourceSchemaVersion: number,
 ): unknown {
   if (!Array.isArray(scenarios)) return scenarios
   let changed = false
@@ -321,7 +328,19 @@ function migrateScenarioActionArrays(
     }
     const scenarioRecord = scenario as Record<string, unknown>
     const patch = scenarioRecord['patch']
-    const canonicalPatch = migrateCanonicalScenarioPatch(patch, context)
+    const parsedPatch = parseScenarioPatch(patch)
+    if (
+      parsedPatch.ok &&
+      (parsedPatch.patch.base.planId !== sourcePlanId ||
+        parsedPatch.patch.base.planSchemaVersion !== sourceSchemaVersion)
+    ) {
+      return scenario
+    }
+    const canonicalPatch = migrateCanonicalScenarioPatch(
+      patch,
+      context,
+      defaultRetirementActions,
+    )
     const migratedPatch =
       canonicalPatch === patch
         ? migrateLegacyScenarioPatch(patch, context)
@@ -354,7 +373,11 @@ function collectScenarioOperationSchedule(
   if (Array.isArray(retirementActions)) schedules.push(retirementActions)
 }
 
-function collectScenarioActionSchedules(scenarios: unknown): unknown[] {
+function collectScenarioActionSchedules(
+  scenarios: unknown,
+  sourcePlanId: unknown,
+  sourceSchemaVersion: number,
+): unknown[] {
   if (!Array.isArray(scenarios)) return []
   const schedules: unknown[] = []
   scenarios.forEach((scenario) => {
@@ -362,7 +385,14 @@ function collectScenarioActionSchedules(scenarios: unknown): unknown[] {
       return
     }
     const patch = (scenario as Record<string, unknown>)['patch']
-    if (parseScenarioPatch(patch).ok) {
+    const parsedPatch = parseScenarioPatch(patch)
+    if (parsedPatch.ok) {
+      if (
+        parsedPatch.patch.base.planId !== sourcePlanId ||
+        parsedPatch.patch.base.planSchemaVersion !== sourceSchemaVersion
+      ) {
+        return
+      }
       const operations = (patch as Record<string, unknown>)['operations'] as unknown[]
       operations.forEach((operation) => {
         const operationRecord = operation as Record<string, unknown>
@@ -403,6 +433,7 @@ function collectScenarioActionSchedules(scenarios: unknown): unknown[] {
  * records that genuinely omitted actionId receive a deterministic ID.
  */
 export const migratePlanV1ToV2: MigrationStep = (raw) => {
+  const sourceSchemaVersion = 1
   const strategies = raw['strategies']
   if (typeof strategies !== 'object' || strategies === null || Array.isArray(strategies)) {
     return raw
@@ -412,13 +443,23 @@ export const migratePlanV1ToV2: MigrationStep = (raw) => {
   const scenarios = raw['scenarios']
   const actionIdContext = createLegacyActionIdContext([
     retirementActions,
-    ...collectScenarioActionSchedules(scenarios),
+    ...collectScenarioActionSchedules(
+      scenarios,
+      raw['id'],
+      sourceSchemaVersion,
+    ),
   ])
   const normalizedActions =
     retirementActions === undefined
       ? []
       : migrateLegacyActionSchedule(retirementActions, actionIdContext)
-  const migratedScenarios = migrateScenarioActionArrays(scenarios, actionIdContext)
+  const migratedScenarios = migrateScenarioActionArrays(
+    scenarios,
+    actionIdContext,
+    normalizedActions,
+    raw['id'],
+    sourceSchemaVersion,
+  )
   if (normalizedActions === retirementActions && migratedScenarios === scenarios) return raw
   return {
     ...raw,

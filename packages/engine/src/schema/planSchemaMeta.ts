@@ -37,6 +37,7 @@ export const PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS: readonly string[] = [
   // Referential integrity (ids must resolve to a person/account in the plan)
   'account.ownerPersonId, income.personId, insurance owner/insured/beneficiary, and careEvent.personId must reference an existing person.',
   'retirement action IDs must be unique across current and legacy action kinds.',
+  'a person ID referenced by a current retirement action must resolve uniquely before person, ownership, or linked-action checks run.',
   'an account ID referenced by a retirement action must resolve uniquely before ownership or destination checks run.',
   'ordinary-withdrawal and conversion allocation IDs/source-account IDs must be unique per action, and their exact-cent allocation sums must equal requestedAmount; a QCD allocation amount must equal its requestedAmount.',
   'current retirement-action person/donor, allocation source, and conversion destination IDs must resolve; a structurally known individual account owner must match the action person, and a conversion destination must be a Roth account.',

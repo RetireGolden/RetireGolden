@@ -568,6 +568,72 @@ describe('v1 -> v2 retirement-action migration', () => {
     if (applied.ok) expect(applied.plan.strategies.qcdAnnual).toBe(2_500)
   })
 
+  it('carries a nonempty base schedule through whole-strategies operations', () => {
+    const raw = withActions(rawV1Plan(), [legacyQcd])
+    const strategies = raw['strategies'] as Record<string, unknown>
+    const beforeStrategies = JSON.parse(JSON.stringify(strategies)) as Record<
+      string,
+      unknown
+    >
+    delete beforeStrategies['retirementActions']
+    const valueStrategies = {
+      ...beforeStrategies,
+      qcdAnnual: 2_500,
+    }
+    raw['scenarios'] = [
+      {
+        id: 'scenario-strategies-with-actions',
+        name: 'Change strategies and retain actions',
+        patch: {
+          kind: 'retiregolden.scenario-patch',
+          version: 1,
+          base: {
+            planId: raw['id'],
+            planSchemaVersion: 1,
+            snapshotHash: 'fnv1a64:0000000000000000',
+          },
+          title: 'Change strategies and retain actions',
+          rationale: null,
+          createdAtIso: '2026-06-11T00:00:00.000Z',
+          actor: { kind: 'legacy' },
+          operations: [
+            {
+              op: 'set',
+              path: '/strategies',
+              before: { present: true, value: beforeStrategies },
+              value: valueStrategies,
+            },
+          ],
+        },
+      },
+    ]
+
+    const migrated = migratePlanToCurrent(raw)
+    expect(migrated.ok).toBe(true)
+    if (!migrated.ok) return
+    const retainedActionId =
+      migrated.plan.strategies.retirementActions[0]?.actionId
+    const parsedPatch = parseScenarioPatch(migrated.plan.scenarios[0]!.patch)
+    expect(parsedPatch.ok).toBe(true)
+    if (!parsedPatch.ok) return
+    const operation = parsedPatch.patch.operations[0]
+    if (operation?.op !== 'set' || operation.before.present !== true) return
+    for (const value of [operation.before.value, operation.value]) {
+      const operationStrategies = value as Record<string, unknown>
+      const operationActions = operationStrategies[
+        'retirementActions'
+      ] as Array<Record<string, unknown>>
+      expect(operationActions[0]?.['actionId']).toBe(retainedActionId)
+    }
+    const applied = applyScenarioPatchDocument(migrated.plan, parsedPatch.patch)
+    expect(applied.ok).toBe(true)
+    if (applied.ok) {
+      expect(applied.plan.strategies.retirementActions[0]?.actionId).toBe(
+        retainedActionId,
+      )
+    }
+  })
+
   it('migrates ID-less actions inside loose legacy scenario patches', () => {
     const raw = rawV1Plan()
     raw['scenarios'] = [
@@ -664,18 +730,24 @@ describe('v1 -> v2 retirement-action migration', () => {
           operations: [
             {
               op: 'set',
-              path: '/assumptions/inflationPct',
-              before: { present: true, value: 2.5 },
-              value: 3,
+              path: '/strategies/retirementActions',
+              before: { present: true, value: [] },
+              value: [legacyQcd],
             },
           ],
         },
       },
     ]
+    const patchSnapshot = JSON.parse(
+      JSON.stringify(
+        (raw['scenarios'] as Array<Record<string, unknown>>)[0]?.['patch'],
+      ),
+    )
 
     const migrated = migratePlanToCurrent(raw)
     expect(migrated.ok).toBe(true)
     if (!migrated.ok) return
+    expect(migrated.plan.scenarios[0]!.patch).toEqual(patchSnapshot)
     const parsedPatch = parseScenarioPatch(migrated.plan.scenarios[0]!.patch)
     expect(parsedPatch.ok).toBe(true)
     if (!parsedPatch.ok) return
