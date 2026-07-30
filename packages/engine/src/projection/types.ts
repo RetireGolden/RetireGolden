@@ -1,5 +1,6 @@
 import type { AssetClassId } from '../model/plan.js'
 import type { FilingStatus } from '../params/types.js'
+import type { ExecuteCashOrdinaryWithdrawalsResult } from '../actions/execution.js'
 
 /**
  * Projection engine types. The deterministic annual ledger is the core v2
@@ -397,6 +398,11 @@ export interface YearResult {
   qcd: number
   /** Dollars moved traditional → Roth this year (taxed as ordinary income, no penalty). */
   rothConversion: number
+  /**
+   * Exact-cent action execution evidence. Present only when the Plan contains
+   * one or more retirement-action requests for this projection year.
+   */
+  retirementActionExecution?: ExecuteCashOrdinaryWithdrawalsResult
   /** Early-withdrawal penalties (10% traditional pre-59½, 20% HSA non-medical pre-65); not in `tax`. */
   penalties: number
   /** MAGI realized this year (drives IRMAA two years later and the ACA credit). */

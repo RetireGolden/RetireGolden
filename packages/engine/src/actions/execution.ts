@@ -784,6 +784,14 @@ export function executeCashOrdinaryWithdrawals(
   const requests = input.requests.map((request) =>
     retirementActionRequestSchema.parse(request),
   )
+  const conversionLinkedWithdrawalIds = new Set(
+    [...input.plan.strategies.retirementActions, ...requests].flatMap((request) =>
+      request.kind === 'rothConversion' &&
+      request.taxFunding.kind === 'linkedWithdrawal'
+        ? [request.taxFunding.withdrawalActionId]
+        : [],
+    ),
+  )
   const openingBalances = input.openingBalances.map((snapshot) => ({
     accountId: accountIdSchema.parse(snapshot.accountId),
     openingBalance: usdCentsSchema.parse(snapshot.openingBalance),
@@ -844,6 +852,14 @@ export function executeCashOrdinaryWithdrawals(
     if (item.scheduleInvalid) blockingReasons.push(unsupportedScopeReason(request))
     if (request.kind !== 'ordinaryWithdrawal') {
       blockingReasons.push(unsupportedScopeReason(request))
+    } else if (conversionLinkedWithdrawalIds.has(request.actionId)) {
+      // Linked tax funding belongs to the conversion's atomic annual group.
+      // Until that group executor exists, it must not move independently.
+      blockingReasons.push(
+        createActionReason('conversion-tax-funding-evidence-unsupported', {
+          personId: request.personId,
+        }),
+      )
     } else {
       for (const allocation of allocations) {
         const account = accounts.get(allocation.sourceAccountId)
