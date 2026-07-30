@@ -10,6 +10,7 @@
 
 import { describe, expect, it } from 'vitest'
 
+import { parseRetirementActionRequest } from '../actions/index.js'
 import { maximizeSpendingDurability, minimizeLifetimeTaxWithEstateFloor, socialSecurityClaimGenerator } from '../decisions/index.js'
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../model/plan.js'
 import { applyScenarioPatch } from '../scenarios/scenarios.js'
@@ -780,6 +781,24 @@ describe('postProcessExactLedgerSchedule', () => {
 })
 
 describe('optimizePlan end-to-end', () => {
+  it('fails closed while identity-bearing retirement actions are unsupported', () => {
+    const plan = tradHeavyPlan()
+    const action = parseRetirementActionRequest({
+      actionId: 'optimizer-cash-action',
+      kind: 'legacyAggregateWithdrawal',
+      year: 2026,
+      requestedAmount: 1_000,
+      legacyCategory: 'cash',
+      provenance: { source: 'migration' },
+    })
+    if (!action.ok) throw new Error(action.issues.join('; '))
+    plan.strategies.retirementActions = [action.request]
+
+    expect(() => buildOptimizerInput(validate(plan), opts)).toThrow(
+      'optimizer does not yet support identity-bearing retirement actions',
+    )
+  })
+
   it('improves the after-tax estate vs the no-conversion baseline', async () => {
     const plan = validate(tradHeavyPlan())
 

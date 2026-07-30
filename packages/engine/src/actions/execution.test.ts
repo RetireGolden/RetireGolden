@@ -812,6 +812,67 @@ describe('cash ordinary-withdrawal execution', () => {
     ])
   })
 
+  it('cannot execute a Plan-linked conversion funding withdrawal from a subset call', () => {
+    const request = withdrawal({
+      actionId: 'tax-funding',
+      sequence: 1,
+      allocations: [allocation('funding-allocation', 'cash', 1_000)],
+    })
+    request.purpose = { kind: 'taxPayment', referenceId: 'conversion' }
+    const conversion = {
+      actionId: asActionId('conversion'),
+      kind: 'rothConversion',
+      personId: asPersonId('p1'),
+      year: 2030,
+      executionDate: '2030-12-31',
+      executionSequence: 2,
+      requestedAmount: asPositiveUsdCents(5_000),
+      allocations: [allocation('conversion-allocation', 'traditional', 5_000)],
+      destinationRothAccountId: asAccountId('roth'),
+      taxFunding: {
+        kind: 'linkedWithdrawal',
+        withdrawalActionId: request.actionId,
+      },
+      provenance: { source: 'manual' },
+    } satisfies RetirementActionRequest
+    const plan = planWith(
+      cash('cash'),
+      {
+        type: 'traditional',
+        id: 'traditional',
+        name: 'Traditional',
+        ownerPersonId: 'p1',
+        annualReturnPct: null,
+        kind: 'ira',
+        balance: 100,
+        annualContribution: 0,
+      },
+      {
+        type: 'roth',
+        id: 'roth',
+        name: 'Roth',
+        ownerPersonId: 'p1',
+        annualReturnPct: null,
+        kind: 'ira',
+        balance: 0,
+        annualContribution: 0,
+      },
+    )
+    plan.strategies.retirementActions = [request, conversion]
+
+    const result = run(plan, [request], balances([['cash', 1_000]]))
+
+    expect(result.evidence[0]).toMatchObject({
+      actionId: 'tax-funding',
+      disposition: {
+        outcome: 'unsupported',
+        executedAmount: 0,
+        reasons: [{ code: 'conversion-tax-funding-evidence-unsupported' }],
+      },
+    })
+    expect(result.balances[0]!.closingBalance).toBe(1_000)
+  })
+
   it('moves zero for unsupported conversion, QCD, and legacy request kinds', () => {
     const ordinary = withdrawal({
       actionId: 'base',

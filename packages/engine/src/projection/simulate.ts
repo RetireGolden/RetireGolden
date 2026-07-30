@@ -64,9 +64,18 @@ import {
   isConvertibleToRoth,
   isSpendableInYear,
   traditionalWithdrawalPenaltyRate,
+  type NonpersistedActionPersonAliveEvidence,
 } from '../strategies/accountEligibility.js'
 import { openIraProRataYear, splitIraDistribution, type IraProRataYear } from '../strategies/iraBasis.js'
 import { propertySaleTax } from '../tax/propertySale.js'
+import {
+  asAccountId,
+  executeCashOrdinaryWithdrawals,
+  ledgerCentTotalToPlanDollars,
+  ledgerCentsToPlanDollars,
+  planDollarsToLedgerCents,
+  type ExecuteCashOrdinaryWithdrawalsResult,
+} from '../actions/index.js'
 import { effectiveBirthYear, fraForBirthYear, fraTotalMonths, survivorFraForBirthYear } from '../socialSecurity/nra.js'
 import {
   computePiaFromEarnings,
@@ -2199,6 +2208,133 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
     }
 
+    // --- exact-cent identity-bearing cash actions ---------------------------
+    // The exact-cent executor owns current-year action ordering and debits named
+    // sources here. Its movement remains outside the legacy withdrawal map so
+    // the final legacy apply loop cannot debit an action source a second time.
+    const currentYearActions = plan.strategies.retirementActions.filter(
+      (request) => request.year === year,
+    )
+    let retirementActionExecution: ExecuteCashOrdinaryWithdrawalsResult | undefined
+    let retirementActionCash = 0
+    if (currentYearActions.length > 0) {
+      const cashAccountIds = new Set(
+        plan.accounts
+          .filter((account) => account.type === 'cash')
+          .map((account) => account.id),
+      )
+      const ordinaryCashSourceAccountIds = new Set<string>(
+        currentYearActions.flatMap((request) =>
+          request.kind === 'ordinaryWithdrawal'
+            ? request.allocations
+              .map((allocation) => allocation.sourceAccountId)
+              .filter((accountId) => cashAccountIds.has(accountId))
+            : [],
+        ),
+      )
+      let openingBalances = [...balances]
+        .filter((state) => ordinaryCashSourceAccountIds.has(state.account.id))
+        .sort((left, right) =>
+          left.account.id < right.account.id ? -1 : left.account.id > right.account.id ? 1 : 0,
+        )
+        .flatMap((state) => {
+          try {
+            return [{
+              accountId: asAccountId(state.account.id),
+              openingBalance: planDollarsToLedgerCents(state.balance),
+            }]
+          } catch {
+            // A schema-valid Plan balance can exceed the exact-cent ledger's
+            // safe range. Omit it so the executor reports required facts
+            // missing instead of aborting the whole projection.
+            return []
+          }
+        })
+      const personAliveEvidence = currentYearActions.flatMap(
+        (request): NonpersistedActionPersonAliveEvidence[] => {
+          if (
+            request.kind === 'legacyAggregateWithdrawal' ||
+            request.kind === 'legacyAggregateRothConversion' ||
+            request.kind === 'legacyAggregateQcd'
+          ) {
+            return []
+          }
+          const personId =
+            request.kind === 'qcd' ? request.donorPersonId : request.personId
+          return [{
+            evidenceId: `projection-alive:${JSON.stringify([
+              request.actionId,
+              personId,
+              year,
+              request.executionDate ?? null,
+            ])}`,
+            actionId: request.actionId,
+            personId,
+            actionYear: year,
+            actionDate: request.executionDate ?? null,
+            alive: stateOf(personId).alive,
+          }]
+        },
+      )
+      while (true) {
+        retirementActionExecution = executeCashOrdinaryWithdrawals({
+          year,
+          plan,
+          requests: currentYearActions,
+          openingBalances,
+          runtimeEvidence: { personAliveEvidence },
+        })
+        const unrepresentableClosingAccountIds = new Set(
+          retirementActionExecution.balances
+            .filter((snapshot) => snapshot.closingBalance !== snapshot.openingBalance)
+            .filter((snapshot) => {
+              try {
+                ledgerCentsToPlanDollars(snapshot.closingBalance)
+                return false
+              } catch {
+                return true
+              }
+            })
+            .map((snapshot) => String(snapshot.accountId)),
+        )
+        if (unrepresentableClosingAccountIds.size === 0) break
+
+        // The action ledger is exact-cent while Plan balances are numbers. If
+        // a committed closing value cannot cross that boundary losslessly,
+        // rerun without that source so the executor returns non-actionable
+        // evidence and the Plan balance remains untouched.
+        openingBalances = openingBalances.filter(
+          (snapshot) =>
+            !unrepresentableClosingAccountIds.has(String(snapshot.accountId)),
+        )
+      }
+
+      if (retirementActionExecution.committed) {
+        const closingCentsByAccountId = new Map(
+          retirementActionExecution.balances
+            .filter((snapshot) => snapshot.closingBalance !== snapshot.openingBalance)
+            .map((snapshot) => [String(snapshot.accountId), snapshot.closingBalance]),
+        )
+        for (const state of balances) {
+          const closingCents = closingCentsByAccountId.get(state.account.id)
+          if (closingCents !== undefined) {
+            state.balance = ledgerCentsToPlanDollars(closingCents)
+          }
+        }
+      }
+      // Keep the annual aggregate exact as an unbounded integer until its one
+      // crossing back into Plan-dollar numbers. Individual ledger amounts are
+      // safe integers, but their annual sum need not fit the branded cent type.
+      const retirementActionCashCents = retirementActionExecution.evidence.reduce(
+        (total, evidence) =>
+          total + BigInt(evidence.disposition.executedAmount),
+        0n,
+      )
+      retirementActionCash = ledgerCentTotalToPlanDollars(
+        retirementActionCashCents,
+      )
+    }
+
     // --- Roth conversions (after RMDs — RMDs must be satisfied first) -------
     const peopleAged65Plus = peopleStates.filter((s) => s.alive && s.ageAttained >= 65).length
     // Forced IRA distributions count only their taxable (post-pro-rata) part
@@ -2266,7 +2402,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         }
       }
       const preConversionInflows =
-        incomes.total - taxableYieldReinvested + rmdTotal - qcd + seppTotal + inheritedTotal + propertySaleProceedsTotal
+        incomes.total -
+        taxableYieldReinvested +
+        rmdTotal -
+        qcd +
+        seppTotal +
+        inheritedTotal +
+        propertySaleProceedsTotal +
+        retirementActionCash
       // Liquid dollars available above the floor to pay a conversion's tax:
       // existing spendable liquid plus this year's surplus inflows, net of the
       // pre-tax cash need. Surplus inflows (inflows above expenses+contributions)
@@ -2466,7 +2609,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // are already in the tax base above), so a sale can fund its own tax bill.
     // HECM draws are loan proceeds — cash in, never income.
     const baseCashInflows =
-      incomes.total - taxableYieldReinvested + rmdTotal - qcd + seppTotal + inheritedTotal + propertySaleProceedsTotal
+      incomes.total -
+      taxableYieldReinvested +
+      rmdTotal -
+      qcd +
+      seppTotal +
+      inheritedTotal +
+      propertySaleProceedsTotal +
+      retirementActionCash
     let cashInflows = baseCashInflows
 
     // Resolve the year's withdrawal strategy. Bracket targeting reuses the
@@ -3518,8 +3668,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
 
     const reportedWithdrawals = {
       ...withdrawalPlan.byCategory,
+      cash: withdrawalPlan.byCategory.cash + retirementActionCash,
       traditional: withdrawalPlan.byCategory.traditional + rmdTotal + seppTotal + inheritedTotal,
-      total: withdrawalPlan.byCategory.total + rmdTotal + seppTotal + inheritedTotal,
+      total:
+        withdrawalPlan.byCategory.total +
+        rmdTotal +
+        seppTotal +
+        inheritedTotal +
+        retirementActionCash,
     }
     // Attribute any portfolio shortfall across the spending layers: a deliberate
     // guardrail cut is a target-lifestyle miss, a genuine shortfall reaches the
@@ -3551,6 +3707,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       inheritedDistribution: inheritedTotal,
       qcd,
       rothConversion,
+      ...(retirementActionExecution ? { retirementActionExecution } : {}),
       penalties,
       magi: magiHistory.get(year)!,
       ...(yearAcaResult ? { aca: yearAcaResult } : {}),

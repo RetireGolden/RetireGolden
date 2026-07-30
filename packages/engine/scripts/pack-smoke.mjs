@@ -43,7 +43,9 @@ const {
   asPersonId,
   asUsdCents,
   executeCashOrdinaryWithdrawals,
+  ledgerCentsToPlanDollars,
   parseRetirementActionRequest,
+  planDollarsToLedgerCents,
 } = await import('@retiregolden/engine/actions')
 const {
   evaluateRetirementActionEligibility,
@@ -70,6 +72,8 @@ assert.equal(typeof simulatePlan, 'function')
 assert.equal(simulate.simulatePlan, simulatePlan)
 assert.equal(asActionId('smoke-action'), 'smoke-action')
 assert.equal(addUsdCents(asUsdCents(125), asUsdCents(75)), 200)
+assert.equal(planDollarsToLedgerCents(1.005), 101)
+assert.equal(ledgerCentsToPlanDollars(asUsdCents(101)), 1.01)
 assert.equal(CURRENT_PLAN_SCHEMA_VERSION, 3)
 assert.ok(packForYear(2026) && typeof packForYear(2026) === 'object')
 
