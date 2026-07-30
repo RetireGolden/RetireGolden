@@ -1170,6 +1170,52 @@ describe('retirement-action physical eligibility preflight', () => {
     }
   })
 
+  it.each([
+    [
+      'traditional with missing activity',
+      {
+        sourceAccountId: asAccountId('ira'),
+        subtype: 'traditional',
+      },
+    ],
+    [
+      'traditional with null activity',
+      {
+        sourceAccountId: asAccountId('ira'),
+        subtype: 'traditional',
+        qcdActivity: null,
+      },
+    ],
+    [
+      'SEP with null activity',
+      {
+        sourceAccountId: asAccountId('ira'),
+        subtype: 'sep',
+        qcdActivity: null,
+      },
+    ],
+    [
+      'SIMPLE with null activity',
+      {
+        sourceAccountId: asAccountId('ira'),
+        subtype: 'simple',
+        qcdActivity: null,
+      },
+    ],
+  ])('fails closed without throwing for malformed external %s', (_label, fact) => {
+    const request = qcdRequest()
+    const plan = { people: [person('p1')], accounts: [ira] }
+    const context = withAlive(request, {
+      ...traditionalContext(),
+      iraFacts: [fact] as NonpersistedRetirementActionEligibilityContext['iraFacts'],
+    })
+    const evaluate = () =>
+      evaluateRetirementActionEligibility(request, plan, context)
+
+    expect(evaluate).not.toThrow()
+    expect(evaluate().reasons[0]?.code).toBe('qcd-sep-simple-activity-unknown')
+  })
+
   it('refuses ongoing SEP/SIMPLE, leaves inherited and Roth sources unsupported, and defers offset diagnostics', () => {
     const plan = { people: [person('p1')], accounts: [ira] }
     const request = qcdRequest()

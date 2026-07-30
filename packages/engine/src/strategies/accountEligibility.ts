@@ -720,9 +720,9 @@ function evaluateQcd(
       const fact = iraFacts.get(request.allocation.sourceAccountId)
       if (
         fact == null ||
-        (fact.subtype === 'traditional' && fact.qcdActivity.kind !== 'notApplicable') ||
+        (fact.subtype === 'traditional' && fact.qcdActivity?.kind !== 'notApplicable') ||
         (fact.subtype !== 'traditional' &&
-          (fact.qcdActivity === undefined ||
+          (fact.qcdActivity == null ||
             fact.qcdActivity.kind !== 'employerContribution' ||
             !Number.isSafeInteger(fact.qcdActivity.actionTaxYear) ||
             fact.qcdActivity.actionTaxYear !== request.year ||
@@ -738,8 +738,7 @@ function evaluateQcd(
         )
       } else if (
         fact.subtype !== 'traditional' &&
-        fact.qcdActivity !== undefined &&
-        fact.qcdActivity.employerContributionMadeForPlanYear
+        fact.qcdActivity?.employerContributionMadeForPlanYear
       ) {
         reasons.push(
           createActionReason('qcd-ongoing-sep-simple', {
