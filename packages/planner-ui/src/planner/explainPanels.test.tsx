@@ -264,6 +264,7 @@ describe('WhyRecommendationPanel', () => {
             candidateNonActionableYears: [],
             supportCodes: ['tax-year-parameters-unsupported'],
             vetoedCandidateIds: ['bracket-10'],
+            vetoedMilp: false,
           },
         })}
         objectiveLabel="Maximize after-tax estate"

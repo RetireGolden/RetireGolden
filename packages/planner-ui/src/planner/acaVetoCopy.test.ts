@@ -15,6 +15,7 @@ function veto(overrides: Partial<AcaActionabilityVeto> = {}): AcaActionabilityVe
     candidateNonActionableYears: [],
     supportCodes: ['tax-year-parameters-unsupported'],
     vetoedCandidateIds: ['bracket-10'],
+    vetoedMilp: false,
     ...overrides,
   }
 }
@@ -28,12 +29,12 @@ describe('acaVetoYears', () => {
 })
 
 describe('acaVetoExplanation', () => {
-  it('names the unpublished-parameters cause and the blocked positive row', () => {
+  it('names the unpublished-parameters cause and the blocked row caveat', () => {
     const text = acaVetoExplanation(veto())
     expect(text).toContain('marketplace (ACA) coverage in 2027 and 2028')
     expect(text).toContain('sourced ACA tax parameters for those years are not yet published')
     expect(text).toContain('no conversion schedule is presented as actionable')
-    expect(text).toContain('leaves the unpriced ACA effect out')
+    expect(text).toContain('leave the unpriced ACA effect out')
   })
 
   it('uses singular phrasing for one year and a generic cause for other codes', () => {
@@ -47,8 +48,21 @@ describe('acaVetoExplanation', () => {
     expect(text).toContain('evidence for 2026 could not be priced as actionable')
     expect(text).toContain('cannot measure that change in that year')
     expect(text).toContain('while it stays unpriced')
-    // Nothing positive was blocked, so no caveat about positive rows.
-    expect(text).not.toContain('positive after-tax estate figure')
+    // Nothing improving was blocked, so no caveat about blocked rows.
+    expect(text).not.toContain('blocked candidate row')
+  })
+
+  it('falls back to the generic cause when codes are mixed across years', () => {
+    // 2026 is non-actionable for unknown tax-exempt interest; only 2027 waits
+    // on parameters — claiming both years wait on parameters would be false.
+    const text = acaVetoExplanation(
+      veto({
+        baselineNonActionableYears: [2026, 2027],
+        supportCodes: ['other-material-facts-unsupported', 'tax-year-parameters-unsupported'],
+      }),
+    )
+    expect(text).toContain('The marketplace (ACA) evidence for 2026 and 2027 could not be priced as actionable')
+    expect(text).not.toContain('not yet published')
   })
 
   it('lists three or more years with commas', () => {

@@ -85,7 +85,11 @@ Cost: six extra deterministic `simulatePlan` runs per optimize. When the tournam
 e.g. `tax-year-parameters-unsupported` past the sourced-pack horizon — make every candidate's exact
 evaluation non-executable even when its raw estate delta is positive, since that delta is ACA-blind in the
 unpriced years), the result carries a structured `acaActionabilityVeto` diagnostic: the non-actionable
-baseline/candidate years, the ACA support codes, and the positive-delta candidate rows the veto blocked.
+baseline/schedule years, the ACA support codes, and the improving schedules the veto blocked — candidate
+rows judged by the active objective's primary metric, plus the post-processed solver schedule when it alone
+went non-actionable. Candidate-only evidence is reported only when it covers every improving row, so the
+diagnostic never claims "nothing was actionable" while an actionable improving candidate lost for another
+reason.
 The Optimize page, the "why this recommendation" panel, and the report's candidate loss reasons all render
 it, so a "no change" verdict next to a positive candidate row always explains itself.
 

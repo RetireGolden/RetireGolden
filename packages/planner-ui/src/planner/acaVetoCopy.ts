@@ -15,7 +15,8 @@ export function acaVetoYears(veto: AcaActionabilityVeto): number[] {
   return [...new Set([...veto.baselineNonActionableYears, ...veto.candidateNonActionableYears])].sort((a, b) => a - b)
 }
 
-function listYears(years: number[]): string {
+/** Natural-language year list ("2027", "2027 and 2028", "2026, 2027, and 2028"). */
+export function formatYearList(years: number[]): string {
   if (years.length <= 1) return String(years[0] ?? '')
   if (years.length === 2) return `${years[0]} and ${years[1]}`
   return `${years.slice(0, -1).join(', ')}, and ${years[years.length - 1]}`
@@ -30,14 +31,19 @@ export const ACA_VETO_ROW_NOTE = 'not actionable (unpriced ACA years)'
  */
 export function acaVetoExplanation(veto: AcaActionabilityVeto): string {
   const years = acaVetoYears(veto)
-  const yearsText = listYears(years)
+  const yearsText = formatYearList(years)
   const those = years.length === 1 ? 'that year' : 'those years'
-  const lead = veto.supportCodes.includes('tax-year-parameters-unsupported')
+  // Name the unpublished-parameters cause only when it is the SOLE code — the
+  // engine merges codes across years, so a mixed set (e.g. one year with
+  // unknown tax-exempt interest, another past the sourced-pack horizon) must
+  // not claim every listed year is waiting on parameters.
+  const parameterGapOnly = veto.supportCodes.length === 1 && veto.supportCodes[0] === 'tax-year-parameters-unsupported'
+  const lead = parameterGapOnly
     ? `This plan carries marketplace (ACA) coverage in ${yearsText}, and sourced ACA tax parameters for ${those} are not yet published.`
     : `The marketplace (ACA) evidence for ${yearsText} could not be priced as actionable on the full projection.`
   const tail =
     veto.vetoedCandidateIds.length > 0
-      ? ' A candidate row can still show a positive after-tax estate figure — that figure leaves the unpriced ACA effect out.'
+      ? ' A blocked candidate row can still show favorable deltas — those figures leave the unpriced ACA effect out.'
       : ''
   return (
     `${lead} Conversion income changes the ACA premium tax credit, and the projection cannot measure that change in ` +

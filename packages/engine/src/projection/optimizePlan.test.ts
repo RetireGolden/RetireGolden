@@ -17,8 +17,9 @@ import { recurringOrdinaryIncome, setAcaYearContract, socialSecurityIncome } fro
 import { buildOptimizerModel, optimizeSchedule, type OptimizedSchedule } from '../strategies/optimizer.js'
 import { createFederalTaxCalculator } from '../tax/federalTax.js'
 import { summarizeProjection } from './compare.js'
-import type { OptimizerYearProbe } from './types.js'
+import type { OptimizerYearProbe, ProjectionResult } from './types.js'
 import {
+  buildAcaActionabilityVeto,
   buildOptimizerInput,
   evaluateExactLedgerSchedule,
   evaluateSimpleConversionCandidates,
@@ -1616,6 +1617,104 @@ describe('exact-ledger candidate tournament', () => {
     expect(veto!.supportCodes.length).toBeGreaterThan(0)
     // Structured-clone safe: the diagnostic crosses the worker boundary as-is.
     expect(() => structuredClone(tournament)).not.toThrow()
+  })
+
+  describe('buildAcaActionabilityVeto', () => {
+    // Only `years[].aca` and `years[].year` are read; everything else on a
+    // YearResult is irrelevant to the veto evidence.
+    const acaResult = (
+      years: { year: number; aca?: { readiness: 'actionable' | 'nonActionable'; supportCodes: string[] } }[],
+    ): ProjectionResult => ({ years }) as unknown as ProjectionResult
+    const actionable = (year: number) => ({ year, aca: { readiness: 'actionable' as const, supportCodes: [] } })
+    const unsourced = (year: number) => ({
+      year,
+      aca: { readiness: 'nonActionable' as const, supportCodes: ['tax-year-parameters-unsupported'] },
+    })
+
+    it('returns null when no evaluated projection has a non-actionable ACA year', () => {
+      const veto = buildAcaActionabilityVeto(
+        acaResult([actionable(2026)]),
+        [{ id: 'bracket-10', improves: true, result: acaResult([actionable(2026)]) }],
+        null,
+      )
+      expect(veto).toBeNull()
+    })
+
+    it('suppresses a candidate-only veto when an improving actionable row was blocked by something else', () => {
+      // The non-actionable best candidate was ACA-vetoed, but an actionable
+      // improving row also lost — claiming "nothing was actionable" is false.
+      const veto = buildAcaActionabilityVeto(
+        acaResult([actionable(2026)]),
+        [
+          { id: 'bracket-22', improves: true, result: acaResult([actionable(2026), unsourced(2027)]) },
+          { id: 'bracket-10', improves: true, result: acaResult([actionable(2026)]) },
+        ],
+        null,
+      )
+      expect(veto).toBeNull()
+    })
+
+    it('reports a candidate-only veto when it covers every improving row', () => {
+      const veto = buildAcaActionabilityVeto(
+        acaResult([actionable(2026)]),
+        [
+          { id: 'bracket-22', improves: true, result: acaResult([actionable(2026), unsourced(2027)]) },
+          { id: 'bracket-10', improves: false, result: acaResult([actionable(2026)]) },
+        ],
+        null,
+      )
+      expect(veto).not.toBeNull()
+      expect(veto!.baselineNonActionableYears).toEqual([])
+      expect(veto!.candidateNonActionableYears).toEqual([2027])
+      expect(veto!.supportCodes).toEqual(['tax-year-parameters-unsupported'])
+      expect(veto!.vetoedCandidateIds).toEqual(['bracket-22'])
+      expect(veto!.vetoedMilp).toBe(false)
+    })
+
+    it("reports the solver's schedule when it alone was ACA-vetoed", () => {
+      // Baseline and simple candidates are actionable and non-improving; the
+      // cleaned MILP projection alone goes non-actionable while its raw delta
+      // is positive — the fallback must still explain itself.
+      const veto = buildAcaActionabilityVeto(
+        acaResult([actionable(2026)]),
+        [{ id: 'bracket-10', improves: false, result: acaResult([actionable(2026)]) }],
+        { improves: true, result: acaResult([actionable(2026), unsourced(2027)]) },
+      )
+      expect(veto).not.toBeNull()
+      expect(veto!.vetoedMilp).toBe(true)
+      expect(veto!.vetoedCandidateIds).toEqual([])
+      expect(veto!.candidateNonActionableYears).toEqual([2027])
+    })
+
+    it('ignores a non-improving vetoed solver schedule', () => {
+      // ACA blocked a schedule that would have been rejected anyway — the
+      // fallback is an ordinary "nothing improved the plan".
+      const veto = buildAcaActionabilityVeto(
+        acaResult([actionable(2026)]),
+        [{ id: 'bracket-10', improves: false, result: acaResult([actionable(2026)]) }],
+        { improves: false, result: acaResult([actionable(2026), unsourced(2027)]) },
+      )
+      expect(veto).toBeNull()
+    })
+
+    it('sorts years and codes and keeps baseline years out of the schedule-only list', () => {
+      const veto = buildAcaActionabilityVeto(
+        acaResult([
+          unsourced(2028),
+          { year: 2026, aca: { readiness: 'nonActionable', supportCodes: ['other-material-facts-unsupported'] } },
+        ]),
+        [
+          { id: 'bracket-10', improves: true, result: acaResult([unsourced(2028), unsourced(2029), unsourced(2026)]) },
+          { id: 'bracket-12', improves: false, result: acaResult([unsourced(2028)]) },
+        ],
+        null,
+      )
+      expect(veto).not.toBeNull()
+      expect(veto!.baselineNonActionableYears).toEqual([2026, 2028])
+      expect(veto!.candidateNonActionableYears).toEqual([2029])
+      expect(veto!.supportCodes).toEqual(['other-material-facts-unsupported', 'tax-year-parameters-unsupported'])
+      expect(veto!.vetoedCandidateIds).toEqual(['bracket-10'])
+    })
   })
 
   it('lets a candidate win outright when the MILP has nothing to recommend', () => {

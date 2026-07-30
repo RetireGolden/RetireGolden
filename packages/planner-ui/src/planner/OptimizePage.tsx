@@ -462,6 +462,11 @@ export function OptimizePage() {
               (spending exceeds what the portfolio can cover), so there's no conversion strategy to weigh. Resolve the
               shortfall in Results or Monte Carlo, then try again.
             </p>
+            {tournament?.acaActionabilityVeto ? (
+              <p className="field-hint" style={{ margin: '0.6rem 0 0' }}>
+                {acaVetoExplanation(tournament.acaActionabilityVeto)}
+              </p>
+            ) : null}
             <div style={{ marginTop: '0.75rem' }}>{rerunButton()}</div>
           </div>
         ) : rawConversions < 1 && !candidateWins ? (
