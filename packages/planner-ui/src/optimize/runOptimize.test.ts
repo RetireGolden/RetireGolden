@@ -147,7 +147,16 @@ describe('runOptimizeRequest', () => {
     // every ACA year of the example), the veto legitimately lifts and the
     // winner assertions should be revisited rather than patched around.
     const plan = buildEarlyRetireeAca()
-    const result = await runOptimizeRequest({ plan, startYear: 2026, liquidationRatePct: 22 })
+    // Minimal budgets: the veto fires before search runs and nulls whatever
+    // the convergence loop would re-solve, so production budgets only add
+    // MILP solve time without changing the pinned behavior.
+    const result = await runOptimizeRequest({
+      plan,
+      startYear: 2026,
+      liquidationRatePct: 22,
+      searchSimulationBudget: 0,
+      convergenceIterations: 1,
+    })
 
     const bracket10 = result.tournament.candidates.find((c) => c.id === 'bracket-10')
     expect(bracket10).toBeDefined()
