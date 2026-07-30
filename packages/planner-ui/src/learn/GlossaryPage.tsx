@@ -5,7 +5,7 @@
  * tooltips and articles can deep-link to a specific definition.
  */
 
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { GLOSSARY_TERMS } from './glossary'
 
 export function GlossaryPage() {

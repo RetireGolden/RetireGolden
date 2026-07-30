@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { usePlan } from '../planContextCore'
 import { useProjection } from '../useProjection'
 import { packForYear } from '@retiregolden/engine/params'

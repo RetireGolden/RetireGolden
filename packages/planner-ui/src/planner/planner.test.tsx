@@ -3,7 +3,7 @@ import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, type ComponentType } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router'
 import { IDBFactory } from 'fake-indexeddb'
 
 import { _resetPlanStoreForTests, loadPlan, savePlan } from '../data/planStore'

@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { act, isValidElement } from 'react'
 import { createRoot } from 'react-dom/client'
 import { renderToString } from 'react-dom/server'
-import { MemoryRouter, useRoutes, type RouteObject } from 'react-router-dom'
+import { MemoryRouter, useRoutes, type RouteObject } from 'react-router'
 import { IDBFactory } from 'fake-indexeddb'
 
 import { _resetPlanStoreForTests, savePlan } from '../data/planStore'

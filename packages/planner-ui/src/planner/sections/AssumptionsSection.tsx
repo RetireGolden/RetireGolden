@@ -1,6 +1,6 @@
 /** Assumptions section: inflation, returns, taxes, asset classes. */
 
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 
 import type { AssetClassId } from '@retiregolden/engine/model/plan'
 import { ASSET_CLASS_IDS } from '@retiregolden/engine/model/plan'

@@ -7,7 +7,7 @@
  * (`import.meta.glob` keys), so they cannot go stale.
  */
 
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 
 // Sibling-workspace globs (engine, app harness tests) resolve when this file
 // is built inside the RetireGolden monorepo — retiregolden.app's build. In an

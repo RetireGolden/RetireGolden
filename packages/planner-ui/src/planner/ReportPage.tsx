@@ -5,7 +5,7 @@
  * old jspdf/html2canvas path with native print CSS.
  */
 
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router'
 import {
   Area,
   AreaChart,

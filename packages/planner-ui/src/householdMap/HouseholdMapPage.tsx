@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 
 import { buildHouseholdGraph } from './householdGraph'
 import { isPlanIncomplete } from '../planner/planCompleteness'

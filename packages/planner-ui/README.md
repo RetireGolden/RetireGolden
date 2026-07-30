@@ -28,7 +28,7 @@ provides:
 
 Compiling to plain ESM would not remove any of those requirements, so the
 package doesn't pretend otherwise. Known-good consumers: Vite ≥ 8 and
-electron-vite, with React 19 and react-router v7 (peers).
+electron-vite, with React 19 and react-router v8 (peers).
 
 ### Required Vite config
 
@@ -55,7 +55,7 @@ this package's source.
 ## Usage
 
 ```bash
-npm install @retiregolden/planner-ui react react-dom react-router-dom
+npm install @retiregolden/planner-ui react react-dom react-router
 ```
 
 The host owns the router and mounts the planner under it:
@@ -63,7 +63,7 @@ The host owns the router and mounts the planner under it:
 ```tsx
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
+import { BrowserRouter } from 'react-router'
 import '@retiregolden/planner-ui/index.css'
 import { PlannerApp } from '@retiregolden/planner-ui'
 
@@ -344,7 +344,7 @@ const readOnly = useWorkspaceReadOnly() // false unless a provider sets it
 
 ### Route groups
 
-The route table is exported as three react-router v7 `RouteObject[]` arrays
+The route table is exported as three react-router v8 `RouteObject[]` arrays
 that spread into `useRoutes` or feed `createBrowserRouter`. Mount them at
 the host router's **root**; to serve the planner under a URL prefix, put the
 prefix in the router's `basename`
@@ -362,7 +362,7 @@ workspace group mounted:
 | `plannerHomeRoutes` | `` (index), `import`, retired-route redirects | The web plans-management home — omit it if the host owns plan management |
 
 ```tsx
-import { useRoutes } from 'react-router-dom'
+import { useRoutes } from 'react-router'
 import { plannerWorkspaceRoutes, plannerContentRoutes } from '@retiregolden/planner-ui'
 
 function PlannerRoutes() {

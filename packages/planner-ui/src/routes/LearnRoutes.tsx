@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Route, Routes, useLocation } from 'react-router-dom'
+import { Route, Routes, useLocation } from 'react-router'
 import { LearningCenterPage } from '../learn/LearningCenterPage'
 import { ArticlePage } from '../learn/ArticlePage'
 import { GlossaryPage } from '../learn/GlossaryPage'

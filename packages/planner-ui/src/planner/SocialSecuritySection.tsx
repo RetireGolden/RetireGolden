@@ -6,7 +6,7 @@
  */
 
 import { useState, type ChangeEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 
 import type { FormerSpouse, IncomeStream, Person } from '@retiregolden/engine/model/plan'
 import {

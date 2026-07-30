@@ -4,7 +4,7 @@ import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderToString } from 'react-dom/server'
-import { MemoryRouter, Route, Routes, type InitialEntry, useNavigate } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, type InitialEntry, useNavigate } from 'react-router'
 import { App } from '../App.tsx'
 import LearnRoutes from '../routes/LearnRoutes'
 import {

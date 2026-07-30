@@ -8,7 +8,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router'
 
 import { compareSwrRules } from '@retiregolden/engine/decisions/swrComparator'
 import { startingInvestableOf } from '@retiregolden/engine/montecarlo/riskBasedGuardrails'

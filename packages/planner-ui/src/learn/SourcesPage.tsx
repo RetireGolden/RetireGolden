@@ -6,7 +6,7 @@
  * its own source list and last-reviewed date.
  */
 
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 
 type PrimarySource = { name: string; scope: string; href: string }
 

@@ -7,7 +7,7 @@
  * stay in ArticlePage but share {@link BackLink}.
  */
 
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router'
 import { OpenExampleButton } from '../../planner/examples/OpenExampleButton'
 import { getCategory, type LearningArticle } from '../learningRegistry'
 import { ArticleBody } from '../ArticleBody'

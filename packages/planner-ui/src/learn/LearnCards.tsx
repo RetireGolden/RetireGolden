@@ -6,7 +6,7 @@
  * empty page (spec §7.3).
  */
 
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { getCategory, isReadable, type LearningArticle } from './learningRegistry'
 
 export function ArticleCard({ article }: { article: LearningArticle }) {
