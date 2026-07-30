@@ -73,7 +73,6 @@ import {
   executeCashOrdinaryWithdrawals,
   ledgerCentsToPlanDollars,
   planDollarsToLedgerCents,
-  sumUsdCents,
   type ExecuteCashOrdinaryWithdrawalsResult,
 } from '../actions/index.js'
 import { effectiveBirthYear, fraForBirthYear, fraTotalMonths, survivorFraForBirthYear } from '../socialSecurity/nra.js'
@@ -2218,15 +2217,22 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     let retirementActionExecution: ExecuteCashOrdinaryWithdrawalsResult | undefined
     let retirementActionCash = 0
     if (currentYearActions.length > 0) {
-      const ordinarySourceAccountIds = new Set(
+      const cashAccountIds = new Set(
+        plan.accounts
+          .filter((account) => account.type === 'cash')
+          .map((account) => account.id),
+      )
+      const ordinaryCashSourceAccountIds = new Set<string>(
         currentYearActions.flatMap((request) =>
           request.kind === 'ordinaryWithdrawal'
-            ? request.allocations.map((allocation) => allocation.sourceAccountId)
+            ? request.allocations
+              .map((allocation) => allocation.sourceAccountId)
+              .filter((accountId) => cashAccountIds.has(accountId))
             : [],
         ),
       )
       const openingBalances = [...balances]
-        .filter((state) => ordinarySourceAccountIds.has(asAccountId(state.account.id)))
+        .filter((state) => ordinaryCashSourceAccountIds.has(state.account.id))
         .sort((left, right) =>
           left.account.id < right.account.id ? -1 : left.account.id > right.account.id ? 1 : 0,
         )
@@ -2272,22 +2278,27 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         const closingCentsByAccountId = new Map(
           retirementActionExecution.balances
             .filter((snapshot) => snapshot.closingBalance !== snapshot.openingBalance)
-            .map((snapshot) => [snapshot.accountId, snapshot.closingBalance]),
+            .map((snapshot) => [String(snapshot.accountId), snapshot.closingBalance]),
         )
         for (const state of balances) {
-          const closingCents = closingCentsByAccountId.get(asAccountId(state.account.id))
+          const closingCents = closingCentsByAccountId.get(state.account.id)
           if (closingCents !== undefined) {
             state.balance = ledgerCentsToPlanDollars(closingCents)
           }
         }
       }
-      retirementActionCash = ledgerCentsToPlanDollars(
-        sumUsdCents(
-          retirementActionExecution.evidence.map(
-            (evidence) => evidence.disposition.executedAmount,
-          ),
-        ),
+      // Keep the annual aggregate exact as an unbounded integer until its one
+      // crossing back into Plan-dollar numbers. Individual ledger amounts are
+      // safe integers, but their annual sum need not fit the branded cent type.
+      const retirementActionCashCents = retirementActionExecution.evidence.reduce(
+        (total, evidence) =>
+          total + BigInt(evidence.disposition.executedAmount),
+        0n,
       )
+      retirementActionCash = Number(retirementActionCashCents) / 100
+      if (!Number.isFinite(retirementActionCash)) {
+        throw new RangeError('annual retirement-action cash exceeds the Plan-dollar range')
+      }
     }
 
     // --- Roth conversions (after RMDs — RMDs must be satisfied first) -------

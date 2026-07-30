@@ -123,10 +123,11 @@ describe('retirement-action cash execution in the annual ledger', () => {
     })
   })
 
-  it('does not quantize an unrelated balance outside the exact-cent boundary', () => {
+  it('does not quantize or brand unrelated balances outside the exact-cent boundary', () => {
     const plan = basePlan()
     plan.accounts = [
       cash('cash-a', 100),
+      cash('   ', 25),
       {
         type: 'taxable',
         id: 'unrelated',
@@ -150,6 +151,7 @@ describe('retirement-action cash execution in the annual ledger', () => {
     const year = run(plan).years[0]!
 
     expect(year.balances['cash-a']).toBe(50)
+    expect(year.balances['   ']).toBe(25)
     expect(year.balances.unrelated).toBe(90_071_992_547_410)
   })
 
@@ -208,6 +210,36 @@ describe('retirement-action cash execution in the annual ledger', () => {
 
     expect(year.withdrawals).toMatchObject({ cash: 0.3, total: 0.3 })
     expect(year.balances['cash-a']).toBe(0.7)
+  })
+
+  it('allows the annual executed-cent sum to exceed one safe cent value', () => {
+    const plan = basePlan()
+    plan.accounts = [
+      cash('cash-a', 50_000_000_000_000),
+      cash('cash-b', 50_000_000_000_000),
+    ]
+    plan.expenses.baseAnnual = 100_000_000_000_000
+    plan.strategies.retirementActions = [
+      withdrawal({
+        actionId: 'first-fifty-trillion',
+        accountId: 'cash-a',
+        dollars: 50_000_000_000_000,
+      }),
+      withdrawal({
+        actionId: 'second-fifty-trillion',
+        accountId: 'cash-b',
+        dollars: 50_000_000_000_000,
+        sequence: 2,
+      }),
+    ]
+
+    const year = run(plan).years[0]!
+
+    expect(year.withdrawals).toMatchObject({
+      cash: 100_000_000_000_000,
+      total: 100_000_000_000_000,
+    })
+    expect(year.balances).toMatchObject({ 'cash-a': 0, 'cash-b': 0 })
   })
 
   it('keeps explicit cash proceeds available when sizing a floor-limited conversion', () => {
@@ -612,6 +644,44 @@ describe('retirement-action cash execution in the annual ledger', () => {
       ira: 40,
       roth: 0,
     })
+  })
+
+  it('does not cent-convert an unsupported noncash action source', () => {
+    const plan = basePlan()
+    plan.accounts = [{
+      type: 'taxable',
+      id: 'taxable',
+      name: 'Taxable',
+      ownerPersonId: 'p1',
+      annualReturnPct: 0,
+      balance: 90_071_992_547_410,
+      costBasis: 0,
+      interestYieldPct: 0,
+      dividendYieldPct: 0,
+      qualifiedRatio: 0,
+      reinvestDividends: true,
+      annualContribution: 0,
+    }]
+    plan.strategies.retirementActions = [
+      withdrawal({
+        actionId: 'unsupported-noncash',
+        accountId: 'taxable',
+        dollars: 10,
+      }),
+    ]
+
+    const year = run(plan).years[0]!
+
+    expect(year.retirementActionExecution?.evidence[0]?.disposition).toMatchObject({
+      outcome: 'unsupported',
+      executedAmount: 0,
+    })
+    expect(
+      year.retirementActionExecution?.evidence[0]?.disposition.reasons.map(
+        (reason) => reason.code,
+      ),
+    ).toContain('withdrawal-source-type-unsupported')
+    expect(year.balances.taxable).toBe(90_071_992_547_410)
   })
 
   it('preserves empty-schedule projection bytes and account-ID behavior', () => {
