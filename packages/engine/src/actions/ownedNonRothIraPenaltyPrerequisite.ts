@@ -58,6 +58,32 @@ export interface SimpleIraParticipationEvidence {
   participationStartEvidenceId: string
 }
 
+/**
+ * Typed signal used by higher-level Plan/runtime adapters to turn an expected
+ * missing SIMPLE participation fact into a non-actionable result. Direct
+ * callers still receive a RangeError with the established message.
+ */
+export class MissingSimpleIraParticipationEvidenceError extends RangeError {
+  readonly sourceAccountIds: readonly AccountId[]
+
+  constructor(sourceAccountIds: readonly AccountId[]) {
+    super('SIMPLE IRA participation evidence is missing for an early distribution')
+    this.name = 'MissingSimpleIraParticipationEvidenceError'
+    this.sourceAccountIds = Object.freeze([...sourceAccountIds])
+  }
+}
+
+/** Typed invalid SIMPLE participation fact with exact source attribution. */
+export class InvalidSimpleIraParticipationEvidenceError extends RangeError {
+  readonly sourceAccountId: AccountId
+
+  constructor(sourceAccountId: AccountId, message: string) {
+    super(message)
+    this.name = 'InvalidSimpleIraParticipationEvidenceError'
+    this.sourceAccountId = sourceAccountId
+  }
+}
+
 export interface QualifiedDisabilityEventEvidence {
   kind: 'disability'
   disabledPersonId: PersonId
@@ -1792,7 +1818,8 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
       )
     }
     if (participationStartDate < birthDate) {
-      throw new RangeError(
+      throw new InvalidSimpleIraParticipationEvidenceError(
+        sourceAccountId,
         'SIMPLE IRA participation start date cannot precede the owner birth date',
       )
     }
@@ -1813,8 +1840,12 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
     })
   }
   if (simpleParticipationBySource.size !== requiredSimpleSourceIds.size) {
-    throw new RangeError(
-      'SIMPLE IRA participation evidence is missing for an early distribution',
+    throw new MissingSimpleIraParticipationEvidenceError(
+      [...requiredSimpleSourceIds]
+        .filter((sourceAccountId) =>
+          !simpleParticipationBySource.has(sourceAccountId),
+        )
+        .sort((left, right) => left < right ? -1 : left > right ? 1 : 0),
     )
   }
 
@@ -1942,7 +1973,8 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
           sourceEvidence.evaluationDate <
           participation.participationStartDate
         ) {
-          throw new RangeError(
+          throw new InvalidSimpleIraParticipationEvidenceError(
+            withdrawal.sourceAccountId,
             'SIMPLE IRA distribution cannot precede participation start',
           )
         }
@@ -1951,7 +1983,8 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
           24,
         )
         if (initialTwoYearPeriodEndDate === null) {
-          throw new RangeError(
+          throw new InvalidSimpleIraParticipationEvidenceError(
+            withdrawal.sourceAccountId,
             'SIMPLE IRA two-year period end is outside civil-date range',
           )
         }
