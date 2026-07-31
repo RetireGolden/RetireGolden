@@ -671,7 +671,7 @@ function canonicalPlanEvents(
     if (action.executionDate === undefined) {
       issues.push(issue(
         'planActionExecutionDateMissing',
-        'A Plan IRA action needs an explicit execution date before it can enter annual chronology',
+        'A Plan action with a traditional-account allocation needs an explicit execution date before it can enter annual chronology',
         { actionId: actionIdSchema.parse(action.actionId) },
       ))
       continue
@@ -859,10 +859,16 @@ export function buildAnnualRetirementPhysicalEventInventory(
     ))
   }
   if (recordParseIssues.length > 0) return incomplete(recordParseIssues)
-  records.sort((left, right) => compareUtf16CodeUnits(
-    canonicalRuntimeRecordKey(left),
-    canonicalRuntimeRecordKey(right),
-  ))
+  const sortedRecords = records
+    .map((record) => ({
+      record,
+      sortKey: canonicalRuntimeRecordKey(record),
+    }))
+    .sort((left, right) => compareUtf16CodeUnits(
+      left.sortKey,
+      right.sortKey,
+    ))
+    .map(({ record }) => record)
 
   const plan = parsedPlan.data
   const planId = planIdSchema.parse(plan.id)
@@ -910,7 +916,7 @@ export function buildAnnualRetirementPhysicalEventInventory(
   const unresolvedIds: string[] = []
   const runtimeEvents: RuntimeAnnualRetirementPhysicalEvent[] = []
   const authorityBindings = new Map<string, MovementAuthorityBinding>()
-  for (const record of records) {
+  for (const record of sortedRecords) {
     const recordId = record.recordStatus === 'resolved'
       ? record.eventId
       : record.activityId
