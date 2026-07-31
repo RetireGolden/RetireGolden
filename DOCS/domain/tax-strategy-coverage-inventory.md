@@ -13,6 +13,13 @@ select a custodian transaction, or replace review by the client's tax and legal 
 Current-year parameters and primary-source links are maintained in the
 [domain rules reference](domain-rules-reference.md).
 
+The partial owned-IRA action substrate now treats each per-allocation early-distribution penalty
+candidate as provisional. Fully evidenced allocations are aggregated by owner, tax year, and exact
+rational rate, rounded once, and allocated by floor quotas plus deterministic largest remainders.
+An unresolved same-rate member keeps its whole rate bucket provisional, and any unresolved
+allocation still suppresses the entire owner/year annual-finalization bundle. This remains
+planning-grade evidence rather than execution readiness.
+
 ## Inventory
 
 | Area | Shipped model or action | Rule and implementation source | Test evidence | Limits that control the claim | Allowed cockpit-v1 claim | Prerequisite or blocker |

@@ -882,4 +882,124 @@ describe('coordinateOwnedNonRothIraAnnualWithdrawalCandidate', () => {
       }],
     })
   })
+
+  it('blocks the owner/year when incomplete evidence keeps a complete same-rate sibling provisional', () => {
+    const base = mixedPenaltyFixture()
+    const siblingSource =
+      movementSource('ira-penalty-sibling', 'traditional')
+    const input:
+      CoordinateOwnedNonRothIraAnnualWithdrawalCandidateInput = {
+        ...base,
+        movementInput: {
+          ...base.movementInput,
+          requests: [
+            ...base.movementInput.requests,
+            request({
+              suffix: 'penalty-sibling',
+              date: '2030-01-25',
+              sequence: 1,
+              allocations: [
+                allocation(
+                  'penalty-sibling',
+                  'ira-penalty-sibling',
+                  1,
+                ),
+              ],
+            }),
+          ],
+          openingBalances: [
+            ...base.movementInput.openingBalances,
+            {
+              accountId: siblingSource.sourceAccountId,
+              openingBalance: asUsdCents(1),
+            },
+          ],
+          sourceEvidence: [
+            ...base.movementInput.sourceEvidence,
+            siblingSource,
+          ],
+        },
+        annualInput: {
+          ...base.annualInput,
+          completePoolEvidence: {
+            ...base.annualInput.completePoolEvidence,
+            accountIds: [
+              ...base.annualInput.completePoolEvidence.accountIds,
+              siblingSource.sourceAccountId,
+            ],
+          },
+          poolMembers: [
+            ...base.annualInput.poolMembers,
+            poolMember('ira-penalty-sibling', 'traditional'),
+          ],
+          annualFacts: {
+            ...base.annualInput.annualFacts,
+            form8606Line7DistributionAmount: asUsdCents(5),
+          },
+        },
+        ownerAliveEvidence: [
+          ...base.ownerAliveEvidence!,
+          {
+            predicate: 'ownerAliveOnOwnedIraDistributionDate',
+            actionId: asActionId('action-penalty-sibling'),
+            allocationId:
+              asAllocationId('allocation-penalty-sibling'),
+            sourceAccountId: asAccountId('ira-penalty-sibling'),
+            ownerPersonId: asPersonId('owner'),
+            evaluationDate: '2030-01-25',
+            aliveOnEvaluationDate: true,
+            ownerAliveEvidenceId: 'owner-alive-penalty-sibling',
+          },
+        ],
+        rejectedDisabilityEvidence: [
+          ...base.rejectedDisabilityEvidence!,
+          {
+            kind: 'disability',
+            disabledPersonId: asPersonId('owner'),
+            disabilityQualificationDate: null,
+            evaluationDate: '2030-01-25',
+            qualifiedOnEvaluationDate: false,
+            disabilityEvidenceId:
+              'rejected-disability-penalty-sibling',
+          },
+        ],
+        iraSeppStatusEvidence: [
+          ...base.iraSeppStatusEvidence!,
+          {
+            predicate: 'ownedNonRothIraSeppStatusForWithdrawal',
+            actionId: asActionId('action-penalty-sibling'),
+            allocationId:
+              asAllocationId('allocation-penalty-sibling'),
+            sourceAccountId: asAccountId('ira-penalty-sibling'),
+            ownerPersonId: asPersonId('owner'),
+            evaluationDate: '2030-01-25',
+            status: 'none',
+            electionId: null,
+            scheduleId: null,
+            seppStatusEvidenceId: 'no-sepp-penalty-sibling',
+          },
+        ],
+      }
+
+    const result =
+      coordinateOwnedNonRothIraAnnualWithdrawalCandidate(input)
+
+    expect(result.status).toBe('annualEvidenceBlocked')
+    if (result.status !== 'annualEvidenceBlocked') return
+    expect(result.annualEvidence).toBeNull()
+    expect(result.bindingEvidence).toBeNull()
+    expect(result.issues.map((issue) => ({
+      actionId: issue.actionId,
+      outcome: issue.prerequisite.outcome,
+    }))).toEqual([
+      {
+        actionId: asActionId('action-penalty'),
+        outcome: 'exceptionEvaluationRequired',
+      },
+      {
+        actionId: asActionId('action-penalty-sibling'),
+        outcome: 'exceptionEvaluationRequired',
+      },
+    ])
+  })
 })

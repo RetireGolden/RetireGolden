@@ -203,6 +203,8 @@ export {
   type OwnedNonRothIraPenaltyCharacterCoverageEvidence,
   type OwnedNonRothIraPenaltyOwnerEvidence,
   type OwnedNonRothIraPenaltyPrerequisiteEvaluation,
+  type OwnedNonRothIraPenaltyRateBucketEvidence,
+  type OwnedNonRothIraPenaltyRateBucketMemberEvidence,
   type OwnedNonRothIraPenaltySourceEvidence,
   type PenaltyAppliesEvaluation,
   type QualifiedDisabilityEventEvidence,

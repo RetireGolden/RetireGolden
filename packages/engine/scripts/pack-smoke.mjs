@@ -537,6 +537,30 @@ assert.equal(
     .penaltyPrerequisites.evaluations[0].finalPenaltyAmount,
   0,
 )
+assert.equal(
+  penaltyOwnedIraAnnualCandidate.annualEvidence
+    .penaltyPrerequisites.evaluations[0].rateBucketEvidence
+    .aggregateOrdinaryIncomeExposureAmount,
+  1,
+)
+assert.equal(
+  penaltyOwnedIraAnnualCandidate.annualEvidence
+    .penaltyPrerequisites.evaluations[0].rateBucketEvidence
+    .aggregatePenaltyAmount,
+  0,
+)
+assert.equal(
+  penaltyOwnedIraAnnualCandidate.annualEvidence
+    .penaltyPrerequisites.evaluations[0].rateBucketEvidence
+    .members[0].allocatedPenaltyAmount,
+  0,
+)
+assert.match(
+  penaltyOwnedIraAnnualCandidate.annualEvidence
+    .penaltyPrerequisites.evaluations[0].rateBucketEvidence
+    .members[0].penaltyApplicabilityEvidenceId,
+  /^owned-ira-penalty-applicability:/,
+)
 assert.deepEqual(
   penaltyOwnedIraAnnualCandidate.annualEvidence
     .penaltyPrerequisites.evaluations[0].rejectedExceptions.map(

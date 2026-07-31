@@ -275,12 +275,20 @@ function twoWithdrawalInput(
   reverseEvidence = false,
   residualBasis = false,
   sameAction = false,
+  options: Readonly<{
+    firstGrossAmount?: number
+    secondGrossAmount?: number
+    secondSubtype?: 'sep' | 'simple'
+  }> = {},
 ): EvaluateOwnedNonRothIraPenaltyPrerequisitesInput {
   const memberYearEndAmount = residualBasis ? 1 : 0
   const poolYearEndAmount = residualBasis ? 2 : 0
   const openingBasisAmount = residualBasis ? 2 : 0
-  const firstGrossAmount = residualBasis ? 1 : 100
-  const secondGrossAmount = residualBasis ? 1 : 50
+  const firstGrossAmount =
+    residualBasis ? 1 : (options.firstGrossAmount ?? 100)
+  const secondGrossAmount =
+    residualBasis ? 1 : (options.secondGrossAmount ?? 50)
+  const secondSubtype = options.secondSubtype ?? 'sep'
   const annualGrossAmount = firstGrossAmount + secondGrossAmount
   const firstActionId = sameAction ? 'action-shared' : 'action-a'
   const secondActionId = sameAction ? 'action-shared' : 'action-b'
@@ -319,7 +327,7 @@ function twoWithdrawalInput(
           accountType: 'traditional',
           accountKind: 'ira',
           inheritanceStatus: 'owned',
-          subtype: 'sep',
+          subtype: secondSubtype,
           yearEndApplicableBalanceAmount: asUsdCents(memberYearEndAmount),
           iraClassificationEvidenceId: 'classification-b',
           accountOwnershipEvidenceId: 'ownership-b',
@@ -374,7 +382,7 @@ function twoWithdrawalInput(
       allocationId: asAllocationId('allocation-b'),
       sourceAccountId: asAccountId('ira-b'),
       ownerPersonId: asPersonId('owner'),
-      subtype: 'sep',
+      subtype: secondSubtype,
       evaluationDate: secondDate,
       distributionDateEvidenceId: sameAction ? 'date-shared' : 'date-b',
       accountOwnershipEvidenceId: 'ownership-b',
@@ -391,7 +399,15 @@ function twoWithdrawalInput(
     },
     sourceEvidence: reverseEvidence ? evidence.reverse() : evidence,
     qualifiedDisabilityEvidence: [],
-    simpleParticipationEvidence: [],
+    simpleParticipationEvidence: secondSubtype === 'simple'
+      ? [{
+          predicate: 'simpleIraParticipationStartForPenaltyRate',
+          sourceAccountId: asAccountId('ira-b'),
+          ownerPersonId: asPersonId('owner'),
+          participationStartDate: '2029-01-01',
+          participationStartEvidenceId: 'simple-participation-b',
+        }]
+      : [],
   }
 }
 
@@ -1381,6 +1397,303 @@ describe('evaluateOwnedNonRothIraPenaltyPrerequisites', () => {
       })
     },
   )
+
+  it('rounds a same-rate owner/year bucket once and deterministically allocates its cents', () => {
+    const value = completeNegativeEvidence(twoWithdrawalInput(
+      false,
+      false,
+      false,
+      { firstGrossAmount: 5, secondGrossAmount: 5 },
+    ))
+    const result =
+      evaluateOwnedNonRothIraPenaltyPrerequisites(value)
+    const permuted = completeNegativeEvidence(twoWithdrawalInput(
+      true,
+      false,
+      false,
+      { firstGrossAmount: 5, secondGrossAmount: 5 },
+    ))
+    permuted.ownerAliveEvidence = [
+      ...permuted.ownerAliveEvidence!,
+    ].reverse()
+    permuted.rejectedDisabilityEvidence = [
+      ...permuted.rejectedDisabilityEvidence!,
+    ].reverse()
+    permuted.iraSeppStatusEvidence = [
+      ...permuted.iraSeppStatusEvidence!,
+    ].reverse()
+    permuted.noOtherExceptionAttestations = [
+      ...permuted.noOtherExceptionAttestations!,
+    ].reverse()
+    expect(
+      evaluateOwnedNonRothIraPenaltyPrerequisites(permuted),
+    ).toEqual(result)
+    const [firstEvaluation, secondEvaluation] = result.evaluations
+    expect(firstEvaluation?.outcome).toBe('penaltyApplies')
+    expect(secondEvaluation?.outcome).toBe('penaltyApplies')
+    if (
+      firstEvaluation?.outcome !== 'penaltyApplies' ||
+      secondEvaluation?.outcome !== 'penaltyApplies'
+    ) return
+
+    expect([
+      firstEvaluation.candidateAmountBeforeExceptions,
+      secondEvaluation.candidateAmountBeforeExceptions,
+    ]).toEqual([1, 1])
+    expect([
+      firstEvaluation.finalPenaltyAmount,
+      secondEvaluation.finalPenaltyAmount,
+    ]).toEqual([1, 0])
+    expect(firstEvaluation.rateBucketEvidence).toEqual(
+      secondEvaluation.rateBucketEvidence,
+    )
+    expect(firstEvaluation.rateBucketEvidence).toMatchObject({
+      ownerPersonId: asPersonId('owner'),
+      taxYear: 2030,
+      numerator: 1,
+      denominator: 10,
+      aggregateOrdinaryIncomeExposureAmount: 10,
+      aggregatePenaltyAmount: 1,
+      allocationMethod:
+        'floorQuotasThenLargestRemaindersCanonicalIdentity',
+      quantization: 'nearestCentHalfUp',
+      intermediateArithmetic: 'bigintRational',
+      members: [
+        {
+          actionId: asActionId('action-a'),
+          ordinaryIncomeExposureAmount: 5,
+          floorQuotaAmount: 0,
+          remainderNumerator: 5,
+          allocatedPenaltyAmount: 1,
+        },
+        {
+          actionId: asActionId('action-b'),
+          ordinaryIncomeExposureAmount: 5,
+          floorQuotaAmount: 0,
+          remainderNumerator: 5,
+          allocatedPenaltyAmount: 0,
+        },
+      ],
+    })
+    expect(
+      firstEvaluation.rateBucketEvidence.members.reduce(
+        (total, member) => total + member.allocatedPenaltyAmount,
+        0,
+      ),
+    ).toBe(firstEvaluation.rateBucketEvidence.aggregatePenaltyAmount)
+    expect(Object.isFrozen(firstEvaluation.rateBucketEvidence)).toBe(true)
+    expect(Object.isFrozen(
+      firstEvaluation.rateBucketEvidence.members,
+    )).toBe(true)
+  })
+
+  it('keeps every same-rate sibling unresolved when one could still join the final bucket', () => {
+    const value = completeNegativeEvidence(twoWithdrawalInput(
+      false,
+      false,
+      false,
+      { firstGrossAmount: 5, secondGrossAmount: 5 },
+    ))
+    value.ownerAliveEvidence = value.ownerAliveEvidence?.filter(
+      (evidence) => evidence.actionId !== asActionId('action-b'),
+    )
+
+    const result =
+      evaluateOwnedNonRothIraPenaltyPrerequisites(value)
+    expect(result.evaluations.map((evaluation) => evaluation.outcome))
+      .toEqual([
+        'exceptionEvaluationRequired',
+        'exceptionEvaluationRequired',
+      ])
+    expect(
+      result.evaluations.map((evaluation) =>
+        evaluation.outcome === 'exceptionEvaluationRequired'
+          ? evaluation.prerequisiteEvidenceId
+          : null,
+      ),
+    ).not.toContain(null)
+  })
+
+  it('finalizes complete 10% and 25% buckets independently', () => {
+    const value = completeNegativeEvidence(twoWithdrawalInput(
+      false,
+      false,
+      false,
+      {
+        firstGrossAmount: 5,
+        secondGrossAmount: 2,
+        secondSubtype: 'simple',
+      },
+    ))
+    const result =
+      evaluateOwnedNonRothIraPenaltyPrerequisites(value)
+    const final = result.evaluations.filter(
+      (evaluation) => evaluation.outcome === 'penaltyApplies',
+    )
+
+    expect(final).toHaveLength(2)
+    expect(final.map(
+      (evaluation) => evaluation.rateBucketEvidence.denominator,
+    )).toEqual([10, 4])
+    expect(final.map(
+      (evaluation) => evaluation.rateBucketEvidence.members.length,
+    )).toEqual([1, 1])
+    expect(final.map(
+      (evaluation) => evaluation.finalPenaltyAmount,
+    )).toEqual([1, 1])
+    expect(final[0]?.rateBucketEvidence.evidenceId).not.toBe(
+      final[1]?.rateBucketEvidence.evidenceId,
+    )
+
+    value.noOtherExceptionAttestations =
+      value.noOtherExceptionAttestations?.filter(
+        (evidence) =>
+          evidence.actionId !== asActionId('action-a'),
+      )
+    const partlyUnresolved =
+      evaluateOwnedNonRothIraPenaltyPrerequisites(value)
+    expect(partlyUnresolved.evaluations.map(
+      (evaluation) => evaluation.outcome,
+    )).toEqual([
+      'exceptionEvaluationRequired',
+      'penaltyApplies',
+    ])
+  })
+
+  it('keeps a maximum-safe aggregate exposure in bigint through bucket allocation', () => {
+    const result = evaluateOwnedNonRothIraPenaltyPrerequisites(
+      completeNegativeEvidence(twoWithdrawalInput(
+        false,
+        false,
+        false,
+        {
+          firstGrossAmount: Number.MAX_SAFE_INTEGER - 1,
+          secondGrossAmount: 1,
+        },
+      )),
+    )
+    const evaluation = result.evaluations[0]
+    expect(evaluation?.outcome).toBe('penaltyApplies')
+    if (evaluation?.outcome !== 'penaltyApplies') return
+
+    expect(
+      evaluation.rateBucketEvidence
+        .aggregateOrdinaryIncomeExposureAmount,
+    ).toBe(Number.MAX_SAFE_INTEGER)
+    expect(
+      evaluation.rateBucketEvidence.aggregatePenaltyAmount,
+    ).toBe(900_719_925_474_099)
+    expect(
+      evaluation.rateBucketEvidence.members.reduce(
+        (total, member) =>
+          total + BigInt(member.allocatedPenaltyAmount),
+        0n,
+      ),
+    ).toBe(
+      BigInt(evaluation.rateBucketEvidence.aggregatePenaltyAmount),
+    )
+  })
+
+  it('binds material member exposure into bucket and member evidence IDs', () => {
+    const baseline = evaluateOwnedNonRothIraPenaltyPrerequisites(
+      completeNegativeEvidence(twoWithdrawalInput(
+        false,
+        false,
+        false,
+        { firstGrossAmount: 5, secondGrossAmount: 5 },
+      )),
+    )
+    const changed = evaluateOwnedNonRothIraPenaltyPrerequisites(
+      completeNegativeEvidence(twoWithdrawalInput(
+        false,
+        false,
+        false,
+        { firstGrossAmount: 6, secondGrossAmount: 4 },
+      )),
+    )
+    const baselineFirst = baseline.evaluations[0]
+    const changedFirst = changed.evaluations[0]
+    expect(baselineFirst?.outcome).toBe('penaltyApplies')
+    expect(changedFirst?.outcome).toBe('penaltyApplies')
+    if (
+      baselineFirst?.outcome !== 'penaltyApplies' ||
+      changedFirst?.outcome !== 'penaltyApplies'
+    ) return
+
+    expect(
+      changedFirst.rateBucketEvidence.aggregatePenaltyAmount,
+    ).toBe(baselineFirst.rateBucketEvidence.aggregatePenaltyAmount)
+    expect(changedFirst.rateBucketEvidence.evidenceId).not.toBe(
+      baselineFirst.rateBucketEvidence.evidenceId,
+    )
+    expect(changedFirst.finalEvidenceId).not.toBe(
+      baselineFirst.finalEvidenceId,
+    )
+  })
+
+  it('binds every completed member exception decision into the shared bucket and all final IDs', () => {
+    const baselineInput = completeNegativeEvidence(twoWithdrawalInput())
+    const changedInput = completeNegativeEvidence(twoWithdrawalInput())
+    changedInput.noOtherExceptionAttestations =
+      changedInput.noOtherExceptionAttestations?.map((attestation) =>
+        attestation.actionId === asActionId('action-b')
+          ? {
+              ...attestation,
+              attestationEvidenceId:
+                'materially-revised-sibling-attestation',
+            }
+          : attestation,
+      )
+
+    const baseline =
+      evaluateOwnedNonRothIraPenaltyPrerequisites(baselineInput)
+    const changed =
+      evaluateOwnedNonRothIraPenaltyPrerequisites(changedInput)
+    const baselineFinal = baseline.evaluations.filter(
+      (evaluation) => evaluation.outcome === 'penaltyApplies',
+    )
+    const changedFinal = changed.evaluations.filter(
+      (evaluation) => evaluation.outcome === 'penaltyApplies',
+    )
+    expect(baselineFinal).toHaveLength(2)
+    expect(changedFinal).toHaveLength(2)
+    const baselineBucket = baselineFinal[0]?.rateBucketEvidence
+    const changedBucket = changedFinal[0]?.rateBucketEvidence
+    if (baselineBucket === undefined || changedBucket === undefined) {
+      return
+    }
+
+    expect(changedBucket.aggregateOrdinaryIncomeExposureAmount).toBe(
+      baselineBucket.aggregateOrdinaryIncomeExposureAmount,
+    )
+    expect(changedBucket.aggregatePenaltyAmount).toBe(
+      baselineBucket.aggregatePenaltyAmount,
+    )
+    expect(changedBucket.members.map((member) => member.rateEvidenceId))
+      .toEqual(
+        baselineBucket.members.map((member) => member.rateEvidenceId),
+      )
+    expect(
+      changedBucket.members[0]?.penaltyApplicabilityEvidenceId,
+    ).toBe(
+      baselineBucket.members[0]?.penaltyApplicabilityEvidenceId,
+    )
+    expect(
+      changedBucket.members[1]?.penaltyApplicabilityEvidenceId,
+    ).not.toBe(
+      baselineBucket.members[1]?.penaltyApplicabilityEvidenceId,
+    )
+    expect(changedBucket.evidenceId).not.toBe(baselineBucket.evidenceId)
+    expect(changedFinal.map((evaluation) => evaluation.finalEvidenceId))
+      .not.toEqual(
+        baselineFinal.map((evaluation) => evaluation.finalEvidenceId),
+      )
+    for (let index = 0; index < baselineFinal.length; index += 1) {
+      expect(changedFinal[index]?.finalEvidenceId).not.toBe(
+        baselineFinal[index]?.finalEvidenceId,
+      )
+    }
+  })
 
   it('is permutation-invariant, detached, and deeply freezes final negative evidence', () => {
     const baseline = completeNegativeEvidence(twoWithdrawalInput())

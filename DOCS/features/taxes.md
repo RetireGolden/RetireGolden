@@ -227,15 +227,24 @@ rules and citations: [domain rules §16](../domain/domain-rules-reference.md#16-
   owner-wide pool and complete line 1-8 facts, builds separate once-rounded line-7/line-8 ledgers, and
   derives allocation-bound line-7 basis-return/ordinary-income character. A second pure prerequisite
   boundary binds that character to explicit owner, source, and civil-date evidence; excludes basis from
-  penalty exposure; applies the exact 59½ and SIMPLE two-year thresholds; and calculates an exact-cent
-  candidate before exceptions. Caller-explicit positive disability evidence can finalize zero penalty
+  penalty exposure; applies the exact 59½ and SIMPLE two-year thresholds; and calculates a provisional
+  per-allocation exact-cent candidate before exceptions. Caller-explicit positive disability evidence
+  can finalize zero penalty
   for matching under-59½ ordinary-income allocations when it proves the owner qualified on or before
   the exact distribution date; that result bypasses SIMPLE participation/rate evidence. Otherwise a
   `penaltyApplies` result requires explicit negative proof of age, death, IRA SEPP, disability, and
   other-exception scope. The no-SEPP record must say `none` with null election/schedule IDs, and the
   no-other-exception attestation is planning evidence rather than filing-grade legal adjudication.
-  Missing evidence leaves `exceptionEvaluationRequired`; malformed or contradictory evidence fails
-  closed. A public pure annual finalization gate composes both boundaries over
+  Complete penalty-applicable allocations are grouped by owner, year, and exact rational rate. The
+  boundary sums each bucket's exposure with bigint arithmetic, rounds the bucket penalty once
+  nearest-cent-half-up, then allocates cents by floor quotas and largest remainders with canonical
+  identity tie-breaking; public immutable bucket evidence makes that conservation auditable. A
+  non-circular applicability ID binds each member's character, rate, identity, and complete rejected-
+  exception tuple into the shared bucket ID, so changing one member's exception evidence changes every
+  member final ID in that bucket. Missing
+  evidence on any same-rate member leaves the whole bucket `exceptionEvaluationRequired`, while a
+  complete different-rate bucket may finalize; malformed or contradictory evidence fails closed. A
+  public pure annual finalization gate composes both boundaries over
   staged executed-gross withdrawals and atomically publishes an owner/year evidence bundle only when
   every taxable allocation is final under the age-59½, disability zero-penalty, or fully evidenced
   penalty-applicable arms. Basis-only
