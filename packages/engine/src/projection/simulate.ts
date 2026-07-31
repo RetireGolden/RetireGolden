@@ -2396,8 +2396,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               } =>
                 ordinarySourceAccountIds.has(state.account.id) &&
                 state.account.type === 'taxable' &&
-                state.account.ownerPersonId !== null &&
-                taxUnitMembers.includes(asPersonId(state.account.ownerPersonId)),
+                state.account.ownerPersonId !== null,
             )
             .sort((left, right) =>
               left.account.id < right.account.id
@@ -2410,6 +2409,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               try {
                 const accountId = asAccountId(state.account.id)
                 const ownerPersonId = asPersonId(state.account.ownerPersonId)
+                if (!taxUnitMembers.includes(ownerPersonId)) return []
                 return [{
                   accountId,
                   openingCostBasis: planDollarsToLedgerCents(state.costBasis),

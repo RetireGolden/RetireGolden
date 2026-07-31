@@ -1412,6 +1412,59 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
     })
   })
 
+  it('keeps cash execution available when a named taxable source has a blank owner identity', () => {
+    const plan = basePlan()
+    plan.accounts = [
+      cash('cash-valid-owner', 50),
+      taxable('taxable-blank-owner', 100, 40),
+    ]
+    plan.expenses.baseAnnual = 10
+    plan.strategies.retirementActions = [
+      withdrawal({
+        actionId: 'cash-valid-owner-action',
+        accountId: 'cash-valid-owner',
+        dollars: 10,
+      }),
+      withdrawal({
+        actionId: 'taxable-blank-owner-action',
+        accountId: 'taxable-blank-owner',
+        dollars: 10,
+        sequence: 2,
+      }),
+    ]
+    const executionPlan = validate(plan)
+    const blankOwnerSource = executionPlan.accounts.find(
+      (account) => account.id === 'taxable-blank-owner',
+    )
+    if (blankOwnerSource === undefined) throw new Error('test source missing')
+    blankOwnerSource.ownerPersonId = ' '
+
+    const year = simulatePlan(executionPlan, {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: noTax,
+    }).years[0]!
+
+    expect(
+      year.retirementActionExecution?.evidence.map(
+        (evidence) => evidence.disposition.executedAmount,
+      ),
+    ).toEqual([1_000, 0])
+    expect(
+      year.retirementActionExecution?.evidence[1]?.disposition.reasons,
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'source-owner-mismatch' }),
+      ]),
+    )
+    expect(year.retirementActionExecution?.taxableBases).toEqual([])
+    expect(year.withdrawals).toMatchObject({ cash: 10, taxable: 0, total: 10 })
+    expect(year.balances).toMatchObject({
+      'cash-valid-owner': 40,
+      'taxable-blank-owner': 100,
+    })
+  })
+
   it('shares one deterministic projected tax unit across individually owned MFJ sources', () => {
     const plan = basePlan()
     plan.household.filingStatus = 'marriedFilingJointly'

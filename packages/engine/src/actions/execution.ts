@@ -772,11 +772,26 @@ function unresolvedAllocationEvidence(
         balanceAfter: before,
       }
     }
+    let ownerPersonIds: readonly PersonId[]
+    try {
+      ownerPersonIds =
+        account.ownerPersonId === null ? [] : [asPersonId(account.ownerPersonId)]
+    } catch {
+      return {
+        ...allocation,
+        resolution: 'unresolved',
+        ownerPersonIds: null,
+        actingPersonId: null,
+        balanceBefore: before,
+        executedAmount: asUsdCents(0),
+        unexecutedAmount: asUsdCents(allocation.requestedAmount),
+        balanceAfter: before,
+      }
+    }
     return {
       ...allocation,
       resolution: 'resolved',
-      ownerPersonIds:
-        account.ownerPersonId === null ? [] : [asPersonId(account.ownerPersonId)],
+      ownerPersonIds,
       actingPersonId,
       balanceBefore: before,
       executedAmount: asUsdCents(0),
