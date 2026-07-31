@@ -717,6 +717,18 @@ describe('Plan-owned non-Roth IRA annual coordinator', () => {
     expect(result.movementCandidate).toBeNull()
   })
 
+  it('fail-closes when the Plan owner age-59½ date is unrepresentable', () => {
+    const value = input()
+    ;(value.plan as Plan).household.people[0]!.dob = '9999-01-01'
+
+    const result =
+      coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate(value)
+
+    expect(result.status).toBe('sourceInventoryIncomplete')
+    expect(issueKinds(result)).toContain('penaltyAgeThresholdInvalid')
+    expect(result.movementCandidate).toBeNull()
+  })
+
   it.each([
     {
       name: 'post-year exclusions exceed nondeductible contributions',

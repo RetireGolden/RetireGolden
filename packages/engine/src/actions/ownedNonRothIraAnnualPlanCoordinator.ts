@@ -63,7 +63,7 @@ import {
   compareUtf16CodeUnits,
   deriveActionStructuralId,
 } from './structuralId.js'
-import { parseCivilIsoDate } from './civilDate.js'
+import { addCalendarMonths, parseCivilIsoDate } from './civilDate.js'
 
 export interface PlanOwnedNonRothIraOpeningBalanceEvidence {
   predicate:
@@ -173,6 +173,7 @@ export type PlanOwnedNonRothIraSourceInventoryIssueKind =
   | 'annualActivityConflict'
   | 'aggregateAmountOverflow'
   | 'penaltyEvidenceInvalid'
+  | 'penaltyAgeThresholdInvalid'
   | 'line7ActionSetMismatch'
   | 'line8InventoryEvidenceBindingMismatch'
   | 'line8EntryForeign'
@@ -814,6 +815,11 @@ function buildCanonicalInventory(
     issues.push(inventoryIssue(
       'ownerNotFound',
       'Owned IRA annual owner must exist in the Plan',
+    ))
+  } else if (addCalendarMonths(owner.dob, 714) === null) {
+    issues.push(inventoryIssue(
+      'penaltyAgeThresholdInvalid',
+      'The Plan owner age-59½ threshold must be representable as a civil date',
     ))
   }
 
