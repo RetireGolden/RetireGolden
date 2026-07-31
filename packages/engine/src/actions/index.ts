@@ -143,3 +143,18 @@ export {
   type ResolvedIndividuallyOwnedSourceAllocationExecutionEvidence,
   type SourceAllocationExecutionEvidence,
 } from './execution.js'
+export {
+  classifyIndividuallyOwnedTaxableWithdrawal,
+  type ClassifyIndividuallyOwnedTaxableWithdrawalInput,
+  type ClassifyIndividuallyOwnedTaxableWithdrawalResult,
+  type AcceptedIndividuallyOwnedTaxableSourceEligibilityEvidence,
+  type IndividuallyOwnedTaxableAccountOwnershipEvidence,
+  type IndividuallyOwnedTaxableWithdrawalBasisEvidence,
+  type IndividuallyOwnedTaxableWithdrawalTaxCharacter,
+  type TaxableAccountTaxAttributionEntry,
+  type TaxableAccountTaxAttributionEvidence,
+  type TaxableWithdrawalBasisReturnTaxCharacter,
+  type TaxableWithdrawalCapitalGainOrLossTaxCharacter,
+  type TaxableWithdrawalFederalFilingStatus,
+  type TaxableWithdrawalTaxUnitEvidence,
+} from './taxableWithdrawalCharacter.js'

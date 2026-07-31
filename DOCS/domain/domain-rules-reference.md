@@ -461,6 +461,14 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   (`fullyTaxableCompensationAtExecution`), with no capital-gain character and no retirement additional tax.
   A later sale of already-taxed shares belongs in a taxable account instead. Exact-cent action proceeds,
   ordinary income, and balance movement each enter the annual ledger once.
+- **Individually owned taxable-source character.** The public pure classifier binds an allocation to explicit
+  1/1 beneficial-owner evidence and immutable caller-supplied tax-unit facts. It recovers aggregate basis with
+  `planningAggregateBasisRatio`, bigint rational arithmetic, and exactly one `nearestCentHalfUp` rounding; the
+  signed capital-gain/loss residual is never rounded independently, and basis return plus gain minus loss equals
+  executed principal.
+  Basis may exceed fair market value, and safe serialized cents may produce an intermediate product above
+  `Number.MAX_SAFE_INTEGER`. This classifier does not move balances or feed tax: taxable retirement actions
+  remain non-actionable until the executor and annual ledger consume the same evidence atomically.
 - **HSA medical-expense subledger.** Per HSA account, `withdrawalTreatment`:
   `assumeAllQualified` (every withdrawal tax- and penalty-free), `capByMedicalExpenses` (qualified only up to
   the household's modeled healthcare premiums + net care costs this year; the excess is ordinary income,

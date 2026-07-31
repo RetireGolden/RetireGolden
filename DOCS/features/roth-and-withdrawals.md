@@ -73,6 +73,15 @@ principal; equity compensation uses the explicit planning boundary
 capital gain. A `final` equity-comp account supplies explicit already-vested evidence without inventing a
 historical vest date; a cliff account requires an exact execution date on or after its recorded vest date.
 
+The public pure taxable-source classifier is the next code-first seam. For one individually owned brokerage
+allocation it snapshots explicit 1/1 beneficial ownership and caller-supplied immutable tax-unit evidence,
+then applies `planningAggregateBasisRatio` with bigint rational arithmetic and one
+`nearestCentHalfUp` basis recovery.
+Basis return plus the signed gain or loss residual reconcile exactly to executed principal, including
+basis-above-value loss positions and safe inputs whose intermediate product exceeds JavaScript's safe-integer
+range. The classifier is character-only: it does not move balances, deplete simulator basis, or make a taxable
+action executable.
+
 The executor stages a whole action before movement, preserves partial and zero-allocation evidence, debits
 each stable source ID once, and feeds proceeds and equity ordinary income once into the same
 tax/ACA/conversion fixed point. Taxable, traditional, Roth, HSA, conversion, QCD, and legacy aggregate
