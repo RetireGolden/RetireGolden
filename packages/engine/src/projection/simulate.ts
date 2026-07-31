@@ -329,7 +329,13 @@ function planWithdrawals(
   // share identical signed basis math.
   for (const state of states) {
     if (state.account.type !== 'taxable') continue
-    const saleProceeds = byAccountId.get(state.account.id) ?? 0
+    // A protected balance can be visited once before, then once after, reserve
+    // release. Clamp the summed floating-point proceeds at the account boundary
+    // while keeping the shared sale helper's validation strict.
+    const saleProceeds = Math.min(
+      state.balance,
+      Math.max(0, byAccountId.get(state.account.id) ?? 0),
+    )
     const sale = aggregateBasisSale({
       openingFairMarketValue: state.balance,
       openingCostBasis: state.costBasis,

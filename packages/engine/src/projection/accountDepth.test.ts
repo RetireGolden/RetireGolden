@@ -362,6 +362,36 @@ describe('fixed-asset disposition', () => {
 })
 
 describe('taxable safety-net floor', () => {
+  it('fully exhausts a loss-position taxable reserve without floating-point oversale', () => {
+    const plan = basePlan()
+    plan.strategies.taxableSafetyNetFloor = 13.71
+    plan.accounts = [
+      {
+        type: 'taxable',
+        id: 'taxable-reserve',
+        name: 'Taxable reserve',
+        ownerPersonId: null,
+        annualReturnPct: null,
+        balance: 100.01,
+        costBasis: 10_100.01,
+        interestYieldPct: 0,
+        dividendYieldPct: 0,
+        annualContribution: 0,
+      },
+    ]
+    plan.expenses.baseAnnual = 200
+
+    const result = simulatePlan(validate(plan), {
+      startYear: 2026,
+      taxCalculator: noTax,
+    })
+    const year = result.years[0]!
+
+    expect(year.balances['taxable-reserve']).toBe(0)
+    expect(year.realizedGains).toBeCloseTo(-10_000, 10)
+    expect(year.capitalLossCarryforwardRemaining).toBeCloseTo(7_000, 10)
+  })
+
   it('preserves the floor from liquid accounts while other accounts can fund spending', () => {
     const plan = basePlan()
     plan.household.people[0]!.retirementAge = 65

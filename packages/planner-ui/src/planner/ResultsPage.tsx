@@ -41,6 +41,7 @@ import { chartTooltipStyle } from './chartStyle'
 import { NonZeroTooltipContent } from './chartTooltip'
 import { frameH } from './chartFrame'
 import { useMcSuccessRate } from './useMcSuccessRate'
+import { hasCapitalLossCarryforward } from './capitalLossCarryforwardVisibility'
 
 type Dollars = 'nominal' | 'today'
 
@@ -207,7 +208,10 @@ export function ResultsPage() {
     [dollars, view],
   )
 
-  const hasCarryforward = plan.household.capitalLossCarryforward > 0
+  const hasCarryforward = hasCapitalLossCarryforward(
+    plan.household.capitalLossCarryforward,
+    view.result.years,
+  )
   const hasAmt = view.result.years.some((y) => y.amt > 0.5)
   const hasFlexibleGoalControls = plan.expenses.oneTimeGoals.some(
     (g) =>
