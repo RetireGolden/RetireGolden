@@ -229,30 +229,30 @@ describe('classifyOwnedNonRothIraAnnualWithdrawals', () => {
     expect(() =>
       classifyOwnedNonRothIraAnnualWithdrawals(
         input({
-        poolMembers: input().poolMembers.map((poolMember) => ({
-          ...poolMember,
-          yearEndApplicableBalanceAmount: asUsdCents(0),
-        })),
-        completePoolEvidence: {
-          ...input().completePoolEvidence,
-          yearEndApplicablePoolBalanceAmount: asUsdCents(0),
-        },
-        annualFacts: {
-          openingBasisAmount: asUsdCents(1),
-          taxYearNondeductibleContributionAmount: asUsdCents(0),
-          postYearNondeductibleContributionExcludedAmount: asUsdCents(0),
-          yearEndApplicablePoolBalanceAmount: asUsdCents(0),
-          outstandingRolloverAmount: asUsdCents(0),
-          rolloverRepaymentAdjustmentAmount: asUsdCents(0),
-          form8606Line7DistributionAmount: asUsdCents(1),
-          form8606Line8NetConversionAmount: asUsdCents(1),
-        },
-        line7Distributions: [
-          activity('distribution', 'ira-traditional', 1, '2030-06-01'),
-        ],
-        line8Conversions: [
-          activity('conversion', 'ira-sep', 1, '2030-07-01'),
-        ],
+          poolMembers: input().poolMembers.map((poolMember) => ({
+            ...poolMember,
+            yearEndApplicableBalanceAmount: asUsdCents(0),
+          })),
+          completePoolEvidence: {
+            ...input().completePoolEvidence,
+            yearEndApplicablePoolBalanceAmount: asUsdCents(0),
+          },
+          annualFacts: {
+            openingBasisAmount: asUsdCents(1),
+            taxYearNondeductibleContributionAmount: asUsdCents(0),
+            postYearNondeductibleContributionExcludedAmount: asUsdCents(0),
+            yearEndApplicablePoolBalanceAmount: asUsdCents(0),
+            outstandingRolloverAmount: asUsdCents(0),
+            rolloverRepaymentAdjustmentAmount: asUsdCents(0),
+            form8606Line7DistributionAmount: asUsdCents(1),
+            form8606Line8NetConversionAmount: asUsdCents(1),
+          },
+          line7Distributions: [
+            activity('distribution', 'ira-traditional', 1, '2030-06-01'),
+          ],
+          line8Conversions: [
+            activity('conversion', 'ira-sep', 1, '2030-07-01'),
+          ],
         }),
       ),
     ).toThrow('cannot recover more than annual IRA basis')
