@@ -282,6 +282,7 @@ describe('ordinary-withdrawal execution', () => {
         ...CashSourcePenaltyCoverageEvidence[],
       ]
     >()
+    expect(Object.isFrozen(result)).toBe(true)
   })
 
   it('keeps the compatibility executor cash-only at runtime', () => {

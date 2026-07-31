@@ -74,7 +74,7 @@ capital gain. A `final` equity-comp account supplies explicit already-vested evi
 historical vest date; a cliff account requires an exact execution date on or after its recorded vest date.
 
 The public pure taxable-source classifier and executor support one individually owned brokerage
-allocation it snapshots explicit 1/1 beneficial ownership and caller-supplied immutable tax-unit evidence,
+allocation. The classifier snapshots explicit 1/1 beneficial ownership and caller-supplied immutable tax-unit evidence,
 then applies `planningAggregateBasisRatio` with bigint rational arithmetic and one
 `nearestCentHalfUp` basis recovery.
 Basis return plus the signed gain or loss residual reconcile exactly to executed principal, including

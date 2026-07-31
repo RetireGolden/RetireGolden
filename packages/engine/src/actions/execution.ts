@@ -1815,10 +1815,10 @@ export function executeCashOrdinaryWithdrawals(
 ): ExecuteCashOrdinaryWithdrawalsResult {
   const result = executeOrdinaryWithdrawalsInScope(input, 'cashOnly')
   assertCashOnlyExecutionResult(result)
-  return {
+  return deepFreeze({
     committed: result.committed,
     scheduleIssues: result.scheduleIssues,
     balances: result.balances,
     evidence: result.evidence,
-  }
+  })
 }
