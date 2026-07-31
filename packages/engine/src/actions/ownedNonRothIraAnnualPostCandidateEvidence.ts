@@ -409,10 +409,15 @@ function claimIdentifier(
     ))
     return
   }
-  if (allowSameBindingReference || (
-    existing.length > 0 &&
-    !allowSameRoleDifferentBinding
-  )) {
+  if (allowSameBindingReference) {
+    issues.push(issue(
+      'identifierCollision',
+      `${label} does not match a prior ${role} declaration`,
+      { identifier: value },
+    ))
+    return
+  }
+  if (existing.length > 0 && !allowSameRoleDifferentBinding) {
     issues.push(issue(
       'identifierCollision',
       `${label} is rebound from ${existing[0]!.label}`,
