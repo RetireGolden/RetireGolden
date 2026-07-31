@@ -73,6 +73,17 @@ export class MissingSimpleIraParticipationEvidenceError extends RangeError {
   }
 }
 
+/** Typed invalid SIMPLE participation fact with exact source attribution. */
+export class InvalidSimpleIraParticipationEvidenceError extends RangeError {
+  readonly sourceAccountId: AccountId
+
+  constructor(sourceAccountId: AccountId, message: string) {
+    super(message)
+    this.name = 'InvalidSimpleIraParticipationEvidenceError'
+    this.sourceAccountId = sourceAccountId
+  }
+}
+
 export interface QualifiedDisabilityEventEvidence {
   kind: 'disability'
   disabledPersonId: PersonId
@@ -1807,7 +1818,8 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
       )
     }
     if (participationStartDate < birthDate) {
-      throw new RangeError(
+      throw new InvalidSimpleIraParticipationEvidenceError(
+        sourceAccountId,
         'SIMPLE IRA participation start date cannot precede the owner birth date',
       )
     }
@@ -1961,7 +1973,8 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
           sourceEvidence.evaluationDate <
           participation.participationStartDate
         ) {
-          throw new RangeError(
+          throw new InvalidSimpleIraParticipationEvidenceError(
+            withdrawal.sourceAccountId,
             'SIMPLE IRA distribution cannot precede participation start',
           )
         }
@@ -1970,7 +1983,8 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
           24,
         )
         if (initialTwoYearPeriodEndDate === null) {
-          throw new RangeError(
+          throw new InvalidSimpleIraParticipationEvidenceError(
+            withdrawal.sourceAccountId,
             'SIMPLE IRA two-year period end is outside civil-date range',
           )
         }

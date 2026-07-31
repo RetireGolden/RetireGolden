@@ -44,6 +44,7 @@ import {
   type StageOwnedNonRothIraOrdinaryWithdrawalMovementsInput,
 } from './ownedNonRothIraMovementCandidate.js'
 import {
+  InvalidSimpleIraParticipationEvidenceError,
   MissingSimpleIraParticipationEvidenceError,
   type NoOtherStatutoryExceptionClaimedAttestation,
   type OwnedNonRothIraNoSeppStatusEvidence,
@@ -174,6 +175,7 @@ export type PlanOwnedNonRothIraSourceInventoryIssueKind =
   | 'evidenceIdInvalid'
   | 'evidenceIdReused'
   | 'simpleParticipationEvidenceMissing'
+  | 'simpleParticipationEvidenceInvalid'
 
 export interface PlanOwnedNonRothIraSourceInventoryIssue {
   kind: PlanOwnedNonRothIraSourceInventoryIssueKind
@@ -507,6 +509,10 @@ function claimCallerPenaltyEvidenceIds(
           ?.priorElectionHistoryEvidenceId,
         'SEPP prior-election-history evidence ID',
       ],
+      [
+        annual.priorElectionHistoryEvidence?.terminalStateEvidenceId,
+        'SEPP prior-election terminal-state evidence ID',
+      ],
     ]
     for (const [evidenceId, label] of primaryIds) {
       if (evidenceId !== undefined) {
@@ -521,7 +527,31 @@ function claimCallerPenaltyEvidenceIds(
         issues,
       )
     }
+    for (
+      const evidenceId of
+        annual.priorElectionHistoryEvidence?.usedDistributionEvidenceIds ?? []
+    ) {
+      claimEvidenceId(
+        evidenceId,
+        'SEPP lifetime used-distribution evidence ID',
+        claimed,
+        issues,
+      )
+    }
   }
+}
+
+function invalidSimpleParticipationEvidence(
+  error: unknown,
+): Readonly<PlanOwnedNonRothIraSourceInventoryIncompleteResult> | null {
+  if (!(error instanceof InvalidSimpleIraParticipationEvidenceError)) {
+    return null
+  }
+  return inventoryBlocked([inventoryIssue(
+    'simpleParticipationEvidenceInvalid',
+    error.message,
+    { sourceAccountId: error.sourceAccountId },
+  )])
 }
 
 function canonicalLine8Entries(
@@ -1679,7 +1709,13 @@ export function coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate(
     )
     if (!Array.isArray(derived)) return derived
     participationEvidence = derived
-    result = run([])
+    try {
+      result = run([])
+    } catch (retryError) {
+      const blocked = invalidSimpleParticipationEvidence(retryError)
+      if (blocked !== null) return blocked
+      throw retryError
+    }
   }
   const ownerAliveEvidence = candidateOwnerAliveEvidence(
     canonical,
@@ -1698,7 +1734,13 @@ export function coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate(
     return inventoryBlocked(generatedIdIssues)
   }
   if (ownerAliveEvidence.length > 0) {
-    result = run(ownerAliveEvidence)
+    try {
+      result = run(ownerAliveEvidence)
+    } catch (retryError) {
+      const blocked = invalidSimpleParticipationEvidence(retryError)
+      if (blocked !== null) return blocked
+      throw retryError
+    }
   }
   claimInnerCoordinatorPrimaryEvidenceIds(
     result,

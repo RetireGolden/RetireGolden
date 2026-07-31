@@ -793,6 +793,102 @@ describe('Plan-owned non-Roth IRA annual coordinator', () => {
     },
   )
 
+  it.each([
+    ['before the owner birth date', '1979-12-31'],
+    ['after the distribution date', '2030-06-16'],
+  ] as const)(
+    'returns a typed issue for a SIMPLE start date %s',
+    (_name, participationStartDate) => {
+      const value = input()
+      ;(value.plan as Plan).household.people[0]!.dob = '1980-01-01'
+      classifyRequestedSourceAsSimple(value, participationStartDate)
+
+      const result =
+        coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate(value)
+
+      expect(result.status).toBe('sourceInventoryIncomplete')
+      expect(issueKinds(result)).toContain(
+        'simpleParticipationEvidenceInvalid',
+      )
+      expect(result.movementCandidate).toBeNull()
+    },
+  )
+
+  it('attributes an invalid SIMPLE date only to the offending source', () => {
+    const value = input()
+    const valuePlan = value.plan as Plan
+    valuePlan.household.people[0]!.dob = '1980-01-01'
+    classifyRequestedSourceAsSimple(value, '2020-01-01')
+    const siblingClassification =
+      valuePlan.retirementActionEligibilityFacts!.iraClassifications.find(
+        (classification) =>
+          classification.sourceAccountId === siblingSourceId,
+      )!
+    valuePlan.retirementActionEligibilityFacts!.iraClassifications = [
+      ...valuePlan.retirementActionEligibilityFacts!.iraClassifications.filter(
+        (classification) =>
+          classification.sourceAccountId !== siblingSourceId,
+      ),
+      {
+        sourceAccountId: siblingSourceId,
+        subtype: 'simple',
+        evidenceId: siblingClassification.evidenceId,
+        provenance: siblingClassification.provenance,
+        simpleParticipationStartDate: '1979-12-31',
+      },
+    ]
+    const siblingActionId = asActionId('withdrawal-sibling-2030')
+    valuePlan.strategies.retirementActions.push({
+      actionId: siblingActionId,
+      kind: 'ordinaryWithdrawal',
+      personId: ownerPersonId,
+      year: 2030,
+      executionDate: '2030-07-15',
+      executionSequence: 2,
+      requestedAmount: asPositiveUsdCents(10_000),
+      allocations: [{
+        allocationId: asAllocationId('allocation-sibling'),
+        sourceAccountId: siblingSourceId,
+        requestedAmount: asPositiveUsdCents(10_000),
+      }],
+      purpose: { kind: 'spending' },
+      provenance: { source: 'manual' },
+    })
+    value.openingBalanceEvidence = value.openingBalanceEvidence.map(
+      (evidence) => evidence.sourceAccountId === siblingSourceId
+        ? { ...evidence, openingBalanceAmount: asUsdCents(10_000) }
+        : evidence,
+    )
+    value.annualBasisEvidence = {
+      ...value.annualBasisEvidence,
+      includedPlanActionIds: [actionId, siblingActionId],
+    }
+    value.personAliveEvidence = [
+      ...value.personAliveEvidence,
+      {
+        evidenceId: 'alive-sibling-action',
+        actionId: siblingActionId,
+        personId: ownerPersonId,
+        actionYear: 2030,
+        actionDate: '2030-07-15',
+        alive: true,
+      },
+    ]
+
+    const result =
+      coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate(value)
+
+    expect(result.status).toBe('sourceInventoryIncomplete')
+    if (result.status !== 'sourceInventoryIncomplete') return
+    expect(result.issues).toEqual([
+      expect.objectContaining({
+        kind: 'simpleParticipationEvidenceInvalid',
+        sourceAccountId: siblingSourceId,
+      }),
+    ])
+    expect(result.movementCandidate).toBeNull()
+  })
+
   it('preserves disability precedence without requiring a SIMPLE participation date', () => {
     const value = input()
     ;(value.plan as Plan).household.people[0]!.dob = '1980-01-01'
@@ -834,6 +930,47 @@ describe('Plan-owned non-Roth IRA annual coordinator', () => {
       result.annualEvidence.penaltyPrerequisites
         .iraSeppScheduleReconciliations[0]?.reconciliation.status,
     ).toBe('reconciled')
+  })
+
+  it('rejects a nested SEPP lifetime evidence ID that reuses an outer ID', () => {
+    const value = input()
+    ;(value.plan as Plan).household.people[0]!.dob = '1980-01-01'
+    const pending =
+      coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate(value)
+    expect(pending.status).toBe('annualEvidenceBlocked')
+    if (pending.status !== 'annualEvidenceBlocked') return
+    const coverage = pending.issues[0]!.prerequisite.characterCoverage
+    const route = qualifiedSeppRoute(
+      coverage.sourceEvidenceIds.distributionDateEvidenceId,
+      coverage.sourceEvidenceIds.accountOwnershipEvidenceId,
+      coverage.sourceEvidenceIds.iraClassificationEvidenceId,
+    )
+    value.iraSeppScheduleRoutes = [{
+      ...route,
+      annualReconciliationInput: {
+        ...route.annualReconciliationInput,
+        priorElectionHistoryEvidence:
+          buildOwnedNonRothIraSeppCompletePriorElectionHistoryEvidence({
+            predicate: 'completeOwnedNonRothIraSeppPriorElectionHistory',
+            electionId: 'plan-sepp-election',
+            scheduleId: 'plan-sepp-schedule',
+            participantPersonId: ownerPersonId,
+            sourceAccountId: requestedSourceId,
+            historyThroughDate: '2029-12-31',
+            terminalStateEvidenceId: 'plan-sepp-prior-terminal',
+            usedDistributionEvidenceIds: [
+              value.openingBalanceEvidence[0]!.evidenceId,
+            ],
+          }),
+      },
+    }]
+
+    const result =
+      coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate(value)
+
+    expect(result.status).toBe('sourceInventoryIncomplete')
+    expect(issueKinds(result)).toContain('evidenceIdReused')
+    expect(result.movementCandidate).toBeNull()
   })
 
   it('preserves all-basis-return precedence without requiring a SIMPLE participation date', () => {
