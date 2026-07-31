@@ -1,6 +1,8 @@
 import { z } from 'zod'
 
 import { planSchema, type Plan } from '../model/plan.js'
+import { rmdStartAgeForBirthYear } from '../params/index.js'
+import { seppActive } from '../strategies/sepp.js'
 import {
   accountIdSchema,
   actionIdSchema,
@@ -25,6 +27,7 @@ import {
   deriveActionStructuralId,
 } from './structuralId.js'
 import { parseCivilIsoDate } from './civilDate.js'
+import type { QcdCharityDesignation } from './contract.js'
 
 export const annualRetirementRuntimeEventKinds = [
   'ownedIraRmd',
@@ -39,13 +42,28 @@ export const annualRetirementRuntimeEventKinds = [
   'employerPlanEmployeeContribution',
   'employerPlanEmployerMatch',
   'annuityFundingTransfer',
-  'tipsFundingTransfer',
   'rolloverInflow',
   'otherTraditionalTransfer',
 ] as const
 
 export type AnnualRetirementRuntimeEventKind =
   (typeof annualRetirementRuntimeEventKinds)[number]
+
+export const annualRetirementResolvedRuntimeEventKinds = [
+  'ownedIraRmd',
+  'employerPlanRmd',
+  'inheritedIraRmd',
+  'automaticSeppDistribution',
+  'legacyNeedBasedWithdrawal',
+  'legacyRothConversion',
+  'ownedIraContribution',
+  'ownedIraEmployerContribution',
+  'employerPlanEmployeeContribution',
+  'employerPlanEmployerMatch',
+] as const satisfies readonly AnnualRetirementRuntimeEventKind[]
+
+export type AnnualRetirementResolvedRuntimeEventKind =
+  (typeof annualRetirementResolvedRuntimeEventKinds)[number]
 
 export type AnnualRetirementRuntimeEventOrigin =
   | 'rmdEngine'
@@ -73,13 +91,19 @@ export interface CompleteAnnualRetirementRuntimeInventoryAttestation {
 }
 
 export interface ResolvedAnnualRetirementPhysicalEventRecord {
+  /**
+   * A resolved contribution record is a post-limit physical occurrence, not a
+   * contribution candidate. Its exact gross and upstream lineage come from the
+   * producer after owner-wide and section 415(c) limits; a fully suppressed
+   * contribution is intentionally absent from the complete runtime inventory.
+   */
   recordStatus: 'resolved'
   planId: PlanId
   taxYear: number
   ledgerRunId: string
   eventId: string
   movementAuthorityId: string
-  kind: AnnualRetirementRuntimeEventKind
+  kind: AnnualRetirementResolvedRuntimeEventKind
   origin: AnnualRetirementRuntimeEventOrigin
   ownerPersonId: PersonId
   /** Affected retirement account; for an inflow, this is the receiving account. */
@@ -144,6 +168,10 @@ export interface PlanAnnualRetirementPhysicalEvent
   kind: 'ordinaryWithdrawal' | 'rothConversion' | 'qcd'
   actionId: ActionId
   allocationId: AllocationId
+  sourceAccountKind: 'ira' | 'employer'
+  sourceInheritanceStatus: 'owned' | 'inherited'
+  destinationRothAccountId: AccountId | null
+  charity: Readonly<QcdCharityDesignation> | null
   scheduledDate: string
   scheduledSequence: number
 }
@@ -151,7 +179,7 @@ export interface PlanAnnualRetirementPhysicalEvent
 export interface RuntimeAnnualRetirementPhysicalEvent
   extends AnnualRetirementPhysicalEventBase {
   origin: AnnualRetirementRuntimeEventOrigin
-  kind: AnnualRetirementRuntimeEventKind
+  kind: AnnualRetirementResolvedRuntimeEventKind
   ledgerRunId: string
   movementAuthorityId: string
   executionDate: string
@@ -299,6 +327,9 @@ const nonblankString = z.string().refine(
 )
 
 const runtimeKindSchema = z.enum(annualRetirementRuntimeEventKinds)
+const resolvedRuntimeKindSchema = z.enum(
+  annualRetirementResolvedRuntimeEventKinds,
+)
 const runtimeOriginSchema = z.enum([
   'rmdEngine',
   'seppEngine',
@@ -326,7 +357,7 @@ const resolvedRecordSchema = z.object({
   ledgerRunId: nonblankString,
   eventId: nonblankString,
   movementAuthorityId: nonblankString,
-  kind: runtimeKindSchema,
+  kind: resolvedRuntimeKindSchema,
   origin: runtimeOriginSchema,
   ownerPersonId: personIdSchema,
   sourceAccountId: accountIdSchema,
@@ -391,6 +422,126 @@ function issue(
   > = {},
 ): AnnualRetirementInventoryIssue {
   return { kind, detail, ...bindings }
+}
+
+type StableIdSchema =
+  | typeof planIdSchema
+  | typeof personIdSchema
+  | typeof accountIdSchema
+  | typeof actionIdSchema
+  | typeof allocationIdSchema
+
+function validatePlanStableId(
+  schema: StableIdSchema,
+  value: unknown,
+  path: string,
+  issues: AnnualRetirementInventoryIssue[],
+): void {
+  const parsed = schema.safeParse(value)
+  if (parsed.success) return
+  for (const idIssue of parsed.error.issues) {
+    issues.push(issue('planInvalid', `${path}: ${idIssue.message}`))
+  }
+}
+
+function planStableIdIssues(plan: Plan): AnnualRetirementInventoryIssue[] {
+  const issues: AnnualRetirementInventoryIssue[] = []
+  validatePlanStableId(planIdSchema, plan.id, 'id', issues)
+  plan.household.people.forEach((person, index) => {
+    validatePlanStableId(
+      personIdSchema,
+      person.id,
+      `household.people.${index}.id`,
+      issues,
+    )
+  })
+  plan.accounts.forEach((account, index) => {
+    validatePlanStableId(
+      accountIdSchema,
+      account.id,
+      `accounts.${index}.id`,
+      issues,
+    )
+    if (account.ownerPersonId !== null) {
+      validatePlanStableId(
+        personIdSchema,
+        account.ownerPersonId,
+        `accounts.${index}.ownerPersonId`,
+        issues,
+      )
+    }
+  })
+  plan.strategies.retirementActions.forEach((action, actionIndex) => {
+    validatePlanStableId(
+      actionIdSchema,
+      action.actionId,
+      `strategies.retirementActions.${actionIndex}.actionId`,
+      issues,
+    )
+    if (action.kind === 'qcd') {
+      validatePlanStableId(
+        personIdSchema,
+        action.donorPersonId,
+        `strategies.retirementActions.${actionIndex}.donorPersonId`,
+        issues,
+      )
+    } else if (
+      action.kind === 'ordinaryWithdrawal' ||
+      action.kind === 'rothConversion'
+    ) {
+      validatePlanStableId(
+        personIdSchema,
+        action.personId,
+        `strategies.retirementActions.${actionIndex}.personId`,
+        issues,
+      )
+    }
+    const allocations = action.kind === 'qcd'
+      ? [action.allocation]
+      : action.kind === 'ordinaryWithdrawal' ||
+          action.kind === 'rothConversion'
+        ? action.allocations
+        : []
+    allocations.forEach((allocation, allocationIndex) => {
+      const allocationPath = action.kind === 'qcd'
+        ? `strategies.retirementActions.${actionIndex}.allocation`
+        : `strategies.retirementActions.${actionIndex}.allocations.${allocationIndex}`
+      validatePlanStableId(
+        allocationIdSchema,
+        allocation.allocationId,
+        `${allocationPath}.allocationId`,
+        issues,
+      )
+      validatePlanStableId(
+        accountIdSchema,
+        allocation.sourceAccountId,
+        `${allocationPath}.sourceAccountId`,
+        issues,
+      )
+    })
+    if (action.kind === 'rothConversion') {
+      validatePlanStableId(
+        accountIdSchema,
+        action.destinationRothAccountId,
+        `strategies.retirementActions.${actionIndex}.destinationRothAccountId`,
+        issues,
+      )
+    }
+  })
+  return issues
+}
+
+function bestEffortRuntimeRecordId(value: unknown): string | undefined {
+  if (typeof value !== 'object' || value === null) return undefined
+  const record = value as Record<string, unknown>
+  const candidate = record.recordStatus === 'resolved'
+    ? record.eventId
+    : record.recordStatus === 'unresolved'
+      ? record.activityId
+      : undefined
+  return typeof candidate === 'string' && candidate.trim().length > 0
+    ? candidate
+    : undefined
 }
 
 function canonicalIssues(
@@ -463,6 +614,16 @@ function sortedUnique(values: readonly string[]): string[] {
   return [...new Set(values)].sort(compareUtf16CodeUnits)
 }
 
+function sortedDuplicates(values: readonly string[]): string[] {
+  const seen = new Set<string>()
+  const duplicates = new Set<string>()
+  for (const value of values) {
+    if (seen.has(value)) duplicates.add(value)
+    else seen.add(value)
+  }
+  return [...duplicates].sort(compareUtf16CodeUnits)
+}
+
 function safeSum(
   amounts: readonly (UsdCents | PositiveUsdCents)[],
   label: string,
@@ -507,14 +668,14 @@ function isOwnedIra(account: TraditionalAccount): boolean {
 function categoryFor(
   kind:
     | PlanAnnualRetirementPhysicalEvent['kind']
-    | AnnualRetirementRuntimeEventKind,
+    | AnnualRetirementResolvedRuntimeEventKind,
   ownedIra: boolean,
 ): AnnualRetirementForm8606Category {
   if (!ownedIra) return 'nonForm8606OrForeignPoolEvent'
   if (kind === 'rothConversion' || kind === 'legacyRothConversion') {
     return 'line8ConversionCandidate'
   }
-  if (kind === 'qcd' || kind === 'legacyQcd') {
+  if (kind === 'qcd') {
     return 'qcdCandidateAwaitingAnnualQcdStage'
   }
   if (
@@ -527,31 +688,148 @@ function categoryFor(
 }
 
 function resolvedSourceKindValid(
-  kind: AnnualRetirementRuntimeEventKind,
+  kind: AnnualRetirementResolvedRuntimeEventKind,
   account: TraditionalAccount,
   plan: Plan,
+  taxYear: number,
+  ownerPersonId: PersonId,
 ): boolean {
-  if (kind === 'ownedIraRmd') return isOwnedIra(account)
+  // This boundary checks only Plan-local necessary source/route conditions.
+  // Dynamic producer state (including shared contribution-limit usage and
+  // exact allowed gross) is owned by the resolved record's upstream evidence
+  // and the complete ledger-run attestation, not recomputed here.
+  const owner = plan.household.people.find(
+    (person) => person.id === ownerPersonId,
+  )
+  const birthYear = owner === undefined
+    ? undefined
+    : Number(owner.dob.slice(0, 4))
+  const ownerAge = birthYear === undefined
+    ? undefined
+    : taxYear - birthYear
+  const ownerModeledAlive = owner !== undefined &&
+    ownerAge !== undefined &&
+    ownerAge <= owner.longevity.planningAge
+  const anyHouseholdMemberModeledAlive = plan.household.people.some((person) => {
+    const personAge = taxYear - Number(person.dob.slice(0, 4))
+    return personAge <= person.longevity.planningAge
+  })
+  const ownerRmdActive = birthYear !== undefined &&
+    ownerAge !== undefined &&
+    ownerAge >= rmdStartAgeForBirthYear(birthYear)
+  const ownerHasCurrentYearWages = owner !== undefined &&
+    ownerAge !== undefined &&
+    plan.incomes.some((income) => {
+      if (
+        income.type !== 'wages' ||
+        income.personId !== ownerPersonId ||
+        income.annualGross <= 0
+      ) return false
+      const stopAge = income.endAge ?? owner.retirementAge
+      return stopAge === null || ownerAge < stopAge
+    })
+  const contributionSchedule = account.contributionSchedule
+  const hasContributionSchedule =
+    contributionSchedule !== undefined && contributionSchedule.length > 0
+  const hasPositiveCurrentYearContributionRequest = hasContributionSchedule
+    ? contributionSchedule.some((phase) =>
+      ownerAge !== undefined &&
+      ownerAge >= (phase.fromAge ?? 0) &&
+      ownerAge <= (phase.toAge ?? 120) &&
+      phase.annualAmount > 0
+    )
+    : account.annualContribution > 0
+  const employerEmployeeContributionPossible =
+    account.kind === 'employer' &&
+    account.inherited === undefined &&
+    ownerModeledAlive &&
+    ownerHasCurrentYearWages &&
+    hasPositiveCurrentYearContributionRequest
+  const ownedIraContributionPossible =
+    isOwnedIra(account) &&
+    ownerModeledAlive &&
+    hasPositiveCurrentYearContributionRequest &&
+    (hasContributionSchedule || ownerHasCurrentYearWages)
+  const rothConversionStrategy = plan.strategies.rothConversion
+  const legacyFillTargetConfigured =
+    rothConversionStrategy.mode === 'fillToTarget' &&
+    (rothConversionStrategy.target === 'acaCliff' ||
+      (rothConversionStrategy.target === 'irmaaTier'
+        ? rothConversionStrategy.targetValue !== null &&
+          Number.isInteger(rothConversionStrategy.targetValue) &&
+          rothConversionStrategy.targetValue > 0
+        : rothConversionStrategy.targetValue !== null &&
+          rothConversionStrategy.targetValue > 0))
+  const legacyRothConversionRequested =
+    rothConversionStrategy.mode === 'manual' ||
+      rothConversionStrategy.mode === 'optimized'
+      ? rothConversionStrategy.conversions
+        .filter((conversion) => conversion.year === taxYear)
+        .reduce((sum, conversion) => sum + conversion.amount, 0) > 0.01
+      : rothConversionStrategy.mode === 'fillToTarget' &&
+        taxYear >= rothConversionStrategy.startYear &&
+        taxYear <= rothConversionStrategy.endYear &&
+        legacyFillTargetConfigured
+  const legacyRothConversionRoutePossible =
+    anyHouseholdMemberModeledAlive &&
+    plan.accounts.some((candidate) => candidate.type === 'roth') &&
+    legacyRothConversionRequested
+
+  if (kind === 'ownedIraRmd') {
+    return isOwnedIra(account) && ownerRmdActive && ownerModeledAlive
+  }
   if (kind === 'employerPlanRmd') {
-    return account.kind === 'employer' && account.inherited === undefined
+    return account.kind === 'employer' &&
+      account.inherited === undefined &&
+      ownerRmdActive &&
+      ownerModeledAlive
   }
   if (kind === 'inheritedIraRmd') {
-    return account.kind === 'ira' && account.inherited !== undefined
+    if (account.inherited === undefined) return false
+    const yearsSinceDeath = taxYear - account.inherited.ownerDeathYear
+    return ownerModeledAlive &&
+      (yearsSinceDeath >= 10 ||
+        (yearsSinceDeath >= 1 &&
+          account.inherited.decedentHadStartedRmds))
   }
-  if (kind === 'ownedIraContribution') return isOwnedIra(account)
+  if (kind === 'automaticSeppDistribution') {
+    return account.inherited === undefined &&
+      account.sepp !== undefined &&
+      ownerAge !== undefined &&
+      ownerModeledAlive &&
+      seppActive(account.sepp.startAge, ownerAge)
+  }
+  if (kind === 'legacyRothConversion') {
+    return account.inherited === undefined &&
+      legacyRothConversionRoutePossible
+  }
+  if (kind === 'ownedIraContribution') return ownedIraContributionPossible
   if (kind === 'ownedIraEmployerContribution') {
+    const eligibilityFacts = plan.retirementActionEligibilityFacts
     const classifications =
-      plan.retirementActionEligibilityFacts?.iraClassifications.filter(
+      eligibilityFacts?.iraClassifications.filter(
         (classification) => classification.sourceAccountId === account.id,
       ) ?? []
-    return isOwnedIra(account) && classifications.length === 1 &&
+    const currentYearActivity = eligibilityFacts?.sepSimpleActivities.find(
+      (activity) =>
+        activity.sourceAccountId === account.id &&
+        activity.actionTaxYear === taxYear,
+    )
+    return isOwnedIra(account) && ownerModeledAlive &&
+      classifications.length === 1 &&
       (classifications[0]!.subtype === 'sep' ||
-        classifications[0]!.subtype === 'simple')
+        classifications[0]!.subtype === 'simple') &&
+      currentYearActivity?.employerContributionMadeForPlanYear === true
   }
-  if (
-    kind === 'employerPlanEmployeeContribution' ||
-    kind === 'employerPlanEmployerMatch'
-  ) return account.kind === 'employer' && account.inherited === undefined
+  if (kind === 'employerPlanEmployeeContribution') {
+    return employerEmployeeContributionPossible
+  }
+  if (kind === 'employerPlanEmployerMatch') {
+    return employerEmployeeContributionPossible &&
+      account.employerMatch !== undefined &&
+      account.employerMatch.matchPct > 0 &&
+      account.employerMatch.capPctOfPay > 0
+  }
   return true
 }
 
@@ -682,6 +960,16 @@ function canonicalPlanEvents(
       const actionId = actionIdSchema.parse(action.actionId)
       const allocationId = allocationIdSchema.parse(allocation.allocationId)
       const sourceAccountId = accountIdSchema.parse(allocation.sourceAccountId)
+      const destinationRothAccountId = action.kind === 'rothConversion'
+        ? accountIdSchema.parse(action.destinationRothAccountId)
+        : null
+      const charity = action.kind === 'qcd'
+        ? { ...action.charity }
+        : null
+      const sourceInheritanceStatus = account.inherited === undefined
+        ? 'owned'
+        : 'inherited'
+      const form8606Category = categoryFor(action.kind, isOwnedIra(account))
       const eventId = deriveActionStructuralId(
         'annual-retirement-plan-event',
         [
@@ -694,6 +982,13 @@ function canonicalPlanEvents(
           action.executionDate,
           action.executionSequence,
           action.kind,
+          ownerPersonId,
+          account.ownerPersonId,
+          account.kind,
+          sourceInheritanceStatus,
+          form8606Category,
+          destinationRothAccountId,
+          charity,
         ],
       )
       events.push({
@@ -704,6 +999,10 @@ function canonicalPlanEvents(
         kind: action.kind,
         actionId,
         allocationId,
+        sourceAccountKind: account.kind,
+        sourceInheritanceStatus,
+        destinationRothAccountId,
+        charity,
         ownerPersonId,
         sourceAccountId,
         grossAmount: positiveUsdCentsSchema.parse(allocation.requestedAmount),
@@ -711,7 +1010,7 @@ function canonicalPlanEvents(
         scheduledSequence: action.executionSequence,
         eventDate: action.executionDate,
         eventSequence: action.executionSequence,
-        form8606Category: categoryFor(action.kind, isOwnedIra(account)),
+        form8606Category,
       })
     }
   }
@@ -787,6 +1086,10 @@ function canonicalEvidenceParts(
       event.kind,
       event.actionId,
       event.allocationId,
+      event.sourceAccountKind,
+      event.sourceInheritanceStatus,
+      event.destinationRothAccountId,
+      event.charity,
       event.ownerPersonId,
       event.sourceAccountId,
       event.grossAmount,
@@ -855,6 +1158,7 @@ export function buildAnnualRetirementPhysicalEventInventory(
       issue(
         'runtimeRecordInvalid',
         `${recordIssue.path.join('.') || '(root)'}: ${recordIssue.message}`,
+        { recordId: bestEffortRuntimeRecordId(rawRecord) },
       ),
     ))
   }
@@ -871,6 +1175,8 @@ export function buildAnnualRetirementPhysicalEventInventory(
     .map(({ record }) => record)
 
   const plan = parsedPlan.data
+  const stableIdIssues = planStableIdIssues(plan)
+  if (stableIdIssues.length > 0) return incomplete(stableIdIssues)
   const planId = planIdSchema.parse(plan.id)
   const taxYear = input.taxYear
   const attestation: CanonicalAttestation = parsedAttestation.data
@@ -884,6 +1190,28 @@ export function buildAnnualRetirementPhysicalEventInventory(
       'Runtime inventory attestation must bind the validated Plan and requested tax year',
     ))
   }
+
+  const duplicatePersonIds = sortedDuplicates(
+    plan.household.people.map((person) => person.id),
+  )
+  const duplicateAccountIds = sortedDuplicates(
+    plan.accounts.map((account) => account.id),
+  )
+  for (const personId of duplicatePersonIds) {
+    inventoryIssues.push(issue(
+      'identifierCollision',
+      `Plan household person ID ${personId} is ambiguous`,
+      { recordId: personId },
+    ))
+  }
+  for (const accountId of duplicateAccountIds) {
+    inventoryIssues.push(issue(
+      'identifierCollision',
+      `Plan account ID ${accountId} is ambiguous`,
+      { recordId: accountId, sourceAccountId: accountIdSchema.parse(accountId) },
+    ))
+  }
+  if (inventoryIssues.length > 0) return incomplete(inventoryIssues)
 
   const people = new Set(plan.household.people.map((person) => person.id))
   const accountById = new Map(
@@ -1047,7 +1375,13 @@ export function buildAnnualRetirementPhysicalEventInventory(
           { recordId: record.eventId, sourceAccountId: record.sourceAccountId },
         ))
       }
-      if (!resolvedSourceKindValid(record.kind, account, plan)) {
+      if (!resolvedSourceKindValid(
+        record.kind,
+        account,
+        plan,
+        taxYear,
+        record.ownerPersonId,
+      )) {
         inventoryIssues.push(issue(
           'sourceKindMismatch',
           `Runtime event kind ${record.kind} is incompatible with this traditional-account class`,
@@ -1064,29 +1398,39 @@ export function buildAnnualRetirementPhysicalEventInventory(
     .sort(compareUtf16CodeUnits)
   const canonicalResolvedIds = [...resolvedIds].sort(compareUtf16CodeUnits)
   const canonicalUnresolvedIds = [...unresolvedIds].sort(compareUtf16CodeUnits)
-  if (attestedResolvedIds.length !== new Set(attestedResolvedIds).size) {
+  const canonicalResolvedIdSet = new Set(canonicalResolvedIds)
+  const canonicalUnresolvedIdSet = new Set(canonicalUnresolvedIds)
+  const resolvedIdsRepeated =
+    attestedResolvedIds.length !== new Set(attestedResolvedIds).size
+  const unresolvedIdsRepeated =
+    attestedUnresolvedIds.length !== new Set(attestedUnresolvedIds).size
+  if (resolvedIdsRepeated) {
     inventoryIssues.push(issue(
       'runtimeInventoryUnexpectedRecord',
       'Runtime attestation must not repeat a resolved event ID',
     ))
   }
-  if (attestedUnresolvedIds.length !== new Set(attestedUnresolvedIds).size) {
+  if (unresolvedIdsRepeated) {
     inventoryIssues.push(issue(
       'runtimeInventoryUnexpectedRecord',
       'Runtime attestation must not repeat an unresolved activity ID',
     ))
   }
   if (!sameStrings(attestedResolvedIds, canonicalResolvedIds)) {
+    const hasUnexpectedResolvedId = resolvedIdsRepeated ||
+      attestedResolvedIds.some((id) => !canonicalResolvedIdSet.has(id))
     inventoryIssues.push(issue(
-      canonicalResolvedIds.some((id) => !attestedResolvedIds.includes(id))
+      hasUnexpectedResolvedId
         ? 'runtimeInventoryUnexpectedRecord'
         : 'runtimeInventoryOmission',
       'Attested resolved-event IDs must exactly equal supplied resolved records',
     ))
   }
   if (!sameStrings(attestedUnresolvedIds, canonicalUnresolvedIds)) {
+    const hasUnexpectedUnresolvedId = unresolvedIdsRepeated ||
+      attestedUnresolvedIds.some((id) => !canonicalUnresolvedIdSet.has(id))
     inventoryIssues.push(issue(
-      canonicalUnresolvedIds.some((id) => !attestedUnresolvedIds.includes(id))
+      hasUnexpectedUnresolvedId
         ? 'runtimeInventoryUnexpectedRecord'
         : 'runtimeInventoryOmission',
       'Attested unresolved-activity IDs must exactly equal supplied unresolved records',
@@ -1105,14 +1449,9 @@ export function buildAnnualRetirementPhysicalEventInventory(
       inventoryIssues,
     )
   }
+  // Allocation IDs are validated within their owning action by the Plan
+  // contract. They intentionally do not enter the global identifier namespace.
   for (const event of planEvents) {
-    claimIdentifier(
-      event.allocationId,
-      'Plan allocation ID',
-      event.actionId,
-      claimed,
-      inventoryIssues,
-    )
     claimIdentifier(
       event.eventId,
       'Plan event structural ID',
@@ -1167,6 +1506,11 @@ export function buildAnnualRetirementPhysicalEventInventory(
     authorityBySlot.set(slot, authority)
   }
   if (chronologyIssues.length > 0) return chronologyInvalid(chronologyIssues)
+  const inventoryTotal = safeSum(
+    events.map((event) => event.grossAmount),
+    'Annual physical-event inventory aggregate',
+  )
+  if (typeof inventoryTotal !== 'number') return incomplete([inventoryTotal])
   const ownedAccounts = [...traditionalById.values()]
     .filter(isOwnedIra)
   const sourceAccountIdsByOwner = new Map<string, AccountId[]>()

@@ -591,13 +591,20 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   Plan/year chronology shape without integrating it into the simulator. It derives traditional-account
   Plan action allocations from the validated Plan and exact-rejoins them with one complete runtime
   attestation for owned, employer, and inherited RMDs; automatic SEPP; legacy need-based withdrawals,
-  conversions, and QCDs; in-year owned-IRA and SEP/SIMPLE account-balance contribution inflows;
-  in-year employer-plan employee contributions and employer match; annuity/TIPS funding; rollover
-  inflows; and other traditional transfers. Following-year IRA contributions designated for the
-  prior tax year remain separate annual-basis facts, not calendar-year physical events.
+  and conversions; in-year owned-IRA and SEP/SIMPLE account-balance contribution inflows;
+  and in-year employer-plan employee contributions and configured employer match. Annuity funding,
+  rollover inflows, other traditional transfers, and aggregate legacy QCD reclassification remain typed
+  unresolved activity until a later contract binds their producer and physical endpoints; they cannot
+  enter a completed resolved inventory.
+  Taxable-side TIPS-ladder funding remains outside this traditional-retirement-account inventory.
+  Following-year IRA contributions designated for the prior tax year remain separate annual-basis
+  facts, not calendar-year physical events.
   Resolved runtime events bind exact cents, owner, source, date, sequence, movement authority, upstream
   evidence, and one ledger run. One movement authority can span multiple source members only when owner,
   kind, origin, date, and sequence are identical; each member keeps its own unique upstream evidence.
+  A resolved contribution event is post-owner-wide-limit producer evidence, not a candidate to be
+  limited again: shared IRA/elective-deferral and section 415(c) state remain upstream, and a fully
+  suppressed contribution is intentionally absent from the complete attested runtime inventory.
   The runtime attestation's own upstream evidence is published and included in the structural inventory
   ID. Unresolved activity retains only its known kind and amount; the boundary
   never substitutes December 31, Plan array order, or a guessed source. Omissions, foreign records,

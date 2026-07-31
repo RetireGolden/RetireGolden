@@ -58,8 +58,11 @@ an established refusal with `movement: noMovement`; coordinator blocking arms re
 an isolated pure action API, not annual projection/simulator integration or custodian settlement proof.
 The separate annual physical-event inventory now derives traditional-account Plan allocations and
 exact-rejoins a complete runtime inventory for RMD, SEPP, legacy projection, IRA/employer-plan
-in-year account-balance contribution inflows, employer match, and transfer activity into one immutable
-Plan/year chronology. Following-year IRA contributions designated for the prior tax year remain
+in-year account-balance contribution inflows, and configured employer match into one immutable
+Plan/year chronology. Aggregate legacy QCD reclassification, annuity funding, rollover inflows, and
+other traditional transfers remain unresolved until their producer and physical endpoints have a typed
+binding contract. Following-year IRA
+contributions designated for the prior tax year remain
 separate annual-basis facts rather than calendar-year physical events. Shared
 movement authority is limited to source members with identical owner/kind/origin/date/sequence bindings;
 member upstream evidence and attestation upstream lineage remain explicit. It publishes owned-IRA views

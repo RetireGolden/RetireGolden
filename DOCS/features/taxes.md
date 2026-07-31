@@ -286,10 +286,12 @@ rules and citations: [domain rules §16](../domain/domain-rules-reference.md#16-
   The pure `buildAnnualRetirementPhysicalEventInventory` API now creates the complete chronology input
   required before that authority can be integrated. It derives Plan traditional-account allocations and
   combines them with an exact Plan/year/ledger-run runtime inventory for RMD, automatic SEPP, legacy
-  withdrawal/conversion/QCD, in-year IRA and employer-plan account-balance contribution inflows,
-  employer match, and traditional-transfer activity. Following-year IRA contributions designated for
-  the prior tax year remain separate annual-basis facts rather than events in this calendar-year
-  chronology. A shared movement authority may cover multiple source members only
+  withdrawal/conversion, in-year IRA and employer-plan account-balance contribution inflows,
+  and configured employer match. Aggregate legacy QCD reclassification, annuity funding, rollover
+  inflows, and other traditional transfers remain unresolved until a later contract binds their producer
+  and physical endpoints. Following-year IRA
+  contributions designated for the prior tax year remain separate annual-basis facts rather than events
+  in this calendar-year chronology. A shared movement authority may cover multiple source members only
   under the same owner/kind/origin/date/sequence binding; upstream evidence stays member-specific and the
   attestation's upstream lineage is structurally bound. Missing identity or chronology remains a
   typed unresolved record and blocks the inventory; no December 31 date, source, or sequence is inferred.

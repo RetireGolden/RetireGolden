@@ -5,6 +5,7 @@ export {
   type CivilDate,
 } from './civilDate.js'
 export {
+  annualRetirementResolvedRuntimeEventKinds,
   annualRetirementRuntimeEventKinds,
   buildAnnualRetirementPhysicalEventInventory,
   type AnnualRetirementCategoryView,
@@ -15,6 +16,7 @@ export {
   type AnnualRetirementInventoryIssue,
   type AnnualRetirementInventoryIssueKind,
   type AnnualRetirementPhysicalEvent,
+  type AnnualRetirementResolvedRuntimeEventKind,
   type AnnualRetirementRuntimeEventKind,
   type AnnualRetirementRuntimeEventOrigin,
   type AnnualRetirementRuntimeInventoryRecord,

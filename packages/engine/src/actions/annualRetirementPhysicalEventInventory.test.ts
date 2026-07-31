@@ -29,7 +29,7 @@ const inheritedId = asAccountId('ira-inherited')
 const rothId = asAccountId('roth-destination')
 
 function basePlan(): Plan {
-  const plan = singlePersonPlan({ dob: '1950-01-01' })
+  const plan = singlePersonPlan({ dob: '1950-01-01', planningAge: 100 })
   plan.id = asPlanId('plan-annual-inventory')
   plan.accounts = [
     traditionalAccount(ownedIraId, 1_000, ownerPersonId),
@@ -60,6 +60,9 @@ function basePlan(): Plan {
       annualContribution: 0,
     },
   ]
+  const employer = plan.accounts.find((account) => account.id === employerId)
+  if (employer?.type !== 'traditional') throw new Error('fixture drift')
+  employer.employerMatch = { matchPct: 50, capPctOfPay: 6 }
   plan.strategies.retirementActions = [{
     actionId: asActionId('withdrawal-plan'),
     kind: 'ordinaryWithdrawal',
@@ -101,7 +104,9 @@ function resolved(
   }
 }
 
-function unresolved(): UnresolvedAnnualRetirementPhysicalActivityRecord {
+function unresolved(
+  overrides: Partial<UnresolvedAnnualRetirementPhysicalActivityRecord> = {},
+): UnresolvedAnnualRetirementPhysicalActivityRecord {
   return {
     recordStatus: 'unresolved',
     planId: asPlanId('plan-annual-inventory'),
@@ -117,6 +122,7 @@ function unresolved(): UnresolvedAnnualRetirementPhysicalActivityRecord {
     executionSequence: null,
     incompatibility: 'legacyAggregateIdentityUnavailable',
     upstreamEvidenceId: 'legacy-unresolved-upstream',
+    ...overrides,
   }
 }
 
@@ -183,6 +189,8 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
       actionId: 'withdrawal-plan',
       allocationId: 'withdrawal-plan-allocation',
       sourceAccountId: ownedIraId,
+      sourceAccountKind: 'ira',
+      sourceInheritanceStatus: 'owned',
       grossAmount: 10_000,
       eventDate: '2030-06-15',
       eventSequence: 20,
@@ -229,6 +237,51 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
       eventId: 'runtime-inventory-upstream',
     })])
     expect(issueKinds(collision)).toContain('identifierCollision')
+  })
+
+  it('binds Plan-event IDs to owner and source-account classification', () => {
+    const originalPlan = basePlan()
+    const originalResult = built(input(originalPlan))
+
+    const changedOwnerPlan = basePlan()
+    const person = changedOwnerPlan.household.people[0]!
+    changedOwnerPlan.household.people.push({
+      ...person,
+      id: spousePersonId,
+    })
+    const changedOwnerAction =
+      changedOwnerPlan.strategies.retirementActions[0]
+    const changedOwnerAccount = changedOwnerPlan.accounts.find(
+      (account) => account.id === ownedIraId,
+    )
+    if (changedOwnerAction?.kind !== 'ordinaryWithdrawal' ||
+      changedOwnerAccount?.type !== 'traditional') {
+      throw new Error('fixture drift')
+    }
+    changedOwnerAction.personId = spousePersonId
+    changedOwnerAccount.ownerPersonId = spousePersonId
+    const changedOwnerResult = built(input(changedOwnerPlan))
+    expect(changedOwnerResult.events[0]!.eventId).not.toBe(
+      originalResult.events[0]!.eventId,
+    )
+
+    const changedClassPlan = basePlan()
+    const changedClassAccount = changedClassPlan.accounts.find(
+      (account) => account.id === ownedIraId,
+    )
+    if (changedClassAccount?.type !== 'traditional') {
+      throw new Error('fixture drift')
+    }
+    changedClassAccount.kind = 'employer'
+    const changedClassResult = built(input(changedClassPlan))
+    expect(changedClassResult.events[0]).toMatchObject({
+      sourceAccountKind: 'employer',
+      sourceInheritanceStatus: 'owned',
+      form8606Category: 'nonForm8606OrForeignPoolEvent',
+    })
+    expect(changedClassResult.events[0]!.eventId).not.toBe(
+      originalResult.events[0]!.eventId,
+    )
   })
 
   it('globally orders Plan and runtime events and requires a unified ledger', () => {
@@ -315,6 +368,27 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
     'inventories explicit %s inflows and prevents standalone execution',
     (kind, sourceAccountId) => {
       const plan = basePlan()
+      const owner = plan.household.people[0]!
+      owner.dob = '1970-01-01'
+      owner.retirementAge = null
+      plan.incomes = [{
+        type: 'wages',
+        id: 'owner-current-wages',
+        personId: ownerPersonId,
+        annualGross: 100_000,
+        endAge: null,
+        realGrowthPct: 0,
+      }]
+      const employer = plan.accounts.find(
+        (account) => account.id === employerId,
+      )
+      if (employer?.type !== 'traditional') throw new Error('fixture drift')
+      employer.annualContribution = 10_000
+      const ownedIra = plan.accounts.find(
+        (account) => account.id === ownedIraId,
+      )
+      if (ownedIra?.type !== 'traditional') throw new Error('fixture drift')
+      ownedIra.annualContribution = 7_000
       plan.retirementActionEligibilityFacts = {
         iraClassifications: [{
           sourceAccountId: siblingIraId,
@@ -322,7 +396,14 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
           evidenceId: 'sibling-sep-classification',
           provenance: { source: 'manual' },
         }],
-        sepSimpleActivities: [],
+        sepSimpleActivities: [{
+          sourceAccountId: siblingIraId,
+          actionTaxYear: 2030,
+          planYearEndDate: '2030-12-31',
+          employerContributionMadeForPlanYear: true,
+          evidenceId: 'sibling-sep-activity',
+          provenance: { source: 'manual' },
+        }],
         deductibleIraContributions: [],
       }
       const result = built(input(plan, [resolved({
@@ -340,6 +421,95 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
         origin: 'contributionLedger',
         form8606Category: 'nonForm8606OrForeignPoolEvent',
       })
+    },
+  )
+
+  it('requires a structurally possible current-year owned-IRA contribution', () => {
+    expect(issueKinds(input(basePlan(), [resolved({
+      kind: 'ownedIraContribution',
+      origin: 'contributionLedger',
+    })]))).toContain('sourceKindMismatch')
+
+    const legacyWithoutWages = basePlan()
+    legacyWithoutWages.household.people[0]!.dob = '1970-01-01'
+    const legacyIra = legacyWithoutWages.accounts.find(
+      (account) => account.id === ownedIraId,
+    )
+    if (legacyIra?.type !== 'traditional') throw new Error('fixture drift')
+    legacyIra.annualContribution = 7_000
+    expect(issueKinds(input(legacyWithoutWages, [resolved({
+      kind: 'ownedIraContribution',
+      origin: 'contributionLedger',
+    })]))).toContain('sourceKindMismatch')
+
+    const scheduled = basePlan()
+    scheduled.household.people[0]!.dob = '1970-01-01'
+    const scheduledIra = scheduled.accounts.find(
+      (account) => account.id === ownedIraId,
+    )
+    if (scheduledIra?.type !== 'traditional') throw new Error('fixture drift')
+    scheduledIra.contributionSchedule = [{
+      annualAmount: 7_000,
+      fromAge: 60,
+      toAge: 60,
+      escalationPct: 0,
+    }]
+    expect(buildAnnualRetirementPhysicalEventInventory(input(
+      scheduled,
+      [resolved({
+        kind: 'ownedIraContribution',
+        origin: 'contributionLedger',
+      })],
+    )).status).toBe('annualPhysicalEventInventoryBuilt')
+
+    scheduled.household.people[0]!.longevity.planningAge = 60
+    scheduled.household.people[0]!.dob = '1969-01-01'
+    scheduledIra.contributionSchedule = [{
+      annualAmount: 7_000,
+      fromAge: 61,
+      toAge: 61,
+      escalationPct: 0,
+    }]
+    expect(issueKinds(input(scheduled, [resolved({
+      kind: 'ownedIraContribution',
+      origin: 'contributionLedger',
+    })]))).toContain('sourceKindMismatch')
+  })
+
+  it.each([
+    'employerPlanEmployeeContribution',
+    'employerPlanEmployerMatch',
+  ] as const)(
+    'requires positive current-year employee-contribution prerequisites for %s',
+    (kind) => {
+      const noContribution = basePlan()
+      noContribution.household.people[0]!.dob = '1970-01-01'
+      noContribution.incomes = [{
+        type: 'wages',
+        id: 'owner-current-wages',
+        personId: ownerPersonId,
+        annualGross: 100_000,
+        endAge: null,
+        realGrowthPct: 0,
+      }]
+      expect(issueKinds(input(noContribution, [resolved({
+        kind,
+        origin: 'contributionLedger',
+        sourceAccountId: employerId,
+      })]))).toContain('sourceKindMismatch')
+
+      const noWages = basePlan()
+      noWages.household.people[0]!.dob = '1970-01-01'
+      const employer = noWages.accounts.find(
+        (account) => account.id === employerId,
+      )
+      if (employer?.type !== 'traditional') throw new Error('fixture drift')
+      employer.annualContribution = 10_000
+      expect(issueKinds(input(noWages, [resolved({
+        kind,
+        origin: 'contributionLedger',
+        sourceAccountId: employerId,
+      })]))).toContain('sourceKindMismatch')
     },
   )
 
@@ -361,7 +531,47 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
     })]))).toContain('sourceKindMismatch')
   })
 
-  it('requires inherited RMD activity to come from an inherited IRA', () => {
+  it.each([
+    ['missing', []],
+    ['explicitly absent', [{
+      sourceAccountId: siblingIraId,
+      actionTaxYear: 2030,
+      planYearEndDate: '2030-12-31',
+      employerContributionMadeForPlanYear: false,
+      evidenceId: 'sibling-sep-no-employer-contribution',
+      provenance: { source: 'manual' as const },
+    }]],
+    ['wrong-year', [{
+      sourceAccountId: siblingIraId,
+      actionTaxYear: 2029,
+      planYearEndDate: '2029-12-31',
+      employerContributionMadeForPlanYear: true,
+      evidenceId: 'sibling-sep-prior-year-employer-contribution',
+      provenance: { source: 'manual' as const },
+    }]],
+  ])(
+    'rejects a SEP/SIMPLE employer contribution when current-year evidence is %s',
+    (_label, sepSimpleActivities) => {
+      const plan = basePlan()
+      plan.retirementActionEligibilityFacts = {
+        iraClassifications: [{
+          sourceAccountId: siblingIraId,
+          subtype: 'sep',
+          evidenceId: 'sibling-sep-classification',
+          provenance: { source: 'manual' },
+        }],
+        sepSimpleActivities,
+        deductibleIraContributions: [],
+      }
+      expect(issueKinds(input(plan, [resolved({
+        kind: 'ownedIraEmployerContribution',
+        origin: 'contributionLedger',
+        sourceAccountId: siblingIraId,
+      })]))).toContain('sourceKindMismatch')
+    },
+  )
+
+  it('accepts inherited RMD activity from any inherited traditional account kind', () => {
     const plan = basePlan()
     const employer = plan.accounts.find((account) => account.id === employerId)
     if (employer?.type !== 'traditional') throw new Error('fixture drift')
@@ -369,8 +579,12 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
       ownerDeathYear: 2028,
       decedentHadStartedRmds: true,
     }
-    expect(issueKinds(input(plan, [resolved({
+    expect(buildAnnualRetirementPhysicalEventInventory(input(plan, [resolved({
       kind: 'inheritedIraRmd',
+      sourceAccountId: employerId,
+    })])).status).toBe('annualPhysicalEventInventoryBuilt')
+    expect(issueKinds(input(plan, [resolved({
+      kind: 'employerPlanRmd',
       sourceAccountId: employerId,
     })]))).toContain('sourceKindMismatch')
   })
@@ -455,6 +669,115 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
         'nonOwnedIraPlanActionPresent',
       ],
     })
+    expect(result.events[0]).toMatchObject({
+      destinationRothAccountId: rothId,
+      charity: null,
+    })
+    expect(result.events[1]).toMatchObject({
+      destinationRothAccountId: null,
+      charity: {
+        designationId: 'charity-one',
+        name: 'Public Charity',
+      },
+    })
+  })
+
+  it('binds conversion destinations and QCD charity designations into event evidence', () => {
+    const conversionPlan = basePlan()
+    const alternateRothId = asAccountId('roth-alternate')
+    conversionPlan.accounts.push({
+      type: 'roth',
+      id: alternateRothId,
+      name: 'Alternate Roth',
+      ownerPersonId,
+      annualReturnPct: 0,
+      kind: 'ira',
+      balance: 0,
+      annualContribution: 0,
+    })
+    conversionPlan.strategies.retirementActions = [{
+      actionId: asActionId('conversion-plan'),
+      kind: 'rothConversion',
+      year: 2030,
+      executionDate: '2030-05-01',
+      executionSequence: 1,
+      requestedAmount: asPositiveUsdCents(4_000),
+      provenance: { source: 'manual' },
+      personId: ownerPersonId,
+      allocations: [{
+        allocationId: asAllocationId('conversion-allocation'),
+        sourceAccountId: ownedIraId,
+        requestedAmount: asPositiveUsdCents(4_000),
+      }],
+      destinationRothAccountId: rothId,
+      taxFunding: { kind: 'noneExpected' },
+    }]
+    const alternateDestinationPlan = structuredClone(conversionPlan)
+    const alternateConversion =
+      alternateDestinationPlan.strategies.retirementActions[0]
+    if (alternateConversion?.kind !== 'rothConversion') {
+      throw new Error('fixture drift')
+    }
+    alternateConversion.destinationRothAccountId = alternateRothId
+
+    const originalConversion = built(input(conversionPlan))
+    const alternateConversionResult = built(input(alternateDestinationPlan))
+    expect(alternateConversionResult.events[0]!.eventId).not.toBe(
+      originalConversion.events[0]!.eventId,
+    )
+    expect(alternateConversionResult.inventoryEvidenceId).not.toBe(
+      originalConversion.inventoryEvidenceId,
+    )
+
+    const qcdPlan = basePlan()
+    qcdPlan.strategies.retirementActions = [{
+      actionId: asActionId('qcd-plan'),
+      kind: 'qcd',
+      year: 2030,
+      executionDate: '2030-05-02',
+      executionSequence: 1,
+      requestedAmount: asPositiveUsdCents(3_000),
+      provenance: { source: 'manual' },
+      donorPersonId: ownerPersonId,
+      allocation: {
+        allocationId: asAllocationId('qcd-allocation'),
+        sourceAccountId: ownedIraId,
+        requestedAmount: asPositiveUsdCents(3_000),
+      },
+      charity: {
+        designationId: 'charity-one',
+        name: 'Public Charity',
+        designationKind: 'eligiblePublicCharity',
+        directFromCustodianAttested: true,
+        eligibleOrganizationAttested: true,
+        notDonorAdvisedFundOrSupportingOrganizationAttested: true,
+        notSplitInterestEntityAttested: true,
+        entireDistributionOtherwiseDeductibleAttested: true,
+      },
+    }]
+    const changedCharityPlan = structuredClone(qcdPlan)
+    const changedQcd = changedCharityPlan.strategies.retirementActions[0]
+    if (changedQcd?.kind !== 'qcd') throw new Error('fixture drift')
+    changedQcd.charity.name = 'Other Public Charity'
+
+    const originalQcd = built(input(qcdPlan))
+    const changedQcdResult = built(input(changedCharityPlan))
+    expect(changedQcdResult.events[0]!.eventId).not.toBe(
+      originalQcd.events[0]!.eventId,
+    )
+    expect(changedQcdResult.inventoryEvidenceId).not.toBe(
+      originalQcd.inventoryEvidenceId,
+    )
+    const originalQcdEvent = originalQcd.events[0]!
+    if (originalQcdEvent.origin !== 'planAction') {
+      throw new Error('fixture drift')
+    }
+    expect(Object.isFrozen(originalQcdEvent.charity)).toBe(true)
+    expect(originalQcdEvent.charity).not.toBe(
+      qcdPlan.strategies.retirementActions[0]!.kind === 'qcd'
+        ? qcdPlan.strategies.retirementActions[0]!.charity
+        : null,
+    )
   })
 
   it('expands every source allocation but permits one action to share its chronology slot', () => {
@@ -474,28 +797,362 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
     expect(result.planOwnedIraActionIds).toEqual(['withdrawal-plan'])
   })
 
+  it('scopes allocation identifiers to their owning action', () => {
+    const plan = basePlan()
+    const firstAction = plan.strategies.retirementActions[0]
+    if (firstAction?.kind !== 'ordinaryWithdrawal') {
+      throw new Error('fixture drift')
+    }
+    plan.strategies.retirementActions.push({
+      ...firstAction,
+      actionId: asActionId('withdrawal-plan-two'),
+      executionDate: '2030-06-16',
+    })
+
+    const result = built(input(plan))
+    expect(result.events).toHaveLength(2)
+    expect(result.events.map((event) =>
+      event.origin === 'planAction' ? event.allocationId : null
+    )).toEqual([
+      'withdrawal-plan-allocation',
+      'withdrawal-plan-allocation',
+    ])
+  })
+
+  it('rejects duplicate unreferenced Plan account identifiers before indexing', () => {
+    const plan = basePlan()
+    const sibling = plan.accounts.find(
+      (account) => account.id === siblingIraId,
+    )
+    if (sibling === undefined) throw new Error('fixture drift')
+    plan.accounts.push({ ...sibling })
+
+    const result = buildAnnualRetirementPhysicalEventInventory(input(plan))
+    expect(result.status).toBe('annualPhysicalEventInventoryIncomplete')
+    expect(result.issues).toContainEqual(expect.objectContaining({
+      kind: 'identifierCollision',
+      recordId: siblingIraId,
+      sourceAccountId: siblingIraId,
+    }))
+  })
+
+  it('rejects duplicate unreferenced household person identifiers before indexing', () => {
+    const plan = basePlan()
+    plan.strategies.retirementActions = []
+    const person = plan.household.people[0]!
+    plan.household.people.push({ ...person })
+
+    const result = buildAnnualRetirementPhysicalEventInventory(input(plan))
+    expect(result.status).toBe('annualPhysicalEventInventoryIncomplete')
+    expect(result.issues).toContainEqual(expect.objectContaining({
+      kind: 'identifierCollision',
+      recordId: ownerPersonId,
+    }))
+  })
+
   it.each([
     ['employerPlanRmd', 'rmdEngine', employerId],
     ['inheritedIraRmd', 'rmdEngine', inheritedId],
-    ['automaticSeppDistribution', 'seppEngine', ownedIraId],
     ['legacyNeedBasedWithdrawal', 'legacyProjection', ownedIraId],
     ['legacyRothConversion', 'legacyProjection', employerId],
-    ['legacyQcd', 'legacyProjection', inheritedId],
-    ['annuityFundingTransfer', 'transferLedger', ownedIraId],
-    ['tipsFundingTransfer', 'transferLedger', employerId],
-    ['rolloverInflow', 'transferLedger', ownedIraId],
-    ['otherTraditionalTransfer', 'transferLedger', inheritedId],
   ] as const)(
     'accepts exact %s runtime records from compatible sources',
     (kind, origin, sourceAccountId) => {
+      const plan = basePlan()
+      if (kind === 'legacyRothConversion') {
+        plan.strategies.rothConversion = {
+          mode: 'manual',
+          conversions: [{ year: 2030, amount: 100 }],
+        }
+      }
       const record = resolved({ kind, origin, sourceAccountId })
       expect(
         buildAnnualRetirementPhysicalEventInventory(
-          input(basePlan(), [record]),
+          input(plan, [record]),
         ).status,
       ).toBe('annualPhysicalEventInventoryBuilt')
     },
   )
+
+  it.each([
+    ['ownedIraRmd', ownedIraId],
+    ['employerPlanRmd', employerId],
+  ] as const)(
+    'requires the owner to have reached the RMD start age for %s',
+    (kind, sourceAccountId) => {
+      const tooYoung = basePlan()
+      tooYoung.household.people[0]!.dob = '1958-01-01'
+      expect(issueKinds(input(tooYoung, [resolved({
+        kind,
+        sourceAccountId,
+      })]))).toContain('sourceKindMismatch')
+
+      const eligible = basePlan()
+      eligible.household.people[0]!.dob = '1957-01-01'
+      expect(buildAnnualRetirementPhysicalEventInventory(input(
+        eligible,
+        [resolved({ kind, sourceAccountId })],
+      )).status).toBe('annualPhysicalEventInventoryBuilt')
+    },
+  )
+
+  it.each([
+    ['ownedIraRmd', ownedIraId],
+    ['employerPlanRmd', employerId],
+    ['inheritedIraRmd', inheritedId],
+  ] as const)(
+    'requires the owner to be modeled alive for %s',
+    (kind, sourceAccountId) => {
+      const afterDeath = basePlan()
+      afterDeath.household.people[0]!.longevity.planningAge = 79
+      expect(issueKinds(input(afterDeath, [resolved({
+        kind,
+        sourceAccountId,
+      })]))).toContain('sourceKindMismatch')
+
+      const lastAliveYear = basePlan()
+      lastAliveYear.household.people[0]!.longevity.planningAge = 80
+      expect(buildAnnualRetirementPhysicalEventInventory(input(
+        lastAliveYear,
+        [resolved({ kind, sourceAccountId })],
+      )).status).toBe('annualPhysicalEventInventoryBuilt')
+    },
+  )
+
+  it.each([
+    ['legacyQcd', 'legacyProjection'],
+    ['annuityFundingTransfer', 'transferLedger'],
+    ['rolloverInflow', 'transferLedger'],
+    ['otherTraditionalTransfer', 'transferLedger'],
+  ] as const)(
+    'keeps %s unresolved until producer and endpoint evidence are modeled',
+    (kind, origin) => {
+      const activity = unresolved({
+        activityId: `${kind}-unresolved`,
+        kind,
+        origin,
+        incompatibility: 'movementAuthorityUnavailable',
+        upstreamEvidenceId: `${kind}-upstream`,
+      })
+      expect(issueKinds(input(basePlan(), [activity]))).toContain(
+        'unresolvedRuntimeActivity',
+      )
+
+      const impossibleResolved = {
+        ...resolved({
+          origin,
+          sourceAccountId: ownedIraId,
+        }),
+        kind,
+      } as unknown as ResolvedAnnualRetirementPhysicalEventRecord
+      expect(issueKinds(input(basePlan(), [impossibleResolved]))).toContain(
+        'runtimeRecordInvalid',
+      )
+    },
+  )
+
+  it('requires automatic SEPP records to name a non-inherited account with an election', () => {
+    expect(issueKinds(input(basePlan(), [resolved({
+      kind: 'automaticSeppDistribution',
+      origin: 'seppEngine',
+    })]))).toContain('sourceKindMismatch')
+
+    const inheritedPlan = basePlan()
+    const inherited = inheritedPlan.accounts.find(
+      (account) => account.id === inheritedId,
+    )
+    if (inherited?.type !== 'traditional') throw new Error('fixture drift')
+    inherited.sepp = { startAge: 58, method: 'rmd' }
+    expect(issueKinds(input(inheritedPlan, [resolved({
+      kind: 'automaticSeppDistribution',
+      origin: 'seppEngine',
+      sourceAccountId: inheritedId,
+    })]))).toContain('sourceKindMismatch')
+
+    for (const [dob, expectedStatus] of [
+      ['1973-01-01', 'annualPhysicalEventInventoryIncomplete'],
+      ['1972-01-01', 'annualPhysicalEventInventoryBuilt'],
+      ['1968-01-01', 'annualPhysicalEventInventoryBuilt'],
+      ['1967-01-01', 'annualPhysicalEventInventoryIncomplete'],
+    ] as const) {
+      const electedPlan = basePlan()
+      electedPlan.household.people[0]!.dob = dob
+      const elected = electedPlan.accounts.find(
+        (account) => account.id === ownedIraId,
+      )
+      if (elected?.type !== 'traditional') throw new Error('fixture drift')
+      elected.sepp = { startAge: 58, method: 'rmd' }
+      expect(buildAnnualRetirementPhysicalEventInventory(input(
+        electedPlan,
+        [resolved({
+          kind: 'automaticSeppDistribution',
+          origin: 'seppEngine',
+        })],
+      )).status).toBe(expectedStatus)
+    }
+  })
+
+  it('accepts inherited RMD records only in a structurally required year', () => {
+    const beforeDeath = basePlan()
+    const inheritedBeforeDeath = beforeDeath.accounts.find(
+      (account) => account.id === inheritedId,
+    )
+    if (inheritedBeforeDeath?.type !== 'traditional' ||
+      inheritedBeforeDeath.inherited === undefined) {
+      throw new Error('fixture drift')
+    }
+    inheritedBeforeDeath.inherited.ownerDeathYear = 2030
+    expect(issueKinds(input(beforeDeath, [resolved({
+      kind: 'inheritedIraRmd',
+      sourceAccountId: inheritedId,
+    })]))).toContain('sourceKindMismatch')
+
+    const optionalWindow = basePlan()
+    const inheritedOptional = optionalWindow.accounts.find(
+      (account) => account.id === inheritedId,
+    )
+    if (inheritedOptional?.type !== 'traditional' ||
+      inheritedOptional.inherited === undefined) {
+      throw new Error('fixture drift')
+    }
+    inheritedOptional.inherited.ownerDeathYear = 2028
+    inheritedOptional.inherited.decedentHadStartedRmds = false
+    expect(issueKinds(input(optionalWindow, [resolved({
+      kind: 'inheritedIraRmd',
+      sourceAccountId: inheritedId,
+    })]))).toContain('sourceKindMismatch')
+
+    const deadlineYear = basePlan()
+    const inheritedDeadline = deadlineYear.accounts.find(
+      (account) => account.id === inheritedId,
+    )
+    if (inheritedDeadline?.type !== 'traditional' ||
+      inheritedDeadline.inherited === undefined) {
+      throw new Error('fixture drift')
+    }
+    inheritedDeadline.inherited.ownerDeathYear = 2020
+    inheritedDeadline.inherited.decedentHadStartedRmds = false
+    expect(buildAnnualRetirementPhysicalEventInventory(input(
+      deadlineYear,
+      [resolved({
+        kind: 'inheritedIraRmd',
+        sourceAccountId: inheritedId,
+      })],
+    )).status).toBe('annualPhysicalEventInventoryBuilt')
+  })
+
+  it('rejects inherited sources for legacy Roth conversions', () => {
+    const plan = basePlan()
+    plan.strategies.rothConversion = {
+      mode: 'manual',
+      conversions: [{ year: 2030, amount: 100 }],
+    }
+    expect(issueKinds(input(plan, [resolved({
+      kind: 'legacyRothConversion',
+      origin: 'legacyProjection',
+      sourceAccountId: inheritedId,
+    })]))).toContain('sourceKindMismatch')
+  })
+
+  it.each([
+    ['disabled strategy', (plan: Plan) => {
+      plan.strategies.rothConversion = { mode: 'none' }
+    }],
+    ['zero current-year manual schedule', (plan: Plan) => {
+      plan.strategies.rothConversion = {
+        mode: 'manual',
+        conversions: [{ year: 2030, amount: 0 }],
+      }
+    }],
+    ['foreign-year optimized schedule', (plan: Plan) => {
+      plan.strategies.rothConversion = {
+        mode: 'optimized',
+        conversions: [{ year: 2029, amount: 100 }],
+      }
+    }],
+    ['out-of-window fill target', (plan: Plan) => {
+      plan.strategies.rothConversion = {
+        mode: 'fillToTarget',
+        target: 'fixedMagi',
+        targetValue: 100_000,
+        startYear: 2028,
+        endYear: 2029,
+      }
+    }],
+    ['fractional IRMAA tier', (plan: Plan) => {
+      plan.strategies.rothConversion = {
+        mode: 'fillToTarget',
+        target: 'irmaaTier',
+        targetValue: 1.5,
+        startYear: 2030,
+        endYear: 2030,
+      }
+    }],
+    ['missing Roth destination', (plan: Plan) => {
+      plan.strategies.rothConversion = {
+        mode: 'manual',
+        conversions: [{ year: 2030, amount: 100 }],
+      }
+      plan.accounts = plan.accounts.filter((account) => account.type !== 'roth')
+    }],
+  ] as const)(
+    'rejects a legacy Roth conversion with %s',
+    (_label, arrange) => {
+      const plan = basePlan()
+      arrange(plan)
+      expect(issueKinds(input(plan, [resolved({
+        kind: 'legacyRothConversion',
+        origin: 'legacyProjection',
+        sourceAccountId: ownedIraId,
+      })]))).toContain('sourceKindMismatch')
+    },
+  )
+
+  it('requires employer-match records to name an account with match configuration', () => {
+    const plan = basePlan()
+    plan.household.people[0]!.dob = '1970-01-01'
+    plan.incomes = [{
+      type: 'wages',
+      id: 'owner-current-wages',
+      personId: ownerPersonId,
+      annualGross: 100_000,
+      endAge: null,
+      realGrowthPct: 0,
+    }]
+    const employer = plan.accounts.find(
+      (account) => account.id === employerId,
+    )
+    if (employer?.type !== 'traditional') throw new Error('fixture drift')
+    employer.annualContribution = 10_000
+    delete employer.employerMatch
+
+    expect(issueKinds(input(plan, [resolved({
+      kind: 'employerPlanEmployerMatch',
+      origin: 'contributionLedger',
+      sourceAccountId: employerId,
+    })]))).toContain('sourceKindMismatch')
+
+    employer.employerMatch = { matchPct: 0, capPctOfPay: 6 }
+    expect(issueKinds(input(plan, [resolved({
+      kind: 'employerPlanEmployerMatch',
+      origin: 'contributionLedger',
+      sourceAccountId: employerId,
+    })]))).toContain('sourceKindMismatch')
+  })
+
+  it('excludes taxable-side TIPS funding from this traditional-account inventory', () => {
+    const tipsRecord = {
+      ...resolved({
+        origin: 'transferLedger',
+        sourceAccountId: employerId,
+      }),
+      kind: 'tipsFundingTransfer',
+    } as unknown as ResolvedAnnualRetirementPhysicalEventRecord
+
+    expect(issueKinds(input(basePlan(), [tipsRecord]))).toContain(
+      'runtimeRecordInvalid',
+    )
+  })
 
   it('fails closed on unresolved activity without fabricating owner, source, or date', () => {
     const result = buildAnnualRetirementPhysicalEventInventory(
@@ -517,14 +1174,23 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
       ...value.runtimeInventoryAttestation,
       resolvedEventIds: [],
     }
-    expect(issueKinds(value)).toContain('runtimeInventoryUnexpectedRecord')
+    expect(issueKinds(value)).toContain('runtimeInventoryOmission')
 
-    const omitted = input()
-    omitted.runtimeInventoryAttestation = {
-      ...omitted.runtimeInventoryAttestation,
+    const unexpected = input()
+    unexpected.runtimeInventoryAttestation = {
+      ...unexpected.runtimeInventoryAttestation,
       resolvedEventIds: ['missing-runtime-event'],
     }
-    expect(issueKinds(omitted)).toContain('runtimeInventoryOmission')
+    expect(issueKinds(unexpected)).toContain('runtimeInventoryUnexpectedRecord')
+
+    const repeated = input(basePlan(), [resolved()])
+    repeated.runtimeInventoryAttestation = {
+      ...repeated.runtimeInventoryAttestation,
+      resolvedEventIds: ['runtime-rmd-event', 'runtime-rmd-event'],
+    }
+    const repeatedKinds = issueKinds(repeated)
+    expect(repeatedKinds).toContain('runtimeInventoryUnexpectedRecord')
+    expect(repeatedKinds).not.toContain('runtimeInventoryOmission')
   })
 
   it('distinguishes invalid attestation shape from a valid wrong binding', () => {
@@ -628,6 +1294,9 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
       eventId: 'huge-one',
       movementAuthorityId: 'huge-authority-one',
       upstreamEvidenceId: 'huge-upstream-one',
+      kind: 'employerPlanRmd',
+      origin: 'rmdEngine',
+      sourceAccountId: employerId,
       grossAmount: asPositiveUsdCents(Number.MAX_SAFE_INTEGER),
       executionDate: '2030-01-01',
       executionSequence: 1,
@@ -636,11 +1305,16 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
       eventId: 'huge-two',
       movementAuthorityId: 'huge-authority-two',
       upstreamEvidenceId: 'huge-upstream-two',
+      kind: 'employerPlanRmd',
+      origin: 'rmdEngine',
+      sourceAccountId: employerId,
       grossAmount: asPositiveUsdCents(1),
       executionDate: '2030-01-02',
       executionSequence: 1,
     })
-    expect(issueKinds(input(basePlan(), [first, second]))).toContain(
+    const overflowPlan = basePlan()
+    overflowPlan.strategies.retirementActions = []
+    expect(issueKinds(input(overflowPlan, [first, second]))).toContain(
       'aggregateAmountOverflow',
     )
   })
@@ -773,8 +1447,41 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
     const invalidRecord = input()
     invalidRecord.runtimeRecords = [{
       recordStatus: 'unresolved',
+      activityId: 'invalid-runtime-activity',
+      eventId: 'unrelated-resolved-event',
       ownerPersonId: ownerPersonId,
     } as unknown as UnresolvedAnnualRetirementPhysicalActivityRecord]
-    expect(issueKinds(invalidRecord)).toContain('runtimeRecordInvalid')
+    const invalidRecordResult = buildAnnualRetirementPhysicalEventInventory(
+      invalidRecord,
+    )
+    expect(invalidRecordResult.issues).toContainEqual(expect.objectContaining({
+      kind: 'runtimeRecordInvalid',
+      recordId: 'invalid-runtime-activity',
+    }))
+  })
+
+  it.each([
+    ['Plan', (plan: Plan) => {
+      plan.id = ' '
+    }],
+    ['action', (plan: Plan) => {
+      const action = plan.strategies.retirementActions[0]!
+      action.actionId = ' ' as typeof action.actionId
+    }],
+    ['allocation', (plan: Plan) => {
+      const action = plan.strategies.retirementActions[0]
+      if (action?.kind !== 'ordinaryWithdrawal') throw new Error('fixture drift')
+      const allocation = action.allocations[0]!
+      allocation.allocationId = ' ' as typeof allocation.allocationId
+    }],
+  ])('returns planInvalid instead of throwing for a blank %s ID', (_label, mutate) => {
+    const value = input()
+    const plan = value.plan as Plan
+    mutate(plan)
+    const result = buildAnnualRetirementPhysicalEventInventory(value)
+    expect(result.status).toBe('annualPhysicalEventInventoryIncomplete')
+    expect(result.issues).toContainEqual(expect.objectContaining({
+      kind: 'planInvalid',
+    }))
   })
 })

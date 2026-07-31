@@ -56,15 +56,22 @@ Source of truth: [github.com/RetireGolden/RetireGolden](https://github.com/Retir
 - `buildAnnualRetirementPhysicalEventInventory` is the pure chronology boundary
   in front of future simulator integration. It derives traditional-account Plan
   action allocations internally and exact-rejoins a complete Plan/year/ledger-run
-  runtime inventory covering RMD, automatic SEPP, legacy projection,
+  runtime inventory covering RMD, automatic SEPP, legacy withdrawal/conversion,
   in-year IRA/employer-plan account-balance contribution inflows and employer
-  match, and transfer activity. Following-year IRA contributions designated for
-  the prior tax year remain separate annual-basis facts, not events in this
-  calendar-year chronology. A
-  shared movement authority may cover multiple source members only when their
-  owner, kind, origin, date, and sequence agree; upstream evidence remains unique
-  per member. It never invents a missing owner, source, date, or order: incomplete
-  records and cross-authority chronology conflicts fail closed. Successful output
+  match. Aggregate legacy QCD reclassification, annuity funding, rollover
+  inflows, and other traditional transfers stay unresolved until their producer
+  and physical endpoints have a typed binding contract. Following-year IRA
+  contributions designated for the prior tax year
+  remain separate annual-basis facts, not events in this calendar-year chronology.
+  A resolved contribution record is the upstream ledger's post-owner-wide-limit
+  occurrence, not a contribution candidate; fully suppressed contributions are
+  intentionally absent under the complete runtime attestation. The inventory
+  checks Plan-local source prerequisites without duplicating shared-limit or
+  section 415(c) math. A shared movement authority may cover multiple source
+  members only when their owner, kind, origin, date, and sequence agree; upstream
+  evidence remains unique per member. It never invents a missing owner, source,
+  date, or order: incomplete records and cross-authority chronology conflicts
+  fail closed. Successful output
   is a globally ordered immutable stream with owned-IRA pool views and provisional
   Form 8606/QCD categories; it still mutates no balance or basis, calculates no tax
   or penalty, and establishes neither movement nor actionability.
