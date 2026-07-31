@@ -252,6 +252,28 @@ export {
   type ValidateOwnedNonRothIraSeppCurrentPaymentCandidateResult,
 } from './ownedNonRothIraSeppCurrentPaymentCandidate.js'
 export {
+  compareUtf16CodeUnits,
+  deriveActionStructuralId,
+} from './structuralId.js'
+export {
+  reconcileOwnedNonRothIraSeppAnnualSchedule,
+  type CompleteOwnedNonRothIraSeppAnnualReconciliationEvidence,
+  type OwnedNonRothIraSeppAnnualDistributionInventoryEvidence,
+  type OwnedNonRothIraSeppAnnualEvidenceMissingIssue,
+  type OwnedNonRothIraSeppAnnualEvidenceMissingResult,
+  type OwnedNonRothIraSeppAnnualMissingEvidenceName,
+  type OwnedNonRothIraSeppAnnualNotReconciledResult,
+  type OwnedNonRothIraSeppAnnualRawPaymentEvidence,
+  type OwnedNonRothIraSeppAnnualReconciledPaymentEvidence,
+  type OwnedNonRothIraSeppAnnualReconciledResult,
+  type OwnedNonRothIraSeppAnnualReconciliationIncompleteResult,
+  type OwnedNonRothIraSeppAnnualReconciliationIssue,
+  type OwnedNonRothIraSeppAnnualReconciliationIssueKind,
+  type OwnedNonRothIraSeppCompletePriorElectionHistoryEvidence,
+  type ReconcileOwnedNonRothIraSeppAnnualScheduleInput,
+  type ReconcileOwnedNonRothIraSeppAnnualScheduleResult,
+} from './ownedNonRothIraSeppAnnualReconciliation.js'
+export {
   coordinateOwnedNonRothIraAnnualWithdrawalCandidate,
   type CoordinateOwnedNonRothIraAnnualWithdrawalCandidateInput,
   type CoordinateOwnedNonRothIraAnnualWithdrawalCandidateResult,

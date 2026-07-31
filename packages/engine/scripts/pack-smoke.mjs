@@ -47,12 +47,14 @@ const {
   classifyIndividuallyOwnedTaxableWithdrawal,
   coordinateOwnedNonRothIraAnnualWithdrawalCandidate,
   evaluateOwnedNonRothIraPenaltyPrerequisites,
+  deriveActionStructuralId,
   executeCashOrdinaryWithdrawals,
   executeOrdinaryWithdrawals,
   ledgerCentsToPlanDollars,
   parseRetirementActionRequest,
   planDollarsToLedgerCents,
   resolveOwnedNonRothIraAnnualWithdrawalEvidence,
+  reconcileOwnedNonRothIraSeppAnnualSchedule,
   stageOwnedNonRothIraOrdinaryWithdrawalMovements,
   validateOwnedNonRothIraSeppCurrentPaymentCandidate,
 } = await import('@retiregolden/engine/actions')
@@ -80,6 +82,10 @@ const shippedSchema = JSON.parse(readFileSync(shippedPath, 'utf8'))
 assert.equal(typeof simulatePlan, 'function')
 assert.equal(simulate.simulatePlan, simulatePlan)
 assert.equal(asActionId('smoke-action'), 'smoke-action')
+assert.match(
+  deriveActionStructuralId('smoke', ['packed']),
+  /^smoke:[0-9a-f]{64}$/,
+)
 assert.equal(addUsdCents(asUsdCents(125), asUsdCents(75)), 200)
 assert.equal(planDollarsToLedgerCents(1.005), 101)
 assert.equal(ledgerCentsToPlanDollars(asUsdCents(101)), 1.01)
@@ -374,7 +380,7 @@ const smokeSeppOpening = {
     'owned-ira-sepp-annual-opening-state:' +
     JSON.stringify([smokeSeppOpeningLineage]),
 }
-const smokeSeppHistory = {
+const smokeSeppHistoryWithoutId = {
   predicate: 'ownedNonRothIraSeppPriorPaymentHistory',
   electionId: 'smoke-sepp-election',
   scheduleId: 'smoke-sepp-schedule',
@@ -386,31 +392,19 @@ const smokeSeppHistory = {
   usedCurrentDistributionEvidenceIds: [],
   lastCompletedSequence: 0,
   lastPaymentDate: null,
+  terminalStateEvidenceId: smokeSeppOpening.openingStateEvidenceId,
   scheduledGrossAmountThroughPriorPayments: 0,
   actualQualifyingGrossAmountThroughPriorPayments: 0,
   nextScheduledSequence: 1,
-  priorHistoryEvidenceId: 'smoke-sepp-history',
 }
-const smokeSeppBefore = {
-  predicate: 'ownedNonRothIraSeppCurrentPaymentState',
-  electionId: 'smoke-sepp-election',
-  scheduleId: 'smoke-sepp-schedule',
-  participantPersonId: asPersonId('smoke-person'),
-  sourceAccountId: asAccountId('smoke-traditional-ira'),
-  taxYear: 2030,
-  completedPaymentCount: 0,
-  lastCompletedSequence: 0,
-  lastPaymentDate: null,
-  nextScheduledSequence: 1,
-  scheduledGrossAmount: 0,
-  actualQualifyingGrossAmount: 0,
+const smokeSeppHistory = {
+  ...smokeSeppHistoryWithoutId,
+  priorHistoryEvidenceId:
+    deriveActionStructuralId('owned-ira-sepp-prior-payment-history', [
+      smokeSeppOpening.openingStateEvidenceId,
+      smokeSeppHistoryWithoutId,
+    ]),
 }
-const smokeSeppBeforeId =
-  'owned-ira-sepp-current-payment-before:' + JSON.stringify([
-    smokeSeppOpening,
-    smokeSeppHistory,
-    smokeSeppBefore,
-  ])
 const smokeSeppCandidate =
   validateOwnedNonRothIraSeppCurrentPaymentCandidate({
     ownerPersonId: asPersonId('smoke-person'),
@@ -474,7 +468,7 @@ const smokeSeppCandidate =
       distributionDate: '2030-12-31',
       currentDistributionEvidenceId: 'smoke-ira-distribution-date',
       paymentSequence: 1,
-      previousScheduleStateId: smokeSeppBeforeId,
+      previousScheduleStateId: smokeSeppOpening.openingStateEvidenceId,
       currentScheduledGrossAmount: 2,
       paymentScheduleEvidenceId: 'smoke-sepp-payment-schedule',
     },
@@ -486,6 +480,135 @@ assert.equal(smokeSeppCandidate.candidate.actualGrossAmount, 2)
 assert.equal(smokeSeppCandidate.candidate.basisReturnExcludedAmount, 1)
 assert.equal(smokeSeppCandidate.candidate.prospectiveOrdinaryIncomeAmount, 1)
 assert.equal(smokeSeppCandidate.candidate.sourceEvidenceId, 'smoke-sepp-source')
+assert.match(
+  smokeSeppCandidate.candidate.afterState.stateEvidenceId,
+  /^owned-ira-sepp-current-payment-after:[0-9a-f]{64}$/,
+)
+assert.match(
+  smokeSeppCandidate.candidate.candidateId,
+  /^owned-ira-sepp-current-payment-candidate:[0-9a-f]{64}$/,
+)
+const smokeSeppPriorElectionHistoryWithoutId = {
+  predicate: 'completeOwnedNonRothIraSeppPriorElectionHistory',
+  electionId: 'smoke-sepp-election',
+  scheduleId: 'smoke-sepp-schedule',
+  participantPersonId: asPersonId('smoke-person'),
+  sourceAccountId: asAccountId('smoke-traditional-ira'),
+  historyThroughDate: '2029-12-31',
+  terminalStateEvidenceId: 'smoke-prior-year-terminal',
+  usedDistributionEvidenceIds: ['smoke-prior-lifetime-distribution'],
+}
+const smokeSeppPriorElectionHistory = {
+  ...smokeSeppPriorElectionHistoryWithoutId,
+  priorElectionHistoryEvidenceId:
+    deriveActionStructuralId(
+      'owned-ira-sepp-complete-prior-election-history', [
+      smokeSeppPriorElectionHistoryWithoutId,
+      ],
+    ),
+}
+const smokeSeppInventoryWithoutId = {
+  predicate: 'completeOwnedNonRothIraSeppAnnualDistributionInventory',
+  electionId: 'smoke-sepp-election',
+  scheduleId: 'smoke-sepp-schedule',
+  participantPersonId: asPersonId('smoke-person'),
+  sourceAccountId: asAccountId('smoke-traditional-ira'),
+  taxYear: 2030,
+  characterCoverages: [smokeSeppCoverage],
+}
+const smokeSeppInventory = {
+  ...smokeSeppInventoryWithoutId,
+  inventoryEvidenceId:
+    deriveActionStructuralId(
+      'owned-ira-sepp-annual-distribution-inventory', [
+      smokeSeppInventoryWithoutId,
+      ],
+    ),
+}
+const smokeSeppAnnualReconciliation =
+  reconcileOwnedNonRothIraSeppAnnualSchedule({
+    ownerPersonId: asPersonId('smoke-person'),
+    taxYear: 2030,
+    sourceEvidence: {
+      predicate: 'ownedNonRothIraSeppSource',
+      sourceAccountId: asAccountId('smoke-traditional-ira'),
+      ownerPersonId: asPersonId('smoke-person'),
+      accountType: 'traditional',
+      accountKind: 'ira',
+      inheritanceStatus: 'owned',
+      subtype: 'traditional',
+      accountOwnershipEvidenceId: 'smoke-ira-ownership',
+      iraClassificationEvidenceId: 'smoke-ira-classification',
+      sourceEvidenceId: 'smoke-sepp-source',
+    },
+    electionEvidence: {
+      predicate: 'ownedNonRothIraSeppElection',
+      electionId: 'smoke-sepp-election',
+      scheduleId: 'smoke-sepp-schedule',
+      participantPersonId: asPersonId('smoke-person'),
+      sourceAccountId: asAccountId('smoke-traditional-ira'),
+      subtype: 'traditional',
+      electionStartDate: '2029-01-01',
+      method: 'fixedAmortization',
+      electionEvidenceId: 'smoke-sepp-election-evidence',
+    },
+    annualScheduleEvidence: {
+      predicate: 'ownedNonRothIraSeppAnnualSchedule',
+      electionId: 'smoke-sepp-election',
+      scheduleId: 'smoke-sepp-schedule',
+      participantPersonId: asPersonId('smoke-person'),
+      sourceAccountId: asAccountId('smoke-traditional-ira'),
+      taxYear: 2030,
+      annualScheduledGrossAmount: 2,
+      annualScheduleEvidenceId: 'smoke-sepp-annual',
+    },
+    noModificationEvidence: {
+      predicate: 'noDisqualifyingOwnedNonRothIraSeppModificationThroughDate',
+      electionId: 'smoke-sepp-election',
+      scheduleId: 'smoke-sepp-schedule',
+      participantPersonId: asPersonId('smoke-person'),
+      sourceAccountId: asAccountId('smoke-traditional-ira'),
+      throughDate: '2030-12-31',
+      disqualifyingModification: 'none',
+      noModificationEvidenceId: 'smoke-sepp-no-modification',
+    },
+    openingStateEvidence: smokeSeppOpening,
+    priorElectionHistoryEvidence: smokeSeppPriorElectionHistory,
+    distributionInventory: smokeSeppInventory,
+    payments: [{
+      currentPaymentEvidence: {
+        predicate: 'ownedNonRothIraSeppCurrentScheduledPayment',
+        electionId: 'smoke-sepp-election',
+        scheduleId: 'smoke-sepp-schedule',
+        actionId: asActionId('smoke-ira-withdrawal'),
+        allocationId: asAllocationId('smoke-ira-allocation'),
+        sourceAccountId: asAccountId('smoke-traditional-ira'),
+        distributionDate: '2030-12-31',
+        currentDistributionEvidenceId: 'smoke-ira-distribution-date',
+        paymentSequence: 1,
+        previousScheduleStateId: smokeSeppOpening.openingStateEvidenceId,
+        currentScheduledGrossAmount: 2,
+        paymentScheduleEvidenceId: 'smoke-sepp-payment-schedule',
+      },
+    }],
+  })
+assert.equal(smokeSeppAnnualReconciliation.status, 'reconciled')
+assert.equal(smokeSeppAnnualReconciliation.qualification, 'notEstablished')
+assert.equal(smokeSeppAnnualReconciliation.penaltyTreatment, 'notEstablished')
+assert.equal(smokeSeppAnnualReconciliation.evidence.paymentCount, 1)
+assert.equal(smokeSeppAnnualReconciliation.evidence.reconciledActualGrossAmount, 2)
+assert.equal(smokeSeppAnnualReconciliation.evidence.basisReturnExcludedAmount, 1)
+assert.equal(smokeSeppAnnualReconciliation.evidence.prospectiveOrdinaryIncomeAmount, 1)
+assert.match(
+  smokeSeppAnnualReconciliation.evidence.distributionInventory.inventoryEvidenceId,
+  /^owned-ira-sepp-annual-distribution-inventory:[0-9a-f]{64}$/,
+)
+assert.match(
+  smokeSeppAnnualReconciliation.evidence.annualReconciliationId,
+  /^owned-ira-sepp-annual-reconciliation:[0-9a-f]{64}$/,
+)
+assert.equal('penaltyRate' in smokeSeppAnnualReconciliation, false)
+assert.equal('penaltyAmount' in smokeSeppAnnualReconciliation, false)
 const smokeAnnualBasis = ownedIraCharacter.annualBasisEvidence
 const smokeAnnualFinalizerInput = {
   annualInput: {

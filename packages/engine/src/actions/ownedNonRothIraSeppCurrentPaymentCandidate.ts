@@ -15,6 +15,7 @@ import {
   type UsdCents,
 } from './money.js'
 import { parseCivilIsoDate } from './civilDate.js'
+import { deriveActionStructuralId } from './structuralId.js'
 import type {
   OwnedNonRothIraPenaltyCharacterCoverageEvidence,
 } from './ownedNonRothIraPenaltyPrerequisite.js'
@@ -100,6 +101,7 @@ export interface OwnedNonRothIraSeppPriorPaymentHistoryEvidence {
   usedCurrentDistributionEvidenceIds: readonly string[]
   lastCompletedSequence: number
   lastPaymentDate: string | null
+  terminalStateEvidenceId?: string
   scheduledGrossAmountThroughPriorPayments: UsdCents
   actualQualifyingGrossAmountThroughPriorPayments: UsdCents
   nextScheduledSequence: number
@@ -283,7 +285,7 @@ function deepFreeze<T>(value: T): Readonly<T> {
   return value as Readonly<T>
 }
 
-function stableId(prefix: string, parts: readonly unknown[]): string {
+function legacyJsonId(prefix: string, parts: readonly unknown[]): string {
   return `${prefix}:${JSON.stringify(parts)}`
 }
 
@@ -498,7 +500,12 @@ export function validateOwnedNonRothIraSeppCurrentPaymentCandidate(
       'Opening SEPP state evidence ID',
     ),
   }
-  const history: OwnedNonRothIraSeppPriorPaymentHistoryEvidence = {
+  const hasExplicitTerminalState =
+    historyInput.terminalStateEvidenceId !== undefined
+  const history: Omit<
+    OwnedNonRothIraSeppPriorPaymentHistoryEvidence,
+    'terminalStateEvidenceId'
+  > & { terminalStateEvidenceId: string } = {
     predicate: historyInput.predicate,
     electionId: nonblankId(historyInput.electionId, 'Prior SEPP election ID'),
     scheduleId: nonblankId(historyInput.scheduleId, 'Prior SEPP schedule ID'),
@@ -529,6 +536,12 @@ export function validateOwnedNonRothIraSeppCurrentPaymentCandidate(
     lastPaymentDate: historyInput.lastPaymentDate === null
       ? null
       : civilDate(historyInput.lastPaymentDate, 'Prior SEPP payment date'),
+    terminalStateEvidenceId: hasExplicitTerminalState
+      ? nonblankId(
+          historyInput.terminalStateEvidenceId,
+          'Prior SEPP terminal-state evidence ID',
+        )
+      : opening.openingStateEvidenceId,
     scheduledGrossAmountThroughPriorPayments: usdCentsSchema.parse(
       historyInput.scheduledGrossAmountThroughPriorPayments,
     ),
@@ -663,6 +676,9 @@ export function validateOwnedNonRothIraSeppCurrentPaymentCandidate(
     opening.openingStateEvidenceId,
     history.priorHistoryEvidenceId,
     payment.paymentScheduleEvidenceId,
+    ...history.terminalStateEvidenceId === opening.openingStateEvidenceId
+      ? []
+      : [history.terminalStateEvidenceId],
     ...history.usedCurrentDistributionEvidenceIds.filter(
       (evidenceId) =>
         evidenceId !== payment.currentDistributionEvidenceId,
@@ -689,7 +705,7 @@ export function validateOwnedNonRothIraSeppCurrentPaymentCandidate(
     iraClassificationEvidenceId:
       coverage.sourceEvidenceIds.iraClassificationEvidenceId,
   }
-  const expectedCharacterCoverageEvidenceId = stableId(
+  const expectedCharacterCoverageEvidenceId = legacyJsonId(
     'owned-ira-penalty-character-coverage',
     [
       coverage.actionId,
@@ -779,7 +795,7 @@ export function validateOwnedNonRothIraSeppCurrentPaymentCandidate(
     actualQualifyingGrossAmount:
       opening.actualQualifyingGrossAmount,
   }
-  const expectedOpeningStateEvidenceId = stableId(
+  const expectedOpeningStateEvidenceId = legacyJsonId(
     'owned-ira-sepp-annual-opening-state',
     [openingStateLineage],
   )
@@ -796,8 +812,10 @@ export function validateOwnedNonRothIraSeppCurrentPaymentCandidate(
     history.lastPaymentDate !== null ||
     history.scheduledGrossAmountThroughPriorPayments !== 0 ||
     history.actualQualifyingGrossAmountThroughPriorPayments !== 0 ||
+    history.terminalStateEvidenceId !== opening.openingStateEvidenceId ||
     history.nextScheduledSequence !== 1)
   const populatedHistoryMismatch = history.completedPaymentCount > 0 && (
+    !hasExplicitTerminalState ||
     history.lastCompletedSequence !== history.completedPaymentCount ||
     history.lastPaymentDate === null ||
     (history.lastPaymentDate !== null &&
@@ -805,11 +823,37 @@ export function validateOwnedNonRothIraSeppCurrentPaymentCandidate(
     (history.lastPaymentDate !== null &&
       history.lastPaymentDate < election.electionStartDate) ||
     history.nextScheduledSequence !== history.lastCompletedSequence + 1)
+  const historyWithoutId = {
+    predicate: history.predicate,
+    electionId: history.electionId,
+    scheduleId: history.scheduleId,
+    participantPersonId: history.participantPersonId,
+    sourceAccountId: history.sourceAccountId,
+    taxYear: history.taxYear,
+    openingStateEvidenceId: history.openingStateEvidenceId,
+    completedPaymentCount: history.completedPaymentCount,
+    usedCurrentDistributionEvidenceIds:
+      history.usedCurrentDistributionEvidenceIds,
+    lastCompletedSequence: history.lastCompletedSequence,
+    lastPaymentDate: history.lastPaymentDate,
+    terminalStateEvidenceId: history.terminalStateEvidenceId,
+    scheduledGrossAmountThroughPriorPayments:
+      history.scheduledGrossAmountThroughPriorPayments,
+    actualQualifyingGrossAmountThroughPriorPayments:
+      history.actualQualifyingGrossAmountThroughPriorPayments,
+    nextScheduledSequence: history.nextScheduledSequence,
+  }
+  const expectedPriorHistoryEvidenceId = deriveActionStructuralId(
+    'owned-ira-sepp-prior-payment-history',
+    [opening.openingStateEvidenceId, historyWithoutId],
+  )
   addIssue(issues, 'priorHistoryBindingMismatch',
     history.predicate !== 'ownedNonRothIraSeppPriorPaymentHistory' ||
     sharedBindingMismatch(history) ||
     history.taxYear !== expectedTaxYear ||
     history.openingStateEvidenceId !== opening.openingStateEvidenceId ||
+    (hasExplicitTerminalState &&
+      history.priorHistoryEvidenceId !== expectedPriorHistoryEvidenceId) ||
     history.usedCurrentDistributionEvidenceIds.length !==
       history.completedPaymentCount ||
     emptyHistoryMismatch ||
@@ -832,11 +876,7 @@ export function validateOwnedNonRothIraSeppCurrentPaymentCandidate(
   }
   const beforeState: OwnedNonRothIraSeppCurrentPaymentStateEvidence = {
     ...beforeStateWithoutId,
-    stateEvidenceId: stableId('owned-ira-sepp-current-payment-before', [
-      opening,
-      history,
-      beforeStateWithoutId,
-    ]),
+    stateEvidenceId: history.terminalStateEvidenceId,
   }
   addIssue(issues, 'paymentSequenceNotContiguous',
     payment.paymentSequence !== history.nextScheduledSequence)
@@ -915,13 +955,29 @@ export function validateOwnedNonRothIraSeppCurrentPaymentCandidate(
     scheduledGrossAmount,
     actualQualifyingGrossAmount,
   }
+  const paymentAfterPredecessorBinding = {
+    predicate: payment.predicate,
+    electionId: payment.electionId,
+    scheduleId: payment.scheduleId,
+    actionId: payment.actionId,
+    allocationId: payment.allocationId,
+    sourceAccountId: payment.sourceAccountId,
+    distributionDate: payment.distributionDate,
+    currentDistributionEvidenceId:
+      payment.currentDistributionEvidenceId,
+    paymentSequence: payment.paymentSequence,
+    currentScheduledGrossAmount: payment.currentScheduledGrossAmount,
+    paymentScheduleEvidenceId: payment.paymentScheduleEvidenceId,
+  }
   const afterState: OwnedNonRothIraSeppCurrentPaymentStateEvidence = {
     ...afterStateWithoutId,
-    stateEvidenceId: stableId('owned-ira-sepp-current-payment-after', [
+    stateEvidenceId: deriveActionStructuralId(
+      'owned-ira-sepp-current-payment-after', [
       beforeState.stateEvidenceId,
-      payment,
+      paymentAfterPredecessorBinding,
       afterStateWithoutId,
-    ]),
+      ],
+    ),
   }
   const candidateWithoutId = {
     predicate: 'ownedNonRothIraSeppCurrentPaymentCandidate' as const,
@@ -955,7 +1011,8 @@ export function validateOwnedNonRothIraSeppCurrentPaymentCandidate(
   }
   const candidate: OwnedNonRothIraSeppCurrentPaymentCandidateEvidence = {
     ...candidateWithoutId,
-    candidateId: stableId('owned-ira-sepp-current-payment-candidate', [
+    candidateId: deriveActionStructuralId(
+      'owned-ira-sepp-current-payment-candidate', [
       coverage,
       source,
       election,
@@ -965,7 +1022,8 @@ export function validateOwnedNonRothIraSeppCurrentPaymentCandidate(
       history,
       payment,
       candidateWithoutId,
-    ]),
+      ],
+    ),
   }
   return deepFreeze({
     ...resultFlags,

@@ -22,10 +22,19 @@ planning-grade evidence rather than execution readiness.
 
 The actions package also has an isolated provisional validator for one current owned-IRA SEPP
 scheduled-payment transition. It derives actual gross and character from canonical coverage, validates
-the raw schedule reference against explicit election/opening/history evidence, and rejects replay found
-in the supplied complete history. It does not qualify SEPP treatment and is not connected to penalty,
-finalization, coordination, execution, or simulation. A future complete annual reconciler must detect
-cross-call forks plus duplicate, replayed, omitted, and extra members before any qualification claim.
+the raw schedule reference against explicit election/opening/history evidence, binds predecessor-after
+to current-previous state, and rejects replay found in the supplied complete history. A separate annual
+reconciler now reconstructs every current-year history from raw payments, takes coverage only from a
+structurally verified complete inventory, requires exact inventory/tuple membership and terminal annual
+gross, and rejects lifetime replay and cross-kind ID reuse, forks, duplicates, omissions, foreign members,
+and extras. Prior-election history must terminate exactly the day before the current tax year, same-day
+identities use locale-independent UTF-16 ordering, and new recursive/annual structural IDs are fixed-width
+SHA-256 digests. Legacy empty current-year history remains accepted without explicit terminal proof by
+safely inferring the opening; populated legacy history without terminal proof fails closed. Its
+completeness is only relative to the explicitly supplied inventory: later penalty integration must
+rederive and exact-rejoin that inventory from full canonical annual characterization. Neither boundary
+qualifies SEPP treatment or connects to penalty, finalization, coordination, execution, or simulation;
+the annual result exposes no penalty rate or amount and establishes no actionability or movement.
 
 ## Inventory
 

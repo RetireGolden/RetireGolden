@@ -571,7 +571,7 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   coverage, explicit election and annual-schedule evidence, no-disqualifying-modification coverage,
   a zero annual opening anchored to the prior-history terminal state, and complete current-year prior
   history. The raw payment supplies only schedule references, sequence, current scheduled gross, and
-  the derived previous-state ID; actual gross, character, prior totals, and prior date come from the
+  the previous terminal-state ID; actual gross, character, prior totals, and prior date come from the
   canonical coverage/history. Prior scheduled gross must exactly equal prior actual qualifying gross,
   the current schedule must equal canonical executed gross, and bigint-derived after totals must remain
   safe and within the separately proved positive annual scheduled amount. Basis remains part of the
@@ -580,11 +580,38 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   `penaltyTreatment: notEstablished`, `movement: notCommitted`, and
   `actionability: notEstablished`; this boundary publishes no qualification, zero-penalty, finalization,
   binding, readiness, execution, or simulation authority and is not consumed by the penalty evaluator,
-  finalizer, or coordinator. Its complete prior-history distribution-ID set rejects local replay, but a
-  standalone call cannot detect separate-call forks. A future annual reconciler must revalidate all raw
-  payment facts and reject duplicate, forked, replayed, omitted, or extra members before publishing any
-  qualification. This slice does not calculate a legal SEPP amount, persist Plan state, or model later
-  modification/recapture consequences.
+  finalizer, or coordinator. Its structurally derived history ID binds an explicit terminal-state ID;
+  the first payment's previous state is the annual opening and every later payment's previous state is
+  the predecessor's derived after state. New history, after-state, and candidate IDs use prefix-scoped,
+  fixed-width SHA-256 structural digests so a payment chain cannot recursively inflate its IDs. The
+  pre-existing opening-state and canonical character-coverage IDs retain their legacy structural formula
+  for public producer compatibility. A legacy empty current-year history may omit the terminal ID and use
+  its prior opaque history ID; the validator safely infers the annual opening. A populated history without
+  explicit terminal proof fails with typed nonconformance. A standalone call still cannot detect
+  separate-call forks.
+  The separate pure `reconcileOwnedNonRothIraSeppAnnualSchedule` boundary closes that local gap for one
+  election, source, and tax year. It canonicalizes raw payments by date and stable action/allocation
+  identity using locale-independent UTF-16 code-unit ordering, reconstructs every current-year history
+  and predecessor chain internally, and revalidates
+  each payment through the standalone validator. Canonical character coverage comes only from an
+  explicitly supplied complete distribution inventory whose producer IDs and structurally derived
+  inventory ID are recomputed. The raw payment tuple does not duplicate coverage, candidates, states,
+  totals, or history. Inventory and tuple must be bijective, sequences contiguous, distribution/payment
+  IDs unique, and scheduled and actual terminal gross must both exactly equal the annual schedule using
+  bigint-safe arithmetic. A structurally derived complete prior-election-history record binds the
+  opening terminal lineage, must end exactly on the day before the tax year opens, and carries the
+  canonical lifetime distribution-ID set. Current distribution overlap is rejected as replay, while
+  reuse of a lifetime distribution ID by any current common, inventory, history, payment-schedule, or
+  derived state/evidence ID fails closed as a cross-kind collision. Inventory, prior-election-history,
+  current-year-history, terminal, candidate, and annual reconciliation IDs use fixed-width structural
+  SHA-256 digests. Basis remains in gross membership while only ordinary exposure is accumulated.
+  Successful reconciliation is complete only relative to that caller-supplied complete inventory. It
+  reports `qualification: notEstablished`, `penaltyTreatment: notEstablished`,
+  `movement: notCommitted`, and `actionability: notEstablished`, exposes no rate or penalty amount, and
+  is not connected to the penalty evaluator, annual finalizer/coordinator, execution, or simulation.
+  Any later penalty integration must rederive and exact-rejoin the inventory from the full canonical
+  annual characterization before relying on this evidence. This slice does not calculate a legal SEPP
+  amount, persist Plan state, or model later modification/recapture consequences.
   Source: [IRS early-distribution exception
   matrix](https://www.irs.gov/retirement-plans/plan-participant-employee/retirement-topics-exceptions-to-tax-on-early-distributions).
 - **Fixed-asset disposition.** Setting `costBasis` on a property switches its planned sale from the legacy
@@ -602,6 +629,8 @@ additive with a no-op default, so plans saved before it stay byte-identical.
 [engine/strategies/iraBasis.ts](../../packages/engine/src/strategies/iraBasis.ts),
 [engine/actions/annualIraBasisAllocation.ts](../../packages/engine/src/actions/annualIraBasisAllocation.ts),
 [engine/actions/ownedNonRothIraWithdrawalCharacter.ts](../../packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts),
+[engine/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts](../../packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts),
+[engine/actions/ownedNonRothIraSeppAnnualReconciliation.ts](../../packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts),
 [engine/tax/propertySale.ts](../../packages/engine/src/tax/propertySale.ts), threaded through
 [engine/projection/simulate.ts](../../packages/engine/src/projection/simulate.ts) and the after-tax estate metric in
 [engine/projection/compare.ts](../../packages/engine/src/projection/compare.ts).

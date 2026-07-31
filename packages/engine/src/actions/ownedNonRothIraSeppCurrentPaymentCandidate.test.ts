@@ -7,6 +7,7 @@ import {
   asPersonId,
 } from './identity.js'
 import { asUsdCents } from './money.js'
+import { deriveActionStructuralId } from './structuralId.js'
 import {
   evaluateOwnedNonRothIraPenaltyPrerequisites,
   type OwnedNonRothIraPenaltyCharacterCoverageEvidence,
@@ -187,11 +188,14 @@ function input(options: {
         : [],
       lastCompletedSequence: priorPayment ? 1 : 0,
       lastPaymentDate: priorDate,
+      terminalStateEvidenceId: priorPayment
+        ? 'prior-payment-terminal-state'
+        : 'derived-below',
       scheduledGrossAmountThroughPriorPayments: asUsdCents(priorGross),
       actualQualifyingGrossAmountThroughPriorPayments:
         asUsdCents(priorGross),
       nextScheduledSequence: nextSequence,
-      priorHistoryEvidenceId: 'prior-history',
+      priorHistoryEvidenceId: 'derived-below',
     },
     currentPaymentEvidence: {
       predicate: 'ownedNonRothIraSeppCurrentScheduledPayment',
@@ -219,6 +223,9 @@ function input(options: {
   value.priorHistoryEvidence = {
     ...value.priorHistoryEvidence!,
     openingStateEvidenceId,
+    terminalStateEvidenceId: priorPayment
+      ? value.priorHistoryEvidence!.terminalStateEvidenceId
+      : openingStateEvidenceId,
   }
   value.currentPaymentEvidence = {
     ...value.currentPaymentEvidence!,
@@ -256,34 +263,40 @@ function expectedOpeningStateId(
 function expectedBeforeStateId(
   value: ValidateOwnedNonRothIraSeppCurrentPaymentCandidateInput,
 ): string {
-  const opening = value.openingStateEvidence!
   const history = {
     ...value.priorHistoryEvidence!,
     usedCurrentDistributionEvidenceIds: [
       ...value.priorHistoryEvidence!.usedCurrentDistributionEvidenceIds,
     ].sort(),
   }
-  const beforeStateWithoutId = {
-    predicate: 'ownedNonRothIraSeppCurrentPaymentState',
-    electionId: value.electionEvidence!.electionId,
-    scheduleId: value.electionEvidence!.scheduleId,
-    participantPersonId: value.ownerPersonId,
-    sourceAccountId: value.sourceEvidence!.sourceAccountId,
-    taxYear: value.taxYear,
+  const historyWithoutId = {
+    predicate: history.predicate,
+    electionId: history.electionId,
+    scheduleId: history.scheduleId,
+    participantPersonId: history.participantPersonId,
+    sourceAccountId: history.sourceAccountId,
+    taxYear: history.taxYear,
+    openingStateEvidenceId: history.openingStateEvidenceId,
     completedPaymentCount: history.completedPaymentCount,
+    usedCurrentDistributionEvidenceIds:
+      history.usedCurrentDistributionEvidenceIds,
     lastCompletedSequence: history.lastCompletedSequence,
     lastPaymentDate: history.lastPaymentDate,
-    nextScheduledSequence: history.nextScheduledSequence,
-    scheduledGrossAmount:
+    terminalStateEvidenceId: history.terminalStateEvidenceId,
+    scheduledGrossAmountThroughPriorPayments:
       history.scheduledGrossAmountThroughPriorPayments,
-    actualQualifyingGrossAmount:
+    actualQualifyingGrossAmountThroughPriorPayments:
       history.actualQualifyingGrossAmountThroughPriorPayments,
+    nextScheduledSequence: history.nextScheduledSequence,
   }
-  return `owned-ira-sepp-current-payment-before:${JSON.stringify([
-    opening,
-    history,
-    beforeStateWithoutId,
-  ])}`
+  value.priorHistoryEvidence = {
+    ...history,
+    priorHistoryEvidenceId: deriveActionStructuralId(
+      'owned-ira-sepp-prior-payment-history',
+      [value.openingStateEvidence!.openingStateEvidenceId, historyWithoutId],
+    ),
+  }
+  return history.terminalStateEvidenceId!
 }
 
 function issueKinds(
@@ -298,8 +311,9 @@ function issueKinds(
 
 describe('validateOwnedNonRothIraSeppCurrentPaymentCandidate', () => {
   it('returns only a provisional first-payment transition with no authority', () => {
+    const value = input()
     const result = validateOwnedNonRothIraSeppCurrentPaymentCandidate(
-      input(),
+      value,
     )
 
     expect(result).toMatchObject({
@@ -333,6 +347,9 @@ describe('validateOwnedNonRothIraSeppCurrentPaymentCandidate', () => {
     expect(result).not.toHaveProperty('finalPenaltyAmount')
     expect(result).not.toHaveProperty('finalEvidenceId')
     if (result.status !== 'provisionalCandidate') return
+    expect(result.candidate.beforeState.stateEvidenceId).toBe(
+      value.openingStateEvidence!.openingStateEvidenceId,
+    )
     expect(result.candidate).not.toHaveProperty('penaltyRate')
     expect(result.candidate).not.toHaveProperty('penaltyAmount')
     expect(result.candidate).not.toHaveProperty('finalizationEvidenceId')
@@ -341,8 +358,9 @@ describe('validateOwnedNonRothIraSeppCurrentPaymentCandidate', () => {
   })
 
   it('advances an exactly proved prior state and contiguous sequence', () => {
+    const value = input({ priorPayment: true })
     const result = validateOwnedNonRothIraSeppCurrentPaymentCandidate(
-      input({ priorPayment: true }),
+      value,
     )
 
     expect(result).toMatchObject({
@@ -366,6 +384,43 @@ describe('validateOwnedNonRothIraSeppCurrentPaymentCandidate', () => {
         },
       },
     })
+    if (result.status !== 'provisionalCandidate') return
+    expect(result.candidate.beforeState.stateEvidenceId).toBe(
+      value.priorHistoryEvidence!.terminalStateEvidenceId,
+    )
+    expect(value.currentPaymentEvidence!.previousScheduleStateId).toBe(
+      result.candidate.beforeState.stateEvidenceId,
+    )
+  })
+
+  it('preserves legacy empty-history inputs but fails closed on populated history without terminal proof', () => {
+    const legacyEmpty = input()
+    legacyEmpty.priorHistoryEvidence = {
+      ...legacyEmpty.priorHistoryEvidence!,
+      terminalStateEvidenceId: undefined,
+      priorHistoryEvidenceId: 'legacy-arbitrary-empty-history-id',
+    }
+    legacyEmpty.currentPaymentEvidence = {
+      ...legacyEmpty.currentPaymentEvidence!,
+      previousScheduleStateId:
+        legacyEmpty.openingStateEvidence!.openingStateEvidenceId,
+    }
+    expect(
+      validateOwnedNonRothIraSeppCurrentPaymentCandidate(legacyEmpty).status,
+    ).toBe('provisionalCandidate')
+
+    const legacyPopulated = input({ priorPayment: true })
+    legacyPopulated.priorHistoryEvidence = {
+      ...legacyPopulated.priorHistoryEvidence!,
+      terminalStateEvidenceId: undefined,
+      priorHistoryEvidenceId: 'legacy-populated-history-id',
+    }
+    expect(() =>
+      validateOwnedNonRothIraSeppCurrentPaymentCandidate(legacyPopulated),
+    ).not.toThrow()
+    expect(issueKinds(
+      validateOwnedNonRothIraSeppCurrentPaymentCandidate(legacyPopulated),
+    )).toContain('priorHistoryBindingMismatch')
   })
 
   it('returns an explicit issue for every missing evidence class', () => {
