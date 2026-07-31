@@ -32,16 +32,20 @@ The checklist is the honesty mechanism (nothing imports silently). Every item is
 Version-sniffs the customer-facing positions/holdings download by header shape (Schwab
 "Positions for account …" sections; Fidelity account-number/current-value columns; Vanguard
 holdings + transactions download, stopping at the transactions section). Produces per-account
-balance aggregates plus cost basis where the file carries it (Vanguard's holdings file has none —
-reported as unmapped). Two consumers:
+balance aggregates plus cost basis where the file carries it. Vanguard's holdings file has no
+cost basis column; the parser says so with a file-level unmapped notice, and what happens next
+depends on the consumer:
 
 - **New plan:** account types guessed from the account label (Roth/IRA/401(k)/HSA keywords, else
-  taxable), every guess a review item.
+  taxable), every guess a review item. A taxable account whose file rows carried no cost basis
+  gets basis **set equal to the balance** (no unrealized gain), flagged **Assumed — review** with
+  a pointer at the Accounts screen — a stated default, never a silent value.
 - **Update balances** (returning users, the annual-checkup posture): the Accounts screen's
   "Update balances from a broker CSV" panel parses the same file and reconciles it against the
   plan the user already built — matching each file account to a plan account, previewing the exact
-  before→after change, and applying only `balance` (and `costBasis` on taxable/equity-comp). This
-  reconciliation model is its own section — [Refresh & reconciliation](#refresh--reconciliation) below.
+  before→after change, and applying only `balance` (and `costBasis` on taxable/equity-comp **only
+  where the file carried one** — a Vanguard refresh leaves the plan's existing basis untouched).
+  This reconciliation model is its own section — [Refresh & reconciliation](#refresh--reconciliation) below.
 
 Unknown header shapes are refused with a pointer at the spreadsheet import — never guessed at.
 
