@@ -424,6 +424,76 @@ describe('Plan-owned non-Roth IRA annual coordinator', () => {
     expect(result.movementCandidate).toBeNull()
   })
 
+  it('returns a typed issue when the Plan action predates its owner', () => {
+    const value = input()
+    ;(value.plan as Plan).household.people[0]!.dob = '2031-01-01'
+
+    const result =
+      coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate(value)
+
+    expect(result.status).toBe('sourceInventoryIncomplete')
+    expect(issueKinds(result)).toContain('planActionDateBeforeOwnerBirth')
+    expect(result.movementCandidate).toBeNull()
+  })
+
+  it('does not infer pre-birth chronology from a malformed action date', () => {
+    const value = input()
+    const request = (value.plan as Plan).strategies.retirementActions[0]!
+    if (request.kind !== 'ordinaryWithdrawal') throw new Error('fixture drift')
+    request.executionDate = ''
+    value.personAliveEvidence = [{
+      ...value.personAliveEvidence[0]!,
+      actionDate: '',
+    }]
+
+    const result =
+      coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate(value)
+
+    expect(result.status).toBe('physicalEligibilityBlocked')
+    expect(issueKinds(result)).not.toContain('planActionDateBeforeOwnerBirth')
+    expect(result.movement).toBe('notCommitted')
+  })
+
+  it('treats an undated action as year-end for an owner born during the year', () => {
+    const value = input()
+    const valuePlan = value.plan as Plan
+    valuePlan.household.people[0]!.dob = '2030-06-01'
+    const request = valuePlan.strategies.retirementActions[0]!
+    if (request.kind !== 'ordinaryWithdrawal') throw new Error('fixture drift')
+    delete request.executionDate
+    value.personAliveEvidence = [{
+      ...value.personAliveEvidence[0]!,
+      actionDate: null,
+    }]
+
+    const result =
+      coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate(value)
+
+    expect(result.status).toBe('scheduleInvalid')
+    expect(issueKinds(result)).not.toContain('planActionDateBeforeOwnerBirth')
+    expect(result.movement).toBe('notCommitted')
+  })
+
+  it('blocks an undated action when the owner is born after the action year', () => {
+    const value = input()
+    const valuePlan = value.plan as Plan
+    valuePlan.household.people[0]!.dob = '2031-01-01'
+    const request = valuePlan.strategies.retirementActions[0]!
+    if (request.kind !== 'ordinaryWithdrawal') throw new Error('fixture drift')
+    delete request.executionDate
+    value.personAliveEvidence = [{
+      ...value.personAliveEvidence[0]!,
+      actionDate: null,
+    }]
+
+    const result =
+      coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate(value)
+
+    expect(result.status).toBe('sourceInventoryIncomplete')
+    expect(issueKinds(result)).toContain('planActionDateBeforeOwnerBirth')
+    expect(result.movementCandidate).toBeNull()
+  })
+
   it.each([
     {
       name: 'missing year-end sibling',
@@ -478,6 +548,38 @@ describe('Plan-owned non-Roth IRA annual coordinator', () => {
 
     expect(result.status).toBe('sourceInventoryIncomplete')
     expect(issueKinds(result)).toContain(issue)
+    expect(result.movementCandidate).toBeNull()
+  })
+
+  it.each([
+    {
+      name: 'post-year exclusions exceed nondeductible contributions',
+      alter: (value: CoordinatePlanOwnedNonRothIraAnnualWithdrawalCandidateInput) => {
+        value.annualBasisEvidence = {
+          ...value.annualBasisEvidence,
+          postYearNondeductibleContributionExcludedAmount:
+            asUsdCents(1),
+        }
+      },
+    },
+    {
+      name: 'rollover repayment exceeds year-end value plus rollovers',
+      alter: (value: CoordinatePlanOwnedNonRothIraAnnualWithdrawalCandidateInput) => {
+        value.annualBasisEvidence = {
+          ...value.annualBasisEvidence,
+          rolloverRepaymentAdjustmentAmount: asUsdCents(90_001),
+        }
+      },
+    },
+  ])('returns a typed issue when $name', ({ alter }) => {
+    const value = input()
+    alter(value)
+
+    const result =
+      coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate(value)
+
+    expect(result.status).toBe('sourceInventoryIncomplete')
+    expect(issueKinds(result)).toContain('annualBasisEvidenceInvalid')
     expect(result.movementCandidate).toBeNull()
   })
 
@@ -967,6 +1069,86 @@ describe('Plan-owned non-Roth IRA annual coordinator', () => {
 
     const result =
       coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate(value)
+
+    expect(result.status).toBe('sourceInventoryIncomplete')
+    expect(issueKinds(result)).toContain('evidenceIdReused')
+    expect(result.movementCandidate).toBeNull()
+  })
+
+  it('claims qualified SEPP coverage IDs even when another source remains blocked', () => {
+    const value = input()
+    const valuePlan = value.plan as Plan
+    valuePlan.household.people[0]!.dob = '1980-01-01'
+    const siblingActionId = asActionId('withdrawal-sibling-2030')
+    valuePlan.strategies.retirementActions.push({
+      actionId: siblingActionId,
+      kind: 'ordinaryWithdrawal',
+      personId: ownerPersonId,
+      year: 2030,
+      executionDate: '2030-07-15',
+      executionSequence: 2,
+      requestedAmount: asPositiveUsdCents(10_000),
+      allocations: [{
+        allocationId: asAllocationId('allocation-sibling'),
+        sourceAccountId: siblingSourceId,
+        requestedAmount: asPositiveUsdCents(10_000),
+      }],
+      purpose: { kind: 'spending' },
+      provenance: { source: 'manual' },
+    })
+    value.openingBalanceEvidence = value.openingBalanceEvidence.map(
+      (evidence) => evidence.sourceAccountId === siblingSourceId
+        ? { ...evidence, openingBalanceAmount: asUsdCents(10_000) }
+        : evidence,
+    )
+    value.annualBasisEvidence = {
+      ...value.annualBasisEvidence,
+      includedPlanActionIds: [actionId, siblingActionId],
+    }
+    value.personAliveEvidence = [
+      ...value.personAliveEvidence,
+      {
+        evidenceId: 'alive-sibling-action',
+        actionId: siblingActionId,
+        personId: ownerPersonId,
+        actionYear: 2030,
+        actionDate: '2030-07-15',
+        alive: true,
+      },
+    ]
+    const pending =
+      coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate(value)
+    expect(pending.status).toBe('annualEvidenceBlocked')
+    if (pending.status !== 'annualEvidenceBlocked') return
+    const requestedCoverage = pending.issues.find(
+      (issue) => issue.sourceAccountId === requestedSourceId,
+    )!.prerequisite.characterCoverage
+    value.iraSeppScheduleRoutes = [qualifiedSeppRoute(
+      requestedCoverage.sourceEvidenceIds.distributionDateEvidenceId,
+      requestedCoverage.sourceEvidenceIds.accountOwnershipEvidenceId,
+      requestedCoverage.sourceEvidenceIds.iraClassificationEvidenceId,
+    )]
+    const baseline =
+      coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate(value)
+    expect(baseline.status).toBe('annualEvidenceBlocked')
+    if (baseline.status !== 'annualEvidenceBlocked') return
+    const reconciliation =
+      baseline.iraSeppScheduleReconciliations[0]?.reconciliation
+    expect(reconciliation?.status).toBe('reconciled')
+    if (reconciliation?.status !== 'reconciled') return
+    const qualifiedCoverageId =
+      reconciliation.evidence.distributionInventory
+        .characterCoverages[0]!.evidenceId
+    const colliding = clone(value)
+    colliding.openingBalanceEvidence =
+      colliding.openingBalanceEvidence.map((evidence) =>
+        evidence.sourceAccountId === siblingSourceId
+          ? { ...evidence, evidenceId: qualifiedCoverageId }
+          : evidence,
+      )
+
+    const result =
+      coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate(colliding)
 
     expect(result.status).toBe('sourceInventoryIncomplete')
     expect(issueKinds(result)).toContain('evidenceIdReused')

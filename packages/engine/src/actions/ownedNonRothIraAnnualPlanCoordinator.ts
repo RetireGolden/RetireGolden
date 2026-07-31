@@ -157,6 +157,7 @@ export type PlanOwnedNonRothIraSourceInventoryIssueKind =
   | 'ownerNotFound'
   | 'ownedIraPoolEmpty'
   | 'planActionBatchEmpty'
+  | 'planActionDateBeforeOwnerBirth'
   | 'mixedSourceAction'
   | 'iraClassificationMissing'
   | 'openingBalanceEvidenceMissing'
@@ -168,6 +169,7 @@ export type PlanOwnedNonRothIraSourceInventoryIssueKind =
   | 'yearEndBalanceEvidenceForeign'
   | 'yearEndBalanceEvidenceBindingMismatch'
   | 'annualBasisEvidenceBindingMismatch'
+  | 'annualBasisEvidenceInvalid'
   | 'line7ActionSetMismatch'
   | 'line8InventoryEvidenceBindingMismatch'
   | 'line8EntryForeign'
@@ -707,6 +709,20 @@ function buildCanonicalInventory(
       poolAccountIds.has(allocation.sourceAccountId),
     )
     if (!touchesPool) continue
+    const evaluationDate =
+      request.executionDate ?? `${String(taxYear).padStart(4, '0')}-12-31`
+    if (
+      owner !== undefined &&
+      parseCivilIsoDate(evaluationDate) !== null &&
+      evaluationDate < owner.dob
+    ) {
+      issues.push(inventoryIssue(
+        'planActionDateBeforeOwnerBirth',
+        'An owned-IRA withdrawal cannot precede the Plan owner birth date',
+        { actionId: request.actionId },
+      ))
+      continue
+    }
     const foreignAllocation = request.allocations.find((allocation) =>
       !poolAccountIds.has(allocation.sourceAccountId),
     )
@@ -963,6 +979,30 @@ function buildCanonicalInventory(
     issues.push(inventoryIssue(
       'line7ActionSetMismatch',
       'Annual basis evidence action IDs must exactly equal the canonical Plan batch',
+    ))
+  }
+  if (
+    annualBasisEvidence.postYearNondeductibleContributionExcludedAmount >
+    annualBasisEvidence.taxYearNondeductibleContributionAmount
+  ) {
+    issues.push(inventoryIssue(
+      'annualBasisEvidenceInvalid',
+      'Post-year excluded IRA contributions cannot exceed tax-year nondeductible contributions',
+    ))
+  }
+  const yearEndAndRollover =
+    yearEndEvidence.reduce(
+      (sum, evidence) =>
+        sum + BigInt(evidence.yearEndApplicableBalanceAmount),
+      0n,
+    ) + BigInt(annualBasisEvidence.outstandingRolloverAmount)
+  if (
+    BigInt(annualBasisEvidence.rolloverRepaymentAdjustmentAmount) >
+    yearEndAndRollover
+  ) {
+    issues.push(inventoryIssue(
+      'annualBasisEvidenceInvalid',
+      'IRA rollover repayment adjustment cannot exceed year-end value plus rollovers',
     ))
   }
   claimEvidenceId(
@@ -1467,6 +1507,12 @@ function claimInnerCoordinatorPrimaryEvidenceIds(
         evidence.distributionInventory.inventoryEvidenceId,
         'Inner SEPP distribution-inventory evidence ID',
       )
+      for (
+        const coverage of
+          evidence.distributionInventory.characterCoverages
+      ) {
+        addCoverageEvidence(coverage)
+      }
       for (const payment of evidence.payments) {
         add(
           payment.currentPaymentCandidateId,
