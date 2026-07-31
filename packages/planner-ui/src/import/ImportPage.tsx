@@ -76,7 +76,10 @@ const ROLE_OPTIONS = (Object.keys(COLUMN_ROLE_LABEL) as ColumnRole[]).map((value
 
 const EMPTY_1040: TenFortyInputs = {
   filingStatus: 'single',
-  state: 'KY',
+  // Deliberately unanswered: a prefilled state made a missed selection silent —
+  // the draft built with the default and materially wrong state taxes. The
+  // select starts on a placeholder and seedPlanFromTenForty rejects ''.
+  state: '',
   primaryDob: '1970-01-01',
   spouseDob: undefined,
   wages: 0,
@@ -356,7 +359,14 @@ export function ImportPage() {
                     set1040({ filingStatus: v, spouseDob: v === 'marriedFilingJointly' ? (tenForty.spouseDob ?? '1970-01-01') : undefined })
                   }
                 />
-                <SelectField label="State of residence" value={tenForty.state} options={US_STATES} onCommit={(v) => set1040({ state: v })} />
+                <SelectField
+                  label="State of residence"
+                  help="Not read off the return — a 1040 only carries a mailing address, and your state changes the state-tax estimate."
+                  value={tenForty.state}
+                  options={US_STATES}
+                  placeholder="Select your state…"
+                  onCommit={(v) => set1040({ state: v })}
+                />
                 <DateField label="Your date of birth" help="Not on the 1040, but every projection needs it to anchor ages." value={tenForty.primaryDob} onCommit={(v) => set1040({ primaryDob: v })} />
                 {tenForty.filingStatus === 'marriedFilingJointly' ? (
                   <DateField label="Spouse's date of birth" value={tenForty.spouseDob ?? ''} onCommit={(v) => set1040({ spouseDob: v })} />
