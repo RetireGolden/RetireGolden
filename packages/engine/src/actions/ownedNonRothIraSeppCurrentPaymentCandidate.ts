@@ -108,6 +108,11 @@ export interface OwnedNonRothIraSeppPriorPaymentHistoryEvidence {
   priorHistoryEvidenceId: string
 }
 
+export type OwnedNonRothIraSeppPriorPaymentHistoryWithoutId = Omit<
+  OwnedNonRothIraSeppPriorPaymentHistoryEvidence,
+  'priorHistoryEvidenceId' | 'terminalStateEvidenceId'
+> & { terminalStateEvidenceId: string }
+
 export interface OwnedNonRothIraSeppCurrentPaymentEvidence {
   predicate: 'ownedNonRothIraSeppCurrentScheduledPayment'
   electionId: string
@@ -331,6 +336,91 @@ function subtype(value: unknown): OwnedNonRothIraSubtype {
   return value
 }
 
+function canonicalPriorPaymentHistoryWithoutId(
+  input: Readonly<Omit<
+    OwnedNonRothIraSeppPriorPaymentHistoryEvidence,
+    'priorHistoryEvidenceId'
+  >>,
+  terminalStateEvidenceId: string,
+): OwnedNonRothIraSeppPriorPaymentHistoryWithoutId {
+  const usedCurrentDistributionEvidenceIds =
+    input.usedCurrentDistributionEvidenceIds.map(
+      (evidenceId) => nonblankId(
+        evidenceId,
+        'Prior SEPP used distribution evidence ID',
+      ),
+    ).sort()
+  if (
+    new Set(usedCurrentDistributionEvidenceIds).size !==
+      usedCurrentDistributionEvidenceIds.length
+  ) {
+    throw new RangeError(
+      'Prior SEPP used distribution evidence IDs must be unique',
+    )
+  }
+  return {
+    predicate: input.predicate,
+    electionId: nonblankId(input.electionId, 'Prior SEPP election ID'),
+    scheduleId: nonblankId(input.scheduleId, 'Prior SEPP schedule ID'),
+    participantPersonId: personIdSchema.parse(input.participantPersonId),
+    sourceAccountId: accountIdSchema.parse(input.sourceAccountId),
+    taxYear: taxYear(input.taxYear, 'Prior SEPP history tax year'),
+    openingStateEvidenceId: nonblankId(
+      input.openingStateEvidenceId,
+      'Prior SEPP opening-state evidence ID',
+    ),
+    completedPaymentCount: nonnegativeInteger(
+      input.completedPaymentCount,
+      'Prior SEPP completed-payment count',
+    ),
+    usedCurrentDistributionEvidenceIds,
+    lastCompletedSequence: nonnegativeInteger(
+      input.lastCompletedSequence,
+      'Prior SEPP last-completed sequence',
+    ),
+    lastPaymentDate: input.lastPaymentDate === null
+      ? null
+      : civilDate(input.lastPaymentDate, 'Prior SEPP payment date'),
+    terminalStateEvidenceId: nonblankId(
+      terminalStateEvidenceId,
+      'Prior SEPP terminal-state evidence ID',
+    ),
+    scheduledGrossAmountThroughPriorPayments: usdCentsSchema.parse(
+      input.scheduledGrossAmountThroughPriorPayments,
+    ),
+    actualQualifyingGrossAmountThroughPriorPayments: usdCentsSchema.parse(
+      input.actualQualifyingGrossAmountThroughPriorPayments,
+    ),
+    nextScheduledSequence: positiveInteger(
+      input.nextScheduledSequence,
+      'Prior SEPP next sequence',
+    ),
+  }
+}
+
+/** Build canonical populated current-year SEPP payment-history evidence. */
+export function buildOwnedNonRothIraSeppPriorPaymentHistoryEvidence(
+  input: Readonly<OwnedNonRothIraSeppPriorPaymentHistoryWithoutId>,
+): Readonly<OwnedNonRothIraSeppPriorPaymentHistoryEvidence> {
+  if (input.predicate !== 'ownedNonRothIraSeppPriorPaymentHistory') {
+    throw new RangeError('Prior SEPP history predicate is not canonical')
+  }
+  const canonicalHistoryWithoutId = canonicalPriorPaymentHistoryWithoutId(
+    input,
+    input.terminalStateEvidenceId,
+  )
+  return deepFreeze({
+    ...canonicalHistoryWithoutId,
+    priorHistoryEvidenceId: deriveActionStructuralId(
+      'owned-ira-sepp-prior-payment-history',
+      [
+        canonicalHistoryWithoutId.openingStateEvidenceId,
+        canonicalHistoryWithoutId,
+      ],
+    ),
+  })
+}
+
 function addIssue(
   issues: OwnedNonRothIraSeppNonconformanceIssue[],
   kind: OwnedNonRothIraSeppNonconformanceKind,
@@ -502,56 +592,16 @@ export function validateOwnedNonRothIraSeppCurrentPaymentCandidate(
   }
   const hasExplicitTerminalState =
     historyInput.terminalStateEvidenceId !== undefined
-  const history: Omit<
-    OwnedNonRothIraSeppPriorPaymentHistoryEvidence,
-    'terminalStateEvidenceId'
-  > & { terminalStateEvidenceId: string } = {
-    predicate: historyInput.predicate,
-    electionId: nonblankId(historyInput.electionId, 'Prior SEPP election ID'),
-    scheduleId: nonblankId(historyInput.scheduleId, 'Prior SEPP schedule ID'),
-    participantPersonId: personIdSchema.parse(
-      historyInput.participantPersonId,
-    ),
-    sourceAccountId: accountIdSchema.parse(historyInput.sourceAccountId),
-    taxYear: taxYear(historyInput.taxYear, 'Prior SEPP history tax year'),
-    openingStateEvidenceId: nonblankId(
-      historyInput.openingStateEvidenceId,
-      'Prior SEPP opening-state evidence ID',
-    ),
-    completedPaymentCount: nonnegativeInteger(
-      historyInput.completedPaymentCount,
-      'Prior SEPP completed-payment count',
-    ),
-    usedCurrentDistributionEvidenceIds:
-      historyInput.usedCurrentDistributionEvidenceIds.map(
-        (evidenceId) => nonblankId(
-          evidenceId,
-          'Prior SEPP used distribution evidence ID',
-        ),
-      ).sort(),
-    lastCompletedSequence: nonnegativeInteger(
-      historyInput.lastCompletedSequence,
-      'Prior SEPP last-completed sequence',
-    ),
-    lastPaymentDate: historyInput.lastPaymentDate === null
-      ? null
-      : civilDate(historyInput.lastPaymentDate, 'Prior SEPP payment date'),
-    terminalStateEvidenceId: hasExplicitTerminalState
-      ? nonblankId(
-          historyInput.terminalStateEvidenceId,
-          'Prior SEPP terminal-state evidence ID',
-        )
+  const canonicalHistoryWithoutId = canonicalPriorPaymentHistoryWithoutId(
+    historyInput,
+    hasExplicitTerminalState
+      ? historyInput.terminalStateEvidenceId!
       : opening.openingStateEvidenceId,
-    scheduledGrossAmountThroughPriorPayments: usdCentsSchema.parse(
-      historyInput.scheduledGrossAmountThroughPriorPayments,
-    ),
-    actualQualifyingGrossAmountThroughPriorPayments: usdCentsSchema.parse(
-      historyInput.actualQualifyingGrossAmountThroughPriorPayments,
-    ),
-    nextScheduledSequence: positiveInteger(
-      historyInput.nextScheduledSequence,
-      'Prior SEPP next sequence',
-    ),
+  )
+  const history: OwnedNonRothIraSeppPriorPaymentHistoryEvidence & {
+    terminalStateEvidenceId: string
+  } = {
+    ...canonicalHistoryWithoutId,
     priorHistoryEvidenceId: nonblankId(
       historyInput.priorHistoryEvidenceId,
       'Prior SEPP history evidence ID',
@@ -587,14 +637,6 @@ export function validateOwnedNonRothIraSeppCurrentPaymentCandidate(
       paymentInput.paymentScheduleEvidenceId,
       'Current SEPP payment-schedule evidence ID',
     ),
-  }
-  if (
-    new Set(history.usedCurrentDistributionEvidenceIds).size !==
-      history.usedCurrentDistributionEvidenceIds.length
-  ) {
-    throw new RangeError(
-      'Prior SEPP used distribution evidence IDs must be unique',
-    )
   }
   const characterEvidenceIds = coverageInput.characterEvidenceIds.map(
     (evidenceId) => nonblankId(

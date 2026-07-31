@@ -16,14 +16,19 @@ import {
   type OwnedNonRothIraPenaltyCharacterCoverageEvidence,
 } from './ownedNonRothIraPenaltyPrerequisite.js'
 import {
+  buildOwnedNonRothIraSeppAnnualDistributionInventoryEvidence,
+  buildOwnedNonRothIraSeppCompletePriorElectionHistoryEvidence,
   reconcileOwnedNonRothIraSeppAnnualSchedule,
   type OwnedNonRothIraSeppAnnualDistributionInventoryEvidence,
+  type OwnedNonRothIraSeppAnnualDistributionInventoryWithoutId,
   type OwnedNonRothIraSeppAnnualRawPaymentEvidence,
   type OwnedNonRothIraSeppAnnualReconciledPaymentEvidence,
   type OwnedNonRothIraSeppCompletePriorElectionHistoryEvidence,
+  type OwnedNonRothIraSeppCompletePriorElectionHistoryWithoutId,
   type ReconcileOwnedNonRothIraSeppAnnualScheduleInput,
 } from './ownedNonRothIraSeppAnnualReconciliation.js'
 import {
+  buildOwnedNonRothIraSeppPriorPaymentHistoryEvidence,
   validateOwnedNonRothIraSeppCurrentPaymentCandidate,
   type OwnedNonRothIraSeppCurrentPaymentEvidence,
   type OwnedNonRothIraSeppPriorPaymentHistoryEvidence,
@@ -136,6 +141,23 @@ function inventory(
     taxYear: 2030,
     characterCoverages: [...records].sort(coverageOrder),
   }
+  return buildOwnedNonRothIraSeppAnnualDistributionInventoryEvidence(
+    withoutId,
+  )
+}
+
+function uncheckedInventory(
+  records: readonly Readonly<OwnedNonRothIraPenaltyCharacterCoverageEvidence>[],
+): OwnedNonRothIraSeppAnnualDistributionInventoryEvidence {
+  const withoutId = {
+    predicate: 'completeOwnedNonRothIraSeppAnnualDistributionInventory' as const,
+    electionId: 'election',
+    scheduleId: 'schedule',
+    participantPersonId: asPersonId('owner'),
+    sourceAccountId: asAccountId('ira-account'),
+    taxYear: 2030,
+    characterCoverages: [...records].sort(coverageOrder),
+  }
   return {
     ...withoutId,
     inventoryEvidenceId: deriveActionStructuralId(
@@ -160,13 +182,9 @@ function priorElectionHistory(options: {
     terminalStateEvidenceId: 'prior-year-terminal-state',
     usedDistributionEvidenceIds: usedIds,
   }
-  return {
-    ...withoutId,
-    priorElectionHistoryEvidenceId: deriveActionStructuralId(
-      'owned-ira-sepp-complete-prior-election-history',
-      [withoutId],
-    ),
-  }
+  return buildOwnedNonRothIraSeppCompletePriorElectionHistoryEvidence(
+    withoutId,
+  )
 }
 
 function openingEvidence() {
@@ -280,13 +298,8 @@ function buildInput(options: {
       actualQualifyingGrossAmountThroughPriorPayments: asUsdCents(actualTotal),
       nextScheduledSequence: index + 1,
     }
-    const history: OwnedNonRothIraSeppPriorPaymentHistoryEvidence = {
-      ...historyWithoutId,
-      priorHistoryEvidenceId: deriveActionStructuralId(
-        'owned-ira-sepp-prior-payment-history',
-        [openingStateEvidence.openingStateEvidenceId, historyWithoutId],
-      ),
-    }
+    const history: OwnedNonRothIraSeppPriorPaymentHistoryEvidence =
+      buildOwnedNonRothIraSeppPriorPaymentHistoryEvidence(historyWithoutId)
     const currentPaymentEvidence = {
       predicate: 'ownedNonRothIraSeppCurrentScheduledPayment' as const,
       electionId: 'election',
@@ -386,6 +399,106 @@ function replaceFirstPayment(
 }
 
 describe('reconcileOwnedNonRothIraSeppAnnualSchedule', () => {
+  it('builds deterministic detached annual inventory evidence', () => {
+    const records = [...canonicalCoverages({
+      amounts: [50, 50],
+      dates: ['2030-02-15', '2030-01-15'],
+    })]
+    let toJsonCalls = 0
+    const withoutId: OwnedNonRothIraSeppAnnualDistributionInventoryWithoutId =
+      Object.assign({
+        predicate:
+          'completeOwnedNonRothIraSeppAnnualDistributionInventory' as const,
+        electionId: 'election',
+        scheduleId: 'schedule',
+        participantPersonId: asPersonId('owner'),
+        sourceAccountId: asAccountId('ira-account'),
+        taxYear: 2030,
+        characterCoverages: records,
+        ignoredExtra: 'not structural',
+      }, {
+        toJSON: () => {
+          toJsonCalls += 1
+          return undefined
+        },
+      })
+    const built =
+      buildOwnedNonRothIraSeppAnnualDistributionInventoryEvidence(withoutId)
+    records.length = 0
+    const reordered =
+      buildOwnedNonRothIraSeppAnnualDistributionInventoryEvidence({
+        ...withoutId,
+        characterCoverages: [...built.characterCoverages].reverse(),
+      })
+
+    expect(built).toEqual(reordered)
+    expect(toJsonCalls).toBe(0)
+    expect(built.characterCoverages).toHaveLength(2)
+    expect(Object.isFrozen(built)).toBe(true)
+    expect(Object.isFrozen(built.characterCoverages)).toBe(true)
+    expect(Object.isFrozen(built.characterCoverages[0])).toBe(true)
+    expect(() =>
+      buildOwnedNonRothIraSeppAnnualDistributionInventoryEvidence({
+        ...withoutId,
+        characterCoverages: [{
+          ...built.characterCoverages[0]!,
+          evidenceId: 'not-canonical',
+        }],
+      })
+    ).toThrow('requires canonical character coverage')
+    expect(() =>
+      buildOwnedNonRothIraSeppAnnualDistributionInventoryEvidence({
+        ...withoutId,
+        predicate: 'wrong-inventory-predicate',
+      } as unknown as OwnedNonRothIraSeppAnnualDistributionInventoryWithoutId)
+    ).toThrow('predicate')
+  })
+
+  it('builds deterministic detached complete prior-election history', () => {
+    const usedIds = ['prior-z', 'prior-a']
+    const withoutId: OwnedNonRothIraSeppCompletePriorElectionHistoryWithoutId = {
+      predicate: 'completeOwnedNonRothIraSeppPriorElectionHistory',
+      electionId: 'election',
+      scheduleId: 'schedule',
+      participantPersonId: asPersonId('owner'),
+      sourceAccountId: asAccountId('ira-account'),
+      historyThroughDate: '2029-12-31',
+      terminalStateEvidenceId: 'prior-terminal',
+      usedDistributionEvidenceIds: usedIds,
+    }
+    const built =
+      buildOwnedNonRothIraSeppCompletePriorElectionHistoryEvidence(withoutId)
+    usedIds.push('mutated-after-build')
+    const reordered =
+      buildOwnedNonRothIraSeppCompletePriorElectionHistoryEvidence({
+        ...withoutId,
+        usedDistributionEvidenceIds: ['prior-a', 'prior-z'],
+      })
+
+    expect(built).toEqual(reordered)
+    expect(built.usedDistributionEvidenceIds).toEqual(['prior-a', 'prior-z'])
+    expect(Object.isFrozen(built)).toBe(true)
+    expect(Object.isFrozen(built.usedDistributionEvidenceIds)).toBe(true)
+    expect(() =>
+      buildOwnedNonRothIraSeppCompletePriorElectionHistoryEvidence({
+        ...withoutId,
+        usedDistributionEvidenceIds: ['duplicate', 'duplicate'],
+      })
+    ).toThrow('must be unique')
+    expect(() =>
+      buildOwnedNonRothIraSeppCompletePriorElectionHistoryEvidence({
+        ...withoutId,
+        historyThroughDate: '2029-02-30',
+      })
+    ).toThrow('canonical civil ISO date')
+    expect(() =>
+      buildOwnedNonRothIraSeppCompletePriorElectionHistoryEvidence({
+        ...withoutId,
+        predicate: 'wrong-prior-election-history-predicate',
+      } as unknown as OwnedNonRothIraSeppCompletePriorElectionHistoryWithoutId)
+    ).toThrow('predicate')
+  })
+
   it('reconciles an exact twelve-payment schedule without penalty authority', () => {
     const result = reconcileOwnedNonRothIraSeppAnnualSchedule(buildInput({
       amounts: Array.from({ length: 12 }, () => 100),
@@ -541,10 +654,94 @@ describe('reconcileOwnedNonRothIraSeppAnnualSchedule', () => {
     ]))
   })
 
+  it.each([
+    ['inventory', (value: ReconcileOwnedNonRothIraSeppAnnualScheduleInput) =>
+      value.distributionInventory!.inventoryEvidenceId],
+    ['prior history', (value: ReconcileOwnedNonRothIraSeppAnnualScheduleInput) =>
+      value.priorElectionHistoryEvidence!.priorElectionHistoryEvidenceId],
+    ['annual line-7', (value: ReconcileOwnedNonRothIraSeppAnnualScheduleInput) =>
+      value.distributionInventory!.characterCoverages[0]!
+        .line7AllocationEvidenceId],
+  ] as const)(
+    'rejects payment-schedule ID reuse of %s evidence',
+    (_label, collisionId) => {
+      const value = buildInput()
+      replaceFirstPayment(value, {
+        paymentScheduleEvidenceId: collisionId(value),
+      })
+      const result = reconcileOwnedNonRothIraSeppAnnualSchedule(value)
+      expect(result.status).toBe('notReconciled')
+      expect(issueKinds(result)).toContain('duplicateAnnualEvidenceId')
+    },
+  )
+
+  it('rejects a generated current-history ID reused by common evidence', () => {
+    const seed = reconcileOwnedNonRothIraSeppAnnualSchedule(buildInput())
+    expect(seed.status).toBe('reconciled')
+    if (seed.status !== 'reconciled') throw new Error('expected reconciliation')
+    const generatedHistoryId = seed.evidence.payments[0]!
+      .priorHistoryEvidenceId
+    const value = buildInput()
+    value.sourceEvidence = {
+      ...value.sourceEvidence!,
+      sourceEvidenceId: generatedHistoryId,
+    }
+    const result = reconcileOwnedNonRothIraSeppAnnualSchedule(value)
+    expect(result.status).toBe('notReconciled')
+    expect(issueKinds(result)).toContain('duplicateAnnualEvidenceId')
+  })
+
+  it('permits the intentional source, distribution, and state alias chains', () => {
+    const value = buildInput({
+      amounts: [50, 50],
+      dates: ['2030-01-15', '2030-02-15'],
+    })
+    const result = reconcileOwnedNonRothIraSeppAnnualSchedule(value)
+    expect(result.status).toBe('reconciled')
+    if (result.status !== 'reconciled') throw new Error('expected reconciliation')
+
+    const firstCoverage = value.distributionInventory!.characterCoverages[0]!
+    const secondCoverage = value.distributionInventory!.characterCoverages[1]!
+    expect(secondCoverage.line7AllocationEvidenceId).toBe(
+      firstCoverage.line7AllocationEvidenceId,
+    )
+    expect(secondCoverage.ageThresholdEvidenceId).toBe(
+      firstCoverage.ageThresholdEvidenceId,
+    )
+
+    for (let index = 0; index < result.evidence.payments.length; index += 1) {
+      const coverage = value.distributionInventory!.characterCoverages[index]!
+      const rawPayment = value.payments![index]!.currentPaymentEvidence
+      const payment = result.evidence.payments[index]!
+      expect(coverage.sourceEvidenceIds.accountOwnershipEvidenceId).toBe(
+        value.sourceEvidence!.accountOwnershipEvidenceId,
+      )
+      expect(coverage.sourceEvidenceIds.iraClassificationEvidenceId).toBe(
+        value.sourceEvidence!.iraClassificationEvidenceId,
+      )
+      expect(coverage.sourceEvidenceIds.distributionDateEvidenceId).toBe(
+        rawPayment.currentDistributionEvidenceId,
+      )
+      expect(payment.beforeStateEvidenceId).toBe(
+        rawPayment.previousScheduleStateId,
+      )
+      if (index === 0) {
+        expect(payment.beforeStateEvidenceId).toBe(
+          value.openingStateEvidence!.openingStateEvidenceId,
+        )
+      } else {
+        expect(payment.beforeStateEvidenceId).toBe(
+          result.evidence.payments[index - 1]!.afterStateEvidenceId,
+        )
+      }
+    }
+    expect(issueKinds(result)).not.toContain('duplicateAnnualEvidenceId')
+  })
+
   it('rejects foreign and extra members on either side of the bijection', () => {
     const foreign = buildInput()
     const record = foreign.distributionInventory!.characterCoverages[0]!
-    foreign.distributionInventory = inventory([{
+    foreign.distributionInventory = uncheckedInventory([{
       ...record,
       sourceAccountId: asAccountId('foreign-ira'),
     }])
@@ -749,7 +946,7 @@ describe('reconcileOwnedNonRothIraSeppAnnualSchedule', () => {
     }],
     ['character', 'paymentNotLocallyConforming', (value: ReconcileOwnedNonRothIraSeppAnnualScheduleInput) => {
       const coverage = value.distributionInventory!.characterCoverages[0]!
-      value.distributionInventory = inventory([{
+      value.distributionInventory = uncheckedInventory([{
         ...coverage,
         ordinaryIncomeExposureAmount: asUsdCents(99),
       }])
@@ -1080,13 +1277,8 @@ function buildRawInputFromCoverages(
       actualQualifyingGrossAmountThroughPriorPayments: asUsdCents(actual),
       nextScheduledSequence: index + 1,
     }
-    const history = {
-      ...historyWithoutId,
-      priorHistoryEvidenceId: deriveActionStructuralId(
-        'owned-ira-sepp-prior-payment-history',
-        [base.openingStateEvidence!.openingStateEvidenceId, historyWithoutId],
-      ),
-    }
+    const history =
+      buildOwnedNonRothIraSeppPriorPaymentHistoryEvidence(historyWithoutId)
     const payment = {
       predicate: 'ownedNonRothIraSeppCurrentScheduledPayment' as const,
       electionId: 'election',

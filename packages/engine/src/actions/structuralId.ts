@@ -132,9 +132,111 @@ function sha256(value: string): string {
   return hash.map((word) => word.toString(16).padStart(8, '0')).join('')
 }
 
+const STRUCTURAL_PARTS_ERROR =
+  'Structural ID parts must be JSON-serializable'
+
+type CanonicalJsonValue =
+  | null
+  | boolean
+  | number
+  | string
+  | CanonicalJsonValue[]
+  | { [key: string]: CanonicalJsonValue }
+
+function invalidStructuralParts(): never {
+  throw new TypeError(STRUCTURAL_PARTS_ERROR)
+}
+
+function canonicalJsonValue(
+  value: unknown,
+  ancestors: Set<object>,
+): CanonicalJsonValue {
+  if (
+    value === null ||
+    typeof value === 'boolean' ||
+    typeof value === 'string'
+  ) {
+    return value
+  }
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value) || Object.is(value, -0)) {
+      return invalidStructuralParts()
+    }
+    return value
+  }
+  if (typeof value !== 'object') return invalidStructuralParts()
+  if (ancestors.has(value)) return invalidStructuralParts()
+
+  ancestors.add(value)
+  try {
+    if (Array.isArray(value)) {
+      if (Object.getPrototypeOf(value) !== Array.prototype) {
+        return invalidStructuralParts()
+      }
+      const keys = Reflect.ownKeys(value)
+      if (
+        keys.length !== value.length + 1 ||
+        keys.some((key) => typeof key !== 'string')
+      ) {
+        return invalidStructuralParts()
+      }
+      const canonical = new Array<CanonicalJsonValue>(value.length)
+      Object.setPrototypeOf(canonical, null)
+      for (let index = 0; index < value.length; index += 1) {
+        const key = String(index)
+        const descriptor = Object.getOwnPropertyDescriptor(value, key)
+        if (
+          descriptor === undefined ||
+          !descriptor.enumerable ||
+          !Object.hasOwn(descriptor, 'value')
+        ) {
+          return invalidStructuralParts()
+        }
+        canonical[index] = canonicalJsonValue(descriptor.value, ancestors)
+      }
+      if (!keys.includes('length')) return invalidStructuralParts()
+      return canonical
+    }
+
+    const prototype = Object.getPrototypeOf(value)
+    if (prototype !== Object.prototype && prototype !== null) {
+      return invalidStructuralParts()
+    }
+    const canonical = Object.create(null) as {
+      [key: string]: CanonicalJsonValue
+    }
+    for (const key of Reflect.ownKeys(value)) {
+      if (typeof key !== 'string') return invalidStructuralParts()
+      const descriptor = Object.getOwnPropertyDescriptor(value, key)
+      if (
+        descriptor === undefined ||
+        !descriptor.enumerable ||
+        !Object.hasOwn(descriptor, 'value')
+      ) {
+        return invalidStructuralParts()
+      }
+      Object.defineProperty(canonical, key, {
+        configurable: true,
+        enumerable: true,
+        value: canonicalJsonValue(descriptor.value, ancestors),
+        writable: true,
+      })
+    }
+    return canonical
+  } finally {
+    ancestors.delete(value)
+  }
+}
+
 /**
- * Derive a prefix-scoped fixed-width SHA-256 ID from already canonicalized,
- * ordered structural parts. This synchronous implementation is browser-safe.
+ * Package-internal structural identity for freshly rebuilt, trusted canonical
+ * data trees. JavaScript has no browser-safe way to distinguish a `Proxy` from
+ * its target, so this is deliberately not a hostile-object validation boundary
+ * and must not be exposed as a general caller-object hasher. The recursive
+ * checks below prevent lossy JSON semantics for in-contract plain data. This
+ * synchronous implementation remains browser-safe.
+ *
+ * @internal
  */
 export function deriveActionStructuralId(
   prefix: string,
@@ -145,17 +247,17 @@ export function deriveActionStructuralId(
   }
   let canonical: string | undefined
   try {
-    canonical = JSON.stringify(parts)
+    canonical = JSON.stringify(canonicalJsonValue(parts, new Set()))
   } catch {
-    throw new TypeError('Structural ID parts must be JSON-serializable')
+    throw new TypeError(STRUCTURAL_PARTS_ERROR)
   }
   if (canonical === undefined) {
-    throw new TypeError('Structural ID parts must be JSON-serializable')
+    throw new TypeError(STRUCTURAL_PARTS_ERROR)
   }
   return `${prefix}:${sha256(canonical)}`
 }
 
-/** Compare strings by raw UTF-16 code units, independent of host locale. */
+/** @internal Compare strings by raw UTF-16 code units, independent of locale. */
 export function compareUtf16CodeUnits(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0
 }

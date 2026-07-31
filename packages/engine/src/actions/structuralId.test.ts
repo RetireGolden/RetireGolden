@@ -31,14 +31,141 @@ describe('action structural IDs', () => {
     expect(compareUtf16CodeUnits('same', 'same')).toBe(0)
   })
 
-  it('normalizes failures for non-JSON-serializable structural parts', () => {
+  it('accepts only lossless canonical JSON trees', () => {
+    const failure = new TypeError(
+      'Structural ID parts must be JSON-serializable',
+    )
+    expect(() => deriveActionStructuralId('undefined', [undefined])).toThrow(
+      failure,
+    )
+    expect(() => deriveActionStructuralId('nan', [Number.NaN])).toThrow(failure)
+    expect(() => deriveActionStructuralId('infinity', [Infinity])).toThrow(
+      failure,
+    )
+    expect(() => deriveActionStructuralId('negative-zero', [-0])).toThrow(
+      failure,
+    )
+    expect(() => deriveActionStructuralId('function', [() => null])).toThrow(
+      failure,
+    )
+    expect(() => deriveActionStructuralId('symbol-value', [Symbol('value')]))
+      .toThrow(failure)
+    expect(deriveActionStructuralId('null', [null])).not.toBe(
+      deriveActionStructuralId('null', [0]),
+    )
+
+    const sparse = new Array(1)
+    expect(() => deriveActionStructuralId('sparse', sparse)).toThrow(failure)
+    const extraArray = [null] as (null | string)[] & { extra?: string }
+    extraArray.extra = 'dropped by JSON.stringify'
+    expect(() => deriveActionStructuralId('extra-array', extraArray)).toThrow(
+      failure,
+    )
+    const symbolArray = [null]
+    Object.defineProperty(symbolArray, Symbol('extra'), { value: 'hidden' })
+    expect(() => deriveActionStructuralId('symbol-array', symbolArray)).toThrow(
+      failure,
+    )
+    const customArray = [null]
+    Object.setPrototypeOf(customArray, null)
+    expect(() => deriveActionStructuralId('prototype-array', customArray))
+      .toThrow(failure)
+    expect(() => deriveActionStructuralId('dropped', [{ dropped: undefined }]))
+      .toThrow(failure)
+
+    let getterCalls = 0
+    const accessor = Object.defineProperty({}, 'value', {
+      enumerable: true,
+      get: () => {
+        getterCalls += 1
+        return 'hidden'
+      },
+    })
+    expect(() => deriveActionStructuralId('accessor', [accessor])).toThrow(
+      failure,
+    )
+    expect(getterCalls).toBe(0)
+    expect(() => deriveActionStructuralId('to-json', [{
+      value: 'visible',
+      toJSON: () => null,
+    }])).toThrow(failure)
+
     const cyclic: unknown[] = []
     cyclic.push(cyclic)
     expect(() => deriveActionStructuralId('cyclic', cyclic)).toThrow(
-      new TypeError('Structural ID parts must be JSON-serializable'),
+      failure,
     )
     expect(() => deriveActionStructuralId('bigint', [1n])).toThrow(
-      new TypeError('Structural ID parts must be JSON-serializable'),
+      failure,
     )
+
+    const nonenumerable = Object.defineProperty({}, 'hidden', {
+      value: 'hidden',
+    })
+    expect(() => deriveActionStructuralId('nonenumerable', [nonenumerable]))
+      .toThrow(failure)
+    expect(() => deriveActionStructuralId('symbol', [{
+      [Symbol('hidden')]: 'hidden',
+    }])).toThrow(failure)
+    expect(() => deriveActionStructuralId('prototype', [
+      Object.create({ inherited: true }),
+    ])).toThrow(failure)
+  })
+
+  it('keeps distinct accepted structures distinct and permits shared references', () => {
+    const nullPrototype = Object.create(null) as Record<string, unknown>
+    nullPrototype.value = 'plain data'
+    const structures: readonly unknown[][] = [
+      [null],
+      [0],
+      ['0'],
+      [[]],
+      [[null]],
+      [{ value: null }],
+      [{ other: null }],
+      [nullPrototype],
+    ]
+    const ids = structures.map((parts) =>
+      deriveActionStructuralId('distinct', parts)
+    )
+    expect(new Set(ids).size).toBe(structures.length)
+
+    const shared = { value: 'same' }
+    expect(deriveActionStructuralId('shared', [shared, shared])).toBe(
+      deriveActionStructuralId('shared', [
+        { value: 'same' },
+        { value: 'same' },
+      ]),
+    )
+  })
+
+  it('documents Proxy inputs as outside the trusted internal contract', () => {
+    const traps: string[] = []
+    const proxied = new Proxy({ value: 'plain data' }, {
+      getOwnPropertyDescriptor: (target, property) => {
+        traps.push(`getOwnPropertyDescriptor:${String(property)}`)
+        return Reflect.getOwnPropertyDescriptor(target, property)
+      },
+      getPrototypeOf: (target) => {
+        traps.push('getPrototypeOf')
+        return Reflect.getPrototypeOf(target)
+      },
+      ownKeys: (target) => {
+        traps.push('ownKeys')
+        return Reflect.ownKeys(target)
+      },
+    })
+
+    // There is no standard browser-safe Proxy detector. This internal helper
+    // therefore requires trusted rebuilt inputs; the test makes the unsupported
+    // boundary explicit instead of pretending these traps cannot execute.
+    expect(deriveActionStructuralId('proxy-boundary', [proxied])).toBe(
+      deriveActionStructuralId('proxy-boundary', [{ value: 'plain data' }]),
+    )
+    expect(traps).toEqual([
+      'getPrototypeOf',
+      'ownKeys',
+      'getOwnPropertyDescriptor:value',
+    ])
   })
 })

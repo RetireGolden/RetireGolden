@@ -7,7 +7,6 @@ import {
   asPersonId,
 } from './identity.js'
 import { asUsdCents } from './money.js'
-import { deriveActionStructuralId } from './structuralId.js'
 import {
   evaluateOwnedNonRothIraPenaltyPrerequisites,
   type OwnedNonRothIraPenaltyCharacterCoverageEvidence,
@@ -16,7 +15,9 @@ import {
   classifyOwnedNonRothIraAnnualWithdrawals,
 } from './ownedNonRothIraWithdrawalCharacter.js'
 import {
+  buildOwnedNonRothIraSeppPriorPaymentHistoryEvidence,
   validateOwnedNonRothIraSeppCurrentPaymentCandidate,
+  type OwnedNonRothIraSeppPriorPaymentHistoryWithoutId,
   type ValidateOwnedNonRothIraSeppCurrentPaymentCandidateInput,
 } from './ownedNonRothIraSeppCurrentPaymentCandidate.js'
 
@@ -263,13 +264,8 @@ function expectedOpeningStateId(
 function expectedBeforeStateId(
   value: ValidateOwnedNonRothIraSeppCurrentPaymentCandidateInput,
 ): string {
-  const history = {
-    ...value.priorHistoryEvidence!,
-    usedCurrentDistributionEvidenceIds: [
-      ...value.priorHistoryEvidence!.usedCurrentDistributionEvidenceIds,
-    ].sort(),
-  }
-  const historyWithoutId = {
+  const history = value.priorHistoryEvidence!
+  const historyWithoutId: OwnedNonRothIraSeppPriorPaymentHistoryWithoutId = {
     predicate: history.predicate,
     electionId: history.electionId,
     scheduleId: history.scheduleId,
@@ -278,25 +274,19 @@ function expectedBeforeStateId(
     taxYear: history.taxYear,
     openingStateEvidenceId: history.openingStateEvidenceId,
     completedPaymentCount: history.completedPaymentCount,
-    usedCurrentDistributionEvidenceIds:
-      history.usedCurrentDistributionEvidenceIds,
+    usedCurrentDistributionEvidenceIds: history.usedCurrentDistributionEvidenceIds,
     lastCompletedSequence: history.lastCompletedSequence,
     lastPaymentDate: history.lastPaymentDate,
-    terminalStateEvidenceId: history.terminalStateEvidenceId,
+    terminalStateEvidenceId: history.terminalStateEvidenceId!,
     scheduledGrossAmountThroughPriorPayments:
       history.scheduledGrossAmountThroughPriorPayments,
     actualQualifyingGrossAmountThroughPriorPayments:
       history.actualQualifyingGrossAmountThroughPriorPayments,
     nextScheduledSequence: history.nextScheduledSequence,
   }
-  value.priorHistoryEvidence = {
-    ...history,
-    priorHistoryEvidenceId: deriveActionStructuralId(
-      'owned-ira-sepp-prior-payment-history',
-      [value.openingStateEvidence!.openingStateEvidenceId, historyWithoutId],
-    ),
-  }
-  return history.terminalStateEvidenceId!
+  value.priorHistoryEvidence =
+    buildOwnedNonRothIraSeppPriorPaymentHistoryEvidence(historyWithoutId)
+  return historyWithoutId.terminalStateEvidenceId
 }
 
 function issueKinds(
@@ -310,6 +300,68 @@ function issueKinds(
 }
 
 describe('validateOwnedNonRothIraSeppCurrentPaymentCandidate', () => {
+  it('builds deterministic detached populated prior-payment history', () => {
+    const seed = input({ priorPayment: true }).priorHistoryEvidence!
+    const usedIds = ['prior-z', 'prior-a']
+    let toJsonCalls = 0
+    const withoutId = Object.assign({
+      predicate: seed.predicate,
+      electionId: seed.electionId,
+      scheduleId: seed.scheduleId,
+      participantPersonId: seed.participantPersonId,
+      sourceAccountId: seed.sourceAccountId,
+      taxYear: seed.taxYear,
+      openingStateEvidenceId: seed.openingStateEvidenceId,
+      completedPaymentCount: seed.completedPaymentCount,
+      usedCurrentDistributionEvidenceIds: usedIds,
+      lastCompletedSequence: seed.lastCompletedSequence,
+      lastPaymentDate: seed.lastPaymentDate,
+      terminalStateEvidenceId: seed.terminalStateEvidenceId!,
+      scheduledGrossAmountThroughPriorPayments:
+        seed.scheduledGrossAmountThroughPriorPayments,
+      actualQualifyingGrossAmountThroughPriorPayments:
+        seed.actualQualifyingGrossAmountThroughPriorPayments,
+      nextScheduledSequence: seed.nextScheduledSequence,
+      ignoredExtra: 'not structural',
+    }, {
+      toJSON: () => {
+        toJsonCalls += 1
+        return undefined
+      },
+    })
+    const built = buildOwnedNonRothIraSeppPriorPaymentHistoryEvidence(
+      withoutId,
+    )
+    usedIds.push('mutated-after-build')
+    const reordered = buildOwnedNonRothIraSeppPriorPaymentHistoryEvidence({
+      ...withoutId,
+      usedCurrentDistributionEvidenceIds: ['prior-z', 'prior-a'],
+    })
+
+    expect(built).toEqual(reordered)
+    expect(toJsonCalls).toBe(0)
+    expect(built.usedCurrentDistributionEvidenceIds).toEqual([
+      'prior-a',
+      'prior-z',
+    ])
+    expect(Object.isFrozen(built)).toBe(true)
+    expect(Object.isFrozen(built.usedCurrentDistributionEvidenceIds)).toBe(true)
+    expect(() => buildOwnedNonRothIraSeppPriorPaymentHistoryEvidence({
+      ...withoutId,
+      usedCurrentDistributionEvidenceIds: ['duplicate', 'duplicate'],
+    })).toThrow('must be unique')
+    expect(() => buildOwnedNonRothIraSeppPriorPaymentHistoryEvidence({
+      ...withoutId,
+      lastPaymentDate: '2030-02-30',
+    })).toThrow('canonical civil ISO date')
+    expect(() => buildOwnedNonRothIraSeppPriorPaymentHistoryEvidence({
+      ...withoutId,
+      predicate: 'wrong-prior-history-predicate',
+    } as unknown as OwnedNonRothIraSeppPriorPaymentHistoryWithoutId)).toThrow(
+      'predicate',
+    )
+  })
+
   it('returns only a provisional first-payment transition with no authority', () => {
     const value = input()
     const result = validateOwnedNonRothIraSeppCurrentPaymentCandidate(

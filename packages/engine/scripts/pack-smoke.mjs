@@ -10,7 +10,7 @@
  * actually resolve. Run from anywhere: `node packages/engine/scripts/pack-smoke.mjs`.
  */
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -35,6 +35,32 @@ assert.equal(typeof globalThis.localStorage, 'undefined')
 // module, and the testing fixtures.
 const { simulatePlan, planSchema, CURRENT_PLAN_SCHEMA_VERSION } = await import('@retiregolden/engine')
 const { packForYear } = await import('@retiregolden/engine/params')
+const actionsApi = await import('@retiregolden/engine/actions')
+const canonicalActionDeepImports = [
+  'annualIraBasisAllocation',
+  'civilDate',
+  'contract',
+  'execution',
+  'identity',
+  'money',
+  'ownedNonRothIraAnnualCandidateCoordinator',
+  'ownedNonRothIraAnnualFinalization',
+  'ownedNonRothIraMovementCandidate',
+  'ownedNonRothIraPenaltyPrerequisite',
+  'ownedNonRothIraSeppAnnualReconciliation',
+  'ownedNonRothIraSeppCurrentPaymentCandidate',
+  'ownedNonRothIraWithdrawalCharacter',
+  'planBalanceAdapter',
+  'reasons',
+  'taxableWithdrawalCharacter',
+]
+for (const moduleName of canonicalActionDeepImports) {
+  const moduleApi = await import('@retiregolden/engine/actions/' + moduleName)
+  assert.ok(
+    Object.keys(moduleApi).length > 0,
+    'canonical public action deep import must resolve: ' + moduleName,
+  )
+}
 const {
   addUsdCents,
   asActionId,
@@ -43,11 +69,13 @@ const {
   asPersonId,
   asPositiveUsdCents,
   asUsdCents,
+  buildOwnedNonRothIraSeppAnnualDistributionInventoryEvidence,
+  buildOwnedNonRothIraSeppCompletePriorElectionHistoryEvidence,
+  buildOwnedNonRothIraSeppPriorPaymentHistoryEvidence,
   classifyOwnedNonRothIraAnnualWithdrawals,
   classifyIndividuallyOwnedTaxableWithdrawal,
   coordinateOwnedNonRothIraAnnualWithdrawalCandidate,
   evaluateOwnedNonRothIraPenaltyPrerequisites,
-  deriveActionStructuralId,
   executeCashOrdinaryWithdrawals,
   executeOrdinaryWithdrawals,
   ledgerCentsToPlanDollars,
@@ -57,7 +85,8 @@ const {
   reconcileOwnedNonRothIraSeppAnnualSchedule,
   stageOwnedNonRothIraOrdinaryWithdrawalMovements,
   validateOwnedNonRothIraSeppCurrentPaymentCandidate,
-} = await import('@retiregolden/engine/actions')
+} = actionsApi
+const moneyDeepApi = await import('@retiregolden/engine/actions/money')
 const {
   evaluateRetirementActionEligibility,
 } = await import('@retiregolden/engine/strategies/accountEligibility')
@@ -82,10 +111,41 @@ const shippedSchema = JSON.parse(readFileSync(shippedPath, 'utf8'))
 assert.equal(typeof simulatePlan, 'function')
 assert.equal(simulate.simulatePlan, simulatePlan)
 assert.equal(asActionId('smoke-action'), 'smoke-action')
-assert.match(
-  deriveActionStructuralId('smoke', ['packed']),
-  /^smoke:[0-9a-f]{64}$/,
+assert.equal(moneyDeepApi.asUsdCents, asUsdCents)
+assert.equal(
+  typeof buildOwnedNonRothIraSeppAnnualDistributionInventoryEvidence,
+  'function',
 )
+assert.equal(
+  typeof buildOwnedNonRothIraSeppCompletePriorElectionHistoryEvidence,
+  'function',
+)
+assert.equal(
+  typeof buildOwnedNonRothIraSeppPriorPaymentHistoryEvidence,
+  'function',
+)
+assert.equal(
+  'deriveActionStructuralId' in actionsApi,
+  false,
+  'the general structural hasher is not part of the public actions barrel',
+)
+await assert.rejects(
+  import('@retiregolden/engine/actions/structuralId'),
+  (error) => error?.code === 'ERR_PACKAGE_PATH_NOT_EXPORTED',
+  'the wildcard exports map must not reopen the internal structural hasher',
+)
+for (const alternateCase of [
+  '@retiregolden/engine/actions/StructuralId',
+  '@retiregolden/engine/actions/STRUCTURALID',
+  '@retiregolden/engine/Actions/structuralId',
+]) {
+  await assert.rejects(
+    import(alternateCase),
+    (error) => error?.code === 'ERR_PACKAGE_PATH_NOT_EXPORTED',
+    'alternate-case internal structural path must remain blocked: ' +
+      alternateCase,
+  )
+}
 assert.equal(addUsdCents(asUsdCents(125), asUsdCents(75)), 200)
 assert.equal(planDollarsToLedgerCents(1.005), 101)
 assert.equal(ledgerCentsToPlanDollars(asUsdCents(101)), 1.01)
@@ -397,14 +457,10 @@ const smokeSeppHistoryWithoutId = {
   actualQualifyingGrossAmountThroughPriorPayments: 0,
   nextScheduledSequence: 1,
 }
-const smokeSeppHistory = {
-  ...smokeSeppHistoryWithoutId,
-  priorHistoryEvidenceId:
-    deriveActionStructuralId('owned-ira-sepp-prior-payment-history', [
-      smokeSeppOpening.openingStateEvidenceId,
-      smokeSeppHistoryWithoutId,
-    ]),
-}
+const smokeSeppHistory =
+  buildOwnedNonRothIraSeppPriorPaymentHistoryEvidence(
+    smokeSeppHistoryWithoutId,
+  )
 const smokeSeppCandidate =
   validateOwnedNonRothIraSeppCurrentPaymentCandidate({
     ownerPersonId: asPersonId('smoke-person'),
@@ -498,15 +554,10 @@ const smokeSeppPriorElectionHistoryWithoutId = {
   terminalStateEvidenceId: 'smoke-prior-year-terminal',
   usedDistributionEvidenceIds: ['smoke-prior-lifetime-distribution'],
 }
-const smokeSeppPriorElectionHistory = {
-  ...smokeSeppPriorElectionHistoryWithoutId,
-  priorElectionHistoryEvidenceId:
-    deriveActionStructuralId(
-      'owned-ira-sepp-complete-prior-election-history', [
-      smokeSeppPriorElectionHistoryWithoutId,
-      ],
-    ),
-}
+const smokeSeppPriorElectionHistory =
+  buildOwnedNonRothIraSeppCompletePriorElectionHistoryEvidence(
+    smokeSeppPriorElectionHistoryWithoutId,
+  )
 const smokeSeppInventoryWithoutId = {
   predicate: 'completeOwnedNonRothIraSeppAnnualDistributionInventory',
   electionId: 'smoke-sepp-election',
@@ -516,15 +567,10 @@ const smokeSeppInventoryWithoutId = {
   taxYear: 2030,
   characterCoverages: [smokeSeppCoverage],
 }
-const smokeSeppInventory = {
-  ...smokeSeppInventoryWithoutId,
-  inventoryEvidenceId:
-    deriveActionStructuralId(
-      'owned-ira-sepp-annual-distribution-inventory', [
-      smokeSeppInventoryWithoutId,
-      ],
-    ),
-}
+const smokeSeppInventory =
+  buildOwnedNonRothIraSeppAnnualDistributionInventoryEvidence(
+    smokeSeppInventoryWithoutId,
+  )
 const smokeSeppAnnualReconciliation =
   reconcileOwnedNonRothIraSeppAnnualSchedule({
     ownerPersonId: asPersonId('smoke-person'),
@@ -919,6 +965,19 @@ try {
     stdio: 'inherit',
     shell,
   })
+
+  const structuralDeclarations = readFileSync(join(
+    work,
+    'node_modules',
+    '@retiregolden',
+    'engine',
+    'dist',
+    'actions',
+    'structuralId.d.ts',
+  ), 'utf8')
+  if (structuralDeclarations.includes('deriveActionStructuralId')) {
+    throw new Error('internal structural hasher leaked into packed declarations')
+  }
 
   writeFileSync(join(work, 'smoke.mjs'), smokeScript)
   execFileSync(process.execPath, ['smoke.mjs'], { cwd: work, stdio: 'inherit' })

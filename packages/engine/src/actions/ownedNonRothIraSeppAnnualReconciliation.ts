@@ -50,6 +50,11 @@ export interface OwnedNonRothIraSeppAnnualDistributionInventoryEvidence {
   inventoryEvidenceId: string
 }
 
+export type OwnedNonRothIraSeppAnnualDistributionInventoryWithoutId = Omit<
+  OwnedNonRothIraSeppAnnualDistributionInventoryEvidence,
+  'inventoryEvidenceId'
+>
+
 export interface OwnedNonRothIraSeppCompletePriorElectionHistoryEvidence {
   predicate: 'completeOwnedNonRothIraSeppPriorElectionHistory'
   electionId: string
@@ -61,6 +66,11 @@ export interface OwnedNonRothIraSeppCompletePriorElectionHistoryEvidence {
   usedDistributionEvidenceIds: readonly string[]
   priorElectionHistoryEvidenceId: string
 }
+
+export type OwnedNonRothIraSeppCompletePriorElectionHistoryWithoutId = Omit<
+  OwnedNonRothIraSeppCompletePriorElectionHistoryEvidence,
+  'priorElectionHistoryEvidenceId'
+>
 
 export interface OwnedNonRothIraSeppAnnualRawPaymentEvidence {
   currentPaymentEvidence:
@@ -115,6 +125,7 @@ export type OwnedNonRothIraSeppAnnualReconciliationIssueKind =
   | 'duplicateDistributionEvidenceId'
   | 'duplicatePaymentEvidenceId'
   | 'duplicateStateEvidenceId'
+  | 'duplicateAnnualEvidenceId'
   | 'lifetimeDistributionReplay'
   | 'lifetimeEvidenceIdCollision'
   | 'inventoryMemberWithoutPayment'
@@ -433,6 +444,51 @@ function compareCoverage(
     compareUtf16CodeUnits(left.evidenceId, right.evidenceId)
 }
 
+/** Build a canonical complete annual SEPP distribution inventory. */
+export function buildOwnedNonRothIraSeppAnnualDistributionInventoryEvidence(
+  input: Readonly<
+    OwnedNonRothIraSeppAnnualDistributionInventoryWithoutId
+  >,
+): Readonly<OwnedNonRothIraSeppAnnualDistributionInventoryEvidence> {
+  if (
+    input.predicate !==
+      'completeOwnedNonRothIraSeppAnnualDistributionInventory'
+  ) {
+    throw new RangeError('SEPP annual inventory predicate is not canonical')
+  }
+  const canonicalRecords = input.characterCoverages.map(canonicalCoverage)
+  if (canonicalRecords.some((record) => !record.producerConforming)) {
+    throw new RangeError(
+      'SEPP annual inventory requires canonical character coverage',
+    )
+  }
+  const inventoryWithoutId:
+    OwnedNonRothIraSeppAnnualDistributionInventoryWithoutId = {
+      predicate: input.predicate,
+      electionId: nonblankId(
+        input.electionId,
+        'SEPP annual inventory election ID',
+      ),
+      scheduleId: nonblankId(
+        input.scheduleId,
+        'SEPP annual inventory schedule ID',
+      ),
+      participantPersonId: personIdSchema.parse(input.participantPersonId),
+      sourceAccountId: accountIdSchema.parse(input.sourceAccountId),
+      taxYear: parseTaxYear(input.taxYear, 'SEPP annual inventory tax year'),
+      characterCoverages: canonicalRecords
+        .map((record) => record.coverage)
+        .sort(compareCoverage),
+    }
+  return deepFreeze({
+    ...inventoryWithoutId,
+    inventoryEvidenceId: deriveActionStructuralId(
+      'owned-ira-sepp-annual-distribution-inventory',
+      [inventoryWithoutId],
+    ),
+  })
+}
+
 function paymentMemberKey(
   payment: Readonly<OwnedNonRothIraSeppCurrentPaymentEvidence>,
 ): string {
@@ -458,9 +514,9 @@ function comparePayment(
     )
 }
 
-function normalizedPriorElectionHistory(
-  input: Readonly<OwnedNonRothIraSeppCompletePriorElectionHistoryEvidence>,
-): OwnedNonRothIraSeppCompletePriorElectionHistoryEvidence {
+function canonicalPriorElectionHistoryWithoutId(
+  input: Readonly<OwnedNonRothIraSeppCompletePriorElectionHistoryWithoutId>,
+): OwnedNonRothIraSeppCompletePriorElectionHistoryWithoutId {
   const usedIds = input.usedDistributionEvidenceIds.map(
     (evidenceId) => nonblankId(
       evidenceId,
@@ -487,11 +543,41 @@ function normalizedPriorElectionHistory(
       'SEPP prior-election terminal-state evidence ID',
     ),
     usedDistributionEvidenceIds: usedIds,
+  }
+}
+
+function normalizedPriorElectionHistory(
+  input: Readonly<OwnedNonRothIraSeppCompletePriorElectionHistoryEvidence>,
+): OwnedNonRothIraSeppCompletePriorElectionHistoryEvidence {
+  return {
+    ...canonicalPriorElectionHistoryWithoutId(input),
     priorElectionHistoryEvidenceId: nonblankId(
       input.priorElectionHistoryEvidenceId,
       'SEPP complete prior-election history evidence ID',
     ),
   }
+}
+
+/** Build canonical complete history for distributions before this tax year. */
+export function buildOwnedNonRothIraSeppCompletePriorElectionHistoryEvidence(
+  input: Readonly<OwnedNonRothIraSeppCompletePriorElectionHistoryWithoutId>,
+): Readonly<OwnedNonRothIraSeppCompletePriorElectionHistoryEvidence> {
+  if (
+    input.predicate !==
+      'completeOwnedNonRothIraSeppPriorElectionHistory'
+  ) {
+    throw new RangeError(
+      'SEPP complete prior-election history predicate is not canonical',
+    )
+  }
+  const historyWithoutId = canonicalPriorElectionHistoryWithoutId(input)
+  return deepFreeze({
+    ...historyWithoutId,
+    priorElectionHistoryEvidenceId: deriveActionStructuralId(
+      'owned-ira-sepp-complete-prior-election-history',
+      [historyWithoutId],
+    ),
+  })
 }
 
 function normalizedPayment(
@@ -552,6 +638,33 @@ function addLifetimeEvidenceCollisions(
   if (evidenceIds.some((evidenceId) => lifetimeDistributionIds.has(evidenceId))) {
     addIssue(issues, { kind: 'lifetimeEvidenceIdCollision', memberKey })
   }
+}
+
+interface AnnualEvidenceIdClaim {
+  role: string
+  aliasGroup?: string
+  memberKey?: string
+}
+
+function addAnnualEvidenceIdClaim(
+  issues: OwnedNonRothIraSeppAnnualReconciliationIssue[],
+  claimsById: Map<string, AnnualEvidenceIdClaim[]>,
+  evidenceId: string,
+  claim: AnnualEvidenceIdClaim,
+): void {
+  const existing = claimsById.get(evidenceId) ?? []
+  if (existing.some((other) =>
+    claim.aliasGroup === undefined ||
+    other.aliasGroup === undefined ||
+    claim.aliasGroup !== other.aliasGroup
+  )) {
+    addIssue(issues, {
+      kind: 'duplicateAnnualEvidenceId',
+      memberKey: claim.memberKey,
+    })
+  }
+  existing.push(claim)
+  claimsById.set(evidenceId, existing)
 }
 
 function failedResult(
@@ -762,6 +875,64 @@ export function reconcileOwnedNonRothIraSeppAnnualSchedule(
   const lifetimeDistributionIds = new Set(
     priorHistory.usedDistributionEvidenceIds,
   )
+  const annualEvidenceClaims = new Map<string, AnnualEvidenceIdClaim[]>()
+  const claimAnnualEvidence = (
+    evidenceId: string,
+    role: string,
+    aliasGroup?: string,
+    memberKey?: string,
+  ): void => addAnnualEvidenceIdClaim(
+    issues,
+    annualEvidenceClaims,
+    evidenceId,
+    { role, aliasGroup, memberKey },
+  )
+  claimAnnualEvidence(
+    source.accountOwnershipEvidenceId,
+    'source.accountOwnershipEvidenceId',
+    `shared-source-ownership-${source.sourceAccountId}`,
+  )
+  claimAnnualEvidence(
+    source.iraClassificationEvidenceId,
+    'source.iraClassificationEvidenceId',
+    `shared-source-classification-${source.sourceAccountId}`,
+  )
+  claimAnnualEvidence(source.sourceEvidenceId, 'source.sourceEvidenceId')
+  claimAnnualEvidence(
+    election.electionEvidenceId,
+    'election.electionEvidenceId',
+  )
+  claimAnnualEvidence(
+    annualSchedule.annualScheduleEvidenceId,
+    'annualSchedule.annualScheduleEvidenceId',
+  )
+  claimAnnualEvidence(
+    noModification.noModificationEvidenceId,
+    'noModification.noModificationEvidenceId',
+  )
+  claimAnnualEvidence(
+    opening.priorHistoryTerminalStateId,
+    'opening.priorHistoryTerminalStateId',
+    'prior-election-terminal-state',
+  )
+  claimAnnualEvidence(
+    priorHistory.terminalStateEvidenceId,
+    'priorHistory.terminalStateEvidenceId',
+    'prior-election-terminal-state',
+  )
+  claimAnnualEvidence(
+    opening.openingStateEvidenceId,
+    'opening.openingStateEvidenceId',
+    'current-state-0',
+  )
+  claimAnnualEvidence(
+    priorHistory.priorElectionHistoryEvidenceId,
+    'priorHistory.priorElectionHistoryEvidenceId',
+  )
+  claimAnnualEvidence(
+    inventory.inventoryEvidenceId,
+    'inventory.inventoryEvidenceId',
+  )
   addLifetimeEvidenceCollisions(issues, lifetimeDistributionIds, [
     source.accountOwnershipEvidenceId,
     source.iraClassificationEvidenceId,
@@ -781,6 +952,56 @@ export function reconcileOwnedNonRothIraSeppAnnualSchedule(
   const inventoryCoverageIds = new Set<string>()
   for (const coverage of canonicalInventoryCoverages) {
     const memberKey = coverageMemberKey(coverage)
+    claimAnnualEvidence(
+      coverage.evidenceId,
+      'coverage.evidenceId',
+      undefined,
+      memberKey,
+    )
+    claimAnnualEvidence(
+      coverage.basisEvidenceId,
+      'coverage.basisEvidenceId',
+      `shared-coverage-basis-${coverage.ownerPersonId}-${expectedTaxYear}`,
+      memberKey,
+    )
+    claimAnnualEvidence(
+      coverage.line7AllocationEvidenceId,
+      'coverage.line7AllocationEvidenceId',
+      `shared-coverage-line7-${coverage.ownerPersonId}-${expectedTaxYear}`,
+      memberKey,
+    )
+    for (const characterEvidenceId of coverage.characterEvidenceIds) {
+      claimAnnualEvidence(
+        characterEvidenceId,
+        'coverage.characterEvidenceId',
+        undefined,
+        memberKey,
+      )
+    }
+    claimAnnualEvidence(
+      coverage.sourceEvidenceIds.distributionDateEvidenceId,
+      'coverage.distributionDateEvidenceId',
+      `current-distribution-${memberKey}`,
+      memberKey,
+    )
+    claimAnnualEvidence(
+      coverage.sourceEvidenceIds.accountOwnershipEvidenceId,
+      'coverage.accountOwnershipEvidenceId',
+      `shared-source-ownership-${coverage.sourceAccountId}`,
+      memberKey,
+    )
+    claimAnnualEvidence(
+      coverage.sourceEvidenceIds.iraClassificationEvidenceId,
+      'coverage.iraClassificationEvidenceId',
+      `shared-source-classification-${coverage.sourceAccountId}`,
+      memberKey,
+    )
+    claimAnnualEvidence(
+      coverage.ageThresholdEvidenceId,
+      'coverage.ageThresholdEvidenceId',
+      `shared-coverage-age-threshold-${coverage.ownerPersonId}`,
+      memberKey,
+    )
     addLifetimeEvidenceCollisions(issues, lifetimeDistributionIds, [
       coverage.evidenceId,
       coverage.basisEvidenceId,
@@ -813,6 +1034,24 @@ export function reconcileOwnedNonRothIraSeppAnnualSchedule(
   const paymentDistributionIds = new Set<string>()
   const paymentEvidenceIds = new Set<string>()
   for (const item of normalizedPayments) {
+    claimAnnualEvidence(
+      item.payment.currentDistributionEvidenceId,
+      'payment.currentDistributionEvidenceId',
+      `current-distribution-${item.memberKey}`,
+      item.memberKey,
+    )
+    claimAnnualEvidence(
+      item.payment.previousScheduleStateId,
+      'payment.previousScheduleStateId',
+      `current-state-${item.payment.paymentSequence - 1}`,
+      item.memberKey,
+    )
+    claimAnnualEvidence(
+      item.payment.paymentScheduleEvidenceId,
+      'payment.paymentScheduleEvidenceId',
+      undefined,
+      item.memberKey,
+    )
     addLifetimeEvidenceCollisions(issues, lifetimeDistributionIds, [
       item.payment.previousScheduleStateId,
       item.payment.paymentScheduleEvidenceId,
@@ -907,24 +1146,51 @@ export function reconcileOwnedNonRothIraSeppAnnualSchedule(
         [opening.openingStateEvidenceId, priorHistoryWithoutId],
       ),
     }
+    claimAnnualEvidence(
+      expectedHistory.terminalStateEvidenceId!,
+      'generatedHistory.terminalStateEvidenceId',
+      `current-state-${index}`,
+      item.memberKey,
+    )
+    claimAnnualEvidence(
+      expectedHistory.priorHistoryEvidenceId,
+      'generatedHistory.priorHistoryEvidenceId',
+      undefined,
+      item.memberKey,
+    )
     addLifetimeEvidenceCollisions(issues, lifetimeDistributionIds, [
       expectedHistory.priorHistoryEvidenceId,
       previousTerminalStateId,
     ], item.memberKey)
-    const currentResult = validateOwnedNonRothIraSeppCurrentPaymentCandidate({
-      ownerPersonId,
-      taxYear: expectedTaxYear,
-      actionId: item.payment.actionId,
-      allocationId: item.payment.allocationId,
-      characterCoverage: coverage,
-      sourceEvidence: source,
-      electionEvidence: election,
-      annualScheduleEvidence: annualSchedule,
-      noModificationEvidence: noModification,
-      openingStateEvidence: opening,
-      priorHistoryEvidence: expectedHistory,
-      currentPaymentEvidence: item.payment,
-    })
+    let currentResult: ReturnType<
+      typeof validateOwnedNonRothIraSeppCurrentPaymentCandidate
+    >
+    try {
+      currentResult = validateOwnedNonRothIraSeppCurrentPaymentCandidate({
+        ownerPersonId,
+        taxYear: expectedTaxYear,
+        actionId: item.payment.actionId,
+        allocationId: item.payment.allocationId,
+        characterCoverage: coverage,
+        sourceEvidence: source,
+        electionEvidence: election,
+        annualScheduleEvidence: annualSchedule,
+        noModificationEvidence: noModification,
+        openingStateEvidence: opening,
+        priorHistoryEvidence: expectedHistory,
+        currentPaymentEvidence: item.payment,
+      })
+    } catch (error) {
+      if (
+        error instanceof RangeError &&
+        error.message ===
+          'SEPP evidence IDs must not be reused across evidence kinds' &&
+        issues.some((issue) => issue.kind === 'duplicateAnnualEvidenceId')
+      ) {
+        break
+      }
+      throw error
+    }
     if (currentResult.status !== 'provisionalCandidate') {
       for (const paymentIssue of currentResult.issues) {
         if (paymentIssue.kind !== 'evidenceMissing') {
@@ -939,6 +1205,24 @@ export function reconcileOwnedNonRothIraSeppAnnualSchedule(
     }
 
     const candidate = currentResult.candidate
+    claimAnnualEvidence(
+      candidate.beforeState.stateEvidenceId,
+      'candidate.beforeState.stateEvidenceId',
+      `current-state-${index}`,
+      item.memberKey,
+    )
+    claimAnnualEvidence(
+      candidate.afterState.stateEvidenceId,
+      'candidate.afterState.stateEvidenceId',
+      `current-state-${index + 1}`,
+      item.memberKey,
+    )
+    claimAnnualEvidence(
+      candidate.candidateId,
+      'candidate.candidateId',
+      undefined,
+      item.memberKey,
+    )
     addLifetimeEvidenceCollisions(issues, lifetimeDistributionIds, [
       candidate.beforeState.stateEvidenceId,
       candidate.afterState.stateEvidenceId,
@@ -982,6 +1266,14 @@ export function reconcileOwnedNonRothIraSeppAnnualSchedule(
     usedDistributionIds.push(candidate.currentDistributionEvidenceId)
     previousTerminalStateId = candidate.afterState.stateEvidenceId
     terminalState = candidate.afterState
+  }
+
+  if (terminalState !== null) {
+    claimAnnualEvidence(
+      terminalState.stateEvidenceId,
+      'terminalState.stateEvidenceId',
+      `current-state-${reconciledPayments.length}`,
+    )
   }
 
   const maximum = BigInt(Number.MAX_SAFE_INTEGER)
@@ -1118,6 +1410,16 @@ export function reconcileOwnedNonRothIraSeppAnnualSchedule(
     'owned-ira-sepp-annual-reconciliation',
     [commonLineage, inventory, normalizedPayments, evidenceWithoutId],
   )
+  claimAnnualEvidence(
+    annualReconciliationId,
+    'annualReconciliation.annualReconciliationId',
+  )
+  if (issues.length > 0) {
+    return failedResult(issues as [
+      OwnedNonRothIraSeppAnnualReconciliationIssue,
+      ...OwnedNonRothIraSeppAnnualReconciliationIssue[],
+    ])
+  }
   if (lifetimeDistributionIds.has(annualReconciliationId)) {
     return failedResult([{ kind: 'lifetimeEvidenceIdCollision' }])
   }
