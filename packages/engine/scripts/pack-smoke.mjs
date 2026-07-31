@@ -45,6 +45,7 @@ const {
   asUsdCents,
   classifyOwnedNonRothIraAnnualWithdrawals,
   classifyIndividuallyOwnedTaxableWithdrawal,
+  coordinateOwnedNonRothIraAnnualWithdrawalCandidate,
   evaluateOwnedNonRothIraPenaltyPrerequisites,
   executeCashOrdinaryWithdrawals,
   executeOrdinaryWithdrawals,
@@ -220,42 +221,43 @@ const taxableCharacter = classifyIndividuallyOwnedTaxableWithdrawal({
 assert.equal(taxableCharacter.taxCharacter[0].kind, 'basisReturn')
 assert.equal(taxableCharacter.taxCharacter[1].kind, 'capitalGain')
 
-const smokeIraMovement =
-  stageOwnedNonRothIraOrdinaryWithdrawalMovements({
-    ownerPersonId: asPersonId('smoke-person'),
-    taxYear: 2030,
-    requests: [{
-      actionId: asActionId('smoke-ira-withdrawal'),
-      kind: 'ordinaryWithdrawal',
-      personId: asPersonId('smoke-person'),
-      year: 2030,
-      executionDate: '2030-12-31',
-      executionSequence: 1,
-      requestedAmount: asPositiveUsdCents(2),
-      allocations: [{
-        allocationId: asAllocationId('smoke-ira-allocation'),
-        sourceAccountId: asAccountId('smoke-traditional-ira'),
-        requestedAmount: asPositiveUsdCents(2),
-      }],
-      purpose: { kind: 'spending' },
-      provenance: { source: 'manual' },
-    }],
-    openingBalances: [{
-      accountId: asAccountId('smoke-traditional-ira'),
-      openingBalance: asUsdCents(2),
-    }],
-    sourceEvidence: [{
-      predicate: 'ownedNonRothIraOrdinaryWithdrawalMovementSource',
+const smokeIraMovementInput = {
+  ownerPersonId: asPersonId('smoke-person'),
+  taxYear: 2030,
+  requests: [{
+    actionId: asActionId('smoke-ira-withdrawal'),
+    kind: 'ordinaryWithdrawal',
+    personId: asPersonId('smoke-person'),
+    year: 2030,
+    executionDate: '2030-12-31',
+    executionSequence: 1,
+    requestedAmount: asPositiveUsdCents(2),
+    allocations: [{
+      allocationId: asAllocationId('smoke-ira-allocation'),
       sourceAccountId: asAccountId('smoke-traditional-ira'),
-      ownerPersonId: asPersonId('smoke-person'),
-      accountType: 'traditional',
-      accountKind: 'ira',
-      inheritanceStatus: 'owned',
-      subtype: 'traditional',
-      accountOwnershipEvidenceId: 'smoke-ira-ownership',
-      iraClassificationEvidenceId: 'smoke-ira-classification',
+      requestedAmount: asPositiveUsdCents(2),
     }],
-  })
+    purpose: { kind: 'spending' },
+    provenance: { source: 'manual' },
+  }],
+  openingBalances: [{
+    accountId: asAccountId('smoke-traditional-ira'),
+    openingBalance: asUsdCents(2),
+  }],
+  sourceEvidence: [{
+    predicate: 'ownedNonRothIraOrdinaryWithdrawalMovementSource',
+    sourceAccountId: asAccountId('smoke-traditional-ira'),
+    ownerPersonId: asPersonId('smoke-person'),
+    accountType: 'traditional',
+    accountKind: 'ira',
+    inheritanceStatus: 'owned',
+    subtype: 'traditional',
+    accountOwnershipEvidenceId: 'smoke-ira-ownership',
+    iraClassificationEvidenceId: 'smoke-ira-classification',
+  }],
+}
+const smokeIraMovement =
+  stageOwnedNonRothIraOrdinaryWithdrawalMovements(smokeIraMovementInput)
 assert.equal(smokeIraMovement.status, 'movementCandidateStaged')
 assert.equal(smokeIraMovement.movement, 'notCommitted')
 assert.equal(
@@ -445,6 +447,34 @@ assert.equal(blockedOwnedIraAnnual.annualEvidence, null)
 assert.equal(
   blockedOwnedIraAnnual.issues[0].reason.code,
   'withdrawal-penalty-evidence-missing',
+)
+const boundOwnedIraAnnualCandidate =
+  coordinateOwnedNonRothIraAnnualWithdrawalCandidate({
+    movementInput: smokeIraMovementInput,
+    annualInput: smokeAnnualFinalizerInput.annualInput,
+    ownerEvidence: smokeAnnualFinalizerInput.ownerEvidence,
+    qualifiedDisabilityEvidence:
+      smokeAnnualFinalizerInput.qualifiedDisabilityEvidence,
+    simpleParticipationEvidence: [],
+  })
+assert.equal(boundOwnedIraAnnualCandidate.status, 'annualEvidenceBound')
+assert.equal(boundOwnedIraAnnualCandidate.movement, 'notCommitted')
+assert.equal(
+  boundOwnedIraAnnualCandidate.actionability,
+  'notEstablished',
+)
+assert.equal(
+  boundOwnedIraAnnualCandidate.bindingEvidence.movementCandidateId,
+  boundOwnedIraAnnualCandidate.movementCandidate.movementCandidateId,
+)
+assert.equal(
+  boundOwnedIraAnnualCandidate.bindingEvidence.finalizationEvidenceId,
+  boundOwnedIraAnnualCandidate.annualEvidence.finalizationEvidenceId,
+)
+assert.equal(
+  boundOwnedIraAnnualCandidate.bindingEvidence.line7AllocationEvidenceId,
+  boundOwnedIraAnnualCandidate.annualEvidence.characterization
+    .line7AllocationEvidence.allocationEvidenceId,
 )
 
 const smokeTaxable = {

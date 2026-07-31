@@ -218,6 +218,16 @@ export {
   type ResolvedOwnedNonRothIraPenaltyPrerequisites,
 } from './ownedNonRothIraAnnualFinalization.js'
 export {
+  coordinateOwnedNonRothIraAnnualWithdrawalCandidate,
+  type CoordinateOwnedNonRothIraAnnualWithdrawalCandidateInput,
+  type CoordinateOwnedNonRothIraAnnualWithdrawalCandidateResult,
+  type OwnedNonRothIraAnnualCandidateBindingEvidence,
+  type OwnedNonRothIraAnnualCandidateEvidenceBlockedResult,
+  type OwnedNonRothIraAnnualCandidateEvidenceBoundResult,
+  type OwnedNonRothIraAnnualCandidateNoPositiveMovementResult,
+  type OwnedNonRothIraAnnualCandidateScheduleInvalidResult,
+} from './ownedNonRothIraAnnualCandidateCoordinator.js'
+export {
   stageOwnedNonRothIraOrdinaryWithdrawalMovements,
   type OwnedNonRothIraMovementActionEvidence,
   type OwnedNonRothIraMovementAllocationEvidence,
