@@ -39,6 +39,7 @@ import {
   type OrdinaryWithdrawalTaxCharacter,
   type ResolvedCashSourceAllocationExecutionEvidence,
   type ResolvedIndividuallyOwnedSourceAllocationExecutionEvidence,
+  type TaxableAccountOpeningSnapshot,
 } from './execution.js'
 
 function cash(id: string, ownerPersonId: string | null = 'p1'): Account {
@@ -53,7 +54,7 @@ function cash(id: string, ownerPersonId: string | null = 'p1'): Account {
   }
 }
 
-function taxable(id: string, ownerPersonId = 'p1'): Account {
+function taxable(id: string, ownerPersonId: string | null = 'p1'): Account {
   return {
     type: 'taxable',
     id,
@@ -181,17 +182,60 @@ function balances(
   }))
 }
 
+function taxableSnapshot(
+  accountId: string,
+  openingCostBasis: number,
+  {
+    ownerPersonId = 'p1',
+    taxYear = 2030,
+    taxUnitMemberPersonIds = ['p1', 'p2'],
+  }: {
+    ownerPersonId?: string
+    taxYear?: number
+    taxUnitMemberPersonIds?: string[]
+  } = {},
+): TaxableAccountOpeningSnapshot {
+  return {
+    accountId: asAccountId(accountId),
+    openingCostBasis: asUsdCents(openingCostBasis),
+    ownership: {
+      accountOwnerPersonIds: [asPersonId(ownerPersonId)],
+      accountOwnershipEvidenceId: `ownership:${accountId}:${ownerPersonId}`,
+      beneficialOwnershipShare: {
+        representation: 'exactRational',
+        numerator: 1,
+        denominator: 1,
+        intermediateArithmetic: 'bigintRational',
+      },
+      attributionEvidenceId: `attribution:${accountId}:${ownerPersonId}`,
+    },
+    taxUnit: {
+      taxUnitId: `tax-unit:${taxYear}`,
+      taxUnitMemberPersonIds: taxUnitMemberPersonIds.map(asPersonId) as [
+        PersonId,
+        ...PersonId[],
+      ],
+      federalFilingStatus: 'marriedFilingJointly',
+      stateFilingStatusId: `state-status:${taxYear}`,
+      taxUnitEvidenceId: `tax-unit-evidence:${taxYear}`,
+      taxYear,
+    },
+  }
+}
+
 function run(
   plan: Plan,
   requests: readonly RetirementActionRequest[],
   openingBalances: readonly AccountOpeningBalanceSnapshot[],
   runtimeEvidence = aliveEvidence(requests),
+  taxableAccountSnapshots: readonly TaxableAccountOpeningSnapshot[] = [],
 ) {
   return executeOrdinaryWithdrawals({
     year: 2030,
     plan,
     requests,
     openingBalances,
+    taxableAccountSnapshots,
     runtimeEvidence,
   })
 }
@@ -409,7 +453,11 @@ describe('ordinary-withdrawal execution', () => {
       evidence.readiness === 'actionable'
         ? evidence.acceptedSourceEligibility[0]
         : undefined
-    expect(accepted?.availabilityEvidence).not.toHaveProperty('vestingDate')
+    expect(
+      accepted?.sourceClass === 'equityCompensation'
+        ? accepted.availabilityEvidence
+        : undefined,
+    ).not.toHaveProperty('vestingDate')
     expect(result.balances[0]?.closingBalance).toBe(25)
   })
 
@@ -1290,5 +1338,427 @@ describe('ordinary-withdrawal execution', () => {
     expect(result.evidence.every((item) => item.readiness === 'nonActionable')).toBe(true)
     expect(result.evidence.every((item) => item.disposition.executedAmount === 0)).toBe(true)
     expect(result.balances[0]!.closingBalance).toBe(10)
+  })
+
+  describe('individually owned taxable sources', () => {
+    it('atomically moves balance and basis and emits gain character', () => {
+      const request = withdrawal({
+        actionId: 'taxable-gain',
+        sequence: 1,
+        allocations: [allocation('taxable-allocation', 'taxable', 5_000)],
+      })
+      const result = run(
+        planWith(taxable('taxable')),
+        [request],
+        balances([['taxable', 10_000]]),
+        aliveEvidence([request]),
+        [taxableSnapshot('taxable', 4_000)],
+      )
+
+      expect(result.evidence[0]).toMatchObject({
+        disposition: { outcome: 'executed', executedAmount: 5_000 },
+        acceptedSourceEligibility: [{
+          sourceClass: 'taxable',
+          basisEvidence: {
+            method: 'planningAggregateBasisRatio',
+            basisRecoveredAmount: 2_000,
+            realizedCapitalGainOrLossAmount: 3_000,
+          },
+        }],
+        taxCharacter: [
+          {
+            actionId: 'taxable-gain',
+            allocationId: 'taxable-allocation',
+            kind: 'basisReturn',
+            amount: 2_000,
+          },
+          {
+            actionId: 'taxable-gain',
+            allocationId: 'taxable-allocation',
+            kind: 'capitalGain',
+            amount: 3_000,
+          },
+        ],
+        penaltyCoverage: [{ sourceClass: 'taxable', executedAmount: 5_000 }],
+      })
+      expect(result.balances).toMatchObject([
+        { accountId: 'taxable', openingBalance: 10_000, closingBalance: 5_000 },
+      ])
+      expect(result.taxableBases).toMatchObject([
+        {
+          accountId: 'taxable',
+          openingCostBasis: 4_000,
+          closingCostBasis: 2_000,
+        },
+      ])
+    })
+
+    it('supports basis above value and closes a full loss-position sale exactly', () => {
+      const request = withdrawal({
+        actionId: 'taxable-loss',
+        sequence: 1,
+        allocations: [allocation('taxable-allocation', 'taxable', 10_000)],
+      })
+      const result = run(
+        planWith(taxable('taxable')),
+        [request],
+        balances([['taxable', 10_000]]),
+        aliveEvidence([request]),
+        [taxableSnapshot('taxable', 15_000)],
+      )
+
+      expect(result.evidence[0]).toMatchObject({
+        taxCharacter: [
+          { kind: 'basisReturn', amount: 15_000 },
+          { kind: 'capitalLoss', amount: 5_000 },
+        ],
+      })
+      expect(result.balances[0]?.closingBalance).toBe(0)
+      expect(result.taxableBases[0]?.closingCostBasis).toBe(0)
+    })
+
+    it('uses staged balance and basis for sequential actions on one source', () => {
+      const requests = [
+        withdrawal({
+          actionId: 'taxable-first',
+          sequence: 1,
+          allocations: [allocation('first-allocation', 'taxable', 2_500)],
+        }),
+        withdrawal({
+          actionId: 'taxable-second',
+          sequence: 2,
+          allocations: [allocation('second-allocation', 'taxable', 2_500)],
+        }),
+      ]
+      const result = run(
+        planWith(taxable('taxable')),
+        requests,
+        balances([['taxable', 10_000]]),
+        aliveEvidence(requests),
+        [taxableSnapshot('taxable', 4_000)],
+      )
+
+      expect(result.evidence.map((item) =>
+        item.readiness === 'actionable'
+          ? item.acceptedSourceEligibility[0]
+          : null,
+      )).toMatchObject([
+        {
+          basisEvidence: {
+            preExecutionFairMarketValue: 10_000,
+            remainingCostBasisBeforeExecution: 4_000,
+            basisRecoveredAmount: 1_000,
+          },
+        },
+        {
+          basisEvidence: {
+            preExecutionFairMarketValue: 7_500,
+            remainingCostBasisBeforeExecution: 3_000,
+            basisRecoveredAmount: 1_000,
+          },
+        },
+      ])
+      expect(result.balances[0]?.closingBalance).toBe(5_000)
+      expect(result.taxableBases[0]?.closingCostBasis).toBe(2_000)
+    })
+
+    it('accepts a depleted taxable sibling only through the zero/no-ratio arm', () => {
+      const requests = [
+        withdrawal({
+          actionId: 'deplete-taxable',
+          sequence: 1,
+          allocations: [allocation('deplete-allocation', 'taxable', 100)],
+        }),
+        withdrawal({
+          actionId: 'mixed-after-depletion',
+          sequence: 2,
+          allocations: [
+            allocation('cash-allocation', 'cash', 50),
+            allocation('taxable-zero-allocation', 'taxable', 50),
+          ],
+        }),
+      ]
+      const result = run(
+        planWith(cash('cash'), taxable('taxable')),
+        requests,
+        balances([['cash', 50], ['taxable', 100]]),
+        aliveEvidence(requests),
+        [taxableSnapshot('taxable', 40)],
+      )
+      const second = result.evidence[1]
+      if (second?.readiness !== 'actionable') {
+        throw new Error('expected mixed partial action')
+      }
+
+      expect(second.disposition).toMatchObject({
+        outcome: 'partial',
+        executedAmount: 50,
+      })
+      expect(second.acceptedSourceEligibility).toContainEqual(
+        expect.objectContaining({
+          allocationId: 'taxable-zero-allocation',
+          sourceClass: 'taxable',
+          basisEvidence: expect.objectContaining({
+            method: 'notApplicableZeroExecution',
+            preExecutionFairMarketValue: 0,
+            remainingCostBasisBeforeExecution: 0,
+            executedAmount: 0,
+            ratio: {
+              representation: 'notApplicableZeroDenominator',
+              numeratorMinorUnits: 0,
+              denominatorMinorUnits: 0,
+              intermediateArithmetic: 'none',
+            },
+          }),
+        }),
+      )
+      expect(
+        second.taxCharacter.some(
+          (character) => character.allocationId === 'taxable-zero-allocation',
+        ),
+      ).toBe(false)
+      expect(result.balances).toMatchObject([
+        { accountId: 'cash', closingBalance: 0 },
+        { accountId: 'taxable', closingBalance: 0 },
+      ])
+      expect(result.taxableBases[0]?.closingCostBasis).toBe(0)
+    })
+
+    it('keeps an all-zero taxable action nonactionable', () => {
+      const request = withdrawal({
+        actionId: 'all-zero',
+        sequence: 1,
+        allocations: [allocation('taxable-allocation', 'taxable', 100)],
+      })
+      const result = run(
+        planWith(taxable('taxable')),
+        [request],
+        balances([['taxable', 0]]),
+        aliveEvidence([request]),
+        [taxableSnapshot('taxable', 0)],
+      )
+
+      expect(result.evidence[0]).toMatchObject({
+        readiness: 'nonActionable',
+        disposition: {
+          outcome: 'refused',
+          executedAmount: 0,
+          reasons: [{ code: 'source-balance-unavailable' }],
+        },
+        taxCharacter: [],
+      })
+    })
+
+    it.each([
+      ['missing', []],
+      [
+        'duplicate',
+        [taxableSnapshot('taxable', 4_000), taxableSnapshot('taxable', 4_000)],
+      ],
+      ['wrong owner', [taxableSnapshot('taxable', 4_000, { ownerPersonId: 'p2' })]],
+      [
+        'wrong tax unit',
+        [
+          taxableSnapshot('taxable', 4_000, {
+            taxUnitMemberPersonIds: ['p2'],
+          }),
+        ],
+      ],
+      ['wrong year', [taxableSnapshot('taxable', 4_000, { taxYear: 2029 })]],
+    ])('fails a mixed action atomically for %s taxable evidence', (_label, snapshots) => {
+      const request = withdrawal({
+        actionId: 'mixed-invalid-taxable',
+        sequence: 1,
+        allocations: [
+          allocation('cash-allocation', 'cash', 100),
+          allocation('taxable-allocation', 'taxable', 100),
+        ],
+      })
+      const result = run(
+        planWith(cash('cash'), taxable('taxable')),
+        [request],
+        balances([['cash', 100], ['taxable', 100]]),
+        aliveEvidence([request]),
+        snapshots,
+      )
+
+      expect(result.evidence[0]).toMatchObject({
+        readiness: 'nonActionable',
+        disposition: {
+          outcome: 'unsupported',
+          executedAmount: 0,
+          reasons: [{ code: 'withdrawal-taxable-basis-unsupported' }],
+        },
+      })
+      expect(result.balances.map((item) => item.closingBalance)).toEqual([
+        100,
+        100,
+      ])
+      expect(
+        result.taxableBases.every(
+          (item) => item.closingCostBasis === item.openingCostBasis,
+        ),
+      ).toBe(true)
+    })
+
+    it('fails stale positive basis at zero FMV closed', () => {
+      const request = withdrawal({
+        actionId: 'stale-basis',
+        sequence: 1,
+        allocations: [allocation('taxable-allocation', 'taxable', 100)],
+      })
+      const result = run(
+        planWith(taxable('taxable')),
+        [request],
+        balances([['taxable', 0]]),
+        aliveEvidence([request]),
+        [taxableSnapshot('taxable', 1)],
+      )
+
+      expect(result.evidence[0]).toMatchObject({
+        disposition: {
+          outcome: 'unsupported',
+          reasons: [{ code: 'withdrawal-taxable-basis-unsupported' }],
+        },
+      })
+      expect(result.taxableBases[0]?.closingCostBasis).toBe(1)
+    })
+
+    it.each([
+      { label: 'half-cent tie', balance: 2, basis: 1, executed: 1 },
+      { label: 'repeating ratio', balance: 3, basis: 1, executed: 2 },
+      {
+        label: 'large bigint intermediate',
+        balance: Number.MAX_SAFE_INTEGER,
+        basis: Number.MAX_SAFE_INTEGER - 2,
+        executed: 4_503_599_627_370_496,
+      },
+    ])('inherits exact classifier arithmetic for $label', ({
+      balance,
+      basis,
+      executed,
+    }) => {
+      const request = withdrawal({
+        actionId: 'exact-arithmetic',
+        sequence: 1,
+        allocations: [allocation('taxable-allocation', 'taxable', executed)],
+      })
+      const result = run(
+        planWith(taxable('taxable')),
+        [request],
+        balances([['taxable', balance]]),
+        aliveEvidence([request]),
+        [taxableSnapshot('taxable', basis)],
+      )
+      const accepted = result.evidence[0]?.readiness === 'actionable'
+        ? result.evidence[0].acceptedSourceEligibility[0]
+        : null
+      if (accepted?.sourceClass !== 'taxable') {
+        throw new Error('expected accepted taxable character')
+      }
+      const recovered =
+        (BigInt(executed) * BigInt(basis)) / BigInt(balance) +
+        (((BigInt(executed) * BigInt(basis)) % BigInt(balance)) * 2n >=
+        BigInt(balance)
+          ? 1n
+          : 0n)
+
+      expect(accepted.basisEvidence).toMatchObject({
+        method: 'planningAggregateBasisRatio',
+        basisRecoveredAmount: Number(recovered),
+        realizedCapitalGainOrLossAmount: Number(BigInt(executed) - recovered),
+      })
+      expect(result.taxableBases[0]?.closingCostBasis).toBe(
+        Number(BigInt(basis) - recovered),
+      )
+    })
+
+    it('keeps joint taxable sources unsupported and unmoved', () => {
+      const request = withdrawal({
+        actionId: 'joint-taxable',
+        sequence: 1,
+        allocations: [allocation('taxable-allocation', 'taxable', 100)],
+      })
+      const result = run(
+        planWith(taxable('taxable', null)),
+        [request],
+        balances([['taxable', 100]]),
+        aliveEvidence([request]),
+        [taxableSnapshot('taxable', 40)],
+      )
+
+      expect(result.evidence[0]).toMatchObject({
+        readiness: 'nonActionable',
+        disposition: {
+          executedAmount: 0,
+          reasons: [{ code: 'joint-source-acting-person-mismatch' }],
+        },
+      })
+      expect(result.balances[0]?.closingBalance).toBe(100)
+      expect(result.taxableBases[0]?.closingCostBasis).toBe(40)
+    })
+
+    it('is invariant to plan, balance, and taxable-snapshot permutations', () => {
+      const request = withdrawal({
+        actionId: 'permutation',
+        sequence: 1,
+        allocations: [
+          allocation('b-allocation', 'b-taxable', 300),
+          allocation('a-allocation', 'a-taxable', 200),
+        ],
+      })
+      const execute = (reverse: boolean) => run(
+        planWith(
+          ...(reverse
+            ? [taxable('b-taxable'), taxable('a-taxable')]
+            : [taxable('a-taxable'), taxable('b-taxable')]),
+        ),
+        [request],
+        balances(
+          reverse
+            ? [['b-taxable', 1_000], ['a-taxable', 1_000]]
+            : [['a-taxable', 1_000], ['b-taxable', 1_000]],
+        ),
+        aliveEvidence([request]),
+        reverse
+          ? [taxableSnapshot('b-taxable', 500), taxableSnapshot('a-taxable', 250)]
+          : [taxableSnapshot('a-taxable', 250), taxableSnapshot('b-taxable', 500)],
+      )
+      const forward = execute(false)
+      const reversed = execute(true)
+
+      expect(reversed.evidence).toEqual(forward.evidence)
+      expect(reversed.balances).toEqual(forward.balances)
+      expect(reversed.taxableBases).toEqual(forward.taxableBases)
+    })
+
+    it('returns detached, deeply frozen, deterministically sorted basis evidence', () => {
+      const request = withdrawal({
+        actionId: 'immutable-taxable',
+        sequence: 1,
+        allocations: [allocation('taxable-allocation', 'b-taxable', 100)],
+      })
+      const snapshotB = taxableSnapshot('b-taxable', 40)
+      const snapshotA = taxableSnapshot('a-taxable', 25)
+      const result = run(
+        planWith(taxable('a-taxable'), taxable('b-taxable')),
+        [request],
+        balances([['b-taxable', 100], ['a-taxable', 100]]),
+        aliveEvidence([request]),
+        [snapshotB, snapshotA],
+      )
+      ;(
+        snapshotB.taxUnit.taxUnitMemberPersonIds as unknown as PersonId[]
+      )[0] = asPersonId('changed')
+
+      expect(result.taxableBases.map((item) => item.accountId)).toEqual([
+        'a-taxable',
+        'b-taxable',
+      ])
+      expect(result.taxableBases[1]?.taxUnit.taxUnitMemberPersonIds[0]).toBe('p1')
+      expect(Object.isFrozen(result.taxableBases)).toBe(true)
+      expect(Object.isFrozen(result.taxableBases[1]?.ownership)).toBe(true)
+      expect(Object.isFrozen(result.taxableBases[1]?.taxUnit)).toBe(true)
+    })
   })
 })

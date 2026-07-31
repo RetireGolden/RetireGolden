@@ -45,6 +45,7 @@ const {
   asUsdCents,
   classifyIndividuallyOwnedTaxableWithdrawal,
   executeCashOrdinaryWithdrawals,
+  executeOrdinaryWithdrawals,
   ledgerCentsToPlanDollars,
   parseRetirementActionRequest,
   planDollarsToLedgerCents,
@@ -214,6 +215,71 @@ const taxableCharacter = classifyIndividuallyOwnedTaxableWithdrawal({
 })
 assert.equal(taxableCharacter.taxCharacter[0].kind, 'basisReturn')
 assert.equal(taxableCharacter.taxCharacter[1].kind, 'capitalGain')
+
+const smokeTaxable = {
+  id: 'smoke-taxable',
+  name: 'Smoke Taxable',
+  type: 'taxable',
+  ownerPersonId: 'smoke-person',
+  annualReturnPct: null,
+  balance: 2,
+  costBasis: 1,
+  annualContribution: 0,
+}
+const smokeTaxablePlan = singlePersonPlan({ planningAge: 100 })
+smokeTaxablePlan.household.people = [smokePerson]
+smokeTaxablePlan.accounts = [smokeTaxable]
+const smokeTaxableWithdrawal = {
+  ...smokeWithdrawal,
+  actionId: asActionId('smoke-taxable-execution'),
+  allocations: [{
+    allocationId: asAllocationId('smoke-taxable-execution-allocation'),
+    sourceAccountId: asAccountId('smoke-taxable'),
+    requestedAmount: asUsdCents(100),
+  }],
+}
+const smokeTaxableExecution = executeOrdinaryWithdrawals({
+  year: 2030,
+  plan: smokeTaxablePlan,
+  requests: [smokeTaxableWithdrawal],
+  openingBalances: [{
+    accountId: asAccountId('smoke-taxable'),
+    openingBalance: asUsdCents(200),
+  }],
+  taxableAccountSnapshots: [{
+    accountId: asAccountId('smoke-taxable'),
+    openingCostBasis: asUsdCents(100),
+    ownership: {
+      accountOwnerPersonIds: [asPersonId('smoke-person')],
+      accountOwnershipEvidenceId: 'smoke-execution-ownership',
+      beneficialOwnershipShare: {
+        representation: 'exactRational',
+        numerator: 1,
+        denominator: 1,
+        intermediateArithmetic: 'bigintRational',
+      },
+      attributionEvidenceId: 'smoke-execution-attribution',
+    },
+    taxUnit: {
+      taxUnitId: 'smoke-execution-tax-unit',
+      taxUnitMemberPersonIds: [asPersonId('smoke-person')],
+      federalFilingStatus: 'single',
+      stateFilingStatusId: 'smoke-execution-state-single',
+      taxUnitEvidenceId: 'smoke-execution-tax-unit-evidence',
+      taxYear: 2030,
+    },
+  }],
+  runtimeEvidence: {
+    personAliveEvidence: [{
+      ...smokeEligibilityContext.personAliveEvidence[0],
+      actionId: smokeTaxableWithdrawal.actionId,
+    }],
+  },
+})
+assert.equal(smokeTaxableExecution.evidence[0].disposition.executedAmount, 100)
+assert.equal(smokeTaxableExecution.evidence[0].taxCharacter[0].actionId, 'smoke-taxable-execution')
+assert.equal(smokeTaxableExecution.balances[0].closingBalance, 100)
+assert.equal(smokeTaxableExecution.taxableBases[0].closingCostBasis, 50)
 
 const plan = singlePersonPlan({ planningAge: 90 })
 plan.accounts = [cashAccount('cash', 500_000)]

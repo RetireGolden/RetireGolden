@@ -116,6 +116,7 @@ export {
   type AcceptedCashSourceEligibilityEvidence,
   type AcceptedEquityCompensationSourceEligibilityEvidence,
   type AcceptedOrdinaryWithdrawalSourceEligibilityEvidence,
+  type AcceptedZeroExecutionTaxableSourceEligibilityEvidence,
   type AccountBalanceExecutionEvidence,
   type AccountOpeningBalanceSnapshot,
   type CashActionableExecutionDisposition,
@@ -142,6 +143,9 @@ export {
   type ResolvedCashSourceAllocationExecutionEvidence,
   type ResolvedIndividuallyOwnedSourceAllocationExecutionEvidence,
   type SourceAllocationExecutionEvidence,
+  type TaxableAccountBasisExecutionEvidence,
+  type TaxableAccountOpeningSnapshot,
+  type TaxableSourcePenaltyCoverageEvidence,
 } from './execution.js'
 export {
   classifyIndividuallyOwnedTaxableWithdrawal,

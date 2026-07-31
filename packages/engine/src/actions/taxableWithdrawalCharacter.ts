@@ -118,6 +118,8 @@ export interface AcceptedIndividuallyOwnedTaxableSourceEligibilityEvidence {
 }
 
 interface TaxableWithdrawalTaxCharacterBase {
+  actionId: ActionId
+  allocationId: AllocationId
   sourceAccountId: AccountId
   sourceClass: 'taxable'
   amount: PositiveUsdCents
@@ -502,6 +504,8 @@ export function classifyIndividuallyOwnedTaxableWithdrawal(
   if (basisRecoveredAmount > 0) {
     const amount = asPositiveUsdCents(basisRecoveredAmount)
     taxCharacter.push({
+      actionId: value.actionId,
+      allocationId: value.allocationId,
       sourceAccountId: value.sourceAccountId,
       sourceClass: 'taxable',
       kind: 'basisReturn',
@@ -514,6 +518,8 @@ export function classifyIndividuallyOwnedTaxableWithdrawal(
     const entry = entries[0]!
     const amount = asPositiveUsdCents(Math.abs(signedAmount))
     taxCharacter.push({
+      actionId: value.actionId,
+      allocationId: value.allocationId,
       sourceAccountId: value.sourceAccountId,
       sourceClass: 'taxable',
       kind: signedAmount > 0 ? 'capitalGain' : 'capitalLoss',
