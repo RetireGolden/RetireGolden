@@ -574,6 +574,19 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   Plan-identity-authoritative, runtime-snapshot-bound planning evidence only; all typed blocked and bound
   outcomes remain `movement: notCommitted` and `actionability: notEstablished` and cannot execute or
   simulate an action.
+  The standalone pure `executePlanOwnedNonRothIraAnnualWithdrawals` boundary reruns that Plan coordinator
+  internally, so a caller cannot present a forged coordinated result as commit authority. Every source,
+  eligibility, schedule, or annual-evidence blocking arm passes through unchanged. An all-zero batch
+  establishes normative `refused`/`nonActionable` dispositions with null executed dates and unchanged
+  balances, but claims `movement: noMovement`, not a commit. Only `annualEvidenceBound` can publish
+  `movement: committed` and `actionability: established`, exact opening/closing cents, positive-action
+  execution dates, per-allocation annual tax character, complete penalty coverage for every positive
+  allocation, and final evaluations only for positive ordinary-income exposure,
+  and a collision-checked structural execution evidence ID transitively bound to the Plan inventory,
+  physical eligibility, movement candidate, annual finalization, and candidate binding. A zero action
+  among positive siblings remains refused with no tax or penalty record; a positive partial action keeps
+  `source-balance-trimmed` as its normative reason. This commit boundary is still isolated from the annual
+  simulator and does not establish custodian completion or filing-grade tax adjudication.
   A separate standalone `validateOwnedNonRothIraSeppCurrentPaymentCandidate` boundary can now validate
   one named owned-IRA SEPP scheduled-payment transition against canonical character/distribution
   coverage, explicit election and annual-schedule evidence, no-disqualifying-modification coverage,
@@ -649,6 +662,8 @@ additive with a no-op default, so plans saved before it stay byte-identical.
 [engine/strategies/iraBasis.ts](../../packages/engine/src/strategies/iraBasis.ts),
 [engine/actions/annualIraBasisAllocation.ts](../../packages/engine/src/actions/annualIraBasisAllocation.ts),
 [engine/actions/ownedNonRothIraWithdrawalCharacter.ts](../../packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts),
+[engine/actions/ownedNonRothIraAnnualPlanCoordinator.ts](../../packages/engine/src/actions/ownedNonRothIraAnnualPlanCoordinator.ts),
+[engine/actions/ownedNonRothIraAnnualExecution.ts](../../packages/engine/src/actions/ownedNonRothIraAnnualExecution.ts),
 [engine/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts](../../packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts),
 [engine/actions/ownedNonRothIraSeppAnnualReconciliation.ts](../../packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts),
 [engine/tax/propertySale.ts](../../packages/engine/src/tax/propertySale.ts), threaded through
