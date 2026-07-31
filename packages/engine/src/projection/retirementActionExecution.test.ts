@@ -76,6 +76,28 @@ function equityComp(
   }
 }
 
+function taxable(
+  id: string,
+  balance: number,
+  costBasis: number,
+  ownerPersonId: string | null = 'p1',
+): Account {
+  return {
+    type: 'taxable',
+    id,
+    name: id,
+    ownerPersonId,
+    annualReturnPct: 0,
+    balance,
+    costBasis,
+    interestYieldPct: 0,
+    dividendYieldPct: 0,
+    qualifiedRatio: 0,
+    reinvestDividends: true,
+    annualContribution: 0,
+  }
+}
+
 function parsedAction(input: unknown): RetirementActionRequest {
   const parsed = parseRetirementActionRequest(input)
   if (!parsed.ok) throw new Error(parsed.issues.join('; '))
@@ -389,40 +411,34 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
     expect(year.balances.unrelated).toBe(90_071_992_547_410)
   })
 
-  it('does not report a present unsupported source balance as missing facts', () => {
+  it('executes an individually owned taxable source with aggregate-basis character', () => {
     const plan = basePlan()
-    plan.accounts = [{
-      type: 'taxable',
-      id: 'taxable-a',
-      name: 'Taxable',
-      ownerPersonId: 'p1',
-      annualReturnPct: 0,
-      balance: 100,
-      costBasis: 50,
-      interestYieldPct: 0,
-      dividendYieldPct: 0,
-      qualifiedRatio: 0,
-      reinvestDividends: true,
-      annualContribution: 0,
-    }]
+    plan.accounts = [taxable('taxable-a', 100, 50)]
+    plan.expenses.baseAnnual = 25
     plan.strategies.retirementActions = [
       withdrawal({
-        actionId: 'unsupported-taxable',
+        actionId: 'taxable-sale',
         accountId: 'taxable-a',
         dollars: 25,
       }),
     ]
 
     const year = run(plan).years[0]!
-    const reasonCodes =
-      year.retirementActionExecution?.evidence[0]?.disposition.reasons.map(
-        (reason) => reason.code,
-      ) ?? []
 
-    expect(reasonCodes).toContain('withdrawal-source-type-unsupported')
-    expect(reasonCodes).not.toContain('required-facts-missing')
-    expect(year.balances['taxable-a']).toBe(100)
-    expect(year.withdrawals.total).toBe(0)
+    expect(year.retirementActionExecution?.evidence[0]).toMatchObject({
+      disposition: { outcome: 'executed', executedAmount: 2_500 },
+      taxCharacter: [
+        { sourceClass: 'taxable', kind: 'basisReturn', amount: 1_250 },
+        { sourceClass: 'taxable', kind: 'capitalGain', amount: 1_250 },
+      ],
+    })
+    expect(year.retirementActionExecution?.taxableBases[0]).toMatchObject({
+      openingCostBasis: 5_000,
+      closingCostBasis: 3_750,
+    })
+    expect(year.balances['taxable-a']).toBe(75)
+    expect(year.withdrawals).toMatchObject({ taxable: 25, total: 25 })
+    expect(year.realizedGains).toBe(12.5)
   })
 
   it('uses only a partial action execution and lets legacy planning fund the residual', () => {
@@ -862,7 +878,7 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
     expect(deathYear.balances['cash-a']).toBe(100)
   })
 
-  it('surfaces unsupported current and legacy kinds without changing scalar balances', () => {
+  it('executes taxable while surfacing the remaining unsupported current and legacy kinds', () => {
     const plan = basePlan()
     plan.accounts = [
       {
@@ -997,20 +1013,29 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
     expect(year.retirementActionExecution).toMatchObject({ committed: true })
     expect(year.retirementActionExecution?.evidence).toHaveLength(6)
     expect(
-      year.retirementActionExecution?.evidence.map(
-        (evidence) => evidence.disposition.executedAmount,
+      year.retirementActionExecution?.evidence.filter(
+        (evidence) => evidence.disposition.executedAmount > 0,
       ),
-    ).toEqual([0, 0, 0, 0, 0, 0])
-    expect(year.withdrawals.total).toBe(0)
+    ).toHaveLength(1)
+    expect(
+      year.retirementActionExecution?.evidence.flatMap(
+        (evidence) => evidence.taxCharacter,
+      ),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ sourceClass: 'taxable' }),
+      ]),
+    )
+    expect(year.withdrawals.total).toBe(10)
     expect(year.balances).toMatchObject({
-      taxable: 100.005,
+      taxable: 100.01,
       'employer-traditional': 50,
       ira: 40,
       roth: 0,
     })
   })
 
-  it('does not cent-convert an unsupported noncash action source', () => {
+  it('does not cent-convert an unrepresentable taxable action balance', () => {
     const plan = basePlan()
     plan.accounts = [{
       type: 'taxable',
@@ -1028,7 +1053,7 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
     }]
     plan.strategies.retirementActions = [
       withdrawal({
-        actionId: 'unsupported-noncash',
+        actionId: 'unrepresentable-taxable',
         accountId: 'taxable',
         dollars: 10,
       }),
@@ -1044,8 +1069,548 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
       year.retirementActionExecution?.evidence[0]?.disposition.reasons.map(
         (reason) => reason.code,
       ),
-    ).toContain('withdrawal-source-type-unsupported')
+    ).toContain('required-facts-missing')
     expect(year.balances.taxable).toBe(90_071_992_547_410)
+  })
+
+  it('feeds taxable action gain through tax, MAGI, realized gains, and reporting once', () => {
+    const plan = basePlan()
+    plan.accounts = [
+      cash('cash-for-tax', 100),
+      taxable('taxable-gain', 100, 40),
+    ]
+    plan.expenses.baseAnnual = 50
+    plan.strategies.retirementActions = [
+      withdrawal({
+        actionId: 'gain-sale',
+        accountId: 'taxable-gain',
+        dollars: 50,
+      }),
+    ]
+
+    const year = simulatePlan(validate(plan), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: createFlatTaxCalculator(10),
+    }).years[0]!
+
+    expect(year.retirementActionExecution?.evidence[0]).toMatchObject({
+      disposition: { outcome: 'executed', executedAmount: 5_000 },
+      taxCharacter: [
+        { kind: 'basisReturn', amount: 2_000 },
+        { kind: 'capitalGain', amount: 3_000 },
+      ],
+    })
+    expect(year.retirementActionExecution?.taxableBases[0]).toMatchObject({
+      openingCostBasis: 4_000,
+      closingCostBasis: 2_000,
+    })
+    expect(year.tax).toBeCloseTo(3, 8)
+    expect(year.magi).toBeCloseTo(30, 8)
+    expect(year.realizedGains).toBeCloseTo(30, 8)
+    expect(year.withdrawals).toMatchObject({
+      cash: 3,
+      taxable: 50,
+      total: 53,
+    })
+    expect(year.balances).toMatchObject({
+      'cash-for-tax': 97,
+      'taxable-gain': 50,
+    })
+  })
+
+  it('creates a carryforward from an action loss and uses it against later ordinary income', () => {
+    const plan = basePlan()
+    plan.accounts = [taxable('taxable-loss', 100, 10_100)]
+    plan.expenses.baseAnnual = 100
+    plan.incomes = [{
+      type: 'recurring',
+      id: 'later-income',
+      label: 'Later income',
+      annualAmount: 10_000,
+      startYear: 2027,
+      endYear: 2027,
+      inflationAdjusted: false,
+      taxTreatment: 'ordinary',
+    }]
+    plan.strategies.retirementActions = [
+      withdrawal({
+        actionId: 'loss-sale',
+        accountId: 'taxable-loss',
+        dollars: 100,
+      }),
+    ]
+
+    const rawCapitalInputs: Array<{
+      year: number
+      rawCapital: number | undefined
+    }> = []
+    const [lossYear, laterYear] = simulatePlan(validate(plan), {
+      startYear: 2026,
+      horizonEndYear: 2027,
+      taxCalculator: {
+        compute(input) {
+          rawCapitalInputs.push({
+            year: input.year,
+            rawCapital: input.realizedCapitalGainsBeforeCarryforward,
+          })
+          return 0
+        },
+      },
+    }).years
+
+    expect(lossYear?.retirementActionExecution?.evidence[0]?.taxCharacter).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: 'capitalLoss', amount: 1_000_000 }),
+      ]),
+    )
+    expect(lossYear).toMatchObject({
+      realizedGains: -10_000,
+      capitalLossUsedAgainstOrdinary: 3_000,
+      capitalLossCarryforwardRemaining: 7_000,
+      withdrawals: { taxable: 100, total: 100 },
+    })
+    expect(laterYear).toMatchObject({
+      capitalLossUsedAgainstOrdinary: 3_000,
+      capitalLossCarryforwardRemaining: 4_000,
+    })
+    expect(
+      new Set(
+        rawCapitalInputs
+          .filter((input) => input.year === 2026)
+          .map((input) => input.rawCapital),
+      ),
+    ).toEqual(new Set([-10_000]))
+  })
+
+  it('uses action-adjusted basis for a same-year residual legacy taxable sale', () => {
+    const plan = basePlan()
+    plan.accounts = [taxable('taxable-shared', 100, 40)]
+    plan.expenses.baseAnnual = 75
+    plan.strategies.retirementActions = [
+      withdrawal({
+        actionId: 'action-first',
+        accountId: 'taxable-shared',
+        dollars: 50,
+      }),
+    ]
+
+    const year = run(plan).years[0]!
+
+    expect(year.retirementActionExecution?.taxableBases[0]).toMatchObject({
+      openingCostBasis: 4_000,
+      closingCostBasis: 2_000,
+    })
+    expect(year.withdrawals).toMatchObject({ taxable: 75, total: 75 })
+    expect(year.realizedGains).toBeCloseTo(45, 8)
+    expect(year.balances['taxable-shared']).toBeCloseTo(25, 8)
+  })
+
+  it('executes sequential taxable actions against the prior action closing basis', () => {
+    const plan = basePlan()
+    plan.accounts = [taxable('taxable-sequential', 100, 40)]
+    plan.expenses.baseAnnual = 50
+    plan.strategies.retirementActions = [
+      withdrawal({
+        actionId: 'taxable-first',
+        accountId: 'taxable-sequential',
+        dollars: 25,
+      }),
+      withdrawal({
+        actionId: 'taxable-second',
+        accountId: 'taxable-sequential',
+        dollars: 25,
+        sequence: 2,
+      }),
+    ]
+
+    const year = run(plan).years[0]!
+
+    expect(
+      year.retirementActionExecution?.evidence.map((evidence) =>
+        evidence.taxCharacter
+          .filter((character) => character.kind === 'capitalGain')
+          .map((character) => character.amount),
+      ),
+    ).toEqual([[1_500], [1_500]])
+    expect(year.retirementActionExecution?.taxableBases[0]).toMatchObject({
+      openingCostBasis: 4_000,
+      closingCostBasis: 2_000,
+    })
+    expect(year.withdrawals).toMatchObject({ taxable: 50, total: 50 })
+    expect(year.realizedGains).toBe(30)
+    expect(year.balances['taxable-sequential']).toBe(50)
+  })
+
+  it('refuses a mixed action atomically when taxable basis cannot cross the cent boundary', () => {
+    const plan = basePlan()
+    plan.accounts = [
+      cash('cash-valid', 50),
+      taxable('taxable-invalid-basis', 50, 90_071_992_547_410),
+    ]
+    plan.strategies.retirementActions = [parsedAction({
+      actionId: 'mixed-invalid-basis',
+      kind: 'ordinaryWithdrawal',
+      personId: 'p1',
+      year: 2026,
+      executionSequence: 1,
+      requestedAmount: 2_000,
+      allocations: [
+        {
+          allocationId: 'mixed-cash',
+          sourceAccountId: 'cash-valid',
+          requestedAmount: 1_000,
+        },
+        {
+          allocationId: 'mixed-taxable',
+          sourceAccountId: 'taxable-invalid-basis',
+          requestedAmount: 1_000,
+        },
+      ],
+      purpose: { kind: 'spending' },
+      provenance: { source: 'manual' },
+    })]
+
+    const year = run(plan).years[0]!
+
+    expect(year.retirementActionExecution?.evidence[0]?.disposition).toMatchObject({
+      outcome: 'unsupported',
+      executedAmount: 0,
+      reasons: [{ code: 'withdrawal-taxable-basis-unsupported' }],
+    })
+    expect(year.balances).toMatchObject({
+      'cash-valid': 50,
+      'taxable-invalid-basis': 50,
+    })
+  })
+
+  it('fails closed for ambiguous and jointly owned taxable sources', () => {
+    const ambiguous = basePlan()
+    ambiguous.household.people.push({
+      id: 'p2',
+      name: 'Chris',
+      dob: '1970-01-01',
+      sex: 'average',
+      retirementAge: 65,
+      longevity: { planningAge: 90, source: 'manual' },
+    })
+    ambiguous.accounts = [
+      cash('ambiguous-cash', 50),
+      taxable('ambiguous-taxable', 100, 40),
+    ]
+    ambiguous.strategies.retirementActions = [parsedAction({
+      actionId: 'ambiguous-unit',
+      kind: 'ordinaryWithdrawal',
+      personId: 'p1',
+      year: 2026,
+      executionSequence: 1,
+      requestedAmount: 2_500,
+      allocations: [
+        {
+          allocationId: 'ambiguous-cash-allocation',
+          sourceAccountId: 'ambiguous-cash',
+          requestedAmount: 1_000,
+        },
+        {
+          allocationId: 'ambiguous-taxable-allocation',
+          sourceAccountId: 'ambiguous-taxable',
+          requestedAmount: 1_500,
+        },
+      ],
+      purpose: { kind: 'spending' },
+      provenance: { source: 'manual' },
+    })]
+    const ambiguousYear = run(ambiguous).years[0]!
+    expect(
+      ambiguousYear.retirementActionExecution?.evidence[0]?.disposition.reasons,
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'withdrawal-taxable-basis-unsupported' }),
+      ]),
+    )
+    expect(ambiguousYear.balances['ambiguous-cash']).toBe(50)
+    expect(ambiguousYear.balances['ambiguous-taxable']).toBe(100)
+
+    const joint = basePlan()
+    joint.household.filingStatus = 'marriedFilingJointly'
+    joint.household.people.push({
+      id: 'p2',
+      name: 'Chris',
+      dob: '1970-01-01',
+      sex: 'average',
+      retirementAge: 65,
+      longevity: { planningAge: 90, source: 'manual' },
+    })
+    joint.accounts = [taxable('joint-taxable', 100, 40, null)]
+    joint.strategies.retirementActions = [
+      withdrawal({
+        actionId: 'joint-source',
+        accountId: 'joint-taxable',
+        dollars: 25,
+      }),
+    ]
+    const jointYear = run(joint).years[0]!
+    expect(
+      jointYear.retirementActionExecution?.evidence[0]?.disposition.reasons,
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'joint-source-acting-person-mismatch' }),
+      ]),
+    )
+    expect(jointYear.balances['joint-taxable']).toBe(100)
+  })
+
+  it('keeps cash execution available when an unrelated living member has an invalid action identity', () => {
+    const plan = basePlan()
+    plan.household.filingStatus = 'marriedFilingJointly'
+    plan.household.people.push({
+      id: ' ',
+      name: 'Legacy whitespace identity',
+      dob: '1970-01-01',
+      sex: 'average',
+      retirementAge: 65,
+      longevity: { planningAge: 90, source: 'manual' },
+    })
+    plan.accounts = [
+      cash('valid-cash', 50),
+      taxable('taxable-without-valid-unit', 100, 40),
+    ]
+    plan.expenses.baseAnnual = 10
+    plan.strategies.retirementActions = [
+      withdrawal({
+        actionId: 'valid-cash-action',
+        accountId: 'valid-cash',
+        dollars: 10,
+      }),
+      withdrawal({
+        actionId: 'taxable-invalid-unit',
+        accountId: 'taxable-without-valid-unit',
+        dollars: 10,
+        sequence: 2,
+      }),
+    ]
+
+    const year = run(plan).years[0]!
+
+    expect(
+      year.retirementActionExecution?.evidence.map(
+        (evidence) => evidence.disposition.executedAmount,
+      ),
+    ).toEqual([1_000, 0])
+    expect(
+      year.retirementActionExecution?.evidence[1]?.disposition.reasons,
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'withdrawal-taxable-basis-unsupported' }),
+      ]),
+    )
+    expect(year.retirementActionExecution?.taxableBases).toEqual([])
+    expect(year.withdrawals).toMatchObject({ cash: 10, taxable: 0, total: 10 })
+    expect(year.balances).toMatchObject({
+      'valid-cash': 40,
+      'taxable-without-valid-unit': 100,
+    })
+  })
+
+  it('keeps cash execution available when a named taxable source has a blank owner identity', () => {
+    const plan = basePlan()
+    plan.accounts = [
+      cash('cash-valid-owner', 50),
+      taxable('taxable-blank-owner', 100, 40),
+    ]
+    plan.expenses.baseAnnual = 10
+    plan.strategies.retirementActions = [
+      withdrawal({
+        actionId: 'cash-valid-owner-action',
+        accountId: 'cash-valid-owner',
+        dollars: 10,
+      }),
+      withdrawal({
+        actionId: 'taxable-blank-owner-action',
+        accountId: 'taxable-blank-owner',
+        dollars: 10,
+        sequence: 2,
+      }),
+    ]
+    const executionPlan = validate(plan)
+    const blankOwnerSource = executionPlan.accounts.find(
+      (account) => account.id === 'taxable-blank-owner',
+    )
+    if (blankOwnerSource === undefined) throw new Error('test source missing')
+    blankOwnerSource.ownerPersonId = ' '
+
+    const year = simulatePlan(executionPlan, {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: noTax,
+    }).years[0]!
+
+    expect(
+      year.retirementActionExecution?.evidence.map(
+        (evidence) => evidence.disposition.executedAmount,
+      ),
+    ).toEqual([1_000, 0])
+    expect(
+      year.retirementActionExecution?.evidence[1]?.disposition.reasons,
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'source-owner-mismatch' }),
+      ]),
+    )
+    expect(year.retirementActionExecution?.taxableBases).toEqual([])
+    expect(year.withdrawals).toMatchObject({ cash: 10, taxable: 0, total: 10 })
+    expect(year.balances).toMatchObject({
+      'cash-valid-owner': 40,
+      'taxable-blank-owner': 100,
+    })
+  })
+
+  it('shares one deterministic projected tax unit across individually owned MFJ sources', () => {
+    const plan = basePlan()
+    plan.household.filingStatus = 'marriedFilingJointly'
+    plan.household.people.push({
+      id: 'p2',
+      name: 'Chris',
+      dob: '1970-01-01',
+      sex: 'average',
+      retirementAge: 65,
+      longevity: { planningAge: 90, source: 'manual' },
+    })
+    plan.accounts = [
+      taxable('taxable-p2', 50, 20, 'p2'),
+      taxable('taxable-p1', 50, 20, 'p1'),
+    ]
+    plan.expenses.baseAnnual = 20
+    plan.strategies.retirementActions = [
+      withdrawal({
+        actionId: 'mfj-p1',
+        accountId: 'taxable-p1',
+        personId: 'p1',
+        dollars: 10,
+      }),
+      withdrawal({
+        actionId: 'mfj-p2',
+        accountId: 'taxable-p2',
+        personId: 'p2',
+        dollars: 10,
+        sequence: 2,
+      }),
+    ]
+
+    const year = run(plan).years[0]!
+    const bases = year.retirementActionExecution?.taxableBases ?? []
+
+    expect(bases).toHaveLength(2)
+    expect(new Set(bases.map((basis) => basis.taxUnit.taxUnitId)).size).toBe(1)
+    expect(
+      bases.map((basis) => basis.taxUnit.taxUnitMemberPersonIds),
+    ).toEqual([['p1', 'p2'], ['p1', 'p2']])
+    expect(year.withdrawals).toMatchObject({ taxable: 20, total: 20 })
+    expect(year.balances).toMatchObject({ 'taxable-p1': 40, 'taxable-p2': 40 })
+  })
+
+  it('keeps taxable execution invariant under account order permutation', () => {
+    const left = basePlan()
+    left.accounts = [
+      taxable('taxable-target', 100, 40),
+      cash('cash-unrelated', 25),
+      taxable('taxable-unrelated', 90_071_992_547_410, 0),
+    ]
+    left.strategies.retirementActions = [
+      withdrawal({
+        actionId: 'order-invariant-taxable',
+        accountId: 'taxable-target',
+        dollars: 25,
+      }),
+    ]
+    const right = structuredClone(left)
+    right.accounts.reverse()
+
+    const leftYear = run(left).years[0]!
+    const rightYear = run(right).years[0]!
+
+    expect(leftYear.retirementActionExecution).toEqual(
+      rightYear.retirementActionExecution,
+    )
+    expect(leftYear.balances).toEqual(rightYear.balances)
+    expect(leftYear.realizedGains).toBe(rightYear.realizedGains)
+  })
+
+  it('includes fixed action gain in the conservative optimizer capital base', () => {
+    const plan = basePlan()
+    plan.accounts = [taxable('taxable-optimizer', 100, 40)]
+    plan.expenses.baseAnnual = 50
+    plan.strategies.retirementActions = [
+      withdrawal({
+        actionId: 'optimizer-action-gain',
+        accountId: 'taxable-optimizer',
+        dollars: 50,
+      }),
+    ]
+    const probes: Array<{ year: number; capitalGainsBase: number }> = []
+
+    simulatePlan(validate(plan), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: noTax,
+      captureOptimizerInputs: (probe) => {
+        probes.push({
+          year: probe.year,
+          capitalGainsBase: probe.capitalGainsBase,
+        })
+      },
+    })
+
+    expect(probes).toEqual([{ year: 2026, capitalGainsBase: 30 }])
+  })
+
+  it('fails closed when exact taxable proceeds cannot cross the Plan aggregate boundary', () => {
+    const firstDollars = 90_071_992_547_409.9
+    const secondDollars = 90_071_992_547_409.89
+    const plan = basePlan()
+    plan.accounts = [
+      taxable('huge-taxable-a', firstDollars, firstDollars),
+      taxable('huge-taxable-b', secondDollars, secondDollars),
+    ]
+    plan.strategies.retirementActions = [
+      withdrawal({
+        actionId: 'huge-taxable-a-sale',
+        accountId: 'huge-taxable-a',
+        dollars: firstDollars,
+      }),
+      withdrawal({
+        actionId: 'huge-taxable-b-sale',
+        accountId: 'huge-taxable-b',
+        dollars: secondDollars,
+        sequence: 2,
+      }),
+    ]
+
+    const year = run(plan).years[0]!
+
+    expect(
+      year.retirementActionExecution?.evidence.map(
+        (evidence) => evidence.disposition.executedAmount,
+      ),
+    ).toEqual([0, 0])
+    expect(
+      year.retirementActionExecution?.evidence.flatMap(
+        (evidence) => evidence.disposition.reasons.map((reason) => reason.code),
+      ),
+    ).toEqual([
+      'withdrawal-taxable-basis-unsupported',
+      'required-facts-missing',
+      'withdrawal-taxable-basis-unsupported',
+      'required-facts-missing',
+    ])
+    expect(year.retirementActionExecution?.balances).toEqual([])
+    expect(year.retirementActionExecution?.taxableBases).toEqual([])
+    expect(year.withdrawals).toMatchObject({ taxable: 0, total: 0 })
+    expect(year.realizedGains).toBe(0)
+    expect(year.balances).toMatchObject({
+      'huge-taxable-a': firstDollars,
+      'huge-taxable-b': secondDollars,
+    })
   })
 
   it('preserves empty-schedule projection bytes and account-ID behavior', () => {

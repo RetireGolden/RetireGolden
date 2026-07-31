@@ -36,6 +36,7 @@ export {
   ledgerCentTotalToPlanDollars,
   ledgerCentsToPlanDollars,
   planDollarsToLedgerCents,
+  signedLedgerCentTotalToPlanDollars,
 } from './planBalanceAdapter.js'
 export {
   ACTION_REASON_REGISTRY,

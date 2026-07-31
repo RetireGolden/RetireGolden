@@ -101,12 +101,36 @@ and state calculators, and the depleting pool threads year-to-year through `simu
 basis pools — so every withdrawal/conversion probe inherits the benefit. The results page shows it
 deplete, with a first-year callout and a combined "you can realize ~$X in gains tax-free this year" figure
 (remaining pool + 0%-bracket headroom). It is a **single pool** (no short/long-term split). Legacy taxable
-withdrawals, annual rebalances, and taxable funding of annuity or TIPS purchases use one shared
-planning-dollar aggregate-basis sale calculation. Basis above fair market value is preserved rather than
-capped, so those paths can emit a negative signed result; a full sale recovers all remaining aggregate basis.
+withdrawals, individually owned taxable ordinary-withdrawal actions, annual rebalances, and taxable funding
+of annuity or TIPS purchases use the same aggregate-basis economics. Action execution performs that
+calculation in exact integer cents; the legacy paths use the shared planning-dollar helper. Basis above fair
+market value is preserved rather than capped, so those paths can emit a negative signed result; a full sale
+recovers all remaining aggregate basis.
 This remains a planning aggregate, not tax-lot or wash-sale accounting. The optimizer conservatively floors
-its MILP capital-gain base at zero and learns the signed result only through the authoritative exact-ledger
-re-run.
+its MILP capital-gain base at zero; fixed action character is included in that conservative base, and every
+candidate is repriced by the authoritative exact-ledger re-run.
+
+## Taxable ordinary-withdrawal actions
+
+The annual projection executes a named taxable brokerage source only when it can construct immutable,
+exact-cent evidence for an individually owned account and one unambiguous projected annual tax unit. Supported
+units are a single living member filing single or qualifying surviving spouse, or exactly two living members
+filing jointly. The owner must belong to that unit and has an exact 1/1 beneficial share. Joint brokerage
+ownership, married-filing-separately and other multiple-tax-unit attribution remain unsupported and fail
+closed without moving the account.
+
+Opening fair market value and aggregate basis cross into the action ledger independently. An invalid basis
+therefore produces `withdrawal-taxable-basis-unsupported` without concealing a valid balance. Each sale
+atomically commits its exact closing balance and closing basis; sequential actions use the prior action's
+closing values, and a same-year residual legacy sale uses the action-adjusted balance and basis. Capital-gain
+and capital-loss character is summed in integer cents and crosses back into the annual tax model once. The
+signed result participates in conversion and bracket sizing, withdrawal tax probes, carryforward, federal and
+state tax, MAGI/ACA/IRMAA, optimizer inputs, realized-gain results, and taxable-withdrawal reporting. Sale
+proceeds enter liquidity once and are not also treated as income or as a second account debit.
+
+This is still annual, planning-grade valuation: the account's current annual state is used for the action even
+when the request has a civil execution date. Dated market valuation, tax lots, wash sales, joint attribution,
+and filed-return state tax-unit reconstruction are not modeled.
 
 ## Taxable brokerage yield
 

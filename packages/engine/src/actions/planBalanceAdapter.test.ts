@@ -4,6 +4,7 @@ import {
   ledgerCentTotalToPlanDollars,
   ledgerCentsToPlanDollars,
   planDollarsToLedgerCents,
+  signedLedgerCentTotalToPlanDollars,
 } from './planBalanceAdapter.js'
 
 describe('Plan dollar / exact-cent adapter', () => {
@@ -49,6 +50,17 @@ describe('Plan dollar / exact-cent adapter', () => {
     )
     expect(() =>
       ledgerCentTotalToPlanDollars(18_014_398_509_481_979n),
+    ).toThrow(RangeError)
+  })
+
+  it('crosses signed aggregate cents exactly without producing negative zero', () => {
+    expect(signedLedgerCentTotalToPlanDollars(12_345n)).toBe(123.45)
+    expect(signedLedgerCentTotalToPlanDollars(-12_345n)).toBe(-123.45)
+    const zero = signedLedgerCentTotalToPlanDollars(0n)
+    expect(zero).toBe(0)
+    expect(Object.is(zero, -0)).toBe(false)
+    expect(() =>
+      signedLedgerCentTotalToPlanDollars(-18_014_398_509_481_979n),
     ).toThrow(RangeError)
   })
 })
