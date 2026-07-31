@@ -299,6 +299,10 @@ rules and citations: [domain rules §16](../domain/domain-rules-reference.md#16-
   Form 8606 line 7, line 8, QCD-awaiting-stage, and non-Form-8606/foreign-pool activity. Those categories
   are routing inputs only: the API changes no balance or basis, calculates no character, tax, or penalty,
   and leaves movement uncommitted and actionability unestablished.
+  The standalone-only `buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput` boundary now
+  binds the canonical candidate, complete owner-wide December 31 pool, basis, and contribution-window
+  evidence into a frozen classifier input without classifying or executing it; see
+  [domain rules §16](../domain/domain-rules-reference.md#16-retirement-action-source-integrity).
   Separately, `validateOwnedNonRothIraSeppCurrentPaymentCandidate` validates one current named SEPP
   payment as a provisional schedule-state transition. Its raw payment record references the canonical
   distribution and prior terminal state rather than restating caller-computed actual gross, character,
