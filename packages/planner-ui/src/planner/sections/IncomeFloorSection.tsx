@@ -282,8 +282,8 @@ function LivePricesCard() {
           <p className="card-hint">
             {snapshot.priceDateIso === null
               ? `${snapshot.tips.length} TIPS from an imported file, dated by your download (the FedInvest CSV carries no date)`
-              : `${snapshot.tips.length} TIPS priced ${snapshot.priceDateIso}`}{' '}
-           , per $100 face, before inflation index ratio.
+              : `${snapshot.tips.length} TIPS priced ${snapshot.priceDateIso}`}. Prices are per $100 face, before the
+            inflation index ratio.
           </p>
           {/* An imported or previous-day snapshot is not fresh: keep the fetch available. */}
           {snapshot.source === 'import' || snapshot.priceDateIso !== latestPriceDateIso() ? (

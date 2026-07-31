@@ -104,7 +104,7 @@ function ScenarioTable({ rows, personName }: { rows: SurvivorScenarioRow[]; pers
                   </>
                 ) : (
                   <>
-                   , <div className="small">no surcharge to relieve at this timing</div>
+                    —<div className="small">no surcharge to relieve at this timing</div>
                   </>
                 )}
               </td>

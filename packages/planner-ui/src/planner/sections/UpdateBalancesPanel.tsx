@@ -526,8 +526,8 @@ export function UpdateBalancesPanel() {
       <h2>Update balances from a broker CSV</h2>
       <p className="card-hint">
         Download the positions/holdings CSV from Schwab, Fidelity, or Vanguard and refresh your account
-        balances (and cost basis where the file has it) without retyping. Only balance and cost basis change, 
-        your return, yield, contribution, and beneficiary settings are left alone. The file is read on this
+        balances (and cost basis where the file has it) without retyping. Only balance and cost basis change.
+        Your return, yield, contribution, and beneficiary settings are left alone. The file is read on this
         device only. To start a whole new plan from a file, use Import &amp; migrate on the home screen.
       </p>
       {message ? (

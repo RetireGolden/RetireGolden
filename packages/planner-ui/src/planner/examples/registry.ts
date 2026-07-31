@@ -319,7 +319,7 @@ export const EXAMPLE_PLANS: ExamplePlan[] = [
     id: 'brokerage-bridge-401k',
     title: '401(k) plus brokerage bridge',
     summary: 'Same couple and gross savings budget as the control, but 401(k) contributions stop near the employer-match cap and the rest builds a taxable brokerage bridge for retiring at 52.',
-    teaches: 'The brokerage basis funds ages 52–59½ at low capital-gains rates and lower current-year ACA MAGI, so more credits survive and no penalties apply. The gross budget is held constant, so this plan pays more tax during accumulation: and still outlives the control by years. Load with "All-in 401(k) (no bridge)" and Compare.',
+    teaches: 'The brokerage basis funds ages 52–59½ at low capital-gains rates and lower current-year ACA MAGI, so more credits survive and no penalties apply. The gross budget is held constant, so this plan pays more tax during accumulation, and still outlives the control by years. Load with "All-in 401(k) (no bridge)" and Compare.',
     themeTags: ['fire', 'accumulation'],
     learnSlug: 'example-brokerage-bridge-401k',
     lookFor: 'Penalty-free bridge years with lower net marketplace premiums and later depletion than the control. Then try the conversion scenario: even 12%-bracket conversions can backfire when the bridge fund is also the spending money.',

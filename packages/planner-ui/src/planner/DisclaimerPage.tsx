@@ -33,7 +33,7 @@ export function DisclaimerPage() {
 
       <h2>Rules change</h2>
       <p>
-        Tax law, contribution limits, Medicare premiums, ACA subsidies, and Social Security rules change frequently, 
+        Tax law, contribution limits, Medicare premiums, ACA subsidies, and Social Security rules change frequently,
         sometimes retroactively. Parameter tables here are updated on a best-effort basis and may be out of date or
         wrong. Verify any number that matters against official sources (irs.gov, ssa.gov, medicare.gov,
         healthcare.gov).

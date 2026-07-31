@@ -165,7 +165,7 @@ export function mapProjectionLabExport(
     review.push({
       status: 'defaulted',
       source: `Birth year ${birthYear}`,
-      detail: 'Date of birth set to July 1 of your ProjectionLab birth year, set the exact date on the Household screen.',
+      detail: 'Date of birth set to July 1 of your ProjectionLab birth year. Set the exact date on the Household screen.',
       locator: jsonPath(`${userKey}.birthYear`),
       confidence: 'assumed',
       target: 'household.people[0].dob',
@@ -174,7 +174,7 @@ export function mapProjectionLabExport(
     review.push({
       status: 'unmapped',
       source: 'Date of birth',
-      detail: 'The export carried no readable birth year, set your date of birth on the Household screen.',
+      detail: 'The export carried no readable birth year. Set your date of birth on the Household screen.',
       locator: { kind: 'none', note: 'the export carried no readable birth year' },
       confidence: 'unmapped',
     })
@@ -347,7 +347,7 @@ export function mapProjectionLabExport(
           review.push({
             status: 'defaulted',
             source: name,
-            detail: 'No monthly payment in the export, set the real payment on the Accounts screen.',
+            detail: 'No monthly payment in the export. Set the real payment on the Accounts screen.',
             locator: { kind: 'none', note: 'no monthly payment in the export' },
             confidence: 'assumed',
             target: `accounts[${accountIndex}].monthlyPayment`,
@@ -417,7 +417,7 @@ export function mapProjectionLabExport(
       review.push({
         status: 'unmapped',
         source: name,
-        detail: 'Social Security needs a claim age and benefit basis, set it up on the Social Security screen (you can import your SSA statement there).',
+        detail: 'Social Security needs a claim age and benefit basis. Set it up on the Social Security screen (you can import your SSA statement there).',
         locator: jsonPath(incomePath),
         confidence: 'unmapped',
       })
@@ -471,7 +471,7 @@ export function mapProjectionLabExport(
     review.push({
       status: 'unmapped',
       source: 'Spending',
-      detail: 'No readable expenses in the export, set baseline spending on the Spending screen.',
+      detail: 'No readable expenses in the export. Set baseline spending on the Spending screen.',
       locator: { kind: 'none', note: 'no readable expenses in the export' },
       confidence: 'unmapped',
     })

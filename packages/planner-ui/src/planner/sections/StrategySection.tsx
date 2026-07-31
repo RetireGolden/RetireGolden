@@ -283,8 +283,8 @@ export function StrategySection() {
       <div className="card">
         <h2>Itemized deductions</h2>
         <p className="card-hint">
-          Federal tax uses the larger of these and the standard deduction. Most retirees take the standard deduction, 
-          turn this on only if your deductible taxes, mortgage interest, and charitable gifts together exceed it. Enter
+          Federal tax uses the larger of these and the standard deduction. Most retirees take the standard deduction.
+          Turn this on only if your deductible taxes, mortgage interest, and charitable gifts together exceed it. Enter
           today's dollars.
         </p>
         <div className="form-grid">
@@ -324,7 +324,7 @@ export function StrategySection() {
         <h2>Capital loss carryforward</h2>
         <p className="card-hint">
           Net capital losses you're carrying from prior years' tax returns (Schedule D line 16). The plan nets them
-          against future realized gains first, then deducts up to $3,000/yr against other income, until used up, 
+          against future realized gains first, then deducts up to $3,000/yr against other income, until used up,
           lowering tax and AGI (and the IRMAA/ACA costs AGI drives) in early-retirement years spent drawing down a
           brokerage. Most users leave this at $0. <LearnLink {...LEARN.lossHarvesting} />
         </p>

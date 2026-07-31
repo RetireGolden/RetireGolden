@@ -285,7 +285,7 @@ export function ImportPage() {
     <div className="import-page">
       <h1>Import &amp; migrate</h1>
       <p className="card-hint">
-        Start a RetireGolden plan from files you already have. Every file is read entirely on this device, 
+        Start a RetireGolden plan from files you already have. Every file is read entirely on this device,
         nothing is uploaded anywhere, and you review exactly what mapped before anything is saved. Restoring
         a RetireGolden backup lives on the <Link to="/">planner home</Link>.
       </p>

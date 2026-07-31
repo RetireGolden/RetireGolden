@@ -89,7 +89,7 @@ export function seedPlanFromTenForty(
   // missed or unregistered selection surfaces here instead of silently seeding
   // the draft — and its state taxes — with a state the user never chose.
   if (inputs.state.trim() === '') {
-    return { ok: false, message: 'Select your state of residence, it drives the state-tax estimate.' }
+    return { ok: false, message: 'Select your state of residence. It drives the state-tax estimate.' }
   }
   if (!/^[A-Za-z]{2}$/.test(inputs.state)) return { ok: false, message: 'Enter your state as its two-letter code.' }
   const dollarFields: Array<[keyof TenFortyInputs, number]> = [
@@ -288,7 +288,7 @@ export function seedPlanFromTenForty(
     review.push({
       status: 'unmapped',
       source: 'Social Security',
-      detail: 'No benefits on the return, set up future Social Security on its screen (your SSA statement XML imports there).',
+      detail: 'No benefits on the return. Set up future Social Security on its screen (your SSA statement XML imports there).',
       locator: { kind: 'none', note: 'no Social Security benefits were entered from the return' },
       confidence: 'unmapped',
     })

@@ -556,7 +556,7 @@ export function buildRefreshDelta(
         status: 'skipped',
         source: candidate.source.accountLabel,
         detail:
-          'More than one file account is assigned to this plan account, so neither was applied, assign each plan account at most once.',
+          'More than one file account is assigned to this plan account, so neither was applied. Assign each plan account at most once.',
         locator: aggregateLocator('duplicate target, refresh blocked'),
         confidence: 'unmapped',
       })
