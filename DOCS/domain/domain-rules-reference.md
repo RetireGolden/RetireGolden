@@ -510,8 +510,14 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   once-rounded basis total across positive actions in canonical date/sequence/action/allocation order.
   Zero executions receive no ledger entry or character. Line 7 and line 8 remain distinct; if their
   independently required rounding would recover more than the annual basis, classification fails closed
-  instead of emitting contradictory evidence. This substrate does not yet establish withdrawal
-  eligibility/penalty evidence or execute/simulate an IRA action.
+  instead of emitting contradictory evidence. The pure penalty-prerequisite boundary then considers only
+  positive ordinary-income character, computes age 59½ as 714 calendar months with month-end clamping,
+  and applies 10% for traditional/SEP or 25% strictly within a SIMPLE IRA's first 24 calendar months
+  (10% at and after that boundary). Candidate amounts use exact bigint rational arithmetic and nearest-cent
+  half-up quantization. A distribution at or after 59½ can receive final zero-penalty age coverage; a
+  distribution before 59½ produces only an exception-evaluation-required candidate, never a conclusion
+  that the penalty applies. These action substrates do not establish withdrawal eligibility or
+  execute/simulate an IRA action.
 - **Fixed-asset disposition.** Setting `costBasis` on a property switches its planned sale from the legacy
   tax-free `expectedNetProceeds` estimate to exact treatment: gain = sale price − selling costs
   (`sellingCostPct`) − basis; depreciation (`depreciationRecapture`) is ordinary income and never excludable;

@@ -225,8 +225,12 @@ rules and citations: [domain rules §16](../domain/domain-rules-reference.md#16-
   tax-free basis, pro-rata across the owner's aggregated IRAs. The actions package also exposes a pure
   annual exact-cent substrate for owned traditional/SEP/SIMPLE IRAs: it requires a prevalidated complete
   owner-wide pool and complete line 1-8 facts, builds separate once-rounded line-7/line-8 ledgers, and
-  derives allocation-bound line-7 basis-return/ordinary-income character. It does not establish
-  eligibility or penalties, move balances, or change the legacy projection path.
+  derives allocation-bound line-7 basis-return/ordinary-income character. A second pure prerequisite
+  boundary binds that character to explicit owner, source, and civil-date evidence; excludes basis from
+  penalty exposure; applies the exact 59½ and SIMPLE two-year thresholds; and calculates an exact-cent
+  candidate before exceptions. Under 59½ it requires a separate exception evaluation and never asserts
+  that a penalty applies. Neither boundary establishes eligibility, moves balances, or changes the legacy
+  projection path.
 - **Property disposition.** Setting `costBasis` on a property replaces the tax-free `expectedNetProceeds`
   estimate with exact treatment: capital gain above basis net of `sellingCostPct`, the §121 primary-residence
   exclusion, and ordinary-income depreciation recapture. Gains flow through the capital-gains stack.
