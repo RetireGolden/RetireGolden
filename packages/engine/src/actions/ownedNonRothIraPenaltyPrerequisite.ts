@@ -21,6 +21,14 @@ import {
   type OwnedNonRothIraSubtype,
   type OwnedNonRothIraWithdrawalClassification,
 } from './ownedNonRothIraWithdrawalCharacter.js'
+import {
+  buildOwnedNonRothIraSeppAnnualDistributionInventoryEvidence,
+  reconcileOwnedNonRothIraSeppAnnualSchedule,
+  type CompleteOwnedNonRothIraSeppAnnualReconciliationEvidence,
+  type OwnedNonRothIraSeppAnnualReconciledPaymentEvidence,
+  type ReconcileOwnedNonRothIraSeppAnnualScheduleInput,
+  type ReconcileOwnedNonRothIraSeppAnnualScheduleResult,
+} from './ownedNonRothIraSeppAnnualReconciliation.js'
 
 export interface OwnedNonRothIraPenaltyOwnerEvidence {
   predicate: 'ownerBirthDateForIraPenaltyAgeThreshold'
@@ -117,10 +125,30 @@ export interface EvaluateOwnedNonRothIraPenaltyPrerequisitesInput {
     readonly Readonly<OwnedNonRothIraOwnerAliveEvidence>[]
   iraSeppStatusEvidence?:
     readonly Readonly<OwnedNonRothIraNoSeppStatusEvidence>[]
+  iraSeppScheduleRoutes?:
+    readonly Readonly<OwnedNonRothIraSeppPenaltyScheduleRouteInput>[]
   noOtherExceptionAttestations?:
     readonly Readonly<NoOtherStatutoryExceptionClaimedAttestation>[]
   simpleParticipationEvidence:
     readonly Readonly<SimpleIraParticipationEvidence>[]
+}
+
+export interface OwnedNonRothIraSeppPenaltyScheduleRouteInput {
+  sourceAccountId: AccountId
+  electionId: string
+  scheduleId: string
+  annualReconciliationInput: Readonly<Omit<
+    ReconcileOwnedNonRothIraSeppAnnualScheduleInput,
+    'ownerPersonId' | 'taxYear' | 'distributionInventory'
+  >>
+}
+
+export interface OwnedNonRothIraSeppPenaltyScheduleReconciliation {
+  sourceAccountId: AccountId
+  electionId: string
+  scheduleId: string
+  reconciliation:
+    Readonly<ReconcileOwnedNonRothIraSeppAnnualScheduleResult>
 }
 
 export interface OwnedNonRothIraPenaltyAgeThresholdEvidence {
@@ -207,6 +235,18 @@ export interface DisabilityQualifiedPenaltyEvaluation
   outcome: 'disabilityQualified'
   evaluatedOrdinaryIncomeExposureAmount: UsdCents
   disabilityEvent: Readonly<QualifiedDisabilityEventEvidence>
+  finalPenaltyAmount: 0
+  finalEvidenceId: string
+}
+
+export interface IraSeppQualifiedPenaltyEvaluation
+  extends OwnedNonRothIraPenaltyEvaluationBase {
+  outcome: 'iraSeppQualified'
+  evaluatedOrdinaryIncomeExposureAmount: UsdCents
+  annualReconciliationEvidence:
+    Readonly<CompleteOwnedNonRothIraSeppAnnualReconciliationEvidence>
+  reconciledPayment:
+    Readonly<OwnedNonRothIraSeppAnnualReconciledPaymentEvidence>
   finalPenaltyAmount: 0
   finalEvidenceId: string
 }
@@ -321,6 +361,7 @@ export interface PenaltyAppliesEvaluation
 export type OwnedNonRothIraPenaltyPrerequisiteEvaluation =
   | Age59HalfReachedPenaltyEvaluation
   | DisabilityQualifiedPenaltyEvaluation
+  | IraSeppQualifiedPenaltyEvaluation
   | PenaltyAppliesEvaluation
   | ExceptionEvaluationRequiredPenaltyPrerequisite
 
@@ -330,6 +371,8 @@ export interface EvaluateOwnedNonRothIraPenaltyPrerequisitesResult {
   ageThresholdEvidence: Readonly<OwnedNonRothIraPenaltyAgeThresholdEvidence>
   coverage:
     readonly Readonly<OwnedNonRothIraPenaltyCharacterCoverageEvidence>[]
+  iraSeppScheduleReconciliations:
+    readonly Readonly<OwnedNonRothIraSeppPenaltyScheduleReconciliation>[]
   evaluations:
     readonly Readonly<OwnedNonRothIraPenaltyPrerequisiteEvaluation>[]
 }
@@ -666,14 +709,87 @@ function validateSourceEvidence(
   return result
 }
 
+function buildPenaltyCharacterCoverage(
+  withdrawal: Readonly<OwnedNonRothIraWithdrawalClassification>,
+  sourceEvidence: Readonly<OwnedNonRothIraPenaltySourceEvidence>,
+  ownerPersonId: PersonId,
+  annualBasisEvidenceId: string,
+  line7AllocationEvidenceId: string,
+  ageThresholdEvidenceId: string,
+): OwnedNonRothIraPenaltyCharacterCoverageEvidence {
+  const character = validateCharacter(
+    withdrawal,
+    line7AllocationEvidenceId,
+  )
+  if (character.basisEvidenceId !== annualBasisEvidenceId) {
+    throw new RangeError(
+      'IRA withdrawal character must bind the supplied annual basis evidence',
+    )
+  }
+  const evidenceId = stableId(
+    'owned-ira-penalty-character-coverage',
+    [
+      withdrawal.actionId,
+      withdrawal.allocationId,
+      withdrawal.sourceAccountId,
+      ownerPersonId,
+      withdrawal.subtype,
+      sourceEvidence.evaluationDate,
+      withdrawal.executedAmount,
+      character.basisReturnAmount,
+      character.ordinaryIncomeAmount,
+      annualBasisEvidenceId,
+      line7AllocationEvidenceId,
+      character.characterEvidenceIds,
+      sourceEvidence,
+      ageThresholdEvidenceId,
+    ],
+  )
+  return {
+    predicate:
+      'completeOwnedNonRothIraPenaltyCharacterCoverageForAllocation',
+    actionId: withdrawal.actionId,
+    allocationId: withdrawal.allocationId,
+    sourceAccountId: withdrawal.sourceAccountId,
+    ownerPersonId,
+    subtype: withdrawal.subtype,
+    evaluationDate: sourceEvidence.evaluationDate,
+    executedAmount: withdrawal.executedAmount,
+    basisReturnExcludedAmount: character.basisReturnAmount,
+    ordinaryIncomeExposureAmount: character.ordinaryIncomeAmount,
+    basisEvidenceId: annualBasisEvidenceId,
+    line7AllocationEvidenceId,
+    characterEvidenceIds: character.characterEvidenceIds,
+    sourceEvidenceIds: {
+      distributionDateEvidenceId:
+        sourceEvidence.distributionDateEvidenceId,
+      accountOwnershipEvidenceId:
+        sourceEvidence.accountOwnershipEvidenceId,
+      iraClassificationEvidenceId:
+        sourceEvidence.iraClassificationEvidenceId,
+    },
+    ageThresholdEvidenceId,
+    evidenceId,
+  }
+}
+
+function scheduleRouteKey(
+  sourceAccountId: AccountId,
+  electionId: string,
+  scheduleId: string,
+): string {
+  return JSON.stringify([sourceAccountId, electionId, scheduleId])
+}
+
 /**
  * Builds the exact early-distribution-penalty prerequisite boundary for
  * finalized owned traditional, SEP, and SIMPLE IRA line-7 character.
  *
- * An under-59½ result remains only a candidate unless exact negative evidence
+ * An under-59½ result may receive final zero-penalty treatment from a complete
+ * annual SEPP reconciliation rebuilt over this evaluator's canonical character
+ * coverage. Otherwise it remains a candidate unless exact negative evidence
  * rejects death, IRA SEPP, disability, and the planning-attested other
- * statutory-exception scope. A final penalty outcome still establishes no
- * action readiness or committed movement.
+ * statutory-exception scope. No outcome establishes readiness or movement.
  */
 export function evaluateOwnedNonRothIraPenaltyPrerequisites(
   input: Readonly<EvaluateOwnedNonRothIraPenaltyPrerequisitesInput>,
@@ -1014,6 +1130,245 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
     )
   }
 
+  // Character coverage is canonical prerequisite evidence and is also the
+  // complete distribution inventory source for every submitted SEPP route.
+  // Derive it once, before interpreting either positive or negative SEPP
+  // evidence, so a caller cannot select a narrower schedule inventory.
+  const coverage: OwnedNonRothIraPenaltyCharacterCoverageEvidence[] = []
+  const coverageByKey = new Map<
+    string,
+    OwnedNonRothIraPenaltyCharacterCoverageEvidence
+  >()
+  const coverageBySource = new Map<
+    AccountId,
+    OwnedNonRothIraPenaltyCharacterCoverageEvidence[]
+  >()
+  for (const withdrawal of characterization.withdrawals) {
+    const key = identityKey(withdrawal.actionId, withdrawal.allocationId)
+    const sourceEvidence = sourceEvidenceByKey.get(key)
+    if (sourceEvidence === undefined) {
+      throw new Error('Canonical IRA withdrawal lost its source evidence')
+    }
+    const characterCoverage = buildPenaltyCharacterCoverage(
+      withdrawal,
+      sourceEvidence,
+      ownerPersonId,
+      annualBasisEvidenceId,
+      line7AllocationEvidenceId,
+      ageThresholdEvidenceId,
+    )
+    coverage.push(characterCoverage)
+    coverageByKey.set(key, characterCoverage)
+    const sourceCoverage = coverageBySource.get(withdrawal.sourceAccountId)
+    if (sourceCoverage === undefined) {
+      coverageBySource.set(withdrawal.sourceAccountId, [characterCoverage])
+    } else {
+      sourceCoverage.push(characterCoverage)
+    }
+  }
+
+  const submittedSeppRouteSourceIds = new Set<AccountId>()
+  const seenSeppRouteKeys = new Set<string>()
+  const seenSeppElectionIds = new Set<string>()
+  const seenSeppScheduleIds = new Set<string>()
+  const normalizedSeppRoutes = (input.iraSeppScheduleRoutes ?? []).map(
+    (routeInput) => {
+      const sourceAccountId = accountIdSchema.parse(
+        routeInput.sourceAccountId,
+      )
+      const electionId = nonblankId(
+        routeInput.electionId,
+        'IRA SEPP route election ID',
+      )
+      const scheduleId = nonblankId(
+        routeInput.scheduleId,
+        'IRA SEPP route schedule ID',
+      )
+      const routeKey = scheduleRouteKey(
+        sourceAccountId,
+        electionId,
+        scheduleId,
+      )
+      if (seenSeppRouteKeys.has(routeKey)) {
+        throw new RangeError('IRA SEPP schedule routes must be unique')
+      }
+      if (seenSeppElectionIds.has(electionId)) {
+        throw new RangeError(
+          'IRA SEPP election IDs must be unique across routes',
+        )
+      }
+      if (seenSeppScheduleIds.has(scheduleId)) {
+        throw new RangeError(
+          'IRA SEPP schedule IDs must be unique across routes',
+        )
+      }
+      if (submittedSeppRouteSourceIds.has(sourceAccountId)) {
+        throw new RangeError(
+          'IRA SEPP schedule routes must include at most one route per source account',
+        )
+      }
+      seenSeppRouteKeys.add(routeKey)
+      seenSeppElectionIds.add(electionId)
+      seenSeppScheduleIds.add(scheduleId)
+      submittedSeppRouteSourceIds.add(sourceAccountId)
+      if (!coverageBySource.has(sourceAccountId)) {
+        throw new RangeError(
+          'IRA SEPP schedule route source must match canonical character coverage',
+        )
+      }
+      const annualInput = routeInput.annualReconciliationInput
+      if (annualInput === null || typeof annualInput !== 'object') {
+        throw new TypeError(
+          'IRA SEPP schedule route requires annual reconciliation input',
+        )
+      }
+      const source = annualInput.sourceEvidence
+      const election = annualInput.electionEvidence
+      const annualSchedule = annualInput.annualScheduleEvidence
+      const noModification = annualInput.noModificationEvidence
+      const opening = annualInput.openingStateEvidence
+      const priorHistory = annualInput.priorElectionHistoryEvidence
+      if (
+        (source !== undefined &&
+          source.sourceAccountId !== sourceAccountId) ||
+        (election !== undefined &&
+          (election.sourceAccountId !== sourceAccountId ||
+            election.electionId !== electionId ||
+            election.scheduleId !== scheduleId)) ||
+        (annualSchedule !== undefined &&
+          (annualSchedule.sourceAccountId !== sourceAccountId ||
+            annualSchedule.electionId !== electionId ||
+            annualSchedule.scheduleId !== scheduleId)) ||
+        (noModification !== undefined &&
+          (noModification.sourceAccountId !== sourceAccountId ||
+            noModification.electionId !== electionId ||
+            noModification.scheduleId !== scheduleId)) ||
+        (opening !== undefined &&
+          (opening.sourceAccountId !== sourceAccountId ||
+            opening.electionId !== electionId ||
+            opening.scheduleId !== scheduleId)) ||
+        (priorHistory !== undefined &&
+          (priorHistory.sourceAccountId !== sourceAccountId ||
+            priorHistory.electionId !== electionId ||
+            priorHistory.scheduleId !== scheduleId)) ||
+        annualInput.payments?.some(({ currentPaymentEvidence }) =>
+          currentPaymentEvidence.sourceAccountId !== sourceAccountId ||
+          currentPaymentEvidence.electionId !== electionId ||
+          currentPaymentEvidence.scheduleId !== scheduleId)
+      ) {
+        throw new RangeError(
+          'IRA SEPP schedule route must exactly bind its source, election, and schedule evidence',
+        )
+      }
+      return {
+        sourceAccountId,
+        electionId,
+        scheduleId,
+        routeKey,
+        annualInput,
+      }
+    },
+  ).sort((left, right) =>
+    left.routeKey < right.routeKey
+      ? -1
+      : left.routeKey > right.routeKey
+        ? 1
+        : 0,
+  )
+
+  const iraSeppScheduleReconciliations:
+    OwnedNonRothIraSeppPenaltyScheduleReconciliation[] = []
+  const qualifiedSeppByKey = new Map<
+    string,
+    Readonly<{
+      annualReconciliationEvidence:
+        CompleteOwnedNonRothIraSeppAnnualReconciliationEvidence
+      reconciledPayment:
+        OwnedNonRothIraSeppAnnualReconciledPaymentEvidence
+    }>
+  >()
+  for (const route of normalizedSeppRoutes) {
+    const routeCoverage = coverageBySource.get(route.sourceAccountId)
+    if (routeCoverage === undefined || routeCoverage.length === 0) {
+      throw new Error('Canonical IRA SEPP route lost its character coverage')
+    }
+    const distributionInventory =
+      buildOwnedNonRothIraSeppAnnualDistributionInventoryEvidence({
+        predicate:
+          'completeOwnedNonRothIraSeppAnnualDistributionInventory',
+        electionId: route.electionId,
+        scheduleId: route.scheduleId,
+        participantPersonId: ownerPersonId,
+        sourceAccountId: route.sourceAccountId,
+        taxYear,
+        characterCoverages: routeCoverage,
+      })
+    const reconciliation = reconcileOwnedNonRothIraSeppAnnualSchedule({
+      ownerPersonId,
+      taxYear,
+      sourceEvidence: route.annualInput.sourceEvidence,
+      electionEvidence: route.annualInput.electionEvidence,
+      annualScheduleEvidence: route.annualInput.annualScheduleEvidence,
+      noModificationEvidence: route.annualInput.noModificationEvidence,
+      openingStateEvidence: route.annualInput.openingStateEvidence,
+      priorElectionHistoryEvidence:
+        route.annualInput.priorElectionHistoryEvidence,
+      distributionInventory,
+      payments: route.annualInput.payments,
+    })
+    iraSeppScheduleReconciliations.push({
+      sourceAccountId: route.sourceAccountId,
+      electionId: route.electionId,
+      scheduleId: route.scheduleId,
+      reconciliation,
+    })
+    if (reconciliation.status !== 'reconciled') continue
+    const annualEvidence = reconciliation.evidence
+    if (
+      annualEvidence.sourceAccountId !== route.sourceAccountId ||
+      annualEvidence.electionId !== route.electionId ||
+      annualEvidence.scheduleId !== route.scheduleId ||
+      annualEvidence.participantPersonId !== ownerPersonId ||
+      annualEvidence.taxYear !== taxYear
+    ) {
+      throw new Error(
+        'Complete IRA SEPP reconciliation lost its canonical route binding',
+      )
+    }
+    for (const payment of annualEvidence.payments) {
+      const key = identityKey(payment.actionId, payment.allocationId)
+      const canonicalCoverage = coverageByKey.get(key)
+      if (
+        canonicalCoverage === undefined ||
+        canonicalCoverage.sourceAccountId !== route.sourceAccountId ||
+        payment.characterCoverageEvidenceId !==
+          canonicalCoverage.evidenceId ||
+        payment.distributionDate !== canonicalCoverage.evaluationDate ||
+        payment.scheduledGrossAmount !== canonicalCoverage.executedAmount ||
+        payment.actualGrossAmount !== canonicalCoverage.executedAmount ||
+        payment.basisReturnExcludedAmount !==
+          canonicalCoverage.basisReturnExcludedAmount ||
+        payment.prospectiveOrdinaryIncomeAmount !==
+          canonicalCoverage.ordinaryIncomeExposureAmount ||
+        payment.currentDistributionEvidenceId !==
+          canonicalCoverage.sourceEvidenceIds.distributionDateEvidenceId
+      ) {
+        throw new RangeError(
+          'Complete IRA SEPP reconciliation payment must exactly rejoin canonical character coverage',
+        )
+      }
+      if (qualifiedSeppByKey.has(key)) {
+        throw new RangeError(
+          'IRA SEPP schedule routes must not qualify one allocation more than once',
+        )
+      }
+      qualifiedSeppByKey.set(key, {
+        annualReconciliationEvidence: annualEvidence,
+        reconciledPayment: payment,
+      })
+    }
+  }
+
   const disabilityRelevantDates = new Set<string>()
   for (const withdrawal of withdrawalByKey.values()) {
     const sourceEvidence = sourceEvidenceByKey.get(
@@ -1275,6 +1630,11 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
         'IRA SEPP status evidence must uniquely match an unresolved allocation',
       )
     }
+    if (submittedSeppRouteSourceIds.has(required.withdrawal.sourceAccountId)) {
+      throw new RangeError(
+        'IRA no-SEPP evidence is contradictory for a submitted positive schedule route',
+      )
+    }
     const evidence: OwnedNonRothIraNoSeppStatusEvidence = {
       predicate: seppInput.predicate,
       actionId: actionIdSchema.parse(seppInput.actionId),
@@ -1388,7 +1748,10 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
       withdrawal.subtype === 'simple' &&
       withdrawal.ordinaryIncomeAmount > 0 &&
       sourceEvidence.evaluationDate < age59HalfDate &&
-      !disabilityByEvaluationDate.has(sourceEvidence.evaluationDate)
+      !disabilityByEvaluationDate.has(sourceEvidence.evaluationDate) &&
+      !qualifiedSeppByKey.has(
+        identityKey(withdrawal.actionId, withdrawal.allocationId),
+      )
     ) {
       requiredSimpleSourceIds.add(withdrawal.sourceAccountId)
     }
@@ -1455,7 +1818,6 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
     )
   }
 
-  const coverage: OwnedNonRothIraPenaltyCharacterCoverageEvidence[] = []
   const evaluationByKey = new Map<
     string,
     OwnedNonRothIraPenaltyPrerequisiteEvaluation
@@ -1467,61 +1829,13 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
       if (sourceEvidence === undefined) {
         throw new Error('Canonical IRA withdrawal lost its source evidence')
       }
-      const character = validateCharacter(
-        withdrawal,
-        line7AllocationEvidenceId,
-      )
-      if (character.basisEvidenceId !== annualBasisEvidenceId) {
-        throw new RangeError(
-          'IRA withdrawal character must bind the supplied annual basis evidence',
-        )
+      const characterCoverage = coverageByKey.get(key)
+      if (characterCoverage === undefined) {
+        throw new Error('Canonical IRA withdrawal lost its character coverage')
       }
-      const characterCoverageId = stableId(
-        'owned-ira-penalty-character-coverage',
-        [
-          withdrawal.actionId,
-          withdrawal.allocationId,
-          withdrawal.sourceAccountId,
-          ownerPersonId,
-          withdrawal.subtype,
-          sourceEvidence.evaluationDate,
-          withdrawal.executedAmount,
-          character.basisReturnAmount,
-          character.ordinaryIncomeAmount,
-          annualBasisEvidenceId,
-          line7AllocationEvidenceId,
-          character.characterEvidenceIds,
-          sourceEvidence,
-          ageThresholdEvidenceId,
-        ],
-      )
-      const characterCoverage:
-        OwnedNonRothIraPenaltyCharacterCoverageEvidence = {
-          predicate:
-            'completeOwnedNonRothIraPenaltyCharacterCoverageForAllocation',
-          actionId: withdrawal.actionId,
-          allocationId: withdrawal.allocationId,
-          sourceAccountId: withdrawal.sourceAccountId,
-          ownerPersonId,
-          subtype: withdrawal.subtype,
-          evaluationDate: sourceEvidence.evaluationDate,
-          executedAmount: withdrawal.executedAmount,
-          basisReturnExcludedAmount: character.basisReturnAmount,
-          ordinaryIncomeExposureAmount: character.ordinaryIncomeAmount,
-          basisEvidenceId: annualBasisEvidenceId,
-          line7AllocationEvidenceId,
-          characterEvidenceIds: character.characterEvidenceIds,
-          sourceEvidenceIds: {
-            distributionDateEvidenceId:
-              sourceEvidence.distributionDateEvidenceId,
-            accountOwnershipEvidenceId:
-              sourceEvidence.accountOwnershipEvidenceId,
-            iraClassificationEvidenceId:
-              sourceEvidence.iraClassificationEvidenceId,
-          },
-          ageThresholdEvidenceId,
-          evidenceId: characterCoverageId,
-        }
+      const characterCoverageId = characterCoverage.evidenceId
+      const ordinaryIncomeExposureAmount =
+        characterCoverage.ordinaryIncomeExposureAmount
       const base: OwnedNonRothIraPenaltyEvaluationBase = {
         actionId: withdrawal.actionId,
         allocationId: withdrawal.allocationId,
@@ -1531,8 +1845,7 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
         evaluationDate: sourceEvidence.evaluationDate,
         characterCoverage,
       }
-      coverage.push(characterCoverage)
-      if (character.ordinaryIncomeAmount === 0) {
+      if (ordinaryIncomeExposureAmount === 0) {
         continue
       }
       if (sourceEvidence.evaluationDate >= age59HalfDate) {
@@ -1540,7 +1853,7 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
           ...base,
           outcome: 'age59HalfReached',
           evaluatedOrdinaryIncomeExposureAmount:
-            character.ordinaryIncomeAmount,
+            ordinaryIncomeExposureAmount,
           finalPenaltyAmount: 0,
           finalEvidenceId: stableId('owned-ira-age-59-half-zero-penalty', [
             characterCoverageId,
@@ -1557,7 +1870,7 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
           ...base,
           outcome: 'disabilityQualified',
           evaluatedOrdinaryIncomeExposureAmount:
-            character.ordinaryIncomeAmount,
+            ordinaryIncomeExposureAmount,
           disabilityEvent,
           finalPenaltyAmount: 0,
           finalEvidenceId: stableId(
@@ -1566,6 +1879,32 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
               characterCoverageId,
               ageThresholdEvidenceId,
               disabilityEvent,
+            ],
+          ),
+        })
+        continue
+      }
+
+      const seppQualification = qualifiedSeppByKey.get(key)
+      if (seppQualification !== undefined) {
+        evaluationByKey.set(key, {
+          ...base,
+          outcome: 'iraSeppQualified',
+          evaluatedOrdinaryIncomeExposureAmount:
+            ordinaryIncomeExposureAmount,
+          annualReconciliationEvidence:
+            seppQualification.annualReconciliationEvidence,
+          reconciledPayment: seppQualification.reconciledPayment,
+          finalPenaltyAmount: 0,
+          finalEvidenceId: stableId(
+            'owned-ira-sepp-qualified-zero-penalty',
+            [
+              characterCoverageId,
+              seppQualification.annualReconciliationEvidence
+                .annualReconciliationId,
+              seppQualification.reconciledPayment
+                .currentPaymentCandidateId,
+              seppQualification.reconciledPayment,
             ],
           ),
         })
@@ -1642,7 +1981,7 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
         }
       }
       const candidate = candidateAmount(
-        character.ordinaryIncomeAmount,
+        ordinaryIncomeExposureAmount,
         rateEvidence.numerator,
         rateEvidence.denominator,
       )
@@ -1732,7 +2071,7 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
           withdrawal.sourceAccountId,
         ]),
         base,
-        exposureAmount: character.ordinaryIncomeAmount,
+        exposureAmount: ordinaryIncomeExposureAmount,
         candidateAmountBeforeExceptions: candidate,
         rateEvidence,
         ownerAliveEvidence,
@@ -2046,6 +2385,7 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
     ownerPersonId,
     ageThresholdEvidence,
     coverage,
+    iraSeppScheduleReconciliations,
     evaluations,
   })
 }

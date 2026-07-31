@@ -571,10 +571,7 @@ const smokeSeppInventory =
   buildOwnedNonRothIraSeppAnnualDistributionInventoryEvidence(
     smokeSeppInventoryWithoutId,
   )
-const smokeSeppAnnualReconciliation =
-  reconcileOwnedNonRothIraSeppAnnualSchedule({
-    ownerPersonId: asPersonId('smoke-person'),
-    taxYear: 2030,
+const smokeSeppAnnualRawRouteInput = {
     sourceEvidence: {
       predicate: 'ownedNonRothIraSeppSource',
       sourceAccountId: asAccountId('smoke-traditional-ira'),
@@ -620,7 +617,6 @@ const smokeSeppAnnualReconciliation =
     },
     openingStateEvidence: smokeSeppOpening,
     priorElectionHistoryEvidence: smokeSeppPriorElectionHistory,
-    distributionInventory: smokeSeppInventory,
     payments: [{
       currentPaymentEvidence: {
         predicate: 'ownedNonRothIraSeppCurrentScheduledPayment',
@@ -637,6 +633,13 @@ const smokeSeppAnnualReconciliation =
         paymentScheduleEvidenceId: 'smoke-sepp-payment-schedule',
       },
     }],
+  }
+const smokeSeppAnnualReconciliation =
+  reconcileOwnedNonRothIraSeppAnnualSchedule({
+    ownerPersonId: asPersonId('smoke-person'),
+    taxYear: 2030,
+    ...smokeSeppAnnualRawRouteInput,
+    distributionInventory: smokeSeppInventory,
   })
 assert.equal(smokeSeppAnnualReconciliation.status, 'reconciled')
 assert.equal(smokeSeppAnnualReconciliation.qualification, 'notEstablished')
@@ -655,6 +658,49 @@ assert.match(
 )
 assert.equal('penaltyRate' in smokeSeppAnnualReconciliation, false)
 assert.equal('penaltyAmount' in smokeSeppAnnualReconciliation, false)
+const smokeSeppQualifiedPenalty =
+  evaluateOwnedNonRothIraPenaltyPrerequisites({
+    characterization: ownedIraCharacter,
+    ownerEvidence: {
+      predicate: 'ownerBirthDateForIraPenaltyAgeThreshold',
+      ownerPersonId: asPersonId('smoke-person'),
+      birthDate: '1980-08-31',
+      evidenceId: 'smoke-birth-date',
+    },
+    sourceEvidence: [{
+      predicate: 'ownedNonRothIraPenaltySourceForWithdrawal',
+      actionId: asActionId('smoke-ira-withdrawal'),
+      allocationId: asAllocationId('smoke-ira-allocation'),
+      sourceAccountId: asAccountId('smoke-traditional-ira'),
+      ownerPersonId: asPersonId('smoke-person'),
+      subtype: 'traditional',
+      evaluationDate: '2030-12-31',
+      distributionDateEvidenceId: 'smoke-ira-distribution-date',
+      accountOwnershipEvidenceId: 'smoke-ira-ownership',
+      iraClassificationEvidenceId: 'smoke-ira-classification',
+    }],
+    iraSeppScheduleRoutes: [{
+      sourceAccountId: asAccountId('smoke-traditional-ira'),
+      electionId: 'smoke-sepp-election',
+      scheduleId: 'smoke-sepp-schedule',
+      annualReconciliationInput: smokeSeppAnnualRawRouteInput,
+    }],
+    simpleParticipationEvidence: [],
+  })
+assert.equal(
+  smokeSeppQualifiedPenalty.iraSeppScheduleReconciliations[0]
+    .reconciliation.status,
+  'reconciled',
+)
+assert.equal(
+  smokeSeppQualifiedPenalty.evaluations[0].outcome,
+  'iraSeppQualified',
+)
+assert.equal(smokeSeppQualifiedPenalty.evaluations[0].finalPenaltyAmount, 0)
+assert.match(
+  smokeSeppQualifiedPenalty.evaluations[0].finalEvidenceId,
+  /^owned-ira-sepp-qualified-zero-penalty:/,
+)
 const smokeAnnualBasis = ownedIraCharacter.annualBasisEvidence
 const smokeAnnualFinalizerInput = {
   annualInput: {
