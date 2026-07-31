@@ -152,6 +152,11 @@ describe('seedPlanFromTenForty', () => {
   it('rejects invalid inputs with actionable messages', () => {
     expect(seedPlanFromTenForty({ ...WORKER_1040, primaryDob: 'yesterday' }, testIds, fixedNow).ok).toBe(false)
     expect(seedPlanFromTenForty({ ...WORKER_1040, state: 'Kentucky' }, testIds, fixedNow).ok).toBe(false)
+    // An unanswered state (the wizard's placeholder value) must fail loudly —
+    // it used to be silently prefilled, seeding materially wrong state taxes.
+    const noState = seedPlanFromTenForty({ ...WORKER_1040, state: '' }, testIds, fixedNow)
+    expect(noState.ok).toBe(false)
+    if (!noState.ok) expect(noState.message).toContain('Select your state')
     expect(seedPlanFromTenForty({ ...WORKER_1040, wages: -5 }, testIds, fixedNow).ok).toBe(false)
     expect(seedPlanFromTenForty({ ...WORKER_1040, agi: Number.NaN }, testIds, fixedNow).ok).toBe(false)
     expect(seedPlanFromTenForty({ ...WORKER_1040, wages: 1e15 }, testIds, fixedNow).ok).toBe(false)

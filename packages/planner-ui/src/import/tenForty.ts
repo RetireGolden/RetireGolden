@@ -85,6 +85,12 @@ export function seedPlanFromTenForty(
   if (inputs.filingStatus === 'marriedFilingJointly' && (!inputs.spouseDob || !isValidIsoDate(inputs.spouseDob))) {
     return { ok: false, message: "Married filing jointly needs your spouse's date of birth too (YYYY-MM-DD)." }
   }
+  // The wizard starts the state select unanswered (no prefilled default), so a
+  // missed or unregistered selection surfaces here instead of silently seeding
+  // the draft — and its state taxes — with a state the user never chose.
+  if (inputs.state.trim() === '') {
+    return { ok: false, message: 'Select your state of residence — it drives the state-tax estimate.' }
+  }
   if (!/^[A-Za-z]{2}$/.test(inputs.state)) return { ok: false, message: 'Enter your state as its two-letter code.' }
   const dollarFields: Array<[keyof TenFortyInputs, number]> = [
     ['wages', inputs.wages],

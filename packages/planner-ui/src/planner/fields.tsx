@@ -336,17 +336,37 @@ export function SelectField<T extends string>({
   options,
   onCommit,
   describedBy,
+  placeholder,
 }: BaseProps & {
-  value: T
+  /** `''` renders the placeholder (when given) as an explicit not-yet-answered state. */
+  value: T | ''
   options: ReadonlyArray<{ value: T; label: string }>
   onCommit: (v: T) => void
   /** id of visible text outside the field (e.g. a card hint) that describes the current selection. */
   describedBy?: string
+  /**
+   * A must-answer select with no safe default: shown as a disabled first
+   * option while value is `''`, so the field starts visibly unanswered
+   * instead of silently prefilling — a missed selection then fails loudly at
+   * validation rather than committing whatever the default happened to be.
+   */
+  placeholder?: string
 }) {
   const id = useId()
   return (
     <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id}>
-      <select id={id} value={value} aria-describedby={describedBy} onChange={(e) => onCommit(e.target.value as T)}>
+      <select
+        id={id}
+        value={value}
+        required={placeholder !== undefined || undefined}
+        aria-describedby={describedBy}
+        onChange={(e) => onCommit(e.target.value as T)}
+      >
+        {placeholder !== undefined ? (
+          <option value="" disabled>
+            {placeholder}
+          </option>
+        ) : null}
         {options.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}

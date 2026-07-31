@@ -58,6 +58,30 @@ function findButton(el: HTMLElement, text: string): HTMLButtonElement | undefine
   return Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.includes(text))
 }
 
+/** Resolve a select through its visible label, the way keyboard/AT users reach it. */
+function findSelect(el: HTMLElement, label: string): HTMLSelectElement {
+  const lab = Array.from(el.querySelectorAll('label')).find((l) => l.textContent?.includes(label))
+  expect(lab, `expected a label containing "${label}"`).toBeTruthy()
+  const sel = el.ownerDocument.getElementById(lab!.htmlFor)
+  expect(sel instanceof HTMLSelectElement, `expected a select labelled "${label}"`).toBe(true)
+  return sel as HTMLSelectElement
+}
+
+/**
+ * Drive a select the way a keyboard commit does: focus it, then update the
+ * value and fire the bubbling change event a browser fires when an option is
+ * chosen with arrows/typeahead + Enter. (jsdom implements no native select
+ * keyboard behavior, so the key press itself is emulated at the event level.)
+ */
+function selectByKeyboard(sel: HTMLSelectElement, value: string) {
+  act(() => {
+    sel.focus()
+    sel.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    sel.value = value
+    sel.dispatchEvent(new Event('change', { bubbles: true }))
+  })
+}
+
 /** Poll for an observable UI condition instead of sleeping a fixed interval. */
 async function waitForUi(done: () => boolean, what: string) {
   const deadline = Date.now() + 2000
@@ -94,12 +118,11 @@ describe('ImportPage', () => {
     const el = render()
     click(findButton(el, 'tax return'))
 
-    // The guided form shows the 1040 line fields; keep the defaults (all $0)
-    // and build — a coherent (if empty) draft with MAGI context still results.
-    // Building hashes the typed inputs (async), so wait for the draft to render.
+    // The guided form shows the 1040 line fields. The dollar defaults (all $0)
+    // are fine, but the state has no default — select one, then build.
     expect(el.textContent).toContain('Line 11')
+    selectByKeyboard(findSelect(el, 'State of residence'), 'KY')
     act(() => findButton(el, 'Build my draft plan')!.click())
-    // Building hashes the typed inputs (async) — wait for the draft to render.
     await waitForUi(() => el.querySelector('.import-review') !== null, 'the review checklist')
 
     // Review checklist appears with the always-present unmapped guidance.
@@ -113,6 +136,39 @@ describe('ImportPage', () => {
     expect(after).toHaveLength(1)
     expect(after[0]!.name).toBe('Seeded from your 1040')
     expect(el.querySelector('[data-testid="plan-route"]')).not.toBeNull()
+  })
+
+  it('starts the 1040 state unanswered and refuses to build until one is chosen', () => {
+    const el = render()
+    click(findButton(el, 'tax return'))
+
+    // No prefilled state: the control starts on a visible placeholder, so a
+    // selection that never registers cannot silently seed a default state.
+    const state = findSelect(el, 'State of residence')
+    expect(state.value).toBe('')
+    expect(state.required).toBe(true)
+    expect(state.options[0]!.value).toBe('')
+    expect(state.options[0]!.disabled).toBe(true)
+    expect(state.options[0]!.textContent).toContain('Select your state')
+
+    act(() => findButton(el, 'Build my draft plan')!.click())
+    expect(el.querySelector('[role="alert"]')?.textContent).toContain('Select your state of residence')
+    expect(el.querySelector('.import-review')).toBeNull()
+  })
+
+  it('carries a keyboard-selected state into the draft review (guided-1040 CO regression)', async () => {
+    const el = render()
+    click(findButton(el, 'tax return'))
+
+    const state = findSelect(el, 'State of residence')
+    selectByKeyboard(state, 'CO')
+    expect(state.value).toBe('CO')
+
+    act(() => findButton(el, 'Build my draft plan')!.click())
+    await waitForUi(() => el.querySelector('.import-review') !== null, 'the review checklist')
+    // The review reports the state actually chosen — never a default.
+    expect(el.textContent).toContain('Resident of CO')
+    expect(el.textContent).not.toContain('Resident of KY')
   })
 
   it('walks a broker CSV to a draft with the review checklist', async () => {
@@ -255,6 +311,7 @@ describe('ImportPage', () => {
   it('identifies the guided 1040 path without fingerprinting the typed inputs', async () => {
     const el = render()
     click(findButton(el, 'tax return'))
+    selectByKeyboard(findSelect(el, 'State of residence'), 'KY')
     act(() => findButton(el, 'Build my draft plan')!.click())
     await waitForUi(() => el.querySelector('.import-review') !== null, 'the review checklist')
 
