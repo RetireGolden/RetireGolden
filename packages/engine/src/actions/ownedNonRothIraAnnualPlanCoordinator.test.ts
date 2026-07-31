@@ -602,6 +602,67 @@ describe('Plan-owned non-Roth IRA annual coordinator', () => {
       issue: 'line8InventoryEvidenceBindingMismatch',
     },
     {
+      name: 'line-8 action reuses a line-7 action identity',
+      alter: (value: CoordinatePlanOwnedNonRothIraAnnualWithdrawalCandidateInput) => {
+        value.line8InventoryEvidence = {
+          ...value.line8InventoryEvidence,
+          entries: [{
+            actionId,
+            allocationId: asAllocationId('conversion-allocation'),
+            sourceAccountId: siblingSourceId,
+            scheduledDate: '2030-07-01',
+            scheduledSequence: 1,
+            grossAmount: asUsdCents(1_000),
+          }],
+        }
+      },
+      issue: 'annualActivityConflict',
+    },
+    {
+      name: 'line-8 action shares a line-7 schedule position',
+      alter: (value: CoordinatePlanOwnedNonRothIraAnnualWithdrawalCandidateInput) => {
+        value.line8InventoryEvidence = {
+          ...value.line8InventoryEvidence,
+          entries: [{
+            actionId: asActionId('conversion-one'),
+            allocationId: asAllocationId('conversion-allocation'),
+            sourceAccountId: siblingSourceId,
+            scheduledDate: '2030-06-15',
+            scheduledSequence: 1,
+            grossAmount: asUsdCents(1_000),
+          }],
+        }
+      },
+      issue: 'annualActivityConflict',
+    },
+    {
+      name: 'one line-8 action allocates one source twice',
+      alter: (value: CoordinatePlanOwnedNonRothIraAnnualWithdrawalCandidateInput) => {
+        value.line8InventoryEvidence = {
+          ...value.line8InventoryEvidence,
+          entries: [
+            {
+              actionId: asActionId('conversion-one'),
+              allocationId: asAllocationId('conversion-first'),
+              sourceAccountId: requestedSourceId,
+              scheduledDate: '2030-07-01',
+              scheduledSequence: 1,
+              grossAmount: asUsdCents(500),
+            },
+            {
+              actionId: asActionId('conversion-one'),
+              allocationId: asAllocationId('conversion-second'),
+              sourceAccountId: requestedSourceId,
+              scheduledDate: '2030-07-01',
+              scheduledSequence: 1,
+              grossAmount: asUsdCents(500),
+            },
+          ],
+        }
+      },
+      issue: 'annualActivityConflict',
+    },
+    {
       name: 'different ledger run',
       alter: (value: CoordinatePlanOwnedNonRothIraAnnualWithdrawalCandidateInput) => {
         value.line8InventoryEvidence = {
@@ -619,6 +680,40 @@ describe('Plan-owned non-Roth IRA annual coordinator', () => {
 
     expect(result.status).toBe('sourceInventoryIncomplete')
     expect(issueKinds(result)).toContain(issue)
+    expect(result.movementCandidate).toBeNull()
+  })
+
+  it('fail-closes when the complete pool aggregate exceeds safe cents', () => {
+    const value = input()
+    value.yearEndBalanceEvidence = value.yearEndBalanceEvidence.map(
+      (evidence) => ({
+        ...evidence,
+        yearEndApplicableBalanceAmount:
+          asUsdCents(Number.MAX_SAFE_INTEGER),
+      }),
+    )
+
+    const result =
+      coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate(value)
+
+    expect(result.status).toBe('sourceInventoryIncomplete')
+    expect(issueKinds(result)).toContain('aggregateAmountOverflow')
+    expect(result.movementCandidate).toBeNull()
+  })
+
+  it('fail-closes when the annual basis denominator exceeds safe cents', () => {
+    const value = input()
+    value.annualBasisEvidence = {
+      ...value.annualBasisEvidence,
+      outstandingRolloverAmount:
+        asUsdCents(Number.MAX_SAFE_INTEGER),
+    }
+
+    const result =
+      coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate(value)
+
+    expect(result.status).toBe('sourceInventoryIncomplete')
+    expect(issueKinds(result)).toContain('aggregateAmountOverflow')
     expect(result.movementCandidate).toBeNull()
   })
 
@@ -1079,6 +1174,25 @@ describe('Plan-owned non-Roth IRA annual coordinator', () => {
 
     expect(result.annualEvidence.penaltyPrerequisites.evaluations[0]?.outcome)
       .toBe('disabilityQualified')
+  })
+
+  it('fail-closes irrelevant caller disability evidence after age 59½', () => {
+    const value = input()
+    value.qualifiedDisabilityEvidence = [{
+      kind: 'disability',
+      disabledPersonId: ownerPersonId,
+      disabilityQualificationDate: '2029-01-01',
+      evaluationDate: '2030-06-15',
+      qualifiedOnEvaluationDate: true,
+      disabilityEvidenceId: 'irrelevant-qualified-disability',
+    }]
+
+    const result =
+      coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate(value)
+
+    expect(result.status).toBe('sourceInventoryIncomplete')
+    expect(issueKinds(result)).toContain('penaltyEvidenceInvalid')
+    expect(result.movementCandidate).toBeNull()
   })
 
   it('preserves a complete qualified-SEPP route and its repeated state references', () => {

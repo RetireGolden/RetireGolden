@@ -170,6 +170,9 @@ export type PlanOwnedNonRothIraSourceInventoryIssueKind =
   | 'yearEndBalanceEvidenceBindingMismatch'
   | 'annualBasisEvidenceBindingMismatch'
   | 'annualBasisEvidenceInvalid'
+  | 'annualActivityConflict'
+  | 'aggregateAmountOverflow'
+  | 'penaltyEvidenceInvalid'
   | 'line7ActionSetMismatch'
   | 'line8InventoryEvidenceBindingMismatch'
   | 'line8EntryForeign'
@@ -346,6 +349,116 @@ function safeCentsSum(values: readonly UsdCents[], label: string): UsdCents {
     throw new RangeError(`${label} exceeded the safe-integer cents range`)
   }
   return asUsdCents(Number(total))
+}
+
+function safeCentsSumOrIssue(
+  values: readonly UsdCents[],
+  label: string,
+  issues: PlanOwnedNonRothIraSourceInventoryIssue[],
+): UsdCents | null {
+  try {
+    return safeCentsSum(values, label)
+  } catch (error) {
+    if (!(error instanceof RangeError)) throw error
+    issues.push(inventoryIssue(
+      'aggregateAmountOverflow',
+      `${label} must remain within the safe-integer cents range`,
+    ))
+    return null
+  }
+}
+
+function requireSafeCentsTotal(
+  total: bigint,
+  label: string,
+  issues: PlanOwnedNonRothIraSourceInventoryIssue[],
+): boolean {
+  if (total >= 0n && total <= BigInt(Number.MAX_SAFE_INTEGER)) return true
+  issues.push(inventoryIssue(
+    'aggregateAmountOverflow',
+    `${label} must remain within the safe-integer cents range`,
+  ))
+  return false
+}
+
+function validateCombinedAnnualActivity(
+  line7Entries: readonly Readonly<AnnualIraBasisAllocationEntryInput>[],
+  line8Entries: readonly Readonly<AnnualIraBasisAllocationEntryInput>[],
+): PlanOwnedNonRothIraSourceInventoryIssue[] {
+  const issues: PlanOwnedNonRothIraSourceInventoryIssue[] = []
+  const identities = new Set<string>()
+  const actionSources = new Set<string>()
+  const scopeByAction = new Map<ActionId, 'line7' | 'line8'>()
+  const slotByAction = new Map<ActionId, string>()
+  const actionBySlot = new Map<string, ActionId>()
+  for (const { entry, scope } of [
+    ...line7Entries.map((entry) => ({ entry, scope: 'line7' as const })),
+    ...line8Entries.map((entry) => ({ entry, scope: 'line8' as const })),
+  ]) {
+    const bindings = {
+      actionId: entry.actionId,
+      sourceAccountId: entry.sourceAccountId,
+    }
+    const identity = JSON.stringify([entry.actionId, entry.allocationId])
+    if (identities.has(identity)) {
+      issues.push(inventoryIssue(
+        'annualActivityConflict',
+        'An IRA action allocation must not appear in both annual line ledgers',
+        bindings,
+      ))
+    }
+    identities.add(identity)
+    const actionSource = JSON.stringify([
+      entry.actionId,
+      entry.sourceAccountId,
+    ])
+    if (actionSources.has(actionSource)) {
+      issues.push(inventoryIssue(
+        'annualActivityConflict',
+        'One IRA action must not allocate the same source more than once',
+        bindings,
+      ))
+    }
+    actionSources.add(actionSource)
+    const existingScope = scopeByAction.get(entry.actionId)
+    if (existingScope !== undefined && existingScope !== scope) {
+      issues.push(inventoryIssue(
+        'annualActivityConflict',
+        'One IRA action must not appear in both annual line scopes',
+        bindings,
+      ))
+    }
+    scopeByAction.set(entry.actionId, scope)
+    const slot = JSON.stringify([
+      entry.scheduledDate,
+      entry.scheduledSequence,
+    ])
+    const existingActionSlot = slotByAction.get(entry.actionId)
+    if (
+      existingActionSlot !== undefined &&
+      existingActionSlot !== slot
+    ) {
+      issues.push(inventoryIssue(
+        'annualActivityConflict',
+        'Every allocation from one IRA action must share its schedule position',
+        bindings,
+      ))
+    }
+    slotByAction.set(entry.actionId, slot)
+    const existingSlotAction = actionBySlot.get(slot)
+    if (
+      existingSlotAction !== undefined &&
+      existingSlotAction !== entry.actionId
+    ) {
+      issues.push(inventoryIssue(
+        'annualActivityConflict',
+        'Different IRA actions must not occupy one annual schedule position',
+        bindings,
+      ))
+    }
+    actionBySlot.set(slot, entry.actionId)
+  }
+  return issues
 }
 
 function sameStrings(
@@ -553,6 +666,29 @@ function invalidSimpleParticipationEvidence(
     'simpleParticipationEvidenceInvalid',
     error.message,
     { sourceAccountId: error.sourceAccountId },
+  )])
+}
+
+function invalidCallerPenaltyEvidence(
+  error: unknown,
+  input:
+    Readonly<CoordinatePlanOwnedNonRothIraAnnualWithdrawalCandidateInput>,
+): Readonly<PlanOwnedNonRothIraSourceInventoryIncompleteResult> | null {
+  const supplied =
+    (input.qualifiedDisabilityEvidence?.length ?? 0) > 0 ||
+    (input.rejectedDisabilityEvidence?.length ?? 0) > 0 ||
+    (input.iraSeppStatusEvidence?.length ?? 0) > 0 ||
+    (input.iraSeppScheduleRoutes?.length ?? 0) > 0 ||
+    (input.noOtherExceptionAttestations?.length ?? 0) > 0
+  if (
+    !supplied ||
+    (!(error instanceof RangeError) && !(error instanceof TypeError))
+  ) {
+    return null
+  }
+  return inventoryBlocked([inventoryIssue(
+    'penaltyEvidenceInvalid',
+    `Caller penalty evidence failed semantic validation: ${error.message}`,
   )])
 }
 
@@ -1269,14 +1405,14 @@ function buildCoordinatorInputs(
     poolMembers
       .filter((member) => requestedSourceIds.has(member.sourceAccountId))
       .map((member) => ({
-      predicate: 'ownedNonRothIraOrdinaryWithdrawalMovementSource',
-      sourceAccountId: member.sourceAccountId,
-      ownerPersonId: member.ownerPersonId,
-      accountType: member.accountType,
-      accountKind: member.accountKind,
-      inheritanceStatus: member.inheritanceStatus,
-      subtype: member.subtype,
-      accountOwnershipEvidenceId: member.accountOwnershipEvidenceId,
+        predicate: 'ownedNonRothIraOrdinaryWithdrawalMovementSource',
+        sourceAccountId: member.sourceAccountId,
+        ownerPersonId: member.ownerPersonId,
+        accountType: member.accountType,
+        accountKind: member.accountKind,
+        inheritanceStatus: member.inheritanceStatus,
+        subtype: member.subtype,
+        accountOwnershipEvidenceId: member.accountOwnershipEvidenceId,
         iraClassificationEvidenceId:
           member.iraClassificationEvidenceId,
       }))
@@ -1300,10 +1436,14 @@ function buildCoordinatorInputs(
     inventory.claimedEvidenceIds,
     generatedIdIssues,
   )
-  const yearEndApplicablePoolBalanceAmount = safeCentsSum(
+  const yearEndApplicablePoolBalanceAmount = safeCentsSumOrIssue(
     poolMembers.map((member) => member.yearEndApplicableBalanceAmount),
     'Owned IRA year-end pool balance',
+    generatedIdIssues,
   )
+  if (yearEndApplicablePoolBalanceAmount === null) {
+    return inventoryBlocked(generatedIdIssues)
+  }
   const completePoolEvidenceId = deriveActionStructuralId(
     'owned-ira-plan-complete-pool',
     [
@@ -1374,14 +1514,55 @@ function buildCoordinatorInputs(
   }
   const staged =
     stageOwnedNonRothIraOrdinaryWithdrawalMovements(movementInput)
-  const line7Amount = safeCentsSum(
+  generatedIdIssues.push(...validateCombinedAnnualActivity(
+    staged.line7Distributions,
+    inventory.line8Entries,
+  ))
+  const line7Amount = safeCentsSumOrIssue(
     staged.line7Distributions.map((entry) => entry.grossAmount),
     'Owned IRA line-7 amount',
+    generatedIdIssues,
   )
-  const line8Amount = safeCentsSum(
+  const line8Amount = safeCentsSumOrIssue(
     inventory.line8Entries.map((entry) => entry.grossAmount),
     'Owned IRA line-8 amount',
+    generatedIdIssues,
   )
+  const annualBasisNumerator =
+    BigInt(inventory.annualBasisEvidence.openingBasisAmount) +
+    BigInt(
+      inventory.annualBasisEvidence
+        .taxYearNondeductibleContributionAmount,
+    ) -
+    BigInt(
+      inventory.annualBasisEvidence
+        .postYearNondeductibleContributionExcludedAmount,
+    )
+  const annualBasisDenominator =
+    BigInt(yearEndApplicablePoolBalanceAmount) +
+    BigInt(inventory.annualBasisEvidence.outstandingRolloverAmount) -
+    BigInt(
+      inventory.annualBasisEvidence.rolloverRepaymentAdjustmentAmount,
+    ) +
+    BigInt(line7Amount ?? 0) +
+    BigInt(line8Amount ?? 0)
+  requireSafeCentsTotal(
+    annualBasisNumerator,
+    'Owned IRA annual basis numerator',
+    generatedIdIssues,
+  )
+  requireSafeCentsTotal(
+    annualBasisDenominator,
+    'Owned IRA annual basis denominator',
+    generatedIdIssues,
+  )
+  if (
+    generatedIdIssues.length > 0 ||
+    line7Amount === null ||
+    line8Amount === null
+  ) {
+    return inventoryBlocked(generatedIdIssues)
+  }
   const annualInput: Omit<
     ClassifyOwnedNonRothIraAnnualWithdrawalsInput,
     'line7Distributions'
@@ -1776,6 +1957,8 @@ export function coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate(
     result = run([])
   } catch (error) {
     if (!(error instanceof MissingSimpleIraParticipationEvidenceError)) {
+      const blocked = invalidCallerPenaltyEvidence(error, input)
+      if (blocked !== null) return blocked
       throw error
     }
     const derived = simpleParticipationEvidence(
@@ -1789,6 +1972,9 @@ export function coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate(
     } catch (retryError) {
       const blocked = invalidSimpleParticipationEvidence(retryError)
       if (blocked !== null) return blocked
+      const invalidPenalty =
+        invalidCallerPenaltyEvidence(retryError, input)
+      if (invalidPenalty !== null) return invalidPenalty
       throw retryError
     }
   }
@@ -1814,6 +2000,9 @@ export function coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate(
     } catch (retryError) {
       const blocked = invalidSimpleParticipationEvidence(retryError)
       if (blocked !== null) return blocked
+      const invalidPenalty =
+        invalidCallerPenaltyEvidence(retryError, input)
+      if (invalidPenalty !== null) return invalidPenalty
       throw retryError
     }
   }
