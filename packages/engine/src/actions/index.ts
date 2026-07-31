@@ -231,6 +231,7 @@ export {
   type ResolvedOwnedNonRothIraPenaltyPrerequisites,
 } from './ownedNonRothIraAnnualFinalization.js'
 export {
+  buildOwnedNonRothIraSeppPriorPaymentHistoryEvidence,
   validateOwnedNonRothIraSeppCurrentPaymentCandidate,
   type OwnedNonRothIraSeppAnnualOpeningStateEvidence,
   type OwnedNonRothIraSeppAnnualScheduleEvidence,
@@ -246,11 +247,34 @@ export {
   type OwnedNonRothIraSeppNonconformanceKind,
   type OwnedNonRothIraSeppNotLocallyConformingResult,
   type OwnedNonRothIraSeppPriorPaymentHistoryEvidence,
+  type OwnedNonRothIraSeppPriorPaymentHistoryWithoutId,
   type OwnedNonRothIraSeppProvisionalCandidateResult,
   type OwnedNonRothIraSeppSourceEvidence,
   type ValidateOwnedNonRothIraSeppCurrentPaymentCandidateInput,
   type ValidateOwnedNonRothIraSeppCurrentPaymentCandidateResult,
 } from './ownedNonRothIraSeppCurrentPaymentCandidate.js'
+export {
+  buildOwnedNonRothIraSeppAnnualDistributionInventoryEvidence,
+  buildOwnedNonRothIraSeppCompletePriorElectionHistoryEvidence,
+  reconcileOwnedNonRothIraSeppAnnualSchedule,
+  type CompleteOwnedNonRothIraSeppAnnualReconciliationEvidence,
+  type OwnedNonRothIraSeppAnnualDistributionInventoryEvidence,
+  type OwnedNonRothIraSeppAnnualDistributionInventoryWithoutId,
+  type OwnedNonRothIraSeppAnnualEvidenceMissingIssue,
+  type OwnedNonRothIraSeppAnnualEvidenceMissingResult,
+  type OwnedNonRothIraSeppAnnualMissingEvidenceName,
+  type OwnedNonRothIraSeppAnnualNotReconciledResult,
+  type OwnedNonRothIraSeppAnnualRawPaymentEvidence,
+  type OwnedNonRothIraSeppAnnualReconciledPaymentEvidence,
+  type OwnedNonRothIraSeppAnnualReconciledResult,
+  type OwnedNonRothIraSeppAnnualReconciliationIncompleteResult,
+  type OwnedNonRothIraSeppAnnualReconciliationIssue,
+  type OwnedNonRothIraSeppAnnualReconciliationIssueKind,
+  type OwnedNonRothIraSeppCompletePriorElectionHistoryEvidence,
+  type OwnedNonRothIraSeppCompletePriorElectionHistoryWithoutId,
+  type ReconcileOwnedNonRothIraSeppAnnualScheduleInput,
+  type ReconcileOwnedNonRothIraSeppAnnualScheduleResult,
+} from './ownedNonRothIraSeppAnnualReconciliation.js'
 export {
   coordinateOwnedNonRothIraAnnualWithdrawalCandidate,
   type CoordinateOwnedNonRothIraAnnualWithdrawalCandidateInput,

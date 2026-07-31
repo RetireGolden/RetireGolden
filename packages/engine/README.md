@@ -21,6 +21,11 @@ Source of truth: [github.com/RetireGolden/RetireGolden](https://github.com/Retir
   - FedInvest TIPS prices: the engine only parses CSV text
     (`ladder/fedInvest`); fetching and caching are the consumer's job.
 - **Deterministic.** Same plan + same options ⇒ bit-identical results.
+- Structural evidence-ID hashing is package-internal. Public action boundaries
+  accept evidence produced by their canonical upstream boundaries; they do not
+  expose a general object hasher. JavaScript cannot reliably detect `Proxy`
+  wrappers, so the internal hasher's contract is limited to freshly rebuilt,
+  trusted plain data trees and is not a hostile-object validation boundary.
 - Parameters (tax brackets, limits, SSA tables, Medicare/FPL) are versioned
   data packs under `params/`, with provenance.
 

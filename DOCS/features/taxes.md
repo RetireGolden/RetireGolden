@@ -266,15 +266,31 @@ rules and citations: [domain rules §16](../domain/domain-rules-reference.md#16-
   `penaltyApplies` evidence outcome but neither commits balances nor integrates with execution or simulation.
   Separately, `validateOwnedNonRothIraSeppCurrentPaymentCandidate` validates one current named SEPP
   payment as a provisional schedule-state transition. Its raw payment record references the canonical
-  distribution and a derived before-state rather than restating caller-computed actual gross, character,
+  distribution and prior terminal state rather than restating caller-computed actual gross, character,
   prior totals, or dates. It requires exact prior scheduled/actual-qualifying equality, rejects a reused
   distribution evidence ID from complete supplied history, derives current actual gross and taxable
   character from canonical coverage, and retains all-basis gross with zero prospective ordinary income.
+  The first previous state is the annual opening; every later previous state is the predecessor's derived
+  after state, and the structural history ID binds that terminal lineage. New history, after-state, and
+  candidate IDs are fixed-width SHA-256 structural digests; legacy opening and canonical coverage IDs
+  retain their existing formula. For public compatibility, an empty legacy history may omit terminal
+  proof and infer the opening while retaining its opaque history ID; populated history without terminal
+  proof is typed nonconforming.
   It always reports pending annual reconciliation and explicitly establishes no penalty treatment,
   movement, actionability, finalization, binding, readiness, execution, or simulation authority. It is
-  not connected to the penalty evaluator, annual finalizer, or coordinator. Because isolated calls
-  cannot detect separate-call forks, future annual reconciliation must revalidate raw facts and reject
-  duplicate, forked, replayed, omitted, or extra payments before qualification can be published.
+  not connected to the penalty evaluator, annual finalizer, or coordinator. The pure
+  `reconcileOwnedNonRothIraSeppAnnualSchedule` API now revalidates a complete election/source/year tuple:
+  it reconstructs histories and the predecessor chain internally, orders same-day stable identities by
+  locale-independent UTF-16 code units, takes character coverage only from a
+  structurally verified complete inventory, requires an exact inventory/payment bijection, rejects
+  lifetime and current-year replay/forks/duplicates/omissions/extras, requires prior-election history to
+  end exactly the day before the tax year, rejects lifetime distribution IDs reused by current
+  non-distribution evidence, and requires scheduled and actual terminal gross to equal the annual
+  schedule. Its new structural IDs are fixed-width digests. All-basis payments remain gross members but add zero
+  prospective ordinary exposure. “Complete” is relative only to the supplied inventory; a later penalty
+  boundary must rederive and rejoin it from full canonical annual characterization. Reconciliation still
+  establishes no qualification, penalty treatment or amount/rate, actionability, movement, readiness,
+  execution, finalization, coordination, or simulation authority.
 - **Property disposition.** Setting `costBasis` on a property replaces the tax-free `expectedNetProceeds`
   estimate with exact treatment: capital gain above basis net of `sellingCostPct`, the §121 primary-residence
   exclusion, and ordinary-income depreciation recapture. Gains flow through the capital-gains stack.

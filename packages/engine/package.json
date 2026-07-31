@@ -60,10 +60,144 @@
     "./schema/plan.v1.json": "./schema/plan.v1.json",
     "./schema/plan.v2.json": "./schema/plan.v2.json",
     "./schema/plan.v3.json": "./schema/plan.v3.json",
-    "./*": {
-      "types": "./dist/*.d.ts",
-      "default": "./dist/*.js"
+    "./actions/annualIraBasisAllocation": {
+      "types": "./dist/actions/annualIraBasisAllocation.d.ts",
+      "default": "./dist/actions/annualIraBasisAllocation.js"
     },
+    "./actions/civilDate": {
+      "types": "./dist/actions/civilDate.d.ts",
+      "default": "./dist/actions/civilDate.js"
+    },
+    "./actions/contract": {
+      "types": "./dist/actions/contract.d.ts",
+      "default": "./dist/actions/contract.js"
+    },
+    "./actions/execution": {
+      "types": "./dist/actions/execution.d.ts",
+      "default": "./dist/actions/execution.js"
+    },
+    "./actions/identity": {
+      "types": "./dist/actions/identity.d.ts",
+      "default": "./dist/actions/identity.js"
+    },
+    "./actions/money": {
+      "types": "./dist/actions/money.d.ts",
+      "default": "./dist/actions/money.js"
+    },
+    "./actions/ownedNonRothIraAnnualCandidateCoordinator": {
+      "types": "./dist/actions/ownedNonRothIraAnnualCandidateCoordinator.d.ts",
+      "default": "./dist/actions/ownedNonRothIraAnnualCandidateCoordinator.js"
+    },
+    "./actions/ownedNonRothIraAnnualFinalization": {
+      "types": "./dist/actions/ownedNonRothIraAnnualFinalization.d.ts",
+      "default": "./dist/actions/ownedNonRothIraAnnualFinalization.js"
+    },
+    "./actions/ownedNonRothIraMovementCandidate": {
+      "types": "./dist/actions/ownedNonRothIraMovementCandidate.d.ts",
+      "default": "./dist/actions/ownedNonRothIraMovementCandidate.js"
+    },
+    "./actions/ownedNonRothIraPenaltyPrerequisite": {
+      "types": "./dist/actions/ownedNonRothIraPenaltyPrerequisite.d.ts",
+      "default": "./dist/actions/ownedNonRothIraPenaltyPrerequisite.js"
+    },
+    "./actions/ownedNonRothIraSeppAnnualReconciliation": {
+      "types": "./dist/actions/ownedNonRothIraSeppAnnualReconciliation.d.ts",
+      "default": "./dist/actions/ownedNonRothIraSeppAnnualReconciliation.js"
+    },
+    "./actions/ownedNonRothIraSeppCurrentPaymentCandidate": {
+      "types": "./dist/actions/ownedNonRothIraSeppCurrentPaymentCandidate.d.ts",
+      "default": "./dist/actions/ownedNonRothIraSeppCurrentPaymentCandidate.js"
+    },
+    "./actions/ownedNonRothIraWithdrawalCharacter": {
+      "types": "./dist/actions/ownedNonRothIraWithdrawalCharacter.d.ts",
+      "default": "./dist/actions/ownedNonRothIraWithdrawalCharacter.js"
+    },
+    "./actions/planBalanceAdapter": {
+      "types": "./dist/actions/planBalanceAdapter.d.ts",
+      "default": "./dist/actions/planBalanceAdapter.js"
+    },
+    "./actions/reasons": {
+      "types": "./dist/actions/reasons.d.ts",
+      "default": "./dist/actions/reasons.js"
+    },
+    "./actions/taxableWithdrawalCharacter": {
+      "types": "./dist/actions/taxableWithdrawalCharacter.d.ts",
+      "default": "./dist/actions/taxableWithdrawalCharacter.js"
+    },
+    "./actions/*": null,
+    "./allocation/*": {
+      "types": "./dist/allocation/*.d.ts",
+      "default": "./dist/allocation/*.js"
+    },
+    "./decisions/*": {
+      "types": "./dist/decisions/*.d.ts",
+      "default": "./dist/decisions/*.js"
+    },
+    "./insights/*": {
+      "types": "./dist/insights/*.d.ts",
+      "default": "./dist/insights/*.js"
+    },
+    "./ladder/*": {
+      "types": "./dist/ladder/*.d.ts",
+      "default": "./dist/ladder/*.js"
+    },
+    "./longevity/*": {
+      "types": "./dist/longevity/*.d.ts",
+      "default": "./dist/longevity/*.js"
+    },
+    "./model/*": {
+      "types": "./dist/model/*.d.ts",
+      "default": "./dist/model/*.js"
+    },
+    "./montecarlo/*": {
+      "types": "./dist/montecarlo/*.d.ts",
+      "default": "./dist/montecarlo/*.js"
+    },
+    "./params/*": {
+      "types": "./dist/params/*.d.ts",
+      "default": "./dist/params/*.js"
+    },
+    "./projection/*": {
+      "types": "./dist/projection/*.d.ts",
+      "default": "./dist/projection/*.js"
+    },
+    "./rmd/*": {
+      "types": "./dist/rmd/*.d.ts",
+      "default": "./dist/rmd/*.js"
+    },
+    "./scenarios/*": {
+      "types": "./dist/scenarios/*.d.ts",
+      "default": "./dist/scenarios/*.js"
+    },
+    "./schema/*": {
+      "types": "./dist/schema/*.d.ts",
+      "default": "./dist/schema/*.js"
+    },
+    "./socialSecurity/*": {
+      "types": "./dist/socialSecurity/*.d.ts",
+      "default": "./dist/socialSecurity/*.js"
+    },
+    "./spending/*": {
+      "types": "./dist/spending/*.d.ts",
+      "default": "./dist/spending/*.js"
+    },
+    "./strategies/*": {
+      "types": "./dist/strategies/*.d.ts",
+      "default": "./dist/strategies/*.js"
+    },
+    "./tax/*": {
+      "types": "./dist/tax/*.d.ts",
+      "default": "./dist/tax/*.js"
+    },
+    "./testing/*": {
+      "types": "./dist/testing/*.d.ts",
+      "default": "./dist/testing/*.js"
+    },
+    "./version": {
+      "types": "./dist/version.d.ts",
+      "default": "./dist/version.js"
+    },
+    "./*": null,
     "./package.json": "./package.json"
   },
   "scripts": {
