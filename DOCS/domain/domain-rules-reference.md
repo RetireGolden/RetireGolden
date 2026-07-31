@@ -613,6 +613,21 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   provisional Form 8606 line-7/line-8/QCD categories, and a typed choice between the isolated standalone
   executor and a future unified annual ledger. It commits no balance or basis, computes no tax or
   penalty, changes no `YearResult`, and establishes neither movement nor actionability.
+  The pure `buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput` boundary consumes only the
+  standalone-compatible branch of that inventory. It reruns both inventory construction and canonical
+  movement staging, exact-rejoins the supplied staged candidate, and requires an exactly-once
+  post-candidate snapshot bound to the same Plan, owner, year, ledger, inventory, and candidate. The
+  snapshot must reproduce every allocation application and candidate balance and must include December
+  31 Form 8606 applicable balances for every owned non-inherited traditional/SEP/SIMPLE IRA sibling,
+  including unrequested and zero-balance members; employer, inherited, duplicate, and foreign members
+  fail closed. A separately complete following-year nondeductible-contribution window supplies Form 8606
+  lines 1 and 4 through an authoritative ordinary April 15-18 federal deadline (excluding disaster
+  relief); records must be positive exact cents, while no activity uses the explicit-empty arm. This
+  leaves line 5 equal to the exact opening basis. Rollover
+  line-6 adjustments and line 8 must be explicitly zero in this standalone slice, while line 7 comes only
+  from positive actual staged gross. Bigint sums produce safe-cent lines 6 and 9. The immutable success
+  contains only a classifier input and reconciliation evidence; it does not call the classifier, penalty
+  gates, executor, or simulator, mutate balance or basis, commit movement, or establish actionability.
   A separate standalone `validateOwnedNonRothIraSeppCurrentPaymentCandidate` boundary can now validate
   one named owned-IRA SEPP scheduled-payment transition against canonical character/distribution
   coverage, explicit election and annual-schedule evidence, no-disqualifying-modification coverage,

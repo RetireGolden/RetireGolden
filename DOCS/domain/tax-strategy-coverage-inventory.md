@@ -70,6 +70,12 @@ and provisional line-7, line-8, and QCD routing categories, but deliberately cha
 tax, penalty, `YearResult`, or simulator state. Unresolved identity/date/order, omissions, collisions,
 and unsafe totals fail closed.
 
+The pure `buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput` API now exact-rejoins the
+standalone inventory, staged candidate, complete owner-wide December 31 pool, basis, and following-year
+contribution evidence into a frozen classifier input without classifying, executing, or integrating with
+projection. The normative contract is in
+[domain rules §16](domain-rules-reference.md#16-retirement-action-source-integrity).
+
 ## Inventory
 
 | Area | Shipped model or action | Rule and implementation source | Test evidence | Limits that control the claim | Allowed cockpit-v1 claim | Prerequisite or blocker |

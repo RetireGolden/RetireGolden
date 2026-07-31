@@ -75,6 +75,11 @@ Source of truth: [github.com/RetireGolden/RetireGolden](https://github.com/Retir
   is a globally ordered immutable stream with owned-IRA pool views and provisional
   Form 8606/QCD categories; it still mutates no balance or basis, calculates no tax
   or penalty, and establishes neither movement nor actionability.
+- `buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput` is the next
+  pure evidence boundary for the standalone-compatible Plan-owned IRA batch. It
+  exact-rejoins the canonical candidate, complete December 31 owner pool, basis,
+  and contribution-window evidence into a frozen classifier input without
+  classifying, executing, or integrating with projection.
 - Parameters (tax brackets, limits, SSA tables, Medicare/FPL) are versioned
   data packs under `params/`, with provenance.
 
