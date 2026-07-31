@@ -587,6 +587,25 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   among positive siblings remains refused with no tax or penalty record; a positive partial action keeps
   `source-balance-trimmed` as its normative reason. This commit boundary is still isolated from the annual
   simulator and does not establish custodian completion or filing-grade tax adjudication.
+  The pure `buildAnnualRetirementPhysicalEventInventory` boundary now establishes the prerequisite
+  Plan/year chronology shape without integrating it into the simulator. It derives traditional-account
+  Plan action allocations from the validated Plan and exact-rejoins them with one complete runtime
+  attestation for owned, employer, and inherited RMDs; automatic SEPP; legacy need-based withdrawals,
+  conversions, and QCDs; in-year owned-IRA and SEP/SIMPLE account-balance contribution inflows;
+  in-year employer-plan employee contributions and employer match; annuity/TIPS funding; rollover
+  inflows; and other traditional transfers. Following-year IRA contributions designated for the
+  prior tax year remain separate annual-basis facts, not calendar-year physical events.
+  Resolved runtime events bind exact cents, owner, source, date, sequence, movement authority, upstream
+  evidence, and one ledger run. One movement authority can span multiple source members only when owner,
+  kind, origin, date, and sequence are identical; each member keeps its own unique upstream evidence.
+  The runtime attestation's own upstream evidence is published and included in the structural inventory
+  ID. Unresolved activity retains only its known kind and amount; the boundary
+  never substitutes December 31, Plan array order, or a guessed source. Omissions, foreign records,
+  unsafe totals, identifier collisions, and cross-authority chronology-slot conflicts fail closed. A
+  successful immutable stream exposes complete owned-IRA pool views, exact Plan-owned action IDs,
+  provisional Form 8606 line-7/line-8/QCD categories, and a typed choice between the isolated standalone
+  executor and a future unified annual ledger. It commits no balance or basis, computes no tax or
+  penalty, changes no `YearResult`, and establishes neither movement nor actionability.
   A separate standalone `validateOwnedNonRothIraSeppCurrentPaymentCandidate` boundary can now validate
   one named owned-IRA SEPP scheduled-payment transition against canonical character/distribution
   coverage, explicit election and annual-schedule evidence, no-disqualifying-modification coverage,

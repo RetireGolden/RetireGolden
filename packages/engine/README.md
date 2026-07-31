@@ -53,6 +53,21 @@ Source of truth: [github.com/RetireGolden/RetireGolden](https://github.com/Retir
   scheduled versus executed dates and publish normative dispositions,
   per-allocation tax character and penalty evidence, and one collision-checked
   structural execution ID. This API is not wired into the annual simulator.
+- `buildAnnualRetirementPhysicalEventInventory` is the pure chronology boundary
+  in front of future simulator integration. It derives traditional-account Plan
+  action allocations internally and exact-rejoins a complete Plan/year/ledger-run
+  runtime inventory covering RMD, automatic SEPP, legacy projection,
+  in-year IRA/employer-plan account-balance contribution inflows and employer
+  match, and transfer activity. Following-year IRA contributions designated for
+  the prior tax year remain separate annual-basis facts, not events in this
+  calendar-year chronology. A
+  shared movement authority may cover multiple source members only when their
+  owner, kind, origin, date, and sequence agree; upstream evidence remains unique
+  per member. It never invents a missing owner, source, date, or order: incomplete
+  records and cross-authority chronology conflicts fail closed. Successful output
+  is a globally ordered immutable stream with owned-IRA pool views and provisional
+  Form 8606/QCD categories; it still mutates no balance or basis, calculates no tax
+  or penalty, and establishes neither movement nor actionability.
 - Parameters (tax brackets, limits, SSA tables, Medicare/FPL) are versioned
   data packs under `params/`, with provenance.
 

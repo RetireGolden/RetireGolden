@@ -283,6 +283,20 @@ rules and citations: [domain rules §16](../domain/domain-rules-reference.md#16-
   reports executed dates only for positive movement; and publishes one collision-checked structural
   execution ID with the upstream Plan/coordinator IDs still visible. This standalone commit API is not
   integrated into projection simulation and does not prove custodian settlement or filing-grade treatment.
+  The pure `buildAnnualRetirementPhysicalEventInventory` API now creates the complete chronology input
+  required before that authority can be integrated. It derives Plan traditional-account allocations and
+  combines them with an exact Plan/year/ledger-run runtime inventory for RMD, automatic SEPP, legacy
+  withdrawal/conversion/QCD, in-year IRA and employer-plan account-balance contribution inflows,
+  employer match, and traditional-transfer activity. Following-year IRA contributions designated for
+  the prior tax year remain separate annual-basis facts rather than events in this calendar-year
+  chronology. A shared movement authority may cover multiple source members only
+  under the same owner/kind/origin/date/sequence binding; upstream evidence stays member-specific and the
+  attestation's upstream lineage is structurally bound. Missing identity or chronology remains a
+  typed unresolved record and blocks the inventory; no December 31 date, source, or sequence is inferred.
+  Successful output groups the globally ordered stream by owned-IRA pool and provisionally separates
+  Form 8606 line 7, line 8, QCD-awaiting-stage, and non-Form-8606/foreign-pool activity. Those categories
+  are routing inputs only: the API changes no balance or basis, calculates no character, tax, or penalty,
+  and leaves movement uncommitted and actionability unestablished.
   Separately, `validateOwnedNonRothIraSeppCurrentPaymentCandidate` validates one current named SEPP
   payment as a provisional schedule-state transition. Its raw payment record references the canonical
   distribution and prior terminal state rather than restating caller-computed actual gross, character,
