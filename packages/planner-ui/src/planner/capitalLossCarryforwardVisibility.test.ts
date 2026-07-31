@@ -28,6 +28,13 @@ describe('results and report carryforward visibility', () => {
     expect(hasCapitalLossCarryforward(0, [year(2026)])).toBe(false)
   })
 
+  it('stays hidden when an opening-zero loss is fully used in-year with nothing remaining', () => {
+    const years = [year(2026, 0, 0, 2_500)]
+
+    expect(hasCapitalLossCarryforward(0, years)).toBe(false)
+    expect(capitalLossCarryforwardHighlight(0, years)).toBeUndefined()
+  })
+
   it('keeps opening carryforwards visible even after the projection exhausts them', () => {
     expect(hasCapitalLossCarryforward(25_000, [year(2026)])).toBe(true)
   })

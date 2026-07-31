@@ -22,7 +22,12 @@ export function hasCapitalLossCarryforward(
   openingCarryforward: number,
   years: readonly CarryforwardYear[],
 ): boolean {
-  return openingCarryforward > 0 || years.some(hasCarryforwardActivity)
+  return (
+    openingCarryforward > 0 ||
+    years.some(
+      (year) => year.capitalLossCarryforwardRemaining > ACTIVITY_THRESHOLD,
+    )
+  )
 }
 
 /** First modeled activity; opening pools retain the historical first-year fallback. */
@@ -30,6 +35,7 @@ export function capitalLossCarryforwardHighlight<T extends CarryforwardYear>(
   openingCarryforward: number,
   years: readonly T[],
 ): T | undefined {
+  if (!hasCapitalLossCarryforward(openingCarryforward, years)) return undefined
   return (
     years.find(hasCarryforwardActivity) ??
     (openingCarryforward > 0 ? years[0] : undefined)
