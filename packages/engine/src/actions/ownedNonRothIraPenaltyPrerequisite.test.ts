@@ -624,6 +624,14 @@ describe('evaluateOwnedNonRothIraPenaltyPrerequisites', () => {
     expect(() =>
       evaluateOwnedNonRothIraPenaltyPrerequisites(malformed),
     ).toThrow(/canonical/)
+
+    const beforeBirth = input({
+      subtype: 'simple',
+      participationStartDate: '1979-12-31',
+    })
+    expect(() =>
+      evaluateOwnedNonRothIraPenaltyPrerequisites(beforeBirth),
+    ).toThrow(/cannot precede the owner birth date/)
   })
 
   it('rejects missing, duplicated, malformed, or foreign character segments', () => {

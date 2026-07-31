@@ -864,6 +864,11 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
         'SIMPLE IRA participation evidence must bind its source and owner',
       )
     }
+    if (participationStartDate < birthDate) {
+      throw new RangeError(
+        'SIMPLE IRA participation start date cannot precede the owner birth date',
+      )
+    }
     if (
       simpleParticipationEvidenceIds.has(participationStartEvidenceId)
     ) {
