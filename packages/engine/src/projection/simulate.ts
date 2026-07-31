@@ -782,7 +782,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         const target = targetWeightsAt(track.policy, year)
         const turnover = rebalanceTurnoverFraction(track.weights, target)
         if (turnover > 1e-9 && state.account.type === 'taxable' && state.balance > 0) {
-          const sellAmount = turnover * state.balance
+          // Normalized floating-point weights can sum a few ulps above 1.
+          // Keep the strict sale helper strict and contain that noise here.
+          const sellAmount = Math.min(state.balance, Math.max(0, turnover * state.balance))
           const sale = aggregateBasisSale({
             openingFairMarketValue: state.balance,
             openingCostBasis: state.costBasis,
