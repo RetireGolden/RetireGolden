@@ -563,6 +563,8 @@ function canonicalLine8Entries(
   issues: PlanOwnedNonRothIraSourceInventoryIssue[],
 ): AnnualIraBasisAllocationEntryInput[] {
   const identities = new Set<string>()
+  const scheduleBySlot = new Map<string, ActionId>()
+  const scheduleByAction = new Map<ActionId, string>()
   return entries
     .map((entry): AnnualIraBasisAllocationEntryInput => {
       const actionId = actionIdSchema.parse(entry.actionId)
@@ -608,6 +610,28 @@ function canonicalLine8Entries(
         ))
       }
       identities.add(identity)
+      const slot = JSON.stringify([scheduledDate, scheduledSequence])
+      const existingActionSlot = scheduleByAction.get(actionId)
+      if (
+        existingActionSlot !== undefined &&
+        existingActionSlot !== slot
+      ) {
+        issues.push(inventoryIssue(
+          'line8InventoryEvidenceBindingMismatch',
+          'Every allocation from one line-8 action must share its schedule position',
+          { actionId, sourceAccountId },
+        ))
+      }
+      scheduleByAction.set(actionId, slot)
+      const scheduledAction = scheduleBySlot.get(slot)
+      if (scheduledAction !== undefined && scheduledAction !== actionId) {
+        issues.push(inventoryIssue(
+          'line8InventoryEvidenceBindingMismatch',
+          'Different line-8 actions must not occupy the same schedule position',
+          { actionId, sourceAccountId },
+        ))
+      }
+      scheduleBySlot.set(slot, actionId)
       return {
         actionId,
         allocationId,

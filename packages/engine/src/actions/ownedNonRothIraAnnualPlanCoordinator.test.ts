@@ -548,6 +548,60 @@ describe('Plan-owned non-Roth IRA annual coordinator', () => {
       issue: 'line8InventoryEvidenceBindingMismatch',
     },
     {
+      name: 'different line-8 actions share one schedule position',
+      alter: (value: CoordinatePlanOwnedNonRothIraAnnualWithdrawalCandidateInput) => {
+        value.line8InventoryEvidence = {
+          ...value.line8InventoryEvidence,
+          entries: [
+            {
+              actionId: asActionId('conversion-one'),
+              allocationId: asAllocationId('conversion-one-allocation'),
+              sourceAccountId: requestedSourceId,
+              scheduledDate: '2030-07-01',
+              scheduledSequence: 1,
+              grossAmount: asUsdCents(500),
+            },
+            {
+              actionId: asActionId('conversion-two'),
+              allocationId: asAllocationId('conversion-two-allocation'),
+              sourceAccountId: siblingSourceId,
+              scheduledDate: '2030-07-01',
+              scheduledSequence: 1,
+              grossAmount: asUsdCents(500),
+            },
+          ],
+        }
+      },
+      issue: 'line8InventoryEvidenceBindingMismatch',
+    },
+    {
+      name: 'one line-8 action spans different schedule positions',
+      alter: (value: CoordinatePlanOwnedNonRothIraAnnualWithdrawalCandidateInput) => {
+        value.line8InventoryEvidence = {
+          ...value.line8InventoryEvidence,
+          entries: [
+            {
+              actionId: asActionId('conversion-one'),
+              allocationId: asAllocationId('conversion-one-first'),
+              sourceAccountId: requestedSourceId,
+              scheduledDate: '2030-07-01',
+              scheduledSequence: 1,
+              grossAmount: asUsdCents(500),
+            },
+            {
+              actionId: asActionId('conversion-one'),
+              allocationId: asAllocationId('conversion-one-second'),
+              sourceAccountId: siblingSourceId,
+              scheduledDate: '2030-07-02',
+              scheduledSequence: 1,
+              grossAmount: asUsdCents(500),
+            },
+          ],
+        }
+      },
+      issue: 'line8InventoryEvidenceBindingMismatch',
+    },
+    {
       name: 'different ledger run',
       alter: (value: CoordinatePlanOwnedNonRothIraAnnualWithdrawalCandidateInput) => {
         value.line8InventoryEvidence = {
