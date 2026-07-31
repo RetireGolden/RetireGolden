@@ -228,9 +228,12 @@ rules and citations: [domain rules §16](../domain/domain-rules-reference.md#16-
   derives allocation-bound line-7 basis-return/ordinary-income character. A second pure prerequisite
   boundary binds that character to explicit owner, source, and civil-date evidence; excludes basis from
   penalty exposure; applies the exact 59½ and SIMPLE two-year thresholds; and calculates an exact-cent
-  candidate before exceptions. Under 59½ it requires a separate exception evaluation and never asserts
-  that a penalty applies. Neither boundary establishes eligibility, moves balances, or changes the legacy
-  projection path.
+  candidate before exceptions. Caller-explicit positive disability evidence can finalize zero penalty
+  for matching under-59½ ordinary-income allocations when it proves the owner qualified on or before
+  the exact distribution date; that result bypasses SIMPLE participation/rate evidence. Missing
+  disability evidence leaves the existing exception-evaluation-required result, while irrelevant or
+  malformed evidence fails closed. Neither boundary establishes eligibility, moves balances, executes
+  an action, or changes the legacy projection path.
 - **Property disposition.** Setting `costBasis` on a property replaces the tax-free `expectedNetProceeds`
   estimate with exact treatment: capital gain above basis net of `sellingCostPct`, the §121 primary-residence
   exclusion, and ordinary-income depreciation recapture. Gains flow through the capital-gains stack.

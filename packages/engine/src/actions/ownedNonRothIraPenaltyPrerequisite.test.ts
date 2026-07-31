@@ -16,6 +16,7 @@ import {
   evaluateOwnedNonRothIraPenaltyPrerequisites,
   type EvaluateOwnedNonRothIraPenaltyPrerequisitesInput,
   type OwnedNonRothIraPenaltySourceEvidence,
+  type QualifiedDisabilityEventEvidence,
   type SimpleIraParticipationEvidence,
 } from './ownedNonRothIraPenaltyPrerequisite.js'
 
@@ -108,6 +109,21 @@ function simpleParticipation(
   }
 }
 
+function qualifiedDisability(
+  evaluationDate = '2030-06-01',
+  disabilityQualificationDate = '2030-06-01',
+  disabilityEvidenceId = 'disability-record',
+): QualifiedDisabilityEventEvidence {
+  return {
+    kind: 'disability',
+    disabledPersonId: asPersonId('owner'),
+    disabilityQualificationDate,
+    evaluationDate,
+    qualifiedOnEvaluationDate: true,
+    disabilityEvidenceId,
+  }
+}
+
 function input(options: {
   subtype?: OwnedNonRothIraSubtype
   taxYear?: number
@@ -116,6 +132,7 @@ function input(options: {
   birthDate?: string
   evaluationDate?: string
   participationStartDate?: string
+  disabilityQualificationDate?: string
 } = {}): EvaluateOwnedNonRothIraPenaltyPrerequisitesInput {
   const subtype = options.subtype ?? 'traditional'
   const taxYear = options.taxYear ?? 2030
@@ -145,7 +162,15 @@ function input(options: {
       evidenceId: 'birth-date',
     },
     sourceEvidence: [sourceEvidence(subtype, evaluationDate)],
+    qualifiedDisabilityEvidence:
+      options.disabilityQualificationDate === undefined
+        ? []
+        : [qualifiedDisability(
+            evaluationDate,
+            options.disabilityQualificationDate,
+          )],
     simpleParticipationEvidence: requiresSimpleParticipation
+      && options.disabilityQualificationDate === undefined
       ? [simpleParticipation(options.participationStartDate)]
       : [],
   }
@@ -280,6 +305,7 @@ function twoWithdrawalInput(
       evidenceId: 'birth-date',
     },
     sourceEvidence: reverseEvidence ? evidence.reverse() : evidence,
+    qualifiedDisabilityEvidence: [],
     simpleParticipationEvidence: [],
   }
 }
@@ -335,6 +361,98 @@ describe('evaluateOwnedNonRothIraPenaltyPrerequisites', () => {
     expect(() =>
       evaluateOwnedNonRothIraPenaltyPrerequisites(value),
     ).toThrow(/exactly match the dated annual line-7 allocation/)
+  })
+
+  it('qualifies disability effective before or exactly on the distribution date', () => {
+    const before = first(evaluateOwnedNonRothIraPenaltyPrerequisites(input({
+      disabilityQualificationDate: '2030-05-31',
+    })))
+    const equal = first(evaluateOwnedNonRothIraPenaltyPrerequisites(input({
+      disabilityQualificationDate: '2030-06-01',
+    })))
+
+    for (const evaluation of [before, equal]) {
+      expect(evaluation).toMatchObject({
+        outcome: 'disabilityQualified',
+        evaluatedOrdinaryIncomeExposureAmount: 100,
+        finalPenaltyAmount: 0,
+        disabilityEvent: {
+          kind: 'disability',
+          disabledPersonId: 'owner',
+          evaluationDate: '2030-06-01',
+          qualifiedOnEvaluationDate: true,
+          disabilityEvidenceId: 'disability-record',
+        },
+      })
+      expect(evaluation).not.toHaveProperty('candidateAmountBeforeExceptions')
+      expect(evaluation).not.toHaveProperty('rateEvidence')
+    }
+  })
+
+  it('keeps an under-age distribution unresolved when disability evidence is absent', () => {
+    expect(first(
+      evaluateOwnedNonRothIraPenaltyPrerequisites(input()),
+    ).outcome).toBe('exceptionEvaluationRequired')
+  })
+
+  it('does not require SIMPLE participation or construct a rate for qualified disability', () => {
+    const value = input({
+      subtype: 'simple',
+      disabilityQualificationDate: '2029-12-31',
+    })
+    value.simpleParticipationEvidence = []
+
+    const evaluation = first(
+      evaluateOwnedNonRothIraPenaltyPrerequisites(value),
+    )
+
+    expect(evaluation).toMatchObject({
+      outcome: 'disabilityQualified',
+      finalPenaltyAmount: 0,
+    })
+    expect(evaluation).not.toHaveProperty('rateEvidence')
+    expect(evaluation).not.toHaveProperty('candidateAmountBeforeExceptions')
+  })
+
+  it('qualifies only the matching date and retains a rate candidate for another date', () => {
+    const value = twoWithdrawalInput()
+    value.qualifiedDisabilityEvidence = [
+      qualifiedDisability('2030-01-01', '2029-12-31'),
+    ]
+
+    const result = evaluateOwnedNonRothIraPenaltyPrerequisites(value)
+
+    expect(result.evaluations.map((evaluation) => evaluation.outcome)).toEqual([
+      'disabilityQualified',
+      'exceptionEvaluationRequired',
+    ])
+    expect(result.evaluations[1]).toMatchObject({
+      actionId: 'action-b',
+      candidateAmountBeforeExceptions: 5,
+      rateEvidence: {
+        kind: 'traditionalOrSepStandardRate',
+        subtype: 'sep',
+      },
+    })
+  })
+
+  it('applies one dated disability event across split same-date allocations', () => {
+    const value = twoWithdrawalInput(false, false, true)
+    value.qualifiedDisabilityEvidence = [
+      qualifiedDisability('2030-01-01', '2030-01-01'),
+    ]
+
+    const result = evaluateOwnedNonRothIraPenaltyPrerequisites(value)
+
+    expect(result.evaluations).toHaveLength(2)
+    expect(result.evaluations.every(
+      (evaluation) => evaluation.outcome === 'disabilityQualified',
+    )).toBe(true)
+    expect(result.evaluations.map((evaluation) =>
+      evaluation.outcome === 'disabilityQualified'
+        ? evaluation.disabilityEvent.disabilityEvidenceId
+        : null,
+    )).toEqual(['disability-record', 'disability-record'])
   })
 
   it.each(['traditional', 'sep'] as const)(
@@ -544,6 +662,110 @@ describe('evaluateOwnedNonRothIraPenaltyPrerequisites', () => {
       'candidateAmountBeforeExceptions',
     )
     expect(result.coverage[0]).not.toHaveProperty('finalPenaltyAmount')
+  })
+
+  it('rejects malformed, foreign, late, duplicate, and irrelevant disability evidence', () => {
+    const malformed = input()
+    malformed.qualifiedDisabilityEvidence = [{
+      ...qualifiedDisability(),
+      disabilityQualificationDate: '2030-02-30',
+    }]
+    expect(() =>
+      evaluateOwnedNonRothIraPenaltyPrerequisites(malformed),
+    ).toThrow(/canonical/)
+
+    const notPositive = input({
+      disabilityQualificationDate: '2030-05-01',
+    })
+    Object.assign(notPositive.qualifiedDisabilityEvidence[0]!, {
+      qualifiedOnEvaluationDate: false,
+    })
+    expect(() =>
+      evaluateOwnedNonRothIraPenaltyPrerequisites(notPositive),
+    ).toThrow(/positively qualify/)
+
+    const foreign = input()
+    foreign.qualifiedDisabilityEvidence = [{
+      ...qualifiedDisability(),
+      disabledPersonId: asPersonId('foreign'),
+    }]
+    expect(() =>
+      evaluateOwnedNonRothIraPenaltyPrerequisites(foreign),
+    ).toThrow(/characterized owner/)
+
+    const late = input()
+    late.qualifiedDisabilityEvidence = [
+      qualifiedDisability('2030-06-01', '2030-06-02'),
+    ]
+    expect(() =>
+      evaluateOwnedNonRothIraPenaltyPrerequisites(late),
+    ).toThrow(/cannot follow/)
+
+    const beforeBirth = input()
+    beforeBirth.qualifiedDisabilityEvidence = [
+      qualifiedDisability('2030-06-01', '1979-12-31'),
+    ]
+    expect(() =>
+      evaluateOwnedNonRothIraPenaltyPrerequisites(beforeBirth),
+    ).toThrow(/cannot precede/)
+
+    const blankEvidenceId = input()
+    blankEvidenceId.qualifiedDisabilityEvidence = [{
+      ...qualifiedDisability(),
+      disabilityEvidenceId: ' ',
+    }]
+    expect(() =>
+      evaluateOwnedNonRothIraPenaltyPrerequisites(blankEvidenceId),
+    ).toThrow(/nonblank/)
+
+    const duplicate = input()
+    duplicate.qualifiedDisabilityEvidence = [
+      qualifiedDisability(),
+      qualifiedDisability(),
+    ]
+    expect(() =>
+      evaluateOwnedNonRothIraPenaltyPrerequisites(duplicate),
+    ).toThrow(/uniquely match/)
+
+    const sharedRecord = twoWithdrawalInput()
+    sharedRecord.qualifiedDisabilityEvidence = [
+      qualifiedDisability(
+        '2030-01-01',
+        '2029-12-31',
+        'disability-record-january',
+      ),
+      qualifiedDisability(
+        '2030-02-01',
+        '2029-12-31',
+        'disability-record-february',
+      ),
+    ]
+    expect(
+      evaluateOwnedNonRothIraPenaltyPrerequisites(sharedRecord)
+        .evaluations
+        .map((evaluation) => evaluation.outcome),
+    ).toEqual(['disabilityQualified', 'disabilityQualified'])
+
+    const conflictingReuse = twoWithdrawalInput()
+    conflictingReuse.qualifiedDisabilityEvidence = [
+      qualifiedDisability('2030-01-01', '2029-12-31'),
+      qualifiedDisability('2030-02-01', '2029-12-31'),
+    ]
+    expect(() =>
+      evaluateOwnedNonRothIraPenaltyPrerequisites(conflictingReuse),
+    ).toThrow(/exact same dated event/)
+
+    const ageQualified = input({ birthDate: '1950-01-01' })
+    ageQualified.qualifiedDisabilityEvidence = [qualifiedDisability()]
+    expect(() =>
+      evaluateOwnedNonRothIraPenaltyPrerequisites(ageQualified),
+    ).toThrow(/under-age positive ordinary-income/)
+
+    const basisOnly = input({ grossAmount: 100, basisAmount: 10_000 })
+    basisOnly.qualifiedDisabilityEvidence = [qualifiedDisability()]
+    expect(() =>
+      evaluateOwnedNonRothIraPenaltyPrerequisites(basisOnly),
+    ).toThrow(/under-age positive ordinary-income/)
   })
 
   it.each([
@@ -802,7 +1024,10 @@ describe('evaluateOwnedNonRothIraPenaltyPrerequisites', () => {
   })
 
   it('is deterministic, detached from inputs, and deeply frozen', () => {
-    const mutableInput = input({ subtype: 'simple' })
+    const mutableInput = input({
+      subtype: 'simple',
+      disabilityQualificationDate: '2030-05-01',
+    })
     const result = evaluateOwnedNonRothIraPenaltyPrerequisites(mutableInput)
     const canonical =
       evaluateOwnedNonRothIraPenaltyPrerequisites(twoWithdrawalInput())
@@ -813,14 +1038,28 @@ describe('evaluateOwnedNonRothIraPenaltyPrerequisites', () => {
     expect(Object.isFrozen(result)).toBe(true)
     expect(Object.isFrozen(result.evaluations)).toBe(true)
     expect(Object.isFrozen(first(result).characterCoverage)).toBe(true)
+    const disabilityEvaluation = first(result)
+    expect(Object.isFrozen(
+      disabilityEvaluation.outcome === 'disabilityQualified'
+        ? disabilityEvaluation.disabilityEvent
+        : null,
+    )).toBe(true)
     const originalEvidenceId = first(result).characterCoverage.evidenceId
     Object.assign(mutableInput.sourceEvidence[0]!, {
       distributionDateEvidenceId: 'mutated',
+    })
+    Object.assign(mutableInput.qualifiedDisabilityEvidence[0]!, {
+      disabilityEvidenceId: 'mutated',
     })
     expect(first(result).characterCoverage.evidenceId).toBe(originalEvidenceId)
     expect(
       first(result).characterCoverage.sourceEvidenceIds
         .distributionDateEvidenceId,
     ).toBe('distribution-date')
+    expect(
+      disabilityEvaluation.outcome === 'disabilityQualified'
+        ? disabilityEvaluation.disabilityEvent.disabilityEvidenceId
+        : null,
+    ).toBe('disability-record')
   })
 })

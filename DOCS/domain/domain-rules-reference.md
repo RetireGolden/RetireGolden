@@ -514,10 +514,15 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   positive ordinary-income character, computes age 59½ as 714 calendar months with month-end clamping,
   and applies 10% for traditional/SEP or 25% strictly within a SIMPLE IRA's first 24 calendar months
   (10% at and after that boundary). Candidate amounts use exact bigint rational arithmetic and nearest-cent
-  half-up quantization. A distribution at or after 59½ can receive final zero-penalty age coverage; a
-  distribution before 59½ produces only an exception-evaluation-required candidate, never a conclusion
-  that the penalty applies. These action substrates do not establish withdrawal eligibility or
-  execute/simulate an IRA action.
+  half-up quantization. A distribution at or after 59½ can receive final zero-penalty age coverage.
+  Before 59½, caller-supplied positive disability evidence can receive final zero-penalty disability
+  coverage only when it binds the owner and exact distribution date and proves qualification on or
+  before that date; a disability-qualified SIMPLE allocation does not need participation-date/rate
+  evidence. Other distributions before 59½ produce only an exception-evaluation-required candidate,
+  never a conclusion that the penalty applies. This pure prerequisite rejects irrelevant disability
+  evidence and does not infer disability from plan data. These action substrates do not establish
+  withdrawal eligibility or execute/simulate an IRA action. Source: [IRS early-distribution exception
+  matrix](https://www.irs.gov/retirement-plans/plan-participant-employee/retirement-topics-exceptions-to-tax-on-early-distributions).
 - **Fixed-asset disposition.** Setting `costBasis` on a property switches its planned sale from the legacy
   tax-free `expectedNetProceeds` estimate to exact treatment: gain = sale price − selling costs
   (`sellingCostPct`) − basis; depreciation (`depreciationRecapture`) is ordinary income and never excludable;

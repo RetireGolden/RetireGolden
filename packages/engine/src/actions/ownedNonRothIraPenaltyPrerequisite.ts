@@ -50,10 +50,21 @@ export interface SimpleIraParticipationEvidence {
   participationStartEvidenceId: string
 }
 
+export interface QualifiedDisabilityEventEvidence {
+  kind: 'disability'
+  disabledPersonId: PersonId
+  disabilityQualificationDate: string
+  evaluationDate: string
+  qualifiedOnEvaluationDate: true
+  disabilityEvidenceId: string
+}
+
 export interface EvaluateOwnedNonRothIraPenaltyPrerequisitesInput {
   characterization: Readonly<ClassifyOwnedNonRothIraAnnualWithdrawalsResult>
   ownerEvidence: Readonly<OwnedNonRothIraPenaltyOwnerEvidence>
   sourceEvidence: readonly Readonly<OwnedNonRothIraPenaltySourceEvidence>[]
+  qualifiedDisabilityEvidence:
+    readonly Readonly<QualifiedDisabilityEventEvidence>[]
   simpleParticipationEvidence:
     readonly Readonly<SimpleIraParticipationEvidence>[]
 }
@@ -137,6 +148,15 @@ export interface Age59HalfReachedPenaltyEvaluation
   finalEvidenceId: string
 }
 
+export interface DisabilityQualifiedPenaltyEvaluation
+  extends OwnedNonRothIraPenaltyEvaluationBase {
+  outcome: 'disabilityQualified'
+  evaluatedOrdinaryIncomeExposureAmount: UsdCents
+  disabilityEvent: Readonly<QualifiedDisabilityEventEvidence>
+  finalPenaltyAmount: 0
+  finalEvidenceId: string
+}
+
 export interface ExceptionEvaluationRequiredPenaltyPrerequisite
   extends OwnedNonRothIraPenaltyEvaluationBase {
   outcome: 'exceptionEvaluationRequired'
@@ -148,6 +168,7 @@ export interface ExceptionEvaluationRequiredPenaltyPrerequisite
 
 export type OwnedNonRothIraPenaltyPrerequisiteEvaluation =
   | Age59HalfReachedPenaltyEvaluation
+  | DisabilityQualifiedPenaltyEvaluation
   | ExceptionEvaluationRequiredPenaltyPrerequisite
 
 export interface EvaluateOwnedNonRothIraPenaltyPrerequisitesResult {
@@ -815,6 +836,90 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
     )
   }
 
+  const disabilityRelevantDates = new Set<string>()
+  for (const withdrawal of withdrawalByKey.values()) {
+    const sourceEvidence = sourceEvidenceByKey.get(
+      identityKey(withdrawal.actionId, withdrawal.allocationId),
+    )
+    if (
+      sourceEvidence !== undefined &&
+      withdrawal.ordinaryIncomeAmount > 0 &&
+      sourceEvidence.evaluationDate < age59HalfDate
+    ) {
+      disabilityRelevantDates.add(sourceEvidence.evaluationDate)
+    }
+  }
+  const disabilityByEvaluationDate = new Map<
+    string,
+    QualifiedDisabilityEventEvidence
+  >()
+  const disabilityEvidenceBindings = new Map<string, string>()
+  for (const disabilityInput of input.qualifiedDisabilityEvidence) {
+    const disabledPersonId = personIdSchema.parse(
+      disabilityInput.disabledPersonId,
+    )
+    const disabilityQualificationDate = validateCivilDate(
+      disabilityInput.disabilityQualificationDate,
+      'IRA disability qualification date',
+    )
+    const evaluationDate = validateCivilDate(
+      disabilityInput.evaluationDate,
+      'IRA disability evaluation date',
+    )
+    const disabilityEvidenceId = nonblankId(
+      disabilityInput.disabilityEvidenceId,
+      'IRA disability evidence ID',
+    )
+    if (
+      disabilityInput.kind !== 'disability' ||
+      disabilityInput.qualifiedOnEvaluationDate !== true ||
+      disabledPersonId !== ownerPersonId
+    ) {
+      throw new RangeError(
+        'IRA disability evidence must positively qualify the characterized owner',
+      )
+    }
+    if (disabilityQualificationDate < birthDate) {
+      throw new RangeError(
+        'IRA disability qualification date cannot precede the owner birth date',
+      )
+    }
+    if (disabilityQualificationDate > evaluationDate) {
+      throw new RangeError(
+        'IRA disability qualification date cannot follow its evaluation date',
+      )
+    }
+    if (
+      !disabilityRelevantDates.has(evaluationDate) ||
+      disabilityByEvaluationDate.has(evaluationDate)
+    ) {
+      throw new RangeError(
+        'IRA disability evidence must uniquely match an under-age positive ordinary-income distribution date',
+      )
+    }
+    const disabilityEvent: QualifiedDisabilityEventEvidence = {
+      kind: 'disability',
+      disabledPersonId,
+      disabilityQualificationDate,
+      evaluationDate,
+      qualifiedOnEvaluationDate: true,
+      disabilityEvidenceId,
+    }
+    const eventBinding = stableStructuralSnapshot(disabilityEvent)
+    const existingEvidenceBinding =
+      disabilityEvidenceBindings.get(disabilityEvidenceId)
+    if (
+      existingEvidenceBinding !== undefined &&
+      existingEvidenceBinding !== eventBinding
+    ) {
+      throw new RangeError(
+        'IRA disability evidence ID reuse must bind the exact same dated event',
+      )
+    }
+    disabilityEvidenceBindings.set(disabilityEvidenceId, eventBinding)
+    disabilityByEvaluationDate.set(evaluationDate, disabilityEvent)
+  }
+
   const requiredSimpleSourceIds = new Set<AccountId>()
   for (const withdrawal of withdrawalByKey.values()) {
     const sourceEvidence = sourceEvidenceByKey.get(
@@ -824,7 +929,8 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
       sourceEvidence !== undefined &&
       withdrawal.subtype === 'simple' &&
       withdrawal.ordinaryIncomeAmount > 0 &&
-      sourceEvidence.evaluationDate < age59HalfDate
+      sourceEvidence.evaluationDate < age59HalfDate &&
+      !disabilityByEvaluationDate.has(sourceEvidence.evaluationDate)
     ) {
       requiredSimpleSourceIds.add(withdrawal.sourceAccountId)
     }
@@ -978,6 +1084,28 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
             characterCoverageId,
             ageThresholdEvidenceId,
           ]),
+        })
+        continue
+      }
+      const disabilityEvent = disabilityByEvaluationDate.get(
+        sourceEvidence.evaluationDate,
+      )
+      if (disabilityEvent !== undefined) {
+        evaluations.push({
+          ...base,
+          outcome: 'disabilityQualified',
+          evaluatedOrdinaryIncomeExposureAmount:
+            character.ordinaryIncomeAmount,
+          disabilityEvent,
+          finalPenaltyAmount: 0,
+          finalEvidenceId: stableId(
+            'owned-ira-disability-qualified-zero-penalty',
+            [
+              characterCoverageId,
+              ageThresholdEvidenceId,
+              disabilityEvent,
+            ],
+          ),
         })
         continue
       }
