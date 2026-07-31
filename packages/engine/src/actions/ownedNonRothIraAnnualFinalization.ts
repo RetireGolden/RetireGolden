@@ -18,9 +18,14 @@ import {
   type DisabilityQualifiedPenaltyEvaluation,
   type EvaluateOwnedNonRothIraPenaltyPrerequisitesResult,
   type ExceptionEvaluationRequiredPenaltyPrerequisite,
+  type NoOtherStatutoryExceptionClaimedAttestation,
+  type OwnedNonRothIraNoSeppStatusEvidence,
+  type OwnedNonRothIraOwnerAliveEvidence,
   type OwnedNonRothIraPenaltyOwnerEvidence,
   type OwnedNonRothIraPenaltySourceEvidence,
+  type PenaltyAppliesEvaluation,
   type QualifiedDisabilityEventEvidence,
+  type RejectedDisabilityStatusEvidence,
   type SimpleIraParticipationEvidence,
 } from './ownedNonRothIraPenaltyPrerequisite.js'
 import {
@@ -38,6 +43,14 @@ export interface ResolveOwnedNonRothIraAnnualWithdrawalEvidenceInput {
   sourceEvidence: readonly Readonly<OwnedNonRothIraPenaltySourceEvidence>[]
   qualifiedDisabilityEvidence?:
     readonly Readonly<QualifiedDisabilityEventEvidence>[]
+  rejectedDisabilityEvidence?:
+    readonly Readonly<RejectedDisabilityStatusEvidence>[]
+  ownerAliveEvidence?:
+    readonly Readonly<OwnedNonRothIraOwnerAliveEvidence>[]
+  iraSeppStatusEvidence?:
+    readonly Readonly<OwnedNonRothIraNoSeppStatusEvidence>[]
+  noOtherExceptionAttestations?:
+    readonly Readonly<NoOtherStatutoryExceptionClaimedAttestation>[]
   simpleParticipationEvidence:
     readonly Readonly<SimpleIraParticipationEvidence>[]
 }
@@ -45,6 +58,7 @@ export interface ResolveOwnedNonRothIraAnnualWithdrawalEvidenceInput {
 export type FinalOwnedNonRothIraPenaltyPrerequisiteEvaluation =
   | Age59HalfReachedPenaltyEvaluation
   | DisabilityQualifiedPenaltyEvaluation
+  | PenaltyAppliesEvaluation
 
 export interface ResolvedOwnedNonRothIraPenaltyPrerequisites
   extends Omit<
@@ -119,9 +133,9 @@ function stableId(prefix: string, parts: readonly unknown[]): string {
  *
  * This is an atomic, pure publication gate. It characterizes staged executed
  * gross withdrawals and evaluates their penalty prerequisites, but it neither
- * commits movement nor concludes that any under-59½ penalty applies. Every
- * positive ordinary-income allocation must have a final zero-penalty age or
- * disability outcome before the owner/year bundle can be published.
+ * commits movement nor establishes action readiness. Every positive
+ * ordinary-income allocation must have a final age, disability, or fully
+ * evidenced penalty-applicable outcome before publication.
  */
 export function resolveOwnedNonRothIraAnnualWithdrawalEvidence(
   input: Readonly<ResolveOwnedNonRothIraAnnualWithdrawalEvidenceInput>,
@@ -150,6 +164,11 @@ export function resolveOwnedNonRothIraAnnualWithdrawalEvidence(
       ownerEvidence: input.ownerEvidence,
       sourceEvidence: input.sourceEvidence,
       qualifiedDisabilityEvidence: input.qualifiedDisabilityEvidence,
+      rejectedDisabilityEvidence: input.rejectedDisabilityEvidence,
+      ownerAliveEvidence: input.ownerAliveEvidence,
+      iraSeppStatusEvidence: input.iraSeppStatusEvidence,
+      noOtherExceptionAttestations:
+        input.noOtherExceptionAttestations,
       simpleParticipationEvidence: input.simpleParticipationEvidence,
     })
   const unresolved = penaltyPrerequisites.evaluations.filter(

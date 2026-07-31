@@ -227,18 +227,31 @@ rules and citations: [domain rules §16](../domain/domain-rules-reference.md#16-
   owner-wide pool and complete line 1-8 facts, builds separate once-rounded line-7/line-8 ledgers, and
   derives allocation-bound line-7 basis-return/ordinary-income character. A second pure prerequisite
   boundary binds that character to explicit owner, source, and civil-date evidence; excludes basis from
-  penalty exposure; applies the exact 59½ and SIMPLE two-year thresholds; and calculates an exact-cent
-  candidate before exceptions. Caller-explicit positive disability evidence can finalize zero penalty
+  penalty exposure; applies the exact 59½ and SIMPLE two-year thresholds; and calculates a provisional
+  per-allocation exact-cent candidate before exceptions. Caller-explicit positive disability evidence
+  can finalize zero penalty
   for matching under-59½ ordinary-income allocations when it proves the owner qualified on or before
-  the exact distribution date; that result bypasses SIMPLE participation/rate evidence. Missing
-  disability evidence leaves the existing exception-evaluation-required result, while irrelevant or
-  malformed evidence fails closed. A public pure annual finalization gate composes both boundaries over
+  the exact distribution date; that result bypasses SIMPLE participation/rate evidence. Otherwise a
+  `penaltyApplies` result requires explicit negative proof of age, death, IRA SEPP, disability, and
+  other-exception scope. The no-SEPP record must say `none` with null election/schedule IDs, and the
+  no-other-exception attestation is planning evidence rather than filing-grade legal adjudication.
+  Complete penalty-applicable allocations are grouped by owner, year, and exact rational rate. The
+  boundary sums each bucket's exposure with bigint arithmetic, rounds the bucket penalty once
+  nearest-cent-half-up, then allocates cents by floor quotas and largest remainders with canonical
+  identity tie-breaking; public immutable bucket evidence makes that conservation auditable. A
+  non-circular applicability ID binds each member's character, rate, identity, and complete rejected-
+  exception tuple into the shared bucket ID, so changing one member's exception evidence changes every
+  member final ID in that bucket. Missing
+  evidence on any same-rate member leaves the whole bucket `exceptionEvaluationRequired`, while a
+  complete different-rate bucket may finalize; malformed or contradictory evidence fails closed. A
+  public pure annual finalization gate composes both boundaries over
   staged executed-gross withdrawals and atomically publishes an owner/year evidence bundle only when
-  every taxable allocation is final under the age-59½ or disability zero-penalty arms. Basis-only
+  every taxable allocation is final under the age-59½, disability zero-penalty, or fully evidenced
+  penalty-applicable arms. Basis-only
   allocations require coverage but no evaluation; unresolved allocations instead return typed
   `withdrawal-penalty-evidence-missing` issues and suppress the whole bundle. The gate reports
-  `movement: notCommitted`; it is not executor/simulator integration, does not assert
-  `penaltyApplies`, and does not change the legacy projection path. A separate pure
+  `movement: notCommitted`; it is not executor/simulator integration or action readiness and does not
+  change the legacy projection path. A separate pure
   `stageOwnedNonRothIraOrdinaryWithdrawalMovements` API accepts one owner/year of dated IRA-only
   ordinary-withdrawal requests, exact-cent openings, and immutable owned traditional/SEP/SIMPLE
   source proofs. It stages canonical sequential physical candidates, including partial and
@@ -249,8 +262,8 @@ rules and citations: [domain rules §16](../domain/domain-rules-reference.md#16-
   requested source facts to the annual pool, derives candidate-bound scheduled-date penalty evidence,
   and binds the movement, line-7 allocation, and finalization evidence IDs. That generated date
   evidence is not external actual-execution proof. All four result arms remain
-  `movement: notCommitted` and `actionability: notEstablished`; the coordinator neither commits
-  balances, concludes `penaltyApplies`, nor integrates with execution or simulation.
+  `movement: notCommitted` and `actionability: notEstablished`; the coordinator can bind a
+  `penaltyApplies` evidence outcome but neither commits balances nor integrates with execution or simulation.
 - **Property disposition.** Setting `costBasis` on a property replaces the tax-free `expectedNetProceeds`
   estimate with exact treatment: capital gain above basis net of `sellingCostPct`, the §121 primary-residence
   exclusion, and ordinary-income depreciation recapture. Gains flow through the capital-gains stack.

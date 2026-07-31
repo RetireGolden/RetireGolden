@@ -59,12 +59,66 @@ export interface QualifiedDisabilityEventEvidence {
   disabilityEvidenceId: string
 }
 
+export interface RejectedDisabilityStatusEvidence {
+  kind: 'disability'
+  disabledPersonId: PersonId
+  disabilityQualificationDate: string | null
+  evaluationDate: string
+  qualifiedOnEvaluationDate: false
+  disabilityEvidenceId: string
+}
+
+export interface OwnedNonRothIraOwnerAliveEvidence {
+  predicate: 'ownerAliveOnOwnedIraDistributionDate'
+  actionId: ActionId
+  allocationId: AllocationId
+  sourceAccountId: AccountId
+  ownerPersonId: PersonId
+  evaluationDate: string
+  distributionDateEvidenceId: string
+  aliveOnEvaluationDate: true
+  ownerAliveEvidenceId: string
+}
+
+export interface OwnedNonRothIraNoSeppStatusEvidence {
+  predicate: 'ownedNonRothIraSeppStatusForWithdrawal'
+  actionId: ActionId
+  allocationId: AllocationId
+  sourceAccountId: AccountId
+  ownerPersonId: PersonId
+  evaluationDate: string
+  status: 'none'
+  electionId: null
+  scheduleId: null
+  seppStatusEvidenceId: string
+}
+
+export interface NoOtherStatutoryExceptionClaimedAttestation {
+  predicate: 'noOtherStatutoryExceptionClaimed'
+  actionId: ActionId
+  allocationId: AllocationId
+  sourceAccountId: AccountId
+  ownerPersonId: PersonId
+  evaluationDate: string
+  attested: true
+  evidenceScope: 'planningEvidenceNotFilingGradeLegalAdjudication'
+  attestationEvidenceId: string
+}
+
 export interface EvaluateOwnedNonRothIraPenaltyPrerequisitesInput {
   characterization: Readonly<ClassifyOwnedNonRothIraAnnualWithdrawalsResult>
   ownerEvidence: Readonly<OwnedNonRothIraPenaltyOwnerEvidence>
   sourceEvidence: readonly Readonly<OwnedNonRothIraPenaltySourceEvidence>[]
   qualifiedDisabilityEvidence?:
     readonly Readonly<QualifiedDisabilityEventEvidence>[]
+  rejectedDisabilityEvidence?:
+    readonly Readonly<RejectedDisabilityStatusEvidence>[]
+  ownerAliveEvidence?:
+    readonly Readonly<OwnedNonRothIraOwnerAliveEvidence>[]
+  iraSeppStatusEvidence?:
+    readonly Readonly<OwnedNonRothIraNoSeppStatusEvidence>[]
+  noOtherExceptionAttestations?:
+    readonly Readonly<NoOtherStatutoryExceptionClaimedAttestation>[]
   simpleParticipationEvidence:
     readonly Readonly<SimpleIraParticipationEvidence>[]
 }
@@ -161,14 +215,113 @@ export interface ExceptionEvaluationRequiredPenaltyPrerequisite
   extends OwnedNonRothIraPenaltyEvaluationBase {
   outcome: 'exceptionEvaluationRequired'
   evaluatedOrdinaryIncomeExposureAmount: UsdCents
+  /** Individually rounded provisional amount, not a final Form 5329 result. */
   candidateAmountBeforeExceptions: UsdCents
   rateEvidence: Readonly<OwnedNonRothIraEarlyDistributionRateEvidence>
   prerequisiteEvidenceId: string
 }
 
+export interface RejectedAge59HalfExceptionEvidence {
+  exception: 'age59Half'
+  disposition: 'rejected'
+  evaluationDate: string
+  age59HalfDate: string
+  ageThresholdEvidenceId: string
+  evidenceId: string
+}
+
+export interface RejectedDeathExceptionEvidence {
+  exception: 'death'
+  disposition: 'rejected'
+  ownerAliveEvidence: Readonly<OwnedNonRothIraOwnerAliveEvidence>
+  evidenceId: string
+}
+
+export interface RejectedIraSeppExceptionEvidence {
+  exception: 'iraSepp'
+  disposition: 'rejected'
+  noSeppEvidence: Readonly<OwnedNonRothIraNoSeppStatusEvidence>
+  evidenceId: string
+}
+
+export interface RejectedDisabilityExceptionEvidence {
+  exception: 'disability'
+  disposition: 'rejected'
+  rejectedDisabilityEvidence:
+    Readonly<RejectedDisabilityStatusEvidence>
+  evidenceId: string
+}
+
+export interface RejectedOtherStatutoryExceptionEvidence {
+  exception: 'otherStatutoryException'
+  disposition: 'rejected'
+  attestation:
+    Readonly<NoOtherStatutoryExceptionClaimedAttestation>
+  evidenceId: string
+}
+
+export type RejectedOwnedNonRothIraPenaltyExceptionTuple = readonly [
+  Readonly<RejectedAge59HalfExceptionEvidence>,
+  Readonly<RejectedDeathExceptionEvidence>,
+  Readonly<RejectedIraSeppExceptionEvidence>,
+  Readonly<RejectedDisabilityExceptionEvidence>,
+  Readonly<RejectedOtherStatutoryExceptionEvidence>,
+]
+
+export interface OwnedNonRothIraPenaltyRateBucketMemberEvidence {
+  actionId: ActionId
+  allocationId: AllocationId
+  sourceAccountId: AccountId
+  canonicalIdentity: string
+  rateEvidenceId: string
+  /** Binds character, rate, identity, and rejected exceptions without bucket/final IDs. */
+  penaltyApplicabilityEvidenceId: string
+  ordinaryIncomeExposureAmount: UsdCents
+  floorQuotaAmount: UsdCents
+  remainderNumerator: number
+  allocatedPenaltyAmount: UsdCents
+}
+
+export interface OwnedNonRothIraPenaltyRateBucketEvidence {
+  predicate: 'ownedNonRothIraPenaltyRateBucket'
+  ownerPersonId: PersonId
+  taxYear: number
+  numerator: 1
+  denominator: 4 | 10
+  aggregateOrdinaryIncomeExposureAmount: UsdCents
+  aggregatePenaltyAmount: UsdCents
+  members:
+    readonly [
+      Readonly<OwnedNonRothIraPenaltyRateBucketMemberEvidence>,
+      ...Readonly<OwnedNonRothIraPenaltyRateBucketMemberEvidence>[],
+    ]
+  allocationMethod:
+    'floorQuotasThenLargestRemaindersCanonicalIdentity'
+  quantization: 'nearestCentHalfUp'
+  intermediateArithmetic: 'bigintRational'
+  evidenceId: string
+}
+
+export interface PenaltyAppliesEvaluation
+  extends OwnedNonRothIraPenaltyEvaluationBase {
+  outcome: 'penaltyApplies'
+  evaluatedOrdinaryIncomeExposureAmount: UsdCents
+  /** Individually rounded provisional amount retained for audit continuity. */
+  candidateAmountBeforeExceptions: UsdCents
+  rateEvidence: Readonly<OwnedNonRothIraEarlyDistributionRateEvidence>
+  rejectedExceptions:
+    Readonly<RejectedOwnedNonRothIraPenaltyExceptionTuple>
+  rateBucketEvidence:
+    Readonly<OwnedNonRothIraPenaltyRateBucketEvidence>
+  /** This member's allocated share of the once-rounded rate-bucket penalty. */
+  finalPenaltyAmount: UsdCents
+  finalEvidenceId: string
+}
+
 export type OwnedNonRothIraPenaltyPrerequisiteEvaluation =
   | Age59HalfReachedPenaltyEvaluation
   | DisabilityQualifiedPenaltyEvaluation
+  | PenaltyAppliesEvaluation
   | ExceptionEvaluationRequiredPenaltyPrerequisite
 
 export interface EvaluateOwnedNonRothIraPenaltyPrerequisitesResult {
@@ -290,10 +443,33 @@ function candidateAmount(
   const quotient = product / divisor
   const remainder = product % divisor
   const rounded = quotient + (remainder * 2n >= divisor ? 1n : 0n)
-  if (rounded > BigInt(Number.MAX_SAFE_INTEGER)) {
-    throw new RangeError('IRA penalty candidate exceeded the safe-integer range')
+  return usdCentsFromBigInt(
+    rounded,
+    'IRA penalty candidate',
+  )
+}
+
+function usdCentsFromBigInt(value: bigint, label: string): UsdCents {
+  if (value < 0n || value > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new RangeError(`${label} exceeded the safe-integer range`)
   }
-  return asUsdCents(Number(rounded))
+  return asUsdCents(Number(value))
+}
+
+interface PendingEarlyPenaltyEvaluation {
+  key: string
+  canonicalIdentity: string
+  base: OwnedNonRothIraPenaltyEvaluationBase
+  exposureAmount: UsdCents
+  candidateAmountBeforeExceptions: UsdCents
+  rateEvidence: OwnedNonRothIraEarlyDistributionRateEvidence
+  ownerAliveEvidence?: OwnedNonRothIraOwnerAliveEvidence
+  noSeppEvidence?: OwnedNonRothIraNoSeppStatusEvidence
+  rejectedDisabilityEvidence?: RejectedDisabilityStatusEvidence
+  noOtherExceptionAttestation?:
+    NoOtherStatutoryExceptionClaimedAttestation
+  rejectedExceptions?:
+    RejectedOwnedNonRothIraPenaltyExceptionTuple
 }
 
 interface ValidatedCharacter {
@@ -494,8 +670,10 @@ function validateSourceEvidence(
  * Builds the exact early-distribution-penalty prerequisite boundary for
  * finalized owned traditional, SEP, and SIMPLE IRA line-7 character.
  *
- * An under-59½ result is deliberately only a candidate before exceptions. It
- * never asserts that a penalty applies and never establishes action readiness.
+ * An under-59½ result remains only a candidate unless exact negative evidence
+ * rejects death, IRA SEPP, disability, and the planning-attested other
+ * statutory-exception scope. A final penalty outcome still establishes no
+ * action readiness or committed movement.
  */
 export function evaluateOwnedNonRothIraPenaltyPrerequisites(
   input: Readonly<EvaluateOwnedNonRothIraPenaltyPrerequisitesInput>,
@@ -920,6 +1098,286 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
     disabilityByEvaluationDate.set(evaluationDate, disabilityEvent)
   }
 
+  const exceptionRequiredByKey = new Map<
+    string,
+    Readonly<{
+      withdrawal: OwnedNonRothIraWithdrawalClassification
+      sourceEvidence: OwnedNonRothIraPenaltySourceEvidence
+    }>
+  >()
+  const exceptionRequiredDates = new Set<string>()
+  for (const withdrawal of withdrawalByKey.values()) {
+    const key = identityKey(withdrawal.actionId, withdrawal.allocationId)
+    const sourceEvidence = sourceEvidenceByKey.get(key)
+    if (
+      sourceEvidence !== undefined &&
+      withdrawal.ordinaryIncomeAmount > 0 &&
+      sourceEvidence.evaluationDate < age59HalfDate &&
+      !disabilityByEvaluationDate.has(sourceEvidence.evaluationDate)
+    ) {
+      exceptionRequiredByKey.set(key, { withdrawal, sourceEvidence })
+      exceptionRequiredDates.add(sourceEvidence.evaluationDate)
+    }
+  }
+
+  const negativeEvidenceIdBindings = new Map<string, string>()
+  const registerNegativeEvidenceId = (
+    evidenceId: string,
+    evidence: unknown,
+  ): void => {
+    const binding = stableStructuralSnapshot(evidence)
+    const existing = negativeEvidenceIdBindings.get(evidenceId)
+    if (existing !== undefined) {
+      throw new RangeError(
+        'IRA negative exception evidence ID reuse is prohibited',
+      )
+    }
+    if (disabilityEvidenceBindings.has(evidenceId)) {
+      throw new RangeError(
+        'Positive and rejected IRA disability evidence cannot reuse an evidence ID',
+      )
+    }
+    negativeEvidenceIdBindings.set(evidenceId, binding)
+  }
+
+  const rejectedDisabilityByEvaluationDate = new Map<
+    string,
+    RejectedDisabilityStatusEvidence
+  >()
+  for (
+    const rejectedInput of
+      input.rejectedDisabilityEvidence ?? []
+  ) {
+    const disabledPersonId = personIdSchema.parse(
+      rejectedInput.disabledPersonId,
+    )
+    const evaluationDate = validateCivilDate(
+      rejectedInput.evaluationDate,
+      'Rejected IRA disability evaluation date',
+    )
+    const disabilityEvidenceId = nonblankId(
+      rejectedInput.disabilityEvidenceId,
+      'Rejected IRA disability evidence ID',
+    )
+    let disabilityQualificationDate: string | null = null
+    if (rejectedInput.disabilityQualificationDate !== null) {
+      disabilityQualificationDate = validateCivilDate(
+        rejectedInput.disabilityQualificationDate,
+        'Rejected IRA disability qualification date',
+      )
+      if (
+        disabilityQualificationDate < birthDate ||
+        disabilityQualificationDate <= evaluationDate
+      ) {
+        throw new RangeError(
+          'Rejected IRA disability qualification date must follow its evaluation date and owner birth',
+        )
+      }
+    }
+    if (
+      rejectedInput.kind !== 'disability' ||
+      rejectedInput.qualifiedOnEvaluationDate !== false ||
+      disabledPersonId !== ownerPersonId ||
+      !exceptionRequiredDates.has(evaluationDate) ||
+      disabilityByEvaluationDate.has(evaluationDate) ||
+      rejectedDisabilityByEvaluationDate.has(evaluationDate)
+    ) {
+      throw new RangeError(
+        'Rejected IRA disability evidence must uniquely bind an unresolved under-age owner and date',
+      )
+    }
+    const rejectedDisability: RejectedDisabilityStatusEvidence = {
+      kind: 'disability',
+      disabledPersonId,
+      disabilityQualificationDate,
+      evaluationDate,
+      qualifiedOnEvaluationDate: false,
+      disabilityEvidenceId,
+    }
+    registerNegativeEvidenceId(
+      disabilityEvidenceId,
+      rejectedDisability,
+    )
+    rejectedDisabilityByEvaluationDate.set(
+      evaluationDate,
+      rejectedDisability,
+    )
+  }
+
+  const ownerAliveByKey = new Map<
+    string,
+    OwnedNonRothIraOwnerAliveEvidence
+  >()
+  for (const aliveInput of input.ownerAliveEvidence ?? []) {
+    const key = identityKey(
+      actionIdSchema.parse(aliveInput.actionId),
+      allocationIdSchema.parse(aliveInput.allocationId),
+    )
+    const required = exceptionRequiredByKey.get(key)
+    if (required === undefined || ownerAliveByKey.has(key)) {
+      throw new RangeError(
+        'IRA owner-alive evidence must uniquely match an unresolved allocation',
+      )
+    }
+    const evaluationDate = validateCivilDate(
+      aliveInput.evaluationDate,
+      'IRA owner-alive evaluation date',
+    )
+    const evidence: OwnedNonRothIraOwnerAliveEvidence = {
+      predicate: aliveInput.predicate,
+      actionId: actionIdSchema.parse(aliveInput.actionId),
+      allocationId: allocationIdSchema.parse(aliveInput.allocationId),
+      sourceAccountId: accountIdSchema.parse(aliveInput.sourceAccountId),
+      ownerPersonId: personIdSchema.parse(aliveInput.ownerPersonId),
+      evaluationDate,
+      distributionDateEvidenceId: nonblankId(
+        aliveInput.distributionDateEvidenceId,
+        'IRA owner-alive distribution-date evidence ID',
+      ),
+      aliveOnEvaluationDate: aliveInput.aliveOnEvaluationDate,
+      ownerAliveEvidenceId: nonblankId(
+        aliveInput.ownerAliveEvidenceId,
+        'IRA owner-alive evidence ID',
+      ),
+    }
+    if (
+      evidence.predicate !== 'ownerAliveOnOwnedIraDistributionDate' ||
+      evidence.actionId !== required.withdrawal.actionId ||
+      evidence.allocationId !== required.withdrawal.allocationId ||
+      evidence.sourceAccountId !== required.withdrawal.sourceAccountId ||
+      evidence.ownerPersonId !== ownerPersonId ||
+      evidence.evaluationDate !==
+        required.sourceEvidence.evaluationDate ||
+      evidence.distributionDateEvidenceId !==
+        required.sourceEvidence.distributionDateEvidenceId ||
+      evidence.aliveOnEvaluationDate !== true
+    ) {
+      throw new RangeError(
+        'IRA owner-alive evidence must bind the owner, allocation, and exact distribution-date evidence',
+      )
+    }
+    registerNegativeEvidenceId(evidence.ownerAliveEvidenceId, evidence)
+    ownerAliveByKey.set(key, evidence)
+  }
+
+  const noSeppByKey = new Map<
+    string,
+    OwnedNonRothIraNoSeppStatusEvidence
+  >()
+  for (const seppInput of input.iraSeppStatusEvidence ?? []) {
+    const key = identityKey(
+      actionIdSchema.parse(seppInput.actionId),
+      allocationIdSchema.parse(seppInput.allocationId),
+    )
+    const required = exceptionRequiredByKey.get(key)
+    if (required === undefined || noSeppByKey.has(key)) {
+      throw new RangeError(
+        'IRA SEPP status evidence must uniquely match an unresolved allocation',
+      )
+    }
+    const evidence: OwnedNonRothIraNoSeppStatusEvidence = {
+      predicate: seppInput.predicate,
+      actionId: actionIdSchema.parse(seppInput.actionId),
+      allocationId: allocationIdSchema.parse(seppInput.allocationId),
+      sourceAccountId: accountIdSchema.parse(seppInput.sourceAccountId),
+      ownerPersonId: personIdSchema.parse(seppInput.ownerPersonId),
+      evaluationDate: validateCivilDate(
+        seppInput.evaluationDate,
+        'IRA SEPP status evaluation date',
+      ),
+      status: seppInput.status,
+      electionId: seppInput.electionId,
+      scheduleId: seppInput.scheduleId,
+      seppStatusEvidenceId: nonblankId(
+        seppInput.seppStatusEvidenceId,
+        'IRA SEPP status evidence ID',
+      ),
+    }
+    if (
+      evidence.predicate !==
+        'ownedNonRothIraSeppStatusForWithdrawal' ||
+      evidence.actionId !== required.withdrawal.actionId ||
+      evidence.allocationId !== required.withdrawal.allocationId ||
+      evidence.sourceAccountId !== required.withdrawal.sourceAccountId ||
+      evidence.ownerPersonId !== ownerPersonId ||
+      evidence.evaluationDate !==
+        required.sourceEvidence.evaluationDate ||
+      evidence.status !== 'none' ||
+      evidence.electionId !== null ||
+      evidence.scheduleId !== null
+    ) {
+      throw new RangeError(
+        'IRA SEPP status must explicitly prove no election or schedule for the exact allocation and date',
+      )
+    }
+    registerNegativeEvidenceId(evidence.seppStatusEvidenceId, evidence)
+    noSeppByKey.set(key, evidence)
+  }
+
+  const noOtherExceptionByKey = new Map<
+    string,
+    NoOtherStatutoryExceptionClaimedAttestation
+  >()
+  for (
+    const attestationInput of
+      input.noOtherExceptionAttestations ?? []
+  ) {
+    const key = identityKey(
+      actionIdSchema.parse(attestationInput.actionId),
+      allocationIdSchema.parse(attestationInput.allocationId),
+    )
+    const required = exceptionRequiredByKey.get(key)
+    if (required === undefined || noOtherExceptionByKey.has(key)) {
+      throw new RangeError(
+        'IRA other-exception attestation must uniquely match an unresolved allocation',
+      )
+    }
+    const evidence: NoOtherStatutoryExceptionClaimedAttestation = {
+      predicate: attestationInput.predicate,
+      actionId: actionIdSchema.parse(attestationInput.actionId),
+      allocationId: allocationIdSchema.parse(
+        attestationInput.allocationId,
+      ),
+      sourceAccountId: accountIdSchema.parse(
+        attestationInput.sourceAccountId,
+      ),
+      ownerPersonId: personIdSchema.parse(
+        attestationInput.ownerPersonId,
+      ),
+      evaluationDate: validateCivilDate(
+        attestationInput.evaluationDate,
+        'IRA other-exception attestation date',
+      ),
+      attested: attestationInput.attested,
+      evidenceScope: attestationInput.evidenceScope,
+      attestationEvidenceId: nonblankId(
+        attestationInput.attestationEvidenceId,
+        'IRA other-exception attestation evidence ID',
+      ),
+    }
+    if (
+      evidence.predicate !== 'noOtherStatutoryExceptionClaimed' ||
+      evidence.actionId !== required.withdrawal.actionId ||
+      evidence.allocationId !== required.withdrawal.allocationId ||
+      evidence.sourceAccountId !== required.withdrawal.sourceAccountId ||
+      evidence.ownerPersonId !== ownerPersonId ||
+      evidence.evaluationDate !==
+        required.sourceEvidence.evaluationDate ||
+      evidence.attested !== true ||
+      evidence.evidenceScope !==
+        'planningEvidenceNotFilingGradeLegalAdjudication'
+    ) {
+      throw new RangeError(
+        'IRA no-other-exception attestation must be planning-scoped and bind the exact owner, allocation, source, and date',
+      )
+    }
+    registerNegativeEvidenceId(
+      evidence.attestationEvidenceId,
+      evidence,
+    )
+    noOtherExceptionByKey.set(key, evidence)
+  }
+
   const requiredSimpleSourceIds = new Set<AccountId>()
   for (const withdrawal of withdrawalByKey.values()) {
     const sourceEvidence = sourceEvidenceByKey.get(
@@ -998,7 +1456,11 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
   }
 
   const coverage: OwnedNonRothIraPenaltyCharacterCoverageEvidence[] = []
-  const evaluations: OwnedNonRothIraPenaltyPrerequisiteEvaluation[] = []
+  const evaluationByKey = new Map<
+    string,
+    OwnedNonRothIraPenaltyPrerequisiteEvaluation
+  >()
+  const pendingEarlyEvaluations: PendingEarlyPenaltyEvaluation[] = []
   for (const withdrawal of characterization.withdrawals) {
       const key = identityKey(withdrawal.actionId, withdrawal.allocationId)
       const sourceEvidence = sourceEvidenceByKey.get(key)
@@ -1074,7 +1536,7 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
         continue
       }
       if (sourceEvidence.evaluationDate >= age59HalfDate) {
-        evaluations.push({
+        evaluationByKey.set(key, {
           ...base,
           outcome: 'age59HalfReached',
           evaluatedOrdinaryIncomeExposureAmount:
@@ -1091,7 +1553,7 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
         sourceEvidence.evaluationDate,
       )
       if (disabilityEvent !== undefined) {
-        evaluations.push({
+        evaluationByKey.set(key, {
           ...base,
           outcome: 'disabilityQualified',
           evaluatedOrdinaryIncomeExposureAmount:
@@ -1184,17 +1646,399 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
         rateEvidence.numerator,
         rateEvidence.denominator,
       )
-      evaluations.push({
-        ...base,
-        outcome: 'exceptionEvaluationRequired',
-        evaluatedOrdinaryIncomeExposureAmount: character.ordinaryIncomeAmount,
+      const ownerAliveEvidence = ownerAliveByKey.get(key)
+      const noSeppEvidence = noSeppByKey.get(key)
+      const rejectedDisabilityEvidence =
+        rejectedDisabilityByEvaluationDate.get(
+          sourceEvidence.evaluationDate,
+        )
+      const noOtherExceptionAttestation =
+        noOtherExceptionByKey.get(key)
+      let rejectedExceptions:
+        RejectedOwnedNonRothIraPenaltyExceptionTuple | undefined
+      if (
+        ownerAliveEvidence !== undefined &&
+        noSeppEvidence !== undefined &&
+        rejectedDisabilityEvidence !== undefined &&
+        noOtherExceptionAttestation !== undefined
+      ) {
+        const rejectedAge: RejectedAge59HalfExceptionEvidence = {
+          exception: 'age59Half',
+          disposition: 'rejected',
+          evaluationDate: sourceEvidence.evaluationDate,
+          age59HalfDate,
+          ageThresholdEvidenceId,
+          evidenceId: stableId(
+            'owned-ira-rejected-age-59-half-exception',
+            [
+              characterCoverageId,
+              sourceEvidence.evaluationDate,
+              age59HalfDate,
+              ageThresholdEvidenceId,
+            ],
+          ),
+        }
+        const rejectedDeath: RejectedDeathExceptionEvidence = {
+          exception: 'death',
+          disposition: 'rejected',
+          ownerAliveEvidence,
+          evidenceId: stableId('owned-ira-rejected-death-exception', [
+            characterCoverageId,
+            ownerAliveEvidence,
+          ]),
+        }
+        const rejectedSepp: RejectedIraSeppExceptionEvidence = {
+          exception: 'iraSepp',
+          disposition: 'rejected',
+          noSeppEvidence,
+          evidenceId: stableId('owned-ira-rejected-sepp-exception', [
+            characterCoverageId,
+            noSeppEvidence,
+          ]),
+        }
+        const rejectedDisability:
+          RejectedDisabilityExceptionEvidence = {
+            exception: 'disability',
+            disposition: 'rejected',
+            rejectedDisabilityEvidence,
+            evidenceId: stableId(
+              'owned-ira-rejected-disability-exception',
+              [characterCoverageId, rejectedDisabilityEvidence],
+            ),
+          }
+        const rejectedOther:
+          RejectedOtherStatutoryExceptionEvidence = {
+            exception: 'otherStatutoryException',
+            disposition: 'rejected',
+            attestation: noOtherExceptionAttestation,
+            evidenceId: stableId(
+              'owned-ira-rejected-other-statutory-exception',
+              [characterCoverageId, noOtherExceptionAttestation],
+            ),
+          }
+        rejectedExceptions = [
+          rejectedAge,
+          rejectedDeath,
+          rejectedSepp,
+          rejectedDisability,
+          rejectedOther,
+        ]
+      }
+      pendingEarlyEvaluations.push({
+        key,
+        canonicalIdentity: JSON.stringify([
+          withdrawal.actionId,
+          withdrawal.allocationId,
+          withdrawal.sourceAccountId,
+        ]),
+        base,
+        exposureAmount: character.ordinaryIncomeAmount,
         candidateAmountBeforeExceptions: candidate,
         rateEvidence,
-        prerequisiteEvidenceId: stableId(
-          'owned-ira-penalty-exception-prerequisite',
-          [characterCoverageId, ageThresholdEvidenceId, rateEvidence, candidate],
+        ownerAliveEvidence,
+        noSeppEvidence,
+        rejectedDisabilityEvidence,
+        noOtherExceptionAttestation,
+        rejectedExceptions,
+      })
+  }
+
+  const pendingByRate = new Map<
+    string,
+    PendingEarlyPenaltyEvaluation[]
+  >()
+  for (const pending of pendingEarlyEvaluations) {
+    const rateKey = JSON.stringify([
+      pending.rateEvidence.numerator,
+      pending.rateEvidence.denominator,
+    ])
+    const members = pendingByRate.get(rateKey)
+    if (members === undefined) {
+      pendingByRate.set(rateKey, [pending])
+    } else {
+      members.push(pending)
+    }
+  }
+
+  for (const pendingBucket of pendingByRate.values()) {
+    const canonicalPending = [...pendingBucket].sort((left, right) =>
+      left.canonicalIdentity < right.canonicalIdentity
+        ? -1
+        : left.canonicalIdentity > right.canonicalIdentity
+          ? 1
+          : 0,
+    )
+    const first = canonicalPending[0]
+    if (first === undefined) {
+      throw new Error('Canonical IRA penalty rate bucket cannot be empty')
+    }
+    const numerator = first.rateEvidence.numerator
+    const denominator = first.rateEvidence.denominator
+    if (canonicalPending.some(
+      (member) => member.rejectedExceptions === undefined,
+    )) {
+      const bucketPrerequisiteStateId = stableId(
+        'owned-ira-penalty-rate-bucket-prerequisite-state',
+        [
+          ownerPersonId,
+          taxYear,
+          numerator,
+          denominator,
+          canonicalPending.map((member) => [
+            member.canonicalIdentity,
+            member.base.characterCoverage.evidenceId,
+            member.exposureAmount,
+            member.candidateAmountBeforeExceptions,
+            member.rateEvidence,
+            member.ownerAliveEvidence ?? null,
+            member.noSeppEvidence ?? null,
+            member.rejectedDisabilityEvidence ?? null,
+            member.noOtherExceptionAttestation ?? null,
+          ]),
+        ],
+      )
+      for (const member of canonicalPending) {
+        evaluationByKey.set(member.key, {
+          ...member.base,
+          outcome: 'exceptionEvaluationRequired',
+          evaluatedOrdinaryIncomeExposureAmount:
+            member.exposureAmount,
+          candidateAmountBeforeExceptions:
+            member.candidateAmountBeforeExceptions,
+          rateEvidence: member.rateEvidence,
+          prerequisiteEvidenceId: stableId(
+            'owned-ira-penalty-exception-prerequisite',
+            [
+              member.base.characterCoverage.evidenceId,
+              ageThresholdEvidenceId,
+              member.rateEvidence,
+              member.candidateAmountBeforeExceptions,
+              member.ownerAliveEvidence ?? null,
+              member.noSeppEvidence ?? null,
+              member.rejectedDisabilityEvidence ?? null,
+              member.noOtherExceptionAttestation ?? null,
+              bucketPrerequisiteStateId,
+            ],
+          ),
+        })
+      }
+      continue
+    }
+
+    let aggregateExposureBigInt = 0n
+    const quotaByIdentity = new Map<
+      string,
+      Readonly<{
+        floorQuotaAmount: UsdCents
+        remainderNumerator: number
+      }>
+    >()
+    let aggregateFloorQuota = 0n
+    for (const member of canonicalPending) {
+      const exposure = BigInt(member.exposureAmount)
+      aggregateExposureBigInt += exposure
+      const product = exposure * BigInt(numerator)
+      const divisor = BigInt(denominator)
+      const floorQuotaAmount = usdCentsFromBigInt(
+        product / divisor,
+        'IRA penalty rate-bucket member floor quota',
+      )
+      quotaByIdentity.set(member.canonicalIdentity, {
+        floorQuotaAmount,
+        remainderNumerator: Number(product % divisor),
+      })
+      aggregateFloorQuota += BigInt(floorQuotaAmount)
+    }
+    const aggregateExposureAmount = usdCentsFromBigInt(
+      aggregateExposureBigInt,
+      'IRA penalty rate-bucket aggregate exposure',
+    )
+    const aggregatePenaltyAmount = candidateAmount(
+      aggregateExposureAmount,
+      numerator,
+      denominator,
+    )
+    const remainingCents =
+      BigInt(aggregatePenaltyAmount) - aggregateFloorQuota
+    if (
+      remainingCents < 0n ||
+      remainingCents > BigInt(canonicalPending.length)
+    ) {
+      throw new RangeError(
+        'IRA penalty rate-bucket allocation cannot conserve its aggregate penalty',
+      )
+    }
+    const allocationPriority = [...canonicalPending].sort(
+      (left, right) => {
+        const leftQuota = quotaByIdentity.get(left.canonicalIdentity)
+        const rightQuota = quotaByIdentity.get(right.canonicalIdentity)
+        if (leftQuota === undefined || rightQuota === undefined) {
+          throw new Error(
+            'Canonical IRA penalty member lost its rational quota',
+          )
+        }
+        if (
+          leftQuota.remainderNumerator !==
+          rightQuota.remainderNumerator
+        ) {
+          return (
+            rightQuota.remainderNumerator -
+            leftQuota.remainderNumerator
+          )
+        }
+        return left.canonicalIdentity < right.canonicalIdentity
+          ? -1
+          : left.canonicalIdentity > right.canonicalIdentity
+            ? 1
+            : 0
+      },
+    )
+    const roundedUpIdentities = new Set(
+      allocationPriority
+        .slice(0, Number(remainingCents))
+        .map((member) => member.canonicalIdentity),
+    )
+    const bucketMembers:
+      OwnedNonRothIraPenaltyRateBucketMemberEvidence[] =
+        canonicalPending.map((member) => {
+          const quota = quotaByIdentity.get(member.canonicalIdentity)
+          const rejectedExceptions = member.rejectedExceptions
+          if (quota === undefined || rejectedExceptions === undefined) {
+            throw new Error(
+              'Canonical IRA penalty member lost its allocation or applicability evidence',
+            )
+          }
+          const penaltyApplicabilityEvidenceId = stableId(
+            'owned-ira-penalty-applicability',
+            [
+              member.canonicalIdentity,
+              member.base.characterCoverage.evidenceId,
+              member.rateEvidence,
+              rejectedExceptions,
+            ],
+          )
+          return {
+            actionId: member.base.actionId,
+            allocationId: member.base.allocationId,
+            sourceAccountId: member.base.sourceAccountId,
+            canonicalIdentity: member.canonicalIdentity,
+            rateEvidenceId: member.rateEvidence.evidenceId,
+            penaltyApplicabilityEvidenceId,
+            ordinaryIncomeExposureAmount: member.exposureAmount,
+            floorQuotaAmount: quota.floorQuotaAmount,
+            remainderNumerator: quota.remainderNumerator,
+            allocatedPenaltyAmount: asUsdCents(
+              quota.floorQuotaAmount +
+                (roundedUpIdentities.has(member.canonicalIdentity)
+                  ? 1
+                  : 0),
+            ),
+          }
+        })
+    const allocatedPenaltyTotal = bucketMembers.reduce(
+      (total, member) => total + BigInt(member.allocatedPenaltyAmount),
+      0n,
+    )
+    if (allocatedPenaltyTotal !== BigInt(aggregatePenaltyAmount)) {
+      throw new RangeError(
+        'IRA penalty rate-bucket member amounts must exactly conserve the aggregate penalty',
+      )
+    }
+    const allocationMethod =
+      'floorQuotasThenLargestRemaindersCanonicalIdentity' as const
+    const rateBucketEvidenceId = stableId(
+      'owned-ira-penalty-rate-bucket',
+      [
+        ownerPersonId,
+        taxYear,
+        numerator,
+        denominator,
+        aggregateExposureAmount,
+        aggregatePenaltyAmount,
+        bucketMembers,
+        allocationMethod,
+        'nearestCentHalfUp',
+        'bigintRational',
+      ],
+    )
+    const rateBucketEvidence:
+      OwnedNonRothIraPenaltyRateBucketEvidence = {
+        predicate: 'ownedNonRothIraPenaltyRateBucket',
+        ownerPersonId,
+        taxYear,
+        numerator,
+        denominator,
+        aggregateOrdinaryIncomeExposureAmount:
+          aggregateExposureAmount,
+        aggregatePenaltyAmount,
+        members: bucketMembers as [
+          OwnedNonRothIraPenaltyRateBucketMemberEvidence,
+          ...OwnedNonRothIraPenaltyRateBucketMemberEvidence[],
+        ],
+        allocationMethod,
+        quantization: 'nearestCentHalfUp',
+        intermediateArithmetic: 'bigintRational',
+        evidenceId: rateBucketEvidenceId,
+      }
+    const allocatedAmountByIdentity = new Map(
+      bucketMembers.map((member) => [
+        member.canonicalIdentity,
+        member.allocatedPenaltyAmount,
+      ]),
+    )
+    for (const member of canonicalPending) {
+      const rejectedExceptions = member.rejectedExceptions
+      const finalPenaltyAmount = allocatedAmountByIdentity.get(
+        member.canonicalIdentity,
+      )
+      if (
+        rejectedExceptions === undefined ||
+        finalPenaltyAmount === undefined
+      ) {
+        throw new Error(
+          'Complete IRA penalty rate bucket lost final member evidence',
+        )
+      }
+      evaluationByKey.set(member.key, {
+        ...member.base,
+        outcome: 'penaltyApplies',
+        evaluatedOrdinaryIncomeExposureAmount:
+          member.exposureAmount,
+        candidateAmountBeforeExceptions:
+          member.candidateAmountBeforeExceptions,
+        rateEvidence: member.rateEvidence,
+        rejectedExceptions,
+        rateBucketEvidence,
+        finalPenaltyAmount,
+        finalEvidenceId: stableId(
+          'owned-ira-penalty-applies',
+          [
+            member.canonicalIdentity,
+            member.base.characterCoverage.evidenceId,
+            ageThresholdEvidenceId,
+            member.rateEvidence,
+            member.candidateAmountBeforeExceptions,
+            rejectedExceptions,
+            rateBucketEvidenceId,
+            finalPenaltyAmount,
+          ],
         ),
       })
+    }
+  }
+
+  const evaluations: OwnedNonRothIraPenaltyPrerequisiteEvaluation[] = []
+  for (const withdrawal of characterization.withdrawals) {
+    if (withdrawal.ordinaryIncomeAmount === 0) continue
+    const evaluation = evaluationByKey.get(
+      identityKey(withdrawal.actionId, withdrawal.allocationId),
+    )
+    if (evaluation === undefined) {
+      throw new Error(
+        'Canonical IRA ordinary-income withdrawal lost its penalty evaluation',
+      )
+    }
+    evaluations.push(evaluation)
   }
 
   return deepFreeze({

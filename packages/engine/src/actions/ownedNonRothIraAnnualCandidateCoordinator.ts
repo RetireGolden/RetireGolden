@@ -20,15 +20,24 @@ import {
   type StageOwnedNonRothIraOrdinaryWithdrawalMovementsInput,
 } from './ownedNonRothIraMovementCandidate.js'
 import type {
+  NoOtherStatutoryExceptionClaimedAttestation,
+  OwnedNonRothIraNoSeppStatusEvidence,
+  OwnedNonRothIraOwnerAliveEvidence,
   OwnedNonRothIraPenaltyOwnerEvidence,
   OwnedNonRothIraPenaltySourceEvidence,
   QualifiedDisabilityEventEvidence,
+  RejectedDisabilityStatusEvidence,
   SimpleIraParticipationEvidence,
 } from './ownedNonRothIraPenaltyPrerequisite.js'
 import type {
   ClassifyOwnedNonRothIraAnnualWithdrawalsInput,
   OwnedNonRothIraPoolMemberEvidence,
 } from './ownedNonRothIraWithdrawalCharacter.js'
+
+export type OwnedNonRothIraCandidateOwnerAliveEvidence = Omit<
+  OwnedNonRothIraOwnerAliveEvidence,
+  'distributionDateEvidenceId'
+>
 
 export interface CoordinateOwnedNonRothIraAnnualWithdrawalCandidateInput {
   movementInput:
@@ -39,6 +48,14 @@ export interface CoordinateOwnedNonRothIraAnnualWithdrawalCandidateInput {
   ownerEvidence: Readonly<OwnedNonRothIraPenaltyOwnerEvidence>
   qualifiedDisabilityEvidence?:
     readonly Readonly<QualifiedDisabilityEventEvidence>[]
+  rejectedDisabilityEvidence?:
+    readonly Readonly<RejectedDisabilityStatusEvidence>[]
+  ownerAliveEvidence?:
+    readonly Readonly<OwnedNonRothIraCandidateOwnerAliveEvidence>[]
+  iraSeppStatusEvidence?:
+    readonly Readonly<OwnedNonRothIraNoSeppStatusEvidence>[]
+  noOtherExceptionAttestations?:
+    readonly Readonly<NoOtherStatutoryExceptionClaimedAttestation>[]
   simpleParticipationEvidence:
     readonly Readonly<SimpleIraParticipationEvidence>[]
 }
@@ -274,14 +291,43 @@ function positiveLine7(
   )
 }
 
+function bindCandidateDistributionDateEvidence(
+  inputs:
+    readonly Readonly<OwnedNonRothIraCandidateOwnerAliveEvidence>[],
+  sourceEvidence:
+    readonly Readonly<OwnedNonRothIraPenaltySourceEvidence>[],
+): OwnedNonRothIraOwnerAliveEvidence[] {
+  const sourceByKey = new Map(
+    sourceEvidence.map((source) => [
+      JSON.stringify([source.actionId, source.allocationId]),
+      source,
+    ]),
+  )
+  return inputs.map((input): OwnedNonRothIraOwnerAliveEvidence => {
+    const source = sourceByKey.get(
+      JSON.stringify([input.actionId, input.allocationId]),
+    )
+    if (source === undefined) {
+      throw new RangeError(
+        'IRA owner-alive evidence is foreign to the staged candidate',
+      )
+    }
+    return {
+      ...input,
+      distributionDateEvidenceId:
+        source.distributionDateEvidenceId,
+    }
+  })
+}
+
 /**
  * Coordinates the two pure owned-IRA evidence calls for one owner/year.
  *
  * It stages physical movement candidates, proves that every requested source
  * exactly rejoins its complete annual pool member, derives penalty-source
  * evidence from the staged source/date facts, and atomically binds the two
- * resulting evidence IDs. It never commits movement, establishes actionability,
- * or concludes that an early-distribution penalty applies.
+ * resulting evidence IDs. It may bind a fully evidenced penalty-applicable
+ * outcome, but never commits movement or establishes actionability.
  */
 export function coordinateOwnedNonRothIraAnnualWithdrawalCandidate(
   input: Readonly<CoordinateOwnedNonRothIraAnnualWithdrawalCandidateInput>,
@@ -327,12 +373,22 @@ export function coordinateOwnedNonRothIraAnnualWithdrawalCandidate(
     })
   }
 
+  const penaltySourceEvidence =
+    derivePenaltySourceEvidence(movementCandidate)
   const annualResult = resolveOwnedNonRothIraAnnualWithdrawalEvidence({
     annualInput: input.annualInput,
     stagedExecutedWithdrawals,
     ownerEvidence: input.ownerEvidence,
-    sourceEvidence: derivePenaltySourceEvidence(movementCandidate),
+    sourceEvidence: penaltySourceEvidence,
     qualifiedDisabilityEvidence: input.qualifiedDisabilityEvidence,
+    rejectedDisabilityEvidence: input.rejectedDisabilityEvidence,
+    ownerAliveEvidence: bindCandidateDistributionDateEvidence(
+      input.ownerAliveEvidence ?? [],
+      penaltySourceEvidence,
+    ),
+    iraSeppStatusEvidence: input.iraSeppStatusEvidence,
+    noOtherExceptionAttestations:
+      input.noOtherExceptionAttestations,
     simpleParticipationEvidence: input.simpleParticipationEvidence,
   })
   if (annualResult.status === 'penaltyEvidenceMissing') {

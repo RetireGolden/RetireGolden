@@ -476,6 +476,98 @@ assert.equal(
   boundOwnedIraAnnualCandidate.annualEvidence.characterization
     .line7AllocationEvidence.allocationEvidenceId,
 )
+const penaltyOwnedIraAnnualCandidate =
+  coordinateOwnedNonRothIraAnnualWithdrawalCandidate({
+    movementInput: smokeIraMovementInput,
+    annualInput: smokeAnnualFinalizerInput.annualInput,
+    ownerEvidence: smokeAnnualFinalizerInput.ownerEvidence,
+    qualifiedDisabilityEvidence: [],
+    rejectedDisabilityEvidence: [{
+      kind: 'disability',
+      disabledPersonId: asPersonId('smoke-person'),
+      disabilityQualificationDate: null,
+      evaluationDate: '2030-12-31',
+      qualifiedOnEvaluationDate: false,
+      disabilityEvidenceId: 'smoke-rejected-disability',
+    }],
+    ownerAliveEvidence: [{
+      predicate: 'ownerAliveOnOwnedIraDistributionDate',
+      actionId: asActionId('smoke-ira-withdrawal'),
+      allocationId: asAllocationId('smoke-ira-allocation'),
+      sourceAccountId: asAccountId('smoke-traditional-ira'),
+      ownerPersonId: asPersonId('smoke-person'),
+      evaluationDate: '2030-12-31',
+      aliveOnEvaluationDate: true,
+      ownerAliveEvidenceId: 'smoke-owner-alive',
+    }],
+    iraSeppStatusEvidence: [{
+      predicate: 'ownedNonRothIraSeppStatusForWithdrawal',
+      actionId: asActionId('smoke-ira-withdrawal'),
+      allocationId: asAllocationId('smoke-ira-allocation'),
+      sourceAccountId: asAccountId('smoke-traditional-ira'),
+      ownerPersonId: asPersonId('smoke-person'),
+      evaluationDate: '2030-12-31',
+      status: 'none',
+      electionId: null,
+      scheduleId: null,
+      seppStatusEvidenceId: 'smoke-no-sepp',
+    }],
+    noOtherExceptionAttestations: [{
+      predicate: 'noOtherStatutoryExceptionClaimed',
+      actionId: asActionId('smoke-ira-withdrawal'),
+      allocationId: asAllocationId('smoke-ira-allocation'),
+      sourceAccountId: asAccountId('smoke-traditional-ira'),
+      ownerPersonId: asPersonId('smoke-person'),
+      evaluationDate: '2030-12-31',
+      attested: true,
+      evidenceScope:
+        'planningEvidenceNotFilingGradeLegalAdjudication',
+      attestationEvidenceId: 'smoke-no-other-exception',
+    }],
+    simpleParticipationEvidence: [],
+  })
+assert.equal(penaltyOwnedIraAnnualCandidate.status, 'annualEvidenceBound')
+assert.equal(
+  penaltyOwnedIraAnnualCandidate.annualEvidence
+    .penaltyPrerequisites.evaluations[0].outcome,
+  'penaltyApplies',
+)
+assert.equal(
+  penaltyOwnedIraAnnualCandidate.annualEvidence
+    .penaltyPrerequisites.evaluations[0].finalPenaltyAmount,
+  0,
+)
+assert.equal(
+  penaltyOwnedIraAnnualCandidate.annualEvidence
+    .penaltyPrerequisites.evaluations[0].rateBucketEvidence
+    .aggregateOrdinaryIncomeExposureAmount,
+  1,
+)
+assert.equal(
+  penaltyOwnedIraAnnualCandidate.annualEvidence
+    .penaltyPrerequisites.evaluations[0].rateBucketEvidence
+    .aggregatePenaltyAmount,
+  0,
+)
+assert.equal(
+  penaltyOwnedIraAnnualCandidate.annualEvidence
+    .penaltyPrerequisites.evaluations[0].rateBucketEvidence
+    .members[0].allocatedPenaltyAmount,
+  0,
+)
+assert.match(
+  penaltyOwnedIraAnnualCandidate.annualEvidence
+    .penaltyPrerequisites.evaluations[0].rateBucketEvidence
+    .members[0].penaltyApplicabilityEvidenceId,
+  /^owned-ira-penalty-applicability:/,
+)
+assert.deepEqual(
+  penaltyOwnedIraAnnualCandidate.annualEvidence
+    .penaltyPrerequisites.evaluations[0].rejectedExceptions.map(
+      (exception) => exception.exception,
+    ),
+  ['age59Half', 'death', 'iraSepp', 'disability', 'otherStatutoryException'],
+)
 
 const smokeTaxable = {
   id: 'smoke-taxable',
