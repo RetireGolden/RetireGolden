@@ -607,11 +607,19 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   SHA-256 digests. Basis remains in gross membership while only ordinary exposure is accumulated.
   Successful reconciliation is complete only relative to that caller-supplied complete inventory. It
   reports `qualification: notEstablished`, `penaltyTreatment: notEstablished`,
-  `movement: notCommitted`, and `actionability: notEstablished`, exposes no rate or penalty amount, and
-  is not connected to the penalty evaluator, annual finalizer/coordinator, execution, or simulation.
-  Any later penalty integration must rederive and exact-rejoin the inventory from the full canonical
-  annual characterization before relying on this evidence. This slice does not calculate a legal SEPP
-  amount, persist Plan state, or model later modification/recapture consequences.
+  `movement: notCommitted`, and `actionability: notEstablished`, and exposes no rate or penalty amount.
+  The penalty-prerequisite boundary now accepts routed raw annual inputs, derives all canonical character
+  coverage first, builds the complete source-account inventory internally, injects the canonical owner/year,
+  runs the annual reconciler, and exact-rejoins every reconciled payment. Only a complete `reconciled` route
+  produces final `iraSeppQualified` zero-penalty evidence, whose ID binds character coverage, annual
+  reconciliation, current candidate, and payment. Evidence-missing, incomplete, and not-reconciled routes
+  remain `exceptionEvaluationRequired`, provide no rejected-SEPP authority, and cannot coexist with a
+  no-SEPP record. All-basis payments remain schedule members without penalty evaluations; age and disability
+  precede SEPP; a SEPP-qualified SIMPLE payment bypasses participation/rate facts while fallback SIMPLE
+  treatment remains 25%/10%. The annual finalizer and coordinator cannot yet submit routes or consume
+  `iraSeppQualified`; no result establishes movement, actionability, readiness, execution, or simulation.
+  This slice does not calculate a legal SEPP amount, persist Plan state, or model later
+  modification/recapture consequences.
   Source: [IRS early-distribution exception
   matrix](https://www.irs.gov/retirement-plans/plan-participant-employee/retirement-topics-exceptions-to-tax-on-early-distributions).
 - **Fixed-asset disposition.** Setting `costBasis` on a property switches its planned sale from the legacy

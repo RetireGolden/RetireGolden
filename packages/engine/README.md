@@ -26,6 +26,12 @@ Source of truth: [github.com/RetireGolden/RetireGolden](https://github.com/Retir
   expose a general object hasher. JavaScript cannot reliably detect `Proxy`
   wrappers, so the internal hasher's contract is limited to freshly rebuilt,
   trusted plain data trees and is not a hostile-object validation boundary.
+- The owned-IRA penalty prerequisite can accept raw annual SEPP schedule routes,
+  rebuild each route's complete inventory from canonical annual character, and
+  issue final `iraSeppQualified` zero-penalty decisions only after complete
+  reconciliation and exact payment rejoin. Non-success routes remain pending
+  and supply no negative-SEPP authority. The annual finalizer and coordinator
+  do not yet accept these routes or consume the new outcome.
 - Parameters (tax brackets, limits, SSA tables, Medicare/FPL) are versioned
   data packs under `params/`, with provenance.
 

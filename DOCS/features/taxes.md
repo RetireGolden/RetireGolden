@@ -287,10 +287,15 @@ rules and citations: [domain rules §16](../domain/domain-rules-reference.md#16-
   end exactly the day before the tax year, rejects lifetime distribution IDs reused by current
   non-distribution evidence, and requires scheduled and actual terminal gross to equal the annual
   schedule. Its new structural IDs are fixed-width digests. All-basis payments remain gross members but add zero
-  prospective ordinary exposure. “Complete” is relative only to the supplied inventory; a later penalty
-  boundary must rederive and rejoin it from full canonical annual characterization. Reconciliation still
-  establishes no qualification, penalty treatment or amount/rate, actionability, movement, readiness,
-  execution, finalization, coordination, or simulation authority.
+  prospective ordinary exposure. “Complete” is relative only to the supplied inventory. The penalty
+  prerequisite now accepts routed raw annual inputs, derives all canonical character coverage first,
+  builds the full source-account inventory internally, reconciles, and exact-rejoins payments. Only a
+  complete `reconciled` route produces final `iraSeppQualified` zero-penalty evidence; every non-success
+  route remains `exceptionEvaluationRequired` and supplies no negative-SEPP authority. Submitted routes
+  cannot coexist with no-SEPP evidence. All-basis payments remain schedule members without evaluations;
+  age and disability precede SEPP; qualified SIMPLE payments bypass participation/rate facts while fallback
+  SIMPLE remains 25%/10%. The annual finalizer and coordinator cannot yet submit these routes or consume
+  the new outcome, and this establishes no actionability, movement, readiness, execution, or simulation.
 - **Property disposition.** Setting `costBasis` on a property replaces the tax-free `expectedNetProceeds`
   estimate with exact treatment: capital gain above basis net of `sellingCostPct`, the §121 primary-residence
   exclusion, and ordinary-income depreciation recapture. Gains flow through the capital-gains stack.

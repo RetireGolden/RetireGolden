@@ -202,6 +202,17 @@ export function resolveOwnedNonRothIraAnnualWithdrawalEvidence(
     })
   }
 
+  // This boundary intentionally cannot submit annual SEPP schedule routes.
+  // Fail closed if that input contract changes before the finalizer's own
+  // accepted-outcome union is deliberately extended.
+  if (penaltyPrerequisites.evaluations.some(
+    (evaluation) => evaluation.outcome === 'iraSeppQualified',
+  )) {
+    throw new Error(
+      'Annual IRA finalization does not yet consume SEPP-qualified prerequisite outcomes',
+    )
+  }
+
   const finalEvaluations =
     penaltyPrerequisites.evaluations as
       readonly FinalOwnedNonRothIraPenaltyPrerequisiteEvaluation[]
