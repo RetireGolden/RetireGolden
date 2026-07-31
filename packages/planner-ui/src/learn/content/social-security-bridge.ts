@@ -31,7 +31,7 @@ export const socialSecurityBridgeArticle: LearningArticle = {
       type: 'list',
       items: [
         'A bridge is a pot of savings that pays you the benefit you gave up, so delaying the claim does not mean living on less.',
-        'Every year of delay raises the benefit permanently, and for couples it raises the survivor benefit too.',
+        'Every year of delay raises the benefit permanently, and delaying the higher earner in a couple also raises the survivor benefit.',
         'The honest comparison is bridge plus a delayed claim against claiming early and keeping the savings invested, run through the same plan.',
       ],
     },

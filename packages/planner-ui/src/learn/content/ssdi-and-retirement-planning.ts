@@ -65,7 +65,7 @@ export const ssdiAndRetirementPlanningArticle: LearningArticle = {
         ['Monthly amount', 'Your full PIA, with no age reduction', 'PIA reduced permanently for every month before FRA'],
         ['Earnings limit', 'Wages above the SGA limit generally stop the benefit outright', 'The earnings test withholds benefits, then credits them back at FRA'],
         ['Delayed credits', 'None. You are already receiving the full PIA', 'Available only if you have not claimed yet'],
-        ['At full retirement age', 'Converts automatically to the retirement benefit at the same amount', 'Stays at the reduced amount for life'],
+        ['At full retirement age', 'Converts automatically to the retirement benefit at the same amount', 'Stays reduced, except that any months the earnings test withheld are credited back and the benefit is recomputed'],
       ],
     },
     { type: 'heading', text: 'Conversion at FRA' },

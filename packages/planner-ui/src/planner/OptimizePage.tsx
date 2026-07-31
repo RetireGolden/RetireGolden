@@ -313,8 +313,8 @@ export function OptimizePage() {
           The default leaves the most after-tax wealth to your heirs; other modes can favor spending durability,
           lifetime tax with an estate floor, survivor liquidity, or bridge-year resilience. RetireGolden generates
           candidate schedules (a multi-year math program over federal brackets, IRMAA thresholds, and RMDs, plus
-          simple bracket-fill and cliff-cap strategies), compares every candidate on your full year-by-year
-          projection, and shows the one that ranks highest on your chosen objective within the search limits. You
+          simple bracket-fill and cliff-cap strategies), compares every candidate schedule on your full year-by-year
+          projection, and shows the schedule that ranks highest on your chosen objective within the search limits. You
           decide whether to apply it.
         </p>
         <p className="field-hint">
@@ -334,7 +334,7 @@ export function OptimizePage() {
           {hasSocialSecurityIncome ? (
             <CheckboxField
               label="Also optimize Social Security claim age"
-              help="Re-runs the full conversion optimizer at each canonical claim age (62 / full retirement age / 70, for up to two Social Security streams) and surfaces the claim-age and conversion pair with the highest projected after-tax estate. A claim change has to beat the current-claim optimum by a clear margin before it is surfaced."
+              help="Re-runs the full conversion optimizer at each canonical claim age (62 / full retirement age / 70, for up to two Social Security streams) and surfaces the claim-age and conversion pair with the highest projected after-tax estate. Note that claim combinations are always compared on after-tax estate, even when you have picked a different objective above; that objective still ranks the schedules within each combination. A claim change has to beat the current-claim optimum by a clear margin before it is surfaced."
               hint="Re-runs the full optimizer once per claim combination, so expect several times longer than a standard run."
               value={coOptimizeClaim}
               onCommit={setCoOptimizeClaim}
