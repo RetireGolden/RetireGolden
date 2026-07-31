@@ -45,6 +45,7 @@ const {
   asUsdCents,
   classifyOwnedNonRothIraAnnualWithdrawals,
   classifyIndividuallyOwnedTaxableWithdrawal,
+  evaluateOwnedNonRothIraPenaltyPrerequisites,
   executeCashOrdinaryWithdrawals,
   executeOrdinaryWithdrawals,
   ledgerCentsToPlanDollars,
@@ -267,6 +268,38 @@ assert.equal(ownedIraCharacter.withdrawals[0].ordinaryIncomeAmount, 1)
 assert.deepEqual(
   ownedIraCharacter.withdrawals[0].taxCharacter.map((segment) => segment.kind),
   ['basisReturn', 'ordinaryIncome'],
+)
+const ownedIraPenaltyPrerequisite =
+  evaluateOwnedNonRothIraPenaltyPrerequisites({
+    characterization: ownedIraCharacter,
+    ownerEvidence: {
+      predicate: 'ownerBirthDateForIraPenaltyAgeThreshold',
+      ownerPersonId: asPersonId('smoke-person'),
+      birthDate: '1955-08-31',
+      evidenceId: 'smoke-birth-date',
+    },
+    sourceEvidence: [{
+      predicate: 'ownedNonRothIraPenaltySourceForWithdrawal',
+      actionId: asActionId('smoke-ira-withdrawal'),
+      allocationId: asAllocationId('smoke-ira-allocation'),
+      sourceAccountId: asAccountId('smoke-traditional-ira'),
+      ownerPersonId: asPersonId('smoke-person'),
+      subtype: 'traditional',
+      evaluationDate: '2030-12-31',
+      distributionDateEvidenceId: 'smoke-ira-distribution-date',
+      accountOwnershipEvidenceId: 'smoke-ira-ownership',
+      iraClassificationEvidenceId: 'smoke-ira-classification',
+    }],
+    simpleParticipationEvidence: [],
+  })
+assert.equal(
+  ownedIraPenaltyPrerequisite.evaluations[0].outcome,
+  'age59HalfReached',
+)
+assert.equal(
+  ownedIraPenaltyPrerequisite.evaluations[0]
+    .characterCoverage.ordinaryIncomeExposureAmount,
+  1,
 )
 
 const smokeTaxable = {

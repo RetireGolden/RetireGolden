@@ -188,3 +188,19 @@ export {
   type OwnedNonRothIraWithdrawalClassification,
   type OwnedNonRothIraWithdrawalTaxCharacter,
 } from './ownedNonRothIraWithdrawalCharacter.js'
+export {
+  evaluateOwnedNonRothIraPenaltyPrerequisites,
+  type Age59HalfReachedPenaltyEvaluation,
+  type EvaluateOwnedNonRothIraPenaltyPrerequisitesInput,
+  type EvaluateOwnedNonRothIraPenaltyPrerequisitesResult,
+  type ExceptionEvaluationRequiredPenaltyPrerequisite,
+  type OwnedNonRothIraEarlyDistributionRateEvidence,
+  type OwnedNonRothIraPenaltyAgeThresholdEvidence,
+  type OwnedNonRothIraPenaltyCharacterCoverageEvidence,
+  type OwnedNonRothIraPenaltyOwnerEvidence,
+  type OwnedNonRothIraPenaltyPrerequisiteEvaluation,
+  type OwnedNonRothIraPenaltySourceEvidence,
+  type SimpleIraEarlyDistributionRateEvidence,
+  type SimpleIraParticipationEvidence,
+  type StandardIraEarlyDistributionRateEvidence,
+} from './ownedNonRothIraPenaltyPrerequisite.js'
