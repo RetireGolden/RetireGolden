@@ -63,7 +63,7 @@ export interface EvaluateOwnedNonRothIraPenaltyPrerequisitesInput {
   characterization: Readonly<ClassifyOwnedNonRothIraAnnualWithdrawalsResult>
   ownerEvidence: Readonly<OwnedNonRothIraPenaltyOwnerEvidence>
   sourceEvidence: readonly Readonly<OwnedNonRothIraPenaltySourceEvidence>[]
-  qualifiedDisabilityEvidence:
+  qualifiedDisabilityEvidence?:
     readonly Readonly<QualifiedDisabilityEventEvidence>[]
   simpleParticipationEvidence:
     readonly Readonly<SimpleIraParticipationEvidence>[]
@@ -854,7 +854,7 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
     QualifiedDisabilityEventEvidence
   >()
   const disabilityEvidenceBindings = new Map<string, string>()
-  for (const disabilityInput of input.qualifiedDisabilityEvidence) {
+  for (const disabilityInput of input.qualifiedDisabilityEvidence ?? []) {
     const disabledPersonId = personIdSchema.parse(
       disabilityInput.disabledPersonId,
     )

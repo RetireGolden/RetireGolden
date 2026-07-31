@@ -393,6 +393,12 @@ describe('evaluateOwnedNonRothIraPenaltyPrerequisites', () => {
     expect(first(
       evaluateOwnedNonRothIraPenaltyPrerequisites(input()),
     ).outcome).toBe('exceptionEvaluationRequired')
+
+    const legacyCompatibleInput = input()
+    delete legacyCompatibleInput.qualifiedDisabilityEvidence
+    expect(first(
+      evaluateOwnedNonRothIraPenaltyPrerequisites(legacyCompatibleInput),
+    ).outcome).toBe('exceptionEvaluationRequired')
   })
 
   it('does not require SIMPLE participation or construct a rate for qualified disability', () => {
@@ -677,7 +683,7 @@ describe('evaluateOwnedNonRothIraPenaltyPrerequisites', () => {
     const notPositive = input({
       disabilityQualificationDate: '2030-05-01',
     })
-    Object.assign(notPositive.qualifiedDisabilityEvidence[0]!, {
+    Object.assign(notPositive.qualifiedDisabilityEvidence![0]!, {
       qualifiedOnEvaluationDate: false,
     })
     expect(() =>
@@ -1048,7 +1054,7 @@ describe('evaluateOwnedNonRothIraPenaltyPrerequisites', () => {
     Object.assign(mutableInput.sourceEvidence[0]!, {
       distributionDateEvidenceId: 'mutated',
     })
-    Object.assign(mutableInput.qualifiedDisabilityEvidence[0]!, {
+    Object.assign(mutableInput.qualifiedDisabilityEvidence![0]!, {
       disabilityEvidenceId: 'mutated',
     })
     expect(first(result).characterCoverage.evidenceId).toBe(originalEvidenceId)
