@@ -74,11 +74,14 @@ import {
 } from '../tax/aggregateBasisSale.js'
 import {
   asAccountId,
+  asPersonId,
   executeOrdinaryWithdrawals,
   ledgerCentTotalToPlanDollars,
   ledgerCentsToPlanDollars,
   planDollarsToLedgerCents,
+  signedLedgerCentTotalToPlanDollars,
   type ExecuteOrdinaryWithdrawalsResult,
+  type TaxableAccountOpeningSnapshot,
 } from '../actions/index.js'
 import { effectiveBirthYear, fraForBirthYear, fraTotalMonths, survivorFraForBirthYear } from '../socialSecurity/nra.js'
 import {
@@ -2295,6 +2298,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     let retirementActionEquityCompensation = 0
     let retirementActionOrdinaryIncome = 0
     let retirementActionProceeds = 0
+    let retirementActionTaxableProceeds = 0
+    let retirementActionCapitalGainOrLoss = 0
     if (currentYearActions.length > 0) {
       const ordinarySourceAccountIds = new Set<string>(
         currentYearActions.flatMap((request) =>
@@ -2322,6 +2327,132 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             return []
           }
         })
+      let aliveTaxUnitMemberIds:
+        | ReturnType<typeof asPersonId>[]
+        | null = null
+      try {
+        aliveTaxUnitMemberIds = peopleStates
+          .filter((state) => state.alive)
+          .map((state) => asPersonId(state.personId))
+          .sort((left, right) => left < right ? -1 : left > right ? 1 : 0)
+      } catch {
+        // A persisted household ID can satisfy the Plan's legacy string
+        // schema without satisfying action identity's nonblank contract.
+        // Omit tax-unit evidence rather than letting unrelated cash/equity
+        // action execution fail with a validation exception.
+      }
+      const hasUnambiguousTaxUnit =
+        aliveTaxUnitMemberIds !== null &&
+        ((filingStatusForYear === 'marriedFilingJointly' &&
+          aliveTaxUnitMemberIds.length === 2) ||
+        ((filingStatusForYear === 'single' ||
+          filingStatusForYear === 'qualifyingSurvivingSpouse') &&
+          aliveTaxUnitMemberIds.length === 1))
+      const taxUnitMembers = hasUnambiguousTaxUnit
+        ? aliveTaxUnitMemberIds as [
+          ReturnType<typeof asPersonId>,
+          ...ReturnType<typeof asPersonId>[],
+        ]
+        : null
+      const annualStateFilingInputs = [
+        stateForYear(plan.household, year),
+        stateResidencySegmentsForYear(plan.household, year),
+      ] as const
+      const taxUnitId = taxUnitMembers === null
+        ? null
+        : `projection-tax-unit:${JSON.stringify([
+          year,
+          filingStatusForYear,
+          taxUnitMembers,
+        ])}`
+      const taxUnitEvidenceId = taxUnitMembers === null
+        ? null
+        : `projection-tax-unit-evidence:${JSON.stringify([
+          year,
+          filingStatusForYear,
+          taxUnitMembers,
+          annualStateFilingInputs,
+        ])}`
+      const stateFilingStatusId = taxUnitMembers === null
+        ? null
+        : `projection-state-filing-status:${JSON.stringify([
+          year,
+          filingStatusForYear,
+          taxUnitMembers,
+          annualStateFilingInputs,
+        ])}`
+      let taxableAccountSnapshots: TaxableAccountOpeningSnapshot[] =
+        taxUnitMembers === null ||
+        taxUnitId === null ||
+        taxUnitEvidenceId === null ||
+        stateFilingStatusId === null
+          ? []
+          : [...balances]
+            .filter(
+              (state): state is BalanceState & {
+                account: Extract<Account, { type: 'taxable' }> & {
+                  ownerPersonId: string
+                }
+              } =>
+                ordinarySourceAccountIds.has(state.account.id) &&
+                state.account.type === 'taxable' &&
+                state.account.ownerPersonId !== null &&
+                taxUnitMembers.includes(asPersonId(state.account.ownerPersonId)),
+            )
+            .sort((left, right) =>
+              left.account.id < right.account.id
+                ? -1
+                : left.account.id > right.account.id
+                  ? 1
+                  : 0,
+            )
+            .flatMap((state) => {
+              try {
+                const accountId = asAccountId(state.account.id)
+                const ownerPersonId = asPersonId(state.account.ownerPersonId)
+                return [{
+                  accountId,
+                  openingCostBasis: planDollarsToLedgerCents(state.costBasis),
+                  ownership: {
+                    accountOwnerPersonIds: [ownerPersonId],
+                    accountOwnershipEvidenceId:
+                      `projection-account-ownership:${JSON.stringify([
+                        accountId,
+                        ownerPersonId,
+                        year,
+                        filingStatusForYear,
+                        taxUnitMembers,
+                      ])}`,
+                    beneficialOwnershipShare: {
+                      representation: 'exactRational',
+                      numerator: 1,
+                      denominator: 1,
+                      intermediateArithmetic: 'bigintRational',
+                    },
+                    attributionEvidenceId:
+                      `projection-taxable-attribution:${JSON.stringify([
+                        accountId,
+                        ownerPersonId,
+                        year,
+                        filingStatusForYear,
+                        taxUnitMembers,
+                      ])}`,
+                  },
+                  taxUnit: {
+                    taxUnitId,
+                    taxUnitMemberPersonIds: taxUnitMembers,
+                    federalFilingStatus: filingStatusForYear,
+                    stateFilingStatusId,
+                    taxUnitEvidenceId,
+                    taxYear: year,
+                  },
+                }]
+              } catch {
+                // Keep a valid balance visible while omitting invalid basis
+                // evidence so taxable movement fails closed and explains why.
+                return []
+              }
+            })
       const personAliveEvidence = currentYearActions.flatMap(
         (request): NonpersistedActionPersonAliveEvidence[] => {
           if (
@@ -2354,9 +2485,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           plan,
           requests: currentYearActions,
           openingBalances,
+          taxableAccountSnapshots,
           runtimeEvidence: { personAliveEvidence },
         })
-        const unrepresentableClosingAccountIds = new Set(
+        const unrepresentableClosingBalanceAccountIds = new Set(
           retirementActionExecution.balances
             .filter((snapshot) => snapshot.closingBalance !== snapshot.openingBalance)
             .filter((snapshot) => {
@@ -2369,15 +2501,181 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             })
             .map((snapshot) => String(snapshot.accountId)),
         )
-        if (unrepresentableClosingAccountIds.size === 0) break
+        const unrepresentableClosingBasisAccountIds = new Set(
+          retirementActionExecution.taxableBases
+            .filter(
+              (snapshot) =>
+                snapshot.closingCostBasis !== snapshot.openingCostBasis,
+            )
+            .filter((snapshot) => {
+              try {
+                ledgerCentsToPlanDollars(snapshot.closingCostBasis)
+                return false
+              } catch {
+                return true
+              }
+            })
+            .map((snapshot) => String(snapshot.accountId)),
+        )
+
+        const sourceIdsByClass = {
+          cash: new Set<string>(),
+          equityCompensation: new Set<string>(),
+          taxable: new Set<string>(),
+          all: new Set<string>(),
+        }
+        for (const evidence of retirementActionExecution.evidence) {
+          if (evidence.readiness !== 'actionable') continue
+          for (const coverage of evidence.penaltyCoverage) {
+            if (coverage.executedAmount <= 0) continue
+            const sourceAccountId = String(coverage.sourceAccountId)
+            sourceIdsByClass[coverage.sourceClass].add(sourceAccountId)
+            sourceIdsByClass.all.add(sourceAccountId)
+          }
+        }
+        // Keep every annual subtotal exact until its Plan-number boundary.
+        // A representable per-account closing does not prove that a sum across
+        // several safe-integer sources is itself representable.
+        const retirementActionCashCents =
+          retirementActionExecution.evidence.reduce(
+            (total, evidence) =>
+              total +
+              evidence.taxCharacter.reduce(
+                (characterTotal, character) =>
+                  characterTotal +
+                  (character.sourceClass === 'cash'
+                    ? BigInt(character.amount)
+                    : 0n),
+                0n,
+              ),
+            0n,
+          )
+        const retirementActionEquityCompensationCents =
+          retirementActionExecution.evidence.reduce(
+            (total, evidence) =>
+              total +
+              evidence.taxCharacter.reduce(
+                (characterTotal, character) =>
+                  characterTotal +
+                  (character.sourceClass === 'equityCompensation'
+                    ? BigInt(character.amount)
+                    : 0n),
+                0n,
+              ),
+            0n,
+          )
+        const retirementActionTaxableProceedsCents =
+          retirementActionExecution.evidence.reduce(
+            (total, evidence) =>
+              total +
+              (evidence.readiness === 'actionable'
+                ? evidence.penaltyCoverage.reduce(
+                  (coverageTotal, coverage) =>
+                    coverageTotal +
+                    (coverage.sourceClass === 'taxable'
+                      ? BigInt(coverage.executedAmount)
+                      : 0n),
+                  0n,
+                )
+                : 0n),
+            0n,
+          )
+        const retirementActionProceedsCents =
+          retirementActionExecution.evidence.reduce(
+            (total, evidence) =>
+              total + BigInt(evidence.disposition.executedAmount),
+            0n,
+          )
+        const retirementActionCapitalCents =
+          retirementActionExecution.evidence.reduce(
+            (total, evidence) =>
+              total +
+              evidence.taxCharacter.reduce((characterTotal, character) => {
+                if (character.sourceClass !== 'taxable') return characterTotal
+                if (character.kind === 'capitalGain') {
+                  return characterTotal + BigInt(character.amount)
+                }
+                if (character.kind === 'capitalLoss') {
+                  return characterTotal - BigInt(character.amount)
+                }
+                return characterTotal
+              }, 0n),
+            0n,
+          )
+
+        const aggregateFailureSourceAccountIds = new Set<string>()
+        try {
+          retirementActionCash = ledgerCentTotalToPlanDollars(
+            retirementActionCashCents,
+          )
+        } catch {
+          sourceIdsByClass.cash.forEach((id) =>
+            aggregateFailureSourceAccountIds.add(id),
+          )
+        }
+        try {
+          retirementActionEquityCompensation =
+            ledgerCentTotalToPlanDollars(
+              retirementActionEquityCompensationCents,
+            )
+        } catch {
+          sourceIdsByClass.equityCompensation.forEach((id) =>
+            aggregateFailureSourceAccountIds.add(id),
+          )
+        }
+        try {
+          retirementActionTaxableProceeds =
+            ledgerCentTotalToPlanDollars(
+              retirementActionTaxableProceedsCents,
+            )
+        } catch {
+          sourceIdsByClass.taxable.forEach((id) =>
+            aggregateFailureSourceAccountIds.add(id),
+          )
+        }
+        try {
+          retirementActionProceeds = ledgerCentTotalToPlanDollars(
+            retirementActionProceedsCents,
+          )
+        } catch {
+          sourceIdsByClass.all.forEach((id) =>
+            aggregateFailureSourceAccountIds.add(id),
+          )
+        }
+        try {
+          retirementActionCapitalGainOrLoss =
+            signedLedgerCentTotalToPlanDollars(retirementActionCapitalCents)
+        } catch {
+          sourceIdsByClass.taxable.forEach((id) =>
+            aggregateFailureSourceAccountIds.add(id),
+          )
+        }
+        if (
+          unrepresentableClosingBalanceAccountIds.size === 0 &&
+          unrepresentableClosingBasisAccountIds.size === 0 &&
+          aggregateFailureSourceAccountIds.size === 0
+        ) {
+          break
+        }
 
         // The action ledger is exact-cent while Plan balances are numbers. If
-        // a committed closing value cannot cross that boundary losslessly,
-        // rerun without that source so the executor returns non-actionable
-        // evidence and the Plan balance remains untouched.
+        // a closing value or annual aggregate cannot cross that boundary
+        // losslessly, rerun without the affected fact source. Independent
+        // actions whose sources remain available may still execute.
+        const unavailableBalanceAccountIds = new Set([
+          ...unrepresentableClosingBalanceAccountIds,
+          ...aggregateFailureSourceAccountIds,
+        ])
         openingBalances = openingBalances.filter(
           (snapshot) =>
-            !unrepresentableClosingAccountIds.has(String(snapshot.accountId)),
+            !unavailableBalanceAccountIds.has(String(snapshot.accountId)),
+        )
+        taxableAccountSnapshots = taxableAccountSnapshots.filter(
+          (snapshot) =>
+            !unavailableBalanceAccountIds.has(String(snapshot.accountId)) &&
+            !unrepresentableClosingBasisAccountIds.has(
+              String(snapshot.accountId),
+            ),
         )
       }
 
@@ -2387,11 +2685,26 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             .filter((snapshot) => snapshot.closingBalance !== snapshot.openingBalance)
             .map((snapshot) => [String(snapshot.accountId), snapshot.closingBalance]),
         )
+        const closingTaxableBasisCentsByAccountId = new Map(
+          retirementActionExecution.taxableBases.map((snapshot) => [
+            String(snapshot.accountId),
+            snapshot.closingCostBasis,
+          ]),
+        )
         for (const state of balances) {
           const closingCents = closingCentsByAccountId.get(state.account.id)
           if (closingCents !== undefined) {
             const closingBalance = ledgerCentsToPlanDollars(closingCents)
-            if (state.account.type === 'equityComp' && state.balance > 0) {
+            if (state.account.type === 'taxable') {
+              const closingBasisCents =
+                closingTaxableBasisCentsByAccountId.get(state.account.id)
+              if (closingBasisCents === undefined) {
+                throw new Error(
+                  'Committed taxable closing balance lost its paired basis',
+                )
+              }
+              state.costBasis = ledgerCentsToPlanDollars(closingBasisCents)
+            } else if (state.account.type === 'equityComp' && state.balance > 0) {
               const executed = state.balance - closingBalance
               const basisRatio = Math.min(1, state.costBasis / state.balance)
               state.costBasis = Math.max(
@@ -2403,50 +2716,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           }
         }
       }
-      // Keep the annual aggregate exact as an unbounded integer until its one
-      // crossing back into Plan-dollar numbers. Individual ledger amounts are
-      // safe integers, but their annual sum need not fit the branded cent type.
-      const retirementActionCashCents = retirementActionExecution.evidence.reduce(
-        (total, evidence) =>
-          total +
-          evidence.taxCharacter.reduce(
-            (characterTotal, character) =>
-              characterTotal +
-              (character.sourceClass === 'cash' ? BigInt(character.amount) : 0n),
-            0n,
-          ),
-        0n,
-      )
-      retirementActionCash = ledgerCentTotalToPlanDollars(
-        retirementActionCashCents,
-      )
-      const retirementActionEquityCompensationCents =
-        retirementActionExecution.evidence.reduce(
-          (total, evidence) =>
-            total +
-            evidence.taxCharacter.reduce(
-              (characterTotal, character) =>
-                characterTotal +
-                (character.sourceClass === 'equityCompensation'
-                  ? BigInt(character.amount)
-                  : 0n),
-              0n,
-            ),
-          0n,
-        )
-      retirementActionEquityCompensation = ledgerCentTotalToPlanDollars(
-        retirementActionEquityCompensationCents,
-      )
       retirementActionOrdinaryIncome = retirementActionEquityCompensation
-      const retirementActionProceedsCents =
-        retirementActionExecution.evidence.reduce(
-          (total, evidence) =>
-            total + BigInt(evidence.disposition.executedAmount),
-          0n,
-        )
-      retirementActionProceeds = ledgerCentTotalToPlanDollars(
-        retirementActionProceedsCents,
-      )
     }
 
     // --- Roth conversions (after RMDs — RMDs must be satisfied first) -------
@@ -2508,8 +2778,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       acaActive && acaContract?.foreignExclusionAddback.state === 'known'
         ? Math.max(0, acaContract.foreignExclusionAddback.amount ?? 0)
         : 0
+    // Canonical signed current-year capital before any residual legacy
+    // withdrawal sale. Exact-cent action character crosses into Plan dollars
+    // once above; proceeds remain liquidity and are not income a second time.
     const preWithdrawalCapitalResult =
-      oneTimeGains + rebalanceRealizedGains
+      oneTimeGains +
+      rebalanceRealizedGains +
+      retirementActionCapitalGainOrLoss
     const netCapitalForPreWithdrawalSizing =
       applyCapitalLossCarryforward(
         capitalLossPool,
@@ -2960,7 +3235,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             iraNontaxableProbe +
             rothEffect.taxableOrdinary +
             hsaProbe.taxableOrdinary,
-          oneTimeGains + rebalanceRealizedGains + withdrawalPlan.realizedGains,
+          preWithdrawalCapitalResult + withdrawalPlan.realizedGains,
           lossOffsetLimit,
         )
         const taxInput = {
@@ -2969,7 +3244,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           ordinaryIncome: nettedProbe.ordinaryAfter,
           capitalGains: nettedProbe.netCapitalGain,
           realizedCapitalGainsBeforeCarryforward:
-            oneTimeGains + rebalanceRealizedGains + withdrawalPlan.realizedGains,
+            preWithdrawalCapitalResult + withdrawalPlan.realizedGains,
           taxableInterestIncome: incomes.taxableInterest + ladderTaxableInterest,
           taxExemptInterest: acaTaxExemptInterest,
           foreignExclusionAddback: acaForeignExclusionAddback,
@@ -3375,7 +3650,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           rothEffectFinal.taxableOrdinary +
           hsaEffectFinal.taxableOrdinary,
       ),
-      oneTimeGains + rebalanceRealizedGains + withdrawalPlan.realizedGains,
+      preWithdrawalCapitalResult + withdrawalPlan.realizedGains,
       lossOffsetLimit,
     )
     capitalLossPool = lossNetting.remaining
@@ -3385,7 +3660,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // gainsRealized is signed (a net capital loss is negative); floor MAGI at 0.
     const ordinaryRealized = lossNetting.ordinaryAfter
     const gainsRealized = lossNetting.netCapitalGain
-    const realizedCapitalGainsBeforeCarryforward = oneTimeGains + rebalanceRealizedGains + withdrawalPlan.realizedGains
+    const realizedCapitalGainsBeforeCarryforward =
+      preWithdrawalCapitalResult + withdrawalPlan.realizedGains
     const taxableSs = taxableSocialSecurity(
       pack,
       taxFilingStatusForYear,
@@ -3569,7 +3845,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // Candidate schedules are still repriced authoritatively by this exact
       // ledger, which preserves the signed result and carryforward.
       const optimizerCapitalGainsBase =
-        Math.max(0, oneTimeGains + rebalanceRealizedGains) + incomes.qualifiedDividends
+        Math.max(0, preWithdrawalCapitalResult) + incomes.qualifiedDividends
       opts.captureOptimizerInputs({
         year,
         ordinaryIncomeBase: optimizerOrdinaryIncomeBase,
@@ -3581,12 +3857,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         ssBenefits: incomes.socialSecurity,
         taxableSsBase: taxableSs,
         ssProvisionalIncomeAddbacks: acaTaxExemptInterest + acaForeignExclusionAddback,
-        // Gains EXCLUDING taxable-withdrawal realizations: the optimizer
-        // re-decides taxable draws as its own `wtax` variable and adds their
-        // gain share to provisional income / MAGI itself, so including the
-        // baseline's withdrawal-driven gains here would double-count them.
-        // (Pre-netting components; capital-loss carryforward refinement is
-        // left to the exact ledger.)
+        // Includes fixed taxable-action character, but excludes residual legacy
+        // taxable-withdrawal realizations: the optimizer re-decides those draws
+        // as its own `wtax` variable and adds their gain share itself.
+        // (Pre-netting components; carryforward refinement is left to the exact
+        // ledger, and the MILP boundary stays conservatively nonnegative.)
         capitalGainsBase: optimizerCapitalGainsBase,
         acaConversionMagiHeadroom:
           yearAcaResult?.readiness === 'actionable' &&
@@ -3816,7 +4091,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       cash: withdrawalPlan.byCategory.cash + retirementActionCash,
       taxable:
         withdrawalPlan.byCategory.taxable +
-        retirementActionEquityCompensation,
+        retirementActionEquityCompensation +
+        retirementActionTaxableProceeds,
       traditional: withdrawalPlan.byCategory.traditional + rmdTotal + seppTotal + inheritedTotal,
       total:
         withdrawalPlan.byCategory.total +
@@ -3868,7 +4144,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       ssdiPaid,
       tax,
       withdrawals: reportedWithdrawals,
-      realizedGains: withdrawalPlan.realizedGains + rebalanceRealizedGains,
+      realizedGains:
+        withdrawalPlan.realizedGains +
+        rebalanceRealizedGains +
+        retirementActionCapitalGainOrLoss,
       taxableYield: incomes.taxableYield,
       capitalLossUsedAgainstGains: lossNetting.usedAgainstGains,
       capitalLossUsedAgainstOrdinary: lossNetting.usedAgainstOrdinary,

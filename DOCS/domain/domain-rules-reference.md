@@ -148,9 +148,12 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
   prior-year carryforward losses do not offset PA-taxable current-year gains in the planning model. The raw
   current-year capital field remains signed, but PA floors that current-year-only input at zero.
 - A current-year signed capital loss joins the opening carryforward pool before the annual ordinary-income
-  deduction. Legacy taxable withdrawals, rebalances, and taxable annuity/TIPS funding share one uncapped
-  aggregate-basis sale rule; basis above value therefore produces a loss instead of being silently capped at
-  a zero gain. Full sales explicitly exhaust both fair market value and remaining aggregate basis.
+  deduction. Legacy taxable withdrawals, individually owned taxable ordinary-withdrawal actions, rebalances,
+  and taxable annuity/TIPS funding share the same uncapped aggregate-basis economics; actions calculate it in
+  exact cents while legacy paths use the planning-dollar helper. Basis above value therefore produces a loss
+  instead of being silently capped at zero. Full sales explicitly exhaust both fair market value and remaining
+  aggregate basis. Pennsylvania's current-year-only input receives this raw signed annual result before its
+  state-specific zero floor.
 - Mid-year state moves prorate state taxable income, deductions, brackets, and retirement caps by months in
   each state segment. Taxable Social Security is computed once on the full-year federal base and then
   apportioned by months.
@@ -475,9 +478,20 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   `Number.MAX_SAFE_INTEGER`. The public ordinary-withdrawal executor consumes a separate exact-cent opening
   balance and cost-basis snapshot, stages both together, and commits both or neither. A depleted taxable
   sibling in a positive partial action uses an explicit zero-execution/no-denominator arm; stale positive
-  basis at zero value fails closed. Joint taxable sources remain unsupported. The annual projection does not
-  yet construct these immutable snapshots or consume signed action gain/loss, so simulator taxable actions
-  remain zero-movement until that separate integration lands.
+  basis at zero value fails closed.
+  The annual projection now constructs these snapshots for named, individually owned taxable sources when
+  the projected tax unit is unambiguous: one living member filing single or qualifying surviving spouse, or
+  exactly two living members filing jointly. Every snapshot for the year shares deterministic tax-unit
+  evidence derived from the projected filing status, sorted living member IDs, and annual state-residency
+  inputs. The owner must be a living unit member with an exact 1/1 share. Invalid basis is omitted without
+  hiding a valid opening balance, and closing balance plus basis commit atomically by stable account ID.
+  Sequential actions and same-year residual legacy sales therefore consume the adjusted basis rather than
+  debiting or characterizing the source twice.
+  Exact-cent action gain/loss crosses into the annual model once and feeds conversion/bracket/floor sizing,
+  withdrawal probes, carryforward, federal and state tax, MAGI/ACA/IRMAA, the conservative nonnegative
+  optimizer base, `YearResult.realizedGains`, and taxable-withdrawal reporting. Proceeds remain a single
+  liquidity inflow. Joint taxable ownership, MFS/multiple tax units, action-date market valuation, tax lots,
+  and filed-return state attribution remain unsupported planning boundaries.
 - **HSA medical-expense subledger.** Per HSA account, `withdrawalTreatment`:
   `assumeAllQualified` (every withdrawal tax- and penalty-free), `capByMedicalExpenses` (qualified only up to
   the household's modeled healthcare premiums + net care costs this year; the excess is ordinary income,

@@ -83,3 +83,15 @@ export function ledgerCentTotalToPlanDollars(cents: bigint): number {
   }
   return dollars
 }
+
+/**
+ * Converts a signed aggregate exact-cent total to Plan dollars without
+ * allowing a precision-changing round trip or JavaScript negative zero.
+ */
+export function signedLedgerCentTotalToPlanDollars(cents: bigint): number {
+  if (cents === 0n) return 0
+  const absoluteDollars = ledgerCentTotalToPlanDollars(
+    cents < 0n ? -cents : cents,
+  )
+  return cents < 0n ? -absoluteDollars : absoluteDollars
+}
