@@ -358,9 +358,16 @@ export function SelectField<T extends string>({
       <select
         id={id}
         value={value}
-        required={placeholder !== undefined || undefined}
+        required={placeholder !== undefined}
         aria-describedby={describedBy}
-        onChange={(e) => onCommit(e.target.value as T)}
+        onChange={(e) => {
+          const v = e.target.value
+          // With a placeholder, '' is the disabled not-yet-answered option —
+          // never a committable choice. Without one, '' can be a real option
+          // value (e.g. "Default (by account type)") and must commit as usual.
+          if (placeholder !== undefined && v === '') return
+          onCommit(v as T)
+        }}
       >
         {placeholder !== undefined ? (
           <option value="" disabled>
