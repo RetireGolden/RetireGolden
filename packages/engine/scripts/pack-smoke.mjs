@@ -43,6 +43,7 @@ const {
   asPersonId,
   asPositiveUsdCents,
   asUsdCents,
+  classifyOwnedNonRothIraAnnualWithdrawals,
   classifyIndividuallyOwnedTaxableWithdrawal,
   executeCashOrdinaryWithdrawals,
   executeOrdinaryWithdrawals,
@@ -215,6 +216,58 @@ const taxableCharacter = classifyIndividuallyOwnedTaxableWithdrawal({
 })
 assert.equal(taxableCharacter.taxCharacter[0].kind, 'basisReturn')
 assert.equal(taxableCharacter.taxCharacter[1].kind, 'capitalGain')
+
+const ownedIraCharacter = classifyOwnedNonRothIraAnnualWithdrawals({
+  ownerPersonId: asPersonId('smoke-person'),
+  ownerWideNonRothIraPoolId: 'smoke-owner-ira-pool',
+  completePoolEvidence: {
+    predicate: 'completeOwnedNonRothIraPoolForOwnerAndTaxYear',
+    ownerPersonId: asPersonId('smoke-person'),
+    ownerWideNonRothIraPoolId: 'smoke-owner-ira-pool',
+    taxYear: 2030,
+    accountIds: [asAccountId('smoke-traditional-ira')],
+    yearEndApplicablePoolBalanceAmount: asUsdCents(2),
+    evidenceId: 'smoke-complete-ira-pool',
+  },
+  annualBasisRecordEvidenceId: 'smoke-ira-basis-record',
+  taxYear: 2030,
+  poolMembers: [{
+    sourceAccountId: asAccountId('smoke-traditional-ira'),
+    ownerPersonId: asPersonId('smoke-person'),
+    accountType: 'traditional',
+    accountKind: 'ira',
+    inheritanceStatus: 'owned',
+    subtype: 'traditional',
+    yearEndApplicableBalanceAmount: asUsdCents(2),
+    iraClassificationEvidenceId: 'smoke-ira-classification',
+    accountOwnershipEvidenceId: 'smoke-ira-ownership',
+  }],
+  annualFacts: {
+    openingBasisAmount: asUsdCents(2),
+    taxYearNondeductibleContributionAmount: asUsdCents(0),
+    postYearNondeductibleContributionExcludedAmount: asUsdCents(0),
+    yearEndApplicablePoolBalanceAmount: asUsdCents(2),
+    outstandingRolloverAmount: asUsdCents(0),
+    rolloverRepaymentAdjustmentAmount: asUsdCents(0),
+    form8606Line7DistributionAmount: asUsdCents(2),
+    form8606Line8NetConversionAmount: asUsdCents(0),
+  },
+  line7Distributions: [{
+    actionId: asActionId('smoke-ira-withdrawal'),
+    allocationId: asAllocationId('smoke-ira-allocation'),
+    sourceAccountId: asAccountId('smoke-traditional-ira'),
+    scheduledDate: '2030-12-31',
+    scheduledSequence: 1,
+    grossAmount: asUsdCents(2),
+  }],
+  line8Conversions: [],
+})
+assert.equal(ownedIraCharacter.withdrawals[0].basisRecoveredAmount, 1)
+assert.equal(ownedIraCharacter.withdrawals[0].ordinaryIncomeAmount, 1)
+assert.deepEqual(
+  ownedIraCharacter.withdrawals[0].taxCharacter.map((segment) => segment.kind),
+  ['basisReturn', 'ordinaryIncome'],
+)
 
 const smokeTaxable = {
   id: 'smoke-taxable',
