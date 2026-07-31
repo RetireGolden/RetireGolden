@@ -157,7 +157,7 @@ function headlineSection(model: ReportModel): string {
     headline.depletionYear === null
       ? `Full plan through ${model.endYear}`
       : model.blocks['household'].incompleteData
-        ? `Depletes in ${headline.depletionYear} (plan setup incomplete - see missing-data note)`
+        ? `Depletes in ${headline.depletionYear} (plan setup incomplete; see missing-data note)`
         : `Depletes in ${headline.depletionYear}`
   const rows = [
     ['Ending net worth', fmtMoney(headline.endingNetWorth), `in ${model.endYear}`],
@@ -172,7 +172,7 @@ function headlineSection(model: ReportModel): string {
 
 function householdSection(model: ReportModel): string {
   const incompleteNote = model.blocks['household'].incompleteData
-    ? '<p class="muted">No income sources or funded accounts yet - the household setup is incomplete.</p>'
+    ? '<p class="muted">No income sources or funded accounts yet, so the household setup is incomplete.</p>'
     : ''
   return `<section><h2>Household</h2>${incompleteNote}${table(
     ['Person', 'Date of birth', 'Retirement age', 'Planning age'],
@@ -326,7 +326,7 @@ function advisorSection(block: ReportAdvisorRecommendationsBlock | null): string
       return `<h3>${escapeHtml(entry.heading)}</h3><p>${escapeHtml(entry.body)}</p><p class="muted">Authored by ${escapeHtml(entry.authoredBy)}${adopted}</p>`
     })
     .join('')
-  return `<section><h2>Advisor recommendations</h2><p class="muted">Professional judgment authored by the advisor named below - not RetireGolden output.</p>${entries}</section>`
+  return `<section><h2>Advisor recommendations</h2><p class="muted">Professional judgment authored by the advisor named below, not RetireGolden output.</p>${entries}</section>`
 }
 
 function appendixSection(model: ReportModel): string {

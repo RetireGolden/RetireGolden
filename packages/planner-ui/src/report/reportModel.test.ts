@@ -292,7 +292,7 @@ describe('renderStandaloneReportHtml incomplete-data caveat', () => {
     expect(html).toContain('Missing data: this plan has no income sources and no funded accounts')
     expect(html).toContain('the household setup is incomplete')
     if (model.blocks['headline-results'].depletionYear !== null) {
-      expect(html).toContain('(plan setup incomplete - see missing-data note)')
+      expect(html).toContain('(plan setup incomplete; see missing-data note)')
       expect(html).not.toMatch(/Depletes in \d+</)
     }
   })

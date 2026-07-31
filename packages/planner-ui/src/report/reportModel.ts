@@ -383,7 +383,7 @@ export const REPORT_ACCOUNT_TYPE_LABEL: Record<Account['type'], string> = {
 }
 
 export const REPORT_EDUCATIONAL_DISCLAIMER =
-  'Educational illustration only - not tax, legal, financial, or medical advice. Figures are projections based on the assumptions below and will differ from actual results.'
+  'Educational illustration only, not tax, legal, financial, or medical advice. Figures are projections based on the assumptions below and will differ from actual results.'
 
 /**
  * Whole-dollar rounding, half away from zero — the same convention
