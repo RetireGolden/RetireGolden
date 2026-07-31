@@ -56,6 +56,19 @@ penalty evaluations only for positive ordinary-income exposure,
 committed opening/closing balances, and a collision-checked structural execution ID. An all-zero batch is
 an established refusal with `movement: noMovement`; coordinator blocking arms remain unchanged. This is
 an isolated pure action API, not annual projection/simulator integration or custodian settlement proof.
+The separate annual physical-event inventory now derives traditional-account Plan allocations and
+exact-rejoins a complete runtime inventory for RMD, SEPP, legacy projection, IRA/employer-plan
+in-year account-balance contribution inflows, and configured employer match into one immutable
+Plan/year chronology. Aggregate legacy QCD reclassification, annuity funding, rollover inflows, and
+other traditional transfers remain unresolved until their producer and physical endpoints have a typed
+binding contract. Following-year IRA
+contributions designated for the prior tax year remain
+separate annual-basis facts rather than calendar-year physical events. Shared
+movement authority is limited to source members with identical owner/kind/origin/date/sequence bindings;
+member upstream evidence and attestation upstream lineage remain explicit. It publishes owned-IRA views
+and provisional line-7, line-8, and QCD routing categories, but deliberately changes no balance, basis,
+tax, penalty, `YearResult`, or simulator state. Unresolved identity/date/order, omissions, collisions,
+and unsafe totals fail closed.
 
 ## Inventory
 

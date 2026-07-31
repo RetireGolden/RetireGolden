@@ -45,8 +45,12 @@ const ownedIraPlanCoordinatorDeepApi = await import(
 const ownedIraAnnualExecutionDeepApi = await import(
   '@retiregolden/engine/actions/ownedNonRothIraAnnualExecution'
 )
+const annualRetirementInventoryDeepApi = await import(
+  '@retiregolden/engine/actions/annualRetirementPhysicalEventInventory'
+)
 const canonicalActionDeepImports = [
   'annualIraBasisAllocation',
+  'annualRetirementPhysicalEventInventory',
   'civilDate',
   'contract',
   'execution',
@@ -84,6 +88,7 @@ const {
   buildOwnedNonRothIraSeppCompletePriorElectionHistoryEvidence,
   buildOwnedNonRothIraSeppPriorPaymentHistoryEvidence,
   buildOwnedNonRothIraStagedDistributionDateEvidenceId,
+  buildAnnualRetirementPhysicalEventInventory,
   classifyOwnedNonRothIraAnnualWithdrawals,
   classifyIndividuallyOwnedTaxableWithdrawal,
   coordinateOwnedNonRothIraAnnualWithdrawalCandidate,
@@ -114,6 +119,11 @@ assert.equal(
   ownedIraAnnualExecutionDeepApi
     .executePlanOwnedNonRothIraAnnualWithdrawals,
   executePlanOwnedNonRothIraAnnualWithdrawals,
+)
+assert.equal(
+  annualRetirementInventoryDeepApi
+    .buildAnnualRetirementPhysicalEventInventory,
+  buildAnnualRetirementPhysicalEventInventory,
 )
 const moneyDeepApi = await import('@retiregolden/engine/actions/money')
 const {
