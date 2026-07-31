@@ -42,6 +42,9 @@ const ownedIraCoordinatorDeepApi = await import(
 const ownedIraPlanCoordinatorDeepApi = await import(
   '@retiregolden/engine/actions/ownedNonRothIraAnnualPlanCoordinator'
 )
+const ownedIraAnnualExecutionDeepApi = await import(
+  '@retiregolden/engine/actions/ownedNonRothIraAnnualExecution'
+)
 const canonicalActionDeepImports = [
   'annualIraBasisAllocation',
   'civilDate',
@@ -50,6 +53,7 @@ const canonicalActionDeepImports = [
   'identity',
   'money',
   'ownedNonRothIraAnnualCandidateCoordinator',
+  'ownedNonRothIraAnnualExecution',
   'ownedNonRothIraAnnualPlanCoordinator',
   'ownedNonRothIraAnnualFinalization',
   'ownedNonRothIraMovementCandidate',
@@ -87,6 +91,7 @@ const {
   evaluateOwnedNonRothIraPenaltyPrerequisites,
   executeCashOrdinaryWithdrawals,
   executeOrdinaryWithdrawals,
+  executePlanOwnedNonRothIraAnnualWithdrawals,
   ledgerCentsToPlanDollars,
   parseRetirementActionRequest,
   planDollarsToLedgerCents,
@@ -104,6 +109,11 @@ assert.equal(
   ownedIraPlanCoordinatorDeepApi
     .coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate,
   coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate,
+)
+assert.equal(
+  ownedIraAnnualExecutionDeepApi
+    .executePlanOwnedNonRothIraAnnualWithdrawals,
+  executePlanOwnedNonRothIraAnnualWithdrawals,
 )
 const moneyDeepApi = await import('@retiregolden/engine/actions/money')
 const {

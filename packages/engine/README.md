@@ -44,6 +44,15 @@ Source of truth: [github.com/RetireGolden/RetireGolden](https://github.com/Retir
   opening, year-end, annual basis/line-7, line-8, and exact alive evidence. It
   remains pure and noncommitting: every result keeps movement uncommitted and
   actionability unestablished.
+- `executePlanOwnedNonRothIraAnnualWithdrawals` is the separate pure commit
+  boundary for that Plan-owned batch. It reruns the coordinator rather than
+  accepting a caller-authored coordinated result, passes every blocking arm
+  through unchanged, turns an all-zero batch into explicit non-actionable
+  refusals, and commits exact opening-to-closing cents only when annual
+  character and final penalty evidence are bound. Committed actions preserve
+  scheduled versus executed dates and publish normative dispositions,
+  per-allocation tax character and penalty evidence, and one collision-checked
+  structural execution ID. This API is not wired into the annual simulator.
 - Parameters (tax brackets, limits, SSA tables, Medicare/FPL) are versioned
   data packs under `params/`, with provenance.
 
