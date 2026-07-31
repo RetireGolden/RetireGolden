@@ -264,6 +264,17 @@ rules and citations: [domain rules §16](../domain/domain-rules-reference.md#16-
   evidence is not external actual-execution proof. All four result arms remain
   `movement: notCommitted` and `actionability: notEstablished`; the coordinator can bind a
   `penaltyApplies` evidence outcome but neither commits balances nor integrates with execution or simulation.
+  Separately, `validateOwnedNonRothIraSeppCurrentPaymentCandidate` validates one current named SEPP
+  payment as a provisional schedule-state transition. Its raw payment record references the canonical
+  distribution and a derived before-state rather than restating caller-computed actual gross, character,
+  prior totals, or dates. It requires exact prior scheduled/actual-qualifying equality, rejects a reused
+  distribution evidence ID from complete supplied history, derives current actual gross and taxable
+  character from canonical coverage, and retains all-basis gross with zero prospective ordinary income.
+  It always reports pending annual reconciliation and explicitly establishes no penalty treatment,
+  movement, actionability, finalization, binding, readiness, execution, or simulation authority. It is
+  not connected to the penalty evaluator, annual finalizer, or coordinator. Because isolated calls
+  cannot detect separate-call forks, future annual reconciliation must revalidate raw facts and reject
+  duplicate, forked, replayed, omitted, or extra payments before qualification can be published.
 - **Property disposition.** Setting `costBasis` on a property replaces the tax-free `expectedNetProceeds`
   estimate with exact treatment: capital gain above basis net of `sellingCostPct`, the §121 primary-residence
   exclusion, and ordinary-income depreciation recapture. Gains flow through the capital-gains stack.

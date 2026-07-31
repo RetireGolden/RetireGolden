@@ -20,6 +20,13 @@ An unresolved same-rate member keeps its whole rate bucket provisional, and any 
 allocation still suppresses the entire owner/year annual-finalization bundle. This remains
 planning-grade evidence rather than execution readiness.
 
+The actions package also has an isolated provisional validator for one current owned-IRA SEPP
+scheduled-payment transition. It derives actual gross and character from canonical coverage, validates
+the raw schedule reference against explicit election/opening/history evidence, and rejects replay found
+in the supplied complete history. It does not qualify SEPP treatment and is not connected to penalty,
+finalization, coordination, execution, or simulation. A future complete annual reconciler must detect
+cross-call forks plus duplicate, replayed, omitted, and extra members before any qualification claim.
+
 ## Inventory
 
 | Area | Shipped model or action | Rule and implementation source | Test evidence | Limits that control the claim | Allowed cockpit-v1 claim | Prerequisite or blocker |

@@ -566,6 +566,25 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   candidate-bound scheduled-date evidence, not custodian or actual-execution proof. Every coordinator
   arm remains `movement: notCommitted` and `actionability: notEstablished`; unresolved penalty evidence,
   an invalid schedule, or no positive movement produces an explicit non-bound result.
+  A separate standalone `validateOwnedNonRothIraSeppCurrentPaymentCandidate` boundary can now validate
+  one named owned-IRA SEPP scheduled-payment transition against canonical character/distribution
+  coverage, explicit election and annual-schedule evidence, no-disqualifying-modification coverage,
+  a zero annual opening anchored to the prior-history terminal state, and complete current-year prior
+  history. The raw payment supplies only schedule references, sequence, current scheduled gross, and
+  the derived previous-state ID; actual gross, character, prior totals, and prior date come from the
+  canonical coverage/history. Prior scheduled gross must exactly equal prior actual qualifying gross,
+  the current schedule must equal canonical executed gross, and bigint-derived after totals must remain
+  safe and within the separately proved positive annual scheduled amount. Basis remains part of the
+  provisional gross schedule member but is excluded from prospective ordinary income, including an
+  all-basis payment. Every result is explicitly `qualification: pendingAnnualReconciliation`,
+  `penaltyTreatment: notEstablished`, `movement: notCommitted`, and
+  `actionability: notEstablished`; this boundary publishes no qualification, zero-penalty, finalization,
+  binding, readiness, execution, or simulation authority and is not consumed by the penalty evaluator,
+  finalizer, or coordinator. Its complete prior-history distribution-ID set rejects local replay, but a
+  standalone call cannot detect separate-call forks. A future annual reconciler must revalidate all raw
+  payment facts and reject duplicate, forked, replayed, omitted, or extra members before publishing any
+  qualification. This slice does not calculate a legal SEPP amount, persist Plan state, or model later
+  modification/recapture consequences.
   Source: [IRS early-distribution exception
   matrix](https://www.irs.gov/retirement-plans/plan-participant-employee/retirement-topics-exceptions-to-tax-on-early-distributions).
 - **Fixed-asset disposition.** Setting `costBasis` on a property switches its planned sale from the legacy
