@@ -163,7 +163,7 @@ export function ExampleLibrary({
     <section className="example-library" aria-labelledby="example-library-heading">
       <Heading id="example-library-heading">Example library</Heading>
       <p className="lede">
-        Explore curated households in the full planner. Examples stay out of {homeLabel} until you save one — edit
+        Explore curated households in the full planner. Examples stay out of {homeLabel} until you save one. Edit
         freely and refresh without cluttering your own list.
       </p>
       <div className="plan-grid">

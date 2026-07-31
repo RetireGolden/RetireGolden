@@ -36,7 +36,7 @@ export const qcdEfficiency: Detector = {
       id: 'qcd-efficiency',
       category: 'withdrawals-charitable',
       title: 'Compare QCDs for your charitable giving',
-      rationale: `You are donating ${charitableStr} per year without Qualified Charitable Distributions (QCDs). Since you are over 70½, the model prices donations routed directly from your pre-tax IRA as more tax-efficient — preview the difference as a scenario.`,
+      rationale: `You are donating ${charitableStr} per year without Qualified Charitable Distributions (QCDs). Since you are over 70½, the model prices donations routed directly from your pre-tax IRA as more tax-efficient. Preview the difference as a scenario.`,
       impact: { qualitative: 'Previews donating pre-tax IRA assets directly to charity, which counts toward RMDs and lowers modeled taxable income.' },
       exact: false,
       confidence: 'high',

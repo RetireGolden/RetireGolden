@@ -226,8 +226,8 @@ export function LongevityWizard({
             onChange={(v) => patch('diabetes', v as Diabetes)}
             options={[
               { value: 'no', label: 'No' },
-              { value: 'yes_controlled', label: 'Yes — generally controlled' },
-              { value: 'yes_uncontrolled', label: 'Yes — often not well controlled' },
+              { value: 'yes_controlled', label: 'Yes: generally controlled' },
+              { value: 'yes_uncontrolled', label: 'Yes: often not well controlled' },
             ]}
           />
         </fieldset>

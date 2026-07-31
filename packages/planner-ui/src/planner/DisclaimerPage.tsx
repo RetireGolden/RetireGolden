@@ -26,14 +26,14 @@ export function DisclaimerPage() {
       <ul>
         <li>Projections depend entirely on your inputs and assumptions. Small changes in returns, inflation, or longevity produce very different outcomes.</li>
         <li>Monte Carlo success rates are statistics about a simplified model, not probabilities about your actual life.</li>
-        <li>The tax engine covers common federal rules (brackets, Social Security taxation, capital-gains stacking, RMDs, IRMAA, ACA credits) at planning precision — not return-filing precision. State income tax models each state's brackets, standard deduction, Social Security treatment, and major retirement-income exclusions, with a flat-rate override for corrections; credits, local/city taxes, and income-tested exclusions are simplified or omitted. Many real-world provisions are approximated.</li>
-        <li>Life-expectancy estimates are population statistics with coarse lifestyle adjustments — they say nothing certain about any individual.</li>
+        <li>The tax engine covers common federal rules (brackets, Social Security taxation, capital-gains stacking, RMDs, IRMAA, ACA credits) at planning precision, not return-filing precision. State income tax models each state's brackets, standard deduction, Social Security treatment, and major retirement-income exclusions, with a flat-rate override for corrections; credits, local/city taxes, and income-tested exclusions are simplified or omitted. Many real-world provisions are approximated.</li>
+        <li>Life-expectancy estimates are population statistics with coarse lifestyle adjustments. They say nothing certain about any individual.</li>
         <li>Historical market data in the bootstrap models is approximate and the past does not predict the future.</li>
       </ul>
 
       <h2>Rules change</h2>
       <p>
-        Tax law, contribution limits, Medicare premiums, ACA subsidies, and Social Security rules change frequently —
+        Tax law, contribution limits, Medicare premiums, ACA subsidies, and Social Security rules change frequently, 
         sometimes retroactively. Parameter tables here are updated on a best-effort basis and may be out of date or
         wrong. Verify any number that matters against official sources (irs.gov, ssa.gov, medicare.gov,
         healthcare.gov).
@@ -46,7 +46,7 @@ export function DisclaimerPage() {
 
       <h2>Where the numbers come from</h2>
       <p>
-        These are the defaults the engine applies. They are summaries at planning precision — see each linked source
+        These are the defaults the engine applies. They are summaries at planning precision. See each linked source
         for the authoritative figures. For the harnesses that check the engine itself against independent
         implementations, see <Link to="/how-tested">How RetireGolden is tested</Link>.
       </p>
@@ -91,7 +91,7 @@ export function DisclaimerPage() {
               GitHub
             </a>
             . It bundles third-party packages (React, Recharts, HiGHS-WASM, Zod, and their dependencies) distributed
-            under their respective permissive licenses — see the{' '}
+            under their respective permissive licenses. See the{' '}
             <a href="/THIRD-PARTY-NOTICES.txt" target="_blank" rel="noopener noreferrer">
               full third-party notices
             </a>

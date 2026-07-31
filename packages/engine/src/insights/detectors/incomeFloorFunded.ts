@@ -44,7 +44,7 @@ export const incomeFloorFunded: Detector = {
         `${EMBEDDED_REAL_YIELD_CURVE.points[EMBEDDED_REAL_YIELD_CURVE.points.length - 1]!.realYieldPct}% real.`,
       impact: {
         qualitative:
-          'The funded ratio is a risk lens, not a verdict: a portfolio can fund the gap in most markets — the question is how much of the floor you want guaranteed regardless of markets.',
+          'The funded ratio is a risk lens, not a verdict: a portfolio can fund the gap in most markets. The question is how much of the floor you want guaranteed regardless of markets.',
       },
       exact: false,
       confidence: 'medium',

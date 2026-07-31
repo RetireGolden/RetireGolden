@@ -115,12 +115,12 @@ describe('workspace group mounted alone', () => {
     await act(async () => {
       resultsLink!.click()
     })
-    for (let attempt = 0; attempt < 200 && !(container.textContent ?? '').includes('Results —'); attempt++) {
+    for (let attempt = 0; attempt < 200 && !(container.textContent ?? '').includes('Results:'); attempt++) {
       await act(async () => {
         await new Promise((r) => setTimeout(r, 10))
       })
     }
-    expect(container.querySelector('h1')?.textContent).toBe(`Results — ${sample.name}`)
+    expect(container.querySelector('h1')?.textContent).toBe(`Results: ${sample.name}`)
 
     await act(async () => root.unmount())
     container.remove()

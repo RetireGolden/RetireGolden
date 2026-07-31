@@ -151,7 +151,7 @@ function accountsGroup(plan: Plan, startYear: number): AssumptionGroup {
     const own = acct.annualReturnPct
     const returnPct = expectedAccountReturnPct(acct, plan.assumptions, startYear)
     const value = allocation
-      ? `${pct(Math.round(returnPct * 100) / 100)}/yr blended — ${allocation}`
+      ? `${pct(Math.round(returnPct * 100) / 100)}/yr blended, ${allocation}`
       : `${pct(returnPct)}/yr${own === null ? ' (plan default)' : ''}`
     return {
       id: `account-${i}`,
@@ -196,7 +196,7 @@ function longevityGroup(plan: Plan): AssumptionGroup {
       },
       ...plan.household.people.map((p, i): AssumptionRow => ({
         id: `person-${i}`,
-        label: `${p.name} — retirement & planning age`,
+        label: `${p.name}: retirement & planning age`,
         value: `${p.retirementAge !== null ? `retires at ${p.retirementAge}, ` : ''}plan runs to age ${p.longevity.planningAge}${p.longevity.source === 'percentile' && p.longevity.percentile ? ` (${p.longevity.percentile.pct}% survival percentile${p.longevity.percentile.joint ? ', joint' : ''})` : ''}`,
         // 'model' and 'percentile' both derive from the SSA period table.
         provenance: p.longevity.source === 'manual' ? 'user-set' : 'published-source',
@@ -344,7 +344,7 @@ export function buildAssumptionsSnapshot(plan: Plan, startYear: number): Assumpt
 export function assumptionsExportText(snapshot: AssumptionsSnapshot): string {
   const sourceById = new Map(PARAMETER_PROVENANCE.map((s) => [s.id, s]))
   const lines: string[] = [
-    `RetireGolden assumptions — ${snapshot.planName}`,
+    `RetireGolden assumptions, ${snapshot.planName}`,
     `Tax parameters: ${snapshot.packYear} pack, compiled ${snapshot.dataAsOf}.`,
     '',
   ]

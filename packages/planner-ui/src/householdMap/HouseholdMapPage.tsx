@@ -139,8 +139,8 @@ export function HouseholdMapPage() {
       <div className="card">
         <h2>Household map</h2>
         <p className="card-hint">
-          One page of everything you've entered — people, income, accounts, property, debts, insurance, and where
-          things go — with the gaps made visible. Every box opens the screen where that item is edited. This is a
+          One page of everything you've entered: people, income, accounts, property, debts, insurance, and where
+          things go, with the gaps made visible. Every box opens the screen where that item is edited. This is a
           picture of your entries, not advice; amounts are as entered, not projected.
         </p>
 
@@ -208,7 +208,7 @@ export function HouseholdMapPage() {
 
         {isPlanIncomplete(plan) ? (
           <p className="card-hint">
-            The map fills in as you enter your household — add accounts and income sources to see the full picture.
+            The map fills in as you enter your household. Add accounts and income sources to see the full picture.
           </p>
         ) : null}
 
@@ -231,8 +231,8 @@ export function HouseholdMapPage() {
                 {vm.edges.map((e) => (
                   <g key={e.id}>
                     <path className={`map-edge map-edge--${e.kind}`} d={e.path} />
-                    {/* Every computed annotation renders — "joint", survivor %,
-                        marriage years — so joint holding is visually distinct
+                    {/* Every computed annotation renders, "joint", survivor %,
+                        marriage years, so joint holding is visually distinct
                         from two individual ownership edges. */}
                     {e.label ? (
                       <text className="map-edge-label" x={e.labelX} y={e.labelY - 4} textAnchor="middle">
@@ -293,7 +293,7 @@ export function HouseholdMapPage() {
                   </th>
                   <td>
                     {n.typeLabel}
-                    {n.notes.length > 0 ? ` — ${n.notes.join('; ')}` : ''}
+                    {n.notes.length > 0 ? `, ${n.notes.join('; ')}` : ''}
                   </td>
                   <td>{n.amountText ?? (vm.amountsHidden && n.hasAmount ? 'hidden' : '—')}</td>
                   <td>{n.relations.length > 0 ? n.relations.join('; ') : '—'}</td>
@@ -315,7 +315,7 @@ export function HouseholdMapPage() {
             {attention.map((n) => (
               <li key={n.id}>
                 <Link to={`../${EDIT_SURFACE_ROUTES[n.editSurface]}`}>{n.label}</Link>
-                {' — '}
+                {': '}
                 <span className="muted">{n.completeness.missing.join('; ')}</span>
               </li>
             ))}
@@ -326,7 +326,7 @@ export function HouseholdMapPage() {
       <div className="card">
         <h3 style={{ marginTop: 0 }}>Not in the model</h3>
         <p className="card-hint">
-          Relationships RetireGolden's plan can't express. The map never guesses at them — if one matters to your
+          Relationships RetireGolden's plan can't express. The map never guesses at them. If one matters to your
           situation, discuss it with a professional.
         </p>
         <ul className="map-unsupported-list">

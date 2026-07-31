@@ -403,7 +403,7 @@ function AddScenario() {
         </div>
       ) : preview?.ok ? (
         <p className="card-hint">
-          <strong>Fields this scenario patches:</strong>{' '}
+          <strong>Fields this scenario changes:</strong>{' '}
           <code>{preview.operationPaths.join(', ')}</code>
         </p>
       ) : null}
@@ -571,7 +571,7 @@ function CapacitySection({
       <div className="item-row-head">
         <div>
           <h3 style={{ margin: 0 }}>Sustainable spending capacity</h3>
-          <p className="card-hint">Exact-ledger annual base spending in today&apos;s dollars.</p>
+          <p className="card-hint">Annual base spending in today&apos;s dollars, priced on the full year-by-year projection.</p>
         </div>
         <button type="button" className="btn btn-secondary btn-small" disabled={running} onClick={onCalculate}>
           {running ? 'Calculating…' : capacity ? 'Recalculate' : 'Calculate capacity'}
@@ -624,7 +624,7 @@ function CapacitySection({
         </>
       ) : (
         <p className="small">
-          Not calculated. This uses two worker-backed exact-ledger solves and reports whether each answer converged,
+          Not calculated. This runs two full year-by-year solves in the background and reports whether each answer converged,
           is only a feasible lower bound, or is unavailable.
         </p>
       )}
@@ -986,7 +986,7 @@ function ComparableScenariosPage() {
         </div>
         {plan.scenarios.length === 0 ? (
           <div className="empty-state">
-            <p>No scenarios yet. Add one above — “{TRUSTEES_DEFAULT_SS_HAIRCUT.cutPct}% SS cut” and “retire 2 years earlier” are classics.</p>
+            <p>No scenarios yet. Add one above. “{TRUSTEES_DEFAULT_SS_HAIRCUT.cutPct}% SS cut” and “retire 2 years earlier” are classics.</p>
           </div>
         ) : baselineFingerprint.error ? (
           <p style={{ color: 'var(--bad)' }}>{baselineFingerprint.error}</p>

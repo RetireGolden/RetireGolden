@@ -137,7 +137,7 @@ export function useHomeData() {
         setNotice(`Could not restore "${restored.name}": ${r.issues.join('; ')}`)
       }
     } catch {
-      setNotice(`Could not restore "${restored.name}" — storage is unavailable in this browser right now.`)
+      setNotice(`Could not restore "${restored.name}". Storage is unavailable in this browser right now.`)
     }
   }
 
@@ -150,7 +150,7 @@ export function useHomeData() {
     const ok = await confirm({
       title: 'Clear all data',
       body:
-        'This erases ALL RetireGolden data from this browser — every plan, plus Social Security and ' +
+        'This erases ALL RetireGolden data from this browser: every plan, plus Social Security and ' +
         'life-expectancy entries. It cannot be undone. Download a plan backup first if you want to keep anything.',
       confirmLabel: 'Erase everything',
       danger: true,

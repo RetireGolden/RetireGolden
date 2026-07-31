@@ -83,7 +83,7 @@ export type MigrationEvidenceStrength = 'structure' | 'name'
 /** What each strength actually claims, in words a review UI can show verbatim. */
 export const MIGRATION_EVIDENCE_CLAIM: Record<MigrationEvidenceStrength, string> = {
   structure: "the file's structure matches this tool's export format, which is a format check rather than a name match",
-  name: 'the text names this tool — which is all a comparison sheet, a cover letter, or a screenshot caption would also do',
+  name: 'the text names this tool, which is all a comparison sheet, a cover letter, or a screenshot caption would also do',
 }
 
 /**
@@ -178,7 +178,7 @@ export const NO_FORMAT_MANUAL_PATH =
  */
 function noFormatLimitations(displayName: string): readonly string[] {
   return [
-    `Nothing is mapped automatically. RetireGolden has no substantiated ${displayName} export format — no documented machine-readable export this project holds a real sample of — and it does not bundle proprietary samples, so there is no format to sniff and no field mapping that could be justified.`,
+    `Nothing is mapped automatically. RetireGolden has no substantiated ${displayName} export format, no documented machine-readable export this project holds a real sample of, and it does not bundle proprietary samples, so there is no format to sniff and no field mapping that could be justified.`,
     'A mapping invented from a format nobody here has seen is the failure mode that matters: it would land wrong numbers in a plan while looking like a successful import. Identification without mapping is the honest position, not a placeholder.',
     // What text comes across is decided per FILE, not per vendor, so it cannot
     // be promised here: these strings are built once at module load, and a
@@ -187,8 +187,8 @@ function noFormatLimitations(displayName: string): readonly string[] {
     // every identify-only vendor, which was simply untrue for every non-PDF
     // source. `buildMigrationReview` says what actually came across, because it
     // is the only place that can see it.
-    'The data is not unimportant — the format is unsubstantiated. What can be brought across from this file is stated separately below.',
-    `What would change this: a real ${displayName} export from a trial account, checked in as a substantiated format with its own fixtures and version sniffing. Then — and only then — is field mapping in scope.`,
+    'The data is not unimportant. The format is unsubstantiated. What can be brought across from this file is stated separately below.',
+    `What would change this: a real ${displayName} export from a trial account, checked in as a substantiated format with its own fixtures and version sniffing. Then, and only then, is field mapping in scope.`,
   ]
 }
 
@@ -204,13 +204,13 @@ export const MIGRATION_ADAPTERS: Record<MigrationVendor, MigrationAdapter> = {
     maps: [
       'Accounts and balances, typed by keyword (cash, taxable, traditional, Roth, HSA, property, debt)',
       'Taxable cost basis where the export carries it',
-      'Income sources — wages-like streams as wages, the rest as recurring ordinary income',
+      'Income sources: wages-like streams as wages, the rest as recurring ordinary income',
       'Expenses, summed into baseline annual spending',
       'Birth year, as a July-1 date of birth',
       'A retirement milestone age',
     ],
     limitations: [
-      'Withdrawal strategy, Roth conversions, market assumptions and scenarios do not transfer between planning tools — they are modeling choices, not data, and RetireGolden models them differently.',
+      'Withdrawal strategy, Roth conversions, market assumptions, and scenarios do not transfer between planning tools. They are modeling choices, not data, and RetireGolden models them differently.',
       'Social Security is deferred to the Social Security screen on purpose: RetireGolden needs a claim age and a benefit basis, not the dollar figure another tool projected.',
       'Filing status and state are not in the export and are defaulted, so both need setting on the Household screen.',
       'Account types the keyword map does not recognize (crypto, collectibles, business interests) are reported unmapped rather than guessed into the nearest bucket.',
@@ -224,7 +224,7 @@ export const MIGRATION_ADAPTERS: Record<MigrationVendor, MigrationAdapter> = {
     // unconditionally: it is the answer in both situations, and a reader who has
     // already tried the import needs somewhere to go rather than a loop.
     manualPath:
-      'The JSON data export is the file that maps: if it has not been through the ProjectionLab import yet, start there. If it has already been tried and would not go through — or all you have is a PDF or a printed report, which maps nothing — bring balances over with the broker CSV or spreadsheet import instead, seed income and taxes from last year’s Form 1040, and type the rest on the planner screens.',
+      'The JSON data export is the file that maps: if it has not been through the ProjectionLab import yet, start there. If it has already been tried and would not go through, or all you have is a PDF or a printed report, which maps nothing, bring balances over with the broker CSV or spreadsheet import instead, seed income and taxes from last year’s Form 1040, and type the rest on the planner screens.',
   },
   rightcapital: {
     vendor: 'rightcapital',
@@ -855,7 +855,7 @@ function unmappedItem(source: string, detail: string, locator: SourceLocator): I
 
 function evidenceItems(candidate: MigrationCandidate, sourceName: string, lead: string): ImportReviewItem[] {
   return candidate.evidence.map((evidence, index) =>
-    unmappedItem(`${sourceName} — ${candidate.adapter.displayName}`, `${index === 0 ? `${lead} ` : ''}${evidenceBody(evidence, candidate)}`, evidence.locator),
+    unmappedItem(`${sourceName}: ${candidate.adapter.displayName}`, `${index === 0 ? `${lead} ` : ''}${evidenceBody(evidence, candidate)}`, evidence.locator),
   )
 }
 
@@ -871,9 +871,9 @@ function evidenceItems(candidate: MigrationCandidate, sourceName: string, lead: 
  */
 function evidenceBody(evidence: MigrationEvidence, candidate: MigrationCandidate): string {
   if (evidence.contradicts === true) {
-    return `Against it: the file's own label says “${evidence.matched}”, which does not name ${candidate.adapter.displayName}. The identification stands on the file's structure — a shape is far harder to have by accident than a label — but this is here because you should see it.`
+    return `Against it: the file's own label says “${evidence.matched}”, which does not name ${candidate.adapter.displayName}. The identification stands on the file's structure. A shape is far harder to have by accident than a label, but this is here because you should see it.`
   }
-  return `The claim rests on this: ${MIGRATION_EVIDENCE_CLAIM[evidence.strength]}. Matched: “${evidence.matched}”. Check it — nothing was mapped on the strength of it.`
+  return `The claim rests on this: ${MIGRATION_EVIDENCE_CLAIM[evidence.strength]}. Matched: “${evidence.matched}”. Check it. Nothing was mapped on the strength of it.`
 }
 
 /**
@@ -931,8 +931,8 @@ export function buildMigrationReview(
     // finds out there is another way in.
     return stamp([
       unmappedItem(
-        `${sourceName} — too large to inspect`,
-        `This file is ${identification.chars.toLocaleString('en-US')} characters, past the ${MAX_MIGRATION_TEXT_CHARS.toLocaleString('en-US')} this reader will look at, so nothing about it was examined — not its structure, not its text, not which tool produced it. That is a statement about its size and nothing else. ${NO_FORMAT_MANUAL_PATH}`,
+        `${sourceName}: too large to inspect`,
+        `This file is ${identification.chars.toLocaleString('en-US')} characters, past the ${MAX_MIGRATION_TEXT_CHARS.toLocaleString('en-US')} this reader will look at, so nothing about it was examined, not its structure, not its text, not which tool produced it. That is a statement about its size and nothing else. ${NO_FORMAT_MANUAL_PATH}`,
         { kind: 'none', note: `${identification.chars.toLocaleString('en-US')} characters` },
       ),
     ])
@@ -943,7 +943,7 @@ export function buildMigrationReview(
     items.push(
       unmappedItem(
         sourceName,
-        `This file names more than one planning tool (${names.join(', ')}), so no tool was claimed for it — a comparison sheet or a transition memo looks exactly like this, and guessing between them would put a wrong label on the whole import. Every match is listed below; pick the right tool by hand if the file really is an export.`,
+        `This file names more than one planning tool (${names.join(', ')}), so no tool was claimed for it. A comparison sheet or a transition memo looks exactly like this, and guessing between them would put a wrong label on the whole import. Every match is listed below; pick the right tool by hand if the file really is an export.`,
         { kind: 'none', note: `${names.length} planning tools named in ${sourceName}` },
       ),
     )
@@ -951,7 +951,7 @@ export function buildMigrationReview(
       items.push(...evidenceItems(candidate, sourceName, `${candidate.adapter.displayName} is one of the tools named in this file.`))
     }
     items.push(
-      unmappedItem(`${sourceName} — what to do instead`, NO_FORMAT_MANUAL_PATH, {
+      unmappedItem(`${sourceName}: what to do instead`, NO_FORMAT_MANUAL_PATH, {
         kind: 'none',
         note: 'no tool was claimed for this file',
       }),
@@ -1015,7 +1015,7 @@ export function buildMigrationReview(
       evidenceItems(
         { ...identification, evidence: conflicts },
         sourceName,
-        `Identified as a ${adapter.displayName} export by its structure and mapped by the ${mapper} import — but the file says something else about itself, and that import never reads this field, so it is raised here.`,
+        `Identified as a ${adapter.displayName} export by its structure and mapped by the ${mapper} import, but the file says something else about itself, and that import never reads this field, so it is raised here.`,
       ),
     )
   }
@@ -1026,14 +1026,14 @@ export function buildMigrationReview(
 
   for (const limitation of adapter.limitations) {
     items.push(
-      unmappedItem(`${sourceName} — ${adapter.displayName} limitations`, limitation, {
+      unmappedItem(`${sourceName}: ${adapter.displayName} limitations`, limitation, {
         kind: 'none',
         note: `published limitation of the ${adapter.displayName} migration path`,
       }),
     )
   }
   items.push(
-    unmappedItem(`${sourceName} — what to do instead`, adapter.manualPath, {
+    unmappedItem(`${sourceName}: what to do instead`, adapter.manualPath, {
       kind: 'none',
       note: `manual path for ${adapter.displayName}`,
     }),
@@ -1101,8 +1101,8 @@ function pageItems(sourceName: string, pages: readonly DocumentPage[]): ImportRe
     const one = readable.length === 1
     items.push(
       unmappedItem(
-        `${sourceName} — text carried over`,
-        `The reader got text from ${one ? 'page' : 'pages'} ${listPages(readable)}, and no value on ${one ? 'it' : 'them'} was mapped into the plan. This report names those pages rather than carrying their text — the text itself lives in the document reader's own notes. Read the page beside the planner screen you are filling in — these are the document's own page numbers, so a page that could not be extracted is simply missing from the list rather than shifting the rest of it.`,
+        `${sourceName}: text carried over`,
+        `The reader got text from ${one ? 'page' : 'pages'} ${listPages(readable)}, and no value on ${one ? 'it' : 'them'} was mapped into the plan. This report names those pages rather than carrying their text, the text itself lives in the document reader's own notes. Read the page beside the planner screen you are filling in. These are the document's own page numbers, so a page that could not be extracted is simply missing from the list rather than shifting the rest of it.`,
         { kind: 'none', note: `${one ? 'page' : 'pages'} ${listPages(readable)}` },
       ),
     )
@@ -1111,7 +1111,7 @@ function pageItems(sourceName: string, pages: readonly DocumentPage[]): ImportRe
     const one = clipped.length === 1
     items.push(
       unmappedItem(
-        `${sourceName} — text cut short`,
+        `${sourceName}: text cut short`,
         // Deliberately does not name WHICH cap. `DocumentPage.truncated` is set
         // by the per-page cap and by the document-wide budget running out
         // partway through a page, and the page itself cannot tell them apart —
@@ -1136,8 +1136,8 @@ function pageItems(sourceName: string, pages: readonly DocumentPage[]): ImportRe
     const one = scanned.length === 1
     items.push(
       unmappedItem(
-        `${sourceName} — an image the reader cannot read`,
-        `${one ? 'Page' : 'Pages'} ${listPages(scanned)} carried no text, only an image the reader cannot read — commonly a scan or a photograph of a statement, though it can also be something as small as a logo or a watermark on an otherwise empty page. Reading an image needs OCR, which RetireGolden does not do. Open ${one ? 'it' : 'them'} in the original to see which, and type in anything that matters.`,
+        `${sourceName}: an image the reader cannot read`,
+        `${one ? 'Page' : 'Pages'} ${listPages(scanned)} carried no text, only an image the reader cannot read, commonly a scan or a photograph of a statement, though it can also be something as small as a logo or a watermark on an otherwise empty page. Reading an image needs OCR, which RetireGolden does not do. Open ${one ? 'it' : 'them'} in the original to see which, and type in anything that matters.`,
         { kind: 'none', note: `${one ? 'page' : 'pages'} ${listPages(scanned)}` },
       ),
     )
@@ -1146,8 +1146,8 @@ function pageItems(sourceName: string, pages: readonly DocumentPage[]): ImportRe
     const one = blank.length === 1
     items.push(
       unmappedItem(
-        `${sourceName} — nothing the reader could read`,
-        `${one ? 'Page' : 'Pages'} ${listPages(blank)} gave up no text and no image the reader recognised. That is usually a genuinely blank page — a separator or a spacer — but the reader only looks for text and for raster images, so a page drawn as vector graphics, or one whose text was converted to outlines, looks exactly the same to it. Glance at ${one ? 'it' : 'them'} in the original before assuming ${one ? 'it holds' : 'they hold'} nothing.`,
+        `${sourceName}: nothing the reader could read`,
+        `${one ? 'Page' : 'Pages'} ${listPages(blank)} gave up no text and no image the reader recognised. That is usually a genuinely blank page, a separator or a spacer, but the reader only looks for text and for raster images, so a page drawn as vector graphics, or one whose text was converted to outlines, looks exactly the same to it. Glance at ${one ? 'it' : 'them'} in the original before assuming ${one ? 'it holds' : 'they hold'} nothing.`,
         { kind: 'none', note: `${one ? 'page' : 'pages'} ${listPages(blank)}` },
       ),
     )
@@ -1181,8 +1181,8 @@ function omittedPageItems(sourceName: string, summary: DocumentTextSummary): Imp
     const list = unreadable.length > MAX_LISTED_PAGES ? `${shown}, … (${unreadable.length} pages)` : shown
     items.push(
       unmappedItem(
-        `${sourceName} — could not be read`,
-        `${one ? 'Page' : 'Pages'} ${list} could not be read at all: the reader failed on ${one ? 'it' : 'them'} before it could tell whether ${one ? 'it held' : 'they held'} text, an image, or nothing. Nothing whatever is known about what ${one ? 'it holds' : 'they hold'} — including whether OCR would help — so open ${one ? 'it' : 'them'} in the original.`,
+        `${sourceName}: could not be read`,
+        `${one ? 'Page' : 'Pages'} ${list} could not be read at all: the reader failed on ${one ? 'it' : 'them'} before it could tell whether ${one ? 'it held' : 'they held'} text, an image, or nothing. Nothing whatever is known about what ${one ? 'it holds' : 'they hold'}, including whether OCR would help, so open ${one ? 'it' : 'them'} in the original.`,
         { kind: 'none', note: `${one ? 'page' : 'pages'} ${list}` },
       ),
     )
@@ -1206,14 +1206,14 @@ function omittedPageItems(sourceName: string, summary: DocumentTextSummary): Imp
   if (neverOpened > 0) {
     items.push(
       unmappedItem(
-        `${sourceName} — reading stopped early`,
+        `${sourceName}: reading stopped early`,
         // The COUNT is what this knows; the CAUSE is only stated when
         // `truncatedBy` recorded one. Naming the text budget unconditionally
         // would be asserting a reason the arithmetic cannot see — the same habit
         // that made the surrounding condition wrong three times.
         `${seen} of ${summary.totalPages} pages were opened${
           summary.truncatedBy.includes('document_text_cap') ? ', the reader having run out of its text budget partway through' : ''
-        }. The remaining ${neverOpened} ${neverOpened === 1 ? 'page was' : 'pages were'} never looked at, so nothing from ${neverOpened === 1 ? 'it' : 'them'} is in this report — not even a note saying a page was unreadable. Work through the remainder by hand, or split the document and bring the rest in separately.`,
+        }. The remaining ${neverOpened} ${neverOpened === 1 ? 'page was' : 'pages were'} never looked at, so nothing from ${neverOpened === 1 ? 'it' : 'them'} is in this report, not even a note saying a page was unreadable. Work through the remainder by hand, or split the document and bring the rest in separately.`,
         { kind: 'none', note: `${seen} of ${summary.totalPages} pages opened` },
       ),
     )

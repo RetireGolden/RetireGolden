@@ -97,7 +97,7 @@ export const PARAMETER_PROVENANCE: ParameterSource[] = [
     id: 'hecm-plf',
     label: 'HECM reverse-mortgage principal limit',
     figures:
-      'Principal-limit factors at a 5.875% expected rate: 35.1% of home value at 62 rising to 61.4% at 90 (planning default — a lender quote always wins); line/loan growth default 7.5%/yr (rate + 0.5% MIP).',
+      'Principal-limit factors at a 5.875% expected rate: 35.1% of home value at 62 rising to 61.4% at 90 (planning default; a lender quote always wins); line/loan growth default 7.5%/yr (rate + 0.5% MIP).',
     publisher: 'HUD HECM PLF tables (as summarized for 2026)',
     url: 'https://reverse.mortgage/age-requirements',
   },
@@ -121,7 +121,7 @@ export const PARAMETER_PROVENANCE: ParameterSource[] = [
     id: 'federal-poverty-line',
     label: 'Federal poverty guideline (ACA)',
     figures:
-      '2025 HHS guideline — $15,650 first person, +$5,500 each additional — applied to the 2026 ACA coverage year.',
+      '2025 HHS guideline ($15,650 first person, +$5,500 each additional) applied to the 2026 ACA coverage year.',
     publisher: 'HHS',
     url: 'https://aspe.hhs.gov/topics/poverty-economic-mobility/poverty-guidelines',
   },

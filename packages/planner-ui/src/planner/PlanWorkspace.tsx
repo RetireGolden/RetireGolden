@@ -86,7 +86,7 @@ function SaveIndicator() {
             ? 'Could not store locally'
             : ''
   const title = isExample
-    ? `This example is saved on this device under its own slot — your edits stick across reloads, but it stays out of ${homeLabel} until you use 'Save to my plans'. 'Load a fresh copy' resets it.`
+    ? `This example is saved on this device under its own slot: your edits stick across reloads, but it stays out of ${homeLabel} until you use 'Save to my plans'. 'Load a fresh copy' resets it.`
     : storageTooltip
   return (
     <span
@@ -121,7 +121,7 @@ function KpiBar() {
           <span className="kpi-label">Plan status</span>
           <span className="kpi-value kpi-value--pending">Getting started</span>
           <span className="kpi-sub kpi-sub--wrap">
-            Add income sources or account balances to complete the picture — results appear as you enter them.
+            Add income sources or account balances to complete the picture. Results appear as you enter them.
           </span>
         </div>
       </div>
@@ -157,7 +157,7 @@ function KpiBar() {
             className="kpi-value kpi-value-link"
             style={{ color: successBand(mcRate).color }}
             to="monte-carlo"
-            title={`Share of ${DEFAULT_PATH_COUNT.toLocaleString()} varied-market simulations where the money lasts — open Monte Carlo for the full picture`}
+            title={`Share of ${DEFAULT_PATH_COUNT.toLocaleString()} varied-market simulations where the money lasts. Open Monte Carlo for the full picture`}
           >
             {Math.round(mcRate * 100)}%
           </Link>
@@ -210,13 +210,13 @@ function WorkspaceInner() {
   const { prompt, alert, dialogs } = useDialogs()
 
   // Page identity: retitle the tab per section so history and multi-tab
-  // comparison work, and give every plan page exactly one h1 (sr-only — the
+  // comparison work, and give every plan page exactly one h1 (sr-only, the
   // visual header is the plan name + KPI bar).
   const sectionTitle = sectionTitleOf(location.pathname)
   useEffect(() => {
     document.title = sectionTitle ? `${sectionTitle} · ${plan.name} · RetireGolden` : `${plan.name} · RetireGolden`
   }, [sectionTitle, plan.name])
-  // Reset only when leaving the workspace entirely — a per-change cleanup
+  // Reset only when leaving the workspace entirely. A per-change cleanup
   // would churn the title through 'RetireGolden' between sections.
   useEffect(
     () => () => {
@@ -301,7 +301,7 @@ function WorkspaceInner() {
           <NavLink to="/compare" className={railClass}>Compare plans</NavLink>
         </nav>
         <div id="plan-content" tabIndex={-1}>
-          <h1 className="sr-only">{sectionTitle ? `${sectionTitle} — ${plan.name}` : plan.name}</h1>
+          <h1 className="sr-only">{sectionTitle ? `${sectionTitle}: ${plan.name}` : plan.name}</h1>
           <Outlet />
         </div>
       </div>

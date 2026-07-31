@@ -55,7 +55,7 @@ export interface PlannerEditionConfig {
 
 /** Default save-indicator tooltip for the free web edition's own plans. */
 export const DEFAULT_STORAGE_TOOLTIP =
-  "Plans live only in this browser — nothing is sent to a server. Use 'Download plan backup' on the planner home to keep a copy."
+  "Plans live only in this browser. Nothing is sent to a server. Use 'Download plan backup' on the planner home to keep a copy."
 
 /** Resolved edition content — defaults applied, so consumers never branch. */
 export interface ResolvedPlannerEdition {

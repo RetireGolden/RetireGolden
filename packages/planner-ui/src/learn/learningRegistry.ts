@@ -134,7 +134,7 @@ export const LEARNING_CATEGORIES: LearningCategory[] = [
   {
     id: 'assumptions',
     label: 'Assumptions',
-    blurb: 'The forward-looking defaults behind your plan — inflation, returns, longevity — and the sources for each.',
+    blurb: 'The forward-looking defaults behind your plan (inflation, returns, longevity) and the sources for each.',
   },
   {
     id: 'example-plans',

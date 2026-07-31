@@ -24,7 +24,7 @@ export function DataAndPrivacyCard({
       <h2>Your data stays on your device, not on our servers</h2>
       <p className="card-hint">
         RetireGolden has no accounts and no server storage. Everything you enter stays on this device, which means we
-        can never see it — and we can never recover it either. To keep a plan safe or move it to another device,
+        can never see it, and we can never recover it either. To keep a plan safe or move it to another device,
         download a plan backup and take it with you.
       </p>
       <div className="picker-actions" style={{ margin: 0 }}>

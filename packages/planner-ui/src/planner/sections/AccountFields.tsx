@@ -129,7 +129,7 @@ export function AccountFields({ account, index }: { account: Account; index: num
       {account.type === 'roth' ? (
         <MoneyField
           label="Contribution basis"
-          help="Your total direct Roth contributions (today's dollars). Contributions come out tax- and penalty-free at any age — before conversions and earnings — so this is what you can tap penalty-free in early retirement. Leave blank to treat the whole current balance as contributions (the safe default). Roth conversions made inside this app automatically start their own 5-year clocks."
+          help="Your total direct Roth contributions (today's dollars). Contributions come out tax- and penalty-free at any age, before conversions and earnings, so this is what you can tap penalty-free in early retirement. Leave blank to treat the whole current balance as contributions (the safe default). Roth conversions made inside this app automatically start their own 5-year clocks."
           hint="Blank = treat whole balance as contributions."
           value={account.contributionBasis ?? null}
           allowNull
@@ -139,7 +139,7 @@ export function AccountFields({ account, index }: { account: Account; index: num
       {account.type === 'traditional' && account.kind === 'ira' && !account.inherited ? (
         <MoneyField
           label="Nondeductible basis (Form 8606)"
-          help="After-tax money already inside this traditional IRA — nondeductible contributions you've reported on IRS Form 8606. When set, every withdrawal and Roth conversion from your IRAs is part tax-free basis and part taxable, in proportion to the basis across all your IRAs (the pro-rata rule). Leave blank if all your IRA money was pre-tax."
+          help="After-tax money already inside this traditional IRA, nondeductible contributions you've reported on IRS Form 8606. When set, every withdrawal and Roth conversion from your IRAs is part tax-free basis and part taxable, in proportion to the basis across all your IRAs (the pro-rata rule). Leave blank if all your IRA money was pre-tax."
           hint="Blank = fully pre-tax IRA."
           value={account.nondeductibleBasis ?? null}
           allowNull
@@ -150,7 +150,7 @@ export function AccountFields({ account, index }: { account: Account; index: num
         <>
           <SelectField
             label="Withdrawal treatment"
-            help="How HSA withdrawals are taxed. 'Assume all qualified' treats every withdrawal as a tax- and penalty-free medical reimbursement (simplest; use if you track receipts). 'Cap at modeled medical costs' only lets withdrawals up to your modeled healthcare premiums and care costs come out tax-free — the excess is taxed as ordinary income and, before 65, penalized 20%. Leave on the default to keep the conservative legacy behavior (tax-free but penalized before 65)."
+            help="How HSA withdrawals are taxed. 'Assume all qualified' treats every withdrawal as a tax- and penalty-free medical reimbursement (simplest; use if you track receipts). 'Cap at modeled medical costs' only lets withdrawals up to your modeled healthcare premiums and care costs come out tax-free. The excess is taxed as ordinary income and, before 65, penalized 20%. Leave on the default to keep the conservative legacy behavior (tax-free but penalized before 65)."
             value={account.withdrawalTreatment ?? 'legacy'}
             options={[
               { value: 'legacy', label: 'Default (tax-free, penalized before 65)' },
@@ -166,14 +166,14 @@ export function AccountFields({ account, index }: { account: Account; index: num
           {account.withdrawalTreatment === 'capByMedicalExpenses' ? (
             <CheckboxField
               label="Accumulate unreimbursed expenses (reimburse later)"
-              help="Model the 'pay medical costs out of pocket now, reimburse yourself from the HSA later' strategy. Modeled medical costs you don't withdraw for in a given year accumulate as a carryover that future withdrawals can draw against tax-free — letting the HSA keep growing while the reimbursable balance grows with it."
+              help="Model the 'pay medical costs out of pocket now, reimburse yourself from the HSA later' strategy. Modeled medical costs you don't withdraw for in a given year accumulate as a carryover that future withdrawals can draw against tax-free, letting the HSA keep growing while the reimbursable balance grows with it."
               value={account.reimburseLater === true}
               onCommit={(v) => set('reimburseLater', v ? true : undefined)}
             />
           ) : null}
           <SelectField
             label="Beneficiary"
-            help="Who inherits this HSA. A spouse inherits it as their own HSA and it passes untaxed. Any other beneficiary (child, estate, single-person plans) receives a fully taxable distribution of the balance in the year of death — so the after-tax estate metric taxes the remaining HSA at your assumed heir tax rate, like a traditional account."
+            help="Who inherits this HSA. A spouse inherits it as their own HSA and it passes untaxed. Any other beneficiary (child, estate, single-person plans) receives a fully taxable distribution of the balance in the year of death, so the after-tax estate metric taxes the remaining HSA at your assumed heir tax rate, like a traditional account."
             value={account.beneficiary ?? 'spouse'}
             options={[
               { value: 'spouse', label: 'Spouse (inherits as HSA, untaxed)' },
@@ -186,7 +186,7 @@ export function AccountFields({ account, index }: { account: Account; index: num
       {account.type === 'traditional' && plan.household.people.length === 2 ? (
         <CheckboxField
           label="Spouse is sole beneficiary"
-          help="If checked and your spouse is more than 10 years younger, RMDs use the larger IRS Joint Life divisor. Leave unchecked when the beneficiary is a child, trust, estate, or split — RMDs then use the standard Uniform Lifetime Table."
+          help="If checked and your spouse is more than 10 years younger, RMDs use the larger IRS Joint Life divisor. Leave unchecked when the beneficiary is a child, trust, estate, or split, RMDs then use the standard Uniform Lifetime Table."
           value={account.spouseSoleBeneficiary === true}
           onCommit={(v) => set('spouseSoleBeneficiary', v)}
         />
@@ -239,8 +239,8 @@ export function AccountFields({ account, index }: { account: Account; index: num
             label="SEPP method"
             value={account.sepp.method}
             options={[
-              { value: 'rmd', label: 'RMD — recomputed yearly (smaller, flexible)' },
-              { value: 'amortization', label: 'Amortization — level payment (larger)' },
+              { value: 'rmd', label: 'RMD: recomputed yearly (smaller, flexible)' },
+              { value: 'amortization', label: 'Amortization: level payment (larger)' },
             ]}
             onCommit={(v) => set('sepp', { ...account.sepp, method: v })}
           />
@@ -460,7 +460,7 @@ export function AccountFields({ account, index }: { account: Account; index: num
           />
           <NumberField
             label="Election year"
-            help="The year the election is due — and the year the lump sum would be paid if taken."
+            help="The year the election is due, and the year the lump sum would be paid if taken."
             value={account.lumpSumOffer.electionYear}
             min={1900}
             max={2200}
@@ -502,7 +502,7 @@ export function AccountFields({ account, index }: { account: Account; index: num
       {account.type === 'annuity' ? (
         <SelectField
           label="Payout form"
-          help="Life only: payments stop at the owner's death (the default). Life with period certain: payments are guaranteed for N years from the start age — if the owner dies inside the window, the household keeps receiving them. Joint & survivor: payments continue to the other household member at the chosen share for their lifetime. Non-qualified exclusion-ratio taxation adjusts to the form."
+          help="Life only: payments stop at the owner's death (the default). Life with period certain: payments are guaranteed for N years from the start age, if the owner dies inside the window, the household keeps receiving them. Joint & survivor: payments continue to the other household member at the chosen share for their lifetime. Non-qualified exclusion-ratio taxation adjusts to the form."
           value={account.payoutForm?.kind ?? 'lifeOnly'}
           options={[
             { value: 'lifeOnly', label: 'Life only' },
@@ -680,7 +680,7 @@ export function AccountFields({ account, index }: { account: Account; index: num
           ) : (
             <MoneyField label="Expected net proceeds" hint="Blank = sell at projected value." value={account.expectedNetProceeds} allowNull onCommit={(v) => set('expectedNetProceeds', v)} />
           )}
-          <MoneyField label="Property tax / year" help="Annual property tax in today's dollars. Charged as a recurring expense while you own the home — and, unlike the mortgage, it keeps going after the loan is paid off." hint="Today's $; continues after payoff." value={account.propertyTaxAnnual ?? null} allowNull onCommit={(v) => set('propertyTaxAnnual', v ?? undefined)} />
+          <MoneyField label="Property tax / year" help="Annual property tax in today's dollars. Charged as a recurring expense while you own the home, and, unlike the mortgage, it keeps going after the loan is paid off." hint="Today's $; continues after payoff." value={account.propertyTaxAnnual ?? null} allowNull onCommit={(v) => set('propertyTaxAnnual', v ?? undefined)} />
           <MoneyField label="Insurance / year" hint="Homeowner's/hazard insurance, today's $." value={account.insuranceAnnual ?? null} allowNull onCommit={(v) => set('insuranceAnnual', v ?? undefined)} />
           <CheckboxField
             label="Model a HECM line of credit"
@@ -706,7 +706,7 @@ export function AccountFields({ account, index }: { account: Account; index: num
             <>
               <NumberField
                 label="Line opens in"
-                help="The year the line of credit is opened. Pfau's research favors opening early — the unused credit compounds from that point regardless of home value."
+                help="The year the line of credit is opened. Pfau's research favors opening early. The unused credit compounds from that point regardless of home value."
                 value={account.hecm.openYear}
                 min={1900}
                 max={2200}
@@ -714,7 +714,7 @@ export function AccountFields({ account, index }: { account: Account; index: num
               />
               <PercentField
                 label="Line size (% of value)"
-                help="The initial principal limit as a percent of the home's value — enter your lender-quoted figure. Blank uses the published HUD principal-limit-factor table by the youngest borrower's age (35–61% between 62 and 90 at a 5.875% expected rate)."
+                help="The initial principal limit as a percent of the home's value. Enter your lender-quoted figure. Blank uses the published HUD principal-limit-factor table by the youngest borrower's age (35–61% between 62 and 90 at a 5.875% expected rate)."
                 hint="Blank = published factor table."
                 value={account.hecm.principalLimitPct ?? null}
                 allowNull
@@ -736,7 +736,7 @@ export function AccountFields({ account, index }: { account: Account; index: num
               />
               <SelectField
                 label="Draw policy"
-                help="Coordinated (buffer asset): draw for spending in years after a negative market return so depressed holdings can recover — visible in Monte Carlo, where down years exist. Last resort: draw only once the portfolio cannot cover spending. Either way an open line backstops a true shortfall."
+                help="Coordinated (buffer asset): draw for spending in years after a negative market return so depressed holdings can recover, visible in Monte Carlo, where down years exist. Last resort: draw only once the portfolio cannot cover spending. Either way an open line backstops a true shortfall."
                 value={account.hecm.drawPolicy}
                 options={[
                   { value: 'lastResort', label: 'Last resort (when portfolio is exhausted)' },
@@ -751,7 +751,7 @@ export function AccountFields({ account, index }: { account: Account; index: num
       {account.type === 'debt' ? (
         <>
           <PercentField label="Interest rate" value={account.interestPct} onCommit={(v) => set('interestPct', v ?? 0)} />
-          <MoneyField label="Monthly payment" help="Principal & interest only. Don't include escrowed property tax or homeowner's insurance here — put those on the home (property) account so they correctly continue after the loan is paid off." hint="P&I only — escrow goes on the home account." value={account.monthlyPayment} onCommit={(v) => set('monthlyPayment', v ?? 0)} />
+          <MoneyField label="Monthly payment" help="Principal & interest only. Don't include escrowed property tax or homeowner's insurance here. Put those on the home (property) account so they correctly continue after the loan is paid off." hint="P&I only, escrow goes on the home account." value={account.monthlyPayment} onCommit={(v) => set('monthlyPayment', v ?? 0)} />
           <NumberField label="Lump-sum payoff year" help="Optional. In this year the entire remaining balance is paid off at once, funded from your withdrawal order (selling taxable holdings realizes gains/tax, just like any other withdrawal). Use it to compare keeping a low-rate loan vs. paying it off early or mid-retirement." hint="Blank = run to term." value={account.payoffYear ?? null} allowNull min={1900} max={2200} onCommit={(v) => set('payoffYear', v === null ? undefined : Math.round(v))} />
         </>
       ) : null}
@@ -759,7 +759,7 @@ export function AccountFields({ account, index }: { account: Account; index: num
         <>
           <SelectField
             label="Estate beneficiary"
-            help="Who inherits this account's balance. Spouse: rolls over untaxed (spousal IRA rollover or HSA inheritance). Non-spouse: the balance is taxed at the heir tax rate for this account class. Charity: passes untaxed and leaves the heirs' estate entirely. Default treats each account by its type — traditional (and a non-spouse HSA) pass to a non-spouse heir taxed at the heir rate; cash, taxable, and Roth pass through untaxed."
+            help="Who inherits this account's balance. Spouse: rolls over untaxed (spousal IRA rollover or HSA inheritance). Non-spouse: the balance is taxed at the heir tax rate for this account class. Charity: passes untaxed and leaves the heirs' estate entirely. Default treats each account by its type, traditional (and a non-spouse HSA) pass to a non-spouse heir taxed at the heir rate; cash, taxable, and Roth pass through untaxed."
             hint="Blank = default by account type."
             value={account.estateBeneficiary?.destination ?? ''}
             options={[
@@ -840,7 +840,7 @@ function PensionDecisionPanel({ plan, pensionId }: { plan: Plan; pensionId: stri
           <> The survivor continuation accounts for {fmtMoney(survivorOptionValue)} of that value.</>
         ) : null}{' '}
         Living longer or discounting at lower rates favors the annuity; dying earlier, higher rates, bequest goals, and
-        control over the money favor the lump sum — the table shows how the comparison moves, and the Insights page can
+        control over the money favor the lump sum. The table shows how the comparison moves, and the Insights page can
         preview the rollover against your full plan. A tradeoff, not advice.
       </p>
       <div className="year-table-wrap" style={{ border: 'none' }}>

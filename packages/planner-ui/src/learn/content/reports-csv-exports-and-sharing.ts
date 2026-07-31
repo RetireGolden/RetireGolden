@@ -36,8 +36,7 @@ export const reportsCsvExportsAndSharingArticle: LearningArticle = {
       items: [
         'Use the printable report when a person needs a readable plan summary or browser-saved PDF.',
         'Use the HTML report when you want a portable audit file with assumptions, parameter provenance, warnings, and recommendation evidence.',
-        'Use the CSV when you want the annual ledger in a spreadsheet.',
-        'Use the JSON backup when you want to preserve or move the editable plan itself.',
+        'Use the CSV for the annual ledger in a spreadsheet, and the JSON backup to preserve or move the editable plan itself.',
       ],
     },
     { type: 'heading', text: 'The basic idea' },
@@ -80,7 +79,7 @@ export const reportsCsvExportsAndSharingArticle: LearningArticle = {
     { type: 'heading', text: 'Why it matters in RetireGolden' },
     {
       type: 'prose',
-      md: 'The **Results** page has **Download CSV**, **Download HTML report**, and **View printable report**. The **Optimize** page can download a recommendation report once the optimizer has run, including the exact-ledger evidence behind the recommendation. The CSV uses the nominal year-by-year ledger, even if the screen is currently toggled to today\'s dollars. The planner home has **Download plan backup** and **Import previous backup** for moving the underlying plan data.',
+      md: 'The **Results** page has **Download CSV**, **Download HTML report**, and **View printable report**. The **Optimize** page can download a recommendation report once the optimizer has run, including the year-by-year evidence behind it. The CSV uses the nominal year-by-year ledger, even if the screen is currently toggled to today\'s dollars. The planner home has **Download plan backup** and **Import previous backup** for moving the underlying plan data.',
     },
     { type: 'heading', text: 'Common mistakes' },
     {

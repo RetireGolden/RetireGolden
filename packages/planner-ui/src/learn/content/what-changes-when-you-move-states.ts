@@ -116,7 +116,7 @@ export const whatChangesWhenYouMoveStatesArticle: LearningArticle = {
     { type: 'heading', text: 'Why it matters in RetireGolden' },
     {
       type: 'prose',
-      md: 'The Relocation Compare page takes candidate states and runs each one as a scenario patch over existing plan fields: household state, planned state moves, local income-tax rate, and baseline spending. The row you see is the same kind of plan run you would get by editing the plan by hand, which makes "Add as scenario" a clean way to keep a candidate for side-by-side comparison.',
+      md: 'The Relocation Compare page takes candidate states and runs each one as a what-if copy of your plan that changes only these fields: household state, planned state moves, local income-tax rate, and baseline spending. The row you see is the same kind of plan run you would get by editing the plan by hand, which makes "Add as scenario" a clean way to keep a candidate for side-by-side comparison.',
     },
     {
       type: 'prose',
@@ -129,7 +129,7 @@ export const whatChangesWhenYouMoveStatesArticle: LearningArticle = {
         'Treating a no-income-tax state as automatically cheaper after housing, property tax, insurance, sales tax, and travel are counted.',
         'Assuming the old state stops mattering on the exact day you change your address, even when source income or residency facts are complicated.',
         'Comparing states with different spending assumptions and then reading the result as a pure tax difference.',
-        'Forgetting that a flat state-tax override can mask the modeled state packs. Clear or document the override before relying on a state-by-state comparison.',
+        'Forgetting that a flat state-tax override can mask the modeled state tax rules. Clear or document the override before relying on a state-by-state comparison.',
       ],
     },
     { type: 'heading', text: 'Where to use this in the app' },

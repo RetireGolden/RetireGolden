@@ -32,7 +32,7 @@ export const todaysDollarsArticle: LearningArticle = {
     {
       type: 'list',
       items: [
-        '**Future (nominal) dollars** are the actual dollar amounts in a future year — bigger, but each one buys less.',
+        '**Future (nominal) dollars** are the actual dollar amounts in a future year: bigger, but each one buys less.',
         "**Today's dollars** (also called **real dollars**) strip out inflation so you can compare to prices you know now.",
         'Neither is “right.” What matters is knowing which one you are looking at.',
       ],
@@ -40,7 +40,7 @@ export const todaysDollarsArticle: LearningArticle = {
     { type: 'heading', text: 'The basic idea' },
     {
       type: 'prose',
-      md: 'Inflation is the slow rise in prices over time. As prices rise, each dollar buys a little less. Over a few years the effect is small. Over a multi-decade retirement, it is large.\n\nThe chart below shows what a fixed $50,000 would buy over time if prices rise about 3% a year. The dollar amount on the bill never changes — but its buying power keeps shrinking.',
+      md: 'Inflation is the slow rise in prices over time. As prices rise, each dollar buys a little less. Over a few years the effect is small. Over a multi-decade retirement, it is large.\n\nThe chart below shows what a fixed $50,000 would buy over time if prices rise about 3% a year. The dollar amount on the bill never changes, but its buying power keeps shrinking.',
     },
     {
       type: 'figure',
@@ -74,7 +74,7 @@ export const todaysDollarsArticle: LearningArticle = {
         { label: 'Assumed inflation', value: 'about 3% a year' },
       ],
       summary:
-        'In 20 years, covering the **same** lifestyle takes about **$90,000** of future dollars — not because the Riveras live larger, but because each dollar buys less.',
+        'In 20 years, covering the **same** lifestyle takes about **$90,000** of future dollars, not because the Riveras live larger, but because each dollar buys less.',
     },
     {
       type: 'prose',
@@ -99,9 +99,14 @@ export const todaysDollarsArticle: LearningArticle = {
       type: 'list',
       items: [
         'Treating a large future balance as “rich” without converting it to today’s dollars.',
-        'Comparing a today’s-dollars number against a future-dollars number — an apples-to-oranges mix.',
-        'Assuming inflation is fixed; it is an assumption you can and should test.',
+        'Comparing a today’s-dollars number against a future-dollars number, an apples-to-oranges mix.',
+        'Assuming inflation is fixed. It is an assumption you can change, and one worth testing.',
       ],
+    },
+    { type: 'heading', text: 'Where to use this in the app' },
+    {
+      type: 'prose',
+      md: 'Every chart and table that can be shown either way carries a today\'s-dollars toggle. Use it on **Results** when you want to compare a future year against your current lifestyle, and turn it off when you want the nominal amounts that will actually appear on a statement. The inflation rate itself lives on **Assumptions**, with its source and last review date.',
     },
   ],
 }

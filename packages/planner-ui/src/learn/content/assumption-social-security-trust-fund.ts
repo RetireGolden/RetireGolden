@@ -46,8 +46,8 @@ export const assumptionSocialSecurityTrustFundArticle: LearningArticle = {
       type: 'list',
       items: [
         '**Combined OASDI Depletion:** The Old-Age and Survivors Insurance (OASI) and Disability Insurance (DI) trust funds, if combined, will exhaust their reserves in **2034**. At that point, ongoing tax revenues will cover **83%** of scheduled benefits, requiring a **17% cut** across the board.',
-        '**Retirement-Only (OASI) Depletion:** If the DI fund is not merged with OASI, the retirement fund alone depletes in **2032** — one quarter earlier than the prior year\'s projection — with ongoing revenues covering **78%** of benefits (a **22% cut**).',
-        '**Year-over-year movement:** the combined depletion year has held at 2034 across recent reports, while the payable share moves a point or two as economic assumptions update — which is why RetireGolden re-verifies these defaults against each annual report.',
+        '**Retirement-Only (OASI) Depletion:** If the DI fund is not merged with OASI, the retirement fund alone depletes in **2032** (one quarter earlier than the prior year\'s projection), with ongoing revenues covering **78%** of benefits (a **22% cut**).',
+        '**Year-over-year movement:** the combined depletion year has held at 2034 across recent reports, while the payable share moves a point or two as economic assumptions update, which is why RetireGolden re-verifies these defaults against each annual report.',
       ],
     },
     { type: 'heading', text: 'How to model this in RetireGolden' },

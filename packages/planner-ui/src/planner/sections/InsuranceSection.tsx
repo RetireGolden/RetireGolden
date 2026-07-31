@@ -105,7 +105,7 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
           />
           <SelectField
             label="Cash value grows by"
-            help="Flat rate is a rough estimate. A pasted illustration schedule is accurate — whole-life cash value is front-loaded-poor, back-loaded-rich, not linear."
+            help="Flat rate is a rough estimate. A pasted illustration schedule is accurate. Whole-life cash value is front-loaded-poor, back-loaded-rich, not linear."
             learn={LEARN.permanentLife}
             value={policy.cashValueMode}
             options={[
@@ -305,7 +305,7 @@ export function InsuranceSection() {
           asset in net worth, and the death benefit pays income-tax-free at the insured's death. Add care events to
           test whether an LTC policy offsets a late-life care shock. <LearnLink {...LEARN.insuranceOverview} />
         </p>
-        {plan.insurance.length === 0 ? <div className="empty-state"><p>No policies yet — add one below.</p></div> : null}
+        {plan.insurance.length === 0 ? <div className="empty-state"><p>No policies yet. Add one below.</p></div> : null}
         {plan.insurance.map((p, i) => (
           <div className="item-row" key={p.id}>
             <div className="item-row-head">
@@ -330,7 +330,7 @@ export function InsuranceSection() {
 
         <h3>Care events</h3>
         <p className="card-hint">
-          A deterministic late-life care episode — a spending spike an LTC policy on the same person can absorb.
+          A deterministic late-life care episode, a spending spike an LTC policy on the same person can absorb.
           Add one to see the stress test below. <LearnLink {...LEARN.ltcCosts} />
         </p>
         {plan.careEvents.map((c, i) => (

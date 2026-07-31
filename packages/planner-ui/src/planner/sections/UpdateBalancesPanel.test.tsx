@@ -347,7 +347,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     expect(brokerageSel!.disabled).toBe(false)
     expect(rothSel!.disabled).toBe(false)
     expect(rothSel!.value).toBe('acct-roth')
-    expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected — advisor override')
+    expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected: advisor override')
 
     act(() => applyButton(el).click())
     // The protected account is untouched (blocked contributes nothing); the sibling refreshes.
@@ -358,7 +358,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // learn a selected account was deliberately left unchanged.
     const status = el.querySelector('[role="status"]')?.textContent ?? ''
     expect(status).toContain('Updated 1 account')
-    expect(status).toContain('1 selected account was left unchanged — protected by advisor overrides')
+    expect(status).toContain('1 selected account was left unchanged, protected by advisor overrides')
   })
 
   it('protects the right account after the plan array is reordered (id, not index)', async () => {
@@ -387,7 +387,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     await chooseFile(el, TWO_ACCOUNT_CSV)
     // Selected onto the protected account, the row renders blocked (not disabled).
     expect(selects(el)[0]!.value).toBe('acct-brokerage')
-    expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected — advisor override')
+    expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected: advisor override')
 
     act(() => applyButton(el).click())
     // Balance stays 1 too — the costBasis-scoped entry blocked the whole write.
@@ -453,7 +453,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
       setter.call(sel, 'acct-brokerage')
       sel.dispatchEvent(new Event('change', { bubbles: true }))
     })
-    expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected — advisor override')
+    expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected: advisor override')
     expect(previewCells(el)[0]).not.toContain('→')
 
     // Release scoped to this row, then apply — the account refreshes from this row.
@@ -591,7 +591,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // Choosing a new file clears the release — protection is restored (row blocked again).
     await chooseFile(el, TWO_ACCOUNT_CSV)
     expect(selects(el)[0]!.value).toBe('acct-brokerage')
-    expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected — advisor override')
+    expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected: advisor override')
   })
 
   it('revokes a row\'s release when that row re-targets, restoring protection for a sibling', async () => {
@@ -620,7 +620,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
 
     // Row 1 now selects Brokerage — with protection restored it is blocked, not applied.
     setSelect(selects(el)[1]!, 'acct-brokerage')
-    expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected — advisor override')
+    expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected: advisor override')
 
     // Row 1 releases it (a fresh release, now owned by row 1) and applies — the write
     // lands from row 1's section (Roth section value, 14,000 / basis 12,000).
@@ -674,7 +674,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     })
 
     // The row is blocked by the override.
-    expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected — advisor override')
+    expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected: advisor override')
 
     // The stale note names the genuinely-absent HSA but NOT the assigned-but-blocked
     // Brokerage — no "blocked AND not in the file" contradiction about one account.
@@ -775,7 +775,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // the stale release did not carry over.
     await chooseFile(el, TWO_ACCOUNT_CSV)
     expect(selects(el)[0]!.value).toBe('acct-brokerage')
-    expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected — advisor override')
+    expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected: advisor override')
   })
 
   it('discards an in-flight file read when the plan changes mid-read', async () => {
@@ -1023,7 +1023,7 @@ describe('UpdateBalancesPanel protection pending', () => {
     // row applies.
     await chooseFile(el, TWO_ACCOUNT_CSV)
     expect(selects(el)[0]!.value).toBe('acct-brokerage')
-    expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected — advisor override')
+    expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected: advisor override')
     expect(applyButton(el).disabled).toBe(false)
 
     act(() => applyButton(el).click())
@@ -1045,7 +1045,7 @@ describe('UpdateBalancesPanel protection pending', () => {
     await chooseFile(el, TWO_ACCOUNT_CSV)
     expect(applyButton(el).disabled).toBe(false)
     expect(applyButton(el).title).toBe('')
-    expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected — advisor override')
+    expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected: advisor override')
 
     act(() => applyButton(el).click())
     expect(plan.accounts.find((a) => a.id === 'acct-brokerage')!).toMatchObject({ balance: 1, costBasis: 1 })
@@ -1224,7 +1224,7 @@ describe('UpdateBalancesPanel protection pending', () => {
 
     // …and the protection it DID supply is still enforced.
     await chooseFile(container, TWO_ACCOUNT_CSV)
-    expect(container.querySelector('[role="note"]')?.textContent).toContain('Protected — advisor override')
+    expect(container.querySelector('[role="note"]')?.textContent).toContain('Protected: advisor override')
     act(() => applyButton(container!).click())
     expect(plan.accounts.find((a) => a.id === 'acct-brokerage')!).toMatchObject({ balance: 1, costBasis: 1 })
     expect(plan.accounts.find((a) => a.id === 'acct-roth')!).toMatchObject({ balance: 14000 })

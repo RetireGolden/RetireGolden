@@ -14,10 +14,10 @@ export function WelcomeHero({
   const Heading = headingLevel
   return (
     <section className="home-hero" aria-labelledby="home-hero-heading">
-      <Heading id="home-hero-heading">Plan your retirement — privately, in your browser</Heading>
+      <Heading id="home-hero-heading">Plan your retirement privately, in your browser</Heading>
       <p className="home-hero-subhead lede">
-        Model your household, stress-test taxes and withdrawals, and explore scenarios — with no account and no data
-        leaving this device.
+        Model your household, stress-test taxes and withdrawals, and compare scenarios. No account, and nothing you
+        type leaves this device.
       </p>
       <ul className="trust-chips" aria-label="Why RetireGolden">
         <li>No accounts</li>

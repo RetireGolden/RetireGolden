@@ -68,8 +68,8 @@ export const PRESET_FAMILY_LABELS: Record<ModelPresetId, string> = {
 /** The full advanced catalog. Every kind the old flat <select> offered stays reachable. */
 export const MODEL_CATALOG: ReadonlyArray<{ kind: ModelKind; label: string; family: ModelPresetId }> = [
   { kind: 'lognormal', label: 'Lognormal (correlated inflation)', family: 'smooth' },
-  { kind: 'hist-iid', label: 'Historical bootstrap — independent years', family: 'history' },
-  { kind: 'hist-block', label: 'Historical bootstrap — 5-year blocks', family: 'history' },
+  { kind: 'hist-iid', label: 'Historical bootstrap: independent years', family: 'history' },
+  { kind: 'hist-block', label: 'Historical bootstrap: 5-year blocks', family: 'history' },
   { kind: 'hist-sequence', label: 'Historical full-sequence replay', family: 'history' },
   { kind: 'student-t', label: 'Student-t (fat tails)', family: 'smooth' },
   { kind: 'regime-switch', label: 'Regime-switching (bull/bear Markov)', family: 'smooth' },

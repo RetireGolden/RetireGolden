@@ -37,7 +37,7 @@ export const howRetireGoldenChecksItsMathArticle: LearningArticle = {
   blocks: [
     {
       type: 'prose',
-      md: 'A retirement projection is only useful if the arithmetic behind it is right. This article explains how RetireGolden’s calculations are tested — and how you can check that work yourself, because all of it is public.',
+      md: 'A retirement projection is only useful if the arithmetic behind it is right. This article explains how RetireGolden’s calculations are tested, and how you can check that work yourself, because all of it is public.',
     },
     {
       type: 'heading',
@@ -46,9 +46,9 @@ export const howRetireGoldenChecksItsMathArticle: LearningArticle = {
     {
       type: 'list',
       items: [
-        'Important calculations are tested against answers worked out **outside the app** — IRS worksheets, Social Security formulas, and independent open-source tools.',
+        'Important calculations are tested against answers worked out **outside the app**: IRS worksheets, Social Security formulas, and independent open-source tools.',
         'The app is not allowed to grade its own homework: a correctness test never uses RetireGolden’s own output as the expected answer.',
-        'The code, the tests, and the testing rules are **open source**, so anyone — including you — can inspect them.',
+        'The code, the tests, and the testing rules are **open source**, so anyone (including you) can inspect them.',
       ],
     },
     {
@@ -96,7 +96,7 @@ export const howRetireGoldenChecksItsMathArticle: LearningArticle = {
     },
     {
       type: 'prose',
-      md: 'The comparisons against independent tools follow written rules, too: the tax year and tool version are pinned, differences in what each tool models are documented next to the numbers, and each comparison states how close the answers must be. When two tools disagree, the difference is investigated and classified — a bug to fix, or a documented modeling difference — rather than quietly ignored.',
+      md: 'The comparisons against independent tools follow written rules, too: the tax year and tool version are pinned, differences in what each tool models are documented next to the numbers, and each comparison states how close the answers must be. When two tools disagree, the difference is investigated and classified (a bug to fix, or a documented modeling difference) rather than quietly ignored.',
     },
     {
       type: 'heading',
@@ -104,7 +104,7 @@ export const howRetireGoldenChecksItsMathArticle: LearningArticle = {
     },
     {
       type: 'prose',
-      md: 'This testing shows that RetireGolden applies its modeled rules the way the official sources describe them. That is a statement about arithmetic, not about the future.\n\nA projection still depends on assumptions — returns, inflation, how long you live — that no amount of testing can pin down. And the model deliberately simplifies some rules to stay at planning precision; [What RetireGolden models and what it does not](/learn/what-retiregolden-models) lists those boundaries.',
+      md: 'This testing shows that RetireGolden applies its modeled rules the way the official sources describe them. That is a statement about arithmetic, not about the future.\n\nA projection still depends on assumptions (returns, inflation, how long you live) that no amount of testing can pin down. And the model deliberately simplifies some rules to stay at planning precision; [What RetireGolden models and what it does not](/learn/what-retiregolden-models) lists those boundaries.',
     },
     {
       type: 'callout',
@@ -117,7 +117,7 @@ export const howRetireGoldenChecksItsMathArticle: LearningArticle = {
     },
     {
       type: 'prose',
-      md: 'RetireGolden is open source, and the testing discipline is published alongside the code — the sources listed below include the testing rules and the full index of which official source backs which test.\n\nYou don’t need to read code to benefit from this. Inside the app, rule-heavy numbers carry their own citations: the [sources and review methodology](/learn/sources) page explains how rules are sourced and kept current, and the Assumptions screen shows where each parameter came from and when it was last reviewed.',
+      md: 'RetireGolden is open source, and the testing discipline is published alongside the code. The sources listed below include the testing rules and the full index of which official source backs which test.\n\nYou don’t need to read code to benefit from this. Inside the app, rule-heavy numbers carry their own citations: the [sources and review methodology](/learn/sources) page explains how rules are sourced and kept current, and the Assumptions screen shows where each parameter came from and when it was last reviewed.',
     },
   ],
 }

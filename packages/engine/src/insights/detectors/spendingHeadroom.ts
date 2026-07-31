@@ -51,7 +51,7 @@ export const spendingHeadroom: Detector = {
       id: 'spending-headroom',
       category: 'sequence-risk',
       title: 'Your plan may support more spending',
-      rationale: `Your plan is projected to end with roughly $${Math.round(endingEstateToday).toLocaleString()} of after-tax estate in today's dollars${bequestTarget > 0 ? ` — well above your $${Math.round(bequestTarget).toLocaleString()} bequest target` : ' with no bequest target set'}. Previewing the max-sustainable spending level shows how much lifestyle that margin could fund.`,
+      rationale: `Your plan is projected to end with roughly $${Math.round(endingEstateToday).toLocaleString()} of after-tax estate in today's dollars${bequestTarget > 0 ? `, well above your $${Math.round(bequestTarget).toLocaleString()} bequest target` : ' with no bequest target set'}. Previewing the max-sustainable spending level shows how much lifestyle that margin could fund.`,
       impact: {
         qualitative: `≈ $${Math.round(roughHeadroomPerYear).toLocaleString()}/yr of rough headroom before taxes; preview for the precise answer.`,
       },
@@ -101,7 +101,7 @@ export const spendingHeadroom: Detector = {
         patch: { expenses: { baseAnnual: maxBaseAnnual } },
       },
       impact: {
-        qualitative: `Exact ledger sustains about $${Math.round(maxBaseAnnual).toLocaleString()}/yr of baseline spending — $${Math.round(slack).toLocaleString()}/yr above your current level (today's dollars).`,
+        qualitative: `The full year-by-year projection sustains about $${Math.round(maxBaseAnnual).toLocaleString()}/yr of baseline spending, which is $${Math.round(slack).toLocaleString()}/yr above your current level (today's dollars).`,
       },
     }
   },

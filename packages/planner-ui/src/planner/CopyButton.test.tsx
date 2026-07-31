@@ -57,7 +57,7 @@ describe('CopyButton', () => {
 
     await act(async () => button(el).click())
 
-    expect(button(el).textContent).toBe('Clipboard unavailable — copy manually')
+    expect(button(el).textContent).toBe('Clipboard unavailable: copy manually')
     const area = fallback(el)!
     expect(area).not.toBeNull()
     expect(area.value).toBe('the payload')

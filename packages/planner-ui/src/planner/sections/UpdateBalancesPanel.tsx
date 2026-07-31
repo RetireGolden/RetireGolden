@@ -385,7 +385,7 @@ export function UpdateBalancesPanel() {
           status: 'skipped',
           source: parsed?.accounts[i]?.accountLabel ?? `Row ${i + 1}`,
           detail: releasedElsewhere
-            ? `Its selected plan account (${accountName(accId)}) is protected by an advisor override released to a different row — only that row may refresh it this time.`
+            ? `Its selected plan account (${accountName(accId)}) is protected by an advisor override released to a different row. Only that row may refresh it this time.`
             : `Its selected plan account (${accountName(accId)}) is protected by an advisor override, so the refresh left its balance unchanged.`,
           locator: {
             kind: 'none',
@@ -506,17 +506,17 @@ export function UpdateBalancesPanel() {
     if (!heldBackByProtection) resetPanel()
     setMessage(
       applied > 0
-        ? `Updated ${applied} account${applied === 1 ? '' : 's'} from the ${BROKER_LABEL[parsed.broker]} file — balances, plus cost basis where the file carried it. Review taxable accounts whose basis the file lacked.` +
+        ? `Updated ${applied} account${applied === 1 ? '' : 's'} from the ${BROKER_LABEL[parsed.broker]} file: balances, plus cost basis where the file carried it. Review taxable accounts whose basis the file lacked.` +
           // A partial apply tears the table (and its skipped-item audit) down, so
           // the held-back accounts must be named here or the user never learns a
           // selected account was deliberately left unchanged.
           (protectionBlocked > 0
-            ? ` ${protectionBlocked} selected account${protectionBlocked === 1 ? ' was' : 's were'} left unchanged — protected by advisor overrides.`
+            ? ` ${protectionBlocked} selected account${protectionBlocked === 1 ? ' was' : 's were'} left unchanged, protected by advisor overrides.`
             : '')
         : protectionBlocked > 0
           ? // Nothing landed, but the visible selections weren't ignored — they were
             // held back by advisor overrides. Say so, and point at the escape hatch.
-            `No balances were applied — ${protectionBlocked} selected account${protectionBlocked === 1 ? ' is' : 's are'} protected by advisor overrides. Use “Allow this refresh” to update one deliberately.`
+            `No balances were applied. ${protectionBlocked} selected account${protectionBlocked === 1 ? ' is' : 's are'} protected by advisor overrides. Use “Allow this refresh” to update one deliberately.`
           : 'No accounts were assigned, so nothing changed.',
     )
   }
@@ -526,7 +526,7 @@ export function UpdateBalancesPanel() {
       <h2>Update balances from a broker CSV</h2>
       <p className="card-hint">
         Download the positions/holdings CSV from Schwab, Fidelity, or Vanguard and refresh your account
-        balances (and cost basis where the file has it) without retyping. Only balance and cost basis change —
+        balances (and cost basis where the file has it) without retyping. Only balance and cost basis change, 
         your return, yield, contribution, and beneficiary settings are left alone. The file is read on this
         device only. To start a whole new plan from a file, use Import &amp; migrate on the home screen.
       </p>
@@ -604,7 +604,7 @@ export function UpdateBalancesPanel() {
                         </select>
                         {rowBlocked ? (
                           <div className="refresh-protected" role="note">
-                            <span className="muted">Protected — advisor override</span>
+                            <span className="muted">Protected: advisor override</span>
                             {canRelease && selectedId ? (
                               <button
                                 type="button"
@@ -649,7 +649,7 @@ export function UpdateBalancesPanel() {
           ) : null}
           {blocked ? (
             <div className="callout callout--warn" role="alert">
-              Two rows are assigned to the same plan account ({duplicateNames.join(', ')}) — the second would silently
+              Two rows are assigned to the same plan account ({duplicateNames.join(', ')}). The second would silently
               overwrite the first, so nothing is applied. Assign each plan account at most once.
             </div>
           ) : null}

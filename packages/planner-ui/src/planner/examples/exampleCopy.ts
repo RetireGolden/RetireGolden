@@ -12,7 +12,7 @@
 import { DEFAULT_HOME_LABEL } from '../editionContext'
 
 /** Save indicator shown in the workspace header for `origin: 'example'` plans. */
-export const EXAMPLE_SAVE_INDICATOR = 'Example — edits kept on this device until you reset'
+export const EXAMPLE_SAVE_INDICATOR = 'Example: edits kept on this device until you reset'
 
 /**
  * Preview-banner sentence describing where an example's edits live.

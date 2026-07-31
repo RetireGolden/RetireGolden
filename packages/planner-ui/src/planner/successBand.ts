@@ -12,7 +12,7 @@ export function successBand(rate: number): { color: string; severity: string; ve
     return {
       color: 'var(--good)',
       severity: 'on track in most markets',
-      verdict: 'On track in most markets — some sequence risk remains.',
+      verdict: 'On track in most markets, some sequence risk remains.',
     }
   if (pct >= 60)
     return { color: 'var(--warn)', severity: 'needs attention', verdict: 'Workable, but sequence risk is real here.' }

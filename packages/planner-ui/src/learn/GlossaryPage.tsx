@@ -22,7 +22,7 @@ export function GlossaryPage() {
           <div key={t.id} className="learn-glossary-item" id={t.id}>
             <dt className="learn-glossary-term">
               {t.term}
-              {t.expansion && <span className="learn-glossary-expansion"> — {t.expansion}</span>}
+              {t.expansion && <span className="learn-glossary-expansion"> ({t.expansion})</span>}
             </dt>
             <dd className="learn-glossary-def">{t.definition}</dd>
           </div>

@@ -104,7 +104,7 @@ export function SpendingSection() {
         <div className="form-grid">
           <MoneyField
             label="Baseline annual spending"
-            help="Everyday living costs in today's dollars: food, utilities, transportation, clothing, entertainment, routine travel, auto insurance, and out-of-pocket medical (copays, deductibles, dental, vision) — the costs with no separate input. Leave OUT anything modeled elsewhere: mortgage/loan payments (debt accounts); property tax & homeowner's insurance (enter those on the home/property account, where they correctly continue after the mortgage is paid off); health-insurance premiums (Healthcare below); and long-term-care or life-insurance premiums (Insurance). The Results page breaks all of these out in a Spending-by-category chart."
+            help="Everyday living costs in today's dollars: food, utilities, transportation, clothing, entertainment, routine travel, auto insurance, and out-of-pocket medical (copays, deductibles, dental, vision). The costs with no separate input. Leave OUT anything modeled elsewhere: mortgage/loan payments (debt accounts); property tax & homeowner's insurance (enter those on the home/property account, where they correctly continue after the mortgage is paid off); health-insurance premiums (Healthcare below); and long-term-care or life-insurance premiums (Insurance). The Results page breaks all of these out in a Spending-by-category chart."
             learn={LEARN.spendingBudget}
             hint="Living costs incl. auto insurance & out-of-pocket medical; exclude mortgage, property tax, premiums."
             value={e.baseAnnual}
@@ -119,7 +119,7 @@ export function SpendingSection() {
           />
           <MoneyField
             label="Required floor (today's $)"
-            help="The must-fund slice of baseline spending — the least you could live on in a bad market, before any discretionary lifestyle. Only matters when Spending guardrails (below) are on: the guardrail rations the gap between baseline and this floor but never cuts below it. Leave 0 (or equal to baseline) to treat all spending as required, which is today's behavior."
+            help="The must-fund slice of baseline spending. The least you could live on in a bad market, before any discretionary lifestyle. Only matters when Spending guardrails (below) are on: the guardrail rations the gap between baseline and this floor but never cuts below it. Leave 0 (or equal to baseline) to treat all spending as required, which is today's behavior."
             learn={LEARN.spendingBudget}
             hint="Guardrails never cut below this. 0 = all spending is required."
             value={e.requiredAnnual ?? 0}
@@ -159,7 +159,7 @@ export function SpendingSection() {
           {plan.household.people.length > 1 ? (
             <PercentField
               label="Survivor spending"
-              help="Household spending in years when only one of you is alive, as a percent of the couple's spending. Studies of retired couples typically land between 60% and 80% — housing and utilities barely drop, while food, travel, and healthcare for the second person do. Scales baseline + phase spending only; one-time goals, healthcare premiums, debt payments, and property costs keep their own schedules."
+              help="Household spending in years when only one of you is alive, as a percent of the couple's spending. Studies of retired couples typically land between 60% and 80%, housing and utilities barely drop, while food, travel, and healthcare for the second person do. Scales baseline + phase spending only; one-time goals, healthcare premiums, debt payments, and property costs keep their own schedules."
               learn={LEARN.survivorSpending}
               hint="100% = no change in survivor years."
               step={5}
@@ -176,7 +176,7 @@ export function SpendingSection() {
           ) : null}
           <MoneyField
             label="Bequest target (today's $)"
-            help="The after-tax estate you want the plan to still leave at the end, in today's dollars. Used as the estate floor by the sustainable-spending solver ('How much can I spend?') and by the estate-floor optimizer objective — it does not change the projection itself. Leave 0 for no target."
+            help="The after-tax estate you want the plan to still leave at the end, in today's dollars. Used as the estate floor by the sustainable-spending solver ('How much can I spend?') and by the estate-floor optimizer objective. It does not change the projection itself. Leave 0 for no target."
             learn={LEARN.sustainableSpending}
             hint="Estate floor for the spending solver and optimizer objectives; 0 = none."
             value={e.bequestTargetDollars ?? 0}
@@ -192,7 +192,7 @@ export function SpendingSection() {
         <h3>Dynamic spending policy</h3>
         <p className="card-hint">
           Let spending flex with the market instead of holding a fixed budget. Guardrails trim and restore the
-          discretionary layer (baseline minus the required floor) — the floor is never cut. Amortized spending
+          discretionary layer (baseline minus the required floor). The floor is never cut. Amortized spending
           (ABW, the rule behind VPW and TPAW) goes further: it replaces the baseline entirely, re-computing each
           year&apos;s spending from the actual portfolio and remaining horizon. Applies in Results and Monte Carlo.{' '}
           <LearnLink {...LEARN.spendingBudget} />
@@ -200,7 +200,7 @@ export function SpendingSection() {
         <div className="form-grid">
           <SelectField
             label="Spending policy"
-            help="Fixed target funds the whole budget every year (today's behavior). Withdrawal-rate guardrails ration the discretionary layer path by path based on how the current withdrawal rate compares to the starting rate. Risk-based guardrails trigger on dollar portfolio thresholds solved from your target probability-of-success band — cut only when the plan's odds actually leave the band, not on the withdrawal rate alone. Amortized spending (ABW) ignores the baseline and phases and spends each year's amortized payment: the actual start-of-year portfolio spread over the remaining horizon at an expected real return, so spending self-corrects after good or bad markets and the portfolio is designed to be spent down by the horizon."
+            help="Fixed target funds the whole budget every year (today's behavior). Withdrawal-rate guardrails ration the discretionary layer path by path based on how the current withdrawal rate compares to the starting rate. Risk-based guardrails trigger on dollar portfolio thresholds solved from your target probability-of-success band, cut only when the plan's odds actually leave the band, not on the withdrawal rate alone. Amortized spending (ABW) ignores the baseline and phases and spends each year's amortized payment: the actual start-of-year portfolio spread over the remaining horizon at an expected real return, so spending self-corrects after good or bad markets and the portfolio is designed to be spent down by the horizon."
             learn={LEARN.dynamicSpendingGuardrails}
             value={e.spendingPolicy?.mode ?? 'fixedTarget'}
             options={[
@@ -326,7 +326,7 @@ export function SpendingSection() {
             <>
               <SelectField
                 label="Expected return source"
-                help="Where the amortization's expected real return comes from. Fixed uses the rate you enter (the VPW preset's approach — its published global returns, 60/40 weighted, are about 3.8%/yr real). CAPE conditions on valuations: expected stock return = 100 ÷ CAPE (the cyclically-adjusted earnings yield), blended with the bond yield at your stock share — richer valuations mean lower planned spending. TIPS yield prices the whole portfolio at a real bond yield — the most conservative reading."
+                help="Where the amortization's expected real return comes from. Fixed uses the rate you enter (the VPW preset's approach, its published global returns, 60/40 weighted, are about 3.8%/yr real). CAPE conditions on valuations: expected stock return = 100 ÷ CAPE (the cyclically-adjusted earnings yield), blended with the bond yield at your stock share, richer valuations mean lower planned spending. TIPS yield prices the whole portfolio at a real bond yield, the most conservative reading."
                 learn={LEARN.spendingBudget}
                 value={e.spendingPolicy.abw?.returnSource ?? 'fixed'}
                 options={[
@@ -390,7 +390,7 @@ export function SpendingSection() {
               ) : null}
               <SelectField
                 label="Amortize to"
-                help="The horizon the balance is spread over. Planning age uses the household's plan horizon. The survival percentiles amortize to the age you (for couples: either of you) have a 25% or 10% chance of reaching — the unadjusted SSA life table, with no health-questionnaire adjustment even if your planning age used one — a shorter, spendier horizon than a conservative planning age."
+                help="The horizon the balance is spread over. Planning age uses the household's plan horizon. The survival percentiles amortize to the age you (for couples: either of you) have a 25% or 10% chance of reaching, the unadjusted SSA life table, with no health-questionnaire adjustment even if your planning age used one, a shorter, spendier horizon than a conservative planning age."
                 learn={LEARN.longevity}
                 value={e.spendingPolicy.abw?.horizon ?? 'planningAge'}
                 options={[
@@ -421,7 +421,7 @@ export function SpendingSection() {
               year&apos;s recurring lifestyle spending is the amortized payment from the actual start-of-year
               portfolio. Healthcare, debt payments, property costs, insurance premiums, and one-time goals stay
               separately modeled on top. Because the payment is recomputed every year, spending self-corrects after
-              market surprises instead of failing — the trade-off is a variable budget.{' '}
+              market surprises instead of failing. The trade-off is a variable budget.{' '}
               <button
                 type="button"
                 className="btn btn-secondary btn-small"
@@ -464,12 +464,12 @@ export function SpendingSection() {
                   <>no raise threshold was solved for this band</>
                 )}
                 . Thresholds are in today's dollars, solved under the standard smooth-randomness market model
-                (12% return volatility, 60/40 weighting) with your plan's inflation — custom Monte Carlo page
+                (12% return volatility, 60/40 weighting) with your plan's inflation, custom Monte Carlo page
                 model settings are not reflected here. Re-solve after meaningful plan changes.
               </p>
             ) : (
               <p className="card-hint">
-                No dollar thresholds solved yet — until they are computed, this policy holds spending steady (it
+                No dollar thresholds solved yet. Until they are computed, this policy holds spending steady (it
                 behaves like fixed target). Solving runs a bounded Monte Carlo search in the background under the
                 standard smooth-randomness market model.
               </p>
@@ -478,7 +478,7 @@ export function SpendingSection() {
               <p className="card-hint">
                 <strong>Heads up:</strong> the plan's success probability stays below your{' '}
                 {thresholdSolution.lowerBandPct}% cut edge even with several times the current portfolio, so no
-                cut threshold exists — the plan is underfunded for this band, not safe. Consider lower target
+                cut threshold exists. The plan is underfunded for this band, not safe. Consider lower target
                 spending or a lower band.
               </p>
             ) : null}
@@ -579,8 +579,8 @@ export function SpendingSection() {
           </button>
         </div>
         <p className="field-hint" style={{ margin: '0.6rem 0 0.25rem' }}>
-          The smile is the shape of <em>average</em> retiree spending — a decline that late healthcare partly
-          reverses (the preset approximates it as two downward steps); the smirk is the <em>median</em> — a steady
+          The smile is the shape of <em>average</em> retiree spending, a decline that late healthcare partly
+          reverses (the preset approximates it as two downward steps); the smirk is the <em>median</em>: a steady
           real decline with no late rise, per Blanchett&apos;s spending research. Or pick your own annual real
           drift, compiled to 5-year phase steps:
         </p>

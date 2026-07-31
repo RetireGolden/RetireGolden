@@ -43,7 +43,7 @@ export function acaVetoExplanation(veto: AcaActionabilityVeto): string {
     : `The marketplace (ACA) evidence for ${yearsText} could not be priced as actionable on the full projection.`
   const tail =
     veto.vetoedCandidateIds.length > 0
-      ? ' A blocked candidate row can still show favorable deltas — those figures leave the unpriced ACA effect out.'
+      ? ' A blocked candidate row can still show favorable deltas. Those figures leave the unpriced ACA effect out.'
       : ''
   return (
     `${lead} Conversion income changes the ACA premium tax credit, and the projection cannot measure that change in ` +

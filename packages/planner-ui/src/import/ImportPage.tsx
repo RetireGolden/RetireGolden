@@ -60,7 +60,7 @@ const SOURCES: Array<{ id: SourceId; title: string; desc: string }> = [
   {
     id: 'generic',
     title: 'Spreadsheet / RPM CSV',
-    desc: 'Any sheet with one row per account — including the Bogleheads Retiree Portfolio Model — via column mapping.',
+    desc: 'Any sheet with one row per account, including the Bogleheads Retiree Portfolio Model, via column mapping.',
   },
   {
     id: 'tenforty',
@@ -285,8 +285,8 @@ export function ImportPage() {
     <div className="import-page">
       <h1>Import &amp; migrate</h1>
       <p className="card-hint">
-        Start a RetireGolden plan from files you already have. Every file is read entirely on this device —
-        nothing is uploaded anywhere — and you review exactly what mapped before anything is saved. Restoring
+        Start a RetireGolden plan from files you already have. Every file is read entirely on this device, 
+        nothing is uploaded anywhere, and you review exactly what mapped before anything is saved. Restoring
         a RetireGolden backup lives on the <Link to="/">planner home</Link>.
       </p>
 
@@ -345,7 +345,7 @@ export function ImportPage() {
             <>
               <p className="card-hint">
                 Copy the values from last year&apos;s Form 1040. Zero is fine for any line that doesn&apos;t
-                apply. No PDF upload — you stay in control of what is entered.
+                apply. No PDF upload. You stay in control of what is entered.
               </p>
               <div className="form-grid">
                 <SelectField
@@ -361,7 +361,7 @@ export function ImportPage() {
                 />
                 <SelectField
                   label="State of residence"
-                  help="Not read off the return — a 1040 only carries a mailing address, and your state changes the state-tax estimate."
+                  help="Not read off the return. A 1040 only carries a mailing address, and your state changes the state-tax estimate."
                   value={tenForty.state}
                   options={US_STATES}
                   placeholder="Select your state…"
@@ -371,16 +371,16 @@ export function ImportPage() {
                 {tenForty.filingStatus === 'marriedFilingJointly' ? (
                   <DateField label="Spouse's date of birth" value={tenForty.spouseDob ?? ''} onCommit={(v) => set1040({ spouseDob: v })} />
                 ) : null}
-                <MoneyField label="Line 1a — wages" value={tenForty.wages} onCommit={(v) => set1040({ wages: v ?? 0 })} />
-                <MoneyField label="Line 2a — tax-exempt interest" value={tenForty.taxExemptInterest} onCommit={(v) => set1040({ taxExemptInterest: v ?? 0 })} />
-                <MoneyField label="Line 2b — taxable interest" value={tenForty.taxableInterest} onCommit={(v) => set1040({ taxableInterest: v ?? 0 })} />
-                <MoneyField label="Line 3a — qualified dividends" value={tenForty.qualifiedDividends} onCommit={(v) => set1040({ qualifiedDividends: v ?? 0 })} />
-                <MoneyField label="Line 3b — ordinary dividends" value={tenForty.ordinaryDividends} onCommit={(v) => set1040({ ordinaryDividends: v ?? 0 })} />
-                <MoneyField label="Line 4b — IRA distributions (taxable)" value={tenForty.iraDistributions} onCommit={(v) => set1040({ iraDistributions: v ?? 0 })} />
-                <MoneyField label="Line 5b — pensions & annuities (taxable)" value={tenForty.pensionsAndAnnuities} onCommit={(v) => set1040({ pensionsAndAnnuities: v ?? 0 })} />
-                <MoneyField label="Line 6a — Social Security benefits" value={tenForty.socialSecurityBenefits} onCommit={(v) => set1040({ socialSecurityBenefits: v ?? 0 })} />
-                <MoneyField label="Line 7 — capital gain or loss" help="Enter a loss as a negative number." value={tenForty.capitalGain} onCommit={(v) => set1040({ capitalGain: v ?? 0 })} />
-                <MoneyField label="Line 11 — adjusted gross income" value={tenForty.agi} onCommit={(v) => set1040({ agi: v ?? 0 })} />
+                <MoneyField label="Line 1a: wages" value={tenForty.wages} onCommit={(v) => set1040({ wages: v ?? 0 })} />
+                <MoneyField label="Line 2a: tax-exempt interest" value={tenForty.taxExemptInterest} onCommit={(v) => set1040({ taxExemptInterest: v ?? 0 })} />
+                <MoneyField label="Line 2b: taxable interest" value={tenForty.taxableInterest} onCommit={(v) => set1040({ taxableInterest: v ?? 0 })} />
+                <MoneyField label="Line 3a: qualified dividends" value={tenForty.qualifiedDividends} onCommit={(v) => set1040({ qualifiedDividends: v ?? 0 })} />
+                <MoneyField label="Line 3b: ordinary dividends" value={tenForty.ordinaryDividends} onCommit={(v) => set1040({ ordinaryDividends: v ?? 0 })} />
+                <MoneyField label="Line 4b: IRA distributions (taxable)" value={tenForty.iraDistributions} onCommit={(v) => set1040({ iraDistributions: v ?? 0 })} />
+                <MoneyField label="Line 5b: pensions & annuities (taxable)" value={tenForty.pensionsAndAnnuities} onCommit={(v) => set1040({ pensionsAndAnnuities: v ?? 0 })} />
+                <MoneyField label="Line 6a: Social Security benefits" value={tenForty.socialSecurityBenefits} onCommit={(v) => set1040({ socialSecurityBenefits: v ?? 0 })} />
+                <MoneyField label="Line 7: capital gain or loss" help="Enter a loss as a negative number." value={tenForty.capitalGain} onCommit={(v) => set1040({ capitalGain: v ?? 0 })} />
+                <MoneyField label="Line 11: adjusted gross income" value={tenForty.agi} onCommit={(v) => set1040({ agi: v ?? 0 })} />
               </div>
               <div className="picker-actions">
                 <button type="button" className="btn btn-primary" onClick={buildTenFortyDraft}>

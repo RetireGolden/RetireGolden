@@ -120,7 +120,7 @@ export const widowsPenalty: Detector = {
       (bracketJumpToday > 100
         ? `On the survivor's projected income in ${singleFiledYearObj!.year}, single brackets and the smaller deduction cost about $${bracketJumpToday.toLocaleString('en-US')} more (today's $) than the same income filed jointly. `
         : `Single filing cuts tax bracket ceilings in half, raising their tax rate. `) +
-      `Converting traditional assets to Roth before ${firstSingleYear} would use joint brackets — preview that window as a scenario.` +
+      `Converting traditional assets to Roth before ${firstSingleYear} would use joint brackets. Preview that window as a scenario.` +
       ssa44Note
 
     const card: InsightCard = {

@@ -47,7 +47,7 @@ export class RouteErrorBoundary extends Component<Props, State> {
           <h1>Something went wrong</h1>
           <p className="muted">
             {staleChunk
-              ? 'Part of the app failed to load — this can happen right after an update, or while offline. Reloading usually fixes it.'
+              ? 'Part of the app failed to load. This can happen right after an update, or while offline. Reloading usually fixes it.'
               : 'This page hit an unexpected error. You can try reloading, or go back to the home page.'}
           </p>
           <pre className="error-boundary-stack">{this.state.error.message}</pre>

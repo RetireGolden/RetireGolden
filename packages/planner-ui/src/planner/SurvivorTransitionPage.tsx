@@ -49,7 +49,7 @@ function ScenarioTable({ rows, personName }: { rows: SurvivorScenarioRow[]; pers
   if (rows.length === 0) {
     return (
       <p className="small">
-        No earlier-death timings to sweep for {personName} — the standard ages (70–90) all fall outside their current
+        No earlier-death timings to sweep for {personName}. The standard ages (70–90) all fall outside their current
         age and planning age.
       </p>
     )
@@ -104,7 +104,7 @@ function ScenarioTable({ rows, personName }: { rows: SurvivorScenarioRow[]; pers
                   </>
                 ) : (
                   <>
-                    —<div className="small">no surcharge to relieve at this timing</div>
+                   , <div className="small">no surcharge to relieve at this timing</div>
                   </>
                 )}
               </td>
@@ -211,7 +211,7 @@ export function SurvivorTransitionPage() {
           with earlier first-death timings so you can see the transition while there is still time to prepare for it:
           the filing-status change, the surviving spouse's Social Security, the tax on similar income, Medicare's
           income surcharge (IRMAA), and the levers available in the joint years. Each timing is a scenario you choose
-          to look at — nothing here is a prediction.{' '}
+          to look at. Nothing here is a prediction.{' '}
           <LearnLink slug="widows-penalty-and-survivor-brackets" label="Learn about the widow's penalty" />
         </p>
         <ul className="small">
@@ -219,8 +219,8 @@ export function SurvivorTransitionPage() {
             <strong>IRMAA relief (SSA-44):</strong> the death of a spouse is a qualifying life-changing event, so the
             survivor can ask Social Security to price IRMAA on current income instead of the two-year lookback. The
             column shows the premium difference between modeling that relief and not. The model is deliberately
-            conservative in the first survivor year — its income estimate still references the death year's joint
-            income, where a real filing could use the survivor's own — so year-one relief can be understated.{' '}
+            conservative in the first survivor year, its income estimate still references the death year's joint
+            income, where a real filing could use the survivor's own, so year-one relief can be understated.{' '}
             <LearnLink slug={LEARN.ssa44.slug} label={LEARN.ssa44.label} />
           </li>
           <li>
@@ -261,7 +261,7 @@ export function SurvivorTransitionPage() {
       ) : analysis.error ? (
         <div className="card">
           <div className="callout callout--warn" role="alert">
-            The death-timing sweep could not run on this plan. The rest of the planner is unaffected — if this
+            The death-timing sweep could not run on this plan. The rest of the planner is unaffected, if this
             persists, check the plan for validation issues on the Enter screens.
           </div>
         </div>
@@ -270,7 +270,7 @@ export function SurvivorTransitionPage() {
           {analysis.failedTimings > 0 ? (
             <div className="callout callout--warn" role="alert">
               {analysis.failedTimings} death timing{analysis.failedTimings === 1 ? '' : 's'} could not be simulated and{' '}
-              {analysis.failedTimings === 1 ? 'is' : 'are'} not shown — the rows below are still exact for their own
+              {analysis.failedTimings === 1 ? 'is' : 'are'} not shown. The rows below are still exact for their own
               timings.
             </div>
           ) : null}

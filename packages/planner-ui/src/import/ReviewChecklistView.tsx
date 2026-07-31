@@ -26,7 +26,7 @@ export function ReviewChecklist({ items }: { items: ImportReviewItem[] }) {
             <ul>
               {group.map((item, i) => (
                 <li key={`${status}-${i}`}>
-                  <strong>{item.source}</strong> — {item.detail}
+                  <strong>{item.source}</strong>: {item.detail}
                 </li>
               ))}
             </ul>

@@ -162,7 +162,7 @@ function headlineSection(model: ReportModel): string {
   const rows = [
     ['Ending net worth', fmtMoney(headline.endingNetWorth), `in ${model.endYear}`],
     ['Ending after-tax estate', fmtMoney(headline.endingAfterTaxEstate), 'net of heir tax on pre-tax balances'],
-    ['Money lasts', escapeHtml(lasts), 'deterministic exact-ledger run'],
+    ['Money lasts', escapeHtml(lasts), 'deterministic year-by-year run'],
     ['Lifetime tax + penalties', fmtMoney(headline.lifetimeTaxesAndPenalties), 'federal + state + penalties'],
     ['Lifetime Roth conversions', fmtMoney(headline.lifetimeRothConversions), 'executed by the ledger'],
     ['FI target', fmtMoney(headline.fiNumber), 'today-dollar portfolio target'],
@@ -442,7 +442,7 @@ function lossReasonForCandidate(
   validation: ExactLedgerValidation | null,
   candidate: ExactLedgerTournament['candidates'][number],
 ): string {
-  if (tournament.winnerCandidateId === candidate.id) return 'Selected exact-ledger winner.'
+  if (tournament.winnerCandidateId === candidate.id) return 'Selected winner on the full year-by-year projection.'
   if (candidate.afterTaxEstateDelta <= 1) return 'Did not improve after-tax estate over the current plan.'
   if (tournament.acaActionabilityVeto?.vetoedCandidateIds.includes(candidate.id)) {
     const years = acaVetoYears(tournament.acaActionabilityVeto)
@@ -453,7 +453,7 @@ function lossReasonForCandidate(
   }
   const benchmark = validation?.afterTaxEstateDelta ?? Math.max(0, ...tournament.candidates.map((row) => row.afterTaxEstateDelta))
   if (benchmark > candidate.afterTaxEstateDelta) return `Trailed the selected recommendation by ${fmtMoney(benchmark - candidate.afterTaxEstateDelta)}.`
-  if (tournament.winnerSource === 'incumbent') return 'The current conversion strategy remained the best result found.'
+  if (tournament.winnerSource === 'incumbent') return 'The current conversion strategy remained the top-ranked result found.'
   if (tournament.winnerSource === 'none') return 'No candidate cleared the recommendation threshold.'
   return 'Not selected under the active objective and guardrails.'
 }

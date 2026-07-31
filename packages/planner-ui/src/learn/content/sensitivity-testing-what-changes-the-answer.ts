@@ -83,7 +83,7 @@ export const sensitivityTestingWhatChangesAnswerArticle: LearningArticle = {
     { type: 'heading', text: 'Why it matters in RetireGolden' },
     {
       type: 'prose',
-      md: 'The **Scenarios** page is built for sensitivity testing. Each scenario stores a small patch on top of the base plan, so you can keep editing the baseline without rebuilding every comparison. **Monte Carlo** then adds market variation around the same assumptions.',
+      md: 'The **Scenarios** page is built for sensitivity testing. Each scenario stores only the handful of fields you changed on top of the base plan, so you can keep editing the baseline without rebuilding every comparison. **Monte Carlo** then adds market variation around the same assumptions.',
     },
     { type: 'heading', text: 'Common mistakes' },
     {

@@ -216,7 +216,7 @@ function BridgePanel() {
       <div className="card">
         <h2>Social Security bridge</h2>
         <p className="card-hint">
-          Your plan already holds a bridge ladder covering the gap years — see it on the Income floor page.{' '}
+          Your plan already holds a bridge ladder covering the gap years, see it on the Income floor page.{' '}
           <LearnLink {...LEARN.socialSecurityBridge} />
         </p>
       </div>
@@ -294,7 +294,7 @@ function BridgePanel() {
     <div className="card">
       <h2>Social Security bridge</h2>
       <p className="card-hint">
-        Delaying is the cheapest inflation-protected annuity you can buy — the bridge pays you the forgone age-62
+        Delaying is the cheapest inflation-protected annuity you can buy. The bridge pays you the forgone age-62
         benefit until your claim starts, so the delay never cuts lifestyle. Sized from your own plan; quoted on
         Treasury real yields as of {EMBEDDED_REAL_YIELD_CURVE.asOfIso}. <LearnLink {...LEARN.socialSecurityBridge} />
       </p>
@@ -327,7 +327,7 @@ function BridgePanel() {
       <div className="form-grid">
         <SelectField
           label="Fund the bridge from"
-          help="The ladder cost is withdrawn from this account in the purchase year — a transfer into the ladder, not spending."
+          help="The ladder cost is withdrawn from this account in the purchase year, a transfer into the ladder, not spending."
           value={funding?.value ?? ''}
           options={fundingOptions.length > 0 ? fundingOptions : [{ value: '', label: 'No cash/taxable account' }]}
           onCommit={setFundingId}
@@ -348,7 +348,7 @@ function BridgePanel() {
       </div>
       {!funding ? (
         <p className="card-hint">
-          Add a cash or taxable account to fund the bridge — without one there is nothing to buy the ladder with, so
+          Add a cash or taxable account to fund the bridge, without one there is nothing to buy the ladder with, so
           the add and compare actions stay off.
         </p>
       ) : null}
@@ -381,7 +381,7 @@ function BridgePanel() {
           </table>
           <p className="card-hint">
             All three run on the same steady-markets ledger and the same 500 seeded market paths, so every difference
-            is the strategy — not luck of the draw.
+            is the strategy, not luck of the draw.
           </p>
         </div>
       ) : null}
@@ -463,8 +463,8 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
   return (
     <div>
       <p className="card-hint">
-        Each claim-age combination is run through your full plan — taxes, Roth conversions, IRMAA, ACA, and RMDs
-        included — and ranked by the objective you choose{' '}
+        Each claim-age combination is run through your full plan: taxes, Roth conversions, IRMAA, ACA, and RMDs
+        included, and ranked by the objective you choose{' '}
         <HelpTip text="Ending net worth minus the income tax heirs owe on inherited pre-tax (traditional) balances, at the heir tax rate in Assumptions. This is the deterministic, single-planning-age view; the Benefits-only tab adds the mortality-weighted insurance angle." />.
         Results assume your expected returns; use the robustness check to see how the ranking holds up across markets.
       </p>
@@ -482,7 +482,7 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
       {best ? (
         <div className="callout callout--info">
           <strong>Best by {objectivePolicies[objectiveId].label.toLowerCase()}: claim at {ageLabel(best.claimByPersonId, personIds)}</strong>
-          {personIds.length === 2 ? ` (${personIds.map(personName).join(' / ')})` : ''} — after-tax estate{' '}
+          {personIds.length === 2 ? ` (${personIds.map(personName).join(' / ')})` : ''}, after-tax estate{' '}
           {fmtMoneyCompact(best.summary.endingAfterTaxEstate)}
           {currentRow && keyOf(currentRow) !== keyOf(best) ? (
             <>
@@ -494,7 +494,7 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
               </span>
               ).
             </>
-          ) : ' — your current choice.'}
+          ) : ', your current choice.'}
           {objectiveId !== 'max-after-tax-estate' ? (
             <>
               {' '}
@@ -542,7 +542,7 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
       {refined && best ? (
         <div className="callout callout--info" style={{ marginTop: '0.75rem' }}>
           <strong>To the month: claim at {personIds.map((id) => fmtClaim(refined.claimByPersonId[id]!)).join(' / ')}</strong>
-          {personIds.length === 2 ? ` (${personIds.map(personName).join(' / ')})` : ''} — after-tax estate{' '}
+          {personIds.length === 2 ? ` (${personIds.map(personName).join(' / ')})` : ''}, after-tax estate{' '}
           {fmtMoneyCompact(refined.summary.endingAfterTaxEstate)}
           {refined.summary.endingAfterTaxEstate > best.summary.endingAfterTaxEstate ? (
             <>
@@ -550,7 +550,7 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
               (<span className="delta-pos">+{fmtMoneyCompact(refined.summary.endingAfterTaxEstate - best.summary.endingAfterTaxEstate)}</span>{' '}
               over the whole-year pick).
             </>
-          ) : ' — the whole-year pick is already optimal to the month.'}
+          ) : '. The whole-year pick is already optimal to the month.'}
           {personIds.some((id) => refined.claimByPersonId[id]!.months > 0) ? (
             <div style={{ marginTop: '0.6rem' }}>
               <button type="button" className="btn btn-primary btn-small" disabled={readOnly} onClick={() => applyMonthly(refined.claimByPersonId)}>
@@ -608,15 +608,16 @@ function CoupleStrategyPanel({ personName, best }: { personName: (id: string) =>
         higherClaim >= lowerClaim ? (
           <>
             {' '}
-            The best strategy above follows the common pattern: <strong>{lowerName}</strong> claims at {lowerClaim} and{' '}
-            <strong>{higherName}</strong> delays to {higherClaim}, locking in the larger survivor check.
+            The top-ranked strategy above follows the common pattern: <strong>{lowerName}</strong> claims at{' '}
+            {lowerClaim} and <strong>{higherName}</strong> delays to {higherClaim}, locking in the larger survivor
+            check.
           </>
         ) : (
           <>
             {' '}
-            Here the best strategy has <strong>{higherName}</strong> ({higherClaim}) claim before{' '}
-            <strong>{lowerName}</strong> ({lowerClaim}) — taxes, longevity, or portfolio assumptions outweigh the usual
-            survivor-protection delay.
+            Here the top-ranked strategy has <strong>{higherName}</strong> ({higherClaim}) claim before{' '}
+            <strong>{lowerName}</strong> ({lowerClaim}), because taxes, longevity, or portfolio assumptions outweigh
+            the usual survivor-protection delay.
           </>
         )
     }
@@ -725,7 +726,7 @@ function CoupleHeatmap({
   return (
     <>
       <p className="card-hint" style={{ marginTop: '0.5rem' }}>
-        After-tax estate by claim age — rows: {personName(rowId!)}, columns: {personName(colId!)}. Greener is better;
+        After-tax estate by claim age, rows: {personName(rowId!)}, columns: {personName(colId!)}. Greener is better;
         click a cell to apply it.
       </p>
       <div className="year-table-wrap" style={{ border: 'none' }}>
@@ -769,7 +770,7 @@ function CoupleHeatmap({
 /**
  * Break-even education (V7 phase 2). The simple cumulative-benefit lens for one
  * person's own retirement benefit, with COLA and an optional investment return.
- * Deliberately lean copy — the conceptual narrative is the V9 Learning Center's
+ * Deliberately lean copy. The conceptual narrative is the V9 Learning Center's
  * job; the In-your-plan sweep is the complete answer.
  */
 function BreakEvenTab({ personIds, personName }: { personIds: string[]; personName: (id: string) => string }) {
@@ -826,10 +827,10 @@ function BreakEvenTab({ personIds, personName }: { personIds: string[]; personNa
     <div>
       <p className="card-hint">
         Claim early and collect sooner, or wait for a bigger check? This compares the cumulative lifetime benefit from{' '}
-        {personName(selectedId)}'s own retirement benefit at each claim age — COLA {cola}%, checks invested at the chosen
+        {personName(selectedId)}'s own retirement benefit at each claim age, COLA {cola}%, checks invested at the chosen
         return{' '}
         <HelpTip text="Pedagogical view. It ignores spousal/survivor benefits, taxes, and the rest of your portfolio; the In-your-plan sweep is the complete answer. A higher assumed return rewards claiming early, pushing break-even later." />.
-        It's the simple lens — the In-your-plan tab is the complete one.
+        It's the simple lens. The In-your-plan tab is the complete one.
       </p>
 
       {personSelect}
@@ -899,13 +900,13 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
       <p className="card-hint">
         The actuarial view: expected lifetime benefits weighted by the chance of being alive to receive them (SSA
         mortality), ignoring your portfolio and taxes{' '}
-        <HelpTip text="The standard actuarial method: each future year's benefit is multiplied by the probability of survival and discounted to today. This isolates Social Security's longevity-insurance value — useful alongside the In-your-plan tab, which adds taxes and portfolio growth." />. When this disagrees with the In-your-plan tab, the gap is how much taxes and growth are pulling your answer.
+        <HelpTip text="The standard actuarial method: each future year's benefit is multiplied by the probability of survival and discounted to today. This isolates Social Security's longevity-insurance value, useful alongside the In-your-plan tab, which adds taxes and portfolio growth." />. When this disagrees with the In-your-plan tab, the gap is how much taxes and growth are pulling your answer.
       </p>
       <div className="form-grid" style={{ maxWidth: '22rem' }}>
         <div className="field">
           <span className="field-label-row">
             <span className="field-label">Real discount rate: {discountPct}%</span>
-            <HelpTip text="The real (after-inflation) rate used to value future benefits — conventionally near the long-term TIPS yield (~2%). Higher rates favor claiming earlier; a very high personal rate (impatience or poor health) can make 62 optimal." />
+            <HelpTip text="The real (after-inflation) rate used to value future benefits, conventionally near the long-term TIPS yield (~2%). Higher rates favor claiming earlier; a very high personal rate (impatience or poor health) can make 62 optimal." />
           </span>
           <input type="range" min={0} max={8} step={0.5} value={discountPct} onChange={(e) => setDiscountPct(Number(e.target.value))} />
         </div>
@@ -914,7 +915,7 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
       {best ? (
         <div className="callout callout--info">
           <strong>Highest expected value: claim at {ageLabel(best.claimByPersonId, personIds)}</strong>
-          {personIds.length === 2 ? ` (${personIds.map(personName).join(' / ')})` : ''} — expected PV{' '}
+          {personIds.length === 2 ? ` (${personIds.map(personName).join(' / ')})` : ''}, expected PV{' '}
           {fmtMoneyCompact(best.expectedPv)}.
           {keyOf(best.claimByPersonId) !== keyOf(current) ? (
             <div style={{ marginTop: '0.6rem' }}>
@@ -1115,7 +1116,7 @@ function SurvivorSwitchingPanel({ discountPct }: { discountPct: number }) {
         As a widow(er) you can hold both a survivor benefit and your own, and switch between them. Survivor benefits stop
         growing at your full retirement age while your own grows to 70, so the order matters. Ranked by expected value at{' '}
         {discountPct}%{' '}
-        <HelpTip text="Illustrative: the survivor base is the deceased's actual (claim-age-adjusted) benefit, the RIB-LIM widow's-limit caps it at 82.5% of the deceased's PIA when they claimed early, and the early-claim widow(er) reduction (up to 28.5% at 60) applies before the survivor's FRA — the same computation the projection ledger uses. Only one benefit is paid at a time — the larger of those claimed." />.
+        <HelpTip text="Illustrative: the survivor base is the deceased's actual (claim-age-adjusted) benefit, the RIB-LIM widow's-limit caps it at 82.5% of the deceased's PIA when they claimed early, and the early-claim widow(er) reduction (up to 28.5% at 60) applies before the survivor's FRA, the same computation the projection ledger uses. Only one benefit is paid at a time, the larger of those claimed." />.
       </p>
       <div className="year-table-wrap" style={{ border: 'none' }}>
         <table className="claim-table">

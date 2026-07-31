@@ -35,7 +35,7 @@ function AssetClassAssumptions() {
       <p className="card-hint">
         Used by accounts with "Model asset classes" turned on: growth blends these returns, Monte Carlo shocks each
         class with long-horizon historical volatility and correlations, and brokerage yields drive annual tax drag.
-        Defaults are documented planning assumptions — edit them to match your own outlook.
+        Defaults are documented planning assumptions. Edit them to match your own outlook.
         {hasOverrides ? (
           <>
             {' '}
@@ -108,7 +108,7 @@ export function AssumptionsSection() {
           />
           <PercentField
             label="State effective tax (override)"
-            help="Leave at 0 to use the modeled per-state brackets for your state(s) of residence. Set a flat rate above 0 to override the model everywhere — useful to correct a state, or to approximate a state that isn't modeled yet."
+            help="Leave at 0 to use the modeled per-state brackets for your state(s) of residence. Set a flat rate above 0 to override the model everywhere, useful to correct a state, or to approximate a state that isn't modeled yet."
             hint="0 = use modeled state brackets."
             learn={LEARN.stateTaxOverride}
             source={provenanceSource('state-income-tax')}

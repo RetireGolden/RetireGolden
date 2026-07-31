@@ -75,7 +75,7 @@ function LadderRow({ ladder, index, startYear }: { ladder: TipsLadder; index: nu
         <TextField label="Name" value={ladder.name} onCommit={(v) => edit((l) => void (l.name = v || 'TIPS ladder'))} />
         <SelectField
           label="Purpose"
-          help="Labeling only — a bridge covers the years until a delayed Social Security claim; a floor covers essential spending. The math is the same."
+          help="Labeling only: a bridge covers the years until a delayed Social Security claim; a floor covers essential spending. The math is the same."
           value={ladder.purpose}
           options={[
             { value: 'floor', label: 'Essential-spending floor' },
@@ -139,7 +139,7 @@ function LadderRow({ ladder, index, startYear }: { ladder: TipsLadder; index: nu
         <>
           <p className="card-hint">
             Quoted cost <strong>{fmtMoney(quote.totalCost)}</strong> (today's $) for {quote.rungs.length} rung
-            {quote.rungs.length === 1 ? '' : 's'} — real yields as of {CURVE.asOfIso}. That's{' '}
+            {quote.rungs.length === 1 ? '' : 's'}, real yields as of {CURVE.asOfIso}. That's{' '}
             {((ladder.annualRealAmount / quote.totalCost) * 100).toFixed(2)}% of cost per year, inflation-protected.
           </p>
           <details>
@@ -167,7 +167,7 @@ function LadderRow({ ladder, index, startYear }: { ladder: TipsLadder; index: nu
               </table>
             </div>
             <p className="card-hint">
-              Execute at your brokerage or TreasuryDirect — RetireGolden never places orders. Annual coupons and par-rung
+              Execute at your brokerage or TreasuryDirect. RetireGolden never places orders. Annual coupons and par-rung
               pricing are planning simplifications; real quotes differ slightly.
             </p>
           </details>
@@ -179,7 +179,7 @@ function LadderRow({ ladder, index, startYear }: { ladder: TipsLadder; index: nu
   )
 }
 
-/** Funded-ratio card — shared with the Results page (step 4 of the plan). */
+/** Funded-ratio card, shared with the Results page (step 4 of the plan). */
 export function FundedRatioCard() {
   const { plan } = usePlan()
   const { result, deflate } = useProjection(plan)
@@ -281,9 +281,9 @@ function LivePricesCard() {
         <>
           <p className="card-hint">
             {snapshot.priceDateIso === null
-              ? `${snapshot.tips.length} TIPS from an imported file — dated by your download (the FedInvest CSV carries no date)`
+              ? `${snapshot.tips.length} TIPS from an imported file, dated by your download (the FedInvest CSV carries no date)`
               : `${snapshot.tips.length} TIPS priced ${snapshot.priceDateIso}`}{' '}
-            — per $100 face, before inflation index ratio.
+           , per $100 face, before inflation index ratio.
           </p>
           {/* An imported or previous-day snapshot is not fresh: keep the fetch available. */}
           {snapshot.source === 'import' || snapshot.priceDateIso !== latestPriceDateIso() ? (
@@ -373,7 +373,7 @@ export function IncomeFloorSection() {
       <div className="card">
         <h2>TIPS ladders</h2>
         <p className="card-hint">
-          A TIPS ladder turns a lump sum into guaranteed, inflation-adjusted income — a DIY real pension for a Social
+          A TIPS ladder turns a lump sum into guaranteed, inflation-adjusted income: a DIY real pension for a Social
           Security bridge or an essential-spending floor. Cash flows run through your full ledger with real TIPS
           taxation (federally ordinary, state-exempt, accretion taxed as it accrues).{' '}
           <LearnLink {...LEARN.tipsLadders} />

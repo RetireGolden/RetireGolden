@@ -22,8 +22,8 @@ import {
 } from './assumptionsExport'
 
 const PROVENANCE_CHIP: Record<AssumptionProvenance, { label: string; title: string }> = {
-  'user-set': { label: 'You set this', title: 'Entered or changed by you — other tools need this value to match your run.' },
-  'app-default': { label: 'App default', title: "RetireGolden's shipped default — you have not changed it." },
+  'user-set': { label: 'You set this', title: 'Entered or changed by you: other tools need this value to match your run.' },
+  'app-default': { label: 'App default', title: "RetireGolden's shipped default. You have not changed it." },
   'published-source': { label: 'Published source', title: 'Comes from a cited publication (statute, agency figure, or documented dataset).' },
 }
 
@@ -38,10 +38,10 @@ export function AssumptionsCardPage() {
       <div className="card">
         <h2>Your assumptions, on one card</h2>
         <p className="card-hint">
-          Every number RetireGolden shows follows from the assumptions below — the same plan run through tools with
+          Every number RetireGolden shows follows from the assumptions below. The same plan run through tools with
           different assumptions (or hidden ones) will disagree. Each value is tagged with where it comes from, and the
           copy buttons export the whole card so you can hand your exact assumptions to another tool or a professional
-          and see where the inputs differ. (The rest of the plan — incomes, expenses, goals — travels in a plan backup
+          and see where the inputs differ. (The rest of the plan, including incomes, expenses, and goals, travels in a plan backup
           from the planner home.)
         </p>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -108,7 +108,7 @@ export function AssumptionsCardPage() {
       <div className="card">
         <p className="field-hint" style={{ margin: 0 }}>
           Monte Carlo results also depend on the market model, path count, and seed chosen on the{' '}
-          <Link to={`/plan/${plan.id}/monte-carlo`}>Monte Carlo page</Link> — your expected returns and inflation above
+          <Link to={`/plan/${plan.id}/monte-carlo`}>Monte Carlo page</Link>, your expected returns and inflation above
           stay the center of every model's distribution. To change anything on this card, use{' '}
           <Link to={`/plan/${plan.id}/assumptions`}>Assumptions</Link>, <Link to={`/plan/${plan.id}/accounts`}>Accounts</Link>,
           or <Link to={`/plan/${plan.id}/household`}>Household</Link>.

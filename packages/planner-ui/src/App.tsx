@@ -194,7 +194,7 @@ export function App({ reportBranding, planStore, readOnly }: PlannerAppProps = {
       </main>
       <footer className="app-footer">
         <span className="muted small">
-          Educational only — not tax, legal, financial, or medical advice. All data stays on this device.{' '}
+          Educational only. Not tax, legal, financial, or medical advice. All data stays on this device.{' '}
           <NavLink to="/disclaimer">Full disclaimer</NavLink>
         </span>
       </footer>

@@ -153,7 +153,7 @@ describe('WhyRecommendationPanel', () => {
     )
     const text = container.textContent!
     expect(text).toContain('Maximize after-tax estate')
-    expect(text).toContain('Fill the 22% bracket — winner')
+    expect(text).toContain('Fill the 22% bracket (winner)')
     // Margin over the runner-up: 65k − 41k.
     expect(text).toContain('$24,000')
     // Beat the solver's own schedule.
@@ -189,7 +189,7 @@ describe('WhyRecommendationPanel', () => {
     )
     const text = container.textContent!
     expect(text).toContain('your applied optimizer schedule')
-    expect(text).toContain('Your current plan (baseline) — winner')
+    expect(text).toContain('Your current plan (baseline) (winner)')
     // The best challenger loses by $5,000, so the incumbent's margin is $5,000.
     expect(text).toContain('$5,000')
     unmount()
@@ -276,7 +276,7 @@ describe('WhyRecommendationPanel', () => {
     expect(text).toContain('sourced ACA tax parameters for those years are not yet published')
     expect(text).toContain('no conversion schedule is presented as actionable')
     // The blocked row is annotated; the merely-negative row is not.
-    expect(text).toContain('Fill the 10% bracket — not actionable (unpriced ACA years)')
+    expect(text).toContain('Fill the 10% bracket (not actionable (unpriced ACA years))')
     expect(text).not.toContain('Fill the 12% bracket — not actionable')
     // No fabricated "ahead by" margin against a vetoed positive row.
     expect(text).not.toContain('ahead of the next-best')
@@ -298,7 +298,7 @@ describe('WhyRecommendationPanel', () => {
     )
     const text = container.textContent!
     expect(text).toContain("The winner is the solver's schedule")
-    expect(text).toContain("Solver's schedule (post-processed) — winner")
+    expect(text).toContain("Solver's schedule (post-processed) (winner)")
     expect(text).toContain('+$72,000')
     // Margin vs the best eligible candidate ($65k): 72k − 65k.
     expect(text).toContain('ahead of the next-best eligible alternative by $7,000')

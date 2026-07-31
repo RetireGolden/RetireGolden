@@ -43,7 +43,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     id: 'annuity',
     term: 'Annuity',
     definition:
-      'A contract, usually with an insurance company, that pays a stream of income — often for life — in exchange for money you put in.',
+      'A contract, usually with an insurance company, that pays a stream of income (often for life) in exchange for money you put in.',
   },
   {
     id: 'basis',
@@ -68,7 +68,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     id: 'effective-tax-rate',
     term: 'Effective tax rate',
     definition:
-      'The average share of your income that goes to tax — total tax divided by total income. It is usually lower than your top bracket.',
+      'The average share of your income that goes to tax: total tax divided by total income. It is usually lower than your top bracket.',
   },
   {
     id: 'fra',
@@ -96,7 +96,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     term: 'LTC',
     expansion: 'long-term care',
     definition:
-      'Help with daily living — like a nursing home or in-home aide — that health insurance and Medicare generally do not cover.',
+      'Help with daily living (like a nursing home or in-home aide) that health insurance and Medicare generally do not cover.',
   },
   {
     id: 'magi',
@@ -109,7 +109,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     id: 'marginal-tax-rate',
     term: 'Marginal tax rate',
     definition:
-      'The tax rate on your next dollar of income — the rate of your top bracket. It drives decisions like how much to convert to Roth.',
+      'The tax rate on your next dollar of income, the rate of your top bracket. It drives decisions like how much to convert to Roth.',
   },
   {
     id: 'medicare',

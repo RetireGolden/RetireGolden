@@ -166,7 +166,7 @@ export function ChoiceDialog({
             key={choice.value}
             type="button"
             className="dialog-choice"
-            aria-label={choice.description ? `${choice.label} — ${choice.description}` : choice.label}
+            aria-label={choice.description ? `${choice.label}, ${choice.description}` : choice.label}
             onClick={() => onResult(choice.value)}
           >
             <span className="dialog-choice-label">{choice.label}</span>

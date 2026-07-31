@@ -305,7 +305,7 @@ describe('classifyPage: all eight combinations of the three signals', () => {
     const items = buildMigrationReview(identifyMigrationDocument(withName), 'all-states.pdf', { pages: withName })
 
     const cited = items
-      .filter((item) => /— (text carried over|text cut short|an image the reader cannot read|nothing the reader could read)$/.test(item.source))
+      .filter((item) => /: (text carried over|text cut short|an image the reader cannot read|nothing the reader could read)$/.test(item.source))
       .flatMap((item) => (item.detail.match(/\b\d+\b/g) ?? []).map(Number))
     for (const page of withName) expect(cited.filter((n) => n === page.page)).toHaveLength(1)
   })

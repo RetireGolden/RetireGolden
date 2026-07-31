@@ -299,7 +299,7 @@ describe('ScenariosPage comparison lifecycle', () => {
     const select = container.querySelector<HTMLSelectElement>('select')
     expect(select).toBeTruthy()
     expect(select!.options).toHaveLength(16)
-    expect(container.textContent).toContain('Fields this scenario patches:')
+    expect(container.textContent).toContain('Fields this scenario changes:')
     expect(container.textContent).toContain('/household/people')
 
     await act(async () => {
@@ -395,7 +395,7 @@ describe('ScenariosPage comparison lifecycle', () => {
     await mount(createSamplePlan(), [], true)
     const fieldset = container.querySelector('fieldset.editable-region')
     expect(fieldset?.hasAttribute('disabled')).toBe(true)
-    expect(container.textContent).toContain('Fields this scenario patches:')
+    expect(container.textContent).toContain('Fields this scenario changes:')
     expect(container.textContent).toContain('/household/people')
   })
 

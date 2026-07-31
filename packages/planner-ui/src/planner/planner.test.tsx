@@ -527,7 +527,7 @@ describe('PlanWorkspace information architecture', () => {
     // Exactly one h1 per plan page: the workspace's sr-only section heading.
     const h1s = Array.from(container.querySelectorAll('h1'))
     expect(h1s).toHaveLength(1)
-    expect(h1s[0]!.textContent).toBe('Insights — Example couple')
+    expect(h1s[0]!.textContent).toBe('Insights: Example couple')
     expect(h1s[0]!.classList.contains('sr-only')).toBe(true)
     expect(container.textContent).toContain('modeled opportunities worth comparing')
 

@@ -70,7 +70,7 @@ export function CopyButton({ label, copiedLabel, text, fallbackLabel = 'Copy thi
   return (
     <>
       <button type="button" className="btn btn-secondary btn-small" onClick={copy}>
-        {state === 'copied' ? copiedLabel : state === 'failed' ? 'Clipboard unavailable — copy manually' : label}
+        {state === 'copied' ? copiedLabel : state === 'failed' ? 'Clipboard unavailable: copy manually' : label}
       </button>
       {state === 'failed' ? (
         <textarea

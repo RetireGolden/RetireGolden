@@ -42,7 +42,7 @@ export const usingScenariosToCompareChoicesArticle: LearningArticle = {
     { type: 'heading', text: 'The basic idea' },
     {
       type: 'prose',
-      md: 'The base plan remains the source of truth. Each scenario stores a patch, and RetireGolden merges that patch over the base plan for comparison. If the scenario is invalid, the table shows an error instead of silently simulating a broken plan.',
+      md: 'The base plan remains the source of truth. Each scenario stores just the fields you changed, and RetireGolden lays those over the base plan for comparison. If the scenario is invalid, the table shows an error instead of silently simulating a broken plan.',
     },
     {
       type: 'figure',

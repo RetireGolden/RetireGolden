@@ -502,7 +502,7 @@
           "url": "https://www.irs.gov/forms-pubs/about-publication-939"
         },
         {
-          "figures": "Principal-limit factors at a 5.875% expected rate: 35.1% of home value at 62 rising to 61.4% at 90 (planning default — a lender quote always wins); line/loan growth default 7.5%/yr (rate + 0.5% MIP).",
+          "figures": "Principal-limit factors at a 5.875% expected rate: 35.1% of home value at 62 rising to 61.4% at 90 (planning default; a lender quote always wins); line/loan growth default 7.5%/yr (rate + 0.5% MIP).",
           "label": "HECM reverse-mortgage principal limit",
           "publisher": "HUD HECM PLF tables (as summarized for 2026)",
           "url": "https://reverse.mortgage/age-requirements"
@@ -520,7 +520,7 @@
           "url": "https://www.ssa.gov/news/en/cola/factsheets/2026.html"
         },
         {
-          "figures": "2025 HHS guideline — $15,650 first person, +$5,500 each additional — applied to the 2026 ACA coverage year.",
+          "figures": "2025 HHS guideline ($15,650 first person, +$5,500 each additional) applied to the 2026 ACA coverage year.",
           "label": "Federal poverty guideline (ACA)",
           "publisher": "HHS",
           "url": "https://aspe.hhs.gov/topics/poverty-economic-mobility/poverty-guidelines"
