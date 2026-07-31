@@ -15,8 +15,12 @@ import {
 import {
   evaluateOwnedNonRothIraPenaltyPrerequisites,
   type EvaluateOwnedNonRothIraPenaltyPrerequisitesInput,
+  type NoOtherStatutoryExceptionClaimedAttestation,
+  type OwnedNonRothIraNoSeppStatusEvidence,
+  type OwnedNonRothIraOwnerAliveEvidence,
   type OwnedNonRothIraPenaltySourceEvidence,
   type QualifiedDisabilityEventEvidence,
+  type RejectedDisabilityStatusEvidence,
   type SimpleIraParticipationEvidence,
 } from './ownedNonRothIraPenaltyPrerequisite.js'
 
@@ -184,6 +188,87 @@ function first(
   const evaluation = value.evaluations[0]
   if (evaluation === undefined) throw new Error('fixture lost evaluation')
   return evaluation
+}
+
+function completeNegativeEvidence(
+  value: EvaluateOwnedNonRothIraPenaltyPrerequisitesInput,
+): EvaluateOwnedNonRothIraPenaltyPrerequisitesInput {
+  const taxableUnderAgeSources = value.sourceEvidence.filter((source) => {
+    const withdrawal = value.characterization.withdrawals.find(
+      (item) =>
+        item.actionId === source.actionId &&
+        item.allocationId === source.allocationId,
+    )
+    return (
+      withdrawal !== undefined &&
+      withdrawal.ordinaryIncomeAmount > 0 &&
+      !value.qualifiedDisabilityEvidence?.some(
+        (event) => event.evaluationDate === source.evaluationDate,
+      )
+    )
+  })
+  const ownerAliveEvidence: OwnedNonRothIraOwnerAliveEvidence[] =
+    taxableUnderAgeSources.map((source) => ({
+      predicate: 'ownerAliveOnOwnedIraDistributionDate',
+      actionId: source.actionId,
+      allocationId: source.allocationId,
+      sourceAccountId: source.sourceAccountId,
+      ownerPersonId: source.ownerPersonId,
+      evaluationDate: source.evaluationDate,
+      distributionDateEvidenceId: source.distributionDateEvidenceId,
+      aliveOnEvaluationDate: true,
+      ownerAliveEvidenceId:
+        `owner-alive-${source.actionId}-${source.allocationId}`,
+    }))
+  const iraSeppStatusEvidence: OwnedNonRothIraNoSeppStatusEvidence[] =
+    taxableUnderAgeSources.map((source) => ({
+      predicate: 'ownedNonRothIraSeppStatusForWithdrawal',
+      actionId: source.actionId,
+      allocationId: source.allocationId,
+      sourceAccountId: source.sourceAccountId,
+      ownerPersonId: source.ownerPersonId,
+      evaluationDate: source.evaluationDate,
+      status: 'none',
+      electionId: null,
+      scheduleId: null,
+      seppStatusEvidenceId:
+        `no-sepp-${source.actionId}-${source.allocationId}`,
+    }))
+  const noOtherExceptionAttestations:
+    NoOtherStatutoryExceptionClaimedAttestation[] =
+      taxableUnderAgeSources.map((source) => ({
+        predicate: 'noOtherStatutoryExceptionClaimed',
+        actionId: source.actionId,
+        allocationId: source.allocationId,
+        sourceAccountId: source.sourceAccountId,
+        ownerPersonId: source.ownerPersonId,
+        evaluationDate: source.evaluationDate,
+        attested: true,
+        evidenceScope:
+          'planningEvidenceNotFilingGradeLegalAdjudication',
+        attestationEvidenceId:
+          `no-other-${source.actionId}-${source.allocationId}`,
+      }))
+  const rejectedDisabilityEvidence:
+    RejectedDisabilityStatusEvidence[] = [
+      ...new Set(
+        taxableUnderAgeSources.map((source) => source.evaluationDate),
+      ),
+    ].map((evaluationDate) => ({
+      kind: 'disability',
+      disabledPersonId: asPersonId('owner'),
+      disabilityQualificationDate: null,
+      evaluationDate,
+      qualifiedOnEvaluationDate: false,
+      disabilityEvidenceId: `rejected-disability-${evaluationDate}`,
+    }))
+  return {
+    ...value,
+    ownerAliveEvidence,
+    rejectedDisabilityEvidence,
+    iraSeppStatusEvidence,
+    noOtherExceptionAttestations,
+  }
 }
 
 function twoWithdrawalInput(
@@ -1067,5 +1152,292 @@ describe('evaluateOwnedNonRothIraPenaltyPrerequisites', () => {
         ? disabilityEvaluation.disabilityEvent.disabilityEvidenceId
         : null,
     ).toBe('disability-record')
+  })
+
+  it('publishes a fixed age/death/SEPP/disability/other rejection tuple before applying the penalty', () => {
+    const result = evaluateOwnedNonRothIraPenaltyPrerequisites(
+      completeNegativeEvidence(input()),
+    )
+
+    expect(first(result)).toMatchObject({
+      outcome: 'penaltyApplies',
+      evaluatedOrdinaryIncomeExposureAmount: 100,
+      candidateAmountBeforeExceptions: 10,
+      finalPenaltyAmount: 10,
+      rejectedExceptions: [
+        { exception: 'age59Half', disposition: 'rejected' },
+        {
+          exception: 'death',
+          disposition: 'rejected',
+          ownerAliveEvidence: {
+            aliveOnEvaluationDate: true,
+            distributionDateEvidenceId: 'distribution-date',
+          },
+        },
+        {
+          exception: 'iraSepp',
+          disposition: 'rejected',
+          noSeppEvidence: {
+            status: 'none',
+            electionId: null,
+            scheduleId: null,
+          },
+        },
+        {
+          exception: 'disability',
+          disposition: 'rejected',
+          rejectedDisabilityEvidence: {
+            disabilityQualificationDate: null,
+            qualifiedOnEvaluationDate: false,
+          },
+        },
+        {
+          exception: 'otherStatutoryException',
+          disposition: 'rejected',
+          attestation: {
+            attested: true,
+            evidenceScope:
+              'planningEvidenceNotFilingGradeLegalAdjudication',
+          },
+        },
+      ],
+    })
+  })
+
+  it.each([
+    ['owner alive', 'ownerAliveEvidence'],
+    ['rejected disability', 'rejectedDisabilityEvidence'],
+    ['no SEPP', 'iraSeppStatusEvidence'],
+    ['no other exception', 'noOtherExceptionAttestations'],
+  ] as const)(
+    'preserves exceptionEvaluationRequired when %s evidence is missing',
+    (_label, field) => {
+      const value = completeNegativeEvidence(input())
+      value[field] = []
+
+      expect(first(
+        evaluateOwnedNonRothIraPenaltyPrerequisites(value),
+      ).outcome).toBe('exceptionEvaluationRequired')
+    },
+  )
+
+  it('rejects bare notQualified SEPP status and non-null election/schedule bindings', () => {
+    for (const malformed of [
+      {
+        status: 'notQualified',
+        electionId: null,
+        scheduleId: null,
+      },
+      {
+        status: 'none',
+        electionId: 'election',
+        scheduleId: null,
+      },
+      {
+        status: 'none',
+        electionId: null,
+        scheduleId: 'schedule',
+      },
+    ]) {
+      const value = completeNegativeEvidence(input())
+      value.iraSeppStatusEvidence = [{
+        ...value.iraSeppStatusEvidence![0]!,
+        ...malformed,
+      } as unknown as OwnedNonRothIraNoSeppStatusEvidence]
+      expect(() =>
+        evaluateOwnedNonRothIraPenaltyPrerequisites(value),
+      ).toThrow(/explicitly prove no election or schedule/)
+    }
+  })
+
+  it('requires owner-alive evidence to reuse the exact distribution-date evidence binding', () => {
+    const value = completeNegativeEvidence(input())
+    value.ownerAliveEvidence = [{
+      ...value.ownerAliveEvidence![0]!,
+      distributionDateEvidenceId: 'different-distribution-date',
+    }]
+
+    expect(() =>
+      evaluateOwnedNonRothIraPenaltyPrerequisites(value),
+    ).toThrow(/exact distribution-date evidence/)
+  })
+
+  it('fails closed on contradictory positive/rejected disability evidence', () => {
+    const value = input({
+      disabilityQualificationDate: '2030-05-01',
+    })
+    value.rejectedDisabilityEvidence = [{
+      kind: 'disability',
+      disabledPersonId: asPersonId('owner'),
+      disabilityQualificationDate: null,
+      evaluationDate: '2030-06-01',
+      qualifiedOnEvaluationDate: false,
+      disabilityEvidenceId: 'rejected-disability',
+    }]
+
+    expect(() =>
+      evaluateOwnedNonRothIraPenaltyPrerequisites(value),
+    ).toThrow(/uniquely bind an unresolved under-age owner and date/)
+  })
+
+  it('accepts a future qualification date as explicit not-qualified-on-distribution evidence', () => {
+    const value = completeNegativeEvidence(input())
+    value.rejectedDisabilityEvidence = [{
+      ...value.rejectedDisabilityEvidence![0]!,
+      disabilityQualificationDate: '2031-01-01',
+    }]
+
+    const evaluation = first(
+      evaluateOwnedNonRothIraPenaltyPrerequisites(value),
+    )
+    expect(evaluation.outcome).toBe('penaltyApplies')
+    if (evaluation.outcome !== 'penaltyApplies') return
+    expect(
+      evaluation.rejectedExceptions[3].rejectedDisabilityEvidence,
+    ).toMatchObject({
+      disabilityQualificationDate: '2031-01-01',
+      qualifiedOnEvaluationDate: false,
+    })
+  })
+
+  it('fails closed on duplicates, foreign extras, and cross-kind evidence-ID reuse', () => {
+    const duplicated = completeNegativeEvidence(input())
+    duplicated.ownerAliveEvidence = [
+      ...duplicated.ownerAliveEvidence!,
+      duplicated.ownerAliveEvidence![0]!,
+    ]
+    expect(() =>
+      evaluateOwnedNonRothIraPenaltyPrerequisites(duplicated),
+    ).toThrow(/uniquely match/)
+
+    const foreign = completeNegativeEvidence(input())
+    foreign.noOtherExceptionAttestations = [
+      ...foreign.noOtherExceptionAttestations!,
+      {
+        ...foreign.noOtherExceptionAttestations![0]!,
+        actionId: asActionId('foreign-action'),
+        attestationEvidenceId: 'foreign-attestation',
+      },
+    ]
+    expect(() =>
+      evaluateOwnedNonRothIraPenaltyPrerequisites(foreign),
+    ).toThrow(/uniquely match/)
+
+    const reused = completeNegativeEvidence(input())
+    reused.iraSeppStatusEvidence = [{
+      ...reused.iraSeppStatusEvidence![0]!,
+      seppStatusEvidenceId:
+        reused.ownerAliveEvidence![0]!.ownerAliveEvidenceId,
+    }]
+    expect(() =>
+      evaluateOwnedNonRothIraPenaltyPrerequisites(reused),
+    ).toThrow(/evidence ID reuse/)
+  })
+
+  it.each([
+    [2030, '2030-12-31', '2029-01-01', 'initialTwoYearPeriod', 25],
+    [2031, '2031-01-01', '2029-01-01', 'standardAfterTwoYearPeriod', 10],
+  ] as const)(
+    'applies the SIMPLE boundary rate in %i on %s',
+    (taxYear, evaluationDate, participationStartDate, phase, amount) => {
+      const result = evaluateOwnedNonRothIraPenaltyPrerequisites(
+        completeNegativeEvidence(input({
+          subtype: 'simple',
+          taxYear,
+          evaluationDate,
+          participationStartDate,
+        })),
+      )
+      const evaluation = first(result)
+      expect(evaluation).toMatchObject({
+        outcome: 'penaltyApplies',
+        candidateAmountBeforeExceptions: amount,
+        finalPenaltyAmount: amount,
+        rateEvidence: {
+          kind: 'simpleIraParticipationRate',
+          phase,
+        },
+      })
+    },
+  )
+
+  it.each([
+    [1, 0],
+    [5, 1],
+    [14, 1],
+    [15, 2],
+  ])(
+    'quantizes a %i-cent ordinary-income exposure to %i cents',
+    (grossAmount, expectedPenalty) => {
+      const evaluation = first(
+        evaluateOwnedNonRothIraPenaltyPrerequisites(
+          completeNegativeEvidence(input({ grossAmount })),
+        ),
+      )
+      expect(evaluation).toMatchObject({
+        outcome: 'penaltyApplies',
+        candidateAmountBeforeExceptions: expectedPenalty,
+        finalPenaltyAmount: expectedPenalty,
+      })
+    },
+  )
+
+  it('is permutation-invariant, detached, and deeply freezes final negative evidence', () => {
+    const baseline = completeNegativeEvidence(twoWithdrawalInput())
+    const permuted = completeNegativeEvidence(twoWithdrawalInput(true))
+    permuted.ownerAliveEvidence = [
+      ...permuted.ownerAliveEvidence!,
+    ].reverse()
+    permuted.rejectedDisabilityEvidence = [
+      ...permuted.rejectedDisabilityEvidence!,
+    ].reverse()
+    permuted.iraSeppStatusEvidence = [
+      ...permuted.iraSeppStatusEvidence!,
+    ].reverse()
+    permuted.noOtherExceptionAttestations = [
+      ...permuted.noOtherExceptionAttestations!,
+    ].reverse()
+
+    const result =
+      evaluateOwnedNonRothIraPenaltyPrerequisites(baseline)
+    expect(
+      evaluateOwnedNonRothIraPenaltyPrerequisites(permuted),
+    ).toEqual(result)
+    expect(result.evaluations).toHaveLength(2)
+    expect(
+      result.evaluations.every(
+        (evaluation) => evaluation.outcome === 'penaltyApplies',
+      ),
+    ).toBe(true)
+    const evaluation = result.evaluations[0]
+    if (evaluation?.outcome !== 'penaltyApplies') return
+    expect(Object.isFrozen(evaluation)).toBe(true)
+    expect(Object.isFrozen(evaluation.rejectedExceptions)).toBe(true)
+    expect(Object.isFrozen(
+      evaluation.rejectedExceptions[4].attestation,
+    )).toBe(true)
+    Object.assign(baseline.ownerAliveEvidence![0]!, {
+      ownerAliveEvidenceId: 'mutated',
+    })
+    expect(
+      evaluation.rejectedExceptions[1].ownerAliveEvidence
+        .ownerAliveEvidenceId,
+    ).not.toBe('mutated')
+
+    const changed = completeNegativeEvidence(twoWithdrawalInput())
+    changed.noOtherExceptionAttestations = [
+      {
+        ...changed.noOtherExceptionAttestations![0]!,
+        attestationEvidenceId: 'materially-revised-attestation',
+      },
+      changed.noOtherExceptionAttestations![1]!,
+    ]
+    const changedResult =
+      evaluateOwnedNonRothIraPenaltyPrerequisites(changed)
+    expect(
+      changedResult.evaluations[0]?.outcome === 'penaltyApplies'
+        ? changedResult.evaluations[0].finalEvidenceId
+        : null,
+    ).not.toBe(evaluation.finalEvidenceId)
   })
 })

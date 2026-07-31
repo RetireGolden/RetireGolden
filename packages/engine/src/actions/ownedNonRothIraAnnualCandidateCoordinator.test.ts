@@ -296,6 +296,100 @@ function mixedFixture():
   }
 }
 
+function mixedPenaltyFixture():
+  CoordinateOwnedNonRothIraAnnualWithdrawalCandidateInput {
+  const base = mixedFixture()
+  const source = movementSource('ira-penalty', 'traditional')
+  return {
+    ...base,
+    movementInput: {
+      ...base.movementInput,
+      requests: [
+        ...base.movementInput.requests,
+        request({
+          suffix: 'penalty',
+          date: '2030-01-20',
+          sequence: 1,
+          allocations: [
+            allocation('penalty', 'ira-penalty', 1),
+          ],
+        }),
+      ],
+      openingBalances: [
+        ...base.movementInput.openingBalances,
+        {
+          accountId: source.sourceAccountId,
+          openingBalance: asUsdCents(1),
+        },
+      ],
+      sourceEvidence: [
+        ...base.movementInput.sourceEvidence,
+        source,
+      ],
+    },
+    annualInput: {
+      ...base.annualInput,
+      completePoolEvidence: {
+        ...base.annualInput.completePoolEvidence,
+        accountIds: [
+          ...base.annualInput.completePoolEvidence.accountIds,
+          source.sourceAccountId,
+        ],
+      },
+      poolMembers: [
+        ...base.annualInput.poolMembers,
+        poolMember('ira-penalty', 'traditional'),
+      ],
+      annualFacts: {
+        ...base.annualInput.annualFacts,
+        form8606Line7DistributionAmount: asUsdCents(4),
+      },
+    },
+    ownerAliveEvidence: [{
+      predicate: 'ownerAliveOnOwnedIraDistributionDate',
+      actionId: asActionId('action-penalty'),
+      allocationId: asAllocationId('allocation-penalty'),
+      sourceAccountId: asAccountId('ira-penalty'),
+      ownerPersonId: asPersonId('owner'),
+      evaluationDate: '2030-01-20',
+      aliveOnEvaluationDate: true,
+      ownerAliveEvidenceId: 'owner-alive-penalty',
+    }],
+    rejectedDisabilityEvidence: [{
+      kind: 'disability',
+      disabledPersonId: asPersonId('owner'),
+      disabilityQualificationDate: null,
+      evaluationDate: '2030-01-20',
+      qualifiedOnEvaluationDate: false,
+      disabilityEvidenceId: 'rejected-disability-penalty',
+    }],
+    iraSeppStatusEvidence: [{
+      predicate: 'ownedNonRothIraSeppStatusForWithdrawal',
+      actionId: asActionId('action-penalty'),
+      allocationId: asAllocationId('allocation-penalty'),
+      sourceAccountId: asAccountId('ira-penalty'),
+      ownerPersonId: asPersonId('owner'),
+      evaluationDate: '2030-01-20',
+      status: 'none',
+      electionId: null,
+      scheduleId: null,
+      seppStatusEvidenceId: 'no-sepp-penalty',
+    }],
+    noOtherExceptionAttestations: [{
+      predicate: 'noOtherStatutoryExceptionClaimed',
+      actionId: asActionId('action-penalty'),
+      allocationId: asAllocationId('allocation-penalty'),
+      sourceAccountId: asAccountId('ira-penalty'),
+      ownerPersonId: asPersonId('owner'),
+      evaluationDate: '2030-01-20',
+      attested: true,
+      evidenceScope:
+        'planningEvidenceNotFilingGradeLegalAdjudication',
+      attestationEvidenceId: 'no-other-penalty',
+    }],
+  }
+}
+
 function bindingId(
   input: CoordinateOwnedNonRothIraAnnualWithdrawalCandidateInput,
 ): string {
@@ -722,5 +816,70 @@ describe('coordinateOwnedNonRothIraAnnualWithdrawalCandidate', () => {
       ;(result.bindingEvidence as { bindingEvidenceId: string })
         .bindingEvidenceId = 'mutated'
     }).toThrow()
+  })
+
+  it('atomically binds a mixed basis, disability, penalty-applies, and age owner-year', () => {
+    const result =
+      coordinateOwnedNonRothIraAnnualWithdrawalCandidate(
+        mixedPenaltyFixture(),
+      )
+
+    expect(result.status).toBe('annualEvidenceBound')
+    if (result.status !== 'annualEvidenceBound') return
+    expect(
+      result.annualEvidence.penaltyPrerequisites.evaluations.map(
+        (evaluation) => evaluation.outcome,
+      ),
+    ).toEqual([
+      'disabilityQualified',
+      'penaltyApplies',
+      'age59HalfReached',
+    ])
+    const penaltyEvaluation =
+      result.annualEvidence.penaltyPrerequisites.evaluations[1]
+    expect(penaltyEvaluation).toMatchObject({
+      outcome: 'penaltyApplies',
+      finalPenaltyAmount: 0,
+      rejectedExceptions: [
+        { exception: 'age59Half' },
+        {
+          exception: 'death',
+          ownerAliveEvidence: {
+            distributionDateEvidenceId:
+              expect.stringContaining(
+                'owned-non-roth-ira-staged-distribution-date:',
+              ),
+          },
+        },
+        { exception: 'iraSepp' },
+        { exception: 'disability' },
+        { exception: 'otherStatutoryException' },
+      ],
+    })
+    expect(result.movement).toBe('notCommitted')
+    expect(result.actionability).toBe('notEstablished')
+  })
+
+  it('suppresses annual and binding evidence when one mixed-batch sibling remains unresolved', () => {
+    const input = mixedPenaltyFixture()
+    input.noOtherExceptionAttestations = []
+
+    const result =
+      coordinateOwnedNonRothIraAnnualWithdrawalCandidate(input)
+
+    expect(result).toMatchObject({
+      status: 'annualEvidenceBlocked',
+      movement: 'notCommitted',
+      actionability: 'notEstablished',
+      annualEvidence: null,
+      bindingEvidence: null,
+      issues: [{
+        actionId: 'action-penalty',
+        allocationId: 'allocation-penalty',
+        prerequisite: {
+          outcome: 'exceptionEvaluationRequired',
+        },
+      }],
+    })
   })
 })

@@ -518,17 +518,24 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   Before 59½, caller-supplied positive disability evidence can receive final zero-penalty disability
   coverage only when it binds the owner and exact distribution date and proves qualification on or
   before that date; a disability-qualified SIMPLE allocation does not need participation-date/rate
-  evidence. Other distributions before 59½ produce only an exception-evaluation-required candidate,
-  never a conclusion that the penalty applies. This pure prerequisite rejects irrelevant disability
-  evidence and does not infer disability from plan data. A third pure owner/year finalization gate
+  evidence. For another distribution before 59½, the prerequisite can finalize `penaltyApplies`
+  only from a fixed negative-evidence tuple: owner alive on the same distribution-date evidence,
+  explicit rejected disability status for that owner/date, explicit IRA SEPP status `none` with null
+  election and schedule IDs, and an allocation-bound `noOtherStatutoryExceptionClaimed` planning
+  attestation. That attestation is not filing-grade legal adjudication. Missing any member preserves
+  `exceptionEvaluationRequired`; malformed, contradictory, duplicate, or foreign records fail closed.
+  The final penalty uses the already-canonical rate and nearest-cent candidate. This pure prerequisite
+  does not infer disability, death, SEPP, or other exceptions from plan data. A third pure owner/year
+  finalization gate
   composes those two canonical boundaries over staged executed-gross line-7 entries. It publishes one
   immutable annual evidence bundle only when every positive ordinary-income allocation has final
-  age-59½ or disability-qualified zero-penalty evidence; basis-only allocations need coverage but no
-  penalty evaluation. Any remaining exception-evaluation-required allocation blocks publication of
+  age-59½, disability-qualified zero-penalty, or fully evidenced penalty-applicable outcome; basis-only
+  allocations need coverage but no penalty evaluation. Any remaining exception-evaluation-required
+  allocation blocks publication of
   the entire owner/year and returns a typed `withdrawal-penalty-evidence-missing` issue per allocation.
   The finalization evidence ID binds the owner, pool, year, annual basis record, both line allocations,
   every coverage record, and every final evaluation. This gate is still `movement: notCommitted`: it
-  does not establish eligibility, execute or simulate an IRA action, or assert `penaltyApplies`.
+  does not establish eligibility or action readiness, or execute or simulate an IRA action.
   A separate pure movement-candidate seam now stages one explicitly dated owner/tax-year batch of
   owned traditional/SEP/SIMPLE IRA ordinary-withdrawal requests against exact-cent opening balances.
   Valid actions require unique civil-date/sequence slots and are ordered by that chronology;
