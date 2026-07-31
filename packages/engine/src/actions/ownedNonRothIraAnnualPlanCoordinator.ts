@@ -54,10 +54,11 @@ import {
   type RejectedDisabilityStatusEvidence,
   type SimpleIraParticipationEvidence,
 } from './ownedNonRothIraPenaltyPrerequisite.js'
-import type {
-  ClassifyOwnedNonRothIraAnnualWithdrawalsInput,
-  CompleteOwnedNonRothIraPoolEvidence,
-  OwnedNonRothIraPoolMemberEvidence,
+import {
+  classifyOwnedNonRothIraAnnualWithdrawals,
+  type ClassifyOwnedNonRothIraAnnualWithdrawalsInput,
+  type CompleteOwnedNonRothIraPoolEvidence,
+  type OwnedNonRothIraPoolMemberEvidence,
 } from './ownedNonRothIraWithdrawalCharacter.js'
 import {
   compareUtf16CodeUnits,
@@ -1599,6 +1600,18 @@ function buildCoordinatorInputs(
       form8606Line8NetConversionAmount: line8Amount,
     },
     line8Conversions: inventory.line8Entries,
+  }
+  try {
+    classifyOwnedNonRothIraAnnualWithdrawals({
+      ...annualInput,
+      line7Distributions: staged.line7Distributions,
+    })
+  } catch (error) {
+    if (!(error instanceof RangeError)) throw error
+    return inventoryBlocked([inventoryIssue(
+      'annualBasisEvidenceInvalid',
+      `Annual IRA characterization failed semantic validation: ${error.message}`,
+    )])
   }
   return { movementInput, annualInput, sourceInventoryEvidenceId }
 }

@@ -1207,6 +1207,56 @@ describe('Plan-owned non-Roth IRA annual coordinator', () => {
     expect(result.movementCandidate).toBeNull()
   })
 
+  it('does not mislabel independent line rounding as penalty evidence', () => {
+    const value = input()
+    value.openingBalanceEvidence = value.openingBalanceEvidence.map(
+      (evidence) => ({
+        ...evidence,
+        openingBalanceAmount:
+          evidence.sourceAccountId === requestedSourceId
+            ? asUsdCents(1)
+            : asUsdCents(0),
+      }),
+    )
+    value.yearEndBalanceEvidence = value.yearEndBalanceEvidence.map(
+      (evidence) => ({
+        ...evidence,
+        yearEndApplicableBalanceAmount: asUsdCents(0),
+      }),
+    )
+    value.annualBasisEvidence = {
+      ...value.annualBasisEvidence,
+      openingBasisAmount: asUsdCents(1),
+    }
+    value.line8InventoryEvidence = {
+      ...value.line8InventoryEvidence,
+      entries: [{
+        actionId: asActionId('conversion-rounding'),
+        allocationId: asAllocationId('conversion-rounding-allocation'),
+        sourceAccountId: siblingSourceId,
+        scheduledDate: '2030-07-01',
+        scheduledSequence: 1,
+        grossAmount: asUsdCents(1),
+      }],
+    }
+    value.qualifiedDisabilityEvidence = [{
+      kind: 'disability',
+      disabledPersonId: ownerPersonId,
+      disabilityQualificationDate: '2029-01-01',
+      evaluationDate: '2030-06-15',
+      qualifiedOnEvaluationDate: true,
+      disabilityEvidenceId: 'irrelevant-qualified-disability',
+    }]
+
+    const result =
+      coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate(value)
+
+    expect(result.status).toBe('sourceInventoryIncomplete')
+    expect(issueKinds(result)).toContain('annualBasisEvidenceInvalid')
+    expect(issueKinds(result)).not.toContain('penaltyEvidenceInvalid')
+    expect(result.movementCandidate).toBeNull()
+  })
+
   it('preserves a complete qualified-SEPP route and its repeated state references', () => {
     const value = input()
     ;(value.plan as Plan).household.people[0]!.dob = '1980-01-01'
