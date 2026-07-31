@@ -51,6 +51,7 @@ const {
   ledgerCentsToPlanDollars,
   parseRetirementActionRequest,
   planDollarsToLedgerCents,
+  resolveOwnedNonRothIraAnnualWithdrawalEvidence,
 } = await import('@retiregolden/engine/actions')
 const {
   evaluateRetirementActionEligibility,
@@ -308,6 +309,100 @@ assert.equal(
   ownedIraPenaltyPrerequisite.evaluations[0]
     .characterCoverage.ordinaryIncomeExposureAmount,
   1,
+)
+const smokeAnnualBasis = ownedIraCharacter.annualBasisEvidence
+const smokeAnnualFinalizerInput = {
+  annualInput: {
+    ownerPersonId: smokeAnnualBasis.ownerPersonId,
+    ownerWideNonRothIraPoolId: smokeAnnualBasis.ownerWideNonRothIraPoolId,
+    completePoolEvidence: smokeAnnualBasis.completePoolEvidence,
+    annualBasisRecordEvidenceId:
+      smokeAnnualBasis.annualBasisRecordEvidenceId,
+    taxYear: smokeAnnualBasis.taxYear,
+    poolMembers: smokeAnnualBasis.poolMembers,
+    annualFacts: {
+      openingBasisAmount: smokeAnnualBasis.openingBasisAmount,
+      taxYearNondeductibleContributionAmount:
+        smokeAnnualBasis.taxYearNondeductibleContributionAmount,
+      postYearNondeductibleContributionExcludedAmount:
+        smokeAnnualBasis.postYearNondeductibleContributionExcludedAmount,
+      yearEndApplicablePoolBalanceAmount:
+        smokeAnnualBasis.yearEndApplicablePoolBalanceAmount,
+      outstandingRolloverAmount: smokeAnnualBasis.outstandingRolloverAmount,
+      rolloverRepaymentAdjustmentAmount:
+        smokeAnnualBasis.rolloverRepaymentAdjustmentAmount,
+      form8606Line7DistributionAmount:
+        smokeAnnualBasis.form8606Line7DistributionAmount,
+      form8606Line8NetConversionAmount:
+        smokeAnnualBasis.form8606Line8NetConversionAmount,
+    },
+    line8Conversions:
+      ownedIraCharacter.line8AllocationEvidence.allocations.map((entry) => ({
+        actionId: entry.actionId,
+        allocationId: entry.allocationId,
+        sourceAccountId: entry.sourceAccountId,
+        scheduledDate: entry.scheduledDate,
+        scheduledSequence: entry.scheduledSequence,
+        grossAmount: entry.grossAmount,
+      })),
+  },
+  stagedExecutedWithdrawals:
+    ownedIraCharacter.line7AllocationEvidence.allocations.map((entry) => ({
+      actionId: entry.actionId,
+      allocationId: entry.allocationId,
+      sourceAccountId: entry.sourceAccountId,
+      scheduledDate: entry.scheduledDate,
+      scheduledSequence: entry.scheduledSequence,
+      grossAmount: entry.grossAmount,
+    })),
+  ownerEvidence: {
+    predicate: 'ownerBirthDateForIraPenaltyAgeThreshold',
+    ownerPersonId: asPersonId('smoke-person'),
+    birthDate: '1980-08-31',
+    evidenceId: 'smoke-birth-date',
+  },
+  sourceEvidence: [{
+    predicate: 'ownedNonRothIraPenaltySourceForWithdrawal',
+    actionId: asActionId('smoke-ira-withdrawal'),
+    allocationId: asAllocationId('smoke-ira-allocation'),
+    sourceAccountId: asAccountId('smoke-traditional-ira'),
+    ownerPersonId: asPersonId('smoke-person'),
+    subtype: 'traditional',
+    evaluationDate: '2030-12-31',
+    distributionDateEvidenceId: 'smoke-ira-distribution-date',
+    accountOwnershipEvidenceId: 'smoke-ira-ownership',
+    iraClassificationEvidenceId: 'smoke-ira-classification',
+  }],
+  qualifiedDisabilityEvidence: [{
+    kind: 'disability',
+    disabledPersonId: asPersonId('smoke-person'),
+    disabilityQualificationDate: '2030-12-31',
+    evaluationDate: '2030-12-31',
+    qualifiedOnEvaluationDate: true,
+    disabilityEvidenceId: 'smoke-disability-record',
+  }],
+  simpleParticipationEvidence: [],
+}
+const resolvedOwnedIraAnnual =
+  resolveOwnedNonRothIraAnnualWithdrawalEvidence(
+    smokeAnnualFinalizerInput,
+  )
+assert.equal(resolvedOwnedIraAnnual.status, 'annualEvidenceResolved')
+assert.equal(resolvedOwnedIraAnnual.movement, 'notCommitted')
+assert.equal(
+  resolvedOwnedIraAnnual.annualEvidence.predicate,
+  'completeOwnedNonRothIraAnnualWithdrawalFinalizationForOwnerAndTaxYear',
+)
+const blockedOwnedIraAnnual =
+  resolveOwnedNonRothIraAnnualWithdrawalEvidence({
+    ...smokeAnnualFinalizerInput,
+    qualifiedDisabilityEvidence: [],
+  })
+assert.equal(blockedOwnedIraAnnual.status, 'penaltyEvidenceMissing')
+assert.equal(blockedOwnedIraAnnual.annualEvidence, null)
+assert.equal(
+  blockedOwnedIraAnnual.issues[0].reason.code,
+  'withdrawal-penalty-evidence-missing',
 )
 
 const smokeTaxable = {

@@ -520,8 +520,16 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   before that date; a disability-qualified SIMPLE allocation does not need participation-date/rate
   evidence. Other distributions before 59½ produce only an exception-evaluation-required candidate,
   never a conclusion that the penalty applies. This pure prerequisite rejects irrelevant disability
-  evidence and does not infer disability from plan data. These action substrates do not establish
-  withdrawal eligibility or execute/simulate an IRA action. Source: [IRS early-distribution exception
+  evidence and does not infer disability from plan data. A third pure owner/year finalization gate
+  composes those two canonical boundaries over staged executed-gross line-7 entries. It publishes one
+  immutable annual evidence bundle only when every positive ordinary-income allocation has final
+  age-59½ or disability-qualified zero-penalty evidence; basis-only allocations need coverage but no
+  penalty evaluation. Any remaining exception-evaluation-required allocation blocks publication of
+  the entire owner/year and returns a typed `withdrawal-penalty-evidence-missing` issue per allocation.
+  The finalization evidence ID binds the owner, pool, year, annual basis record, both line allocations,
+  every coverage record, and every final evaluation. This gate is still `movement: notCommitted`: it
+  does not establish eligibility, execute or simulate an IRA action, or assert `penaltyApplies`.
+  Source: [IRS early-distribution exception
   matrix](https://www.irs.gov/retirement-plans/plan-participant-employee/retirement-topics-exceptions-to-tax-on-early-distributions).
 - **Fixed-asset disposition.** Setting `costBasis` on a property switches its planned sale from the legacy
   tax-free `expectedNetProceeds` estimate to exact treatment: gain = sale price − selling costs

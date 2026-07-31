@@ -206,3 +206,14 @@ export {
   type SimpleIraParticipationEvidence,
   type StandardIraEarlyDistributionRateEvidence,
 } from './ownedNonRothIraPenaltyPrerequisite.js'
+export {
+  resolveOwnedNonRothIraAnnualWithdrawalEvidence,
+  type CompleteOwnedNonRothIraAnnualWithdrawalFinalizationEvidence,
+  type FinalOwnedNonRothIraPenaltyPrerequisiteEvaluation,
+  type OwnedNonRothIraAnnualEvidenceResolvedResult,
+  type OwnedNonRothIraPenaltyEvidenceMissingIssue,
+  type OwnedNonRothIraPenaltyEvidenceMissingResult,
+  type ResolveOwnedNonRothIraAnnualWithdrawalEvidenceInput,
+  type ResolveOwnedNonRothIraAnnualWithdrawalEvidenceResult,
+  type ResolvedOwnedNonRothIraPenaltyPrerequisites,
+} from './ownedNonRothIraAnnualFinalization.js'
