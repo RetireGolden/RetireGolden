@@ -243,9 +243,10 @@ export interface CarryforwardNetting {
 }
 
 /**
- * Apply a net capital-loss carryforward to one year (IRC §1211(b)/§1212): net
- * against this year's realized gains first, then deduct up to `ordinaryOffsetLimit`
- * ($3,000) of the remainder as a net capital loss — a *negative* figure on the
+ * Apply a net capital-loss carryforward and the current signed capital result
+ * to one year (IRC §1211(b)/§1212): use the opening pool against current gains,
+ * add a current loss to what remains, then deduct up to `ordinaryOffsetLimit`
+ * ($3,000) of the available loss as a *negative* figure on the
  * return's capital-gain line that reduces AGI (and so provisional income, taxable
  * SS, and MAGI) regardless of how much other income there is, **not** an offset
  * capped at ordinary income. The rest carries forward indefinitely. Pure — the
@@ -262,16 +263,21 @@ export function applyCapitalLossCarryforward(
   capitalGains: number,
   ordinaryOffsetLimit: number,
 ): CarryforwardNetting {
-  const pool = Math.max(0, carryforward)
-  const netGains = Math.max(0, capitalGains)
+  const openingPool = Math.max(0, carryforward)
+  const currentGain = Math.max(0, capitalGains)
+  const currentLoss = Math.max(0, -capitalGains)
   const ordinary = Math.max(0, ordinaryIncome)
-  const usedAgainstGains = Math.min(pool, netGains)
-  let remaining = pool - usedAgainstGains
-  const usedAgainstOrdinary = Math.min(remaining, Math.max(0, ordinaryOffsetLimit))
-  remaining -= usedAgainstOrdinary
+  const usedAgainstGains = Math.min(openingPool, currentGain)
+  const availableLoss = openingPool - usedAgainstGains + currentLoss
+  const usedAgainstOrdinary = Math.min(
+    availableLoss,
+    Math.max(0, ordinaryOffsetLimit),
+  )
+  const remaining = availableLoss - usedAgainstOrdinary
   return {
     ordinaryAfter: ordinary,
-    netCapitalGain: netGains - usedAgainstGains - usedAgainstOrdinary,
+    netCapitalGain:
+      currentGain - usedAgainstGains - usedAgainstOrdinary,
     usedAgainstGains,
     usedAgainstOrdinary,
     remaining,

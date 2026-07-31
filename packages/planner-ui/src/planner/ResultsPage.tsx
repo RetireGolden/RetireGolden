@@ -41,6 +41,10 @@ import { chartTooltipStyle } from './chartStyle'
 import { NonZeroTooltipContent } from './chartTooltip'
 import { frameH } from './chartFrame'
 import { useMcSuccessRate } from './useMcSuccessRate'
+import {
+  capitalLossCarryforwardHighlight,
+  hasCapitalLossCarryforward,
+} from './capitalLossCarryforwardVisibility'
 
 type Dollars = 'nominal' | 'today'
 
@@ -207,7 +211,10 @@ export function ResultsPage() {
     [dollars, view],
   )
 
-  const hasCarryforward = plan.household.capitalLossCarryforward > 0
+  const hasCarryforward = hasCapitalLossCarryforward(
+    plan.household.capitalLossCarryforward,
+    view.result.years,
+  )
   const hasAmt = view.result.years.some((y) => y.amt > 0.5)
   const hasFlexibleGoalControls = plan.expenses.oneTimeGoals.some(
     (g) =>
@@ -225,11 +232,10 @@ export function ResultsPage() {
     (plan.expenses.excessAnnual ?? 0) > 0 ||
     (plan.expenses.spendingPolicy !== undefined && plan.expenses.spendingPolicy.mode !== 'fixedTarget') ||
     hasFlexibleGoalControls
-  // Highlight the first year the carryforward shelters realized gains (the early
-  // brokerage-drawdown years it's meant for), else the first projection year.
-  const carryforwardHighlight = hasCarryforward
-    ? (view.result.years.find((y) => y.capitalLossUsedAgainstGains > 0.5) ?? view.result.years[0])
-    : undefined
+  const carryforwardHighlight = capitalLossCarryforwardHighlight(
+    plan.household.capitalLossCarryforward,
+    view.result.years,
+  )
 
   const rows = useMemo(
     () =>

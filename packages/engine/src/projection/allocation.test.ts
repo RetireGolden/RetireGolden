@@ -8,6 +8,11 @@
 
 import { describe, expect, it } from 'vitest'
 
+import {
+  driftWeights,
+  rebalanceTurnoverFraction,
+  weightsToVector,
+} from '../allocation/assetClasses.js'
 import type { AssetAllocationPolicy, Plan } from '../model/plan.js'
 import {
   recurringOrdinaryIncome,
@@ -220,6 +225,67 @@ describe('step 4: annual rebalancing realizes taxable gains', () => {
     const gainRatio = 1 - 100_000 / balanceAfterYear1
     expect(r.years[0]!.realizedGains).toBe(0)
     expect(r.years[1]!.realizedGains).toBeCloseTo(expectedSale * gainRatio, 4)
+  })
+
+  it('taxable rebalance preserves loss-position basis and realizes a signed loss', () => {
+    const plan = driftedTaxable('annual')
+    const account = plan.accounts[0] as Extract<
+      Plan['accounts'][number],
+      { type: 'taxable' }
+    >
+    account.costBasis = 400_000
+    const result = simulatePlan(plan, {
+      startYear: 2026,
+      taxCalculator: zeroTax,
+    })
+    const balanceAfterYear1 =
+      200_000 * (1 + (0.5 * 7 + 0.5 * 4) / 100)
+    const driftedStockWeight =
+      (0.5 * 1.07) / (0.5 * 1.07 + 0.5 * 1.04)
+    const expectedSale =
+      (driftedStockWeight - 0.5) * balanceAfterYear1
+    const expectedLoss =
+      expectedSale - 400_000 * (expectedSale / balanceAfterYear1)
+
+    expect(result.years[1]!.realizedGains).toBeCloseTo(expectedLoss, 4)
+    expect(result.years[1]!.realizedGains).toBeLessThan(0)
+  })
+
+  it('clamps floating-point turnover noise before a full taxable rebalance sale', () => {
+    const initialWeights = W(1, 96, 3, 0)
+    const cashWeights = W(0, 0, 0, 100)
+    const driftedWeights = driftWeights(
+      weightsToVector(initialWeights),
+      [7, 7, 4, 2.5],
+    )
+    const noisyTurnover = rebalanceTurnoverFraction(
+      driftedWeights,
+      weightsToVector(cashWeights),
+    )
+    expect(noisyTurnover).toBeGreaterThan(1)
+
+    const plan = singlePersonPlan({ dob: '1972-01-01', planningAge: 60 })
+    const account = allocated(taxableAccount('brok', 200_000, 100_000), {
+      mode: 'custom',
+      rebalancing: 'annual',
+      targets: [
+        { year: 2026, weights: initialWeights },
+        { year: 2027, weights: cashWeights },
+      ],
+    }) as Extract<Plan['accounts'][number], { type: 'taxable' }>
+    account.interestYieldPct = 0
+    account.dividendYieldPct = 0
+    plan.accounts = [account]
+
+    const result = simulatePlan(validatePlan(plan), {
+      startYear: 2026,
+      taxCalculator: zeroTax,
+    })
+
+    expect(result.years[1]!.realizedGains).toBeCloseTo(
+      result.years[0]!.balances['brok']! - 100_000,
+      6,
+    )
   })
 
   it("rebalancing: 'none' opts out — no gains, weights keep drifting", () => {

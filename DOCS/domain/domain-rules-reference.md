@@ -145,7 +145,12 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
   [state-tax-research/](state-tax-research/).
 - Capital gains default to federal conformity unless a state pack says otherwise. CA, MN, and NJ document
   ordinary state taxation of capital gains. PA uses current-year-only capital-loss conformity: federal
-  prior-year carryforward losses do not offset PA-taxable current-year gains in the planning model.
+  prior-year carryforward losses do not offset PA-taxable current-year gains in the planning model. The raw
+  current-year capital field remains signed, but PA floors that current-year-only input at zero.
+- A current-year signed capital loss joins the opening carryforward pool before the annual ordinary-income
+  deduction. Legacy taxable withdrawals, rebalances, and taxable annuity/TIPS funding share one uncapped
+  aggregate-basis sale rule; basis above value therefore produces a loss instead of being silently capped at
+  a zero gain. Full sales explicitly exhaust both fair market value and remaining aggregate basis.
 - Mid-year state moves prorate state taxable income, deductions, brackets, and retirement caps by months in
   each state segment. Taxable Social Security is computed once on the full-year federal base and then
   apportioned by months.

@@ -30,6 +30,7 @@ import { usePlan } from './planContextCore'
 import { fmtMoney, fmtMoneyCompact, fmtPct } from './format'
 import { useProjection } from './useProjection'
 import { US_STATES } from './usStates'
+import { hasCapitalLossCarryforward } from './capitalLossCarryforwardVisibility'
 
 const CATEGORIES = ['cash', 'taxable', 'equityComp', 'traditional', 'roth', 'hsa'] as const
 const CAT_LABEL: Record<(typeof CATEGORIES)[number], string> = {
@@ -111,7 +112,10 @@ function ReportBody() {
   const view = useProjection(plan)
   const { result, summary } = view
   const acaLedgerRows = acaLedgerSummary(result.years)
-  const hasCarryforward = plan.household.capitalLossCarryforward > 0
+  const hasCarryforward = hasCapitalLossCarryforward(
+    plan.household.capitalLossCarryforward,
+    result.years,
+  )
   const depleted = summary.depletionYear !== null
 
   const chartRows = result.years.map((y) => {

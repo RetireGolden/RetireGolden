@@ -169,6 +169,19 @@ describe('computeStateTax — code paths', () => {
     )
     expect(tax).toBeCloseTo(20_000 * 0.0307, 6)
   })
+
+  it('keeps PA current-year-only treatment floored when the raw result is a loss', () => {
+    const tax = computeStateTax(
+      pack('PA'),
+      input({
+        ordinaryIncome: 0,
+        capitalGains: -3_000,
+        realizedCapitalGainsBeforeCarryforward: -20_000,
+      }),
+    )
+
+    expect(tax).toBe(0)
+  })
 })
 
 describe('createStateTaxCalculator', () => {

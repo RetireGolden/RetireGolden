@@ -51,9 +51,9 @@ export interface TaxYearInput {
   filingStatus: ProjectedFilingStatus
   /** Wages, traditional withdrawals, pension/annuity taxable parts, taxable recurring/one-time income. */
   ordinaryIncome: number
-  /** Realized long-term gains (taxable-account withdrawals via basis ratio). */
+  /** Signed realized long-term capital result; losses are negative. */
   capitalGains: number
-  /** Realized gains before federal capital-loss carryforward netting; used by nonconforming states. */
+  /** Raw signed capital result before federal carryforward netting; used by nonconforming states. */
   realizedCapitalGainsBeforeCarryforward?: number
   /** Taxable interest generated in taxable brokerage accounts (already included in ordinaryIncome). */
   taxableInterestIncome?: number
@@ -425,7 +425,7 @@ export interface YearResult {
   ssdiPaid: number
   tax: number
   withdrawals: YearWithdrawals
-  /** Realized capital gains embedded in taxable withdrawals + annual-rebalance sales. */
+  /** Signed capital gain-or-loss embedded in taxable withdrawals and other legacy taxable sales. */
   realizedGains: number
   /** Taxable account interest + dividends generated this year. */
   taxableYield: number
