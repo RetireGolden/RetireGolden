@@ -32,6 +32,13 @@ import {
 } from './money.js'
 import { createActionReason, type ActionReason } from './reasons.js'
 import { formatCivilDate, parseCivilIsoDate } from './civilDate.js'
+import {
+  classifyIndividuallyOwnedTaxableWithdrawal,
+  type AcceptedIndividuallyOwnedTaxableSourceEligibilityEvidence,
+  type IndividuallyOwnedTaxableAccountOwnershipEvidence,
+  type IndividuallyOwnedTaxableWithdrawalTaxCharacter,
+  type TaxableWithdrawalTaxUnitEvidence,
+} from './taxableWithdrawalCharacter.js'
 
 export interface AccountOpeningBalanceSnapshot {
   accountId: AccountId
@@ -40,6 +47,18 @@ export interface AccountOpeningBalanceSnapshot {
 
 export interface AccountBalanceExecutionEvidence extends AccountOpeningBalanceSnapshot {
   closingBalance: UsdCents
+}
+
+export interface TaxableAccountOpeningSnapshot {
+  accountId: AccountId
+  openingCostBasis: UsdCents
+  ownership: Readonly<IndividuallyOwnedTaxableAccountOwnershipEvidence>
+  taxUnit: Readonly<TaxableWithdrawalTaxUnitEvidence>
+}
+
+export interface TaxableAccountBasisExecutionEvidence
+  extends TaxableAccountOpeningSnapshot {
+  closingCostBasis: UsdCents
 }
 
 interface SourceAllocationExecutionEvidenceBase {
@@ -129,9 +148,36 @@ export interface AcceptedEquityCompensationSourceEligibilityEvidence {
   characterEvidence: Readonly<EquityCompensationCharacterEvidence>
 }
 
+export interface AcceptedZeroExecutionTaxableSourceEligibilityEvidence {
+  predicate: 'classifyWithdrawalSource'
+  allocationId: AllocationId
+  sourceAccountId: AccountId
+  evaluationDate: string
+  sourceClass: 'taxable'
+  basisEvidence: Readonly<{
+    method: 'notApplicableZeroExecution'
+    preExecutionFairMarketValue: 0
+    remainingCostBasisBeforeExecution: 0
+    executedAmount: 0
+    basisRecoveredAmount: 0
+    realizedCapitalGainOrLossAmount: 0
+    ratio: Readonly<{
+      representation: 'notApplicableZeroDenominator'
+      numeratorMinorUnits: 0
+      denominatorMinorUnits: 0
+      intermediateArithmetic: 'none'
+    }>
+    basisPreservedAmount: 0
+    reason: 'depletedSource'
+    basisEvidenceId: string
+  }>
+}
+
 export type AcceptedOrdinaryWithdrawalSourceEligibilityEvidence =
   | AcceptedCashSourceEligibilityEvidence
   | AcceptedEquityCompensationSourceEligibilityEvidence
+  | AcceptedIndividuallyOwnedTaxableSourceEligibilityEvidence
+  | AcceptedZeroExecutionTaxableSourceEligibilityEvidence
 
 export interface CashPrincipalTaxCharacter {
   actionId: ActionId
@@ -164,6 +210,7 @@ export interface EquityCompensationOrdinaryIncomeTaxCharacter {
 export type OrdinaryWithdrawalTaxCharacter =
   | CashPrincipalTaxCharacter
   | EquityCompensationOrdinaryIncomeTaxCharacter
+  | IndividuallyOwnedTaxableWithdrawalTaxCharacter
 
 export interface NonRetirementSourcePenaltyCoverageEvidence {
   coverageEvidenceId: string
@@ -171,7 +218,7 @@ export interface NonRetirementSourcePenaltyCoverageEvidence {
   allocationId: AllocationId
   sourceAccountId: AccountId
   applicability: 'notApplicable'
-  sourceClass: 'cash' | 'equityCompensation'
+  sourceClass: 'cash' | 'equityCompensation' | 'taxable'
   reason: 'nonRetirementSource'
   executedAmount: UsdCents
   penaltyRelevantCharacterAmount: 0
@@ -200,6 +247,11 @@ export interface CashSourcePenaltyCoverageEvidence {
 export type EquityCompensationSourcePenaltyCoverageEvidence =
   Omit<NonRetirementSourcePenaltyCoverageEvidence, 'sourceClass'> & {
     sourceClass: 'equityCompensation'
+  }
+
+export type TaxableSourcePenaltyCoverageEvidence =
+  Omit<NonRetirementSourcePenaltyCoverageEvidence, 'sourceClass'> & {
+    sourceClass: 'taxable'
   }
 
 interface OrdinaryWithdrawalExecutionEvidenceBase {
@@ -283,6 +335,12 @@ export interface ExecuteOrdinaryWithdrawalsInput {
   plan: Plan
   requests: readonly RetirementActionRequest[]
   openingBalances: readonly AccountOpeningBalanceSnapshot[]
+  /**
+   * Supplying this field explicitly enables individually owned taxable sources.
+   * Omission preserves the pre-WS3.4b cash/equity-only boundary used by the
+   * annual simulator until it can construct the immutable evidence losslessly.
+   */
+  taxableAccountSnapshots?: readonly TaxableAccountOpeningSnapshot[]
   runtimeEvidence?: RetirementActionEligibilityRuntimeEvidence
 }
 
@@ -290,6 +348,7 @@ export interface ExecuteOrdinaryWithdrawalsResult {
   committed: boolean
   scheduleIssues: readonly OrdinaryWithdrawalExecutionScheduleIssue[]
   balances: readonly AccountBalanceExecutionEvidence[]
+  taxableBases: readonly TaxableAccountBasisExecutionEvidence[]
   evidence: readonly OrdinaryWithdrawalExecutionEvidence[]
 }
 
@@ -730,13 +789,94 @@ function unresolvedAllocationEvidence(
 function nonRetirementCoverageEvidenceId(
   actionId: ActionId,
   allocationId: AllocationId,
-  sourceClass: 'cash' | 'equityCompensation',
+  sourceClass: 'cash' | 'equityCompensation' | 'taxable',
 ): string {
   const prefix =
     sourceClass === 'cash'
       ? 'cash-penalty-coverage'
-      : 'equity-compensation-penalty-coverage'
+      : sourceClass === 'equityCompensation'
+        ? 'equity-compensation-penalty-coverage'
+        : 'taxable-penalty-coverage'
   return `${prefix}:${JSON.stringify([actionId, allocationId])}`
+}
+
+function taxableSnapshotMatches(
+  snapshot: TaxableAccountOpeningSnapshot,
+  account: Extract<Plan['accounts'][number], { type: 'taxable' }>,
+  actingPersonId: PersonId,
+  year: number,
+): boolean {
+  const ownerIds = snapshot.ownership.accountOwnerPersonIds
+  const share = snapshot.ownership.beneficialOwnershipShare
+  const members = snapshot.taxUnit.taxUnitMemberPersonIds
+  const nonblank = (value: unknown): value is string =>
+    typeof value === 'string' && value.trim().length > 0
+  const filingStatusSupported = new Set([
+    'single',
+    'marriedFilingJointly',
+    'marriedFilingSeparately',
+    'headOfHousehold',
+    'qualifyingSurvivingSpouse',
+  ]).has(snapshot.taxUnit.federalFilingStatus)
+  return (
+    snapshot.accountId === account.id &&
+    account.ownerPersonId !== null &&
+    account.ownerPersonId === actingPersonId &&
+    ownerIds.length === 1 &&
+    ownerIds[0] === actingPersonId &&
+    nonblank(snapshot.ownership.accountOwnershipEvidenceId) &&
+    nonblank(snapshot.ownership.attributionEvidenceId) &&
+    share.representation === 'exactRational' &&
+    share.numerator === 1 &&
+    share.denominator === 1 &&
+    share.intermediateArithmetic === 'bigintRational' &&
+    snapshot.taxUnit.taxYear === year &&
+    nonblank(snapshot.taxUnit.taxUnitId) &&
+    nonblank(snapshot.taxUnit.taxUnitEvidenceId) &&
+    nonblank(snapshot.taxUnit.stateFilingStatusId) &&
+    filingStatusSupported &&
+    members.length > 0 &&
+    members.every(nonblank) &&
+    new Set(members).size === members.length &&
+    members.includes(actingPersonId)
+  )
+}
+
+function zeroExecutionTaxableEligibility(
+  actionId: ActionId,
+  allocationId: AllocationId,
+  sourceAccountId: AccountId,
+  evaluationDate: string,
+): AcceptedZeroExecutionTaxableSourceEligibilityEvidence {
+  return {
+    predicate: 'classifyWithdrawalSource',
+    allocationId,
+    sourceAccountId,
+    evaluationDate,
+    sourceClass: 'taxable',
+    basisEvidence: {
+      method: 'notApplicableZeroExecution',
+      preExecutionFairMarketValue: 0,
+      remainingCostBasisBeforeExecution: 0,
+      executedAmount: 0,
+      basisRecoveredAmount: 0,
+      realizedCapitalGainOrLossAmount: 0,
+      ratio: {
+        representation: 'notApplicableZeroDenominator',
+        numeratorMinorUnits: 0,
+        denominatorMinorUnits: 0,
+        intermediateArithmetic: 'none',
+      },
+      basisPreservedAmount: 0,
+      reason: 'depletedSource',
+      basisEvidenceId: `taxable-basis-zero:${JSON.stringify([
+        actionId,
+        allocationId,
+        sourceAccountId,
+        evaluationDate,
+      ])}`,
+    },
+  }
 }
 
 function equityCompensationVestingEvidenceId(
@@ -813,10 +953,18 @@ function assertOrdinaryWithdrawalExecutionEvidence(
     fail('each resolved allocation requires eligibility and penalty coverage')
   }
 
-  const characterByAllocation = indexUnique(
-    evidence.taxCharacter,
-    (character) => character.allocationId,
-  )
+  const charactersByAllocation = new Map<
+    AllocationId,
+    OrdinaryWithdrawalTaxCharacter[]
+  >()
+  for (const character of evidence.taxCharacter) {
+    const characters = charactersByAllocation.get(character.allocationId)
+    if (characters === undefined) {
+      charactersByAllocation.set(character.allocationId, [character])
+    } else {
+      characters.push(character)
+    }
+  }
   const eligibilityByAllocation = indexUnique(
     evidence.acceptedSourceEligibility,
     (accepted) => accepted.allocationId,
@@ -856,8 +1004,7 @@ function assertOrdinaryWithdrawalExecutionEvidence(
       acceptedCandidate
     if (
       accepted.sourceAccountId !== allocation.sourceAccountId ||
-      accepted.evaluationDate !== evidence.executedDate ||
-      accepted.predicate !== 'isSpendableInYear'
+      accepted.evaluationDate !== evidence.executedDate
     ) {
       fail('accepted source eligibility is missing or mismatched')
     }
@@ -884,16 +1031,21 @@ function assertOrdinaryWithdrawalExecutionEvidence(
     ) {
       fail('non-retirement penalty coverage is missing or mismatched')
     }
-    const character = characterByAllocation.get(allocation.allocationId)
+    const characters = charactersByAllocation.get(allocation.allocationId) ?? []
     if (accepted.sourceClass === 'cash') {
+      if (accepted.predicate !== 'isSpendableInYear') {
+        fail('cash source predicate is mismatched')
+      }
       if (accepted.availabilityEvidence.kind !== 'intrinsicallySpendable') {
         fail('cash availability evidence is mismatched')
       }
       if (allocation.executedAmount === 0) {
-        if (character !== undefined) fail('zero execution cannot emit tax character')
+        if (characters.length !== 0) fail('zero execution cannot emit tax character')
         continue
       }
+      const character = characters[0]
       if (
+        characters.length !== 1 ||
         character == null ||
         character.actionId !== evidence.actionId ||
         character.sourceAccountId !== allocation.sourceAccountId ||
@@ -906,7 +1058,10 @@ function assertOrdinaryWithdrawalExecutionEvidence(
       ) {
         fail('cash principal character is missing or mismatched')
       }
-    } else {
+    } else if (accepted.sourceClass === 'equityCompensation') {
+      if (accepted.predicate !== 'isSpendableInYear') {
+        fail('equity-compensation source predicate is mismatched')
+      }
       const sourceEvidence = accepted.characterEvidence
       if (
         sourceEvidence.allocationId !== allocation.allocationId ||
@@ -921,10 +1076,12 @@ function assertOrdinaryWithdrawalExecutionEvidence(
         fail('equity-compensation source character evidence is mismatched')
       }
       if (allocation.executedAmount === 0) {
-        if (character !== undefined) fail('zero execution cannot emit tax character')
+        if (characters.length !== 0) fail('zero execution cannot emit tax character')
         continue
       }
+      const character = characters[0]
       if (
+        characters.length !== 1 ||
         character == null ||
         character.actionId !== evidence.actionId ||
         character.sourceAccountId !== allocation.sourceAccountId ||
@@ -940,16 +1097,80 @@ function assertOrdinaryWithdrawalExecutionEvidence(
       ) {
         fail('equity-compensation character is missing or mismatched')
       }
+    } else {
+      if (accepted.predicate !== 'classifyWithdrawalSource') {
+        fail('taxable source predicate is mismatched')
+      }
+      const basis = accepted.basisEvidence
+      if (basis.method === 'notApplicableZeroExecution') {
+        if (
+          allocation.executedAmount !== 0 ||
+          allocation.balanceBefore !== 0 ||
+          allocation.balanceAfter !== 0 ||
+          basis.preExecutionFairMarketValue !== 0 ||
+          basis.remainingCostBasisBeforeExecution !== 0 ||
+          basis.executedAmount !== 0 ||
+          basis.basisRecoveredAmount !== 0 ||
+          basis.realizedCapitalGainOrLossAmount !== 0 ||
+          basis.ratio.representation !== 'notApplicableZeroDenominator' ||
+          basis.ratio.numeratorMinorUnits !== 0 ||
+          basis.ratio.denominatorMinorUnits !== 0 ||
+          basis.ratio.intermediateArithmetic !== 'none' ||
+          basis.basisPreservedAmount !== 0 ||
+          characters.length !== 0
+        ) {
+          fail('zero-execution taxable evidence is mismatched')
+        }
+        continue
+      }
+      if (
+        allocation.executedAmount === 0 ||
+        basis.executedAmount !== allocation.executedAmount ||
+        basis.preExecutionFairMarketValue !== allocation.balanceBefore ||
+        basis.taxAttributionEvidence.allocationId !== allocation.allocationId ||
+        basis.taxAttributionEvidence.sourceAccountId !== allocation.sourceAccountId
+      ) {
+        fail('positive taxable basis evidence is mismatched')
+      }
+      const signedCharacter = characters.reduce((total, character) => {
+        if (
+          character.actionId !== evidence.actionId ||
+          character.allocationId !== allocation.allocationId ||
+          character.sourceAccountId !== allocation.sourceAccountId ||
+          character.sourceClass !== 'taxable' ||
+          character.characterEvidence.allocationId !== allocation.allocationId ||
+          character.characterEvidence.basisEvidenceId !== basis.basisEvidenceId ||
+          character.characterEvidence.segmentAmount !== character.amount
+        ) {
+          fail('taxable character binding is mismatched')
+        }
+        return (
+          total +
+          (character.kind === 'capitalLoss'
+            ? -BigInt(character.amount)
+            : BigInt(character.amount))
+        )
+      }, 0n)
+      if (
+        characters.length === 0 ||
+        signedCharacter !== BigInt(allocation.executedAmount)
+      ) {
+        fail('taxable character does not reconcile to executed principal')
+      }
     }
   }
   if (executedTotal !== BigInt(evidence.disposition.executedAmount)) {
     fail('action execution does not equal allocation execution')
   }
   if (
-    evidence.taxCharacter.length !==
-    evidence.allocations.filter((allocation) => allocation.executedAmount > 0).length
+    [...charactersByAllocation.keys()].some(
+      (allocationId) =>
+        !evidence.allocations.some(
+          (allocation) => allocation.allocationId === allocationId,
+        ),
+    )
   ) {
-    fail('tax character must be bijective with positive allocations')
+    fail('tax character names an unallocated source')
   }
 }
 
@@ -1041,7 +1262,10 @@ function executionEvidence(
   return deepFreeze(evidence)
 }
 
-type OrdinaryWithdrawalExecutionScope = 'cashOnly' | 'cashAndEquityCompensation'
+type OrdinaryWithdrawalExecutionScope =
+  | 'cashOnly'
+  | 'cashAndEquityCompensation'
+  | 'cashEquityCompensationAndTaxable'
 
 function executeOrdinaryWithdrawalsInScope(
   input: ExecuteOrdinaryWithdrawalsInput,
@@ -1062,6 +1286,14 @@ function executeOrdinaryWithdrawalsInScope(
     accountId: accountIdSchema.parse(snapshot.accountId),
     openingBalance: usdCentsSchema.parse(snapshot.openingBalance),
   }))
+  const taxableAccountSnapshots = (input.taxableAccountSnapshots ?? []).map(
+    (snapshot): TaxableAccountOpeningSnapshot => ({
+      accountId: accountIdSchema.parse(snapshot.accountId),
+      openingCostBasis: usdCentsSchema.parse(snapshot.openingCostBasis),
+      ownership: structuredClone(snapshot.ownership),
+      taxUnit: structuredClone(snapshot.taxUnit),
+    }),
+  )
   const scheduled = requests.map(normalizeSchedule).sort(
     (left, right) =>
       compareUtf16CodeUnits(left.chronologyKey, right.chronologyKey) ||
@@ -1077,6 +1309,13 @@ function executeOrdinaryWithdrawalsInScope(
   for (const snapshot of openingBalances) {
     snapshotCounts.set(snapshot.accountId, (snapshotCounts.get(snapshot.accountId) ?? 0) + 1)
   }
+  const taxableSnapshotCounts = new Map<string, number>()
+  for (const snapshot of taxableAccountSnapshots) {
+    taxableSnapshotCounts.set(
+      snapshot.accountId,
+      (taxableSnapshotCounts.get(snapshot.accountId) ?? 0) + 1,
+    )
+  }
   const unchangedBalances = openingBalances
     .map((snapshot): AccountBalanceExecutionEvidence => ({
       ...snapshot,
@@ -1087,20 +1326,41 @@ function executeOrdinaryWithdrawalsInScope(
         compareUtf16CodeUnits(left.accountId, right.accountId) ||
         left.openingBalance - right.openingBalance,
     )
+  const unchangedTaxableBases = taxableAccountSnapshots
+    .map((snapshot): TaxableAccountBasisExecutionEvidence => ({
+      ...snapshot,
+      closingCostBasis: snapshot.openingCostBasis,
+    }))
+    .sort(
+      (left, right) =>
+        compareUtf16CodeUnits(left.accountId, right.accountId) ||
+        left.openingCostBasis - right.openingCostBasis,
+    )
   if (detectedScheduleIssues.length > 0) {
     return deepFreeze({
       committed: false,
       scheduleIssues: detectedScheduleIssues,
       balances: unchangedBalances,
+      taxableBases: unchangedTaxableBases,
       evidence: [],
     })
   }
 
   const accounts = indexUnique(input.plan.accounts, (account) => account.id)
   const snapshots = indexUnique(openingBalances, (snapshot) => snapshot.accountId)
+  const taxableSnapshots = indexUnique(
+    taxableAccountSnapshots,
+    (snapshot) => snapshot.accountId,
+  )
   let workingBalances = new Map<string, UsdCents>()
   for (const [accountId, snapshot] of snapshots) {
     if (snapshot !== null) workingBalances.set(accountId, snapshot.openingBalance)
+  }
+  let workingTaxableBases = new Map<string, UsdCents>()
+  for (const [accountId, snapshot] of taxableSnapshots) {
+    if (snapshot !== null) {
+      workingTaxableBases.set(accountId, snapshot.openingCostBasis)
+    }
   }
 
   const evidence: OrdinaryWithdrawalExecutionEvidence[] = []
@@ -1139,7 +1399,10 @@ function executeOrdinaryWithdrawalsInScope(
         } else {
           if (
             account.type !== 'cash' &&
-            (scope === 'cashOnly' || account.type !== 'equityComp')
+            (scope === 'cashOnly' ||
+              (account.type !== 'equityComp' &&
+                (scope !== 'cashEquityCompensationAndTaxable' ||
+                  account.type !== 'taxable')))
           ) {
             blockingReasons.push(
               createActionReason('withdrawal-source-type-unsupported', {
@@ -1158,6 +1421,35 @@ function executeOrdinaryWithdrawalsInScope(
           } else if (account.ownerPersonId !== request.personId) {
             blockingReasons.push(
               createActionReason('source-owner-mismatch', {
+                personId: request.personId,
+                accountId: allocation.sourceAccountId,
+                allocationId: allocation.allocationId,
+              }),
+            )
+          } else if (
+            account.type === 'taxable' &&
+            (taxableSnapshots.get(allocation.sourceAccountId) == null ||
+              !taxableSnapshotMatches(
+                taxableSnapshots.get(allocation.sourceAccountId)!,
+                account,
+                request.personId,
+                input.year,
+              ))
+          ) {
+            blockingReasons.push(
+              createActionReason('withdrawal-taxable-basis-unsupported', {
+                personId: request.personId,
+                accountId: allocation.sourceAccountId,
+                allocationId: allocation.allocationId,
+              }),
+            )
+          } else if (
+            account.type === 'taxable' &&
+            (workingBalances.get(allocation.sourceAccountId) ?? 0) === 0 &&
+            (workingTaxableBases.get(allocation.sourceAccountId) ?? 0) > 0
+          ) {
+            blockingReasons.push(
+              createActionReason('withdrawal-taxable-basis-unsupported', {
                 personId: request.personId,
                 accountId: allocation.sourceAccountId,
                 allocationId: allocation.allocationId,
@@ -1200,8 +1492,12 @@ function executeOrdinaryWithdrawalsInScope(
     if (request.kind !== 'ordinaryWithdrawal') {
       throw new Error('Unsupported action scope reached ordinary-withdrawal movement')
     }
+    if (item.executionDate === null) {
+      throw new Error('Validated ordinary-withdrawal schedule disappeared')
+    }
 
     const stagedBalances = new Map(workingBalances)
+    const stagedTaxableBases = new Map(workingTaxableBases)
     const allocationEvidence: SourceAllocationExecutionEvidence[] = []
     const taxCharacter: OrdinaryWithdrawalTaxCharacter[] = []
     const penaltyCoverage: NonRetirementSourcePenaltyCoverageEvidence[] = []
@@ -1217,7 +1513,10 @@ function executeOrdinaryWithdrawalsInScope(
       if (
         account == null ||
         (account.type !== 'cash' &&
-          (scope === 'cashOnly' || account.type !== 'equityComp'))
+          (scope === 'cashOnly' ||
+            (account.type !== 'equityComp' &&
+              (scope !== 'cashEquityCompensationAndTaxable' ||
+                account.type !== 'taxable'))))
       ) {
         throw new Error('Validated ordinary-withdrawal source disappeared')
       }
@@ -1258,13 +1557,44 @@ function executeOrdinaryWithdrawalsInScope(
               segmentAmount: positiveExecutedAmount,
             },
           })
+        } else if (account.type === 'taxable') {
+          const snapshot = taxableSnapshots.get(allocation.sourceAccountId)
+          const basisBefore = stagedTaxableBases.get(allocation.sourceAccountId)
+          if (snapshot == null || basisBefore === undefined) {
+            throw new Error('Validated taxable basis snapshot disappeared')
+          }
+          const classified = classifyIndividuallyOwnedTaxableWithdrawal({
+            actionId: request.actionId,
+            allocationId: allocation.allocationId,
+            sourceAccountId: allocation.sourceAccountId,
+            actingPersonId: request.personId,
+            evaluationDate: item.executionDate,
+            executedAmount,
+            preExecutionFairMarketValue: asPositiveUsdCents(before),
+            remainingCostBasisBeforeExecution: basisBefore,
+            ownership: snapshot.ownership,
+            taxUnit: snapshot.taxUnit,
+          })
+          acceptedSourceEligibility.push(classified.acceptedSourceEligibility)
+          taxCharacter.push(...classified.taxCharacter)
+          stagedTaxableBases.set(
+            allocation.sourceAccountId,
+            centsFromBigInt(
+              BigInt(basisBefore) -
+                BigInt(
+                  classified.acceptedSourceEligibility.basisEvidence
+                    .basisRecoveredAmount,
+                ),
+            ),
+          )
         }
       }
-      if (item.executionDate === null) {
-        throw new Error('Validated ordinary-withdrawal schedule disappeared')
-      }
       const sourceClass =
-        account.type === 'cash' ? 'cash' : 'equityCompensation'
+        account.type === 'cash'
+          ? 'cash'
+          : account.type === 'equityComp'
+            ? 'equityCompensation'
+            : 'taxable'
       const vestingEvidenceId =
         account.type === 'equityComp'
           ? equityCompensationVestingEvidenceId(
@@ -1329,7 +1659,7 @@ function executeOrdinaryWithdrawalsInScope(
           sourceClass: 'cash',
           availabilityEvidence: { kind: 'intrinsicallySpendable' },
         })
-      } else {
+      } else if (account.type === 'equityComp') {
         if (vestingEvidenceId === null || characterEvidenceId === null) {
           throw new Error('Equity-compensation evidence identity disappeared')
         }
@@ -1367,13 +1697,31 @@ function executeOrdinaryWithdrawalsInScope(
             characterEvidenceId,
           },
         })
+      } else if (executedAmount === 0) {
+        const basisBefore = stagedTaxableBases.get(allocation.sourceAccountId)
+        if (before !== 0 || basisBefore !== 0) {
+          throw new Error(
+            'Zero-execution taxable evidence requires a depleted zero-basis source',
+          )
+        }
+        acceptedSourceEligibility.push(
+          zeroExecutionTaxableEligibility(
+            request.actionId,
+            allocation.allocationId,
+            allocation.sourceAccountId,
+            item.executionDate,
+          ),
+        )
       }
     }
     const disposition = actionableDisposition(
       request.requestedAmount,
       centsFromBigInt(executedTotal),
     )
-    if (disposition.readiness === 'actionable') workingBalances = stagedBalances
+    if (disposition.readiness === 'actionable') {
+      workingBalances = stagedBalances
+      workingTaxableBases = stagedTaxableBases
+    }
     evidence.push(
       executionEvidence(
         item,
@@ -1399,11 +1747,26 @@ function executeOrdinaryWithdrawalsInScope(
         compareUtf16CodeUnits(left.accountId, right.accountId) ||
         left.openingBalance - right.openingBalance,
     )
+  const taxableBases = taxableAccountSnapshots
+    .map((snapshot): TaxableAccountBasisExecutionEvidence => ({
+      ...snapshot,
+      closingCostBasis:
+        taxableSnapshotCounts.get(snapshot.accountId) === 1
+          ? (workingTaxableBases.get(snapshot.accountId) ??
+            snapshot.openingCostBasis)
+          : snapshot.openingCostBasis,
+    }))
+    .sort(
+      (left, right) =>
+        compareUtf16CodeUnits(left.accountId, right.accountId) ||
+        left.openingCostBasis - right.openingCostBasis,
+    )
 
   return deepFreeze({
     committed: true,
     scheduleIssues: [],
     balances,
+    taxableBases,
     evidence,
   })
 }
@@ -1416,12 +1779,19 @@ function executeOrdinaryWithdrawalsInScope(
 export function executeOrdinaryWithdrawals(
   input: ExecuteOrdinaryWithdrawalsInput,
 ): ExecuteOrdinaryWithdrawalsResult {
-  return executeOrdinaryWithdrawalsInScope(input, 'cashAndEquityCompensation')
+  return executeOrdinaryWithdrawalsInScope(
+    input,
+    input.taxableAccountSnapshots === undefined
+      ? 'cashAndEquityCompensation'
+      : 'cashEquityCompensationAndTaxable',
+  )
 }
 
 function assertCashOnlyExecutionResult(
   result: ExecuteOrdinaryWithdrawalsResult,
-): asserts result is ExecuteCashOrdinaryWithdrawalsResult {
+): asserts result is ExecuteOrdinaryWithdrawalsResult & {
+  evidence: readonly CashOrdinaryWithdrawalExecutionEvidence[]
+} {
   for (const evidence of result.evidence) {
     if (evidence.readiness === 'nonActionable') continue
     if (
@@ -1445,5 +1815,10 @@ export function executeCashOrdinaryWithdrawals(
 ): ExecuteCashOrdinaryWithdrawalsResult {
   const result = executeOrdinaryWithdrawalsInScope(input, 'cashOnly')
   assertCashOnlyExecutionResult(result)
-  return result
+  return deepFreeze({
+    committed: result.committed,
+    scheduleIssues: result.scheduleIssues,
+    balances: result.balances,
+    evidence: result.evidence,
+  })
 }
