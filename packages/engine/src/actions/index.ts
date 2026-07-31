@@ -191,6 +191,7 @@ export {
 export {
   evaluateOwnedNonRothIraPenaltyPrerequisites,
   type Age59HalfReachedPenaltyEvaluation,
+  type DisabilityQualifiedPenaltyEvaluation,
   type EvaluateOwnedNonRothIraPenaltyPrerequisitesInput,
   type EvaluateOwnedNonRothIraPenaltyPrerequisitesResult,
   type ExceptionEvaluationRequiredPenaltyPrerequisite,
@@ -200,6 +201,7 @@ export {
   type OwnedNonRothIraPenaltyOwnerEvidence,
   type OwnedNonRothIraPenaltyPrerequisiteEvaluation,
   type OwnedNonRothIraPenaltySourceEvidence,
+  type QualifiedDisabilityEventEvidence,
   type SimpleIraEarlyDistributionRateEvidence,
   type SimpleIraParticipationEvidence,
   type StandardIraEarlyDistributionRateEvidence,

@@ -275,7 +275,7 @@ const ownedIraPenaltyPrerequisite =
     ownerEvidence: {
       predicate: 'ownerBirthDateForIraPenaltyAgeThreshold',
       ownerPersonId: asPersonId('smoke-person'),
-      birthDate: '1955-08-31',
+      birthDate: '1980-08-31',
       evidenceId: 'smoke-birth-date',
     },
     sourceEvidence: [{
@@ -290,11 +290,19 @@ const ownedIraPenaltyPrerequisite =
       accountOwnershipEvidenceId: 'smoke-ira-ownership',
       iraClassificationEvidenceId: 'smoke-ira-classification',
     }],
+    qualifiedDisabilityEvidence: [{
+      kind: 'disability',
+      disabledPersonId: asPersonId('smoke-person'),
+      disabilityQualificationDate: '2030-12-31',
+      evaluationDate: '2030-12-31',
+      qualifiedOnEvaluationDate: true,
+      disabilityEvidenceId: 'smoke-disability-record',
+    }],
     simpleParticipationEvidence: [],
   })
 assert.equal(
   ownedIraPenaltyPrerequisite.evaluations[0].outcome,
-  'age59HalfReached',
+  'disabilityQualified',
 )
 assert.equal(
   ownedIraPenaltyPrerequisite.evaluations[0]
