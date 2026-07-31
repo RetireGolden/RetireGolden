@@ -217,3 +217,16 @@ export {
   type ResolveOwnedNonRothIraAnnualWithdrawalEvidenceResult,
   type ResolvedOwnedNonRothIraPenaltyPrerequisites,
 } from './ownedNonRothIraAnnualFinalization.js'
+export {
+  stageOwnedNonRothIraOrdinaryWithdrawalMovements,
+  type OwnedNonRothIraMovementActionEvidence,
+  type OwnedNonRothIraMovementAllocationEvidence,
+  type OwnedNonRothIraMovementCandidateDisposition,
+  type OwnedNonRothIraMovementCandidateBalance,
+  type OwnedNonRothIraMovementCandidateScheduleInvalidResult,
+  type OwnedNonRothIraMovementCandidateStagedResult,
+  type OwnedNonRothIraMovementScheduleIssue,
+  type OwnedNonRothIraMovementSourceEvidence,
+  type StageOwnedNonRothIraOrdinaryWithdrawalMovementsInput,
+  type StageOwnedNonRothIraOrdinaryWithdrawalMovementsResult,
+} from './ownedNonRothIraMovementCandidate.js'
