@@ -1067,9 +1067,7 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
     const existing = negativeEvidenceIdBindings.get(evidenceId)
     if (existing !== undefined) {
       throw new RangeError(
-        existing === binding
-          ? 'IRA negative exception evidence IDs must be unique'
-          : 'IRA negative exception evidence ID reuse must bind one exact record',
+        'IRA negative exception evidence ID reuse is prohibited',
       )
     }
     if (disabilityEvidenceBindings.has(evidenceId)) {
