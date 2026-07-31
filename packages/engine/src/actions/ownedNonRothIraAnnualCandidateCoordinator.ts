@@ -1,12 +1,16 @@
 import type {
   AnnualIraBasisAllocationEntryInput,
 } from './annualIraBasisAllocation.js'
-import type {
-  AccountId,
-  ActionId,
-  AllocationId,
-  PersonId,
+import {
+  accountIdSchema,
+  actionIdSchema,
+  allocationIdSchema,
+  type AccountId,
+  type ActionId,
+  type AllocationId,
+  type PersonId,
 } from './identity.js'
+import { parseCivilIsoDate } from './civilDate.js'
 import {
   resolveOwnedNonRothIraAnnualWithdrawalEvidence,
   type CompleteOwnedNonRothIraAnnualWithdrawalFinalizationEvidence,
@@ -25,6 +29,8 @@ import type {
   OwnedNonRothIraOwnerAliveEvidence,
   OwnedNonRothIraPenaltyOwnerEvidence,
   OwnedNonRothIraPenaltySourceEvidence,
+  OwnedNonRothIraSeppPenaltyScheduleReconciliation,
+  OwnedNonRothIraSeppPenaltyScheduleRouteInput,
   QualifiedDisabilityEventEvidence,
   RejectedDisabilityStatusEvidence,
   SimpleIraParticipationEvidence,
@@ -54,6 +60,8 @@ export interface CoordinateOwnedNonRothIraAnnualWithdrawalCandidateInput {
     readonly Readonly<OwnedNonRothIraCandidateOwnerAliveEvidence>[]
   iraSeppStatusEvidence?:
     readonly Readonly<OwnedNonRothIraNoSeppStatusEvidence>[]
+  iraSeppScheduleRoutes?:
+    readonly Readonly<OwnedNonRothIraSeppPenaltyScheduleRouteInput>[]
   noOtherExceptionAttestations?:
     readonly Readonly<NoOtherStatutoryExceptionClaimedAttestation>[]
   simpleParticipationEvidence:
@@ -105,6 +113,8 @@ export interface OwnedNonRothIraAnnualCandidateEvidenceBlockedResult
     Readonly<OwnedNonRothIraMovementCandidateStagedResult>
   annualEvidence: null
   bindingEvidence: null
+  iraSeppScheduleReconciliations:
+    readonly Readonly<OwnedNonRothIraSeppPenaltyScheduleReconciliation>[]
   issues: readonly [
     Readonly<OwnedNonRothIraPenaltyEvidenceMissingIssue>,
     ...Readonly<OwnedNonRothIraPenaltyEvidenceMissingIssue>[],
@@ -141,6 +151,48 @@ function deepFreeze<T>(value: T): Readonly<T> {
 
 function stableId(prefix: string, parts: readonly unknown[]): string {
   return `${prefix}:${JSON.stringify(parts)}`
+}
+
+export interface BuildOwnedNonRothIraStagedDistributionDateEvidenceIdInput {
+  movementCandidateId: string
+  actionId: ActionId
+  allocationId: AllocationId
+  sourceAccountId: AccountId
+  executionDate: string
+}
+
+/**
+ * Reproduces the coordinator's candidate-bound scheduled-date evidence ID.
+ * This identifies staged planning evidence, not custodian execution proof.
+ */
+export function buildOwnedNonRothIraStagedDistributionDateEvidenceId(
+  input:
+    Readonly<BuildOwnedNonRothIraStagedDistributionDateEvidenceIdInput>,
+): string {
+  const movementCandidateId = input.movementCandidateId
+  if (
+    typeof movementCandidateId !== 'string' ||
+    movementCandidateId.trim().length === 0
+  ) {
+    throw new TypeError(
+      'Owned IRA movement candidate ID must be a nonblank stable identifier',
+    )
+  }
+  const actionId = actionIdSchema.parse(input.actionId)
+  const allocationId = allocationIdSchema.parse(input.allocationId)
+  const sourceAccountId = accountIdSchema.parse(input.sourceAccountId)
+  if (parseCivilIsoDate(input.executionDate) === null) {
+    throw new RangeError(
+      'Owned IRA staged distribution date must be a valid civil date',
+    )
+  }
+  return stableId('owned-non-roth-ira-staged-distribution-date', [
+    movementCandidateId,
+    actionId,
+    allocationId,
+    sourceAccountId,
+    input.executionDate,
+  ])
 }
 
 function sourceFactsMatchPoolMember(
@@ -263,16 +315,14 @@ function derivePenaltySourceEvidence(
         evaluationDate: allocation.executionDate,
         // This satisfies the downstream field as candidate-bound scheduled-date
         // evidence. It is not external custodian or actual-execution proof.
-        distributionDateEvidenceId: stableId(
-          'owned-non-roth-ira-staged-distribution-date',
-          [
-            movementCandidate.movementCandidateId,
-            allocation.actionId,
-            allocation.allocationId,
-            allocation.sourceAccountId,
-            allocation.executionDate,
-          ],
-        ),
+        distributionDateEvidenceId:
+          buildOwnedNonRothIraStagedDistributionDateEvidenceId({
+            movementCandidateId: movementCandidate.movementCandidateId,
+            actionId: allocation.actionId,
+            allocationId: allocation.allocationId,
+            sourceAccountId: allocation.sourceAccountId,
+            executionDate: allocation.executionDate,
+          }),
         accountOwnershipEvidenceId:
           source.accountOwnershipEvidenceId,
         iraClassificationEvidenceId:
@@ -387,6 +437,7 @@ export function coordinateOwnedNonRothIraAnnualWithdrawalCandidate(
       penaltySourceEvidence,
     ),
     iraSeppStatusEvidence: input.iraSeppStatusEvidence,
+    iraSeppScheduleRoutes: input.iraSeppScheduleRoutes,
     noOtherExceptionAttestations:
       input.noOtherExceptionAttestations,
     simpleParticipationEvidence: input.simpleParticipationEvidence,
@@ -399,6 +450,8 @@ export function coordinateOwnedNonRothIraAnnualWithdrawalCandidate(
       movementCandidate,
       annualEvidence: null,
       bindingEvidence: null,
+      iraSeppScheduleReconciliations:
+        annualResult.iraSeppScheduleReconciliations,
       issues: annualResult.issues,
     })
   }

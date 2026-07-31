@@ -279,7 +279,9 @@ export {
   type ReconcileOwnedNonRothIraSeppAnnualScheduleResult,
 } from './ownedNonRothIraSeppAnnualReconciliation.js'
 export {
+  buildOwnedNonRothIraStagedDistributionDateEvidenceId,
   coordinateOwnedNonRothIraAnnualWithdrawalCandidate,
+  type BuildOwnedNonRothIraStagedDistributionDateEvidenceIdInput,
   type CoordinateOwnedNonRothIraAnnualWithdrawalCandidateInput,
   type CoordinateOwnedNonRothIraAnnualWithdrawalCandidateResult,
   type OwnedNonRothIraCandidateOwnerAliveEvidence,

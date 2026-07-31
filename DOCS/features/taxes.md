@@ -294,8 +294,11 @@ rules and citations: [domain rules §16](../domain/domain-rules-reference.md#16-
   route remains `exceptionEvaluationRequired` and supplies no negative-SEPP authority. Submitted routes
   cannot coexist with no-SEPP evidence. All-basis payments remain schedule members without evaluations;
   age and disability precede SEPP; qualified SIMPLE payments bypass participation/rate facts while fallback
-  SIMPLE remains 25%/10%. The annual finalizer and coordinator cannot yet submit these routes or consume
-  the new outcome, and this establishes no actionability, movement, readiness, execution, or simulation.
+  SIMPLE remains 25%/10%. The annual finalizer and coordinator now forward raw routes, consume complete
+  qualified outcomes, preserve full route diagnostics when blocked, and transitively bind compact route
+  results into finalization and candidate evidence. A public staged-date ID builder reproduces the
+  coordinator's deterministic planning-evidence formula, but exact rejoin stays inside the coordinator.
+  This establishes no actionability, movement, readiness, execution, or simulation.
 - **Property disposition.** Setting `costBasis` on a property replaces the tax-free `expectedNetProceeds`
   estimate with exact treatment: capital gain above basis net of `sellingCostPct`, the §121 primary-residence
   exclusion, and ordinary-income depreciation recapture. Gains flow through the capital-gains stack.

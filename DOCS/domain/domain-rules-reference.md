@@ -616,8 +616,12 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   remain `exceptionEvaluationRequired`, provide no rejected-SEPP authority, and cannot coexist with a
   no-SEPP record. All-basis payments remain schedule members without penalty evaluations; age and disability
   precede SEPP; a SEPP-qualified SIMPLE payment bypasses participation/rate facts while fallback SIMPLE
-  treatment remains 25%/10%. The annual finalizer and coordinator cannot yet submit routes or consume
-  `iraSeppQualified`; no result establishes movement, actionability, readiness, execution, or simulation.
+  treatment remains 25%/10%. The annual finalizer and coordinator now forward raw routes, consume only
+  complete `iraSeppQualified` outcomes, expose canonical route diagnostics when annual evidence is blocked,
+  and bind compact route results into finalization evidence without changing no-route IDs. The coordinator's
+  public staged-date ID builder reproduces its deterministic planning-evidence formula but grants no authority;
+  exact source/date rejoin remains inside the coordinator. No result establishes movement, actionability,
+  readiness, execution, or simulation.
   This slice does not calculate a legal SEPP amount, persist Plan state, or model later
   modification/recapture consequences.
   Source: [IRS early-distribution exception

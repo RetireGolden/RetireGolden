@@ -30,8 +30,13 @@ Source of truth: [github.com/RetireGolden/RetireGolden](https://github.com/Retir
   rebuild each route's complete inventory from canonical annual character, and
   issue final `iraSeppQualified` zero-penalty decisions only after complete
   reconciliation and exact payment rejoin. Non-success routes remain pending
-  and supply no negative-SEPP authority. The annual finalizer and coordinator
-  do not yet accept these routes or consume the new outcome.
+  and supply no negative-SEPP authority. The pure annual finalizer and
+  movement-candidate coordinator now forward these raw routes, accept the
+  final qualified outcome, preserve detailed route diagnostics when blocked,
+  and bind compact canonical route results into annual evidence. Their public
+  staged-date ID builder reproduces planning evidence only; exact coordinator
+  rejoin remains the authority, and neither boundary commits movement or
+  establishes actionability.
 - Parameters (tax brackets, limits, SSA tables, Medicare/FPL) are versioned
   data packs under `params/`, with provenance.
 
