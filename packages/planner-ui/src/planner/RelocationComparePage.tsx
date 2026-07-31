@@ -270,7 +270,7 @@ export function RelocationComparePage() {
           <p className="card-hint">
             <strong>Income tax is one relocation factor, not the decision.</strong> Property and sales taxes, housing
             and living costs, healthcare access, and being near people you love are all outside this model. The
-            optional local-rate and spending-adjustment knobs are blunt approximations you control, nothing here
+            optional local-rate and spending-adjustment knobs are blunt approximations you control. Nothing here
             recommends a &quot;best state.&quot; <LearnLink {...LEARN.stateRelocation} />
           </p>
         </div>
