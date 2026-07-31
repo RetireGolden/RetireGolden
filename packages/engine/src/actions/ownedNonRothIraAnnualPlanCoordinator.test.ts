@@ -531,6 +531,23 @@ describe('Plan-owned non-Roth IRA annual coordinator', () => {
       issue: 'line8EntryForeign',
     },
     {
+      name: 'invalid line-8 sequence',
+      alter: (value: CoordinatePlanOwnedNonRothIraAnnualWithdrawalCandidateInput) => {
+        value.line8InventoryEvidence = {
+          ...value.line8InventoryEvidence,
+          entries: [{
+            actionId: asActionId('conversion-2030'),
+            allocationId: asAllocationId('conversion-allocation'),
+            sourceAccountId: requestedSourceId,
+            scheduledDate: '2030-07-01',
+            scheduledSequence: 0,
+            grossAmount: asUsdCents(1_000),
+          }],
+        }
+      },
+      issue: 'line8InventoryEvidenceBindingMismatch',
+    },
+    {
       name: 'different ledger run',
       alter: (value: CoordinatePlanOwnedNonRothIraAnnualWithdrawalCandidateInput) => {
         value.line8InventoryEvidence = {

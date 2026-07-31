@@ -586,13 +586,18 @@ function canonicalLine8Entries(
           { actionId, sourceAccountId },
         ))
       }
-      if (
+      const scheduledSequence = (
         !Number.isSafeInteger(entry.scheduledSequence) ||
         entry.scheduledSequence <= 0
-      ) {
-        throw new RangeError(
+      )
+        ? 1
+        : entry.scheduledSequence
+      if (scheduledSequence !== entry.scheduledSequence) {
+        issues.push(inventoryIssue(
+          'line8InventoryEvidenceBindingMismatch',
           'Line-8 entry sequence must be a positive safe integer',
-        )
+          { actionId, sourceAccountId },
+        ))
       }
       const identity = JSON.stringify([actionId, allocationId])
       if (identities.has(identity)) {
@@ -608,7 +613,7 @@ function canonicalLine8Entries(
         allocationId,
         sourceAccountId,
         scheduledDate,
-        scheduledSequence: entry.scheduledSequence,
+        scheduledSequence,
         grossAmount: usdCentsSchema.parse(entry.grossAmount),
       }
     })
