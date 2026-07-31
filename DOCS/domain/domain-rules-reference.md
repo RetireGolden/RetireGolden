@@ -541,8 +541,13 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   The stable `movementCandidateId` binds the owner/year, canonical requests and schedule, immutable
   owned-IRA source proofs, openings, staged physical evidence, candidate closings, and line-7 entries.
   This seam also reports `movement: notCommitted`: it proves neither annual character nor penalty
-  treatment, does not execute or simulate movement, and cannot commit independently. A later atomic
-  coordinator must bind its `movementCandidateId` to the annual gate's `finalizationEvidenceId`.
+  treatment, does not execute or simulate movement, and cannot commit independently. A pure annual
+  candidate coordinator now exact-rejoins every requested source to its owner-wide pool member,
+  derives penalty-source facts from the staged source and date, and binds the `movementCandidateId`,
+  line-7 allocation evidence ID, and `finalizationEvidenceId`. Its generated distribution-date ID is
+  candidate-bound scheduled-date evidence, not custodian or actual-execution proof. Every coordinator
+  arm remains `movement: notCommitted` and `actionability: notEstablished`; unresolved penalty evidence,
+  an invalid schedule, or no positive movement produces an explicit non-bound result.
   Source: [IRS early-distribution exception
   matrix](https://www.irs.gov/retirement-plans/plan-participant-employee/retirement-topics-exceptions-to-tax-on-early-distributions).
 - **Fixed-asset disposition.** Setting `costBasis` on a property switches its planned sale from the legacy
