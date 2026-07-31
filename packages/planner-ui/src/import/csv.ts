@@ -85,7 +85,7 @@ export function parseCsv(text: string): CsvParseResult {
     i++
   }
   if (inQuotes) {
-    return { ok: false, message: 'File ends inside a quoted value — it looks truncated or corrupted.' }
+    return { ok: false, message: 'File ends inside a quoted value. It looks truncated or corrupted.' }
   }
   if (field !== '' || row.length > 0) {
     const err = endRow()

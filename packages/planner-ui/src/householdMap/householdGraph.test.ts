@@ -207,7 +207,7 @@ describe('buildHouseholdGraph', () => {
     const graph = buildHouseholdGraph(coupleFixture())
     expect(nodeById(graph, 'acct:ira1').completeness).toEqual({
       state: 'partial',
-      missing: ['No estate destination set — the legacy default applies'],
+      missing: ['No estate destination set. The legacy default applies'],
     })
     // Setting a destination clears the flag (blended fixture sets ira1 + brokerage).
     const blended = buildHouseholdGraph(blendedFixture())
@@ -346,7 +346,7 @@ describe('buildHouseholdGraph', () => {
     expect(dupNodes.map((n) => n.id)).toEqual(['acct:dup', 'acct:dup:2'])
     // Every occurrence of the duplicated id carries the attention fact.
     for (const n of dupNodes) {
-      expect(n.completeness.missing).toContain('Duplicate account id "dup" — provenance ambiguous')
+      expect(n.completeness.missing).toContain('Duplicate account id "dup": provenance ambiguous')
     }
     // The suffix cannot collide with a real id: `dup:2` encodes differently.
     expect(accountNodeId('dup:2')).toBe('acct:dup\\:2')

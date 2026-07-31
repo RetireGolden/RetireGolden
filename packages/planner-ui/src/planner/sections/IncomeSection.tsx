@@ -55,7 +55,7 @@ function IncomeFields({ stream, index }: { stream: IncomeStream; index: number }
           />
           <NumberField
             label="Stop age"
-            help="Only set this to end wages at a different age than the retirement age from the Household form — e.g. part-time work that winds down earlier."
+            help="Only set this to end wages at a different age than the retirement age from the Household form, e.g. part-time work that winds down earlier."
             hint={retireAge !== null ? `Blank = retirement age (${retireAge}).` : 'Blank = retirement age.'}
             value={stream.endAge}
             allowNull
@@ -82,7 +82,8 @@ function IncomeFields({ stream, index }: { stream: IncomeStream; index: number }
           <p className="field-hint">
             Social Security is managed on the <Link to="../social-security">Social Security</Link> step so the
             earnings-derived benefit stays in one place. Edit the benefit and claim age there; the{' '}
-            <Link to="../social-security-analysis">Social Security analysis</Link> can apply the best claim age.
+            <Link to="../social-security-analysis">Social Security analysis</Link> can apply the top-ranked claim age
+            for the objective you pick there.
           </p>
         </>
       )

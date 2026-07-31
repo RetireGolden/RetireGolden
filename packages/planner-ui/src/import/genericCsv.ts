@@ -144,7 +144,7 @@ export function draftPlanFromGenericCsv(
       review.push({
         status: 'skipped',
         source: name,
-        detail: 'Summary/total row — counting it would double the money above it.',
+        detail: 'Summary/total row. Counting it would double the money above it.',
         locator: csvRow(rowNumber, columnFor(nameCol) ?? balanceColumn),
         confidence: 'unmapped',
       })
@@ -204,7 +204,7 @@ export function draftPlanFromGenericCsv(
             status: 'defaulted',
             source: name,
             detail:
-              (basisRaw !== null && basisRaw < 0 ? 'The cost basis cell was negative, so it was ignored — ' : 'No cost basis column/value — ') +
+              (basisRaw !== null && basisRaw < 0 ? 'The cost basis cell was negative, so it was ignored, ' : 'No cost basis column/value, ') +
               'basis was set equal to the balance (no unrealized gain). Correct it on the Accounts screen.',
             // The landed basis came from the balance cell; a rejected negative
             // basis cell is context, never the source of the landed value.
@@ -248,7 +248,7 @@ export function draftPlanFromGenericCsv(
           review.push({
             status: 'defaulted',
             source: name,
-            detail: `The negative balance looked like a liability sign convention — imported as a $${amount.toLocaleString('en-US', { maximumFractionDigits: 0 })} debt.`,
+            detail: `The negative balance looked like a liability sign convention, imported as a $${amount.toLocaleString('en-US', { maximumFractionDigits: 0 })} debt.`,
             locator: csvRow(rowNumber, balanceColumn),
             confidence: 'assumed',
             target: `accounts[${accountIndex}]`,
@@ -257,7 +257,7 @@ export function draftPlanFromGenericCsv(
         review.push({
           status: 'defaulted',
           source: name,
-          detail: 'Debts need an interest rate and monthly payment — defaults of 5% and $0/mo were used; set the real terms on the Accounts screen.',
+          detail: 'Debts need an interest rate and monthly payment. Defaults of 5% and $0/mo were used; set the real terms on the Accounts screen.',
           locator: csvRow(rowNumber),
           confidence: 'assumed',
           target: `accounts[${accountIndex}]`,
@@ -295,7 +295,7 @@ export function draftPlanFromGenericCsv(
       source: `${name}${typeText !== '' ? ` (${typeText})` : ''}`,
       detail:
         typeGuess === null
-          ? `No recognizable account type — imported as a taxable account with a $${amount.toLocaleString('en-US', { maximumFractionDigits: 0 })} balance. Change the type on the Accounts screen if that is wrong.`
+          ? `No recognizable account type, imported as a taxable account with a $${amount.toLocaleString('en-US', { maximumFractionDigits: 0 })} balance. Change the type on the Accounts screen if that is wrong.`
           : `Imported as a ${mapped} account with a $${amount.toLocaleString('en-US', { maximumFractionDigits: 0 })} balance.`,
       locator: mappedLocator,
       confidence: typeFromColumn ? 'exact' : 'assumed',
@@ -307,7 +307,7 @@ export function draftPlanFromGenericCsv(
       review.push({
         status: 'unmapped',
         source: name,
-        detail: `The cost basis cell was not imported — only taxable accounts track cost basis, and this row was imported as ${mapped}.`,
+        detail: `The cost basis cell was not imported. Only taxable accounts track cost basis, and this row was imported as ${mapped}.`,
         locator: csvRow(rowNumber, columnFor(basisCol)),
         confidence: 'unmapped',
       })
@@ -316,7 +316,7 @@ export function draftPlanFromGenericCsv(
       review.push({
         status: 'unmapped',
         source: name,
-        detail: `The contribution cell was not imported — ${mapped} accounts do not carry an annual contribution.`,
+        detail: `The contribution cell was not imported. ${mapped} accounts do not carry an annual contribution.`,
         locator: csvRow(rowNumber, columnFor(contributionCol)),
         confidence: 'unmapped',
       })
@@ -330,7 +330,7 @@ export function draftPlanFromGenericCsv(
   review.push({
     status: 'unmapped',
     source: 'Everything except accounts',
-    detail: 'Spreadsheet rows import as account balances only — enter household, income, spending, and Social Security in the planner sections.',
+    detail: 'Spreadsheet rows import as account balances only. Enter household, income, spending, and Social Security in the planner sections.',
     locator: { kind: 'none', note: 'spreadsheet rows carry only account balances, not household, income, spending, or Social Security' },
     confidence: 'unmapped',
   })

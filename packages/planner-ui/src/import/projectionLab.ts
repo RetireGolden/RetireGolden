@@ -32,7 +32,7 @@ export type ProjectionLabImportResult =
 
 const UNRECOGNIZED_MESSAGE =
   'This file does not match a ProjectionLab data export we recognize (expected a "currentFinances" section with accounts). ' +
-  'ProjectionLab may have changed its format — you can still bring balances over with the broker CSV or spreadsheet import.'
+  'ProjectionLab may have changed its format. You can still bring balances over with the broker CSV or spreadsheet import.'
 const TOO_MANY_RECORDS_MESSAGE =
   `This ProjectionLab export contains more than ${MAX_PROJECTIONLAB_RECORDS.toLocaleString('en-US')} records in the sections this importer reads. ` +
   'Split or simplify the export, or bring balances over with the broker CSV or spreadsheet import.'
@@ -165,7 +165,7 @@ export function mapProjectionLabExport(
     review.push({
       status: 'defaulted',
       source: `Birth year ${birthYear}`,
-      detail: 'Date of birth set to July 1 of your ProjectionLab birth year — set the exact date on the Household screen.',
+      detail: 'Date of birth set to July 1 of your ProjectionLab birth year. Set the exact date on the Household screen.',
       locator: jsonPath(`${userKey}.birthYear`),
       confidence: 'assumed',
       target: 'household.people[0].dob',
@@ -174,7 +174,7 @@ export function mapProjectionLabExport(
     review.push({
       status: 'unmapped',
       source: 'Date of birth',
-      detail: 'The export carried no readable birth year — set your date of birth on the Household screen.',
+      detail: 'The export carried no readable birth year. Set your date of birth on the Household screen.',
       locator: { kind: 'none', note: 'the export carried no readable birth year' },
       confidence: 'unmapped',
     })
@@ -182,7 +182,7 @@ export function mapProjectionLabExport(
   review.push({
     status: 'defaulted',
     source: 'Filing status & state',
-    detail: `Filing status defaulted to single and state to ${plan.household.state} — ProjectionLab exports do not carry them. Set both on the Household screen.`,
+    detail: `Filing status defaulted to single and state to ${plan.household.state}, ProjectionLab exports do not carry them. Set both on the Household screen.`,
     locator: { kind: 'none', note: 'ProjectionLab exports do not carry filing status or state' },
     confidence: 'assumed',
   })
@@ -231,7 +231,7 @@ export function mapProjectionLabExport(
       review.push({
         status: 'unmapped',
         source: `${name} (${typeStr || 'unknown type'}, $${balance.toLocaleString('en-US', { maximumFractionDigits: 0 })})`,
-        detail: 'Account type has no RetireGolden equivalent mapping — add it by hand on the Accounts screen.',
+        detail: 'Account type has no RetireGolden equivalent mapping. Add it by hand on the Accounts screen.',
         locator: jsonPath(accountPath),
         confidence: 'unmapped',
       })
@@ -263,7 +263,7 @@ export function mapProjectionLabExport(
           review.push({
             status: 'defaulted',
             source: name,
-            detail: 'No cost basis in the export — basis was set equal to the balance (no unrealized gain). Correct it on the Accounts screen.',
+            detail: 'No cost basis in the export, basis was set equal to the balance (no unrealized gain). Correct it on the Accounts screen.',
             locator: jsonPath(accountPath),
             confidence: 'assumed',
             target: `accounts[${accountIndex}].costBasis`,
@@ -310,13 +310,13 @@ export function mapProjectionLabExport(
         // A pure default has NO source coordinate (a jsonPath here would
         // fabricate one); the scaled fraction genuinely derives from the field.
         let interestPct = 5
-        let interestNote: string | null = 'No readable interest rate in the export — 5% was assumed. Set the real rate on the Accounts screen.'
+        let interestNote: string | null = 'No readable interest rate in the export, 5% was assumed. Set the real rate on the Accounts screen.'
         let interestLocator: SourceLocator = { kind: 'none', note: 'no readable interest rate in the export' }
         let interestConfidence: ImportConfidence = 'assumed'
         if (typeof interestRaw === 'number' && Number.isFinite(interestRaw) && interestRaw >= 0 && interestRaw < 100) {
           if (interestRaw > 0 && interestRaw < 1) {
             interestPct = Math.round(interestRaw * 100 * 10000) / 10000
-            interestNote = `The export's interest rate of ${interestRaw} looked like a fraction — imported as ${interestPct}%. Check it on the Accounts screen.`
+            interestNote = `The export's interest rate of ${interestRaw} looked like a fraction, imported as ${interestPct}%. Check it on the Accounts screen.`
             interestLocator = jsonPath(`${accountPath}.interestRate`)
             interestConfidence = 'derived'
           } else {
@@ -347,7 +347,7 @@ export function mapProjectionLabExport(
           review.push({
             status: 'defaulted',
             source: name,
-            detail: 'No monthly payment in the export — set the real payment on the Accounts screen.',
+            detail: 'No monthly payment in the export. Set the real payment on the Accounts screen.',
             locator: { kind: 'none', note: 'no monthly payment in the export' },
             confidence: 'assumed',
             target: `accounts[${accountIndex}].monthlyPayment`,
@@ -417,7 +417,7 @@ export function mapProjectionLabExport(
       review.push({
         status: 'unmapped',
         source: name,
-        detail: 'Social Security needs a claim age and benefit basis — set it up on the Social Security screen (you can import your SSA statement there).',
+        detail: 'Social Security needs a claim age and benefit basis. Set it up on the Social Security screen (you can import your SSA statement there).',
         locator: jsonPath(incomePath),
         confidence: 'unmapped',
       })
@@ -435,7 +435,7 @@ export function mapProjectionLabExport(
       review.push({
         status: 'defaulted',
         source: name,
-        detail: `Imported as recurring ordinary income of $${annual.toLocaleString('en-US')} /yr with no end year — set dates and tax treatment on the Income screen.`,
+        detail: `Imported as recurring ordinary income of $${annual.toLocaleString('en-US')} /yr with no end year, set dates and tax treatment on the Income screen.`,
         locator: jsonPath(incomePath),
         confidence: 'assumed',
         target: `incomes[${plan.incomes.length - 1}]`,
@@ -462,7 +462,7 @@ export function mapProjectionLabExport(
     review.push({
       status: 'defaulted',
       source: expenseNames.length > 0 ? expenseNames.join(', ') : 'Expenses',
-      detail: `Baseline annual spending set to the $${expenseTotal.toLocaleString('en-US')} sum of your ProjectionLab expenses — RetireGolden models one baseline plus phases/goals, so re-shape it on the Spending screen (healthcare is modeled separately).`,
+      detail: `Baseline annual spending set to the $${expenseTotal.toLocaleString('en-US')} sum of your ProjectionLab expenses, RetireGolden models one baseline plus phases/goals, so re-shape it on the Spending screen (healthcare is modeled separately).`,
       locator: { kind: 'derived', from: expenseLocators, note: 'summed annual expenses' },
       confidence: 'derived',
       target: 'expenses.baseAnnual',
@@ -471,7 +471,7 @@ export function mapProjectionLabExport(
     review.push({
       status: 'unmapped',
       source: 'Spending',
-      detail: 'No readable expenses in the export — set baseline spending on the Spending screen.',
+      detail: 'No readable expenses in the export. Set baseline spending on the Spending screen.',
       locator: { kind: 'none', note: 'no readable expenses in the export' },
       confidence: 'unmapped',
     })
@@ -480,7 +480,7 @@ export function mapProjectionLabExport(
   review.push({
     status: 'unmapped',
     source: 'Strategies, assumptions & scenarios',
-    detail: 'Withdrawal strategy, Roth conversions, market assumptions, and scenarios do not transfer between tools — review the Strategy and Assumptions screens.',
+    detail: 'Withdrawal strategy, Roth conversions, market assumptions, and scenarios do not transfer between tools. Review the Strategy and Assumptions screens.',
     locator: { kind: 'none', note: 'withdrawal strategy, conversions, assumptions, and scenarios do not transfer between tools' },
     confidence: 'unmapped',
   })

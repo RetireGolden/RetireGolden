@@ -78,12 +78,12 @@ export const BUCKET_PRESETS: readonly BucketPreset[] = [
     id: 'three',
     label: '3 buckets (2 yrs / 8 yrs / growth)',
     spans: [2, 8],
-    bucketLabels: ['Bucket 1 — next 2 years of net spending', 'Bucket 2 — years 3–10', 'Bucket 3 — growth (the rest)'],
+    bucketLabels: ['Bucket 1, next 2 years of net spending', 'Bucket 2, years 3–10', 'Bucket 3, growth (the rest)'],
   },
   {
     id: 'two',
     label: '2 buckets (3 yrs / growth)',
     spans: [3],
-    bucketLabels: ['Bucket 1 — next 3 years of net spending', 'Bucket 2 — growth (the rest)'],
+    bucketLabels: ['Bucket 1, next 3 years of net spending', 'Bucket 2, growth (the rest)'],
   },
 ]

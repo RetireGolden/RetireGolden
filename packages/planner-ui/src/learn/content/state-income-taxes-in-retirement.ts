@@ -56,8 +56,8 @@ export const stateIncomeTaxesRetirementArticle: LearningArticle = {
       columns: ['Question', 'Why it matters', 'RetireGolden lens'],
       rows: [
         ['Does the state tax retirement income?', 'Pensions and IRA withdrawals may not all be treated the same', 'Modeled retirement-income exclusions where available'],
-        ['Does the state tax Social Security?', 'Federal taxable benefits may not match state treatment', 'State pack determines whether taxable benefits are included'],
-        ['How are gains treated?', 'Many states tax capital gains like ordinary income', 'State pack setting for capital gains as ordinary income'],
+        ['Does the state tax Social Security?', 'Federal taxable benefits may not match state treatment', 'The state tax rules decide whether taxable benefits are included'],
+        ['How are gains treated?', 'Many states tax capital gains like ordinary income', 'A state tax rule sets whether gains are treated as ordinary income'],
         ['Will you move?', 'Later years may use different rules', 'Household residence by year and plan assumptions'],
       ],
     },
@@ -76,7 +76,7 @@ export const stateIncomeTaxesRetirementArticle: LearningArticle = {
     { type: 'heading', text: 'Why it matters in RetireGolden' },
     {
       type: 'prose',
-      md: 'RetireGolden combines the federal tax calculator with a state tax calculator. The state model starts from ordinary income, capital gains when the state taxes gains as ordinary, and federally taxable Social Security when the state taxes Social Security. It then applies major retirement-income exclusions, state standard deductions, and brackets from the state pack. A flat effective-rate override in **Assumptions** takes precedence when you need a manual approximation.',
+      md: 'RetireGolden combines the federal tax calculator with a state tax calculator. The state model starts from ordinary income, capital gains when the state taxes gains as ordinary, and federally taxable Social Security when the state taxes Social Security. It then applies major retirement-income exclusions, state standard deductions, and brackets from the per-state tax data. A flat effective-rate override in **Assumptions** takes precedence when you need a manual approximation.',
     },
     { type: 'heading', text: 'Common mistakes' },
     {

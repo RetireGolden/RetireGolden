@@ -23,10 +23,10 @@ import { currentStartYear } from '../useProjection'
 const ASSET_RETURN = { stocks: 7, bonds: 4, cash: 2.5 } as const
 
 function riskLabel(stocksPct: number): string {
-  if (stocksPct < 25) return 'Conservative — low volatility, lower growth'
-  if (stocksPct < 50) return 'Balanced — moderate ups and downs'
-  if (stocksPct < 75) return 'Growth — meaningful swings in bad years'
-  return 'Aggressive — expect large drawdowns on the way'
+  if (stocksPct < 25) return 'Conservative: low volatility, lower growth'
+  if (stocksPct < 50) return 'Balanced: moderate ups and downs'
+  if (stocksPct < 75) return 'Growth: meaningful swings in bad years'
+  return 'Aggressive: expect large drawdowns on the way'
 }
 
 export function ReturnEstimatorModal({ initialPct, onApply, onClose }: { initialPct: number | null; onApply: (pct: number) => void; onClose: () => void }) {
@@ -39,7 +39,7 @@ export function ReturnEstimatorModal({ initialPct, onApply, onClose }: { initial
     <Modal title="Estimate expected return" onClose={onClose}>
       <p className="card-hint">
         Describe roughly how this account is invested; we blend long-run nominal return assumptions (stocks {ASSET_RETURN.stocks}%,
-        bonds {ASSET_RETURN.bonds}%, cash {ASSET_RETURN.cash}% — illustrative, before fees, not a forecast). More stocks
+        bonds {ASSET_RETURN.bonds}%, cash {ASSET_RETURN.cash}%; illustrative, before fees, not a forecast). More stocks
         means higher expected growth and bigger swings; Monte Carlo is where that risk shows up.
       </p>
       <div className="alloc-row">
@@ -116,7 +116,7 @@ function WeightsGrid({ title, weights, onCommit }: { title?: string; weights: Al
         ))}
       </div>
       <p className={Math.abs(sum - 100) <= 0.5 ? 'muted small' : 'issue-list small'} role="status">
-        Total {sum.toFixed(0)}%{Math.abs(sum - 100) > 0.5 ? ' — weights must sum to 100%' : ''}
+        Total {sum.toFixed(0)}%{Math.abs(sum - 100) > 0.5 ? ' (weights must sum to 100%)' : ''}
       </p>
     </div>
   )
@@ -171,7 +171,7 @@ export function AllocationPanel({ account, plan, onCommit }: { account: Allocata
         />
         <SelectField
           label="Rebalancing"
-          help="Annual rebalancing trades back to the target mix each January. In a brokerage account those sales realize capital gains through your cost basis; retirement-account rebalancing is tax-free. Drift lets winners run — the mix (and risk) then wanders from the target."
+          help="Annual rebalancing trades back to the target mix each January. In a brokerage account those sales realize capital gains through your cost basis; retirement-account rebalancing is tax-free. Drift lets winners run. The mix (and risk) then wanders from the target."
           value={policy.rebalancing}
           options={[
             { value: 'annual', label: 'Rebalance annually to target' },

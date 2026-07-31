@@ -48,7 +48,7 @@ export const pensionElectionPending: Detector = {
         `${pending.name} offers a $${Math.round(analysis.lumpSum).toLocaleString()} lump sum in ${analysis.electionYear}. ` +
         `At the ${analysis.curveRatePct.toFixed(1)}% curve-anchored discount rate to your planning age, ${direction}. ` +
         'The Accounts section shows the full sensitivity table (discount rate × longevity, survivor option value); ' +
-        'the decision hinges on longevity, survivor needs, and what you would earn on the rollover — tradeoffs, not a verdict.',
+        'the decision hinges on longevity, survivor needs, and what you would earn on the rollover. Those are tradeoffs, not a verdict.',
       impact: {
         qualitative:
           'Preview taking the lump sum (tax-free rollover to a traditional IRA) against keeping the annuity, priced on the exact ledger.',

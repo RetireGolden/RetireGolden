@@ -682,12 +682,12 @@ export function formatDocumentBenchmarkReport(report: DocumentBenchmarkReport): 
   const out: string[] = []
   const width = 26
 
-  out.push('RetireGolden — WS5 document-parsing accuracy benchmark')
+  out.push('RetireGolden: WS5 document-parsing accuracy benchmark')
   out.push('Synthetic corpus, hand-built; expected values are declared in documentCorpus.ts.')
   out.push('')
   out.push('miss:sel = value WAS in the extracted text and no detector produced it (a selection gap).')
   out.push('miss:ext = value was authored on the page and did not survive extraction.')
-  out.push('Neither is an OCR number. This benchmark does not measure OCR — see LIMITATION below.')
+  out.push('Neither is an OCR number. This benchmark does not measure OCR. See LIMITATION below.')
   out.push('')
 
   out.push('PER FIELD')
@@ -713,7 +713,7 @@ export function formatDocumentBenchmarkReport(report: DocumentBenchmarkReport): 
   for (const miss of misses) {
     out.push(
       `  ${pad(miss.document, 24)} ${pad(miss.field, 16)} p${miss.page} ${pad(miss.value, 22)} ` +
-        `${miss.textPresent ? 'text present — selection gap' : 'text lost — extraction gap'}`,
+        `${miss.textPresent ? 'text present: selection gap' : 'text lost: extraction gap'}`,
     )
   }
   out.push('')
@@ -728,7 +728,7 @@ export function formatDocumentBenchmarkReport(report: DocumentBenchmarkReport): 
   }
   out.push('')
 
-  out.push('WHERE THE PLANTED VALUES LIVE — the precondition for every recall number above')
+  out.push('WHERE THE PLANTED VALUES LIVE: the precondition for every recall number above')
   out.push(
     `  ${report.coverage.plantedValues} planted; ${report.coverage.onTextLayerPages} on a page extraction ` +
       `returned a text layer for; ${report.coverage.onPagesWithoutTextLayer} on a page it did not.`,
@@ -741,18 +741,18 @@ export function formatDocumentBenchmarkReport(report: DocumentBenchmarkReport): 
   )
   out.push('')
 
-  out.push('IMAGE-ONLY PAGE DETECTION — what the scanned documents in this corpus measure')
+  out.push('IMAGE-ONLY PAGE DETECTION: what the scanned documents in this corpus measure')
   out.push(
     `  planted ${report.imageOnly.pagesExpected}, detected ${report.imageOnly.pagesDetected}, ` +
       `false positives ${report.imageOnly.falsePositives}, false negatives ${report.imageOnly.falseNegatives}`,
   )
   out.push(
-    '  A page reported image-only lets a UI say "this page is a scanned image — type these values in"',
+    '  A page reported image-only lets a UI say "this page is a scanned image. Type these values in"',
   )
   out.push('  instead of showing an empty result. A blank page must not be reported this way.')
   out.push('')
 
-  out.push('LIMITATION — OCR recoverability is NOT measured here')
+  out.push('LIMITATION: OCR recoverability is NOT measured here')
   out.push(
     '  Image-only pages in this corpus paint a featureless raster and carry no glyphs, so no value is',
   )
@@ -770,7 +770,7 @@ export function formatDocumentBenchmarkReport(report: DocumentBenchmarkReport): 
   )
   out.push('')
 
-  out.push('CORPUS TOTAL — not quotable on its own; the per-field table above is the result.')
+  out.push('CORPUS TOTAL: not quotable on its own; the per-field table above is the result.')
   out.push(header('all fields', width))
   out.push(scoreRow('corpus', width, report.aggregate))
 

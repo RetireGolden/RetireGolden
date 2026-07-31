@@ -35,8 +35,8 @@ export interface ImportReviewItem {
 
 export const IMPORT_STATUS_LABEL: Record<ImportItemStatus, string> = {
   mapped: 'Imported',
-  defaulted: 'Assumed — review',
-  unmapped: 'Not imported — add by hand',
+  defaulted: 'Assumed, review',
+  unmapped: 'Not imported. Add by hand',
   skipped: 'Skipped',
 }
 

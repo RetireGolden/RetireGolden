@@ -26,7 +26,7 @@ function exampleArticle(
       type: 'list',
       items: [
         'Open the linked example in the planner to explore with live numbers.',
-        'Edit freely — the demo stays out of Your plans until you save it.',
+        'Edit freely. The demo stays out of Your plans until you save it.',
         lookFor,
       ],
     },
@@ -95,7 +95,7 @@ function exampleArticle(
 export const exampleCoupleArticle = exampleArticle(
   'example-couple',
   'Example couple: the full retirement picture',
-  'A married household two years from retirement — accounts, Social Security, Roth strategy, insurance, and scenarios.',
+  'A married household two years from retirement: accounts, Social Security, Roth strategy, insurance, and scenarios.',
   'example-couple',
   'This is RetireGolden\'s flagship teaching household: diversified accounts, pre-retirement wages, a fill-to-bracket Roth strategy, LTC policies, and side scenarios for a Social Security haircut and higher spending.',
   'Watch Roth conversions in Strategy, then trace RMDs, taxes, and ending balances in Results.',
@@ -106,9 +106,9 @@ export const exampleCoupleArticle = exampleArticle(
 export const exampleUnderSavedSingleArticle = exampleArticle(
   'example-under-saved-single',
   'Under-saved single retiree',
-  'When modest savings meet steady spending — depletion year and shortfall warnings.',
+  'When modest savings meet steady spending: depletion year and shortfall warnings.',
   'under-saved-single',
-  'Jordan is a single retiree with consulting income, Social Security at 67, and spending that outpaces investable assets over time. The lesson is not pessimism — it is seeing *when* the plan runs out and what still funds cash flow.',
+  'Jordan is a single retiree with consulting income, Social Security at 67, and spending that outpaces investable assets over time. The lesson is not pessimism. It is seeing *when* the plan runs out and what still funds cash flow.',
   'Find the depletion year on Results and compare withdrawals from cash, taxable, and traditional accounts.',
   ['how-to-read-a-retirement-projection', 'reading-the-results-page', 'three-big-questions-spending-time-risk'],
   ['/plan/:planId/results', '/plan/:planId/spending'],
@@ -120,7 +120,7 @@ export const exampleBracketFillRothArticle = exampleArticle(
   'Converting up to a tax bracket top while RMDs and QCDs interact.',
   'bracket-fill-roth',
   'Morgan and Riley are retired with large traditional IRAs, Social Security, and a strategy to fill the 22% bracket with Roth conversions. QCDs offset part of the RMD tax bite.',
-  'Compare lifetime tax vs ending Roth balance — and watch conversion amounts year by year.',
+  'Compare lifetime tax vs ending Roth balance, and watch conversion amounts year by year.',
   ['filling-a-tax-bracket-with-roth-conversions', 'rmds-required-minimum-distributions', 'qcds-qualified-charitable-distributions'],
   ['/plan/:planId/strategy', '/plan/:planId/results'],
 )
@@ -128,7 +128,7 @@ export const exampleBracketFillRothArticle = exampleArticle(
 export const exampleEarlyRetireeAcaArticle = exampleArticle(
   'example-early-retiree-aca',
   'Early retiree and the ACA cliff',
-  'Pre-65 healthcare premiums driven by MAGI — and why conversions have a hidden cost.',
+  'Pre-65 healthcare premiums driven by MAGI, and why conversions have a hidden cost.',
   'early-retiree-aca',
   'Casey retired before Medicare with marketplace coverage, part-time consulting income, and Roth conversions sized to stay below the subsidy cliff. Both income sources flow into MAGI, so converting one bracket higher can forfeit the entire credit.',
   'Check the current-year premium credit in the printable report\'s ACA ledger, then raise the conversion bracket on Strategy and watch it go to zero.',
@@ -152,7 +152,7 @@ export const exampleSurvivorYearsArticle = exampleArticle(
   'Survivor years and the widow\'s penalty',
   'Unequal Social Security, a pension with survivor benefits, and higher taxes after the first death.',
   'survivor-years',
-  'Lee and Chris have unequal Social Security and a pension that pays a survivor benefit. When Chris\'s planning age ends first, Lee steps into survivor benefits and single tax brackets — taxes can rise even as total income falls.',
+  'Lee and Chris have unequal Social Security and a pension that pays a survivor benefit. When Chris\'s planning age ends first, Lee steps into survivor benefits and single tax brackets. Taxes can rise even as total income falls.',
   'Compare tax and Social Security in the last joint year vs the first survivor year.',
   ['widows-penalty-and-survivor-brackets', 'spousal-and-survivor-benefits', 'planning-for-couples-and-survivor-years'],
   ['/plan/:planId/household', '/plan/:planId/results', '/plan/:planId/social-security-analysis'],
@@ -163,7 +163,7 @@ export const exampleMovingStateTaxArticle = exampleArticle(
   'Moving in retirement (state tax)',
   'Mid-plan relocation from Florida to Kentucky changes lifetime tax.',
   'moving-state-tax',
-  'Avery earns consulting income while living in Florida, then relocates to Kentucky. Federal tax is unchanged, but modeled state tax adds a new layer — compare the base plan to the built-in scenarios.',
+  'Avery earns consulting income while living in Florida, then relocates to Kentucky. Federal tax is unchanged, but modeled state tax adds a new layer. Compare the base plan to the built-in scenarios.',
   'Open Scenarios and compare lifetime tax when the move happens sooner vs later.',
   ['state-income-taxes-in-retirement', 'using-scenarios-to-compare-choices'],
   ['/plan/:planId/household', '/plan/:planId/scenarios'],
@@ -397,7 +397,7 @@ A traditional IRA holds nondeductible basis that will affect the taxable portion
 export const exampleFixedTargetSpendingArticle = exampleArticle(
   'example-fixed-target-spending',
   'Fixed target spending control (Riley)',
-  'Classic fixed spending control — identical balances and lifestyle target to the guardrails example but without any required floor or dynamic policy.',
+  'Classic fixed spending control: identical balances and lifestyle target to the guardrails example but without any required floor or dynamic policy.',
   'fixed-target-spending',
   `This is the identical Riley household and spending target as the guardrails version, but with no required floor and no guardrail policy.
 
@@ -511,7 +511,7 @@ export const exampleAll401kNoBridgeArticle = exampleArticle(
   'All-in 401(k) control (Sam & Jordan)',
   'Control half of the savings-location pair: the whole $45,000/yr savings budget goes pre-tax, and retiring at 52 exposes the bridge problem.',
   'all-401k-no-bridge',
-  `Sam and Jordan earn $180,000 together and save $45,000 a year — all of it into traditional 401(k)s — planning to retire at 52.
+  `Sam and Jordan earn $180,000 together and save $45,000 a year (all of it into traditional 401(k)s), planning to retire at 52.
 
 The deduction feels great every year. The problem surfaces at 52: nearly everything they own is inaccessible before 59½ without a 10% penalty (or a rigid SEPP program).
 
@@ -532,7 +532,7 @@ The identical savings budget, placed differently, avoids all of this. That compa
       { label: 'Starting balances', value: '$210k + $85k in 401(k)s, $40k brokerage, $30k cash' },
       { label: 'Healthcare', value: 'Marketplace pre-65; ACA modeling requested, with annual evidence required' },
     ],
-    summary: 'Control case: identical budget and household to the bridge version — only the destination of the savings differs.',
+    summary: 'Control case: identical budget and household to the bridge version. Only the destination of the savings differs.',
   }
 )
 
@@ -541,13 +541,13 @@ export const exampleBrokerageBridge401kArticle = exampleArticle(
   '401(k) plus brokerage bridge (Sam & Jordan)',
   'Feature half of the savings-location pair: 401(k) to the match, the rest into a taxable bridge that funds ages 52–59½.',
   'brokerage-bridge-401k',
-  `Same couple, same wages, same $45,000/yr gross savings budget as the control — but only enough goes into the 401(k)s to capture the full employer match. The remaining ~$30,600/yr builds a joint taxable brokerage.
+  `Same couple, same wages, same $45,000/yr gross savings budget as the control, but only enough goes into the 401(k)s to capture the full employer match. The remaining ~$30,600/yr builds a joint taxable brokerage.
 
-Because the gross budget is held constant, this plan pays more income tax during the accumulation years — the contributions above the match lose their deduction. That honesty is the tradeoff being taught.
+Because the gross budget is held constant, this plan pays more income tax during the accumulation years: the contributions above the match lose their deduction. That honesty is the tradeoff being taught.
 
 At 52 the brokerage is large and mostly basis. Selling it to fund the bridge years realizes modest capital gains, so MAGI stays lower than in the control and no early-withdrawal penalties apply. In sourced, fully evidenced ACA years that lower MAGI can preserve more credit; unsourced future years remain gross in both plans.
 
-The built-in scenario stress-tests the popular "convert to Roth during the bridge" advice. For this lean plan the conversion tax can drain the bridge fund, and an actionable ACA year can add a lost-credit cost. Cheap conversions need spare money — this household's bridge fund is the spending money.`,
+The built-in scenario stress-tests the popular "convert to Roth during the bridge" advice. For this lean plan the conversion tax can drain the bridge fund, and an actionable ACA year can add a lost-credit cost. Cheap conversions need spare money. This household's bridge fund is the spending money.`,
   'Compare bridge-year MAGI, net healthcare premiums, penalties, and the depletion year against the all-401(k) control; then run the conversion scenario and watch the advantage evaporate.',
   ['aca-premium-tax-credits-and-magi', 'why-roth-conversions-raise-other-costs', 'withdrawal-order-basics'],
   ['/plan/:planId/results', '/plan/:planId/accounts', '/plan/:planId/scenarios'],
@@ -559,7 +559,7 @@ The built-in scenario stress-tests the popular "convert to Roth during the bridg
       { label: 'Retirement age', value: '52 (both)' },
       { label: 'Wages', value: '$105,000 + $75,000, 1% real growth' },
       { label: 'Savings', value: '$14,400/yr to 401(k)s (full match kept) + $30,600/yr brokerage' },
-      { label: 'Key difference', value: 'Savings destination only — budget, balances, and household identical' },
+      { label: 'Key difference', value: 'Savings destination only; budget, balances, and household identical' },
       { label: 'Built-in scenario', value: 'Bracket-fill Roth conversions during the bridge (a cautionary tale here)' },
     ],
     summary: 'Feature case: the taxable bridge keeps MAGI lower through 52–59½, avoids penalties, and preserves credit room only in sourced, actionable ACA years.',
@@ -576,7 +576,7 @@ export const exampleNoHeadStartGradArticle = exampleArticle(
 Retirement wealth starts at $0 apart from a small emergency fund. Over a full career that steady saving still compounds into a comfortable retirement at 60.
 
 The pair partner is identical in every respect except one: it begins with a traditional IRA seeded by a childhood Trump account. Load both and use Compare Plans to price the head start.`,
-  'Note where the 401(k)-only trajectory lands by 60 and beyond, then Compare ending assets against the head-start version — the delta is the value of the first 18 years.',
+  'Note where the 401(k)-only trajectory lands by 60 and beyond, then Compare ending assets against the head-start version. The delta is the value of the first 18 years.',
   ['what-is-fire', 'savings-rate-biggest-lever'],
   ['/plan/:planId/results', '/plan/:planId/accounts'],
   'early-investing-fire',
@@ -598,14 +598,14 @@ export const exampleTrumpAccountHeadStartArticle = exampleArticle(
   'Trump account IRA head start (Nova)',
   'Feature half of the head-start pair: the same 22-year-old, plus a traditional IRA seeded by a childhood Trump account.',
   'trump-account-head-start',
-  `Same Nova, same wages, spending, and ongoing savings as the control — plus one account she never had to think about: a traditional IRA that began life as a Trump account.
+  `Same Nova, same wages, spending, and ongoing savings as the control, plus one account she never had to think about: a traditional IRA that began life as a Trump account.
 
 Her parents elected the account at birth, the government added the one-time $1,000 pilot seed, and the family contributed $2,500 a year until 18. At 7% growth that is about $88,400 on her 18th birthday, when the account automatically became a traditional IRA by operation of law. Left invested, it reaches roughly $115,800 at 22.
 
-Because family contributions are after-tax and nondeductible, the IRA carries $45,000 of Form 8606 basis (18 × $2,500). The seed and all earnings are the pre-tax portion. Any withdrawal or Roth conversion applies the pro-rata rule — exactly the machinery this planner models on traditional IRAs.
+Because family contributions are after-tax and nondeductible, the IRA carries $45,000 of Form 8606 basis (18 × $2,500). The seed and all earnings are the pre-tax portion. Any withdrawal or Roth conversion applies the pro-rata rule, exactly the machinery this planner models on traditional IRAs.
 
-The built-in scenario — "Bracket-fill Roth conversions (Form 8606 basis)" — fills the 12% bracket during ages 22–26, while Nova's wages already occupy most of it. The conversions are deliberately modest and shrink as raises consume the bracket headroom; the point is the mechanics, not the size: under the pro-rata rule the basis portion converts tax-free, so only part of each conversion is taxed. The often-cited near-free move — converting at 18 with little or no income, before a career starts — happens earlier than this plan's window and is not what this scenario runs; see the caveat below before attempting it.`,
-  'Compare ending assets against the starting-from-zero control, then run the conversion scenario with and without the nondeductible basis in mind — the basis visibly lowers the conversion tax.',
+The built-in scenario, "Bracket-fill Roth conversions (Form 8606 basis)", fills the 12% bracket during ages 22–26, while Nova's wages already occupy most of it. The conversions are deliberately modest and shrink as raises consume the bracket headroom; the point is the mechanics, not the size: under the pro-rata rule the basis portion converts tax-free, so only part of each conversion is taxed. The often-cited near-free move (converting at 18 with little or no income, before a career starts) happens earlier than this plan's window and is not what this scenario runs; see the caveat below before attempting it.`,
+  'Compare ending assets against the starting-from-zero control, then run the conversion scenario with and without the nondeductible basis in mind. The basis visibly lowers the conversion tax.',
   ['savings-rate-biggest-lever', 'roth-conversion-basics', 'account-types-overview'],
   ['/plan/:planId/results', '/plan/:planId/accounts', '/plan/:planId/scenarios'],
   'early-investing-fire',
@@ -618,14 +618,14 @@ The built-in scenario — "Bracket-fill Roth conversions (Form 8606 basis)" — 
       { label: 'Seeded IRA', value: '$115,800 traditional IRA, $45,000 nondeductible basis' },
       { label: 'Built-in scenario', value: 'Bracket-fill 12% conversions ages 22–26 (Form 8606 basis)' },
     ],
-    summary: 'Feature case: one seeded account, zero extra behavior — the delta against the control prices the 18-year head start.',
+    summary: 'Feature case: one seeded account, zero extra behavior; the delta against the control prices the 18-year head start.',
   },
   {
     blocks: [
       {
         type: 'callout',
         tone: 'note',
-        md: 'This household is **illustrative by design**. The example library\'s clock is fixed at 2026, and a 22-year-old in 2026 (born 2004) could not actually have had a Trump account — contributions only began July 4, 2026. The plan shows what a child born under the program will experience at 22. The account itself needs no special modeling: after 18 it is an ordinary traditional IRA.',
+        md: 'This household is **illustrative by design**. The example library\'s clock is fixed at 2026, and a 22-year-old in 2026 (born 2004) could not actually have had a Trump account: contributions only began July 4, 2026. The plan shows what a child born under the program will experience at 22. The account itself needs no special modeling: after 18 it is an ordinary traditional IRA.',
       },
       { type: 'heading', text: 'Trump Account Rules (verified 2026-07-16)' },
       {
@@ -634,10 +634,10 @@ The built-in scenario — "Bracket-fill Roth conversions (Form 8606 basis)" — 
           '**Eligibility:** a parent or guardian elects an account for a child who has not turned 18 before the end of the election year.',
           '**Federal seed:** a one-time $1,000 government pilot contribution for U.S.-citizen children born January 1, 2025 through December 31, 2028.',
           '**Contributions:** none before July 4, 2026; aggregate cap $5,000/yr (inflation-indexed after 2027). Employers may add up to $2,500/yr (counts against the cap, excluded from the employee\'s income).',
-          '**Tax character:** family contributions are after-tax and nondeductible — they become Form 8606 basis. The seed, employer contributions, and all earnings are pre-tax; growth is tax-deferred.',
+          '**Tax character:** family contributions are after-tax and nondeductible, so they become Form 8606 basis. The seed, employer contributions, and all earnings are pre-tax; growth is tax-deferred.',
           '**Investments:** restricted to low-cost funds tracking the S&P 500 or another primarily-US-equity index, so an equity return assumption is faithful.',
           '**Lock-up:** no withdrawals before January 1 of the year the child turns 18.',
-          '**At 18:** the account automatically becomes a traditional IRA — no rollover event. Normal IRA rules follow, including the 10% penalty before 59½ and the option of a taxable Roth conversion.',
+          '**At 18:** the account automatically becomes a traditional IRA, with no rollover event. Normal IRA rules follow, including the 10% penalty before 59½ and the option of a taxable Roth conversion.',
         ],
       },
       {
@@ -652,12 +652,12 @@ The built-in scenario — "Bracket-fill Roth conversions (Form 8606 basis)" — 
       },
       {
         type: 'prose',
-        md: 'This example uses the moderate middle row. Not every child will get $115,000 — at the same 7% assumption, a seed-only account is worth about $3,400 at 18 and about $4,500 at 22, versus this example\'s ≈ $88,400 at 18 and ≈ $115,800 at 22. Still a real head start from a single $1,000 contribution.',
+        md: 'This example uses the moderate middle row. Not every child will get $115,000. At the same 7% assumption, a seed-only account is worth about $3,400 at 18 and about $4,500 at 22, versus this example\'s ≈ $88,400 at 18 and ≈ $115,800 at 22. Still a real head start from a single $1,000 contribution.',
       },
       {
         type: 'callout',
         tone: 'warn',
-        md: '**Kiddie-tax caveat:** if you convert at 18 while still a dependent — the near-free no-income window commentators call a "legal backdoor" — the taxable part of the conversion is unearned income, and a dependent full-time student under 24 may have it taxed at the parents\' rates under the kiddie tax. Check dependency status before converting. (This example\'s built-in scenario converts later, at ages 22–26 against wage income, and does not model that window.)',
+        md: '**Kiddie-tax caveat:** if you convert at 18 while still a dependent (the near-free no-income window commentators call a "legal backdoor"), the taxable part of the conversion is unearned income, and a dependent full-time student under 24 may have it taxed at the parents\' rates under the kiddie tax. Check dependency status before converting. (This example\'s built-in scenario converts later, at ages 22–26 against wage income, and does not model that window.)',
       },
     ],
     sourceUrls: [

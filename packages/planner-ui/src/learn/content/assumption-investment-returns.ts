@@ -32,8 +32,7 @@ export const assumptionInvestmentReturnsArticle: LearningArticle = {
     {
       type: 'list',
       items: [
-        'RetireGolden defaults to a **5.5%** blended plan-wide nominal return rate.',
-        'This represents a balanced, slightly conservative return that sits below long-run historical averages but aligns with forward-looking institutional outlooks.',
+        'RetireGolden defaults to a **5.5%** blended plan-wide nominal return: balanced and slightly conservative, below long-run historical averages but in line with forward-looking institutional outlooks.',
         'For individual asset classes, RetireGolden\'s UI estimator uses illustrative nominal returns of **7% for stocks**, **4% for bonds**, and **2.5% for cash**.',
         'Volatility (standard deviation) is modeled around **16%** for stocks and **6%** for bonds, which drives the Monte Carlo uncertainty analysis.',
       ],

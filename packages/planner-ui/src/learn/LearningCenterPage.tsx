@@ -28,7 +28,7 @@ export function LearningCenterPage() {
     <article className="page learn-home">
       <h1>Learning Center</h1>
       <p className="lede">
-        Plain-language explanations of the ideas behind your plan — taxes, Social Security, withdrawals, risk, and
+        Plain-language explanations of the ideas behind your plan: taxes, Social Security, withdrawals, risk, and
         more. Read a topic, then come back to the planner with a clearer picture.
       </p>
 

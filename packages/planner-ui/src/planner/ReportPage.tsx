@@ -71,8 +71,8 @@ function accountBalance(a: Account): number {
 }
 
 function incomeLabel(plan: Plan, s: IncomeStream): string {
-  if (s.type === 'wages') return `Wages — ${ownerName(plan, s.personId)}`
-  if (s.type === 'socialSecurity') return `Social Security — ${ownerName(plan, s.personId)}`
+  if (s.type === 'wages') return `Wages: ${ownerName(plan, s.personId)}`
+  if (s.type === 'socialSecurity') return `Social Security: ${ownerName(plan, s.personId)}`
   return s.label
 }
 
@@ -92,8 +92,8 @@ function incomeDetail(s: IncomeStream): string {
 function conversionSummary(plan: Plan): string {
   const rc = plan.strategies.rothConversion
   if (rc.mode === 'none') return 'None'
-  if (rc.mode === 'manual') return `Manual — ${rc.conversions.length} year(s)`
-  if (rc.mode === 'optimized') return `Optimized — ${rc.conversions.length} year(s)`
+  if (rc.mode === 'manual') return `Manual: ${rc.conversions.length} year(s)`
+  if (rc.mode === 'optimized') return `Optimized: ${rc.conversions.length} year(s)`
   return `Fill to ${rc.target}${rc.targetValue !== null ? ` (${rc.targetValue})` : ''}, ${rc.startYear}–${rc.endYear}`
 }
 
@@ -166,7 +166,7 @@ function ReportBody() {
       </header>
 
       <p className="report-disclaimer">
-        Educational illustration only — not tax, legal, financial, or medical advice. Figures are projections based on
+        Educational illustration only, not tax, legal, financial, or medical advice. Figures are projections based on
         the assumptions below and will differ from actual results. See the full disclaimer in the app.
       </p>
 

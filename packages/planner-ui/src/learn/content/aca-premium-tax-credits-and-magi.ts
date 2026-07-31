@@ -82,7 +82,7 @@ export const acaPremiumTaxCreditsAndMagiArticle: LearningArticle = {
     { type: 'heading', text: 'Why it matters in RetireGolden' },
     {
       type: 'prose',
-      md: 'RetireGolden reconciles an evidenced Marketplace year against that same year\'s final household MAGI, including withdrawals, conversions, gains, and required ACA add-backs. The standard planner can request ACA modeling but cannot yet author the annual tax-family, enrollment-premium, and SLCSP evidence contract. Without complete evidence—or when tax-year parameters are not sourced—the projection funds the gross enrollment premium and marks the year non-actionable.',
+      md: 'RetireGolden reconciles an evidenced Marketplace year against that same year\'s final household MAGI, including withdrawals, conversions, gains, and required ACA add-backs. The standard planner can request ACA modeling but cannot yet author the annual tax-family, enrollment-premium, and SLCSP evidence contract. Without complete evidence, or when tax-year parameters are not sourced, the projection funds the gross enrollment premium and marks the year non-actionable.',
     },
     { type: 'heading', text: 'Common mistakes' },
     {
@@ -97,7 +97,7 @@ export const acaPremiumTaxCreditsAndMagiArticle: LearningArticle = {
     { type: 'heading', text: 'Where to use this in the app' },
     {
       type: 'prose',
-      md: 'Use **Spending** to enter the gross pre-65 premium and request ACA modeling. Use **Results** to verify annual evidence readiness, MAGI, and healthcare cost; a requested credit is not an applied credit. Use **Strategy** only when the exact ledger shows an actionable ACA year.',
+      md: 'Use **Spending** to enter the gross pre-65 premium and request ACA modeling. Use **Results** to verify annual evidence readiness, MAGI, and healthcare cost; a requested credit is not an applied credit. Use **Strategy** only when the year-by-year projection shows an actionable ACA year.',
     },
   ],
 }

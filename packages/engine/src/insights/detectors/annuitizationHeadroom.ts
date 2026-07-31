@@ -55,7 +55,7 @@ export const annuitizationHeadroom: Detector = {
       rationale:
         `Your plan runs to ${maxPlanningAge} with no pension or annuity income. ` +
         `Trading $${Math.round(premium).toLocaleString()} of liquid savings for a life annuity (~$${Math.round(monthly).toLocaleString()}/mo) ` +
-        'insures the years past life expectancy — the exact risk a long planning age worries about — at the cost of liquidity and estate. ' +
+        'insures the years past life expectancy, the exact risk a long planning age worries about, at the cost of liquidity and estate. ' +
         'The Monte Carlo page\'s annuitization sweep shows the full success-vs-legacy frontier.',
       impact: {
         qualitative:

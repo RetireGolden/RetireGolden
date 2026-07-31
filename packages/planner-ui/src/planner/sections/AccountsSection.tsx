@@ -54,7 +54,7 @@ export function AccountsSection() {
       <div className="card">
         <h2>Accounts</h2>
         <p className="card-hint">Balances as of today. Investable accounts grow at their expected return (or the default assumption) and are drained per your withdrawal strategy.</p>
-        {plan.accounts.length === 0 ? <div className="empty-state"><p>No accounts yet — add your first below.</p></div> : null}
+        {plan.accounts.length === 0 ? <div className="empty-state"><p>No accounts yet. Add your first below.</p></div> : null}
         {plan.accounts.map((a, i) => (
           <div className="item-row" key={a.id} data-testid="account-row" data-account-type={a.type} data-account-name={a.name}>
             <div className="item-row-head">

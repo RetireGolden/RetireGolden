@@ -172,7 +172,7 @@ export const UNSUPPORTED_RELATIONSHIPS: readonly UnsupportedRelationship[] = [
     id: 'dependents',
     label: 'Children and dependents',
     detail:
-      'Dependents exist only as expense line items and a qualifying-dependent checkbox — not as people the map can show.',
+      'Dependents exist only as expense line items and a qualifying-dependent checkbox, not as people the map can show.',
   },
   {
     id: 'trusts-entities',
@@ -204,7 +204,7 @@ export const UNSUPPORTED_RELATIONSHIPS: readonly UnsupportedRelationship[] = [
     id: 'former-spouses-as-people',
     label: 'Former spouses as people',
     detail:
-      'Former spouses exist only as unnamed benefit-unlock records on a Social Security stream — no name, assets, or other links.',
+      'Former spouses exist only as unnamed eligibility records on a Social Security stream, with no name, assets, or other links.',
   },
   {
     id: 'other-insurance',
@@ -214,7 +214,7 @@ export const UNSUPPORTED_RELATIONSHIPS: readonly UnsupportedRelationship[] = [
   {
     id: 'debt-collateral',
     label: 'Which property secures a debt',
-    detail: 'Debts are standalone — a mortgage is not linked to the home it secures.',
+    detail: 'Debts are standalone. A mortgage is not linked to the home it secures.',
   },
   {
     id: 'income-asset-linkage',
@@ -322,17 +322,17 @@ function accountMissingFacts(a: Account, peopleCount: number): string[] {
   const missing: string[] = []
   if (INVESTABLE_TYPES.has(a.type)) {
     const hasDestination = a.estateBeneficiary !== undefined || (a.type === 'hsa' && a.beneficiary !== undefined)
-    if (!hasDestination) missing.push('No estate destination set — the legacy default applies')
+    if (!hasDestination) missing.push('No estate destination set. The legacy default applies')
   }
   if (a.type === 'property' && a.plannedSaleYear !== null && a.costBasis === undefined && a.expectedNetProceeds === null) {
     missing.push('Planned sale has no cost basis or net-proceeds estimate')
   }
   if (a.type === 'pension' || a.type === 'annuity') {
-    if (a.ownerPersonId === null) missing.push('No owner recorded — the start age has no reference person')
+    if (a.ownerPersonId === null) missing.push('No owner recorded. The start age has no reference person')
     if (peopleCount === 2) {
       if (a.type === 'pension' && a.survivorPct === 0) missing.push('No survivor continuation recorded (0%)')
       if (a.type === 'annuity' && (a.payoutForm === undefined || a.payoutForm.kind === 'lifeOnly')) {
-        missing.push('Life-only payout — no survivor continuation')
+        missing.push('Life-only payout, no survivor continuation')
       }
     }
     // A survivor share with no second person is stale data, not a spouse to draw.
@@ -354,7 +354,7 @@ function hasEarningsRecord(s: Extract<IncomeStream, { type: 'socialSecurity' }>)
 
 function incomeCompleteness(s: IncomeStream): HouseholdCompleteness {
   if (s.type === 'socialSecurity' && s.piaMonthly === null && !hasEarningsRecord(s)) {
-    return { state: 'unknown', missing: ['No PIA or earnings record — the benefit cannot be estimated'] }
+    return { state: 'unknown', missing: ['No PIA or earnings record. The benefit cannot be estimated'] }
   }
   return complete()
 }
@@ -376,8 +376,8 @@ function incomeAmount(s: IncomeStream): { amount: number | null; amountKind: Hou
 
 function incomeLabel(plan: Plan, s: IncomeStream): string {
   const personName = (id: string) => plan.household.people.find((p) => p.id === id)?.name ?? '—'
-  if (s.type === 'wages') return `Wages — ${personName(s.personId)}`
-  if (s.type === 'socialSecurity') return `Social Security — ${personName(s.personId)}`
+  if (s.type === 'wages') return `Wages: ${personName(s.personId)}`
+  if (s.type === 'socialSecurity') return `Social Security: ${personName(s.personId)}`
   return s.label
 }
 
@@ -423,7 +423,7 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
     claimedCounts.set(nodeId, n)
     return { id: n === 1 ? nodeId : `${nodeId}:${n}`, duplicated: (prospectiveCounts.get(nodeId) ?? 0) > 1 }
   }
-  const duplicateFlag = (entity: string, rawId: string): string => `Duplicate ${entity} id "${rawId}" — provenance ambiguous`
+  const duplicateFlag = (entity: string, rawId: string): string => `Duplicate ${entity} id "${rawId}": provenance ambiguous`
   const withDuplicateFlag = (c: HouseholdCompleteness, duplicated: boolean, entity: string, rawId: string): HouseholdCompleteness =>
     duplicated
       ? { state: c.state === 'unknown' ? 'unknown' : 'partial', missing: [...c.missing, duplicateFlag(entity, rawId)] }

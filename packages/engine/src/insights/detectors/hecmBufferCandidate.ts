@@ -61,7 +61,7 @@ export const hecmBufferCandidate: Detector = {
       rationale:
         `${home.name} (~$${Math.round(home.value).toLocaleString()}) rivals your $${Math.round(investable).toLocaleString()} portfolio. ` +
         `A HECM line of credit opened now would start near $${Math.round(lineSize).toLocaleString()} (${plfPct.toFixed(1)}% of value at age ${youngestAge}, published factor tables) ` +
-        `and grow ~${pack.hecm.defaultGrowthRatePct}%/yr regardless of home value. Drawing tax-free after down years — instead of selling depressed assets — is the coordinated buffer strategy; ` +
+        `and grow ~${pack.hecm.defaultGrowthRatePct}%/yr regardless of home value. Drawing tax-free after down years, instead of selling depressed assets, is the coordinated buffer strategy; ` +
         'costs are real (financed fees, a growing loan) and the loan is repaid from the home, non-recourse.',
       impact: {
         qualitative:

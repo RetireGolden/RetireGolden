@@ -52,14 +52,14 @@ export function BucketLensCard({
       <h2>Bucket view (a reporting lens)</h2>
       <p className="card-hint">
         Many retirees think in buckets: a couple of years of spending in cash, several more in stable assets, the
-        rest invested for growth. This view reads the same projected balances that way — bucket 1 holds the next
-        years of <em>net</em> spending (spending plus taxes, minus that year&apos;s income), and so on — without
+        rest invested for growth. This view reads the same projected balances that way: bucket 1 holds the next
+        years of <em>net</em> spending (spending plus taxes, minus that year&apos;s income), and so on, without
         changing how the plan is invested or simulated. The buckets sum exactly to the investable total every year.
       </p>
       <div className="form-grid">
         <SelectField
           label="Bucket definition"
-          help="Purely presentational: pick how the projected balances are segmented. Bucket studies (Estrada; Kitces) find no systematic return or safety benefit from actually managing money as buckets versus a rebalanced total-return portfolio — the value is legibility, so RetireGolden reports buckets but never invests by them."
+          help="Purely presentational: pick how the projected balances are segmented. Bucket studies (Estrada; Kitces) find no systematic return or safety benefit from actually managing money as buckets versus a rebalanced total-return portfolio. The value is legibility, so RetireGolden reports buckets but never invests by them."
           value={presetId}
           options={[
             { value: 'off', label: 'Off' },
@@ -102,7 +102,7 @@ export function BucketLensCard({
           </div>
           <p className="field-hint" style={{ marginTop: '0.5rem' }}>
             Honest labeling: the research record (Estrada&apos;s bucket studies; Kitces) finds bucket{' '}
-            <em>management</em> adds no systematic benefit over a rebalanced total-return portfolio — refilling rules
+            <em>management</em> adds no systematic benefit over a rebalanced total-return portfolio, refilling rules
             are market-timing in disguise. RetireGolden therefore simulates your plan total-return and offers buckets
             only as this view. Years where income covers spending show an empty bucket 1; near the end of the plan
             the leading buckets drain because fewer spending years remain.

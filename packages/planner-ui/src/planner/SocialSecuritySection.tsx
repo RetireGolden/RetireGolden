@@ -35,10 +35,10 @@ function AimeExplainer({ detail, sampleEarnings }: { detail: PiaFromEarningsResu
   const tier = bendTierForAime(detail.aime, detail.eligibilityYear)
   const gain = sampleEarnings && sampleEarnings > 0 ? replaceZeroYearGain(detail, sampleEarnings) : null
   const tierAside =
-    tier.label === '90%' ? ' — the most valuable tier' : tier.label === '15%' ? ' — the least valuable tier, so extra earnings add little' : ''
+    tier.label === '90%' ? ', the most valuable tier' : tier.label === '15%' ? ', the least valuable tier, so extra earnings add little' : ''
   return (
     <details className="ss-explainer">
-      <summary>How this benefit is built — AIME &amp; bend points</summary>
+      <summary>How this benefit is built: AIME &amp; bend points</summary>
       <ul>
         <li>
           Averages your top <strong>{s.computationYearCount}</strong> earning years (wage-indexed) into an AIME of{' '}
@@ -46,11 +46,11 @@ function AimeExplainer({ detail, sampleEarnings }: { detail: PiaFromEarningsResu
         </li>
         {s.zeroYearsInAime > 0 ? (
           <li>
-            <strong>{s.zeroYearsInAime}</strong> of those {s.computationYearCount} years are $0 — each one pulls the
+            <strong>{s.zeroYearsInAime}</strong> of those {s.computationYearCount} years are $0. Each one pulls the
             average down.
           </li>
         ) : (
-          <li>Every averaged year has earnings — no zero years dragging the average down.</li>
+          <li>Every averaged year has earnings, no zero years dragging the average down.</li>
         )}
         <li>
           Your next dollar of AIME is credited at the <strong>{tier.label}</strong> bend-point rate{tierAside}.
@@ -58,7 +58,7 @@ function AimeExplainer({ detail, sampleEarnings }: { detail: PiaFromEarningsResu
         {gain !== null && s.zeroYearsInAime > 0 ? (
           <li>
             Replacing one $0 year with about {fmtMoney(sampleEarnings!)} of earnings would add roughly{' '}
-            <strong>{fmtMoney(gain)}/mo</strong> — a rough estimate at the current bend rate.
+            <strong>{fmtMoney(gain)}/mo</strong>: a rough estimate at the current bend rate.
           </li>
         ) : null}
       </ul>
@@ -86,7 +86,7 @@ function EligibilityNote({ stream, onCommitCredits }: { stream: SsStream; onComm
       {!est.eligible ? (
         <div className="callout callout--warn">
           {est.estimated ? 'Estimated' : 'Entered'} <strong>{est.credits}</strong> of the {CREDITS_FOR_ELIGIBILITY}{' '}
-          credits needed — not yet eligible for a personal retirement benefit. Add covered-work years above or set the
+          credits needed, not yet eligible for a personal retirement benefit. Add covered-work years above or set the
           credit count if the estimate is off (it assumes 4 credits per substantial year).
         </div>
       ) : null}
@@ -132,8 +132,8 @@ function FormerSpousesEditor({
       <h4 style={{ margin: '0 0 0.3rem' }}>Former spouses</h4>
       <p className="card-hint">
         A 10+ year marriage to a living ex (while you're currently unmarried) can pay a divorced-spousal benefit of up to
-        half their benefit; a deceased former spouse can pay a survivor benefit. You receive whichever is largest — your
-        own, spousal, or survivor — so add any that might apply.
+        half their benefit; a deceased former spouse can pay a survivor benefit. You receive whichever is largest of your
+        own, spousal, and survivor benefits, so add any that might apply.
       </p>
       {records.map((r) => (
         <div key={r.id} className="item-row">
@@ -186,7 +186,7 @@ function FormerSpousesEditor({
               <NumberField
                 label="When they claimed (age)"
                 hint="Leave blank if they claimed at/after FRA."
-                help="The age the deceased claimed their own benefit. If they claimed early (before FRA), the widow's-limit (RIB-LIM) caps your survivor benefit at the larger of their reduced benefit or 82.5% of their PIA — usually higher than their reduced amount. Leave blank if they claimed at or after FRA (the safe default)."
+                help="The age the deceased claimed their own benefit. If they claimed early (before FRA), the widow's-limit (RIB-LIM) caps your survivor benefit at the larger of their reduced benefit or 82.5% of their PIA, usually higher than their reduced amount. Leave blank if they claimed at or after FRA (the safe default)."
                 value={r.deceasedClaimAge?.years ?? null}
                 allowNull
                 min={62}
@@ -215,7 +215,7 @@ function FormerSpousesEditor({
           </div>
           {r.relationship === 'divorced' && !householdIsSingle ? (
             <p className="field-hint" style={{ color: 'var(--warn)' }}>
-              Divorced-spousal needs you to be currently unmarried — with a partner on this plan it won't apply (you'd get
+              Divorced-spousal needs you to be currently unmarried. With a partner on this plan it won't apply (you'd get
               the current-spouse top-up instead).
             </p>
           ) : null}
@@ -308,7 +308,7 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
       <div className="item-row-head">
         <span className="item-row-title">
           <span className="type-chip">{personIndex === 0 ? 'Primary' : 'Partner'}</span>
-          {person.name} — full retirement age {fra.years}
+          {person.name}: full retirement age {fra.years}
           {fra.extraMonths > 0 ? `y ${fra.extraMonths}m` : ''}
         </span>
         <button type="button" className="btn-ghost btn-ghost-danger" onClick={() => update((d2) => void d2.incomes.splice(streamIndex, 1))}>
@@ -322,7 +322,7 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
           help="Quick: type the PIA from your SSA statement. Earnings record: paste or import your full earnings history and we compute the PIA (AIME → bend points), which is more accurate if you'll retire before the statement's assumed work-through age."
           value={mode}
           options={[
-            { value: 'quick', label: 'Quick — enter PIA' },
+            { value: 'quick', label: 'Quick: enter PIA' },
             { value: 'earnings', label: 'Earnings record (advanced)' },
           ]}
           onCommit={(v) =>
@@ -375,7 +375,7 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
           {stream.disability ? (
             <NumberField
               label="Disability onset age"
-              help="The age your disability began. SSDI starts here (not at your retirement claim age) and pays the full PIA. Must be before your full retirement age — an onset at/after FRA is ignored (SSDI converts to retirement at FRA, so it can't start later)."
+              help="The age your disability began. SSDI starts here (not at your retirement claim age) and pays the full PIA. Must be before your full retirement age. An onset at/after FRA is ignored (SSDI converts to retirement at FRA, so it can't start later)."
               value={stream.disability.onsetAge}
               min={40}
               max={75}
@@ -393,7 +393,7 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
         <div className="form-grid">
           <MoneyField
             label="PIA (monthly benefit at FRA)"
-            help="Your Primary Insurance Amount — the monthly benefit at full retirement age in today's dollars, from ssa.gov/myaccount."
+            help="Your Primary Insurance Amount, the monthly benefit at full retirement age in today's dollars, from ssa.gov/myaccount."
             value={stream.piaMonthly}
             allowNull
             onCommit={(v) => setStream((s) => (s.piaMonthly = v ?? 0))}
@@ -402,7 +402,7 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
       ) : (
         <div className="earnings-entry">
           <label className="field-label" htmlFor={`earn-${stream.id}`}>
-            Annual covered earnings — one <code>year amount</code> per line
+            Annual covered earnings: one <code>year amount</code> per line
           </label>
           <textarea
             id={`earn-${stream.id}`}
@@ -464,7 +464,7 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
                 />
                 <NumberField
                   label="Work through age"
-                  help="Project earnings up to (but not including) this age — your last full working year. Defaults to this person's retirement age."
+                  help="Project earnings up to (but not including) this age. Your last full working year. Defaults to this person's retirement age."
                   hint={person.retirementAge !== null ? `Blank = retirement age (${person.retirementAge}).` : 'Blank = retirement age.'}
                   value={stream.earningsProjection.throughAge}
                   allowNull
@@ -487,7 +487,7 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
                 <>
                   {' '}
                   Includes <strong>{projectedYears}</strong> projected {projectedYears === 1 ? 'year' : 'years'} (
-                  {projectedRange}) at {fmtMoney(projectedAmount ?? 0)}/yr — fewer zero years than the SSA statement
+                  {projectedRange}) at {fmtMoney(projectedAmount ?? 0)}/yr, fewer zero years than the SSA statement
                   would assume if you retire early.
                 </>
               ) : null}
@@ -495,7 +495,7 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
           ) : null}
           {stream.earningsProjection != null && projectedYears === 0 && resolved.piaMonthly !== null ? (
             <p className="field-hint" style={{ marginTop: '0.4rem', color: 'var(--warn)' }}>
-              No years were projected — your reported earnings already reach your retirement age, or no retirement age is
+              No years were projected. Your reported earnings already reach your retirement age, or no retirement age is
               set on the Household step.
             </p>
           ) : null}
@@ -526,14 +526,15 @@ export function SocialSecuritySection() {
       <div className="card">
         <h2>Social Security</h2>
         <p className="card-hint">
-          Birth dates and planning ages come from the Household form — here you add each person's benefit and a claiming
+          Birth dates and planning ages come from the Household form. Here you add each person's benefit and a claiming
           age. Monthly precision, the earnings test, spousal and survivor benefits, and an optional trust-fund cut (see
           Assumptions) are all modeled.
         </p>
         {couple ? (
           <div className="callout callout--info">
             For couples, the survivor keeps the larger of the two benefits, so delaying the <em>higher</em> earner's
-            claim protects both lifetimes. The analysis page works out the best combination for your whole plan.
+            claim protects both lifetimes. The analysis page ranks every claim-age combination on your whole plan
+            using the objective you choose.
           </div>
         ) : null}
         {plan.household.people.map((p, i) => (
@@ -541,7 +542,7 @@ export function SocialSecuritySection() {
         ))}
         <div className="callout callout--info" style={{ marginTop: '1rem' }}>
           <strong>Claiming early while still working?</strong> The earnings test withholds part of the benefit above an
-          annual wage limit before full retirement age — RetireGolden models that withholding, and credits the withheld
+          annual wage limit before full retirement age. RetireGolden models that withholding, and credits the withheld
           months back at full retirement age (recomputing the benefit as if you'd claimed that many months later), as an
           annual approximation.
         </div>

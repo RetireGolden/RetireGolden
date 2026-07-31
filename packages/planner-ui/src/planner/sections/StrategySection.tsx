@@ -74,7 +74,7 @@ export function StrategySection() {
           {plan.household.people.length === 2 ? (
             <MoneyField
               label="Survivor reserve target (today's $)"
-              help="The minimum investable balance the surviving spouse should have in the first survivor year, in today's dollars (deflated by inflation). Used as a hard constraint by the decision engine's protect-survivor-liquidity objective — candidates whose survivor-year investable falls below this target are disqualified. Leave blank for no reserve constraint."
+              help="The minimum investable balance the surviving spouse should have in the first survivor year, in today's dollars (deflated by inflation). Used as a hard constraint by the decision engine's protect-survivor-liquidity objective, candidates whose survivor-year investable falls below this target are disqualified. Leave blank for no reserve constraint."
               hint="Blank = no survivor reserve constraint."
               value={plan.strategies.survivorReserveTarget ?? null}
               allowNull
@@ -201,7 +201,7 @@ export function StrategySection() {
           <div className="form-grid">
             <SelectField
               label="Target"
-              help="Each year, convert just enough to reach this ceiling — a bracket top, an IRMAA tier, the ACA cliff, or a fixed MAGI."
+              help="Each year, convert just enough to reach this ceiling: a bracket top, an IRMAA tier, the ACA cliff, or a fixed MAGI."
               learn={LEARN.fillingTaxBracket}
               source={provenanceSource(
                 rc.target === 'irmaaTier' ? 'medicare-irmaa' : rc.target === 'acaCliff' ? 'aca-ptc' : 'federal-brackets',
@@ -269,7 +269,7 @@ export function StrategySection() {
         <div className="form-grid">
           <MoneyField
             label="QCD per year (today's $)"
-            help="A qualified charitable distribution sends IRA money straight to charity from age 70½. It counts toward your RMD but never appears in taxable income — usually better than a deductible cash gift once you take the standard deduction."
+            help="A qualified charitable distribution sends IRA money straight to charity from age 70½. It counts toward your RMD but never appears in taxable income, usually better than a deductible cash gift once you take the standard deduction."
             learn={LEARN.qcd}
             source={provenanceSource('rmd-qcd')}
             hint="Routed out of RMDs from age 70½; excluded from income."
@@ -283,8 +283,8 @@ export function StrategySection() {
       <div className="card">
         <h2>Itemized deductions</h2>
         <p className="card-hint">
-          Federal tax uses the larger of these and the standard deduction. Most retirees take the standard deduction —
-          turn this on only if your deductible taxes, mortgage interest, and charitable gifts together exceed it. Enter
+          Federal tax uses the larger of these and the standard deduction. Most retirees take the standard deduction.
+          Turn this on only if your deductible taxes, mortgage interest, and charitable gifts together exceed it. Enter
           today's dollars.
         </p>
         <div className="form-grid">
@@ -324,7 +324,7 @@ export function StrategySection() {
         <h2>Capital loss carryforward</h2>
         <p className="card-hint">
           Net capital losses you're carrying from prior years' tax returns (Schedule D line 16). The plan nets them
-          against future realized gains first, then deducts up to $3,000/yr against other income, until used up —
+          against future realized gains first, then deducts up to $3,000/yr against other income, until used up,
           lowering tax and AGI (and the IRMAA/ACA costs AGI drives) in early-retirement years spent drawing down a
           brokerage. Most users leave this at $0. <LearnLink {...LEARN.lossHarvesting} />
         </p>

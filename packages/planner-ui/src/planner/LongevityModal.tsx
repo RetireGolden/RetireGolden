@@ -40,7 +40,7 @@ export function LongevityModal({ person, personIndex, onApply, onClose }: Longev
   }, [personIndex, onApply, onClose])
 
   return (
-    <Modal title={`Estimate planning age — ${person.name}`} onClose={onClose} width="40rem">
+    <Modal title={`Estimate planning age: ${person.name}`} onClose={onClose} width="40rem">
       <p className="card-hint">
         A short questionnaire combining a Social Security period life table with conservative lifestyle adjustments.
         The result becomes {person.name}'s planning age; you can still override it afterwards.

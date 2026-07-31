@@ -18,7 +18,7 @@ const BY_ID = new Map(PARAMETER_PROVENANCE.map((s) => [s.id, s]))
 export function provenanceSource(id: string): SourceLink {
   const entry = BY_ID.get(id)
   if (!entry) {
-    if (import.meta.env.DEV) throw new Error(`Unknown provenance id "${id}" — see engine/params/provenance.ts`)
+    if (import.meta.env.DEV) throw new Error(`Unknown provenance id "${id}", see engine/params/provenance.ts`)
     return { label: 'source list', url: '/disclaimer' }
   }
   return { label: entry.publisher, url: entry.url }

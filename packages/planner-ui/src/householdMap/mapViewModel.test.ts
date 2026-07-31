@@ -48,7 +48,7 @@ describe('buildMapViewModel', () => {
     expect(brokerage.relations).toContain('Owned by Sam (joint)')
     const alex = vm.nodes.find((n) => n.label === 'Alex')!
     expect(alex.relations.some((r) => r.startsWith('Owns Joint brokerage'))).toBe(true)
-    expect(alex.relations.some((r) => r.startsWith('Receives Wages — Alex'))).toBe(true)
+    expect(alex.relations.some((r) => r.startsWith('Receives Wages: Alex'))).toBe(true)
     expect(alex.relations.some((r) => r.startsWith('Covered by Alex whole life'))).toBe(true)
     // Every edge is phrased on both endpoints — topology never lives only in the SVG.
     for (const e of vm.edges) {
@@ -82,7 +82,7 @@ describe('buildMapViewModel', () => {
     expect(labels).toContain('Joint brokerage')
     expect(labels).toContain('Home')
     // …but Sam and every individually-owned Sam item must be absent.
-    for (const samOnly of ['Sam', 'Sam IRA', 'Wages — Sam', 'Social Security — Sam', 'Sam LTC']) {
+    for (const samOnly of ['Sam', 'Sam IRA', 'Wages: Sam', 'Social Security: Sam', 'Sam LTC']) {
       expect(labels).not.toContain(samOnly)
     }
   })

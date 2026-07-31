@@ -89,7 +89,7 @@ export function seedPlanFromTenForty(
   // missed or unregistered selection surfaces here instead of silently seeding
   // the draft — and its state taxes — with a state the user never chose.
   if (inputs.state.trim() === '') {
-    return { ok: false, message: 'Select your state of residence — it drives the state-tax estimate.' }
+    return { ok: false, message: 'Select your state of residence. It drives the state-tax estimate.' }
   }
   if (!/^[A-Za-z]{2}$/.test(inputs.state)) return { ok: false, message: 'Enter your state as its two-letter code.' }
   const dollarFields: Array<[keyof TenFortyInputs, number]> = [
@@ -153,8 +153,8 @@ export function seedPlanFromTenForty(
     status: 'mapped',
     source: jointReturn ? 'Dates of birth (guided entry, not on the 1040)' : 'Date of birth (guided entry, not on the 1040)',
     detail: jointReturn
-      ? "Your and your spouse's dates of birth as you typed them — a 1040 does not carry them, and they anchor every age in the plan. Correct either on the Household screen."
-      : 'Your date of birth as you typed it — a 1040 does not carry it, and it anchors every age in the plan. Correct it on the Household screen.',
+      ? "Your and your spouse's dates of birth as you typed them. A 1040 does not carry them, and they anchor every age in the plan. Correct either on the Household screen."
+      : 'Your date of birth as you typed it. A 1040 does not carry it, and it anchors every age in the plan. Correct it on the Household screen.',
     locator: {
       kind: 'none',
       note: jointReturn
@@ -171,11 +171,11 @@ export function seedPlanFromTenForty(
     plan.incomes.push({ type: 'wages', id: newId(), personId: primary.id, annualGross: inputs.wages, endAge: null, realGrowthPct: 0 })
     review.push({
       status: inputs.filingStatus === 'marriedFilingJointly' ? 'defaulted' : 'mapped',
-      source: 'From your 1040 — line 1a (wages)',
+      source: 'From your 1040, line 1a (wages)',
       detail:
         `$${inputs.wages.toLocaleString('en-US')} /yr of wages until retirement` +
         (inputs.filingStatus === 'marriedFilingJointly'
-          ? ', all placed on you — split it between spouses on the Income screen so retirement dates apply per person.'
+          ? ', all placed on you, split it between spouses on the Income screen so retirement dates apply per person.'
           : '.'),
       locator: form1040('1a'),
       // On a joint return, line 1a is the combined amount but the per-person
@@ -208,10 +208,10 @@ export function seedPlanFromTenForty(
     })
     review.push({
       status: 'defaulted',
-      source: 'From your 1040 — lines 2b/3a/3b (interest & dividends)',
+      source: 'From your 1040, lines 2b/3a/3b (interest & dividends)',
       detail:
         `Your $${investmentIncome.toLocaleString('en-US')} of interest + dividends implies roughly a ` +
-        `$${estimatedBalance.toLocaleString('en-US')} taxable balance at a ${ASSUMED_TAXABLE_YIELD_PCT}% yield — an estimate to replace ` +
+        `$${estimatedBalance.toLocaleString('en-US')} taxable balance at a ${ASSUMED_TAXABLE_YIELD_PCT}% yield, an estimate to replace ` +
         'with the real balance and cost basis on the Accounts screen. The qualified-dividend share was kept.',
       locator: { kind: 'derived', from: [form1040('2b'), form1040('3a'), form1040('3b')], note: `balance implied by a ${ASSUMED_TAXABLE_YIELD_PCT}% yield` },
       confidence: 'estimated',
@@ -223,9 +223,9 @@ export function seedPlanFromTenForty(
   if (inputs.iraDistributions > 0) {
     review.push({
       status: 'unmapped',
-      source: 'From your 1040 — line 4b (IRA distributions)',
+      source: 'From your 1040, line 4b (IRA distributions)',
       detail:
-        `You took $${inputs.iraDistributions.toLocaleString('en-US')} from IRAs — RetireGolden models withdrawals from account balances, ` +
+        `You took $${inputs.iraDistributions.toLocaleString('en-US')} from IRAs, RetireGolden models withdrawals from account balances, ` +
         'so add your traditional IRA/401(k) accounts with their balances on the Accounts screen (a broker CSV can fill them).',
       locator: form1040('4b'),
       confidence: 'unmapped',
@@ -249,10 +249,10 @@ export function seedPlanFromTenForty(
     })
     review.push({
       status: 'defaulted',
-      source: 'From your 1040 — line 5b (pensions & annuities)',
+      source: 'From your 1040, line 5b (pensions & annuities)',
       detail:
         `A pension paying $${Math.round(inputs.pensionsAndAnnuities / 12).toLocaleString('en-US')} /mo starting now, with no COLA and a 50% ` +
-        'survivor benefit — check the COLA, survivor percentage, and public/private split on the Accounts screen.',
+        'survivor benefit, check the COLA, survivor percentage, and public/private split on the Accounts screen.',
       locator: form1040('5b'),
       confidence: 'assumed',
       target: `accounts[${plan.accounts.length - 1}]`,
@@ -272,12 +272,12 @@ export function seedPlanFromTenForty(
     })
     review.push({
       status: 'defaulted',
-      source: 'From your 1040 — line 6a (Social Security benefits)',
+      source: 'From your 1040, line 6a (Social Security benefits)',
       detail:
-        `$${monthly.toLocaleString('en-US')} /mo entered as the benefit basis, assuming a claim at 67 — if you claimed earlier or later, ` +
+        `$${monthly.toLocaleString('en-US')} /mo entered as the benefit basis, assuming a claim at 67, if you claimed earlier or later, ` +
         'set the real claim age (or import your SSA statement) on the Social Security screen.' +
         (inputs.filingStatus === 'marriedFilingJointly'
-          ? ' Line 6a is the joint total, but it was all placed on you — if both spouses receive benefits, split it into one ' +
+          ? ' Line 6a is the joint total, but it was all placed on you, if both spouses receive benefits, split it into one ' +
             'stream per person on the Social Security screen (survivor-year benefits and benefit end dates depend on whose record is whose).'
           : ''),
       locator: form1040('6a'),
@@ -288,7 +288,7 @@ export function seedPlanFromTenForty(
     review.push({
       status: 'unmapped',
       source: 'Social Security',
-      detail: 'No benefits on the return — set up future Social Security on its screen (your SSA statement XML imports there).',
+      detail: 'No benefits on the return. Set up future Social Security on its screen (your SSA statement XML imports there).',
       locator: { kind: 'none', note: 'no Social Security benefits were entered from the return' },
       confidence: 'unmapped',
     })
@@ -298,11 +298,11 @@ export function seedPlanFromTenForty(
   if (inputs.capitalGain !== 0) {
     review.push({
       status: 'unmapped',
-      source: 'From your 1040 — line 7 (capital gain/loss)',
+      source: 'From your 1040, line 7 (capital gain/loss)',
       detail:
         inputs.capitalGain > 0
-          ? 'Last year\'s realized gains are not projected forward — RetireGolden realizes gains from actual modeled sales and yields instead.'
-          : `A $${Math.abs(inputs.capitalGain).toLocaleString('en-US')} loss may leave a carryforward — enter any remaining capital-loss carryforward on the Household screen.`,
+          ? 'Last year\'s realized gains are not projected forward, RetireGolden realizes gains from actual modeled sales and yields instead.'
+          : `A $${Math.abs(inputs.capitalGain).toLocaleString('en-US')} loss may leave a carryforward, enter any remaining capital-loss carryforward on the Household screen.`,
       locator: form1040('7'),
       confidence: 'unmapped',
     })
@@ -313,8 +313,8 @@ export function seedPlanFromTenForty(
   plan.assumptions.recentAnnualMagi = magi
   review.push({
     status: 'mapped',
-    source: 'From your 1040 — lines 11 + 2a (AGI + tax-exempt interest)',
-    detail: `Recent MAGI of $${magi.toLocaleString('en-US')} recorded — Medicare IRMAA looks back two years, so early projection years use it.`,
+    source: 'From your 1040, lines 11 + 2a (AGI + tax-exempt interest)',
+    detail: `Recent MAGI of $${magi.toLocaleString('en-US')} recorded, Medicare IRMAA looks back two years, so early projection years use it.`,
     locator: { kind: 'derived', from: [form1040('11'), form1040('2a')], note: 'AGI plus tax-exempt interest' },
     confidence: 'derived',
     target: 'assumptions.recentAnnualMagi',
@@ -325,7 +325,7 @@ export function seedPlanFromTenForty(
     status: 'unmapped',
     source: 'Spending, balances & retirement dates',
     detail:
-      'A tax return shows income, not spending or savings — set baseline spending on the Spending screen, account balances on the Accounts screen, and retirement ages on the Household screen.',
+      'A tax return shows income, not spending or savings, set baseline spending on the Spending screen, account balances on the Accounts screen, and retirement ages on the Household screen.',
     locator: { kind: 'none', note: 'a tax return shows income, not spending, balances, or retirement dates' },
     confidence: 'unmapped',
   })

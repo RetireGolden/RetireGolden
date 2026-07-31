@@ -4,7 +4,7 @@ export const tipsLaddersArticle: LearningArticle = {
   slug: 'tips-ladders',
   title: 'TIPS ladders: a guaranteed real income floor',
   description:
-    'How a ladder of inflation-protected Treasuries turns a lump sum into guaranteed inflation-adjusted income — and how RetireGolden prices, taxes, and stress-tests one inside your plan.',
+    'How a ladder of inflation-protected Treasuries turns a lump sum into guaranteed inflation-adjusted income, and how RetireGolden prices, taxes, and stress-tests one inside your plan.',
   category: 'risk-uncertainty',
   tags: ['tips', 'income floor', 'inflation', 'bonds', 'safety-first', 'ladder', 'real yield'],
   audience: 'intermediate',
@@ -25,22 +25,21 @@ export const tipsLaddersArticle: LearningArticle = {
   blocks: [
     {
       type: 'prose',
-      md: 'A **TIPS ladder** is a set of Treasury Inflation-Protected Securities chosen so that one bond matures each year, and each maturity (plus the interest the others pay that year) delivers the same amount of **real** — inflation-adjusted — income. Buy the ladder once, and the income arrives on schedule no matter what stocks, rates, or inflation do. It is the closest thing an individual can buy to a DIY inflation-indexed pension, with no insurance company involved.',
+      md: 'A **TIPS ladder** is a set of Treasury Inflation-Protected Securities chosen so that one bond matures each year, and each maturity (plus the interest the others pay that year) delivers the same amount of **real** (inflation-adjusted) income. Buy the ladder once, and the income arrives on schedule no matter what stocks, rates, or inflation do. It is the closest thing an individual can buy to a DIY inflation-indexed pension, with no insurance company involved.',
     },
     { type: 'heading', text: 'Quick takeaways' },
     {
       type: 'list',
       items: [
-        '**Guaranteed and inflation-proof**: both principal and coupons index to CPI, and the ladder is backed by the U.S. Treasury — the two risks a bond ladder usually leaves open (inflation and default) are both covered.',
-        '**Priced by real yields**: at a ~2.7% long real yield, a 30-year ladder costs roughly 20½ times its annual payout — about a **4.8–4.9% real withdrawal rate**, comfortably above the ~4% rule of thumb for portfolios. When real yields fall, the same income costs more.',
-        '**The trade**: the money is committed. A ladder rung spent this year cannot also compound in stocks; the ladder ends when its last rung matures (no longevity pooling like an annuity).',
-        '**Tax texture matters**: TIPS interest and the annual inflation adjustment are **federally taxable but exempt from state income tax** — and the inflation adjustment is taxed before you see the cash ("phantom income"), which is why many holders keep TIPS in tax-advantaged accounts. RetireGolden models the taxable-brokerage version, where the state exemption and phantom income actually bite.',
+        '**Guaranteed and inflation-proof**: both principal and coupons index to CPI, and the ladder is backed by the U.S. Treasury. The two risks a bond ladder usually leaves open (inflation and default) are both covered.',
+        '**Priced by real yields**: at a ~2.7% long real yield, a 30-year ladder costs roughly 20½ times its annual payout, about a **4.8–4.9% real withdrawal rate**, comfortably above the ~4% rule of thumb for portfolios. When real yields fall, the same income costs more.',
+        '**The trade**: the money is committed. A ladder rung spent this year cannot also compound in stocks, and the ladder ends when its last rung matures (no longevity pooling like an annuity). Tax texture matters too: TIPS interest and the annual inflation adjustment are federally taxable but exempt from state income tax, and the inflation adjustment is taxed before you see the cash ("phantom income").',
       ],
     },
     { type: 'heading', text: 'How RetireGolden builds one' },
     {
       type: 'prose',
-      md: 'On the **Income floor** page you give a target real income, a first payout year, and a last payout year. RetireGolden solves the rung sizes back-to-front — the final year is funded by its maturing bond alone; earlier years by their maturing bond plus the coupons of every rung still outstanding — and prices each rung on an embedded Treasury real-yield curve (the "curve as of" date is shown next to every quote).\n\nThe cost you see is a planning-grade quote, not a brokerage order: coupons pay annually, rungs are par bonds at the interpolated curve yield, and there is no CUSIP-level lot rounding. An optional live-price mode can fetch actual Treasury (FedInvest) closing prices for comparison — it never runs without your click, and the plan itself always works offline on the embedded curve.',
+      md: 'On the **Income floor** page you give a target real income, a first payout year, and a last payout year. RetireGolden solves the rung sizes back-to-front: the final year is funded by its maturing bond alone; earlier years by their maturing bond plus the coupons of every rung still outstanding, and prices each rung on an embedded Treasury real-yield curve (the "curve as of" date is shown next to every quote).\n\nThe cost you see is a planning-grade quote, not a brokerage order: coupons pay annually, rungs are par bonds at the interpolated curve yield, and there is no CUSIP-level lot rounding. An optional live-price mode can fetch actual Treasury (FedInvest) closing prices for comparison. It never runs without your click, and the plan itself always works offline on the embedded curve.',
     },
     {
       type: 'formula',
@@ -55,12 +54,12 @@ export const tipsLaddersArticle: LearningArticle = {
     { type: 'heading', text: 'What happens inside your plan' },
     {
       type: 'prose',
-      md: 'The ladder is not a side calculation — its cash flows live inside the same yearly ledger as everything else. The purchase leaves your chosen cash or brokerage account in the purchase year (realizing capital gains pro-rata if it sells appreciated holdings). Each year after that, coupons and any maturing principal arrive as income; the taxable slice (coupons plus that year\'s inflation accretion) flows through federal tax, the Social Security taxability formula, IRMAA, and ACA credits like any other ordinary income — while the state return excludes it. The unmatured rungs ride in your net worth as a dedicated asset the withdrawal engine never raids.',
+      md: 'The ladder is not a side calculation. Its cash flows live inside the same yearly ledger as everything else. The purchase leaves your chosen cash or brokerage account in the purchase year (realizing capital gains pro-rata if it sells appreciated holdings). Each year after that, coupons and any maturing principal arrive as income; the taxable slice (coupons plus that year\'s inflation accretion) flows through federal tax, the Social Security taxability formula, IRMAA, and ACA credits like any other ordinary income, while the state return excludes it. The unmatured rungs ride in your net worth as a dedicated asset the withdrawal engine never raids.',
     },
     {
       type: 'callout',
       tone: 'note',
-      md: 'RetireGolden models ladders held in **taxable** accounts. TIPS inside an IRA are just part of that account\'s balance — model those with the account\'s own allocation instead. The phantom-income and state-exemption mechanics only exist on the taxable side.',
+      md: 'RetireGolden models ladders held in **taxable** accounts. TIPS inside an IRA are just part of that account\'s balance. Model those with the account\'s own allocation instead. The phantom-income and state-exemption mechanics only exist on the taxable side.',
     },
     { type: 'heading', text: 'Ladder, annuity, or portfolio?' },
     {
@@ -84,9 +83,14 @@ export const tipsLaddersArticle: LearningArticle = {
       type: 'list',
       items: [
         '**Planning-grade pricing**: annual coupons, par-bond rungs, no auction/secondary spread. Real quotes (tipsladder.com, your brokerage) will differ by small amounts.',
-        '**Curve staleness**: the embedded curve refreshes with the annual parameter packs; the "curve as of" date is always shown. Real yields move — re-quote before you buy.',
+        '**Curve staleness**: the embedded curve refreshes with the annual parameter packs; the "curve as of" date is always shown. Real yields move, so re-quote before you buy.',
         '**OID precision**: the phantom-income model (accretion taxed in the year it accrues) is the standard planning simplification of TIPS OID rules, not a Form 1099-OID reproduction.',
       ],
+    },
+    { type: 'heading', text: 'Where to use this in the app' },
+    {
+      type: 'prose',
+      md: 'Build or size a ladder on **Income floor**, where the rung schedule and the cost on the current real-yield curve are shown together. **Results** prices the coupons and the inflation adjustment through the normal tax, IRMAA, and ACA lines, and **Monte Carlo** shows what the ladder changes when markets go badly. **Social Security analysis** can size a ladder specifically for the bridge years.',
     },
   ],
 }

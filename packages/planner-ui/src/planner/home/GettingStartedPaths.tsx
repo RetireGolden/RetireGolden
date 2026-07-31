@@ -22,7 +22,7 @@ export function GettingStartedPaths({ onCreatePlan }: GettingStartedPathsProps) 
         <Link to="/examples" className="home-path-card plan-card">
           <span className="home-path-card-title">Try an example</span>
           <span className="home-path-card-desc">
-            Open a curated household with realistic numbers — explore freely without saving anything yet.
+            Open a curated household with realistic numbers. Explore freely without saving anything yet.
           </span>
         </Link>
         {/* Building and importing both create plans through the seam — hidden
@@ -43,7 +43,7 @@ export function GettingStartedPaths({ onCreatePlan }: GettingStartedPathsProps) 
               <span className="home-path-card-title">Import from a file</span>
               <span className="home-path-card-desc">
                 Seed a plan from a broker CSV, a ProjectionLab export, a spreadsheet, or last year&apos;s tax
-                return — parsed on this device, never uploaded.
+                return, parsed on this device, never uploaded.
               </span>
             </Link>
           </>

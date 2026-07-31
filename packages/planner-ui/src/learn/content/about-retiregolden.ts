@@ -25,7 +25,7 @@ export const aboutRetireGoldenArticle: LearningArticle = {
   blocks: [
     {
       type: 'prose',
-      md: 'RetireGolden helps you see how the choices you make today could shape your retirement — and it does it without sending a single number to anyone.',
+      md: 'RetireGolden helps you see how the choices you make today could shape your retirement, and it does it without sending a single number to anyone.',
     },
     {
       type: 'heading',
@@ -35,7 +35,7 @@ export const aboutRetireGoldenArticle: LearningArticle = {
       type: 'list',
       items: [
         'RetireGolden is an **educational planner**, not personalized financial, tax, or legal advice.',
-        'Everything you enter stays **in your browser** — there are no accounts and no server.',
+        'Everything you enter stays **in your browser**. There are no accounts and no server.',
         'You build a plan section by section, then explore results, risk, and trade-offs.',
       ],
     },
@@ -70,7 +70,7 @@ export const aboutRetireGoldenArticle: LearningArticle = {
     },
     {
       type: 'table',
-      caption: 'What RetireGolden is built for — and what it is not.',
+      caption: 'What RetireGolden is built for, and what it is not.',
       columns: ['Area', 'What it does', 'What it does not do'],
       rows: [
         ['Projections', 'Models savings, income, spending, and taxes over time', 'Predict actual market returns'],
@@ -94,7 +94,7 @@ export const aboutRetireGoldenArticle: LearningArticle = {
     },
     {
       type: 'prose',
-      md: 'You do not need every detail to get value. A rough plan with sensible defaults already tells you a lot — you can refine it over time.',
+      md: 'You do not need every detail to get value. A rough plan with sensible defaults already tells you a lot. You can refine it over time.',
     },
   ],
 }

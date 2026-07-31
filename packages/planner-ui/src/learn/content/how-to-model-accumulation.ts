@@ -28,7 +28,7 @@ export const howToModelAccumulationArticle: LearningArticle = {
   blocks: [
     {
       type: 'prose',
-      md: 'RetireGolden features robust controls designed specifically to model the wealth accumulation phase. This article walks you through configuring salary growth, matching, and schedules to map your journey to Financial Independence.',
+      md: 'Most retirement calculators start the day you stop working. If you are still saving, the years before that are where the plan is actually built. Salary growth, employer matching, and contribution schedules all change how much is there when you get to the finish line, and RetireGolden models each of them separately.',
     },
     { type: 'heading', text: 'Three key steps' },
     {

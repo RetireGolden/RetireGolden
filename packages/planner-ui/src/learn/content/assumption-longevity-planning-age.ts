@@ -26,7 +26,7 @@ export const assumptionLongevityPlanningAgeArticle: LearningArticle = {
   blocks: [
     {
       type: 'prose',
-      md: "One of the most difficult questions in retirement planning is: *How long will my money need to last?* Planning to your average \"life expectancy\" is a common trap—it is merely a median, meaning you have a 50% chance of outliving your assets. A secure retirement plan requires planning for a much longer horizon.",
+      md: "One of the most difficult questions in retirement planning is: *How long will my money need to last?* Planning to your average \"life expectancy\" is a common trap: it is merely a median, meaning you have a 50% chance of outliving your assets. A secure retirement plan requires planning for a much longer horizon.",
     },
     { type: 'heading', text: 'Quick takeaways' },
     {
@@ -59,7 +59,7 @@ export const assumptionLongevityPlanningAgeArticle: LearningArticle = {
     { type: 'heading', text: 'Modeling couples and survivor years' },
     {
       type: 'prose',
-      md: "When planning for a couple, the plan must account for the **survivor period**—the years after one spouse passes. This period often sees a drop in household income (losing the smaller of the two Social Security checks) while fixed expenses (like housing and utilities) remain mostly flat. Tying the planning horizon to the longer joint life expectancy ensures the surviving partner is not left underfunded.",
+      md: "When planning for a couple, the plan must account for the **survivor period**, the years after one spouse passes. This period often sees a drop in household income (losing the smaller of the two Social Security checks) while fixed expenses (like housing and utilities) remain mostly flat. Tying the planning horizon to the longer joint life expectancy ensures the surviving partner is not left underfunded.",
     },
     { type: 'heading', text: 'Watch-outs' },
     {

@@ -68,7 +68,7 @@ function DriverDetails({ row }: { row: RelocationCandidateRow }) {
       <p className="field-hint">
         {row.modeled
           ? 'Driver attribution is unavailable for this row.'
-          : 'This row was priced without a modeled state pack (flat override or unmodeled state), so per-driver attribution is unavailable.'}
+          : 'This row was priced without modeled state tax rules (flat override or unmodeled state), so per-driver attribution is unavailable.'}
       </p>
     )
   }
@@ -78,12 +78,12 @@ function DriverDetails({ row }: { row: RelocationCandidateRow }) {
     // a move-year candidate still pays the origin state before the move.
     return row.lifetimeStateLocalTax === 0 ? (
       <p className="field-hint">
-        {f.stateName} levies no broad income tax — the whole state+local line is $0 by construction. Property, sales,
+        {f.stateName} levies no broad income tax. The whole state+local line is $0 by construction. Property, sales,
         and other taxes are outside this model.
       </p>
     ) : (
       <p className="field-hint">
-        {f.stateName} levies no broad income tax, so the years lived there contribute $0 — the{' '}
+        {f.stateName} levies no broad income tax, so the years lived there contribute $0, the{' '}
         {fmtMoney(row.lifetimeStateLocalTax)} lifetime state+local line comes from the years before the move (or other
         residences on this row&apos;s path). Property, sales, and other taxes are outside this model.
       </p>
@@ -120,7 +120,7 @@ function DriverDetails({ row }: { row: RelocationCandidateRow }) {
           />
           {!f.retirementRuleShared ? (
             <DriverRow
-              label="— of which the separate public-pension rule"
+              label="of which: the separate public-pension rule"
               value={fmtMoney(d.publicPensionExclusionSavings)}
               note={exclusionLabel(f.retirementPublic)}
             />
@@ -139,8 +139,8 @@ function DriverDetails({ row }: { row: RelocationCandidateRow }) {
         </tbody>
       </table>
       <p className="field-hint" style={{ marginTop: '0.5rem' }}>
-        Each figure re-prices every ledger year with that one rule neutralized, so the figures explain — but need not
-        sum to — the {fmtMoney(d.totalStateLocalTax)} lifetime state+local tax this row actually paid (top marginal
+        Each figure re-prices every ledger year with that one rule neutralized, so the figures explain, but need not
+        sum to, the {fmtMoney(d.totalStateLocalTax)} lifetime state+local tax this row actually paid (top marginal
         rate {f.topRatePct}%). A negative figure means the rule costs more than the benchmark.
       </p>
     </div>
@@ -261,7 +261,7 @@ export function RelocationComparePage() {
       <div className="card">
         <h2>Relocation Compare</h2>
         <p className="card-hint">
-          &quot;Which state should I retire in?&quot; — priced on <em>your</em> plan, not a generic ranking. Each
+          &quot;Which state should I retire in?&quot;, priced on <em>your</em> plan, not a generic ranking. Each
           candidate state re-runs your full year-by-year projection (federal + modeled state tax, retirement-income
           exclusions, Social Security treatment, capital-gain rules, split-year moves), so the rows differ only by
           where you live. <LearnLink {...LEARN.stateRelocation} />
@@ -270,7 +270,7 @@ export function RelocationComparePage() {
           <p className="card-hint">
             <strong>Income tax is one relocation factor, not the decision.</strong> Property and sales taxes, housing
             and living costs, healthcare access, and being near people you love are all outside this model. The
-            optional local-rate and spending-adjustment knobs are blunt approximations you control — nothing here
+            optional local-rate and spending-adjustment knobs are blunt approximations you control, nothing here
             recommends a &quot;best state.&quot; <LearnLink {...LEARN.stateRelocation} />
           </p>
         </div>
@@ -279,7 +279,7 @@ export function RelocationComparePage() {
             <p className="card-hint">
               Your plan sets a flat state-tax override ({plan.assumptions.stateEffectiveTaxPct}% under Assumptions),
               which replaces the modeled per-state rules. The baseline row keeps it; candidate rows clear it so the
-              destination&apos;s modeled rules can apply — so part of any difference below comes from dropping the
+              destination&apos;s modeled rules can apply, so part of any difference below comes from dropping the
               override itself.
             </p>
           </div>
@@ -291,7 +291,7 @@ export function RelocationComparePage() {
         <p className="card-hint">
           Up to {MAX_RELOCATION_CANDIDATES} states. Leave &quot;Move year&quot; blank to price the whole plan as a
           resident there; set a year to model a split-year move (July, like the Household screen). Nothing here
-          changes your plan — use &quot;Add as scenario&quot; on a result row to keep one.
+          changes your plan. Use &quot;Add as scenario&quot; on a result row to keep one.
         </p>
         {drafts.map((draft, i) => (
           <div className="item-row" key={i} style={{ marginTop: i === 0 ? 0 : '0.75rem' }}>
@@ -317,7 +317,7 @@ export function RelocationComparePage() {
               />
               <NumberField
                 label="Move year (optional)"
-                help="Blank prices the whole plan as a resident of the candidate state (your planned moves are replaced). A year models staying put until a split-year July move — the move-year is taxed part-year in each state."
+                help="Blank prices the whole plan as a resident of the candidate state (your planned moves are replaced). A year models staying put until a split-year July move. The move-year is taxed part-year in each state."
                 value={draft.moveYear}
                 allowNull
                 min={startYear}
@@ -328,7 +328,7 @@ export function RelocationComparePage() {
               />
               <PercentField
                 label="Local income tax (optional)"
-                help="Flat local/city rate on state taxable income in the destination (e.g. ~3.9% in NYC). Replaces the plan's local rate for this candidate, across the whole plan — exact for a from-the-start candidate, an approximation across a mid-plan move."
+                help="Flat local/city rate on state taxable income in the destination (e.g. ~3.9% in NYC). Replaces the plan's local rate for this candidate, across the whole plan, exact for a from-the-start candidate, an approximation across a mid-plan move."
                 value={draft.localRatePct}
                 min={0}
                 max={10}
@@ -359,7 +359,7 @@ export function RelocationComparePage() {
             <span className="field-label" style={{ margin: 0 }}>
               Success rate ({RELOCATION_MC_PATHS} shared market paths per state)
             </span>
-            <HelpTip text="Runs a Monte Carlo per row with the same seed and market paths, so path N is the identical market history for every state — differences are the state's doing, not luck. Uses the smooth-randomness model; the Monte Carlo page has the full model catalog." />
+            <HelpTip text="Runs a Monte Carlo per row with the same seed and market paths, so path N is the identical market history for every state. Differences are the state's doing, not luck. Uses the smooth-randomness model; the Monte Carlo page has the full model catalog." />
           </label>
           <button type="button" className="btn btn-primary btn-small" disabled={running || drafts.length === 0} onClick={run}>
             {running ? 'Comparing…' : 'Run compare'}
@@ -399,7 +399,7 @@ export function RelocationComparePage() {
                     Lifetime state+local tax <HelpTip text="Sum of the ledger's per-year state and local income-tax lines over the whole projection (nominal). The drill-down explains which state rules drive it." />
                   </th>
                   <th style={{ textAlign: 'right' }}>
-                    Lifetime taxes & penalties <HelpTip text="Federal + state + local + penalties over the whole projection (nominal) — the ranking default, since a state change also moves federal interactions like deduction and bracket timing." />
+                    Lifetime taxes & penalties <HelpTip text="Federal + state + local + penalties over the whole projection (nominal), the ranking default, since a state change also moves federal interactions like deduction and bracket timing." />
                   </th>
                   <th style={{ textAlign: 'right' }}>Δ vs staying</th>
                   <th style={{ textAlign: 'right' }}>Ending after-tax estate (today&apos;s $)</th>
@@ -416,7 +416,7 @@ export function RelocationComparePage() {
                         {!row.error && !row.modeled ? (
                           <>
                             {' '}
-                            <HelpTip text="Part of this row was priced without a modeled state pack (unmodeled state, or the flat override) — treat its state-tax line as approximate." />
+                            <HelpTip text="Part of this row was priced without modeled state tax rules (unmodeled state, or the flat override), so treat its state-tax line as approximate." />
                           </>
                         ) : null}
                       </td>
@@ -456,7 +456,7 @@ export function RelocationComparePage() {
                     </button>
                     <p className="field-hint" style={{ marginTop: '0.5rem' }}>
                       Creates a side-by-side scenario under Scenarios using the planner&apos;s existing state-move
-                      fields — your plan itself is not changed. The scenario reruns to exactly this row.
+                      fields. Your plan itself is not changed. The scenario reruns to exactly this row.
                     </p>
                   </div>
                 ) : null}
@@ -475,7 +475,7 @@ export function RelocationComparePage() {
           <p className="field-hint" style={{ marginTop: '0.75rem' }}>
             Rows use the same start year, market assumptions, and (when enabled) the same {result.monteCarlo?.pathCount}{' '}
             seeded market paths, so differences are attributable to residence, not simulation noise. State rules come
-            from the modeled per-state packs (all 50 states + DC); property, sales, and estate/inheritance taxes are
+            from the modeled per-state tax data (all 50 states + DC); property, sales, and estate/inheritance taxes are
             not modeled.
           </p>
         </div>

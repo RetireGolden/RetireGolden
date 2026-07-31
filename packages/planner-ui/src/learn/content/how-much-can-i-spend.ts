@@ -42,7 +42,7 @@ export const howMuchCanISpendArticle: LearningArticle = {
       type: 'list',
       items: [
         'The answer is annual baseline spending in today\'s dollars.',
-        'The solver reruns the same exact ledger used by Results: taxes, withdrawals, healthcare, Social Security, ACA, IRMAA, survivor years, and spending phases all count.',
+        'The solver reruns the same year-by-year projection Results uses: taxes, withdrawals, healthcare, Social Security, ACA, IRMAA, survivor years, and spending phases all count.',
         'A bequest target on the Spending screen becomes an estate floor the answer must preserve.',
       ],
     },
@@ -80,7 +80,7 @@ export const howMuchCanISpendArticle: LearningArticle = {
         { label: 'Spending slack', value: '+$9,500 per year' },
       ],
       summary:
-        'The answer means the exact ledger found a higher baseline that still avoids depletion and preserves the bequest floor. It does not mean every future path is risk-free.',
+        'The answer means the full projection found a higher baseline that still avoids depletion and preserves the bequest floor. It does not mean every future path is risk-free.',
     },
     { type: 'heading', text: 'How to use the answer' },
     {

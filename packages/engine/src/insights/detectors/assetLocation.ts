@@ -99,7 +99,7 @@ export const assetLocation: Detector = {
         patch: best.candidate.planPatch as Record<string, unknown>,
       },
       impact: {
-        qualitative: `Exact ledger: "${best.candidate.label}" improves after-tax estate by about $${Math.round(best.delta).toLocaleString()} (today's dollars).`,
+        qualitative: `On the full year-by-year projection, "${best.candidate.label}" improves after-tax estate by about $${Math.round(best.delta).toLocaleString()} (today's dollars).`,
         endingAfterTaxEstateDelta: best.delta,
       },
     }

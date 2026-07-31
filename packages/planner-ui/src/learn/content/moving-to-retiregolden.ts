@@ -8,7 +8,7 @@ import type { LearningArticle } from '../learningRegistry'
 export const movingToRetireGoldenArticle: LearningArticle = {
   slug: 'moving-to-retiregolden',
   title: 'Moving to RetireGolden from another tool',
-  description: 'How the import wizard turns files you already have into a draft plan — and how to leave with your data any time.',
+  description: 'How the import wizard turns files you already have into a draft plan, and how to leave with your data any time.',
   category: 'using-retiregolden',
   tags: ['import', 'migration', 'csv', 'projectionlab', 'broker', 'portability', 'backup'],
   audience: 'beginner',
@@ -28,15 +28,14 @@ export const movingToRetireGoldenArticle: LearningArticle = {
   blocks: [
     {
       type: 'prose',
-      md: 'Retyping a plan you already built somewhere else is the worst part of switching tools. The **Import & migrate** wizard (from the planner home) starts a draft RetireGolden plan from files you already have — and everything is parsed on your device, so no file is ever uploaded anywhere.',
+      md: 'Retyping a plan you already built somewhere else is the worst part of switching tools. The **Import & migrate** wizard (from the planner home) starts a draft RetireGolden plan from files you already have, and everything is parsed on your device, so no file is ever uploaded anywhere.',
     },
     { type: 'heading', text: 'Quick takeaways' },
     {
       type: 'list',
       items: [
         'Four guided paths: a broker positions CSV (Schwab, Fidelity, Vanguard), a ProjectionLab JSON export, any spreadsheet saved as CSV (including the Bogleheads Retiree Portfolio Model), and last year\'s Form 1040.',
-        'Nothing imports silently: a review checklist shows what mapped, what was assumed for you, and what could not come over.',
-        'Imports create a draft — you review it before saving, and every imported value stays editable like anything you typed.',
+        'Nothing imports silently: a review checklist shows what mapped, what was assumed for you, and what could not come over. Imports create a draft you approve before saving, and every value stays editable.',
         'Getting out is as supported as getting in: the plan backup is a documented, versioned JSON file.',
       ],
     },
@@ -55,25 +54,25 @@ export const movingToRetireGoldenArticle: LearningArticle = {
     { type: 'heading', text: 'The review checklist keeps mapping honest' },
     {
       type: 'prose',
-      md: 'Formats differ, so no migration is ever 1:1. Instead of pretending otherwise, every import ends at a checklist with four groups: **Imported** (mapped directly), **Assumed — review** (a default the wizard had to invent, like treating a missing cost basis as "no unrealized gain"), **Not imported** (things the file could not express, with pointers to the right screen), and **Skipped** (unreadable rows). Work through the first two groups before trusting results.',
+      md: 'Formats differ, so no migration is ever 1:1. Instead of pretending otherwise, every import ends at a checklist with four groups: **Imported** (mapped directly), **Assumed: review** (a default the wizard had to invent, like treating a missing cost basis as "no unrealized gain"), **Not imported** (things the file could not express, with pointers to the right screen), and **Skipped** (unreadable rows). Work through the first two groups before trusting results.',
     },
     { type: 'heading', text: 'Updating balances later' },
     {
       type: 'prose',
-      md: 'After the first import, you rarely want a whole new plan — just fresh numbers. The Accounts screen has **Update balances from a broker CSV**: download the same positions file at your annual checkup, assign each account in the file to a plan account, and apply. Balances (and cost basis, where present) refresh without retyping.',
+      md: 'After the first import, you rarely want a whole new plan, just fresh numbers. The Accounts screen has **Update balances from a broker CSV**: download the same positions file at your annual checkup, assign each account in the file to a plan account, and apply. Balances (and cost basis, where present) refresh without retyping.',
     },
     { type: 'heading', text: 'And moving out' },
     {
       type: 'prose',
-      md: 'Lock-in works both ways, so RetireGolden documents the exit too. **Download plan backup** on the planner home produces a plain JSON file containing every plan in full — a versioned, documented format, and backups made by older versions of the app keep importing through automatic migrations. If you move to another tool someday, your data is already in your hands in a machine-readable form.',
+      md: 'Lock-in works both ways, so RetireGolden documents the exit too. **Download plan backup** on the planner home produces a plain JSON file containing every plan in full: a versioned, documented format, and backups made by older versions of the app keep importing through automatic migrations. If you move to another tool someday, your data is already in your hands in a machine-readable form.',
     },
     { type: 'heading', text: 'Common mistakes' },
     {
       type: 'list',
       items: [
-        'Skipping the review checklist — the "Assumed" group is where wrong guesses (account types, cost basis) hide.',
-        'Importing a broker CSV and expecting income or spending — positions files only carry balances.',
-        'Using the import wizard to restore a RetireGolden backup — that lives on the planner home ("Import previous backup").',
+        'Skipping the review checklist. The "Assumed" group is where wrong guesses (account types, cost basis) hide.',
+        'Importing a broker CSV and expecting income or spending. Positions files only carry balances.',
+        'Using the import wizard to restore a RetireGolden backup. That lives on the planner home ("Import previous backup").',
         'Forgetting that a draft is a starting point: results are only as good as the sections you finish afterward.',
       ],
     },

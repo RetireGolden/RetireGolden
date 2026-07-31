@@ -65,7 +65,7 @@ function SuccessGauge({ rate, pathCount }: { rate: number; pathCount: number }) 
     <div
       className="success-gauge"
       role="img"
-      aria-label={`Success probability ${pct} percent — ${severity} — over ${pathCount} paths`}
+      aria-label={`Success probability ${pct} percent, ${severity}, over ${pathCount} paths`}
     >
       <svg width="176" height="176" viewBox="0 0 176 176">
         <circle cx="88" cy="88" r={r} fill="none" stroke="var(--surface-2)" strokeWidth="16" />
@@ -252,14 +252,14 @@ export function MonteCarloPage() {
         <p className="card-hint">
           Your deterministic projection assumes the same return and inflation every year. Monte Carlo replays the exact
           same plan a thousand times with markets that vary year to year, then reports how often the money lasts. The
-          model below controls <em>how</em> those markets are generated — your expected returns and inflation from
+          model below controls <em>how</em> those markets are generated, your expected returns and inflation from
           Assumptions stay the center of the distribution either way.
         </p>
         <div className="form-grid">
           <div className="field field-span-full">
             <span className="field-label-row">
               <span className="field-label">Model</span>
-              <HelpTip text="Monte Carlo needs a rule for generating each year's market. Smooth randomness draws each year's return from a bell-shaped curve around your expected return, with inflation statistically linked to it. Replay real history starts your retirement in a random year since 1928 and lets actual market history unfold from there. Stress test forces a 25% market drop in the first year, then returns to normal randomness. The advanced catalog offers more ways to shape the markets — fat tails, volatility clustering, bull/bear regimes, and more. Every model keeps your expected returns and inflation from Assumptions at the center of the distribution, and the same seed always reproduces the same markets." />
+              <HelpTip text="Monte Carlo needs a rule for generating each year's market. Smooth randomness draws each year's return from a bell-shaped curve around your expected return, with inflation statistically linked to it. Replay real history starts your retirement in a random year since 1928 and lets actual market history unfold from there. Stress test forces a 25% market drop in the first year, then returns to normal randomness. The advanced catalog offers more ways to shape the markets, fat tails, volatility clustering, bull/bear regimes, and more. Every model keeps your expected returns and inflation from Assumptions at the center of the distribution, and the same seed always reproduces the same markets." />
             </span>
             <div className="model-preset-row" role="group" aria-label="Market model presets">
               {MODEL_PRESETS.map((preset) => (
@@ -291,7 +291,7 @@ export function MonteCarloPage() {
                 <p className="field-hint">
                   {catalogLabelOf(modelKind)} is part of the “{PRESET_FAMILY_LABELS[presetFamilyOf(modelKind)]}” family.
                 </p>
-                <p className="field-hint">Current market seed: {seed} — “Re-roll markets” draws a new one.</p>
+                <p className="field-hint">Current market seed: {seed}. “Re-roll markets” draws a new one.</p>
               </div>
             </details>
           </div>
@@ -315,7 +315,7 @@ export function MonteCarloPage() {
           <div className="field">
             <span className="field-label-row">
               <span className="field-label">Market draw</span>
-              <HelpTip text="The random sequence is reproducible: the same draw always produces the same thousand markets, so results don't jump around as you edit the plan. Re-roll to check the conclusion holds under a different draw — if success swings more than a point or two, run 10,000 paths. The exact seed number is under Advanced models." />
+              <HelpTip text="The random sequence is reproducible: the same draw always produces the same thousand markets, so results don't jump around as you edit the plan. Re-roll to check the conclusion holds under a different draw, if success swings more than a point or two, run 10,000 paths. The exact seed number is under Advanced models." />
             </span>
             <button type="button" className="btn btn-secondary btn-small" onClick={() => setSeed((Math.random() * 0xffffffff) >>> 0)}>
               Re-roll markets
@@ -324,7 +324,7 @@ export function MonteCarloPage() {
           <div className="field">
             <span className="field-label-row">
               <span className="field-label">Precision</span>
-              <HelpTip text="1,000 paths run automatically and put the success rate within roughly ±1.5 points. 10,000 paths tighten that to about ±0.5 — useful when comparing strategies that differ by a hair." />
+              <HelpTip text="1,000 paths run automatically and put the success rate within roughly ±1.5 points. 10,000 paths tighten that to about ±0.5, useful when comparing strategies that differ by a hair." />
             </span>
             <button type="button" className="btn btn-secondary btn-small" disabled={running} onClick={() => run(ON_DEMAND_PATH_COUNT)}>
               Run {ON_DEMAND_PATH_COUNT.toLocaleString()} paths
@@ -336,7 +336,7 @@ export function MonteCarloPage() {
               <span>
                 <span className="field-label-row">
                   <span className="field-label">Model longevity</span>
-                  <HelpTip text="Instead of everyone living to their fixed planning age, each path draws a lifespan from SSA mortality tables (by age and sex). Outcomes are then weighted by how long people actually live — dying earlier frees the plan, living longer stresses it. Couples use a joint-life RMD divisor when one spouse is much younger." />
+                  <HelpTip text="Instead of everyone living to their fixed planning age, each path draws a lifespan from SSA mortality tables (by age and sex). Outcomes are then weighted by how long people actually live, dying earlier frees the plan, living longer stresses it. Couples use a joint-life RMD divisor when one spouse is much younger." />
                 </span>
                 <p className="field-hint">Draw lifespans from mortality tables instead of the fixed planning age.</p>
               </span>
@@ -348,7 +348,7 @@ export function MonteCarloPage() {
               <span>
                 <span className="field-label-row">
                   <span className="field-label">Model an LTC shock</span>
-                  <HelpTip text="Each path may draw a paid long-term-care episode (incidence, onset age, and duration from published LTC-risk research), adding a late-life cost spike. Any LTC policy you've entered offsets it — so the success rate with vs. without coverage shows what the policy buys you across the whole distribution." />
+                  <HelpTip text="Each path may draw a paid long-term-care episode (incidence, onset age, and duration from published LTC-risk research), adding a late-life cost spike. Any LTC policy you've entered offsets it, so the success rate with vs. without coverage shows what the policy buys you across the whole distribution." />
                 </span>
                 <p className="field-hint">Add a probabilistic care episode; your LTC policy offsets it.</p>
               </span>
@@ -386,7 +386,7 @@ export function MonteCarloPage() {
               </p>
               {summary.successRate < 0.9 ? (
                 <p className="mc-handrail">
-                  A result like this is usually movable — small changes to spending, retirement age, or claiming
+                  A result like this is usually movable: small changes to spending, retirement age, or claiming
                   strategy shift it the most. See what would change this:{' '}
                   <Link to={`/plan/${plan.id}/insights`}>Insights</Link> ·{' '}
                   <Link to={`/plan/${plan.id}/spending-solver`}>How much can I spend?</Link>
@@ -418,7 +418,7 @@ export function MonteCarloPage() {
                 <div className="muted">
                   Typical shortfall when the plan falls short{' '}
                   <HelpTip
-                    text="Expected shortfall: the average unmet spending across only the markets where the money runs out — a sense of how bad a bad outcome tends to be."
+                    text="Expected shortfall: the average unmet spending across only the markets where the money runs out, a sense of how bad a bad outcome tends to be."
                     learn={{ slug: 'sequence-of-returns-risk', label: 'Sequence-of-returns risk' }}
                   />
                 </div>
@@ -434,7 +434,7 @@ export function MonteCarloPage() {
                 <div className="stat-value">{Math.round(summary.downsideRisk.failureRate * 100)}%</div>
                 <div className="muted">
                   Chance the money runs out{' '}
-                  <HelpTip text="The share of simulated markets in which investable assets are depleted before the end of the plan — the complement of the success rate." />
+                  <HelpTip text="The share of simulated markets in which investable assets are depleted before the end of the plan, the complement of the success rate." />
                 </div>
               </div>
             </div>
@@ -547,7 +547,7 @@ export function MonteCarloPage() {
               <h2>Adjustment outlook</h2>
               <p className="card-hint">
                 A more useful headline than one success number: how likely a mid-course spending adjustment is, how
-                deep it tends to go, how long it lasts — and how likely the plan ends with money left over.
+                deep it tends to go, how long it lasts, and how likely the plan ends with money left over.
               </p>
               {/* Headline pair: how likely a cut is, how likely it ends well. */}
               <div className="stat-grid">
@@ -614,7 +614,7 @@ export function MonteCarloPage() {
                   </p>
                 ) : (
                   <p className="card-hint">
-                    Risk-based guardrails are selected but the dollar thresholds have not been solved yet — solve them
+                    Risk-based guardrails are selected but the dollar thresholds have not been solved yet. Solve them
                     on the Spending screen to activate adjustments.
                   </p>
                 )
@@ -694,11 +694,11 @@ export function MonteCarloPage() {
                   Each point trades that share of your investable assets for an immediate life annuity (payout rate{' '}
                   {visibleFrontier.annuitization.payoutRatePct.toFixed(1)}% at age {visibleFrontier.annuitization.startAge},{' '}
                   {visibleFrontier.annuitization.rateSource === 'default-table'
-                    ? 'from a published-quote planning table — check a marketplace quote before acting'
+                    ? 'from a published-quote planning table. Check a marketplace quote before acting'
                     : 'from your entered quote'}
-                  ), priced on the exact ledger over the same market paths.
+                  ), priced on the full year-by-year projection over the same market simulations.
                   {visibleFrontier.annuitization.attributionAvailable
-                    ? ' The dashed line holds the same dollars but shifts them from bonds to stocks instead of buying the annuity — the implicit rising-equity glidepath that research attributes much of a SPIA\'s benefit to. The gap between the lines is what annuitization adds beyond it (mortality credits, spending floor), net of lost liquidity.'
+                    ? ' The dashed line holds the same dollars but shifts them from bonds to stocks instead of buying the annuity, the implicit rising-equity glidepath that research attributes much of a SPIA\'s benefit to. The gap between the lines is what annuitization adds beyond it (mortality credits, spending floor), net of lost liquidity.'
                     : ''}
                 </p>
                 <div className="chart-grid">
@@ -876,7 +876,7 @@ export function MonteCarloPage() {
             <div className="chart-card">
               <h2>When depleting plans run out</h2>
               {summary.depletionYearCounts.length === 0 ? (
-                <p className="muted">No path depleted — every simulated market carried the plan to the end.</p>
+                <p className="muted">No path depleted. Every simulated market carried the plan to the end.</p>
               ) : (
                 <div
                   className="chart-frame"

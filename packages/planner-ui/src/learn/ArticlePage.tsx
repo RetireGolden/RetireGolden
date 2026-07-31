@@ -36,7 +36,7 @@ function PlannedArticle({ article }: { article: LearningArticle }) {
       <p className="lede">{article.description}</p>
       <div className="learn-callout learn-callout--note">
         <p>
-          This article is planned but not written yet — it’s on the V9 content roadmap. In the meantime, explore the
+          This article is planned but not written yet. It’s on the V9 content roadmap. In the meantime, explore the
           planner or browse other topics.
         </p>
       </div>

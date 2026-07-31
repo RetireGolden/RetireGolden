@@ -44,9 +44,9 @@ function planYearAge(dob: string): number {
 }
 
 const PCT_OPTIONS = [
-  { value: '50', label: '50% — the median (half of people live longer)' },
-  { value: '25', label: '25% — the standard prudent choice' },
-  { value: '10', label: '10% — conservative' },
+  { value: '50', label: '50%: the median (half of people live longer)' },
+  { value: '25', label: '25%: the standard prudent choice' },
+  { value: '10', label: '10%: conservative' },
 ]
 
 export function SurvivalPercentileModal({ person, personIndex, partner, onApply, onClose }: SurvivalPercentileModalProps) {
@@ -104,16 +104,16 @@ export function SurvivalPercentileModal({ person, personIndex, partner, onApply,
   }
 
   return (
-    <Modal title={`Planning age from a survival percentile — ${person.name}`} onClose={onClose} width="40rem">
+    <Modal title={`Planning age from a survival percentile, ${person.name}`} onClose={onClose} width="40rem">
       <p className="card-hint">
         Instead of guessing an age, plan to the age you have only a chosen chance of reaching. Probabilities come
-        from the Social Security Administration 2022 period life table — the same table behind the questionnaire
+        from the Social Security Administration 2022 period life table, the same table behind the questionnaire
         and the Monte Carlo longevity model. The result is written as an ordinary planning age you can still edit.
       </p>
       <div className="form-grid">
         <SelectField
           label="Chance of reaching that age"
-          help="The survival probability the planning age is anchored to. Planning to the 25th percentile means only a 1-in-4 chance of outliving the plan horizon — a common prudent convention. The median (50%) is a coin flip; 10% is conservative."
+          help="The survival probability the planning age is anchored to. Planning to the 25th percentile means only a 1-in-4 chance of outliving the plan horizon, a common prudent convention. The median (50%) is a coin flip; 10% is conservative."
           value={pct}
           options={PCT_OPTIONS}
           onCommit={(v) => setPct(v as '50' | '25' | '10')}
@@ -121,7 +121,7 @@ export function SurvivalPercentileModal({ person, personIndex, partner, onApply,
         {partner !== null ? (
           <CheckboxField
             label="Either of us (joint)"
-            help="For couples: the age at which there is still the chosen chance that at least one of you is alive (independent lifetimes). Joint horizons are several years longer than either individual's — the usual reason couple plans should run longer. Applying writes the joint age as THIS person's planning age so the household horizon reaches it; your partner's own planning age is left unchanged (the plan always runs to the later of the two)."
+            help="For couples: the age at which there is still the chosen chance that at least one of you is alive (independent lifetimes). Joint horizons are several years longer than either individual's. The usual reason couple plans should run longer. Applying writes the joint age as THIS person's planning age so the household horizon reaches it; your partner's own planning age is left unchanged (the plan always runs to the later of the two)."
             value={joint}
             onCommit={setJoint}
           />

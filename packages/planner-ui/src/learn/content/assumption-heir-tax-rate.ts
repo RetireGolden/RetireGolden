@@ -42,7 +42,7 @@ export const assumptionHeirTaxRateArticle: LearningArticle = {
     },
     {
       type: 'prose',
-      md: "Because these distributions are treated as ordinary income and must occur within a tight 10-year window—often during the heirs' peak earning years—the tax rate can be substantial. A flat **25%** assumption represents a typical mid-range federal tax bracket (22% or 24%) plus a modest buffer for state income taxes.",
+      md: "Because these distributions are treated as ordinary income and must occur within a tight 10-year window (often during the heirs' peak earning years), the tax rate can be substantial. A flat **25%** assumption represents a typical mid-range federal tax bracket (22% or 24%) plus a modest buffer for state income taxes.",
     },
     {
       type: 'formula',

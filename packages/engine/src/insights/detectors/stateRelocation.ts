@@ -47,7 +47,7 @@ export const stateRelocation: Detector = {
       id: 'state-relocation',
       category: 'longevity-insurance-geography',
       title: 'State residence is a tax lever worth a look',
-      rationale: `Your plan is based in ${currentState}, which levies an income tax, with no relocation modeled. If a move is ever on the table for other reasons, the state-tax difference is worth quantifying — the Relocation Compare page prices candidate states on your actual plan. Income tax is one factor among many; nothing here says you should move.`,
+      rationale: `Your plan is based in ${currentState}, which levies an income tax, with no relocation modeled. If a move is ever on the table for other reasons, the state-tax difference is worth quantifying. The Relocation Compare page prices candidate states on your actual plan. Income tax is one factor among many; nothing here says you should move.`,
       impact: { qualitative: 'Preview to quantify the lifetime state-tax drag vs modeled zero-income-tax states on your own plan.' },
       exact: false,
       confidence: 'medium',
@@ -103,7 +103,7 @@ export const stateRelocation: Detector = {
           patch: relocationScenarioPatch(ctx.plan, { state: best.destinationState, moveYear: startYear }, startYear),
         },
         impact: {
-          qualitative: `Exact ledger: staying in ${ctx.plan.household.state} costs about $${Math.round(savings).toLocaleString()} of lifetime state+local income tax (today's dollars) vs ${best.destinationState}, the best of ${ZERO_TAX_SHORTLIST.join('/')} on your plan. Income tax is one relocation factor — compare your own shortlist on the Relocation Compare page.`,
+          qualitative: `On the full year-by-year projection, staying in ${ctx.plan.household.state} costs about $${Math.round(savings).toLocaleString()} of lifetime state+local income tax (today's dollars) vs ${best.destinationState}, the best of ${ZERO_TAX_SHORTLIST.join('/')} on your plan. Income tax is one relocation factor. Compare your own shortlist on the Relocation Compare page.`,
         },
       }
     } catch {

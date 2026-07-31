@@ -133,7 +133,7 @@ function finishAggregates(
   review.push({
     status: 'unmapped',
     source: 'Positions detail',
-    detail: 'Only account balances (and cost basis where present) import — individual holdings, lots, and quantities are not modeled.',
+    detail: 'Only account balances (and cost basis where present) import. Individual holdings, lots, and quantities are not modeled.',
     locator: { kind: 'none', note: 'individual holdings, lots, and quantities are not modeled' },
     confidence: 'unmapped',
   })
@@ -251,7 +251,7 @@ function parseAccountColumnFile(
         source: `${label}: Pending Activity`,
         detail:
           value !== null
-            ? `$${value.toLocaleString('en-US')} of unsettled activity was not counted — it will appear in a position or cash on your next download.`
+            ? `$${value.toLocaleString('en-US')} of unsettled activity was not counted. It will appear in a position or cash on your next download.`
             : 'Unsettled activity row was not counted.',
         locator: csvRow(r + 1, valueLabel || undefined),
         confidence: 'unmapped',
@@ -289,7 +289,7 @@ function parseAccountColumnFile(
     review.push({
       status: 'unmapped',
       source: 'Cost basis',
-      detail: "Vanguard's holdings download has no cost basis column — enter basis on taxable accounts from vanguard.com's cost basis page.",
+      detail: "Vanguard's holdings download has no cost basis column. Enter basis on taxable accounts from vanguard.com's cost basis page.",
       locator: { kind: 'none', note: "Vanguard's holdings download has no cost basis column" },
       confidence: 'unmapped',
     })
@@ -417,7 +417,7 @@ export function draftPlanFromBrokerAccounts(
       review.push({
         status: 'defaulted',
         source: acc.accountLabel,
-        detail: `The file's net-negative total of -$${Math.abs(acc.totalValue).toLocaleString('en-US', { maximumFractionDigits: 0 })} was clamped to a $0 balance — set the real balance on the Accounts screen.`,
+        detail: `The file's net-negative total of -$${Math.abs(acc.totalValue).toLocaleString('en-US', { maximumFractionDigits: 0 })} was clamped to a $0 balance. Set the real balance on the Accounts screen.`,
         locator: { kind: 'none', note: 'net-negative account totals cannot be modeled and were clamped to zero' },
         confidence: 'assumed',
         target: `accounts[${accountIndex}]`,
@@ -427,7 +427,7 @@ export function draftPlanFromBrokerAccounts(
       review.push({
         status: 'defaulted',
         source: acc.accountLabel,
-        detail: `The file's negative cost basis of -$${Math.abs(acc.costBasis).toLocaleString('en-US', { maximumFractionDigits: 0 })} was clamped to $0 — correct it on the Accounts screen.`,
+        detail: `The file's negative cost basis of -$${Math.abs(acc.costBasis).toLocaleString('en-US', { maximumFractionDigits: 0 })} was clamped to $0. Correct it on the Accounts screen.`,
         locator: { kind: 'none', note: 'a negative cost basis cannot be modeled and was clamped to zero' },
         confidence: 'assumed',
         target: `accounts[${accountIndex}].costBasis`,
@@ -445,7 +445,7 @@ export function draftPlanFromBrokerAccounts(
         review.push({
           status: 'defaulted',
           source: acc.accountLabel,
-          detail: 'No cost basis in the file — basis was set equal to the balance (no unrealized gain). Correct it on the Accounts screen.',
+          detail: 'No cost basis in the file. Basis was set equal to the balance (no unrealized gain). Correct it on the Accounts screen.',
           locator: { kind: 'none', note: 'the imported broker file carried no cost basis for this account' },
           confidence: 'assumed',
           target: `accounts[${accountIndex}].costBasis`,
@@ -460,7 +460,7 @@ export function draftPlanFromBrokerAccounts(
         review.push({
           status: 'unmapped',
           source: acc.accountLabel,
-          detail: `The file's $${acc.costBasis.toLocaleString('en-US', { maximumFractionDigits: 0 })} cost basis was not imported — cost basis only applies to taxable accounts, and this was created as a ${type} account.`,
+          detail: `The file's $${acc.costBasis.toLocaleString('en-US', { maximumFractionDigits: 0 })} cost basis was not imported. Cost basis only applies to taxable accounts, and this was created as a ${type} account.`,
           locator: { kind: 'none', note: 'cost basis does not apply to this account type' },
           confidence: 'unmapped',
         })
@@ -483,7 +483,7 @@ export function draftPlanFromBrokerAccounts(
   review.push({
     status: 'unmapped',
     source: 'Everything except balances',
-    detail: 'Broker files carry no household, income, spending, or Social Security data — enter those in the planner sections.',
+    detail: 'Broker files carry no household, income, spending, or Social Security data. Enter those in the planner sections.',
     locator: { kind: 'none', note: 'broker files carry no household, income, spending, or Social Security data' },
     confidence: 'unmapped',
   })

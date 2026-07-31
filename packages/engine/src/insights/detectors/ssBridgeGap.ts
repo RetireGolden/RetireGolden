@@ -68,7 +68,7 @@ export const ssBridgeGap: Detector = {
       rationale:
         `You delay Social Security but retire earlier, leaving ${firstYear}–${lastYear} without your benefit. ` +
         `A TIPS bridge ladder (≈$${Math.round(totalCost).toLocaleString()} today) pays you the forgone age-62 benefit ` +
-        `(~$${Math.round(annualTotal).toLocaleString()}/yr, inflation-protected) until your claim starts — the delayed claim's longevity insurance without the lifestyle gap.`,
+        `(~$${Math.round(annualTotal).toLocaleString()}/yr, inflation-protected) until your claim starts, giving you the delayed claim's longevity insurance without the lifestyle gap.`,
       impact: {
         qualitative:
           'Preview the bridge against your full plan: guaranteed gap-year income and steadier withdrawals, at the cost of locking up liquid savings.',

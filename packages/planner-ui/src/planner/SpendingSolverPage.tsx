@@ -63,8 +63,8 @@ interface ShapeRow {
 
 const SHAPE_DEFS: { id: SpendingShapeId; label: string }[] = [
   { id: 'flat', label: 'Constant-real (no decline)' },
-  { id: 'smile', label: 'Smile — average retiree (−10% at 75, −20% at 85)' },
-  { id: 'smirk', label: 'Smirk — median retiree (−1%/yr real)' },
+  { id: 'smile', label: 'Smile: average retiree (−10% at 75, −20% at 85)' },
+  { id: 'smirk', label: 'Smirk: median retiree (−1%/yr real)' },
 ]
 
 export function SpendingSolverPage() {
@@ -210,7 +210,7 @@ export function SpendingSolverPage() {
         <p className="card-hint">
           Finds the highest annual base spending (today's dollars) your exact projection ledger can sustain: the plan
           must never run out of investable money through the full horizon, and the ending after-tax estate must stay at
-          or above your bequest target. Every probed level re-runs the whole ledger — taxes, ACA and IRMAA cliffs,
+          or above your bequest target. Every probed level re-runs the whole ledger: taxes, ACA and IRMAA cliffs,
           withdrawal order, healthcare, debts, and survivor years all price in. Phases and one-time goals stay as
           entered; only the baseline level moves. <LearnLink {...LEARN.sustainableSpending} />
         </p>
@@ -218,7 +218,7 @@ export function SpendingSolverPage() {
           <div className="callout callout--info">
             <p className="card-hint">
               This plan uses <strong>amortized spending (ABW)</strong>: annual spending is recomputed from the actual
-              portfolio every year, so there is no fixed base-spending level to solve for — the amortization rule{' '}
+              portfolio every year, so there is no fixed base-spending level to solve for. The amortization rule{' '}
               <em>is</em> the answer to &quot;how much can I spend?&quot;, and it adjusts itself as markets move. See
               each year&apos;s amount on Results, or switch the spending policy back to fixed target under{' '}
               <Link to={`/plan/${plan.id}/spending`}>Spending</Link> to use this solver. The shape and published-rule
@@ -234,7 +234,7 @@ export function SpendingSolverPage() {
               </>
             ) : (
               <>
-                No bequest target set — the only constraint is not running out. Set one under{' '}
+                No bequest target set. The only constraint is not running out. Set one under{' '}
                 <Link to={`/plan/${plan.id}/spending`}>Spending</Link> to protect an estate floor.
               </>
             )}
@@ -273,7 +273,7 @@ export function SpendingSolverPage() {
                 <p className="muted" style={{ margin: 0 }}>
                   {slack !== null && slack >= 0
                     ? `That is ${fmtMoney(slack)} per year of headroom above your current ${fmtMoney(result.currentBaseAnnual)} baseline (today's dollars).`
-                    : `That is ${fmtMoney(Math.abs(slack ?? 0))} per year BELOW your current ${fmtMoney(result.currentBaseAnnual)} baseline — your projection cannot sustain today's spending through the horizon.`}
+                    : `That is ${fmtMoney(Math.abs(slack ?? 0))} per year BELOW your current ${fmtMoney(result.currentBaseAnnual)} baseline. Your projection cannot sustain today's spending through the horizon.`}
                   {!result.converged
                     ? ' The simulation budget ran out before the answer fully converged, so this is a feasible lower bound.'
                     : ''}
@@ -286,7 +286,7 @@ export function SpendingSolverPage() {
                 label="Max sustainable spending"
                 value={`${fmtMoney(solvedRounded ?? 0)}/yr`}
                 tone="neutral"
-                help="Highest annual baseline spending (today's dollars) whose full year-by-year projection never depletes investable assets and keeps the ending after-tax estate at or above your bequest target. Solved by bisection to ~$500 resolution, then shown rounded down to the nearest $100 — the same rounded figure is what Apply and scenarios use."
+                help="Highest annual baseline spending (today's dollars) whose full year-by-year projection never depletes investable assets and keeps the ending after-tax estate at or above your bequest target. Solved by bisection to ~$500 resolution, then shown rounded down to the nearest $100. The same rounded figure is what Apply and scenarios use."
               />
               <Stat
                 label="Spending slack"
@@ -300,12 +300,12 @@ export function SpendingSolverPage() {
                   result.limitingConstraint === 'estate-floor'
                     ? 'Bequest target'
                     : result.limitingConstraint === 'depletion'
-                      ? 'Depletion — at higher spending'
+                      ? 'Depletion at higher spending'
                       : 'No limit found'
                 }
                 tone="neutral"
                 small
-                help="What failed at the next-higher spending level the solver probed — not at the answer above, which passed. 'Depletion' means spending any more than the answer would run the portfolio out of money before the end of the plan; 'Bequest target' means the ending estate would fall below your floor. 'No limit found' means spending appeared unbounded at every probed level (guaranteed income outruns spending)."
+                help="What failed at the next-higher spending level the solver probed, not at the answer above, which passed. 'Depletion' means spending any more than the answer would run the portfolio out of money before the end of the plan; 'Bequest target' means the ending estate would fall below your floor. 'No limit found' means spending appeared unbounded at every probed level (guaranteed income outruns spending)."
               />
             </div>
 
@@ -314,7 +314,7 @@ export function SpendingSolverPage() {
                 <h2>Evidence at that level</h2>
                 <p className="card-hint">
                   From the full projection run at the solver&apos;s exact answer (shown as{' '}
-                  {fmtMoney(solvedRounded ?? 0)}/yr, rounded down to the nearest $100) — the same year-by-year
+                  {fmtMoney(solvedRounded ?? 0)}/yr, rounded down to the nearest $100), the same year-by-year
                   numbers Results shows, not an approximation.
                 </p>
                 <ul style={{ margin: '0.25rem 0 0.75rem 1.1rem', lineHeight: 1.7 }}>
@@ -334,7 +334,7 @@ export function SpendingSolverPage() {
                 </ul>
                 <p className="field-hint">
                   Solved in {result.simulationCount} full-plan simulations
-                  {result.converged ? ', converged to ~$500 resolution.' : ' — budget exhausted, feasible lower bound.'}
+                  {result.converged ? ', converged to ~$500 resolution.' : '. Budget exhausted, feasible lower bound.'}
                 </p>
                 <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                   <button type="button" className="btn btn-primary btn-small" disabled={readOnly} onClick={applyToSpending}>
@@ -357,12 +357,12 @@ export function SpendingSolverPage() {
                   <p>
                     The solver bisects on the baseline spending level: each probe re-runs your entire year-by-year
                     projection (taxes, ACA/IRMAA cliffs, withdrawal order, healthcare, debts, survivor years) and
-                    checks two constraints — investable assets must never deplete before {result.evidence.endYear}, and
+                    checks two constraints: investable assets must never deplete before {result.evidence.endYear}, and
                     the ending after-tax estate must stay at or above{' '}
                     {result.estateFloorTodayDollars > 0
                       ? `your ${fmtMoney(result.estateFloorTodayDollars)} bequest target`
                       : 'zero (no bequest target set)'}
-                    . The solver&apos;s exact answer is the highest level that passed both — it is shown, applied,
+                    . The solver&apos;s exact answer is the highest level that passed both. It is shown, applied,
                     and added to scenarios rounded down to the nearest $100 ({fmtMoney(solvedRounded ?? 0)}), which
                     therefore also passes. The next-higher probe failed on{' '}
                     {result.limitingConstraint === 'estate-floor'
@@ -387,10 +387,10 @@ export function SpendingSolverPage() {
         <p className="card-hint">
           The answer above keeps your phases as entered. Research on actual retirees says spending rarely stays
           constant-real: the <em>average</em> path is a &quot;smile&quot; (a slow decline that late-life healthcare
-          partly reverses — the preset approximates it as two downward steps) and the <em>median</em> path is a
-          &quot;smirk&quot; — a steady ~1%/yr real decline with no late rise at all (Blanchett).
+          partly reverses; the preset approximates it as two downward steps) and the <em>median</em> path is a
+          &quot;smirk&quot;, a steady ~1%/yr real decline with no late rise at all (Blanchett).
           Shape-aware plans support a higher initial spend from the same portfolio. Solve your plan under each shape
-          to see the size of that effect here — apply a shape on the{' '}
+          to see the size of that effect here. Apply a shape on the{' '}
           <Link to={`/plan/${plan.id}/spending`}>Spending</Link> screen if you want to keep it.{' '}
           <LearnLink {...LEARN.spendingProfiles} />
         </p>
@@ -433,7 +433,7 @@ export function SpendingSolverPage() {
             </div>
             <p className="field-hint" style={{ marginTop: '0.5rem' }}>
               Each row re-solves your full plan with that shape&apos;s phase rows (initial spend in today&apos;s
-              dollars; later years follow the shape). No shape is &quot;the answer&quot; — they are framings of how
+              dollars; later years follow the shape). No shape is &quot;the answer&quot;. They are framings of how
               your own later-life spending might behave.
             </p>
           </>
@@ -443,11 +443,11 @@ export function SpendingSolverPage() {
       <div className="card">
         <h2>Whose 4% rule? Published rules vs this plan</h2>
         <p className="card-hint">
-          The community argues about the &quot;right&quot; safe withdrawal rate — Bengen&apos;s 2025 book says 4.7%,
+          The community argues about the &quot;right&quot; safe withdrawal rate: Bengen&apos;s 2025 book says 4.7%,
           Morningstar&apos;s latest study says 3.9%, Early Retirement Now conditions it on market valuations. Here is
           each published rule priced on <em>your</em> plan through the same year-by-year ledger, next to your
           plan&apos;s own solved answer above. The rules assume constant-real spending of a fixed fraction of the
-          starting portfolio; your solver answer prices your actual phases, taxes, and horizon — which is why they
+          starting portfolio; your solver answer prices your actual phases, taxes, and horizon, which is why they
           differ.
         </p>
         <div className="table-scroll">
@@ -488,7 +488,7 @@ export function SpendingSolverPage() {
                 <tr>
                   <td>
                     <strong>This plan&apos;s solver</strong>{' '}
-                    <HelpTip text="The exact-ledger answer from the top of this page, expressed as an initial rate on the same starting investable balance so it can sit in the same table. Unlike the published rules it prices your actual phases, taxes, healthcare, and horizon." />
+                    <HelpTip text="The full-projection answer from the top of this page, expressed as an initial rate on the same starting investable balance so it can sit in the same table. Unlike the published rules it prices your actual phases, taxes, healthcare, and horizon." />
                   </td>
                   <td style={{ textAlign: 'right' }}>{((solvedRounded / startingInvestable) * 100).toFixed(2)}%</td>
                   <td style={{ textAlign: 'right' }}>{fmtMoney(solvedRounded)}</td>
@@ -500,10 +500,10 @@ export function SpendingSolverPage() {
           </table>
         </div>
         <p className="field-hint" style={{ marginTop: '0.5rem' }}>
-          Each rule runs with your accounts, taxes, healthcare, goals, and horizon unchanged — only recurring
+          Each rule runs with your accounts, taxes, healthcare, goals, and horizon unchanged, only recurring
           lifestyle spending is set to the rule&apos;s level (constant-real, as the rules define it). A rule
           &quot;running out&quot; on your plan usually means your horizon is longer than the 30 years the rule was
-          derived for, or your fixed costs differ from a generic retiree&apos;s — evidence for why a plan-specific
+          derived for, or your fixed costs differ from a generic retiree&apos;s, evidence for why a plan-specific
           answer beats a debate about whose rule is right.
         </p>
       </div>

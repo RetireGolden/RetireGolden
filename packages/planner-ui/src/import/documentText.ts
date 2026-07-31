@@ -570,7 +570,7 @@ function failureMessage(reason: DocumentTextFailureReason, context: FailureConte
       // naming the install alone sends a bundled host to a fix that cannot
       // work: the package may be installed already and a browser still cannot
       // resolve its bare specifier at run time.
-      return 'PDF reading is unavailable in this app because the optional "pdfjs-dist" package is not installed. Install it, or — in a browser bundle, where the package name cannot be resolved at run time — import pdfjs in the app itself and pass it as options.pdfjs.'
+      return 'PDF reading is unavailable in this app because the optional "pdfjs-dist" package is not installed. Install it, or, in a browser bundle, where the package name cannot be resolved at run time, import pdfjs in the app itself and pass it as options.pdfjs.'
     case 'pdfjs_worker_unavailable': {
       // A host that passed its own pdfjs in never reached this module's worker
       // import at all, so "its main-thread worker module could not be loaded"
@@ -578,7 +578,7 @@ function failureMessage(reason: DocumentTextFailureReason, context: FailureConte
       // its OWN import of `pdf.worker.mjs`, and that is what it is told.
       const because = context.detail ? ` (${context.detail})` : ''
       return context.supplied === true
-        ? `PDF reading is unavailable in this app: the pdfjs module this app supplied has no main-thread worker, and pdfjs could not load a worker any other way${because}. Import "pdfjs-dist/legacy/build/pdf.worker.mjs" alongside it — that import is what makes pdfjs run worker-free.`
+        ? `PDF reading is unavailable in this app: the pdfjs module this app supplied has no main-thread worker, and pdfjs could not load a worker any other way${because}. Import "pdfjs-dist/legacy/build/pdf.worker.mjs" alongside it. That import is what makes pdfjs run worker-free.`
         : `PDF reading is unavailable in this app: "pdfjs-dist" is installed, but its main-thread worker module could not be loaded${because}.`
     }
     case 'pdfjs_incompatible':
@@ -587,8 +587,8 @@ function failureMessage(reason: DocumentTextFailureReason, context: FailureConte
         : 'PDF reading is unavailable in this app because the installed "pdfjs-dist" build is not one this app can use.'
     case 'extraction_failed':
       return context.detail
-        ? `Something went wrong while reading this PDF (${context.detail}). The document itself may be perfectly fine — try again, or enter the values by hand.`
-        : 'Something went wrong while reading this PDF. The document itself may be perfectly fine — try again, or enter the values by hand.'
+        ? `Something went wrong while reading this PDF (${context.detail}). The document itself may be perfectly fine. Try again, or enter the values by hand.`
+        : 'Something went wrong while reading this PDF. The document itself may be perfectly fine. Try again, or enter the values by hand.'
     case 'unreadable_input':
       return 'This file could not be read from memory because its data had already been handed off elsewhere. Choose the file again, or enter the values by hand.'
   }

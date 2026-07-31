@@ -71,7 +71,7 @@ export function SourcesPage() {
 
       <h2>Date-stamped, current-year values</h2>
       <p>
-        Rules and dollar figures change — sometimes retroactively. Articles that depend on current-year numbers are
+        Rules and dollar figures change, sometimes retroactively. Articles that depend on current-year numbers are
         marked for annual review, carry a “last reviewed” date, and either pull live values from the app’s parameter
         data or clearly stamp the year a figure applies to.
       </p>

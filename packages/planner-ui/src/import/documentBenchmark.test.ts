@@ -394,7 +394,7 @@ describe('the report cannot be quoted as a single number', () => {
 
   it('names every miss with the page it was expected on', async () => {
     const text = formatDocumentBenchmarkReport(await report())
-    expect(text).toContain('text present — selection gap')
+    expect(text).toContain('text present: selection gap')
     // Both surviving misses, named with their page.
     expect(text).toContain('p2 Individual Brokerage')
     expect(text).toContain('p1 SAMUEL O BRENNAN')
@@ -409,7 +409,7 @@ describe('the report cannot be quoted as a single number', () => {
     // report now says outright what it cannot tell you.
     expect(text).not.toContain('the OCR decision')
     expect(text).not.toContain('OCR gap')
-    expect(text).toContain('LIMITATION — OCR recoverability is NOT measured here')
+    expect(text).toContain('LIMITATION: OCR recoverability is NOT measured here')
     expect(text).toContain('Neither is an OCR number.')
     // What DOES survive about scanned pages, stated as the measurement it is.
     expect(text).toContain('IMAGE-ONLY PAGE DETECTION')
@@ -429,7 +429,7 @@ describe('the report cannot be quoted as a single number', () => {
         oneOffProbe({ expected: [{ field: 'account_number', value: '****9999', page: 1 }] }),
       ]),
     )
-    expect(text).toContain('text lost — extraction gap')
+    expect(text).toContain('text lost: extraction gap')
     expect(text).toContain('miss:ext')
   })
 })

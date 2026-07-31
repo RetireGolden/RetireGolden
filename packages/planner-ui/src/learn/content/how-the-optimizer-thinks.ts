@@ -34,9 +34,8 @@ export const howTheOptimizerThinksArticle: LearningArticle = {
     {
       type: 'list',
       items: [
-        'Optimize starts from a no-conversion baseline, then searches across plan years at once.',
-        'The solver uses a simplified math model to find a raw candidate schedule, then RetireGolden trims it to what the exact ledger can execute and measures the cleaned result.',
-        'Objective modes change what "better" means after candidates have been evaluated; they do not bypass the exact ledger.',
+        'Optimize starts from a no-conversion baseline and searches every plan year at once with a simplified math model, then trims the raw candidate schedule to what your full year-by-year projection can actually execute.',
+        'Objective modes change what "better" means after candidates have been evaluated; they do not bypass that projection.',
         'A proposed schedule should still be checked in Results and Monte Carlo before you treat it as a good idea.',
       ],
     },
@@ -60,7 +59,7 @@ export const howTheOptimizerThinksArticle: LearningArticle = {
         ['Baseline probe', 'Runs the plan with conversions stripped out to capture spending, income, RMDs, and tax context', 'Gives the solver a clean starting point'],
         ['Search', 'Uses a linearized model to test conversion amounts across years', 'Makes a multi-year search fast enough for the browser'],
         ['Exact cleanup', 'Runs the raw schedule through the projection ledger, trims conversions the ledger cannot execute, and re-runs the cleaned schedule', 'Keeps the schedule applyable and tied to the same engine used by Results'],
-        ['Objective ranking', 'Ranks the exact-ledger evaluations under the selected objective policy', 'Lets the same candidates answer different planning questions without a second ranking system'],
+        ['Objective ranking', 'Ranks the full-projection evaluations under the selected objective policy', 'Lets the same candidates answer different planning questions without a second ranking system'],
         ['Risk check', 'Runs a Monte Carlo success estimate for the proposed schedule', 'Shows whether the schedule appears to strain the plan under market variation'],
       ],
     },
@@ -79,7 +78,7 @@ export const howTheOptimizerThinksArticle: LearningArticle = {
     { type: 'heading', text: 'Why it matters in RetireGolden' },
     {
       type: 'prose',
-      md: 'The Optimize tab shows after-tax estate delta, lifetime tax delta, success rate, and proposed conversions by year. When you choose a non-default objective, the page calls out that estate and tax deltas are context rather than the ranking metric. If the raw solver request is larger than the exact ledger can execute, the chart shows the cleaned schedule. "Apply optimized schedule" keeps the cleaned schedule labeled as optimizer output. "Accept as manual" copies the same cleaned amounts into an editable manual schedule under Strategy.',
+      md: 'The Optimize tab shows after-tax estate delta, lifetime tax delta, success rate, and proposed conversions by year. When you choose a non-default objective, the page calls out that estate and tax deltas are context rather than the ranking metric. If the raw solver request is larger than the projection can execute, the chart shows the cleaned schedule. "Apply optimized schedule" keeps the cleaned schedule labeled as optimizer output. "Accept as manual" copies the same cleaned amounts into an editable manual schedule under Strategy.',
     },
     { type: 'heading', text: 'Common mistakes' },
     {
@@ -87,7 +86,7 @@ export const howTheOptimizerThinksArticle: LearningArticle = {
       items: [
         'Thinking the optimizer minimizes lifetime tax. It may raise taxes while improving after-tax estate.',
         'Switching objectives without reading the objective hint; a survivor-liquidity winner may not also be the largest-estate winner.',
-        'Applying a schedule without noticing whether the exact ledger cleaned or rejected part of the raw solver request.',
+        'Applying a schedule without noticing whether the projection cleaned or rejected part of the raw solver request.',
         'Ignoring MAGI, IRMAA, ACA, and cash-flow effects in Results.',
         'Assuming an infeasible result means Optimize is broken; often the plan has a spending shortfall before any conversion strategy matters.',
         'Forgetting to test the heir tax rate assumption, which changes how valuable leftover traditional dollars appear.',

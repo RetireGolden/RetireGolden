@@ -124,10 +124,10 @@ const tooltipProps = {
 } as const
 
 // Stacked charts (6–8 series) hide ~$0 rows in the tooltip via content, never
-// by nulling zeros in the data — see NonZeroTooltipContent.
+// by nulling zeros in the data, see NonZeroTooltipContent.
 const stackTooltipProps = { ...tooltipProps, content: NonZeroTooltipContent } as const
 
-/** "1,000" — keeps verdict copy in sync if the default path count changes. */
+/** "1,000", keeps verdict copy in sync if the default path count changes. */
 const PATH_COUNT_LABEL = DEFAULT_PATH_COUNT.toLocaleString()
 
 /**
@@ -366,7 +366,7 @@ export function ResultsPage() {
           <h2>
             {depletionYear !== null
               ? `This plan runs out of money in ${depletionYear}.`
-              : `Your money lasts the full plan — through ${endYear}.`}
+              : `Your money lasts the full plan, through ${endYear}.`}
           </h2>
           <p className="muted">
             {depletionYear !== null ? (
@@ -391,7 +391,7 @@ export function ResultsPage() {
                   <>
                     {' '}
                     Across {PATH_COUNT_LABEL} varied markets, this plan succeeds {Math.round(mcRate * 100)}% of the
-                    time — <Link to={`/plan/${plan.id}/monte-carlo`}>see Monte Carlo</Link>.
+                    time, <Link to={`/plan/${plan.id}/monte-carlo`}>see Monte Carlo</Link>.
                   </>
                 ) : null}{' '}
                 <Link to={`/plan/${plan.id}/insights`}>See what would change this →</Link>
@@ -404,7 +404,7 @@ export function ResultsPage() {
                   <>
                     {' '}
                     Across {PATH_COUNT_LABEL} varied markets, this plan succeeds {Math.round(mcRate * 100)}% of the
-                    time — <Link to={`/plan/${plan.id}/monte-carlo`}>see Monte Carlo</Link>.
+                    time, <Link to={`/plan/${plan.id}/monte-carlo`}>see Monte Carlo</Link>.
                   </>
                 ) : null}{' '}
                 The charts below are the evidence behind this verdict.
@@ -432,7 +432,7 @@ export function ResultsPage() {
           label="Copy plan for your AI"
           copiedLabel="Plan copied ✓"
           fallbackLabel="Your plan, as JSON"
-          // The projection's own start year, not a freshly computed one — the
+          // The projection's own start year, not a freshly computed one, the
           // payload must reproduce the numbers on this page, and a reader that
           // defaults the year would drift from them every January.
           text={() => serializeSinglePlan(plan, view.startYear)}
@@ -440,7 +440,7 @@ export function ResultsPage() {
       </div>
 
       <p className="results-privacy field-hint">
-        <strong>Copy plan for your AI</strong> puts this plan on your clipboard as JSON — paste it into any assistant
+        <strong>Copy plan for your AI</strong> puts this plan on your clipboard as JSON. Paste it into any assistant
         and ask it about your plan. It is your whole plan in the clear: balances, ages, income, spending. Nothing
         leaves this device when you copy, but whatever you paste it into sees all of it, under your own account and
         that provider's terms.
@@ -512,7 +512,7 @@ export function ResultsPage() {
             gains and {fmtMoney(adj(carryforwardHighlight.year, carryforwardHighlight.capitalLossUsedAgainstOrdinary))} of
             ordinary income;{' '}
             {fmtMoney(adj(carryforwardHighlight.year, carryforwardHighlight.capitalLossCarryforwardRemaining))} carries
-            forward. It nets against realized gains first, then up to $3,000/yr against ordinary income — watch it deplete
+            forward. It nets against realized gains first, then up to $3,000/yr against ordinary income. Watch it deplete
             in the “Loss carryf'd” column below.
           </p>
         </div>
@@ -563,7 +563,7 @@ export function ResultsPage() {
 
       {!fireLeads ? (
         <details className="ss-explainer">
-          <summary>Path to Financial Independence (FIRE) — an optional lens</summary>
+          <summary>Path to Financial Independence (FIRE): an optional lens</summary>
           <p className="field-hint">
             FI metrics matter most while accumulating; for plans at or near retirement they are shown here for
             reference, not as a verdict.
@@ -668,7 +668,7 @@ export function ResultsPage() {
 
       <details open id="year-table">
         {/* The h2 inside the summary keeps this reachable by heading navigation
-            (screen readers, heading-jump extensions) — a bare summary is not. */}
+            (screen readers, heading-jump extensions). A bare summary is not. */}
         <summary className="year-table-summary">
           <h2>Year-by-year detail</h2>
         </summary>
@@ -772,47 +772,47 @@ export function ResultsPage() {
           <summary>What the columns mean</summary>
           <ul>
             <li>
-              <strong>Age</strong> — one entry per person (e.g. "67 / 64"). A person shows "—" after their modeled
+              <strong>Age</strong>: one entry per person (e.g. "67 / 64"). A person shows "—" after their modeled
               death; income and spending reflect the survivor from that year on.
             </li>
             {hasLayeredSpending ? (
               <>
                 <li>
-                  <strong>Required</strong> — must-fund floor spending, including required lifestyle and system costs.
+                  <strong>Required</strong>: must-fund floor spending, including required lifestyle and system costs.
                 </li>
                 <li>
-                  <strong>Target</strong> — required plus target lifestyle spending before ideal/excess upside.
+                  <strong>Target</strong>: required plus target lifestyle spending before ideal/excess upside.
                 </li>
                 <li>
-                  <strong>Upside</strong> — ideal and excess spending intended above target.
+                  <strong>Upside</strong>: ideal and excess spending intended above target.
                 </li>
               </>
             ) : null}
             {hasAmt ? (
               <li>
-                <strong>AMT</strong> — federal alternative minimum tax, included in Tax.
+                <strong>AMT</strong>: federal alternative minimum tax, included in Tax.
               </li>
             ) : null}
             <li>
-              <strong>MAGI</strong> — modified adjusted gross income, displayed in the active dollar mode; IRMAA and
+              <strong>MAGI</strong>: modified adjusted gross income, displayed in the active dollar mode; IRMAA and
               ACA threshold checks always use each year's nominal dollars.
             </li>
             <li>
-              <strong>Tax-free gains room</strong> — additional long-term gains you could realize this year at $0
+              <strong>Tax-free gains room</strong>: additional long-term gains you could realize this year at $0
               federal tax: remaining loss carryforward absorbs gains first, then the 0% long-term bracket covers more.
             </li>
             {hasCarryforward ? (
               <li>
-                <strong>Loss carryf&apos;d</strong> — capital-loss carryforward remaining at year end.
+                <strong>Loss carryf&apos;d</strong>: capital-loss carryforward remaining at year end.
               </li>
             ) : null}
             {hasLayeredSpending ? (
               <>
                 <li>
-                  <strong>Layer miss</strong> — required-floor shortfall / target-lifestyle shortfall / upside miss.
+                  <strong>Layer miss</strong>: required-floor shortfall / target-lifestyle shortfall / upside miss.
                 </li>
                 <li>
-                  <strong>Guardrails</strong> — the guardrail action taken that year (cut / raise), and flexible goal
+                  <strong>Guardrails</strong>: the guardrail action taken that year (cut / raise), and flexible goal
                   outcomes as counts: <strong>F</strong>unded / <strong>P</strong>artial / <strong>D</strong>eferred /{' '}
                   <strong>S</strong>kipped (e.g. “1F/0P/2D/1S”).
                 </li>
@@ -823,7 +823,7 @@ export function ResultsPage() {
       </details>
 
       <p className="field-hint">
-        Every figure above comes from the single year-by-year ledger in this table — the same ledger Monte Carlo and
+        Every figure above comes from the single year-by-year ledger in this table, the same ledger Monte Carlo and
         the optimizer price against. <Link to={`/plan/${plan.id}/assumptions-card`}>See the assumptions behind it</Link>{' '}
         · <Link to="/how-tested">How RetireGolden is tested</Link>
       </p>

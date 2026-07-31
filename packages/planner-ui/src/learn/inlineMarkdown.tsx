@@ -1,8 +1,8 @@
 /**
  * Tiny, dependency-free inline renderer for article prose.
  *
- * Supports just enough Markdown for body text — links, bold, and inline code —
- * and builds real React elements (never `dangerouslySetInnerHTML`), so author
+ * Supports just enough Markdown for body text (links, bold, italics, and
+ * inline code) and builds real React elements (never `dangerouslySetInnerHTML`), so author
  * content cannot inject raw HTML. Block structure (paragraphs, lists, headings)
  * is handled by ArticleBody; this only handles inline spans within one string.
  */
@@ -10,8 +10,9 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 
-// link [text](href) | bold **text** | inline code `code`
-const INLINE_PATTERN = /\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|`([^`]+)`/g
+// link [text](href) | bold **text** | italic *text* | inline code `code`
+// Bold precedes italic in the alternation so "**x**" never matches as italics.
+const INLINE_PATTERN = /\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|`([^`]+)`|\*([^*\n]+)\*/g
 
 /** Render a single line/paragraph of constrained Markdown to React nodes. */
 export function renderInline(text: string): ReactNode[] {
@@ -26,6 +27,7 @@ export function renderInline(text: string): ReactNode[] {
     const [linkText, href] = [match[1], match[2]]
     const boldText = match[3]
     const codeText = match[4]
+    const italicText = match[5]
 
     if (linkText !== undefined && href !== undefined) {
       // Internal links use the router; external links open in a new tab.
@@ -44,6 +46,8 @@ export function renderInline(text: string): ReactNode[] {
       nodes.push(<strong key={key++}>{boldText}</strong>)
     } else if (codeText !== undefined) {
       nodes.push(<code key={key++}>{codeText}</code>)
+    } else if (italicText !== undefined) {
+      nodes.push(<em key={key++}>{italicText}</em>)
     }
 
     lastIndex = start + match[0].length

@@ -93,7 +93,7 @@ function recommendationBody(validation: ExactLedgerValidation): string {
     case 'rejected':
       return `Converting ${requested} ${taxPhrase}, but your projected after-tax estate moves from ${from} to ${to}.`
     case 'unexecutable':
-      return `The optimizer proposed converting ${requested}, but only ${executed} could actually be converted — the traditional balance it counted on is not available in the plan years shown.`
+      return `The optimizer proposed converting ${requested}, but only ${executed} could actually be converted. The traditional balance it counted on is not available in the plan years shown.`
   }
 }
 
@@ -313,8 +313,9 @@ export function OptimizePage() {
           The default leaves the most after-tax wealth to your heirs; other modes can favor spending durability,
           lifetime tax with an estate floor, survivor liquidity, or bridge-year resilience. RetireGolden generates
           candidate schedules (a multi-year math program over federal brackets, IRMAA thresholds, and RMDs, plus
-          simple bracket-fill and cliff-cap strategies), compares every candidate on your full year-by-year
-          projection, and recommends the best result it found within the search limits.
+          simple bracket-fill and cliff-cap strategies), compares every candidate schedule on your full year-by-year
+          projection, and shows the schedule that ranks highest on your chosen objective within the search limits. You
+          decide whether to apply it.
         </p>
         <p className="field-hint">
           Using the {formatPct(plan.assumptions.heirTaxRatePct / 100)} heir tax rate from{' '}
@@ -323,7 +324,7 @@ export function OptimizePage() {
         <div className="form-grid" style={{ marginTop: '0.5rem' }}>
           <SelectField
             label="Optimize for"
-            help="What 'better' means when candidate schedules are ranked on your full year-by-year projection. The default maximizes the after-tax estate; other objectives re-rank the same evaluations — money lasting longer, lowest lifetime tax without breaking the estate floor, the worst-case balance in survivor years, or the worst-case balance across pre-Social-Security bridge years. Every objective still hard-rejects candidates that shorten how long the money lasts."
+            help="What 'better' means when candidate schedules are ranked on your full year-by-year projection. The default maximizes the after-tax estate. Other objectives re-rank the same evaluations by money lasting longer, lowest lifetime tax without breaking the estate floor, the worst-case balance in survivor years, or the worst-case balance across pre-Social-Security bridge years. Every objective still hard-rejects candidates that shorten how long the money lasts."
             hint={objectivePolicies[objectiveId].description}
             learn={LEARN.optimizerObjectives}
             value={objectiveId}
@@ -333,8 +334,8 @@ export function OptimizePage() {
           {hasSocialSecurityIncome ? (
             <CheckboxField
               label="Also optimize Social Security claim age"
-              help="Re-runs the full conversion optimizer at each canonical claim age (62 / full retirement age / 70, for up to two Social Security streams) and recommends the claim-age + conversion pair with the best projected after-tax estate. A claim change must beat the current-claim optimum by a clear margin to be recommended."
-              hint="Re-runs the full optimizer once per claim combination — expect several times longer than a standard run."
+              help="Re-runs the full conversion optimizer at each canonical claim age (62 / full retirement age / 70, for up to two Social Security streams) and surfaces the claim-age and conversion pair with the highest projected after-tax estate. Note that claim combinations are always compared on after-tax estate, even when you have picked a different objective above; that objective still ranks the schedules within each combination. A claim change has to beat the current-claim optimum by a clear margin before it is surfaced."
+              hint="Re-runs the full optimizer once per claim combination, so expect several times longer than a standard run."
               value={coOptimizeClaim}
               onCommit={setCoOptimizeClaim}
             />
@@ -385,9 +386,9 @@ export function OptimizePage() {
               {incumbentHolds
                 ? 'Your current conversion strategy already holds under the new claim age, so applying changes only the Social Security claim age.'
                 : scheduleApplyAvailable
-                  ? 'Everything below — the schedule, the estate and tax deltas, and the success rate — was computed assuming this claim change. Apply installs the new claim age and the conversion schedule together; the schedule alone would not be correct for your current claim ages.'
+                  ? 'Everything below (the schedule, the estate and tax deltas, and the success rate) was computed assuming this claim change. Apply installs the new claim age and the conversion schedule together; the schedule alone would not be correct for your current claim ages.'
                   : recommendedConversions.length === 0
-                    ? 'No conversion change comes with this recommendation, so the button here changes just the Social Security claim age — the estate gain above comes from the claim change itself.'
+                    ? 'No conversion change comes with this result, so the button here changes just the Social Security claim age. The estate gain above comes from the claim change itself.'
                     : 'The conversion schedule from this run is diagnostic-only and cannot be applied, so the button here changes just the Social Security claim age. The estate gain above was measured with that schedule included, so the claim change alone may capture only part of it.'}
             </p>
             {/* Claim-only recommendations show their success rate here (the
@@ -422,7 +423,7 @@ export function OptimizePage() {
         incumbentHolds && tournament ? (
           <div className="card">
             <h2 style={{ margin: '0 0 0.35rem', color: 'var(--good)' }}>
-              No change recommended — {tournament.winnerLabel} is still the best result found.
+              Nothing beat your current plan: {tournament.winnerLabel} still ranks highest.
             </h2>
             <p className="muted" style={{ margin: 0 }}>
               RetireGolden compared {tournament.candidates.length} simple candidate strategies and a fresh solver
@@ -433,7 +434,7 @@ export function OptimizePage() {
               . Your current schedule (
               {fmtMoney(tournament.winnerConversions.reduce((sum, c) => sum + c.amount, 0))} of conversions across{' '}
               {tournament.winnerConversions.length} year{tournament.winnerConversions.length === 1 ? '' : 's'}) stays
-              in place{claimChangeRecommended ? ' — only the claim change above is left to apply.' : ' — nothing to apply.'}
+              in place{claimChangeRecommended ? ', so only the claim change above is left to apply.' : ', so there is nothing to apply.'}
             </p>
             {tournament.acaActionabilityVeto ? (
               <p className="field-hint" style={{ margin: '0.6rem 0 0' }}>
@@ -458,7 +459,7 @@ export function OptimizePage() {
           <div className="card">
             <h2>Couldn't optimize this plan</h2>
             <p className="muted">
-              The optimizer couldn't find a feasible schedule — usually because the plan runs out of money before the end
+              The optimizer couldn't find a feasible schedule, usually because the plan runs out of money before the end
               (spending exceeds what the portfolio can cover), so there's no conversion strategy to weigh. Resolve the
               shortfall in Results or Monte Carlo, then try again.
             </p>
@@ -522,7 +523,7 @@ export function OptimizePage() {
                 ) : null}
                 {tournament && tournament.policyId !== 'max-after-tax-estate' ? (
                   <p className="field-hint" style={{ margin: '0.45rem 0 0' }}>
-                    Candidates ranked by <strong>{objectivePolicies[tournament.policyId].label}</strong> — the estate
+                    Candidates ranked by <strong>{objectivePolicies[tournament.policyId].label}</strong>. The estate
                     and tax deltas below are context, not the ranking metric.
                   </p>
                 ) : null}
@@ -553,7 +554,7 @@ export function OptimizePage() {
                 label="Lifetime tax"
                 value={`${taxDelta <= 0 ? '' : '+'}${fmtMoney(taxDelta)}`}
                 tone={taxDelta < 0 ? 'good' : taxDelta > 0 ? 'bad' : 'neutral'}
-                help="Change in total taxes and penalties paid over the whole plan. Conversions usually raise lifetime tax (you pay sooner) even as they raise the after-tax estate — the estate figure is the goal, this is the cost."
+                help="Change in total taxes and penalties paid over the whole plan. Conversions usually raise lifetime tax (you pay sooner) even as they raise the after-tax estate. Under the default objective the estate figure is the goal and this is the cost."
               />
               <DeltaStat
                 label="Success rate"
@@ -610,7 +611,7 @@ export function OptimizePage() {
                   ? 'This result is shown as a diagnostic; it cannot be applied to your plan as a recommended schedule.'
                   : `Apply keeps it labeled as optimizer output; Accept as manual copies the same amounts into an editable manual conversion schedule you can adjust under Strategy.${
                       claimChangeRecommended
-                        ? ' Both buttons also install the recommended Social Security claim change — the schedule was computed assuming it.'
+                        ? ' Both buttons also install the Social Security claim change shown above, because the schedule was computed assuming it.'
                         : ''
                     }`}
               </p>

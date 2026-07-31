@@ -24,7 +24,6 @@ export const widowsPenaltyAndSurvivorBracketsArticle: LearningArticle = {
     'spousal-and-survivor-benefits',
     'appealing-irmaa-ssa-44',
     'roth-conversion-basics',
-    'rmds-required-minimum-distributions',
     'marginal-vs-effective-tax-rate',
   ],
   relatedPlannerRoutes: ['/plan/:planId/household', '/plan/:planId/survivor', '/plan/:planId/results', '/plan/:planId/social-security-analysis'],
@@ -100,7 +99,7 @@ export const widowsPenaltyAndSurvivorBracketsArticle: LearningArticle = {
     { type: 'heading', text: 'Where to use this in the app' },
     {
       type: 'prose',
-      md: "Use **Household** to set planning ages, **Social Security analysis** to compare survivor-sensitive claiming choices, and **Results** to inspect taxes, RMDs, and balances after one spouse dies. For couples, the **Survivor transition** view sweeps earlier death timings on your own plan — filing shift, survivor Social Security, IRMAA with and without SSA-44 relief, and the convert-while-joint lever — and **Spending → Healthcare** has the opt-in SSA-44 toggles.",
+      md: "Use **Household** to set planning ages, **Social Security analysis** to compare survivor-sensitive claiming choices, and **Results** to inspect taxes, RMDs, and balances after one spouse dies. For couples, the **Survivor transition** view sweeps earlier death timings on your own plan (filing shift, survivor Social Security, IRMAA with and without SSA-44 relief, and the convert-while-joint lever), and **Spending → Healthcare** has the opt-in SSA-44 toggles.",
     },
   ],
 }

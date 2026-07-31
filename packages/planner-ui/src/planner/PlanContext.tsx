@@ -212,7 +212,7 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
           ) : (
             <>
               The plan is stored on this device, but its data doesn&apos;t match what this version of the app can
-              read — usually a version mismatch (for example, a backup made by a newer version). Your data has not
+              read, usually a version mismatch (for example, a backup made by a newer version). Your data has not
               been changed. Try reloading to pick up the latest app version, or restore a backup via Data &amp;
               privacy on the planner home.
             </>
