@@ -264,6 +264,15 @@ rules and citations: [domain rules §16](../domain/domain-rules-reference.md#16-
   evidence is not external actual-execution proof. All four result arms remain
   `movement: notCommitted` and `actionability: notEstablished`; the coordinator can bind a
   `penaltyApplies` evidence outcome but neither commits balances nor integrates with execution or simulation.
+  The pure `coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate` boundary now adds
+  Plan-identity-authoritative, runtime-snapshot-bound planning evidence: it derives the complete
+  Plan owner/year ordinary-withdrawal batch and owned non-Roth IRA pool rather than accepting
+  caller-authored requests or account identities. It requires a Plan classification for every pool
+  member plus complete, common-ledger-run opening and Form 8606 year-end snapshots, annual basis and
+  line-7 completeness (including an explicit no-omitted-activity attestation), complete line-8 inventory,
+  and exact alive evidence before staging. The boundary derives annual totals internally, but every
+  arm still reports `movement: notCommitted` and `actionability: notEstablished`; it neither commits
+  movement nor supplies execution or simulation authority.
   Separately, `validateOwnedNonRothIraSeppCurrentPaymentCandidate` validates one current named SEPP
   payment as a provisional schedule-state transition. Its raw payment record references the canonical
   distribution and prior terminal state rather than restating caller-computed actual gross, character,

@@ -566,6 +566,14 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   candidate-bound scheduled-date evidence, not custodian or actual-execution proof. Every coordinator
   arm remains `movement: notCommitted` and `actionability: notEstablished`; unresolved penalty evidence,
   an invalid schedule, or no positive movement produces an explicit non-bound result.
+  A Plan-authoritative wrapper, `coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate`, derives the
+  complete owner/year Plan action batch and owned non-inherited traditional/SEP/SIMPLE IRA pool instead
+  of trusting caller-authored identities or requests. It binds those identities to complete runtime
+  evidence from one ledger run: opening and Form 8606 year-end snapshots for every pool member, complete
+  annual basis/line-7 and line-8 inventories, and exact alive evidence. This is
+  Plan-identity-authoritative, runtime-snapshot-bound planning evidence only; all typed blocked and bound
+  outcomes remain `movement: notCommitted` and `actionability: notEstablished` and cannot execute or
+  simulate an action.
   A separate standalone `validateOwnedNonRothIraSeppCurrentPaymentCandidate` boundary can now validate
   one named owned-IRA SEPP scheduled-payment transition against canonical character/distribution
   coverage, explicit election and annual-schedule evidence, no-disqualifying-modification coverage,

@@ -37,6 +37,13 @@ Source of truth: [github.com/RetireGolden/RetireGolden](https://github.com/Retir
   staged-date ID builder reproduces planning evidence only; exact coordinator
   rejoin remains the authority, and neither boundary commits movement or
   establishes actionability.
+- `coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate` adds
+  Plan-identity-authoritative, runtime-snapshot-bound planning evidence around
+  that coordinator. It derives the complete Plan owner/year ordinary-withdrawal
+  batch and owned non-Roth IRA pool, then requires complete, consistently dated
+  opening, year-end, annual basis/line-7, line-8, and exact alive evidence. It
+  remains pure and noncommitting: every result keeps movement uncommitted and
+  actionability unestablished.
 - Parameters (tax brackets, limits, SSA tables, Medicare/FPL) are versioned
   data packs under `params/`, with provenance.
 
