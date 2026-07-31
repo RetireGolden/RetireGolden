@@ -163,3 +163,28 @@ export {
   type TaxableWithdrawalFederalFilingStatus,
   type TaxableWithdrawalTaxUnitEvidence,
 } from './taxableWithdrawalCharacter.js'
+export {
+  allocateAnnualIraBasis,
+  type AllocateAnnualIraBasisInput,
+  type AnnualIraBasisAllocationEntry,
+  type AnnualIraBasisAllocationEntryInput,
+  type AnnualIraBasisAllocationEvidence,
+  type AnnualIraBasisAllocationScope,
+  type AnnualIraBasisRatio,
+  type ExactAnnualIraBasisRatio,
+  type NotApplicableAnnualIraBasisRatio,
+} from './annualIraBasisAllocation.js'
+export {
+  classifyOwnedNonRothIraAnnualWithdrawals,
+  type ClassifyOwnedNonRothIraAnnualWithdrawalsInput,
+  type ClassifyOwnedNonRothIraAnnualWithdrawalsResult,
+  type CompleteOwnedNonRothIraPoolEvidence,
+  type OwnedNonRothIraAnnualBasisEvidence,
+  type OwnedNonRothIraAnnualFacts,
+  type OwnedNonRothIraBasisReturnTaxCharacter,
+  type OwnedNonRothIraOrdinaryIncomeTaxCharacter,
+  type OwnedNonRothIraPoolMemberEvidence,
+  type OwnedNonRothIraSubtype,
+  type OwnedNonRothIraWithdrawalClassification,
+  type OwnedNonRothIraWithdrawalTaxCharacter,
+} from './ownedNonRothIraWithdrawalCharacter.js'

@@ -504,7 +504,14 @@ additive with a no-op default, so plans saved before it stay byte-identical.
 - **Nondeductible IRA basis (Form 8606 pro-rata).** `nondeductibleBasis` on a traditional IRA aggregates
   across an owner's own IRAs; every withdrawal and conversion is part tax-free basis and part taxable in the
   ratio of basis to the aggregated pre-distribution balance (IRC §408(d)(2)). Employer plans and inherited
-  IRAs are excluded from the aggregation. Basis is historical cost (never indexed).
+  IRAs are excluded from the aggregation. Basis is historical cost (never indexed). Separately, the pure
+  action-character substrate accepts exact-cent complete-pool evidence and complete annual Form 8606
+  inputs, derives the capped line-5/line-9 ratio with bigint intermediates, and allocates each line's
+  once-rounded basis total across positive actions in canonical date/sequence/action/allocation order.
+  Zero executions receive no ledger entry or character. Line 7 and line 8 remain distinct; if their
+  independently required rounding would recover more than the annual basis, classification fails closed
+  instead of emitting contradictory evidence. This substrate does not yet establish withdrawal
+  eligibility/penalty evidence or execute/simulate an IRA action.
 - **Fixed-asset disposition.** Setting `costBasis` on a property switches its planned sale from the legacy
   tax-free `expectedNetProceeds` estimate to exact treatment: gain = sale price − selling costs
   (`sellingCostPct`) − basis; depreciation (`depreciationRecapture`) is ordinary income and never excludable;
@@ -518,6 +525,8 @@ additive with a no-op default, so plans saved before it stay byte-identical.
 
 **Code:** [engine/strategies/accountEligibility.ts](../../packages/engine/src/strategies/accountEligibility.ts),
 [engine/strategies/iraBasis.ts](../../packages/engine/src/strategies/iraBasis.ts),
+[engine/actions/annualIraBasisAllocation.ts](../../packages/engine/src/actions/annualIraBasisAllocation.ts),
+[engine/actions/ownedNonRothIraWithdrawalCharacter.ts](../../packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts),
 [engine/tax/propertySale.ts](../../packages/engine/src/tax/propertySale.ts), threaded through
 [engine/projection/simulate.ts](../../packages/engine/src/projection/simulate.ts) and the after-tax estate metric in
 [engine/projection/compare.ts](../../packages/engine/src/projection/compare.ts).
