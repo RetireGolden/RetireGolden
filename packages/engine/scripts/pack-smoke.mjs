@@ -36,6 +36,9 @@ assert.equal(typeof globalThis.localStorage, 'undefined')
 const { simulatePlan, planSchema, CURRENT_PLAN_SCHEMA_VERSION } = await import('@retiregolden/engine')
 const { packForYear } = await import('@retiregolden/engine/params')
 const actionsApi = await import('@retiregolden/engine/actions')
+const ownedIraCoordinatorDeepApi = await import(
+  '@retiregolden/engine/actions/ownedNonRothIraAnnualCandidateCoordinator'
+)
 const canonicalActionDeepImports = [
   'annualIraBasisAllocation',
   'civilDate',
@@ -72,6 +75,7 @@ const {
   buildOwnedNonRothIraSeppAnnualDistributionInventoryEvidence,
   buildOwnedNonRothIraSeppCompletePriorElectionHistoryEvidence,
   buildOwnedNonRothIraSeppPriorPaymentHistoryEvidence,
+  buildOwnedNonRothIraStagedDistributionDateEvidenceId,
   classifyOwnedNonRothIraAnnualWithdrawals,
   classifyIndividuallyOwnedTaxableWithdrawal,
   coordinateOwnedNonRothIraAnnualWithdrawalCandidate,
@@ -86,6 +90,11 @@ const {
   stageOwnedNonRothIraOrdinaryWithdrawalMovements,
   validateOwnedNonRothIraSeppCurrentPaymentCandidate,
 } = actionsApi
+assert.equal(
+  ownedIraCoordinatorDeepApi
+    .buildOwnedNonRothIraStagedDistributionDateEvidenceId,
+  buildOwnedNonRothIraStagedDistributionDateEvidenceId,
+)
 const moneyDeepApi = await import('@retiregolden/engine/actions/money')
 const {
   evaluateRetirementActionEligibility,
@@ -822,6 +831,53 @@ assert.equal(
   boundOwnedIraAnnualCandidate.bindingEvidence.line7AllocationEvidenceId,
   boundOwnedIraAnnualCandidate.annualEvidence.characterization
     .line7AllocationEvidence.allocationEvidenceId,
+)
+const smokeCoordinatorDistributionDateEvidenceId =
+  buildOwnedNonRothIraStagedDistributionDateEvidenceId({
+    movementCandidateId: smokeIraMovement.movementCandidateId,
+    actionId: asActionId('smoke-ira-withdrawal'),
+    allocationId: asAllocationId('smoke-ira-allocation'),
+    sourceAccountId: asAccountId('smoke-traditional-ira'),
+    executionDate: '2030-12-31',
+  })
+const smokeSeppBoundCoordinator =
+  coordinateOwnedNonRothIraAnnualWithdrawalCandidate({
+    movementInput: smokeIraMovementInput,
+    annualInput: smokeAnnualFinalizerInput.annualInput,
+    ownerEvidence: smokeAnnualFinalizerInput.ownerEvidence,
+    iraSeppScheduleRoutes: [{
+      sourceAccountId: asAccountId('smoke-traditional-ira'),
+      electionId: 'smoke-sepp-election',
+      scheduleId: 'smoke-sepp-schedule',
+      annualReconciliationInput: {
+        ...smokeSeppAnnualRawRouteInput,
+        payments: [{
+          currentPaymentEvidence: {
+            ...smokeSeppAnnualRawRouteInput.payments[0]
+              .currentPaymentEvidence,
+            currentDistributionEvidenceId:
+              smokeCoordinatorDistributionDateEvidenceId,
+          },
+        }],
+      },
+    }],
+    simpleParticipationEvidence: [],
+  })
+assert.equal(smokeSeppBoundCoordinator.status, 'annualEvidenceBound')
+assert.equal(
+  smokeSeppBoundCoordinator.annualEvidence.penaltyPrerequisites
+    .iraSeppScheduleReconciliations[0].reconciliation.status,
+  'reconciled',
+)
+assert.equal(
+  smokeSeppBoundCoordinator.annualEvidence.penaltyPrerequisites
+    .evaluations[0].outcome,
+  'iraSeppQualified',
+)
+assert.equal(
+  smokeSeppBoundCoordinator.annualEvidence.penaltyPrerequisites
+    .evaluations[0].finalPenaltyAmount,
+  0,
 )
 const penaltyOwnedIraAnnualCandidate =
   coordinateOwnedNonRothIraAnnualWithdrawalCandidate({

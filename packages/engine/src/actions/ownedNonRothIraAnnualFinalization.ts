@@ -18,16 +18,20 @@ import {
   type DisabilityQualifiedPenaltyEvaluation,
   type EvaluateOwnedNonRothIraPenaltyPrerequisitesResult,
   type ExceptionEvaluationRequiredPenaltyPrerequisite,
+  type IraSeppQualifiedPenaltyEvaluation,
   type NoOtherStatutoryExceptionClaimedAttestation,
   type OwnedNonRothIraNoSeppStatusEvidence,
   type OwnedNonRothIraOwnerAliveEvidence,
   type OwnedNonRothIraPenaltyOwnerEvidence,
   type OwnedNonRothIraPenaltySourceEvidence,
+  type OwnedNonRothIraSeppPenaltyScheduleReconciliation,
+  type OwnedNonRothIraSeppPenaltyScheduleRouteInput,
   type PenaltyAppliesEvaluation,
   type QualifiedDisabilityEventEvidence,
   type RejectedDisabilityStatusEvidence,
   type SimpleIraParticipationEvidence,
 } from './ownedNonRothIraPenaltyPrerequisite.js'
+import { deriveActionStructuralId } from './structuralId.js'
 import {
   createActionReason,
   type ActionReason,
@@ -49,6 +53,8 @@ export interface ResolveOwnedNonRothIraAnnualWithdrawalEvidenceInput {
     readonly Readonly<OwnedNonRothIraOwnerAliveEvidence>[]
   iraSeppStatusEvidence?:
     readonly Readonly<OwnedNonRothIraNoSeppStatusEvidence>[]
+  iraSeppScheduleRoutes?:
+    readonly Readonly<OwnedNonRothIraSeppPenaltyScheduleRouteInput>[]
   noOtherExceptionAttestations?:
     readonly Readonly<NoOtherStatutoryExceptionClaimedAttestation>[]
   simpleParticipationEvidence:
@@ -58,6 +64,7 @@ export interface ResolveOwnedNonRothIraAnnualWithdrawalEvidenceInput {
 export type FinalOwnedNonRothIraPenaltyPrerequisiteEvaluation =
   | Age59HalfReachedPenaltyEvaluation
   | DisabilityQualifiedPenaltyEvaluation
+  | IraSeppQualifiedPenaltyEvaluation
   | PenaltyAppliesEvaluation
 
 export interface ResolvedOwnedNonRothIraPenaltyPrerequisites
@@ -104,6 +111,8 @@ export interface OwnedNonRothIraPenaltyEvidenceMissingResult {
   status: 'penaltyEvidenceMissing'
   movement: 'notCommitted'
   annualEvidence: null
+  iraSeppScheduleReconciliations:
+    readonly Readonly<OwnedNonRothIraSeppPenaltyScheduleReconciliation>[]
   issues: readonly [
     Readonly<OwnedNonRothIraPenaltyEvidenceMissingIssue>,
     ...Readonly<OwnedNonRothIraPenaltyEvidenceMissingIssue>[],
@@ -128,14 +137,56 @@ function stableId(prefix: string, parts: readonly unknown[]): string {
   return `${prefix}:${JSON.stringify(parts)}`
 }
 
+function isFinalPenaltyEvaluation(
+  evaluation: Readonly<
+    EvaluateOwnedNonRothIraPenaltyPrerequisitesResult['evaluations'][number]
+  >,
+): evaluation is Readonly<FinalOwnedNonRothIraPenaltyPrerequisiteEvaluation> {
+  return (
+    evaluation.outcome === 'age59HalfReached' ||
+    evaluation.outcome === 'disabilityQualified' ||
+    evaluation.outcome === 'iraSeppQualified' ||
+    evaluation.outcome === 'penaltyApplies'
+  )
+}
+
+function compactSeppRouteBindings(
+  reconciliations:
+    readonly Readonly<OwnedNonRothIraSeppPenaltyScheduleReconciliation>[],
+): readonly (readonly string[])[] {
+  return reconciliations.map((route) => {
+    const reconciliation = route.reconciliation
+    if (reconciliation.status === 'reconciled') {
+      return [
+        route.sourceAccountId,
+        route.electionId,
+        route.scheduleId,
+        reconciliation.status,
+        reconciliation.evidence.annualReconciliationId,
+      ]
+    }
+    return [
+      route.sourceAccountId,
+      route.electionId,
+      route.scheduleId,
+      reconciliation.status,
+      deriveActionStructuralId(
+        'owned-ira-sepp-annual-route-result',
+        [reconciliation],
+      ),
+    ]
+  })
+}
+
 /**
  * Resolves one complete owner/year owned non-Roth IRA evidence bundle.
  *
  * This is an atomic, pure publication gate. It characterizes staged executed
  * gross withdrawals and evaluates their penalty prerequisites, but it neither
  * commits movement nor establishes action readiness. Every positive
- * ordinary-income allocation must have a final age, disability, or fully
- * evidenced penalty-applicable outcome before publication.
+ * ordinary-income allocation must have a final age, disability, complete
+ * annual SEPP qualification, or fully evidenced penalty-applicable outcome
+ * before publication.
  */
 export function resolveOwnedNonRothIraAnnualWithdrawalEvidence(
   input: Readonly<ResolveOwnedNonRothIraAnnualWithdrawalEvidenceInput>,
@@ -167,6 +218,7 @@ export function resolveOwnedNonRothIraAnnualWithdrawalEvidence(
       rejectedDisabilityEvidence: input.rejectedDisabilityEvidence,
       ownerAliveEvidence: input.ownerAliveEvidence,
       iraSeppStatusEvidence: input.iraSeppStatusEvidence,
+      iraSeppScheduleRoutes: input.iraSeppScheduleRoutes,
       noOtherExceptionAttestations:
         input.noOtherExceptionAttestations,
       simpleParticipationEvidence: input.simpleParticipationEvidence,
@@ -198,30 +250,27 @@ export function resolveOwnedNonRothIraAnnualWithdrawalEvidence(
       status: 'penaltyEvidenceMissing',
       movement: 'notCommitted',
       annualEvidence: null,
+      iraSeppScheduleReconciliations:
+        penaltyPrerequisites.iraSeppScheduleReconciliations,
       issues,
     })
   }
 
-  // This boundary intentionally cannot submit annual SEPP schedule routes.
-  // Fail closed if that input contract changes before the finalizer's own
-  // accepted-outcome union is deliberately extended.
-  if (penaltyPrerequisites.evaluations.some(
-    (evaluation) => evaluation.outcome === 'iraSeppQualified',
-  )) {
+  if (!penaltyPrerequisites.evaluations.every(isFinalPenaltyEvaluation)) {
     throw new Error(
-      'Annual IRA finalization does not yet consume SEPP-qualified prerequisite outcomes',
+      'Canonical IRA penalty prerequisites retained an unresolved outcome',
     )
   }
-
-  const finalEvaluations =
-    penaltyPrerequisites.evaluations as
-      readonly FinalOwnedNonRothIraPenaltyPrerequisiteEvaluation[]
+  const finalEvaluations = penaltyPrerequisites.evaluations
   const resolvedPenaltyPrerequisites:
     ResolvedOwnedNonRothIraPenaltyPrerequisites = {
       ...penaltyPrerequisites,
       evaluations: finalEvaluations,
     }
   const annualBasisEvidence = characterization.annualBasisEvidence
+  const seppRouteBindings = compactSeppRouteBindings(
+    penaltyPrerequisites.iraSeppScheduleReconciliations,
+  )
   const finalizationEvidenceId = stableId(
     'owned-non-roth-ira-annual-withdrawal-finalization',
     [
@@ -235,6 +284,7 @@ export function resolveOwnedNonRothIraAnnualWithdrawalEvidence(
         .map((item) => item.evidenceId)
         .sort(),
       finalEvaluations.map((item) => item.finalEvidenceId).sort(),
+      ...(seppRouteBindings.length === 0 ? [] : [seppRouteBindings]),
     ],
   )
   const annualEvidence:
