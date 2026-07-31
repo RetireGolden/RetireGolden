@@ -192,6 +192,7 @@ export type AnnualRetirementInventoryIssueKind =
   | 'planInvalid'
   | 'taxYearInvalid'
   | 'runtimeRecordInvalid'
+  | 'attestationInvalid'
   | 'attestationBindingMismatch'
   | 'runtimeRecordBindingMismatch'
   | 'runtimeEventOriginMismatch'
@@ -837,7 +838,7 @@ export function buildAnnualRetirementPhysicalEventInventory(
   if (!parsedAttestation.success) {
     return incomplete(parsedAttestation.error.issues.map((attestationIssue) =>
       issue(
-        'attestationBindingMismatch',
+        'attestationInvalid',
         `${attestationIssue.path.join('.') || '(root)'}: ${attestationIssue.message}`,
       ),
     ))
@@ -1162,21 +1163,40 @@ export function buildAnnualRetirementPhysicalEventInventory(
   if (chronologyIssues.length > 0) return chronologyInvalid(chronologyIssues)
   const ownedAccounts = [...traditionalById.values()]
     .filter(isOwnedIra)
-  const owners = sortedUnique(
-    ownedAccounts.map((account) => account.ownerPersonId ?? ''),
-  ).filter((owner) => owner.length > 0)
+  const sourceAccountIdsByOwner = new Map<string, AccountId[]>()
+  const ownedIraOwnerByAccountId = new Map<AccountId, string>()
+  for (const account of ownedAccounts) {
+    if (account.ownerPersonId === null) continue
+    const ownerAccountIds = sourceAccountIdsByOwner.get(account.ownerPersonId)
+    const accountId = accountIdSchema.parse(account.id)
+    if (ownerAccountIds === undefined) {
+      sourceAccountIdsByOwner.set(account.ownerPersonId, [accountId])
+    } else {
+      ownerAccountIds.push(accountId)
+    }
+    ownedIraOwnerByAccountId.set(accountId, account.ownerPersonId)
+  }
+  for (const sourceAccountIds of sourceAccountIdsByOwner.values()) {
+    sourceAccountIds.sort(compareUtf16CodeUnits)
+  }
+  const poolEventsByOwner = new Map<string, AnnualRetirementPhysicalEvent[]>()
+  for (const event of events) {
+    const owner = ownedIraOwnerByAccountId.get(event.sourceAccountId)
+    if (owner === undefined) continue
+    const ownerEvents = poolEventsByOwner.get(owner)
+    if (ownerEvents === undefined) {
+      poolEventsByOwner.set(owner, [event])
+    } else {
+      ownerEvents.push(event)
+    }
+  }
+  const owners = [...sourceAccountIdsByOwner.keys()].sort(compareUtf16CodeUnits)
   const pools: OwnedNonRothIraAnnualPhysicalEventPoolView[] = []
   const aggregationIssues: AnnualRetirementInventoryIssue[] = []
   for (const owner of owners) {
     const ownerPersonId = personIdSchema.parse(owner)
-    const sourceAccountIds = ownedAccounts
-      .filter((account) => account.ownerPersonId === owner)
-      .map((account) => accountIdSchema.parse(account.id))
-      .sort(compareUtf16CodeUnits)
-    const sourceSet = new Set(sourceAccountIds)
-    const poolEvents = events.filter((event) =>
-      sourceSet.has(event.sourceAccountId),
-    )
+    const sourceAccountIds = sourceAccountIdsByOwner.get(owner) ?? []
+    const poolEvents = poolEventsByOwner.get(owner) ?? []
     const line7 = categoryView(poolEvents, 'line7DistributionCandidate')
     const line8 = categoryView(poolEvents, 'line8ConversionCandidate')
     const qcd = categoryView(
@@ -1213,15 +1233,22 @@ export function buildAnnualRetirementPhysicalEventInventory(
   }
   if (aggregationIssues.length > 0) return incomplete(aggregationIssues)
 
-  const actionIdsWithTraditionalSources = new Set(
-    planEvents.map((event) => event.actionId),
+  const planEventsByActionId = new Map<ActionId, PlanAnnualRetirementPhysicalEvent[]>()
+  for (const event of planEvents) {
+    const actionEvents = planEventsByActionId.get(event.actionId)
+    if (actionEvents === undefined) {
+      planEventsByActionId.set(event.actionId, [event])
+    } else {
+      actionEvents.push(event)
+    }
+  }
+  const planActionsById = new Map(
+    plan.strategies.retirementActions.map((action) => [action.actionId, action]),
   )
-  const planOwnedIraActionIds = [...actionIdsWithTraditionalSources]
+  const planOwnedIraActionIds = [...planEventsByActionId.keys()]
     .filter((actionId) => {
-      const actionEvents = planEvents.filter((event) => event.actionId === actionId)
-      const planAction = plan.strategies.retirementActions.find(
-        (action) => action.actionId === actionId,
-      )
+      const actionEvents = planEventsByActionId.get(actionId) ?? []
+      const planAction = planActionsById.get(actionId)
       if (
         planAction === undefined ||
         planAction.kind === 'legacyAggregateWithdrawal' ||
@@ -1237,12 +1264,13 @@ export function buildAnnualRetirementPhysicalEventInventory(
       })
     })
     .sort(compareUtf16CodeUnits)
+  const planOwnedIraActionIdSet = new Set(planOwnedIraActionIds)
 
   const unifiedReasons: UnifiedAnnualLedgerReason[] = []
   if (runtimeEvents.length > 0) unifiedReasons.push('runtimePhysicalActivityPresent')
   const ownedActionOwners = sortedUnique(
     planEvents
-      .filter((event) => planOwnedIraActionIds.includes(event.actionId))
+      .filter((event) => planOwnedIraActionIdSet.has(event.actionId))
       .map((event) => event.ownerPersonId),
   )
   if (ownedActionOwners.length > 1) unifiedReasons.push('multipleOwnedIraOwners')
@@ -1250,7 +1278,7 @@ export function buildAnnualRetirementPhysicalEventInventory(
     event.kind === 'rothConversion' || event.kind === 'qcd',
   )) unifiedReasons.push('planConversionOrQcdPresent')
   if (planEvents.some((event) =>
-    !planOwnedIraActionIds.includes(event.actionId),
+    !planOwnedIraActionIdSet.has(event.actionId),
   )) unifiedReasons.push('nonOwnedIraPlanActionPresent')
   if (planOwnedIraActionIds.length === 0) {
     unifiedReasons.push('planOwnedIraActionBatchEmpty')

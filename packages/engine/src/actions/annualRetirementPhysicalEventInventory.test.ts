@@ -527,6 +527,22 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
     expect(issueKinds(omitted)).toContain('runtimeInventoryOmission')
   })
 
+  it('distinguishes invalid attestation shape from a valid wrong binding', () => {
+    const invalid = input()
+    invalid.runtimeInventoryAttestation = {
+      ...invalid.runtimeInventoryAttestation,
+      ledgerRunId: ' ',
+    }
+    expect(issueKinds(invalid)).toEqual(['attestationInvalid'])
+
+    const wrongBinding = input()
+    wrongBinding.runtimeInventoryAttestation = {
+      ...wrongBinding.runtimeInventoryAttestation,
+      planId: asPlanId('different-plan'),
+    }
+    expect(issueKinds(wrongBinding)).toEqual(['attestationBindingMismatch'])
+  })
+
   it('fails closed on foreign bindings, wrong account classes, and wrong origins', () => {
     const wrongOwner = input(basePlan(), [resolved({
       ownerPersonId: spousePersonId,
