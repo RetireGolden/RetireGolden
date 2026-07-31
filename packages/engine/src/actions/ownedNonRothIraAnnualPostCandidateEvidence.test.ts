@@ -495,6 +495,20 @@ describe('buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput', () =>
     }
     expect(status(tooEarlyDeadline)).toBe('contributionWindowIncomplete')
 
+    const malformedDeadline = clone()
+    malformedDeadline.postYearContributionWindow.deadlineEvidence = {
+      ...malformedDeadline.postYearContributionWindow.deadlineEvidence,
+      deadlineDate: null as unknown as string,
+    }
+    expect(status(malformedDeadline)).toBe('contributionWindowIncomplete')
+
+    const malformedContributionDate = clone()
+    malformedContributionDate.postYearContributionWindow.contributions = [{
+      ...malformedContributionDate.postYearContributionWindow.contributions[0]!,
+      contributionDate: 20310201 as unknown as string,
+    }]
+    expect(status(malformedContributionDate)).toBe('contributionWindowIncomplete')
+
     const adjustedApril18 = clone()
     adjustedApril18.postYearContributionWindow.deadlineEvidence = {
       ...adjustedApril18.postYearContributionWindow.deadlineEvidence,

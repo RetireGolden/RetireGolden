@@ -737,21 +737,30 @@ export function buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput(
     deadline.calendarAdjustmentStatus !== 'weekendAndDistrictOfColumbiaHolidayAdjustmentApplied' ||
     !nonblank(deadline.evidenceId) || !nonblank(deadline.upstreamEvidenceId)
   ) contributionIssues.push(issue('contributionWindowIncomplete', 'Post-year contribution window and evidenced deadline must bind the Plan owner, tax year, and annual ledger'))
-  const parsedDeadline = parseCivilIsoDate(deadline.deadlineDate)
+  const deadlineDate =
+    typeof deadline.deadlineDate === 'string' ? deadline.deadlineDate : ''
+  const parsedDeadline =
+    deadlineDate === '' ? null : parseCivilIsoDate(deadlineDate)
   const deadlineYear = String(taxYear + 1).padStart(4, '0')
   if (
     parsedDeadline === null ||
-    formatCivilDate(parsedDeadline) !== deadline.deadlineDate ||
+    formatCivilDate(parsedDeadline) !== deadlineDate ||
     parsedDeadline.year !== taxYear + 1 ||
-    deadline.deadlineDate < `${deadlineYear}-04-15` ||
-    deadline.deadlineDate > `${deadlineYear}-04-18`
+    deadlineDate < `${deadlineYear}-04-15` ||
+    deadlineDate > `${deadlineYear}-04-18`
   ) {
     contributionIssues.push(issue('contributionWindowIncomplete', 'The ordinary federal IRA deadline must be a canonical April 15-18 date in the following calendar year, excluding disaster relief'))
   }
   const contributionIds = new Set<string>()
   const contributions = [...contribution.contributions].sort((left, right) =>
-    compareUtf16CodeUnits(left.contributionDate, right.contributionDate) ||
-    compareUtf16CodeUnits(left.contributionId, right.contributionId))
+    compareUtf16CodeUnits(
+      typeof left.contributionDate === 'string' ? left.contributionDate : '',
+      typeof right.contributionDate === 'string' ? right.contributionDate : '',
+    ) ||
+    compareUtf16CodeUnits(
+      typeof left.contributionId === 'string' ? left.contributionId : '',
+      typeof right.contributionId === 'string' ? right.contributionId : '',
+    ))
   const normalizedContributions: PlanOwnedNonRothIraPostYearNondeductibleContribution[] = []
   let contributionTotal = 0n
   for (const entry of contributions) {
@@ -764,13 +773,16 @@ export function buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput(
       contributionIssues.push(issue('contributionWindowIncomplete', 'Contribution source must be a valid pool account and amount must be positive exact safe-integer cents; use an explicit-empty window for zero', { sourceAccountId: entry.sourceAccountId }))
       continue
     }
-    const parsedDate = parseCivilIsoDate(entry.contributionDate)
+    const contributionDate =
+      typeof entry.contributionDate === 'string' ? entry.contributionDate : ''
+    const parsedDate =
+      contributionDate === '' ? null : parseCivilIsoDate(contributionDate)
     if (
       !nonblank(entry.contributionId) || contributionIds.has(entry.contributionId) ||
       entry.planId !== planId || entry.ownerPersonId !== ownerPersonId ||
       entry.designatedTaxYear !== taxYear || !poolIdSet.has(sourceAccountId) ||
-      parsedDate === null || formatCivilDate(parsedDate) !== entry.contributionDate ||
-      entry.contributionDate <= expectedYearEndDate || entry.contributionDate > deadline.deadlineDate ||
+      parsedDate === null || formatCivilDate(parsedDate) !== contributionDate ||
+      contributionDate <= expectedYearEndDate || contributionDate > deadlineDate ||
       !nonblank(entry.evidenceId) || !nonblank(entry.upstreamEvidenceId)
     ) contributionIssues.push(issue('contributionWindowIncomplete', 'Every post-year contribution must be unique, designate the tax year, belong to the owner-wide pool, and fall after December 31 through the evidenced deadline', { sourceAccountId }))
     contributionIds.add(entry.contributionId)
