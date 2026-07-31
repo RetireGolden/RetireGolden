@@ -128,7 +128,7 @@ export function HowTestedPage() {
         )}{' '}
         A deterministic case runner replays the whole example-plan library and diffs engine output on every change, so
         unintended result drift is caught before it ships. New engine features ship switched off by default, and a
-        test proves that a plan built before the feature existed still produces byte-identical numbers.
+        test proves that a plan built before the feature existed still produces exactly the same numbers.
       </p>
       {!HAS_SUITE_DATA && (
         <p className="muted small">
