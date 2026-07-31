@@ -232,8 +232,13 @@ rules and citations: [domain rules §16](../domain/domain-rules-reference.md#16-
   for matching under-59½ ordinary-income allocations when it proves the owner qualified on or before
   the exact distribution date; that result bypasses SIMPLE participation/rate evidence. Missing
   disability evidence leaves the existing exception-evaluation-required result, while irrelevant or
-  malformed evidence fails closed. Neither boundary establishes eligibility, moves balances, executes
-  an action, or changes the legacy projection path.
+  malformed evidence fails closed. A public pure annual finalization gate composes both boundaries over
+  staged executed-gross withdrawals and atomically publishes an owner/year evidence bundle only when
+  every taxable allocation is final under the age-59½ or disability zero-penalty arms. Basis-only
+  allocations require coverage but no evaluation; unresolved allocations instead return typed
+  `withdrawal-penalty-evidence-missing` issues and suppress the whole bundle. The gate reports
+  `movement: notCommitted`; it is not executor/simulator integration, does not assert
+  `penaltyApplies`, and does not change the legacy projection path.
 - **Property disposition.** Setting `costBasis` on a property replaces the tax-free `expectedNetProceeds`
   estimate with exact treatment: capital gain above basis net of `sellingCostPct`, the §121 primary-residence
   exclusion, and ordinary-income depreciation recapture. Gains flow through the capital-gains stack.
