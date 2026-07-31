@@ -238,7 +238,15 @@ rules and citations: [domain rules §16](../domain/domain-rules-reference.md#16-
   allocations require coverage but no evaluation; unresolved allocations instead return typed
   `withdrawal-penalty-evidence-missing` issues and suppress the whole bundle. The gate reports
   `movement: notCommitted`; it is not executor/simulator integration, does not assert
-  `penaltyApplies`, and does not change the legacy projection path.
+  `penaltyApplies`, and does not change the legacy projection path. A separate pure
+  `stageOwnedNonRothIraOrdinaryWithdrawalMovements` API accepts one owner/year of dated IRA-only
+  ordinary-withdrawal requests, exact-cent openings, and immutable owned traditional/SEP/SIMPLE
+  source proofs. It stages canonical sequential physical candidates, including partial and
+  unavailable outcomes, and emits only positive actually staged cents as line-7 inputs directly
+  consumable by the annual gate. Its `movementCandidateId` binds all requests, source facts,
+  before/after evidence, and line-7 entries. It neither characterizes tax, establishes penalty
+  treatment, commits balances, nor integrates with execution or simulation; a future coordinator
+  must atomically bind that ID to the annual gate's `finalizationEvidenceId`.
 - **Property disposition.** Setting `costBasis` on a property replaces the tax-free `expectedNetProceeds`
   estimate with exact treatment: capital gain above basis net of `sellingCostPct`, the §121 primary-residence
   exclusion, and ordinary-income depreciation recapture. Gains flow through the capital-gains stack.

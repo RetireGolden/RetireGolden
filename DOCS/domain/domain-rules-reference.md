@@ -529,6 +529,20 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   The finalization evidence ID binds the owner, pool, year, annual basis record, both line allocations,
   every coverage record, and every final evaluation. This gate is still `movement: notCommitted`: it
   does not establish eligibility, execute or simulate an IRA action, or assert `penaltyApplies`.
+  A separate pure movement-candidate seam now stages one explicitly dated owner/tax-year batch of
+  owned traditional/SEP/SIMPLE IRA ordinary-withdrawal requests against exact-cent opening balances.
+  Valid actions require unique civil-date/sequence slots and are ordered by that chronology;
+  a slot conflict aborts the whole candidate rather than using action or array order as a fallback.
+  Stable allocation ID orders allocations within each action, and each allocation stages sequentially
+  as the lesser of requested cents and the remaining source balance. The result retains before,
+  executed, unexecuted, and candidate-after cents for every
+  allocation, including zero-executed allocations, while emitting Form 8606 line-7 entries only for
+  positive staged gross. Global schedule defects abort the batch with unchanged candidate balances.
+  The stable `movementCandidateId` binds the owner/year, canonical requests and schedule, immutable
+  owned-IRA source proofs, openings, staged physical evidence, candidate closings, and line-7 entries.
+  This seam also reports `movement: notCommitted`: it proves neither annual character nor penalty
+  treatment, does not execute or simulate movement, and cannot commit independently. A later atomic
+  coordinator must bind its `movementCandidateId` to the annual gate's `finalizationEvidenceId`.
   Source: [IRS early-distribution exception
   matrix](https://www.irs.gov/retirement-plans/plan-participant-employee/retirement-topics-exceptions-to-tax-on-early-distributions).
 - **Fixed-asset disposition.** Setting `costBasis` on a property switches its planned sale from the legacy

@@ -52,6 +52,7 @@ const {
   parseRetirementActionRequest,
   planDollarsToLedgerCents,
   resolveOwnedNonRothIraAnnualWithdrawalEvidence,
+  stageOwnedNonRothIraOrdinaryWithdrawalMovements,
 } = await import('@retiregolden/engine/actions')
 const {
   evaluateRetirementActionEligibility,
@@ -219,6 +220,54 @@ const taxableCharacter = classifyIndividuallyOwnedTaxableWithdrawal({
 assert.equal(taxableCharacter.taxCharacter[0].kind, 'basisReturn')
 assert.equal(taxableCharacter.taxCharacter[1].kind, 'capitalGain')
 
+const smokeIraMovement =
+  stageOwnedNonRothIraOrdinaryWithdrawalMovements({
+    ownerPersonId: asPersonId('smoke-person'),
+    taxYear: 2030,
+    requests: [{
+      actionId: asActionId('smoke-ira-withdrawal'),
+      kind: 'ordinaryWithdrawal',
+      personId: asPersonId('smoke-person'),
+      year: 2030,
+      executionDate: '2030-12-31',
+      executionSequence: 1,
+      requestedAmount: asPositiveUsdCents(2),
+      allocations: [{
+        allocationId: asAllocationId('smoke-ira-allocation'),
+        sourceAccountId: asAccountId('smoke-traditional-ira'),
+        requestedAmount: asPositiveUsdCents(2),
+      }],
+      purpose: { kind: 'spending' },
+      provenance: { source: 'manual' },
+    }],
+    openingBalances: [{
+      accountId: asAccountId('smoke-traditional-ira'),
+      openingBalance: asUsdCents(2),
+    }],
+    sourceEvidence: [{
+      predicate: 'ownedNonRothIraOrdinaryWithdrawalMovementSource',
+      sourceAccountId: asAccountId('smoke-traditional-ira'),
+      ownerPersonId: asPersonId('smoke-person'),
+      accountType: 'traditional',
+      accountKind: 'ira',
+      inheritanceStatus: 'owned',
+      subtype: 'traditional',
+      accountOwnershipEvidenceId: 'smoke-ira-ownership',
+      iraClassificationEvidenceId: 'smoke-ira-classification',
+    }],
+  })
+assert.equal(smokeIraMovement.status, 'movementCandidateStaged')
+assert.equal(smokeIraMovement.movement, 'notCommitted')
+assert.equal(
+  smokeIraMovement.candidateBalances[0].candidateClosingBalance,
+  0,
+)
+assert.ok(
+  smokeIraMovement.movementCandidateId.startsWith(
+    'owned-non-roth-ira-movement-candidate:',
+  ),
+)
+
 const ownedIraCharacter = classifyOwnedNonRothIraAnnualWithdrawals({
   ownerPersonId: asPersonId('smoke-person'),
   ownerWideNonRothIraPoolId: 'smoke-owner-ira-pool',
@@ -254,14 +303,7 @@ const ownedIraCharacter = classifyOwnedNonRothIraAnnualWithdrawals({
     form8606Line7DistributionAmount: asUsdCents(2),
     form8606Line8NetConversionAmount: asUsdCents(0),
   },
-  line7Distributions: [{
-    actionId: asActionId('smoke-ira-withdrawal'),
-    allocationId: asAllocationId('smoke-ira-allocation'),
-    sourceAccountId: asAccountId('smoke-traditional-ira'),
-    scheduledDate: '2030-12-31',
-    scheduledSequence: 1,
-    grossAmount: asUsdCents(2),
-  }],
+  line7Distributions: smokeIraMovement.line7Distributions,
   line8Conversions: [],
 })
 assert.equal(ownedIraCharacter.withdrawals[0].basisRecoveredAmount, 1)
