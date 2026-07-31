@@ -372,13 +372,14 @@ interface IdentifierClaim {
 }
 
 function claimIdentifier(
-  ids: Map<string, IdentifierClaim>,
+  ids: Map<string, IdentifierClaim[]>,
   value: unknown,
   role: string,
   bindingParts: readonly unknown[],
   label: string,
   issues: PlanOwnedNonRothIraPostCandidateEvidenceIssue[],
   allowSameBindingReference = false,
+  allowSameRoleDifferentBinding = false,
 ): void {
   if (!nonblank(value)) {
     issues.push(issue('identifierCollision', `${label} must be a nonblank stable identifier`))
@@ -388,21 +389,38 @@ function claimIdentifier(
     'owned-ira-post-candidate-identifier-binding',
     bindingParts,
   )
-  const existing = ids.get(value)
-  if (existing !== undefined) {
-    if (
-      allowSameBindingReference &&
-      existing.role === role &&
-      existing.binding === binding
-    ) return
+  const existing = ids.get(value) ?? []
+  const crossRole = existing.find((claim) => claim.role !== role)
+  if (crossRole !== undefined) {
     issues.push(issue(
       'identifierCollision',
-      `${label} collides with ${existing.label}`,
+      `${label} collides with ${crossRole.label}`,
       { identifier: value },
     ))
     return
   }
-  ids.set(value, { role, binding, label })
+  const sameBinding = existing.find((claim) => claim.binding === binding)
+  if (sameBinding !== undefined) {
+    if (allowSameBindingReference) return
+    issues.push(issue(
+      'identifierCollision',
+      `${label} collides with ${sameBinding.label}`,
+      { identifier: value },
+    ))
+    return
+  }
+  if (allowSameBindingReference || (
+    existing.length > 0 &&
+    !allowSameRoleDifferentBinding
+  )) {
+    issues.push(issue(
+      'identifierCollision',
+      `${label} is rebound from ${existing[0]!.label}`,
+      { identifier: value },
+    ))
+    return
+  }
+  ids.set(value, [...existing, { role, binding, label }])
 }
 
 function derivedOwnershipId(planId: PlanId, ownerPersonId: PersonId, sourceAccountId: AccountId): string {
@@ -924,7 +942,7 @@ export function buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput(
     reconciliationBinding,
   )
 
-  const ids = new Map<string, IdentifierClaim>()
+  const ids = new Map<string, IdentifierClaim[]>()
   const idIssues: PlanOwnedNonRothIraPostCandidateEvidenceIssue[] = []
   const claim = (
     value: unknown,
@@ -932,10 +950,20 @@ export function buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput(
     binding: readonly unknown[],
     label: string,
     allowReference = false,
-  ) => claimIdentifier(ids, value, role, binding, label, idIssues, allowReference)
+    allowSameRoleDifferentBinding = false,
+  ) => claimIdentifier(
+    ids,
+    value,
+    role,
+    binding,
+    label,
+    idIssues,
+    allowReference,
+    allowSameRoleDifferentBinding,
+  )
   const accountsById = new Map(plan.accounts.map((account) => [account.id, account] as const))
   const actionsById = new Map(plan.strategies.retirementActions.map((action) => [action.actionId, action] as const))
-  const allocationsById = new Map<string, { actionId: ActionId; allocation: unknown }>()
+  const allocationsByAction = new Map<ActionId, Map<AllocationId, unknown>>()
 
   claim(planId, 'planId', [planId], 'Plan ID')
   for (const person of plan.household.people) {
@@ -958,11 +986,13 @@ export function buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput(
         'allocationId',
         [action.actionId, allocation],
         `allocation ID ${allocation.allocationId}`,
+        false,
+        true,
       )
-      allocationsById.set(allocation.allocationId, {
-        actionId: action.actionId,
-        allocation,
-      })
+      const actionAllocationsById =
+        allocationsByAction.get(action.actionId) ?? new Map<AllocationId, unknown>()
+      actionAllocationsById.set(allocation.allocationId, allocation)
+      allocationsByAction.set(action.actionId, actionAllocationsById)
     }
   }
   for (const classification of plan.retirementActionEligibilityFacts?.iraClassifications ?? []) {
@@ -1014,10 +1044,12 @@ export function buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput(
 
   for (const application of suppliedApplications) {
     const action = actionsById.get(application.actionId)
-    const allocation = allocationsById.get(application.allocationId)
+    const allocation = allocationsByAction
+      .get(application.actionId)
+      ?.get(application.allocationId)
     const account = accountsById.get(application.sourceAccountId)
     if (action !== undefined) claim(application.actionId, 'actionId', [planId, action], 'application action reference', true)
-    if (allocation !== undefined) claim(application.allocationId, 'allocationId', [allocation.actionId, allocation.allocation], 'application allocation reference', true)
+    if (allocation !== undefined) claim(application.allocationId, 'allocationId', [application.actionId, allocation], 'application allocation reference', true)
     if (account !== undefined) claim(application.sourceAccountId, 'accountId', [planId, account], 'application source-account reference', true)
     claim(application.applicationEvidenceId, 'allocationApplicationEvidence', [application], `allocation application evidence ID for ${application.allocationId}`)
     claim(application.upstreamEvidenceId, 'allocationApplicationUpstreamEvidence', [application], `allocation application upstream evidence ID for ${application.allocationId}`)

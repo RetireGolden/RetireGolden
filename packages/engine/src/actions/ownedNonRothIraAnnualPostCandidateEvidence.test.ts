@@ -180,8 +180,8 @@ function base(opening = 10_000): MutableInput {
           executedAmount: allocation.executedAmount,
           unexecutedAmount: allocation.unexecutedAmount,
           candidateBalanceAfter: allocation.candidateBalanceAfter,
-          applicationEvidenceId: `application-${allocation.allocationId}`,
-          upstreamEvidenceId: `application-${allocation.allocationId}-upstream`,
+          applicationEvidenceId: `application-${action.actionId}-${allocation.allocationId}`,
+          upstreamEvidenceId: `application-${action.actionId}-${allocation.allocationId}-upstream`,
         }))),
       candidateBalances: candidate.candidateBalances.map((balance) => ({
         ...balance,
@@ -289,8 +289,8 @@ function refreshInventoryAndCandidate(value: MutableInput): void {
       executedAmount: allocation.executedAmount,
       unexecutedAmount: allocation.unexecutedAmount,
       candidateBalanceAfter: allocation.candidateBalanceAfter,
-      applicationEvidenceId: `application-${allocation.allocationId}`,
-      upstreamEvidenceId: `application-${allocation.allocationId}-upstream`,
+      applicationEvidenceId: `application-${action.actionId}-${allocation.allocationId}`,
+      upstreamEvidenceId: `application-${action.actionId}-${allocation.allocationId}-upstream`,
     })),
   )
   value.postCandidateSnapshot.candidateBalances = candidate.candidateBalances.map(
@@ -806,6 +806,28 @@ describe('buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput', () =>
       expect(first).not.toHaveProperty('disposition')
       expect(first).not.toHaveProperty('committedBalances')
     }
+  })
+
+  it('allows action-scoped allocation IDs to repeat across distinct actions', () => {
+    const value = clone()
+    const first = value.movementInput.requests[0]!
+    const second = {
+      ...first,
+      actionId: asActionId('withdrawal-two'),
+      executionDate: '2030-07-15',
+      executionSequence: 20,
+      requestedAmount: asPositiveUsdCents(1_000),
+      allocations: [{
+        ...first.allocations[0]!,
+        requestedAmount: asPositiveUsdCents(1_000),
+      }],
+    }
+    const valuePlan = value.inventoryInput.plan as Plan
+    valuePlan.strategies.retirementActions.push(second)
+    value.movementInput.requests = [...value.movementInput.requests, second]
+    refreshInventoryAndCandidate(value)
+
+    expect(status(value)).toBe('postCandidateClassificationInputBuilt')
   })
 
   it('rejects caller IDs that collide with derived result IDs', () => {
