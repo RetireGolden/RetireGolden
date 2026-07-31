@@ -163,7 +163,14 @@ function first(
 
 function twoWithdrawalInput(
   reverseEvidence = false,
+  residualBasis = false,
 ): EvaluateOwnedNonRothIraPenaltyPrerequisitesInput {
+  const memberYearEndAmount = residualBasis ? 1 : 0
+  const poolYearEndAmount = residualBasis ? 2 : 0
+  const openingBasisAmount = residualBasis ? 2 : 0
+  const firstGrossAmount = residualBasis ? 1 : 100
+  const secondGrossAmount = residualBasis ? 1 : 50
+  const annualGrossAmount = firstGrossAmount + secondGrossAmount
   const characterizationResult =
     classifyOwnedNonRothIraAnnualWithdrawals({
       ownerPersonId: asPersonId('owner'),
@@ -174,7 +181,7 @@ function twoWithdrawalInput(
         ownerWideNonRothIraPoolId: 'two-source-pool',
         taxYear: 2030,
         accountIds: [asAccountId('ira-a'), asAccountId('ira-b')],
-        yearEndApplicablePoolBalanceAmount: asUsdCents(0),
+        yearEndApplicablePoolBalanceAmount: asUsdCents(poolYearEndAmount),
         evidenceId: 'complete-two-source-pool',
       },
       annualBasisRecordEvidenceId: 'two-source-basis-record',
@@ -187,7 +194,7 @@ function twoWithdrawalInput(
           accountKind: 'ira',
           inheritanceStatus: 'owned',
           subtype: 'traditional',
-          yearEndApplicableBalanceAmount: asUsdCents(0),
+          yearEndApplicableBalanceAmount: asUsdCents(memberYearEndAmount),
           iraClassificationEvidenceId: 'classification-a',
           accountOwnershipEvidenceId: 'ownership-a',
         },
@@ -198,19 +205,19 @@ function twoWithdrawalInput(
           accountKind: 'ira',
           inheritanceStatus: 'owned',
           subtype: 'sep',
-          yearEndApplicableBalanceAmount: asUsdCents(0),
+          yearEndApplicableBalanceAmount: asUsdCents(memberYearEndAmount),
           iraClassificationEvidenceId: 'classification-b',
           accountOwnershipEvidenceId: 'ownership-b',
         },
       ],
       annualFacts: {
-        openingBasisAmount: asUsdCents(0),
+        openingBasisAmount: asUsdCents(openingBasisAmount),
         taxYearNondeductibleContributionAmount: asUsdCents(0),
         postYearNondeductibleContributionExcludedAmount: asUsdCents(0),
-        yearEndApplicablePoolBalanceAmount: asUsdCents(0),
+        yearEndApplicablePoolBalanceAmount: asUsdCents(poolYearEndAmount),
         outstandingRolloverAmount: asUsdCents(0),
         rolloverRepaymentAdjustmentAmount: asUsdCents(0),
-        form8606Line7DistributionAmount: asUsdCents(150),
+        form8606Line7DistributionAmount: asUsdCents(annualGrossAmount),
         form8606Line8NetConversionAmount: asUsdCents(0),
       },
       line7Distributions: [
@@ -220,7 +227,7 @@ function twoWithdrawalInput(
           sourceAccountId: asAccountId('ira-b'),
           scheduledDate: '2030-02-01',
           scheduledSequence: 1,
-          grossAmount: asUsdCents(50),
+          grossAmount: asUsdCents(secondGrossAmount),
         },
         {
           actionId: asActionId('action-a'),
@@ -228,7 +235,7 @@ function twoWithdrawalInput(
           sourceAccountId: asAccountId('ira-a'),
           scheduledDate: '2030-01-01',
           scheduledSequence: 1,
-          grossAmount: asUsdCents(100),
+          grossAmount: asUsdCents(firstGrossAmount),
         },
       ],
       line8Conversions: [],
@@ -421,7 +428,7 @@ describe('evaluateOwnedNonRothIraPenaltyPrerequisites', () => {
 
     expect(() =>
       evaluateOwnedNonRothIraPenaltyPrerequisites(value),
-    ).toThrow(/exactly match the dated annual line-7 allocation/)
+    ).toThrow(/canonical rederived result/)
   })
 
   it('applies month-end clamp to the SIMPLE 24-month boundary', () => {
@@ -621,7 +628,7 @@ describe('evaluateOwnedNonRothIraPenaltyPrerequisites', () => {
     })
     expect(() =>
       evaluateOwnedNonRothIraPenaltyPrerequisites(missing),
-    ).toThrow(/exactly cover/)
+    ).toThrow(/canonical rederived result/)
 
     const duplicated = structuredClone(input())
     Object.assign(duplicated.characterization.withdrawals[0]!, {
@@ -632,7 +639,7 @@ describe('evaluateOwnedNonRothIraPenaltyPrerequisites', () => {
     })
     expect(() =>
       evaluateOwnedNonRothIraPenaltyPrerequisites(duplicated),
-    ).toThrow(/unique/)
+    ).toThrow(/canonical rederived result/)
 
     const malformed = structuredClone(input())
     Object.assign(
@@ -642,7 +649,7 @@ describe('evaluateOwnedNonRothIraPenaltyPrerequisites', () => {
     )
     expect(() =>
       evaluateOwnedNonRothIraPenaltyPrerequisites(malformed),
-    ).toThrow(/amount/)
+    ).toThrow(/canonical rederived result/)
 
     const foreign = structuredClone(input())
     Object.assign(
@@ -652,7 +659,100 @@ describe('evaluateOwnedNonRothIraPenaltyPrerequisites', () => {
     )
     expect(() =>
       evaluateOwnedNonRothIraPenaltyPrerequisites(foreign),
-    ).toThrow(/line-7/)
+    ).toThrow(/canonical rederived result/)
+  })
+
+  it('rejects synchronized erasure of nonzero line-7 activity', () => {
+    const value = structuredClone(input())
+    Object.assign(value.characterization.line7AllocationEvidence, {
+      annualGrossAmount: asUsdCents(0),
+      annualNontaxableBasisAmount: asUsdCents(0),
+      annualTaxableAmount: asUsdCents(0),
+      allocations: [],
+    })
+    Object.assign(value.characterization, { withdrawals: [] })
+
+    expect(() =>
+      evaluateOwnedNonRothIraPenaltyPrerequisites(value),
+    ).toThrow()
+  })
+
+  it('rejects synchronized taxable-to-basis reclassification', () => {
+    const value = structuredClone(input({
+      grossAmount: 200,
+      basisAmount: 200,
+    }))
+    const allocation =
+      value.characterization.line7AllocationEvidence.allocations[0]!
+    const withdrawal = value.characterization.withdrawals[0]!
+    const basisCharacter = withdrawal.taxCharacter.find(
+      (segment) => segment.kind === 'basisReturn',
+    )!
+    const ordinaryCharacter = withdrawal.taxCharacter.find(
+      (segment) => segment.kind === 'ordinaryIncome',
+    )!
+    Object.assign(value.characterization.line7AllocationEvidence, {
+      annualNontaxableBasisAmount: asUsdCents(101),
+      annualTaxableAmount: asUsdCents(99),
+    })
+    Object.assign(allocation, {
+      allocatedBasisAmount: asUsdCents(101),
+      taxableAmount: asUsdCents(99),
+    })
+    Object.assign(withdrawal, {
+      basisRecoveredAmount: asUsdCents(101),
+      ordinaryIncomeAmount: asUsdCents(99),
+    })
+    Object.assign(basisCharacter, { amount: asUsdCents(101) })
+    Object.assign(basisCharacter.characterEvidence, {
+      segmentAmount: asUsdCents(101),
+    })
+    Object.assign(ordinaryCharacter, { amount: asUsdCents(99) })
+    Object.assign(ordinaryCharacter.characterEvidence, {
+      segmentAmount: asUsdCents(99),
+    })
+
+    expect(() =>
+      evaluateOwnedNonRothIraPenaltyPrerequisites(value),
+    ).toThrow(/canonical rederived result/)
+  })
+
+  it('rejects a synchronized residual-basis shift between allocations', () => {
+    const value = structuredClone(twoWithdrawalInput(false, true))
+    const allocations =
+      value.characterization.line7AllocationEvidence.allocations
+    const withdrawals = value.characterization.withdrawals
+    const firstAllocation = allocations[0]!
+    const secondAllocation = allocations[1]!
+    const firstWithdrawal = withdrawals[0]!
+    const secondWithdrawal = withdrawals[1]!
+    const firstCharacter = firstWithdrawal.taxCharacter[0]!
+    const secondCharacter = secondWithdrawal.taxCharacter[0]!
+
+    Object.assign(firstAllocation, {
+      allocatedBasisAmount: asUsdCents(0),
+      taxableAmount: asUsdCents(1),
+      residualCentAwarded: 0,
+    })
+    Object.assign(secondAllocation, {
+      allocatedBasisAmount: asUsdCents(1),
+      taxableAmount: asUsdCents(0),
+      residualCentAwarded: 1,
+    })
+    Object.assign(firstWithdrawal, {
+      basisRecoveredAmount: asUsdCents(0),
+      ordinaryIncomeAmount: asUsdCents(1),
+    })
+    Object.assign(secondWithdrawal, {
+      basisRecoveredAmount: asUsdCents(1),
+      ordinaryIncomeAmount: asUsdCents(0),
+    })
+    Object.assign(firstCharacter, { kind: 'ordinaryIncome' })
+    Object.assign(secondCharacter, { kind: 'basisReturn' })
+
+    expect(() =>
+      evaluateOwnedNonRothIraPenaltyPrerequisites(value),
+    ).toThrow(/canonical rederived result/)
   })
 
   it('is deterministic, detached from inputs, and deeply frozen', () => {

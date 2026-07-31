@@ -15,10 +15,11 @@ import {
   type UsdCents,
 } from './money.js'
 import { addCalendarMonths, parseCivilIsoDate } from './civilDate.js'
-import type {
-  ClassifyOwnedNonRothIraAnnualWithdrawalsResult,
-  OwnedNonRothIraSubtype,
-  OwnedNonRothIraWithdrawalClassification,
+import {
+  classifyOwnedNonRothIraAnnualWithdrawals,
+  type ClassifyOwnedNonRothIraAnnualWithdrawalsResult,
+  type OwnedNonRothIraSubtype,
+  type OwnedNonRothIraWithdrawalClassification,
 } from './ownedNonRothIraWithdrawalCharacter.js'
 
 export interface OwnedNonRothIraPenaltyOwnerEvidence {
@@ -178,6 +179,61 @@ function deepFreeze<T>(value: T): Readonly<T> {
 
 function stableId(prefix: string, parts: readonly unknown[]): string {
   return `${prefix}:${JSON.stringify(parts)}`
+}
+
+function structuralValue(
+  value: unknown,
+  ancestors: WeakSet<object>,
+): unknown {
+  if (value === null) return ['null']
+  if (Array.isArray(value)) {
+    if (ancestors.has(value)) {
+      throw new TypeError('IRA characterization must be acyclic')
+    }
+    ancestors.add(value)
+    const result = ['array', value.map((entry) =>
+      structuralValue(entry, ancestors))]
+    ancestors.delete(value)
+    return result
+  }
+  switch (typeof value) {
+    case 'string':
+      return ['string', value]
+    case 'number':
+      return [
+        'number',
+        Number.isFinite(value) ? value : String(value),
+      ]
+    case 'boolean':
+      return ['boolean', value]
+    case 'undefined':
+      return ['undefined']
+    case 'bigint':
+      return ['bigint', value.toString()]
+    case 'object': {
+      if (ancestors.has(value)) {
+        throw new TypeError('IRA characterization must be acyclic')
+      }
+      ancestors.add(value)
+      const entries = Object.keys(value)
+        .sort()
+        .map((key) => [
+          key,
+          structuralValue(
+            (value as Record<string, unknown>)[key],
+            ancestors,
+          ),
+        ])
+      ancestors.delete(value)
+      return ['object', entries]
+    }
+    default:
+      return [typeof value, String(value)]
+  }
+}
+
+function stableStructuralSnapshot(value: unknown): string {
+  return JSON.stringify(structuralValue(value, new WeakSet()))
 }
 
 function identityKey(
@@ -423,7 +479,67 @@ function validateSourceEvidence(
 export function evaluateOwnedNonRothIraPenaltyPrerequisites(
   input: Readonly<EvaluateOwnedNonRothIraPenaltyPrerequisitesInput>,
 ): Readonly<EvaluateOwnedNonRothIraPenaltyPrerequisitesResult> {
-  const annualBasisEvidence = input.characterization.annualBasisEvidence
+  const suppliedCharacterization = input.characterization
+  const suppliedAnnualBasis = suppliedCharacterization.annualBasisEvidence
+  const characterization = classifyOwnedNonRothIraAnnualWithdrawals({
+    ownerPersonId: suppliedAnnualBasis.ownerPersonId,
+    ownerWideNonRothIraPoolId:
+      suppliedAnnualBasis.ownerWideNonRothIraPoolId,
+    completePoolEvidence: suppliedAnnualBasis.completePoolEvidence,
+    annualBasisRecordEvidenceId:
+      suppliedAnnualBasis.annualBasisRecordEvidenceId,
+    taxYear: suppliedAnnualBasis.taxYear,
+    poolMembers: suppliedAnnualBasis.poolMembers,
+    annualFacts: {
+      openingBasisAmount: suppliedAnnualBasis.openingBasisAmount,
+      taxYearNondeductibleContributionAmount:
+        suppliedAnnualBasis.taxYearNondeductibleContributionAmount,
+      postYearNondeductibleContributionExcludedAmount:
+        suppliedAnnualBasis.postYearNondeductibleContributionExcludedAmount,
+      yearEndApplicablePoolBalanceAmount:
+        suppliedAnnualBasis.yearEndApplicablePoolBalanceAmount,
+      outstandingRolloverAmount:
+        suppliedAnnualBasis.outstandingRolloverAmount,
+      rolloverRepaymentAdjustmentAmount:
+        suppliedAnnualBasis.rolloverRepaymentAdjustmentAmount,
+      form8606Line7DistributionAmount:
+        suppliedAnnualBasis.form8606Line7DistributionAmount,
+      form8606Line8NetConversionAmount:
+        suppliedAnnualBasis.form8606Line8NetConversionAmount,
+    },
+    line7Distributions:
+      suppliedCharacterization.line7AllocationEvidence.allocations.map(
+        (entry) => ({
+          actionId: entry.actionId,
+          allocationId: entry.allocationId,
+          sourceAccountId: entry.sourceAccountId,
+          scheduledDate: entry.scheduledDate,
+          scheduledSequence: entry.scheduledSequence,
+          grossAmount: entry.grossAmount,
+        }),
+      ),
+    line8Conversions:
+      suppliedCharacterization.line8AllocationEvidence.allocations.map(
+        (entry) => ({
+          actionId: entry.actionId,
+          allocationId: entry.allocationId,
+          sourceAccountId: entry.sourceAccountId,
+          scheduledDate: entry.scheduledDate,
+          scheduledSequence: entry.scheduledSequence,
+          grossAmount: entry.grossAmount,
+        }),
+      ),
+  })
+  if (
+    stableStructuralSnapshot(suppliedCharacterization) !==
+    stableStructuralSnapshot(characterization)
+  ) {
+    throw new RangeError(
+      'Supplied IRA characterization must exactly equal its canonical rederived result',
+    )
+  }
+
+  const annualBasisEvidence = characterization.annualBasisEvidence
   const ownerPersonId = personIdSchema.parse(
     annualBasisEvidence.ownerPersonId,
   )
@@ -432,10 +548,10 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
     throw new RangeError('IRA penalty tax year must be a four-digit year')
   }
   if (
-    input.characterization.line7AllocationEvidence.calculationScope !==
+    characterization.line7AllocationEvidence.calculationScope !==
       'form8606Line7Distributions' ||
-    input.characterization.line7AllocationEvidence.taxYear !== taxYear ||
-    input.characterization.line7AllocationEvidence.poolId !==
+    characterization.line7AllocationEvidence.taxYear !== taxYear ||
+    characterization.line7AllocationEvidence.poolId !==
       annualBasisEvidence.ownerWideNonRothIraPoolId
   ) {
     throw new RangeError(
@@ -443,13 +559,35 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
     )
   }
   const line7AllocationEvidenceId = nonblankId(
-    input.characterization.line7AllocationEvidence.allocationEvidenceId,
+    characterization.line7AllocationEvidence.allocationEvidenceId,
     'Form 8606 line-7 allocation evidence ID',
   )
   const annualBasisEvidenceId = nonblankId(
     annualBasisEvidence.basisEvidenceId,
     'Annual IRA basis evidence ID',
   )
+  const authoritativeLine7GrossAmount = usdCentsSchema.parse(
+    annualBasisEvidence.form8606Line7DistributionAmount,
+  )
+  const line7AnnualGrossAmount = usdCentsSchema.parse(
+    characterization.line7AllocationEvidence.annualGrossAmount,
+  )
+  const line7AnnualBasisAmount = usdCentsSchema.parse(
+    characterization.line7AllocationEvidence
+      .annualNontaxableBasisAmount,
+  )
+  const line7AnnualTaxableAmount = usdCentsSchema.parse(
+    characterization.line7AllocationEvidence.annualTaxableAmount,
+  )
+  if (
+    line7AnnualGrossAmount !== authoritativeLine7GrossAmount ||
+    BigInt(line7AnnualBasisAmount) + BigInt(line7AnnualTaxableAmount) !==
+      BigInt(line7AnnualGrossAmount)
+  ) {
+    throw new RangeError(
+      'Annual line-7 gross, basis, and taxable totals must reconcile to authoritative Form 8606 evidence',
+    )
+  }
 
   const birthDate = validateCivilDate(
     input.ownerEvidence.birthDate,
@@ -489,11 +627,62 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
   }
 
   const withdrawalByKey = new Map<string, OwnedNonRothIraWithdrawalClassification>()
-  for (const withdrawal of input.characterization.withdrawals) {
+  let allocationGrossTotal = 0n
+  let allocationBasisTotal = 0n
+  let allocationTaxableTotal = 0n
+  for (
+    const allocation of
+      characterization.line7AllocationEvidence.allocations
+  ) {
+    const grossAmount = positiveUsdCentsSchema.parse(allocation.grossAmount)
+    const basisAmount = usdCentsSchema.parse(allocation.allocatedBasisAmount)
+    const taxableAmount = usdCentsSchema.parse(allocation.taxableAmount)
+    if (
+      BigInt(basisAmount) + BigInt(taxableAmount) !== BigInt(grossAmount)
+    ) {
+      throw new RangeError(
+        'Every annual line-7 allocation must reconcile gross to basis plus taxable character',
+      )
+    }
+    allocationGrossTotal += BigInt(grossAmount)
+    allocationBasisTotal += BigInt(basisAmount)
+    allocationTaxableTotal += BigInt(taxableAmount)
+  }
+  if (
+    allocationGrossTotal !== BigInt(line7AnnualGrossAmount) ||
+    allocationBasisTotal !== BigInt(line7AnnualBasisAmount) ||
+    allocationTaxableTotal !== BigInt(line7AnnualTaxableAmount)
+  ) {
+    throw new RangeError(
+      'Annual line-7 allocation collection must reconcile to its authoritative totals',
+    )
+  }
+
+  let withdrawalGrossTotal = 0n
+  let withdrawalBasisTotal = 0n
+  let withdrawalTaxableTotal = 0n
+  for (const withdrawal of characterization.withdrawals) {
     const actionId = actionIdSchema.parse(withdrawal.actionId)
     const allocationId = allocationIdSchema.parse(withdrawal.allocationId)
     const sourceAccountId = accountIdSchema.parse(withdrawal.sourceAccountId)
     validateSubtype(withdrawal.subtype)
+    const executedAmount = positiveUsdCentsSchema.parse(
+      withdrawal.executedAmount,
+    )
+    const basisRecoveredAmount = usdCentsSchema.parse(
+      withdrawal.basisRecoveredAmount,
+    )
+    const ordinaryIncomeAmount = usdCentsSchema.parse(
+      withdrawal.ordinaryIncomeAmount,
+    )
+    if (
+      BigInt(basisRecoveredAmount) + BigInt(ordinaryIncomeAmount) !==
+      BigInt(executedAmount)
+    ) {
+      throw new RangeError(
+        'Every characterized IRA withdrawal must reconcile execution to basis plus ordinary income',
+      )
+    }
     const key = identityKey(actionId, allocationId)
     if (withdrawalByKey.has(key)) {
       throw new RangeError(
@@ -501,7 +690,7 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
       )
     }
     const line7Allocation =
-      input.characterization.line7AllocationEvidence.allocations.find(
+      characterization.line7AllocationEvidence.allocations.find(
         (allocation) =>
           allocation.actionId === actionId &&
           allocation.allocationId === allocationId,
@@ -519,13 +708,25 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
       )
     }
     withdrawalByKey.set(key, withdrawal)
+    withdrawalGrossTotal += BigInt(executedAmount)
+    withdrawalBasisTotal += BigInt(basisRecoveredAmount)
+    withdrawalTaxableTotal += BigInt(ordinaryIncomeAmount)
   }
   if (
     withdrawalByKey.size !==
-    input.characterization.line7AllocationEvidence.allocations.length
+    characterization.line7AllocationEvidence.allocations.length
   ) {
     throw new RangeError(
       'IRA penalty input must include every annual line-7 allocation exactly once',
+    )
+  }
+  if (
+    withdrawalGrossTotal !== BigInt(line7AnnualGrossAmount) ||
+    withdrawalBasisTotal !== BigInt(line7AnnualBasisAmount) ||
+    withdrawalTaxableTotal !== BigInt(line7AnnualTaxableAmount)
+  ) {
+    throw new RangeError(
+      'Characterized IRA withdrawal collection must reconcile to authoritative annual line-7 totals',
     )
   }
 
@@ -559,7 +760,7 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
       )
     }
     const line7Allocation =
-      input.characterization.line7AllocationEvidence.allocations.find(
+      characterization.line7AllocationEvidence.allocations.find(
         (allocation) =>
           allocation.actionId === withdrawal.actionId &&
           allocation.allocationId === withdrawal.allocationId,
@@ -675,7 +876,7 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
 
   const coverage: OwnedNonRothIraPenaltyCharacterCoverageEvidence[] = []
   const evaluations: OwnedNonRothIraPenaltyPrerequisiteEvaluation[] = []
-  for (const withdrawal of input.characterization.withdrawals) {
+  for (const withdrawal of characterization.withdrawals) {
       const key = identityKey(withdrawal.actionId, withdrawal.allocationId)
       const sourceEvidence = sourceEvidenceByKey.get(key)
       if (sourceEvidence === undefined) {
