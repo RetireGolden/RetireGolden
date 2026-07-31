@@ -821,6 +821,7 @@ export function buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput(
   const line7 = safeCents(recomputed.line7Distributions.reduce((sum, entry) => sum + BigInt(entry.grossAmount), 0n))
   const line6 = safeCents(yearEndBalances.reduce((sum, entry) => sum + BigInt(entry.yearEndApplicableBalanceAmount), 0n))
   if (line1 === null || line7 === null || line6 === null) return blocked('annualBasisArithmeticInvalid', [issue('annualBasisArithmeticInvalid', 'Annual Form 8606 components exceed the exact safe-cent range')])
+  const line4 = line1
   const line9 = safeCents(BigInt(line6) + BigInt(line7))
   if (line9 === null) return blocked('annualBasisArithmeticInvalid', [issue('annualBasisArithmeticInvalid', 'Form 8606 line 9 exceeds the exact safe-cent range')])
 
@@ -885,7 +886,7 @@ export function buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput(
     annualFacts: {
       openingBasisAmount,
       taxYearNondeductibleContributionAmount: line1,
-      postYearNondeductibleContributionExcludedAmount: line1,
+      postYearNondeductibleContributionExcludedAmount: line4,
       yearEndApplicablePoolBalanceAmount: line6,
       outstandingRolloverAmount: asUsdCents(0),
       rolloverRepaymentAdjustmentAmount: asUsdCents(0),
@@ -1121,7 +1122,7 @@ export function buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput(
     annualBasisRecordEvidenceId: basis.evidenceId,
     contributionWindowEvidenceId: contribution.evidenceId,
     form8606Line1NondeductibleContributionAmount: line1,
-    form8606Line4PostYearExcludedContributionAmount: line1,
+    form8606Line4PostYearExcludedContributionAmount: line4,
     form8606Line5BasisAmount: openingBasisAmount,
     form8606Line6AdjustedYearEndAndRolloverAmount: line6,
     form8606Line7DistributionAmount: line7,
