@@ -164,6 +164,7 @@ function first(
 function twoWithdrawalInput(
   reverseEvidence = false,
   residualBasis = false,
+  sameAction = false,
 ): EvaluateOwnedNonRothIraPenaltyPrerequisitesInput {
   const memberYearEndAmount = residualBasis ? 1 : 0
   const poolYearEndAmount = residualBasis ? 2 : 0
@@ -171,6 +172,10 @@ function twoWithdrawalInput(
   const firstGrossAmount = residualBasis ? 1 : 100
   const secondGrossAmount = residualBasis ? 1 : 50
   const annualGrossAmount = firstGrossAmount + secondGrossAmount
+  const firstActionId = sameAction ? 'action-shared' : 'action-a'
+  const secondActionId = sameAction ? 'action-shared' : 'action-b'
+  const firstDate = '2030-01-01'
+  const secondDate = sameAction ? firstDate : '2030-02-01'
   const characterizationResult =
     classifyOwnedNonRothIraAnnualWithdrawals({
       ownerPersonId: asPersonId('owner'),
@@ -222,18 +227,18 @@ function twoWithdrawalInput(
       },
       line7Distributions: [
         {
-          actionId: asActionId('action-b'),
+          actionId: asActionId(secondActionId),
           allocationId: asAllocationId('allocation-b'),
           sourceAccountId: asAccountId('ira-b'),
-          scheduledDate: '2030-02-01',
+          scheduledDate: secondDate,
           scheduledSequence: 1,
           grossAmount: asUsdCents(secondGrossAmount),
         },
         {
-          actionId: asActionId('action-a'),
+          actionId: asActionId(firstActionId),
           allocationId: asAllocationId('allocation-a'),
           sourceAccountId: asAccountId('ira-a'),
-          scheduledDate: '2030-01-01',
+          scheduledDate: firstDate,
           scheduledSequence: 1,
           grossAmount: asUsdCents(firstGrossAmount),
         },
@@ -243,25 +248,25 @@ function twoWithdrawalInput(
   const evidence: OwnedNonRothIraPenaltySourceEvidence[] = [
     {
       predicate: 'ownedNonRothIraPenaltySourceForWithdrawal',
-      actionId: asActionId('action-a'),
+      actionId: asActionId(firstActionId),
       allocationId: asAllocationId('allocation-a'),
       sourceAccountId: asAccountId('ira-a'),
       ownerPersonId: asPersonId('owner'),
       subtype: 'traditional',
-      evaluationDate: '2030-01-01',
-      distributionDateEvidenceId: 'date-a',
+      evaluationDate: firstDate,
+      distributionDateEvidenceId: sameAction ? 'date-shared' : 'date-a',
       accountOwnershipEvidenceId: 'ownership-a',
       iraClassificationEvidenceId: 'classification-a',
     },
     {
       predicate: 'ownedNonRothIraPenaltySourceForWithdrawal',
-      actionId: asActionId('action-b'),
+      actionId: asActionId(secondActionId),
       allocationId: asAllocationId('allocation-b'),
       sourceAccountId: asAccountId('ira-b'),
       ownerPersonId: asPersonId('owner'),
       subtype: 'sep',
-      evaluationDate: '2030-02-01',
-      distributionDateEvidenceId: 'date-b',
+      evaluationDate: secondDate,
+      distributionDateEvidenceId: sameAction ? 'date-shared' : 'date-b',
       accountOwnershipEvidenceId: 'ownership-b',
       iraClassificationEvidenceId: 'classification-b',
     },
@@ -753,6 +758,39 @@ describe('evaluateOwnedNonRothIraPenaltyPrerequisites', () => {
     expect(() =>
       evaluateOwnedNonRothIraPenaltyPrerequisites(value),
     ).toThrow(/canonical rederived result/)
+  })
+
+  it('allows one action date evidence ID across split IRA allocations', () => {
+    const result = evaluateOwnedNonRothIraPenaltyPrerequisites(
+      twoWithdrawalInput(false, false, true),
+    )
+
+    expect(result.evaluations).toHaveLength(2)
+    expect(result.evaluations.map((evaluation) => evaluation.actionId)).toEqual([
+      'action-shared',
+      'action-shared',
+    ])
+    expect(
+      result.coverage.map(
+        (item) => item.sourceEvidenceIds.distributionDateEvidenceId,
+      ),
+    ).toEqual(['date-shared', 'date-shared'])
+  })
+
+  it('rejects distribution-date evidence ID reuse across actions', () => {
+    const value = twoWithdrawalInput()
+    value.sourceEvidence = [
+      value.sourceEvidence[0]!,
+      {
+        ...value.sourceEvidence[1]!,
+        distributionDateEvidenceId:
+          value.sourceEvidence[0]!.distributionDateEvidenceId,
+      },
+    ]
+
+    expect(() =>
+      evaluateOwnedNonRothIraPenaltyPrerequisites(value),
+    ).toThrow(/reuse must bind one action and exact date/)
   })
 
   it('is deterministic, detached from inputs, and deeply frozen', () => {

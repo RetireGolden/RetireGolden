@@ -734,7 +734,10 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
     string,
     OwnedNonRothIraPenaltySourceEvidence
   >()
-  const distributionDateEvidenceIds = new Set<string>()
+  const distributionDateEvidenceBindings = new Map<
+    string,
+    Readonly<{ actionId: ActionId; evaluationDate: string }>
+  >()
   for (const sourceEvidenceInput of input.sourceEvidence) {
     const key = identityKey(
       actionIdSchema.parse(sourceEvidenceInput.actionId),
@@ -783,17 +786,26 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
         'IRA distribution evaluation date cannot precede the owner birth date',
       )
     }
-    if (
-      distributionDateEvidenceIds.has(
+    const existingDateEvidenceBinding =
+      distributionDateEvidenceBindings.get(
         sourceEvidence.distributionDateEvidenceId,
       )
+    if (
+      existingDateEvidenceBinding !== undefined &&
+      (existingDateEvidenceBinding.actionId !== sourceEvidence.actionId ||
+        existingDateEvidenceBinding.evaluationDate !==
+          sourceEvidence.evaluationDate)
     ) {
       throw new RangeError(
-        'IRA distribution-date evidence IDs must be unique per allocation',
+        'IRA distribution-date evidence ID reuse must bind one action and exact date',
       )
     }
-    distributionDateEvidenceIds.add(
+    distributionDateEvidenceBindings.set(
       sourceEvidence.distributionDateEvidenceId,
+      {
+        actionId: sourceEvidence.actionId,
+        evaluationDate: sourceEvidence.evaluationDate,
+      },
     )
     sourceEvidenceByKey.set(key, sourceEvidence)
   }
