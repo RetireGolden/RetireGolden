@@ -7,6 +7,7 @@ import { createStateTaxCalculator } from '../tax/stateTax.js'
 import { createFlatTaxCalculator } from './flatTax.js'
 import { simulatePlan } from './simulate.js'
 import { claimFactor } from '../socialSecurity/claimFactor.js'
+import type { TaxCalculator } from './types.js'
 
 let counter = 0
 const testIds = () => `sim-${++counter}`
@@ -830,6 +831,20 @@ describe('spending, withdrawals, and depletion', () => {
     const y1 = result.years[0]!
     expect(y1.withdrawals.taxable).toBe(40_000)
     expect(y1.realizedGains).toBeCloseTo(30_000, 6)
+  })
+
+  it('realizes a signed loss and exhausts basis on a full taxable withdrawal', () => {
+    const plan = basePlan()
+    plan.expenses.baseAnnual = 100_000
+    plan.accounts = [taxable(100_000, 200_000)]
+    const result = simulatePlan(validate(plan), {
+      startYear: 2026,
+      taxCalculator: noTax,
+    })
+
+    expect(result.years[0]!.withdrawals.taxable).toBe(100_000)
+    expect(result.years[0]!.realizedGains).toBe(-100_000)
+    expect(result.years[0]!.balances[plan.accounts[0]!.id]).toBe(0)
   })
 
   it('records the first shortfall year as depletion', () => {
@@ -2871,6 +2886,135 @@ describe('capital loss carryforward', () => {
       expect(y.capitalLossUsedAgainstOrdinary).toBe(0)
       expect(y.capitalLossCarryforwardRemaining).toBe(0)
     }
+  })
+
+  it('adds a current taxable-sale loss to the pool exactly once', () => {
+    const plan = basePlan()
+    plan.household.people[0] = {
+      id: 'p1',
+      name: 'Pat',
+      dob: '1966-06-15',
+      sex: 'average',
+      retirementAge: 67,
+      longevity: { planningAge: 70, source: 'manual' },
+    }
+    plan.expenses.baseAnnual = 70_000
+    plan.incomes = [{
+      type: 'recurring',
+      id: testIds(),
+      label: 'Ordinary income',
+      annualAmount: 50_000,
+      startYear: 2026,
+      endYear: null,
+      inflationAdjusted: false,
+      taxTreatment: 'ordinary',
+    }]
+    plan.accounts = [taxable(20_000, 40_000)]
+
+    const result = simulatePlan(validate(plan), {
+      startYear: 2026,
+      horizonEndYear: 2027,
+      taxCalculator: noTax,
+    })
+    const [first, second] = result.years
+
+    expect(first).toMatchObject({
+      realizedGains: -20_000,
+      magi: 47_000,
+      capitalLossUsedAgainstGains: 0,
+      capitalLossUsedAgainstOrdinary: 3_000,
+      capitalLossCarryforwardRemaining: 17_000,
+    })
+    expect(second).toMatchObject({
+      realizedGains: 0,
+      magi: 47_000,
+      capitalLossUsedAgainstGains: 0,
+      capitalLossUsedAgainstOrdinary: 3_000,
+      capitalLossCarryforwardRemaining: 14_000,
+    })
+  })
+
+  it('caps a current loss once for conversion-floor probes and final tax', () => {
+    const observed: {
+      netCapital: number
+      rawCapital: number | undefined
+    }[] = []
+    const observingTax: TaxCalculator = {
+      compute(input) {
+        observed.push({
+          netCapital: input.capitalGains,
+          rawCapital: input.realizedCapitalGainsBeforeCarryforward,
+        })
+        return 0
+      },
+    }
+    const plan = basePlan()
+    plan.accounts = [
+      taxable(100_000, 200_000),
+      {
+        type: 'annuity',
+        id: testIds(),
+        name: 'Loss-funded SPIA',
+        ownerPersonId: 'p1',
+        annualReturnPct: null,
+        startAge: 60,
+        monthlyAmount: 10_000 / 12,
+        colaPct: 0,
+        taxablePct: 100,
+        purchase: {
+          year: 2026,
+          premium: 100_000,
+          fundingAccountId: '',
+          taxQualification: 'nonQualified',
+        },
+      },
+      {
+        type: 'traditional',
+        id: testIds(),
+        name: 'Traditional',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 500_000,
+        annualContribution: 0,
+      },
+      {
+        type: 'roth',
+        id: testIds(),
+        name: 'Roth',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 0,
+        annualContribution: 0,
+      },
+    ]
+    const taxableAccount = plan.accounts[0]!
+    const annuity = plan.accounts[1]!
+    if (annuity.type !== 'annuity') throw new Error('expected annuity fixture')
+    annuity.purchase!.fundingAccountId = taxableAccount.id
+    plan.strategies.taxableSafetyNetFloor = 1
+    plan.strategies.rothConversion = {
+      mode: 'fillToTarget',
+      target: 'topOfBracket',
+      targetValue: 12,
+      startYear: 2026,
+      endYear: 2026,
+    }
+
+    const year = simulatePlan(validate(plan), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: observingTax,
+    }).years[0]!
+
+    expect(year.rothConversion).toBeGreaterThan(0)
+    expect(year.capitalLossCarryforwardRemaining).toBe(97_000)
+    expect(observed.some((input) => input.rawCapital === -100_000)).toBe(true)
+    expect(observed.some((input) => input.netCapital === -3_000)).toBe(true)
+    expect(
+      observed.every((input) => input.netCapital >= -3_000),
+    ).toBe(true)
   })
 })
 

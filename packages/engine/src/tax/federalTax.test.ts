@@ -347,6 +347,94 @@ describe('applyCapitalLossCarryforward', () => {
     expect(r.remaining).toBe(0)
   })
 
+  it.each([
+    {
+      carryforward: 0,
+      ordinaryIncome: 50_000,
+      current: -20_000,
+      limit: LIMIT,
+      netCapitalGain: -3_000,
+      remaining: 17_000,
+      usedAgainstGains: 0,
+      usedAgainstOrdinary: 3_000,
+    },
+    {
+      carryforward: 5_000,
+      ordinaryIncome: 50_000,
+      current: -10_000,
+      limit: LIMIT,
+      netCapitalGain: -3_000,
+      remaining: 12_000,
+      usedAgainstGains: 0,
+      usedAgainstOrdinary: 3_000,
+    },
+    {
+      carryforward: 10_000,
+      ordinaryIncome: 50_000,
+      current: 8_000,
+      limit: LIMIT,
+      netCapitalGain: -2_000,
+      remaining: 0,
+      usedAgainstGains: 8_000,
+      usedAgainstOrdinary: 2_000,
+    },
+    {
+      carryforward: 10_000,
+      ordinaryIncome: 50_000,
+      current: 15_000,
+      limit: LIMIT,
+      netCapitalGain: 5_000,
+      remaining: 0,
+      usedAgainstGains: 10_000,
+      usedAgainstOrdinary: 0,
+    },
+    {
+      carryforward: 0,
+      ordinaryIncome: 50_000,
+      current: -2_000,
+      limit: LIMIT,
+      netCapitalGain: -2_000,
+      remaining: 0,
+      usedAgainstGains: 0,
+      usedAgainstOrdinary: 2_000,
+    },
+    {
+      carryforward: 0,
+      ordinaryIncome: 50_000,
+      current: -20_000,
+      limit: 0,
+      netCapitalGain: 0,
+      remaining: 20_000,
+      usedAgainstGains: 0,
+      usedAgainstOrdinary: 0,
+    },
+    {
+      carryforward: 0,
+      ordinaryIncome: 0,
+      current: -20_000,
+      limit: LIMIT,
+      netCapitalGain: -3_000,
+      remaining: 17_000,
+      usedAgainstGains: 0,
+      usedAgainstOrdinary: 3_000,
+    },
+  ])('nets signed current capital result %#', (expected) => {
+    const result = applyCapitalLossCarryforward(
+      expected.carryforward,
+      expected.ordinaryIncome,
+      expected.current,
+      expected.limit,
+    )
+
+    expect(result).toEqual({
+      ordinaryAfter: Math.max(0, expected.ordinaryIncome),
+      netCapitalGain: expected.netCapitalGain,
+      usedAgainstGains: expected.usedAgainstGains,
+      usedAgainstOrdinary: expected.usedAgainstOrdinary,
+      remaining: expected.remaining,
+    })
+  })
+
   it('reduces taxable Social Security even with little other income (bot-flagged case)', () => {
     // $60k SS, $1k other income, $3k net loss from the carryforward and no gains:
     // the loss lowers provisional income, so less SS is taxable and MAGI drops.

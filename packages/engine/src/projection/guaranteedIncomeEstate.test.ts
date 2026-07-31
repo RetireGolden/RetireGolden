@@ -66,6 +66,45 @@ function validate(plan: Plan): Plan {
 const run = (plan: Plan) => simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
 
 describe('annuity purchase — non-qualified exclusion ratio (Pub 939)', () => {
+  it('realizes a signed loss when a taxable loss position funds the purchase', () => {
+    const plan = basePlan()
+    plan.accounts = [
+      {
+        type: 'taxable',
+        id: 'taxable1',
+        name: 'Brokerage',
+        ownerPersonId: null,
+        annualReturnPct: null,
+        balance: 100_000,
+        costBasis: 200_000,
+        annualContribution: 0,
+      },
+      {
+        type: 'annuity',
+        id: 'ann1',
+        name: 'SPIA',
+        ownerPersonId: 'p1',
+        annualReturnPct: null,
+        startAge: 60,
+        monthlyAmount: 10_000 / 12,
+        colaPct: 0,
+        taxablePct: 100,
+        purchase: {
+          year: 2026,
+          premium: 100_000,
+          fundingAccountId: 'taxable1',
+          taxQualification: 'nonQualified',
+        },
+      },
+    ]
+
+    const year = run(plan).years[0]!
+
+    expect(year.realizedGains).toBe(-100_000)
+    expect(year.capitalLossUsedAgainstOrdinary).toBe(3_000)
+    expect(year.capitalLossCarryforwardRemaining).toBe(97_000)
+  })
+
   it('taxes only the non-excluded share of each payment, then fully after the investment is recovered', () => {
     // Premium $121,000, $10,000/yr immediate life annuity at age 60. Table V
     // multiple at 60 = 24.2 → expected return $242,000 → exclusion ratio

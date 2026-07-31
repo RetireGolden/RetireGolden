@@ -87,10 +87,10 @@ IRMAA tier) for the results table, charts, and CSV.
 ## Capital-loss carryforward
 
 A starting net capital loss (e.g. an ESPP sold at a loss) is a common attribute a near-retiree brings to
-the plan, and it matters most in early-retirement brokerage-drawdown years. The rule
+the plan, and current-year aggregate-basis sales can add a new signed loss to the same pool. The rule
 ([`applyCapitalLossCarryforward`](../../packages/engine/src/tax/federalTax.ts)):
 
-1. Net against this year's realized gains first;
+1. Net the opening carryforward against this year's realized gains, then add any current-year signed loss;
 2. then up to **$3,000/yr** against ordinary income (a fixed, never-indexed pack constant,
    `capitalLossOrdinaryOffsetLimit`);
 3. remainder carries forward indefinitely.
@@ -100,9 +100,13 @@ taxable SS) → lower MAGI (IRMAA/ACA). The netting is a pure boundary helper ap
 and state calculators, and the depleting pool threads year-to-year through `simulate.ts` like the Roth
 basis pools — so every withdrawal/conversion probe inherits the benefit. The results page shows it
 deplete, with a first-year callout and a combined "you can realize ~$X in gains tax-free this year" figure
-(remaining pool + 0%-bracket headroom). It is a **single pool** (no short/long-term split), models only a
-user-entered opening balance (no in-plan loss harvesting), and the optimizer is aware of it only via the
-exact ledger re-run, not inside the LP.
+(remaining pool + 0%-bracket headroom). It is a **single pool** (no short/long-term split). Legacy taxable
+withdrawals, annual rebalances, and taxable funding of annuity or TIPS purchases use one shared
+planning-dollar aggregate-basis sale calculation. Basis above fair market value is preserved rather than
+capped, so those paths can emit a negative signed result; a full sale recovers all remaining aggregate basis.
+This remains a planning aggregate, not tax-lot or wash-sale accounting. The optimizer conservatively floors
+its MILP capital-gain base at zero and learns the signed result only through the authoritative exact-ledger
+re-run.
 
 ## Taxable brokerage yield
 

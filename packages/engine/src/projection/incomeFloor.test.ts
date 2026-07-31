@@ -160,6 +160,41 @@ describe('TIPS ladder purchase funding', () => {
     expect(y2026.realizedGains).toBeCloseTo(build.totalCost * 0.5, 0)
   })
 
+  it('realizes a signed loss when a loss-position taxable account funds the ladder', () => {
+    const plan = basePlan()
+    plan.accounts = [
+      {
+        type: 'taxable',
+        id: 'tx1',
+        name: 'Brokerage',
+        ownerPersonId: null,
+        annualReturnPct: null,
+        balance: 100_000,
+        costBasis: 200_000,
+        annualContribution: 0,
+      },
+    ]
+    plan.incomeFloor = {
+      ladders: [
+        ladder({ purchase: { year: 2026, fundingAccountId: 'tx1' } }),
+      ],
+    }
+    const year = run(plan).years.find((item) => item.year === 2026)!
+    const build = buildLadder({
+      annualRealIncome: 10_000,
+      firstPayoutOffset: 1,
+      payoutYears: 5,
+      curve: EMBEDDED_REAL_YIELD_CURVE,
+    })
+
+    expect(year.realizedGains).toBeCloseTo(-build.totalCost, 0)
+    expect(year.capitalLossUsedAgainstOrdinary).toBe(3_000)
+    expect(year.capitalLossCarryforwardRemaining).toBeCloseTo(
+      build.totalCost - 3_000,
+      0,
+    )
+  })
+
   it('scales the ladder down (with a warning) when the funding account is short', () => {
     const plan = basePlan()
     plan.accounts = [cash(20_000)]

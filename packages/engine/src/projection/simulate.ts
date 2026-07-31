@@ -69,6 +69,10 @@ import {
 import { openIraProRataYear, splitIraDistribution, type IraProRataYear } from '../strategies/iraBasis.js'
 import { propertySaleTax } from '../tax/propertySale.js'
 import {
+  aggregateBasisSale,
+  type AggregateBasisSaleResult,
+} from '../tax/aggregateBasisSale.js'
+import {
   asAccountId,
   executeOrdinaryWithdrawals,
   ledgerCentTotalToPlanDollars,
@@ -159,6 +163,7 @@ interface WithdrawalPlanResult {
   byCategory: YearWithdrawals
   byAccountId: Map<string, number>
   realizedGains: number
+  taxableSales: ReadonlyMap<string, Readonly<AggregateBasisSaleResult>>
   shortfall: number
   /** Dollars taken out of the taxable safety-net reserve as a last resort. */
   reserveUsed: number
@@ -227,6 +232,10 @@ function planWithdrawals(
 ): WithdrawalPlanResult {
   const byCategory: YearWithdrawals = { cash: 0, taxable: 0, traditional: 0, roth: 0, hsa: 0, total: 0 }
   const byAccountId = new Map<string, number>()
+  const taxableSales = new Map<
+    string,
+    Readonly<AggregateBasisSaleResult>
+  >()
   const available = new Map(states.map((s) => [s.account.id, spendableBalance(s, year)]))
   let realizedGains = 0
   let remaining = amount
@@ -256,7 +265,7 @@ function planWithdrawals(
   const takeFrom = (state: BalanceState, want: number): number => {
     const take = Math.min(available.get(state.account.id) ?? 0, want, remaining)
     if (take <= 0) return 0
-    if ((state.account.type === 'taxable' || state.account.type === 'equityComp') && state.balance > 0) {
+    if (state.account.type === 'equityComp' && state.balance > 0) {
       const basisRatio = Math.min(1, state.costBasis / state.balance)
       realizedGains += take * (1 - basisRatio)
     }
@@ -315,8 +324,30 @@ function planWithdrawals(
     reserveUsed = before - remaining
   }
 
+  // Proportional planning may visit one account more than once. Characterize
+  // each taxable account's final aggregate sale once so planning and commit
+  // share identical signed basis math.
+  for (const state of states) {
+    if (state.account.type !== 'taxable') continue
+    const saleProceeds = byAccountId.get(state.account.id) ?? 0
+    const sale = aggregateBasisSale({
+      openingFairMarketValue: state.balance,
+      openingCostBasis: state.costBasis,
+      saleProceeds,
+    })
+    taxableSales.set(state.account.id, sale)
+    realizedGains += sale.realizedCapitalGainOrLoss
+  }
+
   byCategory.total = byCategory.cash + byCategory.taxable + byCategory.traditional + byCategory.roth + byCategory.hsa
-  return { byCategory, byAccountId, realizedGains, shortfall: Math.max(0, remaining), reserveUsed }
+  return {
+    byCategory,
+    byAccountId,
+    realizedGains,
+    taxableSales,
+    shortfall: Math.max(0, remaining),
+    reserveUsed,
+  }
 }
 
 export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResult {
@@ -752,10 +783,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         const turnover = rebalanceTurnoverFraction(track.weights, target)
         if (turnover > 1e-9 && state.account.type === 'taxable' && state.balance > 0) {
           const sellAmount = turnover * state.balance
-          const basisRatio = Math.min(1, state.costBasis / state.balance)
-          const gain = sellAmount * (1 - basisRatio)
-          rebalanceRealizedGains += gain
-          state.costBasis += gain
+          const sale = aggregateBasisSale({
+            openingFairMarketValue: state.balance,
+            openingCostBasis: state.costBasis,
+            saleProceeds: sellAmount,
+          })
+          rebalanceRealizedGains += sale.realizedCapitalGainOrLoss
+          state.costBasis = sale.remainingCostBasis + sellAmount
         }
         track.weights = target
       }
@@ -789,7 +823,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (funded < premium - EPSILON) {
         warnings.add('An annuity premium exceeded its funding account balance and was reduced to the available amount.')
       }
-      if ((funding.account.type === 'taxable' || funding.account.type === 'equityComp') && funding.balance > 0) {
+      if (funding.account.type === 'taxable') {
+        const sale = aggregateBasisSale({
+          openingFairMarketValue: funding.balance,
+          openingCostBasis: funding.costBasis,
+          saleProceeds: funded,
+        })
+        rebalanceRealizedGains += sale.realizedCapitalGainOrLoss
+        funding.costBasis = sale.remainingCostBasis
+      } else if (funding.account.type === 'equityComp' && funding.balance > 0) {
         const basisRatio = Math.min(1, funding.costBasis / funding.balance)
         rebalanceRealizedGains += funded * (1 - basisRatio)
         funding.costBasis = Math.max(0, funding.costBasis - funded * basisRatio)
@@ -852,7 +894,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           'A TIPS ladder purchase exceeded its funding account balance; the ladder was scaled down to what the available money buys.',
         )
       }
-      if ((funding.account.type === 'taxable' || funding.account.type === 'equityComp') && funding.balance > 0) {
+      if (funding.account.type === 'taxable') {
+        const sale = aggregateBasisSale({
+          openingFairMarketValue: funding.balance,
+          openingCostBasis: funding.costBasis,
+          saleProceeds: funded,
+        })
+        rebalanceRealizedGains += sale.realizedCapitalGainOrLoss
+        funding.costBasis = sale.remainingCostBasis
+      } else if (funding.account.type === 'equityComp' && funding.balance > 0) {
         const basisRatio = Math.min(1, funding.costBasis / funding.balance)
         rebalanceRealizedGains += funded * (1 - basisRatio)
         funding.costBasis = Math.max(0, funding.costBasis - funded * basisRatio)
@@ -2450,6 +2500,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       acaActive && acaContract?.foreignExclusionAddback.state === 'known'
         ? Math.max(0, acaContract.foreignExclusionAddback.amount ?? 0)
         : 0
+    const preWithdrawalCapitalResult =
+      oneTimeGains + rebalanceRealizedGains
+    const netCapitalForPreWithdrawalSizing =
+      applyCapitalLossCarryforward(
+        capitalLossPool,
+        incomeBeforeConversion,
+        preWithdrawalCapitalResult,
+        pack.federalTax.capitalLossOrdinaryOffsetLimit,
+      ).netCapitalGain
 
     // Taxable safety-net floor, conversion side (step 7): trim a fill-to-target
     // conversion so its estimated tax bill stays payable from liquid dollars
@@ -2485,7 +2544,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         const netted = applyCapitalLossCarryforward(
           capitalLossPool,
           Math.max(0, incomeBeforeConversion + extraOrdinary),
-          oneTimeGains,
+          preWithdrawalCapitalResult,
           pack.federalTax.capitalLossOrdinaryOffsetLimit,
         )
         return taxCalculator.compute({
@@ -2493,7 +2552,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           filingStatus: filingStatusForYear,
           ordinaryIncome: netted.ordinaryAfter,
           capitalGains: netted.netCapitalGain,
-          realizedCapitalGainsBeforeCarryforward: oneTimeGains,
+          realizedCapitalGainsBeforeCarryforward:
+            preWithdrawalCapitalResult,
           taxableInterestIncome: incomes.taxableInterest + ladderTaxableInterest,
           taxExemptInterest: acaTaxExemptInterest,
           foreignExclusionAddback: acaForeignExclusionAddback,
@@ -2576,7 +2636,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           pack,
           filingStatus: taxFilingStatusForYear,
           ordinaryIncomeBase: incomeBeforeConversion,
-          capitalGains: oneTimeGains + rebalanceRealizedGains,
+          capitalGains: netCapitalForPreWithdrawalSizing,
           qualifiedDividends: incomes.qualifiedDividends,
           ssBenefits: incomes.socialSecurity,
           peopleAged65Plus,
@@ -2697,7 +2757,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           pack,
           filingStatus: taxFilingStatusForYear,
           ordinaryIncomeBase: ordinaryBase,
-          capitalGains: oneTimeGains + rebalanceRealizedGains,
+          capitalGains: netCapitalForPreWithdrawalSizing,
           qualifiedDividends: incomes.qualifiedDividends,
           ssBenefits: incomes.socialSecurity,
           peopleAged65Plus,
@@ -3496,6 +3556,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
       const optimizerOrdinaryIncomeBase =
         Math.max(0, incomeBeforeConversion - rmdTotal - inheritedTotal) + taxableSs
+      // Deliberate conservative MILP boundary: the linear optimizer does not
+      // model a signed capital-loss pool, so it never receives a negative base.
+      // Candidate schedules are still repriced authoritatively by this exact
+      // ledger, which preserves the signed result and carryforward.
       const optimizerCapitalGainsBase =
         Math.max(0, oneTimeGains + rebalanceRealizedGains) + incomes.qualifiedDividends
       opts.captureOptimizerInputs({
@@ -3550,11 +3614,20 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     for (const state of balances) {
       const taken = withdrawalPlan.byAccountId.get(state.account.id) ?? 0
       if (taken <= 0) continue
-      if ((state.account.type === 'taxable' || state.account.type === 'equityComp') && state.balance > 0) {
+      if (state.account.type === 'taxable') {
+        const sale = withdrawalPlan.taxableSales.get(state.account.id)
+        if (sale === undefined) {
+          throw new Error('Planned taxable sale disappeared before commit')
+        }
+        state.costBasis = sale.remainingCostBasis
+        state.balance = sale.remainingFairMarketValue
+      } else if (state.account.type === 'equityComp' && state.balance > 0) {
         const basisRatio = Math.min(1, state.costBasis / state.balance)
         state.costBasis = Math.max(0, state.costBasis - taken * basisRatio)
+        state.balance -= taken
+      } else {
+        state.balance -= taken
       }
-      state.balance -= taken
     }
     // Commit the Roth basis ordering (contributions → conversions → earnings) once
     // per pool, so next year's seasoning + earnings are correct across the owner's

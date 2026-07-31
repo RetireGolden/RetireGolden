@@ -222,6 +222,30 @@ describe('step 4: annual rebalancing realizes taxable gains', () => {
     expect(r.years[1]!.realizedGains).toBeCloseTo(expectedSale * gainRatio, 4)
   })
 
+  it('taxable rebalance preserves loss-position basis and realizes a signed loss', () => {
+    const plan = driftedTaxable('annual')
+    const account = plan.accounts[0] as Extract<
+      Plan['accounts'][number],
+      { type: 'taxable' }
+    >
+    account.costBasis = 400_000
+    const result = simulatePlan(plan, {
+      startYear: 2026,
+      taxCalculator: zeroTax,
+    })
+    const balanceAfterYear1 =
+      200_000 * (1 + (0.5 * 7 + 0.5 * 4) / 100)
+    const driftedStockWeight =
+      (0.5 * 1.07) / (0.5 * 1.07 + 0.5 * 1.04)
+    const expectedSale =
+      (driftedStockWeight - 0.5) * balanceAfterYear1
+    const expectedLoss =
+      expectedSale - 400_000 * (expectedSale / balanceAfterYear1)
+
+    expect(result.years[1]!.realizedGains).toBeCloseTo(expectedLoss, 4)
+    expect(result.years[1]!.realizedGains).toBeLessThan(0)
+  })
+
   it("rebalancing: 'none' opts out — no gains, weights keep drifting", () => {
     const r = simulatePlan(driftedTaxable('none'), { startYear: 2026, taxCalculator: zeroTax })
     for (const y of r.years) expect(y.realizedGains).toBe(0)
