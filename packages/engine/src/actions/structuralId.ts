@@ -143,7 +143,12 @@ export function deriveActionStructuralId(
   if (prefix.trim().length === 0 || prefix.includes(':')) {
     throw new TypeError('Structural ID prefix must be nonblank and contain no colon')
   }
-  const canonical = JSON.stringify(parts)
+  let canonical: string | undefined
+  try {
+    canonical = JSON.stringify(parts)
+  } catch {
+    throw new TypeError('Structural ID parts must be JSON-serializable')
+  }
   if (canonical === undefined) {
     throw new TypeError('Structural ID parts must be JSON-serializable')
   }
@@ -152,10 +157,5 @@ export function deriveActionStructuralId(
 
 /** Compare strings by raw UTF-16 code units, independent of host locale. */
 export function compareUtf16CodeUnits(left: string, right: string): number {
-  const length = Math.min(left.length, right.length)
-  for (let index = 0; index < length; index += 1) {
-    const difference = left.charCodeAt(index) - right.charCodeAt(index)
-    if (difference !== 0) return difference
-  }
-  return left.length - right.length
+  return left < right ? -1 : left > right ? 1 : 0
 }

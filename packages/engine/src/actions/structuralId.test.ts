@@ -24,9 +24,21 @@ describe('action structural IDs', () => {
   })
 
   it('uses raw UTF-16 code-unit ordering rather than host collation', () => {
-    expect(compareUtf16CodeUnits('A', 'a')).toBeLessThan(0)
-    expect(compareUtf16CodeUnits('z', '\u00e9')).toBeLessThan(0)
-    expect(compareUtf16CodeUnits('\u00e9', '\ud83d\ude00')).toBeLessThan(0)
+    expect(compareUtf16CodeUnits('A', 'a')).toBe(-1)
+    expect(compareUtf16CodeUnits('z', '\u00e9')).toBe(-1)
+    expect(compareUtf16CodeUnits('\u00e9', '\ud83d\ude00')).toBe(-1)
+    expect(compareUtf16CodeUnits('a', 'A')).toBe(1)
     expect(compareUtf16CodeUnits('same', 'same')).toBe(0)
+  })
+
+  it('normalizes failures for non-JSON-serializable structural parts', () => {
+    const cyclic: unknown[] = []
+    cyclic.push(cyclic)
+    expect(() => deriveActionStructuralId('cyclic', cyclic)).toThrow(
+      new TypeError('Structural ID parts must be JSON-serializable'),
+    )
+    expect(() => deriveActionStructuralId('bigint', [1n])).toThrow(
+      new TypeError('Structural ID parts must be JSON-serializable'),
+    )
   })
 })
