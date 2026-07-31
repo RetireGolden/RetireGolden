@@ -701,6 +701,62 @@ describe('Plan-owned non-Roth IRA annual coordinator', () => {
     expect(result.movementCandidate).toBeNull()
   })
 
+  it('fail-closes before staging when requested source totals overflow', () => {
+    const value = input()
+    const valuePlan = value.plan as Plan
+    const firstAction = valuePlan.strategies.retirementActions[0]!
+    if (firstAction.kind !== 'ordinaryWithdrawal') {
+      throw new Error('fixture drift')
+    }
+    firstAction.requestedAmount =
+      asPositiveUsdCents(Number.MAX_SAFE_INTEGER)
+    firstAction.allocations[0]!.requestedAmount =
+      asPositiveUsdCents(Number.MAX_SAFE_INTEGER)
+    const secondActionId = asActionId('withdrawal-overflow-2030')
+    valuePlan.strategies.retirementActions.push({
+      actionId: secondActionId,
+      kind: 'ordinaryWithdrawal',
+      personId: ownerPersonId,
+      year: 2030,
+      executionDate: '2030-07-15',
+      executionSequence: 2,
+      requestedAmount: asPositiveUsdCents(1),
+      allocations: [{
+        allocationId: asAllocationId('allocation-overflow'),
+        sourceAccountId: requestedSourceId,
+        requestedAmount: asPositiveUsdCents(1),
+      }],
+      purpose: { kind: 'spending' },
+      provenance: { source: 'manual' },
+    })
+    value.annualBasisEvidence = {
+      ...value.annualBasisEvidence,
+      includedPlanActionIds: [actionId, secondActionId],
+    }
+    value.personAliveEvidence = [
+      ...value.personAliveEvidence,
+      {
+        evidenceId: 'alive-overflow-action',
+        actionId: secondActionId,
+        personId: ownerPersonId,
+        actionYear: 2030,
+        actionDate: '2030-07-15',
+        alive: true,
+      },
+    ]
+
+    const result =
+      coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate(value)
+
+    expect(result.status).toBe('sourceInventoryIncomplete')
+    expect(issueKinds(result)).toContain('aggregateAmountOverflow')
+    expect(result.issues).toContainEqual(expect.objectContaining({
+      kind: 'aggregateAmountOverflow',
+      sourceAccountId: requestedSourceId,
+    }))
+    expect(result.movementCandidate).toBeNull()
+  })
+
   it('fail-closes when the annual basis denominator exceeds safe cents', () => {
     const value = input()
     value.annualBasisEvidence = {

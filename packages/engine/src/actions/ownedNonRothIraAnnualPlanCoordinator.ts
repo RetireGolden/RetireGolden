@@ -383,6 +383,31 @@ function requireSafeCentsTotal(
   return false
 }
 
+function validateRequestedSourceAggregates(
+  requests: readonly Readonly<OrdinaryWithdrawalRequest>[],
+): PlanOwnedNonRothIraSourceInventoryIssue[] {
+  const requestedBySource = new Map<AccountId, bigint>()
+  for (const request of requests) {
+    for (const allocation of request.allocations) {
+      requestedBySource.set(
+        allocation.sourceAccountId,
+        (requestedBySource.get(allocation.sourceAccountId) ?? 0n) +
+          BigInt(allocation.requestedAmount),
+      )
+    }
+  }
+  return [...requestedBySource.entries()]
+    .filter(([, requestedAmount]) =>
+      requestedAmount > BigInt(Number.MAX_SAFE_INTEGER),
+    )
+    .sort(([left], [right]) => compareUtf16CodeUnits(left, right))
+    .map(([sourceAccountId]) => inventoryIssue(
+      'aggregateAmountOverflow',
+      'Owned IRA requested source total must remain within the safe-integer cents range',
+      { sourceAccountId },
+    ))
+}
+
 function validateCombinedAnnualActivity(
   line7Entries: readonly Readonly<AnnualIraBasisAllocationEntryInput>[],
   line8Entries: readonly Readonly<AnnualIraBasisAllocationEntryInput>[],
@@ -1352,6 +1377,12 @@ function buildCoordinatorInputs(
     sourceInventoryEvidenceId: string
   }> | Readonly<PlanOwnedNonRothIraSourceInventoryIncompleteResult> {
   const generatedIdIssues: PlanOwnedNonRothIraSourceInventoryIssue[] = []
+  generatedIdIssues.push(
+    ...validateRequestedSourceAggregates(inventory.requests),
+  )
+  if (generatedIdIssues.length > 0) {
+    return inventoryBlocked(generatedIdIssues)
+  }
   const yearEndBySource = new Map(
     inventory.yearEndEvidence.map((evidence) => [
       evidence.sourceAccountId,
