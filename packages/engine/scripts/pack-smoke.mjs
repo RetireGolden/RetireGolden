@@ -36,6 +36,9 @@ assert.equal(typeof globalThis.localStorage, 'undefined')
 const { simulatePlan, planSchema, CURRENT_PLAN_SCHEMA_VERSION } = await import('@retiregolden/engine')
 const { packForYear } = await import('@retiregolden/engine/params')
 const actionsApi = await import('@retiregolden/engine/actions')
+const candidateIdentityAllocatorDeepApi = await import(
+  '@retiregolden/engine/actions/retirementActionCandidateIdentityAllocator'
+)
 const ownedIraCoordinatorDeepApi = await import(
   '@retiregolden/engine/actions/ownedNonRothIraAnnualCandidateCoordinator'
 )
@@ -91,6 +94,7 @@ const canonicalActionDeepImports = [
   'ownedNonRothIraWithdrawalCharacter',
   'planBalanceAdapter',
   'reasons',
+  'retirementActionCandidateIdentityAllocator',
   'taxableWithdrawalCharacter',
 ]
 for (const moduleName of canonicalActionDeepImports) {
@@ -109,6 +113,7 @@ const {
   asPlanId,
   asPositiveUsdCents,
   asUsdCents,
+  allocateRetirementActionCandidateIdentity,
   buildOwnedNonRothIraSeppAnnualDistributionInventoryEvidence,
   buildOwnedNonRothIraSeppCompletePriorElectionHistoryEvidence,
   buildOwnedNonRothIraSeppPriorPaymentHistoryEvidence,
@@ -137,6 +142,11 @@ const {
   stageOwnedNonRothIraOrdinaryWithdrawalMovements,
   validateOwnedNonRothIraSeppCurrentPaymentCandidate,
 } = actionsApi
+assert.equal(
+  candidateIdentityAllocatorDeepApi.allocateRetirementActionCandidateIdentity,
+  allocateRetirementActionCandidateIdentity,
+)
+assert.equal(typeof allocateRetirementActionCandidateIdentity, 'function')
 assert.equal(
   ownedIraAnnualPassProbeDeepApi
     .buildCompletePlanOwnedNonRothIraAnnualPassEvidence,
