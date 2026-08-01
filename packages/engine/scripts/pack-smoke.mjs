@@ -95,6 +95,7 @@ const canonicalActionDeepImports = [
   'planBalanceAdapter',
   'reasons',
   'retirementActionCandidateIdentityAllocator',
+  'retirementActionManualReview',
   'taxableWithdrawalCharacter',
 ]
 for (const moduleName of canonicalActionDeepImports) {
@@ -138,6 +139,7 @@ const {
   probePlanOwnedNonRothIraAnnualPass,
   resolveOwnedNonRothIraAnnualWithdrawalEvidence,
   resolvePlanOwnedNonRothIraAnnualFilingSources,
+  reviewAndReplaceRetirementActionManually,
   reconcileOwnedNonRothIraSeppAnnualSchedule,
   stageOwnedNonRothIraOrdinaryWithdrawalMovements,
   validateOwnedNonRothIraSeppCurrentPaymentCandidate,
@@ -147,6 +149,7 @@ assert.equal(
   allocateRetirementActionCandidateIdentity,
 )
 assert.equal(typeof allocateRetirementActionCandidateIdentity, 'function')
+assert.equal(typeof reviewAndReplaceRetirementActionManually, 'function')
 assert.equal(
   ownedIraAnnualPassProbeDeepApi
     .buildCompletePlanOwnedNonRothIraAnnualPassEvidence,

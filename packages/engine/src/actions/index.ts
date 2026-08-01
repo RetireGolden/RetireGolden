@@ -75,6 +75,19 @@ export {
   type RothConversionCandidateIdentityIntent,
 } from './retirementActionCandidateIdentityAllocator.js'
 export {
+  reviewAndReplaceRetirementActionManually,
+  type RetirementActionManualReplacementReadyResult,
+  type RetirementActionManualReviewBlockedResult,
+  type RetirementActionManualReviewInput,
+  type RetirementActionManualReviewIssue,
+  type RetirementActionManualReviewIssueKind,
+  type RetirementActionManualReviewReplacementEvidence,
+  type RetirementActionManualReviewRequiredEvidence,
+  type RetirementActionManualReviewRequiredResult,
+  type RetirementActionManualReviewResult,
+  type RetirementActionManualReviewTargetEvidence,
+} from './retirementActionManualReview.js'
+export {
   ledgerCentTotalToPlanDollars,
   ledgerCentsToPlanDollars,
   planDollarsToLedgerCents,
