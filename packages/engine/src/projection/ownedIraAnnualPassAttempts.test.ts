@@ -355,6 +355,25 @@ describe('owned IRA annual-pass attempt controller', () => {
     expect(runAttempt).not.toHaveBeenCalled()
   })
 
+  it.each([0, 10_000, 1.5])(
+    'rejects the out-of-range tax year %s before opening an attempt',
+    (taxYear) => {
+      const runAttempt = vi.fn()
+      expect(runOwnedIraAnnualPassAttempts<string>({
+        state: state(),
+        stable: { ...stable, taxYear },
+        initialAssumedEffects: [effect(10)],
+        runAttempt,
+      })).toMatchObject({
+        status: 'rolledBack',
+        reason: 'stableContextInvalid',
+        attemptCount: 0,
+      })
+      expect(runAttempt).not.toHaveBeenCalled()
+      expect(probeMock).not.toHaveBeenCalled()
+    },
+  )
+
   it('snapshots stable and assumption getters exactly once before validation', () => {
     let stablePlanReads = 0
     const statefulStable = { ...stable }

@@ -137,6 +137,7 @@ function validStableContext(
 ): boolean {
   return nonblank(stable.planId) && nonblank(stable.ownerPersonId) &&
     Number.isInteger(stable.taxYear) &&
+    stable.taxYear >= 1 && stable.taxYear <= 9999 &&
     nonblank(stable.ledgerRunId) && nonblank(stable.movementCandidateId) &&
     nonblank(stable.inventoryEvidenceId) &&
     nonblank(stable.transactionEvidenceId)
