@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { compareOptimizerExactLedgerResults } from './optimizerExactLedgerComparison.js'
+import type { Plan } from '../model/plan.js'
+import {
+  compareOptimizerExactLedgerResults as compareOptimizerExactLedgerResultsWithPlan,
+} from './optimizerExactLedgerComparison.js'
 import type { ProjectionResult, YearResult } from './types.js'
 
 function projection(
@@ -17,23 +20,18 @@ function projection(
     endingNondeductibleIraBasis?: number
   }> = {},
 ): ProjectionResult {
-  const normalizedYears = years.map((year) => ({
-    ...year,
-    investableTotal: year.investableTotal ??
-      Object.values(year.balances).reduce((sum, balance) => sum + balance, 0),
-  }))
   return {
-    startYear: normalizedYears[0]?.year,
-    endYear: normalizedYears.at(-1)?.year,
-    years: normalizedYears.map((year) => ({
+    startYear: years[0]?.year,
+    endYear: years.at(-1)?.year,
+    years: years.map((year) => ({
       year: year.year,
       tax: year.tax ?? 10,
       penalties: year.penalties ?? 0,
-      investableTotal: year.investableTotal,
+      investableTotal: year.investableTotal ?? 100,
       netWorth: year.netWorth ?? 120,
       balances: year.balances,
     })) as YearResult[],
-    endingInvestable: endings.endingInvestable ?? normalizedYears.at(-1)?.investableTotal,
+    endingInvestable: endings.endingInvestable ?? 100,
     endingNetWorth: endings.endingNetWorth ?? 120,
     endingNondeductibleIraBasis: endings.endingNondeductibleIraBasis ?? 0,
   } as ProjectionResult
@@ -44,6 +42,41 @@ function twoYearResult(): ProjectionResult {
     { year: 2030, balances: { roth: 40, traditional: 60 } },
     { year: 2031, balances: { roth: 45, traditional: 55 } },
   ])
+}
+
+function comparisonPlan(
+  accountIds: readonly string[],
+  permanentLifePolicyIds: readonly string[] = [],
+): Pick<Plan, 'accounts' | 'insurance'> {
+  return {
+    accounts: accountIds.map((id) => ({
+      type: 'cash',
+      id,
+      name: id,
+      ownerPersonId: null,
+      annualReturnPct: 0,
+      balance: 0,
+      annualContribution: 0,
+    })),
+    insurance: permanentLifePolicyIds.map((id) => ({
+      kind: 'permanentLife',
+      id,
+    })) as Plan['insurance'],
+  }
+}
+
+function compareOptimizerExactLedgerResults(
+  aggregate: Readonly<ProjectionResult>,
+  allocated: Readonly<ProjectionResult>,
+) {
+  const accountIds = [...new Set(
+    aggregate.years.flatMap((year) => Object.keys(year.balances)),
+  )]
+  return compareOptimizerExactLedgerResultsWithPlan(
+    aggregate,
+    allocated,
+    comparisonPlan(accountIds),
+  )
 }
 
 describe('compareOptimizerExactLedgerResults', () => {
@@ -90,12 +123,12 @@ describe('compareOptimizerExactLedgerResults', () => {
         penalties: 0,
         investableTotal: 2.0049,
         netWorth: -0.0049,
-        balances: { zero: -0, total: 2.0049 },
+        balances: { zero: -0 },
       },
       {
         year: 2031,
         netWorth: -1.005,
-        balances: { zero: 0, total: 0 },
+        balances: { zero: 0 },
       },
     ], { endingNetWorth: -1.005 })
     const evidence = compareOptimizerExactLedgerResults(result, structuredClone(result))!
@@ -109,8 +142,7 @@ describe('compareOptimizerExactLedgerResults', () => {
     expect(Object.is(amountFor('annualBalanceTotal', 'netWorth'), -0)).toBe(false)
     expect(amountFor('projectionEndingTotal', 'endingNetWorth')).toBe(-101)
     const zero = evidence.entries.find((entry) =>
-      entry.key.kind === 'accountEndingBalance' &&
-      entry.key.accountId === 'zero')!.aggregateMinorUnits
+      entry.key.kind === 'accountEndingBalance')!.aggregateMinorUnits
     expect(zero).toBe(0)
     expect(Object.is(zero, -0)).toBe(false)
   })
@@ -176,22 +208,29 @@ describe('compareOptimizerExactLedgerResults', () => {
     expect(compareOptimizerExactLedgerResults(aggregate, twoYearResult())).toBeNull()
   })
 
-  it('rejects a collapsed account identity that does not reconcile to the annual total', () => {
-    const collapsed = projection([{
-      year: 2030,
-      balances: { duplicate: 60 },
-      investableTotal: 100,
-    }])
-    expect(compareOptimizerExactLedgerResults(
-      collapsed,
-      structuredClone(collapsed),
-    )).toBeNull()
-  })
-
   it('accepts whitespace-only IDs from the Plan account contract', () => {
     const result = projection([{ year: 2030, balances: { '   ': 100 } }])
     expect(compareOptimizerExactLedgerResults(result, structuredClone(result))
       ?.evaluatedAccountIds).toEqual(['   '])
+  })
+
+  it('rejects duplicate or mismatched Plan balance identities before certifying coverage', () => {
+    const result = twoYearResult()
+    expect(compareOptimizerExactLedgerResultsWithPlan(
+      result,
+      structuredClone(result),
+      comparisonPlan(['roth', 'traditional', 'roth']),
+    )).toBeNull()
+    expect(compareOptimizerExactLedgerResultsWithPlan(
+      result,
+      structuredClone(result),
+      comparisonPlan(['roth', 'traditional'], ['roth']),
+    )).toBeNull()
+    expect(compareOptimizerExactLedgerResultsWithPlan(
+      result,
+      structuredClone(result),
+      comparisonPlan(['roth']),
+    )).toBeNull()
   })
 
   it.each([
@@ -269,6 +308,6 @@ describe('compareOptimizerExactLedgerResults', () => {
   })
 
   it('exposes no caller-selected field, epsilon, residual, or tolerance options', () => {
-    expect(compareOptimizerExactLedgerResults.length).toBe(2)
+    expect(compareOptimizerExactLedgerResultsWithPlan.length).toBe(3)
   })
 })

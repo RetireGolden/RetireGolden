@@ -1,5 +1,6 @@
 import { planDollarsToLedgerCents } from '../actions/planBalanceAdapter.js'
 import { compareUtf16CodeUnits } from '../actions/structuralId.js'
+import type { Plan } from '../model/plan.js'
 import type { ProjectionResult } from './types.js'
 
 export type SafeMinorUnitInteger = number
@@ -114,12 +115,7 @@ function arrayDataValues(value: unknown): unknown[] {
   return values
 }
 
-interface BalanceSnapshot {
-  readonly balances: ReadonlyMap<string, SafeMinorUnitInteger>
-  readonly total: SafeMinorUnitInteger
-}
-
-function balanceSnapshot(value: unknown): BalanceSnapshot {
+function balanceSnapshot(value: unknown): ReadonlyMap<string, SafeMinorUnitInteger> {
   const balances = value
   if (balances === null || typeof balances !== 'object' || Array.isArray(balances)) {
     throw new TypeError('Every exact-ledger year must publish a balance map')
@@ -129,7 +125,6 @@ function balanceSnapshot(value: unknown): BalanceSnapshot {
     throw new TypeError('Exact-ledger balances must be a plain record')
   }
   const snapshot = new Map<string, SafeMinorUnitInteger>()
-  let rawTotal = 0
   for (const key of Reflect.ownKeys(balances)) {
     if (typeof key !== 'string' || key.length === 0) {
       throw new TypeError('Exact-ledger balance keys must be nonempty Plan account IDs')
@@ -141,14 +136,30 @@ function balanceSnapshot(value: unknown): BalanceSnapshot {
         !Number.isFinite(descriptor.value) || descriptor.value < 0) {
       throw new TypeError('Exact-ledger balances must be enumerable data properties')
     }
-    rawTotal += descriptor.value
     snapshot.set(key, quantize(descriptor.value, false))
   }
-  return { balances: snapshot, total: quantize(rawTotal, false) }
+  return snapshot
 }
 
 function sameNumbers(left: readonly number[], right: readonly number[]): boolean {
   return left.length === right.length && left.every((value, index) => value === right[index])
+}
+
+function expectedPublishedBalanceIds(
+  plan: Readonly<Pick<Plan, 'accounts' | 'insurance'>>,
+): readonly string[] {
+  const ids: string[] = []
+  for (const account of plan.accounts) {
+    if (account.type !== 'pension' && account.type !== 'annuity') ids.push(account.id)
+  }
+  for (const policy of plan.insurance) {
+    if (policy.kind === 'permanentLife') ids.push(policy.id)
+  }
+  if (ids.some((id) => typeof id !== 'string' || id.length === 0) ||
+      new Set(ids).size !== ids.length) {
+    throw new TypeError('Plan balance identities must be nonempty and globally unique')
+  }
+  return ids.sort(compareUtf16CodeUnits)
 }
 
 interface YearSnapshot {
@@ -186,18 +197,13 @@ function sourceSnapshot(result: Readonly<ProjectionResult>): ResultSnapshot {
         (taxYears.length > 0 && taxYear !== prior + 1)) {
       throw new TypeError('Exact-ledger years must be unique, contiguous, and strictly increasing')
     }
-    const balanceSnapshotValue = balanceSnapshot(ownDataProperty(rawYear, 'balances'))
-    const balances = balanceSnapshotValue.balances
+    const balances = balanceSnapshot(ownDataProperty(rawYear, 'balances'))
     for (const accountId of balances.keys()) accountIds.add(accountId)
-    const investableTotal = quantize(ownDataProperty(rawYear, 'investableTotal'), false)
-    if (balanceSnapshotValue.total !== investableTotal) {
-      throw new TypeError('Exact-ledger account balances do not reconcile to the investable total')
-    }
     years.set(taxYear, {
       taxYear,
       tax: quantize(ownDataProperty(rawYear, 'tax'), false),
       penalties: quantize(ownDataProperty(rawYear, 'penalties'), false),
-      investableTotal,
+      investableTotal: quantize(ownDataProperty(rawYear, 'investableTotal'), false),
       netWorth: quantize(ownDataProperty(rawYear, 'netWorth'), true),
       balances,
     })
@@ -259,6 +265,7 @@ function amountFor(
 export function compareOptimizerExactLedgerResults(
   aggregateResult: Readonly<ProjectionResult>,
   allocatedResult: Readonly<ProjectionResult>,
+  plan: Readonly<Pick<Plan, 'accounts' | 'insurance'>>,
 ): Readonly<OptimizerExactLedgerComparisonEvidence> | null {
   try {
     const aggregate = sourceSnapshot(aggregateResult)
@@ -271,6 +278,10 @@ export function compareOptimizerExactLedgerResults(
       ...aggregate.accountIds,
       ...allocated.accountIds,
     ])].sort(compareUtf16CodeUnits)
+    const expectedAccountIds = expectedPublishedBalanceIds(plan)
+    if (evaluatedAccountIds.length !== expectedAccountIds.length ||
+        evaluatedAccountIds.some((accountId, index) =>
+          accountId !== expectedAccountIds[index])) return null
     for (const taxYear of aggregate.horizon.taxYears) {
       const aggregateBalances = aggregate.years.get(taxYear)!.balances
       const allocatedBalances = allocated.years.get(taxYear)!.balances
