@@ -461,7 +461,14 @@ function lossReasonForCandidate(
     )
   }
   const benchmark = validation?.afterTaxEstateDelta ?? Math.max(0, ...tournament.candidates.map((row) => row.afterTaxEstateDelta))
-  if (benchmark > candidate.afterTaxEstateDelta) return `Trailed the selected recommendation by ${fmtMoney(benchmark - candidate.afterTaxEstateDelta)}.`
+  if (benchmark > candidate.afterTaxEstateDelta) {
+    return readinessVeto
+      ? `Trailed the calculated winner by ${fmtMoney(benchmark - candidate.afterTaxEstateDelta)}; that winner was withheld pending account allocation.`
+      : `Trailed the selected recommendation by ${fmtMoney(benchmark - candidate.afterTaxEstateDelta)}.`
+  }
+  if (readinessVeto) {
+    return 'Not selected under the active objective and guardrails; the calculated winner was withheld pending account allocation.'
+  }
   if (tournament.winnerSource === 'incumbent') return 'The current conversion strategy remained the top-ranked result found.'
   if (tournament.winnerSource === 'none') return 'No candidate cleared the recommendation threshold.'
   return 'Not selected under the active objective and guardrails.'

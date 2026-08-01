@@ -55,7 +55,10 @@ export function displayedScheduleAlreadyExecuted(
     'winnerSource' | 'searchRefined' | 'retirementActionReadinessVeto'
   > | null,
 ): boolean {
-  if (tournament?.winnerSource === 'candidate') return true
+  if (
+    tournament?.winnerSource === 'candidate' ||
+    (tournament?.winnerSource === 'milp' && tournament.searchRefined)
+  ) return true
   const withheldSource = tournament?.retirementActionReadinessVeto?.vetoedWinnerSource
   return withheldSource === 'candidate' ||
     (withheldSource === 'milp' && tournament?.searchRefined === true)

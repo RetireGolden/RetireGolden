@@ -384,6 +384,70 @@ describe('optimizer recommendation evidence', () => {
     expect(evidence.candidates[0]?.lossReason).not.toMatch(/no candidate cleared/i)
   })
 
+  it('does not describe other rows as clearing no objective when a winner was withheld', () => {
+    const evidence = reportEvidenceFromOptimizeResult({
+      tournament: {
+        policyId: 'min-lifetime-tax-estate-floor',
+        candidates: [
+          {
+            id: 'fill-10',
+            label: 'Fill the 10% bracket',
+            executedConversionTotal: 20_000,
+            afterTaxEstateDelta: 1_000,
+            lifetimeTaxDelta: -2_000,
+            moneyLastsYearsDelta: 0,
+          },
+          {
+            id: 'fill-12',
+            label: 'Fill the 12% bracket',
+            executedConversionTotal: 50_000,
+            afterTaxEstateDelta: 2_000,
+            lifetimeTaxDelta: -5_000,
+            moneyLastsYearsDelta: 0,
+          },
+        ],
+        winnerSource: 'none',
+        winnerCandidateId: null,
+        winnerLabel: null,
+        winnerConversions: [],
+        winnerValidation: null,
+        marginOverMilpDollars: 0,
+        searchRefined: false,
+        searchSimulations: 0,
+        acaActionabilityVeto: null,
+        retirementActionReadinessVeto: {
+          reason: 'identityIncomplete',
+          vetoedWinnerSource: 'candidate',
+          vetoedCandidateId: 'fill-12',
+          vetoedCandidateLabel: 'Fill the 12% bracket',
+          vetoedConversions: [{ year: 2026, amount: 50_000 }],
+          vetoedValidation: {
+            baseline: { endingAfterTaxEstate: 100_000 },
+            candidate: { endingAfterTaxEstate: 102_000 },
+            afterTaxEstateDelta: 2_000,
+            endingNetWorthDelta: 1_500,
+            lifetimeTaxDelta: -5_000,
+            moneyLastsYearsDelta: 0,
+            requestedConversionTotal: 50_000,
+            executedConversionTotal: 50_000,
+            executedConversionRatio: 1,
+            firstMateriallyUnexecutedYear: null,
+            traditionalDepletionYear: null,
+            recommendationState: 'identityIncomplete',
+          },
+        },
+      },
+      claimAge: null,
+    } as never)
+
+    expect(evidence.candidates[0]?.lossReason).toMatch(
+      /trailed the calculated winner.*withheld pending account allocation/i,
+    )
+    expect(evidence.candidates[0]?.lossReason).not.toMatch(
+      /no candidate cleared|current conversion strategy remained/i,
+    )
+  })
+
   it('reports a diagnostic-only cleaned schedule withheld for missing account allocation', () => {
     const evidence = reportEvidenceFromOptimizeResult({
       tournament: {

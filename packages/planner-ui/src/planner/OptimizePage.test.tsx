@@ -147,6 +147,16 @@ describe('OptimizePage tournament display helpers', () => {
 
   it('treats a search-refined withheld MILP schedule as exact-ledger executed', () => {
     expect(displayedScheduleAlreadyExecuted({
+      winnerSource: 'milp',
+      searchRefined: true,
+      retirementActionReadinessVeto: null,
+    } as never)).toBe(true)
+    expect(displayedScheduleAlreadyExecuted({
+      winnerSource: 'milp',
+      searchRefined: false,
+      retirementActionReadinessVeto: null,
+    } as never)).toBe(false)
+    expect(displayedScheduleAlreadyExecuted({
       winnerSource: 'none',
       searchRefined: true,
       retirementActionReadinessVeto: { vetoedWinnerSource: 'milp' },
