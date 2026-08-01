@@ -50,6 +50,7 @@ export type RetirementActionManualReviewIssueKind =
   | 'replacementAmountMismatch'
   | 'dependentActionReference'
   | 'allocatorBlocked'
+  | 'replacementIdentityCollision'
   | 'reviewEvidenceCollision'
   | 'replacementPlanInvalid'
 
@@ -68,6 +69,7 @@ export interface RetirementActionManualReviewTargetEvidence {
   year: number
   requestedAmount: PositiveUsdCents
   originalPlanIndex: number
+  request: Readonly<RetirementActionRequest>
 }
 
 export interface RetirementActionManualReviewReplacementEvidence {
@@ -78,6 +80,7 @@ export interface RetirementActionManualReviewReplacementEvidence {
   targetOmittedBeforeAllocation: true
   inferredFields: readonly []
   replacementActionId: ActionId
+  replacementProvenance: Readonly<ActionProvenance>
   preservedActionIds: readonly ActionId[]
   allocatorEvidence: Readonly<RetirementActionCandidateIdentityEvidence>
 }
@@ -175,6 +178,7 @@ function blocked(
   const canonical = canonicalIssues(issues)
   const outcome = canonical.some((entry) =>
     entry.allocatorIssue?.reason?.outcome === 'unsupported' ||
+    entry.kind === 'targetProvenanceUnsupported' ||
     entry.kind === 'targetKindUnsupported' ||
     entry.kind === 'replacementProvenanceInvalid' ||
     entry.kind === 'reviewEvidenceCollision' ||
@@ -207,7 +211,54 @@ function targetEvidence(
     year: target.year,
     requestedAmount: target.requestedAmount,
     originalPlanIndex,
+    request: target,
   }
+}
+
+function actionAllocationIds(action: RetirementActionRequest): string[] {
+  if (action.kind === 'qcd') {
+    return [action.allocation.allocationId]
+  }
+  return action.kind === 'ordinaryWithdrawal' || action.kind === 'rothConversion'
+    ? action.allocations.map((allocation) => allocation.allocationId)
+    : []
+}
+
+function completePlanReservedIdentifiers(plan: Readonly<Plan>): Set<string> {
+  const reserved = new Set(retirementActionPlanReservedIdentifiers(plan))
+  for (const sourceRecord of (
+    plan.retirementActionAnnualTaxFacts?.ownedNonRothIraAnnualFilingSourceRecords ?? []
+  )) {
+    for (const claim of planOwnedNonRothIraAnnualFilingSourceIdentifierClaims(sourceRecord)) {
+      reserved.add(claim.value)
+    }
+  }
+  return reserved
+}
+
+function replacementCrossRoleIdentifierIssues(
+  target: RetirementActionRequest,
+  replacement: OrdinaryWithdrawalRequest | RothConversionRequest,
+): RetirementActionManualReviewIssue[] {
+  const issues: RetirementActionManualReviewIssue[] = []
+  const targetAllocationIds = new Set(actionAllocationIds(target))
+  if (targetAllocationIds.has(replacement.actionId)) {
+    issues.push(issue(
+      'replacementIdentityCollision',
+      'replacementIntent',
+      `The replacement action ID reuses target allocation identifier "${replacement.actionId}".`,
+    ))
+  }
+  for (const allocationId of actionAllocationIds(replacement)) {
+    if (allocationId === target.actionId) {
+      issues.push(issue(
+        'replacementIdentityCollision',
+        'replacementIntent',
+        `The replacement allocation ID reuses target action identifier "${allocationId}".`,
+      ))
+    }
+  }
+  return issues
 }
 
 function referencesAction(
@@ -323,9 +374,21 @@ function reviewUnchecked(
       'The Plan retirement-action schedule is unavailable.',
     )])
   }
-  const targetIndexes = rawActions.flatMap((action, index) =>
-    record(action)?.['actionId'] === targetActionId ? [index] : [],
-  )
+  const sparseScheduleIssues: RetirementActionManualReviewIssue[] = []
+  for (let index = 0; index < rawActions.length; index += 1) {
+    if (!Object.hasOwn(rawActions, index)) {
+      sparseScheduleIssues.push(issue(
+        'invalidInput',
+        `plan.strategies.retirementActions.${index}`,
+        'The Plan retirement-action schedule must not contain empty array slots.',
+      ))
+    }
+  }
+  if (sparseScheduleIssues.length > 0) return blocked(sparseScheduleIssues)
+  const targetIndexes: number[] = []
+  for (let index = 0; index < rawActions.length; index += 1) {
+    if (record(rawActions[index])?.['actionId'] === targetActionId) targetIndexes.push(index)
+  }
   if (targetIndexes.length === 0) {
     return blocked([issue(
       'targetMissing',
@@ -410,16 +473,16 @@ function reviewUnchecked(
   }
 
   const parsedActions: RetirementActionRequest[] = []
-  rawActions.forEach((action, index) => {
-    if (index === targetIndex) return
-    const parsed = retirementActionRequestSchema.safeParse(action)
+  for (let index = 0; index < rawActions.length; index += 1) {
+    if (index === targetIndex) continue
+    const parsed = retirementActionRequestSchema.safeParse(rawActions[index])
     if (!parsed.success) {
       reviewIssues.push(issue(
         'invalidInput',
         `plan.strategies.retirementActions.${index}`,
         'A non-target action does not satisfy the retirement-action contract.',
       ))
-      return
+      continue
     }
     parsedActions.push(parsed.data)
     if (!targetHasLinkedActionDependency && referencesAction(parsed.data, targetActionId)) {
@@ -429,7 +492,7 @@ function reviewUnchecked(
         'Another action references the target; replacing one side would leave a dangling or mismatched action group.',
       ))
     }
-  })
+  }
   if (reviewIssues.length > 0) return blocked(reviewIssues, target)
 
   const stablePlanId = planIdSchema.safeParse(input.plan.id)
@@ -474,15 +537,21 @@ function reviewUnchecked(
       'Canonical allocation did not preserve the reviewed manual action invariants.',
     )], target)
   }
-  if (
-    allocatedRequest.kind === 'ordinaryWithdrawal' &&
-    allocatedRequest.purpose.referenceId === targetActionId
-  ) {
+  if (hasLinkedActionDependency(allocatedRequest)) {
     return blocked([issue(
       'dependentActionReference',
-      'replacementIntent.purpose.referenceId',
-      'The replacement cannot retain a purpose reference to the omitted target action.',
+      allocatedRequest.kind === 'ordinaryWithdrawal'
+        ? 'replacementIntent.purpose.referenceId'
+        : 'replacementIntent.taxFunding.withdrawalActionId',
+      'A single-action replacement cannot introduce or retain a linked-action dependency; coordinated pairs must be allocated and validated together.',
     )], target)
+  }
+  const replacementIdentifierIssues = replacementCrossRoleIdentifierIssues(
+    target,
+    allocatedRequest,
+  )
+  if (replacementIdentifierIssues.length > 0) {
+    return blocked(replacementIdentifierIssues, target)
   }
 
   const replacementActions = [...parsedActions]
@@ -516,22 +585,13 @@ function reviewUnchecked(
   const reviewEvidenceId = deriveActionStructuralId('retirement-action-manual-review', [{
     planId: parsedPlanId.data,
     target: reviewedTargetEvidence,
-    replacementActionId: allocatedRequest.actionId,
+    replacement: allocatedRequest,
     preservedActionIds,
     allocatorEvidence: allocated.evidence,
   }])
-  const reservedIdentifiers = new Set(
-    retirementActionPlanReservedIdentifiers(replacementPlanResult.data),
-  )
-  reservedIdentifiers.add(targetActionId)
-  for (const sourceRecord of (
-    replacementPlanResult.data.retirementActionAnnualTaxFacts
-      ?.ownedNonRothIraAnnualFilingSourceRecords ?? []
-  )) {
-    for (const claim of planOwnedNonRothIraAnnualFilingSourceIdentifierClaims(sourceRecord)) {
-      reservedIdentifiers.add(claim.value)
-    }
-  }
+  const reservedIdentifiers = completePlanReservedIdentifiers(replacementPlanResult.data)
+  reservedIdentifiers.add(target.actionId)
+  for (const allocationId of actionAllocationIds(target)) reservedIdentifiers.add(allocationId)
   if (reservedIdentifiers.has(reviewEvidenceId)) {
     return blocked([issue(
       'reviewEvidenceCollision',
@@ -547,6 +607,7 @@ function reviewUnchecked(
     targetOmittedBeforeAllocation: true,
     inferredFields: [],
     replacementActionId: allocatedRequest.actionId,
+    replacementProvenance: allocatedRequest.provenance,
     preservedActionIds,
     allocatorEvidence: allocated.evidence,
   }

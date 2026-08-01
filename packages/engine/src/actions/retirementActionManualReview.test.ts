@@ -168,7 +168,9 @@ describe('manual retirement-action review and replacement', () => {
         provenanceSource: 'migration',
         provenance: { source: 'migration', sourceId: 'v1-withdrawal' },
         originalPlanIndex: 0,
+        request: legacyWithdrawal(),
       },
+      replacementProvenance: { source: 'manual', sourceId: 'manual-review' },
       allocatorEvidence: { policy: 'explicitStablePlanIdsOnly' },
     })
     expect(plan.strategies.retirementActions).toEqual(scheduledBefore)
@@ -192,6 +194,7 @@ describe('manual retirement-action review and replacement', () => {
     expect(result.replacement.actionId).toBe(allocated.request.actionId)
     expect(result.replacement.allocations).toEqual(allocated.request.allocations)
     expect(result.evidence.targetOmittedBeforeAllocation).toBe(true)
+    expect(result.evidence.target.request).toEqual(allocated.request)
   })
 
   it('replaces migrated conversion identity without choosing a source or destination', () => {
@@ -213,6 +216,45 @@ describe('manual retirement-action review and replacement', () => {
       sourceAccountIds: ['traditional-a'],
       destinationRothAccountId: 'roth-a',
     })
+  })
+
+  it('binds complete replacement provenance into the review evidence ID', () => {
+    const plan = basePlan()
+    plan.strategies.retirementActions = [legacyWithdrawal()]
+
+    const baseline = review(plan, 'legacy-withdrawal', ordinaryIntent())
+    const changedSource = review(plan, 'legacy-withdrawal', ordinaryIntent({
+      provenance: { source: 'manual', sourceId: 'other-review' },
+    }))
+    const changedScenario = review(plan, 'legacy-withdrawal', ordinaryIntent({
+      provenance: {
+        source: 'manual',
+        sourceId: 'manual-review',
+        scenarioId: 'scenario-a',
+      },
+    }))
+
+    expect(baseline.status).toBe('replacementReady')
+    expect(changedSource.status).toBe('replacementReady')
+    expect(changedScenario.status).toBe('replacementReady')
+    if (
+      baseline.status !== 'replacementReady' ||
+      changedSource.status !== 'replacementReady' ||
+      changedScenario.status !== 'replacementReady'
+    ) return
+    expect(changedSource.replacement.actionId).toBe(baseline.replacement.actionId)
+    expect(changedScenario.replacement.actionId).toBe(baseline.replacement.actionId)
+    expect(changedSource.evidence.replacementProvenance).toEqual({
+      source: 'manual',
+      sourceId: 'other-review',
+    })
+    expect(changedScenario.evidence.replacementProvenance).toEqual({
+      source: 'manual',
+      sourceId: 'manual-review',
+      scenarioId: 'scenario-a',
+    })
+    expect(changedSource.evidence.evidenceId).not.toBe(baseline.evidence.evidenceId)
+    expect(changedScenario.evidence.evidenceId).not.toBe(baseline.evidence.evidenceId)
   })
 
   it.each(['legacyAggregateQcd', 'qcd'] as const)(
@@ -309,6 +351,25 @@ describe('manual retirement-action review and replacement', () => {
 
     expect(issueKinds(review(plan, 'missing', ordinaryIntent()))).toEqual(['targetMissing'])
     expect(issueKinds(review(plan, 'duplicate', ordinaryIntent()))).toEqual(['targetAmbiguous'])
+  })
+
+  it('rejects sparse retirement-action schedules without compacting empty slots', () => {
+    const plan = basePlan()
+    const sparseActions = new Array<RetirementActionRequest>(2)
+    sparseActions[1] = legacyWithdrawal()
+    plan.strategies.retirementActions = sparseActions
+
+    const result = review(plan, 'legacy-withdrawal', ordinaryIntent())
+
+    expect(result).toMatchObject({
+      status: 'blocked',
+      outcome: 'refused',
+      target: null,
+      issues: [{
+        kind: 'invalidInput',
+        field: 'plan.strategies.retirementActions.0',
+      }],
+    })
   })
 
   it('requires manual provenance and preserves kind, year, and exact-cent amount', () => {
@@ -519,6 +580,41 @@ describe('manual retirement-action review and replacement', () => {
     })
   })
 
+  it('rejects a one-sided replacement reference to a preserved action', () => {
+    const plan = basePlan()
+    const preservedConversion = action({
+      actionId: 'preserved-conversion',
+      kind: 'rothConversion',
+      personId: 'p1',
+      year: 2030,
+      executionDate: '2030-09-01',
+      executionSequence: 2,
+      requestedAmount: 20_000,
+      allocations: [{
+        allocationId: 'preserved-allocation',
+        sourceAccountId: 'traditional-a',
+        requestedAmount: 20_000,
+      }],
+      destinationRothAccountId: 'roth-a',
+      taxFunding: { kind: 'noneExpected' },
+      provenance: { source: 'manual' },
+    })
+    plan.strategies.retirementActions = [legacyWithdrawal(), preservedConversion]
+
+    const result = review(plan, 'legacy-withdrawal', ordinaryIntent({
+      purpose: { kind: 'taxPayment', referenceId: 'preserved-conversion' },
+    }))
+
+    expect(result).toMatchObject({
+      status: 'blocked',
+      outcome: 'refused',
+      issues: [{
+        kind: 'dependentActionReference',
+        field: 'replacementIntent.purpose.referenceId',
+      }],
+    })
+  })
+
   it('blocks generator/optimizer targets instead of relabeling them manual', () => {
     const plan = basePlan()
     const allocated = allocateRetirementActionCandidateIdentity(plan, {
@@ -529,9 +625,32 @@ describe('manual retirement-action review and replacement', () => {
     if (allocated.status !== 'allocated') return
     plan.strategies.retirementActions = [allocated.request]
 
-    expect(issueKinds(review(plan, allocated.request.actionId, ordinaryIntent()))).toEqual([
-      'targetProvenanceUnsupported',
-    ])
+    const result = review(plan, allocated.request.actionId, ordinaryIntent())
+    expect(result).toMatchObject({
+      status: 'blocked',
+      outcome: 'unsupported',
+      issues: [{ kind: 'targetProvenanceUnsupported' }],
+    })
+  })
+
+  it('rejects cross-role reuse of a removed target identifier by the replacement', () => {
+    const plan = basePlan()
+    const allocated = allocateRetirementActionCandidateIdentity(plan, ordinaryIntent())
+    expect(allocated.status).toBe('allocated')
+    if (allocated.status !== 'allocated') return
+    const generatedAllocationId = allocated.request.allocations[0]!.allocationId
+    plan.strategies.retirementActions = [legacyWithdrawal(generatedAllocationId)]
+
+    const result = review(plan, generatedAllocationId, ordinaryIntent())
+
+    expect(result).toMatchObject({
+      status: 'blocked',
+      outcome: 'refused',
+      issues: [{
+        kind: 'replacementIdentityCollision',
+        field: 'replacementIntent',
+      }],
+    })
   })
 
   it('fails closed when the deterministic review evidence identity is already reserved', () => {
@@ -591,6 +710,37 @@ describe('manual retirement-action review and replacement', () => {
       .toBe(first.evidence.replacementActionId)
     expect(moved.evidence.evidenceId).not.toBe(first.evidence.evidenceId)
     expect(changedProvenance.evidence.evidenceId).not.toBe(first.evidence.evidenceId)
+  })
+
+  it('publishes and binds every field of an already-manual target request', () => {
+    const plan = basePlan()
+    const allocated = allocateRetirementActionCandidateIdentity(plan, ordinaryIntent())
+    expect(allocated.status).toBe('allocated')
+    if (allocated.status !== 'allocated') return
+    plan.strategies.retirementActions = [allocated.request]
+    const changedTargetPlan = structuredClone(plan)
+    changedTargetPlan.strategies.retirementActions[0] = action({
+      ...changedTargetPlan.strategies.retirementActions[0],
+      executionDate: '2030-06-16',
+    })
+
+    const baseline = review(plan, allocated.request.actionId, ordinaryIntent())
+    const changedTarget = review(
+      changedTargetPlan,
+      allocated.request.actionId,
+      ordinaryIntent(),
+    )
+
+    expect(baseline.status).toBe('replacementReady')
+    expect(changedTarget.status).toBe('replacementReady')
+    if (baseline.status !== 'replacementReady' || changedTarget.status !== 'replacementReady') {
+      return
+    }
+    expect(changedTarget.target.actionId).toBe(baseline.target.actionId)
+    expect(changedTarget.evidence.target.request).toMatchObject({
+      executionDate: '2030-06-16',
+    })
+    expect(changedTarget.evidence.evidenceId).not.toBe(baseline.evidence.evidenceId)
   })
 
   it('reports a nonblank stable Plan ID requirement deterministically', () => {
