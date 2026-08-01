@@ -432,15 +432,18 @@ function canonicalAssumptions(
   const result: PlanOwnedNonRothIraAnnualPassAssumedEffect[] = []
   const identities = new Set<string>()
   for (const effect of effects) {
-    const parsed = [
-      effect.executedAmount,
-      effect.basisReturnAmount,
-      effect.ordinaryIncomeAmount,
-      effect.allocatedPenaltyAmount,
-    ].map((amount) => usdCentsSchema.safeParse(amount))
+    const executedAmount = usdCentsSchema.safeParse(effect.executedAmount)
+    const basisReturnAmount = usdCentsSchema.safeParse(effect.basisReturnAmount)
+    const ordinaryIncomeAmount =
+      usdCentsSchema.safeParse(effect.ordinaryIncomeAmount)
+    const allocatedPenaltyAmount =
+      usdCentsSchema.safeParse(effect.allocatedPenaltyAmount)
     if (!nonblank(effect.actionId) || !nonblank(effect.allocationId) ||
         !nonblank(effect.sourceAccountId) ||
-        parsed.some((amount) => !amount.success)) return null
+        !executedAmount.success || !basisReturnAmount.success ||
+        !ordinaryIncomeAmount.success || !allocatedPenaltyAmount.success) {
+      return null
+    }
     const identity = JSON.stringify([
       effect.actionId,
       effect.allocationId,
@@ -452,11 +455,10 @@ function canonicalAssumptions(
       actionId: effect.actionId,
       allocationId: effect.allocationId,
       sourceAccountId: effect.sourceAccountId,
-      executedAmount: parsed[0]!.success ? parsed[0].data : asUsdCents(0),
-      basisReturnAmount: parsed[1]!.success ? parsed[1].data : asUsdCents(0),
-      ordinaryIncomeAmount: parsed[2]!.success ? parsed[2].data : asUsdCents(0),
-      allocatedPenaltyAmount:
-        parsed[3]!.success ? parsed[3].data : asUsdCents(0),
+      executedAmount: executedAmount.data,
+      basisReturnAmount: basisReturnAmount.data,
+      ordinaryIncomeAmount: ordinaryIncomeAmount.data,
+      allocatedPenaltyAmount: allocatedPenaltyAmount.data,
     })
   }
   return result.sort(effectOrder)
