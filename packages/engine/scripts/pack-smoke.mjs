@@ -44,6 +44,9 @@ const decisionsApi = await import('@retiregolden/engine/decisions')
 const ordinaryWithdrawalCandidateAdapterDeepApi = await import(
   '@retiregolden/engine/decisions/ordinaryWithdrawalCandidateAdapter'
 )
+const rothConversionCandidateAdapterDeepApi = await import(
+  '@retiregolden/engine/decisions/rothConversionCandidateAdapter'
+)
 const ownedIraCoordinatorDeepApi = await import(
   '@retiregolden/engine/actions/ownedNonRothIraAnnualCandidateCoordinator'
 )
@@ -163,6 +166,11 @@ assert.equal(
 assert.equal(
   typeof decisionsApi.adaptOrdinaryWithdrawalGeneratorCandidate,
   'function',
+)
+assert.equal(
+  rothConversionCandidateAdapterDeepApi
+    .adaptFillTargetRothConversionGeneratorCandidate,
+  decisionsApi.adaptFillTargetRothConversionGeneratorCandidate,
 )
 assert.equal(
   ownedIraAnnualPassProbeDeepApi
