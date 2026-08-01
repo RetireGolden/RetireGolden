@@ -39,6 +39,9 @@ const actionsApi = await import('@retiregolden/engine/actions')
 const ownedIraCoordinatorDeepApi = await import(
   '@retiregolden/engine/actions/ownedNonRothIraAnnualCandidateCoordinator'
 )
+const ownedIraCandidateTransactionDeepApi = await import(
+  '@retiregolden/engine/actions/ownedNonRothIraAnnualCandidateTransaction'
+)
 const ownedIraPlanCoordinatorDeepApi = await import(
   '@retiregolden/engine/actions/ownedNonRothIraAnnualPlanCoordinator'
 )
@@ -63,6 +66,7 @@ const canonicalActionDeepImports = [
   'identity',
   'money',
   'ownedNonRothIraAnnualCandidateCoordinator',
+  'ownedNonRothIraAnnualCandidateTransaction',
   'ownedNonRothIraAnnualExecution',
   'ownedNonRothIraAnnualPlanCoordinator',
   'ownedNonRothIraAnnualPostCandidateEvidence',
@@ -110,6 +114,7 @@ const {
   ledgerCentsToPlanDollars,
   parseRetirementActionRequest,
   planDollarsToLedgerCents,
+  preparePlanOwnedNonRothIraAnnualCandidateTransaction,
   resolveOwnedNonRothIraAnnualWithdrawalEvidence,
   reconcileOwnedNonRothIraSeppAnnualSchedule,
   stageOwnedNonRothIraOrdinaryWithdrawalMovements,
@@ -119,6 +124,15 @@ assert.equal(
   ownedIraCoordinatorDeepApi
     .buildOwnedNonRothIraStagedDistributionDateEvidenceId,
   buildOwnedNonRothIraStagedDistributionDateEvidenceId,
+)
+assert.equal(
+  ownedIraCandidateTransactionDeepApi
+    .preparePlanOwnedNonRothIraAnnualCandidateTransaction,
+  preparePlanOwnedNonRothIraAnnualCandidateTransaction,
+)
+assert.equal(
+  typeof preparePlanOwnedNonRothIraAnnualCandidateTransaction,
+  'function',
 )
 assert.equal(
   ownedIraPlanCoordinatorDeepApi

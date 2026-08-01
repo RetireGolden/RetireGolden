@@ -92,6 +92,10 @@
       "types": "./dist/actions/ownedNonRothIraAnnualCandidateCoordinator.d.ts",
       "default": "./dist/actions/ownedNonRothIraAnnualCandidateCoordinator.js"
     },
+    "./actions/ownedNonRothIraAnnualCandidateTransaction": {
+      "types": "./dist/actions/ownedNonRothIraAnnualCandidateTransaction.d.ts",
+      "default": "./dist/actions/ownedNonRothIraAnnualCandidateTransaction.js"
+    },
     "./actions/ownedNonRothIraAnnualExecution": {
       "types": "./dist/actions/ownedNonRothIraAnnualExecution.d.ts",
       "default": "./dist/actions/ownedNonRothIraAnnualExecution.js"
