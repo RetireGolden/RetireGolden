@@ -190,7 +190,7 @@ function deepFreeze<T>(value: T): Readonly<T> {
   return value as Readonly<T>
 }
 
-function nonblank(value: unknown): value is string {
+function nonblank<T>(value: T): value is T & string {
   return typeof value === 'string' && value.trim().length > 0
 }
 
@@ -426,42 +426,51 @@ function observedEffects(
   return result.sort(effectOrder)
 }
 
-function canonicalAssumptions(
+export function canonicalPlanOwnedNonRothIraAnnualPassEffects(
   effects: readonly Readonly<PlanOwnedNonRothIraAnnualPassAssumedEffect>[],
 ): PlanOwnedNonRothIraAnnualPassAssumedEffect[] | null {
-  const result: PlanOwnedNonRothIraAnnualPassAssumedEffect[] = []
-  const identities = new Set<string>()
-  for (const effect of effects) {
-    const executedAmount = usdCentsSchema.safeParse(effect.executedAmount)
-    const basisReturnAmount = usdCentsSchema.safeParse(effect.basisReturnAmount)
-    const ordinaryIncomeAmount =
-      usdCentsSchema.safeParse(effect.ordinaryIncomeAmount)
-    const allocatedPenaltyAmount =
-      usdCentsSchema.safeParse(effect.allocatedPenaltyAmount)
-    if (!nonblank(effect.actionId) || !nonblank(effect.allocationId) ||
-        !nonblank(effect.sourceAccountId) ||
-        !executedAmount.success || !basisReturnAmount.success ||
-        !ordinaryIncomeAmount.success || !allocatedPenaltyAmount.success) {
-      return null
+  try {
+    if (!Array.isArray(effects)) return null
+    const result: PlanOwnedNonRothIraAnnualPassAssumedEffect[] = []
+    const identities = new Set<string>()
+    for (const effect of effects) {
+      if (effect === null || typeof effect !== 'object') return null
+      const actionId = effect.actionId
+      const allocationId = effect.allocationId
+      const sourceAccountId = effect.sourceAccountId
+      const executedAmountValue = effect.executedAmount
+      const basisReturnAmountValue = effect.basisReturnAmount
+      const ordinaryIncomeAmountValue = effect.ordinaryIncomeAmount
+      const allocatedPenaltyAmountValue = effect.allocatedPenaltyAmount
+      if (!nonblank(actionId) || !nonblank(allocationId) ||
+          !nonblank(sourceAccountId)) return null
+      const executedAmount = usdCentsSchema.safeParse(executedAmountValue)
+      const basisReturnAmount = usdCentsSchema.safeParse(basisReturnAmountValue)
+      const ordinaryIncomeAmount =
+        usdCentsSchema.safeParse(ordinaryIncomeAmountValue)
+      const allocatedPenaltyAmount =
+        usdCentsSchema.safeParse(allocatedPenaltyAmountValue)
+      if (!executedAmount.success || !basisReturnAmount.success ||
+          !ordinaryIncomeAmount.success || !allocatedPenaltyAmount.success) {
+        return null
+      }
+      const identity = JSON.stringify([actionId, allocationId, sourceAccountId])
+      if (identities.has(identity)) return null
+      identities.add(identity)
+      result.push({
+        actionId,
+        allocationId,
+        sourceAccountId,
+        executedAmount: executedAmount.data,
+        basisReturnAmount: basisReturnAmount.data,
+        ordinaryIncomeAmount: ordinaryIncomeAmount.data,
+        allocatedPenaltyAmount: allocatedPenaltyAmount.data,
+      })
     }
-    const identity = JSON.stringify([
-      effect.actionId,
-      effect.allocationId,
-      effect.sourceAccountId,
-    ])
-    if (identities.has(identity)) return null
-    identities.add(identity)
-    result.push({
-      actionId: effect.actionId,
-      allocationId: effect.allocationId,
-      sourceAccountId: effect.sourceAccountId,
-      executedAmount: executedAmount.data,
-      basisReturnAmount: basisReturnAmount.data,
-      ordinaryIncomeAmount: ordinaryIncomeAmount.data,
-      allocatedPenaltyAmount: allocatedPenaltyAmount.data,
-    })
+    return result.sort(effectOrder)
+  } catch {
+    return null
   }
-  return result.sort(effectOrder)
 }
 
 function effectKeys(
@@ -491,7 +500,8 @@ export function buildCompletePlanOwnedNonRothIraAnnualPassEvidence(
       !nonblank(input.upstreamEvidenceId)) {
     throw new TypeError('Annual-pass evidence bindings must be complete and nonblank')
   }
-  const assumptions = canonicalAssumptions(input.assumedEffects)
+  const assumptions =
+    canonicalPlanOwnedNonRothIraAnnualPassEffects(input.assumedEffects)
   if (assumptions === null) {
     throw new TypeError('Annual-pass assumptions must be valid and unique')
   }
@@ -620,7 +630,9 @@ function probePlanOwnedNonRothIraAnnualPassUnchecked(
       'Truthful completed annual inventory cannot use the standalone transaction',
       completed.status)
   }
-  if (canonicalAssumptions(suppliedPass.assumedEffects) === null) {
+  if (canonicalPlanOwnedNonRothIraAnnualPassEffects(
+    suppliedPass.assumedEffects,
+  ) === null) {
     return rollback('effectAssumptionInvalid',
       'Annual-pass assumptions must be a valid, unique allocation vector')
   }
