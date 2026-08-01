@@ -4787,20 +4787,20 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     })
 
     // --- snapshot ------------------------------------------------------------
-    const balanceRecord: Record<string, number> = {}
+    const balanceEntries: [string, number][] = []
     let investableTotal = unassignedCash
     for (const state of balances) {
-      balanceRecord[state.account.id] = state.balance
+      balanceEntries.push([state.account.id, state.balance])
       investableTotal += state.balance
     }
     let propertyTotal = 0
     for (const [id, value] of propertyValues) {
-      balanceRecord[id] = value
+      balanceEntries.push([id, value])
       propertyTotal += value
     }
     let debtTotal = 0
     for (const [id, value] of debtBalances) {
-      balanceRecord[id] = value
+      balanceEntries.push([id, value])
       debtTotal += value
     }
     // HECM loans net against net worth with the non-recourse floor honored:
@@ -4814,9 +4814,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }
     let insuranceCashValueTotal = 0
     for (const [id, value] of insuranceCashValues) {
-      balanceRecord[id] = value
+      balanceEntries.push([id, value])
       insuranceCashValueTotal += value
     }
+    const balanceRecord = Object.fromEntries(balanceEntries)
 
     const reportedWithdrawals = {
       ...withdrawalPlan.byCategory,

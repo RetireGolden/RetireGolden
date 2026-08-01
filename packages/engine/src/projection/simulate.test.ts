@@ -5,6 +5,7 @@ import { computePiaFromEarnings, isPiaFromEarningsError } from '../socialSecurit
 import { combineTaxCalculators, computeFederalTax, createFederalTaxCalculator } from '../tax/federalTax.js'
 import { createStateTaxCalculator } from '../tax/stateTax.js'
 import { createFlatTaxCalculator } from './flatTax.js'
+import { compareOptimizerExactLedgerResults } from './optimizerExactLedgerComparison.js'
 import { simulatePlan } from './simulate.js'
 import { claimFactor } from '../socialSecurity/claimFactor.js'
 import type { TaxCalculator } from './types.js'
@@ -127,6 +128,29 @@ describe('horizon and wages', () => {
     expect(result.startYear).toBe(2026)
     expect(result.endYear).toBe(1966 + 90)
     expect(result.years).toHaveLength(2056 - 2026 + 1)
+  })
+
+  it('publishes reserved Plan account IDs as own balance keys for exact comparison', () => {
+    const plan = basePlan()
+    plan.accounts = [{
+      type: 'cash',
+      id: '__proto__',
+      name: 'Reserved ID cash',
+      ownerPersonId: null,
+      annualReturnPct: 0,
+      balance: 123,
+      annualContribution: 0,
+    }]
+    const validatedPlan = validate(plan)
+    const result = simulatePlan(validatedPlan, {
+      startYear: 2026,
+      taxCalculator: noTax,
+    })
+
+    expect(Object.hasOwn(result.years[0]!.balances, '__proto__')).toBe(true)
+    expect(result.years[0]!.balances.__proto__).toBe(123)
+    expect(compareOptimizerExactLedgerResults(result, result, validatedPlan)
+      ?.evaluatedAccountIds).toContain('__proto__')
   })
 
   it('pays wages until the retirement-age year, then stops', () => {
