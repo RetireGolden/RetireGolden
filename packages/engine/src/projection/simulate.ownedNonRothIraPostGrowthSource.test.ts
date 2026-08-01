@@ -75,6 +75,8 @@ describe('simulate owned non-Roth IRA post-growth source capture', () => {
       ownerPools: [],
     })
     expect(Object.keys(year)).toContain('ownedNonRothIraPostGrowthSource')
+    expect(year.ownedNonRothIraBalancesBeforeGrowth).toEqual({})
+    expect(Object.isFrozen(year.ownedNonRothIraBalancesBeforeGrowth)).toBe(true)
     expect(Object.isFrozen(sourceOf(year))).toBe(true)
     expect(Object.isFrozen(sourceOf(year).ownerPools)).toBe(true)
   })
@@ -183,6 +185,11 @@ describe('simulate owned non-Roth IRA post-growth source capture', () => {
       sourceOf(year).ownerPools[0]!
         .accountBalances[0]!.balancePlanDollars,
     )
+    const balancesBeforeGrowth = years.map((year) =>
+      year.ownedNonRothIraBalancesBeforeGrowth!.ira,
+    )
+    expect(balancesBeforeGrowth[0]).toBeCloseTo(110, 10)
+    expect(balancesBeforeGrowth[1]).toBeCloseTo(131, 10)
     expect(capturedBalances[0]).toBeCloseTo(121, 10)
     expect(capturedBalances[1]).toBeCloseTo(144.1, 10)
     expect(capturedBalances).toEqual(years.map((year) => year.balances.ira))
@@ -249,8 +256,10 @@ describe('simulate owned non-Roth IRA post-growth source capture', () => {
   it('freezes every owner pool and account fact without structural IDs or sealing', () => {
     const plan = singlePersonPlan({ planningAge: 60 })
     plan.accounts = [ownedIra('ira-b', 2), ownedIra('ira-a', 1)]
-    const source = sourceOf(run(plan)[0]!)
+    const year = run(plan)[0]!
+    const source = sourceOf(year)
 
+    expect(Object.isFrozen(year.ownedNonRothIraBalancesBeforeGrowth)).toBe(true)
     expect(Object.isFrozen(source)).toBe(true)
     expect(Object.isFrozen(source.ownerPools)).toBe(true)
     expect(Object.isFrozen(source.ownerPools[0])).toBe(true)

@@ -2148,6 +2148,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
 
     // --- contributions & employer match --------------------
     let contributions = 0
+    let ownedNonRothIraContributions = 0
     let employerMatch = 0
     let preTaxContributions = 0
     // Deposit destinations for the optimizer probe: the LP models balances as
@@ -2283,6 +2284,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         if (rb) rb.contributionBasis += allowed
       }
       contributions += allowed
+      if (isAggregatedIra(account)) ownedNonRothIraContributions += allowed
       if (account.type === 'traditional' || account.type === 'hsa') preTaxContributions += allowed
       if (account.type === 'traditional') traditionalInflow += allowed
       else otherInflow += allowed
@@ -4345,6 +4347,24 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
     }
 
+    const ownedNonRothIraBalanceBeforeGrowthByState =
+      new Map<BalanceState, number>()
+    for (const state of balances) {
+      if (isAggregatedIra(state.account)) {
+        ownedNonRothIraBalanceBeforeGrowthByState.set(state, state.balance)
+      }
+    }
+    const ownedNonRothIraBalancesBeforeGrowth = Object.freeze(
+      Object.fromEntries(
+        balances
+          .filter((state) => isAggregatedIra(state.account))
+          .map((state) => [
+            state.account.id,
+            ownedNonRothIraBalanceBeforeGrowthByState.get(state)!,
+          ]),
+      ),
+    )
+
     const shockPct = returnShockAt(year)
     // Wealth-weighted total return the ledger actually applies this year
     // (including distributed taxable yield — a distribution, not a loss).
@@ -4553,6 +4573,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       incomes,
       expenses,
       contributions,
+      ownedNonRothIraContributions,
+      ownedNonRothIraBalancesBeforeGrowth,
       employerMatch,
       rmd: rmdTotal,
       sepp: seppTotal,

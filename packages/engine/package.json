@@ -195,6 +195,7 @@
       "types": "./dist/params/*.d.ts",
       "default": "./dist/params/*.js"
     },
+    "./projection/internal/*": null,
     "./projection/*": {
       "types": "./dist/projection/*.d.ts",
       "default": "./dist/projection/*.js"

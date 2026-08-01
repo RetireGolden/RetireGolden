@@ -20,6 +20,7 @@ function withoutAdditiveRetirementSources(result: ProjectionResult): unknown {
   for (const year of legacy.years) {
     Reflect.deleteProperty(year, 'retirementRuntimeSource')
     Reflect.deleteProperty(year, 'retirementRuntimeApplicationSource')
+    Reflect.deleteProperty(year, 'ownedNonRothIraBalancesBeforeGrowth')
     Reflect.deleteProperty(year, 'ownedNonRothIraPostGrowthSource')
   }
   return legacy
