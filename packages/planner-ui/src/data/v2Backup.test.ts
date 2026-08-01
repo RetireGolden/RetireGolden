@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest'
 
 import { asUsdCents } from '@retiregolden/engine/actions/money'
 import { createEmptyPlan } from '@retiregolden/engine/model/plan'
+import {
+  ownedNonRothIraAnnualFilingSourceRecord,
+  traditionalAccount,
+} from '@retiregolden/engine/testing/planFixtures'
 import { MAX_BACKUP_JSON_CHARS, parseV2Backup, serializeV2Backup } from './v2Backup'
 
 let counter = 0
@@ -22,7 +26,7 @@ describe('v2 backup envelope', () => {
     }
   })
 
-  it('round-trips Plan v3 retirement-action eligibility facts', () => {
+  it('round-trips current-Plan retirement-action eligibility facts', () => {
     const plan = createEmptyPlan({
       newId: testIds,
       now: fixedNow,
@@ -59,6 +63,29 @@ describe('v2 backup envelope', () => {
           taxYear: 2041,
           amountCents: asUsdCents(500_000),
         },
+      ],
+    }
+
+    const result = parseV2Backup(serializeV2Backup([plan], fixedNow))
+    expect(result.ok).toBe(true)
+    if (result.ok) expect(result.plans).toEqual([plan])
+  })
+
+  it('round-trips authoritative annual tax facts when Plan identity is preserved', () => {
+    const plan = createEmptyPlan({
+      newId: testIds,
+      now: fixedNow,
+      name: 'Annual filing evidence',
+    })
+    const ownerPersonId = plan.household.people[0]!.id
+    plan.accounts = [traditionalAccount('ira-1', 10_000, ownerPersonId)]
+    plan.retirementActionAnnualTaxFacts = {
+      ownedNonRothIraAnnualFilingSourceRecords: [
+        ownedNonRothIraAnnualFilingSourceRecord(
+          plan,
+          ownerPersonId,
+          ['ira-1'],
+        ),
       ],
     }
 

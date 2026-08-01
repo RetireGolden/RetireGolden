@@ -14,7 +14,7 @@
  */
 
 /** The Plan document's schema version. Kept in lockstep with `CURRENT_PLAN_SCHEMA_VERSION`. */
-export const PLAN_SCHEMA_VERSION = 3
+export const PLAN_SCHEMA_VERSION = 4
 
 /** Stable, versioned identifier for the emitted schema (embeds the version). */
 export const PLAN_SCHEMA_ID = `https://retiregolden.org/schemas/plan/v${PLAN_SCHEMA_VERSION}.json`
@@ -45,6 +45,8 @@ export const PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS: readonly string[] = [
   'retirement-action eligibility evidenceId and provenance.sourceId values must contain at least one non-whitespace character.',
   'retirement-action eligibility evidence IDs are globally unique; IRA classifications are unique per source account, SEP/SIMPLE activities per source account/action tax year, and deductible IRA contributions per donor/tax year.',
   'retirement-action IRA classifications must reference a uniquely resolved, individually owned, non-inherited traditional IRA; SEP/SIMPLE activities require exactly one matching SEP or SIMPLE classification.',
+  'retirement-action annual filing sources are unique per containing Plan/owner/tax year, bind the containing Plan and a uniquely resolved owner, and review the exact current owned non-inherited traditional-IRA pool.',
+  'retirement-action annual filing sources require canonical real dates, January 1 opening basis, the exact calendar-adjusted ordinary deadline (April 15 through 18) and completed window, finalization on/after that deadline, boundary-wide source identifiers unique across records and the Plan identity namespace, unique reviewed accounts, designated-year reviewed-pool post-year contributions within the allowed window, and an exact safe-integer contribution sum.',
   'SIMPLE participation start dates must be real canonical civil dates when present.',
   'SEP/SIMPLE activity planYearEndDate must be a real date in actionTaxYear; deductible IRA contribution donors must resolve uniquely and contribution years cannot precede the donor’s age-70½ threshold year.',
   'traditional/roth/hsa accounts must have an individual owner (ownerPersonId not null).',
@@ -52,7 +54,7 @@ export const PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS: readonly string[] = [
   // Account-level discriminated rules
   'employerMatch may be set only on employer-kind traditional/roth accounts.',
   'cliff-vesting equity compensation requires a vestDate.',
-  'nondeductibleBasis (Form 8606) applies only to traditional IRAs and not to inherited accounts.',
+  'planning-only nondeductibleBasis (Form 8606) applies only to traditional IRAs and not to inherited accounts; it is not filing-grade annual tax evidence.',
   'hsa reimburse-later accumulation requires the capByMedicalExpenses withdrawal treatment.',
   'property depreciationRecapture requires a costBasis; a HECM line of credit requires a primary residence.',
   'an estateBeneficiary charity destination requires charityPct.',

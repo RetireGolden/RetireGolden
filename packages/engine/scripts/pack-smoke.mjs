@@ -48,6 +48,12 @@ const ownedIraPlanCoordinatorDeepApi = await import(
 const ownedIraAnnualExecutionDeepApi = await import(
   '@retiregolden/engine/actions/ownedNonRothIraAnnualExecution'
 )
+const ownedIraAnnualFilingEvidenceDeepApi = await import(
+  '@retiregolden/engine/actions/ownedNonRothIraAnnualFilingEvidence'
+)
+const ownedIraAnnualFilingSourceResolverDeepApi = await import(
+  '@retiregolden/engine/actions/ownedNonRothIraAnnualFilingSourceResolver'
+)
 const annualRetirementInventoryDeepApi = await import(
   '@retiregolden/engine/actions/annualRetirementPhysicalEventInventory'
 )
@@ -71,6 +77,8 @@ const canonicalActionDeepImports = [
   'ownedNonRothIraAnnualCandidateCoordinator',
   'ownedNonRothIraAnnualCandidateTransaction',
   'ownedNonRothIraAnnualExecution',
+  'ownedNonRothIraAnnualFilingEvidence',
+  'ownedNonRothIraAnnualFilingSourceResolver',
   'ownedNonRothIraAnnualPlanCoordinator',
   'ownedNonRothIraAnnualPostCandidateEvidence',
   'ownedNonRothIraAnnualPostCandidateExecution',
@@ -98,6 +106,7 @@ const {
   asAccountId,
   asAllocationId,
   asPersonId,
+  asPlanId,
   asPositiveUsdCents,
   asUsdCents,
   buildOwnedNonRothIraSeppAnnualDistributionInventoryEvidence,
@@ -105,6 +114,7 @@ const {
   buildOwnedNonRothIraSeppPriorPaymentHistoryEvidence,
   buildOwnedNonRothIraStagedDistributionDateEvidenceId,
   buildAnnualRetirementPhysicalEventInventory,
+  buildPlanOwnedNonRothIraAnnualFilingEvidence,
   buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput,
   buildCompletePlanOwnedNonRothIraAnnualPassEvidence,
   classifyOwnedNonRothIraAnnualWithdrawals,
@@ -122,6 +132,7 @@ const {
   preparePlanOwnedNonRothIraAnnualCandidateTransaction,
   probePlanOwnedNonRothIraAnnualPass,
   resolveOwnedNonRothIraAnnualWithdrawalEvidence,
+  resolvePlanOwnedNonRothIraAnnualFilingSources,
   reconcileOwnedNonRothIraSeppAnnualSchedule,
   stageOwnedNonRothIraOrdinaryWithdrawalMovements,
   validateOwnedNonRothIraSeppCurrentPaymentCandidate,
@@ -134,6 +145,16 @@ assert.equal(
 assert.equal(
   ownedIraAnnualPassProbeDeepApi.probePlanOwnedNonRothIraAnnualPass,
   probePlanOwnedNonRothIraAnnualPass,
+)
+assert.equal(
+  ownedIraAnnualFilingEvidenceDeepApi
+    .buildPlanOwnedNonRothIraAnnualFilingEvidence,
+  buildPlanOwnedNonRothIraAnnualFilingEvidence,
+)
+assert.equal(
+  ownedIraAnnualFilingSourceResolverDeepApi
+    .resolvePlanOwnedNonRothIraAnnualFilingSources,
+  resolvePlanOwnedNonRothIraAnnualFilingSources,
 )
 assert.equal(
   ownedIraCoordinatorDeepApi
@@ -237,11 +258,11 @@ for (const alternateCase of [
 assert.equal(addUsdCents(asUsdCents(125), asUsdCents(75)), 200)
 assert.equal(planDollarsToLedgerCents(1.005), 101)
 assert.equal(ledgerCentsToPlanDollars(asUsdCents(101)), 1.01)
-assert.equal(CURRENT_PLAN_SCHEMA_VERSION, 3)
+assert.equal(CURRENT_PLAN_SCHEMA_VERSION, 4)
 assert.ok(packForYear(2026) && typeof packForYear(2026) === 'object')
 
-assert.equal(PLAN_SCHEMA_VERSION, 3)
-assert.equal(planJsonSchema.properties.schemaVersion.const, 3)
+assert.equal(PLAN_SCHEMA_VERSION, 4)
+assert.equal(planJsonSchema.properties.schemaVersion.const, 4)
 assert.ok(String(planJsonSchema.$id).includes('/v' + PLAN_SCHEMA_VERSION + '.json'), 'schema carries a versioned $id')
 assert.deepEqual(shippedSchema, planJsonSchema, 'offline JSON artifact matches the exported constant')
 assert.ok(
@@ -260,6 +281,82 @@ assert.equal(
   }).ok,
   true,
 )
+
+const smokeFilingPlan = singlePersonPlan({ planningAge: 100 })
+smokeFilingPlan.id = 'smoke-filing-plan'
+smokeFilingPlan.household.people[0].id = 'smoke-filing-owner'
+smokeFilingPlan.accounts = [{
+  id: 'smoke-filing-ira',
+  name: 'Smoke filing IRA',
+  type: 'traditional',
+  kind: 'ira',
+  ownerPersonId: 'smoke-filing-owner',
+  annualReturnPct: null,
+  balance: 10_000,
+  annualContribution: 0,
+}]
+const smokeFilingSource = {
+  predicate: 'completePlanOwnedNonRothIraAnnualFilingSourceRecord',
+  planId: asPlanId(smokeFilingPlan.id),
+  ownerPersonId: asPersonId('smoke-filing-owner'),
+  taxYear: 2030,
+  evidenceScope: 'realWorldTaxRecordNotProjection',
+  sourceRecordId: 'smoke-filing-record',
+  sourceEvidenceId: 'smoke-filing-evidence',
+  authority: {
+    acquisition: 'manual',
+    recordKind: 'filedForm8606',
+    sourceId: 'smoke-filing-authority',
+    finalizedDate: '2031-04-15',
+  },
+  reviewedSourceAccountIds: [asAccountId('smoke-filing-ira')],
+  openingBasis: {
+    asOfDate: '2030-01-01',
+    openingBasisAmount: asUsdCents(0),
+    sourceEvidenceId: 'smoke-filing-basis',
+  },
+  rolloverFacts: {
+    inventoryStatus: 'completeIncludingExplicitEmpty',
+    outstandingRolloverAmount: 0,
+    rolloverRepaymentAdjustmentAmount: 0,
+    sourceEvidenceId: 'smoke-filing-rollovers',
+  },
+  nondeductibleContributionFacts: {
+    inYearInventoryStatus: 'completeExplicitEmpty',
+    inYearContributions: [],
+    postYearWindowStatus: 'completeThroughOrdinaryDeadline',
+    completedThroughDate: '2031-04-15',
+    deadlineAuthority: {
+      authoritySourceId: 'smoke-filing-deadline',
+      designatedTaxYear: 2030,
+      deadlineStatus: 'authoritativeFederalDeadlineEstablished',
+      deadlineKind: 'ordinaryFederalFilingDeadlineExcludingDisasterRelief',
+      calendarAdjustmentStatus:
+        'weekendAndDistrictOfColumbiaHolidayAdjustmentApplied',
+      disasterReliefContributionStatus:
+        'noPostOrdinaryDeadlineContributionClaimed',
+      deadlineDate: '2031-04-15',
+    },
+    contributions: [],
+  },
+}
+smokeFilingPlan.retirementActionAnnualTaxFacts = {
+  ownedNonRothIraAnnualFilingSourceRecords: [smokeFilingSource],
+}
+const smokeFilingResolution = resolvePlanOwnedNonRothIraAnnualFilingSources({
+  plan: smokeFilingPlan,
+})
+assert.equal(smokeFilingResolution.status, 'resolved')
+assert.equal(smokeFilingResolution.sources[0].sourceOrigin, 'plan')
+const smokeFilingEvidence = buildPlanOwnedNonRothIraAnnualFilingEvidence({
+  plan: smokeFilingPlan,
+  ownerPersonId: 'smoke-filing-owner',
+  taxYear: 2030,
+  ledgerRunId: 'smoke-filing-ledger',
+  knowledgeAsOfDate: '2031-04-15',
+  sourceRecord: smokeFilingResolution.sources[0].sourceRecord,
+})
+assert.equal(smokeFilingEvidence.status, 'annualFilingEvidenceBuilt')
 
 const smokePerson = {
   id: 'smoke-person',

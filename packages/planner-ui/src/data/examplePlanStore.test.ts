@@ -16,6 +16,10 @@ import {
 import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
 import { createScenarioPatch } from '@retiregolden/engine/scenarios/patch'
 import { applyScenarioPatch } from '@retiregolden/engine/scenarios/scenarios'
+import {
+  ownedNonRothIraAnnualFilingSourceRecord,
+  traditionalAccount,
+} from '@retiregolden/engine/testing/planFixtures'
 import { EXAMPLE_PLANS } from '../planner/examples/registry'
 import { saveFreshDemo, saveExampleToMyPlans } from '../planner/examples/loadExample'
 import { serializeV2Backup, normalizePlansForImport } from './v2Backup'
@@ -116,6 +120,42 @@ describe('example plan isolation', () => {
       expect(applyScenarioPatch(loaded.plan, scenario.patch).ok).toBe(true)
     }
     expect((await loadPlan(exampleStorageId('example-couple'))).ok).toBe(false)
+  })
+
+  it('discards authoritative Plan-id-bound facts on example conversion and import re-keying', async () => {
+    const demo = newPlan('Example with filing source')
+    demo.id = 'example:filing-source'
+    demo.origin = 'example'
+    const ownerPersonId = demo.household.people[0]!.id
+    demo.accounts = [traditionalAccount('ira-1', 10_000, ownerPersonId)]
+    demo.retirementActionAnnualTaxFacts = {
+      ownedNonRothIraAnnualFilingSourceRecords: [
+        ownedNonRothIraAnnualFilingSourceRecord(
+          demo,
+          ownerPersonId,
+          ['ira-1'],
+        ),
+      ],
+    }
+
+    const saved = await savePlan(demo, fixedNow)
+    expect(saved.ok).toBe(true)
+    if (!saved.ok) return
+    const converted = await convertExampleToUserPlan(saved.plan, {
+      newId: () => 'converted-user-plan',
+      now: fixedNow,
+    })
+    expect(converted.ok).toBe(true)
+    if (converted.ok) {
+      expect(converted.plan).not.toHaveProperty('retirementActionAnnualTaxFacts')
+    }
+
+    const normalized = await normalizePlansForImport(
+      [structuredClone(demo)],
+      ['example:filing-source'],
+    )
+    expect(normalized[0]!.id).not.toBe(demo.id)
+    expect(normalized[0]).not.toHaveProperty('retirementActionAnnualTaxFacts')
   })
 
   it('saveExampleToMyPlans stamps updatedAtIso with the current time', async () => {

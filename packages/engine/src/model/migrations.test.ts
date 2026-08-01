@@ -13,6 +13,7 @@ import {
   migratePlanToCurrent,
   migratePlanV1ToV2,
   migratePlanV2ToV3,
+  migratePlanV3ToV4,
   type MigrationStep,
 } from './migrations.js'
 
@@ -76,9 +77,8 @@ describe('migratePlanToCurrent', () => {
     old['title'] = 'Renamed plan'
     old['schemaVersion'] = 1
 
-    // Hypothetical step 1 -> 2; test uses currentVersion=2 with planSchema still
-    // expecting literal 1, so re-validation must fail — proving steps run AND
-    // output is checked. (Real steps land alongside real schema bumps.)
+    // Hypothetical transitions prove every registered step runs in order and
+    // final output is re-validated against the actual current Plan schema.
     const step1to2: MigrationStep = (raw) => {
       const { title, ...rest } = raw
       return { ...rest, name: title }
@@ -87,13 +87,18 @@ describe('migratePlanToCurrent', () => {
       ...raw,
       name: `${String(raw['name'])} plan`,
     })
-    const result = migratePlanToCurrent(old, { 1: step1to2, 2: step2to3 }, 3)
+    const step3to4: MigrationStep = (raw) => raw
+    const result = migratePlanToCurrent(
+      old,
+      { 1: step1to2, 2: step2to3, 3: step3to4 },
+      4,
+    )
     expect(result.ok).toBe(true)
     if (result.ok) expect(result.plan.name).toBe('Renamed plan plan')
   })
 
   it('reports validation issues for corrupt current-version data', () => {
-    const result = migratePlanToCurrent({ schemaVersion: 3, id: '', name: '' })
+    const result = migratePlanToCurrent({ schemaVersion: 4, id: '', name: '' })
     expect(result.ok).toBe(false)
     if (!result.ok) {
       expect(result.reason).toBe('invalid_after_migration')
@@ -159,7 +164,7 @@ describe('v1 -> v2 retirement-action migration', () => {
 
     expect(result.ok).toBe(true)
     if (result.ok) {
-      expect(result.plan.schemaVersion).toBe(3)
+      expect(result.plan.schemaVersion).toBe(4)
       expect(result.plan.strategies.retirementActions).toEqual([])
       expect(result.plan.strategies.withdrawalOrder).toEqual(scalarSnapshot['withdrawalOrder'])
       expect(result.plan.strategies.rothConversion).toEqual(scalarSnapshot['rothConversion'])
@@ -205,7 +210,7 @@ describe('v1 -> v2 retirement-action migration', () => {
     if (!parsedPatch.ok) return
     expect(parsedPatch.patch.base).toEqual({
       planId: migrated.plan.id,
-      planSchemaVersion: 3,
+      planSchemaVersion: 4,
       snapshotHash: scenarioPlanSnapshotHash(migrated.plan),
     })
 
@@ -925,7 +930,7 @@ describe('v2 -> v3 retirement-action eligibility facts migration', () => {
     const result = migratePlanToCurrent(raw)
     expect(result.ok).toBe(true)
     if (result.ok) {
-      expect(result.plan.schemaVersion).toBe(3)
+      expect(result.plan.schemaVersion).toBe(4)
       expect(result.plan).not.toHaveProperty('retirementActionEligibilityFacts')
     }
   })
@@ -952,7 +957,7 @@ describe('v2 -> v3 retirement-action eligibility facts migration', () => {
       const result = migratePlanToCurrent(raw)
       expect(result.ok).toBe(true)
       if (result.ok) {
-        expect(result.plan.schemaVersion).toBe(3)
+        expect(result.plan.schemaVersion).toBe(4)
         expect(result.plan).not.toHaveProperty(
           'retirementActionEligibilityFacts',
         )
@@ -960,7 +965,7 @@ describe('v2 -> v3 retirement-action eligibility facts migration', () => {
     },
   )
 
-  it('rebinds a canonical v2 scenario to the migrated v3 snapshot', () => {
+  it('rebinds a canonical v2 scenario to the migrated current snapshot', () => {
     const current = createEmptyPlan({ newId: testIds, now: fixedNow })
     const edited = structuredClone(current)
     edited.assumptions.inflationPct = 3
@@ -997,11 +1002,59 @@ describe('v2 -> v3 retirement-action eligibility facts migration', () => {
     if (!parsedPatch.ok) return
     expect(parsedPatch.patch.base).toEqual({
       planId: migrated.plan.id,
-      planSchemaVersion: 3,
+      planSchemaVersion: 4,
       snapshotHash: scenarioPlanSnapshotHash(migrated.plan),
     })
     const applied = applyScenarioPatchDocument(migrated.plan, parsedPatch.patch)
     expect(applied.ok).toBe(true)
     if (applied.ok) expect(applied.plan.assumptions.inflationPct).toBe(3)
   })
+})
+
+describe('v3 -> v4 retirement-action annual tax facts migration', () => {
+  function rawV3Plan(): Record<string, unknown> {
+    const current = createEmptyPlan({ newId: testIds, now: fixedNow })
+    return {
+      ...JSON.parse(JSON.stringify(current)),
+      schemaVersion: 3,
+    } as Record<string, unknown>
+  }
+
+  it('is pure and does not invent authoritative annual tax facts', () => {
+    const raw = rawV3Plan()
+    const migrated = migratePlanV3ToV4(raw)
+    expect(migrated).toBe(raw)
+    expect(migrated).not.toHaveProperty('retirementActionAnnualTaxFacts')
+
+    const result = migratePlanToCurrent(raw)
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.plan.schemaVersion).toBe(4)
+      expect(result.plan).not.toHaveProperty('retirementActionAnnualTaxFacts')
+    }
+  })
+
+  it.each([1, 2, 3])(
+    'discards annual tax facts smuggled into schema v%s',
+    (schemaVersion) => {
+      const raw = {
+        ...rawV3Plan(),
+        schemaVersion,
+        retirementActionAnnualTaxFacts: {
+          ownedNonRothIraAnnualFilingSourceRecords: [{
+            predicate: 'completePlanOwnedNonRothIraAnnualFilingSourceRecord',
+            planId: 'invented-plan',
+            ownerPersonId: 'invented-owner',
+            taxYear: 2025,
+          }],
+        },
+      }
+      const result = migratePlanToCurrent(raw)
+      expect(result.ok).toBe(true)
+      if (result.ok) {
+        expect(result.plan.schemaVersion).toBe(4)
+        expect(result.plan).not.toHaveProperty('retirementActionAnnualTaxFacts')
+      }
+    },
+  )
 })

@@ -139,8 +139,8 @@ export function AccountFields({ account, index }: { account: Account; index: num
       {account.type === 'traditional' && account.kind === 'ira' && !account.inherited ? (
         <MoneyField
           label="Nondeductible basis (Form 8606)"
-          help="After-tax money already inside this traditional IRA, nondeductible contributions you've reported on IRS Form 8606. When set, every withdrawal and Roth conversion from your IRAs is part tax-free basis and part taxable, in proportion to the basis across all your IRAs (the pro-rata rule). Leave blank if all your IRA money was pre-tax."
-          hint="Blank = fully pre-tax IRA."
+          help="Planning estimate for after-tax money already inside this traditional IRA. It affects projected withdrawals and Roth conversions under the owner-wide pro-rata rule, but it is not a complete annual tax record and cannot establish filing-grade action evidence. Leave blank if all your IRA money was pre-tax."
+          hint="Planning input only; blank = fully pre-tax IRA."
           value={account.nondeductibleBasis ?? null}
           allowNull
           onCommit={(v) => set('nondeductibleBasis', v ?? undefined)}

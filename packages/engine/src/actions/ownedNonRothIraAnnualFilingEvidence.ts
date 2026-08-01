@@ -1,6 +1,8 @@
-import { z } from 'zod'
-
 import { planSchema, type Plan } from '../model/plan.js'
+import {
+  ordinaryFederalFilingDeadline,
+  planOwnedNonRothIraAnnualFilingSourceRecordSchema,
+} from '../model/retirementActionAnnualTaxFacts.js'
 import { formatCivilDate, parseCivilIsoDate } from './civilDate.js'
 import {
   accountIdSchema,
@@ -11,8 +13,6 @@ import {
   type PlanId,
 } from './identity.js'
 import {
-  positiveUsdCentsSchema,
-  usdCentsSchema,
   type PositiveUsdCents,
 } from './money.js'
 import type {
@@ -26,86 +26,10 @@ import {
   deriveActionStructuralId,
 } from './structuralId.js'
 
-const nonblankIdSchema = z.string().refine(
-  (value) => value.trim().length > 0,
-  { message: 'identifier must not be blank' },
-)
-
-const exactZeroSchema = z.literal(0).refine(
-  (value) => !Object.is(value, -0),
-  { message: 'expected canonical literal zero' },
-)
-
-const filingSourceAuthoritySchema = z.object({
-  acquisition: z.enum(['manual', 'import']),
-  recordKind: z.enum([
-    'filedForm8606',
-    'taxProfessionalWorkpaper',
-    'completeAccountRecordReconstruction',
-  ]),
-  sourceId: nonblankIdSchema,
-  finalizedDate: z.string(),
-}).strict()
-
-const filingDeadlineAuthoritySchema = z.object({
-  authoritySourceId: nonblankIdSchema,
-  designatedTaxYear: z.number().int().min(2006).max(9998),
-  deadlineStatus: z.literal('authoritativeFederalDeadlineEstablished'),
-  deadlineKind: z.literal(
-    'ordinaryFederalFilingDeadlineExcludingDisasterRelief',
-  ),
-  calendarAdjustmentStatus: z.literal(
-    'weekendAndDistrictOfColumbiaHolidayAdjustmentApplied',
-  ),
-  disasterReliefContributionStatus: z.literal(
-    'noPostOrdinaryDeadlineContributionClaimed',
-  ),
-  deadlineDate: z.string(),
-}).strict()
-
-const postYearContributionSourceSchema = z.object({
-  sourceRecordId: nonblankIdSchema,
-  sourceEvidenceId: nonblankIdSchema,
-  sourceAccountId: accountIdSchema,
-  designatedTaxYear: z.number().int().min(2006).max(9998),
-  contributionDate: z.string(),
-  nondeductibleContributionAmount: positiveUsdCentsSchema,
-}).strict()
-
-export const planOwnedNonRothIraAnnualFilingSourceRecordSchema = z.object({
-  predicate: z.literal('completePlanOwnedNonRothIraAnnualFilingSourceRecord'),
-  planId: planIdSchema,
-  ownerPersonId: personIdSchema,
-  taxYear: z.number().int().min(2006).max(9998),
-  evidenceScope: z.literal('realWorldTaxRecordNotProjection'),
-  sourceRecordId: nonblankIdSchema,
-  sourceEvidenceId: nonblankIdSchema,
-  authority: filingSourceAuthoritySchema,
-  reviewedSourceAccountIds: z.array(accountIdSchema),
-  openingBasis: z.object({
-    asOfDate: z.string(),
-    openingBasisAmount: usdCentsSchema,
-    sourceEvidenceId: nonblankIdSchema,
-  }).strict(),
-  rolloverFacts: z.object({
-    inventoryStatus: z.literal('completeIncludingExplicitEmpty'),
-    outstandingRolloverAmount: exactZeroSchema,
-    rolloverRepaymentAdjustmentAmount: exactZeroSchema,
-    sourceEvidenceId: nonblankIdSchema,
-  }).strict(),
-  nondeductibleContributionFacts: z.object({
-    inYearInventoryStatus: z.literal('completeExplicitEmpty'),
-    inYearContributions: z.tuple([]),
-    postYearWindowStatus: z.literal('completeThroughOrdinaryDeadline'),
-    completedThroughDate: z.string(),
-    deadlineAuthority: filingDeadlineAuthoritySchema,
-    contributions: z.array(postYearContributionSourceSchema),
-  }).strict(),
-}).strict()
-
-export type PlanOwnedNonRothIraAnnualFilingSourceRecord = z.infer<
-  typeof planOwnedNonRothIraAnnualFilingSourceRecordSchema
->
+export {
+  planOwnedNonRothIraAnnualFilingSourceRecordSchema,
+  type PlanOwnedNonRothIraAnnualFilingSourceRecord,
+} from '../model/retirementActionAnnualTaxFacts.js'
 
 export interface BuildPlanOwnedNonRothIraAnnualFilingEvidenceInput {
   plan: unknown
@@ -224,41 +148,6 @@ function blocked(
 function canonicalDate(value: string): string | null {
   const parsed = parseCivilIsoDate(value)
   return parsed !== null && formatCivilDate(parsed) === value ? value : null
-}
-
-function dayOfWeek(year: number, month: number, day: number): number {
-  const offsets = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4]
-  const adjustedYear = month < 3 ? year - 1 : year
-  return (
-    adjustedYear +
-    Math.floor(adjustedYear / 4) -
-    Math.floor(adjustedYear / 100) +
-    Math.floor(adjustedYear / 400) +
-    offsets[month - 1]! +
-    day
-  ) % 7
-}
-
-function ordinaryFederalFilingDeadline(taxYear: number): string | null {
-  // The District of Columbia holiday began affecting the nationwide federal
-  // deadline in filing season 2007. Older years need historical calendars.
-  if (!Number.isInteger(taxYear) || taxYear < 2006 || taxYear >= 9999) {
-    return null
-  }
-  const deadlineYear = taxYear + 1
-  const april16Weekday = dayOfWeek(deadlineYear, 4, 16)
-  const observedEmancipationDay = april16Weekday === 6
-    ? 15
-    : april16Weekday === 0
-      ? 17
-      : 16
-  let day = 15
-  while (
-    dayOfWeek(deadlineYear, 4, day) === 0 ||
-    dayOfWeek(deadlineYear, 4, day) === 6 ||
-    day === observedEmancipationDay
-  ) day++
-  return `${String(deadlineYear).padStart(4, '0')}-04-${String(day).padStart(2, '0')}`
 }
 
 function sameStrings(left: readonly string[], right: readonly string[]): boolean {

@@ -7,7 +7,7 @@ import { MemoryRouter, Route, Routes } from 'react-router'
 import { IDBFactory } from 'fake-indexeddb'
 
 import { _resetPlanStoreForTests, loadPlan, savePlan } from '../data/planStore'
-import { parsePlan } from '@retiregolden/engine/model/plan'
+import { parsePlan, type Plan } from '@retiregolden/engine/model/plan'
 import { asUsdCents } from '@retiregolden/engine/actions/money'
 import { applyScenarioPatch } from '@retiregolden/engine/scenarios/scenarios'
 import { PlanProvider } from './PlanContext'
@@ -39,6 +39,60 @@ async function waitFor(predicate: () => boolean) {
     })
   }
   throw new Error('Timed out waiting for expected render')
+}
+
+function annualFilingSource(
+  plan: Plan,
+  ownerPersonId: string,
+  accountIds: string[],
+  taxYear = 2030,
+  suffix = ownerPersonId,
+): NonNullable<Plan['retirementActionAnnualTaxFacts']>['ownedNonRothIraAnnualFilingSourceRecords'][number] {
+  return {
+    predicate: 'completePlanOwnedNonRothIraAnnualFilingSourceRecord',
+    planId: plan.id as never,
+    ownerPersonId: ownerPersonId as never,
+    taxYear,
+    evidenceScope: 'realWorldTaxRecordNotProjection',
+    sourceRecordId: `record-${suffix}-${taxYear}`,
+    sourceEvidenceId: `evidence-${suffix}-${taxYear}`,
+    authority: {
+      acquisition: 'manual',
+      recordKind: 'filedForm8606',
+      sourceId: `authority-${suffix}-${taxYear}`,
+      finalizedDate: `${taxYear + 1}-04-15`,
+    },
+    reviewedSourceAccountIds: accountIds as never,
+    openingBasis: {
+      asOfDate: `${taxYear}-01-01`,
+      openingBasisAmount: asUsdCents(0),
+      sourceEvidenceId: `basis-${suffix}-${taxYear}`,
+    },
+    rolloverFacts: {
+      inventoryStatus: 'completeIncludingExplicitEmpty',
+      outstandingRolloverAmount: 0,
+      rolloverRepaymentAdjustmentAmount: 0,
+      sourceEvidenceId: `rollovers-${suffix}-${taxYear}`,
+    },
+    nondeductibleContributionFacts: {
+      inYearInventoryStatus: 'completeExplicitEmpty',
+      inYearContributions: [],
+      postYearWindowStatus: 'completeThroughOrdinaryDeadline',
+      completedThroughDate: `${taxYear + 1}-04-15`,
+      deadlineAuthority: {
+        authoritySourceId: `deadline-${suffix}-${taxYear}`,
+        designatedTaxYear: taxYear,
+        deadlineStatus: 'authoritativeFederalDeadlineEstablished',
+        deadlineKind: 'ordinaryFederalFilingDeadlineExcludingDisasterRelief',
+        calendarAdjustmentStatus:
+          'weekendAndDistrictOfColumbiaHolidayAdjustmentApplied',
+        disasterReliefContributionStatus:
+          'noPostOrdinaryDeadlineContributionClaimed',
+        deadlineDate: `${taxYear + 1}-04-15`,
+      },
+      contributions: [],
+    },
+  }
 }
 
 describe('removePartner', () => {
@@ -175,6 +229,110 @@ describe('eligibility fact edit integrity', () => {
     expect(plan.retirementActionEligibilityFacts.deductibleIraContributions).toEqual([
       expect.objectContaining({ evidenceId: 'partner-contribution' }),
     ])
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+})
+
+describe('annual filing-source edit integrity', () => {
+  it('preserves planning-only value edits but atomically clears all years after a pool edit', () => {
+    const plan = createSamplePlan()
+    const [primary, partner] = plan.household.people
+    const primaryIraIndex = plan.accounts.findIndex(
+      (account) => account.type === 'traditional',
+    )
+    const primaryIra = plan.accounts[primaryIraIndex]
+    if (primaryIra?.type !== 'traditional') throw new Error('expected traditional account')
+    primaryIra.kind = 'ira'
+    primaryIra.ownerPersonId = primary!.id
+    delete primaryIra.inherited
+    plan.accounts.push({
+      ...primaryIra,
+      id: 'partner-ira',
+      name: 'Partner IRA',
+      ownerPersonId: partner!.id,
+    })
+    const currentPool = (ownerPersonId: string) => plan.accounts
+      .filter((account) =>
+        account.type === 'traditional' &&
+        account.kind === 'ira' &&
+        account.inherited === undefined &&
+        account.ownerPersonId === ownerPersonId)
+      .map((account) => account.id)
+    plan.retirementActionAnnualTaxFacts = {
+      ownedNonRothIraAnnualFilingSourceRecords: [
+        annualFilingSource(plan, primary!.id, currentPool(primary!.id), 2030, 'primary'),
+        annualFilingSource(plan, primary!.id, currentPool(primary!.id), 2031, 'primary'),
+        annualFilingSource(plan, partner!.id, currentPool(partner!.id), 2030, 'partner'),
+      ],
+    }
+
+    updateAccountField(plan, primaryIraIndex, 'balance', 99_000)
+    updateAccountField(plan, primaryIraIndex, 'nondeductibleBasis', 5_000)
+    expect(
+      plan.retirementActionAnnualTaxFacts.ownedNonRothIraAnnualFilingSourceRecords,
+    ).toHaveLength(3)
+
+    updateAccountField(plan, primaryIraIndex, 'kind', 'employer')
+    expect(
+      plan.retirementActionAnnualTaxFacts.ownedNonRothIraAnnualFilingSourceRecords,
+    ).toEqual([
+      expect.objectContaining({ ownerPersonId: partner!.id }),
+    ])
+    const parsed = parsePlan(plan)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+  })
+
+  it('clears an owner record when an exact IRA member is removed', () => {
+    const plan = createSamplePlan()
+    const primary = plan.household.people[0]!
+    const iraIndex = plan.accounts.findIndex((account) => account.type === 'traditional')
+    const ira = plan.accounts[iraIndex]
+    if (ira?.type !== 'traditional') throw new Error('expected traditional account')
+    ira.kind = 'ira'
+    ira.ownerPersonId = primary.id
+    delete ira.inherited
+    plan.retirementActionAnnualTaxFacts = {
+      ownedNonRothIraAnnualFilingSourceRecords: [
+        annualFilingSource(plan, primary.id, [ira.id]),
+      ],
+    }
+
+    removeAccount(plan, iraIndex)
+
+    expect(plan).not.toHaveProperty('retirementActionAnnualTaxFacts')
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+
+  it('clears both removed and surviving owner records before partner accounts are re-homed', () => {
+    const plan = createSamplePlan()
+    const [primary, partner] = plan.household.people
+    const primaryIra = {
+      type: 'traditional' as const,
+      id: 'primary-ira',
+      name: 'Primary IRA',
+      ownerPersonId: primary!.id,
+      annualReturnPct: null,
+      kind: 'ira' as const,
+      balance: 10_000,
+      annualContribution: 0,
+    }
+    const partnerIra = {
+      ...primaryIra,
+      id: 'partner-ira',
+      name: 'Partner IRA',
+      ownerPersonId: partner!.id,
+    }
+    plan.accounts = [primaryIra, partnerIra]
+    plan.retirementActionAnnualTaxFacts = {
+      ownedNonRothIraAnnualFilingSourceRecords: [
+        annualFilingSource(plan, primary!.id, ['primary-ira'], 2030, 'primary'),
+        annualFilingSource(plan, partner!.id, ['partner-ira'], 2030, 'partner'),
+      ],
+    }
+
+    removePartner(plan, partner!.id)
+
+    expect(plan).not.toHaveProperty('retirementActionAnnualTaxFacts')
     expect(parsePlan(plan).ok).toBe(true)
   })
 })

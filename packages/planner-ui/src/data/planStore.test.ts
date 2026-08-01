@@ -6,6 +6,10 @@ import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
 import { createScenarioPatch } from '@retiregolden/engine/scenarios/patch'
 import { applyScenarioPatch } from '@retiregolden/engine/scenarios/scenarios'
 import {
+  ownedNonRothIraAnnualFilingSourceRecord,
+  traditionalAccount,
+} from '@retiregolden/engine/testing/planFixtures'
+import {
   _resetPlanStoreForTests,
   clearAllPlans,
   deletePlan,
@@ -112,6 +116,32 @@ describe('planStore', () => {
     expect(applied.ok).toBe(true)
     if (applied.ok) expect(applied.plan.expenses.baseAnnual).toBe(12_345)
     expect((await listPlanSummaries()).map((s) => s.name)).toEqual(['A/B copy', 'Original'])
+  })
+
+  it('discards Plan-id-bound annual tax facts when duplicating', async () => {
+    const plan = newPlan('Authoritative source')
+    const ownerPersonId = plan.household.people[0]!.id
+    plan.accounts = [traditionalAccount('ira-1', 10_000, ownerPersonId)]
+    plan.retirementActionAnnualTaxFacts = {
+      ownedNonRothIraAnnualFilingSourceRecords: [
+        ownedNonRothIraAnnualFilingSourceRecord(
+          plan,
+          ownerPersonId,
+          ['ira-1'],
+        ),
+      ],
+    }
+    await savePlan(plan, fixedNow)
+
+    const duplicated = await duplicatePlan(plan.id, {
+      newId: () => 'copy-without-authoritative-source',
+      now: fixedNow,
+    })
+
+    expect(duplicated.ok).toBe(true)
+    if (duplicated.ok) {
+      expect(duplicated.plan).not.toHaveProperty('retirementActionAnnualTaxFacts')
+    }
   })
 
   it('duplicates from an in-memory source, not the stale stored copy', async () => {

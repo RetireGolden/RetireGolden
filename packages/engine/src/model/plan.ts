@@ -1,5 +1,5 @@
 /**
- * Plan schema v3 — the household financial domain model.
+ * Plan schema v4 — the household financial domain model.
  *
  * Zod schemas are the source of truth: types are inferred from them, and the
  * same schemas validate IndexedDB reads, JSON imports, and migration output.
@@ -14,8 +14,14 @@ import { z } from 'zod'
 import { persistedRetirementActionRequestSchema } from '../actions/contract.js'
 import { addCalendarMonths, parseCivilIsoDate } from '../actions/civilDate.js'
 import { usdCentsSchema } from '../actions/money.js'
+import {
+  ownedNonRothIraAnnualFilingSourceKey,
+  planOwnedNonRothIraAnnualFilingSourceIdentifierClaims,
+  retirementActionAnnualTaxFactsSchema,
+} from './retirementActionAnnualTaxFacts.js'
+export type { RetirementActionAnnualTaxFacts } from './retirementActionAnnualTaxFacts.js'
 
-export const CURRENT_PLAN_SCHEMA_VERSION = 3
+export const CURRENT_PLAN_SCHEMA_VERSION = 4
 
 const isoDateRe = /^\d{4}-\d{2}-\d{2}$/
 
@@ -346,8 +352,10 @@ export const traditionalAccountSchema = z.object({
   annualContribution,
   inherited: inheritedAccountSchema.optional(),
   /**
-   * Form-8606 nondeductible contribution basis (after-tax dollars already in
-   * this IRA). When any of an owner's traditional IRAs carries basis, every
+   * Planning-only Form-8606 nondeductible contribution basis (after-tax dollars
+   * already in this IRA). It drives projections but is not a complete annual
+   * filing record and cannot establish filing-grade action evidence. When any
+   * of an owner's traditional IRAs carries basis, every
    * withdrawal and Roth conversion from that owner's IRAs applies the pro-rata
    * rule across the aggregated IRA balances — the taxable portion is reduced by
    * the basis fraction, and basis depletes as it is distributed. IRA kind only
@@ -1536,6 +1544,8 @@ export const planSchema = z
     assumptions: assumptionsSchema,
     /** Durable action eligibility evidence; intentionally absent until explicitly authored. */
     retirementActionEligibilityFacts: retirementActionEligibilityFactsSchema.optional(),
+    /** Authoritative real-world annual tax sources; never inferred from projection fields. */
+    retirementActionAnnualTaxFacts: retirementActionAnnualTaxFactsSchema.optional(),
     scenarios: z.array(scenarioSchema),
   })
   .superRefine((plan, ctx) => {
@@ -1627,6 +1637,84 @@ export const planSchema = z
     }
     const accountTypeById = new Map(plan.accounts.map((a) => [a.id, a.type]))
     const accountById = new Map(plan.accounts.map((account) => [account.id, account]))
+
+    const annualTaxFacts = plan.retirementActionAnnualTaxFacts
+    if (annualTaxFacts !== undefined) {
+      const records = annualTaxFacts.ownedNonRothIraAnnualFilingSourceRecords
+      const indexesByKey = new Map<string, number[]>()
+      const sourceClaimsByIdentifier = new Map<string, Array<{
+        path: PropertyKey[]
+      }>>()
+      records.forEach((record, index) => {
+        const key = ownedNonRothIraAnnualFilingSourceKey(record)
+        const keyIndexes = indexesByKey.get(key)
+        if (keyIndexes === undefined) indexesByKey.set(key, [index])
+        else keyIndexes.push(index)
+
+        const root = ['retirementActionAnnualTaxFacts', 'ownedNonRothIraAnnualFilingSourceRecords', index] as const
+        planOwnedNonRothIraAnnualFilingSourceIdentifierClaims(record).forEach((claim) => {
+          const path = [...root, ...claim.path]
+          const matches = sourceClaimsByIdentifier.get(claim.value)
+          if (matches === undefined) {
+            sourceClaimsByIdentifier.set(claim.value, [{ path }])
+          } else matches.push({ path })
+        })
+        if (record.planId !== plan.id) {
+          ctx.addIssue({
+            code: 'custom',
+            path: [...root, 'planId'],
+            message: 'annual filing source record must bind the containing Plan id',
+          })
+        }
+        const ownerIndexes = personIndexesById.get(record.ownerPersonId)
+        if (ownerIndexes?.length !== 1) {
+          ctx.addIssue({
+            code: 'custom',
+            path: [...root, 'ownerPersonId'],
+            message: 'annual filing source owner must resolve uniquely in the Plan',
+          })
+        }
+        const expectedPool = plan.accounts
+          .filter((account) =>
+            account.type === 'traditional' &&
+            account.kind === 'ira' &&
+            account.inherited === undefined &&
+            account.ownerPersonId === record.ownerPersonId)
+          .map((account) => account.id)
+          .sort()
+        const reviewedPool = [...record.reviewedSourceAccountIds].sort()
+        if (
+          expectedPool.length === 0 ||
+          expectedPool.length !== reviewedPool.length ||
+          expectedPool.some((accountId, poolIndex) => accountId !== reviewedPool[poolIndex])
+        ) {
+          ctx.addIssue({
+            code: 'custom',
+            path: [...root, 'reviewedSourceAccountIds'],
+            message: 'annual filing source must review the exact current owner-wide IRA pool',
+          })
+        }
+      })
+      for (const indexes of indexesByKey.values()) {
+        if (indexes.length < 2) continue
+        indexes.forEach((index) => ctx.addIssue({
+          code: 'custom',
+          path: ['retirementActionAnnualTaxFacts', 'ownedNonRothIraAnnualFilingSourceRecords', index],
+          message: 'duplicate annual filing source Plan, owner, and tax year',
+        }))
+      }
+      const reservedIdentifiers = retirementActionPlanReservedIdentifiers(plan)
+      for (const [identifier, claims] of sourceClaimsByIdentifier) {
+        if (claims.length < 2 && !reservedIdentifiers.has(identifier)) continue
+        claims.forEach((claim) => ctx.addIssue({
+          code: 'custom',
+          path: claim.path,
+          message: reservedIdentifiers.has(identifier)
+            ? `annual filing source identifier "${identifier}" collides with the Plan identity namespace`
+            : `duplicate annual filing source identifier "${identifier}"`,
+        }))
+      }
+    }
 
     const eligibilityFacts = plan.retirementActionEligibilityFacts
     if (eligibilityFacts !== undefined) {
@@ -2182,6 +2270,71 @@ export const planSchema = z
     })
   })
 export type Plan = z.infer<typeof planSchema>
+
+/** Stable identifiers already reserved by a Plan, excluding annual source facts. */
+export function retirementActionPlanReservedIdentifiers(
+  plan: Readonly<Plan>,
+): ReadonlySet<string> {
+  const identifiers = new Set<string>([plan.id])
+  plan.household.people.forEach((person) => identifiers.add(person.id))
+  plan.accounts.forEach((account) => identifiers.add(account.id))
+  plan.insurance.forEach((policy) => identifiers.add(policy.id))
+  plan.careEvents.forEach((careEvent) => identifiers.add(careEvent.id))
+  plan.incomeFloor?.ladders.forEach((ladder) => identifiers.add(ladder.id))
+  plan.incomes.forEach((income) => {
+    identifiers.add(income.id)
+    if (income.type === 'socialSecurity') {
+      income.formerSpouses?.forEach((formerSpouse) => identifiers.add(formerSpouse.id))
+    }
+  })
+  plan.expenses.oneTimeGoals.forEach((goal) => identifiers.add(goal.id))
+  plan.strategies.retirementActions.forEach((action) => {
+    identifiers.add(action.actionId)
+    if (action.kind === 'qcd') identifiers.add(action.charity.designationId)
+    const withAllocations = action as unknown as {
+      allocations?: readonly { allocationId: string }[]
+      allocation?: { allocationId: string }
+    }
+    const allocations = withAllocations.allocations ??
+      (withAllocations.allocation === undefined ? [] : [withAllocations.allocation])
+    allocations.forEach((allocation) => identifiers.add(allocation.allocationId))
+  })
+  const eligibility = plan.retirementActionEligibilityFacts
+  eligibility?.iraClassifications.forEach((record) => identifiers.add(record.evidenceId))
+  eligibility?.sepSimpleActivities.forEach((record) => identifiers.add(record.evidenceId))
+  eligibility?.deductibleIraContributions.forEach((record) => identifiers.add(record.evidenceId))
+  plan.scenarios.forEach((scenario) => identifiers.add(scenario.id))
+  return identifiers
+}
+
+/** Discard plan-bound authoritative sources when the containing Plan is re-keyed. */
+export function discardRetirementActionAnnualTaxFacts(plan: Plan): void {
+  delete plan.retirementActionAnnualTaxFacts
+}
+
+/**
+ * Remove complete owner/year records after an edit changes an owner's reviewed
+ * IRA pool. Nested source facts are never selectively rewritten.
+ */
+export function clearRetirementActionAnnualTaxFactsForOwners(
+  plan: Plan,
+  ownerPersonIds: Iterable<string>,
+): void {
+  const facts = plan.retirementActionAnnualTaxFacts
+  if (facts === undefined) return
+  const affected = new Set(ownerPersonIds)
+  if (affected.size === 0) return
+  const retained = facts.ownedNonRothIraAnnualFilingSourceRecords.filter(
+    (record) => !affected.has(record.ownerPersonId),
+  )
+  if (retained.length === 0) {
+    delete plan.retirementActionAnnualTaxFacts
+  } else if (retained.length !== facts.ownedNonRothIraAnnualFilingSourceRecords.length) {
+    plan.retirementActionAnnualTaxFacts = {
+      ownedNonRothIraAnnualFilingSourceRecords: retained,
+    }
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Parsing + factory

@@ -361,6 +361,26 @@ export {
   type PlanOwnedNonRothIraAnnualExecutionNoPositiveMovementResult,
 } from './ownedNonRothIraAnnualExecution.js'
 export {
+  buildPlanOwnedNonRothIraAnnualFilingEvidence,
+  planOwnedNonRothIraAnnualFilingSourceRecordSchema,
+  type BuildPlanOwnedNonRothIraAnnualFilingEvidenceInput,
+  type BuildPlanOwnedNonRothIraAnnualFilingEvidenceResult,
+  type PlanOwnedNonRothIraAnnualFilingEvidenceBlockedResult,
+  type PlanOwnedNonRothIraAnnualFilingEvidenceBuiltResult,
+  type PlanOwnedNonRothIraAnnualFilingEvidenceIssue,
+  type PlanOwnedNonRothIraAnnualFilingEvidenceIssueKind,
+  type PlanOwnedNonRothIraAnnualFilingSourceRecord,
+} from './ownedNonRothIraAnnualFilingEvidence.js'
+export {
+  resolvePlanOwnedNonRothIraAnnualFilingSources,
+  type OwnedNonRothIraAnnualFilingSourceOrigin,
+  type OwnedNonRothIraAnnualFilingSourceResolutionIssue,
+  type OwnedNonRothIraAnnualFilingSourceResolutionIssueKind,
+  type ResolvedPlanOwnedNonRothIraAnnualFilingSource,
+  type ResolvePlanOwnedNonRothIraAnnualFilingSourcesInput,
+  type ResolvePlanOwnedNonRothIraAnnualFilingSourcesResult,
+} from './ownedNonRothIraAnnualFilingSourceResolver.js'
+export {
   buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput,
   type BuildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput,
   type BuildPlanOwnedNonRothIraAnnualPostCandidateClassificationInputResult,

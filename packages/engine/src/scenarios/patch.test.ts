@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, parsePlan, type Plan } from '../model/plan.js'
-import { setAcaYearContract } from '../testing/planFixtures.js'
+import {
+  ownedNonRothIraAnnualFilingSourceRecord,
+  setAcaYearContract,
+  traditionalAccount,
+} from '../testing/planFixtures.js'
 import { isScenarioPatchDocument, parseScenarioPatch, type ScenarioPatchMetadata } from './contract.js'
 import {
   applyLegacyScenarioPatch,
@@ -516,6 +520,91 @@ describe('canonical scenario patch documents', () => {
     }
   })
 
+  it('protects authoritative annual tax facts from canonical and legacy scenario patches', () => {
+    const base = plan()
+    base.accounts.push(traditionalAccount('ira-1', 10_000, 'person-1'))
+    base.retirementActionAnnualTaxFacts = {
+      ownedNonRothIraAnnualFilingSourceRecords: [
+        ownedNonRothIraAnnualFilingSourceRecord(
+          base,
+          'person-1',
+          ['ira-1'],
+        ),
+      ],
+    }
+
+    const edited = clonePlan(base)
+    edited.retirementActionAnnualTaxFacts!
+      .ownedNonRothIraAnnualFilingSourceRecords[0]!.openingBasis
+      .openingBasisAmount = 100 as never
+    const canonical = createScenarioPatch(base, edited, metadata)
+    expect(canonical.ok).toBe(false)
+    if (!canonical.ok) {
+      expect(canonical.issues).toContain(
+        'protected field "retirementActionAnnualTaxFacts" differs',
+      )
+    }
+
+    const replaced = applyLegacyScenarioPatch(base, {
+      retirementActionAnnualTaxFacts: {
+        ownedNonRothIraAnnualFilingSourceRecords: [],
+      },
+    })
+    expect(replaced.ok).toBe(true)
+    if (replaced.ok) {
+      expect(replaced.plan.retirementActionAnnualTaxFacts).toEqual(
+        base.retirementActionAnnualTaxFacts,
+      )
+    }
+
+    const injected = applyLegacyScenarioPatch(plan(), {
+      retirementActionAnnualTaxFacts: base.retirementActionAnnualTaxFacts,
+    })
+    expect(injected.ok).toBe(true)
+    if (injected.ok) {
+      expect(injected.plan).not.toHaveProperty('retirementActionAnnualTaxFacts')
+    }
+  })
+
+  it('reports every protected fact root invalidated by one structural scenario edit', () => {
+    const base = plan()
+    base.accounts.push(traditionalAccount('ira-1', 10_000, 'person-1'))
+    const edited = clonePlan(base)
+    const editedIra = edited.accounts.find((account) => account.id === 'ira-1')
+    if (editedIra?.type !== 'traditional') throw new Error('expected traditional IRA')
+    editedIra.kind = 'employer'
+    const patch = build(base, edited)
+
+    base.retirementActionEligibilityFacts = {
+      iraClassifications: [{
+        evidenceId: 'classification-1',
+        provenance: { source: 'manual' },
+        sourceAccountId: 'ira-1',
+        subtype: 'traditional',
+      }],
+      sepSimpleActivities: [],
+      deductibleIraContributions: [],
+    }
+    base.retirementActionAnnualTaxFacts = {
+      ownedNonRothIraAnnualFilingSourceRecords: [
+        ownedNonRothIraAnnualFilingSourceRecord(
+          base,
+          'person-1',
+          ['ira-1'],
+        ),
+      ],
+    }
+
+    const applied = applyScenarioPatchDocument(base, patch)
+    expect(applied.ok).toBe(false)
+    if (!applied.ok) {
+      expect(applied.conflicts.map((conflict) => conflict.path).sort()).toEqual([
+        '/retirementActionAnnualTaxFacts',
+        '/retirementActionEligibilityFacts',
+      ])
+    }
+  })
+
   it('reports a protected-fact conflict when an older scenario invalidates later eligibility evidence', () => {
     const base = plan()
     base.accounts.push({
@@ -672,7 +761,7 @@ describe('scenario patch validation and hostile paths', () => {
     version: 1,
     base: {
       planId: 'plan-1',
-      planSchemaVersion: 3,
+      planSchemaVersion: 4,
       snapshotHash: 'fnv1a64:0000000000000000',
     },
     title: 'Hostile path',

@@ -36,7 +36,7 @@ const pkgDir = resolve(scriptDir, '..')
 // This guard fails generation loudly if the model's version moves ahead of those
 // static paths, so a future bump can't silently overwrite an older artifact (the sync
 // test would otherwise compare the overwritten file against the new object and pass).
-const EXPECTED_VERSION = 3
+const EXPECTED_VERSION = 4
 
 const generatorUrl = pathToFileURL(join(pkgDir, 'dist', 'schema', 'generate.js')).href
 let generatePlanJsonSchema

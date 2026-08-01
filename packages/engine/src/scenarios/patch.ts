@@ -33,6 +33,11 @@ const editableRoots = [
   'assumptions',
 ] as const
 
+const protectedFactFields = [
+  'retirementActionEligibilityFacts',
+  'retirementActionAnnualTaxFacts',
+] as const
+
 const protectedFields = [
   'schemaVersion',
   'id',
@@ -41,7 +46,7 @@ const protectedFields = [
   'exampleSourceId',
   'createdAtIso',
   'updatedAtIso',
-  'retirementActionEligibilityFacts',
+  ...protectedFactFields,
   'scenarios',
 ] as const
 
@@ -284,6 +289,11 @@ export function applyLegacyScenarioPatch(plan: Plan, patch: LegacyScenarioPatch)
   } else {
     merged['retirementActionEligibilityFacts'] = cloneJson(plan.retirementActionEligibilityFacts)
   }
+  if (plan.retirementActionAnnualTaxFacts === undefined) {
+    Reflect.deleteProperty(merged, 'retirementActionAnnualTaxFacts')
+  } else {
+    merged['retirementActionAnnualTaxFacts'] = cloneJson(plan.retirementActionAnnualTaxFacts)
+  }
   merged['scenarios'] = plan.scenarios
   return parsePlan(merged)
 }
@@ -414,22 +424,34 @@ function mutateOperations(
   }
   const parsedPlan = parsePlan(draft)
   if (!parsedPlan.ok) {
-    if (ownValue(draft, 'retirementActionEligibilityFacts') !== undefined) {
-      const withoutEligibilityFacts = structuredClone(draft)
-      Reflect.deleteProperty(withoutEligibilityFacts, 'retirementActionEligibilityFacts')
-      if (parsePlan(withoutEligibilityFacts).ok) {
-        const message =
-          'scenario operations conflict with protected retirement-action eligibility facts'
+    const presentProtectedFacts = protectedFactFields.filter(
+      (field) => ownValue(draft, field) !== undefined,
+    )
+    if (presentProtectedFacts.length > 0) {
+      const withoutProtectedFacts = structuredClone(draft)
+      presentProtectedFacts.forEach((field) => {
+        Reflect.deleteProperty(withoutProtectedFacts, field)
+      })
+      if (parsePlan(withoutProtectedFacts).ok) {
+        const implicated = presentProtectedFacts.filter((field) =>
+          parsedPlan.issues.some((issue) =>
+            issue.startsWith(`${field}.`) || issue.startsWith(`${field}:`)),
+        )
+        const conflictsFor = implicated.length > 0 ? implicated : presentProtectedFacts
+        const conflicts = conflictsFor.map((field) => {
+          const message = field === 'retirementActionEligibilityFacts'
+            ? 'scenario operations conflict with protected retirement-action eligibility facts'
+            : 'scenario operations conflict with protected retirement-action annual tax facts'
+          return {
+            kind: 'value' as const,
+            path: `/${field}`,
+            message,
+          }
+        })
         return {
           ok: false,
-          issues: [message, ...parsedPlan.issues],
-          conflicts: [
-            {
-              kind: 'value',
-              path: '/retirementActionEligibilityFacts',
-              message,
-            },
-          ],
+          issues: [...conflicts.map((conflict) => conflict.message), ...parsedPlan.issues],
+          conflicts,
         }
       }
     }
