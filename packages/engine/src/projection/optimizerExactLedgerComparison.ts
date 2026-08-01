@@ -86,6 +86,52 @@ function quantize(value: unknown, signed: boolean): SafeMinorUnitInteger {
   return value < 0 ? -magnitude : magnitude
 }
 
+interface DecimalTerm {
+  readonly coefficient: bigint
+  readonly scale: number
+}
+
+function decimalTerm(value: number): DecimalTerm {
+  const match = /^(\d+)(?:\.(\d+))?(?:e([+-]?\d+))?$/i.exec(String(value))
+  if (match === null) {
+    throw new TypeError('Exact-ledger balance has no supported decimal spelling')
+  }
+  const fraction = match[2] ?? ''
+  return {
+    coefficient: BigInt(`${match[1]}${fraction}`),
+    scale: fraction.length - Number(match[3] ?? 0),
+  }
+}
+
+/**
+ * Sum nonnegative published dollar values as exact decimal spellings, then
+ * quantize the aggregate once. This avoids imposing JavaScript enumeration or
+ * floating-addition order on a necessary aggregate bound.
+ */
+function quantizeDecimalSum(values: readonly number[]): SafeMinorUnitInteger {
+  const terms = values.map(decimalTerm)
+  let scale = 0
+  for (const term of terms) scale = Math.max(scale, term.scale)
+  const coefficient = terms.reduce(
+    (sum, term) => sum + term.coefficient * 10n ** BigInt(scale - term.scale),
+    0n,
+  )
+  const centScale = scale - 2
+  let cents: bigint
+  if (centScale <= 0) {
+    cents = coefficient * 10n ** BigInt(-centScale)
+  } else {
+    const divisor = 10n ** BigInt(centScale)
+    const quotient = coefficient / divisor
+    const remainder = coefficient % divisor
+    cents = quotient + (remainder * 2n >= divisor ? 1n : 0n)
+  }
+  if (cents > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new TypeError('Exact-ledger aggregate balance exceeds the supported domain')
+  }
+  return Number(cents)
+}
+
 function ownDataProperty(value: unknown, key: string): unknown {
   if (value === null || typeof value !== 'object') {
     throw new TypeError('Exact-ledger source must be a data object')
@@ -114,7 +160,12 @@ function arrayDataValues(value: unknown): unknown[] {
   return values
 }
 
-function balanceSnapshot(value: unknown): ReadonlyMap<string, SafeMinorUnitInteger> {
+interface BalanceSnapshot {
+  readonly minorUnits: ReadonlyMap<string, SafeMinorUnitInteger>
+  readonly rawDollars: ReadonlyMap<string, number>
+}
+
+function balanceSnapshot(value: unknown): BalanceSnapshot {
   const balances = value
   if (balances === null || typeof balances !== 'object' || Array.isArray(balances)) {
     throw new TypeError('Every exact-ledger year must publish a balance map')
@@ -124,6 +175,7 @@ function balanceSnapshot(value: unknown): ReadonlyMap<string, SafeMinorUnitInteg
     throw new TypeError('Exact-ledger balances must be a plain record')
   }
   const snapshot = new Map<string, SafeMinorUnitInteger>()
+  const rawDollars = new Map<string, number>()
   for (const key of Reflect.ownKeys(balances)) {
     if (typeof key !== 'string' || key.length === 0) {
       throw new TypeError('Exact-ledger balance keys must be nonempty Plan account IDs')
@@ -136,8 +188,9 @@ function balanceSnapshot(value: unknown): ReadonlyMap<string, SafeMinorUnitInteg
       throw new TypeError('Exact-ledger balances must be enumerable data properties')
     }
     snapshot.set(key, quantize(descriptor.value, false))
+    rawDollars.set(key, descriptor.value)
   }
-  return snapshot
+  return { minorUnits: snapshot, rawDollars }
 }
 
 function sameNumbers(left: readonly number[], right: readonly number[]): boolean {
@@ -147,6 +200,7 @@ function sameNumbers(left: readonly number[], right: readonly number[]): boolean
 interface ExpectedPublishedBalanceIds {
   readonly all: readonly string[]
   readonly investable: readonly string[]
+  readonly ownedNonRothIras: readonly string[]
 }
 
 function expectedPublishedBalanceIds(
@@ -154,11 +208,16 @@ function expectedPublishedBalanceIds(
 ): ExpectedPublishedBalanceIds {
   const ids: string[] = []
   const investableIds: string[] = []
+  const ownedNonRothIraIds: string[] = []
   for (const account of plan.accounts) {
     if (account.type === 'pension' || account.type === 'annuity') continue
     ids.push(account.id)
     if (account.type !== 'property' && account.type !== 'debt') {
       investableIds.push(account.id)
+    }
+    if (account.type === 'traditional' && account.kind === 'ira' &&
+        account.inherited === undefined) {
+      ownedNonRothIraIds.push(account.id)
     }
   }
   for (const policy of plan.insurance) {
@@ -171,6 +230,7 @@ function expectedPublishedBalanceIds(
   return {
     all: ids.sort(compareUtf16CodeUnits),
     investable: investableIds.sort(compareUtf16CodeUnits),
+    ownedNonRothIras: ownedNonRothIraIds.sort(compareUtf16CodeUnits),
   }
 }
 
@@ -181,6 +241,7 @@ interface YearSnapshot {
   readonly investableTotal: SafeMinorUnitInteger
   readonly netWorth: SafeMinorUnitInteger
   readonly balances: ReadonlyMap<string, SafeMinorUnitInteger>
+  readonly rawBalances: ReadonlyMap<string, number>
 }
 
 interface ResultSnapshot {
@@ -209,15 +270,16 @@ function sourceSnapshot(result: Readonly<ProjectionResult>): ResultSnapshot {
         (taxYears.length > 0 && taxYear !== prior + 1)) {
       throw new TypeError('Exact-ledger years must be unique, contiguous, and strictly increasing')
     }
-    const balances = balanceSnapshot(ownDataProperty(rawYear, 'balances'))
-    for (const accountId of balances.keys()) accountIds.add(accountId)
+    const balanceValues = balanceSnapshot(ownDataProperty(rawYear, 'balances'))
+    for (const accountId of balanceValues.minorUnits.keys()) accountIds.add(accountId)
     years.set(taxYear, {
       taxYear,
       tax: quantize(ownDataProperty(rawYear, 'tax'), false),
       penalties: quantize(ownDataProperty(rawYear, 'penalties'), false),
       investableTotal: quantize(ownDataProperty(rawYear, 'investableTotal'), false),
       netWorth: quantize(ownDataProperty(rawYear, 'netWorth'), true),
-      balances,
+      balances: balanceValues.minorUnits,
+      rawBalances: balanceValues.rawDollars,
     })
     taxYears.push(taxYear)
     prior = taxYear
@@ -236,8 +298,7 @@ function sourceSnapshot(result: Readonly<ProjectionResult>): ResultSnapshot {
   )
   const finalYear = years.get(endYear)!
   if (endingInvestable !== finalYear.investableTotal ||
-      endingNetWorth !== finalYear.netWorth ||
-      endingNondeductibleIraBasis > endingInvestable) {
+      endingNetWorth !== finalYear.netWorth) {
     throw new TypeError('Exact-ledger ending totals violate projection invariants')
   }
   return {
@@ -306,6 +367,18 @@ export function compareOptimizerExactLedgerResults(
         aggregateBalances.get(accountId)! > aggregateYear.investableTotal ||
         allocatedBalances.get(accountId)! > allocatedYear.investableTotal)) return null
     }
+    const aggregateEndingYear = aggregate.years.get(aggregate.horizon.endYear)!
+    const allocatedEndingYear = allocated.years.get(allocated.horizon.endYear)!
+    const aggregateEndingIraBalance = quantizeDecimalSum(
+      expectedAccountIds.ownedNonRothIras.map((accountId) =>
+        aggregateEndingYear.rawBalances.get(accountId)!),
+    )
+    const allocatedEndingIraBalance = quantizeDecimalSum(
+      expectedAccountIds.ownedNonRothIras.map((accountId) =>
+        allocatedEndingYear.rawBalances.get(accountId)!),
+    )
+    if (aggregate.endingNondeductibleIraBasis > aggregateEndingIraBalance ||
+        allocated.endingNondeductibleIraBasis > allocatedEndingIraBalance) return null
 
     const keys: OptimizerExactLedgerComparisonKey[] = []
     for (const taxYear of aggregate.horizon.taxYears) {

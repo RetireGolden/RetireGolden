@@ -292,15 +292,65 @@ describe('compareOptimizerExactLedgerResults', () => {
     expect(compareOptimizerExactLedgerResults(aggregate, structuredClone(aggregate))).toBeNull()
   })
 
-  it('rejects ending IRA basis above ending investable on both ledgers', () => {
+  it('rejects ending IRA basis above the published owned-IRA balance on both ledgers', () => {
     const inconsistent = projection(
       [{ year: 2030, balances: { traditional: 100 } }],
       { endingNondeductibleIraBasis: 100.01 },
     )
-    expect(compareOptimizerExactLedgerResults(
+    const plan = comparisonPlan(['traditional'])
+    plan.accounts = [{
+      type: 'traditional',
+      kind: 'ira',
+      id: 'traditional',
+      name: 'Traditional IRA',
+      ownerPersonId: 'person-1',
+      annualReturnPct: 0,
+      balance: 100,
+      annualContribution: 0,
+    }]
+    expect(compareOptimizerExactLedgerResultsWithPlan(
       inconsistent,
       structuredClone(inconsistent),
+      plan,
     )).toBeNull()
+  })
+
+  it('bounds ending IRA basis with one exact-decimal sum, independent of float order', () => {
+    const endingBasis = 40_000_000_000_000.01
+    const result = projection(
+      [{
+        year: 2030,
+        investableTotal: 40_000_000_000_000,
+        netWorth: 40_000_000_000_000,
+        balances: {
+          large: 40_000_000_000_000,
+          smallA: 0.003,
+          smallB: 0.003,
+        },
+      }],
+      {
+        endingInvestable: 40_000_000_000_000,
+        endingNetWorth: 40_000_000_000_000,
+        endingNondeductibleIraBasis: endingBasis,
+      },
+    )
+    const plan = comparisonPlan(['large', 'smallA', 'smallB'])
+    plan.accounts = ['large', 'smallA', 'smallB'].map((id, index) => ({
+      type: 'traditional',
+      kind: 'ira',
+      id,
+      name: id,
+      ownerPersonId: index === 0 ? 'person-1' : 'person-2',
+      annualReturnPct: 0,
+      balance: 0,
+      annualContribution: 0,
+    }))
+
+    expect(compareOptimizerExactLedgerResultsWithPlan(
+      result,
+      structuredClone(result),
+      plan,
+    )).not.toBeNull()
   })
 
   it('uses raw UTF-16 ordering and is invariant to balance-map insertion order', () => {
