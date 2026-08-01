@@ -158,6 +158,20 @@ export interface OptimizerYearProbe {
   exogenousCash: number
   /** Forced RMD this year in the baseline (0 when not age-eligible). */
   rmd: number
+  /** Taxable part of `rmd` after exact owned-IRA basis character. */
+  rmdTaxable?: number
+  /**
+   * Gross incumbent owner-traditional distributions (forced plus
+   * discretionary). Settlement uses this to distinguish an exact realized-flow
+   * fraction from a no-flow marginal balance fraction.
+   */
+  incumbentTraditionalDistribution: number
+  /**
+   * Incumbent taxable share of gross owner-traditional withdrawals. The LP
+   * applies this exact-ledger linearization to both forced and discretionary
+   * dollars; absent preserves the historical all-taxable assumption.
+   */
+  traditionalWithdrawalTaxableFraction?: number
   /** Start-of-year owner-convertible traditional balance, used to recover the owner RMD divisor ratio. */
   startTraditional: number
   /** Forced inherited-traditional distribution this year in the baseline. */
@@ -230,6 +244,11 @@ export interface OptimizerYearProbe {
   acaCliffState: YearAcaResult['cliffState'] | null
   /** Conversion already executed in the probe schedule for absolute-bound reconstruction. */
   incumbentRothConversion: number
+  /**
+   * Incumbent taxable share of gross Roth conversions after exact line-8 basis
+   * character; absent preserves the historical all-taxable assumption.
+   */
+  rothConversionTaxableFraction?: number
   /**
    * True when the ledger priced this premium year's IRMAA under an SSA-44
    * redetermination (the two years after a qualifying life-changing event, see

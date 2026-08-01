@@ -66,6 +66,19 @@ export type RunOwnedNonRothIraAnnualSettlementAttempt = (
   context: Readonly<OwnedNonRothIraAnnualSettlementAttemptContext>,
 ) => readonly Readonly<YearResult>[]
 
+export interface OwnedNonRothIraAnnualAttemptStateEvidence {
+  readonly status: 'ownedNonRothIraAnnualAttemptStateCaptured'
+  readonly planId: PlanId
+  readonly taxYear: number
+  readonly attemptNumber: number
+  readonly state: ReturnType<typeof snapshotInvariantState>
+}
+
+export type CaptureOwnedNonRothIraAnnualAttemptStateEvidence = (
+  context: Readonly<OwnedNonRothIraAnnualSettlementAttemptContext>,
+  year: Readonly<YearResult>,
+) => Readonly<OwnedNonRothIraAnnualAttemptStateEvidence>
+
 export interface RunOwnedNonRothIraAnnualSettlementInput {
   readonly state: SimulatorAnnualPassStateBindings
   readonly plan: Plan
@@ -73,6 +86,13 @@ export interface RunOwnedNonRothIraAnnualSettlementInput {
   readonly initialAssumedEffects:
     readonly Readonly<OwnedNonRothIraAnnualSettlementEffect>[]
   readonly runAttempt: RunOwnedNonRothIraAnnualSettlementAttempt
+  /**
+   * Optional integration binding for the explicitly named annual-tail state
+   * that is not independently represented by YearResult balances/journals.
+   * Without it every such field must remain checkpoint-equal.
+   */
+  readonly captureAttemptStateEvidence?:
+    CaptureOwnedNonRothIraAnnualAttemptStateEvidence
 }
 
 export interface OwnedNonRothIraCommittedPlanningCarryforward {
@@ -253,12 +273,48 @@ function snapshotNumberMap<Value>(
     .sort(([left], [right]) => compareUtf16CodeUnits(String(left), String(right)))
 }
 
+type SimulatorAnnualPassEvidenceValueKey = Exclude<
+  typeof SIMULATOR_ANNUAL_PASS_VALUE_BINDING_KEYS[number],
+  'nextRetirementRuntimeMutationOrdinal'
+>
+
+type SimulatorAnnualPassValueSnapshot = Readonly<{
+  [Key in SimulatorAnnualPassEvidenceValueKey]:
+    ReturnType<SimulatorAnnualPassStateBindings[Key]['read']>
+}>
+
+function snapshotAnnualPassValues(
+  state: Readonly<SimulatorAnnualPassStateBindings>,
+): SimulatorAnnualPassValueSnapshot {
+  return Object.fromEntries(
+    SIMULATOR_ANNUAL_PASS_VALUE_BINDING_KEYS
+      .filter((key): key is SimulatorAnnualPassEvidenceValueKey =>
+        key !== 'nextRetirementRuntimeMutationOrdinal')
+      .map((key) => [key, state[key].read()]),
+  ) as SimulatorAnnualPassValueSnapshot
+}
+
 function snapshotInvariantState(
   state: Readonly<SimulatorAnnualPassStateBindings>,
-): unknown {
-  // This private foundation has evidence only for runtime journals, their
-  // ordinal, and end balances. Every other transaction-owned value stays
-  // checkpoint-equal until a later integration supplies an explicit binding.
+): Readonly<{
+  balanceCostBasis: readonly (readonly [string, number])[]
+  iraProRata: readonly [string, unknown][]
+  iraBasisByOwner: readonly [string, unknown][]
+  rothBasis: readonly [string, unknown][]
+  propertyValues: readonly [string, unknown][]
+  hecmStates: readonly [string, unknown][]
+  insuranceCashValues: readonly [string, unknown][]
+  allocationTrack: readonly [string, unknown][]
+  seppAmortAmount: readonly [string, unknown][]
+  magiHistory: readonly [number, unknown][]
+  warnings: readonly string[]
+  valueBindings: SimulatorAnnualPassValueSnapshot
+  expenses: unknown
+}> {
+  // Runtime journals, ordinal, and end balances have independent YearResult
+  // bindings. Every other transaction-owned field is named here and must stay
+  // checkpoint-equal unless the integration supplies a complete attempt-bound
+  // snapshot that exactly matches this shape.
   return {
     balanceCostBasis: state.balances
       .map((record) => [record.account.id, record.costBasis] as const)
@@ -273,19 +329,24 @@ function snapshotInvariantState(
     seppAmortAmount: snapshotStringMap(state.seppAmortAmount),
     magiHistory: snapshotNumberMap(state.magiHistory),
     warnings: [...state.warnings].sort(compareUtf16CodeUnits),
-    unassignedCash: state.unassignedCash.read(),
-    priorYearPortfolioReturnPct: state.priorYearPortfolioReturnPct.read(),
-    capitalLossPool: state.capitalLossPool.read(),
-    hsaReimbursablePool: state.hsaReimbursablePool.read(),
-    depletionYear: state.depletionYear.read(),
-    conversionNontaxable: state.conversionNontaxable.read(),
-    healthcare: state.healthcare.read(),
-    qualifiedMedicalThisYear: state.qualifiedMedicalThisYear.read(),
-    hsaQualifiedCap: state.hsaQualifiedCap.read(),
-    requiredSpendingBase: state.requiredSpendingBase.read(),
-    targetSpendingBase: state.targetSpendingBase.read(),
+    valueBindings: snapshotAnnualPassValues(state),
     expenses: structuredClone(state.expenses),
   }
+}
+
+export function captureOwnedNonRothIraAnnualAttemptStateEvidence(input: {
+  readonly state: Readonly<SimulatorAnnualPassStateBindings>
+  readonly planId: PlanId
+  readonly taxYear: number
+  readonly attemptNumber: number
+}): Readonly<OwnedNonRothIraAnnualAttemptStateEvidence> {
+  return deepFreeze({
+    status: 'ownedNonRothIraAnnualAttemptStateCaptured' as const,
+    planId: input.planId,
+    taxYear: input.taxYear,
+    attemptNumber: input.attemptNumber,
+    state: snapshotInvariantState(input.state),
+  })
 }
 
 function captureAttemptState(
@@ -343,11 +404,23 @@ function attemptStateMatchesYear(
   year: Readonly<YearResult>,
   stable: Readonly<OwnedNonRothIraAnnualSettlementStableContext>,
   plan: Readonly<Plan>,
+  attemptNumber: number,
+  stateEvidence:
+    Readonly<OwnedNonRothIraAnnualAttemptStateEvidence> | null,
 ): boolean {
   const occurrenceSource = year.retirementRuntimeSource
   const applicationSource = year.retirementRuntimeApplicationSource
+  const currentInvariantState = snapshotInvariantState(state)
+  const invariantStateBound = stateEvidence === null
+    ? same(checkpoint.invariantState, currentInvariantState)
+    : stateEvidence.status ===
+        'ownedNonRothIraAnnualAttemptStateCaptured' &&
+      stateEvidence.planId === stable.planId &&
+      stateEvidence.taxYear === stable.projectionStartTaxYear &&
+      stateEvidence.attemptNumber === attemptNumber &&
+      same(stateEvidence.state, currentInvariantState)
   if (!attemptBindingReferencesMatch(checkpoint, state) ||
-      !same(checkpoint.invariantState, snapshotInvariantState(state)) ||
+      !invariantStateBound ||
       year.year !== stable.projectionStartTaxYear ||
       occurrenceSource === undefined ||
       applicationSource === undefined ||
@@ -695,6 +768,10 @@ export function runOwnedNonRothIraAnnualSettlementAttempts(
     ): Readonly<SettlementProbeInput> => {
       const checkpoint = captureAttemptState(input.state)
       const years = input.runAttempt(context)
+      const stateEvidence = Array.isArray(years) && years.length === 1 &&
+          input.captureAttemptStateEvidence !== undefined
+        ? input.captureAttemptStateEvidence(context, years[0]!)
+        : null
       const attemptStateBound = Array.isArray(years) && years.length === 1 &&
         attemptStateMatchesYear(
           checkpoint,
@@ -702,6 +779,8 @@ export function runOwnedNonRothIraAnnualSettlementAttempts(
           years[0]!,
           stable,
           plan,
+          context.attemptNumber,
+          stateEvidence,
         )
       const replay = replayOwnedNonRothIraContiguousYears(
         plan,

@@ -46,6 +46,54 @@ function year(over: Partial<OptimizerYear> = {}): OptimizerYear {
 }
 
 describe('optimizer model builder', () => {
+  it('prices exact-ledger IRA character in every ordinary-income coefficient', () => {
+    const input: OptimizerInput = {
+      years: [year({
+        traditionalWithdrawalTaxableFraction: 0.75,
+        rothConversionTaxableFraction: 0.5,
+        acaMagiMax: 5_000,
+      })],
+      openingTrad: 100_000,
+      openingInheritedTrad: 0,
+      openingOther: 0,
+      liquidationRate: 0.5,
+    }
+
+    const lp = buildOptimizerModel(input).lp
+
+    expect(lp).toContain(
+      ' tifloor0: + 1 ti0 - 0.5 conv0 - 0.75 wt0 - 1 wi0',
+    )
+    expect(lp).toContain(
+      ' acamagi0: + 0.5 conv0 + 0.75 wt0 + 1 wi0 <= 5000',
+    )
+  })
+
+  it.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+    'falls back to all-taxable coefficients for non-finite fraction %s',
+    (invalidFraction) => {
+      const lp = buildOptimizerModel({
+        years: [year({
+          traditionalWithdrawalTaxableFraction: invalidFraction,
+          rothConversionTaxableFraction: invalidFraction,
+          acaMagiMax: 5_000,
+        })],
+        openingTrad: 100_000,
+        openingInheritedTrad: 0,
+        openingOther: 0,
+        liquidationRate: 0.5,
+      }).lp
+
+      expect(lp).toContain(
+        ' tifloor0: + 1 ti0 - 1 conv0 - 1 wt0 - 1 wi0',
+      )
+      expect(lp).toContain(
+        ' acamagi0: + 1 conv0 + 1 wt0 + 1 wi0 <= 5000',
+      )
+      expect(lp).not.toMatch(/NaN|Infinity/)
+    },
+  )
+
   it('changes the raw compressed schedule when actionable ACA MAGI binds', async () => {
     const base: OptimizerInput = {
       years: [year()],

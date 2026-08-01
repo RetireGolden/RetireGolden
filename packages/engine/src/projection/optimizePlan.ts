@@ -275,7 +275,10 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
       rmdDivisor: p.rmd > 0 && p.startTraditional > 0 ? p.startTraditional / p.rmd : null,
       // Baseline forced RMD, so saturation skips (senior deduction) see the
       // year's true no-conversion MAGI, not just the non-withdrawal base.
-      baselineRmd: p.rmd,
+      baselineRmd: p.rmdTaxable ?? p.rmd,
+      traditionalWithdrawalTaxableFraction:
+        p.traditionalWithdrawalTaxableFraction,
+      rothConversionTaxableFraction: p.rothConversionTaxableFraction,
       inheritedDistribution: p.inheritedDistribution,
       inheritedDistributionDivisor:
         p.inheritedDistribution > 0 && p.startInheritedTraditional > 0

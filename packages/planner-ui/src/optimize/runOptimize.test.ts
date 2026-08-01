@@ -71,6 +71,8 @@ function ssPlan(): Plan {
 }
 
 describe('runOptimizeRequest', () => {
+  // This is a production-default search plus exact-ledger post-processing;
+  // coverage instrumentation can legitimately exceed Vitest's 5s default.
   it('solves a plan and returns exact-ledger post-processing (sync fallback)', async () => {
     const result = await runOptimizeRequest({ plan: plan(), startYear: 2026, liquidationRatePct: 25 })
     const { schedule, postProcessed } = result
@@ -97,7 +99,7 @@ describe('runOptimizeRequest', () => {
 
     // Claim-age co-optimization is opt-in; a plain request reports null.
     expect(result.claimAge).toBeNull()
-  })
+  }, 20_000)
 
   it('co-optimizes the SS claim age when requested and stays structured-clone safe', async () => {
     // Minimal per-run budgets: the claim grid re-runs the full optimize per
