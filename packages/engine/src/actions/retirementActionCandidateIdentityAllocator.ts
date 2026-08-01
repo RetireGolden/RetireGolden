@@ -2,6 +2,8 @@ import type {
   ActionProvenance,
   ConversionTaxFunding,
   OrdinaryWithdrawalRequest,
+  QcdCharityDesignation,
+  QualifiedCharitableDistributionRequest,
   RothConversionRequest,
   WithdrawalPurpose,
 } from './contract.js'
@@ -70,15 +72,28 @@ export interface RothConversionCandidateIdentityIntent
   taxFunding: ConversionTaxFunding
 }
 
+export interface QcdCandidateIdentityIntent {
+  kind: 'qcd'
+  year: number
+  executionDate: string
+  executionSequence: number
+  requestedAmount: PositiveUsdCents
+  donorPersonId: PersonId
+  provenance: ActionProvenance
+  sourceAllocation: RetirementActionCandidateSourceIntent
+  charity: QcdCharityDesignation
+}
+
 /**
  * Identity-bearing candidate input accepted by this narrow allocator.
  *
- * QCD, legacy aggregate strategies, account categories, withdrawal-order
- * labels, and aggregate conversion schedules deliberately have no arm here.
+ * Legacy aggregate strategies, account categories, withdrawal-order labels,
+ * and aggregate conversion/QCD schedules deliberately have no arm here.
  */
 export type RetirementActionCandidateIdentityIntent =
   | OrdinaryWithdrawalCandidateIdentityIntent
   | RothConversionCandidateIdentityIntent
+  | QcdCandidateIdentityIntent
 
 export type RetirementActionCandidateIdentityIssueKind =
   | 'invalidIntent'
@@ -109,7 +124,10 @@ export interface RetirementActionCandidateIdentityEvidence {
 
 export type AllocatedRetirementActionCandidateIdentity = Readonly<{
   status: 'allocated'
-  request: OrdinaryWithdrawalRequest | RothConversionRequest
+  request:
+    | OrdinaryWithdrawalRequest
+    | RothConversionRequest
+    | QualifiedCharitableDistributionRequest
   evidence: RetirementActionCandidateIdentityEvidence
 }>
 
@@ -323,6 +341,298 @@ function conversionDestinationIssue(
   return null
 }
 
+function qcdSourceIssue(
+  account: Account,
+  donorPersonId: PersonId,
+  sourceAccountId: AccountId,
+): RetirementActionCandidateIdentityIssue | null {
+  if (account.ownerPersonId === null || account.ownerPersonId !== donorPersonId) {
+    return issue(
+      account.ownerPersonId === null ? 'ambiguousIdentity' : 'ineligibleIdentity',
+      'sourceAllocation.sourceAccountId',
+      'The QCD source must be an individually owned IRA whose owner is the named donor.',
+      'qcd-source-owner-mismatch',
+      { personId: donorPersonId, accountId: sourceAccountId },
+    )
+  }
+  if (account.type !== 'traditional' || account.kind !== 'ira') {
+    return issue(
+      'ineligibleIdentity',
+      'sourceAllocation.sourceAccountId',
+      'The QCD source must be an eligible IRA rather than an employer plan or another account type.',
+      'qcd-source-not-ira',
+      { accountId: sourceAccountId },
+    )
+  }
+  if (account.inherited !== undefined) {
+    return issue(
+      'ineligibleIdentity',
+      'sourceAllocation.sourceAccountId',
+      'Beneficiary-held IRA tax-pool classification is outside the implementation-ready v1 QCD contract.',
+      'qcd-inherited-basis-unsupported',
+      { personId: donorPersonId, accountId: sourceAccountId },
+    )
+  }
+  return null
+}
+
+function allocateQcdCandidateIdentityUnchecked(
+  plan: Readonly<Plan>,
+  candidate: UnknownRecord,
+): RetirementActionCandidateIdentityAllocationResult {
+  const issues: RetirementActionCandidateIdentityIssue[] = []
+  const parsedPlanId = planIdSchema.safeParse(plan.id)
+  if (!parsedPlanId.success) {
+    issues.push(issue(
+      'missingIdentity',
+      'plan.id',
+      'The Plan requires a nonblank stable ID before candidate identities can be allocated.',
+      'required-facts-missing',
+    ))
+  }
+
+  const allowedKeys = new Set([
+    'kind',
+    'year',
+    'executionDate',
+    'executionSequence',
+    'requestedAmount',
+    'donorPersonId',
+    'provenance',
+    'sourceAllocation',
+    'charity',
+  ])
+  for (const key of Object.keys(candidate).sort(compareUtf16CodeUnits)) {
+    if (!allowedKeys.has(key)) {
+      issues.push(issue(
+        'invalidIntent',
+        key,
+        `Unexpected QCD candidate field "${key}" is not part of the explicit identity-allocation contract.`,
+        'required-facts-missing',
+      ))
+    }
+  }
+
+  const rawDonorPersonId = candidate['donorPersonId']
+  let donorPersonId: PersonId | null = null
+  if (!stableNonblank(rawDonorPersonId)) {
+    issues.push(issue(
+      'missingIdentity',
+      'donorPersonId',
+      'An explicit stable Plan donor person ID is required.',
+      'person-not-found',
+    ))
+  } else {
+    const matches = matchingPeople(plan, rawDonorPersonId)
+    if (matches.length === 0) {
+      issues.push(issue(
+        'missingIdentity',
+        'donorPersonId',
+        'The selected QCD donor ID does not exist in the Plan.',
+        'person-not-found',
+      ))
+    } else if (matches.length !== 1) {
+      issues.push(issue(
+        'ambiguousIdentity',
+        'donorPersonId',
+        'The selected QCD donor ID is duplicated in the Plan.',
+        'person-not-found',
+      ))
+    } else {
+      donorPersonId = personIdSchema.parse(rawDonorPersonId)
+    }
+  }
+
+  const requestedAmount = candidate['requestedAmount']
+  if (!exactPositiveCents(requestedAmount)) {
+    issues.push(issue(
+      'amountMismatch',
+      'requestedAmount',
+      'The requested QCD amount must be a positive safe-integer USD cent count.',
+      'allocation-total-mismatch',
+    ))
+  }
+
+  const source = record(candidate['sourceAllocation'])
+  let sourceAccountId: AccountId | null = null
+  let sourceAmount: PositiveUsdCents | null = null
+  if (source === null) {
+    issues.push(issue(
+      'missingIdentity',
+      'sourceAllocation',
+      'One explicit QCD source-account allocation is required.',
+      'source-account-not-found',
+    ))
+  } else {
+    for (const key of Object.keys(source).sort(compareUtf16CodeUnits)) {
+      if (key !== 'sourceAccountId' && key !== 'requestedAmount') {
+        issues.push(issue(
+          'invalidIntent',
+          `sourceAllocation.${key}`,
+          `Unexpected QCD source-allocation field "${key}" will not be overwritten or treated as identity evidence.`,
+          'required-facts-missing',
+        ))
+      }
+    }
+    if (!exactPositiveCents(source['requestedAmount'])) {
+      issues.push(issue(
+        'amountMismatch',
+        'sourceAllocation.requestedAmount',
+        'The QCD source amount must be a positive safe-integer USD cent count.',
+        'allocation-total-mismatch',
+      ))
+    } else {
+      sourceAmount = source['requestedAmount']
+      if (exactPositiveCents(requestedAmount) && sourceAmount !== requestedAmount) {
+        issues.push(issue(
+          'amountMismatch',
+          'sourceAllocation.requestedAmount',
+          'The QCD source-allocation cents must exactly equal the requested amount.',
+          'allocation-total-mismatch',
+        ))
+      }
+    }
+
+    const rawSourceAccountId = source['sourceAccountId']
+    if (!stableNonblank(rawSourceAccountId)) {
+      issues.push(issue(
+        'missingIdentity',
+        'sourceAllocation.sourceAccountId',
+        'An explicit stable Plan QCD source-account ID is required.',
+        'source-account-not-found',
+      ))
+    } else {
+      const matches = matchingAccounts(plan, rawSourceAccountId)
+      if (matches.length === 0) {
+        issues.push(issue(
+          'missingIdentity',
+          'sourceAllocation.sourceAccountId',
+          'The selected QCD source account ID does not exist in the Plan.',
+          'source-account-not-found',
+        ))
+      } else if (matches.length !== 1) {
+        issues.push(issue(
+          'ambiguousIdentity',
+          'sourceAllocation.sourceAccountId',
+          'The selected QCD source account ID is duplicated in the Plan.',
+          'source-account-not-found',
+        ))
+      } else {
+        sourceAccountId = accountIdSchema.parse(rawSourceAccountId)
+        if (donorPersonId !== null) {
+          const sourceIssue = qcdSourceIssue(
+            matches[0]!,
+            donorPersonId,
+            sourceAccountId,
+          )
+          if (sourceIssue !== null) issues.push(sourceIssue)
+        }
+      }
+    }
+  }
+
+  if (
+    issues.length > 0 ||
+    !parsedPlanId.success ||
+    donorPersonId === null ||
+    sourceAccountId === null ||
+    sourceAmount === null ||
+    !exactPositiveCents(requestedAmount)
+  ) {
+    return blocked(issues)
+  }
+
+  const identityFacts = {
+    planId: parsedPlanId.data,
+    kind: 'qcd',
+    year: candidate['year'],
+    executionDate: candidate['executionDate'] ?? null,
+    executionSequence: candidate['executionSequence'],
+    requestedAmount,
+    donorPersonId,
+    sourceAccountId,
+    charity: candidate['charity'],
+  }
+  let actionId: ReturnType<typeof actionIdSchema.parse>
+  let allocationId: ReturnType<typeof allocationIdSchema.parse>
+  try {
+    actionId = actionIdSchema.parse(deriveActionStructuralId(
+      'retirement-action-candidate',
+      [identityFacts],
+    ))
+    allocationId = allocationIdSchema.parse(deriveActionStructuralId(
+      'retirement-action-allocation',
+      [actionId, sourceAccountId, sourceAmount],
+    ))
+  } catch {
+    return blocked([issue(
+      'invalidIntent',
+      '$',
+      'QCD candidate facts are not losslessly serializable for stable identity.',
+      'required-facts-missing',
+    )])
+  }
+
+  const reserved = completePlanReservedIdentifiers(plan)
+  const collisionIssues: RetirementActionCandidateIdentityIssue[] = []
+  for (const claim of [
+    { field: 'actionId', value: actionId },
+    { field: 'allocationId', value: allocationId },
+  ]) {
+    if (reserved.has(claim.value)) {
+      collisionIssues.push(issue(
+        'generatedIdentityCollision',
+        claim.field,
+        `The deterministic ${claim.field} ${claim.value} is already reserved by this Plan; the allocator will not suffix or replace it.`,
+        null,
+      ))
+    } else {
+      reserved.add(claim.value)
+    }
+  }
+  if (collisionIssues.length > 0) return blocked(collisionIssues)
+
+  const parsed = retirementActionRequestSchema.safeParse({
+    actionId,
+    kind: 'qcd',
+    year: candidate['year'],
+    executionDate: candidate['executionDate'],
+    executionSequence: candidate['executionSequence'],
+    requestedAmount,
+    provenance: candidate['provenance'],
+    donorPersonId,
+    allocation: { allocationId, sourceAccountId, requestedAmount: sourceAmount },
+    charity: candidate['charity'],
+  })
+  if (!parsed.success || parsed.data.kind !== 'qcd') {
+    const detail = parsed.success
+      ? 'Candidate did not produce a QCD request.'
+      : parsed.error.issues
+        .map((entry) => `${entry.path.join('.') || '$'}: ${entry.message}`)
+        .join('; ')
+    return blocked([issue(
+      'invalidIntent',
+      '$',
+      detail,
+      'required-facts-missing',
+    )])
+  }
+
+  return {
+    status: 'allocated',
+    request: parsed.data,
+    evidence: {
+      policy: 'explicitStablePlanIdsOnly',
+      planId: parsedPlanId.data,
+      personId: donorPersonId,
+      sourceAccountIds: [sourceAccountId],
+      destinationRothAccountId: null,
+      sourceCanonicalOrder: 'utf16AccountId',
+      generatedAllocationOrder: 'utf16AllocationId',
+    },
+  }
+}
+
 /**
  * Materialize explicit stable Plan identities into an ordinary-withdrawal or
  * Roth-conversion request. This function never chooses identities from account
@@ -343,6 +653,9 @@ function allocateRetirementActionCandidateIdentityUnchecked(
       'required-facts-missing',
     )])
   }
+  if (candidate['kind'] === 'qcd') {
+    return allocateQcdCandidateIdentityUnchecked(plan, candidate)
+  }
 
   const issues: RetirementActionCandidateIdentityIssue[] = []
   const parsedPlanId = planIdSchema.safeParse(plan.id)
@@ -359,7 +672,7 @@ function allocateRetirementActionCandidateIdentityUnchecked(
     return blocked([issue(
       'invalidIntent',
       'kind',
-      'Only explicit ordinary-withdrawal and Roth-conversion candidates are supported; aggregate and QCD shapes are not allocated.',
+      'Only explicit ordinary-withdrawal, Roth-conversion, and QCD candidates are supported; aggregate shapes are not allocated.',
       'required-facts-missing',
     )])
   }
