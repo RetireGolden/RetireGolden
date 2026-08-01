@@ -141,14 +141,15 @@ describe('horizon and wages', () => {
       balance: 123,
       annualContribution: 0,
     }]
-    const result = simulatePlan(validate(plan), {
+    const validatedPlan = validate(plan)
+    const result = simulatePlan(validatedPlan, {
       startYear: 2026,
       taxCalculator: noTax,
     })
 
     expect(Object.hasOwn(result.years[0]!.balances, '__proto__')).toBe(true)
     expect(result.years[0]!.balances.__proto__).toBe(123)
-    expect(compareOptimizerExactLedgerResults(result, result, plan)
+    expect(compareOptimizerExactLedgerResults(result, result, validatedPlan)
       ?.evaluatedAccountIds).toContain('__proto__')
   })
 
