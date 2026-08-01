@@ -389,6 +389,42 @@ describe('compareOptimizerExactLedgerResults', () => {
     )).not.toBeNull()
   })
 
+  it('accepts the simulator Plan-order IRA aggregate when binary addition rounds up a cent', () => {
+    const first = 10_000_000_000_062.984
+    const second = 42.41
+    const simulatorAggregate = first + second
+    const result = projection(
+      [{
+        year: 2030,
+        investableTotal: simulatorAggregate,
+        netWorth: simulatorAggregate,
+        balances: { first, second },
+      }],
+      {
+        endingInvestable: simulatorAggregate,
+        endingNetWorth: simulatorAggregate,
+        endingNondeductibleIraBasis: simulatorAggregate,
+      },
+    )
+    const plan = comparisonPlan(['first', 'second'])
+    plan.accounts = ['first', 'second'].map((id) => ({
+      type: 'traditional',
+      kind: 'ira',
+      id,
+      name: id,
+      ownerPersonId: 'person-1',
+      annualReturnPct: 0,
+      balance: 0,
+      annualContribution: 0,
+    }))
+
+    expect(compareOptimizerExactLedgerResultsWithPlan(
+      result,
+      structuredClone(result),
+      plan,
+    )).not.toBeNull()
+  })
+
   it('uses raw UTF-16 ordering and is invariant to balance-map insertion order', () => {
     const aggregate = projection([{ year: 2030, balances: { 'ä': 1, z: 2, a: 3 } }])
     const allocated = projection([{ year: 2030, balances: { a: 3, z: 2, 'ä': 1 } }])

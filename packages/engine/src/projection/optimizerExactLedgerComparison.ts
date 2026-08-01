@@ -137,6 +137,19 @@ function quantizeDecimalSum(values: readonly number[]): SafeMinorUnitInteger {
   return Number(cents)
 }
 
+/**
+ * Bound the simulator's aggregate IRA basis without rejecting a valid result
+ * solely because binary addition rounded the Plan-order balance sum one cent
+ * above the exact-decimal sum. The exact sum remains order-independent; the
+ * second bound mirrors the simulator's own Plan-order aggregation.
+ */
+function ownedIraBalanceUpperBound(values: readonly number[]): SafeMinorUnitInteger {
+  const exact = quantizeDecimalSum(values)
+  if (exact === Number.MAX_SAFE_INTEGER) return exact
+  const simulatorOrder = quantize(values.reduce((sum, value) => sum + value, 0), false)
+  return Math.max(exact, simulatorOrder)
+}
+
 function ownDataProperty(value: unknown, key: string): unknown {
   if (value === null || typeof value !== 'object') {
     throw new TypeError('Exact-ledger source must be a data object')
@@ -235,7 +248,9 @@ function expectedPublishedBalanceIds(
   return {
     all: ids.sort(compareUtf16CodeUnits),
     investable: investableIds.sort(compareUtf16CodeUnits),
-    ownedNonRothIras: ownedNonRothIraIds.sort(compareUtf16CodeUnits),
+    // Preserve Plan order here because the simulator aggregates owner IRA
+    // balances in Plan order. Exact-decimal summation remains order-independent.
+    ownedNonRothIras: ownedNonRothIraIds,
   }
 }
 
@@ -374,11 +389,11 @@ export function compareOptimizerExactLedgerResults(
     }
     const aggregateEndingYear = aggregate.years.get(aggregate.horizon.endYear)!
     const allocatedEndingYear = allocated.years.get(allocated.horizon.endYear)!
-    const aggregateEndingIraBalance = quantizeDecimalSum(
+    const aggregateEndingIraBalance = ownedIraBalanceUpperBound(
       expectedAccountIds.ownedNonRothIras.map((accountId) =>
         aggregateEndingYear.rawBalances.get(accountId)!),
     )
-    const allocatedEndingIraBalance = quantizeDecimalSum(
+    const allocatedEndingIraBalance = ownedIraBalanceUpperBound(
       expectedAccountIds.ownedNonRothIras.map((accountId) =>
         allocatedEndingYear.rawBalances.get(accountId)!),
     )
