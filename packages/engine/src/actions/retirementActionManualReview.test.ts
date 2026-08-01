@@ -275,6 +275,31 @@ describe('manual retirement-action review and replacement', () => {
     },
   )
 
+  it('reports an invalid Plan ID on the non-mutating QCD manual-review path', () => {
+    const plan = basePlan()
+    plan.id = '   '
+    plan.strategies.retirementActions = [action({
+      actionId: 'qcd-target',
+      kind: 'legacyAggregateQcd',
+      year: 2030,
+      requestedAmount: 5_000,
+      legacyField: 'qcdAnnual',
+      provenance: { source: 'migration' },
+    })]
+
+    const result = review(plan, 'qcd-target')
+
+    expect(result).toMatchObject({
+      status: 'manualReviewRequired',
+      outcome: 'unsupported',
+      evidence: { planId: null },
+      issues: [
+        { kind: 'invalidInput', field: 'plan.id' },
+        { kind: 'targetKindUnsupported', field: 'targetActionId' },
+      ],
+    })
+  })
+
   it('distinguishes missing and duplicated targets without selecting by array order', () => {
     const plan = basePlan()
     plan.strategies.retirementActions = [

@@ -253,6 +253,21 @@ function manualReviewRequired(
   originalPlanIndex: number,
 ): RetirementActionManualReviewRequiredResult {
   const parsedPlanId = planIdSchema.safeParse(plan.id)
+  const issues: [
+    RetirementActionManualReviewIssue,
+    ...RetirementActionManualReviewIssue[],
+  ] = [issue(
+    'targetKindUnsupported',
+    'targetActionId',
+    'QCD review remains explicit and non-mutating until the canonical identity allocator exposes a QCD arm.',
+  )]
+  if (!parsedPlanId.success) {
+    issues.unshift(issue(
+      'invalidInput',
+      'plan.id',
+      'The Plan must have a nonblank stable ID before manual review evidence can be created.',
+    ))
+  }
   return deepFreeze({
     status: 'manualReviewRequired',
     outcome: 'unsupported',
@@ -267,11 +282,7 @@ function manualReviewRequired(
       inferredFields: [],
       unsupportedKind: target.kind,
     },
-    issues: [issue(
-      'targetKindUnsupported',
-      'targetActionId',
-      'QCD review remains explicit and non-mutating until the canonical identity allocator exposes a QCD arm.',
-    )],
+    issues,
   })
 }
 
