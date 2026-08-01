@@ -74,6 +74,7 @@ function strategyValueChanged(
 function inspectRetirementActionPatch(
   planPatch: unknown,
   baseStrategies?: Plan['strategies'],
+  materializedStrategies?: Plan['strategies'],
 ): RetirementActionPatchInspection {
   const patch = objectRecord(planPatch)
   if (patch === null) {
@@ -87,16 +88,17 @@ function inspectRetirementActionPatch(
   if (!isScenarioPatchEnvelope(patch)) {
     const strategies = objectRecord(patch['strategies'])
     const base = objectRecord(baseStrategies)
+    const materialized = objectRecord(materializedStrategies)
     const legacyValueChanged = (key: string): boolean =>
       strategies !== null &&
       Object.prototype.hasOwnProperty.call(strategies, key) &&
-      (base === null || strategyValueChanged(base, strategies, key))
+      (base === null || strategyValueChanged(base, materialized ?? strategies, key))
     const retirementActionsChanged = legacyValueChanged('retirementActions')
     return {
       changesRetirementActions: RETIREMENT_ACTION_STRATEGY_KEYS.some(legacyValueChanged),
       hasAggregateStrategy: [...AGGREGATE_RETIREMENT_ACTION_STRATEGY_KEYS].some(legacyValueChanged),
       retirementActionRequests: retirementActionsChanged
-        ? strategies?.['retirementActions']
+        ? (materialized ?? strategies)?.['retirementActions']
         : undefined,
     }
   }
@@ -164,11 +166,34 @@ function inspectRetirementActionPatch(
   }
 }
 
+function inspectCandidateRetirementActionPatch(
+  candidate: DecisionCandidate,
+  basePlan?: Plan,
+): RetirementActionPatchInspection {
+  const patch = objectRecord(candidate.planPatch)
+  if (basePlan === undefined || patch === null || isScenarioPatchEnvelope(patch)) {
+    return inspectRetirementActionPatch(candidate.planPatch, basePlan?.strategies)
+  }
+  const materialized = planForCandidate(basePlan, { planPatch: candidate.planPatch })
+  if (!materialized.ok) {
+    return {
+      changesRetirementActions: true,
+      hasAggregateStrategy: false,
+      retirementActionRequests: null,
+    }
+  }
+  return inspectRetirementActionPatch(
+    candidate.planPatch,
+    basePlan.strategies,
+    materialized.plan.strategies,
+  )
+}
+
 /** Whether the candidate's concrete change can cause retirement-account movement. */
 export function candidateChangesRetirementActions(candidate: DecisionCandidate, basePlan?: Plan): boolean {
   try {
     if (candidate.conversions !== undefined || candidate.retirementActionReadiness !== undefined) return true
-    return inspectRetirementActionPatch(candidate.planPatch, basePlan?.strategies).changesRetirementActions
+    return inspectCandidateRetirementActionPatch(candidate, basePlan).changesRetirementActions
   } catch {
     // A hostile or malformed runtime candidate must be gated, never trusted.
     return true
@@ -176,9 +201,9 @@ export function candidateChangesRetirementActions(candidate: DecisionCandidate, 
 }
 
 function patchedRetirementActionIds(candidate: DecisionCandidate, basePlan?: Plan): string[] | null {
-  const patchedRequests = inspectRetirementActionPatch(
-    candidate.planPatch,
-    basePlan?.strategies,
+  const patchedRequests = inspectCandidateRetirementActionPatch(
+    candidate,
+    basePlan,
   ).retirementActionRequests
   if (!Array.isArray(patchedRequests)) return null
   const materialized = basePlan === undefined ? null : planForCandidate(basePlan, candidate)
@@ -243,7 +268,7 @@ function inspectRetirementActionReadiness(candidate: DecisionCandidate, basePlan
   if (candidate.conversions !== undefined) {
     return 'Identity-complete retirement-action evidence cannot certify an aggregate conversion schedule.'
   }
-  if (inspectRetirementActionPatch(candidate.planPatch, basePlan?.strategies).hasAggregateStrategy) {
+  if (inspectCandidateRetirementActionPatch(candidate, basePlan).hasAggregateStrategy) {
     return 'Identity-complete retirement-action evidence cannot certify an aggregate withdrawal, conversion, or QCD strategy.'
   }
 

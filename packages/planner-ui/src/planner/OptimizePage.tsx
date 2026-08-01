@@ -36,6 +36,7 @@ import {
   actionableTournamentConversions,
   buildOptimizeChartRows,
   displayedCleanedConversions,
+  monteCarloSuccessValue,
   shouldShowRecommendedScheduleBars,
 } from './optimizePageChart'
 import { applyOptimizeRecommendation, claimEstateGain, planWithWinningClaim } from './optimizePageClaim'
@@ -134,7 +135,9 @@ export function OptimizePage() {
   // Rendered as a calm "no change recommended" card, not a rejected-schedule
   // diagnostic (the deltas on this page are always vs the current plan, so a
   // fresh solver proposal that loses to the incumbent shows scary negatives).
-  const incumbentHolds = tournament?.winnerSource === 'incumbent'
+  const incumbentHolds =
+    tournament?.winnerSource === 'incumbent' &&
+    tournament.retirementActionReadinessVeto === null
   const candidateReplacedMilp = candidateWins && postProcessed?.recommendationSchedule === 'cleaned'
   const recommendedConversions = useMemo(
     () => actionableTournamentConversions(tournament),
@@ -156,7 +159,11 @@ export function OptimizePage() {
     // under the new claim) is still a recommendation worth pricing and reporting.
     return claimChangeRecommended ? planForRecommendation : null
   }, [planForRecommendation, recommendedConversions, claimChangeRecommended])
-  const validation = candidateWins ? (tournament?.winnerValidation ?? null) : (postProcessed?.cleanedValidation ?? null)
+  const validation = candidateWins
+    ? (tournament?.winnerValidation ?? null)
+    : (tournament?.retirementActionReadinessVeto?.vetoedValidation ??
+      postProcessed?.cleanedValidation ??
+      null)
 
   const run = useCallback(() => {
     const token = ++runToken.current
@@ -428,7 +435,9 @@ export function OptimizePage() {
             )}
             <div style={{ marginTop: '0.75rem' }}>{rerunButton()}</div>
           </div>
-        ) : schedule.status === 'infeasible' && !candidateWins ? (
+        ) : schedule.status === 'infeasible' &&
+          !candidateWins &&
+          !tournament?.retirementActionReadinessVeto ? (
           <div className="card">
             <h2>Couldn't optimize this plan</h2>
             <p className="muted">
@@ -443,7 +452,9 @@ export function OptimizePage() {
             ) : null}
             <div style={{ marginTop: '0.75rem' }}>{rerunButton()}</div>
           </div>
-        ) : rawConversions < 1 && !candidateWins ? (
+        ) : rawConversions < 1 &&
+          !candidateWins &&
+          !tournament?.retirementActionReadinessVeto ? (
           <div className="card">
             <h2>No beneficial conversions found</h2>
             <p className="muted">
@@ -531,8 +542,8 @@ export function OptimizePage() {
               />
               <DeltaStat
                 label="Success rate"
-                value={mcRate === null ? '…' : `${Math.round(mcRate * 100)}%`}
-                tone={mcRate !== null && mcRate >= 0.9 ? 'good' : 'neutral'}
+                value={monteCarloSuccessValue(recommendedConversions.length > 0, mcRate)}
+                tone={recommendedConversions.length > 0 && mcRate !== null && mcRate >= 0.9 ? 'good' : 'neutral'}
                 help="Monte Carlo success probability for the proposed schedule (1,000 paths, lognormal markets), so you can confirm the conversions don't materially raise the risk of running out."
               />
             </div>

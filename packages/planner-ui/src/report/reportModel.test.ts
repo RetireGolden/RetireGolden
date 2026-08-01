@@ -352,6 +352,21 @@ describe('optimizer recommendation evidence', () => {
           vetoedWinnerSource: 'candidate',
           vetoedCandidateId: 'fill-12',
           vetoedCandidateLabel: 'Fill the 12% bracket',
+          vetoedConversions: [{ year: 2026, amount: 50_000 }],
+          vetoedValidation: {
+            baseline: { endingAfterTaxEstate: 100_000 },
+            candidate: { endingAfterTaxEstate: 102_000 },
+            afterTaxEstateDelta: 2_000,
+            endingNetWorthDelta: 1_500,
+            lifetimeTaxDelta: -5_000,
+            moneyLastsYearsDelta: 0,
+            requestedConversionTotal: 50_000,
+            executedConversionTotal: 50_000,
+            executedConversionRatio: 1,
+            firstMateriallyUnexecutedYear: null,
+            traditionalDepletionYear: null,
+            recommendationState: 'identityIncomplete',
+          },
         },
       },
       claimAge: null,
@@ -359,6 +374,8 @@ describe('optimizer recommendation evidence', () => {
 
     expect(evidence.recommendationState).toBe('identityIncomplete')
     expect(evidence.winnerLabel).toContain('withheld pending account allocation')
+    expect(evidence.validation?.afterTaxEstateDelta).toBe(2_000)
+    expect(evidence.validation?.requestedConversionTotal).toBe(50_000)
     expect(evidence.candidates[0]?.lossReason).toMatch(
       /cleared the selected objective.*owner, source IRA, and Roth destination/i,
     )

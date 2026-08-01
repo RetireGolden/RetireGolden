@@ -18,15 +18,28 @@ export function actionableTournamentConversions(
 }
 
 export function displayedCleanedConversions(
-  tournament: Pick<ExactLedgerTournament, 'winnerSource' | 'winnerConversions'> | null,
+  tournament: Pick<
+    ExactLedgerTournament,
+    'winnerSource' | 'winnerConversions' | 'retirementActionReadinessVeto'
+  > | null,
   postProcessed: OptimizePostProcessing | null,
 ): { year: number; amount: number }[] {
+  const withheld = tournament?.retirementActionReadinessVeto?.vetoedConversions
+  if (withheld && withheld.length > 0) return withheld
   const actionable = actionableTournamentConversions(tournament)
   if (actionable.length > 0) return actionable
-  return tournament?.winnerSource === 'none' &&
-    postProcessed?.cleanedValidation.recommendationState === 'identityIncomplete'
-    ? postProcessed.cleanedSchedule.conversions
-    : []
+  if (tournament?.winnerSource !== 'none') return []
+  return postProcessed?.cleanedValidation.recommendationState === 'identityIncomplete'
+      ? postProcessed.cleanedSchedule.conversions
+      : []
+}
+
+export function monteCarloSuccessValue(
+  hasRecommendationPlan: boolean,
+  successRate: number | null,
+): string {
+  if (!hasRecommendationPlan) return 'Unavailable'
+  return successRate === null ? '…' : `${Math.round(successRate * 100)}%`
 }
 
 export function buildOptimizeChartRows({

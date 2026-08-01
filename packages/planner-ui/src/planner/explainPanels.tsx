@@ -144,6 +144,12 @@ export function WhyRecommendationPanel({
     tournament.winnerSource === 'milp'
       ? "the solver's schedule"
       : (tournament.winnerLabel ?? 'the recommendation')
+  const displayedMilpValidation =
+    tournament.winnerSource === 'milp'
+      ? tournament.winnerValidation
+      : tournament.retirementActionReadinessVeto?.vetoedWinnerSource === 'milp'
+        ? tournament.retirementActionReadinessVeto.vetoedValidation
+        : null
 
   return (
     <details className="ss-explainer">
@@ -214,18 +220,23 @@ export function WhyRecommendationPanel({
               <td>±$0</td>
               <td>—</td>
             </tr>
-            {tournament.winnerSource === 'milp' && tournament.winnerValidation ? (
+            {displayedMilpValidation ? (
               <tr>
                 <td>
-                  Solver's schedule (post-processed)<strong> (winner)</strong>
+                  Solver's schedule (post-processed)
+                  {tournament.winnerSource === 'milp' ? (
+                    <strong> (winner)</strong>
+                  ) : (
+                    <em className="muted"> ({RETIREMENT_ACTION_READINESS_VETO_ROW_NOTE})</em>
+                  )}
                 </td>
-                <td>{fmtMoneyCompact(tournament.winnerValidation.executedConversionTotal)}</td>
-                <td>{fmtSignedMoney(tournament.winnerValidation.afterTaxEstateDelta)}</td>
-                <td>{fmtSignedMoney(tournament.winnerValidation.lifetimeTaxDelta)}</td>
+                <td>{fmtMoneyCompact(displayedMilpValidation.executedConversionTotal)}</td>
+                <td>{fmtSignedMoney(displayedMilpValidation.afterTaxEstateDelta)}</td>
+                <td>{fmtSignedMoney(displayedMilpValidation.lifetimeTaxDelta)}</td>
                 <td>
-                  {tournament.winnerValidation.moneyLastsYearsDelta === 0
+                  {displayedMilpValidation.moneyLastsYearsDelta === 0
                     ? 'unchanged'
-                    : `${tournament.winnerValidation.moneyLastsYearsDelta > 0 ? '+' : ''}${tournament.winnerValidation.moneyLastsYearsDelta} yr`}
+                    : `${displayedMilpValidation.moneyLastsYearsDelta > 0 ? '+' : ''}${displayedMilpValidation.moneyLastsYearsDelta} yr`}
                 </td>
               </tr>
             ) : null}

@@ -16,6 +16,7 @@ import {
   maximizeSpendingDurability,
   minimizeLifetimeTaxWithEstateFloor,
   socialSecurityClaimGenerator,
+  type ExactDecisionEvaluation,
 } from '../decisions/index.js'
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../model/plan.js'
 import { applyScenarioPatch } from '../scenarios/scenarios.js'
@@ -599,6 +600,24 @@ describe('evaluateExactLedgerSchedule', () => {
     expect(validation.executedConversionRatio).toBe(1)
   })
 
+  it('preserves a nonempty exact-ledger-neutral aggregate schedule as neutral', () => {
+    const plan = validate(tradHeavyPlan())
+    const baseline = simulatePlan(plan, opts)
+    const candidate = structuredClone(baseline)
+    const year = candidate.years[0]!
+    year.rothConversion = 100
+    const validation = evaluateExactLedgerSchedule(
+      plan,
+      [{ year: year.year, amount: 100 }],
+      baseline,
+      candidate,
+    )
+
+    expect(validation.executedConversionTotal).toBe(100)
+    expect(validation.afterTaxEstateDelta).toBe(0)
+    expect(validation.recommendationState).toBe('neutral')
+  })
+
   it('rejects fully executable schedules with no exact estate improvement', () => {
     const plan = validate(taxableConversionCostPlan())
     const conversions = [{ year: 2026, amount: 50_000 }]
@@ -669,7 +688,7 @@ describe('postProcessExactLedgerSchedule', () => {
     expect(processed.cleanedValidation.requestedConversionTotal).toBe(20_000)
     expect(processed.cleanedValidation.executedConversionTotal).toBeCloseTo(20_000, 2)
     expect(processed.cleanedValidation.executedConversionRatio).toBe(1)
-    expect(processed.cleanedValidation.recommendationState).toBe('identityIncomplete')
+    expect(processed.cleanedValidation.recommendationState).toBe('neutral')
     expect(processed.recommendationSchedule).toBe('none')
   })
 
@@ -1747,6 +1766,12 @@ describe('exact-ledger candidate tournament', () => {
     expect(tournament.winnerCandidateId).toBeNull()
     expect(tournament.marginOverMilpDollars).toBe(0)
     expect(tournament.winnerValidation).toBeNull()
+    expect(tournament.retirementActionReadinessVeto).toMatchObject({
+      reason: 'identityIncomplete',
+      vetoedWinnerSource: 'candidate',
+      vetoedValidation: { recommendationState: 'identityIncomplete' },
+    })
+    expect(tournament.retirementActionReadinessVeto?.vetoedConversions.length).toBeGreaterThan(0)
   })
 
   it('holds an explicitly applied incumbent schedule when nothing beats it', () => {
@@ -1785,6 +1810,7 @@ describe('objective-mode tournament (sustainable-spending plan, Step 5)', () => 
     expect(tournament.policyId).toBe('max-after-tax-estate')
     expect(tournament.winnerSource).toBe('none')
     expect(tournament.winnerCandidateId).toBeNull()
+    expect(tournament.retirementActionReadinessVeto).not.toBeNull()
   })
 
   it('re-ranks the same candidates under a different objective', () => {
@@ -1824,6 +1850,66 @@ describe('objective-mode tournament (sustainable-spending plan, Step 5)', () => 
       vetoedWinnerSource: 'candidate',
     })
     expect(tournament.retirementActionReadinessVeto?.vetoedCandidateId).not.toBeNull()
+    expect(tournament.retirementActionReadinessVeto?.vetoedConversions.length).toBeGreaterThan(0)
+    expect(tournament.retirementActionReadinessVeto?.vetoedValidation).toMatchObject({
+      recommendationState: 'identityIncomplete',
+    })
+    const vetoedRow = tournament.candidates.find(
+      (candidate) =>
+        candidate.id === tournament.retirementActionReadinessVeto?.vetoedCandidateId,
+    )
+    expect(tournament.retirementActionReadinessVeto?.vetoedValidation.afterTaxEstateDelta)
+      .toBeCloseTo(vetoedRow!.afterTaxEstateDelta, 6)
+  })
+
+  it('keeps an identity-withheld MILP schedule in policy ranking and preserves its diagnostics', async () => {
+    const plan = validate(tradHeavyPlan())
+    const baseline = simulatePlan(plan, opts)
+    const optimized = await optimizePlan(plan, opts)
+    expect(optimized.postProcessed?.cleanedValidation.recommendationState)
+      .toBe('identityIncomplete')
+    const policy = {
+      ...maximizeAfterTaxEstate,
+      id: 'min-lifetime-tax-estate-floor' as const,
+      label: 'Prefer the calculated MILP row for this regression',
+      primaryMetricLabel: 'MILP-row score',
+      primaryMetric: (evaluation: ExactDecisionEvaluation) =>
+        evaluation.candidate.source === 'milp' ? 1_000_000 : 0,
+    }
+
+    const tournament = runExactLedgerTournament(
+      plan,
+      baseline,
+      optimized.postProcessed,
+      opts,
+      { policy },
+    )
+
+    expect(tournament.winnerSource).toBe('none')
+    expect(tournament.retirementActionReadinessVeto).toMatchObject({
+      vetoedWinnerSource: 'milp',
+      vetoedCandidateId: null,
+      vetoedValidation: { recommendationState: 'identityIncomplete' },
+    })
+    expect(tournament.retirementActionReadinessVeto?.vetoedConversions)
+      .toEqual(optimized.postProcessed?.cleanedSchedule.conversions)
+
+    const cleanedTotal = optimized.postProcessed!.cleanedSchedule.conversions
+      .reduce((sum, conversion) => sum + conversion.amount, 0)
+    const belowConfiguredMinimum = {
+      ...optimized.postProcessed!,
+      minimumRequestedConversionDollars: cleanedTotal + 1,
+      recommendationSchedule: 'none' as const,
+    }
+    const thresholded = runExactLedgerTournament(
+      plan,
+      baseline,
+      belowConfiguredMinimum,
+      opts,
+      { policy },
+    )
+    expect(thresholded.winnerSource).not.toBe('milp')
+    expect(thresholded.retirementActionReadinessVeto?.vetoedWinnerSource).not.toBe('milp')
   })
 
   it('the tax-with-estate-floor objective can pick a different winner than the estate objective', () => {

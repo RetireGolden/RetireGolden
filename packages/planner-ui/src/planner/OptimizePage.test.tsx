@@ -8,6 +8,7 @@ import {
   actionableTournamentConversions,
   buildOptimizeChartRows,
   displayedCleanedConversions,
+  monteCarloSuccessValue,
   shouldShowRecommendedScheduleBars,
 } from './optimizePageChart'
 
@@ -57,6 +58,7 @@ describe('OptimizePage tournament display helpers', () => {
     const tournament = {
       winnerSource: 'none' as const,
       winnerConversions: [] as { year: number; amount: number }[],
+      retirementActionReadinessVeto: null,
     }
     const postProcessed = {
       cleanedSchedule: schedule(conversions),
@@ -72,8 +74,32 @@ describe('OptimizePage tournament display helpers', () => {
     expect(displayedCleanedConversions({
       winnerSource: 'incumbent',
       winnerConversions: [{ year: 2025, amount: 2_000 }],
+      retirementActionReadinessVeto: null,
     }, postProcessed)).toEqual([])
+    const withheld = [{ year: 2028, amount: 8_000 }]
+    expect(displayedCleanedConversions({
+      winnerSource: 'incumbent',
+      winnerConversions: [{ year: 2025, amount: 2_000 }],
+      retirementActionReadinessVeto: { vetoedConversions: withheld },
+    } as never, postProcessed)).toBe(withheld)
     expect(displayedCleanedConversions(null, postProcessed)).toEqual([])
+  })
+
+  it('uses the selected withheld winner for diagnostics and never shows a pending Monte Carlo rate', () => {
+    const withheld = [{ year: 2028, amount: 8_000 }]
+    expect(displayedCleanedConversions({
+      winnerSource: 'none',
+      winnerConversions: [],
+      retirementActionReadinessVeto: {
+        vetoedConversions: withheld,
+      },
+    } as never, {
+      cleanedSchedule: schedule([{ year: 2026, amount: 5_000 }]),
+      cleanedValidation: { recommendationState: 'identityIncomplete' },
+    } as never)).toBe(withheld)
+    expect(monteCarloSuccessValue(false, null)).toBe('Unavailable')
+    expect(monteCarloSuccessValue(true, null)).toBe('…')
+    expect(monteCarloSuccessValue(true, 0.914)).toBe('91%')
   })
 
   it('shows recommended bars when a candidate wins even without a cleanup mismatch', () => {

@@ -412,6 +412,10 @@ export interface RetirementActionReadinessVeto {
   readonly vetoedWinnerSource: 'candidate' | 'milp'
   readonly vetoedCandidateId: string | null
   readonly vetoedCandidateLabel: string | null
+  /** Exact calculated schedule retained solely for diagnostic display/reporting. */
+  readonly vetoedConversions: { year: number; amount: number }[]
+  /** Exact calculated metrics retained without making the schedule actionable. */
+  readonly vetoedValidation: ExactLedgerValidation
 }
 
 export interface ExactLedgerTournament {
@@ -459,6 +463,46 @@ export interface ExactLedgerTournament {
 
 /** A candidate only replaces the MILP schedule when it wins by more than this. */
 const DEFAULT_TOURNAMENT_SWITCH_MARGIN_DOLLARS = 1_000
+
+function calculatedPostProcessedSchedule(
+  postProcessed: ExactLedgerPostProcessing | null,
+): ExactLedgerPostProcessing | null {
+  if (postProcessed === null) return null
+  const cleanedConversionTotal = postProcessed.cleanedSchedule.conversions.reduce(
+    (sum, conversion) => sum + conversion.amount,
+    0,
+  )
+  return postProcessed.recommendationSchedule === 'cleaned' ||
+    (postProcessed.stabilized &&
+      cleanedConversionTotal >= postProcessed.minimumRequestedConversionDollars &&
+      postProcessed.cleanedValidation.recommendationState === 'identityIncomplete')
+    ? postProcessed
+    : null
+}
+
+function readinessVetoFor(
+  source: 'candidate' | 'milp',
+  candidateId: string | null,
+  candidateLabel: string | null,
+  conversions: { year: number; amount: number }[],
+  validation: ExactLedgerValidation,
+): RetirementActionReadinessVeto | null {
+  return validation.recommendationState === 'identityIncomplete'
+    ? {
+        reason: 'identityIncomplete',
+        vetoedWinnerSource: source,
+        vetoedCandidateId: candidateId,
+        vetoedCandidateLabel: candidateLabel,
+        vetoedConversions: conversions.map((conversion) => ({ ...conversion })),
+        vetoedValidation: validation,
+      }
+    : null
+}
+
+function calculatedBeneficial(validation: ExactLedgerValidation): boolean {
+  return validation.recommendationState === 'beneficial' ||
+    validation.recommendationState === 'identityIncomplete'
+}
 
 /**
  * The plan's currently-installed conversion strategy as exact-ledger executed
@@ -666,14 +710,16 @@ export function runExactLedgerTournament(
       options.policy,
     )
     if (ranked.winnerSource !== 'candidate' && ranked.winnerSource !== 'milp') return ranked
-    const readinessVeto = ranked.winnerValidation?.recommendationState === 'identityIncomplete'
-      ? {
-          reason: 'identityIncomplete' as const,
-          vetoedWinnerSource: ranked.winnerSource,
-          vetoedCandidateId: ranked.winnerCandidateId,
-          vetoedCandidateLabel: ranked.winnerLabel,
-        }
-      : null
+    const readinessVeto = ranked.winnerValidation === null
+      ? null
+      : readinessVetoFor(
+          ranked.winnerSource,
+          ranked.winnerCandidateId,
+          ranked.winnerLabel,
+          ranked.winnerConversions,
+          ranked.winnerValidation,
+        )
+    if (readinessVeto === null) return ranked
     return fallbackTournament(
       plan,
       baselineResult,
@@ -686,12 +732,12 @@ export function runExactLedgerTournament(
   const margin = options.switchMarginDollars ?? DEFAULT_TOURNAMENT_SWITCH_MARGIN_DOLLARS
   const rich = buildRichCandidates(plan, baselineResult, simulateOptions)
   const candidates = rich.map((candidate) => candidate.evaluation)
+  const calculatedMilp = calculatedPostProcessedSchedule(postProcessed)
   const milpRecommended =
-    postProcessed !== null &&
-    postProcessed.recommendationSchedule === 'cleaned' &&
+    calculatedMilp !== null &&
     !hasNonActionableAca(baselineResult) &&
-    !hasNonActionableAca(postProcessed.cleanedResult)
-      ? postProcessed
+    !hasNonActionableAca(calculatedMilp.cleanedResult)
+      ? calculatedMilp
       : null
   const milpDelta = milpRecommended ? milpRecommended.cleanedValidation.afterTaxEstateDelta : 0
   const guardrailResult = milpRecommended?.cleanedResult ?? baselineResult
@@ -709,8 +755,8 @@ export function runExactLedgerTournament(
     const winnerValidation = evaluateExactLedgerSchedule(plan, best.conversions, baselineResult, best.result)
     const clearsMilpComparison = milpRecommended
       ? best.evaluation.afterTaxEstateDelta > milpDelta + margin
-      : winnerValidation.recommendationState === 'beneficial'
-    if (winnerValidation.recommendationState === 'beneficial' && clearsMilpComparison) {
+      : calculatedBeneficial(winnerValidation)
+    if (calculatedBeneficial(winnerValidation) && clearsMilpComparison) {
       let winner = {
         candidate: best,
         conversions: best.conversions,
@@ -746,7 +792,7 @@ export function runExactLedgerTournament(
             refined.bestEvaluation.candidateResult,
           )
           if (
-            refinedValidation.recommendationState === 'beneficial' &&
+            calculatedBeneficial(refinedValidation) &&
             refinedValidation.afterTaxEstateDelta > winner.estateDelta
           ) {
             winner = {
@@ -769,6 +815,23 @@ export function runExactLedgerTournament(
             row.id === winner.candidate.evaluation.id ? { ...row, afterTaxEstateDelta: winner.estateDelta } : row,
           )
         : candidates
+      const readinessVeto = readinessVetoFor(
+        'candidate',
+        winner.candidate.evaluation.id,
+        winner.candidate.evaluation.label,
+        winner.conversions,
+        winner.validation,
+      )
+      if (readinessVeto !== null) {
+        return fallbackTournament(
+          plan,
+          baselineResult,
+          displayCandidates,
+          'max-after-tax-estate',
+          null,
+          readinessVeto,
+        )
+      }
       return {
         policyId: 'max-after-tax-estate',
         candidates: displayCandidates,
@@ -813,7 +876,7 @@ export function runExactLedgerTournament(
           refined.bestEvaluation.candidateResult,
         )
         if (
-          refinedValidation.recommendationState === 'beneficial' &&
+          calculatedBeneficial(refinedValidation) &&
           refinedValidation.afterTaxEstateDelta > milpRecommended.cleanedValidation.afterTaxEstateDelta
         ) {
           winnerConversions = executed
@@ -821,6 +884,23 @@ export function runExactLedgerTournament(
           searchRefined = true
         }
       }
+    }
+    const readinessVeto = readinessVetoFor(
+      'milp',
+      null,
+      null,
+      winnerConversions,
+      winnerValidation,
+    )
+    if (readinessVeto !== null) {
+      return fallbackTournament(
+        plan,
+        baselineResult,
+        candidates,
+        'max-after-tax-estate',
+        null,
+        readinessVeto,
+      )
     }
     return {
       policyId: 'max-after-tax-estate',
@@ -921,12 +1001,12 @@ function runPolicyRankedTournament(
   const ctx = decisionContext(plan, baselineResult, simulateOptions)
   const rich = buildRichCandidates(plan, baselineResult, simulateOptions)
   const candidates = rich.map((candidate) => candidate.evaluation)
+  const calculatedMilp = calculatedPostProcessedSchedule(postProcessed)
   const milpRecommended =
-    postProcessed !== null &&
-    postProcessed.recommendationSchedule === 'cleaned' &&
+    calculatedMilp !== null &&
     !hasNonActionableAca(baselineResult) &&
-    !hasNonActionableAca(postProcessed.cleanedResult)
-      ? postProcessed
+    !hasNonActionableAca(calculatedMilp.cleanedResult)
+      ? calculatedMilp
       : null
 
   const evaluations = rich.map((candidate) => candidate.fullEvaluation)
@@ -956,7 +1036,7 @@ function runPolicyRankedTournament(
       conversionExecution: null,
       traditionalDepletionYear: null,
       diagnostics: [],
-      recommendationState: milpRecommended.cleanedValidation.recommendationState === 'beneficial' ? 'beneficial' : 'neutral',
+      recommendationState: calculatedBeneficial(milpRecommended.cleanedValidation) ? 'beneficial' : 'neutral',
     }
     evaluations.push(milpEvaluation)
   }
@@ -1102,6 +1182,8 @@ export interface ExactLedgerPostProcessing {
   iterationCount: number
   /** Trailing-year prune candidates evaluated (0 when the prune pass did not run). */
   pruneIterationCount: number
+  /** Resolved minimum used to decide whether the cleaned schedule was eligible. */
+  minimumRequestedConversionDollars: number
   recommendationSchedule: ExactLedgerRecommendationSchedule
 }
 
@@ -1215,6 +1297,7 @@ function refuseAggregateScheduleRecommendation(
 ): ExactLedgerValidation {
   if (
     requestedConversions.every((conversion) => conversion.amount <= 0) ||
+    validation.recommendationState === 'neutral' ||
     validation.recommendationState === 'rejected' ||
     validation.recommendationState === 'unexecutable'
   ) {
@@ -1425,9 +1508,7 @@ export function postProcessExactLedgerSchedule(
   const recommendationSchedule =
     stabilized &&
     cleanedConversionTotal >= minimumRequestedConversionDollars &&
-    cleanedValidation.recommendationState !== 'rejected' &&
-    cleanedValidation.recommendationState !== 'unexecutable' &&
-    cleanedValidation.recommendationState !== 'identityIncomplete'
+    cleanedValidation.recommendationState === 'beneficial'
       ? 'cleaned'
       : 'none'
 
@@ -1442,6 +1523,7 @@ export function postProcessExactLedgerSchedule(
     stabilized,
     iterationCount,
     pruneIterationCount,
+    minimumRequestedConversionDollars,
     recommendationSchedule,
   }
 }

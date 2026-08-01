@@ -483,11 +483,12 @@ function validationEvidence(validation: ExactLedgerValidation | null): ReportVal
 
 export function reportEvidenceFromOptimizeResult(result: OptimizeResult): ReportRecommendationEvidence {
   const tournament = result.tournament
-  // Only the winning source's validation belongs on the report. winnerValidation is
-  // set for 'milp'/'candidate' winners and intentionally null for 'incumbent'/'none';
-  // do not fall back to the solver's cleanedValidation, which describes a schedule that
-  // did not win and would mislabel a "no change" / incumbent result.
-  const validation = tournament.winnerValidation ?? null
+  // Report the selected actionable winner or the exact calculated winner that
+  // was explicitly withheld. Never substitute the solver's cleaned validation
+  // for a different policy winner or an ordinary incumbent/no-winner result.
+  const validation = tournament.winnerValidation ??
+    tournament.retirementActionReadinessVeto?.vetoedValidation ??
+    null
   const policy = objectivePolicies[tournament.policyId]
   const withheldCleanedSchedule =
     tournament.winnerSource === 'none' &&

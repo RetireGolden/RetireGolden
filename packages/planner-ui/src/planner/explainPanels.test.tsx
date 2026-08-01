@@ -13,6 +13,7 @@ import { MemoryRouter } from 'react-router'
 import type { MonteCarloSummary } from '@retiregolden/engine/montecarlo/run'
 import type { ExactLedgerTournament, ExactLedgerValidation } from '@retiregolden/engine/projection/optimizePlan'
 import { WhyRecommendationPanel, WhySuccessPanel } from './explainPanels'
+import { RETIREMENT_ACTION_READINESS_VETO_ROW_NOTE } from './retirementActionReadinessVetoCopy'
 
 function render(node: React.ReactNode): { container: HTMLDivElement; unmount: () => void } {
   const container = document.createElement('div')
@@ -240,6 +241,12 @@ describe('WhyRecommendationPanel', () => {
             vetoedWinnerSource: 'candidate',
             vetoedCandidateId: 'fill-22',
             vetoedCandidateLabel: 'Fill the 22% bracket',
+            vetoedConversions: [{ year: 2026, amount: 180_000 }],
+            vetoedValidation: fakeValidation(65_000, {
+              lifetimeTaxDelta: 30_000,
+              executedConversionTotal: 180_000,
+              recommendationState: 'identityIncomplete',
+            }),
           },
         })}
         objectiveLabel="Minimize lifetime tax with estate floor"
@@ -250,6 +257,41 @@ describe('WhyRecommendationPanel', () => {
     expect(text).toContain('owner, source IRA, and Roth destination')
     expect(text).toContain('Fill the 22% bracket (calculated winner; withheld pending account allocation)')
     expect(text).not.toContain('None cleared the recommendation threshold')
+    unmount()
+  })
+
+  it('shows the withheld MILP winner row with its own exact diagnostics', () => {
+    const { container, unmount } = render(
+      <WhyRecommendationPanel
+        tournament={fakeTournament({
+          winnerSource: 'none',
+          winnerCandidateId: null,
+          winnerLabel: null,
+          winnerConversions: [],
+          winnerValidation: null,
+          retirementActionReadinessVeto: {
+            reason: 'identityIncomplete',
+            vetoedWinnerSource: 'milp',
+            vetoedCandidateId: null,
+            vetoedCandidateLabel: null,
+            vetoedConversions: [{ year: 2026, amount: 210_000 }],
+            vetoedValidation: fakeValidation(72_000, {
+              lifetimeTaxDelta: 25_000,
+              executedConversionTotal: 210_000,
+              recommendationState: 'identityIncomplete',
+            }),
+          },
+        })}
+        objectiveLabel="Minimize lifetime tax with estate floor"
+      />,
+    )
+
+    const text = container.textContent!
+    expect(text).toContain(
+      `Solver's schedule (post-processed) (${RETIREMENT_ACTION_READINESS_VETO_ROW_NOTE})`,
+    )
+    expect(text).toContain('$210k')
+    expect(text).toContain('+$72,000')
     unmount()
   })
 

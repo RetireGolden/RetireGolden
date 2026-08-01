@@ -239,6 +239,37 @@ describe('evaluateCandidate', () => {
     }
   })
 
+  it('materializes partial legacy strategy overrides before deciding whether they change actions', () => {
+    const plan = tradHeavyPlan()
+    plan.strategies.rothConversion = {
+      mode: 'fillToTarget',
+      target: 'topOfBracket',
+      targetValue: 12,
+      startYear: 2026,
+      endYear: 2035,
+    }
+    const ctx = createDecisionContext(plan, simOptions())
+    const sameValue = evaluateCandidate(
+      ctx,
+      rothCandidate({
+        planPatch: { strategies: { rothConversion: { targetValue: 12 } } },
+      }),
+      { candidateResult: ctx.baselineResult },
+    )
+    expect(sameValue.recommendationState).toBe('neutral')
+    expect(sameValue.diagnostics).toEqual([])
+
+    const changedValue = evaluateCandidate(
+      ctx,
+      rothCandidate({
+        planPatch: { strategies: { rothConversion: { targetValue: 22 } } },
+      }),
+      { candidateResult: ctx.baselineResult },
+    )
+    expect(changedValue.recommendationState).toBe('diagnostic')
+    expect(changedValue.diagnostics.join(' ')).toMatch(/identity-complete/i)
+  })
+
   it('rejects incomplete or aggregate identity-complete evidence', () => {
     const ctx = createDecisionContext(tradHeavyPlan(), simOptions())
     const incomplete = evaluateCandidate(
