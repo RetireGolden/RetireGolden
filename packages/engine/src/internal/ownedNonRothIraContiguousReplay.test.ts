@@ -84,6 +84,29 @@ describe('private contiguous owned-IRA basis replay', () => {
     expect(Object.isFrozen(result)).toBe(true)
   })
 
+  it('keeps a safe aggregate basis in exact cents when Plan dollars cannot represent it', () => {
+    const plan = singlePersonPlan({ planningAge: 60 })
+    plan.id = 'aggregate-basis-exact-cents'
+    plan.accounts = [
+      ira('ira-a', 38_491_108_915_768.56, 38_491_108_915_768.56),
+      ira('ira-b', 37_789_379_125_460.984, 37_789_379_125_460.984),
+    ]
+
+    const result = replayOwnedNonRothIraContiguousYears(plan, TAX_YEAR, project(plan))
+
+    expect(result.status).toBe('ownedNonRothIraContiguousReplayComplete')
+    if (result.status !== 'ownedNonRothIraContiguousReplayComplete') return
+    expect(result.annualReplays[0]!.ownerReplays[0]!).toMatchObject({
+      openingBasisAmount: 7_628_048_804_122_954,
+      nextYearOpeningBasisAmount: 7_628_048_804_122_954,
+      annualObservation: {
+        startOfTaxYearBasisObservation: {
+          startOfTaxYearIraBasisAmount: 7_628_048_804_122_954,
+        },
+      },
+    })
+  })
+
   it('blocks the whole horizon on a later source break and cannot resume by reseeding a suffix', () => {
     const plan = singlePersonPlan({ planningAge: 61 })
     plan.id = 'source-failure-propagation'

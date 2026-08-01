@@ -6,7 +6,7 @@ import {
 } from '../actions/annualIraBasisAllocation.js'
 import { asActionId, asAllocationId, type PersonId } from '../actions/identity.js'
 import { asPositiveUsdCents, asUsdCents, type UsdCents } from '../actions/money.js'
-import { ledgerCentsToPlanDollars, planDollarsToLedgerCents } from '../actions/planBalanceAdapter.js'
+import { planDollarsToLedgerCents } from '../actions/planBalanceAdapter.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from '../actions/structuralId.js'
 import { planSchema, type Account, type Plan } from '../model/plan.js'
 import { isAggregatedIra } from '../strategies/accountEligibility.js'
@@ -242,7 +242,8 @@ function replayUnchecked(
         taxYear: sourceYear.taxYear,
         ledgerRunId,
         observationBoundary: 'sealedAfterAllAnnualTransactionsAndGrowth',
-        startOfTaxYearIraBasis: ledgerCentsToPlanDollars(openingBasisAmount),
+        startOfTaxYearIraBasis: 0,
+        startOfTaxYearIraBasisAmount: openingBasisAmount,
         yearEndBalances: ownerSource.yearEndBalances.map((balance) => ({
           sourceAccountId: balance.sourceAccountId,
           balance: balance.balancePlanDollars,
