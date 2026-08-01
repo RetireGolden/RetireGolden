@@ -1,5 +1,5 @@
 import {
-  retirementActionRequestSchema,
+  persistedRetirementActionRequestSchema,
   type ActionProvenance,
   type OrdinaryWithdrawalRequest,
   type RetirementActionRequest,
@@ -249,39 +249,69 @@ function completePlanReservedIdentifiers(plan: Readonly<Plan>): Set<string> {
   return reserved
 }
 
-function reviewedIdentityRecords(
-  plan: Readonly<Plan>,
-  allocatorEvidence: Readonly<RetirementActionCandidateIdentityEvidence>,
-): {
+type ReviewedIdentityReferences = Pick<
+  RetirementActionCandidateIdentityEvidence,
+  'personId' | 'sourceAccountIds' | 'destinationRothAccountId'
+>
+
+interface ReviewedIdentityRecords {
   person: Plan['household']['people'][number]
   sourceAccounts: Plan['accounts']
   destinationRothAccount: Plan['accounts'][number] | null
-} | null {
-  const person = plan.household.people.find(
-    (entry) => entry.id === allocatorEvidence.personId,
+}
+
+function reviewedIdentityRecords(
+  plan: Readonly<Plan>,
+  references: Readonly<ReviewedIdentityReferences>,
+): ReviewedIdentityRecords | null {
+  const people = plan.household.people.filter(
+    (entry) => entry.id === references.personId,
   )
+  if (people.length !== 1) return null
   const sourceAccounts: Plan['accounts'] = []
-  for (const sourceAccountId of allocatorEvidence.sourceAccountIds) {
-    const sourceAccount = plan.accounts.find((account) => account.id === sourceAccountId)
-    if (sourceAccount === undefined) return null
-    sourceAccounts.push(sourceAccount)
+  for (const sourceAccountId of references.sourceAccountIds) {
+    const matches = plan.accounts.filter((account) => account.id === sourceAccountId)
+    if (matches.length !== 1) return null
+    sourceAccounts.push(matches[0]!)
   }
-  const destinationRothAccount = allocatorEvidence.destinationRothAccountId === null
-    ? null
-    : plan.accounts.find(
-        (account) => account.id === allocatorEvidence.destinationRothAccountId,
+  const destinationMatches = references.destinationRothAccountId === null
+    ? []
+    : plan.accounts.filter(
+        (account) => account.id === references.destinationRothAccountId,
       )
-  if (
-    person === undefined ||
-    destinationRothAccount === undefined
-  ) {
+  if (references.destinationRothAccountId !== null && destinationMatches.length !== 1) {
     return null
   }
+  const destinationRothAccount = references.destinationRothAccountId === null
+    ? null
+    : destinationMatches[0]!
   return {
-    person,
+    person: people[0]!,
     sourceAccounts,
     destinationRothAccount,
   }
+}
+
+function targetIdentityReferences(
+  target: RetirementActionRequest,
+): ReviewedIdentityReferences | null {
+  if (target.kind === 'ordinaryWithdrawal' || target.kind === 'rothConversion') {
+    return {
+      personId: target.personId,
+      sourceAccountIds: target.allocations.map((allocation) => allocation.sourceAccountId),
+      destinationRothAccountId: target.kind === 'rothConversion'
+        ? target.destinationRothAccountId
+        : null,
+    }
+  }
+  if (target.kind === 'qcd') {
+    return {
+      personId: target.donorPersonId,
+      sourceAccountIds: [target.allocation.sourceAccountId],
+      destinationRothAccountId: null,
+    }
+  }
+  return null
 }
 
 function replacementCrossRoleIdentifierIssues(
@@ -451,7 +481,9 @@ function reviewUnchecked(
     )])
   }
   const targetIndex = targetIndexes[0]!
-  const parsedTarget = retirementActionRequestSchema.safeParse(rawActions[targetIndex])
+  const parsedTarget = persistedRetirementActionRequestSchema.safeParse(
+    rawActions[targetIndex],
+  )
   if (!parsedTarget.success) {
     return blocked([issue(
       'invalidInput',
@@ -522,7 +554,7 @@ function reviewUnchecked(
   const parsedActions: RetirementActionRequest[] = []
   for (let index = 0; index < rawActions.length; index += 1) {
     if (index === targetIndex) continue
-    const parsed = retirementActionRequestSchema.safeParse(rawActions[index])
+    const parsed = persistedRetirementActionRequestSchema.safeParse(rawActions[index])
     if (!parsed.success) {
       reviewIssues.push(issue(
         'invalidInput',
@@ -629,15 +661,26 @@ function reviewUnchecked(
   }
   const preservedActionIds = parsedActions.map((action) => action.actionId)
   const reviewedTargetEvidence = targetEvidence(target, targetIndex)
-  const identityRecords = reviewedIdentityRecords(
+  const replacementIdentityRecords = reviewedIdentityRecords(
     replacementPlanResult.data,
     allocated.evidence,
   )
-  if (identityRecords === null) {
+  if (replacementIdentityRecords === null) {
     return blocked([issue(
       'replacementInvariantViolation',
       'replacementIntent',
       'Canonical allocation evidence did not resolve to unique reviewed identity records.',
+    )], target)
+  }
+  const targetReferences = targetIdentityReferences(target)
+  const targetIdentityRecords = targetReferences === null
+    ? null
+    : reviewedIdentityRecords(replacementPlanResult.data, targetReferences)
+  if (targetReferences !== null && targetIdentityRecords === null) {
+    return blocked([issue(
+      'invalidInput',
+      'target',
+      'The target action identity references must resolve uniquely in the Plan.',
     )], target)
   }
   const reviewEvidenceId = deriveActionStructuralId('retirement-action-manual-review', [
@@ -647,7 +690,10 @@ function reviewUnchecked(
       replacement: allocatedRequest,
       preservedActions: parsedActions,
       allocatorEvidence: allocated.evidence,
-      identityRecords,
+      identityRecords: {
+        replacement: replacementIdentityRecords,
+        target: targetIdentityRecords,
+      },
     }),
   ])
   const reservedIdentifiers = completePlanReservedIdentifiers(replacementPlanResult.data)

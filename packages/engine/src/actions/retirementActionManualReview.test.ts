@@ -19,9 +19,10 @@ import {
   reviewAndReplaceRetirementActionManually,
   type RetirementActionManualReviewInput,
 } from './retirementActionManualReview.js'
-import type { Account, Plan } from '../model/plan.js'
+import { planSchema, type Account, type Plan } from '../model/plan.js'
 import {
   cashAccount,
+  couplePlan,
   singlePersonPlan,
   taxableAccount,
   traditionalAccount,
@@ -306,6 +307,30 @@ describe('manual retirement-action review and replacement', () => {
     expect(explicitUndefined.evidence.evidenceId).toBe(omitted.evidence.evidenceId)
   })
 
+  it('normalizes forward-compatible Plan action fields through the persisted schema', () => {
+    const plan = basePlan()
+    plan.strategies.retirementActions = [
+      {
+        ...legacyWithdrawal(),
+        futureTargetField: { retainedByFutureVersion: true },
+      } as unknown as RetirementActionRequest,
+      {
+        ...legacyWithdrawal('preserved-action'),
+        futurePreservedField: 'future-value',
+      } as unknown as RetirementActionRequest,
+    ]
+
+    expect(planSchema.safeParse(plan).success).toBe(true)
+    const result = review(plan, 'legacy-withdrawal', ordinaryIntent())
+
+    expect(result.status).toBe('replacementReady')
+    if (result.status !== 'replacementReady') return
+    expect(result.target).not.toHaveProperty('futureTargetField')
+    expect(result.evidence.target.request).not.toHaveProperty('futureTargetField')
+    expect(result.plan.strategies.retirementActions[1])
+      .not.toHaveProperty('futurePreservedField')
+  })
+
   it('binds selected person and account records into the review evidence ID', () => {
     const cashPlan = basePlan()
     cashPlan.strategies.retirementActions = [legacyWithdrawal()]
@@ -337,6 +362,85 @@ describe('manual retirement-action review and replacement', () => {
     expect(changedPerson.replacement.actionId).toBe(cash.replacement.actionId)
     expect(taxable.evidence.evidenceId).not.toBe(cash.evidence.evidenceId)
     expect(changedPerson.evidence.evidenceId).not.toBe(cash.evidence.evidenceId)
+  })
+
+  it('binds target-referenced person, source, and destination records into evidence', () => {
+    const plan = couplePlan({ p1PlanningAge: 100, p2PlanningAge: 100 })
+    plan.accounts = [
+      traditionalAccount('traditional-a', 1_000, 'p1'),
+      ownedRoth('roth-a'),
+      traditionalAccount('target-traditional', 1_000, 'p2'),
+      ownedRoth('target-roth', 'p2'),
+    ]
+    plan.strategies.retirementActions = [action({
+      actionId: 'manual-target',
+      kind: 'rothConversion',
+      year: 2030,
+      executionDate: '2030-08-01',
+      executionSequence: 1,
+      requestedAmount: 20_000,
+      provenance: { source: 'manual' },
+      personId: 'p2',
+      allocations: [{
+        allocationId: 'target-allocation',
+        sourceAccountId: 'target-traditional',
+        requestedAmount: 20_000,
+      }],
+      destinationRothAccountId: 'target-roth',
+      taxFunding: { kind: 'noneExpected' },
+    })]
+    const changedPersonPlan = structuredClone(plan)
+    changedPersonPlan.household.people[1]!.name = 'Different Robin'
+    const changedSourcePlan = structuredClone(plan)
+    const targetSourceAccount = changedSourcePlan.accounts.find(
+      (account) => account.id === 'target-traditional',
+    )!
+    if (targetSourceAccount.type !== 'traditional') {
+      throw new Error('expected traditional source')
+    }
+    targetSourceAccount.balance = 2_000
+    const changedDestinationPlan = structuredClone(plan)
+    const targetDestinationAccount = changedDestinationPlan.accounts.find(
+      (account) => account.id === 'target-roth',
+    )!
+    if (targetDestinationAccount.type !== 'roth') {
+      throw new Error('expected Roth destination')
+    }
+    targetDestinationAccount.balance = 2_000
+
+    const baseline = review(plan, 'manual-target', conversionIntent())
+    const changedPerson = review(
+      changedPersonPlan,
+      'manual-target',
+      conversionIntent(),
+    )
+    const changedSource = review(
+      changedSourcePlan,
+      'manual-target',
+      conversionIntent(),
+    )
+    const changedDestination = review(
+      changedDestinationPlan,
+      'manual-target',
+      conversionIntent(),
+    )
+
+    expect(baseline.status).toBe('replacementReady')
+    expect(changedPerson.status).toBe('replacementReady')
+    expect(changedSource.status).toBe('replacementReady')
+    expect(changedDestination.status).toBe('replacementReady')
+    if (
+      baseline.status !== 'replacementReady' ||
+      changedPerson.status !== 'replacementReady' ||
+      changedSource.status !== 'replacementReady' ||
+      changedDestination.status !== 'replacementReady'
+    ) return
+    expect(changedPerson.replacement.actionId).toBe(baseline.replacement.actionId)
+    expect(changedSource.replacement.actionId).toBe(baseline.replacement.actionId)
+    expect(changedDestination.replacement.actionId).toBe(baseline.replacement.actionId)
+    expect(changedPerson.evidence.evidenceId).not.toBe(baseline.evidence.evidenceId)
+    expect(changedSource.evidence.evidenceId).not.toBe(baseline.evidence.evidenceId)
+    expect(changedDestination.evidence.evidenceId).not.toBe(baseline.evidence.evidenceId)
   })
 
   it.each(['legacyAggregateQcd', 'qcd'] as const)(
