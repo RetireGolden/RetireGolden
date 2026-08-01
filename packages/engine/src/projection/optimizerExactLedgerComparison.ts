@@ -1,4 +1,7 @@
-import { planDollarsToLedgerCents } from '../actions/planBalanceAdapter.js'
+import {
+  ledgerCentsToPlanDollars,
+  planDollarsToLedgerCents,
+} from '../actions/planBalanceAdapter.js'
 import { compareUtf16CodeUnits } from '../actions/structuralId.js'
 import type { Plan } from '../model/plan.js'
 import type { ProjectionResult } from './types.js'
@@ -86,94 +89,65 @@ function quantize(value: unknown, signed: boolean): SafeMinorUnitInteger {
   return value < 0 ? -magnitude : magnitude
 }
 
-interface DecimalTerm {
-  readonly coefficient: bigint
-  readonly scale: number
-}
-
-function decimalTerm(value: number): DecimalTerm {
-  const match = /^(\d+)(?:\.(\d+))?(?:e([+-]?\d+))?$/i.exec(String(value))
-  if (match === null) {
-    throw new TypeError('Exact-ledger balance has no supported decimal spelling')
-  }
-  const fraction = match[2] ?? ''
-  return {
-    coefficient: BigInt(`${match[1]}${fraction}`),
-    scale: fraction.length - Number(match[3] ?? 0),
-  }
-}
-
-/**
- * Sum nonnegative published dollar values as exact decimal spellings, then
- * quantize the aggregate once. This avoids imposing JavaScript enumeration or
- * floating-addition order on a necessary aggregate bound.
- */
-function quantizeDecimalSumCents(values: readonly number[]): bigint {
-  const terms = values.map(decimalTerm)
-  let scale = 0
-  for (const term of terms) scale = Math.max(scale, term.scale)
-  const coefficient = terms.reduce(
-    (sum, term) => sum + term.coefficient * 10n ** BigInt(scale - term.scale),
-    0n,
-  )
-  const centScale = scale - 2
-  let cents: bigint
-  if (centScale <= 0) {
-    cents = coefficient * 10n ** BigInt(-centScale)
-  } else {
-    const divisor = 10n ** BigInt(centScale)
-    const quotient = coefficient / divisor
-    const remainder = coefficient % divisor
-    cents = quotient + (remainder * 2n >= divisor ? 1n : 0n)
-  }
-  return cents
-}
-
-function quantizeDecimalSum(values: readonly number[]): SafeMinorUnitInteger {
-  const cents = quantizeDecimalSumCents(values)
-  if (cents > BigInt(Number.MAX_SAFE_INTEGER)) {
-    // This value is used only as an upper bound for a separately validated
-    // safe-integer ending basis. Any larger exact sum proves that every
-    // representable basis is within the bound; saturating avoids rejecting a
-    // valid projection merely because several individually safe balances sum
-    // beyond the serialized minor-unit domain.
-    return Number.MAX_SAFE_INTEGER
-  }
-  return Number(cents)
-}
-
-function binaryAdditionRoundingAllowance(values: readonly number[]): bigint {
-  // After the first term, each additional nonnegative value can contribute
-  // less than one cent from its binary representation and less than one cent
-  // from the following addition at the safe-cent boundary.
-  return BigInt(2 * Math.max(0, values.length - 1))
-}
-
-function combinedBalancesFitPublishedTotal(
-  values: readonly number[],
+function planOrderBalancesFitPublishedTotal(
+  accountIds: readonly string[],
+  rawBalances: ReadonlyMap<string, number>,
   publishedTotal: SafeMinorUnitInteger,
 ): boolean {
-  return quantizeDecimalSumCents(values) <=
-    BigInt(publishedTotal) + binaryAdditionRoundingAllowance(values)
+  let planOrderTotal = 0
+  for (const accountId of accountIds) {
+    planOrderTotal += rawBalances.get(accountId)!
+  }
+  return quantize(planOrderTotal, false) <= publishedTotal
+}
+
+interface BasisSeededOwnedIraGroup {
+  readonly accountIds: readonly string[]
+  readonly seededBasisUpperBoundPlanDollars: number
+}
+
+function seededBasisUpperBound(seedPlanDollars: number): number {
+  try {
+    const normalized = ledgerCentsToPlanDollars(
+      planDollarsToLedgerCents(seedPlanDollars),
+    )
+    return Math.max(seedPlanDollars, normalized)
+  } catch {
+    // An unsafe or unrepresentable seed cannot commit through the exact-cent
+    // settlement. Retain the simulator's raw Plan-order seed as the bound.
+    return seedPlanDollars
+  }
 }
 
 /**
- * Bound the simulator's aggregate IRA basis without rejecting a valid result
- * solely because binary addition rounded an owner-grouped balance sum above
- * the exact-decimal sum. Within the supported safe-cent domain, each binary
- * added term and its binary addition can each move the aggregate by less than
- * one cent, so n nonnegative balances need at most 2(n - 1) additional cents
- * regardless of grouping or order. This is
- * only a conservative source-validity upper bound; ledger equality remains an
- * exact safe-integer-cent comparison below.
+ * Reproduce the simulator's owner-grouped, Plan-order IRA balance accumulation.
+ * Remaining basis cannot exceed that owner's Plan-order seed, and ending basis
+ * is capped at the owner-group balance before owner results are added in
+ * first-seeded Plan order.
  */
-function ownedIraBalanceUpperBound(values: readonly number[]): SafeMinorUnitInteger {
-  const exact = quantizeDecimalSum(values)
-  if (exact === Number.MAX_SAFE_INTEGER) return exact
-  return Math.min(
-    Number.MAX_SAFE_INTEGER,
-    exact + Number(binaryAdditionRoundingAllowance(values)),
-  )
+function ownedIraBalanceUpperBound(
+  ownerGroups: readonly Readonly<BasisSeededOwnedIraGroup>[],
+  rawBalances: ReadonlyMap<string, number>,
+): SafeMinorUnitInteger {
+  let total = 0
+  for (const ownerGroup of ownerGroups) {
+    let ownerTotal = 0
+    for (const accountId of ownerGroup.accountIds) {
+      ownerTotal += rawBalances.get(accountId)!
+    }
+    total += Math.min(
+      ownerGroup.seededBasisUpperBoundPlanDollars,
+      ownerTotal,
+    )
+  }
+  try {
+    return quantize(total, false)
+  } catch {
+    // The bound alone may exceed the supported cent domain while the separately
+    // validated ending basis remains representable. Every safe basis is then
+    // necessarily below the source balance bound.
+    return Number.MAX_SAFE_INTEGER
+  }
 }
 
 function ownDataProperty(value: unknown, key: string): unknown {
@@ -244,15 +218,25 @@ function sameNumbers(left: readonly number[], right: readonly number[]): boolean
 interface ExpectedPublishedBalanceIds {
   readonly all: readonly string[]
   readonly investable: readonly string[]
-  readonly ownedNonRothIras: readonly string[]
+  readonly investableInPlanOrder: readonly string[]
+  readonly basisSeededOwnedIraGroups:
+    readonly Readonly<BasisSeededOwnedIraGroup>[]
 }
 
 function expectedPublishedBalanceIds(
-  plan: Readonly<Pick<Plan, 'accounts' | 'insurance'>>,
+  plan: Readonly<Pick<Plan, 'accounts' | 'household' | 'insurance'>>,
 ): ExpectedPublishedBalanceIds {
   const ids: string[] = []
   const investableIds: string[] = []
-  const ownedNonRothIraIds: string[] = []
+  const iraIdsByOwner = new Map<string, string[]>()
+  const basisSeededOwnerIds: string[] = []
+  const seededBasisByOwner = new Map<string, number>()
+  const primaryPersonId = plan.household.people[0]?.id
+  const personIds = new Set(plan.household.people.map((person) => person.id))
+  if (typeof primaryPersonId !== 'string' || primaryPersonId.length === 0 ||
+      personIds.size !== plan.household.people.length) {
+    throw new TypeError('Plan household identities must be nonempty and unique')
+  }
   for (const account of plan.accounts) {
     if (account.type === 'pension' || account.type === 'annuity') continue
     ids.push(account.id)
@@ -261,7 +245,26 @@ function expectedPublishedBalanceIds(
     }
     if (account.type === 'traditional' && account.kind === 'ira' &&
         account.inherited === undefined) {
-      ownedNonRothIraIds.push(account.id)
+      const ownerId = account.ownerPersonId ?? primaryPersonId
+      if (!personIds.has(ownerId)) {
+        throw new TypeError('Owned IRA identity must reference a Plan person')
+      }
+      const ownerGroup = iraIdsByOwner.get(ownerId) ?? []
+      ownerGroup.push(account.id)
+      iraIdsByOwner.set(ownerId, ownerGroup)
+      const basis = account.nondeductibleBasis ?? 0
+      if (!Number.isFinite(basis) || basis < 0) {
+        throw new TypeError('Owned IRA basis must be finite and nonnegative')
+      }
+      if (basis > 0) {
+        if (!seededBasisByOwner.has(ownerId)) {
+          basisSeededOwnerIds.push(ownerId)
+        }
+        seededBasisByOwner.set(
+          ownerId,
+          (seededBasisByOwner.get(ownerId) ?? 0) + basis,
+        )
+      }
     }
   }
   for (const policy of plan.insurance) {
@@ -273,8 +276,16 @@ function expectedPublishedBalanceIds(
   }
   return {
     all: ids.sort(compareUtf16CodeUnits),
-    investable: investableIds.sort(compareUtf16CodeUnits),
-    ownedNonRothIras: ownedNonRothIraIds.sort(compareUtf16CodeUnits),
+    investable: [...investableIds].sort(compareUtf16CodeUnits),
+    investableInPlanOrder: investableIds,
+    basisSeededOwnedIraGroups: basisSeededOwnerIds.map(
+      (ownerId) => ({
+        accountIds: iraIdsByOwner.get(ownerId)!,
+        seededBasisUpperBoundPlanDollars: seededBasisUpperBound(
+          seededBasisByOwner.get(ownerId)!,
+        ),
+      }),
+    ),
   }
 }
 
@@ -382,7 +393,7 @@ function amountFor(
 export function compareOptimizerExactLedgerResults(
   aggregateResult: Readonly<ProjectionResult>,
   allocatedResult: Readonly<ProjectionResult>,
-  plan: Readonly<Pick<Plan, 'accounts' | 'insurance'>>,
+  plan: Readonly<Pick<Plan, 'accounts' | 'household' | 'insurance'>>,
 ): Readonly<OptimizerExactLedgerComparisonEvidence> | null {
   try {
     const aggregate = sourceSnapshot(aggregateResult)
@@ -410,29 +421,25 @@ export function compareOptimizerExactLedgerResults(
       if (expectedAccountIds.investable.some((accountId) =>
         aggregateBalances.get(accountId)! > aggregateYear.investableTotal ||
         allocatedBalances.get(accountId)! > allocatedYear.investableTotal)) return null
-      const aggregateInvestableBalances = expectedAccountIds.investable.map(
-        (accountId) => aggregateYear.rawBalances.get(accountId)!,
-      )
-      const allocatedInvestableBalances = expectedAccountIds.investable.map(
-        (accountId) => allocatedYear.rawBalances.get(accountId)!,
-      )
-      if (!combinedBalancesFitPublishedTotal(
-        aggregateInvestableBalances,
+      if (!planOrderBalancesFitPublishedTotal(
+        expectedAccountIds.investableInPlanOrder,
+        aggregateYear.rawBalances,
         aggregateYear.investableTotal,
-      ) || !combinedBalancesFitPublishedTotal(
-        allocatedInvestableBalances,
+      ) || !planOrderBalancesFitPublishedTotal(
+        expectedAccountIds.investableInPlanOrder,
+        allocatedYear.rawBalances,
         allocatedYear.investableTotal,
       )) return null
     }
     const aggregateEndingYear = aggregate.years.get(aggregate.horizon.endYear)!
     const allocatedEndingYear = allocated.years.get(allocated.horizon.endYear)!
     const aggregateEndingIraBalance = ownedIraBalanceUpperBound(
-      expectedAccountIds.ownedNonRothIras.map((accountId) =>
-        aggregateEndingYear.rawBalances.get(accountId)!),
+      expectedAccountIds.basisSeededOwnedIraGroups,
+      aggregateEndingYear.rawBalances,
     )
     const allocatedEndingIraBalance = ownedIraBalanceUpperBound(
-      expectedAccountIds.ownedNonRothIras.map((accountId) =>
-        allocatedEndingYear.rawBalances.get(accountId)!),
+      expectedAccountIds.basisSeededOwnedIraGroups,
+      allocatedEndingYear.rawBalances,
     )
     if (aggregate.endingNondeductibleIraBasis > aggregateEndingIraBalance ||
         allocated.endingNondeductibleIraBasis > allocatedEndingIraBalance) return null

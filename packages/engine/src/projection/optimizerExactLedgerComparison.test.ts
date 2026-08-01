@@ -47,8 +47,20 @@ function twoYearResult(): ProjectionResult {
 function comparisonPlan(
   accountIds: readonly string[],
   permanentLifePolicyIds: readonly string[] = [],
-): Pick<Plan, 'accounts' | 'insurance'> {
+): Pick<Plan, 'accounts' | 'household' | 'insurance'> {
   return {
+    household: {
+      people: ['person-1', 'person-2', 'person-a', 'person-b'].map((id) => ({
+        id,
+        name: id,
+        dob: '1960-01-01',
+        sex: 'average',
+        retirementAge: null,
+        longevity: { planningAge: 95, source: 'manual' },
+      })),
+      state: 'KY',
+      filingStatus: 'single',
+    } as Plan['household'],
     accounts: accountIds.map((id) => ({
       type: 'cash',
       id,
@@ -262,10 +274,8 @@ describe('compareOptimizerExactLedgerResults', () => {
       balances: { home: 200 },
       investableTotal: 100,
     }], { endingInvestable: 100 })
-    const plan = {
-      accounts: [{ type: 'property', id: 'home' }] as Plan['accounts'],
-      insurance: [],
-    }
+    const plan = comparisonPlan(['home'])
+    plan.accounts = [{ type: 'property', id: 'home' }] as Plan['accounts']
 
     expect(compareOptimizerExactLedgerResultsWithPlan(
       result,
@@ -306,6 +316,7 @@ describe('compareOptimizerExactLedgerResults', () => {
       ownerPersonId: 'person-1',
       annualReturnPct: 0,
       balance: 100,
+      nondeductibleBasis: 100.01,
       annualContribution: 0,
     }]
     expect(compareOptimizerExactLedgerResultsWithPlan(
@@ -334,7 +345,128 @@ describe('compareOptimizerExactLedgerResults', () => {
     )).toBeNull()
   })
 
-  it('bounds ending IRA basis with one exact-decimal sum, independent of float order', () => {
+  it('does not tolerate a one-cent-short published investable total', () => {
+    const inconsistent = projection(
+      [{
+        year: 2030,
+        investableTotal: 99.99,
+        netWorth: 99.99,
+        balances: { first: 50, second: 50 },
+      }],
+      { endingInvestable: 99.99, endingNetWorth: 99.99 },
+    )
+    const plan = comparisonPlan(['first', 'second'])
+
+    expect(compareOptimizerExactLedgerResultsWithPlan(
+      inconsistent,
+      structuredClone(inconsistent),
+      plan,
+    )).toBeNull()
+  })
+
+  it('does not tolerate ending IRA basis one cent above owner-grouped balances', () => {
+    const inconsistent = projection(
+      [{
+        year: 2030,
+        investableTotal: 100,
+        netWorth: 100,
+        balances: { first: 50, second: 50 },
+      }],
+      {
+        endingInvestable: 100,
+        endingNetWorth: 100,
+        endingNondeductibleIraBasis: 100.01,
+      },
+    )
+    const plan = comparisonPlan(['first', 'second'])
+    plan.accounts = ['first', 'second'].map((id, index) => ({
+      type: 'traditional',
+      kind: 'ira',
+      id,
+      name: id,
+      ownerPersonId: 'person-1',
+      annualReturnPct: 0,
+      balance: 0,
+      nondeductibleBasis: index === 0 ? 100.01 : undefined,
+      annualContribution: 0,
+    }))
+
+    expect(compareOptimizerExactLedgerResultsWithPlan(
+      inconsistent,
+      structuredClone(inconsistent),
+      plan,
+    )).toBeNull()
+  })
+
+  it('rejects ending IRA basis above the Plan-order seeded basis', () => {
+    const inconsistent = projection(
+      [{
+        year: 2030,
+        investableTotal: 100,
+        netWorth: 100,
+        balances: { traditional: 100 },
+      }],
+      {
+        endingInvestable: 100,
+        endingNetWorth: 100,
+        endingNondeductibleIraBasis: 100,
+      },
+    )
+    const plan = comparisonPlan(['traditional'])
+    plan.accounts = [{
+      type: 'traditional',
+      kind: 'ira',
+      id: 'traditional',
+      name: 'Traditional IRA',
+      ownerPersonId: 'person-1',
+      annualReturnPct: 0,
+      balance: 100,
+      nondeductibleBasis: 1,
+      annualContribution: 0,
+    }]
+
+    expect(compareOptimizerExactLedgerResultsWithPlan(
+      inconsistent,
+      structuredClone(inconsistent),
+      plan,
+    )).toBeNull()
+  })
+
+  it('allows independent owner seed normalization at the exact-cent boundary', () => {
+    const result = projection(
+      [{
+        year: 2030,
+        investableTotal: 200,
+        netWorth: 200,
+        balances: { first: 100, second: 100 },
+      }],
+      {
+        endingInvestable: 200,
+        endingNetWorth: 200,
+        endingNondeductibleIraBasis: 0.02,
+      },
+    )
+    const plan = comparisonPlan(['first', 'second'])
+    plan.accounts = ['first', 'second'].map((id, index) => ({
+      type: 'traditional',
+      kind: 'ira',
+      id,
+      name: id,
+      ownerPersonId: index === 0 ? 'person-1' : 'person-2',
+      annualReturnPct: 0,
+      balance: 100,
+      nondeductibleBasis: 0.006,
+      annualContribution: 0,
+    }))
+
+    expect(compareOptimizerExactLedgerResultsWithPlan(
+      result,
+      structuredClone(result),
+      plan,
+    )).not.toBeNull()
+  })
+
+  it('bounds ending IRA basis with the simulator owner-grouped Plan order', () => {
     const endingBasis = 40_000_000_000_000.01
     const result = projection(
       [{
@@ -362,6 +494,7 @@ describe('compareOptimizerExactLedgerResults', () => {
       ownerPersonId: index === 0 ? 'person-1' : 'person-2',
       annualReturnPct: 0,
       balance: 0,
+      nondeductibleBasis: id === 'large' ? 40_000_000_000_000 : 0.003,
       annualContribution: 0,
     }))
 
@@ -372,7 +505,7 @@ describe('compareOptimizerExactLedgerResults', () => {
     )).not.toBeNull()
   })
 
-  it('saturates an owned-IRA upper bound above the safe-cent domain', () => {
+  it('accepts a safe Plan-order aggregate at the safe-cent boundary', () => {
     const first = 13_525_815_597_016.54
     const second = 76_546_176_950_393.38
     const publishedTotal = first + second
@@ -426,7 +559,7 @@ describe('compareOptimizerExactLedgerResults', () => {
       },
     )
     const plan = comparisonPlan(['first', 'second'])
-    plan.accounts = ['first', 'second'].map((id) => ({
+    plan.accounts = ['first', 'second'].map((id, index) => ({
       type: 'traditional',
       kind: 'ira',
       id,
@@ -434,6 +567,7 @@ describe('compareOptimizerExactLedgerResults', () => {
       ownerPersonId: 'person-1',
       annualReturnPct: 0,
       balance: 0,
+      nondeductibleBasis: index === 0 ? first : second,
       annualContribution: 0,
     }))
 
