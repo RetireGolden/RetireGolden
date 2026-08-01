@@ -156,6 +156,26 @@ export interface SimulateOptions {
 
 const EPSILON = 0.005
 
+function compareNullableUtf16(
+  left: string | null,
+  right: string | null,
+): number {
+  if (left === right) return 0
+  if (left === null) return -1
+  if (right === null) return 1
+  return compareUtf16CodeUnits(left, right)
+}
+
+function compareNullableNumber(
+  left: number | null,
+  right: number | null,
+): number {
+  if (left === right) return 0
+  if (left === null) return -1
+  if (right === null) return 1
+  return left - right
+}
+
 function canonicalRuntimeOccurrenceOrder(
   left: Readonly<SimulatorAnnualRetirementRuntimeOccurrence>,
   right: Readonly<SimulatorAnnualRetirementRuntimeOccurrence>,
@@ -163,26 +183,13 @@ function canonicalRuntimeOccurrenceOrder(
   return compareUtf16CodeUnits(
     left.producerOccurrenceKey,
     right.producerOccurrenceKey,
-  ) || compareUtf16CodeUnits(
-    JSON.stringify([
-      left.kind,
-      left.grossAmountPlanDollars,
-      left.ownerPersonId,
-      left.sourceAccountId,
-      left.executionDate,
-      left.executionSequence,
-      left.movementAuthorityId,
-    ]),
-    JSON.stringify([
-      right.kind,
-      right.grossAmountPlanDollars,
-      right.ownerPersonId,
-      right.sourceAccountId,
-      right.executionDate,
-      right.executionSequence,
-      right.movementAuthorityId,
-    ]),
-  )
+  ) || compareUtf16CodeUnits(left.kind, right.kind)
+    || left.grossAmountPlanDollars - right.grossAmountPlanDollars
+    || compareNullableUtf16(left.ownerPersonId, right.ownerPersonId)
+    || compareNullableUtf16(left.sourceAccountId, right.sourceAccountId)
+    || compareNullableUtf16(left.executionDate, right.executionDate)
+    || compareNullableNumber(left.executionSequence, right.executionSequence)
+    || compareNullableUtf16(left.movementAuthorityId, right.movementAuthorityId)
 }
 const MAX_TAX_ITERATIONS = 8
 const MAX_ACA_FIXED_POINT_EVALUATIONS = 160

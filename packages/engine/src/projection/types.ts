@@ -427,8 +427,10 @@ export interface YearResult {
    * Projection-only raw source capture for legacy retirement-account
    * mutations. A later replay consumer owns journal validation, structural
    * identity derivation, and sealing; this field changes no legacy movement.
+   * `simulatePlan` always publishes it, while optionality preserves source
+   * compatibility for external consumers that construct `YearResult` values.
    */
-  retirementRuntimeSource:
+  retirementRuntimeSource?:
     Readonly<SimulatorAnnualRetirementRuntimeSource>
   /**
    * Exact-cent action execution evidence. Present only when the Plan contains

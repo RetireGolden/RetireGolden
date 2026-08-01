@@ -26,6 +26,7 @@ function runOneYear(plan: Plan): YearResult {
 
 function records(year: YearResult): readonly Readonly<AnnualRetirementRuntimeInventoryRecord>[] {
   const source = year.retirementRuntimeSource
+  if (source === undefined) throw new Error('expected simulator runtime source')
   let journal = beginSimulatorAnnualRetirementRuntimeJournal({
     planId: asPlanId(source.planId),
     taxYear: source.taxYear,
@@ -254,7 +255,7 @@ describe('simulate annual retirement runtime source capture', () => {
     expect(records(year)).toHaveLength(1)
     expect(grossCents(records(year))).toBe(1_000_000)
     expect(recordsOfKind(year, 'legacyQcd')).toEqual([])
-    expect(year.retirementRuntimeSource.nonmovingLegacyQcdOverlay).toEqual({
+    expect(year.retirementRuntimeSource?.nonmovingLegacyQcdOverlay).toEqual({
       status: 'nonmovingLegacyQcdCaptured',
       kind: 'legacyQcd',
       taxYear: TAX_YEAR,
