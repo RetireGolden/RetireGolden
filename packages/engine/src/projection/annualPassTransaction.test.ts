@@ -372,6 +372,52 @@ function mutateEntireAnnualPass(bindings: SimulatorAnnualPassStateBindings): voi
 }
 
 describe('simulator annual-pass transaction', () => {
+  it('restores original binding references after hostile replacements', () => {
+    const { bindings } = fixture()
+    const references = { ...bindings }
+    const balanceRecords = [...bindings.balances]
+    const accounts = bindings.balances.map((record) => record.account)
+    const capitalLossPoolRead = bindings.capitalLossPool.read
+    const capitalLossPoolWrite = bindings.capitalLossPool.write
+    const transaction = beginSimulatorAnnualPassTransaction(bindings)
+
+    bindings.balances = bindings.balances.map((record) => ({
+      account: { ...record.account },
+      balance: record.balance,
+      costBasis: record.costBasis,
+    }))
+    bindings.retirementRuntimeOccurrences = [
+      ...bindings.retirementRuntimeOccurrences,
+    ]
+    bindings.iraBasisByOwner = new Map(bindings.iraBasisByOwner)
+    bindings.capitalLossPool = {
+      read: references.capitalLossPool.read,
+      write: references.capitalLossPool.write,
+    }
+    ;(references.capitalLossPool as {
+      read: () => number
+      write: (value: number) => void
+    }).read = () => capitalLossPoolRead() + 1
+    ;(references.capitalLossPool as {
+      read: () => number
+      write: (value: number) => void
+    }).write = () => {}
+    bindings.expenses = { ...bindings.expenses }
+
+    transaction.rollback()
+
+    for (const key of Object.keys(references) as
+      Array<keyof SimulatorAnnualPassStateBindings>) {
+      expect(bindings[key]).toBe(references[key])
+    }
+    bindings.balances.forEach((record, index) => {
+      expect(record).toBe(balanceRecords[index])
+      expect(record.account).toBe(accounts[index])
+    })
+    expect(bindings.capitalLossPool.read).toBe(capitalLossPoolRead)
+    expect(bindings.capitalLossPool.write).toBe(capitalLossPoolWrite)
+  })
+
   it('exactly rolls back every named container/local and restores balance member identity', () => {
     const { bindings, originalBalances } = fixture()
     const before = stateBytes(bindings)

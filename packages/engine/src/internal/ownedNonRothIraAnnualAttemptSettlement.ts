@@ -165,7 +165,37 @@ interface SettlementProbeInput {
   readonly issue: OwnedNonRothIraContiguousReplayIssue | null
 }
 
+const VALUE_BINDING_KEYS = [
+  'nextRetirementRuntimeMutationOrdinal',
+  'unassignedCash',
+  'priorYearPortfolioReturnPct',
+  'capitalLossPool',
+  'hsaReimbursablePool',
+  'depletionYear',
+  'conversionNontaxable',
+  'healthcare',
+  'qualifiedMedicalThisYear',
+  'hsaQualifiedCap',
+  'requiredSpendingBase',
+  'targetSpendingBase',
+] as const satisfies readonly (keyof SimulatorAnnualPassStateBindings)[]
+
 interface AttemptStateCheckpoint {
+  readonly bindingReferences: {
+    readonly [Key in keyof SimulatorAnnualPassStateBindings]:
+      SimulatorAnnualPassStateBindings[Key]
+  }
+  readonly balanceBindings: readonly {
+    readonly record: SimulatorAnnualPassStateBindings['balances'][number]
+    readonly account:
+      SimulatorAnnualPassStateBindings['balances'][number]['account']
+  }[]
+  readonly valueBindingMethods: readonly {
+    readonly key: typeof VALUE_BINDING_KEYS[number]
+    readonly binding: object
+    readonly read: unknown
+    readonly write: unknown
+  }[]
   readonly runtimeOccurrences:
     readonly Readonly<SimulatorAnnualRetirementRuntimeOccurrence>[]
   readonly runtimeApplications:
@@ -274,6 +304,20 @@ function captureAttemptState(
   state: Readonly<SimulatorAnnualPassStateBindings>,
 ): AttemptStateCheckpoint {
   return {
+    bindingReferences: { ...state },
+    balanceBindings: state.balances.map((record) => ({
+      record,
+      account: record.account,
+    })),
+    valueBindingMethods: VALUE_BINDING_KEYS.map((key) => {
+      const binding = state[key]
+      return {
+        key,
+        binding,
+        read: binding.read,
+        write: binding.write,
+      }
+    }),
     runtimeOccurrences: state.retirementRuntimeOccurrences.map((value) => ({
       ...value,
     })),
@@ -282,6 +326,26 @@ function captureAttemptState(
     nextMutationOrdinal: state.nextRetirementRuntimeMutationOrdinal.read(),
     invariantState: snapshotInvariantState(state),
   }
+}
+
+function attemptBindingReferencesMatch(
+  checkpoint: Readonly<AttemptStateCheckpoint>,
+  state: Readonly<SimulatorAnnualPassStateBindings>,
+): boolean {
+  const bindingKeys = Object.keys(checkpoint.bindingReferences) as
+    Array<keyof SimulatorAnnualPassStateBindings>
+  return bindingKeys.every((key) =>
+    state[key] === checkpoint.bindingReferences[key]) &&
+    checkpoint.valueBindingMethods.every(({ key, binding, read, write }) => {
+      const current = state[key]
+      return current === binding &&
+        current.read === read &&
+        current.write === write
+    }) &&
+    state.balances.length === checkpoint.balanceBindings.length &&
+    state.balances.every((record, index) =>
+      record === checkpoint.balanceBindings[index]!.record &&
+      record.account === checkpoint.balanceBindings[index]!.account)
 }
 
 function attemptStateMatchesYear(
@@ -293,7 +357,8 @@ function attemptStateMatchesYear(
 ): boolean {
   const occurrenceSource = year.retirementRuntimeSource
   const applicationSource = year.retirementRuntimeApplicationSource
-  if (!same(checkpoint.invariantState, snapshotInvariantState(state)) ||
+  if (!attemptBindingReferencesMatch(checkpoint, state) ||
+      !same(checkpoint.invariantState, snapshotInvariantState(state)) ||
       year.year !== stable.projectionStartTaxYear ||
       occurrenceSource === undefined ||
       applicationSource === undefined ||

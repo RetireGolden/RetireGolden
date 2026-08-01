@@ -496,6 +496,12 @@ describe('private owned-IRA annual attempt settlement', () => {
     'mutationOrdinal',
     'balanceMovement',
     'balanceInventory',
+    'balanceBinding',
+    'journalBinding',
+    'mapBinding',
+    'scalarBinding',
+    'scalarWiring',
+    'expensesBinding',
     'costBasis',
     'warning',
     'map',
@@ -506,6 +512,8 @@ describe('private owned-IRA annual attempt settlement', () => {
     const years = cloneYears(project(plan))
     const simulatorState = state(plan)
     const before = stateBytes(simulatorState)
+    const originalCapitalLossPoolWrite =
+      simulatorState.capitalLossPool.write
 
     const result = runOwnedNonRothIraAnnualSettlementAttempts({
       state: simulatorState,
@@ -532,6 +540,30 @@ describe('private owned-IRA annual attempt settlement', () => {
           simulatorState.balances[0]!.balance += 0.01
         } else if (kind === 'balanceInventory') {
           simulatorState.balances.splice(0, 1)
+        } else if (kind === 'balanceBinding') {
+          const original = simulatorState.balances[0]!
+          simulatorState.balances[0] = {
+            account: { id: original.account.id },
+            balance: original.balance,
+            costBasis: original.costBasis,
+          }
+        } else if (kind === 'journalBinding') {
+          simulatorState.retirementRuntimeOccurrences = [
+            ...simulatorState.retirementRuntimeOccurrences,
+          ]
+        } else if (kind === 'mapBinding') {
+          simulatorState.iraBasisByOwner =
+            new Map(simulatorState.iraBasisByOwner)
+        } else if (kind === 'scalarBinding') {
+          simulatorState.capitalLossPool = binding(
+            simulatorState.capitalLossPool.read(),
+          )
+        } else if (kind === 'scalarWiring') {
+          ;(simulatorState.capitalLossPool as {
+            write: (value: number) => void
+          }).write = () => {}
+        } else if (kind === 'expensesBinding') {
+          simulatorState.expenses = { ...simulatorState.expenses }
         } else if (kind === 'costBasis') {
           simulatorState.balances[0]!.costBasis += 1
         } else if (kind === 'warning') {
@@ -555,6 +587,8 @@ describe('private owned-IRA annual attempt settlement', () => {
       committedCarryforwards: null,
     })
     expect(stateBytes(simulatorState)).toBe(before)
+    expect(simulatorState.capitalLossPool.write)
+      .toBe(originalCapitalLossPoolWrite)
   })
 
   it('reports replay-effect canonicalization failures distinctly from aggregate ownership', () => {
