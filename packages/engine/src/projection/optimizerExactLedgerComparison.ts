@@ -127,7 +127,12 @@ function quantizeDecimalSum(values: readonly number[]): SafeMinorUnitInteger {
     cents = quotient + (remainder * 2n >= divisor ? 1n : 0n)
   }
   if (cents > BigInt(Number.MAX_SAFE_INTEGER)) {
-    throw new TypeError('Exact-ledger aggregate balance exceeds the supported domain')
+    // This value is used only as an upper bound for a separately validated
+    // safe-integer ending basis. Any larger exact sum proves that every
+    // representable basis is within the bound; saturating avoids rejecting a
+    // valid projection merely because several individually safe balances sum
+    // beyond the serialized minor-unit domain.
+    return Number.MAX_SAFE_INTEGER
   }
   return Number(cents)
 }

@@ -353,6 +353,42 @@ describe('compareOptimizerExactLedgerResults', () => {
     )).not.toBeNull()
   })
 
+  it('saturates an owned-IRA upper bound above the safe-cent domain', () => {
+    const first = 13_525_815_597_016.54
+    const second = 76_546_176_950_393.38
+    const publishedTotal = first + second
+    const result = projection(
+      [{
+        year: 2030,
+        investableTotal: publishedTotal,
+        netWorth: publishedTotal,
+        balances: { first, second },
+      }],
+      {
+        endingInvestable: publishedTotal,
+        endingNetWorth: publishedTotal,
+        endingNondeductibleIraBasis: 0,
+      },
+    )
+    const plan = comparisonPlan(['first', 'second'])
+    plan.accounts = ['first', 'second'].map((id) => ({
+      type: 'traditional',
+      kind: 'ira',
+      id,
+      name: id,
+      ownerPersonId: 'person-1',
+      annualReturnPct: 0,
+      balance: 0,
+      annualContribution: 0,
+    }))
+
+    expect(compareOptimizerExactLedgerResultsWithPlan(
+      result,
+      structuredClone(result),
+      plan,
+    )).not.toBeNull()
+  })
+
   it('uses raw UTF-16 ordering and is invariant to balance-map insertion order', () => {
     const aggregate = projection([{ year: 2030, balances: { 'ä': 1, z: 2, a: 3 } }])
     const allocated = projection([{ year: 2030, balances: { a: 3, z: 2, 'ä': 1 } }])
