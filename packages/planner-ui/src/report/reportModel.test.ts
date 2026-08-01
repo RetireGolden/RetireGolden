@@ -415,4 +415,57 @@ describe('optimizer recommendation evidence', () => {
     )
     expect(evidence.validation).toBeNull()
   })
+
+  it('attributes a withheld MILP row to the readiness veto', () => {
+    const evidence = reportEvidenceFromOptimizeResult({
+      tournament: {
+        policyId: 'max-after-tax-estate',
+        candidates: [{
+          id: 'milp-cleaned-schedule',
+          label: 'Optimizer cleaned schedule',
+          executedConversionTotal: 50_000,
+          afterTaxEstateDelta: 2_000,
+          lifetimeTaxDelta: -5_000,
+          moneyLastsYearsDelta: 0,
+        }],
+        winnerSource: 'none',
+        winnerCandidateId: null,
+        winnerLabel: null,
+        winnerConversions: [],
+        winnerValidation: null,
+        marginOverMilpDollars: 0,
+        searchRefined: false,
+        searchSimulations: 0,
+        acaActionabilityVeto: null,
+        retirementActionReadinessVeto: {
+          reason: 'identityIncomplete',
+          vetoedWinnerSource: 'milp',
+          vetoedCandidateId: null,
+          vetoedCandidateLabel: null,
+          vetoedConversions: [{ year: 2026, amount: 50_000 }],
+          vetoedValidation: {
+            baseline: { endingAfterTaxEstate: 100_000 },
+            candidate: { endingAfterTaxEstate: 102_000 },
+            afterTaxEstateDelta: 2_000,
+            endingNetWorthDelta: 1_500,
+            lifetimeTaxDelta: -5_000,
+            moneyLastsYearsDelta: 0,
+            requestedConversionTotal: 50_000,
+            executedConversionTotal: 50_000,
+            executedConversionRatio: 1,
+            firstMateriallyUnexecutedYear: null,
+            traditionalDepletionYear: null,
+            recommendationState: 'identityIncomplete',
+          },
+        },
+      },
+      claimAge: null,
+    } as never)
+
+    expect(evidence.winnerSource).toBe('milp')
+    expect(evidence.candidates[0]?.lossReason).toMatch(
+      /owner, source IRA, and Roth destination/i,
+    )
+    expect(evidence.candidates[0]?.lossReason).not.toMatch(/no candidate cleared/i)
+  })
 })

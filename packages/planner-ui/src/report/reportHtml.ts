@@ -445,8 +445,12 @@ function lossReasonForCandidate(
   candidate: ExactLedgerTournament['candidates'][number],
 ): string {
   if (tournament.winnerCandidateId === candidate.id) return 'Selected winner on the full year-by-year projection.'
-  if (tournament.retirementActionReadinessVeto?.vetoedCandidateId === candidate.id) {
-    return retirementActionReadinessVetoExplanation(tournament.retirementActionReadinessVeto)
+  const readinessVeto = tournament.retirementActionReadinessVeto
+  if (
+    readinessVeto?.vetoedCandidateId === candidate.id ||
+    (readinessVeto?.vetoedWinnerSource === 'milp' && candidate.id === 'milp-cleaned-schedule')
+  ) {
+    return retirementActionReadinessVetoExplanation(readinessVeto)
   }
   if (candidate.afterTaxEstateDelta <= 1) return 'Did not improve after-tax estate over the current plan.'
   if (tournament.acaActionabilityVeto?.vetoedCandidateIds.includes(candidate.id)) {
