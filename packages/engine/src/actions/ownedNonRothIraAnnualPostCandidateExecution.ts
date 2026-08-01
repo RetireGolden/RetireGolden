@@ -267,6 +267,7 @@ interface IdentifierDeclaration {
   role: IdentifierRole
   binding: unknown
   label: string
+  exactRepeat?: boolean
 }
 
 function allIdentifierValues(
@@ -324,7 +325,7 @@ function postCandidateClaims(
 function declareIdentifier(
   claims: Map<string, IdentifierClaim>,
   declaration: Readonly<IdentifierDeclaration>,
-  exactDerivedRepeat: boolean,
+  allowExactRepeat: boolean,
 ): string | null {
   const binding = identifierBinding(declaration.binding)
   const existing = claims.get(declaration.value)
@@ -337,7 +338,7 @@ function declareIdentifier(
     return null
   }
   if (
-    exactDerivedRepeat &&
+    allowExactRepeat &&
     existing.role === declaration.role &&
     existing.binding === binding
   ) {
@@ -355,8 +356,9 @@ function callerPenaltyDeclarations(
     role: IdentifierRole,
     binding: unknown,
     label: string,
+    exactRepeat = false,
   ): void => {
-    result.push({ value, role, binding, label })
+    result.push({ value, role, binding, label, exactRepeat })
   }
   add(input.ownerEvidence.evidenceId, 'ownerBirthDateEvidence',
     input.ownerEvidence, 'owner birth-date evidence')
@@ -433,9 +435,55 @@ function callerPenaltyDeclarations(
           'SEPP prior-election used-distribution evidence')
       }
     }
-    for (const payment of annual.payments ?? []) {
-      add(payment.currentPaymentEvidence.paymentScheduleEvidenceId,
-        'seppPaymentScheduleEvidence', payment.currentPaymentEvidence,
+    const payments = annual.payments ?? []
+    for (const payment of payments) {
+      const evidence = payment.currentPaymentEvidence
+      add(evidence.currentDistributionEvidenceId,
+        'seppDistributionEvidence',
+        [
+          evidence.actionId,
+          evidence.allocationId,
+          evidence.sourceAccountId,
+          evidence.distributionDate,
+        ],
+        'SEPP current-distribution evidence reference',
+        true)
+      let previousStateBinding: unknown
+      if (
+        annual.openingStateEvidence !== undefined &&
+        evidence.previousScheduleStateId ===
+          annual.openingStateEvidence.openingStateEvidenceId
+      ) {
+        previousStateBinding = annual.openingStateEvidence
+      } else if (
+        history !== undefined &&
+        evidence.previousScheduleStateId === history.terminalStateEvidenceId
+      ) {
+        previousStateBinding = [routeKey, 'priorElectionTerminal', history]
+      } else {
+        const predecessor = payments.find((candidate) =>
+          candidate.currentPaymentEvidence.paymentSequence ===
+            evidence.paymentSequence - 1)
+        previousStateBinding = predecessor === undefined
+          ? [
+              routeKey,
+              evidence.actionId,
+              evidence.allocationId,
+              evidence.paymentSequence,
+              'unresolvedPrevious',
+            ]
+          : [
+              routeKey,
+              predecessor.currentPaymentEvidence.actionId,
+              predecessor.currentPaymentEvidence.allocationId,
+              predecessor.currentPaymentEvidence.paymentSequence,
+              'after',
+            ]
+      }
+      add(evidence.previousScheduleStateId, 'seppStateEvidence',
+        previousStateBinding, 'SEPP previous schedule-state reference', true)
+      add(evidence.paymentScheduleEvidenceId,
+        'seppPaymentScheduleEvidence', evidence,
         'SEPP payment-schedule evidence')
     }
   }
@@ -447,7 +495,11 @@ function claimCallerPenaltyDeclarations(
   claims: Map<string, IdentifierClaim>,
 ): string | null {
   for (const declaration of callerPenaltyDeclarations(input)) {
-    const issue = declareIdentifier(claims, declaration, false)
+    const issue = declareIdentifier(
+      claims,
+      declaration,
+      declaration.exactRepeat === true,
+    )
     if (issue !== null) return issue
   }
   return null

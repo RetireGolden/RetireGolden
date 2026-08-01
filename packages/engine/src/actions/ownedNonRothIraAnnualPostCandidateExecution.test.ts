@@ -1234,4 +1234,52 @@ describe('post-candidate owned non-Roth IRA annual execution', () => {
         executionEvidenceId: null,
       })
   })
+
+  it.each([
+    'currentDistributionEvidenceId',
+    'previousScheduleStateId',
+  ] as const)(
+    'preflights an unreconciled SEPP %s collision despite age precedence',
+    (field) => {
+      const input = structuredClone(
+        executionInput(10_000, '1950-01-01'),
+      ) as unknown as ExecutePlanOwnedNonRothIraAnnualPostCandidateInput
+      bindSeppRoute(input)
+      const payment = input.iraSeppScheduleRoutes?.[0]
+        ?.annualReconciliationInput.payments?.[0]?.currentPaymentEvidence
+      if (payment === undefined) throw new Error('SEPP fixture lost its payment')
+      ;(payment as unknown as Record<typeof field, string>)[field] =
+        'post-candidate-snapshot'
+
+      const { line7Distributions, ...annualInput } =
+        input.postCandidateEvidence.classificationInput
+      void line7Distributions
+      const coordinated = coordinateOwnedNonRothIraAnnualWithdrawalCandidate({
+        movementInput: input.postCandidateInput.movementInput,
+        annualInput,
+        ownerEvidence: input.ownerEvidence,
+        iraSeppScheduleRoutes: input.iraSeppScheduleRoutes,
+        simpleParticipationEvidence: [],
+      })
+      expect(coordinated.status).toBe('annualEvidenceBound')
+      if (coordinated.status !== 'annualEvidenceBound') {
+        throw new Error('age-precedence fixture did not finalize')
+      }
+      expect(coordinated.annualEvidence.penaltyPrerequisites
+        .evaluations[0]?.outcome).toBe('age59HalfReached')
+      expect(coordinated.annualEvidence.penaltyPrerequisites
+        .iraSeppScheduleReconciliations[0]?.reconciliation.status)
+        .not.toBe('reconciled')
+      input.annualFinalization = coordinated.annualEvidence
+
+      expect(executePlanOwnedNonRothIraAnnualPostCandidate(input))
+        .toMatchObject({
+          status: 'identifierCollision',
+          movement: 'notCommitted',
+          actionability: 'notEstablished',
+          executionEvidenceId: null,
+        })
+    },
+    COVERAGE_INSTRUMENTED_BINDER_TIMEOUT_MS,
+  )
 })
