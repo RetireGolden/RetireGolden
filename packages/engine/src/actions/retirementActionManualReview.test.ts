@@ -406,6 +406,22 @@ describe('manual retirement-action review and replacement', () => {
     ])
   })
 
+  it('reports a nonblank stable Plan ID requirement deterministically', () => {
+    const plan = basePlan()
+    plan.id = '   '
+    plan.strategies.retirementActions = [legacyWithdrawal()]
+
+    const result = review(plan, 'legacy-withdrawal', ordinaryIntent())
+
+    expect(result).toMatchObject({
+      status: 'blocked',
+      issues: [{
+        kind: 'invalidInput',
+        field: 'plan.id',
+      }],
+    })
+  })
+
   it('fails closed for unexpected fields and hostile getters', () => {
     const plan = basePlan()
     plan.strategies.retirementActions = [legacyWithdrawal()]

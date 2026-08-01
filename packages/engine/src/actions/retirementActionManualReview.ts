@@ -399,6 +399,15 @@ function reviewUnchecked(
   })
   if (reviewIssues.length > 0) return blocked(reviewIssues, target)
 
+  const stablePlanId = planIdSchema.safeParse(input.plan.id)
+  if (!stablePlanId.success) {
+    return blocked([issue(
+      'invalidInput',
+      'plan.id',
+      'The Plan must have a nonblank stable ID before manual review evidence can be created.',
+    )], target)
+  }
+
   const planWithoutTarget: Plan = {
     ...(input.plan as Plan),
     strategies: {
@@ -461,10 +470,17 @@ function reviewUnchecked(
         .join('; '),
     )], target)
   }
-  const parsedPlanId = planIdSchema.parse(replacementPlanResult.data.id)
+  const parsedPlanId = planIdSchema.safeParse(replacementPlanResult.data.id)
+  if (!parsedPlanId.success) {
+    return blocked([issue(
+      'invalidInput',
+      'plan.id',
+      'The Plan must have a nonblank stable ID before manual review evidence can be created.',
+    )], target)
+  }
   const preservedActionIds = parsedActions.map((action) => action.actionId)
   const reviewEvidenceId = deriveActionStructuralId('retirement-action-manual-review', [{
-    planId: parsedPlanId,
+    planId: parsedPlanId.data,
     targetActionId,
     replacementActionId: allocatedRequest.actionId,
     preservedActionIds,
@@ -492,7 +508,7 @@ function reviewUnchecked(
   const reviewEvidence: RetirementActionManualReviewReplacementEvidence = {
     policy: 'explicitManualIntentOmitTargetThenCanonicalAllocate',
     evidenceId: reviewEvidenceId,
-    planId: parsedPlanId,
+    planId: parsedPlanId.data,
     target: targetEvidence(target, targetIndex),
     targetOmittedBeforeAllocation: true,
     inferredFields: [],
