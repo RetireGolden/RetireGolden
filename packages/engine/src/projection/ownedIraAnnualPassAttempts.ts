@@ -1,6 +1,6 @@
 import type { PersonId, PlanId } from '../actions/identity.js'
-import { usdCentsSchema } from '../actions/money.js'
 import {
+  canonicalPlanOwnedNonRothIraAnnualPassEffects,
   probePlanOwnedNonRothIraAnnualPass,
   type PlanOwnedNonRothIraAnnualPassAssumedEffect,
   type PlanOwnedNonRothIraAnnualPassCommitResult,
@@ -118,64 +118,6 @@ function same(left: unknown, right: unknown): boolean {
     key === rightKeys[index] && same(leftRecord[key], rightRecord[key]))
 }
 
-function effectOrder(
-  left: Readonly<PlanOwnedNonRothIraAnnualPassAssumedEffect>,
-  right: Readonly<PlanOwnedNonRothIraAnnualPassAssumedEffect>,
-): number {
-  return compareUtf16CodeUnits(left.actionId, right.actionId) ||
-    compareUtf16CodeUnits(left.allocationId, right.allocationId) ||
-    compareUtf16CodeUnits(left.sourceAccountId, right.sourceAccountId)
-}
-
-function canonicalEffects(
-  effects: readonly Readonly<PlanOwnedNonRothIraAnnualPassAssumedEffect>[],
-): PlanOwnedNonRothIraAnnualPassAssumedEffect[] | null {
-  if (!Array.isArray(effects)) return null
-  const result: PlanOwnedNonRothIraAnnualPassAssumedEffect[] = []
-  const identities = new Set<string>()
-  for (const effect of effects) {
-    if (effect === null || typeof effect !== 'object') return null
-    const actionId = effect.actionId
-    const allocationId = effect.allocationId
-    const sourceAccountId = effect.sourceAccountId
-    const executedAmountValue = effect.executedAmount
-    const basisReturnAmountValue = effect.basisReturnAmount
-    const ordinaryIncomeAmountValue = effect.ordinaryIncomeAmount
-    const allocatedPenaltyAmountValue = effect.allocatedPenaltyAmount
-    if (!nonblank(actionId) || !nonblank(allocationId) ||
-        !nonblank(sourceAccountId)) return null
-    const executedAmount = usdCentsSchema.safeParse(executedAmountValue)
-    const basisReturnAmount = usdCentsSchema.safeParse(basisReturnAmountValue)
-    const ordinaryIncomeAmount = usdCentsSchema.safeParse(
-      ordinaryIncomeAmountValue,
-    )
-    const allocatedPenaltyAmount = usdCentsSchema.safeParse(
-      allocatedPenaltyAmountValue,
-    )
-    if (!executedAmount.success || !basisReturnAmount.success ||
-        !ordinaryIncomeAmount.success || !allocatedPenaltyAmount.success) {
-      return null
-    }
-    const identity = JSON.stringify([
-      actionId,
-      allocationId,
-      sourceAccountId,
-    ])
-    if (identities.has(identity)) return null
-    identities.add(identity)
-    result.push({
-      actionId,
-      allocationId,
-      sourceAccountId,
-      executedAmount: executedAmount.data,
-      basisReturnAmount: basisReturnAmount.data,
-      ordinaryIncomeAmount: ordinaryIncomeAmount.data,
-      allocatedPenaltyAmount: allocatedPenaltyAmount.data,
-    })
-  }
-  return result.sort(effectOrder)
-}
-
 function assumptionIdentity(
   effects: readonly Readonly<PlanOwnedNonRothIraAnnualPassAssumedEffect>[],
 ): string {
@@ -210,7 +152,8 @@ function inputMatchesAttempt(
   const completed = input.completedCandidateInput
   const inventory = completed.runtimeInventoryAttestation
   const completedPlan = completed.plan
-  const suppliedAssumptions = canonicalEffects(pass.assumedEffects)
+  const suppliedAssumptions =
+    canonicalPlanOwnedNonRothIraAnnualPassEffects(pass.assumedEffects)
   return pass.planId === stable.planId &&
     pass.ownerPersonId === stable.ownerPersonId &&
     pass.taxYear === stable.taxYear &&
@@ -288,7 +231,8 @@ export function runOwnedIraAnnualPassAttempts<DeferredEffect = never>(
   let initialAssumptions:
     PlanOwnedNonRothIraAnnualPassAssumedEffect[] | null
   try {
-    initialAssumptions = canonicalEffects(input.initialAssumedEffects)
+    initialAssumptions =
+      canonicalPlanOwnedNonRothIraAnnualPassEffects(input.initialAssumedEffects)
   } catch {
     return rolledBack('assumptionVectorInvalid', 0)
   }
@@ -366,7 +310,9 @@ export function runOwnedIraAnnualPassAttempts<DeferredEffect = never>(
 
     let observed: PlanOwnedNonRothIraAnnualPassAssumedEffect[] | null
     try {
-      observed = canonicalEffects(probeResult.observedEffects)
+      observed = canonicalPlanOwnedNonRothIraAnnualPassEffects(
+        probeResult.observedEffects,
+      )
     } catch {
       transaction.rollback()
       return rolledBack('assumptionVectorInvalid', attemptNumber)
