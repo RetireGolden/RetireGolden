@@ -17,6 +17,17 @@ export function actionableTournamentConversions(
     : []
 }
 
+export function displayedCleanedConversions(
+  tournament: Pick<ExactLedgerTournament, 'winnerSource' | 'winnerConversions'> | null,
+  postProcessed: OptimizePostProcessing | null,
+): { year: number; amount: number }[] {
+  const actionable = actionableTournamentConversions(tournament)
+  if (actionable.length > 0) return actionable
+  return postProcessed?.cleanedValidation.recommendationState === 'identityIncomplete'
+    ? postProcessed.cleanedSchedule.conversions
+    : []
+}
+
 export function buildOptimizeChartRows({
   schedule,
   recommendedConversions,

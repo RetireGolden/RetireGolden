@@ -24,6 +24,7 @@ import {
   type ReportRecommendationEvidence,
   type ReportValidationEvidence,
 } from './reportModel'
+import { retirementActionReadinessVetoExplanation } from '../planner/retirementActionReadinessVetoCopy'
 
 export type {
   ReportClaimAgeEvidence,
@@ -443,6 +444,9 @@ function lossReasonForCandidate(
   candidate: ExactLedgerTournament['candidates'][number],
 ): string {
   if (tournament.winnerCandidateId === candidate.id) return 'Selected winner on the full year-by-year projection.'
+  if (tournament.retirementActionReadinessVeto?.vetoedCandidateId === candidate.id) {
+    return retirementActionReadinessVetoExplanation(tournament.retirementActionReadinessVeto)
+  }
   if (candidate.afterTaxEstateDelta <= 1) return 'Did not improve after-tax estate over the current plan.'
   if (tournament.acaActionabilityVeto?.vetoedCandidateIds.includes(candidate.id)) {
     const years = acaVetoYears(tournament.acaActionabilityVeto)
@@ -485,14 +489,24 @@ export function reportEvidenceFromOptimizeResult(result: OptimizeResult): Report
   // did not win and would mislabel a "no change" / incumbent result.
   const validation = tournament.winnerValidation ?? null
   const policy = objectivePolicies[tournament.policyId]
-  const recommendationState = validation?.recommendationState ?? (tournament.winnerSource === 'incumbent' ? 'neutral' : 'none')
-  const winnerLabel =
-    tournament.winnerLabel ??
-    (tournament.winnerSource === 'milp'
-      ? "the solver's cleaned schedule"
+  const recommendationState = validation?.recommendationState ??
+    (tournament.retirementActionReadinessVeto
+      ? 'identityIncomplete'
       : tournament.winnerSource === 'incumbent'
-        ? 'current plan strategy'
+        ? 'neutral'
         : 'none')
+  const winnerLabel =
+    tournament.retirementActionReadinessVeto
+      ? `${tournament.retirementActionReadinessVeto.vetoedCandidateLabel ??
+        (tournament.retirementActionReadinessVeto.vetoedWinnerSource === 'milp'
+          ? "the solver's cleaned schedule"
+          : 'calculated policy winner')} (withheld pending account allocation)`
+      : tournament.winnerLabel ??
+        (tournament.winnerSource === 'milp'
+          ? "the solver's cleaned schedule"
+          : tournament.winnerSource === 'incumbent'
+            ? 'current plan strategy'
+            : 'none')
   return {
     objectiveId: tournament.policyId,
     objectiveLabel: policy.label,

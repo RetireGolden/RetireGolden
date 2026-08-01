@@ -7,6 +7,7 @@ import { recommendationBody, recommendationHeading } from './optimizePageRecomme
 import {
   actionableTournamentConversions,
   buildOptimizeChartRows,
+  displayedCleanedConversions,
   shouldShowRecommendedScheduleBars,
 } from './optimizePageChart'
 
@@ -49,6 +50,25 @@ describe('OptimizePage tournament display helpers', () => {
     expect(actionableTournamentConversions(tournament('incumbent'))).toEqual([])
     expect(actionableTournamentConversions(tournament('none'))).toEqual([])
     expect(actionableTournamentConversions(null)).toEqual([])
+  })
+
+  it('preserves an identity-withheld cleaned schedule only for diagnostic display', () => {
+    const conversions = [{ year: 2026, amount: 5_000 }]
+    const tournament = {
+      winnerSource: 'none' as const,
+      winnerConversions: [] as { year: number; amount: number }[],
+    }
+    const postProcessed = {
+      cleanedSchedule: schedule(conversions),
+      cleanedValidation: { recommendationState: 'identityIncomplete' },
+    } as never
+
+    expect(actionableTournamentConversions(tournament)).toEqual([])
+    expect(displayedCleanedConversions(tournament, postProcessed)).toBe(conversions)
+    expect(displayedCleanedConversions(tournament, {
+      cleanedSchedule: schedule(conversions),
+      cleanedValidation: { recommendationState: 'neutral' },
+    } as never)).toEqual([])
   })
 
   it('shows recommended bars when a candidate wins even without a cleanup mismatch', () => {

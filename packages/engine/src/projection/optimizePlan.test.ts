@@ -11,7 +11,12 @@
 import { describe, expect, it } from 'vitest'
 
 import { parseRetirementActionRequest } from '../actions/index.js'
-import { maximizeSpendingDurability, minimizeLifetimeTaxWithEstateFloor, socialSecurityClaimGenerator } from '../decisions/index.js'
+import {
+  maximizeAfterTaxEstate,
+  maximizeSpendingDurability,
+  minimizeLifetimeTaxWithEstateFloor,
+  socialSecurityClaimGenerator,
+} from '../decisions/index.js'
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../model/plan.js'
 import { applyScenarioPatch } from '../scenarios/scenarios.js'
 import { recurringOrdinaryIncome, setAcaYearContract, socialSecurityIncome } from '../testing/planFixtures.js'
@@ -1802,6 +1807,25 @@ describe('objective-mode tournament (sustainable-spending plan, Step 5)', () => 
     expect(durability.candidates.map((c) => c.id)).toEqual(estate.candidates.map((c) => c.id))
   })
 
+  it('preserves the identity-withholding reason when a policy-ranked winner falls back', () => {
+    const plan = validate(tradHeavyPlan())
+    const baseline = simulatePlan(plan, opts)
+    const policy = {
+      ...maximizeAfterTaxEstate,
+      id: 'min-lifetime-tax-estate-floor' as const,
+      label: 'Test policy-ranked estate objective',
+    }
+
+    const tournament = runExactLedgerTournament(plan, baseline, null, opts, { policy })
+
+    expect(tournament.winnerSource).toBe('none')
+    expect(tournament.retirementActionReadinessVeto).toMatchObject({
+      reason: 'identityIncomplete',
+      vetoedWinnerSource: 'candidate',
+    })
+    expect(tournament.retirementActionReadinessVeto?.vetoedCandidateId).not.toBeNull()
+  })
+
   it('the tax-with-estate-floor objective can pick a different winner than the estate objective', () => {
     const plan = validate(tradHeavyPlan())
     const baseline = simulatePlan(plan, opts)
@@ -1810,6 +1834,7 @@ describe('objective-mode tournament (sustainable-spending plan, Step 5)', () => 
       policy: minimizeLifetimeTaxWithEstateFloor,
     })
     expect(taxFloor.policyId).toBe('min-lifetime-tax-estate-floor')
+    expect(taxFloor.winnerSource).toBe('none')
     // Whoever wins, the winner must save lifetime tax without shrinking the
     // estate — and the ranking ran over the same candidate field.
     expect(taxFloor.candidates.map((c) => c.id)).toEqual(estate.candidates.map((c) => c.id))

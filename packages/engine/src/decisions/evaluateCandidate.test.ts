@@ -366,6 +366,66 @@ describe('evaluateCandidate', () => {
     }
   })
 
+  it('requires readiness and execution only for requests changed by the candidate', () => {
+    const plan = tradHeavyPlan()
+    const sourceAccount = plan.accounts.find((account) => account.type === 'cash')!
+    sourceAccount.ownerPersonId = 'p1'
+    const existingRequest = {
+      actionId: 'existing-historical-action',
+      kind: 'ordinaryWithdrawal',
+      year: 2020,
+      executionSequence: 1,
+      requestedAmount: 1_000,
+      provenance: { source: 'manual', sourceId: 'historical-readiness-test' },
+      personId: 'p1',
+      allocations: [{
+        allocationId: 'existing-historical-allocation',
+        sourceAccountId: sourceAccount.id,
+        requestedAmount: 1_000,
+      }],
+      purpose: { kind: 'spending' },
+    } as const
+    const appendedRequest = {
+      actionId: 'new-actionable-action',
+      kind: 'ordinaryWithdrawal',
+      year: 2026,
+      executionSequence: 2,
+      requestedAmount: 5_000,
+      provenance: { source: 'generator', sourceId: 'changed-readiness-test' },
+      personId: 'p1',
+      allocations: [{
+        allocationId: 'new-actionable-allocation',
+        sourceAccountId: sourceAccount.id,
+        requestedAmount: 5_000,
+      }],
+      purpose: { kind: 'spending' },
+    } as const
+    plan.strategies.retirementActions = [existingRequest] as never
+    const ctx = createDecisionContext(plan, simOptions())
+
+    const evaluation = evaluateCandidate(
+      ctx,
+      rothCandidate({
+        category: 'withdrawal',
+        planPatch: {
+          strategies: {
+            retirementActions: [existingRequest, appendedRequest],
+          },
+        },
+        retirementActionReadiness: {
+          state: 'identityComplete',
+          actionRequestIds: [appendedRequest.actionId],
+        },
+      }),
+    )
+
+    expect(evaluation.diagnostics).toEqual([])
+    expect(evaluation.recommendationState).not.toBe('diagnostic')
+    expect(evaluation.candidateResult.years.flatMap((year) =>
+      year.retirementActionExecution?.evidence ?? []).map((evidence) =>
+      evidence.actionId)).toContain(appendedRequest.actionId)
+  })
+
   it('does not accept identity tags without matching execution evidence', () => {
     const plan = tradHeavyPlan()
     const sourceAccount = plan.accounts.find((account) => account.type === 'cash')!

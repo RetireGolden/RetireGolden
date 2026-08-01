@@ -142,6 +142,7 @@ function fakeTournament(overrides: Partial<ExactLedgerTournament> = {}): ExactLe
     searchRefined: true,
     searchSimulations: 64,
     acaActionabilityVeto: null,
+    retirementActionReadinessVeto: null,
     ...overrides,
   }
 }
@@ -218,6 +219,37 @@ describe('WhyRecommendationPanel', () => {
     expect(text).not.toContain('ahead of the next-best')
     // The considered alternatives still show, with their real deltas.
     expect(text).toContain('Fill the 22% bracket')
+    unmount()
+  })
+
+  it('explains when a policy winner is withheld only for missing account identities', () => {
+    const { container, unmount } = render(
+      <WhyRecommendationPanel
+        tournament={fakeTournament({
+          policyId: 'min-lifetime-tax-estate-floor',
+          winnerSource: 'none',
+          winnerCandidateId: null,
+          winnerLabel: null,
+          winnerConversions: [],
+          winnerValidation: null,
+          marginOverMilpDollars: 0,
+          searchRefined: false,
+          searchSimulations: 0,
+          retirementActionReadinessVeto: {
+            reason: 'identityIncomplete',
+            vetoedWinnerSource: 'candidate',
+            vetoedCandidateId: 'fill-22',
+            vetoedCandidateLabel: 'Fill the 22% bracket',
+          },
+        })}
+        objectiveLabel="Minimize lifetime tax with estate floor"
+      />,
+    )
+    const text = container.textContent!
+    expect(text).toContain('calculated winner cleared the selected objective')
+    expect(text).toContain('owner, source IRA, and Roth destination')
+    expect(text).toContain('Fill the 22% bracket (calculated winner; withheld pending account allocation)')
+    expect(text).not.toContain('None cleared the recommendation threshold')
     unmount()
   })
 

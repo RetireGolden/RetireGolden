@@ -11,7 +11,7 @@ import type { Plan } from '@retiregolden/engine/model/plan'
 import { draftPlanFromBrokerAccounts, parseBrokerPositionsCsv } from '../import/brokerCsv'
 import { projectPlan } from '../planner/useProjection'
 import { fmtMoney } from '../planner/format'
-import { renderStandaloneReportHtml } from './reportHtml'
+import { renderStandaloneReportHtml, reportEvidenceFromOptimizeResult } from './reportHtml'
 import {
   REPORT_BLOCK_IDS,
   REPORT_EDUCATIONAL_DISCLAIMER,
@@ -322,5 +322,46 @@ describe('renderStandaloneReportHtml advisor block', () => {
     expect(html).toContain('Authored by A. Advisor, CFP')
     expect(html).toContain('adopted July 1, 2026')
     expect(html).not.toContain('<script')
+  })
+})
+
+describe('optimizer recommendation evidence', () => {
+  it('reports a policy winner withheld for missing account allocation', () => {
+    const evidence = reportEvidenceFromOptimizeResult({
+      tournament: {
+        policyId: 'min-lifetime-tax-estate-floor',
+        candidates: [{
+          id: 'fill-12',
+          label: 'Fill the 12% bracket',
+          executedConversionTotal: 50_000,
+          afterTaxEstateDelta: 2_000,
+          lifetimeTaxDelta: -5_000,
+          moneyLastsYearsDelta: 0,
+        }],
+        winnerSource: 'none',
+        winnerCandidateId: null,
+        winnerLabel: null,
+        winnerConversions: [],
+        winnerValidation: null,
+        marginOverMilpDollars: 0,
+        searchRefined: false,
+        searchSimulations: 0,
+        acaActionabilityVeto: null,
+        retirementActionReadinessVeto: {
+          reason: 'identityIncomplete',
+          vetoedWinnerSource: 'candidate',
+          vetoedCandidateId: 'fill-12',
+          vetoedCandidateLabel: 'Fill the 12% bracket',
+        },
+      },
+      claimAge: null,
+    } as never)
+
+    expect(evidence.recommendationState).toBe('identityIncomplete')
+    expect(evidence.winnerLabel).toContain('withheld pending account allocation')
+    expect(evidence.candidates[0]?.lossReason).toMatch(
+      /cleared the selected objective.*owner, source IRA, and Roth destination/i,
+    )
+    expect(evidence.candidates[0]?.lossReason).not.toMatch(/no candidate cleared/i)
   })
 })

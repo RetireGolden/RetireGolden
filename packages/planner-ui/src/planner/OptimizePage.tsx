@@ -35,6 +35,7 @@ import { LEARN } from './learnLinks'
 import {
   actionableTournamentConversions,
   buildOptimizeChartRows,
+  displayedCleanedConversions,
   shouldShowRecommendedScheduleBars,
 } from './optimizePageChart'
 import { applyOptimizeRecommendation, claimEstateGain, planWithWinningClaim } from './optimizePageClaim'
@@ -139,6 +140,10 @@ export function OptimizePage() {
     () => actionableTournamentConversions(tournament),
     [tournament],
   )
+  const displayedConversions = useMemo(
+    () => displayedCleanedConversions(tournament, postProcessed),
+    [tournament, postProcessed],
+  )
   // Step 5 claim-age co-optimization: when a claim change won, the schedule and
   // every validation delta on this page were computed against the claim-patched
   // plan, so Monte Carlo, the report, and Apply must all start from it.
@@ -200,16 +205,17 @@ export function OptimizePage() {
 
   const estateDelta = validation?.afterTaxEstateDelta ?? 0
   const taxDelta = validation?.lifetimeTaxDelta ?? 0
-  const totalConversions = recommendedConversions.reduce((sum, c) => sum + c.amount, 0)
+  const totalConversions = displayedConversions.reduce((sum, c) => sum + c.amount, 0)
   const rawConversions = totalScheduleConversions(schedule)
   const executedConversions = validation?.executedConversionTotal ?? 0
   const hasPostProcessingAdjustments = (postProcessed?.adjustments.length ?? 0) > 0
+  const recommendationState = validation?.recommendationState ?? 'neutral'
   const hasExecutionMismatch =
     !candidateWins &&
-    (hasPostProcessingAdjustments ||
+    (recommendationState === 'identityIncomplete' ||
+      hasPostProcessingAdjustments ||
       (validation?.firstMateriallyUnexecutedYear !== null && validation?.firstMateriallyUnexecutedYear !== undefined))
   const showRecommendedBars = shouldShowRecommendedScheduleBars(candidateWins, hasExecutionMismatch)
-  const recommendationState = validation?.recommendationState ?? 'neutral'
   const blocksApply = candidateWins
     ? false
     : recommendationState === 'rejected' ||
@@ -223,8 +229,13 @@ export function OptimizePage() {
   const scheduleApplyAvailable = recommendedConversions.length > 0 && !blocksApply
 
   const chartRows = useMemo(
-    () => buildOptimizeChartRows({ schedule, recommendedConversions, postProcessed, candidateWins }),
-    [schedule, recommendedConversions, postProcessed, candidateWins],
+    () => buildOptimizeChartRows({
+      schedule,
+      recommendedConversions: displayedConversions,
+      postProcessed,
+      candidateWins,
+    }),
+    [schedule, displayedConversions, postProcessed, candidateWins],
   )
 
   const apply = (mode: 'optimized' | 'manual') => {
@@ -349,7 +360,7 @@ export function OptimizePage() {
                 ? 'Your current conversion strategy already holds under the new claim age, so applying changes only the Social Security claim age.'
                 : scheduleApplyAvailable
                   ? 'Everything below (the schedule, the estate and tax deltas, and the success rate) was computed assuming this claim change. Apply installs the new claim age and the conversion schedule together; the schedule alone would not be correct for your current claim ages.'
-                  : recommendedConversions.length === 0
+                  : displayedConversions.length === 0
                     ? 'No conversion change comes with this result, so the button here changes just the Social Security claim age. The estate gain above comes from the claim change itself.'
                     : 'The conversion schedule from this run is diagnostic-only and cannot be applied, so the button here changes just the Social Security claim age. The estate gain above was measured with that schedule included, so the claim change alone may capture only part of it.'}
             </p>
@@ -456,7 +467,7 @@ export function OptimizePage() {
                 <p className="muted" style={{ margin: 0 }}>
                   {validation
                     ? recommendationBody(validation)
-                    : `${fmtMoney(totalConversions)} of conversions across ${recommendedConversions.length} year(s).`}
+                    : `${fmtMoney(totalConversions)} of conversions across ${displayedConversions.length} year(s).`}
                 </p>
                 {candidateWins && tournament ? (
                   <p className="field-hint" style={{ margin: '0.45rem 0 0' }}>

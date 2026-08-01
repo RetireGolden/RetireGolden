@@ -407,6 +407,13 @@ export interface AcaActionabilityVeto {
   vetoedMilp: boolean
 }
 
+export interface RetirementActionReadinessVeto {
+  readonly reason: 'identityIncomplete'
+  readonly vetoedWinnerSource: 'candidate' | 'milp'
+  readonly vetoedCandidateId: string | null
+  readonly vetoedCandidateLabel: string | null
+}
+
 export interface ExactLedgerTournament {
   /** Objective policy that ranked this tournament (default `max-after-tax-estate`). */
   policyId: ObjectivePolicyId
@@ -443,6 +450,11 @@ export interface ExactLedgerTournament {
    * "nothing improved the plan").
    */
   acaActionabilityVeto: AcaActionabilityVeto | null
+  /**
+   * A calculated policy winner that was withheld because its aggregate
+   * conversion schedule lacks complete owner/source/destination identities.
+   */
+  retirementActionReadinessVeto: RetirementActionReadinessVeto | null
 }
 
 /** A candidate only replaces the MILP schedule when it wins by more than this. */
@@ -653,9 +665,23 @@ export function runExactLedgerTournament(
       simulateOptions,
       options.policy,
     )
-    return ranked.winnerSource === 'candidate' || ranked.winnerSource === 'milp'
-      ? fallbackTournament(plan, baselineResult, ranked.candidates, ranked.policyId, null)
-      : ranked
+    if (ranked.winnerSource !== 'candidate' && ranked.winnerSource !== 'milp') return ranked
+    const readinessVeto = ranked.winnerValidation?.recommendationState === 'identityIncomplete'
+      ? {
+          reason: 'identityIncomplete' as const,
+          vetoedWinnerSource: ranked.winnerSource,
+          vetoedCandidateId: ranked.winnerCandidateId,
+          vetoedCandidateLabel: ranked.winnerLabel,
+        }
+      : null
+    return fallbackTournament(
+      plan,
+      baselineResult,
+      ranked.candidates,
+      ranked.policyId,
+      null,
+      readinessVeto,
+    )
   }
   const margin = options.switchMarginDollars ?? DEFAULT_TOURNAMENT_SWITCH_MARGIN_DOLLARS
   const rich = buildRichCandidates(plan, baselineResult, simulateOptions)
@@ -755,6 +781,7 @@ export function runExactLedgerTournament(
         searchRefined,
         searchSimulations,
         acaActionabilityVeto: null,
+        retirementActionReadinessVeto: null,
       }
     }
   }
@@ -807,6 +834,7 @@ export function runExactLedgerTournament(
       searchRefined,
       searchSimulations,
       acaActionabilityVeto: null,
+      retirementActionReadinessVeto: null,
     }
   }
   return fallbackTournament(
@@ -838,6 +866,7 @@ function fallbackTournament(
   candidates: SimpleCandidateEvaluation[],
   policyId: ObjectivePolicyId,
   acaActionabilityVeto: AcaActionabilityVeto | null,
+  retirementActionReadinessVeto: RetirementActionReadinessVeto | null = null,
 ): ExactLedgerTournament {
   const incumbent = incumbentExecutedConversions(plan, baselineResult)
   if (incumbent) {
@@ -853,6 +882,7 @@ function fallbackTournament(
       searchRefined: false,
       searchSimulations: 0,
       acaActionabilityVeto,
+      retirementActionReadinessVeto,
     }
   }
   return {
@@ -867,6 +897,7 @@ function fallbackTournament(
     searchRefined: false,
     searchSimulations: 0,
     acaActionabilityVeto,
+    retirementActionReadinessVeto,
   }
 }
 
@@ -958,6 +989,7 @@ function runPolicyRankedTournament(
       searchRefined: false,
       searchSimulations: 0,
       acaActionabilityVeto: null,
+      retirementActionReadinessVeto: null,
     }
   }
   if (winner) {
@@ -978,6 +1010,7 @@ function runPolicyRankedTournament(
         searchRefined: false,
         searchSimulations: 0,
         acaActionabilityVeto: null,
+        retirementActionReadinessVeto: null,
       }
     }
   }

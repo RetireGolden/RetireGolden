@@ -176,18 +176,34 @@ export function candidateChangesRetirementActions(candidate: DecisionCandidate, 
 }
 
 function patchedRetirementActionIds(candidate: DecisionCandidate, basePlan?: Plan): string[] | null {
-  const requests = inspectRetirementActionPatch(
+  const patchedRequests = inspectRetirementActionPatch(
     candidate.planPatch,
     basePlan?.strategies,
   ).retirementActionRequests
-  if (!Array.isArray(requests)) return null
+  if (!Array.isArray(patchedRequests)) return null
+  const materialized = basePlan === undefined ? null : planForCandidate(basePlan, candidate)
+  if (materialized !== null && !materialized.ok) return null
+  const requests = materialized?.plan.strategies.retirementActions ?? patchedRequests
+
+  const baseRequestsById = new Map<string, string>()
+  for (const request of basePlan?.strategies.retirementActions ?? []) {
+    const requestRecord = objectRecord(request)
+    const actionId = requestRecord?.['actionId']
+    if (typeof actionId !== 'string' || actionId.trim().length === 0 ||
+        baseRequestsById.has(actionId)) return null
+    baseRequestsById.set(actionId, canonicalScenarioJson(request))
+  }
 
   const ids: string[] = []
+  const finalIds = new Set<string>()
   for (const request of requests) {
     const requestRecord = objectRecord(request)
     const actionId = requestRecord?.['actionId']
+    if (typeof actionId !== 'string' || actionId.trim().length === 0 ||
+        finalIds.has(actionId)) return null
+    finalIds.add(actionId)
+    if (baseRequestsById.get(actionId) === canonicalScenarioJson(request)) continue
     if (!IDENTITY_COMPLETE_RETIREMENT_ACTION_KINDS.has(String(requestRecord?.['kind']))) return null
-    if (typeof actionId !== 'string' || actionId.trim().length === 0) return null
     ids.push(actionId)
   }
   return ids
