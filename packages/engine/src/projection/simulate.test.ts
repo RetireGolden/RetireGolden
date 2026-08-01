@@ -152,6 +152,38 @@ describe('horizon and wages', () => {
       ?.evaluatedAccountIds).toContain('__proto__')
   })
 
+  it('does not certify a projection that collapsed duplicate Plan account IDs', () => {
+    const plan = basePlan()
+    plan.accounts = [
+      {
+        type: 'cash',
+        id: 'duplicate-account',
+        name: 'First duplicate',
+        ownerPersonId: null,
+        annualReturnPct: 0,
+        balance: 40,
+        annualContribution: 0,
+      },
+      {
+        type: 'cash',
+        id: 'duplicate-account',
+        name: 'Second duplicate',
+        ownerPersonId: null,
+        annualReturnPct: 0,
+        balance: 60,
+        annualContribution: 0,
+      },
+    ]
+    const result = simulatePlan(validate(plan), {
+      startYear: 2026,
+      taxCalculator: noTax,
+    })
+
+    expect(result.years[0]!.investableTotal).toBe(100)
+    expect(result.years[0]!.balances['duplicate-account']).toBe(60)
+    expect(compareOptimizerExactLedgerResults(result, result)).toBeNull()
+  })
+
   it('pays wages until the retirement-age year, then stops', () => {
     const plan = basePlan()
     plan.incomes = [wages(100_000)]

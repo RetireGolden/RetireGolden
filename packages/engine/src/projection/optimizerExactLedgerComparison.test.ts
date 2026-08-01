@@ -17,18 +17,23 @@ function projection(
     endingNondeductibleIraBasis?: number
   }> = {},
 ): ProjectionResult {
+  const normalizedYears = years.map((year) => ({
+    ...year,
+    investableTotal: year.investableTotal ??
+      Object.values(year.balances).reduce((sum, balance) => sum + balance, 0),
+  }))
   return {
-    startYear: years[0]?.year,
-    endYear: years.at(-1)?.year,
-    years: years.map((year) => ({
+    startYear: normalizedYears[0]?.year,
+    endYear: normalizedYears.at(-1)?.year,
+    years: normalizedYears.map((year) => ({
       year: year.year,
       tax: year.tax ?? 10,
       penalties: year.penalties ?? 0,
-      investableTotal: year.investableTotal ?? 100,
+      investableTotal: year.investableTotal,
       netWorth: year.netWorth ?? 120,
       balances: year.balances,
     })) as YearResult[],
-    endingInvestable: endings.endingInvestable ?? 100,
+    endingInvestable: endings.endingInvestable ?? normalizedYears.at(-1)?.investableTotal,
     endingNetWorth: endings.endingNetWorth ?? 120,
     endingNondeductibleIraBasis: endings.endingNondeductibleIraBasis ?? 0,
   } as ProjectionResult
@@ -85,12 +90,12 @@ describe('compareOptimizerExactLedgerResults', () => {
         penalties: 0,
         investableTotal: 2.0049,
         netWorth: -0.0049,
-        balances: { zero: -0 },
+        balances: { zero: -0, total: 2.0049 },
       },
       {
         year: 2031,
         netWorth: -1.005,
-        balances: { zero: 0 },
+        balances: { zero: 0, total: 0 },
       },
     ], { endingNetWorth: -1.005 })
     const evidence = compareOptimizerExactLedgerResults(result, structuredClone(result))!
@@ -104,7 +109,8 @@ describe('compareOptimizerExactLedgerResults', () => {
     expect(Object.is(amountFor('annualBalanceTotal', 'netWorth'), -0)).toBe(false)
     expect(amountFor('projectionEndingTotal', 'endingNetWorth')).toBe(-101)
     const zero = evidence.entries.find((entry) =>
-      entry.key.kind === 'accountEndingBalance')!.aggregateMinorUnits
+      entry.key.kind === 'accountEndingBalance' &&
+      entry.key.accountId === 'zero')!.aggregateMinorUnits
     expect(zero).toBe(0)
     expect(Object.is(zero, -0)).toBe(false)
   })
@@ -168,6 +174,18 @@ describe('compareOptimizerExactLedgerResults', () => {
     const aggregate = twoYearResult()
     delete aggregate.years[1]!.balances.roth
     expect(compareOptimizerExactLedgerResults(aggregate, twoYearResult())).toBeNull()
+  })
+
+  it('rejects a collapsed account identity that does not reconcile to the annual total', () => {
+    const collapsed = projection([{
+      year: 2030,
+      balances: { duplicate: 60 },
+      investableTotal: 100,
+    }])
+    expect(compareOptimizerExactLedgerResults(
+      collapsed,
+      structuredClone(collapsed),
+    )).toBeNull()
   })
 
   it('accepts whitespace-only IDs from the Plan account contract', () => {

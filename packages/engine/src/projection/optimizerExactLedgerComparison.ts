@@ -114,7 +114,12 @@ function arrayDataValues(value: unknown): unknown[] {
   return values
 }
 
-function balanceSnapshot(value: unknown): ReadonlyMap<string, SafeMinorUnitInteger> {
+interface BalanceSnapshot {
+  readonly balances: ReadonlyMap<string, SafeMinorUnitInteger>
+  readonly total: SafeMinorUnitInteger
+}
+
+function balanceSnapshot(value: unknown): BalanceSnapshot {
   const balances = value
   if (balances === null || typeof balances !== 'object' || Array.isArray(balances)) {
     throw new TypeError('Every exact-ledger year must publish a balance map')
@@ -124,6 +129,7 @@ function balanceSnapshot(value: unknown): ReadonlyMap<string, SafeMinorUnitInteg
     throw new TypeError('Exact-ledger balances must be a plain record')
   }
   const snapshot = new Map<string, SafeMinorUnitInteger>()
+  let rawTotal = 0
   for (const key of Reflect.ownKeys(balances)) {
     if (typeof key !== 'string' || key.length === 0) {
       throw new TypeError('Exact-ledger balance keys must be nonempty Plan account IDs')
@@ -135,9 +141,10 @@ function balanceSnapshot(value: unknown): ReadonlyMap<string, SafeMinorUnitInteg
         !Number.isFinite(descriptor.value) || descriptor.value < 0) {
       throw new TypeError('Exact-ledger balances must be enumerable data properties')
     }
+    rawTotal += descriptor.value
     snapshot.set(key, quantize(descriptor.value, false))
   }
-  return snapshot
+  return { balances: snapshot, total: quantize(rawTotal, false) }
 }
 
 function sameNumbers(left: readonly number[], right: readonly number[]): boolean {
@@ -179,13 +186,18 @@ function sourceSnapshot(result: Readonly<ProjectionResult>): ResultSnapshot {
         (taxYears.length > 0 && taxYear !== prior + 1)) {
       throw new TypeError('Exact-ledger years must be unique, contiguous, and strictly increasing')
     }
-    const balances = balanceSnapshot(ownDataProperty(rawYear, 'balances'))
+    const balanceSnapshotValue = balanceSnapshot(ownDataProperty(rawYear, 'balances'))
+    const balances = balanceSnapshotValue.balances
     for (const accountId of balances.keys()) accountIds.add(accountId)
+    const investableTotal = quantize(ownDataProperty(rawYear, 'investableTotal'), false)
+    if (balanceSnapshotValue.total !== investableTotal) {
+      throw new TypeError('Exact-ledger account balances do not reconcile to the investable total')
+    }
     years.set(taxYear, {
       taxYear,
       tax: quantize(ownDataProperty(rawYear, 'tax'), false),
       penalties: quantize(ownDataProperty(rawYear, 'penalties'), false),
-      investableTotal: quantize(ownDataProperty(rawYear, 'investableTotal'), false),
+      investableTotal,
       netWorth: quantize(ownDataProperty(rawYear, 'netWorth'), true),
       balances,
     })
