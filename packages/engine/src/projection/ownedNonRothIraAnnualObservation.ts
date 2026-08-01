@@ -7,9 +7,6 @@ import {
   type PersonId,
   type PlanId,
 } from '../actions/identity.js'
-import type {
-  PlanOwnedNonRothIraApplicableYearEndBalance,
-} from '../actions/ownedNonRothIraAnnualPostCandidateEvidence.js'
 import { planDollarsToLedgerCents } from '../actions/planBalanceAdapter.js'
 import {
   compareUtf16CodeUnits,
@@ -130,6 +127,26 @@ export interface SimulatorOwnedNonRothIraProjectionPostYearContributionWindow {
   evidenceId: string
 }
 
+/**
+ * A complete December 31 balance observation only within the projection
+ * model. Its distinct predicate and phase prevent structural assignment to
+ * the filing-grade Form 8606 balance contract.
+ */
+export interface SimulatorOwnedNonRothIraYearEndApplicableBalanceObservation {
+  predicate: 'simulatorOwnedNonRothIraYearEndApplicableBalanceObservation'
+  planId: PlanId
+  ownerPersonId: PersonId
+  sourceAccountId: AccountId
+  taxYear: number
+  ledgerRunId: string
+  evidenceScope: 'projectionModelOnlyNotRealWorldFilingCompleteness'
+  ledgerPhase: 'projectionModelDecember31AfterAllAnnualTransactionsAndGrowth'
+  asOfDate: string
+  yearEndApplicableBalanceAmount: UsdCents
+  evidenceId: string
+  upstreamEvidenceId: string
+}
+
 interface ObservationResultBase {
   movement: 'notCommitted'
   actionability: 'notEstablished'
@@ -155,7 +172,7 @@ export interface CompleteSimulatorOwnedNonRothIraAnnualObservation {
   asOfDate: string
   evidenceScope: Readonly<ProjectionModelOwnedIraEvidenceScope>
   yearEndApplicableBalances:
-    readonly Readonly<PlanOwnedNonRothIraApplicableYearEndBalance>[]
+    readonly Readonly<SimulatorOwnedNonRothIraYearEndApplicableBalanceObservation>[]
   aggregateYearEndApplicableBalanceAmount: UsdCents
   startOfTaxYearBasisObservation:
     Readonly<SimulatorOwnedNonRothIraStartOfTaxYearBasisObservation>
@@ -684,14 +701,17 @@ function buildSimulatorOwnedNonRothIraAnnualObservationUnchecked(
       `December 31 balance upstream evidence ID for ${sourceAccountId}`,
     )
     const withoutId = {
-      predicate: 'ownedNonRothIraForm8606ApplicableTaxYearEndBalance' as const,
+      predicate:
+        'simulatorOwnedNonRothIraYearEndApplicableBalanceObservation' as const,
       planId,
       ownerPersonId,
       sourceAccountId,
       taxYear,
       ledgerRunId,
+      evidenceScope:
+        'projectionModelOnlyNotRealWorldFilingCompleteness' as const,
       ledgerPhase:
-        'form8606ApplicableTaxYearEndAfterCanonicalMovementCandidate' as const,
+        'projectionModelDecember31AfterAllAnnualTransactionsAndGrowth' as const,
       asOfDate,
       yearEndApplicableBalanceAmount: amount,
       upstreamEvidenceId,

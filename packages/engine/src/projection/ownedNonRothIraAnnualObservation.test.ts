@@ -1,11 +1,24 @@
 import { describe, expect, it } from 'vitest'
 
+import type {
+  PlanOwnedNonRothIraApplicableYearEndBalance,
+} from '../actions/ownedNonRothIraAnnualPostCandidateEvidence.js'
 import type { Plan } from '../model/plan.js'
 import { couplePlan, singlePersonPlan, traditionalAccount } from '../testing/planFixtures.js'
 import {
   buildSimulatorOwnedNonRothIraAnnualObservation,
   type BuildSimulatorOwnedNonRothIraAnnualObservationInput,
+  type SimulatorOwnedNonRothIraYearEndApplicableBalanceObservation,
 } from './ownedNonRothIraAnnualObservation.js'
+
+type ProjectionBalanceAssignableToFilingGrade =
+  SimulatorOwnedNonRothIraYearEndApplicableBalanceObservation extends
+    PlanOwnedNonRothIraApplicableYearEndBalance
+    ? true
+    : false
+
+const projectionBalanceAssignableToFilingGrade:
+  ProjectionBalanceAssignableToFilingGrade = false
 
 function plan(): Plan {
   const value = couplePlan({
@@ -69,6 +82,10 @@ function containsProperty(value: unknown, property: string): boolean {
 }
 
 describe('simulator owned non-Roth IRA annual observation', () => {
+  it('keeps projection balances structurally distinct from filing-grade balances', () => {
+    expect(projectionBalanceAssignableToFilingGrade).toBe(false)
+  })
+
   it('builds complete immutable owner-wide December 31 evidence at the sealed boundary', () => {
     const result = built()
     expect(result).toMatchObject({
@@ -123,6 +140,8 @@ describe('simulator owned non-Roth IRA annual observation', () => {
       result.observation.yearEndApplicableBalances.map((entry) => ({
         sourceAccountId: entry.sourceAccountId,
         amount: entry.yearEndApplicableBalanceAmount,
+        predicate: entry.predicate,
+        evidenceScope: entry.evidenceScope,
         phase: entry.ledgerPhase,
         asOfDate: entry.asOfDate,
       })),
@@ -130,15 +149,23 @@ describe('simulator owned non-Roth IRA annual observation', () => {
       {
         sourceAccountId: 'ira-requested',
         amount: 9_001,
+        predicate:
+          'simulatorOwnedNonRothIraYearEndApplicableBalanceObservation',
+        evidenceScope:
+          'projectionModelOnlyNotRealWorldFilingCompleteness',
         phase:
-          'form8606ApplicableTaxYearEndAfterCanonicalMovementCandidate',
+          'projectionModelDecember31AfterAllAnnualTransactionsAndGrowth',
         asOfDate: '2030-12-31',
       },
       {
         sourceAccountId: 'ira-zero-sibling',
         amount: 0,
+        predicate:
+          'simulatorOwnedNonRothIraYearEndApplicableBalanceObservation',
+        evidenceScope:
+          'projectionModelOnlyNotRealWorldFilingCompleteness',
         phase:
-          'form8606ApplicableTaxYearEndAfterCanonicalMovementCandidate',
+          'projectionModelDecember31AfterAllAnnualTransactionsAndGrowth',
         asOfDate: '2030-12-31',
       },
     ])
