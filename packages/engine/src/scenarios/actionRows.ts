@@ -167,7 +167,7 @@ export function normalizeScenarioActionRows(
       for (const request of execution?.requests ?? []) {
         if (seenActionIds.has(request.actionId)) {
           throw new Error(
-            `Duplicate retirement-action execution evidence for actionId "${request.actionId}"`,
+            `Duplicate retirement-action published request for actionId "${request.actionId}"`,
           )
         }
         seenActionIds.add(request.actionId)

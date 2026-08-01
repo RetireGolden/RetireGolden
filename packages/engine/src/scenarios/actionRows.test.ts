@@ -487,5 +487,11 @@ describe('compareScenarioActionRows', () => {
       baselineScheduleDiagnostics: [{ actionId: 'action-a' }],
       proposalScheduleDiagnostics: [],
     })
+    expect(() => normalizeScenarioActionRows([
+      yearResult(2030, [], [issue], [
+        request('action-a', 'allocation-a'),
+        request('action-a', 'allocation-a-copy'),
+      ]),
+    ])).toThrow('Duplicate retirement-action published request')
   })
 })
