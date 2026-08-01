@@ -15,11 +15,9 @@ import {
   maximizeAfterTaxEstate,
   maximizeSpendingDurability,
   minimizeLifetimeTaxWithEstateFloor,
-  socialSecurityClaimGenerator,
   type ExactDecisionEvaluation,
 } from '../decisions/index.js'
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../model/plan.js'
-import { applyScenarioPatch } from '../scenarios/scenarios.js'
 import { recurringOrdinaryIncome, setAcaYearContract, socialSecurityIncome } from '../testing/planFixtures.js'
 import { buildOptimizerModel, optimizeSchedule, type OptimizedSchedule } from '../strategies/optimizer.js'
 import { createFederalTaxCalculator } from '../tax/federalTax.js'
@@ -1254,52 +1252,20 @@ describe('co-optimized SS claim age (Step 5)', () => {
     return plan
   }
 
-  it('the joint optimum beats the separate claim sweep and the separate conversion optimize', async () => {
+  it('withholds a claim patch whose winning joint schedule is not actionable', async () => {
     const plan = validate(bridgeClaimPlan())
     const joint = await optimizePlanCoOptimizingClaimAge(plan, { ...opts, convergence: { maxIterations: 4 } })
 
-    // Bounded grid actually ran, and the joint optimum is at least the
-    // current-claim conversion optimum (the floor it is compared against).
+    // Bounded grid actually ran, but aggregate conversion schedules are
+    // identity-incomplete. The claim and schedule are a joint recommendation,
+    // so the public result must not expose the claim change by itself.
     expect(joint.claimAge.enabled).toBe(true)
     expect(joint.claimAge.combinationsEvaluated).toBeGreaterThan(1)
     expect(joint.claimAge.jointExactEstate).toBeGreaterThanOrEqual(joint.claimAge.currentClaimExactEstate - 1)
-    // On this bridge fixture delaying to 70 opens cheap-conversion years, so a
-    // claim change wins and materially beats the current-claim optimum
-    // (~+$118k of exact estate at the time of writing).
-    expect(joint.claimAge.winningClaimLabel).toContain('70')
-    expect(joint.claimAge.jointExactEstate).toBeGreaterThan(joint.claimAge.currentClaimExactEstate + 10_000)
-
-    // Separate claim sweep: best exact estate from a claim change alone (no
-    // conversions). The joint optimum co-optimizes conversions on top, so it can
-    // never be worse than the best claim-only outcome.
-    let bestClaimOnly = summarizeProjection(plan, simulatePlan(plan, opts)).endingAfterTaxEstate
-    const ctx = {
-      plan,
-      baselineResult: simulatePlan(plan, opts),
-      baselineSummary: summarizeProjection(plan, simulatePlan(plan, opts)),
-      simulateOptions: opts,
-    }
-    for (const candidate of socialSecurityClaimGenerator.generate(ctx)) {
-      if (!candidate.planPatch) continue
-      const applied = applyScenarioPatch(plan, candidate.planPatch)
-      if (!applied.ok) continue
-      bestClaimOnly = Math.max(
-        bestClaimOnly,
-        summarizeProjection(applied.plan, simulatePlan(applied.plan, opts)).endingAfterTaxEstate,
-      )
-    }
-    expect(joint.claimAge.jointExactEstate).toBeGreaterThanOrEqual(bestClaimOnly - 1)
-
-    // Readiness withholding blocks publication, not internal joint valuation:
-    // the calculated schedule priced on the winning claim plan reproduces the
-    // reported estate even though winnerConversions is intentionally empty.
-    const calculatedConversions =
-      joint.tournament.retirementActionReadinessVeto?.vetoedConversions ??
-      joint.tournament.winnerConversions
-    expect(calculatedConversions.length).toBeGreaterThan(0)
-    const finalPlan = withOptimizedConversions(joint.optimizedPlan, calculatedConversions)
-    const finalEstate = summarizeProjection(finalPlan, simulatePlan(finalPlan, opts)).endingAfterTaxEstate
-    expect(finalEstate).toBeCloseTo(joint.claimAge.jointExactEstate, 0)
+    expect(joint.claimAge.winningClaimLabel).toBeNull()
+    expect(joint.claimAge.winningClaimPatch).toBeNull()
+    expect(joint.optimizedPlan.incomes).toEqual(plan.incomes)
+    expect(joint.tournament.retirementActionReadinessVeto).not.toBeNull()
   })
 })
 

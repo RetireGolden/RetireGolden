@@ -216,25 +216,92 @@ function inspectCandidateRetirementActionPatch(
   )
 }
 
-function candidateOnlyRemovesAggregateRothConversions(
+function conversionScheduleRequestsMovement(value: unknown): boolean {
+  if (!Array.isArray(value)) return true
+  for (const conversion of value) {
+    const record = objectRecord(conversion)
+    const year = record?.['year']
+    const amount = record?.['amount']
+    if (
+      typeof year !== 'number' ||
+      !Number.isInteger(year) ||
+      year < 1900 ||
+      year > 2200 ||
+      typeof amount !== 'number' ||
+      !Number.isFinite(amount) ||
+      amount < 0
+    ) {
+      return true
+    }
+    if (amount > 0) return true
+  }
+  return false
+}
+
+function rothStrategyRequestsMovement(value: unknown): boolean {
+  const strategy = objectRecord(value)
+  if (strategy?.['mode'] === 'none') return false
+  if (strategy?.['mode'] === 'manual' || strategy?.['mode'] === 'optimized') {
+    return conversionScheduleRequestsMovement(strategy['conversions'])
+  }
+  return true
+}
+
+function retirementActionRequestsOnlyRemoved(before: unknown, after: unknown): boolean {
+  if (!Array.isArray(before) || !Array.isArray(after)) return false
+  const beforeById = new Map<string, string>()
+  for (const request of before) {
+    const actionId = objectRecord(request)?.['actionId']
+    if (typeof actionId !== 'string' || actionId.trim().length === 0 || beforeById.has(actionId)) {
+      return false
+    }
+    beforeById.set(actionId, canonicalScenarioJson(request))
+  }
+  const finalIds = new Set<string>()
+  for (const request of after) {
+    const actionId = objectRecord(request)?.['actionId']
+    if (
+      typeof actionId !== 'string' ||
+      actionId.trim().length === 0 ||
+      finalIds.has(actionId) ||
+      beforeById.get(actionId) !== canonicalScenarioJson(request)
+    ) {
+      return false
+    }
+    finalIds.add(actionId)
+  }
+  return true
+}
+
+function candidateOnlyRemovesRetirementActions(
   candidate: DecisionCandidate,
   basePlan: Plan,
 ): boolean {
-  if (candidate.conversions !== undefined) return false
+  if (
+    candidate.conversions !== undefined &&
+    conversionScheduleRequestsMovement(candidate.conversions)
+  ) {
+    return false
+  }
   const materialized = planForCandidate(basePlan, candidate)
   if (!materialized.ok) return false
 
   const before = objectRecord(basePlan.strategies)
   const after = objectRecord(materialized.plan.strategies)
+  if (strategyValueChanged(before, after, 'withdrawalOrder') ||
+      strategyValueChanged(before, after, 'qcdAnnual')) return false
   if (
-    basePlan.strategies.rothConversion.mode === 'none' ||
-    materialized.plan.strategies.rothConversion.mode !== 'none' ||
-    !strategyValueChanged(before, after, 'rothConversion')
-  ) {
-    return false
-  }
-  return !(['retirementActions', 'withdrawalOrder', 'qcdAnnual'] as const)
-    .some((key) => strategyValueChanged(before, after, key))
+    strategyValueChanged(before, after, 'rothConversion') &&
+    rothStrategyRequestsMovement(materialized.plan.strategies.rothConversion)
+  ) return false
+  if (
+    strategyValueChanged(before, after, 'retirementActions') &&
+    !retirementActionRequestsOnlyRemoved(
+      basePlan.strategies.retirementActions,
+      materialized.plan.strategies.retirementActions,
+    )
+  ) return false
+  return true
 }
 
 /** Whether the candidate's concrete change can cause retirement-account movement. */
@@ -243,8 +310,11 @@ export function candidateChangesRetirementActions(candidate: DecisionCandidate, 
     // Readiness is evidence about a concrete retirement-action change, not a
     // plan mutation of its own. An idempotent retirementActions patch may
     // legitimately retain its evidence while an unrelated edit is evaluated.
-    if (candidate.conversions !== undefined) return true
-    if (basePlan !== undefined && candidateOnlyRemovesAggregateRothConversions(candidate, basePlan)) {
+    if (
+      candidate.conversions !== undefined &&
+      conversionScheduleRequestsMovement(candidate.conversions)
+    ) return true
+    if (basePlan !== undefined && candidateOnlyRemovesRetirementActions(candidate, basePlan)) {
       return false
     }
     return inspectCandidateRetirementActionPatch(candidate, basePlan).changesRetirementActions

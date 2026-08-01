@@ -519,7 +519,9 @@ export function reportEvidenceFromOptimizeResult(result: OptimizeResult): Report
     objectiveLabel: policy.label,
     recommendationState,
     winnerLabel,
-    winnerSource: tournament.winnerSource,
+    winnerSource:
+      tournament.retirementActionReadinessVeto?.vetoedWinnerSource ??
+      tournament.winnerSource,
     validation: validationEvidence(validation),
     candidates: tournament.candidates.map((candidate) => ({
       afterTaxEstateDelta: candidate.afterTaxEstateDelta,

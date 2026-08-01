@@ -537,6 +537,87 @@ describe('evaluateCandidate', () => {
       evidence.actionId)).toContain(appendedRequest.actionId)
   })
 
+  it('does not require readiness for an empty conversion schedule that requests no transfer', () => {
+    const plan = tradHeavyPlan()
+    plan.strategies.rothConversion = {
+      mode: 'manual',
+      conversions: [{ year: 2027, amount: 25_000 }],
+    }
+    const ctx = createDecisionContext(plan, simOptions())
+
+    const evaluation = evaluateCandidate(
+      ctx,
+      rothCandidate({ conversions: [] }),
+    )
+
+    expect(evaluation.recommendationState).not.toBe('diagnostic')
+    expect(evaluation.diagnostics).toEqual([])
+  })
+
+  it('does not require readiness to cancel unchanged identity-bearing requests', () => {
+    const plan = tradHeavyPlan()
+    const sourceAccount = plan.accounts.find((account) => account.type === 'cash')!
+    sourceAccount.ownerPersonId = 'p1'
+    const retainedRequest = {
+      actionId: 'retained-action',
+      kind: 'ordinaryWithdrawal',
+      year: 2026,
+      executionSequence: 1,
+      requestedAmount: 1_000,
+      provenance: { source: 'manual', sourceId: 'removal-readiness-test' },
+      personId: 'p1',
+      allocations: [{
+        allocationId: 'retained-allocation',
+        sourceAccountId: sourceAccount.id,
+        requestedAmount: 1_000,
+      }],
+      purpose: { kind: 'spending' },
+    } as const
+    const removedRequest = {
+      ...retainedRequest,
+      actionId: 'removed-action',
+      allocations: [{
+        ...retainedRequest.allocations[0],
+        allocationId: 'removed-allocation',
+      }],
+    } as const
+    plan.strategies.retirementActions = [retainedRequest, removedRequest] as never
+    const ctx = createDecisionContext(plan, simOptions())
+
+    const removal = evaluateCandidate(
+      ctx,
+      rothCandidate({
+        category: 'withdrawal',
+        planPatch: { strategies: { retirementActions: [retainedRequest] } },
+      }),
+      { candidateResult: ctx.baselineResult },
+    )
+    expect(removal.recommendationState).not.toBe('diagnostic')
+    expect(removal.diagnostics).toEqual([])
+
+    const changed = evaluateCandidate(
+      ctx,
+      rothCandidate({
+        category: 'withdrawal',
+        planPatch: {
+          strategies: {
+            retirementActions: [{
+              ...retainedRequest,
+              requestedAmount: 2_000,
+              allocations: [{
+                ...retainedRequest.allocations[0],
+                requestedAmount: 2_000,
+              }],
+            }],
+          },
+        },
+      }),
+      { candidateResult: ctx.baselineResult },
+    )
+    expect(changed.recommendationState).toBe('diagnostic')
+    expect(changed.diagnostics.join(' ')).toMatch(/identity-complete/i)
+  })
+
   it('does not accept identity tags without matching execution evidence', () => {
     const plan = tradHeavyPlan()
     const sourceAccount = plan.accounts.find((account) => account.type === 'cash')!

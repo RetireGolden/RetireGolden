@@ -375,6 +375,7 @@ describe('optimizer recommendation evidence', () => {
     expect(evidence.recommendationState).toBe('identityIncomplete')
     expect(evidence.validation?.recommendationState).toBe('rejected')
     expect(evidence.winnerLabel).toContain('withheld pending account allocation')
+    expect(evidence.winnerSource).toBe('candidate')
     expect(evidence.validation?.afterTaxEstateDelta).toBe(2_000)
     expect(evidence.validation?.requestedConversionTotal).toBe(50_000)
     expect(evidence.candidates[0]?.lossReason).toMatch(

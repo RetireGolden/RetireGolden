@@ -1865,8 +1865,11 @@ function winnerExactEstate(plan: Plan, tournament: ExactLedgerTournament, simula
  * estate. A claim switch must clear a small margin to avoid churn. The grid is
  * bounded (≤ 2 streams × 3 canonical ages), so the cost is a small multiple of a
  * single optimize; the exact ledger prices every pair, so the tournament remains
- * the guardrail for each. Returns the winning plan (current or claim-patched) and
- * its optimizer result plus a diagnostic of the joint decision.
+ * the guardrail for each. A pair whose calculated schedule is withheld for
+ * incomplete retirement-action identity remains valuation evidence only; its
+ * claim patch is not published separately. Returns the winning actionable plan
+ * (current or claim-patched) and its optimizer result plus a diagnostic of the
+ * joint decision.
  */
 export async function optimizePlanCoOptimizingClaimAge(
   plan: Plan,
@@ -1897,6 +1900,10 @@ export async function optimizePlanCoOptimizingClaimAge(
     const result = await optimizePlan(patchedPlan, opts)
     const estate = winnerExactEstate(patchedPlan, result.tournament, simulateOptions)
     evaluated++
+    // A claim patch and its calculated conversion schedule are one joint
+    // recommendation. Publishing only the claim change would let callers apply
+    // a different plan from the pair that actually won the exact-ledger test.
+    if (result.tournament.retirementActionReadinessVeto !== null) continue
     // The churn margin is charged against the FIXED current-claim floor, not
     // the running best — otherwise the winner is generator-order-dependent (a
     // slightly-worse candidate adopted first could lock out the true optimum
