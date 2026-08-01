@@ -44,12 +44,22 @@ export interface StagedOwnedNonRothIraAnnualEventApplicationInput {
   stagingEvidenceId: string
 }
 
+export interface StagedOwnedNonRothIraAnnualContributionApplicationInput {
+  inventoryEventId: string
+  sourceBalanceBefore: UsdCents
+  creditedAmount: UsdCents
+  sourceBalanceAfter: UsdCents
+  stagingEvidenceId: string
+}
+
 export interface PreparePlanOwnedNonRothIraAnnualPhysicalTransactionInput
   extends BuildAnnualRetirementPhysicalEventInventoryInput {
   ownerPersonId: PersonId
   openingBalances: readonly Readonly<AccountOpeningBalanceSnapshot>[]
   actualApplications:
     readonly Readonly<StagedOwnedNonRothIraAnnualEventApplicationInput>[]
+  settledContributionApplications:
+    readonly Readonly<StagedOwnedNonRothIraAnnualContributionApplicationInput>[]
 }
 
 export type OwnedNonRothIraAnnualPhysicalTransactionIssueKind =
@@ -67,6 +77,11 @@ export type OwnedNonRothIraAnnualPhysicalTransactionIssueKind =
   | 'actualApplicationDuplicate'
   | 'actualApplicationMissing'
   | 'actualApplicationForeign'
+  | 'contributionApplicationInvalid'
+  | 'contributionApplicationDuplicate'
+  | 'contributionApplicationMissing'
+  | 'contributionApplicationForeign'
+  | 'contributionCreditMismatch'
   | 'executionExceedsRequested'
   | 'runtimeExecutionMismatch'
   | 'sourceBalanceMismatch'
@@ -142,6 +157,29 @@ export type OwnedNonRothIraAnnualPhysicalApplication =
   | Readonly<OwnedNonRothIraAnnualLine7PhysicalApplication>
   | Readonly<OwnedNonRothIraAnnualLine8PhysicalApplication>
 
+export interface OwnedNonRothIraSettledAnnualContributionApplication {
+  predicate: 'ownedNonRothIraSettledAnnualContributionApplication'
+  planId: PlanId
+  ownerPersonId: PersonId
+  taxYear: number
+  ledgerRunId: string
+  inventoryEvidenceId: string
+  inventoryEventId: string
+  eventOrigin: 'contributionLedger'
+  eventKind: 'ownedIraContribution' | 'ownedIraEmployerContribution'
+  movementAuthorityId: string
+  sourceAccountId: AccountId
+  scheduledDate: string
+  scheduledSequence: number
+  inventoriedAmount: UsdCents
+  sourceBalanceBefore: UsdCents
+  creditedAmount: UsdCents
+  sourceBalanceAfter: UsdCents
+  inventoryEventUpstreamEvidenceId: string
+  stagingEvidenceId: string
+  applicationEvidenceId: string
+}
+
 export interface OwnedNonRothIraDetachedAnnualSourceBalanceTransition {
   predicate: 'ownedNonRothIraDetachedAnnualSourceBalanceTransition'
   planId: PlanId
@@ -151,6 +189,7 @@ export interface OwnedNonRothIraDetachedAnnualSourceBalanceTransition {
   inventoryEvidenceId: string
   sourceAccountId: AccountId
   openingBalance: UsdCents
+  settledContributionAmount: UsdCents
   requestedAmount: UsdCents
   executedAmount: UsdCents
   unexecutedAmount: UsdCents
@@ -187,6 +226,8 @@ export interface PlanOwnedNonRothIraAnnualPhysicalTransactionPreparedResult
   ledgerRunId: string
   inventory: Readonly<AnnualRetirementInventoryBuiltResult>
   applications: readonly OwnedNonRothIraAnnualPhysicalApplication[]
+  settledContributionApplications:
+    readonly Readonly<OwnedNonRothIraSettledAnnualContributionApplication>[]
   sourceBalanceTransitions:
     readonly Readonly<OwnedNonRothIraDetachedAnnualSourceBalanceTransition>[]
   stagedDestinationCredits:
@@ -225,7 +266,18 @@ const actualApplicationSchema = z.object({
   stagingEvidenceId: nonblankString,
 }).strict()
 
+const settledContributionApplicationSchema = z.object({
+  inventoryEventId: nonblankString,
+  sourceBalanceBefore: usdCentsSchema,
+  creditedAmount: usdCentsSchema,
+  sourceBalanceAfter: usdCentsSchema,
+  stagingEvidenceId: nonblankString,
+}).strict()
+
 type CanonicalActualApplication = z.infer<typeof actualApplicationSchema>
+type CanonicalSettledContributionApplication = z.infer<
+  typeof settledContributionApplicationSchema
+>
 
 function deepFreeze<T>(value: T): Readonly<T> {
   if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
@@ -402,6 +454,17 @@ function eventLineScope(
     : 'form8606Line7Distributions'
 }
 
+function isSettledContributionEvent(
+  event: AnnualRetirementPhysicalEvent,
+): event is Extract<AnnualRetirementPhysicalEvent, { origin: Exclude<
+  AnnualRetirementPhysicalEvent['origin'], 'planAction'
+> }> & {
+  kind: 'ownedIraContribution' | 'ownedIraEmployerContribution'
+} {
+  return event.kind === 'ownedIraContribution' ||
+    event.kind === 'ownedIraEmployerContribution'
+}
+
 function runtimeActionId(
   inventory: Readonly<AnnualRetirementInventoryBuiltResult>,
   event: Exclude<AnnualRetirementPhysicalEvent, { origin: 'planAction' }>,
@@ -486,10 +549,18 @@ function prepare(
       'Owned IRA QCD events require their annual QCD stage before this line-7/line-8 transaction can be complete',
     ))
   }
-  if (pool.nonForm8606OrForeignPoolEvent.events.length > 0) {
+  const settledContributionEvents =
+    pool.nonForm8606OrForeignPoolEvent.events.filter(
+      isSettledContributionEvent,
+    )
+  const unsupportedPoolEvents =
+    pool.nonForm8606OrForeignPoolEvent.events.filter(
+      (event) => !isSettledContributionEvent(event),
+    )
+  if (unsupportedPoolEvents.length > 0) {
     issues.push(issue(
       'unsupportedPoolActivity',
-      'Owned IRA pool activity outside Form 8606 lines 7 and 8 requires a broader physical ledger stage',
+      'Owned IRA pool activity outside Form 8606 lines 7 and 8 must be a settled owned-IRA contribution; QCD, rollover, transfer, and other activity requires a broader physical ledger stage',
     ))
   }
 
@@ -599,6 +670,60 @@ function prepare(
       ))
     }
   }
+
+  const expectedContributionById = new Map(
+    settledContributionEvents.map((event) => [event.eventId, event]),
+  )
+  const settledContributionByEventId = new Map<
+    string,
+    CanonicalSettledContributionApplication
+  >()
+  const parsedContributions = z.array(
+    settledContributionApplicationSchema,
+  ).safeParse(input.settledContributionApplications)
+  if (!parsedContributions.success) {
+    issues.push(issue(
+      'contributionApplicationInvalid',
+      'Every settled contribution application must contain only an inventory event ID, exact before/credited/after cents, and staging evidence ID',
+    ))
+  } else {
+    for (const contribution of parsedContributions.data) {
+      if (settledContributionByEventId.has(contribution.inventoryEventId)) {
+        issues.push(issue(
+          'contributionApplicationDuplicate',
+          'Settled contribution applications must bind each contribution inventory event exactly once',
+          { inventoryEventId: contribution.inventoryEventId },
+        ))
+        continue
+      }
+      settledContributionByEventId.set(
+        contribution.inventoryEventId,
+        contribution,
+      )
+      if (!expectedContributionById.has(contribution.inventoryEventId)) {
+        issues.push(issue(
+          'contributionApplicationForeign',
+          'Settled contribution application is foreign to the selected owner contribution event set',
+          { inventoryEventId: contribution.inventoryEventId },
+        ))
+      }
+      claim(
+        claimed,
+        contribution.stagingEvidenceId,
+        'Settled contribution staging evidence ID',
+        issues,
+      )
+    }
+  }
+  for (const event of settledContributionEvents) {
+    if (!settledContributionByEventId.has(event.eventId)) {
+      issues.push(issue(
+        'contributionApplicationMissing',
+        'Every selected owner contribution inventory event requires one settled contribution application',
+        { inventoryEventId: event.eventId, sourceAccountId: event.sourceAccountId },
+      ))
+    }
+  }
   if (issues.length > 0) return blocked(inventory, issues)
 
   const currentBalanceBySource = new Map<AccountId, UsdCents>(
@@ -608,11 +733,97 @@ function prepare(
     ]),
   )
   const applications: OwnedNonRothIraAnnualPhysicalApplication[] = []
+  const settledContributionApplications:
+    OwnedNonRothIraSettledAnnualContributionApplication[] = []
   const stagedDestinationCredits:
     OwnedNonRothIraDetachedAnnualRothDestinationCredit[] = []
   const runtimeActionIds = new Map<string, ActionId>()
+  const sourceChainEvidenceByEventId = new Map<string, readonly unknown[]>()
 
-  for (const event of expectedEvents) {
+  const stagedEvents = pool.events.filter((event) =>
+    expectedById.has(event.eventId) || expectedContributionById.has(event.eventId),
+  )
+  for (const event of stagedEvents) {
+    if (isSettledContributionEvent(event)) {
+      const contribution = settledContributionByEventId.get(event.eventId)!
+      const currentBalance = currentBalanceBySource.get(event.sourceAccountId)!
+      if (contribution.sourceBalanceBefore !== currentBalance) {
+        issues.push(issue(
+          'sourceBalanceMismatch',
+          'Settled contribution source balance before the event must equal the detached source chain',
+          { inventoryEventId: event.eventId, sourceAccountId: event.sourceAccountId },
+        ))
+      }
+      if (contribution.creditedAmount !== event.grossAmount) {
+        issues.push(issue(
+          'contributionCreditMismatch',
+          'A resolved owned-IRA contribution must credit its exact inventoried gross amount',
+          { inventoryEventId: event.eventId, sourceAccountId: event.sourceAccountId },
+        ))
+      }
+      const expectedAfter = BigInt(contribution.sourceBalanceBefore) +
+        BigInt(contribution.creditedAmount)
+      if (
+        expectedAfter > BigInt(Number.MAX_SAFE_INTEGER) ||
+        BigInt(contribution.sourceBalanceAfter) !== expectedAfter
+      ) {
+        issues.push(issue(
+          'sourceArithmeticMismatch',
+          'Settled contribution source balance after the event must equal before plus credited within the exact-cent safe-integer range',
+          { inventoryEventId: event.eventId, sourceAccountId: event.sourceAccountId },
+        ))
+      }
+
+      const applicationWithoutEvidence = {
+        predicate: 'ownedNonRothIraSettledAnnualContributionApplication' as const,
+        planId: inventory.planId,
+        ownerPersonId,
+        taxYear: inventory.taxYear,
+        ledgerRunId: inventory.ledgerRunId,
+        inventoryEvidenceId: inventory.inventoryEvidenceId,
+        inventoryEventId: event.eventId,
+        eventOrigin: 'contributionLedger' as const,
+        eventKind: event.kind,
+        movementAuthorityId: event.movementAuthorityId,
+        sourceAccountId: event.sourceAccountId,
+        scheduledDate: event.eventDate,
+        scheduledSequence: event.eventSequence,
+        inventoriedAmount: asUsdCents(event.grossAmount),
+        sourceBalanceBefore: contribution.sourceBalanceBefore,
+        creditedAmount: contribution.creditedAmount,
+        sourceBalanceAfter: contribution.sourceBalanceAfter,
+        inventoryEventUpstreamEvidenceId: event.upstreamEvidenceId,
+        stagingEvidenceId: contribution.stagingEvidenceId,
+      }
+      const applicationEvidenceId = deriveActionStructuralId(
+        'owned-ira-unified-annual-settled-contribution-application',
+        [applicationWithoutEvidence],
+      )
+      claim(
+        claimed,
+        applicationEvidenceId,
+        'Derived settled contribution-application evidence ID',
+        issues,
+      )
+      settledContributionApplications.push({
+        ...applicationWithoutEvidence,
+        applicationEvidenceId,
+      })
+      sourceChainEvidenceByEventId.set(event.eventId, [
+        event.eventId,
+        event.upstreamEvidenceId,
+        contribution.stagingEvidenceId,
+        applicationEvidenceId,
+        contribution.sourceBalanceBefore,
+        contribution.creditedAmount,
+        contribution.sourceBalanceAfter,
+      ])
+      currentBalanceBySource.set(
+        event.sourceAccountId,
+        contribution.sourceBalanceAfter,
+      )
+      continue
+    }
     const actual = actualByEventId.get(event.eventId)!
     const currentBalance = currentBalanceBySource.get(event.sourceAccountId)!
     if (actual.sourceBalanceBefore !== currentBalance) {
@@ -767,6 +978,14 @@ function prepare(
         })
       }
     }
+    sourceChainEvidenceByEventId.set(event.eventId, [
+      event.eventId,
+      actual.stagingEvidenceId,
+      applicationEvidenceId,
+      actual.sourceBalanceBefore,
+      actual.executedAmount,
+      actual.sourceBalanceAfter,
+    ])
     currentBalanceBySource.set(
       event.sourceAccountId,
       actual.sourceBalanceAfter,
@@ -807,6 +1026,14 @@ function prepare(
     const sourceApplications = applications.filter(
       (application) => application.sourceAccountId === sourceAccountId,
     )
+    const sourceContributions = settledContributionApplications.filter(
+      (contribution) => contribution.sourceAccountId === sourceAccountId,
+    )
+    const settledContributionAmount = safeSum(
+      sourceContributions.map((contribution) => contribution.creditedAmount),
+      `Settled contribution amount for source ${sourceAccountId}`,
+      issues,
+    )
     const requestedAmount = safeSum(
       sourceApplications.map((application) => application.requestedAmount),
       `Requested amount for source ${sourceAccountId}`,
@@ -823,6 +1050,7 @@ function prepare(
       issues,
     )
     if (
+      settledContributionAmount === null ||
       requestedAmount === null ||
       executedAmount === null ||
       unexecutedAmount === null
@@ -833,14 +1061,12 @@ function prepare(
         inventory.inventoryEvidenceId,
         sourceAccountId,
         openingBySource.get(sourceAccountId)!.openingBalance,
-        sourceApplications.map((application) => [
-          application.inventoryEventId,
-          application.stagingEvidenceId,
-          application.applicationEvidenceId,
-          application.sourceBalanceBefore,
-          application.executedAmount,
-          application.sourceBalanceAfter,
-        ]),
+        pool.events
+          .filter((event) => event.sourceAccountId === sourceAccountId)
+          .flatMap((event) => {
+            const entry = sourceChainEvidenceByEventId.get(event.eventId)
+            return entry === undefined ? [] : [entry]
+          }),
       ],
     )
     claim(
@@ -858,6 +1084,7 @@ function prepare(
       inventoryEvidenceId: inventory.inventoryEvidenceId,
       sourceAccountId,
       openingBalance: openingBySource.get(sourceAccountId)!.openingBalance,
+      settledContributionAmount,
       requestedAmount,
       executedAmount,
       unexecutedAmount,
@@ -932,6 +1159,7 @@ function prepare(
     ledgerRunId: inventory.ledgerRunId,
     inventoryEvidenceId: inventory.inventoryEvidenceId,
     applications,
+    settledContributionApplications,
     sourceBalanceTransitions,
     stagedDestinationCredits,
     line7Entries,
@@ -963,6 +1191,7 @@ function prepare(
     ledgerRunId: inventory.ledgerRunId,
     inventory,
     applications,
+    settledContributionApplications,
     sourceBalanceTransitions,
     stagedDestinationCredits,
     line7Entries,
