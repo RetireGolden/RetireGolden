@@ -1,7 +1,12 @@
 import { combineTaxCalculators, createFederalTaxCalculator } from '@retiregolden/engine/tax/federalTax'
 import { createStateTaxCalculator } from '@retiregolden/engine/tax/stateTax'
 import { createEmptyPlan, parsePlan, type Account, type IncomeStream, type Plan } from '@retiregolden/engine/model/plan'
-import { optimizePlan, evaluateExactLedgerSchedule, withOptimizedConversions } from '@retiregolden/engine/projection/optimizePlan'
+import {
+  optimizePlan,
+  evaluateExactLedgerSchedule,
+  withOptimizedConversions,
+  type ExactLedgerTournament,
+} from '@retiregolden/engine/projection/optimizePlan'
 import { DEFAULT_OPTIMIZE_CONVERGENCE_ITERATIONS, DEFAULT_OPTIMIZE_SEARCH_BUDGET } from '@retiregolden/planner-ui/optimize/runOptimize'
 import { summarizeProjection, type ProjectionSummary } from '@retiregolden/engine/projection/compare'
 import { simulatePlan, type SimulateOptions } from '@retiregolden/engine/projection/simulate'
@@ -822,6 +827,17 @@ export function priceOwlScheduleOnRetireGoldenLedger(
   }
 }
 
+/**
+ * The parity oracle prices the calculated winner, including a schedule that
+ * production correctly withholds from Apply until account identities exist.
+ * This is intentionally separate from the public actionable winner contract.
+ */
+export function retireGoldenParityBenchmarkConversions(
+  tournament: Pick<ExactLedgerTournament, 'winnerConversions' | 'retirementActionReadinessVeto'>,
+): OwlScheduleConversion[] {
+  return tournament.retirementActionReadinessVeto?.vetoedConversions ?? tournament.winnerConversions
+}
+
 async function runRetireGoldenSchedule(fixture: OwlParityFixture, startYear: number): Promise<PricedSchedule & { recommendationState: string }> {
   const plan = fixture.plan
   const simulateOptions = { startYear, taxCalculator: taxCalculatorFor(plan) }
@@ -835,7 +851,7 @@ async function runRetireGoldenSchedule(fixture: OwlParityFixture, startYear: num
     search: { maxSimulations: DEFAULT_OPTIMIZE_SEARCH_BUDGET },
     convergence: { maxIterations: DEFAULT_OPTIMIZE_CONVERGENCE_ITERATIONS },
   })
-  const conversions = optimized.tournament.winnerConversions
+  const conversions = retireGoldenParityBenchmarkConversions(optimized.tournament)
   const candidatePlan = conversions.length > 0 ? withOptimizedConversions(plan, conversions) : plan
   const candidateResult = conversions.length > 0 ? simulatePlan(candidatePlan, simulateOptions) : baselineResult
   const validation =

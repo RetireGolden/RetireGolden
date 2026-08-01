@@ -481,6 +481,24 @@ function calculatedPostProcessedSchedule(
 }
 
 /**
+ * Choose the post-processed convergence result using only schedules that are
+ * eligible to participate in the calculated estate comparison. A raw estate
+ * delta from an unstabilized, undersized, or unexecutable schedule must never
+ * displace an eligible schedule merely because its invalid raw result prices
+ * higher.
+ */
+export function selectConvergencePostProcessing(
+  first: ExactLedgerPostProcessing,
+  converged: ExactLedgerPostProcessing | null,
+): 'first-solve' | 'converged' {
+  const eligibleFirst = calculatedPostProcessedSchedule(first)
+  const eligibleConverged = calculatedPostProcessedSchedule(converged)
+  const firstDelta = eligibleFirst?.cleanedValidation.afterTaxEstateDelta ?? -Infinity
+  const convergedDelta = eligibleConverged?.cleanedValidation.afterTaxEstateDelta ?? -Infinity
+  return firstDelta > convergedDelta ? 'first-solve' : 'converged'
+}
+
+/**
  * A non-estate policy may legitimately rank a stabilized neutral/rejected MILP
  * row by durability or tax. Keep this broader calculation seam out of the
  * default estate tournament, where those states must not become a false holder.
@@ -1794,13 +1812,7 @@ export async function optimizePlan(plan: Plan, opts: OptimizePlanOptions): Promi
   // prices higher, so convergence-enabled can never do worse than disabled.
   if (convergence.enabled && schedule !== firstSchedule) {
     const firstPostProcessed = postProcessExactLedgerSchedule(plan, firstSchedule, baselineResult, simulateOptions)
-    // Recommendation withholding is a presentation/actionability decision, not
-    // a valuation result. Compare the exact cleaned deltas even when both
-    // schedules are withheld, otherwise two `none` results collapse to
-    // -Infinity and silently prefer the converged schedule.
-    const convergedDelta = postProcessed?.cleanedValidation.afterTaxEstateDelta ?? -Infinity
-    const firstDelta = firstPostProcessed.cleanedValidation.afterTaxEstateDelta
-    if (firstDelta > convergedDelta) {
+    if (selectConvergencePostProcessing(firstPostProcessed, postProcessed) === 'first-solve') {
       schedule = firstSchedule
       input = firstInput
       postProcessed = firstPostProcessed

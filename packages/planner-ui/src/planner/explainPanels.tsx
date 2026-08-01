@@ -213,7 +213,10 @@ export function WhyRecommendationPanel({
             <tr>
               <td>
                 Your current plan (baseline)
-                {tournament.winnerSource === 'incumbent' ? <strong> (winner)</strong> : ''}
+                {tournament.winnerSource === 'incumbent' &&
+                tournament.retirementActionReadinessVeto === null ? (
+                  <strong> (winner)</strong>
+                ) : ''}
               </td>
               <td>—</td>
               <td>±$0</td>

@@ -503,6 +503,7 @@ export function reportEvidenceFromOptimizeResult(result: OptimizeResult): Report
     null
   const policy = objectivePolicies[tournament.policyId]
   const withheldCleanedSchedule =
+    tournament.policyId === 'max-after-tax-estate' &&
     tournament.winnerSource === 'none' &&
     tournament.retirementActionReadinessVeto === null &&
     tournament.acaActionabilityVeto === null &&

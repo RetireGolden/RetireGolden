@@ -32,6 +32,7 @@ import {
   optimizePlanCoOptimizingClaimAge,
   postProcessExactLedgerSchedule,
   runExactLedgerTournament,
+  selectConvergencePostProcessing,
   withOptimizedConversions,
 } from './optimizePlan.js'
 import { simulatePlan } from './simulate.js'
@@ -1120,6 +1121,44 @@ describe('exact-ledger convergence loop (Step 1)', () => {
     const withConv = validate(withOptimizedConversions(plan, conversions))
     return summarizeProjection(withConv, simulatePlan(withConv, opts)).endingAfterTaxEstate
   }
+
+  const postProcessedForConvergence = (options: {
+    delta: number
+    stabilized?: boolean
+    total?: number
+    minimum?: number
+    recommendationSchedule?: 'cleaned' | 'none'
+    recommendationState?: 'beneficial' | 'neutral' | 'rejected' | 'unexecutable' | 'identityIncomplete'
+  }) => ({
+    cleanedSchedule: { conversions: [{ year: 2026, amount: options.total ?? 50_000 }] },
+    cleanedValidation: {
+      afterTaxEstateDelta: options.delta,
+      recommendationState: options.recommendationState ?? 'beneficial',
+    },
+    stabilized: options.stabilized ?? true,
+    minimumRequestedConversionDollars: options.minimum ?? 1,
+    recommendationSchedule: options.recommendationSchedule ?? 'cleaned',
+  }) as never
+
+  it('compares only calculation-eligible post-processed convergence schedules', () => {
+    const validConverged = postProcessedForConvergence({ delta: 10_000 })
+    const invalidFirst = postProcessedForConvergence({
+      delta: 50_000,
+      stabilized: false,
+      recommendationSchedule: 'none',
+    })
+    expect(selectConvergencePostProcessing(invalidFirst, validConverged)).toBe('converged')
+
+    const validFirst = postProcessedForConvergence({ delta: 5_000 })
+    const invalidConverged = postProcessedForConvergence({
+      delta: 40_000,
+      total: 0,
+      minimum: 1,
+      recommendationSchedule: 'none',
+      recommendationState: 'unexecutable',
+    })
+    expect(selectConvergencePostProcessing(validFirst, invalidConverged)).toBe('first-solve')
+  })
 
   it('loop disabled reproduces the pre-convergence schedule exactly', async () => {
     const plan = validate(ssTorpedoPlan())

@@ -400,7 +400,10 @@ function inspectRetirementActionReadiness(candidate: DecisionCandidate, basePlan
     return 'Retirement-action candidate has incomplete readiness evidence and cannot be recommended.'
   }
 
-  if (candidate.conversions !== undefined) {
+  if (
+    candidate.conversions !== undefined &&
+    conversionScheduleRequestsMovement(candidate.conversions)
+  ) {
     return 'Identity-complete retirement-action evidence cannot certify an aggregate conversion schedule.'
   }
   if (inspectCandidateRetirementActionPatch(candidate, basePlan).hasAggregateStrategy) {

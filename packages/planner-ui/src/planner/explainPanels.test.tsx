@@ -228,9 +228,9 @@ describe('WhyRecommendationPanel', () => {
       <WhyRecommendationPanel
         tournament={fakeTournament({
           policyId: 'min-lifetime-tax-estate-floor',
-          winnerSource: 'none',
+          winnerSource: 'incumbent',
           winnerCandidateId: null,
-          winnerLabel: null,
+          winnerLabel: 'your applied optimizer schedule',
           winnerConversions: [],
           winnerValidation: null,
           marginOverMilpDollars: 0,
@@ -256,6 +256,7 @@ describe('WhyRecommendationPanel', () => {
     expect(text).toContain('calculated winner cleared the selected objective')
     expect(text).toContain('owner, source IRA, and Roth destination')
     expect(text).toContain('Fill the 22% bracket (calculated winner; withheld pending account allocation)')
+    expect(text).not.toContain('Your current plan (baseline) (winner)')
     expect(text).not.toContain('None cleared the recommendation threshold')
     unmount()
   })

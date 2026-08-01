@@ -481,6 +481,36 @@ describe('optimizer recommendation evidence', () => {
     expect(evidence.validation).toBeNull()
   })
 
+  it('does not resurrect a legacy identity-withheld MILP row under a non-estate policy', () => {
+    const evidence = reportEvidenceFromOptimizeResult({
+      tournament: {
+        policyId: 'min-lifetime-tax-estate-floor',
+        candidates: [],
+        winnerSource: 'none',
+        winnerCandidateId: null,
+        winnerLabel: null,
+        winnerConversions: [],
+        winnerValidation: null,
+        marginOverMilpDollars: 0,
+        searchRefined: false,
+        searchSimulations: 0,
+        acaActionabilityVeto: null,
+        retirementActionReadinessVeto: null,
+      },
+      postProcessed: {
+        cleanedSchedule: { conversions: [{ year: 2026, amount: 50_000 }] },
+        cleanedValidation: { recommendationState: 'identityIncomplete' },
+        stabilized: true,
+        minimumRequestedConversionDollars: 1,
+      },
+      claimAge: null,
+    } as never)
+
+    expect(evidence.recommendationState).toBe('none')
+    expect(evidence.winnerLabel).toBe('none')
+    expect(evidence.winnerSource).toBe('none')
+  })
+
   it('attributes a withheld MILP row to the readiness veto', () => {
     const evidence = reportEvidenceFromOptimizeResult({
       tournament: {

@@ -442,7 +442,7 @@ describe('evaluateCandidate', () => {
     expect(hostile.diagnostics.join(' ')).toMatch(/incomplete readiness evidence/i)
   })
 
-  it('accepts matching identity-bearing request evidence independent of account and evidence order', () => {
+  it('accepts matching identity-bearing request evidence with absent, empty, or zero-only aggregate conversions', () => {
     const plan = tradHeavyPlan()
     const sourceAccount = plan.accounts.find((account) => account.type === 'cash')!
     sourceAccount.ownerPersonId = 'p1'
@@ -480,17 +480,24 @@ describe('evaluateCandidate', () => {
       [plan, requests, ['decision-action-a', 'decision-action-b']],
       [{ ...plan, accounts: [...plan.accounts].reverse() }, [...requests].reverse(), ['decision-action-b', 'decision-action-a']],
     ] as const) {
-      const ctx = createDecisionContext(candidatePlan, simOptions())
-      const evaluation = evaluateCandidate(
-        ctx,
-        rothCandidate({
-          category: 'withdrawal',
-          planPatch: { strategies: { retirementActions: candidateRequests } },
-          retirementActionReadiness: { state: 'identityComplete', actionRequestIds: [...evidenceIds] },
-        }),
-      )
-      expect(evaluation.recommendationState).not.toBe('diagnostic')
-      expect(evaluation.diagnostics).toEqual([])
+      for (const conversions of [
+        undefined,
+        [],
+        [{ year: 2026, amount: 0 }],
+      ] as const) {
+        const ctx = createDecisionContext(candidatePlan, simOptions())
+        const evaluation = evaluateCandidate(
+          ctx,
+          rothCandidate({
+            category: 'withdrawal',
+            conversions: conversions === undefined ? undefined : [...conversions],
+            planPatch: { strategies: { retirementActions: candidateRequests } },
+            retirementActionReadiness: { state: 'identityComplete', actionRequestIds: [...evidenceIds] },
+          }),
+        )
+        expect(evaluation.recommendationState).not.toBe('diagnostic')
+        expect(evaluation.diagnostics).toEqual([])
+      }
     }
   })
 

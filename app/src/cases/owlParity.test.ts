@@ -6,6 +6,7 @@ import {
   evaluateOwlParityGate,
   owlCaseFiles,
   priceOwlScheduleOnRetireGoldenLedger,
+  retireGoldenParityBenchmarkConversions,
   stableOwlParityManifestJson,
   type OwlRunnerSummary,
 } from './owlParity'
@@ -33,6 +34,17 @@ function skippedOwlSummary(): OwlRunnerSummary {
 }
 
 describe('Owl parity oracle harness', () => {
+  it('prices a readiness-vetoed calculated schedule without republishing it as actionable', () => {
+    const calculated = [{ year: 2026, amount: 25_000 }]
+    const tournament = {
+      winnerConversions: [],
+      retirementActionReadinessVeto: { vetoedConversions: calculated },
+    }
+
+    expect(retireGoldenParityBenchmarkConversions(tournament as never)).toEqual(calculated)
+    expect(tournament.winnerConversions).toEqual([])
+  })
+
   it('converts every fixture plan to a deterministic Owl TOML case', () => {
     const files = owlCaseFiles()
 
