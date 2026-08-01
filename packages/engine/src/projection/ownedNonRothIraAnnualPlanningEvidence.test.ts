@@ -108,6 +108,12 @@ function plan(
   }
   first.nondeductibleBasis = options.openingBasisA ?? 30
   second.nondeductibleBasis = options.openingBasisB ?? 20
+  second.contributionSchedule = [{
+    annualAmount: 100,
+    fromAge: null,
+    toAge: null,
+    escalationPct: 0,
+  }]
   value.accounts = [
     first,
     second,
@@ -214,6 +220,48 @@ function observation(
     throw new Error(`observation fixture failed: ${JSON.stringify(result.issues)}`)
   }
   return result.observation
+}
+
+function rehashObservationDeadline(
+  observed: ReturnType<typeof observation>,
+  mutate: (deadline: Record<string, unknown>) => void,
+): unknown {
+  const draft = structuredClone(observed) as unknown as Record<string, unknown>
+  const window = draft.projectionPostYearContributionWindow as
+    Record<string, unknown>
+  const deadline = window.deadlineObservation as Record<string, unknown>
+  mutate(deadline)
+  deadline.upstreamEvidenceId = deriveActionStructuralId(
+    'simulator-owned-ira-contribution-deadline-upstream',
+    [
+      (draft.evidenceScope as Record<string, unknown>).evidenceId,
+      draft.taxYear,
+      deadline.deadlineDate,
+    ],
+  )
+  delete deadline.evidenceId
+  deadline.evidenceId = deriveActionStructuralId(
+    'simulator-owned-ira-contribution-deadline',
+    [deadline],
+  )
+  window.upstreamEvidenceId = deriveActionStructuralId(
+    'simulator-owned-ira-post-year-contribution-window-upstream',
+    [
+      (draft.evidenceScope as Record<string, unknown>).evidenceId,
+      deadline,
+    ],
+  )
+  delete window.evidenceId
+  window.evidenceId = deriveActionStructuralId(
+    'simulator-owned-ira-post-year-contribution-window',
+    [window],
+  )
+  delete draft.evidenceId
+  draft.evidenceId = deriveActionStructuralId(
+    'simulator-owned-ira-annual-observation',
+    [draft],
+  )
+  return draft
 }
 
 function activity(
@@ -882,6 +930,7 @@ function input(options: {
   inventory?: unknown
   assumptions?: unknown
   priorCarryforwardEvidence?: unknown
+  priorPlanningEvidence?: unknown
   projectionStartTaxYear?: number
   taxYear?: number
   ledgerRunId?: string
@@ -906,6 +955,7 @@ function input(options: {
     annualPhysicalTransaction,
     assumptions: options.assumptions ?? assumptions({ taxYear }),
     priorCarryforwardEvidence: options.priorCarryforwardEvidence,
+    priorPlanningEvidence: options.priorPlanningEvidence,
   }
 }
 
@@ -924,14 +974,21 @@ function issueKinds(value: ReturnType<
 }
 
 function previousPlanningEvidence(withPostYearContribution = false) {
-  const current = built(input({
+  return built(input({
     events: [],
     assumptions: assumptions({
       designations: [],
       postYear: withPostYearContribution ? undefined : [],
     }),
   }))
-  return current.carryforwardEvidence
+}
+
+function rehashEvidenceRecord(
+  record: Record<string, unknown>,
+  namespace: string,
+): void {
+  delete record.evidenceId
+  record.evidenceId = deriveActionStructuralId(namespace, [record])
 }
 
 describe('simulator owned non-Roth IRA annual planning evidence', () => {
@@ -1075,6 +1132,161 @@ describe('simulator owned non-Roth IRA annual planning evidence', () => {
     )
   })
 
+  it('accepts a mathematically canonical predecessor with nonempty annual allocations', () => {
+    const previous = built(input({
+      assumptions: assumptions({ postYear: [] }),
+    }))
+    const nextTaxYear = TAX_YEAR + 1
+    const nextLedgerRunId = `planning-ledger-${nextTaxYear}`
+    const value = plan()
+    const openingAmount =
+      previous.carryforwardEvidence.openingPlanningBasisAmount / 100
+    expect(built(input({
+      plan: value,
+      taxYear: nextTaxYear,
+      ledgerRunId: nextLedgerRunId,
+      annualObservation: observation(value, {
+        openingBasis: openingAmount,
+        taxYear: nextTaxYear,
+        ledgerRunId: nextLedgerRunId,
+      }),
+      events: [],
+      assumptions: assumptions({
+        taxYear: nextTaxYear,
+        openingSource: {
+          source: 'priorProjectionCarryforward',
+          asOfDate: `${nextTaxYear}-01-01`,
+          amount: openingAmount,
+          priorTaxYear: TAX_YEAR,
+          priorCarryforwardEvidenceId:
+            previous.carryforwardEvidence.evidenceId,
+        },
+        designations: [],
+        postYear: [],
+      }),
+      priorCarryforwardEvidence: previous.carryforwardEvidence,
+      priorPlanningEvidence: previous.planningEvidence,
+      projectionStartTaxYear: TAX_YEAR,
+    })).status).toBe('annualPlanningEvidenceBuilt')
+  })
+
+  it('rejects fully rehashed predecessor post-year assumptions after the ordinary deadline', () => {
+    const previous = previousPlanningEvidence(true)
+    const planning = structuredClone(previous.planningEvidence) as unknown as
+      Record<string, unknown>
+    const postYear = planning.postYearPriorTaxYearContributionAssumptions as
+      Array<Record<string, unknown>>
+    postYear[0]!.contributionDate = `${TAX_YEAR + 1}-04-16`
+    rehashEvidenceRecord(
+      planning,
+      'simulator-owned-ira-annual-planning-evidence',
+    )
+    const carryforward = structuredClone(previous.carryforwardEvidence) as
+      unknown as Record<string, unknown>
+    carryforward.sourcePlanningEvidenceId = planning.evidenceId
+    carryforward.postYearPriorTaxYearContributionAssumptions = postYear
+    rehashEvidenceRecord(
+      carryforward,
+      'simulator-owned-ira-planning-carryforward-evidence',
+    )
+    const nextTaxYear = TAX_YEAR + 1
+    const nextLedgerRunId = `planning-ledger-${nextTaxYear}`
+    const value = plan()
+    const result = buildSimulatorOwnedNonRothIraAnnualPlanningEvidence(input({
+      plan: value,
+      taxYear: nextTaxYear,
+      ledgerRunId: nextLedgerRunId,
+      annualObservation: observation(value, {
+        openingBasis: 57,
+        taxYear: nextTaxYear,
+        ledgerRunId: nextLedgerRunId,
+      }),
+      events: [],
+      assumptions: assumptions({
+        taxYear: nextTaxYear,
+        openingSource: {
+          source: 'priorProjectionCarryforward',
+          asOfDate: `${nextTaxYear}-01-01`,
+          amount: 57,
+          priorTaxYear: TAX_YEAR,
+          priorCarryforwardEvidenceId: String(carryforward.evidenceId),
+        },
+        designations: [],
+        postYear: [],
+      }),
+      priorCarryforwardEvidence: carryforward,
+      priorPlanningEvidence: planning,
+      projectionStartTaxYear: TAX_YEAR,
+    }))
+    expect(issueKinds(result)).toContain('openingBasisMismatch')
+  })
+
+  it('rejects a fully rehashed permutation of predecessor allocation chronology', () => {
+    const previous = built(input({
+      events: [
+        activity('first-prior-distribution', 'distribution', 10, {
+          executionDate: `${TAX_YEAR}-03-01`,
+        }),
+        activity('second-prior-distribution', 'distribution', 20, {
+          executionDate: `${TAX_YEAR}-06-01`,
+          executionSequence: 2,
+        }),
+      ],
+      assumptions: assumptions({ postYear: [] }),
+    }))
+    const planning = structuredClone(previous.planningEvidence) as unknown as
+      Record<string, unknown>
+    const distribution = planning.distributionAllocation as
+      Record<string, unknown>
+    ;(distribution.allocations as unknown[]).reverse()
+    rehashEvidenceRecord(
+      distribution,
+      'simulator-owned-ira-planning-allocation',
+    )
+    rehashEvidenceRecord(
+      planning,
+      'simulator-owned-ira-annual-planning-evidence',
+    )
+    const carryforward = structuredClone(previous.carryforwardEvidence) as
+      unknown as Record<string, unknown>
+    carryforward.sourcePlanningEvidenceId = planning.evidenceId
+    rehashEvidenceRecord(
+      carryforward,
+      'simulator-owned-ira-planning-carryforward-evidence',
+    )
+    const nextTaxYear = TAX_YEAR + 1
+    const nextLedgerRunId = `planning-ledger-${nextTaxYear}`
+    const value = plan()
+    const openingAmount = Number(carryforward.openingPlanningBasisAmount) / 100
+    const result = buildSimulatorOwnedNonRothIraAnnualPlanningEvidence(input({
+      plan: value,
+      taxYear: nextTaxYear,
+      ledgerRunId: nextLedgerRunId,
+      annualObservation: observation(value, {
+        openingBasis: openingAmount,
+        taxYear: nextTaxYear,
+        ledgerRunId: nextLedgerRunId,
+      }),
+      events: [],
+      assumptions: assumptions({
+        taxYear: nextTaxYear,
+        openingSource: {
+          source: 'priorProjectionCarryforward',
+          asOfDate: `${nextTaxYear}-01-01`,
+          amount: openingAmount,
+          priorTaxYear: TAX_YEAR,
+          priorCarryforwardEvidenceId: String(carryforward.evidenceId),
+        },
+        designations: [],
+        postYear: [],
+      }),
+      priorCarryforwardEvidence: carryforward,
+      priorPlanningEvidence: planning,
+      projectionStartTaxYear: TAX_YEAR,
+    }))
+    expect(issueKinds(result)).toContain('openingBasisMismatch')
+  })
+
   it('blocks when a predecessor post-year contribution is absent from current physical inventory', () => {
     const previous = previousPlanningEvidence(true)
     const nextTaxYear = TAX_YEAR + 1
@@ -1097,12 +1309,13 @@ describe('simulator owned non-Roth IRA annual planning evidence', () => {
           asOfDate: `${nextTaxYear}-01-01`,
           amount: 57,
           priorTaxYear: TAX_YEAR,
-          priorCarryforwardEvidenceId: previous.evidenceId,
+          priorCarryforwardEvidenceId: previous.carryforwardEvidence.evidenceId,
         },
         designations: [],
         postYear: [],
       }),
-      priorCarryforwardEvidence: previous,
+      priorCarryforwardEvidence: previous.carryforwardEvidence,
+      priorPlanningEvidence: previous.planningEvidence,
       projectionStartTaxYear: TAX_YEAR,
     }))
     expect(result.status).toBe('annualPlanningEvidenceBlocked')
@@ -1156,7 +1369,7 @@ describe('simulator owned non-Roth IRA annual planning evidence', () => {
           asOfDate: `${nextTaxYear}-01-01`,
           amount: 57,
           priorTaxYear: TAX_YEAR,
-          priorCarryforwardEvidenceId: previous.evidenceId,
+          priorCarryforwardEvidenceId: previous.carryforwardEvidence.evidenceId,
         },
         designations: [{
           activityId: 'prior-year-settled-contribution',
@@ -1165,7 +1378,8 @@ describe('simulator owned non-Roth IRA annual planning evidence', () => {
         }],
         postYear: [],
       }),
-      priorCarryforwardEvidence: previous,
+      priorCarryforwardEvidence: previous.carryforwardEvidence,
+      priorPlanningEvidence: previous.planningEvidence,
       projectionStartTaxYear: TAX_YEAR,
     }))
     expect(result.planningEvidence).toMatchObject({
@@ -1211,7 +1425,7 @@ describe('simulator owned non-Roth IRA annual planning evidence', () => {
           asOfDate: `${nextTaxYear}-01-01`,
           amount: 50,
           priorTaxYear: TAX_YEAR,
-          priorCarryforwardEvidenceId: previous.evidenceId,
+          priorCarryforwardEvidenceId: previous.carryforwardEvidence.evidenceId,
         },
         designations: [{
           activityId: 'settled-personal-contribution',
@@ -1220,7 +1434,8 @@ describe('simulator owned non-Roth IRA annual planning evidence', () => {
         }],
         postYear: [],
       }),
-      priorCarryforwardEvidence: previous,
+      priorCarryforwardEvidence: previous.carryforwardEvidence,
+      priorPlanningEvidence: previous.planningEvidence,
       projectionStartTaxYear: TAX_YEAR,
     }))
     expect(result.planningEvidence).toMatchObject({
@@ -1249,7 +1464,7 @@ describe('simulator owned non-Roth IRA annual planning evidence', () => {
     )
     const forged = rehashPreparedTransaction(canonical, (draft) => {
       draft.settledContributionApplications[0]!.stagingEvidenceId =
-        previous.sourcePlanningEvidenceId
+        previous.carryforwardEvidence.sourcePlanningEvidenceId
     })
     const result = buildSimulatorOwnedNonRothIraAnnualPlanningEvidence(input({
       plan: value,
@@ -1269,7 +1484,7 @@ describe('simulator owned non-Roth IRA annual planning evidence', () => {
           asOfDate: `${nextTaxYear}-01-01`,
           amount: 50,
           priorTaxYear: TAX_YEAR,
-          priorCarryforwardEvidenceId: previous.evidenceId,
+          priorCarryforwardEvidenceId: previous.carryforwardEvidence.evidenceId,
         },
         designations: [{
           activityId: 'settled-personal-contribution',
@@ -1278,7 +1493,8 @@ describe('simulator owned non-Roth IRA annual planning evidence', () => {
         }],
         postYear: [],
       }),
-      priorCarryforwardEvidence: previous,
+      priorCarryforwardEvidence: previous.carryforwardEvidence,
+      priorPlanningEvidence: previous.planningEvidence,
       projectionStartTaxYear: TAX_YEAR,
     }))
     expect(issueKinds(result)).toContain('identifierCollision')
@@ -1718,6 +1934,28 @@ describe('simulator owned non-Roth IRA annual planning evidence', () => {
     expect(issueKinds(result)).toContain('contributionAssumptionInvalid')
   })
 
+  it('applies settled personal-contribution subtype and Plan-route eligibility to post-year assumptions', () => {
+    const simplePlan = plan()
+    simplePlan.retirementActionEligibilityFacts!.iraClassifications.find(
+      (classification) => classification.sourceAccountId === 'ira-b',
+    )!.subtype = 'simple'
+    expect(issueKinds(buildSimulatorOwnedNonRothIraAnnualPlanningEvidence(input({
+      plan: simplePlan,
+    })))).toContain('contributionAssumptionInvalid')
+
+    const routeLessPlan = plan()
+    const source = routeLessPlan.accounts.find(
+      (account) => account.id === 'ira-b',
+    )
+    if (source?.type !== 'traditional') throw new Error('fixture drift')
+    delete source.contributionSchedule
+    source.annualContribution = 0
+    routeLessPlan.incomes = []
+    expect(issueKinds(buildSimulatorOwnedNonRothIraAnnualPlanningEvidence(input({
+      plan: routeLessPlan,
+    })))).toContain('contributionAssumptionInvalid')
+  })
+
   it('rejects nonzero, negative-zero, and incomplete rollover assumptions', () => {
     for (const rolloverAssumption of [
       {
@@ -1753,7 +1991,7 @@ describe('simulator owned non-Roth IRA annual planning evidence', () => {
     const nextTaxYear = TAX_YEAR + 1
     const nextLedgerRunId = `planning-ledger-${nextTaxYear}`
     const value = plan()
-    const prior = built(input({
+    const validContinuityInput = input({
       plan: value,
       taxYear: nextTaxYear,
       ledgerRunId: nextLedgerRunId,
@@ -1768,13 +2006,81 @@ describe('simulator owned non-Roth IRA annual planning evidence', () => {
           asOfDate: `${nextTaxYear}-01-01`,
           amount: 50,
           priorTaxYear: TAX_YEAR,
-          priorCarryforwardEvidenceId: previous.evidenceId,
+          priorCarryforwardEvidenceId: previous.carryforwardEvidence.evidenceId,
         },
       }),
-      priorCarryforwardEvidence: previous,
+      priorCarryforwardEvidence: previous.carryforwardEvidence,
+      priorPlanningEvidence: previous.planningEvidence,
       projectionStartTaxYear: TAX_YEAR,
-    }))
+    })
+    const prior = built(validContinuityInput)
     expect(prior.status).toBe('annualPlanningEvidenceBuilt')
+
+    const missingPriorPlanning =
+      buildSimulatorOwnedNonRothIraAnnualPlanningEvidence({
+        ...validContinuityInput,
+        priorPlanningEvidence: undefined,
+      })
+    expect(issueKinds(missingPriorPlanning)).toContain('openingBasisMismatch')
+
+    const forgedPriorPlanning = structuredClone(previous.planningEvidence) as
+      unknown as Record<string, unknown>
+    forgedPriorPlanning.nextYearOpeningPlanningBasisAmount = 5_001
+    delete forgedPriorPlanning.evidenceId
+    forgedPriorPlanning.evidenceId = deriveActionStructuralId(
+      'simulator-owned-ira-annual-planning-evidence',
+      [forgedPriorPlanning],
+    )
+    const rehashedPredecessor =
+      buildSimulatorOwnedNonRothIraAnnualPlanningEvidence({
+        ...validContinuityInput,
+        priorPlanningEvidence: forgedPriorPlanning,
+      })
+    expect(issueKinds(rehashedPredecessor)).toContain('openingBasisMismatch')
+
+    const pairedPlanning = structuredClone(previous.planningEvidence) as
+      unknown as Record<string, unknown>
+    pairedPlanning.nextYearOpeningPlanningBasisAmount = 5_001
+    delete pairedPlanning.evidenceId
+    pairedPlanning.evidenceId = deriveActionStructuralId(
+      'simulator-owned-ira-annual-planning-evidence',
+      [pairedPlanning],
+    )
+    const pairedCarryforward = structuredClone(
+      previous.carryforwardEvidence,
+    ) as unknown as Record<string, unknown>
+    pairedCarryforward.sourcePlanningEvidenceId = pairedPlanning.evidenceId
+    pairedCarryforward.openingPlanningBasisAmount = 5_001
+    delete pairedCarryforward.evidenceId
+    pairedCarryforward.evidenceId = deriveActionStructuralId(
+      'simulator-owned-ira-planning-carryforward-evidence',
+      [pairedCarryforward],
+    )
+    const pairedForgery =
+      buildSimulatorOwnedNonRothIraAnnualPlanningEvidence(input({
+        plan: value,
+        taxYear: nextTaxYear,
+        ledgerRunId: nextLedgerRunId,
+        annualObservation: observation(value, {
+          openingBasis: 50.01,
+          taxYear: nextTaxYear,
+          ledgerRunId: nextLedgerRunId,
+        }),
+        assumptions: assumptions({
+          taxYear: nextTaxYear,
+          openingSource: {
+            source: 'priorProjectionCarryforward',
+            asOfDate: `${nextTaxYear}-01-01`,
+            amount: 50.01,
+            priorTaxYear: TAX_YEAR,
+            priorCarryforwardEvidenceId: String(pairedCarryforward.evidenceId),
+          },
+        }),
+        priorCarryforwardEvidence: pairedCarryforward,
+        priorPlanningEvidence: pairedPlanning,
+        projectionStartTaxYear: TAX_YEAR,
+      }))
+    expect(issueKinds(pairedForgery)).toContain('openingBasisMismatch')
 
     const stale = buildSimulatorOwnedNonRothIraAnnualPlanningEvidence(input({
       plan: value,
@@ -1791,10 +2097,11 @@ describe('simulator owned non-Roth IRA annual planning evidence', () => {
           asOfDate: `${nextTaxYear}-01-01`,
           amount: 50,
           priorTaxYear: TAX_YEAR - 1,
-          priorCarryforwardEvidenceId: previous.evidenceId,
+          priorCarryforwardEvidenceId: previous.carryforwardEvidence.evidenceId,
         },
       }),
-      priorCarryforwardEvidence: previous,
+      priorCarryforwardEvidence: previous.carryforwardEvidence,
+      priorPlanningEvidence: previous.planningEvidence,
       projectionStartTaxYear: TAX_YEAR,
     }))
     expect(issueKinds(stale)).toContain('openingBasisMismatch')
@@ -1884,6 +2191,37 @@ describe('simulator owned non-Roth IRA annual planning evidence', () => {
         line7GrossAmount: settled.line7GrossAmount + 1,
       },
     })))).toContain('activityInventoryInvalid')
+  })
+
+  it.each([
+    ['deadlineDate', `${TAX_YEAR + 1}-04-16`],
+    ['deadlineKind', 'disasterReliefExtension'],
+    ['calendarAdjustmentStatus', 'notApplied'],
+  ])('rejects a fully rehashed modeled deadline with false %s', (field, value) => {
+    const forged = rehashObservationDeadline(observation(), (deadline) => {
+      deadline[field] = value
+    })
+    const result = buildSimulatorOwnedNonRothIraAnnualPlanningEvidence(input({
+      annualObservation: forged,
+    }))
+    expect(issueKinds(result)).toContain('observationInvalid')
+  })
+
+  it('requires a prepared physical transaction to carry exactly no issues', () => {
+    const settled = structuredClone(physicalTransaction(plan(), defaultEvents()))
+    const forged = {
+      ...settled,
+      issues: [{ kind: 'inventedIssue', detail: 'not clean' }],
+    }
+    const result = buildSimulatorOwnedNonRothIraAnnualPlanningEvidence(input({
+      transaction: forged,
+    }))
+    expect(issueKinds(result)).toContain('activityInventoryBindingMismatch')
+
+    const malformed = buildSimulatorOwnedNonRothIraAnnualPlanningEvidence(input({
+      transaction: { ...settled, issues: {} },
+    }))
+    expect(issueKinds(malformed)).toContain('activityInventoryInvalid')
   })
 
   it('rejects a semantically changed application even when every public ID is rehashed', () => {
@@ -2033,7 +2371,9 @@ describe('simulator owned non-Roth IRA annual planning evidence', () => {
   })
 
   it('blocks safe-cent overflow in contribution carryforward assumptions', () => {
+    const value = planWithContribution()
     const postYearOverflow = buildSimulatorOwnedNonRothIraAnnualPlanningEvidence(input({
+      plan: value,
       assumptions: assumptions({
         postYear: [
           {
@@ -2101,5 +2441,32 @@ describe('simulator owned non-Roth IRA annual planning evidence', () => {
     })
     expect(issueKinds(result)).toContain('inputInvalid')
     expect(Object.isFrozen(result)).toBe(true)
+  })
+
+  it('fails closed when both a thrown value and its formatter are hostile', () => {
+    const baseline = input()
+    const hostileThrownValue = {
+      toString() {
+        throw new Error('hostile formatter')
+      },
+    }
+    const hostileInput = {
+      get plan(): unknown {
+        throw hostileThrownValue
+      },
+      ownerPersonId: baseline.ownerPersonId,
+      taxYear: baseline.taxYear,
+      projectionStartTaxYear: baseline.projectionStartTaxYear,
+      ledgerRunId: baseline.ledgerRunId,
+      annualObservation: baseline.annualObservation,
+      annualPhysicalTransaction: baseline.annualPhysicalTransaction,
+      assumptions: baseline.assumptions,
+    }
+    const result = buildSimulatorOwnedNonRothIraAnnualPlanningEvidence(
+      hostileInput,
+    )
+    expect(result.status).toBe('annualPlanningEvidenceBlocked')
+    expect(issueKinds(result)).toContain('inputInvalid')
+    expect(result.issues[0]!.detail).toContain('unformattable error')
   })
 })

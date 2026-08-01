@@ -1,4 +1,5 @@
 import { planSchema, type Plan } from '../model/plan.js'
+import { ordinaryFederalFilingDeadline } from '../model/retirementActionAnnualTaxFacts.js'
 import {
   type PlanOwnedNonRothIraAnnualPhysicalTransactionPreparedResult,
 } from '../actions/ownedNonRothIraAnnualPhysicalTransaction.js'
@@ -94,6 +95,8 @@ export interface BuildSimulatorOwnedNonRothIraAnnualPlanningEvidenceInput {
   assumptions: unknown
   /** Required only when openingBasis.source is priorProjectionCarryforward. */
   priorCarryforwardEvidence?: unknown
+  /** Required only when openingBasis.source is priorProjectionCarryforward. */
+  priorPlanningEvidence?: unknown
 }
 
 export interface CompleteSimulatorOwnedNonRothIraPlanningCarryforwardEvidence {
@@ -362,7 +365,22 @@ function blocked(
 }
 
 function safeError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
+  try {
+    if (error instanceof Error) {
+      try {
+        if (typeof error.message === 'string') return error.message
+      } catch {
+        // Fall through to the guarded generic formatter.
+      }
+    }
+    try {
+      return String(error)
+    } catch {
+      return 'unformattable error'
+    }
+  } catch {
+    return 'unformattable error'
+  }
 }
 
 function safeCents(value: bigint, label: string): UsdCents {
@@ -747,6 +765,199 @@ function allocateAnnualScopes(
   }
 }
 
+function priorPlanningArithmeticIsCanonical(
+  value: Record<string, unknown>,
+  accountSet: ReadonlySet<AccountId>,
+): boolean {
+  try {
+    const cents = (raw: unknown): UsdCents => {
+      if (typeof raw !== 'number') throw new TypeError('expected cents')
+      return asUsdCents(raw)
+    }
+    const opening = cents(value.openingPlanningBasisAmount)
+    const inYear = cents(value.inYearNondeductibleContributionAmount)
+    const postYear = cents(
+      value.postYearPriorTaxYearNondeductibleContributionAmount,
+    )
+    const numerator = cents(value.allocationBasisNumeratorAmount)
+    const observedBalance = cents(
+      value.observedYearEndApplicablePoolBalanceAmount,
+    )
+    const denominator = cents(value.annualBasisDenominatorAmount)
+    const nextYear = cents(value.nextYearOpeningPlanningBasisAmount)
+    if (!Array.isArray(value.postYearPriorTaxYearContributionAssumptions) ||
+        !isRecord(value.distributionAllocation) ||
+        !isRecord(value.conversionAllocation) ||
+        !isRecord(value.annualBasisRatio)) return false
+
+    const priorTaxYear = Number(value.taxYear)
+    const priorDeadline = ordinaryFederalFilingDeadline(priorTaxYear)
+    if (priorDeadline === null) return false
+    let postYearSum = 0n
+    const postYearKeys = new Set<string>()
+    let priorPostYearOrder: readonly [string, string] | null = null
+    for (const raw of value.postYearPriorTaxYearContributionAssumptions) {
+      if (!isRecord(raw) ||
+          raw.designatedTaxYear !== value.taxYear ||
+          canonicalDate(raw.contributionDate) === null) return false
+      const parsedSource = accountIdSchema.safeParse(raw.sourceAccountId)
+      if (!parsedSource.success || !accountSet.has(parsedSource.data) ||
+          typeof raw.nondeductibleContributionAmount !== 'number') return false
+      const contributionDate = String(raw.contributionDate)
+      const postYearStart = `${String(priorTaxYear + 1).padStart(4, '0')}-01-01`
+      const key = JSON.stringify([
+        parsedSource.data,
+        raw.designatedTaxYear,
+        contributionDate,
+      ])
+      const currentOrder = [contributionDate, parsedSource.data] as const
+      if (contributionDate < postYearStart || contributionDate > priorDeadline ||
+          postYearKeys.has(key) ||
+          (priorPostYearOrder !== null &&
+            (compareUtf16CodeUnits(priorPostYearOrder[0], currentOrder[0]) > 0 ||
+              (priorPostYearOrder[0] === currentOrder[0] &&
+                compareUtf16CodeUnits(
+                  priorPostYearOrder[1],
+                  currentOrder[1],
+                ) >= 0)))) return false
+      postYearKeys.add(key)
+      priorPostYearOrder = currentOrder
+      postYearSum += BigInt(asPositiveUsdCents(
+        raw.nondeductibleContributionAmount,
+      ))
+    }
+    if (safeCents(postYearSum, 'Prior post-year contribution sum') !== postYear ||
+        safeCents(
+          BigInt(opening) + BigInt(inYear),
+          'Prior allocation numerator',
+        ) !== numerator) return false
+
+    const activityIds = new Set<string>()
+    const canonicalScope = (
+      rawScope: Record<string, unknown>,
+      scope: SimulatorOwnedNonRothIraPlanningAllocationEvidence['calculationScope'],
+      activityKind: 'distribution' | 'rothConversion',
+    ): CanonicalActivity[] => {
+      if (rawScope.calculationScope !== scope ||
+          rawScope.residualAllocationOrder !==
+            'executionDateThenSequenceThenActivityId' ||
+          !Array.isArray(rawScope.allocations)) {
+        throw new TypeError('invalid prior allocation scope')
+      }
+      const activities: CanonicalActivity[] = []
+      let grossSum = 0n
+      let basisSum = 0n
+      let ordinarySum = 0n
+      for (const raw of rawScope.allocations) {
+        if (!isRecord(raw) || !nonblank(raw.activityId) ||
+            activityIds.has(raw.activityId) || !nonblank(raw.actionId) ||
+            canonicalDate(raw.executionDate) === null ||
+            !Number.isSafeInteger(raw.executionSequence) ||
+            Number(raw.executionSequence) <= 0) {
+          throw new TypeError('invalid prior allocation entry')
+        }
+        const parsedSource = accountIdSchema.safeParse(raw.sourceAccountId)
+        if (!parsedSource.success || !accountSet.has(parsedSource.data) ||
+            typeof raw.grossAmount !== 'number' ||
+            String(raw.executionDate) < `${priorTaxYear}-01-01` ||
+            String(raw.executionDate) > `${priorTaxYear}-12-31`) {
+          throw new TypeError('invalid prior allocation source')
+        }
+        const gross = asPositiveUsdCents(raw.grossAmount)
+        const allocatedBasis = cents(raw.allocatedBasisAmount)
+        const ordinaryIncome = cents(raw.ordinaryIncomeAmount)
+        if (BigInt(allocatedBasis) + BigInt(ordinaryIncome) !== BigInt(gross) ||
+            (raw.residualCentAwarded !== 0 &&
+              raw.residualCentAwarded !== 1)) {
+          throw new RangeError('invalid prior allocation arithmetic')
+        }
+        activityIds.add(raw.activityId)
+        grossSum += BigInt(gross)
+        basisSum += BigInt(allocatedBasis)
+        ordinarySum += BigInt(ordinaryIncome)
+        activities.push({
+          activityId: raw.activityId,
+          authorityKind: 'derivedRuntimeAction',
+          authorityId: raw.actionId,
+          allocationActionId: raw.actionId,
+          sourceAccountId: parsedSource.data,
+          activityKind,
+          executionDate: String(raw.executionDate),
+          executionSequence: Number(raw.executionSequence),
+          grossAmount: gross,
+          upstreamEvidenceId: raw.actionId,
+        })
+      }
+      if (activities.some((activity, index) => index > 0 &&
+          canonicalActivityOrder(activities[index - 1]!, activity) >= 0)) {
+        throw new RangeError('noncanonical prior allocation order')
+      }
+      if (safeCents(grossSum, 'Prior scope gross') !==
+            cents(rawScope.annualGrossAmount) ||
+          safeCents(basisSum, 'Prior scope basis') !==
+            cents(rawScope.annualBasisReturnAmount) ||
+          safeCents(ordinarySum, 'Prior scope ordinary income') !==
+            cents(rawScope.annualOrdinaryIncomeAmount)) {
+        throw new RangeError('invalid prior allocation totals')
+      }
+      return activities
+    }
+    const distribution = value.distributionAllocation
+    const conversion = value.conversionAllocation
+    const distributions = canonicalScope(
+      distribution,
+      'projectionPlanningDistributions',
+      'distribution',
+    )
+    const conversions = canonicalScope(
+      conversion,
+      'projectionPlanningNetConversions',
+      'rothConversion',
+    )
+    const distributionGross = cents(distribution.annualGrossAmount)
+    const conversionGross = cents(conversion.annualGrossAmount)
+    const expectedDenominator = safeCents(
+      BigInt(observedBalance) + BigInt(distributionGross) +
+        BigInt(conversionGross),
+      'Prior annual denominator',
+    )
+    if (expectedDenominator !== denominator) return false
+    const expectedRatio = ratio(numerator, denominator)
+    if (deriveActionStructuralId(
+      'simulator-owned-ira-prior-ratio-rejoin',
+      [value.annualBasisRatio],
+    ) !== deriveActionStructuralId(
+      'simulator-owned-ira-prior-ratio-rejoin',
+      [expectedRatio],
+    )) return false
+    const expectedAllocations = allocateAnnualScopes(
+      expectedRatio,
+      distributions,
+      conversions,
+    )
+    if (deriveActionStructuralId(
+      'simulator-owned-ira-prior-allocation-rejoin',
+      [distribution, conversion],
+    ) !== deriveActionStructuralId(
+      'simulator-owned-ira-prior-allocation-rejoin',
+      [expectedAllocations.distributionAllocation,
+        expectedAllocations.conversionAllocation],
+    )) return false
+    const recovered = BigInt(
+      expectedAllocations.distributionAllocation.annualBasisReturnAmount,
+    ) + BigInt(
+      expectedAllocations.conversionAllocation.annualBasisReturnAmount,
+    )
+    if (recovered > BigInt(numerator)) return false
+    return safeCents(
+      BigInt(opening) + BigInt(inYear) + BigInt(postYear) - recovered,
+      'Prior next-year opening basis',
+    ) === nextYear
+  } catch {
+    return false
+  }
+}
+
 function buildUnchecked(
   input: Readonly<BuildSimulatorOwnedNonRothIraAnnualPlanningEvidenceInput>,
 ): Readonly<BuildSimulatorOwnedNonRothIraAnnualPlanningEvidenceResult> {
@@ -761,12 +972,14 @@ function buildUnchecked(
   const rawPhysicalTransaction = input.annualPhysicalTransaction
   const rawAssumptions = input.assumptions
   const rawPriorCarryforwardEvidence = input.priorCarryforwardEvidence
+  const rawPriorPlanningEvidence = input.priorPlanningEvidence
   let snapshot: {
     plan: unknown
     observation: unknown
     physicalTransaction: unknown
     assumptions: unknown
     priorCarryforwardEvidence: unknown
+    priorPlanningEvidence: unknown
   }
   try {
     snapshot = structuredClone({
@@ -775,6 +988,7 @@ function buildUnchecked(
       physicalTransaction: rawPhysicalTransaction,
       assumptions: rawAssumptions,
       priorCarryforwardEvidence: rawPriorCarryforwardEvidence,
+      priorPlanningEvidence: rawPriorPlanningEvidence,
     })
   } catch (error) {
     return blocked([issue(
@@ -890,6 +1104,7 @@ function buildUnchecked(
     ) observationIssues.push(issue('observationInvalid', 'Opening basis observation is incomplete'))
   }
   let deadlineDate: string | null = null
+  const expectedDeadlineDate = ordinaryFederalFilingDeadline(taxYear)
   if (isRecord(projectionWindow)) {
     const deadline = projectionWindow.deadlineObservation
     if (
@@ -921,7 +1136,12 @@ function buildUnchecked(
           'projectionModelOnlyNotAuthoritativeFilingEvidence' ||
         deadline.deadlineStatus !==
           'modeledOrdinaryFederalDeadlineCalculated' ||
-        deadlineDate === null || !nonblank(deadline.evidenceId)
+        deadline.deadlineKind !==
+          'ordinaryFederalFilingDeadlineExcludingDisasterRelief' ||
+        deadline.calendarAdjustmentStatus !==
+          'weekendAndDistrictOfColumbiaHolidayAdjustmentApplied' ||
+        expectedDeadlineDate === null || deadlineDate !== expectedDeadlineDate ||
+        !nonblank(deadline.evidenceId)
       ) observationIssues.push(issue('observationInvalid', 'Modeled deadline observation is incomplete'))
     }
   }
@@ -1095,6 +1315,7 @@ function buildUnchecked(
       !Array.isArray(transaction.stagedDestinationCredits) ||
       !Array.isArray(transaction.line7Entries) ||
       !Array.isArray(transaction.line8Entries) ||
+      !Array.isArray(transaction.issues) ||
       !isRecord(transaction.line8InventoryEvidence)) {
     return blocked([issue(
       'activityInventoryInvalid',
@@ -1109,6 +1330,7 @@ function buildUnchecked(
     transaction.planId !== planId || transaction.ownerPersonId !== ownerPersonId ||
     transaction.taxYear !== taxYear || transaction.ledgerRunId !== ledgerRunId ||
     !nonblank(transaction.transactionEvidenceId) ||
+    transaction.issues.length !== 0 ||
     transaction.inventory.planId !== planId ||
     transaction.inventory.taxYear !== taxYear ||
     transaction.inventory.ledgerRunId !== ledgerRunId ||
@@ -2414,6 +2636,7 @@ function buildUnchecked(
     )])
   }
   let priorCarryforwardEvidence: Record<string, unknown> | null = null
+  let priorPlanningEvidence: Record<string, unknown> | null = null
   if (opening.source === 'planAccountPlanningSeed') {
     if (taxYear !== projectionStartTaxYear) {
       return blocked([issue(
@@ -2443,17 +2666,20 @@ function buildUnchecked(
         'Plan-seeded opening basis must equal the complete owner-wide Plan seed',
       )])
     }
-    if (snapshot.priorCarryforwardEvidence !== undefined) {
+    if (snapshot.priorCarryforwardEvidence !== undefined ||
+        snapshot.priorPlanningEvidence !== undefined) {
       return blocked([issue(
         'openingBasisMismatch',
-        'A current-Plan opening seed cannot also claim prior planning continuity',
+        'A current-Plan opening seed cannot also claim prior planning continuity evidence',
       )])
     }
   } else if (opening.source === 'priorProjectionCarryforward') {
     const prior = snapshot.priorCarryforwardEvidence
+    const priorPlanning = snapshot.priorPlanningEvidence
     if (taxYear <= projectionStartTaxYear ||
         opening.priorTaxYear !== taxYear - 1 ||
         !nonblank(opening.priorCarryforwardEvidenceId) || !isRecord(prior) ||
+        !isRecord(priorPlanning) ||
         prior.predicate !==
           'completeSimulatorOwnedNonRothIraPlanningCarryforwardEvidence' ||
         prior.planId !== planId || prior.ownerPersonId !== ownerPersonId ||
@@ -2479,16 +2705,94 @@ function buildUnchecked(
         'Prior carryforward must exact-rejoin complete planning evidence from the immediately preceding year',
       )])
     }
+    if (
+      priorPlanning.predicate !==
+        'completeSimulatorOwnedNonRothIraAnnualPlanningEvidence' ||
+      priorPlanning.planId !== planId ||
+      priorPlanning.ownerPersonId !== ownerPersonId ||
+      priorPlanning.taxYear !== taxYear - 1 ||
+      priorPlanning.projectionStartTaxYear !== projectionStartTaxYear ||
+      priorPlanning.ledgerRunId !== prior.sourceLedgerRunId ||
+      priorPlanning.evidenceScope !==
+        'projectionPlanningEstimateOnlyNotTaxReturnEvidence' ||
+      priorPlanning.filingCompleteness !== 'notEstablished' ||
+      priorPlanning.realWorldAccountCompleteness !== 'notEstablished' ||
+      priorPlanning.taxReturnUse !== 'prohibited' ||
+      priorPlanning.assumptionStatus !==
+        'explicitProjectionAssumptionsApplied' ||
+      priorPlanning.assumedOutstandingRolloverAmount !== 0 ||
+      priorPlanning.assumedRolloverRepaymentAdjustmentAmount !== 0 ||
+      Object.is(priorPlanning.assumedOutstandingRolloverAmount, -0) ||
+      Object.is(
+        priorPlanning.assumedRolloverRepaymentAdjustmentAmount,
+        -0,
+      ) ||
+      priorPlanning.displayCopy !==
+        'Projected IRA tax treatment uses complete simulated Plan activity and explicit basis, contribution, and no-rollover assumptions. It is not Form 8606 or tax-return evidence.' ||
+      !nonblank(priorPlanning.observationEvidenceId) ||
+      !nonblank(priorPlanning.activityInventoryEvidenceId) ||
+      !nonblank(priorPlanning.assumptionsEvidenceId) ||
+      priorPlanning.evidenceId !== prior.sourcePlanningEvidenceId ||
+      priorPlanning.nextYearOpeningPlanningBasisAmount !==
+        prior.openingPlanningBasisAmount ||
+      !Array.isArray(priorPlanning.accountIds) ||
+      priorPlanning.accountIds.length !== accountIds.length ||
+      !sameStrings(
+        [...priorPlanning.accountIds].filter((value): value is string =>
+          typeof value === 'string'),
+        accountIds,
+      ) ||
+      !Array.isArray(
+        priorPlanning.postYearPriorTaxYearContributionAssumptions,
+      ) || !priorPlanningArithmeticIsCanonical(priorPlanning, accountSet)
+    ) {
+      return blocked([issue(
+        'openingBasisMismatch',
+        'Supplied prior planning evidence must exactly define the predecessor carryforward source',
+      )])
+    }
     try {
       const { evidenceId, ...priorBody } = prior
-      if (!derivedIdMatches(
-        evidenceId,
+      const { evidenceId: planningEvidenceId, ...priorPlanningBody } =
+        priorPlanning
+      const expectedPriorCarryforwardBody = {
+        predicate:
+          'completeSimulatorOwnedNonRothIraPlanningCarryforwardEvidence',
+        planId: priorPlanning.planId,
+        ownerPersonId: priorPlanning.ownerPersonId,
+        projectionStartTaxYear: priorPlanning.projectionStartTaxYear,
+        fromTaxYear: priorPlanning.taxYear,
+        toTaxYear: Number(priorPlanning.taxYear) + 1,
+        sourceLedgerRunId: priorPlanning.ledgerRunId,
+        sourcePlanningEvidenceId: priorPlanning.evidenceId,
+        accountIds: priorPlanning.accountIds,
+        openingPlanningBasisAmount:
+          priorPlanning.nextYearOpeningPlanningBasisAmount,
+        postYearPriorTaxYearContributionAssumptions:
+          priorPlanning.postYearPriorTaxYearContributionAssumptions,
+        evidenceScope:
+          'projectionPlanningCarryforwardOnlyNotTaxReturnEvidence',
+        taxReturnUse: 'prohibited',
+      }
+      const expectedCarryforwardEvidenceId = deriveActionStructuralId(
         'simulator-owned-ira-planning-carryforward-evidence',
-        [priorBody],
-      )) {
+        [expectedPriorCarryforwardBody],
+      )
+      if (evidenceId !== expectedCarryforwardEvidenceId ||
+        deriveActionStructuralId(
+          'simulator-owned-ira-prior-carryforward-exact-rejoin',
+          [priorBody],
+        ) !== deriveActionStructuralId(
+          'simulator-owned-ira-prior-carryforward-exact-rejoin',
+          [expectedPriorCarryforwardBody],
+        ) || !derivedIdMatches(
+          planningEvidenceId,
+          'simulator-owned-ira-annual-planning-evidence',
+          [priorPlanningBody],
+        )) {
         return blocked([issue(
           'openingBasisMismatch',
-          'Prior carryforward evidence ID must bind its complete contents',
+          'Prior planning and carryforward evidence must bind and exact-rejoin their complete contents',
         )])
       }
     } catch (error) {
@@ -2498,6 +2802,7 @@ function buildUnchecked(
       )])
     }
     priorCarryforwardEvidence = prior
+    priorPlanningEvidence = priorPlanning
   } else {
     return blocked([issue('assumptionsInvalid', 'Opening-basis assumption source is unsupported')])
   }
@@ -2527,16 +2832,22 @@ function buildUnchecked(
     }
     subtypeBySource.set(sourceAccountId, classifications[0]!.subtype)
   }
-  for (const activity of activities) {
-    const subtype = subtypeBySource.get(activity.sourceAccountId)
+  const owner = plan.household.people.find(
+    (person) => person.id === ownerPersonId,
+  )!
+  const ownerAge = taxYear - Number(owner.dob.slice(0, 4))
+  const ownerModeledAlive = ownerAge <= owner.longevity.planningAge
+  const ownerHasCurrentYearWages = plan.incomes.some((income) => {
+    if (income.type !== 'wages' || income.personId !== ownerPersonId ||
+        income.annualGross <= 0) return false
+    const stopAge = income.endAge ?? owner.retirementAge
+    return stopAge === null || ownerAge < stopAge
+  })
+  const personalContributionEligibleBySource = new Map<AccountId, boolean>()
+  for (const sourceAccountId of accountIds) {
     const source = plan.accounts.find(
-      (account) => account.id === activity.sourceAccountId,
+      (account) => account.id === sourceAccountId,
     )
-    const owner = plan.household.people.find(
-      (person) => person.id === ownerPersonId,
-    )!
-    const ownerAge = taxYear - Number(owner.dob.slice(0, 4))
-    const ownerModeledAlive = ownerAge <= owner.longevity.planningAge
     const contributionSchedule = source?.type === 'traditional'
       ? source.contributionSchedule
       : undefined
@@ -2550,12 +2861,15 @@ function buildUnchecked(
             ownerAge <= (phase.toAge ?? 120) && phase.annualAmount > 0)
         : source.annualContribution > 0
       : false
-    const ownerHasCurrentYearWages = plan.incomes.some((income) => {
-      if (income.type !== 'wages' || income.personId !== ownerPersonId ||
-          income.annualGross <= 0) return false
-      const stopAge = income.endAge ?? owner.retirementAge
-      return stopAge === null || ownerAge < stopAge
-    })
+    personalContributionEligibleBySource.set(
+      sourceAccountId,
+      subtypeBySource.get(sourceAccountId) !== 'simple' && ownerModeledAlive &&
+        hasPositiveCurrentYearContributionRequest &&
+        (hasContributionSchedule || ownerHasCurrentYearWages),
+    )
+  }
+  for (const activity of activities) {
+    const subtype = subtypeBySource.get(activity.sourceAccountId)
     if (activity.activityKind === 'ownedIraContribution' &&
         subtype === 'simple') {
       classificationIssues.push(issue(
@@ -2565,8 +2879,8 @@ function buildUnchecked(
       ))
     }
     if (activity.activityKind === 'ownedIraContribution' &&
-        (!ownerModeledAlive || !hasPositiveCurrentYearContributionRequest ||
-          (!hasContributionSchedule && !ownerHasCurrentYearWages))) {
+        personalContributionEligibleBySource.get(activity.sourceAccountId) !==
+          true) {
       classificationIssues.push(issue(
         'activityUnsupported',
         'Personal IRA contribution activity requires the same positive Plan contribution route accepted by the canonical inventory producer',
@@ -2709,6 +3023,14 @@ function buildUnchecked(
         'contributionAssumptionInvalid',
         'Post-year contribution must be unique, designate the tax year, belong to the pool, and occur by the modeled ordinary deadline',
         { sourceAccountId: typeof raw.sourceAccountId === 'string' ? raw.sourceAccountId : undefined },
+      ))
+      continue
+    }
+    if (personalContributionEligibleBySource.get(parsedAccount.data) !== true) {
+      contributionIssues.push(issue(
+        'contributionAssumptionInvalid',
+        'Post-year personal IRA contribution assumptions require a non-SIMPLE source and the same positive Plan contribution route accepted by the canonical inventory producer',
+        { sourceAccountId: parsedAccount.data },
       ))
       continue
     }
@@ -3117,6 +3439,7 @@ function buildUnchecked(
   )
   if (opening.source === 'priorProjectionCarryforward') {
     const prior = priorCarryforwardEvidence!
+    const priorPlanning = priorPlanningEvidence!
     claimIdentifier(
       claims,
       prior.evidenceId,
@@ -3136,11 +3459,20 @@ function buildUnchecked(
     )
     claimIdentifier(
       claims,
+      priorPlanning.evidenceId,
+      'priorSourcePlanningEvidenceId',
+      [priorPlanning],
+      'Prior source planning evidence definition',
+      idIssues,
+    )
+    claimIdentifier(
+      claims,
       prior.sourcePlanningEvidenceId,
       'priorSourcePlanningEvidenceId',
-      [prior.sourcePlanningEvidenceId, prior.fromTaxYear, prior.ownerPersonId],
-      'Prior source planning evidence ID',
+      [priorPlanning],
+      'Prior source planning evidence reference',
       idIssues,
+      true,
     )
     claimIdentifier(
       claims,
