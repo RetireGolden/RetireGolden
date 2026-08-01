@@ -86,7 +86,10 @@ describe('payout-form feature-off identity', () => {
     const withForm = couplePlan()
     withForm.accounts = [cash(200_000), spia({ kind: 'lifeOnly' })]
     const legacyLedger = (_key: string, value: unknown) =>
-      _key === 'retirementRuntimeSource' ? undefined : value
+      _key === 'retirementRuntimeSource' ||
+      _key === 'ownedNonRothIraPostGrowthSource'
+        ? undefined
+        : value
     expect(JSON.stringify(run(withForm).years, legacyLedger)).toBe(
       JSON.stringify(run(withoutForm).years, legacyLedger),
     )
