@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest'
 
 import { summarizeProjection } from '../projection/compare.js'
 import { simulatePlan } from '../projection/simulate.js'
+import { createScenarioPatch } from '../scenarios/patch.js'
 import {
   accumulatorPlan,
   inheritedOnlyPlan,
@@ -32,6 +33,17 @@ function rothCandidate(overrides: Partial<DecisionCandidate>): DecisionCandidate
     explanation: 'test',
     ...overrides,
   }
+}
+
+function canonicalPatchFor(basePlan: ReturnType<typeof tradHeavyPlan>, editedPlan: ReturnType<typeof tradHeavyPlan>) {
+  const result = createScenarioPatch(basePlan, editedPlan, {
+    title: 'Decision readiness test',
+    rationale: null,
+    createdAtIso: '2026-01-01T00:00:00.000Z',
+    actor: { kind: 'system', id: 'decision-readiness-test' },
+  })
+  if (!result.ok) throw new Error(result.issues.join('; '))
+  return result.patch
 }
 
 describe('evaluateCandidate', () => {
@@ -110,6 +122,36 @@ describe('evaluateCandidate', () => {
     expect(evaluation.conversionExecution?.executedTotal).toBeGreaterThan(0)
     expect(evaluation.recommendationState).toBe('diagnostic')
     expect(evaluation.diagnostics.join(' ')).toContain('exploratory and non-actionable')
+  })
+
+  it('gates canonical scenario operations and aggregate QCD changes', () => {
+    const plan = tradHeavyPlan()
+    const edited = structuredClone(plan)
+    edited.strategies.qcdAnnual = 1_000
+    const patch = canonicalPatchFor(plan, edited)
+    const ctx = createDecisionContext(plan, simOptions())
+
+    const untagged = evaluateCandidate(
+      ctx,
+      rothCandidate({ planPatch: patch }),
+      { candidateResult: ctx.baselineResult },
+    )
+    expect(untagged.recommendationState).toBe('diagnostic')
+    expect(untagged.diagnostics.join(' ')).toMatch(/untagged.*identity-complete/i)
+
+    const falselyCertified = evaluateCandidate(
+      ctx,
+      rothCandidate({
+        planPatch: patch,
+        retirementActionReadiness: {
+          state: 'identityComplete',
+          actionRequestIds: ['pretend-qcd-action'],
+        },
+      }),
+      { candidateResult: ctx.baselineResult },
+    )
+    expect(falselyCertified.recommendationState).toBe('diagnostic')
+    expect(falselyCertified.diagnostics.join(' ')).toMatch(/aggregate.*QCD/i)
   })
 
   it('rejects incomplete or aggregate identity-complete evidence', () => {
@@ -236,6 +278,45 @@ describe('evaluateCandidate', () => {
       expect(evaluation.recommendationState).toBe('neutral')
       expect(evaluation.diagnostics).toEqual([])
     }
+  })
+
+  it('extracts matching request identities from canonical scenario operations', () => {
+    const plan = tradHeavyPlan()
+    const sourceAccountId = plan.accounts.find((account) => account.type === 'cash')!.id
+    const edited = structuredClone(plan)
+    edited.strategies.retirementActions = [{
+      actionId: 'canonical-decision-action',
+      kind: 'ordinaryWithdrawal',
+      year: 2027,
+      executionSequence: 1,
+      requestedAmount: 10_000,
+      provenance: { source: 'generator', sourceId: 'canonical-readiness-test' },
+      personId: 'p1',
+      allocations: [{
+        allocationId: 'canonical-decision-allocation',
+        sourceAccountId,
+        requestedAmount: 10_000,
+      }],
+      purpose: { kind: 'spending' },
+    }] as never
+    const patch = canonicalPatchFor(plan, edited)
+    const ctx = createDecisionContext(plan, simOptions())
+
+    const evaluation = evaluateCandidate(
+      ctx,
+      rothCandidate({
+        category: 'withdrawal',
+        planPatch: patch,
+        retirementActionReadiness: {
+          state: 'identityComplete',
+          actionRequestIds: ['canonical-decision-action'],
+        },
+      }),
+      { candidateResult: ctx.baselineResult },
+    )
+
+    expect(evaluation.recommendationState).toBe('neutral')
+    expect(evaluation.diagnostics).toEqual([])
   })
 
   it('marks candidates with invalid patches diagnostic instead of recommending them', () => {

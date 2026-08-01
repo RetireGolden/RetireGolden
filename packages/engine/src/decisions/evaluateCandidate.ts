@@ -11,6 +11,11 @@
  */
 
 import type { Plan } from '../model/plan.js'
+import {
+  decodeScenarioPointer,
+  isScenarioPatchEnvelope,
+  parseScenarioPatch,
+} from '../scenarios/contract.js'
 import { applyScenarioPatch } from '../scenarios/scenarios.js'
 import { summarizeProjection, type ProjectionSummary } from '../projection/compare.js'
 import { simulatePlan } from '../projection/simulate.js'
@@ -28,7 +33,13 @@ const RETIREMENT_ACTION_STRATEGY_KEYS = [
   'retirementActions',
   'rothConversion',
   'withdrawalOrder',
+  'qcdAnnual',
 ] as const
+const AGGREGATE_RETIREMENT_ACTION_STRATEGY_KEYS = new Set([
+  'rothConversion',
+  'withdrawalOrder',
+  'qcdAnnual',
+])
 const IDENTITY_COMPLETE_RETIREMENT_ACTION_KINDS = new Set([
   'ordinaryWithdrawal',
   'rothConversion',
@@ -41,15 +52,97 @@ function objectRecord(value: unknown): Record<string, unknown> | null {
     : null
 }
 
+interface RetirementActionPatchInspection {
+  changesRetirementActions: boolean
+  hasAggregateStrategy: boolean
+  retirementActionRequests: unknown
+}
+
+function hasRetirementActionStrategy(record: Record<string, unknown> | null): boolean {
+  return record !== null && RETIREMENT_ACTION_STRATEGY_KEYS.some((key) =>
+    Object.prototype.hasOwnProperty.call(record, key),
+  )
+}
+
+function inspectRetirementActionPatch(planPatch: unknown): RetirementActionPatchInspection {
+  const patch = objectRecord(planPatch)
+  if (patch === null) {
+    return {
+      changesRetirementActions: false,
+      hasAggregateStrategy: false,
+      retirementActionRequests: undefined,
+    }
+  }
+
+  if (!isScenarioPatchEnvelope(patch)) {
+    const strategies = objectRecord(patch['strategies'])
+    return {
+      changesRetirementActions: hasRetirementActionStrategy(strategies),
+      hasAggregateStrategy: strategies !== null && [...AGGREGATE_RETIREMENT_ACTION_STRATEGY_KEYS].some((key) =>
+        Object.prototype.hasOwnProperty.call(strategies, key),
+      ),
+      retirementActionRequests: strategies?.['retirementActions'],
+    }
+  }
+
+  const parsed = parseScenarioPatch(patch)
+  if (!parsed.ok) {
+    return {
+      changesRetirementActions: true,
+      hasAggregateStrategy: false,
+      retirementActionRequests: null,
+    }
+  }
+
+  let changesRetirementActions = false
+  let hasAggregateStrategy = false
+  let retirementActionRequests: unknown
+  for (const operation of parsed.patch.operations) {
+    const segments = decodeScenarioPointer(operation.path)
+    if (segments?.[0] !== 'strategies') continue
+
+    if (segments.length === 1) {
+      const beforeStrategies = operation.before.present
+        ? objectRecord(operation.before.value)
+        : null
+      const afterStrategies = operation.op === 'set'
+        ? objectRecord(operation.value)
+        : null
+      changesRetirementActions ||= hasRetirementActionStrategy(beforeStrategies) ||
+        hasRetirementActionStrategy(afterStrategies)
+      hasAggregateStrategy ||= [...AGGREGATE_RETIREMENT_ACTION_STRATEGY_KEYS].some((key) =>
+        Object.prototype.hasOwnProperty.call(beforeStrategies ?? {}, key) ||
+        Object.prototype.hasOwnProperty.call(afterStrategies ?? {}, key),
+      )
+      retirementActionRequests = afterStrategies?.['retirementActions']
+      continue
+    }
+
+    const strategyKey = segments[1]!
+    if (!RETIREMENT_ACTION_STRATEGY_KEYS.includes(strategyKey as typeof RETIREMENT_ACTION_STRATEGY_KEYS[number])) {
+      continue
+    }
+    changesRetirementActions = true
+    hasAggregateStrategy ||= AGGREGATE_RETIREMENT_ACTION_STRATEGY_KEYS.has(strategyKey)
+    if (strategyKey === 'retirementActions') {
+      retirementActionRequests = segments.length === 2 && operation.op === 'set'
+        ? operation.value
+        : null
+    }
+  }
+
+  return {
+    changesRetirementActions,
+    hasAggregateStrategy,
+    retirementActionRequests,
+  }
+}
+
 /** Whether the candidate's concrete change can cause retirement-account movement. */
 export function candidateChangesRetirementActions(candidate: DecisionCandidate): boolean {
   try {
     if (candidate.conversions !== undefined || candidate.retirementActionReadiness !== undefined) return true
-    const patch = objectRecord(candidate.planPatch)
-    const strategies = objectRecord(patch?.['strategies'])
-    return strategies !== null && RETIREMENT_ACTION_STRATEGY_KEYS.some((key) =>
-      Object.prototype.hasOwnProperty.call(strategies, key),
-    )
+    return inspectRetirementActionPatch(candidate.planPatch).changesRetirementActions
   } catch {
     // A hostile or malformed runtime candidate must be gated, never trusted.
     return true
@@ -57,9 +150,7 @@ export function candidateChangesRetirementActions(candidate: DecisionCandidate):
 }
 
 function patchedRetirementActionIds(candidate: DecisionCandidate): string[] | null {
-  const patch = objectRecord(candidate.planPatch)
-  const strategies = objectRecord(patch?.['strategies'])
-  const requests = strategies?.['retirementActions']
+  const requests = inspectRetirementActionPatch(candidate.planPatch).retirementActionRequests
   if (!Array.isArray(requests)) return null
 
   const ids: string[] = []
@@ -107,14 +198,8 @@ function inspectRetirementActionReadiness(candidate: DecisionCandidate): string 
   if (candidate.conversions !== undefined) {
     return 'Identity-complete retirement-action evidence cannot certify an aggregate conversion schedule.'
   }
-  const patch = objectRecord(candidate.planPatch)
-  const strategies = objectRecord(patch?.['strategies'])
-  if (
-    strategies !== null &&
-    (Object.prototype.hasOwnProperty.call(strategies, 'rothConversion') ||
-      Object.prototype.hasOwnProperty.call(strategies, 'withdrawalOrder'))
-  ) {
-    return 'Identity-complete retirement-action evidence cannot certify an aggregate withdrawal or conversion strategy.'
+  if (inspectRetirementActionPatch(candidate.planPatch).hasAggregateStrategy) {
+    return 'Identity-complete retirement-action evidence cannot certify an aggregate withdrawal, conversion, or QCD strategy.'
   }
 
   const patchedIds = patchedRetirementActionIds(candidate)

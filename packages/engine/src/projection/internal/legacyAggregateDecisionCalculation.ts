@@ -1,7 +1,7 @@
 /**
  * Package-private capability for the legacy aggregate optimizer calculation
  * path. The package export map blocks `projection/internal/*`, so public
- * decision callers cannot forge this unique symbol through options.
+ * decision callers cannot forge membership in this module-local WeakSet.
  *
  * Remove this boundary when the WS4 optimizer bridge emits identity-bearing
  * actions and exact comparison evidence.
