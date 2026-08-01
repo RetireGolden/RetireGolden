@@ -53,6 +53,7 @@ export type RetirementActionManualReviewIssueKind =
   | 'allocatorBlocked'
   | 'replacementIdentityCollision'
   | 'reviewEvidenceCollision'
+  | 'replacementInvariantViolation'
   | 'replacementPlanInvalid'
 
 export interface RetirementActionManualReviewIssue {
@@ -180,9 +181,8 @@ function blocked(
     entry.allocatorIssue?.reason?.outcome === 'unsupported' ||
     entry.kind === 'targetProvenanceUnsupported' ||
     entry.kind === 'targetKindUnsupported' ||
-    entry.kind === 'replacementProvenanceInvalid' ||
     entry.kind === 'reviewEvidenceCollision' ||
-    entry.kind === 'replacementPlanInvalid')
+    entry.kind === 'replacementInvariantViolation')
     ? 'unsupported' as const
     : 'refused' as const
   return deepFreeze({
@@ -531,7 +531,7 @@ function reviewUnchecked(
     allocatedRequest.requestedAmount !== target.requestedAmount
   ) {
     return blocked([issue(
-      'replacementPlanInvalid',
+      'replacementInvariantViolation',
       'replacementIntent',
       'Canonical allocation did not preserve the reviewed manual action invariants.',
     )], target)
@@ -585,7 +585,7 @@ function reviewUnchecked(
     planId: parsedPlanId.data,
     target: reviewedTargetEvidence,
     replacement: allocatedRequest,
-    preservedActionIds,
+    preservedActions: parsedActions,
     allocatorEvidence: allocated.evidence,
   }])
   const reservedIdentifiers = completePlanReservedIdentifiers(replacementPlanResult.data)

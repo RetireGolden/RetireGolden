@@ -355,8 +355,8 @@ describe('manual retirement-action review and replacement', () => {
 
   it('rejects sparse retirement-action schedules without compacting empty slots', () => {
     const plan = basePlan()
-    const sparseActions = new Array<RetirementActionRequest>(10_000_000)
-    sparseActions[9_999_999] = legacyWithdrawal()
+    const sparseActions = new Array<RetirementActionRequest>(1_000_000)
+    sparseActions[999_999] = legacyWithdrawal()
     plan.strategies.retirementActions = sparseActions
 
     const result = review(plan, 'legacy-withdrawal', ordinaryIntent())
@@ -389,6 +389,7 @@ describe('manual retirement-action review and replacement', () => {
     }))
 
     expect(issueKinds(provenance)).toEqual(['replacementProvenanceInvalid'])
+    expect(provenance).toMatchObject({ status: 'blocked', outcome: 'refused' })
     expect(issueKinds(mismatched)).toEqual([
       'replacementAmountMismatch',
       'replacementKindMismatch',
@@ -706,7 +707,21 @@ describe('manual retirement-action review and replacement', () => {
     ])
   })
 
-  it('binds target index and complete provenance into the review evidence ID', () => {
+  it('classifies a correctable replacement Plan validation failure as refused', () => {
+    const plan = basePlan()
+    plan.name = ''
+    plan.strategies.retirementActions = [legacyWithdrawal()]
+
+    const result = review(plan, 'legacy-withdrawal', ordinaryIntent())
+
+    expect(result).toMatchObject({
+      status: 'blocked',
+      outcome: 'refused',
+      issues: [{ kind: 'replacementPlanInvalid', field: 'plan' }],
+    })
+  })
+
+  it('binds target index and complete target/preserved evidence into the review ID', () => {
     const firstPlan = basePlan()
     firstPlan.strategies.retirementActions = [
       legacyWithdrawal(),
@@ -722,6 +737,11 @@ describe('manual retirement-action review and replacement', () => {
       ...changedProvenancePlan.strategies.retirementActions[0],
       provenance: { source: 'migration', sourceId: 'different-import' },
     })
+    const changedPreservedPlan = structuredClone(firstPlan)
+    changedPreservedPlan.strategies.retirementActions[1] = action({
+      ...changedPreservedPlan.strategies.retirementActions[1],
+      requestedAmount: 10_001,
+    })
 
     const first = review(firstPlan, 'legacy-withdrawal', ordinaryIntent())
     const moved = review(movedPlan, 'legacy-withdrawal', ordinaryIntent())
@@ -730,14 +750,21 @@ describe('manual retirement-action review and replacement', () => {
       'legacy-withdrawal',
       ordinaryIntent(),
     )
+    const changedPreserved = review(
+      changedPreservedPlan,
+      'legacy-withdrawal',
+      ordinaryIntent(),
+    )
 
     expect(first.status).toBe('replacementReady')
     expect(moved.status).toBe('replacementReady')
     expect(changedProvenance.status).toBe('replacementReady')
+    expect(changedPreserved.status).toBe('replacementReady')
     if (
       first.status !== 'replacementReady' ||
       moved.status !== 'replacementReady' ||
-      changedProvenance.status !== 'replacementReady'
+      changedProvenance.status !== 'replacementReady' ||
+      changedPreserved.status !== 'replacementReady'
     ) return
     expect(first.evidence.target.originalPlanIndex).toBe(0)
     expect(moved.evidence.target.originalPlanIndex).toBe(1)
@@ -750,6 +777,9 @@ describe('manual retirement-action review and replacement', () => {
       .toBe(first.evidence.replacementActionId)
     expect(moved.evidence.evidenceId).not.toBe(first.evidence.evidenceId)
     expect(changedProvenance.evidence.evidenceId).not.toBe(first.evidence.evidenceId)
+    expect(changedPreserved.evidence.preservedActionIds)
+      .toEqual(first.evidence.preservedActionIds)
+    expect(changedPreserved.evidence.evidenceId).not.toBe(first.evidence.evidenceId)
   })
 
   it('publishes and binds every field of an already-manual target request', () => {
