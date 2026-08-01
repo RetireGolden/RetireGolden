@@ -29,6 +29,7 @@ import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { runSpendingSolve } from '../optimize/spendingRunner'
 import { fmtMoneyCompact } from './format'
 import { LiveStatus } from './LiveStatus'
+import { ScenarioActionComparisonTable } from './ScenarioActionComparisonTable'
 import {
   buildScenarioLever,
   SCENARIO_LEVER_DEFINITIONS,
@@ -790,6 +791,7 @@ function ScenarioDetail({
       ) : (
         <p className="small">Shared-market risk is off for this comparison.</p>
       )}
+      <ScenarioActionComparisonTable actionRows={comparison.actionRows} />
       <AnnualLedgerComparison comparison={comparison} />
     </>
   )
