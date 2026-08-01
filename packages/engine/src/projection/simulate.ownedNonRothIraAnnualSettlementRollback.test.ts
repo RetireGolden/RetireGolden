@@ -103,6 +103,8 @@ describe('simulator owned-IRA settlement rollback integration', () => {
 
     expect(controller.calls).toHaveBeenCalledTimes(1)
     expect(optimizerProbes).toHaveLength(2)
+    expect(result.years.every((year) =>
+      !Object.hasOwn(year, 'ownedNonRothIraAnnualReplay'))).toBe(true)
     expect(result.years.map((year) => year.balances.ira)).toEqual([100, 100])
     expect(JSON.stringify(result)).not.toMatch(
       /pendingOwnedNonRothIraAnnualSettlement|assumptionCycle|attemptCallbackThrew/,

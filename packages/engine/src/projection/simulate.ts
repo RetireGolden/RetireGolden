@@ -91,6 +91,10 @@ import {
   runOwnedNonRothIraAnnualSettlementAttempts,
   type OwnedNonRothIraAnnualSettlementEffect,
 } from '../internal/ownedNonRothIraAnnualAttemptSettlement.js'
+import {
+  committedOwnedNonRothIraAnnualReplayPublication,
+} from
+  '../internal/ownedNonRothIraAnnualReplayPublication.js'
 import { deriveOwnedNonRothIraReplayAllocationIdentity } from
   '../internal/ownedNonRothIraReplayIdentity.js'
 import { effectiveBirthYear, fraForBirthYear, fraTotalMonths, survivorFraForBirthYear } from '../socialSecurity/nra.js'
@@ -5139,6 +5143,20 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           }
         }
         ownedNonRothIraSettlementEnabled = iraBasisByOwner.size > 0
+        const publication =
+          committedOwnedNonRothIraAnnualReplayPublication(
+            settlement,
+            settledAnnualPass.yearResult,
+          )
+        if (publication !== null) {
+          settledAnnualPass = {
+            ...settledAnnualPass,
+            yearResult: {
+              ...settledAnnualPass.yearResult,
+              ownedNonRothIraAnnualReplay: publication,
+            },
+          }
+        }
       } else {
         ownedNonRothIraSettlementEnabled = false
         settledAnnualPass = runPostContributionAnnualPass([])
