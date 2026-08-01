@@ -83,6 +83,8 @@ import {
   type ExecuteOrdinaryWithdrawalsResult,
   type TaxableAccountOpeningSnapshot,
 } from '../actions/index.js'
+import { compareUtf16CodeUnits } from '../actions/structuralId.js'
+import { type SimulatorAnnualRetirementRuntimeOccurrence } from './annualRetirementRuntimeJournal.js'
 import { effectiveBirthYear, fraForBirthYear, fraTotalMonths, survivorFraForBirthYear } from '../socialSecurity/nra.js'
 import {
   computePiaFromEarnings,
@@ -153,6 +155,42 @@ export interface SimulateOptions {
 }
 
 const EPSILON = 0.005
+
+function compareNullableUtf16(
+  left: string | null,
+  right: string | null,
+): number {
+  if (left === right) return 0
+  if (left === null) return -1
+  if (right === null) return 1
+  return compareUtf16CodeUnits(left, right)
+}
+
+function compareNullableNumber(
+  left: number | null,
+  right: number | null,
+): number {
+  if (left === right) return 0
+  if (left === null) return -1
+  if (right === null) return 1
+  return left - right
+}
+
+function canonicalRuntimeOccurrenceOrder(
+  left: Readonly<SimulatorAnnualRetirementRuntimeOccurrence>,
+  right: Readonly<SimulatorAnnualRetirementRuntimeOccurrence>,
+): number {
+  return compareUtf16CodeUnits(
+    left.producerOccurrenceKey,
+    right.producerOccurrenceKey,
+  ) || compareUtf16CodeUnits(left.kind, right.kind)
+    || left.grossAmountPlanDollars - right.grossAmountPlanDollars
+    || compareNullableUtf16(left.ownerPersonId, right.ownerPersonId)
+    || compareNullableUtf16(left.sourceAccountId, right.sourceAccountId)
+    || compareNullableUtf16(left.executionDate, right.executionDate)
+    || compareNullableNumber(left.executionSequence, right.executionSequence)
+    || compareNullableUtf16(left.movementAuthorityId, right.movementAuthorityId)
+}
 const MAX_TAX_ITERATIONS = 8
 const MAX_ACA_FIXED_POINT_EVALUATIONS = 160
 
@@ -773,6 +811,17 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const inflFactor = inflFactorFrom(startYear, year)
     const { pack, isStandIn } = packForYear(year)
     const limitGrowth = limitScale(pack, isStandIn, year)
+    const annualRetirementRuntimeOccurrences:
+      SimulatorAnnualRetirementRuntimeOccurrence[] = []
+    const recordAnnualRetirementRuntimeOccurrence = (
+      occurrence: Readonly<SimulatorAnnualRetirementRuntimeOccurrence>,
+    ): void => {
+      annualRetirementRuntimeOccurrences.push({ ...occurrence })
+    }
+    const runtimeOccurrenceKey = (
+      kind: SimulatorAnnualRetirementRuntimeOccurrence['kind'],
+      ...binding: readonly unknown[]
+    ): string => JSON.stringify([kind, ...binding])
 
     // Prior Dec 31 balances (RMD base) — captured before this year's flows.
     const startOfYearBalance = new Map(balances.map((b) => [b.account.id, b.balance]))
@@ -848,6 +897,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         funding.costBasis = Math.max(0, funding.costBasis - funded * basisRatio)
       }
       funding.balance -= funded
+      if (funded > 0 && funding.account.type === 'traditional') {
+        const kind = 'annuityFundingTransfer' as const
+        recordAnnualRetirementRuntimeOccurrence({
+          producerOccurrenceKey: runtimeOccurrenceKey(kind, funding.account.id, account.id),
+          kind,
+          grossAmountPlanDollars: funded,
+          ownerPersonId: funding.account.ownerPersonId,
+          sourceAccountId: funding.account.id,
+          executionDate: null,
+          executionSequence: null,
+          movementAuthorityId: null,
+        })
+      }
       annuityInvestmentInContract.set(account.id, (annuityInvestmentInContract.get(account.id) ?? 0) + funded)
     }
 
@@ -862,6 +924,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const target = balances.find((b) => b.account.id === account.lumpSumElection!.rolloverAccountId)
       if (!target) continue
       target.balance += account.lumpSumOffer.amount
+      if (account.lumpSumOffer.amount > 0 && target.account.type === 'traditional') {
+        const kind = 'rolloverInflow' as const
+        recordAnnualRetirementRuntimeOccurrence({
+          producerOccurrenceKey: runtimeOccurrenceKey(kind, account.id, target.account.id),
+          kind,
+          grossAmountPlanDollars: account.lumpSumOffer.amount,
+          ownerPersonId: target.account.ownerPersonId,
+          sourceAccountId: target.account.id,
+          executionDate: null,
+          executionSequence: null,
+          movementAuthorityId: null,
+        })
+      }
     }
 
     // --- HECM line open (annuity-pension-and-home-equity, step 4) -----------
@@ -2111,6 +2186,23 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
 
       state.balance += allowed
+      const contributionKind = account.type === 'traditional'
+        ? account.kind === 'employer'
+          ? 'employerPlanEmployeeContribution' as const
+          : 'ownedIraContribution' as const
+        : null
+      if (contributionKind !== null) {
+        recordAnnualRetirementRuntimeOccurrence({
+          producerOccurrenceKey: runtimeOccurrenceKey(contributionKind, account.id),
+          kind: contributionKind,
+          grossAmountPlanDollars: allowed,
+          ownerPersonId: account.ownerPersonId,
+          sourceAccountId: account.id,
+          executionDate: null,
+          executionSequence: null,
+          movementAuthorityId: null,
+        })
+      }
       if (account.type === 'taxable' || account.type === 'equityComp') state.costBasis += allowed
       // Direct Roth contributions add to the always-accessible basis (employer
       // Roth contributions are treated the same here, a planning simplification).
@@ -2141,6 +2233,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
 
           if (matchVal > 0) {
             state.balance += matchVal
+            if (account.type === 'traditional') {
+              const kind = 'employerPlanEmployerMatch' as const
+              recordAnnualRetirementRuntimeOccurrence({
+                producerOccurrenceKey: runtimeOccurrenceKey(kind, account.id),
+                kind,
+                grossAmountPlanDollars: matchVal,
+                ownerPersonId: account.ownerPersonId,
+                sourceAccountId: account.id,
+                executionDate: null,
+                executionSequence: null,
+                movementAuthorityId: null,
+              })
+            }
             employerMatch += matchVal
             // Employer match only lands in traditional or Roth employer accounts,
             // never a taxable brokerage, so taxableInflow is unaffected here.
@@ -2198,6 +2303,17 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const take = Math.min(rmd, state.balance)
       if (take <= 0) continue
       state.balance -= take
+      const kind = state.account.kind === 'ira' ? 'ownedIraRmd' as const : 'employerPlanRmd' as const
+      recordAnnualRetirementRuntimeOccurrence({
+        producerOccurrenceKey: runtimeOccurrenceKey(kind, state.account.id),
+        kind,
+        grossAmountPlanDollars: take,
+        ownerPersonId: state.account.ownerPersonId,
+        sourceAccountId: state.account.id,
+        executionDate: null,
+        executionSequence: null,
+        movementAuthorityId: null,
+      })
       rmdTotal += take
       // Pro-rata return of basis on IRA RMDs (step 5); committed immediately.
       if (state.account.kind === 'ira') {
@@ -2238,6 +2354,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const take = Math.min(amount, state.balance)
       if (take <= 0) continue
       state.balance -= take
+      {
+        const kind = 'automaticSeppDistribution' as const
+        recordAnnualRetirementRuntimeOccurrence({
+          producerOccurrenceKey: runtimeOccurrenceKey(kind, state.account.id),
+          kind,
+          grossAmountPlanDollars: take,
+          ownerPersonId: state.account.ownerPersonId,
+          sourceAccountId: state.account.id,
+          executionDate: null,
+          executionSequence: null,
+          movementAuthorityId: null,
+        })
+      }
       seppTotal += take
       // Pro-rata return of basis on IRA SEPP distributions (step 5).
       if (state.account.kind === 'ira') {
@@ -2273,6 +2402,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       })
       if (take <= 0) continue
       state.balance -= take
+      {
+        const kind = 'inheritedIraRmd' as const
+        recordAnnualRetirementRuntimeOccurrence({
+          producerOccurrenceKey: runtimeOccurrenceKey(kind, state.account.id),
+          kind,
+          grossAmountPlanDollars: take,
+          ownerPersonId: state.account.ownerPersonId,
+          sourceAccountId: state.account.id,
+          executionDate: null,
+          executionSequence: null,
+          movementAuthorityId: null,
+        })
+      }
       inheritedTotal += take
     }
 
@@ -2948,6 +3090,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             if (!isConvertibleToRoth(state.account) || remaining <= 0) continue
             const take = Math.min(state.balance, remaining)
             state.balance -= take
+            if (take > 0) {
+              const kind = 'legacyRothConversion' as const
+              recordAnnualRetirementRuntimeOccurrence({
+                producerOccurrenceKey: runtimeOccurrenceKey(kind, state.account.id, rothTarget.account.id),
+                kind,
+                grossAmountPlanDollars: take,
+                ownerPersonId: state.account.ownerPersonId,
+                sourceAccountId: state.account.id,
+                executionDate: null,
+                executionSequence: null,
+                movementAuthorityId: null,
+              })
+            }
             remaining -= take
             // Pro-rata return of basis on converted IRA dollars (step 5): the
             // basis portion moves to Roth without creating ordinary income.
@@ -3897,6 +4052,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     for (const state of balances) {
       const taken = withdrawalPlan.byAccountId.get(state.account.id) ?? 0
       if (taken <= 0) continue
+      if (state.account.type === 'traditional') {
+        const kind = 'legacyNeedBasedWithdrawal' as const
+        recordAnnualRetirementRuntimeOccurrence({
+          producerOccurrenceKey: runtimeOccurrenceKey(kind, state.account.id),
+          kind,
+          grossAmountPlanDollars: taken,
+          ownerPersonId: state.account.ownerPersonId,
+          sourceAccountId: state.account.id,
+          executionDate: null,
+          executionSequence: null,
+          movementAuthorityId: null,
+        })
+      }
       if (state.account.type === 'taxable') {
         const sale = withdrawalPlan.taxableSales.get(state.account.id)
         if (sale === undefined) {
@@ -4118,6 +4286,32 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const targetShortfall = shortfallAttribution.targetShortfall + skippedTargetNominal + skippedRequiredNominal
     const idealShortfall = shortfallAttribution.idealShortfall + skippedIdealNominal
     const excessShortfall = shortfallAttribution.excessShortfall + skippedExcessNominal
+    const retirementRuntimeSource = Object.freeze({
+      status: 'runtimeOccurrenceSourcesCaptured' as const,
+      captureBoundary:
+        'legacyAnnualPassCommittedBeforeYearResultPublication' as const,
+      journalValidation: 'notRun' as const,
+      planId: plan.id,
+      taxYear: year,
+      runtimeOccurrences: Object.freeze(
+        [...annualRetirementRuntimeOccurrences]
+          .sort(canonicalRuntimeOccurrenceOrder)
+          .map((occurrence) => Object.freeze({ ...occurrence })),
+      ),
+      nonmovingLegacyQcdOverlay: qcd > 0
+        ? Object.freeze({
+          status: 'nonmovingLegacyQcdCaptured' as const,
+          kind: 'legacyQcd' as const,
+          taxYear: year,
+          grossAmountPlanDollars: qcd,
+          ownerPersonId: null,
+          sourceAccountId: null,
+          physicalMovement: 'notAdditionalMovement' as const,
+          inventoryReplay:
+            'requiresSeparateQcdCharacterizationStage' as const,
+        })
+        : null,
+    })
     years.push({
       year,
       people: peopleStates,
@@ -4131,6 +4325,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       inheritedDistribution: inheritedTotal,
       qcd,
       rothConversion,
+      retirementRuntimeSource,
       ...(retirementActionExecution ? { retirementActionExecution } : {}),
       penalties,
       magi: magiHistory.get(year)!,

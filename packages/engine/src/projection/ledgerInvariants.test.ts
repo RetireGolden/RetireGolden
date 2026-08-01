@@ -15,6 +15,14 @@ import {
 } from '../testing/planFixtures.js'
 import type { ProjectionResult } from './types.js'
 
+function withoutRetirementRuntimeSource(result: ProjectionResult): unknown {
+  const legacy = structuredClone(result)
+  for (const year of legacy.years) {
+    Reflect.deleteProperty(year, 'retirementRuntimeSource')
+  }
+  return legacy
+}
+
 function expectYearSums(result: ProjectionResult): void {
   for (const y of result.years) {
     expectMoney(
@@ -138,7 +146,9 @@ describe('ledger invariants', () => {
       medicareExtrasMonthlyPerPerson: 0,
     }
 
-    expect(runPlan(withNoOpAca, createFlatTaxCalculator(0))).toEqual(runPlan(base, createFlatTaxCalculator(0)))
+    expect(withoutRetirementRuntimeSource(runPlan(withNoOpAca, createFlatTaxCalculator(0)))).toEqual(
+      withoutRetirementRuntimeSource(runPlan(base, createFlatTaxCalculator(0))),
+    )
   })
 
   it('higher spending does not improve ending investable assets when all else is equal', () => {

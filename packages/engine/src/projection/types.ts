@@ -1,6 +1,7 @@
 import type { AssetClassId } from '../model/plan.js'
 import type { FilingStatus } from '../params/types.js'
 import type { ExecuteOrdinaryWithdrawalsResult } from '../actions/index.js'
+import type { SimulatorAnnualRetirementRuntimeOccurrence } from './annualRetirementRuntimeJournal.js'
 
 /**
  * Projection engine types. The deterministic annual ledger is the core v2
@@ -377,6 +378,30 @@ export interface YearAcaResult {
   }
 }
 
+export interface SimulatorAnnualRetirementNonmovingLegacyQcdOverlay {
+  readonly status: 'nonmovingLegacyQcdCaptured'
+  readonly kind: 'legacyQcd'
+  readonly taxYear: number
+  readonly grossAmountPlanDollars: number
+  readonly ownerPersonId: null
+  readonly sourceAccountId: null
+  readonly physicalMovement: 'notAdditionalMovement'
+  readonly inventoryReplay: 'requiresSeparateQcdCharacterizationStage'
+}
+
+export interface SimulatorAnnualRetirementRuntimeSource {
+  readonly status: 'runtimeOccurrenceSourcesCaptured'
+  readonly captureBoundary:
+    'legacyAnnualPassCommittedBeforeYearResultPublication'
+  readonly journalValidation: 'notRun'
+  readonly planId: string
+  readonly taxYear: number
+  readonly runtimeOccurrences:
+    readonly Readonly<SimulatorAnnualRetirementRuntimeOccurrence>[]
+  readonly nonmovingLegacyQcdOverlay:
+    Readonly<SimulatorAnnualRetirementNonmovingLegacyQcdOverlay> | null
+}
+
 export interface YearResult {
   year: number
   people: PersonYearState[]
@@ -398,6 +423,15 @@ export interface YearResult {
   qcd: number
   /** Dollars moved traditional → Roth this year (taxed as ordinary income, no penalty). */
   rothConversion: number
+  /**
+   * Projection-only raw source capture for legacy retirement-account
+   * mutations. A later replay consumer owns journal validation, structural
+   * identity derivation, and sealing; this field changes no legacy movement.
+   * `simulatePlan` always publishes it, while optionality preserves source
+   * compatibility for external consumers that construct `YearResult` values.
+   */
+  retirementRuntimeSource?:
+    Readonly<SimulatorAnnualRetirementRuntimeSource>
   /**
    * Exact-cent action execution evidence. Present only when the Plan contains
    * one or more retirement-action requests for this projection year.
