@@ -1,5 +1,6 @@
 import {
   retirementActionRequestSchema,
+  type ActionProvenance,
   type OrdinaryWithdrawalRequest,
   type RetirementActionRequest,
   type RothConversionRequest,
@@ -63,6 +64,7 @@ export interface RetirementActionManualReviewTargetEvidence {
   actionId: ActionId
   kind: RetirementActionRequest['kind']
   provenanceSource: 'manual' | 'migration'
+  provenance: Readonly<ActionProvenance>
   year: number
   requestedAmount: PositiveUsdCents
   originalPlanIndex: number
@@ -172,7 +174,7 @@ function blocked(
 ): RetirementActionManualReviewBlockedResult {
   const canonical = canonicalIssues(issues)
   const outcome = canonical.some((entry) =>
-    entry.kind === 'allocatorBlocked' ||
+    entry.allocatorIssue?.reason?.outcome === 'unsupported' ||
     entry.kind === 'targetKindUnsupported' ||
     entry.kind === 'replacementProvenanceInvalid' ||
     entry.kind === 'reviewEvidenceCollision' ||
@@ -201,6 +203,7 @@ function targetEvidence(
     actionId: target.actionId,
     kind: target.kind,
     provenanceSource: target.provenance.source as 'manual' | 'migration',
+    provenance: target.provenance,
     year: target.year,
     requestedAmount: target.requestedAmount,
     originalPlanIndex,
@@ -218,6 +221,17 @@ function referencesAction(
   ) || (
     action.kind === 'ordinaryWithdrawal' &&
     action.purpose.referenceId === targetActionId
+  )
+}
+
+function hasLinkedActionDependency(action: RetirementActionRequest): boolean {
+  return (
+    action.kind === 'rothConversion' &&
+    action.taxFunding.kind === 'linkedWithdrawal'
+  ) || (
+    action.kind === 'ordinaryWithdrawal' &&
+    action.purpose.kind === 'taxPayment' &&
+    action.purpose.referenceId !== undefined
   )
 }
 
@@ -354,6 +368,14 @@ function reviewUnchecked(
 
   const expectedKind = expectedReplacementKind(target)
   const reviewIssues: RetirementActionManualReviewIssue[] = []
+  const targetHasLinkedActionDependency = hasLinkedActionDependency(target)
+  if (targetHasLinkedActionDependency) {
+    reviewIssues.push(issue(
+      'dependentActionReference',
+      `plan.strategies.retirementActions.${targetIndex}`,
+      'The target references another action; replacing one side would erase or mismatch the linked action group.',
+    ))
+  }
   if (replacement['kind'] !== expectedKind) {
     reviewIssues.push(issue(
       'replacementKindMismatch',
@@ -389,7 +411,7 @@ function reviewUnchecked(
       return
     }
     parsedActions.push(parsed.data)
-    if (referencesAction(parsed.data, targetActionId)) {
+    if (!targetHasLinkedActionDependency && referencesAction(parsed.data, targetActionId)) {
       reviewIssues.push(issue(
         'dependentActionReference',
         `plan.strategies.retirementActions.${index}`,
@@ -479,9 +501,10 @@ function reviewUnchecked(
     )], target)
   }
   const preservedActionIds = parsedActions.map((action) => action.actionId)
+  const reviewedTargetEvidence = targetEvidence(target, targetIndex)
   const reviewEvidenceId = deriveActionStructuralId('retirement-action-manual-review', [{
     planId: parsedPlanId.data,
-    targetActionId,
+    target: reviewedTargetEvidence,
     replacementActionId: allocatedRequest.actionId,
     preservedActionIds,
     allocatorEvidence: allocated.evidence,
@@ -509,7 +532,7 @@ function reviewUnchecked(
     policy: 'explicitManualIntentOmitTargetThenCanonicalAllocate',
     evidenceId: reviewEvidenceId,
     planId: parsedPlanId.data,
-    target: targetEvidence(target, targetIndex),
+    target: reviewedTargetEvidence,
     targetOmittedBeforeAllocation: true,
     inferredFields: [],
     replacementActionId: allocatedRequest.actionId,

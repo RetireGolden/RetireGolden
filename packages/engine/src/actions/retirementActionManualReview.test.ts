@@ -166,6 +166,7 @@ describe('manual retirement-action review and replacement', () => {
         actionId: 'legacy-withdrawal',
         kind: 'legacyAggregateWithdrawal',
         provenanceSource: 'migration',
+        provenance: { source: 'migration', sourceId: 'v1-withdrawal' },
         originalPlanIndex: 0,
       },
       allocatorEvidence: { policy: 'explicitStablePlanIdsOnly' },
@@ -333,6 +334,65 @@ describe('manual retirement-action review and replacement', () => {
     }
   })
 
+  it('preserves refused allocator outcomes while propagating actual unsupported reasons', () => {
+    const refusedPlan = basePlan()
+    refusedPlan.strategies.retirementActions = [legacyWithdrawal()]
+    const refused = review(refusedPlan, 'legacy-withdrawal', ordinaryIntent({
+      sourceAllocations: [{
+        sourceAccountId: asAccountId('cash-a'),
+        requestedAmount: asPositiveUsdCents(9_999),
+      }],
+    }))
+
+    expect(refused).toMatchObject({
+      status: 'blocked',
+      outcome: 'refused',
+      issues: [expect.objectContaining({
+        kind: 'allocatorBlocked',
+        allocatorIssue: expect.objectContaining({
+          reason: expect.objectContaining({
+            code: 'allocation-total-mismatch',
+            outcome: 'refused',
+          }),
+        }),
+      })],
+    })
+
+    const unsupportedPlan = basePlan()
+    unsupportedPlan.accounts.push({
+      type: 'pension',
+      id: 'pension-a',
+      name: 'Pension A',
+      ownerPersonId: 'p1',
+      annualReturnPct: null,
+      startAge: 65,
+      monthlyAmount: 1_000,
+      colaPct: 0,
+      survivorPct: 0,
+    })
+    unsupportedPlan.strategies.retirementActions = [legacyWithdrawal()]
+    const unsupported = review(unsupportedPlan, 'legacy-withdrawal', ordinaryIntent({
+      sourceAllocations: [{
+        sourceAccountId: asAccountId('pension-a'),
+        requestedAmount: asPositiveUsdCents(10_000),
+      }],
+    }))
+
+    expect(unsupported).toMatchObject({
+      status: 'blocked',
+      outcome: 'unsupported',
+      issues: [expect.objectContaining({
+        kind: 'allocatorBlocked',
+        allocatorIssue: expect.objectContaining({
+          reason: expect.objectContaining({
+            code: 'withdrawal-source-type-unsupported',
+            outcome: 'unsupported',
+          }),
+        }),
+      })],
+    })
+  })
+
   it('blocks replacement of one side of a referenced conversion-funding group', () => {
     const plan = basePlan()
     const funding = action({
@@ -378,6 +438,62 @@ describe('manual retirement-action review and replacement', () => {
     ])
   })
 
+  it.each([
+    { label: 'missing', fundingAction: null },
+    {
+      label: 'non-reciprocal',
+      fundingAction: action({
+        actionId: 'funding-action',
+        kind: 'ordinaryWithdrawal',
+        personId: 'p1',
+        year: 2030,
+        executionDate: '2030-06-01',
+        executionSequence: 1,
+        requestedAmount: 10_000,
+        allocations: [{
+          allocationId: 'funding-allocation',
+          sourceAccountId: 'cash-a',
+          requestedAmount: 10_000,
+        }],
+        purpose: { kind: 'spending' },
+        provenance: { source: 'manual' },
+      }),
+    },
+  ])('rejects a target with a $label outbound linked dependency', ({ fundingAction }) => {
+    const plan = basePlan()
+    const target = action({
+      actionId: 'conversion-action',
+      kind: 'rothConversion',
+      personId: 'p1',
+      year: 2030,
+      executionDate: '2030-09-01',
+      executionSequence: 2,
+      requestedAmount: 20_000,
+      allocations: [{
+        allocationId: 'conversion-allocation',
+        sourceAccountId: 'traditional-a',
+        requestedAmount: 20_000,
+      }],
+      destinationRothAccountId: 'roth-a',
+      taxFunding: { kind: 'linkedWithdrawal', withdrawalActionId: 'funding-action' },
+      provenance: { source: 'manual' },
+    })
+    plan.strategies.retirementActions = fundingAction === null
+      ? [target]
+      : [fundingAction, target]
+
+    const result = review(plan, 'conversion-action', conversionIntent())
+
+    expect(result).toMatchObject({
+      status: 'blocked',
+      outcome: 'refused',
+      issues: [{
+        kind: 'dependentActionReference',
+        field: `plan.strategies.retirementActions.${fundingAction === null ? 0 : 1}`,
+      }],
+    })
+  })
+
   it('blocks generator/optimizer targets instead of relabeling them manual', () => {
     const plan = basePlan()
     const allocated = allocateRetirementActionCandidateIdentity(plan, {
@@ -404,6 +520,52 @@ describe('manual retirement-action review and replacement', () => {
     expect(issueKinds(review(plan, 'legacy-withdrawal', ordinaryIntent()))).toEqual([
       'reviewEvidenceCollision',
     ])
+  })
+
+  it('binds target index and complete provenance into the review evidence ID', () => {
+    const firstPlan = basePlan()
+    firstPlan.strategies.retirementActions = [
+      legacyWithdrawal(),
+      legacyWithdrawal('preserved-action'),
+    ]
+    const movedPlan = structuredClone(firstPlan)
+    movedPlan.strategies.retirementActions = [
+      movedPlan.strategies.retirementActions[1]!,
+      movedPlan.strategies.retirementActions[0]!,
+    ]
+    const changedProvenancePlan = structuredClone(firstPlan)
+    changedProvenancePlan.strategies.retirementActions[0] = action({
+      ...changedProvenancePlan.strategies.retirementActions[0],
+      provenance: { source: 'migration', sourceId: 'different-import' },
+    })
+
+    const first = review(firstPlan, 'legacy-withdrawal', ordinaryIntent())
+    const moved = review(movedPlan, 'legacy-withdrawal', ordinaryIntent())
+    const changedProvenance = review(
+      changedProvenancePlan,
+      'legacy-withdrawal',
+      ordinaryIntent(),
+    )
+
+    expect(first.status).toBe('replacementReady')
+    expect(moved.status).toBe('replacementReady')
+    expect(changedProvenance.status).toBe('replacementReady')
+    if (
+      first.status !== 'replacementReady' ||
+      moved.status !== 'replacementReady' ||
+      changedProvenance.status !== 'replacementReady'
+    ) return
+    expect(first.evidence.target.originalPlanIndex).toBe(0)
+    expect(moved.evidence.target.originalPlanIndex).toBe(1)
+    expect(changedProvenance.evidence.target.provenance).toEqual({
+      source: 'migration',
+      sourceId: 'different-import',
+    })
+    expect(moved.evidence.replacementActionId).toBe(first.evidence.replacementActionId)
+    expect(changedProvenance.evidence.replacementActionId)
+      .toBe(first.evidence.replacementActionId)
+    expect(moved.evidence.evidenceId).not.toBe(first.evidence.evidenceId)
+    expect(changedProvenance.evidence.evidenceId).not.toBe(first.evidence.evidenceId)
   })
 
   it('reports a nonblank stable Plan ID requirement deterministically', () => {
