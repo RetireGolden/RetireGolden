@@ -1065,6 +1065,10 @@ describe('post-candidate owned non-Roth IRA annual execution', () => {
     ;(permuted.postCandidateInput.inventoryInput.plan as Plan).accounts.reverse()
     ;(permuted.postCandidateInput.postCandidateSnapshot
       .yearEndApplicableBalances as unknown[]).reverse()
+    ;(permuted.postCandidateInput.postCandidateSnapshot
+      .allocationApplications as unknown[]).reverse()
+    ;(permuted.postCandidateInput.postCandidateSnapshot
+      .candidateBalances as unknown[]).reverse()
     permuted.postCandidateEvidence = reverseKeys(
       permuted.postCandidateEvidence,
     )
@@ -1196,18 +1200,21 @@ describe('post-candidate owned non-Roth IRA annual execution', () => {
       })
   })
 
-  it('rejects a derived SEPP inventory ID reused by snapshot evidence', () => {
+  it('registers a reconciled SEPP route when age takes precedence', () => {
     const input = structuredClone(
-      executionInput(10_000, '1990-01-01'),
+      executionInput(10_000, '1950-01-01'),
     ) as unknown as ExecutePlanOwnedNonRothIraAnnualPostCandidateInput
     const first = bindSeppRoute(input)
-    const evaluation = first.annualEvidence.penaltyPrerequisites.evaluations[0]
-    expect(evaluation?.outcome).toBe('iraSeppQualified')
-    if (evaluation?.outcome !== 'iraSeppQualified') {
-      throw new Error('SEPP fixture lost its qualified evaluation')
+    expect(first.annualEvidence.penaltyPrerequisites.evaluations[0]?.outcome)
+      .toBe('age59HalfReached')
+    const route = first.annualEvidence.penaltyPrerequisites
+      .iraSeppScheduleReconciliations[0]
+    expect(route?.reconciliation.status).toBe('reconciled')
+    if (route?.reconciliation.status !== 'reconciled') {
+      throw new Error('SEPP fixture lost its reconciliation')
     }
     const inventoryEvidenceId =
-      evaluation.annualReconciliationEvidence.distributionInventory
+      route.reconciliation.evidence.distributionInventory
         .inventoryEvidenceId
     ;(input.postCandidateInput.postCandidateSnapshot as {
       evidenceId: string

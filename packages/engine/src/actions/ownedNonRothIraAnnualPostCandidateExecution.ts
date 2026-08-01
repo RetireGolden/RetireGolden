@@ -525,35 +525,38 @@ function annualDerivedDeclarations(
           'derivedPenaltyApplicabilityEvidence', member,
           'derived penalty-applicability evidence')
       }
-    } else if (evaluation.outcome === 'iraSeppQualified') {
-      const reconciliation = evaluation.annualReconciliationEvidence
-      const routeKey = [
-        reconciliation.participantPersonId,
-        reconciliation.sourceAccountId,
-        reconciliation.electionId,
-        reconciliation.scheduleId,
-      ] as const
-      add(reconciliation.distributionInventory.inventoryEvidenceId,
-        'derivedSeppDistributionInventoryEvidence',
-        reconciliation.distributionInventory,
-        'derived SEPP distribution-inventory evidence')
-      add(reconciliation.annualReconciliationId,
-        'derivedSeppAnnualReconciliationEvidence', reconciliation,
-        'derived SEPP annual-reconciliation evidence')
-      for (const payment of reconciliation.payments) {
-        add(payment.priorHistoryEvidenceId,
-          'derivedSeppCurrentHistoryEvidence',
-          [routeKey, payment.actionId, payment.allocationId,
-            payment.paymentSequence, 'history'],
-          'derived SEPP current-year history evidence')
-        add(payment.afterStateEvidenceId, 'seppStateEvidence',
-          [routeKey, payment.actionId, payment.allocationId,
-            payment.paymentSequence, 'after'],
-          'derived SEPP after-state evidence')
-        add(payment.currentPaymentCandidateId,
-          'derivedSeppCurrentPaymentCandidate', payment,
-          'derived SEPP current-payment candidate')
-      }
+    }
+  }
+  for (const route of
+    annual.penaltyPrerequisites.iraSeppScheduleReconciliations) {
+    if (route.reconciliation.status !== 'reconciled') continue
+    const reconciliation = route.reconciliation.evidence
+    const routeKey = [
+      reconciliation.participantPersonId,
+      reconciliation.sourceAccountId,
+      reconciliation.electionId,
+      reconciliation.scheduleId,
+    ] as const
+    add(reconciliation.distributionInventory.inventoryEvidenceId,
+      'derivedSeppDistributionInventoryEvidence',
+      reconciliation.distributionInventory,
+      'derived SEPP distribution-inventory evidence')
+    add(reconciliation.annualReconciliationId,
+      'derivedSeppAnnualReconciliationEvidence', reconciliation,
+      'derived SEPP annual-reconciliation evidence')
+    for (const payment of reconciliation.payments) {
+      add(payment.priorHistoryEvidenceId,
+        'derivedSeppCurrentHistoryEvidence',
+        [routeKey, payment.actionId, payment.allocationId,
+          payment.paymentSequence, 'history'],
+        'derived SEPP current-year history evidence')
+      add(payment.afterStateEvidenceId, 'seppStateEvidence',
+        [routeKey, payment.actionId, payment.allocationId,
+          payment.paymentSequence, 'after'],
+        'derived SEPP after-state evidence')
+      add(payment.currentPaymentCandidateId,
+        'derivedSeppCurrentPaymentCandidate', payment,
+        'derived SEPP current-payment candidate')
     }
   }
   return result
@@ -685,8 +688,6 @@ export function executePlanOwnedNonRothIraAnnualPostCandidate(
       coordinated.annualEvidence.finalizationEvidenceId,
       coordinated.bindingEvidence.bindingEvidenceId,
       snapshot.evidenceId,
-      snapshot.allocationApplications,
-      snapshot.candidateBalances,
       balances,
       published.actions,
     ],
