@@ -194,6 +194,37 @@ describe('simulate annual retirement runtime source capture', () => {
     expect(records(year)).toEqual([])
   })
 
+  it('preserves missing account ownership instead of inventing the primary owner', () => {
+    const plan = singlePersonPlan({ planningAge: 60 })
+    plan.incomes = [{
+      type: 'wages', id: 'wages', personId: 'p1', annualGross: 100_000,
+      endAge: null, realGrowthPct: 0,
+    }]
+    plan.accounts = [{
+      ...traditionalSource('legacy-unowned-ira', 0),
+      ownerPersonId: null,
+      annualContribution: 5_000,
+    }]
+    const year = simulatePlan(plan, {
+      startYear: TAX_YEAR,
+      horizonEndYear: TAX_YEAR,
+      taxCalculator: noTax,
+    }).years[0]!
+    const occurrence = year.retirementRuntimeSource?.runtimeOccurrences.find(
+      (candidate) => candidate.kind === 'ownedIraContribution',
+    )
+
+    expect(year.contributions).toBe(5_000)
+    expect(occurrence?.ownerPersonId).toBeNull()
+    expect(recordsOfKind(year, 'ownedIraContribution')).toEqual([
+      expect.objectContaining({
+        recordStatus: 'unresolved',
+        ownerPersonId: null,
+        incompatibility: 'legacyAggregateIdentityUnavailable',
+      }),
+    ])
+  })
+
   it.each(['sep', 'simple'] as const)(
     'does not invent a %s employer contribution from eligibility facts',
     (subtype) => {
