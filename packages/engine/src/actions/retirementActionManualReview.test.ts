@@ -23,6 +23,7 @@ import type { Account, Plan } from '../model/plan.js'
 import {
   cashAccount,
   singlePersonPlan,
+  taxableAccount,
   traditionalAccount,
 } from '../testing/planFixtures.js'
 
@@ -255,6 +256,87 @@ describe('manual retirement-action review and replacement', () => {
     })
     expect(changedSource.evidence.evidenceId).not.toBe(baseline.evidence.evidenceId)
     expect(changedScenario.evidence.evidenceId).not.toBe(baseline.evidence.evidenceId)
+  })
+
+  it('normalizes explicit undefined optional fields before deriving review evidence', () => {
+    const omittedPlan = basePlan()
+    omittedPlan.strategies.retirementActions = [
+      legacyWithdrawal(),
+      action({
+        actionId: 'preserved-action',
+        kind: 'ordinaryWithdrawal',
+        year: 2031,
+        executionSequence: 1,
+        requestedAmount: 10_000,
+        provenance: { source: 'manual' },
+        personId: 'p1',
+        allocations: [{
+          allocationId: 'preserved-allocation',
+          sourceAccountId: 'cash-a',
+          requestedAmount: 10_000,
+        }],
+        purpose: { kind: 'spending' },
+      }),
+    ]
+    const undefinedPlan = structuredClone(omittedPlan)
+    const undefinedPreserved = undefinedPlan.strategies.retirementActions[1]!
+    Object.assign(undefinedPreserved, { executionDate: undefined })
+    Object.assign(undefinedPreserved.provenance, { scenarioId: undefined })
+
+    const omittedIntent = ordinaryIntent({
+      provenance: { source: 'manual' },
+      purpose: { kind: 'spending' },
+    })
+    const undefinedIntent = structuredClone(omittedIntent)
+    Object.assign(undefinedIntent.provenance, { sourceId: undefined })
+    Object.assign(undefinedIntent.purpose, { referenceId: undefined })
+
+    const omitted = review(omittedPlan, 'legacy-withdrawal', omittedIntent)
+    const explicitUndefined = review(
+      undefinedPlan,
+      'legacy-withdrawal',
+      undefinedIntent,
+    )
+
+    expect(omitted.status).toBe('replacementReady')
+    expect(explicitUndefined.status).toBe('replacementReady')
+    if (omitted.status !== 'replacementReady' || explicitUndefined.status !== 'replacementReady') {
+      return
+    }
+    expect(explicitUndefined.evidence.evidenceId).toBe(omitted.evidence.evidenceId)
+  })
+
+  it('binds selected person and account records into the review evidence ID', () => {
+    const cashPlan = basePlan()
+    cashPlan.strategies.retirementActions = [legacyWithdrawal()]
+    const taxablePlan = structuredClone(cashPlan)
+    taxablePlan.accounts[0] = {
+      ...taxableAccount('cash-a', 1_000, 1_000),
+      ownerPersonId: 'p1',
+    }
+    const changedPersonPlan = structuredClone(cashPlan)
+    changedPersonPlan.household.people[0]!.name = 'Different Pat'
+
+    const cash = review(cashPlan, 'legacy-withdrawal', ordinaryIntent())
+    const taxable = review(taxablePlan, 'legacy-withdrawal', ordinaryIntent())
+    const changedPerson = review(
+      changedPersonPlan,
+      'legacy-withdrawal',
+      ordinaryIntent(),
+    )
+
+    expect(cash.status).toBe('replacementReady')
+    expect(taxable.status).toBe('replacementReady')
+    expect(changedPerson.status).toBe('replacementReady')
+    if (
+      cash.status !== 'replacementReady' ||
+      taxable.status !== 'replacementReady' ||
+      changedPerson.status !== 'replacementReady'
+    ) return
+    expect(taxable.replacement.actionId).toBe(cash.replacement.actionId)
+    expect(changedPerson.replacement.actionId).toBe(cash.replacement.actionId)
+    expect(taxable.evidence.evidenceId).not.toBe(cash.evidence.evidenceId)
+    expect(changedPerson.evidence.evidenceId).not.toBe(cash.evidence.evidenceId)
   })
 
   it.each(['legacyAggregateQcd', 'qcd'] as const)(

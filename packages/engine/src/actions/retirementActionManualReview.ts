@@ -152,6 +152,19 @@ function deepFreeze<T>(value: T): Readonly<T> {
   return value as Readonly<T>
 }
 
+function normalizeOptionalUndefinedFields(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((entry) => normalizeOptionalUndefinedFields(entry))
+  }
+  const source = record(value)
+  if (source === null) return value
+  const normalized: UnknownRecord = {}
+  for (const [key, entry] of Object.entries(source)) {
+    if (entry !== undefined) normalized[key] = normalizeOptionalUndefinedFields(entry)
+  }
+  return normalized
+}
+
 function issue(
   kind: RetirementActionManualReviewIssueKind,
   field: string,
@@ -234,6 +247,41 @@ function completePlanReservedIdentifiers(plan: Readonly<Plan>): Set<string> {
     }
   }
   return reserved
+}
+
+function reviewedIdentityRecords(
+  plan: Readonly<Plan>,
+  allocatorEvidence: Readonly<RetirementActionCandidateIdentityEvidence>,
+): {
+  person: Plan['household']['people'][number]
+  sourceAccounts: Plan['accounts']
+  destinationRothAccount: Plan['accounts'][number] | null
+} | null {
+  const person = plan.household.people.find(
+    (entry) => entry.id === allocatorEvidence.personId,
+  )
+  const sourceAccounts: Plan['accounts'] = []
+  for (const sourceAccountId of allocatorEvidence.sourceAccountIds) {
+    const sourceAccount = plan.accounts.find((account) => account.id === sourceAccountId)
+    if (sourceAccount === undefined) return null
+    sourceAccounts.push(sourceAccount)
+  }
+  const destinationRothAccount = allocatorEvidence.destinationRothAccountId === null
+    ? null
+    : plan.accounts.find(
+        (account) => account.id === allocatorEvidence.destinationRothAccountId,
+      )
+  if (
+    person === undefined ||
+    destinationRothAccount === undefined
+  ) {
+    return null
+  }
+  return {
+    person,
+    sourceAccounts,
+    destinationRothAccount,
+  }
 }
 
 function replacementCrossRoleIdentifierIssues(
@@ -581,13 +629,27 @@ function reviewUnchecked(
   }
   const preservedActionIds = parsedActions.map((action) => action.actionId)
   const reviewedTargetEvidence = targetEvidence(target, targetIndex)
-  const reviewEvidenceId = deriveActionStructuralId('retirement-action-manual-review', [{
-    planId: parsedPlanId.data,
-    target: reviewedTargetEvidence,
-    replacement: allocatedRequest,
-    preservedActions: parsedActions,
-    allocatorEvidence: allocated.evidence,
-  }])
+  const identityRecords = reviewedIdentityRecords(
+    replacementPlanResult.data,
+    allocated.evidence,
+  )
+  if (identityRecords === null) {
+    return blocked([issue(
+      'replacementInvariantViolation',
+      'replacementIntent',
+      'Canonical allocation evidence did not resolve to unique reviewed identity records.',
+    )], target)
+  }
+  const reviewEvidenceId = deriveActionStructuralId('retirement-action-manual-review', [
+    normalizeOptionalUndefinedFields({
+      planId: parsedPlanId.data,
+      target: reviewedTargetEvidence,
+      replacement: allocatedRequest,
+      preservedActions: parsedActions,
+      allocatorEvidence: allocated.evidence,
+      identityRecords,
+    }),
+  ])
   const reservedIdentifiers = completePlanReservedIdentifiers(replacementPlanResult.data)
   reservedIdentifiers.add(target.actionId)
   for (const allocationId of actionAllocationIds(target)) reservedIdentifiers.add(allocationId)
