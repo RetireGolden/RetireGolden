@@ -15,7 +15,15 @@ export const qcdEfficiency: Detector = {
     const charitable = ctx.plan.strategies.itemizedDeductions?.charitable ?? 0
     if (charitable <= 0) return null
     if (ctx.plan.strategies.qcdAnnual >= charitable) return null
-    if (!ctx.projection.result.years[0]) return null
+    const qcdTargetYears = ctx.projection.result.years.map((year) => year.year)
+    if (
+      qcdTargetYears.length === 0 ||
+      qcdTargetYears.some((year, index) =>
+        !Number.isSafeInteger(year) ||
+        year < 1 ||
+        (index > 0 && year <= qcdTargetYears[index - 1]!),
+      )
+    ) return null
 
     return {
       id: 'qcd-efficiency',
@@ -45,6 +53,7 @@ export const qcdEfficiency: Detector = {
           state: 'exploratoryNonActionable',
           reason: QCD_EFFICIENCY_EXPLORATORY_REASON,
         },
+        candidateMetadata: { qcdTargetYears },
       },
     }
   },

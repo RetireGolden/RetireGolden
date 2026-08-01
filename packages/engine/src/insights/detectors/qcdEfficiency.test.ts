@@ -18,7 +18,7 @@ function context(): DetectorContext {
   return {
     plan,
     projection: {
-      result: { years: [{ people: [], balances: {} }] },
+      result: { years: [{ year: 2026, people: [], balances: {} }] },
     },
   } as unknown as DetectorContext
 }
@@ -39,12 +39,14 @@ describe('QCD efficiency detector source integrity', () => {
         state: 'exploratoryNonActionable',
         reason: QCD_EFFICIENCY_EXPLORATORY_REASON,
       },
+      candidateMetadata: { qcdTargetYears: [2026] },
     })
     const candidate = candidateFromInsight(card!, card!.action)
     expect(candidate?.retirementActionReadiness).toEqual({
       state: 'exploratoryNonActionable',
       reason: QCD_EFFICIENCY_EXPLORATORY_REASON,
     })
+    expect(candidate?.metadata).toEqual({ qcdTargetYears: [2026] })
   })
 
   it('does not emit a card without a positive charitable target or projection year', () => {

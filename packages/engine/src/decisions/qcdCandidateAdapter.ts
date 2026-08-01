@@ -87,12 +87,12 @@ export interface QcdEfficiencyAlternativeEvidence {
 export type AdaptedQcdEfficiencyCandidate = Readonly<{
   status: 'adapted'
   candidate: DecisionCandidate
-  selectedAlternativeId: string
-  request: QualifiedCharitableDistributionRequest
-  identityEvidence: RetirementActionCandidateIdentityEvidence
+  selectedAlternativeIds: readonly string[]
+  requests: readonly QualifiedCharitableDistributionRequest[]
+  identityEvidence: readonly RetirementActionCandidateIdentityEvidence[]
   allocationEvidence: Readonly<{
     policy: 'eligibleAlternativeCanonicalIdentityTuple'
-    selectedAlternativeId: string
+    selectedAlternativeIds: readonly string[]
     alternatives: readonly QcdEfficiencyAlternativeEvidence[]
   }>
 }>
@@ -103,7 +103,7 @@ export type BlockedQcdEfficiencyCandidate = Readonly<{
   issues: readonly [QcdEfficiencyCandidateIssue, ...QcdEfficiencyCandidateIssue[]]
   allocationEvidence: Readonly<{
     policy: 'eligibleAlternativeCanonicalIdentityTuple'
-    selectedAlternativeId: null
+    selectedAlternativeIds: readonly []
     alternatives: readonly QcdEfficiencyAlternativeEvidence[]
   }>
 }>
@@ -145,7 +145,7 @@ function blocked(
     issues: issues as [QcdEfficiencyCandidateIssue, ...QcdEfficiencyCandidateIssue[]],
     allocationEvidence: {
       policy: 'eligibleAlternativeCanonicalIdentityTuple',
-      selectedAlternativeId: null,
+      selectedAlternativeIds: [],
       alternatives,
     },
   }
@@ -195,6 +195,7 @@ function exactExploratoryCandidate(
   try {
     const outer = record(candidate)
     const readiness = record(outer?.['retirementActionReadiness'])
+    const metadata = record(outer?.['metadata'])
     const patch = record(outer?.['planPatch'])
     const strategies = record(patch?.['strategies'])
     const itemized = record(strategies?.['itemizedDeductions'])
@@ -210,6 +211,7 @@ function exactExploratoryCandidate(
         'explanation',
         'planPatch',
         'retirementActionReadiness',
+        'metadata',
       ]) ||
       outer['id'] !== 'insight-qcd-efficiency' ||
       outer['source'] !== 'detector' ||
@@ -233,7 +235,16 @@ function exactExploratoryCandidate(
       readiness === null ||
       !keysExactly(readiness, ['state', 'reason']) ||
       readiness['state'] !== 'exploratoryNonActionable' ||
-      readiness['reason'] !== QCD_EFFICIENCY_EXPLORATORY_REASON
+      readiness['reason'] !== QCD_EFFICIENCY_EXPLORATORY_REASON ||
+      metadata === null ||
+      !keysExactly(metadata, ['qcdTargetYears']) ||
+      !Array.isArray(metadata['qcdTargetYears']) ||
+      metadata['qcdTargetYears'].length === 0 ||
+      metadata['qcdTargetYears'].some((year, index, years) =>
+        !Number.isSafeInteger(year) ||
+        (year as number) < 1 ||
+        (index > 0 && (year as number) <= (years[index - 1] as number)),
+      )
     ) {
       return localIssue(
         'invalidExploratoryCandidate',
@@ -276,7 +287,8 @@ function eligibilityReasons(decision: RetirementActionEligibilityDecision): read
 }
 
 /**
- * Replace the detector's aggregate calculation preview with one explicit QCD.
+ * Replace the detector's aggregate calculation preview with a complete explicit
+ * per-year QCD schedule.
  * Every donor/source/date/charity alternative is caller-authored and evaluated
  * through the shared eligibility service. Eligible alternatives are selected
  * by stable identity, never Plan or caller array position; all alternatives
@@ -296,7 +308,15 @@ export function adaptQcdEfficiencyDetectorCandidate(
   try {
     planSnapshot = structuredClone(plan)
     candidateSnapshot = structuredClone(exploratoryCandidate)
-    alternativeSnapshots = structuredClone(alternatives)
+    const clonedAlternatives: unknown = structuredClone(alternatives)
+    if (!Array.isArray(clonedAlternatives) || clonedAlternatives.length === 0) {
+      return blocked([localIssue(
+        'invalidAlternative',
+        'alternatives',
+        'QCD alternatives must be a nonempty plain-data array.',
+      )])
+    }
+    alternativeSnapshots = clonedAlternatives as QcdEfficiencyCandidateAlternative[]
   } catch {
     return blocked([localIssue(
       'invalidAlternative',
@@ -307,6 +327,10 @@ export function adaptQcdEfficiencyDetectorCandidate(
 
   const invalidCandidate = exactExploratoryCandidate(planSnapshot, candidateSnapshot)
   if (invalidCandidate !== null) return blocked([invalidCandidate])
+  const targetYears = [
+    ...(candidateSnapshot.metadata?.['qcdTargetYears'] as readonly number[]),
+  ]
+  const targetYearSet = new Set(targetYears)
 
   const schedule = inspectCompleteRetirementActionCandidateSchedule(
     planSnapshot.strategies.retirementActions,
@@ -430,6 +454,8 @@ export function adaptQcdEfficiencyDetectorCandidate(
       intentRecord['kind'] !== 'qcd' ||
       provenanceRecord['source'] !== 'generator' ||
       provenanceRecord['sourceId'] !== 'qcd-efficiency' ||
+      !Number.isSafeInteger(intentRecord['year']) ||
+      !targetYearSet.has(intentRecord['year'] as number) ||
       intentRecord['requestedAmount'] !== charitableCents ||
       sourceAllocationRecord['requestedAmount'] !== charitableCents
     ) {
@@ -438,7 +464,7 @@ export function adaptQcdEfficiencyDetectorCandidate(
       issues.push(localIssue(
         'invalidAlternative',
         `alternatives.${index}.intent`,
-        'Every alternative must preserve qcd-efficiency generator provenance and allocate the detector charitable target exactly once.',
+        'Every alternative must preserve qcd-efficiency generator provenance, target one detector projection year, and allocate the annual charitable target exactly once.',
       ))
       continue
     }
@@ -560,25 +586,41 @@ export function adaptQcdEfficiencyDetectorCandidate(
   if (issues.some((entry) => entry.kind === 'invalidAlternative' || entry.kind === 'ambiguousAlternative')) {
     return blocked(issues, evidence)
   }
-  if (eligible.length === 0) {
+  const eligibleByYear = new Map<number, typeof eligible>()
+  for (const entry of eligible) {
+    const group = eligibleByYear.get(entry.request.year) ?? []
+    group.push(entry)
+    eligibleByYear.set(entry.request.year, group)
+  }
+  const missingTargetYears = targetYears.filter((year) =>
+    (eligibleByYear.get(year)?.length ?? 0) === 0,
+  )
+  if (missingTargetYears.length > 0) {
     return blocked(
-      issues.length > 0
-        ? issues
-        : [localIssue(
-            'ineligibleAlternative',
-            'alternatives',
-            'No supplied QCD alternative is eligible and identity-complete.',
-          )],
+      [
+        ...issues,
+        ...missingTargetYears.map((year) => localIssue(
+          'ineligibleAlternative',
+          'alternatives',
+          `No supplied QCD alternative is eligible and identity-complete for detector target year ${year}.`,
+        )),
+      ],
       evidence,
     )
   }
 
-  eligible.sort((left, right) => compareUtf16CodeUnits(
-    canonicalAlternativeKey(left.evidence),
-    canonicalAlternativeKey(right.evidence),
-  ))
-  const selected = eligible[0]!
-  const retirementActions = [...schedule.actions, selected.request]
+  const selected = targetYears.map((year) => {
+    const options = eligibleByYear.get(year)!
+    options.sort((left, right) => compareUtf16CodeUnits(
+      canonicalAlternativeKey(left.evidence),
+      canonicalAlternativeKey(right.evidence),
+    ))
+    return options[0]!
+  })
+  const retirementActions = [
+    ...schedule.actions,
+    ...selected.map((entry) => entry.request),
+  ]
   const positions = new Map<string, number>()
   for (const [index, action] of retirementActions.entries()) {
     const group = action.executionDate === undefined
@@ -625,7 +667,8 @@ export function adaptQcdEfficiencyDetectorCandidate(
     },
     metadata: {
       qcdAllocationPolicy: 'eligibleAlternativeCanonicalIdentityTuple',
-      qcdSelectedAlternativeId: selected.alternative.alternativeId,
+      qcdTargetYears: targetYears,
+      qcdSelectedAlternativeIds: selected.map((entry) => entry.alternative.alternativeId),
       qcdAlternatives: canonicalAlternativeEvidence,
     },
   }
@@ -635,19 +678,19 @@ export function adaptQcdEfficiencyDetectorCandidate(
     return blocked([localIssue(
       'invalidAlternative',
       'planPatch',
-      `The selected explicit QCD does not materialize as a valid Plan: ${materialized.issues.join('; ')}`,
+      `The selected explicit QCD schedule does not materialize as a valid Plan: ${materialized.issues.join('; ')}`,
     )], evidence)
   }
 
   return {
     status: 'adapted',
     candidate,
-    selectedAlternativeId: selected.alternative.alternativeId,
-    request: selected.request,
-    identityEvidence: selected.identityEvidence,
+    selectedAlternativeIds: selected.map((entry) => entry.alternative.alternativeId),
+    requests: selected.map((entry) => entry.request),
+    identityEvidence: selected.map((entry) => entry.identityEvidence),
     allocationEvidence: {
       policy: 'eligibleAlternativeCanonicalIdentityTuple',
-      selectedAlternativeId: selected.alternative.alternativeId,
+      selectedAlternativeIds: selected.map((entry) => entry.alternative.alternativeId),
       alternatives: canonicalAlternativeEvidence,
     },
   }

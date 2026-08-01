@@ -39,6 +39,9 @@ export function candidateFromInsight(
     ...(action.retirementActionReadiness === undefined
       ? {}
       : { retirementActionReadiness: action.retirementActionReadiness }),
+    ...(action.candidateMetadata === undefined
+      ? {}
+      : { metadata: action.candidateMetadata }),
   }
 }
 
