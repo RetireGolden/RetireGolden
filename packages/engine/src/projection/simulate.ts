@@ -5129,11 +5129,16 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           }
         }
         for (const carryforward of settlement.committedCarryforwards) {
-          iraBasisByOwner.set(
-            carryforward.ownerPersonId,
-            ledgerCentsToPlanDollars(carryforward.openingBasisAmount),
+          const openingBasis = ledgerCentsToPlanDollars(
+            carryforward.openingBasisAmount,
           )
+          if (openingBasis > 0) {
+            iraBasisByOwner.set(carryforward.ownerPersonId, openingBasis)
+          } else {
+            iraBasisByOwner.delete(carryforward.ownerPersonId)
+          }
         }
+        ownedNonRothIraSettlementEnabled = iraBasisByOwner.size > 0
       } else {
         ownedNonRothIraSettlementEnabled = false
         settledAnnualPass = runPostContributionAnnualPass([])

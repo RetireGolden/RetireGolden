@@ -1,5 +1,30 @@
 import { describe, expect, it, vi } from 'vitest'
 
+const settlementController = vi.hoisted(() => ({
+  calls: vi.fn(),
+}))
+
+vi.mock('../internal/ownedNonRothIraAnnualAttemptSettlement.js', async (
+  importOriginal,
+) => {
+  const original = await importOriginal<
+    typeof import('../internal/ownedNonRothIraAnnualAttemptSettlement.js')
+  >()
+  return {
+    ...original,
+    runOwnedNonRothIraAnnualSettlementAttempts: (
+      input: Parameters<
+        typeof original.runOwnedNonRothIraAnnualSettlementAttempts
+      >[0],
+    ) => {
+      const result =
+        original.runOwnedNonRothIraAnnualSettlementAttempts(input)
+      settlementController.calls(input.projectionStartTaxYear, result)
+      return result
+    },
+  }
+})
+
 import type { Account, Plan } from '../model/plan.js'
 import {
   singlePersonPlan,
@@ -164,6 +189,32 @@ describe('simulator owned non-Roth IRA exact annual settlement', () => {
     expect(years.map((year) => year.magi)).toEqual([8_000, 8_000])
     expect(years[1]!.balances.ira).toBe(80_000)
     expect(result.endingNondeductibleIraBasis).toBe(16_000)
+  })
+
+  it('stops settlement after the committed carryforward reaches zero', () => {
+    settlementController.calls.mockClear()
+    const plan = singlePersonPlan({ planningAge: 60 })
+    plan.id = 'settled-zero-carryforward'
+    plan.accounts = [ira('ira', 0.01, 0.01)]
+    plan.expenses.baseAnnual = 0.01
+
+    const result = project(plan, TAX_YEAR + 1)
+
+    expect(result.years).toHaveLength(2)
+    expect(result.endingNondeductibleIraBasis).toBe(0)
+    expect(settlementController.calls).toHaveBeenCalledTimes(1)
+    expect(settlementController.calls).toHaveBeenCalledWith(
+      TAX_YEAR,
+      expect.objectContaining({
+        status: 'committed',
+        committedCarryforwards: [
+          expect.objectContaining({
+            ownerPersonId: 'p1',
+            openingBasisAmount: 0,
+          }),
+        ],
+      }),
+    )
   })
 
   it('buffers optimizer publication until the exact attempt commits', () => {
