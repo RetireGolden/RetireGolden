@@ -469,4 +469,40 @@ describe('optimizer recommendation evidence', () => {
     )
     expect(evidence.candidates[0]?.lossReason).not.toMatch(/no candidate cleared/i)
   })
+
+  it('does not relabel an ACA-vetoed result as account-allocation withholding', () => {
+    const evidence = reportEvidenceFromOptimizeResult({
+      tournament: {
+        policyId: 'max-after-tax-estate',
+        candidates: [],
+        winnerSource: 'none',
+        winnerCandidateId: null,
+        winnerLabel: null,
+        winnerConversions: [],
+        winnerValidation: null,
+        marginOverMilpDollars: 0,
+        searchRefined: false,
+        searchSimulations: 0,
+        acaActionabilityVeto: {
+          baselineNonActionableYears: [2027],
+          candidateNonActionableYears: [],
+          supportCodes: ['tax-year-parameters-unsupported'],
+          vetoedCandidateIds: [],
+          vetoedMilp: true,
+        },
+        retirementActionReadinessVeto: null,
+      },
+      postProcessed: {
+        cleanedSchedule: { conversions: [{ year: 2026, amount: 50_000 }] },
+        cleanedValidation: { recommendationState: 'identityIncomplete' },
+        stabilized: true,
+        minimumRequestedConversionDollars: 1,
+      },
+      claimAge: null,
+    } as never)
+
+    expect(evidence.recommendationState).toBe('none')
+    expect(evidence.winnerLabel).toBe('none')
+    expect(evidence.winnerSource).toBe('none')
+  })
 })

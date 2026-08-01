@@ -498,6 +498,7 @@ export function reportEvidenceFromOptimizeResult(result: OptimizeResult): Report
   const withheldCleanedSchedule =
     tournament.winnerSource === 'none' &&
     tournament.retirementActionReadinessVeto === null &&
+    tournament.acaActionabilityVeto === null &&
     isCalculatedIdentityWithheldPostProcessing(result.postProcessed)
   const recommendationState =
     tournament.retirementActionReadinessVeto || withheldCleanedSchedule
