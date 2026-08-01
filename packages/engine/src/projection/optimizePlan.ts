@@ -45,6 +45,7 @@ import {
 import { expectedAccountReturnPct } from '../allocation/assetClasses.js'
 import { buildLognormalModelConfigForPlan } from '../montecarlo/marketModels.js'
 import { summarizeProjection, type ProjectionSummary } from './compare.js'
+import { allowLegacyAggregateDecisionCalculation } from './internal/legacyAggregateDecisionCalculation.js'
 import { simulatePlan, type SimulateOptions } from './simulate.js'
 import type { AcaSupportCode, OptimizerYearProbe, ProjectionResult } from './types.js'
 
@@ -575,7 +576,7 @@ export function buildAcaActionabilityVeto(
 function buildRichCandidates(plan: Plan, baselineResult: ProjectionResult, simulateOptions: SimulateOptions): RichCandidate[] {
   const ctx = decisionContext(plan, baselineResult, simulateOptions)
   return dedupeCandidates(simpleRothConversionGenerator.generate(ctx)).map((candidate) => {
-    const evaluation = evaluateCandidate(ctx, candidate)
+    const evaluation = evaluateCandidate(ctx, candidate, allowLegacyAggregateDecisionCalculation({}))
     return {
       evaluation: {
         id: candidate.id,
@@ -691,9 +692,13 @@ export function runExactLedgerTournament(
         const ctx = decisionContext(plan, baselineResult, simulateOptions)
         const seeds = eligible.slice(0, 2).filter((candidate) => candidate.conversions.length > 0)
         for (const seed of seeds) {
-          const refined = refineConversionSchedule(ctx, seed.conversions, {
-            maxSimulations: options.search.maxSimulations,
-          })
+          const refined = refineConversionSchedule(
+            ctx,
+            seed.conversions,
+            allowLegacyAggregateDecisionCalculation({
+              maxSimulations: options.search.maxSimulations,
+            }),
+          )
           searchSimulations += refined.simulationCount
           if (!refined.improved || lastsThroughYear(refined.bestEvaluation.candidateResult) < guardrailLastsThroughYear) continue
           // Snap to exact-ledger executed amounts so the recommended schedule
@@ -755,9 +760,13 @@ export function runExactLedgerTournament(
     let searchSimulations = 0
     if (options.search && winnerConversions.length > 0) {
       const ctx = decisionContext(plan, baselineResult, simulateOptions)
-      const refined = refineConversionSchedule(ctx, winnerConversions, {
-        maxSimulations: options.search.maxSimulations,
-      })
+      const refined = refineConversionSchedule(
+        ctx,
+        winnerConversions,
+        allowLegacyAggregateDecisionCalculation({
+          maxSimulations: options.search.maxSimulations,
+        }),
+      )
       searchSimulations = refined.simulationCount
       if (refined.improved && lastsThroughYear(refined.bestEvaluation.candidateResult) >= guardrailLastsThroughYear) {
         const executed = refined.bestEvaluation.conversionExecution?.executedByYear ?? refined.bestConversions
@@ -1130,7 +1139,10 @@ export function evaluateExactLedgerSchedule(
       explanation: 'Requested conversion schedule compared with the exact ledger.',
       conversions: requestedConversions,
     },
-    { ...options, candidateResult },
+    allowLegacyAggregateDecisionCalculation({
+      ...options,
+      candidateResult,
+    }),
   )
   const execution = evaluation.conversionExecution!
   return {

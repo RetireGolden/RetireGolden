@@ -253,6 +253,11 @@ await assert.rejects(
   (error) => error?.code === 'ERR_PACKAGE_PATH_NOT_EXPORTED',
   'the projection wildcard must not publish stale internal source-series artifacts',
 )
+await assert.rejects(
+  import('@retiregolden/engine/projection/internal/legacyAggregateDecisionCalculation'),
+  (error) => error?.code === 'ERR_PACKAGE_PATH_NOT_EXPORTED',
+  'the projection wildcard must not publish the legacy optimizer calculation capability',
+)
 for (const alternateCase of [
   '@retiregolden/engine/actions/StructuralId',
   '@retiregolden/engine/actions/STRUCTURALID',

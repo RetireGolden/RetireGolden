@@ -15,6 +15,7 @@ import { applyScenarioPatch } from '../scenarios/scenarios.js'
 import { summarizeProjection, type ProjectionSummary } from '../projection/compare.js'
 import { simulatePlan } from '../projection/simulate.js'
 import type { ProjectionResult } from '../projection/types.js'
+import { isLegacyAggregateDecisionCalculation } from '../projection/internal/legacyAggregateDecisionCalculation.js'
 import type {
   ConversionExecution,
   DecisionCandidate,
@@ -22,6 +23,122 @@ import type {
   DecisionRecommendationState,
   ExactDecisionEvaluation,
 } from './types.js'
+
+const RETIREMENT_ACTION_STRATEGY_KEYS = [
+  'retirementActions',
+  'rothConversion',
+  'withdrawalOrder',
+] as const
+const IDENTITY_COMPLETE_RETIREMENT_ACTION_KINDS = new Set([
+  'ordinaryWithdrawal',
+  'rothConversion',
+  'qcd',
+])
+
+function objectRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null
+}
+
+/** Whether the candidate's concrete change can cause retirement-account movement. */
+export function candidateChangesRetirementActions(candidate: DecisionCandidate): boolean {
+  try {
+    if (candidate.conversions !== undefined || candidate.retirementActionReadiness !== undefined) return true
+    const patch = objectRecord(candidate.planPatch)
+    const strategies = objectRecord(patch?.['strategies'])
+    return strategies !== null && RETIREMENT_ACTION_STRATEGY_KEYS.some((key) =>
+      Object.prototype.hasOwnProperty.call(strategies, key),
+    )
+  } catch {
+    // A hostile or malformed runtime candidate must be gated, never trusted.
+    return true
+  }
+}
+
+function patchedRetirementActionIds(candidate: DecisionCandidate): string[] | null {
+  const patch = objectRecord(candidate.planPatch)
+  const strategies = objectRecord(patch?.['strategies'])
+  const requests = strategies?.['retirementActions']
+  if (!Array.isArray(requests)) return null
+
+  const ids: string[] = []
+  for (const request of requests) {
+    const requestRecord = objectRecord(request)
+    const actionId = requestRecord?.['actionId']
+    if (!IDENTITY_COMPLETE_RETIREMENT_ACTION_KINDS.has(String(requestRecord?.['kind']))) return null
+    if (typeof actionId !== 'string' || actionId.trim().length === 0) return null
+    ids.push(actionId)
+  }
+  return ids
+}
+
+function sameUniqueStringSet(left: string[], right: string[]): boolean {
+  if (left.length !== right.length || new Set(left).size !== left.length || new Set(right).size !== right.length) {
+    return false
+  }
+  const rightSet = new Set(right)
+  return left.every((value) => rightSet.has(value))
+}
+
+/**
+ * Return the fail-closed diagnostic for retirement-action readiness, or null
+ * when the candidate carries complete identity-bearing request evidence.
+ */
+function inspectRetirementActionReadiness(candidate: DecisionCandidate): string | null {
+  if (!candidateChangesRetirementActions(candidate)) return null
+
+  const readiness = candidate.retirementActionReadiness
+  if (!readiness) {
+    return 'Retirement-action candidate is untagged; identity-complete owner, source, and destination evidence is required before it can be recommended.'
+  }
+  const readinessRecord = objectRecord(readiness)
+  if (readinessRecord?.['state'] === 'exploratoryNonActionable') {
+    const rawReason = readinessRecord['reason']
+    const reason = typeof rawReason === 'string' ? rawReason.trim() : ''
+    return reason.length > 0
+      ? `Retirement-action candidate is exploratory and non-actionable: ${reason}`
+      : 'Retirement-action candidate has incomplete exploratory readiness evidence and cannot be recommended.'
+  }
+  if (readinessRecord?.['state'] !== 'identityComplete') {
+    return 'Retirement-action candidate has incomplete readiness evidence and cannot be recommended.'
+  }
+
+  if (candidate.conversions !== undefined) {
+    return 'Identity-complete retirement-action evidence cannot certify an aggregate conversion schedule.'
+  }
+  const patch = objectRecord(candidate.planPatch)
+  const strategies = objectRecord(patch?.['strategies'])
+  if (
+    strategies !== null &&
+    (Object.prototype.hasOwnProperty.call(strategies, 'rothConversion') ||
+      Object.prototype.hasOwnProperty.call(strategies, 'withdrawalOrder'))
+  ) {
+    return 'Identity-complete retirement-action evidence cannot certify an aggregate withdrawal or conversion strategy.'
+  }
+
+  const patchedIds = patchedRetirementActionIds(candidate)
+  const evidenceIds = readinessRecord['actionRequestIds']
+  if (
+    patchedIds === null ||
+    patchedIds.length === 0 ||
+    !Array.isArray(evidenceIds) ||
+    evidenceIds.length === 0 ||
+    evidenceIds.some((id) => typeof id !== 'string' || id.trim().length === 0) ||
+    !sameUniqueStringSet(patchedIds, evidenceIds)
+  ) {
+    return 'Retirement-action identity evidence is incomplete or does not exactly match the candidate request IDs.'
+  }
+  return null
+}
+
+export function retirementActionReadinessDiagnostic(candidate: DecisionCandidate): string | null {
+  try {
+    return inspectRetirementActionReadiness(candidate)
+  } catch {
+    return 'Retirement-action candidate has incomplete readiness evidence and cannot be recommended.'
+  }
+}
 
 export interface EvaluateCandidateOptions {
   /** Dollars around zero treated as matching the baseline. */
@@ -270,6 +387,10 @@ export function evaluateCandidate(
     )
   }
   const hasUnsafeAcaEvidence = unsafeBaselineAcaYears.length > 0 || unsafeCandidateAcaYears.length > 0
+  const retirementActionDiagnostic = isLegacyAggregateDecisionCalculation(options)
+    ? null
+    : retirementActionReadinessDiagnostic(candidate)
+  if (retirementActionDiagnostic) diagnostics.push(retirementActionDiagnostic)
 
   return {
     candidate,
@@ -281,7 +402,7 @@ export function evaluateCandidate(
     traditionalDepletionYear: findTraditionalDepletionYear(built.plan, candidateResult, neutralToleranceDollars),
     diagnostics,
     recommendationState:
-      hasUnsafeAcaEvidence
+      hasUnsafeAcaEvidence || retirementActionDiagnostic !== null
         ? 'diagnostic'
         : classifyRecommendationState({
             afterTaxEstateDelta: deltas.endingAfterTaxEstate,

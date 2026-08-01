@@ -28,6 +28,26 @@ export type DecisionCategory =
   | 'asset-location'
   | 'guaranteed-income'
 
+/**
+ * Readiness evidence for a candidate that changes retirement-account movement.
+ *
+ * Aggregate withdrawal orders and Roth schedules can still be priced on the
+ * exact ledger, but they do not identify the legal owner, source account, or
+ * destination account.  They therefore remain explicitly exploratory until a
+ * later allocation step produces identity-bearing retirement-action requests.
+ */
+export type RetirementActionCandidateReadiness =
+  | {
+      state: 'identityComplete'
+      /** Exact request IDs installed by this candidate's `retirementActions` patch. */
+      actionRequestIds: string[]
+    }
+  | {
+      state: 'exploratoryNonActionable'
+      /** Human-readable explanation of the identity or allocation evidence still missing. */
+      reason: string
+    }
+
 export interface DecisionCandidate {
   id: string
   source: DecisionSource
@@ -45,6 +65,11 @@ export interface DecisionCandidate {
    * execute less (balance caps), which evaluation reports as diagnostics.
    */
   conversions?: Array<{ year: number; amount: number }>
+  /**
+   * Required when the candidate changes retirement-account movement.  The
+   * evaluator fails closed when this evidence is absent or incomplete.
+   */
+  retirementActionReadiness?: RetirementActionCandidateReadiness
   metadata?: Record<string, unknown>
 }
 

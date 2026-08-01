@@ -14,6 +14,11 @@ import type { OptimizedSchedule } from '../strategies/optimizer.js'
 import { QLAC_DEFERRED_PAYOUT_RATE, spiaPayoutRate } from './spiaQuotes.js'
 import type { CandidateGenerator, DecisionCandidate, DecisionContext } from './types.js'
 
+const AGGREGATE_RETIREMENT_ACTION_EXPLORATION = {
+  state: 'exploratoryNonActionable',
+  reason: 'This aggregate strategy does not yet identify legal owners, source accounts, and destination accounts.',
+} as const
+
 function fillToTargetPatch(
   target: 'topOfBracket' | 'irmaaTier' | 'acaCliff',
   targetValue: number | null,
@@ -111,6 +116,7 @@ export const simpleRothConversionGenerator: CandidateGenerator = {
         ? `Roth conversions up to the ${targetValue}% bracket in each year before ${window.year}, evaluated on the exact ledger.`
         : `Roth conversions each year up to ${label.toLowerCase().replace(/^fill |^convert up to /, '')}, evaluated on the exact ledger.`,
       planPatch: fillToTargetPatch(target, targetValue, startYear, window ? window.year - 1 : endYear),
+      retirementActionReadiness: AGGREGATE_RETIREMENT_ACTION_EXPLORATION,
     })
     const candidates = [
       make('bracket-10', 'Fill the 10% bracket', 'topOfBracket', 10, 'roth'),
@@ -153,6 +159,7 @@ export const noConversionGenerator: CandidateGenerator = {
         label: 'No Roth conversions',
         explanation: 'Runs the plan with no Roth conversions, in case the current schedule costs more than it saves.',
         planPatch: { strategies: { rothConversion: { mode: 'none' } } },
+        retirementActionReadiness: AGGREGATE_RETIREMENT_ACTION_EXPLORATION,
       },
     ]
   },
@@ -183,6 +190,7 @@ export const withdrawalOrderGenerator: CandidateGenerator = {
         label,
         explanation: `Funds spending with a ${label.toLowerCase()} instead of the current strategy.`,
         planPatch: { strategies: { withdrawalOrder: strategy } },
+        retirementActionReadiness: AGGREGATE_RETIREMENT_ACTION_EXPLORATION,
       }))
   },
 }
@@ -503,6 +511,7 @@ export function milpScheduleGenerator(schedules: {
           label: 'Optimizer schedule (raw)',
           explanation: 'The raw MILP conversion schedule, priced on the exact ledger.',
           conversions: schedules.raw.conversions,
+          retirementActionReadiness: AGGREGATE_RETIREMENT_ACTION_EXPLORATION,
         })
       }
       if (schedules.cleanedConversions && schedules.cleanedConversions.length > 0) {
@@ -513,6 +522,7 @@ export function milpScheduleGenerator(schedules: {
           label: 'Optimizer schedule (exact-ledger cleaned)',
           explanation: 'The post-processed MILP schedule the exact ledger can execute in full.',
           conversions: schedules.cleanedConversions,
+          retirementActionReadiness: AGGREGATE_RETIREMENT_ACTION_EXPLORATION,
         })
       }
       return candidates

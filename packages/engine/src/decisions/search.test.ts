@@ -36,15 +36,16 @@ describe('refineConversionSchedule', () => {
     expect(second.bestEvaluation.deltas.endingAfterTaxEstate).toBe(first.bestEvaluation.deltas.endingAfterTaxEstate)
   })
 
-  it('improves or matches the seed schedule on the exact ledger', () => {
+  it('prices the seed but does not refine an aggregate exploratory schedule into a recommendation', () => {
     const ctx = createDecisionContext(tradHeavyPlan(), simOptions())
     const seed = seedSchedule()
     const refined = refineConversionSchedule(ctx, seed, { maxSimulations: 60 })
 
-    // The trad-heavy fixture leaves large bracket headroom above the flat
-    // seed, so coarse steps must find a strictly better schedule.
-    expect(refined.improved).toBe(true)
+    // The aggregate seed still receives exact-ledger deltas, but every move is
+    // diagnostic-only until the schedule has identity-complete allocations.
+    expect(refined.improved).toBe(false)
     expect(refined.bestEvaluation.deltas.endingAfterTaxEstate).toBeGreaterThan(0)
+    expect(refined.bestEvaluation.recommendationState).toBe('diagnostic')
 
     // Never worse than the seed by construction.
     const seedEvaluation = refineConversionSchedule(ctx, seed, { maxSimulations: 1 })
@@ -53,7 +54,18 @@ describe('refineConversionSchedule', () => {
     )
   })
 
-  it('search improves or matches tournament results', () => {
+  it('does not let a Proxy forge legacy optimizer calculation authority', () => {
+    const ctx = createDecisionContext(tradHeavyPlan(), simOptions())
+    const forged = new Proxy({ maxSimulations: 8 }, {
+      get: (target, key, receiver) => typeof key === 'symbol' ? true : Reflect.get(target, key, receiver),
+    })
+    const refined = refineConversionSchedule(ctx, seedSchedule(), forged)
+
+    expect(refined.improved).toBe(false)
+    expect(refined.bestEvaluation.recommendationState).toBe('diagnostic')
+  })
+
+  it('search improves or matches legacy optimizer tournament results', () => {
     const plan = tradHeavyPlan()
     const opts = simOptions()
     const baseline = simulatePlan(plan, opts)
@@ -67,10 +79,8 @@ describe('refineConversionSchedule', () => {
       unrefined.winnerValidation!.afterTaxEstateDelta,
     )
     expect(refined.searchSimulations).toBeGreaterThan(0)
-    // Search refines the top two candidates, each under its own budget.
     expect(refined.searchSimulations).toBeLessThanOrEqual(80)
     if (refined.searchRefined) {
-      // A refined winner stays exact-ledger executable by construction.
       expect(refined.winnerValidation!.executedConversionRatio).toBeGreaterThan(0.999)
       expect(refined.winnerValidation!.recommendationState).toBe('beneficial')
     }
