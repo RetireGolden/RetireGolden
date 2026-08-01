@@ -304,6 +304,16 @@ describe('Plan-owned non-Roth IRA annual filing evidence', () => {
     expect(issueKinds(future)).toEqual(['sourceNotFinal'])
   })
 
+  it.each([2005, 9999, 2030.5])(
+    'rejects unsupported tax year %s before deadline validation',
+    (taxYear) => {
+      const value = clone()
+      value.taxYear = taxYear
+
+      expect(issueKinds(value)).toEqual(['taxYearInvalid'])
+    },
+  )
+
   it.each([
     ['2031-04-14', 'deadlineAuthorityInvalid'],
     ['2031-04-16', 'deadlineAuthorityInvalid'],
@@ -674,5 +684,24 @@ describe('Plan-owned non-Roth IRA annual filing evidence', () => {
       postYearContributionWindow: null,
       issues: [{ kind: 'inputInvalid' }],
     })
+
+    const hostileThrownValue =
+      {} as BuildPlanOwnedNonRothIraAnnualFilingEvidenceInput
+    Object.defineProperty(hostileThrownValue, 'plan', {
+      get: () => {
+        throw {
+          toString: () => {
+            throw new Error('hostile toString')
+          },
+          valueOf: () => {
+            throw new Error('hostile valueOf')
+          },
+        }
+      },
+    })
+    expect(() =>
+      buildPlanOwnedNonRothIraAnnualFilingEvidence(hostileThrownValue),
+    ).not.toThrow()
+    expect(issueKinds(hostileThrownValue)).toEqual(['inputInvalid'])
   })
 })

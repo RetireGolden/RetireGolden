@@ -427,7 +427,22 @@ function claimPlanIdentifiers(
 }
 
 function safeError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
+  try {
+    if (error instanceof Error) {
+      try {
+        if (typeof error.message === 'string') return error.message
+      } catch {
+        // Fall through to the guarded string conversion.
+      }
+    }
+    try {
+      return String(error)
+    } catch {
+      return 'unreadable caller-controlled error'
+    }
+  } catch {
+    return 'unreadable caller-controlled error'
+  }
 }
 
 function buildUnchecked(
@@ -461,10 +476,11 @@ function buildUnchecked(
   if (!parsedOwner.success) {
     return blocked([issue('ownerInvalid', 'Owner person ID must be nonblank')])
   }
-  if (!Number.isInteger(rawTaxYear) || rawTaxYear < 1 || rawTaxYear > 9998) {
+  if (!Number.isInteger(rawTaxYear) || rawTaxYear < 2006 ||
+      rawTaxYear > 9998) {
     return blocked([issue(
       'taxYearInvalid',
-      'Tax year must be an integer from 1 through 9998',
+      'Tax year must be an integer from 2006 through 9998',
     )])
   }
   if (typeof rawLedgerRunId !== 'string' || rawLedgerRunId.trim().length === 0) {
