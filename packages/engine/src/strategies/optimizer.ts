@@ -92,7 +92,7 @@ export interface OptimizerYear {
    */
   peopleAged65Plus: number
   /**
-   * Baseline forced owner-traditional distribution (the probe's RMD, nominal).
+   * Taxable portion of the baseline forced owner-traditional distribution.
    * Not a constraint input — the RMD floor stays `trad ÷ rmdDivisor` on the
    * endogenous balance. Used only to locate the linearization point for
    * saturation skips: a 65+ RMD year whose forced income already sits past the
