@@ -243,6 +243,16 @@ await assert.rejects(
   (error) => error?.code === 'ERR_PACKAGE_PATH_NOT_EXPORTED',
   'the wildcard exports map must not reopen the internal structural hasher',
 )
+await assert.rejects(
+  import('@retiregolden/engine/internal/ownedNonRothIraRuntimeSourceSeries'),
+  (error) => error?.code === 'ERR_PACKAGE_PATH_NOT_EXPORTED',
+  'the package-wide deny rule must not publish the simulator-owned source-series seam',
+)
+await assert.rejects(
+  import('@retiregolden/engine/projection/internal/ownedNonRothIraRuntimeSourceSeries'),
+  (error) => error?.code === 'ERR_PACKAGE_PATH_NOT_EXPORTED',
+  'the projection wildcard must not publish stale internal source-series artifacts',
+)
 for (const alternateCase of [
   '@retiregolden/engine/actions/StructuralId',
   '@retiregolden/engine/actions/STRUCTURALID',
