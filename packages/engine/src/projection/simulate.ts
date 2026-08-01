@@ -4222,6 +4222,53 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (state.account.type === 'taxable') state.costBasis += taxableYield.gross
     }
 
+    const ownedNonRothIraBalancesByOwner = new Map<
+      string | null,
+      Array<{ sourceAccountId: string; balancePlanDollars: number }>
+    >()
+    for (const state of balances) {
+      if (!isAggregatedIra(state.account)) continue
+      // A validated Plan always supplies an owner here. Preserve null on a
+      // malformed direct simulatePlan call so this raw, not-yet-validated
+      // source never invents ownership that later replay could mistake as fact.
+      const ownerPersonId = state.account.ownerPersonId
+      const accountBalances = ownedNonRothIraBalancesByOwner.get(ownerPersonId) ?? []
+      accountBalances.push({
+        sourceAccountId: state.account.id,
+        balancePlanDollars: state.balance,
+      })
+      ownedNonRothIraBalancesByOwner.set(ownerPersonId, accountBalances)
+    }
+    const ownedNonRothIraPostGrowthSource = Object.freeze({
+      status: 'postGrowthOwnedNonRothIraBalancesCaptured' as const,
+      captureBoundary:
+        'afterAllAnnualTransactionsAndGrowthBeforeYearResultPublication' as const,
+      annualObservationValidation: 'notRun' as const,
+      planId: plan.id,
+      taxYear: year,
+      ownerPools: Object.freeze(
+        [...ownedNonRothIraBalancesByOwner]
+          .sort(([leftOwner], [rightOwner]) => {
+            if (leftOwner === null) return rightOwner === null ? 0 : -1
+            if (rightOwner === null) return 1
+            return compareUtf16CodeUnits(leftOwner, rightOwner)
+          })
+          .map(([ownerPersonId, accountBalances]) => Object.freeze({
+            ownerPersonId,
+            accountBalances: Object.freeze(
+              accountBalances
+                .sort((left, right) =>
+                  compareUtf16CodeUnits(
+                    left.sourceAccountId,
+                    right.sourceAccountId,
+                  ) || left.balancePlanDollars - right.balancePlanDollars,
+                )
+                .map((balance) => Object.freeze({ ...balance })),
+            ),
+          })),
+      ),
+    })
+
     // --- snapshot ------------------------------------------------------------
     const balanceRecord: Record<string, number> = {}
     let investableTotal = unassignedCash
@@ -4326,6 +4373,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       qcd,
       rothConversion,
       retirementRuntimeSource,
+      ownedNonRothIraPostGrowthSource,
       ...(retirementActionExecution ? { retirementActionExecution } : {}),
       penalties,
       magi: magiHistory.get(year)!,

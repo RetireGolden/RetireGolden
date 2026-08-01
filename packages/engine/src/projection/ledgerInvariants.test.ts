@@ -15,10 +15,11 @@ import {
 } from '../testing/planFixtures.js'
 import type { ProjectionResult } from './types.js'
 
-function withoutRetirementRuntimeSource(result: ProjectionResult): unknown {
+function withoutAdditiveRetirementSources(result: ProjectionResult): unknown {
   const legacy = structuredClone(result)
   for (const year of legacy.years) {
     Reflect.deleteProperty(year, 'retirementRuntimeSource')
+    Reflect.deleteProperty(year, 'ownedNonRothIraPostGrowthSource')
   }
   return legacy
 }
@@ -146,8 +147,8 @@ describe('ledger invariants', () => {
       medicareExtrasMonthlyPerPerson: 0,
     }
 
-    expect(withoutRetirementRuntimeSource(runPlan(withNoOpAca, createFlatTaxCalculator(0)))).toEqual(
-      withoutRetirementRuntimeSource(runPlan(base, createFlatTaxCalculator(0))),
+    expect(withoutAdditiveRetirementSources(runPlan(withNoOpAca, createFlatTaxCalculator(0)))).toEqual(
+      withoutAdditiveRetirementSources(runPlan(base, createFlatTaxCalculator(0))),
     )
   })
 

@@ -402,6 +402,34 @@ export interface SimulatorAnnualRetirementRuntimeSource {
     Readonly<SimulatorAnnualRetirementNonmovingLegacyQcdOverlay> | null
 }
 
+export interface SimulatorOwnedNonRothIraPostGrowthAccountBalanceSource {
+  readonly sourceAccountId: string
+  readonly balancePlanDollars: number
+}
+
+export interface SimulatorOwnedNonRothIraPostGrowthOwnerPoolSource {
+  /** Null is preserved only for an unvalidated malformed Plan; replay must reject it. */
+  readonly ownerPersonId: string | null
+  readonly accountBalances:
+    readonly Readonly<SimulatorOwnedNonRothIraPostGrowthAccountBalanceSource>[]
+}
+
+/**
+ * Cheap simulator-owned source facts captured from the live balance ledger
+ * after every annual mutation and growth pass. A later internal replay owns
+ * exact-cent conversion, pool validation, structural identity, and sealing.
+ */
+export interface SimulatorAnnualOwnedNonRothIraPostGrowthSource {
+  readonly status: 'postGrowthOwnedNonRothIraBalancesCaptured'
+  readonly captureBoundary:
+    'afterAllAnnualTransactionsAndGrowthBeforeYearResultPublication'
+  readonly annualObservationValidation: 'notRun'
+  readonly planId: string
+  readonly taxYear: number
+  readonly ownerPools:
+    readonly Readonly<SimulatorOwnedNonRothIraPostGrowthOwnerPoolSource>[]
+}
+
 export interface YearResult {
   year: number
   people: PersonYearState[]
@@ -432,6 +460,15 @@ export interface YearResult {
    */
   retirementRuntimeSource?:
     Readonly<SimulatorAnnualRetirementRuntimeSource>
+  /**
+   * Projection-only raw post-growth balances for every complete owner-wide
+   * owned non-Roth IRA pool. This additive source does not affect simulation
+   * economics and is not itself a validated or sealed annual observation.
+   * `simulatePlan` always publishes it, while optionality preserves source
+   * compatibility for external consumers that construct `YearResult` values.
+   */
+  ownedNonRothIraPostGrowthSource?:
+    Readonly<SimulatorAnnualOwnedNonRothIraPostGrowthSource>
   /**
    * Exact-cent action execution evidence. Present only when the Plan contains
    * one or more retirement-action requests for this projection year.
