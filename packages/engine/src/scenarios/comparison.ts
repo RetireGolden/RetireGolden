@@ -23,6 +23,10 @@ import type { MonteCarloSummary } from '../montecarlo/run.js'
 import { summarizeProjection } from '../projection/compare.js'
 import { simulatePlan } from '../projection/simulate.js'
 import type { ProjectionResult, TaxCalculator, YearResult } from '../projection/types.js'
+import {
+  compareScenarioActionRows,
+  type ScenarioActionComparisonRow,
+} from './actionRows.js'
 import { scenarioPlanSnapshotHash } from './patch.js'
 
 export interface ScalarComparison {
@@ -279,6 +283,7 @@ export interface ScenarioPlanComparison {
   aca: ScenarioAcaComparison
   estate: ScenarioEstateComparison
   annual: AnnualScenarioComparisonRow[]
+  actionRows: readonly Readonly<ScenarioActionComparisonRow>[]
   spendingCapacity: ScenarioSpendingCapacityComparison | null
   risk: ScenarioRiskComparison | null
 }
@@ -702,6 +707,7 @@ export function compareScenarioPlans(
       },
     },
     annual: annualComparison(baselineResult, proposalResult),
+    actionRows: compareScenarioActionRows(baselineResult.years, proposalResult.years),
     spendingCapacity,
     risk,
   }

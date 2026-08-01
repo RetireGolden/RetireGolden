@@ -760,6 +760,13 @@ describe('ordinary-withdrawal execution', () => {
       evidence: [],
       balances: [{ openingBalance: 100, closingBalance: 100 }],
     })
+    expect(result.requests.map((request) => request.actionId)).toEqual([
+      'independent',
+      'collision-one',
+      'collision-two',
+    ])
+    expect(Object.isFrozen(result.requests)).toBe(true)
+    expect(Object.isFrozen(result.requests[0])).toBe(true)
   })
 
   it('aborts before movement for duplicate action identity or another action year', () => {
