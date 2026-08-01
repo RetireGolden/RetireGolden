@@ -628,6 +628,17 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   from positive actual staged gross. Bigint sums produce safe-cent lines 6 and 9. The immutable success
   contains only a classifier input and reconciliation evidence; it does not call the classifier, penalty
   gates, executor, or simulator, mutate balance or basis, commit movement, or establish actionability.
+  The matching pure `executePlanOwnedNonRothIraAnnualPostCandidate` boundary rebuilds that result, reruns
+  only the candidate-level annual coordinator with caller-supplied penalty facts, and exact-rejoins the
+  canonical candidate, line-7 characterization, reconciliation, and supplied finalization. It publishes
+  normative committed/refused action and balance evidence from the snapshot's already-applied candidate;
+  it never invokes the older Plan coordinator/executor and never stages or applies another balance delta.
+  Its collision-checked execution ID binds the reconciliation, finalization and candidate binding,
+  snapshot allocation applications, candidate balances, and published evidence. Any stale or tampered
+  link fails closed with no movement. A combined semantic identifier registry also rejects cross-role or
+  differently bound reuse between post-candidate, penalty, finalization, and binding evidence while
+  retaining exact same-role references. Unresolved penalty evidence remains non-actionable. This binder
+  is still isolated from the annual simulator and is not custodian completion evidence.
   A separate standalone `validateOwnedNonRothIraSeppCurrentPaymentCandidate` boundary can now validate
   one named owned-IRA SEPP scheduled-payment transition against canonical character/distribution
   coverage, explicit election and annual-schedule evidence, no-disqualifying-modification coverage,
