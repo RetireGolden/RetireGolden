@@ -124,15 +124,17 @@ describe('OptimizePage tournament display helpers', () => {
     expect(shouldShowRecommendedScheduleBars(false, false)).toBe(false)
   })
 
-  it('builds chart rows from the winning candidate schedule', () => {
+  it('builds chart execution from a displayed actionable or withheld candidate schedule', () => {
     const rows = buildOptimizeChartRows({
       schedule: schedule([{ year: 2026, amount: 1_000 }]),
       recommendedConversions: [
         { year: 2026, amount: 5_000 },
         { year: 2027, amount: 6_000 },
       ],
-      postProcessed: null,
-      candidateWins: true,
+      postProcessed: {
+        cleanedExecutionByYear: [{ year: 2026, rothConversion: 999 }],
+      } as never,
+      candidateScheduleDisplayed: true,
     })
 
     expect(rows).toEqual([

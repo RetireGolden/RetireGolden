@@ -130,6 +130,9 @@ export function OptimizePage() {
   // candidate strategy beats the post-processed MILP schedule on the exact
   // after-tax estate, its schedule is what the page shows and applies.
   const candidateWins = tournament?.winnerSource === 'candidate'
+  const withheldCandidateDisplayed =
+    tournament?.retirementActionReadinessVeto?.vetoedWinnerSource === 'candidate'
+  const candidateScheduleDisplayed = candidateWins || withheldCandidateDisplayed
   // Nothing evaluated beat the plan's already-installed conversion strategy —
   // the usual state right after applying a winning schedule and re-running.
   // Rendered as a calm "no change recommended" card, not a rejected-schedule
@@ -240,9 +243,9 @@ export function OptimizePage() {
       schedule,
       recommendedConversions: displayedConversions,
       postProcessed,
-      candidateWins,
+      candidateScheduleDisplayed,
     }),
-    [schedule, displayedConversions, postProcessed, candidateWins],
+    [schedule, displayedConversions, postProcessed, candidateScheduleDisplayed],
   )
 
   const apply = (mode: 'optimized' | 'manual') => {
@@ -555,6 +558,8 @@ export function OptimizePage() {
                   ? candidateReplacedMilp
                     ? 'Raw optimizer request, winning candidate schedule, and what your projection actually executed (nominal dollars).'
                     : 'Winning candidate schedule and what your projection actually executed (nominal dollars).'
+                  : withheldCandidateDisplayed
+                    ? 'Raw optimizer request and the withheld candidate schedule that your exact projection executed (nominal dollars).'
                   : 'Raw optimizer requests, cleaned schedule, and what your projection actually executed (nominal dollars).'}
               </p>
               <div style={{ width: '100%', height: 280 }}>
@@ -568,14 +573,22 @@ export function OptimizePage() {
                     {showRecommendedBars ? (
                       <Bar
                         dataKey="cleaned"
-                        name={candidateWins ? 'Recommended schedule' : 'Cleaned schedule'}
+                        name={candidateWins
+                          ? 'Recommended schedule'
+                          : withheldCandidateDisplayed
+                            ? 'Withheld candidate schedule'
+                            : 'Cleaned schedule'}
                         fill="var(--chart-2)"
                       />
                     ) : null}
                     {showRecommendedBars ? (
                       <Bar
                         dataKey="executed"
-                        name={candidateWins ? 'Executed recommendation' : 'Executed after cleaning'}
+                        name={candidateWins
+                          ? 'Executed recommendation'
+                          : withheldCandidateDisplayed
+                            ? 'Executed withheld candidate'
+                            : 'Executed after cleaning'}
                         fill="var(--chart-3)"
                       />
                     ) : null}

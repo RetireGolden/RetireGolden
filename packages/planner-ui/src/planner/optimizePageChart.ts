@@ -61,18 +61,18 @@ export function buildOptimizeChartRows({
   schedule,
   recommendedConversions,
   postProcessed,
-  candidateWins,
+  candidateScheduleDisplayed,
 }: {
   schedule: OptimizedSchedule | null
   recommendedConversions: { year: number; amount: number }[]
   postProcessed: OptimizePostProcessing | null
-  candidateWins: boolean
+  candidateScheduleDisplayed: boolean
 }): OptimizeChartRow[] {
   const rawByYear = new Map(schedule?.conversions.map((c) => [c.year, c.amount]) ?? [])
   const cleanedByYear = new Map(recommendedConversions.map((c) => [c.year, c.amount]))
-  // A winning candidate's schedule is its exact-ledger execution; the MILP path
-  // reports the cleaned re-run's executed amounts.
-  const executedByYear = candidateWins
+  // A candidate schedule, actionable or withheld, is already its exact-ledger
+  // execution; the MILP path reports the cleaned re-run's executed amounts.
+  const executedByYear = candidateScheduleDisplayed
     ? cleanedByYear
     : new Map(postProcessed?.cleanedExecutionByYear.map((year) => [year.year, year.rothConversion]) ?? [])
   const years = [...new Set([...rawByYear.keys(), ...cleanedByYear.keys()])].sort((a, b) => a - b)
