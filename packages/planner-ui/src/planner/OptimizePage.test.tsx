@@ -1,7 +1,9 @@
 /** @vitest-environment jsdom */
 import { describe, expect, it } from 'vitest'
 
+import type { ExactLedgerValidation } from '@retiregolden/engine/projection/optimizePlan'
 import type { OptimizedSchedule } from '@retiregolden/engine/strategies/optimizer'
+import { recommendationBody, recommendationHeading } from './optimizePageRecommendation'
 import {
   actionableTournamentConversions,
   buildOptimizeChartRows,
@@ -20,6 +22,21 @@ function schedule(conversions: { year: number; amount: number }[]): OptimizedSch
 }
 
 describe('OptimizePage tournament display helpers', () => {
+  it('describes identity withholding without claiming an execution shortfall', () => {
+    const validation = {
+      recommendationState: 'identityIncomplete',
+      requestedConversionTotal: 5_000,
+      executedConversionTotal: 5_000,
+      baseline: { endingAfterTaxEstate: 100_000 },
+      candidate: { endingAfterTaxEstate: 105_000 },
+      lifetimeTaxDelta: 0,
+    } as ExactLedgerValidation
+
+    expect(recommendationHeading(validation)).toMatch(/account allocation/i)
+    expect(recommendationBody(validation)).toMatch(/priced and executed.*owner.*source IRA.*Roth destination/i)
+    expect(recommendationBody(validation)).not.toMatch(/only .* could actually be converted/i)
+  })
+
   it('only exposes a tournament winner schedule for an actionable winner', () => {
     const conversions = [{ year: 2026, amount: 5_000 }]
     const tournament = (winnerSource: 'candidate' | 'milp' | 'incumbent' | 'none') => ({

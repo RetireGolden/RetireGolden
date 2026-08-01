@@ -181,6 +181,35 @@ describe('evaluateCandidate', () => {
     expect(evaluation.diagnostics).toEqual([])
   })
 
+  it('does not gate a redundant nested retirement-strategy operation', () => {
+    const plan = tradHeavyPlan()
+    const edited = structuredClone(plan)
+    edited.assumptions.inflationPct += 0.1
+    const seed = canonicalPatchFor(plan, edited)
+    const patch = {
+      ...seed,
+      operations: [
+        ...seed.operations,
+        {
+          op: 'set',
+          path: '/strategies/qcdAnnual',
+          before: { present: true, value: plan.strategies.qcdAnnual },
+          value: plan.strategies.qcdAnnual,
+        },
+      ],
+    } as never
+    const ctx = createDecisionContext(plan, simOptions())
+
+    const evaluation = evaluateCandidate(
+      ctx,
+      rothCandidate({ planPatch: patch }),
+      { candidateResult: ctx.baselineResult },
+    )
+
+    expect(evaluation.recommendationState).toBe('neutral')
+    expect(evaluation.diagnostics).toEqual([])
+  })
+
   it('does not gate a normalized legacy strategies override when only unrelated values change', () => {
     const plan = tradHeavyPlan()
     const ctx = createDecisionContext(plan, simOptions())

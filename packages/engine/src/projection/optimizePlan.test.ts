@@ -664,7 +664,7 @@ describe('postProcessExactLedgerSchedule', () => {
     expect(processed.cleanedValidation.requestedConversionTotal).toBe(20_000)
     expect(processed.cleanedValidation.executedConversionTotal).toBeCloseTo(20_000, 2)
     expect(processed.cleanedValidation.executedConversionRatio).toBe(1)
-    expect(processed.cleanedValidation.recommendationState).toBe('unexecutable')
+    expect(processed.cleanedValidation.recommendationState).toBe('identityIncomplete')
     expect(processed.recommendationSchedule).toBe('none')
   })
 
@@ -734,7 +734,7 @@ describe('postProcessExactLedgerSchedule', () => {
     // exact calculation, but cannot publish the aggregate result as actionable.
     expect(processed.pruneIterationCount).toBeGreaterThanOrEqual(1)
     expect(processed.cleanedSchedule.conversions).toEqual([{ year: 2026, amount: 20_000 }])
-    expect(processed.cleanedValidation.recommendationState).toBe('unexecutable')
+    expect(processed.cleanedValidation.recommendationState).toBe('identityIncomplete')
     expect(processed.cleanedValidation.afterTaxEstateDelta).toBeGreaterThan(0)
     expect(processed.adjustments).toContainEqual({
       year: 2027,
@@ -825,7 +825,7 @@ describe('optimizePlan end-to-end', () => {
     expect(optimized.endingAfterTaxEstate).toBeGreaterThanOrEqual(baseline.endingAfterTaxEstate - 1)
     // And on this trad-heavy plan it should genuinely win.
     expect(optimized.endingAfterTaxEstate).toBeGreaterThan(baseline.endingAfterTaxEstate)
-    expect(validation.recommendationState).toBe('unexecutable')
+    expect(validation.recommendationState).toBe('identityIncomplete')
     // The real ledger, not the linear model, is the authority for the accepted
     // schedule. Spending withdrawals and RMDs can consume traditional balance
     // before a later LP-requested conversion, so the exact ledger may execute
@@ -1309,7 +1309,7 @@ describe('optimizer regression fixtures', () => {
     // Dropping unexecutable years preserves the beneficial exact calculation,
     // but the cleaned aggregate schedule is still not recommendable.
     expect(processed.cleanedValidation.afterTaxEstateDelta).toBeGreaterThan(0)
-    expect(processed.cleanedValidation.recommendationState).toBe('unexecutable')
+    expect(processed.cleanedValidation.recommendationState).toBe('identityIncomplete')
     expect(processed.recommendationSchedule).toBe('none')
   })
 
@@ -1341,7 +1341,7 @@ describe('optimizer regression fixtures', () => {
     expect(schedule.status).toBe('optimal')
     expect(schedule.conversions.reduce((sum, c) => sum + c.amount, 0)).toBeGreaterThan(0)
     expect(postProcessed).not.toBeNull()
-    expect(postProcessed!.cleanedValidation.recommendationState).toBe('unexecutable')
+    expect(postProcessed!.cleanedValidation.recommendationState).toBe('identityIncomplete')
     expect(postProcessed!.cleanedValidation.moneyLastsYearsDelta).toBeGreaterThanOrEqual(0)
     expect(postProcessed!.recommendationSchedule).toBe('none')
     expect(postProcessed!.cleanedValidation.afterTaxEstateDelta).toBeGreaterThanOrEqual(-1)
@@ -1400,7 +1400,7 @@ describe('fixture matrix (account mix, income timing, liquidity source)', () => 
 
     expect(schedule.status).toBe('optimal')
     expect(postProcessed).not.toBeNull()
-    expect(postProcessed!.cleanedValidation.recommendationState).toBe('unexecutable')
+    expect(postProcessed!.cleanedValidation.recommendationState).toBe('identityIncomplete')
     expect(postProcessed!.cleanedValidation.afterTaxEstateDelta).toBeGreaterThan(0)
     // A tiny IRA cannot justify a big schedule: conversions stay near the balance.
     expect(postProcessed!.cleanedValidation.executedConversionTotal).toBeLessThan(50_000)
@@ -1415,9 +1415,9 @@ describe('fixture matrix (account mix, income timing, liquidity source)', () => 
     // conversions survive (they still cut lifetime tax by shrinking RMDs).
     expect(requested(heir0)).toBeGreaterThan(0)
     expect(requested(heir37)).toBeGreaterThan(2 * requested(heir0))
-    expect(heir0.postProcessed!.cleanedValidation.recommendationState).toBe('unexecutable')
+    expect(heir0.postProcessed!.cleanedValidation.recommendationState).toBe('identityIncomplete')
     expect(heir0.postProcessed!.cleanedValidation.lifetimeTaxDelta).toBeLessThan(0)
-    expect(heir37.postProcessed!.cleanedValidation.recommendationState).toBe('unexecutable')
+    expect(heir37.postProcessed!.cleanedValidation.recommendationState).toBe('identityIncomplete')
   })
 
   it('handles a household that works straight into Social Security (no bridge window)', async () => {
@@ -1436,7 +1436,7 @@ describe('fixture matrix (account mix, income timing, liquidity source)', () => 
     // No low-income gap exists, so any recommendation must still clear the
     // exact-ledger gate rather than assume empty brackets.
     expect(schedule.status).toBe('optimal')
-    expect(postProcessed!.cleanedValidation.recommendationState).toBe('unexecutable')
+    expect(postProcessed!.cleanedValidation.recommendationState).toBe('identityIncomplete')
     expect(postProcessed!.cleanedValidation.executedConversionRatio).toBeGreaterThan(0.9)
   })
 
@@ -1451,7 +1451,7 @@ describe('fixture matrix (account mix, income timing, liquidity source)', () => 
     // schedule must be fully executed, preserve its exact calculation, and
     // never request more than the raw solve did.
     expect(postProcessed!.cleanedValidation.executedConversionRatio).toBeCloseTo(1, 6)
-    expect(postProcessed!.cleanedValidation.recommendationState).toBe('unexecutable')
+    expect(postProcessed!.cleanedValidation.recommendationState).toBe('identityIncomplete')
     expect(postProcessed!.cleanedValidation.executedConversionTotal).toBeLessThanOrEqual(
       postProcessed!.rawValidation.requestedConversionTotal + 1,
     )
@@ -1470,8 +1470,8 @@ describe('fixture matrix (account mix, income timing, liquidity source)', () => 
     // Same conversions either way, but the low-basis bridge realizes capital
     // gains to fund spending and conversion taxes — the exact ledger prices
     // that, shrinking the estate win and raising lifetime tax.
-    expect(high.postProcessed!.cleanedValidation.recommendationState).toBe('unexecutable')
-    expect(low.postProcessed!.cleanedValidation.recommendationState).toBe('unexecutable')
+    expect(high.postProcessed!.cleanedValidation.recommendationState).toBe('identityIncomplete')
+    expect(low.postProcessed!.cleanedValidation.recommendationState).toBe('identityIncomplete')
     expect(high.postProcessed!.cleanedValidation.afterTaxEstateDelta).toBeGreaterThan(
       low.postProcessed!.cleanedValidation.afterTaxEstateDelta + 20_000,
     )
@@ -1495,7 +1495,7 @@ describe('fixture matrix (account mix, income timing, liquidity source)', () => 
 
     // Converting in cheap MFJ years before the survivor's single brackets is
     // the classic widow's-penalty play; the exact ledger confirms it here.
-    expect(postProcessed!.cleanedValidation.recommendationState).toBe('unexecutable')
+    expect(postProcessed!.cleanedValidation.recommendationState).toBe('identityIncomplete')
     expect(postProcessed!.cleanedValidation.executedConversionTotal).toBeGreaterThan(500_000)
     expect(postProcessed!.cleanedValidation.afterTaxEstateDelta).toBeGreaterThan(50_000)
   })
@@ -1529,7 +1529,7 @@ describe('fixture matrix (account mix, income timing, liquidity source)', () => 
 
     const { schedule, postProcessed } = await optimizePlan(valid, opts)
     expect(schedule.status).toBe('optimal')
-    expect(postProcessed!.cleanedValidation.recommendationState).toBe('unexecutable')
+    expect(postProcessed!.cleanedValidation.recommendationState).toBe('identityIncomplete')
   })
 })
 

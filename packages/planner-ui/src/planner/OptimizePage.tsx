@@ -16,7 +16,6 @@ import type { OptimizedSchedule } from '@retiregolden/engine/strategies/optimize
 import { objectivePolicies, type ObjectivePolicyId } from '@retiregolden/engine/decisions'
 import {
   type ExactLedgerRecommendationState,
-  type ExactLedgerValidation,
   withOptimizedConversions,
 } from '@retiregolden/engine/projection/optimizePlan'
 import { DEFAULT_PATH_COUNT, runMonteCarlo } from '../mc/pool'
@@ -39,6 +38,7 @@ import {
   shouldShowRecommendedScheduleBars,
 } from './optimizePageChart'
 import { applyOptimizeRecommendation, claimEstateGain, planWithWinningClaim } from './optimizePageClaim'
+import { recommendationBody, recommendationHeading } from './optimizePageRecommendation'
 import { currentStartYear, projectPlan, seedFromPlanId } from './useProjection'
 import { chartTooltipStyle } from './chartStyle'
 
@@ -62,43 +62,6 @@ function DeltaStat({
       <div className={`stat-value stat-value--${tone}`}>{value}</div>
     </div>
   )
-}
-
-function recommendationHeading(validation: ExactLedgerValidation): string {
-  switch (validation.recommendationState) {
-    case 'beneficial':
-      return `Up to ${fmtMoney(validation.afterTaxEstateDelta)} more for your heirs.`
-    case 'neutral':
-      return 'The optimizer matches your current strategy.'
-    case 'rejected':
-      return 'This lower-tax schedule is not recommended.'
-    case 'unexecutable':
-      return 'This conversion schedule is mostly theoretical.'
-  }
-}
-
-function recommendationBody(validation: ExactLedgerValidation): string {
-  const requested = fmtMoney(validation.requestedConversionTotal)
-  const executed = fmtMoney(validation.executedConversionTotal)
-  const from = fmtMoneyCompact(validation.baseline.endingAfterTaxEstate)
-  const to = fmtMoneyCompact(validation.candidate.endingAfterTaxEstate)
-  const taxPhrase =
-    validation.lifetimeTaxDelta < 0
-      ? `lowers lifetime tax by ${fmtMoney(Math.abs(validation.lifetimeTaxDelta))}`
-      : validation.lifetimeTaxDelta > 0
-        ? `raises lifetime tax by ${fmtMoney(validation.lifetimeTaxDelta)}`
-        : 'leaves lifetime tax unchanged'
-
-  switch (validation.recommendationState) {
-    case 'beneficial':
-      return `Converting ${requested} raises your projected after-tax estate from ${from} to ${to}.`
-    case 'neutral':
-      return `Converting ${requested} leaves your projected after-tax estate essentially unchanged at ${to}.`
-    case 'rejected':
-      return `Converting ${requested} ${taxPhrase}, but your projected after-tax estate moves from ${from} to ${to}.`
-    case 'unexecutable':
-      return `The optimizer proposed converting ${requested}, but only ${executed} could actually be converted. The traditional balance it counted on is not available in the plan years shown.`
-  }
 }
 
 function stateColor(state: ExactLedgerRecommendationState): string {
@@ -251,6 +214,7 @@ export function OptimizePage() {
     ? false
     : recommendationState === 'rejected' ||
       recommendationState === 'unexecutable' ||
+      recommendationState === 'identityIncomplete' ||
       postProcessed?.recommendationSchedule === 'none'
   // A claim change can win on estate alone while the conversion side is
   // unappliable (incumbent holds, empty/infeasible schedule, or diagnostic-only

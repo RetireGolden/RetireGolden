@@ -1008,7 +1008,12 @@ function runPolicyRankedTournament(
   )
 }
 
-export type ExactLedgerRecommendationState = 'beneficial' | 'neutral' | 'rejected' | 'unexecutable'
+export type ExactLedgerRecommendationState =
+  | 'beneficial'
+  | 'neutral'
+  | 'rejected'
+  | 'unexecutable'
+  | 'identityIncomplete'
 export type ExactLedgerRecommendationSchedule = 'cleaned' | 'none'
 
 export interface ExactLedgerValidationOptions {
@@ -1177,13 +1182,14 @@ function refuseAggregateScheduleRecommendation(
 ): ExactLedgerValidation {
   if (
     requestedConversions.every((conversion) => conversion.amount <= 0) ||
-    validation.recommendationState === 'rejected'
+    validation.recommendationState === 'rejected' ||
+    validation.recommendationState === 'unexecutable'
   ) {
     return validation
   }
   return {
     ...validation,
-    recommendationState: 'unexecutable',
+    recommendationState: 'identityIncomplete',
   }
 }
 
@@ -1387,7 +1393,8 @@ export function postProcessExactLedgerSchedule(
     stabilized &&
     cleanedConversionTotal >= minimumRequestedConversionDollars &&
     cleanedValidation.recommendationState !== 'rejected' &&
-    cleanedValidation.recommendationState !== 'unexecutable'
+    cleanedValidation.recommendationState !== 'unexecutable' &&
+    cleanedValidation.recommendationState !== 'identityIncomplete'
       ? 'cleaned'
       : 'none'
 

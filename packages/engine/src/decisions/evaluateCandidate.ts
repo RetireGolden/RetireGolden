@@ -140,6 +140,14 @@ function inspectRetirementActionPatch(
     if (!RETIREMENT_ACTION_STRATEGY_KEYS.includes(strategyKey as typeof RETIREMENT_ACTION_STRATEGY_KEYS[number])) {
       continue
     }
+    const beforePresent = operation.before.present
+    const afterPresent = operation.op === 'set'
+    const operationChanged =
+      beforePresent !== afterPresent ||
+      (beforePresent &&
+        afterPresent &&
+        canonicalScenarioJson(operation.before.value) !== canonicalScenarioJson(operation.value))
+    if (!operationChanged) continue
     changesRetirementActions = true
     hasAggregateStrategy ||= AGGREGATE_RETIREMENT_ACTION_STRATEGY_KEYS.has(strategyKey)
     if (strategyKey === 'retirementActions') {
