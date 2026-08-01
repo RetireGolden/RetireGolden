@@ -507,11 +507,11 @@ function readinessVetoFor(
   conversions: { year: number; amount: number }[],
   validation: ExactLedgerValidation,
 ): RetirementActionReadinessVeto | null {
-  // Every non-empty schedule produced here is still aggregate: it has exact
-  // amounts but no legal owner/source/destination identities. That is a
+  // Every positive-movement schedule produced here is still aggregate: it has
+  // exact amounts but no legal owner/source/destination identities. That is a
   // publication veto regardless of how a custom policy ranked its estate
   // validation (beneficial, neutral, or rejected).
-  return conversions.length > 0
+  return conversions.some((conversion) => conversion.amount > 0)
     ? {
         reason: 'identityIncomplete',
         vetoedWinnerSource: source,
