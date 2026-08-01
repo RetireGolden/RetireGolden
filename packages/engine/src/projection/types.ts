@@ -409,6 +409,7 @@ export type SimulatorRetirementRuntimeApplicationPhase =
   | 'ownerRmdDistribution'
   | 'automaticSeppDistribution'
   | 'legacyRothConversion'
+  | 'legacyRothConversionAggregateDestinationCredit'
   | 'legacyNeedBasedWithdrawal'
 
 interface SimulatorRetirementRuntimeApplicationBase {

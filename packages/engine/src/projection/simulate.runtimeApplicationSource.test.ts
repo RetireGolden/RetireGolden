@@ -10,11 +10,15 @@ import { createFlatTaxCalculator } from './flatTax.js'
 import { simulatePlan } from './simulate.js'
 import type {
   SimulatorRetirementRuntimeApplication,
+  SimulatorRetirementRuntimeApplicationPhase,
   YearResult,
 } from './types.js'
 
 const TAX_YEAR = 2026
 const noTax = createFlatTaxCalculator(0)
+const AGGREGATE_ROTH_CREDIT_PHASE:
+  SimulatorRetirementRuntimeApplicationPhase =
+    'legacyRothConversionAggregateDestinationCredit'
 
 function runOneYear(plan: Plan, validate = true): YearResult {
   return simulatePlan(validate ? validatePlan(plan) : plan, {
@@ -247,7 +251,7 @@ describe('simulate annual owned-IRA runtime application source', () => {
     )
     expect(destinationCredit).toEqual({
       applicationKind: 'aggregateRothDestinationCredit',
-      simulatorPhase: 'legacyRothConversionAggregateDestinationCredit',
+      simulatorPhase: AGGREGATE_ROTH_CREDIT_PHASE,
       mutationOrdinal: 3,
       producerOccurrenceKey: null,
       ownerPersonId: null,
