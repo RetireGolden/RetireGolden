@@ -482,8 +482,6 @@ export interface SimulatorAnnualRetirementRuntimeApplicationSource {
 
 export interface SimulatorOwnedNonRothIraPostGrowthAccountBalanceSource {
   readonly sourceAccountId: string
-  /** Live ledger balance after every annual mutation and immediately before growth. */
-  readonly balanceBeforeGrowthPlanDollars: number
   readonly balancePlanDollars: number
 }
 
@@ -525,6 +523,14 @@ export interface YearResult {
    * records so source replay can prove that no physical credit was omitted.
    */
   ownedNonRothIraContributions?: number
+  /**
+   * Independently published live owned-IRA balances after every annual
+   * mutation and immediately before growth. This authoritative boundary lets
+   * source replay bind per-account applications without inferring stochastic
+   * or allocation returns from year-end balances.
+   */
+  ownedNonRothIraBalancesBeforeGrowth?:
+    Readonly<Record<string, number>>
   /** Employer match contributions made this year. */
   employerMatch: number
   /** Forced traditional-account distributions (included in withdrawals.traditional). */

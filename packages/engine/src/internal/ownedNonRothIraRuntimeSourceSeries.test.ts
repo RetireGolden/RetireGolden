@@ -438,6 +438,29 @@ describe('private owned-IRA runtime source-series validation', () => {
       })
   })
 
+  it('fails closed before map construction when owned IRA IDs are duplicated', () => {
+    const plan = singlePersonPlan({ planningAge: 60 })
+    plan.id = 'duplicate-owned-ira-id'
+    plan.accounts = [
+      traditional('duplicate-ira', 10_000),
+      traditional('duplicate-ira', 10_000),
+    ]
+    const years = simulatePlan(plan, {
+      startYear: TAX_YEAR,
+      horizonEndYear: TAX_YEAR,
+      taxCalculator: noTax,
+    }).years
+
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, years))
+      .toMatchObject({
+        status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+        issues: [{
+          kind: 'sourceIdentityInvalid',
+          sourceAccountId: 'duplicate-ira',
+        }],
+      })
+  })
+
   it('rejoins occurrence coverage to every independently published annual movement total', () => {
     const rmdPlan = singlePersonPlan({ dob: '1950-01-01', planningAge: 76 })
     rmdPlan.id = 'missing-rmd-source'

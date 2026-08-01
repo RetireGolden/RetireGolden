@@ -88,6 +88,7 @@ describe('payout-form feature-off identity', () => {
     const legacyLedger = (_key: string, value: unknown) =>
       _key === 'retirementRuntimeSource' ||
       _key === 'retirementRuntimeApplicationSource' ||
+      _key === 'ownedNonRothIraBalancesBeforeGrowth' ||
       _key === 'ownedNonRothIraPostGrowthSource'
         ? undefined
         : value

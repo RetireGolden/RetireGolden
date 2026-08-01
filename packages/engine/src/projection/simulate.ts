@@ -4347,12 +4347,23 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
     }
 
-    const ownedNonRothIraBalanceBeforeGrowth = new Map<BalanceState, number>()
+    const ownedNonRothIraBalanceBeforeGrowthByState =
+      new Map<BalanceState, number>()
     for (const state of balances) {
       if (isAggregatedIra(state.account)) {
-        ownedNonRothIraBalanceBeforeGrowth.set(state, state.balance)
+        ownedNonRothIraBalanceBeforeGrowthByState.set(state, state.balance)
       }
     }
+    const ownedNonRothIraBalancesBeforeGrowth = Object.freeze(
+      Object.fromEntries(
+        balances
+          .filter((state) => isAggregatedIra(state.account))
+          .map((state) => [
+            state.account.id,
+            ownedNonRothIraBalanceBeforeGrowthByState.get(state)!,
+          ]),
+      ),
+    )
 
     const shockPct = returnShockAt(year)
     // Wealth-weighted total return the ledger actually applies this year
@@ -4395,11 +4406,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
 
     const ownedNonRothIraBalancesByOwner = new Map<
       string | null,
-      Array<{
-        sourceAccountId: string
-        balanceBeforeGrowthPlanDollars: number
-        balancePlanDollars: number
-      }>
+      Array<{ sourceAccountId: string; balancePlanDollars: number }>
     >()
     for (const state of balances) {
       if (!isAggregatedIra(state.account)) continue
@@ -4410,8 +4417,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const accountBalances = ownedNonRothIraBalancesByOwner.get(ownerPersonId) ?? []
       accountBalances.push({
         sourceAccountId: state.account.id,
-        balanceBeforeGrowthPlanDollars:
-          ownedNonRothIraBalanceBeforeGrowth.get(state)!,
         balancePlanDollars: state.balance,
       })
       ownedNonRothIraBalancesByOwner.set(ownerPersonId, accountBalances)
@@ -4569,6 +4574,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       expenses,
       contributions,
       ownedNonRothIraContributions,
+      ownedNonRothIraBalancesBeforeGrowth,
       employerMatch,
       rmd: rmdTotal,
       sepp: seppTotal,

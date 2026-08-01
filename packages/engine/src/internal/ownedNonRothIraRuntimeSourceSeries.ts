@@ -631,6 +631,17 @@ function validateUnchecked(
   const accountOrder = new Map(plan.accounts.map((account, index) => [account.id, index]))
   const pools = ownedPools(plan)
   const ownedAccounts = [...pools.values()].flat()
+  const ownedAccountIds = new Set<string>()
+  for (const account of ownedAccounts) {
+    if (ownedAccountIds.has(account.id)) {
+      fail(
+        'sourceIdentityInvalid',
+        'Owned non-Roth IRA account IDs must be unique before source replay',
+        { sourceAccountId: account.id },
+      )
+    }
+    ownedAccountIds.add(account.id)
+  }
   const personIds = new Set(plan.household.people.map((person) => person.id))
   let openingBalances = new Map<AccountId, UsdCents>(ownedAccounts.map((account) => [
     asAccountId(account.id), cents(account.balance, 'Plan opening IRA balance', { sourceAccountId: account.id }),
@@ -645,8 +656,13 @@ function validateUnchecked(
     const occurrenceSource = yearResult.retirementRuntimeSource
     const applicationSource = yearResult.retirementRuntimeApplicationSource
     const balanceSource = yearResult.ownedNonRothIraPostGrowthSource
-    if (!occurrenceSource || !applicationSource || !balanceSource) {
-      fail('sourceMissing', 'Each year requires occurrences, applications, and post-growth balances', { taxYear })
+    const publishedBalancesBeforeGrowth =
+      yearResult.ownedNonRothIraBalancesBeforeGrowth
+    if (!occurrenceSource || !applicationSource || !balanceSource ||
+        !publishedBalancesBeforeGrowth ||
+        typeof publishedBalancesBeforeGrowth !== 'object' ||
+        Array.isArray(publishedBalancesBeforeGrowth)) {
+      fail('sourceMissing', 'Each year requires occurrences, applications, pre-growth balances, and post-growth balances', { taxYear })
     }
     if (occurrenceSource.status !== 'runtimeOccurrenceSourcesCaptured' ||
         occurrenceSource.captureBoundary !== 'legacyAnnualPassCommittedBeforeYearResultPublication' ||
@@ -817,6 +833,46 @@ function validateUnchecked(
     const preGrowthRawBalances = new Map<AccountId, number>()
     const ownerBalances = new Map<PersonId, NormalizedOwnedNonRothIraYearEndBalance[]>()
     const publishedBalances = yearResult.balances
+    if (Object.keys(publishedBalancesBeforeGrowth).length !==
+        ownedAccounts.length) {
+      fail(
+        'sourceCoverageInvalid',
+        'Published pre-growth balances must contain every and only owned non-Roth IRA account',
+        { taxYear },
+      )
+    }
+    for (const account of ownedAccounts) {
+      if (!Object.hasOwn(publishedBalancesBeforeGrowth, account.id)) {
+        fail(
+          'sourceCoverageInvalid',
+          'Published pre-growth balances must contain every and only owned non-Roth IRA account',
+          {
+            taxYear,
+            ownerPersonId: account.ownerPersonId!,
+            sourceAccountId: account.id,
+          },
+        )
+      }
+      const sourceAccountId = asAccountId(account.id)
+      const rawBalanceBeforeGrowthPlanDollars =
+        publishedBalancesBeforeGrowth[account.id]
+      preGrowthRawBalances.set(
+        sourceAccountId,
+        rawBalanceBeforeGrowthPlanDollars,
+      )
+      preGrowthBalances.set(
+        sourceAccountId,
+        cents(
+          rawBalanceBeforeGrowthPlanDollars,
+          'Published pre-growth IRA balance',
+          {
+            taxYear,
+            ownerPersonId: account.ownerPersonId!,
+            sourceAccountId,
+          },
+        ),
+      )
+    }
     for (let ownerIndex = 0; ownerIndex < expectedOwners.length; ownerIndex += 1) {
       const owner = expectedOwners[ownerIndex]!
       const rawPool = balanceSource.ownerPools[ownerIndex]!
@@ -841,21 +897,9 @@ function validateUnchecked(
           })
         }
         const sourceAccountId = asAccountId(account.id)
-        const rawBalanceBeforeGrowthPlanDollars =
-          raw.balanceBeforeGrowthPlanDollars
-        const balanceBeforeGrowthAmount = cents(
-          rawBalanceBeforeGrowthPlanDollars,
-          'Pre-growth IRA balance',
-          { taxYear, ownerPersonId: owner, sourceAccountId },
-        )
         const balanceAmount = cents(rawBalancePlanDollars, 'Post-growth IRA balance', {
           taxYear, ownerPersonId: owner, sourceAccountId,
         })
-        preGrowthBalances.set(sourceAccountId, balanceBeforeGrowthAmount)
-        preGrowthRawBalances.set(
-          sourceAccountId,
-          rawBalanceBeforeGrowthPlanDollars,
-        )
         postGrowthBalances.set(sourceAccountId, balanceAmount)
         postGrowthRawBalances.set(sourceAccountId, rawBalancePlanDollars)
         return { sourceAccountId, balancePlanDollars: rawBalancePlanDollars, balanceAmount }
