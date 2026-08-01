@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { Account, Plan } from '../model/plan.js'
 import { createFlatTaxCalculator } from '../projection/flatTax.js'
@@ -14,6 +14,28 @@ import {
   traditionalAccount,
   validatePlan,
 } from '../testing/planFixtures.js'
+
+const { replayTransform } = vi.hoisted(() => ({
+  replayTransform: {
+    current: null as null | ((value: unknown) => unknown),
+  },
+}))
+
+vi.mock('./ownedNonRothIraContiguousReplay.js', async (importOriginal) => {
+  const original = await importOriginal<
+    typeof import('./ownedNonRothIraContiguousReplay.js')
+  >()
+  return {
+    ...original,
+    replayOwnedNonRothIraContiguousYears: (
+      ...args: Parameters<typeof original.replayOwnedNonRothIraContiguousYears>
+    ) => {
+      const result = original.replayOwnedNonRothIraContiguousYears(...args)
+      return replayTransform.current?.(result) ?? result
+    },
+  }
+})
+
 import {
   runOwnedNonRothIraAnnualSettlementAttempts,
   type OwnedNonRothIraAnnualSettlementEffect,
@@ -21,6 +43,10 @@ import {
 
 const TAX_YEAR = 2026
 const noTax = createFlatTaxCalculator(0)
+
+afterEach(() => {
+  replayTransform.current = null
+})
 
 function binding<T>(initial: T): SimulatorAnnualPassValueBinding<T> {
   let value = initial
@@ -50,9 +76,22 @@ function expenses(): YearExpenses {
   }
 }
 
-function state(): SimulatorAnnualPassStateBindings {
+function state(plan?: Readonly<Plan>): SimulatorAnnualPassStateBindings {
+  const balances = plan === undefined
+    ? [{ account: { id: 'ira' }, balance: 100_000, costBasis: 0 }]
+    : plan.accounts.flatMap((account) =>
+      'balance' in account && typeof account.balance === 'number'
+        ? [{
+            account: { id: account.id },
+            balance: account.balance,
+            costBasis: 'costBasis' in account &&
+              typeof account.costBasis === 'number'
+              ? account.costBasis
+              : 0,
+          }]
+        : [])
   return {
-    balances: [{ account: { id: 'ira' }, balance: 100_000, costBasis: 0 }],
+    balances,
     retirementRuntimeOccurrences: [],
     retirementRuntimeApplications: [],
     nextRetirementRuntimeMutationOrdinal: binding(1),
@@ -153,8 +192,8 @@ function mutateAttemptState(
   simulatorState: SimulatorAnnualPassStateBindings,
   years: readonly Readonly<YearResult>[],
 ): void {
+  if (years.length !== 1) throw new Error('attempt helper requires one year')
   const year = years[0]!
-  simulatorState.balances[0]!.balance -= 1
   simulatorState.warnings.add('attempt-tail')
   simulatorState.retirementRuntimeOccurrences.push(
     ...year.retirementRuntimeSource!.runtimeOccurrences.map((value) => ({
@@ -166,16 +205,18 @@ function mutateAttemptState(
       structuredClone(value)),
   )
   simulatorState.nextRetirementRuntimeMutationOrdinal.write(
-    simulatorState.nextRetirementRuntimeMutationOrdinal.read() +
-      year.retirementRuntimeApplicationSource!.applications.length,
+    year.retirementRuntimeApplicationSource!.applications.length + 1,
   )
+  for (const record of simulatorState.balances) {
+    record.balance = year.balances[record.account.id]!
+  }
 }
 
 describe('private owned-IRA annual attempt settlement', () => {
   it('reprobes from the exact checkpoint and queues one carryforward only on exact commit', () => {
     const plan = rmdPlan()
-    const canonicalYears = project(plan, TAX_YEAR + 1)
-    const simulatorState = state()
+    const canonicalYears = project(plan)
+    const simulatorState = state(plan)
     const before = stateBytes(simulatorState)
     const attempts: string[] = []
 
@@ -201,19 +242,21 @@ describe('private owned-IRA annual attempt settlement', () => {
       settlement: 'exactEffectsMatched',
       planId: plan.id,
       projectionStartTaxYear: TAX_YEAR,
-      endTaxYear: TAX_YEAR + 1,
+      endTaxYear: TAX_YEAR,
     })
     expect(result.pendingSettlement.observedEffects.length).toBeGreaterThan(0)
     expect(result.committedCarryforwards).toHaveLength(1)
     expect(result.committedCarryforwards[0]).toMatchObject({
       ownerPersonId: 'p1',
-      fromTaxYear: TAX_YEAR + 1,
-      toTaxYear: TAX_YEAR + 2,
+      fromTaxYear: TAX_YEAR,
+      toTaxYear: TAX_YEAR + 1,
     })
     expect(result.committedCarryforwards).toBe(
       result.pendingSettlement.committedCarryforwards,
     )
-    expect(simulatorState.balances[0]!.balance).toBe(99_999)
+    expect(simulatorState.balances[0]!.balance).toBe(
+      canonicalYears[0]!.balances.ira,
+    )
     expect(simulatorState.retirementRuntimeOccurrences).not.toHaveLength(0)
     expect(Object.isFrozen(result.pendingSettlement)).toBe(true)
   })
@@ -277,7 +320,7 @@ describe('private owned-IRA annual attempt settlement', () => {
         1,
       )
     }
-    const simulatorState = state()
+    const simulatorState = state(plan)
     const before = stateBytes(simulatorState)
 
     const result = runOwnedNonRothIraAnnualSettlementAttempts({
@@ -305,7 +348,7 @@ describe('private owned-IRA annual attempt settlement', () => {
 
   it('restores state on callback throws and assumption cycles', () => {
     const plan = rmdPlan()
-    const simulatorState = state()
+    const simulatorState = state(plan)
     const before = stateBytes(simulatorState)
     const thrown = runOwnedNonRothIraAnnualSettlementAttempts({
       state: simulatorState,
@@ -347,24 +390,215 @@ describe('private owned-IRA annual attempt settlement', () => {
     expect(stateBytes(simulatorState)).toBe(before)
   })
 
-  it('cannot reseed a later suffix after the projection-start chain is absent', () => {
+  it('rejects cached current-year results when the retry did not reproduce its journals', () => {
     const plan = rmdPlan()
-    const suffix = project(plan, TAX_YEAR + 1).slice(1)
-    const simulatorState = state()
+    const cachedYears = cloneYears(project(plan))
+    const simulatorState = state(plan)
+    const before = stateBytes(simulatorState)
+
     const result = runOwnedNonRothIraAnnualSettlementAttempts({
       state: simulatorState,
       plan,
       projectionStartTaxYear: TAX_YEAR,
-      initialAssumedEffects: [] as OwnedNonRothIraAnnualSettlementEffect[],
-      runAttempt: () => suffix,
+      initialAssumedEffects: [],
+      runAttempt: (context) => {
+        if (context.attemptNumber === 1) {
+          mutateAttemptState(simulatorState, cachedYears)
+        }
+        return cachedYears
+      },
     })
 
     expect(result).toMatchObject({
       status: 'rolledBack',
-      reason: 'contiguousReplayBlocked',
+      reason: 'attemptBindingMismatch',
+      attemptCount: 2,
       pendingSettlement: null,
       committedCarryforwards: null,
-      issue: { kind: 'yearSeriesInvalid' },
     })
+    expect(stateBytes(simulatorState)).toBe(before)
   })
+
+  it('rejects a current-year result with no matching journal state', () => {
+    const plan = rmdPlan()
+    const years = cloneYears(project(plan))
+    const simulatorState = state(plan)
+    const before = stateBytes(simulatorState)
+
+    const result = runOwnedNonRothIraAnnualSettlementAttempts({
+      state: simulatorState,
+      plan,
+      projectionStartTaxYear: TAX_YEAR,
+      initialAssumedEffects: [],
+      runAttempt: () => years,
+    })
+
+    expect(result).toMatchObject({
+      status: 'rolledBack',
+      reason: 'attemptBindingMismatch',
+      attemptCount: 1,
+      pendingSettlement: null,
+      committedCarryforwards: null,
+    })
+    expect(stateBytes(simulatorState)).toBe(before)
+  })
+
+  it.each([
+    'occurrenceJournal',
+    'applicationJournal',
+    'mutationOrdinal',
+    'balanceMovement',
+    'balanceInventory',
+  ] as const)('rejects forged or unrelated %s state', (kind) => {
+    const plan = rmdPlan()
+    const years = cloneYears(project(plan))
+    const simulatorState = state(plan)
+    const before = stateBytes(simulatorState)
+
+    const result = runOwnedNonRothIraAnnualSettlementAttempts({
+      state: simulatorState,
+      plan,
+      projectionStartTaxYear: TAX_YEAR,
+      initialAssumedEffects: [],
+      runAttempt: () => {
+        mutateAttemptState(simulatorState, years)
+        if (kind === 'occurrenceJournal') {
+          simulatorState.retirementRuntimeOccurrences[0]!
+            .grossAmountPlanDollars += 0.01
+        } else if (kind === 'applicationJournal') {
+          const application = simulatorState.retirementRuntimeApplications[0]!
+          if (application.applicationKind === 'aggregateRothDestinationCredit') {
+            throw new Error('expected debit application')
+          }
+          ;(application as { producerOccurrenceKey: string })
+            .producerOccurrenceKey = 'forged-occurrence'
+        } else if (kind === 'mutationOrdinal') {
+          simulatorState.nextRetirementRuntimeMutationOrdinal.write(
+            simulatorState.nextRetirementRuntimeMutationOrdinal.read() + 1,
+          )
+        } else if (kind === 'balanceMovement') {
+          simulatorState.balances[0]!.balance += 0.01
+        } else {
+          simulatorState.balances.splice(0, 1)
+        }
+        return years
+      },
+    })
+
+    expect(result).toMatchObject({
+      status: 'rolledBack',
+      reason: 'attemptBindingMismatch',
+      attemptCount: 1,
+      pendingSettlement: null,
+      committedCarryforwards: null,
+    })
+    expect(stateBytes(simulatorState)).toBe(before)
+  })
+
+  it('reports replay-effect canonicalization failures distinctly from aggregate ownership', () => {
+    const plan = rmdPlan()
+    const years = cloneYears(project(plan))
+    const simulatorState = state(plan)
+    const before = stateBytes(simulatorState)
+    replayTransform.current = (value) => {
+      const replay = structuredClone(value) as {
+        status: string
+        annualReplays: Array<{
+          ownerReplays: Array<{
+            line7AllocationEvidence: {
+              allocations: Array<{ grossAmount: number }>
+            }
+          }>
+        }>
+      }
+      expect(replay.status).toBe('ownedNonRothIraContiguousReplayComplete')
+      replay.annualReplays[0]!.ownerReplays[0]!
+        .line7AllocationEvidence.allocations[0]!.grossAmount += 1
+      return replay
+    }
+
+    const result = runOwnedNonRothIraAnnualSettlementAttempts({
+      state: simulatorState,
+      plan,
+      projectionStartTaxYear: TAX_YEAR,
+      initialAssumedEffects: [],
+      runAttempt: () => {
+        mutateAttemptState(simulatorState, years)
+        return years
+      },
+    })
+
+    expect(result).toMatchObject({
+      status: 'rolledBack',
+      reason: 'replayEffectsInvalid',
+      attemptCount: 1,
+      pendingSettlement: null,
+      committedCarryforwards: null,
+      issue: {
+        kind: 'basisReplayInvalid',
+        detail: 'Contiguous replay effects could not be canonicalized',
+      },
+    })
+    expect(stateBytes(simulatorState)).toBe(before)
+  })
+
+  it('rejects a terminal year that cannot form a supported carryforward', () => {
+    const plan = singlePersonPlan({ dob: '9923-01-01', planningAge: 76 })
+    plan.id = 'attempt-terminal-year'
+    plan.accounts = [ira('ira', 100_000, 'p1', 20_000)]
+    const terminalYears = simulatePlan(validatePlan(plan), {
+      startYear: 9999,
+      horizonEndYear: 9999,
+      taxCalculator: noTax,
+    }).years
+    const simulatorState = state(plan)
+    const before = stateBytes(simulatorState)
+
+    const result = runOwnedNonRothIraAnnualSettlementAttempts({
+      state: simulatorState,
+      plan,
+      projectionStartTaxYear: 9999,
+      initialAssumedEffects: [],
+      runAttempt: () => {
+        mutateAttemptState(simulatorState, terminalYears)
+        return terminalYears
+      },
+    })
+
+    expect(result).toMatchObject({
+      status: 'rolledBack',
+      reason: 'carryforwardYearUnsupported',
+      attemptCount: 1,
+      pendingSettlement: null,
+      committedCarryforwards: null,
+      issue: { kind: 'yearSeriesInvalid', taxYear: 9999 },
+    })
+    expect(stateBytes(simulatorState)).toBe(before)
+  })
+
+  it.each(['laterYear', 'multiYear'] as const)(
+    'rejects a %s result at the single-year transaction boundary',
+    (kind) => {
+      const plan = rmdPlan()
+      const invalidYears = kind === 'laterYear'
+        ? project(plan, TAX_YEAR + 1).slice(1)
+        : project(plan, TAX_YEAR + 1)
+      const simulatorState = state(plan)
+      const result = runOwnedNonRothIraAnnualSettlementAttempts({
+        state: simulatorState,
+        plan,
+        projectionStartTaxYear: TAX_YEAR,
+        initialAssumedEffects: [] as OwnedNonRothIraAnnualSettlementEffect[],
+        runAttempt: () => invalidYears,
+      })
+
+      expect(result).toMatchObject({
+        status: 'rolledBack',
+        reason: 'attemptBindingMismatch',
+        pendingSettlement: null,
+        committedCarryforwards: null,
+        issue: null,
+      })
+    },
+  )
 })

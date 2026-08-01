@@ -17,13 +17,18 @@ import { compareUtf16CodeUnits } from '../actions/structuralId.js'
 import { planSchema, type Plan } from '../model/plan.js'
 import type { SimulatorAnnualPassStateBindings } from
   '../projection/annualPassTransaction.js'
+import type { SimulatorAnnualRetirementRuntimeOccurrence } from
+  '../projection/annualRetirementRuntimeJournal.js'
 import {
   runAnnualPassAttemptsWithAdapter,
   type AnnualPassAttemptDriverAdapter,
   type AnnualPassAttemptDriverContext,
   type AnnualPassAttemptRollbackReason,
 } from './annualPassAttemptDriver.js'
-import type { YearResult } from '../projection/types.js'
+import type {
+  SimulatorRetirementRuntimeApplication,
+  YearResult,
+} from '../projection/types.js'
 import {
   replayOwnedNonRothIraContiguousYears,
   type OwnedNonRothIraContiguousReplayComplete,
@@ -121,6 +126,8 @@ export type OwnedNonRothIraAnnualSettlementRollbackReason =
   | AnnualPassAttemptRollbackReason
   | 'contiguousReplayBlocked'
   | 'aggregateOwnerBindingIncomplete'
+  | 'replayEffectsInvalid'
+  | 'carryforwardYearUnsupported'
 
 export interface OwnedNonRothIraAnnualSettlementCommitted {
   readonly status: 'committed'
@@ -149,12 +156,21 @@ export type OwnedNonRothIraAnnualSettlementResult =
 
 interface SettlementProbeInput {
   readonly invocationToken: object
+  readonly attemptStateBound: boolean
   readonly assumptions:
     readonly Readonly<OwnedNonRothIraAnnualSettlementEffect>[]
   readonly replay: Readonly<OwnedNonRothIraContiguousReplayResult>
   readonly observedEffects:
     readonly Readonly<OwnedNonRothIraAnnualSettlementEffect>[]
   readonly issue: OwnedNonRothIraContiguousReplayIssue | null
+}
+
+interface AttemptStateCheckpoint {
+  readonly runtimeOccurrences:
+    readonly Readonly<SimulatorAnnualRetirementRuntimeOccurrence>[]
+  readonly runtimeApplications:
+    readonly Readonly<SimulatorRetirementRuntimeApplication>[]
+  readonly nextMutationOrdinal: number
 }
 
 function deepFreeze<T>(value: T): Readonly<T> {
@@ -165,6 +181,136 @@ function deepFreeze<T>(value: T): Readonly<T> {
     Object.freeze(value)
   }
   return value as Readonly<T>
+}
+
+function same(left: unknown, right: unknown): boolean {
+  if (Object.is(left, right)) return true
+  if (left === null || right === null ||
+      typeof left !== 'object' || typeof right !== 'object') return false
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return Array.isArray(left) && Array.isArray(right) &&
+      left.length === right.length &&
+      left.every((value, index) => same(value, right[index]))
+  }
+  const leftPrototype = Object.getPrototypeOf(left)
+  const rightPrototype = Object.getPrototypeOf(right)
+  if ((leftPrototype !== Object.prototype && leftPrototype !== null) ||
+      (rightPrototype !== Object.prototype && rightPrototype !== null)) {
+    return false
+  }
+  const leftRecord = left as Record<string, unknown>
+  const rightRecord = right as Record<string, unknown>
+  const leftKeys = Object.keys(leftRecord).sort(compareUtf16CodeUnits)
+  const rightKeys = Object.keys(rightRecord).sort(compareUtf16CodeUnits)
+  return leftKeys.length === rightKeys.length && leftKeys.every((key, index) =>
+    key === rightKeys[index] && same(leftRecord[key], rightRecord[key]))
+}
+
+function cloneRuntimeApplication(
+  value: Readonly<SimulatorRetirementRuntimeApplication>,
+): SimulatorRetirementRuntimeApplication {
+  return value.applicationKind === 'aggregateRothDestinationCredit'
+    ? {
+        ...value,
+        producerOccurrenceKeys: [...value.producerOccurrenceKeys],
+        sourceOwnerPersonIds: [...value.sourceOwnerPersonIds],
+      }
+    : { ...value }
+}
+
+function captureAttemptState(
+  state: Readonly<SimulatorAnnualPassStateBindings>,
+): AttemptStateCheckpoint {
+  return {
+    runtimeOccurrences: state.retirementRuntimeOccurrences.map((value) => ({
+      ...value,
+    })),
+    runtimeApplications:
+      state.retirementRuntimeApplications.map(cloneRuntimeApplication),
+    nextMutationOrdinal: state.nextRetirementRuntimeMutationOrdinal.read(),
+  }
+}
+
+function attemptStateMatchesYear(
+  checkpoint: Readonly<AttemptStateCheckpoint>,
+  state: Readonly<SimulatorAnnualPassStateBindings>,
+  year: Readonly<YearResult>,
+  stable: Readonly<OwnedNonRothIraAnnualSettlementStableContext>,
+  plan: Readonly<Plan>,
+): boolean {
+  const occurrenceSource = year.retirementRuntimeSource
+  const applicationSource = year.retirementRuntimeApplicationSource
+  if (year.year !== stable.projectionStartTaxYear ||
+      occurrenceSource?.planId !== stable.planId ||
+      occurrenceSource.taxYear !== stable.projectionStartTaxYear ||
+      applicationSource?.planId !== stable.planId ||
+      applicationSource.taxYear !== stable.projectionStartTaxYear ||
+      state.retirementRuntimeOccurrences.length <
+        checkpoint.runtimeOccurrences.length ||
+      state.retirementRuntimeApplications.length <
+        checkpoint.runtimeApplications.length ||
+      !same(
+        state.retirementRuntimeOccurrences.slice(
+          0,
+          checkpoint.runtimeOccurrences.length,
+        ),
+        checkpoint.runtimeOccurrences,
+      ) ||
+      !same(
+        state.retirementRuntimeApplications.slice(
+          0,
+          checkpoint.runtimeApplications.length,
+        ),
+        checkpoint.runtimeApplications,
+      )) return false
+
+  const stateOccurrences = [...state.retirementRuntimeOccurrences]
+    .sort((left, right) => compareUtf16CodeUnits(
+      left.producerOccurrenceKey,
+      right.producerOccurrenceKey,
+    ))
+  const resultOccurrences = [...occurrenceSource.runtimeOccurrences]
+    .sort((left, right) => compareUtf16CodeUnits(
+      left.producerOccurrenceKey,
+      right.producerOccurrenceKey,
+    ))
+  if (!same(stateOccurrences, resultOccurrences) ||
+      !same(
+        state.retirementRuntimeApplications,
+        applicationSource.applications,
+      )) return false
+
+  const appendedApplications = state.retirementRuntimeApplications.slice(
+    checkpoint.runtimeApplications.length,
+  )
+  if (!Number.isSafeInteger(checkpoint.nextMutationOrdinal) ||
+      checkpoint.nextMutationOrdinal !==
+        checkpoint.runtimeApplications.length + 1 ||
+      checkpoint.runtimeApplications.some((application, index) =>
+        application.mutationOrdinal !== index + 1) ||
+      appendedApplications.some((application, index) =>
+        application.mutationOrdinal !== checkpoint.nextMutationOrdinal + index) ||
+      state.nextRetirementRuntimeMutationOrdinal.read() !==
+        checkpoint.nextMutationOrdinal + appendedApplications.length) {
+    return false
+  }
+
+  const expectedBalanceIds = new Set(plan.accounts.flatMap((account) =>
+    account.type === 'cash' || account.type === 'taxable' ||
+      account.type === 'equityComp' || account.type === 'traditional' ||
+      account.type === 'roth' || account.type === 'hsa'
+      ? [account.id]
+      : []))
+  if (state.balances.length !== expectedBalanceIds.size) return false
+  const seenBalanceIds = new Set<string>()
+  for (const record of state.balances) {
+    const accountId = record.account.id
+    if (!expectedBalanceIds.has(accountId) || seenBalanceIds.has(accountId) ||
+        !Object.hasOwn(year.balances, accountId) ||
+        !Object.is(record.balance, year.balances[accountId])) return false
+    seenBalanceIds.add(accountId)
+  }
+  return true
 }
 
 function canonicalEffects(
@@ -341,9 +487,11 @@ function rolledBack(
 
 /**
  * Privately settles a complete contiguous replay against bounded simulator
- * attempts. The callback can return only same-attempt YearResults; it receives
- * no deferred-effect or commit capability. The module queues its one inert
- * settlement value only after the fixed replay exactly matches assumptions.
+ * attempts. The callback must return the one current-year result whose runtime
+ * sources, mutation ordinal, and end balances exactly match the active
+ * transaction; it receives no deferred-effect or commit capability. The module
+ * queues its one inert settlement only after that binding and the fixed replay
+ * exactly match assumptions.
  */
 export function runOwnedNonRothIraAnnualSettlementAttempts(
   input: Readonly<RunOwnedNonRothIraAnnualSettlementInput>,
@@ -387,6 +535,7 @@ export function runOwnedNonRothIraAnnualSettlementAttempts(
     effectIdentity,
     inputMatchesAttempt: (value, currentStable, assumptions) =>
       value.invocationToken === invocationToken &&
+      value.attemptStateBound &&
       currentStable.planId === stable.planId &&
       currentStable.projectionStartTaxYear === stable.projectionStartTaxYear &&
       effectIdentity(value.assumptions) === effectIdentity(assumptions),
@@ -434,7 +583,16 @@ export function runOwnedNonRothIraAnnualSettlementAttempts(
       >>,
       capability,
     ): Readonly<SettlementProbeInput> => {
+      const checkpoint = captureAttemptState(input.state)
       const years = input.runAttempt(context)
+      const attemptStateBound = Array.isArray(years) && years.length === 1 &&
+        attemptStateMatchesYear(
+          checkpoint,
+          input.state,
+          years[0]!,
+          stable,
+          plan,
+        )
       const replay = replayOwnedNonRothIraContiguousYears(
         plan,
         stable.projectionStartTaxYear,
@@ -442,26 +600,38 @@ export function runOwnedNonRothIraAnnualSettlementAttempts(
       )
       let observedEffects: OwnedNonRothIraAnnualSettlementEffect[] = []
       let issue: OwnedNonRothIraContiguousReplayIssue | null
-      if (replay.status === 'ownedNonRothIraContiguousReplayComplete') {
+      let issueReason: OwnedNonRothIraAnnualSettlementRollbackReason | null =
+        null
+      if (stable.projectionStartTaxYear >= 9999) {
+        issue = {
+          kind: 'yearSeriesInvalid',
+          detail: 'A committed annual settlement requires a supported next tax year for its carryforward',
+          taxYear: stable.projectionStartTaxYear,
+        }
+        issueReason = 'carryforwardYearUnsupported'
+      } else if (replay.status === 'ownedNonRothIraContiguousReplayComplete') {
         issue = aggregateIssue(replay)
-        const derived = replayEffects(replay)
-        if (derived === null) {
-          issue = {
-            kind: 'basisReplayInvalid',
-            detail: 'Contiguous replay effects could not be canonicalized',
-          }
+        if (issue !== null) {
+          issueReason = 'aggregateOwnerBindingIncomplete'
         } else {
-          observedEffects = derived
+          const derived = replayEffects(replay)
+          if (derived === null) {
+            issue = {
+              kind: 'basisReplayInvalid',
+              detail: 'Contiguous replay effects could not be canonicalized',
+            }
+            issueReason = 'replayEffectsInvalid'
+          } else {
+            observedEffects = derived
+          }
         }
       } else {
         issue = replay.issues[0]
+        issueReason = 'contiguousReplayBlocked'
       }
       if (issue !== null) {
         lastIssue = issue
-        lastIssueReason = replay.status ===
-          'ownedNonRothIraContiguousReplayComplete'
-          ? 'aggregateOwnerBindingIncomplete'
-          : 'contiguousReplayBlocked'
+        lastIssueReason = issueReason
       } else if (effectIdentity(observedEffects) ===
           effectIdentity(context.assumedEffects)) {
         capability.defer(pendingSettlement(
@@ -473,6 +643,7 @@ export function runOwnedNonRothIraAnnualSettlementAttempts(
       }
       return {
         invocationToken,
+        attemptStateBound,
         assumptions: context.assumedEffects,
         replay,
         observedEffects,
