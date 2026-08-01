@@ -80,6 +80,11 @@ Source of truth: [github.com/RetireGolden/RetireGolden](https://github.com/Retir
   exact-rejoins the canonical candidate, complete December 31 owner pool, basis,
   and contribution-window evidence into a frozen classifier input without
   classifying, executing, or integrating with projection.
+- `executePlanOwnedNonRothIraAnnualPostCandidate` is the matching pure commit
+  binder. It rebuilds that evidence, reruns the candidate-level annual
+  finalizer, exact-rejoins caller-supplied reconciliation and finalization, and
+  publishes committed/refused evidence from the already-applied candidate. It
+  never stages or applies a second balance delta and remains outside projection.
 - Parameters (tax brackets, limits, SSA tables, Medicare/FPL) are versioned
   data packs under `params/`, with provenance.
 
