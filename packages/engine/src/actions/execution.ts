@@ -346,6 +346,8 @@ export interface ExecuteOrdinaryWithdrawalsInput {
 
 export interface ExecuteOrdinaryWithdrawalsResult {
   committed: boolean
+  /** Canonical immutable requests evaluated by this annual transaction. */
+  requests: readonly Readonly<RetirementActionRequest>[]
   scheduleIssues: readonly OrdinaryWithdrawalExecutionScheduleIssue[]
   balances: readonly AccountBalanceExecutionEvidence[]
   taxableBases: readonly TaxableAccountBasisExecutionEvidence[]
@@ -466,6 +468,8 @@ export type CashExecutionScheduleIssue =
 
 export interface ExecuteCashOrdinaryWithdrawalsResult {
   committed: boolean
+  /** Canonical immutable requests evaluated by this annual transaction. */
+  requests: readonly Readonly<RetirementActionRequest>[]
   scheduleIssues: readonly CashExecutionScheduleIssue[]
   balances: readonly AccountBalanceExecutionEvidence[]
   evidence: readonly CashOrdinaryWithdrawalExecutionEvidence[]
@@ -1316,6 +1320,13 @@ function executeOrdinaryWithdrawalsInScope(
         (right.sequence ?? Number.MAX_SAFE_INTEGER) ||
       compareUtf16CodeUnits(left.request.actionId, right.request.actionId),
   )
+  const publishedRequests = deepFreeze(scheduled.map((item) => {
+    const request = structuredClone(item.request)
+    if (request.kind === 'ordinaryWithdrawal' || request.kind === 'rothConversion') {
+      request.allocations = [...canonicalAllocations(request)]
+    }
+    return request
+  }))
   if (!Number.isSafeInteger(input.year) || input.year < 1 || input.year > 9999) {
     throw new RangeError('Execution year must be a four-digit positive calendar year')
   }
@@ -1354,6 +1365,7 @@ function executeOrdinaryWithdrawalsInScope(
   if (detectedScheduleIssues.length > 0) {
     return deepFreeze({
       committed: false,
+      requests: publishedRequests,
       scheduleIssues: detectedScheduleIssues,
       balances: unchangedBalances,
       taxableBases: unchangedTaxableBases,
@@ -1779,6 +1791,7 @@ function executeOrdinaryWithdrawalsInScope(
 
   return deepFreeze({
     committed: true,
+    requests: publishedRequests,
     scheduleIssues: [],
     balances,
     taxableBases,
@@ -1832,6 +1845,7 @@ export function executeCashOrdinaryWithdrawals(
   assertCashOnlyExecutionResult(result)
   return deepFreeze({
     committed: result.committed,
+    requests: result.requests,
     scheduleIssues: result.scheduleIssues,
     balances: result.balances,
     evidence: result.evidence,

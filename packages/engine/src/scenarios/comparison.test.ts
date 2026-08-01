@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { asAccountId, asActionId, asAllocationId, asPersonId } from '../actions/identity.js'
+import { asPositiveUsdCents } from '../actions/money.js'
 import { createFlatTaxCalculator } from '../projection/flatTax.js'
 import {
   cashAccount,
@@ -126,6 +128,134 @@ describe('compareScenarioPlans', () => {
       result.annual.reduce((total, row) => total + (row.values.withdrawals.proposal ?? 0), 0),
     )
     expect(result.spending.intended.delta).toBeGreaterThan(0)
+  })
+
+  it('includes canonical action rows from each already-computed projection', () => {
+    const baseline = comparisonPlan()
+    baseline.accounts[0]!.ownerPersonId = 'p1'
+    baseline.strategies.retirementActions = [{
+      actionId: asActionId('shared-action'),
+      kind: 'ordinaryWithdrawal',
+      personId: asPersonId('p1'),
+      year: 2030,
+      executionSequence: 1,
+      requestedAmount: asPositiveUsdCents(12_345),
+      allocations: [{
+        allocationId: asAllocationId('shared-allocation'),
+        sourceAccountId: asAccountId('cash'),
+        requestedAmount: asPositiveUsdCents(12_345),
+      }],
+      purpose: { kind: 'spending' },
+      provenance: { source: 'manual' },
+    }]
+    const proposal = structuredClone(baseline)
+    proposal.strategies.retirementActions[0]!.year = 2031
+
+    const result = compareScenarioPlans(validatePlan(baseline), validatePlan(proposal), {
+      startYear: 2026,
+      taxCalculatorForPlan: () => noTax,
+    })
+
+    expect(result.actionRows).toEqual([{
+      actionId: 'shared-action',
+      baseline: expect.objectContaining({
+        actionId: 'shared-action',
+        year: 2030,
+        personId: 'p1',
+        requestedAmountCents: 12_345,
+        executedAmountCents: 12_345,
+      }),
+      proposal: expect.objectContaining({
+        actionId: 'shared-action',
+        year: 2031,
+        personId: 'p1',
+        requestedAmountCents: 12_345,
+        executedAmountCents: 12_345,
+      }),
+      baselineScheduleDiagnostics: [],
+      proposalScheduleDiagnostics: [],
+    }])
+  })
+
+  it('does not drop actions refused before evidence publication by a schedule collision', () => {
+    const baseline = comparisonPlan()
+    baseline.accounts[0]!.ownerPersonId = 'p1'
+    const scheduledAction = (
+      actionId: string,
+      allocationId: string,
+      executionDate: string,
+      executionSequence: number,
+    ) => ({
+      actionId: asActionId(actionId),
+      kind: 'ordinaryWithdrawal' as const,
+      personId: asPersonId('p1'),
+      year: 2030,
+      executionDate,
+      executionSequence,
+      requestedAmount: asPositiveUsdCents(100),
+      allocations: [{
+        allocationId: asAllocationId(allocationId),
+        sourceAccountId: asAccountId('cash'),
+        requestedAmount: asPositiveUsdCents(100),
+      }],
+      purpose: { kind: 'spending' as const },
+      provenance: { source: 'manual' as const },
+    })
+    baseline.strategies.retirementActions = [
+      scheduledAction('collision-b', 'allocation-b', '2030-06-01', 1),
+      scheduledAction('independent', 'allocation-independent', '2030-07-01', 1),
+      scheduledAction('collision-a', 'allocation-a', '2030-06-01', 1),
+    ]
+    const proposal = structuredClone(baseline)
+    proposal.strategies.retirementActions = []
+
+    const result = compareScenarioPlans(validatePlan(baseline), validatePlan(proposal), {
+      startYear: 2026,
+      taxCalculatorForPlan: () => noTax,
+    })
+
+    expect(result.actionRows.map((row) => row.actionId)).toEqual([
+      'collision-a',
+      'collision-b',
+      'independent',
+    ])
+    for (const row of result.actionRows) {
+      expect(row.baseline).toMatchObject({
+        actionId: row.actionId,
+        personId: 'p1',
+        requestedAmountCents: 100,
+        executedAmountCents: 0,
+        unexecutedAmountCents: 100,
+        readiness: 'nonActionable',
+        outcome: 'refused',
+        reasons: [{ code: 'action-sequence-conflict' }],
+        sourceAllocations: [{
+          allocationId:
+            row.actionId === 'collision-a'
+              ? 'allocation-a'
+              : row.actionId === 'collision-b'
+                ? 'allocation-b'
+                : 'allocation-independent',
+          sourceAccountId: 'cash',
+          resolution: 'unresolved',
+          requestedAmountCents: 100,
+          executedAmountCents: 0,
+          unexecutedAmountCents: 100,
+        }],
+      })
+      expect(row.proposal).toBeNull()
+      expect(row.proposalScheduleDiagnostics).toEqual([])
+      expect(row.baselineScheduleDiagnostics).toEqual(
+        row.actionId === 'independent'
+          ? []
+          : [expect.objectContaining({
+              kind: 'executionSequenceConflict',
+              actionId: row.actionId,
+              collidingActionIds: ['collision-a', 'collision-b'],
+              reason: expect.objectContaining({ code: 'action-sequence-conflict' }),
+            })],
+      )
+    }
   })
 
   it('reconciles annual and lifetime ACA values from ledger facts only', () => {
