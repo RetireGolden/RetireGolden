@@ -664,7 +664,8 @@ describe('postProcessExactLedgerSchedule', () => {
     expect(processed.cleanedValidation.requestedConversionTotal).toBe(20_000)
     expect(processed.cleanedValidation.executedConversionTotal).toBeCloseTo(20_000, 2)
     expect(processed.cleanedValidation.executedConversionRatio).toBe(1)
-    expect(processed.recommendationSchedule).toBe('cleaned')
+    expect(processed.cleanedValidation.recommendationState).toBe('unexecutable')
+    expect(processed.recommendationSchedule).toBe('none')
   })
 
   it('blocks cleaned schedules that still lower exact after-tax estate', () => {
@@ -729,11 +730,11 @@ describe('postProcessExactLedgerSchedule', () => {
     expect(processed.rawValidation.executedConversionRatio).toBeCloseTo(1, 6)
     expect(processed.rawValidation.recommendationState).toBe('rejected')
 
-    // The prune pass drops the harmful trailing year and adopts the result
-    // only because the exact ledger prices the remainder beneficial.
+    // The prune pass still drops the harmful trailing year and preserves the
+    // exact calculation, but cannot publish the aggregate result as actionable.
     expect(processed.pruneIterationCount).toBeGreaterThanOrEqual(1)
     expect(processed.cleanedSchedule.conversions).toEqual([{ year: 2026, amount: 20_000 }])
-    expect(processed.cleanedValidation.recommendationState).toBe('beneficial')
+    expect(processed.cleanedValidation.recommendationState).toBe('unexecutable')
     expect(processed.cleanedValidation.afterTaxEstateDelta).toBeGreaterThan(0)
     expect(processed.adjustments).toContainEqual({
       year: 2027,
@@ -742,7 +743,7 @@ describe('postProcessExactLedgerSchedule', () => {
       cleaned: 0,
       reason: 'estate-pruned',
     })
-    expect(processed.recommendationSchedule).toBe('cleaned')
+    expect(processed.recommendationSchedule).toBe('none')
   })
 
   it('keeps schedules rejected when pruning cannot make them beneficial', () => {
@@ -824,7 +825,7 @@ describe('optimizePlan end-to-end', () => {
     expect(optimized.endingAfterTaxEstate).toBeGreaterThanOrEqual(baseline.endingAfterTaxEstate - 1)
     // And on this trad-heavy plan it should genuinely win.
     expect(optimized.endingAfterTaxEstate).toBeGreaterThan(baseline.endingAfterTaxEstate)
-    expect(validation.recommendationState).toBe('beneficial')
+    expect(validation.recommendationState).toBe('unexecutable')
     // The real ledger, not the linear model, is the authority for the accepted
     // schedule. Spending withdrawals and RMDs can consume traditional balance
     // before a later LP-requested conversion, so the exact ledger may execute
@@ -1305,12 +1306,11 @@ describe('optimizer regression fixtures', () => {
     expect(cleanedTotal).toBeLessThan(requestedTotal)
     expect(processed.cleanedValidation.executedConversionRatio).toBeCloseTo(1, 6)
 
-    // The rescue outcome: dropping unexecutable years keeps the schedule
-    // beneficial on the exact ledger, and only the cleaned schedule is
-    // recommendable — never the raw over-request.
+    // Dropping unexecutable years preserves the beneficial exact calculation,
+    // but the cleaned aggregate schedule is still not recommendable.
     expect(processed.cleanedValidation.afterTaxEstateDelta).toBeGreaterThan(0)
-    expect(processed.cleanedValidation.recommendationState).toBe('beneficial')
-    expect(processed.recommendationSchedule).toBe('cleaned')
+    expect(processed.cleanedValidation.recommendationState).toBe('unexecutable')
+    expect(processed.recommendationSchedule).toBe('none')
   })
 
   it('does not mark contribution-funded exact plans infeasible', async () => {
@@ -1341,11 +1341,10 @@ describe('optimizer regression fixtures', () => {
     expect(schedule.status).toBe('optimal')
     expect(schedule.conversions.reduce((sum, c) => sum + c.amount, 0)).toBeGreaterThan(0)
     expect(postProcessed).not.toBeNull()
-    expect(postProcessed!.cleanedValidation.recommendationState).not.toBe('unexecutable')
+    expect(postProcessed!.cleanedValidation.recommendationState).toBe('unexecutable')
     expect(postProcessed!.cleanedValidation.moneyLastsYearsDelta).toBeGreaterThanOrEqual(0)
-    if (postProcessed!.recommendationSchedule === 'cleaned') {
-      expect(postProcessed!.cleanedValidation.afterTaxEstateDelta).toBeGreaterThanOrEqual(-1)
-    }
+    expect(postProcessed!.recommendationSchedule).toBe('none')
+    expect(postProcessed!.cleanedValidation.afterTaxEstateDelta).toBeGreaterThanOrEqual(-1)
   })
 })
 
@@ -1401,7 +1400,7 @@ describe('fixture matrix (account mix, income timing, liquidity source)', () => 
 
     expect(schedule.status).toBe('optimal')
     expect(postProcessed).not.toBeNull()
-    expect(postProcessed!.cleanedValidation.recommendationState).toBe('beneficial')
+    expect(postProcessed!.cleanedValidation.recommendationState).toBe('unexecutable')
     expect(postProcessed!.cleanedValidation.afterTaxEstateDelta).toBeGreaterThan(0)
     // A tiny IRA cannot justify a big schedule: conversions stay near the balance.
     expect(postProcessed!.cleanedValidation.executedConversionTotal).toBeLessThan(50_000)
@@ -1416,9 +1415,9 @@ describe('fixture matrix (account mix, income timing, liquidity source)', () => 
     // conversions survive (they still cut lifetime tax by shrinking RMDs).
     expect(requested(heir0)).toBeGreaterThan(0)
     expect(requested(heir37)).toBeGreaterThan(2 * requested(heir0))
-    expect(heir0.postProcessed!.cleanedValidation.recommendationState).toBe('beneficial')
+    expect(heir0.postProcessed!.cleanedValidation.recommendationState).toBe('unexecutable')
     expect(heir0.postProcessed!.cleanedValidation.lifetimeTaxDelta).toBeLessThan(0)
-    expect(heir37.postProcessed!.cleanedValidation.recommendationState).toBe('beneficial')
+    expect(heir37.postProcessed!.cleanedValidation.recommendationState).toBe('unexecutable')
   })
 
   it('handles a household that works straight into Social Security (no bridge window)', async () => {
@@ -1437,7 +1436,7 @@ describe('fixture matrix (account mix, income timing, liquidity source)', () => 
     // No low-income gap exists, so any recommendation must still clear the
     // exact-ledger gate rather than assume empty brackets.
     expect(schedule.status).toBe('optimal')
-    expect(postProcessed!.cleanedValidation.recommendationState).toBe('beneficial')
+    expect(postProcessed!.cleanedValidation.recommendationState).toBe('unexecutable')
     expect(postProcessed!.cleanedValidation.executedConversionRatio).toBeGreaterThan(0.9)
   })
 
@@ -1449,10 +1448,10 @@ describe('fixture matrix (account mix, income timing, liquidity source)', () => 
     // traditional for living costs) and the trim+prune pipeline had to repair
     // it; with the in-solve taxable-SS PWL and unscaled-deduction fidelity the
     // raw solve now sizes executably on its own. Either way, the cleaned
-    // schedule must be fully executable, beneficial, and never request more
-    // than the raw solve did.
+    // schedule must be fully executed, preserve its exact calculation, and
+    // never request more than the raw solve did.
     expect(postProcessed!.cleanedValidation.executedConversionRatio).toBeCloseTo(1, 6)
-    expect(postProcessed!.cleanedValidation.recommendationState).toBe('beneficial')
+    expect(postProcessed!.cleanedValidation.recommendationState).toBe('unexecutable')
     expect(postProcessed!.cleanedValidation.executedConversionTotal).toBeLessThanOrEqual(
       postProcessed!.rawValidation.requestedConversionTotal + 1,
     )
@@ -1471,8 +1470,8 @@ describe('fixture matrix (account mix, income timing, liquidity source)', () => 
     // Same conversions either way, but the low-basis bridge realizes capital
     // gains to fund spending and conversion taxes — the exact ledger prices
     // that, shrinking the estate win and raising lifetime tax.
-    expect(high.postProcessed!.cleanedValidation.recommendationState).toBe('beneficial')
-    expect(low.postProcessed!.cleanedValidation.recommendationState).toBe('beneficial')
+    expect(high.postProcessed!.cleanedValidation.recommendationState).toBe('unexecutable')
+    expect(low.postProcessed!.cleanedValidation.recommendationState).toBe('unexecutable')
     expect(high.postProcessed!.cleanedValidation.afterTaxEstateDelta).toBeGreaterThan(
       low.postProcessed!.cleanedValidation.afterTaxEstateDelta + 20_000,
     )
@@ -1496,7 +1495,7 @@ describe('fixture matrix (account mix, income timing, liquidity source)', () => 
 
     // Converting in cheap MFJ years before the survivor's single brackets is
     // the classic widow's-penalty play; the exact ledger confirms it here.
-    expect(postProcessed!.cleanedValidation.recommendationState).toBe('beneficial')
+    expect(postProcessed!.cleanedValidation.recommendationState).toBe('unexecutable')
     expect(postProcessed!.cleanedValidation.executedConversionTotal).toBeGreaterThan(500_000)
     expect(postProcessed!.cleanedValidation.afterTaxEstateDelta).toBeGreaterThan(50_000)
   })
@@ -1530,12 +1529,12 @@ describe('fixture matrix (account mix, income timing, liquidity source)', () => 
 
     const { schedule, postProcessed } = await optimizePlan(valid, opts)
     expect(schedule.status).toBe('optimal')
-    expect(postProcessed!.cleanedValidation.recommendationState).toBe('beneficial')
+    expect(postProcessed!.cleanedValidation.recommendationState).toBe('unexecutable')
   })
 })
 
 describe('exact-ledger candidate tournament', () => {
-  it('recommends a simple bracket fill when it beats the MILP on the exact ledger', async () => {
+  it('keeps simple bracket-fill calculations but does not recommend an aggregate winner', async () => {
     const plan = validate(tradHeavyPlan())
     const { postProcessed, tournament } = await optimizePlan(plan, opts)
 
@@ -1547,18 +1546,13 @@ describe('exact-ledger candidate tournament', () => {
     expect(bracket10.afterTaxEstateDelta).toBeGreaterThan(
       postProcessed!.cleanedValidation.afterTaxEstateDelta + 10_000,
     )
-    expect(tournament.winnerSource).toBe('candidate')
-    expect(tournament.winnerCandidateId).toBe('bracket-12-until-2030')
-    const winnerRow = tournament.candidates.find((c) => c.id === tournament.winnerCandidateId)!
-    expect(winnerRow.afterTaxEstateDelta).toBeGreaterThanOrEqual(bracket10.afterTaxEstateDelta)
-    expect(tournament.marginOverMilpDollars).toBeGreaterThan(10_000)
-    expect(tournament.winnerValidation!.recommendationState).toBe('beneficial')
-    // The winner's schedule is exact-ledger executed amounts by construction.
-    expect(tournament.winnerValidation!.executedConversionRatio).toBeCloseTo(1, 6)
-    expect(tournament.winnerConversions.reduce((sum, c) => sum + c.amount, 0)).toBeGreaterThan(150_000)
+    expect(tournament.winnerSource).toBe('none')
+    expect(tournament.winnerCandidateId).toBeNull()
+    expect(tournament.winnerValidation).toBeNull()
+    expect(tournament.winnerConversions).toEqual([])
   })
 
-  it('does not replace a recommendable MILP schedule with a shorter-lasting candidate', async () => {
+  it('withholds a calculated MILP schedule and a shorter-lasting candidate', async () => {
     const plan = validate(tradHeavyPlan())
     const baseline = simulatePlan(plan, opts)
     const { postProcessed } = await optimizePlan(plan, opts)
@@ -1580,22 +1574,22 @@ describe('exact-ledger candidate tournament', () => {
     expect(Math.max(...tournament.candidates.map((c) => c.afterTaxEstateDelta))).toBeGreaterThan(
       processed.cleanedValidation.afterTaxEstateDelta + 10_000,
     )
-    expect(tournament.winnerSource).toBe('milp')
-    expect(tournament.winnerConversions).toEqual(processed.cleanedSchedule.conversions)
+    expect(tournament.winnerSource).toBe('none')
+    expect(tournament.winnerConversions).toEqual([])
   })
 
-  it('keeps the MILP schedule when every simple candidate is exact-ledger worse', async () => {
+  it('withholds the MILP schedule when every simple candidate is exact-ledger worse', async () => {
     const plan = validate(coastFireGapPlan())
     const baseline = simulatePlan(plan, opts)
-    const { postProcessed, tournament } = await optimizePlan(plan, opts)
+    const { tournament } = await optimizePlan(plan, opts)
 
     // Blanket fills drain the flat-return traditional into taxed conversions
     // this household never benefits from; the trimmed MILP schedule wins.
     const candidates = evaluateSimpleConversionCandidates(plan, baseline, opts)
     for (const candidate of candidates) expect(candidate.afterTaxEstateDelta).toBeLessThanOrEqual(0)
     expect(candidates.some((candidate) => candidate.afterTaxEstateDelta < 0)).toBe(true)
-    expect(tournament.winnerSource).toBe('milp')
-    expect(tournament.winnerConversions).toEqual(postProcessed!.cleanedSchedule.conversions)
+    expect(tournament.winnerSource).toBe('none')
+    expect(tournament.winnerConversions).toEqual([])
   })
 
   it('keeps every ACA-sensitive tournament winner behind actionable exact-ledger evidence', async () => {
@@ -1736,7 +1730,7 @@ describe('exact-ledger candidate tournament', () => {
     })
   })
 
-  it('lets a candidate win outright when the MILP has nothing to recommend', () => {
+  it('does not let an aggregate candidate win when the MILP has nothing to recommend', () => {
     // Force the no-MILP path directly: same trad-heavy plan, no post-processing.
     const plan = validate(tradHeavyPlan())
     const baseline = simulatePlan(plan, opts)
@@ -1744,22 +1738,17 @@ describe('exact-ledger candidate tournament', () => {
       switchMarginDollars: Number.MAX_SAFE_INTEGER,
     })
 
-    expect(tournament.winnerSource).toBe('candidate')
-    expect(tournament.winnerCandidateId).toBe('bracket-12-until-2030')
+    expect(tournament.winnerSource).toBe('none')
+    expect(tournament.winnerCandidateId).toBeNull()
     expect(tournament.marginOverMilpDollars).toBe(0)
-    expect(tournament.winnerValidation!.afterTaxEstateDelta).toBeGreaterThan(0)
+    expect(tournament.winnerValidation).toBeNull()
   })
 
-  it('holds the incumbent applied schedule when nothing beats it', () => {
-    // Win a tournament, apply the winner, and re-run: the baseline now includes
-    // the winning conversions, so no candidate improves on it — the tournament
-    // must report the incumbent, not a scary "nothing recommended" diagnostic.
+  it('holds an explicitly applied incumbent schedule when nothing beats it', () => {
+    // Install an explicit schedule and run against that baseline: when no
+    // candidate improves on it, the tournament reports the incumbent.
     const plan = validate(tradHeavyPlan())
-    const baseline = simulatePlan(plan, opts)
-    const firstRun = runExactLedgerTournament(plan, baseline, null, opts)
-    expect(firstRun.winnerSource).toBe('candidate')
-
-    const appliedPlan = withOptimizedConversions(plan, firstRun.winnerConversions)
+    const appliedPlan = withOptimizedConversions(plan, [{ year: 2026, amount: 20_000 }])
     const appliedBaseline = simulatePlan(appliedPlan, opts)
     const rerun = runExactLedgerTournament(appliedPlan, appliedBaseline, null, opts)
 
@@ -1784,22 +1773,23 @@ describe('exact-ledger candidate tournament', () => {
 })
 
 describe('objective-mode tournament (sustainable-spending plan, Step 5)', () => {
-  it('stamps the default policy id without changing behavior', () => {
+  it('stamps the default policy id while withholding aggregate winners', () => {
     const plan = validate(tradHeavyPlan())
     const baseline = simulatePlan(plan, opts)
     const tournament = runExactLedgerTournament(plan, baseline, null, opts)
     expect(tournament.policyId).toBe('max-after-tax-estate')
-    expect(tournament.winnerSource).toBe('candidate')
-    expect(tournament.winnerCandidateId).toBe('bracket-12-until-2030')
+    expect(tournament.winnerSource).toBe('none')
+    expect(tournament.winnerCandidateId).toBeNull()
   })
 
   it('re-ranks the same candidates under a different objective', () => {
     const plan = validate(tradHeavyPlan())
     const baseline = simulatePlan(plan, opts)
 
-    // The estate objective recommends a bracket fill on this fixture…
+    // The estate objective calculates the same bracket-fill field, but cannot
+    // publish an aggregate winner.
     const estate = runExactLedgerTournament(plan, baseline, null, opts)
-    expect(estate.winnerSource).toBe('candidate')
+    expect(estate.winnerSource).toBe('none')
 
     // …but conversions cannot make the money last longer here (it never
     // depletes either way), so the durability objective recommends nothing —

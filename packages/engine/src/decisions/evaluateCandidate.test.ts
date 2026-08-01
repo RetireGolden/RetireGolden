@@ -154,6 +154,33 @@ describe('evaluateCandidate', () => {
     expect(falselyCertified.diagnostics.join(' ')).toMatch(/aggregate.*QCD/i)
   })
 
+  it('does not treat an unrelated whole-strategies operation as an aggregate action change', () => {
+    const plan = tradHeavyPlan()
+    const edited = structuredClone(plan)
+    edited.strategies.taxableSafetyNetFloor =
+      (edited.strategies.taxableSafetyNetFloor ?? 0) + 1_000
+    const seed = canonicalPatchFor(plan, edited)
+    const wholeStrategiesPatch = {
+      ...seed,
+      operations: [{
+        op: 'set',
+        path: '/strategies',
+        before: { present: true, value: plan.strategies },
+        value: edited.strategies,
+      }],
+    } as never
+    const ctx = createDecisionContext(plan, simOptions())
+
+    const evaluation = evaluateCandidate(
+      ctx,
+      rothCandidate({ planPatch: wholeStrategiesPatch }),
+      { candidateResult: ctx.baselineResult },
+    )
+
+    expect(evaluation.recommendationState).toBe('neutral')
+    expect(evaluation.diagnostics).toEqual([])
+  })
+
   it('rejects incomplete or aggregate identity-complete evidence', () => {
     const ctx = createDecisionContext(tradHeavyPlan(), simOptions())
     const incomplete = evaluateCandidate(
@@ -280,7 +307,7 @@ describe('evaluateCandidate', () => {
     }
   })
 
-  it('extracts matching request identities from canonical scenario operations', () => {
+  it('extracts matching request identities from a whole-strategies canonical operation', () => {
     const plan = tradHeavyPlan()
     const sourceAccountId = plan.accounts.find((account) => account.type === 'cash')!.id
     const edited = structuredClone(plan)
@@ -299,7 +326,16 @@ describe('evaluateCandidate', () => {
       }],
       purpose: { kind: 'spending' },
     }] as never
-    const patch = canonicalPatchFor(plan, edited)
+    const seed = canonicalPatchFor(plan, edited)
+    const patch = {
+      ...seed,
+      operations: [{
+        op: 'set',
+        path: '/strategies',
+        before: { present: true, value: plan.strategies },
+        value: edited.strategies,
+      }],
+    } as never
     const ctx = createDecisionContext(plan, simOptions())
 
     const evaluation = evaluateCandidate(

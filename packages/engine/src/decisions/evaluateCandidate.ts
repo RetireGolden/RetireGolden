@@ -16,6 +16,7 @@ import {
   isScenarioPatchEnvelope,
   parseScenarioPatch,
 } from '../scenarios/contract.js'
+import { canonicalScenarioJson } from '../scenarios/patch.js'
 import { applyScenarioPatch } from '../scenarios/scenarios.js'
 import { summarizeProjection, type ProjectionSummary } from '../projection/compare.js'
 import { simulatePlan } from '../projection/simulate.js'
@@ -64,6 +65,18 @@ function hasRetirementActionStrategy(record: Record<string, unknown> | null): bo
   )
 }
 
+function strategyValueChanged(
+  before: Record<string, unknown> | null,
+  after: Record<string, unknown> | null,
+  key: string,
+): boolean {
+  const hasBefore = before !== null && Object.prototype.hasOwnProperty.call(before, key)
+  const hasAfter = after !== null && Object.prototype.hasOwnProperty.call(after, key)
+  if (hasBefore !== hasAfter) return true
+  if (!hasBefore) return false
+  return canonicalScenarioJson(before![key]) !== canonicalScenarioJson(after![key])
+}
+
 function inspectRetirementActionPatch(planPatch: unknown): RetirementActionPatchInspection {
   const patch = objectRecord(planPatch)
   if (patch === null) {
@@ -108,13 +121,15 @@ function inspectRetirementActionPatch(planPatch: unknown): RetirementActionPatch
       const afterStrategies = operation.op === 'set'
         ? objectRecord(operation.value)
         : null
-      changesRetirementActions ||= hasRetirementActionStrategy(beforeStrategies) ||
-        hasRetirementActionStrategy(afterStrategies)
-      hasAggregateStrategy ||= [...AGGREGATE_RETIREMENT_ACTION_STRATEGY_KEYS].some((key) =>
-        Object.prototype.hasOwnProperty.call(beforeStrategies ?? {}, key) ||
-        Object.prototype.hasOwnProperty.call(afterStrategies ?? {}, key),
+      changesRetirementActions ||= RETIREMENT_ACTION_STRATEGY_KEYS.some((key) =>
+        strategyValueChanged(beforeStrategies, afterStrategies, key),
       )
-      retirementActionRequests = afterStrategies?.['retirementActions']
+      hasAggregateStrategy ||= [...AGGREGATE_RETIREMENT_ACTION_STRATEGY_KEYS].some((key) =>
+        strategyValueChanged(beforeStrategies, afterStrategies, key),
+      )
+      if (strategyValueChanged(beforeStrategies, afterStrategies, 'retirementActions')) {
+        retirementActionRequests = afterStrategies?.['retirementActions']
+      }
       continue
     }
 

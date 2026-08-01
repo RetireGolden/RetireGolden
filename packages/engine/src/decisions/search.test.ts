@@ -65,7 +65,7 @@ describe('refineConversionSchedule', () => {
     expect(refined.bestEvaluation.recommendationState).toBe('diagnostic')
   })
 
-  it('search improves or matches legacy optimizer tournament results', () => {
+  it('does not publish search-refined aggregate tournament results', () => {
     const plan = tradHeavyPlan()
     const opts = simOptions()
     const baseline = simulatePlan(plan, opts)
@@ -73,17 +73,11 @@ describe('refineConversionSchedule', () => {
     const unrefined = runExactLedgerTournament(plan, baseline, null, opts)
     const refined = runExactLedgerTournament(plan, baseline, null, opts, { search: { maxSimulations: 40 } })
 
-    expect(unrefined.winnerSource).toBe('candidate')
-    expect(refined.winnerSource).toBe('candidate')
-    expect(refined.winnerValidation!.afterTaxEstateDelta).toBeGreaterThanOrEqual(
-      unrefined.winnerValidation!.afterTaxEstateDelta,
-    )
-    expect(refined.searchSimulations).toBeGreaterThan(0)
-    expect(refined.searchSimulations).toBeLessThanOrEqual(80)
-    if (refined.searchRefined) {
-      expect(refined.winnerValidation!.executedConversionRatio).toBeGreaterThan(0.999)
-      expect(refined.winnerValidation!.recommendationState).toBe('beneficial')
-    }
+    expect(unrefined.winnerSource).toBe('none')
+    expect(refined.winnerSource).toBe('none')
+    expect(refined.winnerValidation).toBeNull()
+    expect(refined.searchSimulations).toBe(0)
+    expect(refined.searchRefined).toBe(false)
     // Determinism at the tournament level too.
     const rerun = runExactLedgerTournament(plan, baseline, null, opts, { search: { maxSimulations: 40 } })
     expect(rerun.winnerConversions).toEqual(refined.winnerConversions)

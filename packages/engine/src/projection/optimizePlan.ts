@@ -646,7 +646,16 @@ export function runExactLedgerTournament(
   // A non-default objective re-ranks the same evaluations through the shared
   // ranker instead of the estate-delta arbitration below.
   if (options.policy && options.policy.id !== 'max-after-tax-estate') {
-    return runPolicyRankedTournament(plan, baselineResult, postProcessed, simulateOptions, options.policy)
+    const ranked = runPolicyRankedTournament(
+      plan,
+      baselineResult,
+      postProcessed,
+      simulateOptions,
+      options.policy,
+    )
+    return ranked.winnerSource === 'candidate' || ranked.winnerSource === 'milp'
+      ? fallbackTournament(plan, baselineResult, ranked.candidates, ranked.policyId, null)
+      : ranked
   }
   const margin = options.switchMarginDollars ?? DEFAULT_TOURNAMENT_SWITCH_MARGIN_DOLLARS
   const rich = buildRichCandidates(plan, baselineResult, simulateOptions)
@@ -1109,7 +1118,7 @@ function scheduleWithConversions(schedule: OptimizedSchedule, conversions: { yea
  * as a separate blocking state ('diagnostic' in engine terms, 'unexecutable'
  * here for the optimizer UI contract).
  */
-export function evaluateExactLedgerSchedule(
+function evaluateExactLedgerScheduleCalculation(
   plan: Plan,
   requestedConversions: { year: number; amount: number }[],
   baselineResult: ProjectionResult,
@@ -1160,6 +1169,46 @@ export function evaluateExactLedgerSchedule(
     recommendationState:
       evaluation.recommendationState === 'diagnostic' ? 'unexecutable' : evaluation.recommendationState,
   }
+}
+
+function refuseAggregateScheduleRecommendation(
+  validation: ExactLedgerValidation,
+  requestedConversions: readonly { year: number; amount: number }[],
+): ExactLedgerValidation {
+  if (
+    requestedConversions.every((conversion) => conversion.amount <= 0) ||
+    validation.recommendationState === 'rejected'
+  ) {
+    return validation
+  }
+  return {
+    ...validation,
+    recommendationState: 'unexecutable',
+  }
+}
+
+/**
+ * Public optimizer validation retains exact calculation metrics, but an
+ * aggregate conversion schedule cannot become a recommendation until WS4
+ * allocates stable owner/source/destination action identities.
+ */
+export function evaluateExactLedgerSchedule(
+  plan: Plan,
+  requestedConversions: { year: number; amount: number }[],
+  baselineResult: ProjectionResult,
+  candidateResult: ProjectionResult,
+  options: ExactLedgerValidationOptions = {},
+): ExactLedgerValidation {
+  return refuseAggregateScheduleRecommendation(
+    evaluateExactLedgerScheduleCalculation(
+      plan,
+      requestedConversions,
+      baselineResult,
+      candidateResult,
+      options,
+    ),
+    requestedConversions,
+  )
 }
 
 function conversionsMatch(
@@ -1261,7 +1310,7 @@ export function postProcessExactLedgerSchedule(
 
   let cleanedSchedule = scheduleWithConversions(rawSchedule, currentConversions)
   let cleanedResult = simulatePlan(withOptimizedConversions(plan, cleanedSchedule.conversions), simulateOptions)
-  let cleanedValidation = evaluateExactLedgerSchedule(
+  let cleanedValidation = evaluateExactLedgerScheduleCalculation(
     plan,
     cleanedSchedule.conversions,
     baselineResult,
@@ -1297,7 +1346,13 @@ export function postProcessExactLedgerSchedule(
       candidate = candidate.slice(0, -1)
       pruneIterationCount++
       const prunedResult = simulatePlan(withOptimizedConversions(plan, candidate), simulateOptions)
-      const prunedValidation = evaluateExactLedgerSchedule(plan, candidate, baselineResult, prunedResult, options)
+      const prunedValidation = evaluateExactLedgerScheduleCalculation(
+        plan,
+        candidate,
+        baselineResult,
+        prunedResult,
+        options,
+      )
       const bestDelta = best?.validation.afterTaxEstateDelta ?? cleanedValidation.afterTaxEstateDelta
       if (prunedValidation.afterTaxEstateDelta > bestDelta) {
         best = { conversions: candidate, result: prunedResult, validation: prunedValidation }
@@ -1324,6 +1379,10 @@ export function postProcessExactLedgerSchedule(
   const minimumRequestedConversionDollars =
     options.minimumRequestedConversionDollars ?? DEFAULT_MINIMUM_REQUESTED_CONVERSION_DOLLARS
   const cleanedConversionTotal = cleanedSchedule.conversions.reduce((sum, conversion) => sum + conversion.amount, 0)
+  cleanedValidation = refuseAggregateScheduleRecommendation(
+    cleanedValidation,
+    cleanedSchedule.conversions,
+  )
   const recommendationSchedule =
     stabilized &&
     cleanedConversionTotal >= minimumRequestedConversionDollars &&
