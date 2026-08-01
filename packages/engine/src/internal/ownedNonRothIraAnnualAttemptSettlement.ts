@@ -171,6 +171,7 @@ interface AttemptStateCheckpoint {
   readonly runtimeApplications:
     readonly Readonly<SimulatorRetirementRuntimeApplication>[]
   readonly nextMutationOrdinal: number
+  readonly invariantState: unknown
 }
 
 function deepFreeze<T>(value: T): Readonly<T> {
@@ -218,6 +219,57 @@ function cloneRuntimeApplication(
     : { ...value }
 }
 
+function snapshotStringMap<Value>(
+  value: ReadonlyMap<string, Value>,
+): Array<[string, Value]> {
+  return [...value]
+    .map(([key, entry]) => [key, structuredClone(entry)] as [string, Value])
+    .sort(([left], [right]) => compareUtf16CodeUnits(left, right))
+}
+
+function snapshotNumberMap<Value>(
+  value: ReadonlyMap<number, Value>,
+): Array<[number, Value]> {
+  return [...value]
+    .map(([key, entry]) => [key, structuredClone(entry)] as [number, Value])
+    .sort(([left], [right]) => compareUtf16CodeUnits(String(left), String(right)))
+}
+
+function snapshotInvariantState(
+  state: Readonly<SimulatorAnnualPassStateBindings>,
+): unknown {
+  // This private foundation has evidence only for runtime journals, their
+  // ordinal, and end balances. Every other transaction-owned value stays
+  // checkpoint-equal until a later integration supplies an explicit binding.
+  return {
+    balanceCostBasis: state.balances
+      .map((record) => [record.account.id, record.costBasis] as const)
+      .sort(([left], [right]) => compareUtf16CodeUnits(left, right)),
+    iraProRata: snapshotStringMap(state.iraProRata),
+    iraBasisByOwner: snapshotStringMap(state.iraBasisByOwner),
+    rothBasis: snapshotStringMap(state.rothBasis),
+    propertyValues: snapshotStringMap(state.propertyValues),
+    hecmStates: snapshotStringMap(state.hecmStates),
+    insuranceCashValues: snapshotStringMap(state.insuranceCashValues),
+    allocationTrack: snapshotStringMap(state.allocationTrack),
+    seppAmortAmount: snapshotStringMap(state.seppAmortAmount),
+    magiHistory: snapshotNumberMap(state.magiHistory),
+    warnings: [...state.warnings].sort(compareUtf16CodeUnits),
+    unassignedCash: state.unassignedCash.read(),
+    priorYearPortfolioReturnPct: state.priorYearPortfolioReturnPct.read(),
+    capitalLossPool: state.capitalLossPool.read(),
+    hsaReimbursablePool: state.hsaReimbursablePool.read(),
+    depletionYear: state.depletionYear.read(),
+    conversionNontaxable: state.conversionNontaxable.read(),
+    healthcare: state.healthcare.read(),
+    qualifiedMedicalThisYear: state.qualifiedMedicalThisYear.read(),
+    hsaQualifiedCap: state.hsaQualifiedCap.read(),
+    requiredSpendingBase: state.requiredSpendingBase.read(),
+    targetSpendingBase: state.targetSpendingBase.read(),
+    expenses: structuredClone(state.expenses),
+  }
+}
+
 function captureAttemptState(
   state: Readonly<SimulatorAnnualPassStateBindings>,
 ): AttemptStateCheckpoint {
@@ -228,6 +280,7 @@ function captureAttemptState(
     runtimeApplications:
       state.retirementRuntimeApplications.map(cloneRuntimeApplication),
     nextMutationOrdinal: state.nextRetirementRuntimeMutationOrdinal.read(),
+    invariantState: snapshotInvariantState(state),
   }
 }
 
@@ -240,7 +293,8 @@ function attemptStateMatchesYear(
 ): boolean {
   const occurrenceSource = year.retirementRuntimeSource
   const applicationSource = year.retirementRuntimeApplicationSource
-  if (year.year !== stable.projectionStartTaxYear ||
+  if (!same(checkpoint.invariantState, snapshotInvariantState(state)) ||
+      year.year !== stable.projectionStartTaxYear ||
       occurrenceSource?.planId !== stable.planId ||
       occurrenceSource.taxYear !== stable.projectionStartTaxYear ||
       applicationSource?.planId !== stable.planId ||

@@ -127,8 +127,28 @@ function stateBytes(value: SimulatorAnnualPassStateBindings): string {
     retirementRuntimeApplications: value.retirementRuntimeApplications,
     nextRetirementRuntimeMutationOrdinal:
       value.nextRetirementRuntimeMutationOrdinal.read(),
+    iraProRata: [...value.iraProRata],
+    iraBasisByOwner: [...value.iraBasisByOwner],
+    rothBasis: [...value.rothBasis],
+    propertyValues: [...value.propertyValues],
+    hecmStates: [...value.hecmStates],
+    insuranceCashValues: [...value.insuranceCashValues],
+    allocationTrack: [...value.allocationTrack],
+    seppAmortAmount: [...value.seppAmortAmount],
+    magiHistory: [...value.magiHistory],
     warnings: [...value.warnings],
     unassignedCash: value.unassignedCash.read(),
+    priorYearPortfolioReturnPct: value.priorYearPortfolioReturnPct.read(),
+    capitalLossPool: value.capitalLossPool.read(),
+    hsaReimbursablePool: value.hsaReimbursablePool.read(),
+    depletionYear: value.depletionYear.read(),
+    conversionNontaxable: value.conversionNontaxable.read(),
+    healthcare: value.healthcare.read(),
+    qualifiedMedicalThisYear: value.qualifiedMedicalThisYear.read(),
+    hsaQualifiedCap: value.hsaQualifiedCap.read(),
+    requiredSpendingBase: value.requiredSpendingBase.read(),
+    targetSpendingBase: value.targetSpendingBase.read(),
+    expenses: value.expenses,
   })
 }
 
@@ -194,7 +214,6 @@ function mutateAttemptState(
 ): void {
   if (years.length !== 1) throw new Error('attempt helper requires one year')
   const year = years[0]!
-  simulatorState.warnings.add('attempt-tail')
   simulatorState.retirementRuntimeOccurrences.push(
     ...year.retirementRuntimeSource!.runtimeOccurrences.map((value) => ({
       ...value,
@@ -449,6 +468,11 @@ describe('private owned-IRA annual attempt settlement', () => {
     'mutationOrdinal',
     'balanceMovement',
     'balanceInventory',
+    'costBasis',
+    'warning',
+    'map',
+    'scalar',
+    'expenses',
   ] as const)('rejects forged or unrelated %s state', (kind) => {
     const plan = rmdPlan()
     const years = cloneYears(project(plan))
@@ -478,8 +502,18 @@ describe('private owned-IRA annual attempt settlement', () => {
           )
         } else if (kind === 'balanceMovement') {
           simulatorState.balances[0]!.balance += 0.01
-        } else {
+        } else if (kind === 'balanceInventory') {
           simulatorState.balances.splice(0, 1)
+        } else if (kind === 'costBasis') {
+          simulatorState.balances[0]!.costBasis += 1
+        } else if (kind === 'warning') {
+          simulatorState.warnings.add('forged-warning')
+        } else if (kind === 'map') {
+          simulatorState.iraBasisByOwner.set('p1', 123)
+        } else if (kind === 'scalar') {
+          simulatorState.capitalLossPool.write(123)
+        } else {
+          simulatorState.expenses.total += 123
         }
         return years
       },
