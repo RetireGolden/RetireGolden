@@ -364,4 +364,33 @@ describe('optimizer recommendation evidence', () => {
     )
     expect(evidence.candidates[0]?.lossReason).not.toMatch(/no candidate cleared/i)
   })
+
+  it('reports a diagnostic-only cleaned schedule withheld for missing account allocation', () => {
+    const evidence = reportEvidenceFromOptimizeResult({
+      tournament: {
+        policyId: 'max-after-tax-estate',
+        candidates: [],
+        winnerSource: 'none',
+        winnerCandidateId: null,
+        winnerLabel: null,
+        winnerConversions: [],
+        winnerValidation: null,
+        marginOverMilpDollars: 0,
+        searchRefined: false,
+        searchSimulations: 0,
+        acaActionabilityVeto: null,
+        retirementActionReadinessVeto: null,
+      },
+      postProcessed: {
+        cleanedValidation: { recommendationState: 'identityIncomplete' },
+      },
+      claimAge: null,
+    } as never)
+
+    expect(evidence.recommendationState).toBe('identityIncomplete')
+    expect(evidence.winnerLabel).toBe(
+      "the solver's cleaned schedule (withheld pending account allocation)",
+    )
+    expect(evidence.validation).toBeNull()
+  })
 })

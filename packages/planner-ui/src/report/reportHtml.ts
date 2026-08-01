@@ -489,8 +489,12 @@ export function reportEvidenceFromOptimizeResult(result: OptimizeResult): Report
   // did not win and would mislabel a "no change" / incumbent result.
   const validation = tournament.winnerValidation ?? null
   const policy = objectivePolicies[tournament.policyId]
+  const withheldCleanedSchedule =
+    tournament.winnerSource === 'none' &&
+    tournament.retirementActionReadinessVeto === null &&
+    result.postProcessed?.cleanedValidation.recommendationState === 'identityIncomplete'
   const recommendationState = validation?.recommendationState ??
-    (tournament.retirementActionReadinessVeto
+    (tournament.retirementActionReadinessVeto || withheldCleanedSchedule
       ? 'identityIncomplete'
       : tournament.winnerSource === 'incumbent'
         ? 'neutral'
@@ -501,6 +505,8 @@ export function reportEvidenceFromOptimizeResult(result: OptimizeResult): Report
         (tournament.retirementActionReadinessVeto.vetoedWinnerSource === 'milp'
           ? "the solver's cleaned schedule"
           : 'calculated policy winner')} (withheld pending account allocation)`
+      : withheldCleanedSchedule
+        ? "the solver's cleaned schedule (withheld pending account allocation)"
       : tournament.winnerLabel ??
         (tournament.winnerSource === 'milp'
           ? "the solver's cleaned schedule"

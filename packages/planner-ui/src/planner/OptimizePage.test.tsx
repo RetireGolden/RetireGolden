@@ -69,6 +69,11 @@ describe('OptimizePage tournament display helpers', () => {
       cleanedSchedule: schedule(conversions),
       cleanedValidation: { recommendationState: 'neutral' },
     } as never)).toEqual([])
+    expect(displayedCleanedConversions({
+      winnerSource: 'incumbent',
+      winnerConversions: [{ year: 2025, amount: 2_000 }],
+    }, postProcessed)).toEqual([])
+    expect(displayedCleanedConversions(null, postProcessed)).toEqual([])
   })
 
   it('shows recommended bars when a candidate wins even without a cleanup mismatch', () => {

@@ -23,7 +23,8 @@ export function displayedCleanedConversions(
 ): { year: number; amount: number }[] {
   const actionable = actionableTournamentConversions(tournament)
   if (actionable.length > 0) return actionable
-  return postProcessed?.cleanedValidation.recommendationState === 'identityIncomplete'
+  return tournament?.winnerSource === 'none' &&
+    postProcessed?.cleanedValidation.recommendationState === 'identityIncomplete'
     ? postProcessed.cleanedSchedule.conversions
     : []
 }
