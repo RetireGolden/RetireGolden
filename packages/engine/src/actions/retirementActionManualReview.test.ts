@@ -524,6 +524,46 @@ describe('manual retirement-action review and replacement', () => {
     ])
   })
 
+  it('does not treat non-tax purpose references as action dependencies', () => {
+    const plan = basePlan()
+    plan.strategies.retirementActions = [
+      action({
+        actionId: 'target-withdrawal',
+        kind: 'ordinaryWithdrawal',
+        personId: 'p1',
+        year: 2030,
+        executionDate: '2030-06-01',
+        executionSequence: 1,
+        requestedAmount: 10_000,
+        allocations: [{
+          allocationId: 'target-allocation',
+          sourceAccountId: 'cash-a',
+          requestedAmount: 10_000,
+        }],
+        purpose: { kind: 'goal', referenceId: 'goal-a' },
+        provenance: { source: 'manual' },
+      }),
+      action({
+        actionId: 'preserved-withdrawal',
+        kind: 'ordinaryWithdrawal',
+        personId: 'p1',
+        year: 2031,
+        executionDate: '2031-06-01',
+        executionSequence: 1,
+        requestedAmount: 10_000,
+        allocations: [{
+          allocationId: 'preserved-allocation',
+          sourceAccountId: 'cash-a',
+          requestedAmount: 10_000,
+        }],
+        purpose: { kind: 'goal', referenceId: 'target-withdrawal' },
+        provenance: { source: 'manual' },
+      }),
+    ]
+
+    expect(review(plan, 'target-withdrawal', ordinaryIntent()).status).toBe('replacementReady')
+  })
+
   it.each([
     { label: 'missing', fundingAction: null },
     {

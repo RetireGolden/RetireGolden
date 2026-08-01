@@ -271,6 +271,7 @@ function referencesAction(
     action.taxFunding.withdrawalActionId === targetActionId
   ) || (
     action.kind === 'ordinaryWithdrawal' &&
+    action.purpose.kind === 'taxPayment' &&
     action.purpose.referenceId === targetActionId
   )
 }
