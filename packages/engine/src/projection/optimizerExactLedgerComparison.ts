@@ -93,12 +93,58 @@ function planOrderBalancesFitPublishedTotal(
   accountIds: readonly string[],
   rawBalances: ReadonlyMap<string, number>,
   publishedTotal: SafeMinorUnitInteger,
+  exact: boolean,
 ): boolean {
   let planOrderTotal = 0
   for (const accountId of accountIds) {
     planOrderTotal += rawBalances.get(accountId)!
   }
-  return quantize(planOrderTotal, false) <= publishedTotal
+  const planOrderMinorUnits = quantize(planOrderTotal, false)
+  return exact
+    ? planOrderMinorUnits === publishedTotal
+    : planOrderMinorUnits <= publishedTotal
+}
+
+function planDerivedNetWorthLowerBoundFits(
+  rawInvestableTotal: number,
+  rawBalances: ReadonlyMap<string, number>,
+  publishedNetWorth: SafeMinorUnitInteger,
+  expected: Readonly<ExpectedPublishedBalanceIds>,
+  projectionStartYear: number,
+  taxYear: number,
+): boolean {
+  let propertyTotal = 0
+  for (const accountId of expected.propertyInPlanOrder) {
+    propertyTotal += rawBalances.get(accountId)!
+  }
+  let debtTotal = 0
+  for (const accountId of expected.debtInPlanOrder) {
+    debtTotal += rawBalances.get(accountId)!
+  }
+  let insuranceCashValueTotal = 0
+  for (const policyId of expected.permanentLifeInPlanOrder) {
+    insuranceCashValueTotal += rawBalances.get(policyId)!
+  }
+  let maximumHecmEffectiveDebt = 0
+  const activeHecmProperties = expected.hecmProperties
+    .filter((property) =>
+      Math.max(property.openYear, projectionStartYear) <= taxYear)
+    .sort((left, right) =>
+      Math.max(left.openYear, projectionStartYear) -
+        Math.max(right.openYear, projectionStartYear) ||
+      left.planIndex - right.planIndex)
+  for (const property of activeHecmProperties) {
+    maximumHecmEffectiveDebt += rawBalances.get(property.accountId)!
+  }
+  const lowerBound = rawInvestableTotal + propertyTotal - debtTotal +
+    insuranceCashValueTotal - maximumHecmEffectiveDebt
+  try {
+    return quantize(lowerBound, true) <= publishedNetWorth
+  } catch {
+    // A lower bound below the signed safe-cent domain cannot exclude a
+    // separately validated safe net worth. Any other invalid bound fails shut.
+    return Number.isFinite(lowerBound) && lowerBound < 0
+  }
 }
 
 interface BasisSeededOwnedIraGroup {
@@ -219,6 +265,15 @@ interface ExpectedPublishedBalanceIds {
   readonly all: readonly string[]
   readonly investable: readonly string[]
   readonly investableInPlanOrder: readonly string[]
+  readonly investableTotalMustEqualPublishedBalances: boolean
+  readonly propertyInPlanOrder: readonly string[]
+  readonly debtInPlanOrder: readonly string[]
+  readonly hecmProperties: readonly Readonly<{
+    readonly accountId: string
+    readonly openYear: number
+    readonly planIndex: number
+  }>[]
+  readonly permanentLifeInPlanOrder: readonly string[]
   readonly basisSeededOwnedIraGroups:
     readonly Readonly<BasisSeededOwnedIraGroup>[]
 }
@@ -228,6 +283,14 @@ function expectedPublishedBalanceIds(
 ): ExpectedPublishedBalanceIds {
   const ids: string[] = []
   const investableIds: string[] = []
+  const propertyIds: string[] = []
+  const debtIds: string[] = []
+  const hecmProperties: Array<{
+    readonly accountId: string
+    readonly openYear: number
+    readonly planIndex: number
+  }> = []
+  const permanentLifeIds: string[] = []
   const iraIdsByOwner = new Map<string, string[]>()
   const basisSeededOwnerIds: string[] = []
   const seededBasisByOwner = new Map<string, number>()
@@ -239,12 +302,23 @@ function expectedPublishedBalanceIds(
       personIds.size !== plan.household.people.length) {
     throw new TypeError('Plan household identities must be nonempty and unique')
   }
-  for (const account of plan.accounts) {
+  for (const [planIndex, account] of plan.accounts.entries()) {
     if (account.type === 'pension' || account.type === 'annuity') continue
     ids.push(account.id)
     if (account.type !== 'property' && account.type !== 'debt') {
       investableIds.push(account.id)
     }
+    if (account.type === 'property') {
+      propertyIds.push(account.id)
+      if (account.hecm !== undefined) {
+        hecmProperties.push({
+          accountId: account.id,
+          openYear: account.hecm.openYear,
+          planIndex,
+        })
+      }
+    }
+    if (account.type === 'debt') debtIds.push(account.id)
     if (account.type === 'traditional' && account.kind === 'ira' &&
         account.inherited === undefined) {
       const ownerId = account.ownerPersonId ?? primaryPersonId
@@ -270,7 +344,10 @@ function expectedPublishedBalanceIds(
     }
   }
   for (const policy of plan.insurance) {
-    if (policy.kind === 'permanentLife') ids.push(policy.id)
+    if (policy.kind === 'permanentLife') {
+      ids.push(policy.id)
+      permanentLifeIds.push(policy.id)
+    }
   }
   if (ids.some((id) => typeof id !== 'string' || id.length === 0) ||
       new Set(ids).size !== ids.length) {
@@ -280,6 +357,13 @@ function expectedPublishedBalanceIds(
     all: ids.sort(compareUtf16CodeUnits),
     investable: [...investableIds].sort(compareUtf16CodeUnits),
     investableInPlanOrder: investableIds,
+    investableTotalMustEqualPublishedBalances: plan.accounts.some(
+      (account) => account.type === 'cash' || account.type === 'taxable',
+    ),
+    propertyInPlanOrder: propertyIds,
+    debtInPlanOrder: debtIds,
+    hecmProperties,
+    permanentLifeInPlanOrder: permanentLifeIds,
     basisSeededOwnedIraGroups: basisSeededOwnerIds.map(
       (ownerId) => ({
         accountIds: iraIdsByOwner.get(ownerId)!,
@@ -296,6 +380,7 @@ interface YearSnapshot {
   readonly tax: SafeMinorUnitInteger
   readonly penalties: SafeMinorUnitInteger
   readonly investableTotal: SafeMinorUnitInteger
+  readonly rawInvestableTotal: number
   readonly netWorth: SafeMinorUnitInteger
   readonly balances: ReadonlyMap<string, SafeMinorUnitInteger>
   readonly rawBalances: ReadonlyMap<string, number>
@@ -328,12 +413,14 @@ function sourceSnapshot(result: Readonly<ProjectionResult>): ResultSnapshot {
       throw new TypeError('Exact-ledger years must be unique, contiguous, and strictly increasing')
     }
     const balanceValues = balanceSnapshot(ownDataProperty(rawYear, 'balances'))
+    const rawInvestableTotal = ownDataProperty(rawYear, 'investableTotal')
     for (const accountId of balanceValues.minorUnits.keys()) accountIds.add(accountId)
     years.set(taxYear, {
       taxYear,
       tax: quantize(ownDataProperty(rawYear, 'tax'), false),
       penalties: quantize(ownDataProperty(rawYear, 'penalties'), false),
-      investableTotal: quantize(ownDataProperty(rawYear, 'investableTotal'), false),
+      investableTotal: quantize(rawInvestableTotal, false),
+      rawInvestableTotal: rawInvestableTotal as number,
       netWorth: quantize(ownDataProperty(rawYear, 'netWorth'), true),
       balances: balanceValues.minorUnits,
       rawBalances: balanceValues.rawDollars,
@@ -427,10 +514,27 @@ export function compareOptimizerExactLedgerResults(
         expectedAccountIds.investableInPlanOrder,
         aggregateYear.rawBalances,
         aggregateYear.investableTotal,
+        expectedAccountIds.investableTotalMustEqualPublishedBalances,
       ) || !planOrderBalancesFitPublishedTotal(
         expectedAccountIds.investableInPlanOrder,
         allocatedYear.rawBalances,
         allocatedYear.investableTotal,
+        expectedAccountIds.investableTotalMustEqualPublishedBalances,
+      )) return null
+      if (!planDerivedNetWorthLowerBoundFits(
+        aggregateYear.rawInvestableTotal,
+        aggregateYear.rawBalances,
+        aggregateYear.netWorth,
+        expectedAccountIds,
+        aggregate.horizon.startYear,
+        taxYear,
+      ) || !planDerivedNetWorthLowerBoundFits(
+        allocatedYear.rawInvestableTotal,
+        allocatedYear.rawBalances,
+        allocatedYear.netWorth,
+        expectedAccountIds,
+        allocated.horizon.startYear,
+        taxYear,
       )) return null
     }
     const aggregateEndingYear = aggregate.years.get(aggregate.horizon.endYear)!

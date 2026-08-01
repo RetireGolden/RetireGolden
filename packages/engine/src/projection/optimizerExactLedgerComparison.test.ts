@@ -62,10 +62,10 @@ function comparisonPlan(
       filingStatus: 'single',
     } as Plan['household'],
     accounts: accountIds.map((id) => ({
-      type: 'cash',
+      type: 'hsa',
       id,
       name: id,
-      ownerPersonId: null,
+      ownerPersonId: 'person-1',
       annualReturnPct: 0,
       balance: 0,
       annualContribution: 0,
@@ -135,15 +135,34 @@ describe('compareOptimizerExactLedgerResults', () => {
         penalties: 0,
         investableTotal: 2.0049,
         netWorth: -0.0049,
-        balances: { zero: -0 },
+        balances: { debt: 3.01, zero: -0 },
       },
       {
         year: 2031,
+        investableTotal: 0,
         netWorth: -1.005,
-        balances: { zero: 0 },
+        balances: { debt: 3.01, zero: 0 },
       },
-    ], { endingNetWorth: -1.005 })
-    const evidence = compareOptimizerExactLedgerResults(result, structuredClone(result))!
+    ], { endingInvestable: 0, endingNetWorth: -1.005 })
+    const plan = comparisonPlan(['debt', 'zero'])
+    plan.accounts = [
+      {
+        type: 'debt',
+        id: 'debt',
+        name: 'Debt',
+        ownerPersonId: null,
+        annualReturnPct: 0,
+        balance: 3.01,
+        interestPct: 0,
+        monthlyPayment: 0,
+      },
+      plan.accounts[1]!,
+    ]
+    const evidence = compareOptimizerExactLedgerResultsWithPlan(
+      result,
+      structuredClone(result),
+      plan,
+    )!
     const amountFor = (kind: string, field?: string) => evidence.entries.find((entry) =>
       entry.key.kind === kind && (field === undefined ||
         ('field' in entry.key && entry.key.field === field)))?.aggregateMinorUnits
@@ -154,7 +173,8 @@ describe('compareOptimizerExactLedgerResults', () => {
     expect(Object.is(amountFor('annualBalanceTotal', 'netWorth'), -0)).toBe(false)
     expect(amountFor('projectionEndingTotal', 'endingNetWorth')).toBe(-101)
     const zero = evidence.entries.find((entry) =>
-      entry.key.kind === 'accountEndingBalance')!.aggregateMinorUnits
+      entry.key.kind === 'accountEndingBalance' &&
+      entry.key.accountId === 'zero')!.aggregateMinorUnits
     expect(zero).toBe(0)
     expect(Object.is(zero, -0)).toBe(false)
   })
@@ -273,7 +293,8 @@ describe('compareOptimizerExactLedgerResults', () => {
       year: 2030,
       balances: { home: 200 },
       investableTotal: 100,
-    }], { endingInvestable: 100 })
+      netWorth: 300,
+    }], { endingInvestable: 100, endingNetWorth: 300 })
     const plan = comparisonPlan(['home'])
     plan.accounts = [{ type: 'property', id: 'home' }] as Plan['accounts']
 
@@ -356,6 +377,57 @@ describe('compareOptimizerExactLedgerResults', () => {
       { endingInvestable: 99.99, endingNetWorth: 99.99 },
     )
     const plan = comparisonPlan(['first', 'second'])
+
+    expect(compareOptimizerExactLedgerResultsWithPlan(
+      inconsistent,
+      structuredClone(inconsistent),
+      plan,
+    )).toBeNull()
+  })
+
+  it.each(['cash', 'taxable'] as const)(
+    'requires exact published investable total with a %s surplus target',
+    (type) => {
+      const inconsistent = projection(
+        [{
+          year: 2030,
+          investableTotal: 100,
+          netWorth: 100,
+          balances: { target: 80 },
+        }],
+        { endingInvestable: 100, endingNetWorth: 100 },
+      )
+      const plan = comparisonPlan(['target'])
+      plan.accounts = [{
+        type,
+        id: 'target',
+        name: 'Surplus target',
+        ownerPersonId: null,
+        annualReturnPct: 0,
+        balance: 80,
+        annualContribution: 0,
+        ...(type === 'taxable' ? { costBasis: 80 } : {}),
+      }] as Plan['accounts']
+
+      expect(compareOptimizerExactLedgerResultsWithPlan(
+        inconsistent,
+        structuredClone(inconsistent),
+        plan,
+      )).toBeNull()
+    },
+  )
+
+  it('rejects net worth below investable assets when no Plan debt exists', () => {
+    const inconsistent = projection(
+      [{
+        year: 2030,
+        investableTotal: 100,
+        netWorth: 50,
+        balances: { invested: 100 },
+      }],
+      { endingInvestable: 100, endingNetWorth: 50 },
+    )
+    const plan = comparisonPlan(['invested'])
 
     expect(compareOptimizerExactLedgerResultsWithPlan(
       inconsistent,
