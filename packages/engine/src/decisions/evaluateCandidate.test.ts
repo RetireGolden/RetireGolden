@@ -202,7 +202,16 @@ describe('evaluateCandidate', () => {
 
     const evaluation = evaluateCandidate(
       ctx,
-      rothCandidate({ planPatch: patch }),
+      rothCandidate({
+        planPatch: patch,
+        // Evidence may survive candidate construction even when the canonical
+        // action operation applies idempotently. It must not turn metadata
+        // presence into a retirement-action change.
+        retirementActionReadiness: {
+          state: 'identityComplete',
+          actionRequestIds: ['already-applied-qcd'],
+        },
+      }),
       { candidateResult: ctx.baselineResult },
     )
 
@@ -344,10 +353,17 @@ describe('evaluateCandidate', () => {
 
   it('rejects incomplete or aggregate identity-complete evidence', () => {
     const ctx = createDecisionContext(tradHeavyPlan(), simOptions())
+    const legacyAggregateRequest = {
+      actionId: 'legacy-aggregate-action',
+      kind: 'legacyAggregateRothConversion',
+      year: 2027,
+      requestedAmount: 3_000_000,
+      provenance: { source: 'migration', sourceId: 'legacy-readiness-test' },
+    } as const
     const incomplete = evaluateCandidate(
       ctx,
       rothCandidate({
-        planPatch: { strategies: { retirementActions: [] } },
+        planPatch: { strategies: { retirementActions: [legacyAggregateRequest] } },
         retirementActionReadiness: { state: 'identityComplete', actionRequestIds: [] },
       }),
       { candidateResult: ctx.baselineResult },
@@ -370,15 +386,7 @@ describe('evaluateCandidate', () => {
       rothCandidate({
         planPatch: {
           strategies: {
-            retirementActions: [
-              {
-                actionId: 'legacy-aggregate-action',
-                kind: 'legacyAggregateRothConversion',
-                year: 2027,
-                requestedAmount: 3_000_000,
-                provenance: { source: 'migration', sourceId: 'legacy-readiness-test' },
-              },
-            ],
+            retirementActions: [legacyAggregateRequest],
           },
         },
         retirementActionReadiness: {
@@ -394,7 +402,7 @@ describe('evaluateCandidate', () => {
     const malformed = evaluateCandidate(
       ctx,
       rothCandidate({
-        planPatch: { strategies: { retirementActions: [] } },
+        planPatch: { strategies: { retirementActions: [legacyAggregateRequest] } },
         retirementActionReadiness: { state: 'identityComplete' } as never,
       }),
       { candidateResult: ctx.baselineResult },
@@ -408,7 +416,7 @@ describe('evaluateCandidate', () => {
     const hostile = evaluateCandidate(
       ctx,
       rothCandidate({
-        planPatch: { strategies: { retirementActions: [] } },
+        planPatch: { strategies: { retirementActions: [legacyAggregateRequest] } },
         retirementActionReadiness: hostileReadiness as never,
       }),
       { candidateResult: ctx.baselineResult },

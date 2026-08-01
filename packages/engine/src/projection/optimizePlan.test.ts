@@ -1945,6 +1945,46 @@ describe('objective-mode tournament (sustainable-spending plan, Step 5)', () => 
     expect(tournament.retirementActionReadinessVeto?.vetoedConversions)
       .toEqual(optimized.postProcessed?.cleanedSchedule.conversions)
 
+    for (const recommendationState of ['neutral', 'rejected'] as const) {
+      const policyValidButEstateNonbeneficial = {
+        ...optimized.postProcessed!,
+        recommendationSchedule: 'none' as const,
+        cleanedValidation: {
+          ...optimized.postProcessed!.cleanedValidation,
+          recommendationState,
+        },
+      }
+      const defaultTournament = runExactLedgerTournament(
+        plan,
+        baseline,
+        policyValidButEstateNonbeneficial,
+        opts,
+      )
+      const defaultWithoutMilp = runExactLedgerTournament(
+        plan,
+        baseline,
+        null,
+        opts,
+      )
+      expect(defaultTournament).toEqual(defaultWithoutMilp)
+
+      const ranked = runExactLedgerTournament(
+        plan,
+        baseline,
+        policyValidButEstateNonbeneficial,
+        opts,
+        { policy },
+      )
+      expect(ranked.winnerSource).toBe('none')
+      expect(ranked.retirementActionReadinessVeto).toMatchObject({
+        vetoedWinnerSource: 'milp',
+        vetoedCandidateId: null,
+        vetoedValidation: { recommendationState },
+      })
+      expect(ranked.retirementActionReadinessVeto?.vetoedConversions)
+        .toEqual(optimized.postProcessed?.cleanedSchedule.conversions)
+    }
+
     const cleanedTotal = optimized.postProcessed!.cleanedSchedule.conversions
       .reduce((sum, conversion) => sum + conversion.amount, 0)
     const belowConfiguredMinimum = {

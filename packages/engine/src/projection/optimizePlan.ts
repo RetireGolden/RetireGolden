@@ -480,6 +480,26 @@ function calculatedPostProcessedSchedule(
     : null
 }
 
+/**
+ * A non-estate policy may legitimately rank a stabilized neutral/rejected MILP
+ * row by durability or tax. Keep this broader calculation seam out of the
+ * default estate tournament, where those states must not become a false holder.
+ */
+function policyRankablePostProcessedSchedule(
+  postProcessed: ExactLedgerPostProcessing | null,
+): ExactLedgerPostProcessing | null {
+  if (postProcessed === null) return null
+  const cleanedConversionTotal = postProcessed.cleanedSchedule.conversions.reduce(
+    (sum, conversion) => sum + conversion.amount,
+    0,
+  )
+  return postProcessed.stabilized &&
+    cleanedConversionTotal >= postProcessed.minimumRequestedConversionDollars &&
+    postProcessed.cleanedValidation.recommendationState !== 'unexecutable'
+    ? postProcessed
+    : null
+}
+
 function readinessVetoFor(
   source: 'candidate' | 'milp',
   candidateId: string | null,
@@ -1019,7 +1039,7 @@ function runPolicyRankedTournament(
   const ctx = decisionContext(plan, baselineResult, simulateOptions)
   const rich = buildRichCandidates(plan, baselineResult, simulateOptions)
   const candidates = rich.map((candidate) => candidate.evaluation)
-  const calculatedMilp = calculatedPostProcessedSchedule(postProcessed)
+  const calculatedMilp = policyRankablePostProcessedSchedule(postProcessed)
   const milpRecommended =
     calculatedMilp !== null &&
     !hasNonActionableAca(baselineResult) &&

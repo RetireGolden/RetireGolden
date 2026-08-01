@@ -240,7 +240,10 @@ function candidateOnlyRemovesAggregateRothConversions(
 /** Whether the candidate's concrete change can cause retirement-account movement. */
 export function candidateChangesRetirementActions(candidate: DecisionCandidate, basePlan?: Plan): boolean {
   try {
-    if (candidate.conversions !== undefined || candidate.retirementActionReadiness !== undefined) return true
+    // Readiness is evidence about a concrete retirement-action change, not a
+    // plan mutation of its own. An idempotent retirementActions patch may
+    // legitimately retain its evidence while an unrelated edit is evaluated.
+    if (candidate.conversions !== undefined) return true
     if (basePlan !== undefined && candidateOnlyRemovesAggregateRothConversions(candidate, basePlan)) {
       return false
     }

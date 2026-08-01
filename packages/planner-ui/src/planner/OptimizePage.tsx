@@ -40,7 +40,13 @@ import {
   monteCarloSuccessValue,
   shouldShowRecommendedScheduleBars,
 } from './optimizePageChart'
-import { applyOptimizeRecommendation, claimEstateGain, planWithWinningClaim } from './optimizePageClaim'
+import {
+  applyOptimizeRecommendation,
+  claimEstateGain,
+  claimOnlyApplyAvailable,
+  claimRecommendationReportAvailable,
+  planWithWinningClaim,
+} from './optimizePageClaim'
 import {
   publicationValidation,
   recommendationBody,
@@ -166,10 +172,26 @@ export function OptimizePage() {
   const planForRecommendation = useMemo(() => planWithWinningClaim(plan, claimAge), [plan, claimAge])
   const optimizedPlan = useMemo(() => {
     if (recommendedConversions.length > 0) return withOptimizedConversions(planForRecommendation, recommendedConversions)
-    // A claim change with no conversion change (the incumbent schedule holds
-    // under the new claim) is still a recommendation worth pricing and reporting.
-    return claimChangeRecommended ? planForRecommendation : null
-  }, [planForRecommendation, recommendedConversions, claimChangeRecommended])
+    // Price a claim-only plan only when the joint result established that the
+    // incumbent strategy holds or no conversion change exists. A withheld
+    // diagnostic schedule may have driven claim selection, so substituting an
+    // unvalidated claim-only plan would make Monte Carlo and the report describe
+    // a different recommendation.
+    return claimOnlyApplyAvailable({
+      claimChangeRecommended,
+      scheduleApplyAvailable: false,
+      incumbentHolds,
+      displayedConversionCount: displayedConversions.length,
+    })
+      ? planForRecommendation
+      : null
+  }, [
+    planForRecommendation,
+    recommendedConversions,
+    claimChangeRecommended,
+    incumbentHolds,
+    displayedConversions,
+  ])
   const validation = candidateWins
     ? (tournament?.winnerValidation ?? null)
     : (tournament?.retirementActionReadinessVeto?.vetoedValidation ??
@@ -251,6 +273,18 @@ export function OptimizePage() {
   // result). The claim card then carries its own apply control so the winning
   // claim change is never advertised without a way to install it.
   const scheduleApplyAvailable = recommendedConversions.length > 0 && !blocksApply
+  const claimOnlyApplyIsAvailable = claimOnlyApplyAvailable({
+    claimChangeRecommended,
+    scheduleApplyAvailable,
+    incumbentHolds,
+    displayedConversionCount: displayedConversions.length,
+  })
+  const recommendationReportIsAvailable = claimRecommendationReportAvailable({
+    claimChangeRecommended,
+    scheduleApplyAvailable,
+    incumbentHolds,
+    displayedConversionCount: displayedConversions.length,
+  })
 
   const chartRows = useMemo(
     () => buildOptimizeChartRows({
@@ -273,7 +307,7 @@ export function OptimizePage() {
   // change is still an actionable recommendation on its own (the current
   // conversion strategy already holds under the new claim ages).
   const applyClaimChangeOnly = () => {
-    if (!claimChangeRecommended) return
+    if (!claimOnlyApplyIsAvailable) return
     update((d) => applyOptimizeRecommendation(d, { claimAge, conversions: [], mode: 'optimized' }))
   }
 
@@ -284,7 +318,7 @@ export function OptimizePage() {
   )
 
   const downloadRecommendationReport = () => {
-    if (!optimizeResult) return
+    if (!optimizeResult || !recommendationReportIsAvailable) return
     // Report the plan the evidence section describes: when the optimizer recommends
     // a schedule, project that recommended plan so the headline results and ledger
     // appendix match the recommendation. When nothing beats the incumbent (no
@@ -358,7 +392,7 @@ export function OptimizePage() {
           <button
             type="button"
             className="btn btn-secondary btn-small"
-            disabled={!optimizeResult || running}
+            disabled={!optimizeResult || running || !recommendationReportIsAvailable}
             onClick={downloadRecommendationReport}
           >
             Download recommendation report
@@ -386,18 +420,18 @@ export function OptimizePage() {
                   ? 'Everything below (the schedule, the estate and tax deltas, and the success rate) was computed assuming this claim change. Apply installs the new claim age and the conversion schedule together; the schedule alone would not be correct for your current claim ages.'
                   : displayedConversions.length === 0
                     ? 'No conversion change comes with this result, so the button here changes just the Social Security claim age. The estate gain above comes from the claim change itself.'
-                    : 'The conversion schedule from this run is diagnostic-only and cannot be applied, so the button here changes just the Social Security claim age. The estate gain above was measured with that schedule included, so the claim change alone may capture only part of it.'}
+                    : 'The conversion schedule from this run is diagnostic-only and cannot be applied. The estate gain above was measured with that schedule included, and the claim change alone was not separately validated, so no Apply action is offered.'}
             </p>
             {/* Claim-only recommendations show their success rate here (the
                 stats row below never renders for them); when a schedule comes
                 along, the normal stats row already shows the rate computed
                 against the same claim-patched plan via optimizedPlan. */}
-            {recommendedConversions.length === 0 && mcRate !== null ? (
+            {claimOnlyApplyIsAvailable && mcRate !== null ? (
               <p className="field-hint" style={{ margin: '0.45rem 0 0' }}>
                 Monte Carlo success rate with this claim change: {Math.round(mcRate * 100)}%.
               </p>
             ) : null}
-            {!scheduleApplyAvailable ? (
+            {claimOnlyApplyIsAvailable ? (
               <div style={{ marginTop: '0.75rem' }}>
                 <button type="button" className="btn btn-primary btn-small" disabled={readOnly} onClick={applyClaimChangeOnly}>
                   Apply claim change

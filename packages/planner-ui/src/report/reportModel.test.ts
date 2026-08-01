@@ -365,7 +365,7 @@ describe('optimizer recommendation evidence', () => {
             executedConversionRatio: 1,
             firstMateriallyUnexecutedYear: null,
             traditionalDepletionYear: null,
-            recommendationState: 'identityIncomplete',
+            recommendationState: 'rejected',
           },
         },
       },
@@ -373,6 +373,7 @@ describe('optimizer recommendation evidence', () => {
     } as never)
 
     expect(evidence.recommendationState).toBe('identityIncomplete')
+    expect(evidence.validation?.recommendationState).toBe('rejected')
     expect(evidence.winnerLabel).toContain('withheld pending account allocation')
     expect(evidence.validation?.afterTaxEstateDelta).toBe(2_000)
     expect(evidence.validation?.requestedConversionTotal).toBe(50_000)

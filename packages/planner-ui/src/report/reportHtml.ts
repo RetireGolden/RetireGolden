@@ -495,12 +495,11 @@ export function reportEvidenceFromOptimizeResult(result: OptimizeResult): Report
     tournament.winnerSource === 'none' &&
     tournament.retirementActionReadinessVeto === null &&
     isCalculatedIdentityWithheldPostProcessing(result.postProcessed)
-  const recommendationState = validation?.recommendationState ??
-    (tournament.retirementActionReadinessVeto || withheldCleanedSchedule
+  const recommendationState =
+    tournament.retirementActionReadinessVeto || withheldCleanedSchedule
       ? 'identityIncomplete'
-      : tournament.winnerSource === 'incumbent'
-        ? 'neutral'
-        : 'none')
+      : validation?.recommendationState ??
+        (tournament.winnerSource === 'incumbent' ? 'neutral' : 'none')
   const winnerLabel =
     tournament.retirementActionReadinessVeto
       ? `${tournament.retirementActionReadinessVeto.vetoedCandidateLabel ??

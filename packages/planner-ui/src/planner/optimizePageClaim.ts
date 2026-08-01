@@ -17,6 +17,35 @@ export function claimEstateGain(claimAge: ClaimAgeCoOptimization | null): number
 }
 
 /**
+ * A claim-only Apply is safe only when the exact joint result did not depend
+ * on a different, withheld conversion schedule. The incumbent path preserves
+ * the already-installed strategy; an empty calculated schedule proves the
+ * joint gain came from the claim change alone.
+ */
+export function claimOnlyApplyAvailable(args: {
+  claimChangeRecommended: boolean
+  scheduleApplyAvailable: boolean
+  incumbentHolds: boolean
+  displayedConversionCount: number
+}): boolean {
+  return args.claimChangeRecommended &&
+    !args.scheduleApplyAvailable &&
+    (args.incumbentHolds || args.displayedConversionCount === 0)
+}
+
+/** A report needs either the joint Apply plan or an established claim-only plan. */
+export function claimRecommendationReportAvailable(args: {
+  claimChangeRecommended: boolean
+  scheduleApplyAvailable: boolean
+  incumbentHolds: boolean
+  displayedConversionCount: number
+}): boolean {
+  return !args.claimChangeRecommended ||
+    args.scheduleApplyAvailable ||
+    claimOnlyApplyAvailable(args)
+}
+
+/**
  * The plan the recommendation was actually computed against: the current plan
  * with the winning claim change installed, or the plan itself when the current
  * claim ages won (or co-optimization did not run). Monte Carlo and the report
