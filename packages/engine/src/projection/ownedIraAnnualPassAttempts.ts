@@ -313,17 +313,25 @@ export function runOwnedIraAnnualPassAttempts<DeferredEffect = never>(
       stable,
       assumedEffects: assumptions,
     })
+    let callbackOpen = true
     const capability = Object.freeze({
-      defer: (effect: DeferredEffect): void => transaction.defer(effect),
+      defer: (effect: DeferredEffect): void => {
+        if (!callbackOpen) {
+          throw new TypeError('Attempt capability is closed')
+        }
+        transaction.defer(effect)
+      },
     })
 
     let probeInput: Readonly<ProbePlanOwnedNonRothIraAnnualPassInput>
     try {
       probeInput = input.runAttempt(context, capability)
     } catch {
+      callbackOpen = false
       transaction.rollback()
       return rolledBack('attemptCallbackThrew', attemptNumber)
     }
+    callbackOpen = false
 
     try {
       if (!inputMatchesAttempt(probeInput, stable, assumptions)) {

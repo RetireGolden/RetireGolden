@@ -440,6 +440,42 @@ describe('owned IRA annual-pass attempt controller', () => {
     expect(stateBytes(simulatorState)).toBe(baseline)
   })
 
+  it('closes the defer capability before validating the returned probe input', () => {
+    const simulatorState = state()
+    const baseline = stateBytes(simulatorState)
+
+    const result = runOwnedIraAnnualPassAttempts<string>({
+      state: simulatorState,
+      stable,
+      initialAssumedEffects: [effect(10)],
+      runAttempt: (context, capability) => {
+        mutate(simulatorState, context.attemptNumber)
+        capability.defer('within-callback')
+        const value = probeInput(
+          context.assumedEffects,
+          context.attemptNumber,
+        )
+        const annualPassEvidence = value.annualPassEvidence
+        Object.defineProperty(value, 'annualPassEvidence', {
+          enumerable: true,
+          get: () => {
+            capability.defer('after-callback')
+            return annualPassEvidence
+          },
+        })
+        return value
+      },
+    })
+
+    expect(result).toEqual({
+      status: 'rolledBack',
+      reason: 'attemptBindingMismatch',
+      attemptCount: 1,
+      deferredEffects: [],
+    })
+    expect(stateBytes(simulatorState)).toBe(baseline)
+  })
+
   it('rolls back callback and probe exceptions without exposing effects', () => {
     for (const target of ['callback', 'probe'] as const) {
       const simulatorState = state()
