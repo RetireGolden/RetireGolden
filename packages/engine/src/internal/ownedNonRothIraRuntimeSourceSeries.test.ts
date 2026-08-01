@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { Account, Plan } from '../model/plan.js'
+import { planDollarsToLedgerCents } from '../actions/planBalanceAdapter.js'
 import {
   couplePlan,
   singlePersonPlan,
@@ -164,7 +165,7 @@ describe('private owned-IRA runtime source-series validation', () => {
   })
 
   it('requires canonical producer-key serialization', () => {
-    const plan = singlePersonPlan({ dob: '1953-01-01', planningAge: 90 })
+    const plan = singlePersonPlan({ dob: '1950-01-01', planningAge: 90 })
     plan.id = 'canonical-key'
     plan.accounts = [traditional('ira', 100_000)]
     const years = copy(project(plan))
@@ -184,9 +185,9 @@ describe('private owned-IRA runtime source-series validation', () => {
   })
 
   it('preserves genuine fractional-cent RMD chains by normalizing from raw transitions', () => {
-    const plan = singlePersonPlan({ dob: '1953-01-01', planningAge: 90 })
+    const plan = singlePersonPlan({ dob: '1950-01-01', planningAge: 90 })
     plan.id = 'fractional-cent-rmd-chain'
-    plan.accounts = [traditional('ira', 100_000)]
+    plan.accounts = [traditional('ira', 539_722.3276478298)]
     plan.accounts[0]!.annualReturnPct = 5
 
     const result = validateOwnedNonRothIraRuntimeSourceSeries(
@@ -196,12 +197,69 @@ describe('private owned-IRA runtime source-series validation', () => {
     expect(result.status).toBe('ownedNonRothIraRuntimeSourceSeriesComplete')
     if (result.status !== 'ownedNonRothIraRuntimeSourceSeriesComplete') return
     expect(result.years).toHaveLength(2)
-    for (const year of result.years) {
+    const rawYears = project(plan, TAX_YEAR + 1)
+    for (let index = 0; index < result.years.length; index += 1) {
+      const year = result.years[index]!
       const application = year.ownerSources[0]!.applications[0]!
+      const rawOccurrence = rawYears[index]!.retirementRuntimeSource!
+        .runtimeOccurrences.find((occurrence) =>
+          occurrence.producerOccurrenceKey === application.producerOccurrenceKey)!
+      expect(application.amount).toBe(
+        planDollarsToLedgerCents(rawOccurrence.grossAmountPlanDollars),
+      )
+      expect(application.amount).toBe(
+        planDollarsToLedgerCents(rawYears[index]!.rmd),
+      )
       expect(
-        BigInt(application.sourceBalanceBefore) - BigInt(application.amount),
+        BigInt(application.sourceBalanceBefore) -
+          BigInt(application.amount) +
+          BigInt(application.sourceBalanceRoundingResidualCents),
       ).toBe(BigInt(application.sourceBalanceAfter))
     }
+    expect(result.years.some((year) =>
+      year.ownerSources[0]!.applications[0]!
+        .sourceBalanceRoundingResidualCents !== 0)).toBe(true)
+  })
+
+  it('requires a continuous raw Plan-dollar chain between adjacent applications', () => {
+    const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 60 })
+    plan.id = 'raw-adjacent-chain'
+    plan.incomes = [{
+      type: 'wages', id: 'wages', personId: 'p1', annualGross: 100_000,
+      endAge: null, realGrowthPct: 0,
+    }]
+    plan.accounts = [
+      { ...traditional('ira', 0), annualContribution: 5_000 },
+      {
+        type: 'pension', id: 'pension', name: 'Pension', ownerPersonId: 'p1',
+        annualReturnPct: null, startAge: 60, monthlyAmount: 0, colaPct: 0,
+        survivorPct: 0,
+        lumpSumOffer: { amount: 20_000, electionYear: TAX_YEAR },
+        lumpSumElection: { rolloverAccountId: 'ira' },
+      },
+    ]
+    const years = copy(project(plan))
+    const rolloverOccurrence = years[0]!.retirementRuntimeSource!
+      .runtimeOccurrences.find((occurrence) => occurrence.kind === 'rolloverInflow')!
+    const rolloverApplication = years[0]!.retirementRuntimeApplicationSource!
+      .applications.find((application) =>
+        application.producerOccurrenceKey === rolloverOccurrence.producerOccurrenceKey)!
+    if (rolloverApplication.applicationKind !== 'credit') throw new Error('expected rollover credit')
+    ;(rolloverOccurrence as { grossAmountPlanDollars: number })
+      .grossAmountPlanDollars += 0.001
+    ;(rolloverApplication as {
+      creditedAmountPlanDollars: number
+      sourceBalanceAfterPlanDollars: number
+    }).creditedAmountPlanDollars += 0.001
+    ;(rolloverApplication as {
+      sourceBalanceAfterPlanDollars: number
+    }).sourceBalanceAfterPlanDollars += 0.001
+
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, years))
+      .toMatchObject({
+        status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+        issues: [{ kind: 'balanceChainInvalid' }],
+      })
   })
 
   it('rejoins occurrence coverage to every independently published annual movement total', () => {
@@ -279,6 +337,42 @@ describe('private owned-IRA runtime source-series validation', () => {
     unpublishedBalance.balancePlanDollars += 1
     expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, unpublished))
       .toMatchObject({ status: 'ownedNonRothIraRuntimeSourceSeriesBlocked', issues: [{ kind: 'postGrowthPoolInvalid' }] })
+  })
+
+  it('reconciles large multi-account totals in simulator Plan order', () => {
+    const plan = singlePersonPlan({ dob: '1950-01-01', planningAge: 76 })
+    plan.id = 'large-plan-order-total'
+    plan.accounts = Array.from({ length: 20 }, (_, index) =>
+      traditional(`ira-${String(20 - index).padStart(2, '0')}`, 40_000_000_000_000))
+
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(
+      plan, TAX_YEAR, project(plan),
+    )).toMatchObject({ status: 'ownedNonRothIraRuntimeSourceSeriesComplete' })
+  })
+
+  it('snapshots each post-growth balance scalar once before validation and emission', () => {
+    const plan = singlePersonPlan({ planningAge: 60 })
+    plan.id = 'post-growth-scalar-snapshot'
+    plan.accounts = [traditional('ira', 100_000)]
+    const years = copy(project(plan))
+    const rawBalance = years[0]!.ownedNonRothIraPostGrowthSource!
+      .ownerPools[0]!.accountBalances[0]!
+    let reads = 0
+    Object.defineProperty(rawBalance, 'balancePlanDollars', {
+      enumerable: true,
+      get: () => {
+        reads += 1
+        return reads === 1 ? years[0]!.balances.ira! : 101_000
+      },
+    })
+
+    const result = validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, years)
+
+    expect(result.status).toBe('ownedNonRothIraRuntimeSourceSeriesComplete')
+    if (result.status !== 'ownedNonRothIraRuntimeSourceSeriesComplete') return
+    expect(reads).toBe(1)
+    expect(result.years[0]!.ownerSources[0]!.yearEndBalances[0])
+      .toMatchObject({ balancePlanDollars: 100_000, balanceAmount: 10_000_000 })
   })
 
   it('blocks QCD allocation and annuity pool escape in the source layer', () => {

@@ -1,5 +1,5 @@
 import { asAccountId, type AccountId, type PersonId } from '../actions/identity.js'
-import { asUsdCents, type UsdCents } from '../actions/money.js'
+import type { UsdCents } from '../actions/money.js'
 import { planDollarsToLedgerCents } from '../actions/planBalanceAdapter.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from '../actions/structuralId.js'
 import { planSchema, type Account, type Plan } from '../model/plan.js'
@@ -11,7 +11,6 @@ import type {
   YearResult,
 } from '../projection/types.js'
 
-const MAX_SAFE_CENTS = BigInt(Number.MAX_SAFE_INTEGER)
 const MAX_RAW_RECONCILIATION_TOLERANCE_DOLLARS = 0.000001
 
 export type OwnedNonRothIraRuntimeSourceSeriesIssueKind =
@@ -63,6 +62,12 @@ export interface NormalizedOwnedNonRothIraApplication {
   readonly amount: UsdCents
   readonly sourceBalanceBefore: UsdCents
   readonly sourceBalanceAfter: UsdCents
+  /**
+   * Signed cent residual left by independently rounding the raw before,
+   * gross-amount, and after values. The normalized identity is
+   * `before +/- amount + residual === after`.
+   */
+  readonly sourceBalanceRoundingResidualCents: -2 | -1 | 0 | 1 | 2
   readonly form8606Line: 'line7' | 'line8' | null
 }
 
@@ -219,12 +224,16 @@ function reconcilePublishedTotal(
   publishedPlanDollars: number,
   label: string,
   taxYear: number,
+  accountOrder: ReadonlyMap<string, number>,
 ): void {
   const selectedKinds = new Set(kinds)
+  const selectedOccurrences = occurrences
+    .filter((occurrence) => selectedKinds.has(occurrence.kind))
+    .sort((left, right) =>
+      (accountOrder.get(left.sourceAccountId ?? '') ?? Number.MAX_SAFE_INTEGER) -
+      (accountOrder.get(right.sourceAccountId ?? '') ?? Number.MAX_SAFE_INTEGER))
   const occurrenceTotal = summedPlanDollars(
-    occurrences
-      .filter((occurrence) => selectedKinds.has(occurrence.kind))
-      .map((occurrence) => occurrence.grossAmountPlanDollars),
+    selectedOccurrences.map((occurrence) => occurrence.grossAmountPlanDollars),
     `${label} occurrence total`,
     { taxYear },
   )
@@ -233,7 +242,7 @@ function reconcilePublishedTotal(
   if (!rawTotalsReconcile(
     occurrenceTotal,
     publishedPlanDollars,
-    occurrences.length,
+    selectedOccurrences.length,
   )) {
     fail('sourceCoverageInvalid', `${label} occurrences must exact-rejoin the published annual total`, {
       taxYear,
@@ -543,6 +552,9 @@ function validateUnchecked(
   let openingBalances = new Map<AccountId, UsdCents>([...pools.values()].flat().map((account) => [
     asAccountId(account.id), cents(account.balance, 'Plan opening IRA balance', { sourceAccountId: account.id }),
   ]))
+  let openingRawBalances = new Map<AccountId, number>([...pools.values()].flat().map((account) => [
+    asAccountId(account.id), account.balance,
+  ]))
   const normalizedYears: NormalizedOwnedNonRothIraRuntimeSourceYear[] = []
 
   for (const yearResult of years) {
@@ -605,6 +617,7 @@ function validateUnchecked(
       yearResult.rmd,
       'RMD',
       taxYear,
+      accountOrder,
     )
     reconcilePublishedTotal(
       occurrenceSource.runtimeOccurrences,
@@ -612,6 +625,7 @@ function validateUnchecked(
       yearResult.sepp,
       'SEPP',
       taxYear,
+      accountOrder,
     )
     reconcilePublishedTotal(
       occurrenceSource.runtimeOccurrences,
@@ -619,6 +633,7 @@ function validateUnchecked(
       yearResult.inheritedDistribution,
       'inherited distribution',
       taxYear,
+      accountOrder,
     )
     reconcilePublishedTotal(
       occurrenceSource.runtimeOccurrences,
@@ -626,6 +641,7 @@ function validateUnchecked(
       yearResult.rothConversion,
       'Roth conversion',
       taxYear,
+      accountOrder,
     )
 
     const expectedOwners = [...pools.keys()]
@@ -633,7 +649,9 @@ function validateUnchecked(
       fail('postGrowthPoolInvalid', 'Post-growth source must contain every and only complete owned-IRA pool', { taxYear })
     }
     const postGrowthBalances = new Map<AccountId, UsdCents>()
+    const postGrowthRawBalances = new Map<AccountId, number>()
     const ownerBalances = new Map<PersonId, NormalizedOwnedNonRothIraYearEndBalance[]>()
+    const publishedBalances = yearResult.balances
     for (let ownerIndex = 0; ownerIndex < expectedOwners.length; ownerIndex += 1) {
       const owner = expectedOwners[ownerIndex]!
       const rawPool = balanceSource.ownerPools[ownerIndex]!
@@ -643,23 +661,27 @@ function validateUnchecked(
       }
       const normalizedBalances = rawPool.accountBalances.map((raw, accountIndex) => {
         const account = accounts[accountIndex]!
-        if (raw.sourceAccountId !== account.id) {
+        const rawSourceAccountId = raw.sourceAccountId
+        const rawBalancePlanDollars = raw.balancePlanDollars
+        if (rawSourceAccountId !== account.id) {
           fail('postGrowthPoolInvalid', 'Post-growth balances must retain canonical account order including zero siblings', {
-            taxYear, ownerPersonId: owner, sourceAccountId: raw.sourceAccountId,
+            taxYear, ownerPersonId: owner, sourceAccountId: rawSourceAccountId,
           })
         }
-        if (!Object.hasOwn(yearResult.balances, account.id) ||
-            yearResult.balances[account.id] !== raw.balancePlanDollars) {
+        const publishedBalancePlanDollars = publishedBalances[account.id]
+        if (!Object.hasOwn(publishedBalances, account.id) ||
+            publishedBalancePlanDollars !== rawBalancePlanDollars) {
           fail('postGrowthPoolInvalid', 'Post-growth balances must exact-rejoin the published account balance', {
-            taxYear, ownerPersonId: owner, sourceAccountId: raw.sourceAccountId,
+            taxYear, ownerPersonId: owner, sourceAccountId: rawSourceAccountId,
           })
         }
         const sourceAccountId = asAccountId(account.id)
-        const balanceAmount = cents(raw.balancePlanDollars, 'Post-growth IRA balance', {
+        const balanceAmount = cents(rawBalancePlanDollars, 'Post-growth IRA balance', {
           taxYear, ownerPersonId: owner, sourceAccountId,
         })
         postGrowthBalances.set(sourceAccountId, balanceAmount)
-        return { sourceAccountId, balancePlanDollars: raw.balancePlanDollars, balanceAmount }
+        postGrowthRawBalances.set(sourceAccountId, rawBalancePlanDollars)
+        return { sourceAccountId, balancePlanDollars: rawBalancePlanDollars, balanceAmount }
       })
       ownerBalances.set(owner, normalizedBalances)
     }
@@ -716,18 +738,25 @@ function validateUnchecked(
       const rawExpectedAfter = application.applicationKind === 'debit'
         ? application.sourceBalanceBeforePlanDollars - rawAmount
         : application.sourceBalanceBeforePlanDollars + rawAmount
-      const normalizedAmount = application.applicationKind === 'debit'
-        ? BigInt(before) - BigInt(after)
-        : BigInt(after) - BigInt(before)
+      const expectedCentAfter = application.applicationKind === 'debit'
+        ? BigInt(before) - BigInt(occurrenceAmount)
+        : BigInt(before) + BigInt(occurrenceAmount)
+      const sourceBalanceRoundingResidual = BigInt(after) - expectedCentAfter
       if (rawAmount !== occurrence.grossAmountPlanDollars ||
           occurrenceAmount === 0 ||
           rawExpectedAfter !== application.sourceBalanceAfterPlanDollars ||
+          openingRawBalances.get(sourceAccountId) !==
+            application.sourceBalanceBeforePlanDollars ||
           openingBalances.get(sourceAccountId) !== before ||
-          normalizedAmount <= 0n || normalizedAmount > MAX_SAFE_CENTS) {
+          sourceBalanceRoundingResidual < -2n ||
+          sourceBalanceRoundingResidual > 2n) {
         fail('balanceChainInvalid', 'Application must continue the exact per-account before/amount/after chain', context)
       }
-      const amount = asUsdCents(Number(normalizedAmount))
       openingBalances.set(sourceAccountId, after)
+      openingRawBalances.set(
+        sourceAccountId,
+        application.sourceBalanceAfterPlanDollars,
+      )
       if (occurrence.kind === 'annuityFundingTransfer') {
         fail('annuityStageRequired', 'Annuity funding leaves the captured owned-IRA pool and requires a broader transfer stage', context)
       }
@@ -740,9 +769,11 @@ function validateUnchecked(
         mutationOrdinal: application.mutationOrdinal,
         ownerPersonId: occurrence.ownerPersonId as PersonId,
         sourceAccountId,
-        amount,
+        amount: occurrenceAmount,
         sourceBalanceBefore: before,
         sourceBalanceAfter: after,
+        sourceBalanceRoundingResidualCents:
+          Number(sourceBalanceRoundingResidual) as -2 | -1 | 0 | 1 | 2,
         form8606Line: shape.form8606Line,
       })
     }
@@ -789,6 +820,7 @@ function validateUnchecked(
       evidenceId: deriveActionStructuralId('projection-owned-ira-runtime-source-year', [plan.id, withoutId]),
     }))
     openingBalances = postGrowthBalances
+    openingRawBalances = postGrowthRawBalances
   }
 
   const withoutId = {
