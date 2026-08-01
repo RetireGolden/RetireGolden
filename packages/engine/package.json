@@ -112,6 +112,10 @@
       "types": "./dist/actions/ownedNonRothIraAnnualPostCandidateExecution.d.ts",
       "default": "./dist/actions/ownedNonRothIraAnnualPostCandidateExecution.js"
     },
+    "./actions/ownedNonRothIraAnnualPassProbe": {
+      "types": "./dist/actions/ownedNonRothIraAnnualPassProbe.d.ts",
+      "default": "./dist/actions/ownedNonRothIraAnnualPassProbe.js"
+    },
     "./actions/ownedNonRothIraAnnualFinalization": {
       "types": "./dist/actions/ownedNonRothIraAnnualFinalization.d.ts",
       "default": "./dist/actions/ownedNonRothIraAnnualFinalization.js"
