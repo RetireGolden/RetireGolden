@@ -355,6 +355,56 @@ describe('owned IRA annual-pass attempt controller', () => {
     expect(runAttempt).not.toHaveBeenCalled()
   })
 
+  it('snapshots stable and assumption getters exactly once before validation', () => {
+    let stablePlanReads = 0
+    const statefulStable = { ...stable }
+    Object.defineProperty(statefulStable, 'planId', {
+      enumerable: true,
+      get: () => {
+        stablePlanReads += 1
+        return stablePlanReads === 1 ? stable.planId : '' as PlanId
+      },
+    })
+    const statefulEffect = (
+      value: PlanOwnedNonRothIraAnnualPassAssumedEffect,
+      actionId: string,
+    ): PlanOwnedNonRothIraAnnualPassAssumedEffect => {
+      let reads = 0
+      const result = { ...value }
+      Object.defineProperty(result, 'actionId', {
+        enumerable: true,
+        get: () => {
+          reads += 1
+          return reads === 1 ? asActionId(actionId) : asActionId('')
+        },
+      })
+      return result
+    }
+    const initial = statefulEffect(effect(10), 'action-initial')
+    const observed = statefulEffect(effect(11), 'action-observed')
+    probeMock
+      .mockImplementationOnce((input: ProbePlanOwnedNonRothIraAnnualPassInput) =>
+        probeResult('reprobe', input, [observed]))
+      .mockImplementationOnce((input: ProbePlanOwnedNonRothIraAnnualPassInput) =>
+        probeResult('commit', input))
+    const seenActionIds: string[] = []
+
+    const result = runOwnedIraAnnualPassAttempts<string>({
+      state: state(),
+      stable: statefulStable,
+      initialAssumedEffects: [initial],
+      runAttempt: (context) => {
+        expect(context.stable.planId).toBe(stable.planId)
+        seenActionIds.push(context.assumedEffects[0]!.actionId)
+        return probeInput(context.assumedEffects, context.attemptNumber)
+      },
+    })
+
+    expect(result).toMatchObject({ status: 'committed', attemptCount: 2 })
+    expect(stablePlanReads).toBe(1)
+    expect(seenActionIds).toEqual(['action-initial', 'action-observed'])
+  })
+
   it('rolls back hostile observed assumptions without exposing state or effects', () => {
     const simulatorState = state()
     const baseline = stateBytes(simulatorState)

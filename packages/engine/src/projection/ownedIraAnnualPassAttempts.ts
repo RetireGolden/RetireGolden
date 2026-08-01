@@ -91,7 +91,7 @@ function deepFreeze<T>(value: T): Readonly<T> {
   return value as Readonly<T>
 }
 
-function nonblank(value: unknown): value is string {
+function nonblank<T>(value: T): value is T & string {
   return typeof value === 'string' && value.trim().length > 0
 }
 
@@ -134,32 +134,39 @@ function canonicalEffects(
   const result: PlanOwnedNonRothIraAnnualPassAssumedEffect[] = []
   const identities = new Set<string>()
   for (const effect of effects) {
-    if (effect === null || typeof effect !== 'object' ||
-        !nonblank(effect.actionId) || !nonblank(effect.allocationId) ||
-        !nonblank(effect.sourceAccountId)) return null
-    const executedAmount = usdCentsSchema.safeParse(effect.executedAmount)
-    const basisReturnAmount = usdCentsSchema.safeParse(effect.basisReturnAmount)
+    if (effect === null || typeof effect !== 'object') return null
+    const actionId = effect.actionId
+    const allocationId = effect.allocationId
+    const sourceAccountId = effect.sourceAccountId
+    const executedAmountValue = effect.executedAmount
+    const basisReturnAmountValue = effect.basisReturnAmount
+    const ordinaryIncomeAmountValue = effect.ordinaryIncomeAmount
+    const allocatedPenaltyAmountValue = effect.allocatedPenaltyAmount
+    if (!nonblank(actionId) || !nonblank(allocationId) ||
+        !nonblank(sourceAccountId)) return null
+    const executedAmount = usdCentsSchema.safeParse(executedAmountValue)
+    const basisReturnAmount = usdCentsSchema.safeParse(basisReturnAmountValue)
     const ordinaryIncomeAmount = usdCentsSchema.safeParse(
-      effect.ordinaryIncomeAmount,
+      ordinaryIncomeAmountValue,
     )
     const allocatedPenaltyAmount = usdCentsSchema.safeParse(
-      effect.allocatedPenaltyAmount,
+      allocatedPenaltyAmountValue,
     )
     if (!executedAmount.success || !basisReturnAmount.success ||
         !ordinaryIncomeAmount.success || !allocatedPenaltyAmount.success) {
       return null
     }
     const identity = JSON.stringify([
-      effect.actionId,
-      effect.allocationId,
-      effect.sourceAccountId,
+      actionId,
+      allocationId,
+      sourceAccountId,
     ])
     if (identities.has(identity)) return null
     identities.add(identity)
     result.push({
-      actionId: effect.actionId,
-      allocationId: effect.allocationId,
-      sourceAccountId: effect.sourceAccountId,
+      actionId,
+      allocationId,
+      sourceAccountId,
       executedAmount: executedAmount.data,
       basisReturnAmount: basisReturnAmount.data,
       ordinaryIncomeAmount: ordinaryIncomeAmount.data,
@@ -262,10 +269,19 @@ export function runOwnedIraAnnualPassAttempts<DeferredEffect = never>(
 ): Readonly<OwnedIraAnnualPassAttemptsResult<DeferredEffect>> {
   let stable: Readonly<OwnedIraAnnualPassStableContext>
   try {
-    if (!validStableContext(input.stable)) {
+    const stableSnapshot: OwnedIraAnnualPassStableContext = {
+      planId: input.stable.planId,
+      ownerPersonId: input.stable.ownerPersonId,
+      taxYear: input.stable.taxYear,
+      ledgerRunId: input.stable.ledgerRunId,
+      movementCandidateId: input.stable.movementCandidateId,
+      inventoryEvidenceId: input.stable.inventoryEvidenceId,
+      transactionEvidenceId: input.stable.transactionEvidenceId,
+    }
+    if (!validStableContext(stableSnapshot)) {
       return rolledBack('stableContextInvalid', 0)
     }
-    stable = deepFreeze({ ...input.stable })
+    stable = deepFreeze(stableSnapshot)
   } catch {
     return rolledBack('stableContextInvalid', 0)
   }
