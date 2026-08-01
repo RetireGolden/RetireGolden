@@ -354,6 +354,22 @@ describe('retirement-action candidate identity allocator', () => {
     expect(reasonCodes(categoryOnly)).toContain('source-account-not-found')
   })
 
+  it('fails closed instead of throwing on hostile candidate inspection', () => {
+    const plan = singlePersonPlan()
+    plan.accounts = [ownedCash('cash-a')]
+    const hostile = new Proxy({}, {
+      get: () => { throw new Error('hostile getter') },
+      ownKeys: () => { throw new Error('hostile keys') },
+    })
+
+    expect(() => allocateUnknown(plan, hostile)).not.toThrow()
+    const result = allocateUnknown(plan, hostile)
+
+    expect(result.status).toBe('blocked')
+    expect(issueKinds(result)).toEqual(['invalidIntent'])
+    expect(reasonCodes(result)).toEqual(['required-facts-missing'])
+  })
+
   it('does not silently overwrite caller-supplied action or allocation identities', () => {
     const plan = singlePersonPlan()
     plan.accounts = [ownedCash('cash-a')]

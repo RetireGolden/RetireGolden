@@ -336,7 +336,7 @@ function conversionDestinationIssue(
  * proves identity allocation only; the eligibility service and WS4 readiness
  * gate remain authoritative for actionability.
  */
-export function allocateRetirementActionCandidateIdentity(
+function allocateRetirementActionCandidateIdentityUnchecked(
   plan: Readonly<Plan>,
   intent: RetirementActionCandidateIdentityIntent,
 ): RetirementActionCandidateIdentityAllocationResult {
@@ -728,5 +728,21 @@ export function allocateRetirementActionCandidateIdentity(
       sourceCanonicalOrder: 'utf16AccountId',
       generatedAllocationOrder: 'utf16AllocationId',
     },
+  }
+}
+
+export function allocateRetirementActionCandidateIdentity(
+  plan: Readonly<Plan>,
+  intent: RetirementActionCandidateIdentityIntent,
+): RetirementActionCandidateIdentityAllocationResult {
+  try {
+    return allocateRetirementActionCandidateIdentityUnchecked(plan, intent)
+  } catch {
+    return blocked([issue(
+      'invalidIntent',
+      '$',
+      'Candidate and Plan facts could not be inspected losslessly for stable identity allocation.',
+      'required-facts-missing',
+    )])
   }
 }
