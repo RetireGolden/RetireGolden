@@ -27,8 +27,9 @@ import {
   retirementActionPlanReservedIdentifiers,
   type Plan,
 } from '../model/plan.js'
-import { planOwnedNonRothIraAnnualFilingSourceIdentifierClaims } from
-  '../model/retirementActionAnnualTaxFacts.js'
+import {
+  planOwnedNonRothIraAnnualFilingSourceIdentifierClaims,
+} from '../model/retirementActionAnnualTaxFacts.js'
 
 export interface RetirementActionManualReviewInput {
   plan: Readonly<Plan>
@@ -162,13 +163,12 @@ function issue(
 function canonicalIssues(
   issues: readonly RetirementActionManualReviewIssue[],
 ): RetirementActionManualReviewIssue[] {
-  const keyed = new Map<string, RetirementActionManualReviewIssue>()
-  for (const entry of issues) {
-    keyed.set(JSON.stringify([entry.kind, entry.field, entry.detail]), entry)
-  }
-  return [...keyed.entries()]
-    .sort(([left], [right]) => compareUtf16CodeUnits(left, right))
-    .map(([, entry]) => entry)
+  return [...issues].sort((left, right) =>
+    compareUtf16CodeUnits(
+      JSON.stringify([left.kind, left.field, left.detail, left.allocatorIssue]),
+      JSON.stringify([right.kind, right.field, right.detail, right.allocatorIssue]),
+    ),
+  )
 }
 
 function blocked(
@@ -375,17 +375,15 @@ function reviewUnchecked(
       'The Plan retirement-action schedule is unavailable.',
     )])
   }
-  const sparseScheduleIssues: RetirementActionManualReviewIssue[] = []
   for (let index = 0; index < rawActions.length; index += 1) {
     if (!Object.hasOwn(rawActions, index)) {
-      sparseScheduleIssues.push(issue(
+      return blocked([issue(
         'invalidInput',
         `plan.strategies.retirementActions.${index}`,
         'The Plan retirement-action schedule must not contain empty array slots.',
-      ))
+      )])
     }
   }
-  if (sparseScheduleIssues.length > 0) return blocked(sparseScheduleIssues)
   const targetIndexes: number[] = []
   for (let index = 0; index < rawActions.length; index += 1) {
     if (record(rawActions[index])?.['actionId'] === targetActionId) targetIndexes.push(index)

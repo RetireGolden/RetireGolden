@@ -355,8 +355,8 @@ describe('manual retirement-action review and replacement', () => {
 
   it('rejects sparse retirement-action schedules without compacting empty slots', () => {
     const plan = basePlan()
-    const sparseActions = new Array<RetirementActionRequest>(2)
-    sparseActions[1] = legacyWithdrawal()
+    const sparseActions = new Array<RetirementActionRequest>(10_000_000)
+    sparseActions[9_999_999] = legacyWithdrawal()
     plan.strategies.retirementActions = sparseActions
 
     const result = review(plan, 'legacy-withdrawal', ordinaryIntent())
