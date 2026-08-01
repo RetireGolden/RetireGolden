@@ -10,6 +10,7 @@ import {
 import { asPositiveUsdCents, asUsdCents } from './money.js'
 import {
   buildPlanOwnedNonRothIraAnnualFilingEvidence,
+  planOwnedNonRothIraAnnualFilingSourceRecordSchema,
   type BuildPlanOwnedNonRothIraAnnualFilingEvidenceInput,
   type PlanOwnedNonRothIraAnnualFilingSourceRecord,
 } from './ownedNonRothIraAnnualFilingEvidence.js'
@@ -304,6 +305,14 @@ describe('Plan-owned non-Roth IRA annual filing evidence', () => {
     expect(issueKinds(future)).toEqual(['sourceNotFinal'])
   })
 
+  it('classifies a malformed authority finalized date as invalid source data', () => {
+    const value = clone()
+    ;(value.sourceRecord as PlanOwnedNonRothIraAnnualFilingSourceRecord)
+      .authority.finalizedDate = '2031-02-29'
+
+    expect(issueKinds(value)).toEqual(['sourceRecordInvalid'])
+  })
+
   it.each([2005, 9999, 2030.5])(
     'rejects unsupported tax year %s before deadline validation',
     (taxYear) => {
@@ -313,6 +322,27 @@ describe('Plan-owned non-Roth IRA annual filing evidence', () => {
       expect(issueKinds(value)).toEqual(['taxYearInvalid'])
     },
   )
+
+  it('aligns every persisted source tax-year field to the supported deadline era', () => {
+    const source = sourceRecord()
+    source.taxYear = 2005
+    source.nondeductibleContributionFacts.deadlineAuthority.designatedTaxYear =
+      2005
+    source.nondeductibleContributionFacts.contributions[0]!.designatedTaxYear =
+      2005
+
+    const parsed =
+      planOwnedNonRothIraAnnualFilingSourceRecordSchema.safeParse(source)
+    expect(parsed.success).toBe(false)
+    if (!parsed.success) {
+      expect(parsed.error.issues.map((entry) => entry.path.join('.')))
+        .toEqual(expect.arrayContaining([
+          'taxYear',
+          'nondeductibleContributionFacts.deadlineAuthority.designatedTaxYear',
+          'nondeductibleContributionFacts.contributions.0.designatedTaxYear',
+        ]))
+    }
+  })
 
   it.each([
     ['2031-04-14', 'deadlineAuthorityInvalid'],

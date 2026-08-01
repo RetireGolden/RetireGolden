@@ -49,7 +49,7 @@ const filingSourceAuthoritySchema = z.object({
 
 const filingDeadlineAuthoritySchema = z.object({
   authoritySourceId: nonblankIdSchema,
-  designatedTaxYear: z.number().int().min(1).max(9998),
+  designatedTaxYear: z.number().int().min(2006).max(9998),
   deadlineStatus: z.literal('authoritativeFederalDeadlineEstablished'),
   deadlineKind: z.literal(
     'ordinaryFederalFilingDeadlineExcludingDisasterRelief',
@@ -67,7 +67,7 @@ const postYearContributionSourceSchema = z.object({
   sourceRecordId: nonblankIdSchema,
   sourceEvidenceId: nonblankIdSchema,
   sourceAccountId: accountIdSchema,
-  designatedTaxYear: z.number().int().min(1).max(9998),
+  designatedTaxYear: z.number().int().min(2006).max(9998),
   contributionDate: z.string(),
   nondeductibleContributionAmount: positiveUsdCentsSchema,
 }).strict()
@@ -76,7 +76,7 @@ export const planOwnedNonRothIraAnnualFilingSourceRecordSchema = z.object({
   predicate: z.literal('completePlanOwnedNonRothIraAnnualFilingSourceRecord'),
   planId: planIdSchema,
   ownerPersonId: personIdSchema,
-  taxYear: z.number().int().min(1).max(9998),
+  taxYear: z.number().int().min(2006).max(9998),
   evidenceScope: z.literal('realWorldTaxRecordNotProjection'),
   sourceRecordId: nonblankIdSchema,
   sourceEvidenceId: nonblankIdSchema,
@@ -397,7 +397,7 @@ function claimPlanIdentifiers(
     claimIdentifier(
       claimed,
       record.evidenceId,
-      'eligibilityEvidenceId',
+      'iraClassificationEvidenceId',
       [record],
       issues,
     )
@@ -406,7 +406,7 @@ function claimPlanIdentifiers(
     claimIdentifier(
       claimed,
       record.evidenceId,
-      'eligibilityEvidenceId',
+      'sepSimpleActivityEvidenceId',
       [record],
       issues,
     )
@@ -415,7 +415,7 @@ function claimPlanIdentifiers(
     claimIdentifier(
       claimed,
       record.evidenceId,
-      'eligibilityEvidenceId',
+      'deductibleIraContributionEvidenceId',
       [record],
       issues,
     )
@@ -602,8 +602,13 @@ function buildUnchecked(
       'Post-year contribution inventory must be complete through the authoritative ordinary deadline',
     )])
   }
-  if (canonicalDate(source.authority.finalizedDate) === null ||
-      source.authority.finalizedDate < deadlineDate ||
+  if (canonicalDate(source.authority.finalizedDate) === null) {
+    return blocked([issue(
+      'sourceRecordInvalid',
+      'Real-world source authority finalized date must be a real canonical civil date',
+    )])
+  }
+  if (source.authority.finalizedDate < deadlineDate ||
       source.authority.finalizedDate > knowledgeAsOfDate ||
       contributionFacts.completedThroughDate > knowledgeAsOfDate) {
     return blocked([issue(
