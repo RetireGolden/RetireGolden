@@ -11,7 +11,7 @@ import type { Plan } from '@retiregolden/engine/model/plan'
 import { draftPlanFromBrokerAccounts, parseBrokerPositionsCsv } from '../import/brokerCsv'
 import { projectPlan } from '../planner/useProjection'
 import { fmtMoney } from '../planner/format'
-import { renderStandaloneReportHtml } from './reportHtml'
+import { renderStandaloneReportHtml, reportEvidenceFromOptimizeResult } from './reportHtml'
 import {
   REPORT_BLOCK_IDS,
   REPORT_EDUCATIONAL_DISCLAIMER,
@@ -322,5 +322,281 @@ describe('renderStandaloneReportHtml advisor block', () => {
     expect(html).toContain('Authored by A. Advisor, CFP')
     expect(html).toContain('adopted July 1, 2026')
     expect(html).not.toContain('<script')
+  })
+})
+
+describe('optimizer recommendation evidence', () => {
+  it('reports a policy winner withheld for missing account allocation', () => {
+    const evidence = reportEvidenceFromOptimizeResult({
+      tournament: {
+        policyId: 'min-lifetime-tax-estate-floor',
+        candidates: [{
+          id: 'fill-12',
+          label: 'Fill the 12% bracket',
+          executedConversionTotal: 50_000,
+          afterTaxEstateDelta: 2_000,
+          lifetimeTaxDelta: -5_000,
+          moneyLastsYearsDelta: 0,
+        }],
+        winnerSource: 'none',
+        winnerCandidateId: null,
+        winnerLabel: null,
+        winnerConversions: [],
+        winnerValidation: null,
+        marginOverMilpDollars: 0,
+        searchRefined: false,
+        searchSimulations: 0,
+        acaActionabilityVeto: null,
+        retirementActionReadinessVeto: {
+          reason: 'identityIncomplete',
+          vetoedWinnerSource: 'candidate',
+          vetoedCandidateId: 'fill-12',
+          vetoedCandidateLabel: 'Fill the 12% bracket',
+          vetoedConversions: [{ year: 2026, amount: 50_000 }],
+          vetoedValidation: {
+            baseline: { endingAfterTaxEstate: 100_000 },
+            candidate: { endingAfterTaxEstate: 102_000 },
+            afterTaxEstateDelta: 2_000,
+            endingNetWorthDelta: 1_500,
+            lifetimeTaxDelta: -5_000,
+            moneyLastsYearsDelta: 0,
+            requestedConversionTotal: 50_000,
+            executedConversionTotal: 50_000,
+            executedConversionRatio: 1,
+            firstMateriallyUnexecutedYear: null,
+            traditionalDepletionYear: null,
+            recommendationState: 'rejected',
+          },
+        },
+      },
+      claimAge: null,
+    } as never)
+
+    expect(evidence.recommendationState).toBe('identityIncomplete')
+    expect(evidence.validation?.recommendationState).toBe('rejected')
+    expect(evidence.winnerLabel).toContain('withheld pending account allocation')
+    expect(evidence.winnerSource).toBe('candidate')
+    expect(evidence.validation?.afterTaxEstateDelta).toBe(2_000)
+    expect(evidence.validation?.requestedConversionTotal).toBe(50_000)
+    expect(evidence.candidates[0]?.lossReason).toMatch(
+      /cleared the selected objective.*owner, source IRA, and Roth destination/i,
+    )
+    expect(evidence.candidates[0]?.lossReason).not.toMatch(/no candidate cleared/i)
+  })
+
+  it('does not describe other rows as clearing no objective when a winner was withheld', () => {
+    const evidence = reportEvidenceFromOptimizeResult({
+      tournament: {
+        policyId: 'min-lifetime-tax-estate-floor',
+        candidates: [
+          {
+            id: 'fill-10',
+            label: 'Fill the 10% bracket',
+            executedConversionTotal: 20_000,
+            afterTaxEstateDelta: 1_000,
+            lifetimeTaxDelta: -2_000,
+            moneyLastsYearsDelta: 0,
+          },
+          {
+            id: 'fill-12',
+            label: 'Fill the 12% bracket',
+            executedConversionTotal: 50_000,
+            afterTaxEstateDelta: 2_000,
+            lifetimeTaxDelta: -5_000,
+            moneyLastsYearsDelta: 0,
+          },
+        ],
+        winnerSource: 'none',
+        winnerCandidateId: null,
+        winnerLabel: null,
+        winnerConversions: [],
+        winnerValidation: null,
+        marginOverMilpDollars: 0,
+        searchRefined: false,
+        searchSimulations: 0,
+        acaActionabilityVeto: null,
+        retirementActionReadinessVeto: {
+          reason: 'identityIncomplete',
+          vetoedWinnerSource: 'candidate',
+          vetoedCandidateId: 'fill-12',
+          vetoedCandidateLabel: 'Fill the 12% bracket',
+          vetoedConversions: [{ year: 2026, amount: 50_000 }],
+          vetoedValidation: {
+            baseline: { endingAfterTaxEstate: 100_000 },
+            candidate: { endingAfterTaxEstate: 102_000 },
+            afterTaxEstateDelta: 2_000,
+            endingNetWorthDelta: 1_500,
+            lifetimeTaxDelta: -5_000,
+            moneyLastsYearsDelta: 0,
+            requestedConversionTotal: 50_000,
+            executedConversionTotal: 50_000,
+            executedConversionRatio: 1,
+            firstMateriallyUnexecutedYear: null,
+            traditionalDepletionYear: null,
+            recommendationState: 'identityIncomplete',
+          },
+        },
+      },
+      claimAge: null,
+    } as never)
+
+    expect(evidence.candidates[0]?.lossReason).toMatch(
+      /trailed the calculated winner.*withheld pending account allocation/i,
+    )
+    expect(evidence.candidates[0]?.lossReason).not.toMatch(
+      /no candidate cleared|current conversion strategy remained/i,
+    )
+  })
+
+  it('reports a diagnostic-only cleaned schedule withheld for missing account allocation', () => {
+    const evidence = reportEvidenceFromOptimizeResult({
+      tournament: {
+        policyId: 'max-after-tax-estate',
+        candidates: [],
+        winnerSource: 'none',
+        winnerCandidateId: null,
+        winnerLabel: null,
+        winnerConversions: [],
+        winnerValidation: null,
+        marginOverMilpDollars: 0,
+        searchRefined: false,
+        searchSimulations: 0,
+        acaActionabilityVeto: null,
+        retirementActionReadinessVeto: null,
+      },
+      postProcessed: {
+        cleanedSchedule: { conversions: [{ year: 2026, amount: 50_000 }] },
+        cleanedValidation: { recommendationState: 'identityIncomplete' },
+        stabilized: true,
+        minimumRequestedConversionDollars: 1,
+      },
+      claimAge: null,
+    } as never)
+
+    expect(evidence.recommendationState).toBe('identityIncomplete')
+    expect(evidence.winnerLabel).toBe(
+      "the solver's cleaned schedule (withheld pending account allocation)",
+    )
+    expect(evidence.winnerSource).toBe('milp')
+    expect(evidence.validation).toBeNull()
+  })
+
+  it('does not resurrect a legacy identity-withheld MILP row under a non-estate policy', () => {
+    const evidence = reportEvidenceFromOptimizeResult({
+      tournament: {
+        policyId: 'min-lifetime-tax-estate-floor',
+        candidates: [],
+        winnerSource: 'none',
+        winnerCandidateId: null,
+        winnerLabel: null,
+        winnerConversions: [],
+        winnerValidation: null,
+        marginOverMilpDollars: 0,
+        searchRefined: false,
+        searchSimulations: 0,
+        acaActionabilityVeto: null,
+        retirementActionReadinessVeto: null,
+      },
+      postProcessed: {
+        cleanedSchedule: { conversions: [{ year: 2026, amount: 50_000 }] },
+        cleanedValidation: { recommendationState: 'identityIncomplete' },
+        stabilized: true,
+        minimumRequestedConversionDollars: 1,
+      },
+      claimAge: null,
+    } as never)
+
+    expect(evidence.recommendationState).toBe('none')
+    expect(evidence.winnerLabel).toBe('none')
+    expect(evidence.winnerSource).toBe('none')
+  })
+
+  it('attributes a withheld MILP row to the readiness veto', () => {
+    const evidence = reportEvidenceFromOptimizeResult({
+      tournament: {
+        policyId: 'max-after-tax-estate',
+        candidates: [],
+        winnerSource: 'none',
+        winnerCandidateId: null,
+        winnerLabel: null,
+        winnerConversions: [],
+        winnerValidation: null,
+        marginOverMilpDollars: 0,
+        searchRefined: false,
+        searchSimulations: 0,
+        acaActionabilityVeto: null,
+        retirementActionReadinessVeto: {
+          reason: 'identityIncomplete',
+          vetoedWinnerSource: 'milp',
+          vetoedCandidateId: null,
+          vetoedCandidateLabel: null,
+          vetoedConversions: [{ year: 2026, amount: 50_000 }],
+          vetoedValidation: {
+            baseline: { endingAfterTaxEstate: 100_000 },
+            candidate: { endingAfterTaxEstate: 102_000 },
+            afterTaxEstateDelta: 2_000,
+            endingNetWorthDelta: 1_500,
+            lifetimeTaxDelta: -5_000,
+            moneyLastsYearsDelta: 0,
+            requestedConversionTotal: 50_000,
+            executedConversionTotal: 50_000,
+            executedConversionRatio: 1,
+            firstMateriallyUnexecutedYear: null,
+            traditionalDepletionYear: null,
+            recommendationState: 'identityIncomplete',
+          },
+        },
+      },
+      claimAge: null,
+    } as never)
+
+    expect(evidence.winnerSource).toBe('milp')
+    expect(evidence.candidates[0]).toMatchObject({
+      candidateId: 'milp-cleaned-schedule',
+      label: "the solver's cleaned schedule",
+      afterTaxEstateDelta: 2_000,
+      lifetimeTaxDelta: -5_000,
+      moneyLastsYearsDelta: 0,
+    })
+    expect(evidence.candidates[0]?.lossReason).toMatch(
+      /owner, source IRA, and Roth destination/i,
+    )
+    expect(evidence.candidates[0]?.lossReason).not.toMatch(/no candidate cleared/i)
+  })
+
+  it('does not relabel an ACA-vetoed result as account-allocation withholding', () => {
+    const evidence = reportEvidenceFromOptimizeResult({
+      tournament: {
+        policyId: 'max-after-tax-estate',
+        candidates: [],
+        winnerSource: 'none',
+        winnerCandidateId: null,
+        winnerLabel: null,
+        winnerConversions: [],
+        winnerValidation: null,
+        marginOverMilpDollars: 0,
+        searchRefined: false,
+        searchSimulations: 0,
+        acaActionabilityVeto: {
+          baselineNonActionableYears: [2027],
+          candidateNonActionableYears: [],
+          supportCodes: ['tax-year-parameters-unsupported'],
+          vetoedCandidateIds: [],
+          vetoedMilp: true,
+        },
+        retirementActionReadinessVeto: null,
+      },
+      postProcessed: {
+        cleanedSchedule: { conversions: [{ year: 2026, amount: 50_000 }] },
+        cleanedValidation: { recommendationState: 'identityIncomplete' },
+        stabilized: true,
+        minimumRequestedConversionDollars: 1,
+      },
+      claimAge: null,
+    } as never)
+
+    expect(evidence.recommendationState).toBe('none')
+    expect(evidence.winnerLabel).toBe('none')
+    expect(evidence.winnerSource).toBe('none')
   })
 })

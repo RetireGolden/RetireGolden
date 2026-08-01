@@ -24,6 +24,8 @@ import {
   type ReportRecommendationEvidence,
   type ReportValidationEvidence,
 } from './reportModel'
+import { retirementActionReadinessVetoExplanation } from '../planner/retirementActionReadinessVetoCopy'
+import { isCalculatedIdentityWithheldPostProcessing } from '../planner/optimizePageChart'
 
 export type {
   ReportClaimAgeEvidence,
@@ -443,6 +445,13 @@ function lossReasonForCandidate(
   candidate: ExactLedgerTournament['candidates'][number],
 ): string {
   if (tournament.winnerCandidateId === candidate.id) return 'Selected winner on the full year-by-year projection.'
+  const readinessVeto = tournament.retirementActionReadinessVeto
+  if (
+    readinessVeto?.vetoedCandidateId === candidate.id ||
+    (readinessVeto?.vetoedWinnerSource === 'milp' && candidate.id === 'milp-cleaned-schedule')
+  ) {
+    return retirementActionReadinessVetoExplanation(readinessVeto)
+  }
   if (candidate.afterTaxEstateDelta <= 1) return 'Did not improve after-tax estate over the current plan.'
   if (tournament.acaActionabilityVeto?.vetoedCandidateIds.includes(candidate.id)) {
     const years = acaVetoYears(tournament.acaActionabilityVeto)
@@ -452,7 +461,14 @@ function lossReasonForCandidate(
     )
   }
   const benchmark = validation?.afterTaxEstateDelta ?? Math.max(0, ...tournament.candidates.map((row) => row.afterTaxEstateDelta))
-  if (benchmark > candidate.afterTaxEstateDelta) return `Trailed the selected recommendation by ${fmtMoney(benchmark - candidate.afterTaxEstateDelta)}.`
+  if (benchmark > candidate.afterTaxEstateDelta) {
+    return readinessVeto
+      ? `Trailed the calculated winner by ${fmtMoney(benchmark - candidate.afterTaxEstateDelta)}; that winner was withheld pending account allocation.`
+      : `Trailed the selected recommendation by ${fmtMoney(benchmark - candidate.afterTaxEstateDelta)}.`
+  }
+  if (readinessVeto) {
+    return 'Not selected under the active objective and guardrails; the calculated winner was withheld pending account allocation.'
+  }
   if (tournament.winnerSource === 'incumbent') return 'The current conversion strategy remained the top-ranked result found.'
   if (tournament.winnerSource === 'none') return 'No candidate cleared the recommendation threshold.'
   return 'Not selected under the active objective and guardrails.'
@@ -479,35 +495,71 @@ function validationEvidence(validation: ExactLedgerValidation | null): ReportVal
 
 export function reportEvidenceFromOptimizeResult(result: OptimizeResult): ReportRecommendationEvidence {
   const tournament = result.tournament
-  // Only the winning source's validation belongs on the report. winnerValidation is
-  // set for 'milp'/'candidate' winners and intentionally null for 'incumbent'/'none';
-  // do not fall back to the solver's cleanedValidation, which describes a schedule that
-  // did not win and would mislabel a "no change" / incumbent result.
-  const validation = tournament.winnerValidation ?? null
+  // Report the selected actionable winner or the exact calculated winner that
+  // was explicitly withheld. Never substitute the solver's cleaned validation
+  // for a different policy winner or an ordinary incumbent/no-winner result.
+  const validation = tournament.winnerValidation ??
+    tournament.retirementActionReadinessVeto?.vetoedValidation ??
+    null
   const policy = objectivePolicies[tournament.policyId]
-  const recommendationState = validation?.recommendationState ?? (tournament.winnerSource === 'incumbent' ? 'neutral' : 'none')
+  const withheldCleanedSchedule =
+    tournament.policyId === 'max-after-tax-estate' &&
+    tournament.winnerSource === 'none' &&
+    tournament.retirementActionReadinessVeto === null &&
+    tournament.acaActionabilityVeto === null &&
+    isCalculatedIdentityWithheldPostProcessing(result.postProcessed)
+  const recommendationState =
+    tournament.retirementActionReadinessVeto || withheldCleanedSchedule
+      ? 'identityIncomplete'
+      : validation?.recommendationState ??
+        (tournament.winnerSource === 'incumbent' ? 'neutral' : 'none')
   const winnerLabel =
-    tournament.winnerLabel ??
-    (tournament.winnerSource === 'milp'
-      ? "the solver's cleaned schedule"
-      : tournament.winnerSource === 'incumbent'
-        ? 'current plan strategy'
-        : 'none')
+    tournament.retirementActionReadinessVeto
+      ? `${tournament.retirementActionReadinessVeto.vetoedCandidateLabel ??
+        (tournament.retirementActionReadinessVeto.vetoedWinnerSource === 'milp'
+          ? "the solver's cleaned schedule"
+          : 'calculated policy winner')} (withheld pending account allocation)`
+      : withheldCleanedSchedule
+        ? "the solver's cleaned schedule (withheld pending account allocation)"
+      : tournament.winnerLabel ??
+        (tournament.winnerSource === 'milp'
+          ? "the solver's cleaned schedule"
+          : tournament.winnerSource === 'incumbent'
+            ? 'current plan strategy'
+            : 'none')
+  const candidateRows = tournament.candidates.map((candidate) => ({
+    afterTaxEstateDelta: candidate.afterTaxEstateDelta,
+    candidateId: candidate.id,
+    label: candidate.label,
+    lifetimeTaxDelta: candidate.lifetimeTaxDelta,
+    lossReason: lossReasonForCandidate(tournament, validation, candidate),
+    moneyLastsYearsDelta: candidate.moneyLastsYearsDelta,
+  }))
+  const readinessVeto = tournament.retirementActionReadinessVeto
+  if (
+    readinessVeto?.vetoedWinnerSource === 'milp' &&
+    !candidateRows.some((candidate) => candidate.candidateId === 'milp-cleaned-schedule')
+  ) {
+    const vetoed = readinessVeto.vetoedValidation
+    candidateRows.push({
+      afterTaxEstateDelta: vetoed.afterTaxEstateDelta,
+      candidateId: 'milp-cleaned-schedule',
+      label: readinessVeto.vetoedCandidateLabel ?? "the solver's cleaned schedule",
+      lifetimeTaxDelta: vetoed.lifetimeTaxDelta,
+      lossReason: retirementActionReadinessVetoExplanation(readinessVeto),
+      moneyLastsYearsDelta: vetoed.moneyLastsYearsDelta,
+    })
+  }
   return {
     objectiveId: tournament.policyId,
     objectiveLabel: policy.label,
     recommendationState,
     winnerLabel,
-    winnerSource: tournament.winnerSource,
+    winnerSource:
+      tournament.retirementActionReadinessVeto?.vetoedWinnerSource ??
+      (withheldCleanedSchedule ? 'milp' : tournament.winnerSource),
     validation: validationEvidence(validation),
-    candidates: tournament.candidates.map((candidate) => ({
-      afterTaxEstateDelta: candidate.afterTaxEstateDelta,
-      candidateId: candidate.id,
-      label: candidate.label,
-      lifetimeTaxDelta: candidate.lifetimeTaxDelta,
-      lossReason: lossReasonForCandidate(tournament, validation, candidate),
-      moneyLastsYearsDelta: candidate.moneyLastsYearsDelta,
-    })),
+    candidates: candidateRows,
     claimAge: result.claimAge?.enabled
       ? {
           combinationsEvaluated: result.claimAge.combinationsEvaluated,

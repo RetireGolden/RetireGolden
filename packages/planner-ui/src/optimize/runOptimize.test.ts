@@ -85,6 +85,7 @@ describe('runOptimizeRequest', () => {
     expect(postProcessed?.cleanedSchedule.conversions.reduce((a, c) => a + c.amount, 0)).toBeGreaterThan(0)
     expect(postProcessed?.cleanedValidation.executedConversionRatio).toBeGreaterThan(0)
     expect(postProcessed?.cleanedExecutionByYear.length).toBeGreaterThan(0)
+    expect(postProcessed?.minimumRequestedConversionDollars).toBeGreaterThan(0)
     expect(postProcessed).not.toHaveProperty('rawResult')
     expect(postProcessed).not.toHaveProperty('cleanedResult')
 

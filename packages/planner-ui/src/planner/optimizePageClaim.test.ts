@@ -10,7 +10,13 @@ import { describe, expect, it } from 'vitest'
 import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
 import type { ClaimAgeCoOptimization } from '@retiregolden/engine/projection/optimizePlan'
 import { socialSecurityIncome } from '@retiregolden/engine/testing/planFixtures'
-import { applyOptimizeRecommendation, claimEstateGain, planWithWinningClaim } from './optimizePageClaim'
+import {
+  applyOptimizeRecommendation,
+  claimEstateGain,
+  claimOnlyApplyAvailable,
+  claimRecommendationReportAvailable,
+  planWithWinningClaim,
+} from './optimizePageClaim'
 
 let counter = 0
 const ids = () => `opc-${++counter}`
@@ -60,6 +66,66 @@ describe('claimEstateGain', () => {
     expect(claimEstateGain(claimAgeWithPatch(ssPlan()))).toBe(118_000)
     expect(claimEstateGain(noChange)).toBe(0)
     expect(claimEstateGain(null)).toBe(0)
+  })
+})
+
+describe('claimOnlyApplyAvailable', () => {
+  it('allows a separately established claim-only result', () => {
+    expect(claimOnlyApplyAvailable({
+      claimChangeRecommended: true,
+      scheduleApplyAvailable: false,
+      incumbentHolds: false,
+      displayedConversionCount: 0,
+    })).toBe(true)
+  })
+
+  it('allows preserving the incumbent schedule under the winning claim age', () => {
+    expect(claimOnlyApplyAvailable({
+      claimChangeRecommended: true,
+      scheduleApplyAvailable: false,
+      incumbentHolds: true,
+      displayedConversionCount: 2,
+    })).toBe(true)
+  })
+
+  it('withholds claim-only Apply when the joint result depended on a diagnostic schedule', () => {
+    expect(claimOnlyApplyAvailable({
+      claimChangeRecommended: true,
+      scheduleApplyAvailable: false,
+      incumbentHolds: false,
+      displayedConversionCount: 2,
+    })).toBe(false)
+  })
+
+  it('does not duplicate the joint Apply control', () => {
+    expect(claimOnlyApplyAvailable({
+      claimChangeRecommended: true,
+      scheduleApplyAvailable: true,
+      incumbentHolds: false,
+      displayedConversionCount: 2,
+    })).toBe(false)
+  })
+
+  it('withholds a mixed report when the joint claim result depends on a diagnostic schedule', () => {
+    const unsafe = {
+      claimChangeRecommended: true,
+      scheduleApplyAvailable: false,
+      incumbentHolds: false,
+      displayedConversionCount: 2,
+    }
+    expect(claimRecommendationReportAvailable(unsafe)).toBe(false)
+    expect(claimRecommendationReportAvailable({
+      ...unsafe,
+      scheduleApplyAvailable: true,
+    })).toBe(true)
+    expect(claimRecommendationReportAvailable({
+      ...unsafe,
+      displayedConversionCount: 0,
+    })).toBe(true)
+    expect(claimRecommendationReportAvailable({
+      ...unsafe,
+      claimChangeRecommended: false,
+    })).toBe(true)
   })
 })
 

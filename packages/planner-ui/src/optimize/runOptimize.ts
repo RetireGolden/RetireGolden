@@ -27,6 +27,7 @@ function summarizePostProcessing(postProcessed: ExactLedgerPostProcessing | null
     stabilized: postProcessed.stabilized,
     iterationCount: postProcessed.iterationCount,
     pruneIterationCount: postProcessed.pruneIterationCount,
+    minimumRequestedConversionDollars: postProcessed.minimumRequestedConversionDollars,
     recommendationSchedule: postProcessed.recommendationSchedule,
     cleanedExecutionByYear: postProcessed.cleanedResult.years.map((year) => ({
       year: year.year,

@@ -396,7 +396,7 @@ describe('objective policies and ranking', () => {
 })
 
 describe('runDecisionTournament', () => {
-  it('selects bracket-fill candidate when exact ledger beats milp', () => {
+  it('prices aggregate bracket-fill and milp candidates without selecting either', () => {
     const ctx = createDecisionContext(tradHeavyPlan(), simOptions())
     // A deliberately over-converting "solver" schedule alongside the simple fills.
     const milp = milpScheduleGenerator({
@@ -407,20 +407,74 @@ describe('runDecisionTournament', () => {
     })
     const result = runDecisionTournament(ctx, [simpleRothConversionGenerator, milp])
 
-    expect(result.winner).not.toBeNull()
-    expect(result.winner!.evaluation.candidate.source).not.toBe('milp')
-    expect(result.winner!.evaluation.candidate.id).toMatch(/bracket|cap/)
+    expect(result.winner).toBeNull()
+    expect(result.ranked.every((row) => row.evaluation.recommendationState === 'diagnostic')).toBe(true)
+    expect(result.ranked.some((row) => row.evaluation.deltas.endingAfterTaxEstate !== 0)).toBe(true)
     const milpRow = result.ranked.find((row) => row.evaluation.candidate.id === 'milp-cleaned')!
     expect(milpRow.lossReason).not.toBeNull()
   })
 
-  it('does not let milp infeasibility override a solvent exact projection', () => {
+  it('does not turn a solvent aggregate projection into an actionable recommendation', () => {
     // No MILP generator at all (the solver said "infeasible"): simple
     // candidates still win on the exact ledger.
     const ctx = createDecisionContext(tradHeavyPlan(), simOptions())
     const result = runDecisionTournament(ctx, [simpleRothConversionGenerator])
-    expect(result.winner).not.toBeNull()
-    expect(result.winner!.evaluation.recommendationState).toBe('beneficial')
+    expect(result.winner).toBeNull()
+    expect(result.ranked.every((row) => row.evaluation.recommendationState === 'diagnostic')).toBe(true)
+  })
+
+  it('does not expose a string option that can bypass aggregate readiness', () => {
+    const ctx = createDecisionContext(tradHeavyPlan(), simOptions())
+    const result = runDecisionTournament(ctx, [simpleRothConversionGenerator], {
+      evaluation: { retirementActionReadinessMode: 'legacyAggregateCalculation' } as never,
+    })
+
+    expect(result.winner).toBeNull()
+    expect(result.ranked.every((row) => row.evaluation.recommendationState === 'diagnostic')).toBe(true)
+  })
+
+  it('does not let a Proxy forge the package-private optimizer capability', () => {
+    const ctx = createDecisionContext(tradHeavyPlan(), simOptions())
+    const forged = new Proxy({}, {
+      get: (_target, key) => typeof key === 'symbol' ? true : undefined,
+    })
+    const result = runDecisionTournament(ctx, [simpleRothConversionGenerator], {
+      evaluation: forged,
+    })
+
+    expect(result.winner).toBeNull()
+    expect(result.ranked.every((row) => row.evaluation.recommendationState === 'diagnostic')).toBe(true)
+  })
+
+  it('dedupes malformed identity readiness without throwing and lets evaluation fail closed', () => {
+    const ctx = createDecisionContext(tradHeavyPlan(), simOptions())
+    const malformed = {
+      ...simpleRothConversionGenerator.generate(ctx)[0]!,
+      retirementActionReadiness: { state: 'identityComplete' } as never,
+    }
+    const result = runDecisionTournament(ctx, [{ id: 'malformed', generate: () => [malformed] }])
+
+    expect(result.winner).toBeNull()
+    expect(result.ranked).toHaveLength(1)
+    expect(result.ranked[0]!.evaluation.recommendationState).toBe('diagnostic')
+    expect(result.ranked[0]!.evaluation.diagnostics.join(' ')).toMatch(/incomplete|does not exactly match|cannot certify/i)
+  })
+
+  it('keeps hostile readiness accessors diagnostic through dedupe and evaluation', () => {
+    const ctx = createDecisionContext(tradHeavyPlan(), simOptions())
+    const hostileReadiness = new Proxy({}, {
+      get: () => { throw new Error('hostile readiness') },
+    })
+    const hostile = {
+      ...simpleRothConversionGenerator.generate(ctx)[0]!,
+      retirementActionReadiness: hostileReadiness as never,
+    }
+    const result = runDecisionTournament(ctx, [{ id: 'hostile', generate: () => [hostile] }])
+
+    expect(result.winner).toBeNull()
+    expect(result.ranked).toHaveLength(1)
+    expect(result.ranked[0]!.evaluation.recommendationState).toBe('diagnostic')
+    expect(result.ranked[0]!.evaluation.diagnostics.join(' ')).toMatch(/incomplete readiness evidence/i)
   })
 
   it('returns no winner when nothing improves the plan', () => {

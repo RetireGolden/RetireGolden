@@ -12,6 +12,10 @@ import type { MonteCarloSummary } from '@retiregolden/engine/montecarlo/run'
 import type { ExactLedgerTournament } from '@retiregolden/engine/projection/optimizePlan'
 import { ACA_VETO_ROW_NOTE, acaVetoExplanation } from './acaVetoCopy'
 import { fmtMoney, fmtMoneyCompact } from './format'
+import {
+  RETIREMENT_ACTION_READINESS_VETO_ROW_NOTE,
+  retirementActionReadinessVetoExplanation,
+} from './retirementActionReadinessVetoCopy'
 
 function fmtSignedMoney(v: number): string {
   return `${v >= 0 ? '+' : '−'}${fmtMoney(Math.abs(v))}`
@@ -140,11 +144,24 @@ export function WhyRecommendationPanel({
     tournament.winnerSource === 'milp'
       ? "the solver's schedule"
       : (tournament.winnerLabel ?? 'the recommendation')
+  const displayedMilpValidation =
+    tournament.winnerSource === 'milp'
+      ? tournament.winnerValidation
+      : tournament.retirementActionReadinessVeto?.vetoedWinnerSource === 'milp'
+        ? tournament.retirementActionReadinessVeto.vetoedValidation
+        : null
 
   return (
     <details className="ss-explainer">
       <summary>Why this recommendation?</summary>
-      {noWinner ? (
+      {tournament.retirementActionReadinessVeto ? (
+        <p>
+          Every candidate below was re-run through your full year-by-year projection and ranked by{' '}
+          <strong>{objectiveLabel}</strong>
+          {estateObjective ? '' : ' (the estate deltas shown are context, not the ranking metric)'}.{' '}
+          <strong>A calculated winner cleared the selected objective but was withheld pending account allocation.</strong>
+        </p>
+      ) : noWinner ? (
         <p>
           Every candidate below was re-run through your full year-by-year projection and ranked by{' '}
           <strong>{objectiveLabel}</strong>
@@ -175,6 +192,12 @@ export function WhyRecommendationPanel({
           <strong>Why nothing qualified.</strong> {acaVetoExplanation(tournament.acaActionabilityVeto)}
         </p>
       ) : null}
+      {tournament.retirementActionReadinessVeto ? (
+        <p>
+          <strong>Why the calculated winner was withheld.</strong>{' '}
+          {retirementActionReadinessVetoExplanation(tournament.retirementActionReadinessVeto)}
+        </p>
+      ) : null}
       <div className="year-table-wrap" style={{ border: 'none' }}>
         <table className="compare-table">
           <thead>
@@ -190,25 +213,33 @@ export function WhyRecommendationPanel({
             <tr>
               <td>
                 Your current plan (baseline)
-                {tournament.winnerSource === 'incumbent' ? <strong> (winner)</strong> : ''}
+                {tournament.winnerSource === 'incumbent' &&
+                tournament.retirementActionReadinessVeto === null ? (
+                  <strong> (winner)</strong>
+                ) : ''}
               </td>
               <td>—</td>
               <td>±$0</td>
               <td>±$0</td>
               <td>—</td>
             </tr>
-            {tournament.winnerSource === 'milp' && tournament.winnerValidation ? (
+            {displayedMilpValidation ? (
               <tr>
                 <td>
-                  Solver's schedule (post-processed)<strong> (winner)</strong>
+                  Solver's schedule (post-processed)
+                  {tournament.winnerSource === 'milp' ? (
+                    <strong> (winner)</strong>
+                  ) : (
+                    <em className="muted"> ({RETIREMENT_ACTION_READINESS_VETO_ROW_NOTE})</em>
+                  )}
                 </td>
-                <td>{fmtMoneyCompact(tournament.winnerValidation.executedConversionTotal)}</td>
-                <td>{fmtSignedMoney(tournament.winnerValidation.afterTaxEstateDelta)}</td>
-                <td>{fmtSignedMoney(tournament.winnerValidation.lifetimeTaxDelta)}</td>
+                <td>{fmtMoneyCompact(displayedMilpValidation.executedConversionTotal)}</td>
+                <td>{fmtSignedMoney(displayedMilpValidation.afterTaxEstateDelta)}</td>
+                <td>{fmtSignedMoney(displayedMilpValidation.lifetimeTaxDelta)}</td>
                 <td>
-                  {tournament.winnerValidation.moneyLastsYearsDelta === 0
+                  {displayedMilpValidation.moneyLastsYearsDelta === 0
                     ? 'unchanged'
-                    : `${tournament.winnerValidation.moneyLastsYearsDelta > 0 ? '+' : ''}${tournament.winnerValidation.moneyLastsYearsDelta} yr`}
+                    : `${displayedMilpValidation.moneyLastsYearsDelta > 0 ? '+' : ''}${displayedMilpValidation.moneyLastsYearsDelta} yr`}
                 </td>
               </tr>
             ) : null}
@@ -219,6 +250,9 @@ export function WhyRecommendationPanel({
                   {c.id === tournament.winnerCandidateId ? <strong> (winner)</strong> : ''}
                   {tournament.acaActionabilityVeto?.vetoedCandidateIds.includes(c.id) ? (
                     <em className="muted"> ({ACA_VETO_ROW_NOTE})</em>
+                  ) : null}
+                  {tournament.retirementActionReadinessVeto?.vetoedCandidateId === c.id ? (
+                    <em className="muted"> ({RETIREMENT_ACTION_READINESS_VETO_ROW_NOTE})</em>
                   ) : null}
                 </td>
                 <td>{fmtMoneyCompact(c.executedConversionTotal)}</td>

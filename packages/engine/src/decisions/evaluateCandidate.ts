@@ -11,10 +11,17 @@
  */
 
 import type { Plan } from '../model/plan.js'
+import {
+  decodeScenarioPointer,
+  isScenarioPatchEnvelope,
+  parseScenarioPatch,
+} from '../scenarios/contract.js'
+import { canonicalScenarioJson } from '../scenarios/patch.js'
 import { applyScenarioPatch } from '../scenarios/scenarios.js'
 import { summarizeProjection, type ProjectionSummary } from '../projection/compare.js'
 import { simulatePlan } from '../projection/simulate.js'
 import type { ProjectionResult } from '../projection/types.js'
+import { isLegacyAggregateDecisionCalculation } from '../projection/internal/legacyAggregateDecisionCalculation.js'
 import type {
   ConversionExecution,
   DecisionCandidate,
@@ -22,6 +29,469 @@ import type {
   DecisionRecommendationState,
   ExactDecisionEvaluation,
 } from './types.js'
+
+const RETIREMENT_ACTION_STRATEGY_KEYS = [
+  'retirementActions',
+  'rothConversion',
+  'withdrawalOrder',
+  'qcdAnnual',
+] as const
+const AGGREGATE_RETIREMENT_ACTION_STRATEGY_KEYS = new Set([
+  'rothConversion',
+  'withdrawalOrder',
+  'qcdAnnual',
+])
+const IDENTITY_COMPLETE_RETIREMENT_ACTION_KINDS = new Set([
+  'ordinaryWithdrawal',
+  'rothConversion',
+  'qcd',
+])
+
+function objectRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null
+}
+
+interface RetirementActionPatchInspection {
+  changesRetirementActions: boolean
+  hasAggregateStrategy: boolean
+  retirementActionRequests: unknown
+}
+
+function strategyExecutionValue(key: string, value: unknown): unknown {
+  if (key !== 'rothConversion') return value
+  const strategy = objectRecord(value)
+  if (strategy === null || !Object.prototype.hasOwnProperty.call(strategy, 'optimizedAtIso')) {
+    return value
+  }
+  const execution = { ...strategy }
+  delete execution['optimizedAtIso']
+  return execution
+}
+
+function strategyValueChanged(
+  before: Record<string, unknown> | null,
+  after: Record<string, unknown> | null,
+  key: string,
+): boolean {
+  const hasBefore = before !== null && Object.prototype.hasOwnProperty.call(before, key)
+  const hasAfter = after !== null && Object.prototype.hasOwnProperty.call(after, key)
+  if (hasBefore !== hasAfter) return true
+  if (!hasBefore) return false
+  return canonicalScenarioJson(strategyExecutionValue(key, before![key])) !==
+    canonicalScenarioJson(strategyExecutionValue(key, after![key]))
+}
+
+function inspectRetirementActionPatch(
+  planPatch: unknown,
+  baseStrategies?: Plan['strategies'],
+  materializedStrategies?: Plan['strategies'],
+): RetirementActionPatchInspection {
+  const patch = objectRecord(planPatch)
+  if (patch === null) {
+    return {
+      changesRetirementActions: false,
+      hasAggregateStrategy: false,
+      retirementActionRequests: undefined,
+    }
+  }
+
+  if (!isScenarioPatchEnvelope(patch)) {
+    const strategies = objectRecord(patch['strategies'])
+    const base = objectRecord(baseStrategies)
+    const materialized = objectRecord(materializedStrategies)
+    const finalStrategies = materialized ?? strategies
+    const legacyValueChanged = (key: string): boolean =>
+      strategies !== null &&
+      Object.prototype.hasOwnProperty.call(strategies, key) &&
+      (base === null || strategyValueChanged(base, finalStrategies, key))
+    const retirementActionsChanged = legacyValueChanged('retirementActions')
+    return {
+      changesRetirementActions: RETIREMENT_ACTION_STRATEGY_KEYS.some(legacyValueChanged),
+      hasAggregateStrategy: [...AGGREGATE_RETIREMENT_ACTION_STRATEGY_KEYS].some((key) =>
+        legacyValueChanged(key) &&
+        aggregateStrategyRequestsMovement(key, finalStrategies?.[key]),
+      ),
+      retirementActionRequests: retirementActionsChanged
+        ? finalStrategies?.['retirementActions']
+        : undefined,
+    }
+  }
+
+  const parsed = parseScenarioPatch(patch)
+  if (!parsed.ok) {
+    return {
+      changesRetirementActions: true,
+      hasAggregateStrategy: false,
+      retirementActionRequests: null,
+    }
+  }
+
+  let changesRetirementActions = false
+  let hasAggregateStrategy = false
+  let retirementActionRequests: unknown
+  for (const operation of parsed.patch.operations) {
+    const segments = decodeScenarioPointer(operation.path)
+    if (segments?.[0] !== 'strategies') continue
+
+    if (segments.length === 1) {
+      const beforeStrategies = operation.before.present
+        ? objectRecord(operation.before.value)
+        : null
+      const afterStrategies = operation.op === 'set'
+        ? objectRecord(operation.value)
+        : null
+      changesRetirementActions ||= RETIREMENT_ACTION_STRATEGY_KEYS.some((key) =>
+        strategyValueChanged(beforeStrategies, afterStrategies, key),
+      )
+      hasAggregateStrategy ||= [...AGGREGATE_RETIREMENT_ACTION_STRATEGY_KEYS].some((key) =>
+        strategyValueChanged(beforeStrategies, afterStrategies, key),
+      )
+      if (strategyValueChanged(beforeStrategies, afterStrategies, 'retirementActions')) {
+        retirementActionRequests = afterStrategies?.['retirementActions']
+      }
+      continue
+    }
+
+    const strategyKey = segments[1]!
+    if (!RETIREMENT_ACTION_STRATEGY_KEYS.includes(strategyKey as typeof RETIREMENT_ACTION_STRATEGY_KEYS[number])) {
+      continue
+    }
+    // Optimizer provenance is display metadata. Setting or clearing it cannot
+    // move retirement-account money and therefore must not demand execution
+    // identities.
+    if (
+      strategyKey === 'rothConversion' &&
+      segments.length === 3 &&
+      segments[2] === 'optimizedAtIso'
+    ) {
+      continue
+    }
+    const beforePresent = operation.before.present
+    const afterPresent = operation.op === 'set'
+    const operationChanged =
+      beforePresent !== afterPresent ||
+      (beforePresent &&
+        afterPresent &&
+        canonicalScenarioJson(strategyExecutionValue(strategyKey, operation.before.value)) !==
+          canonicalScenarioJson(strategyExecutionValue(strategyKey, operation.value)))
+    if (!operationChanged) continue
+    changesRetirementActions = true
+    hasAggregateStrategy ||= AGGREGATE_RETIREMENT_ACTION_STRATEGY_KEYS.has(strategyKey)
+    if (strategyKey === 'retirementActions') {
+      retirementActionRequests = segments.length === 2 && operation.op === 'set'
+        ? operation.value
+        : null
+    }
+  }
+
+  return {
+    changesRetirementActions,
+    hasAggregateStrategy,
+    retirementActionRequests,
+  }
+}
+
+function inspectCandidateRetirementActionPatch(
+  candidate: DecisionCandidate,
+  basePlan?: Plan,
+): RetirementActionPatchInspection {
+  const patch = objectRecord(candidate.planPatch)
+  if (basePlan === undefined || patch === null) {
+    return inspectRetirementActionPatch(candidate.planPatch, basePlan?.strategies)
+  }
+  // Classify the plan that applyScenarioPatch actually produced. Canonical
+  // patches deliberately accept an operation idempotently when the current
+  // value already equals its target, so trusting the document's stale
+  // `before` snapshot would turn an applied no-op into a false readiness gate.
+  const materialized = planForCandidate(basePlan, { planPatch: candidate.planPatch })
+  if (!materialized.ok) {
+    return {
+      changesRetirementActions: true,
+      hasAggregateStrategy: false,
+      retirementActionRequests: null,
+    }
+  }
+  return inspectRetirementActionPatch(
+    { strategies: materialized.plan.strategies },
+    basePlan.strategies,
+    materialized.plan.strategies,
+  )
+}
+
+function conversionScheduleRequestsMovement(value: unknown): boolean {
+  if (!Array.isArray(value)) return true
+  for (const conversion of value) {
+    const record = objectRecord(conversion)
+    const year = record?.['year']
+    const amount = record?.['amount']
+    if (
+      typeof year !== 'number' ||
+      !Number.isInteger(year) ||
+      year < 1900 ||
+      year > 2200 ||
+      typeof amount !== 'number' ||
+      !Number.isFinite(amount) ||
+      amount < 0
+    ) {
+      return true
+    }
+    if (amount > 0) return true
+  }
+  return false
+}
+
+function rothStrategyRequestsMovement(value: unknown): boolean {
+  const strategy = objectRecord(value)
+  if (strategy?.['mode'] === 'none') return false
+  if (strategy?.['mode'] === 'manual' || strategy?.['mode'] === 'optimized') {
+    return conversionScheduleRequestsMovement(strategy['conversions'])
+  }
+  return true
+}
+
+function qcdStrategyRequestsMovement(value: unknown): boolean {
+  // Missing/zero aggregate QCD configuration cancels future movement. Any
+  // positive or malformed value remains gated until it is replaced by
+  // identity-complete action requests.
+  if (value === undefined || value === 0) return false
+  return true
+}
+
+function aggregateStrategyRequestsMovement(key: string, value: unknown): boolean {
+  if (key === 'rothConversion') return rothStrategyRequestsMovement(value)
+  if (key === 'qcdAnnual') return qcdStrategyRequestsMovement(value)
+  // A changed withdrawal order can redirect account movement even though it
+  // does not carry a dollar amount of its own.
+  return true
+}
+
+function retirementActionRequestsOnlyRemoved(before: unknown, after: unknown): boolean {
+  if (!Array.isArray(before) || !Array.isArray(after)) return false
+  const beforeById = new Map<string, string>()
+  for (const request of before) {
+    const actionId = objectRecord(request)?.['actionId']
+    if (typeof actionId !== 'string' || actionId.trim().length === 0 || beforeById.has(actionId)) {
+      return false
+    }
+    beforeById.set(actionId, canonicalScenarioJson(request))
+  }
+  const finalIds = new Set<string>()
+  for (const request of after) {
+    const actionId = objectRecord(request)?.['actionId']
+    if (
+      typeof actionId !== 'string' ||
+      actionId.trim().length === 0 ||
+      finalIds.has(actionId) ||
+      beforeById.get(actionId) !== canonicalScenarioJson(request)
+    ) {
+      return false
+    }
+    finalIds.add(actionId)
+  }
+  return true
+}
+
+function candidateOnlyRemovesRetirementActions(
+  candidate: DecisionCandidate,
+  basePlan: Plan,
+): boolean {
+  if (
+    candidate.conversions !== undefined &&
+    conversionScheduleRequestsMovement(candidate.conversions)
+  ) {
+    return false
+  }
+  const materialized = planForCandidate(basePlan, candidate)
+  if (!materialized.ok) return false
+
+  const before = objectRecord(basePlan.strategies)
+  const after = objectRecord(materialized.plan.strategies)
+  if (strategyValueChanged(before, after, 'withdrawalOrder')) return false
+  if (
+    strategyValueChanged(before, after, 'qcdAnnual') &&
+    qcdStrategyRequestsMovement(materialized.plan.strategies.qcdAnnual)
+  ) return false
+  if (
+    strategyValueChanged(before, after, 'rothConversion') &&
+    rothStrategyRequestsMovement(materialized.plan.strategies.rothConversion)
+  ) return false
+  if (
+    strategyValueChanged(before, after, 'retirementActions') &&
+    !retirementActionRequestsOnlyRemoved(
+      basePlan.strategies.retirementActions,
+      materialized.plan.strategies.retirementActions,
+    )
+  ) return false
+  return true
+}
+
+/** Whether the candidate's concrete change can cause retirement-account movement. */
+export function candidateChangesRetirementActions(candidate: DecisionCandidate, basePlan?: Plan): boolean {
+  try {
+    // Readiness is evidence about a concrete retirement-action change, not a
+    // plan mutation of its own. An idempotent retirementActions patch may
+    // legitimately retain its evidence while an unrelated edit is evaluated.
+    if (
+      candidate.conversions !== undefined &&
+      conversionScheduleRequestsMovement(candidate.conversions)
+    ) return true
+    if (basePlan !== undefined && candidateOnlyRemovesRetirementActions(candidate, basePlan)) {
+      return false
+    }
+    return inspectCandidateRetirementActionPatch(candidate, basePlan).changesRetirementActions
+  } catch {
+    // A hostile or malformed runtime candidate must be gated, never trusted.
+    return true
+  }
+}
+
+function patchedRetirementActionIds(candidate: DecisionCandidate, basePlan?: Plan): string[] | null {
+  const patchedRequests = inspectCandidateRetirementActionPatch(
+    candidate,
+    basePlan,
+  ).retirementActionRequests
+  if (!Array.isArray(patchedRequests)) return null
+  const materialized = basePlan === undefined ? null : planForCandidate(basePlan, candidate)
+  if (materialized !== null && !materialized.ok) return null
+  const requests = materialized?.plan.strategies.retirementActions ?? patchedRequests
+
+  const baseRequestsById = new Map<string, string>()
+  for (const request of basePlan?.strategies.retirementActions ?? []) {
+    const requestRecord = objectRecord(request)
+    const actionId = requestRecord?.['actionId']
+    if (typeof actionId !== 'string' || actionId.trim().length === 0 ||
+        baseRequestsById.has(actionId)) return null
+    baseRequestsById.set(actionId, canonicalScenarioJson(request))
+  }
+
+  const ids: string[] = []
+  const finalIds = new Set<string>()
+  for (const request of requests) {
+    const requestRecord = objectRecord(request)
+    const actionId = requestRecord?.['actionId']
+    if (typeof actionId !== 'string' || actionId.trim().length === 0 ||
+        finalIds.has(actionId)) return null
+    finalIds.add(actionId)
+    if (baseRequestsById.get(actionId) === canonicalScenarioJson(request)) continue
+    if (!IDENTITY_COMPLETE_RETIREMENT_ACTION_KINDS.has(String(requestRecord?.['kind']))) return null
+    ids.push(actionId)
+  }
+  return ids
+}
+
+function sameUniqueStringSet(left: string[], right: string[]): boolean {
+  if (left.length !== right.length || new Set(left).size !== left.length || new Set(right).size !== right.length) {
+    return false
+  }
+  const rightSet = new Set(right)
+  return left.every((value) => rightSet.has(value))
+}
+
+/**
+ * Return the fail-closed diagnostic for retirement-action readiness, or null
+ * when the candidate carries complete identity-bearing request evidence.
+ */
+function inspectRetirementActionReadiness(candidate: DecisionCandidate, basePlan?: Plan): string | null {
+  if (!candidateChangesRetirementActions(candidate, basePlan)) return null
+
+  const readiness = candidate.retirementActionReadiness
+  if (!readiness) {
+    return 'Retirement-action candidate is untagged; identity-complete owner, source, and destination evidence is required before it can be recommended.'
+  }
+  const readinessRecord = objectRecord(readiness)
+  if (readinessRecord?.['state'] === 'exploratoryNonActionable') {
+    const rawReason = readinessRecord['reason']
+    const reason = typeof rawReason === 'string' ? rawReason.trim() : ''
+    return reason.length > 0
+      ? `Retirement-action candidate is exploratory and non-actionable: ${reason}`
+      : 'Retirement-action candidate has incomplete exploratory readiness evidence and cannot be recommended.'
+  }
+  if (readinessRecord?.['state'] !== 'identityComplete') {
+    return 'Retirement-action candidate has incomplete readiness evidence and cannot be recommended.'
+  }
+
+  if (
+    candidate.conversions !== undefined &&
+    conversionScheduleRequestsMovement(candidate.conversions)
+  ) {
+    return 'Identity-complete retirement-action evidence cannot certify an aggregate conversion schedule.'
+  }
+  if (inspectCandidateRetirementActionPatch(candidate, basePlan).hasAggregateStrategy) {
+    return 'Identity-complete retirement-action evidence cannot certify an aggregate withdrawal, conversion, or QCD strategy.'
+  }
+
+  const patchedIds = patchedRetirementActionIds(candidate, basePlan)
+  const evidenceIds = readinessRecord['actionRequestIds']
+  if (
+    patchedIds === null ||
+    patchedIds.length === 0 ||
+    !Array.isArray(evidenceIds) ||
+    evidenceIds.length === 0 ||
+    evidenceIds.some((id) => typeof id !== 'string' || id.trim().length === 0) ||
+    !sameUniqueStringSet(patchedIds, evidenceIds)
+  ) {
+    return 'Retirement-action identity evidence is incomplete or does not exactly match the candidate request IDs.'
+  }
+  return null
+}
+
+export function retirementActionReadinessDiagnostic(candidate: DecisionCandidate, basePlan?: Plan): string | null {
+  try {
+    return inspectRetirementActionReadiness(candidate, basePlan)
+  } catch {
+    return 'Retirement-action candidate has incomplete readiness evidence and cannot be recommended.'
+  }
+}
+
+function inspectRetirementActionExecution(
+  candidate: DecisionCandidate,
+  candidateResult: ProjectionResult,
+  basePlan: Plan,
+): string | null {
+  const patchedIds = patchedRetirementActionIds(candidate, basePlan)
+  if (patchedIds === null || patchedIds.length === 0) {
+    return 'Retirement-action execution evidence is incomplete or does not exactly match the candidate request IDs.'
+  }
+
+  const requestedIds = new Set(patchedIds)
+  const evidenceCountById = new Map<string, number>()
+  for (const year of candidateResult.years) {
+    const execution = objectRecord(year.retirementActionExecution)
+    const evidence = execution?.['evidence']
+    if (!Array.isArray(evidence)) continue
+
+    for (const entry of evidence) {
+      const evidenceRecord = objectRecord(entry)
+      const actionId = evidenceRecord?.['actionId']
+      if (typeof actionId !== 'string' || !requestedIds.has(actionId)) continue
+      evidenceCountById.set(actionId, (evidenceCountById.get(actionId) ?? 0) + 1)
+      if (execution?.['committed'] !== true || evidenceRecord?.['readiness'] !== 'actionable') {
+        return `Retirement-action request ${actionId} does not have matching committed, actionable exact-ledger execution evidence.`
+      }
+    }
+  }
+
+  for (const actionId of patchedIds) {
+    if (evidenceCountById.get(actionId) !== 1) {
+      return `Retirement-action request ${actionId} does not have exactly one matching committed, actionable exact-ledger execution record.`
+    }
+  }
+  return null
+}
+
+function retirementActionExecutionDiagnostic(
+  candidate: DecisionCandidate,
+  candidateResult: ProjectionResult,
+  basePlan: Plan,
+): string | null {
+  try {
+    return inspectRetirementActionExecution(candidate, candidateResult, basePlan)
+  } catch {
+    return 'Retirement-action execution evidence is incomplete and cannot support a recommendation.'
+  }
+}
 
 export interface EvaluateCandidateOptions {
   /** Dollars around zero treated as matching the baseline. */
@@ -270,6 +740,16 @@ export function evaluateCandidate(
     )
   }
   const hasUnsafeAcaEvidence = unsafeBaselineAcaYears.length > 0 || unsafeCandidateAcaYears.length > 0
+  const legacyAggregateCalculation = isLegacyAggregateDecisionCalculation(options)
+  const retirementActionReadiness = legacyAggregateCalculation
+    ? null
+    : retirementActionReadinessDiagnostic(candidate, ctx.plan)
+  const retirementActionDiagnostic =
+    retirementActionReadiness ??
+    (legacyAggregateCalculation || !candidateChangesRetirementActions(candidate, ctx.plan)
+      ? null
+      : retirementActionExecutionDiagnostic(candidate, candidateResult, ctx.plan))
+  if (retirementActionDiagnostic) diagnostics.push(retirementActionDiagnostic)
 
   return {
     candidate,
@@ -281,7 +761,7 @@ export function evaluateCandidate(
     traditionalDepletionYear: findTraditionalDepletionYear(built.plan, candidateResult, neutralToleranceDollars),
     diagnostics,
     recommendationState:
-      hasUnsafeAcaEvidence
+      hasUnsafeAcaEvidence || retirementActionDiagnostic !== null
         ? 'diagnostic'
         : classifyRecommendationState({
             afterTaxEstateDelta: deltas.endingAfterTaxEstate,

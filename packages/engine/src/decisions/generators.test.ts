@@ -5,9 +5,12 @@ import { ASSET_CLASS_IDS } from '../model/plan.js'
 import { createDecisionContext, evaluateCandidate } from './evaluateCandidate.js'
 import {
   assetLocationGenerator,
+  milpScheduleGenerator,
+  noConversionGenerator,
   probabilityBandSpendingGuardrailGenerator,
   simpleRothConversionGenerator,
   socialSecurityClaimGridGenerator,
+  withdrawalOrderGenerator,
 } from './generators.js'
 import { assetLocationPlan, noTraditionalPlan, simOptions } from './decisionFixtures.js'
 
@@ -25,6 +28,52 @@ describe('simpleRothConversionGenerator ACA evidence gate', () => {
     const actionable = createDecisionContext(noTraditionalPlan(), simOptions())
     actionable.baselineResult.years[0]!.aca = { readiness: 'actionable' } as never
     expect(simpleRothConversionGenerator.generate(actionable).some((candidate) => candidate.id === 'aca-cliff-cap')).toBe(true)
+  })
+
+  it('marks every aggregate fill candidate explicitly exploratory', () => {
+    const candidates = simpleRothConversionGenerator.generate(createDecisionContext(noTraditionalPlan(), simOptions()))
+    expect(candidates.length).toBeGreaterThan(0)
+    for (const candidate of candidates) {
+      expect(candidate.retirementActionReadiness).toMatchObject({ state: 'exploratoryNonActionable' })
+    }
+  })
+})
+
+describe('aggregate retirement-action generator readiness', () => {
+  it('keeps the removal-only no-conversion candidate actionable without identities', () => {
+    const plan = noTraditionalPlan()
+    plan.strategies.rothConversion = {
+      mode: 'manual',
+      conversions: [{ year: 2027, amount: 1_000 }],
+    }
+    const ctx = createDecisionContext(plan, simOptions())
+    const [candidate] = noConversionGenerator.generate(ctx)
+
+    expect(candidate?.retirementActionReadiness).toBeUndefined()
+    const evaluation = evaluateCandidate(ctx, candidate!)
+    expect(evaluation.recommendationState).not.toBe('diagnostic')
+    expect(evaluation.diagnostics.join(' ')).not.toMatch(/identity|retirement-action/i)
+    expect(evaluation.candidateResult.years.reduce((sum, year) => sum + year.rothConversion, 0)).toBe(0)
+  })
+
+  it('marks withdrawal candidates exploratory independent of account-array order', () => {
+    const plan = noTraditionalPlan()
+    const permutedPlan = { ...plan, accounts: [...plan.accounts].reverse() }
+    const original = withdrawalOrderGenerator.generate(createDecisionContext(plan, simOptions()))
+    const permuted = withdrawalOrderGenerator.generate(createDecisionContext(permutedPlan, simOptions()))
+
+    expect(permuted.map((candidate) => candidate.id)).toEqual(original.map((candidate) => candidate.id))
+    for (const candidate of [...original, ...permuted]) {
+      expect(candidate.retirementActionReadiness).toMatchObject({ state: 'exploratoryNonActionable' })
+    }
+  })
+
+  it('marks raw optimizer schedules exploratory rather than identity-complete', () => {
+    const [candidate] = milpScheduleGenerator({
+      cleanedConversions: [{ year: 2027, amount: 25_000 }],
+    }).generate(createDecisionContext(noTraditionalPlan(), simOptions()))
+
+    expect(candidate?.retirementActionReadiness).toMatchObject({ state: 'exploratoryNonActionable' })
   })
 })
 

@@ -16,7 +16,6 @@ import type { OptimizedSchedule } from '@retiregolden/engine/strategies/optimize
 import { objectivePolicies, type ObjectivePolicyId } from '@retiregolden/engine/decisions'
 import {
   type ExactLedgerRecommendationState,
-  type ExactLedgerValidation,
   withOptimizedConversions,
 } from '@retiregolden/engine/projection/optimizePlan'
 import { DEFAULT_PATH_COUNT, runMonteCarlo } from '../mc/pool'
@@ -33,8 +32,27 @@ import { CheckboxField, HelpTip, SelectField } from './fields'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { fmtMoney, fmtMoneyCompact } from './format'
 import { LEARN } from './learnLinks'
-import { buildOptimizeChartRows, shouldShowRecommendedScheduleBars } from './optimizePageChart'
-import { applyOptimizeRecommendation, claimEstateGain, planWithWinningClaim } from './optimizePageClaim'
+import {
+  actionableTournamentConversions,
+  buildOptimizeChartRows,
+  displayedCleanedConversions,
+  displayedScheduleAlreadyExecuted as isDisplayedScheduleAlreadyExecuted,
+  monteCarloSuccessValue,
+  positiveConversionCount,
+  shouldShowRecommendedScheduleBars,
+} from './optimizePageChart'
+import {
+  applyOptimizeRecommendation,
+  claimEstateGain,
+  claimOnlyApplyAvailable,
+  claimRecommendationReportAvailable,
+  planWithWinningClaim,
+} from './optimizePageClaim'
+import {
+  publicationValidation,
+  recommendationBody,
+  recommendationHeading,
+} from './optimizePageRecommendation'
 import { currentStartYear, projectPlan, seedFromPlanId } from './useProjection'
 import { chartTooltipStyle } from './chartStyle'
 
@@ -58,43 +76,6 @@ function DeltaStat({
       <div className={`stat-value stat-value--${tone}`}>{value}</div>
     </div>
   )
-}
-
-function recommendationHeading(validation: ExactLedgerValidation): string {
-  switch (validation.recommendationState) {
-    case 'beneficial':
-      return `Up to ${fmtMoney(validation.afterTaxEstateDelta)} more for your heirs.`
-    case 'neutral':
-      return 'The optimizer matches your current strategy.'
-    case 'rejected':
-      return 'This lower-tax schedule is not recommended.'
-    case 'unexecutable':
-      return 'This conversion schedule is mostly theoretical.'
-  }
-}
-
-function recommendationBody(validation: ExactLedgerValidation): string {
-  const requested = fmtMoney(validation.requestedConversionTotal)
-  const executed = fmtMoney(validation.executedConversionTotal)
-  const from = fmtMoneyCompact(validation.baseline.endingAfterTaxEstate)
-  const to = fmtMoneyCompact(validation.candidate.endingAfterTaxEstate)
-  const taxPhrase =
-    validation.lifetimeTaxDelta < 0
-      ? `lowers lifetime tax by ${fmtMoney(Math.abs(validation.lifetimeTaxDelta))}`
-      : validation.lifetimeTaxDelta > 0
-        ? `raises lifetime tax by ${fmtMoney(validation.lifetimeTaxDelta)}`
-        : 'leaves lifetime tax unchanged'
-
-  switch (validation.recommendationState) {
-    case 'beneficial':
-      return `Converting ${requested} raises your projected after-tax estate from ${from} to ${to}.`
-    case 'neutral':
-      return `Converting ${requested} leaves your projected after-tax estate essentially unchanged at ${to}.`
-    case 'rejected':
-      return `Converting ${requested} ${taxPhrase}, but your projected after-tax estate moves from ${from} to ${to}.`
-    case 'unexecutable':
-      return `The optimizer proposed converting ${requested}, but only ${executed} could actually be converted. The traditional balance it counted on is not available in the plan years shown.`
-  }
 }
 
 function stateColor(state: ExactLedgerRecommendationState): string {
@@ -161,22 +142,32 @@ export function OptimizePage() {
   // candidate strategy beats the post-processed MILP schedule on the exact
   // after-tax estate, its schedule is what the page shows and applies.
   const candidateWins = tournament?.winnerSource === 'candidate'
+  const withheldCandidateDisplayed =
+    tournament?.retirementActionReadinessVeto?.vetoedWinnerSource === 'candidate'
+  const withheldRefinedMilpDisplayed =
+    tournament?.retirementActionReadinessVeto?.vetoedWinnerSource === 'milp' &&
+    tournament.searchRefined
+  const displayedScheduleAlreadyExecuted = isDisplayedScheduleAlreadyExecuted(tournament)
   // Nothing evaluated beat the plan's already-installed conversion strategy —
   // the usual state right after applying a winning schedule and re-running.
   // Rendered as a calm "no change recommended" card, not a rejected-schedule
   // diagnostic (the deltas on this page are always vs the current plan, so a
   // fresh solver proposal that loses to the incumbent shows scary negatives).
-  const incumbentHolds = tournament?.winnerSource === 'incumbent'
+  const incumbentHolds =
+    tournament?.winnerSource === 'incumbent' &&
+    tournament.retirementActionReadinessVeto === null
   const candidateReplacedMilp = candidateWins && postProcessed?.recommendationSchedule === 'cleaned'
-  const displaySchedule = postProcessed?.cleanedSchedule ?? schedule
   const recommendedConversions = useMemo(
-    () =>
-      incumbentHolds
-        ? [] // the plan already holds the best schedule — nothing to apply or Monte-Carlo
-        : candidateWins
-          ? tournament!.winnerConversions
-          : (displaySchedule?.conversions ?? []),
-    [incumbentHolds, candidateWins, tournament, displaySchedule],
+    () => actionableTournamentConversions(tournament),
+    [tournament],
+  )
+  const displayedConversions = useMemo(
+    () => displayedCleanedConversions(tournament, postProcessed),
+    [tournament, postProcessed],
+  )
+  const displayedConversionCount = useMemo(
+    () => positiveConversionCount(displayedConversions),
+    [displayedConversions],
   )
   // Step 5 claim-age co-optimization: when a claim change won, the schedule and
   // every validation delta on this page were computed against the claim-patched
@@ -186,11 +177,37 @@ export function OptimizePage() {
   const planForRecommendation = useMemo(() => planWithWinningClaim(plan, claimAge), [plan, claimAge])
   const optimizedPlan = useMemo(() => {
     if (recommendedConversions.length > 0) return withOptimizedConversions(planForRecommendation, recommendedConversions)
-    // A claim change with no conversion change (the incumbent schedule holds
-    // under the new claim) is still a recommendation worth pricing and reporting.
-    return claimChangeRecommended ? planForRecommendation : null
-  }, [planForRecommendation, recommendedConversions, claimChangeRecommended])
-  const validation = candidateWins ? (tournament?.winnerValidation ?? null) : (postProcessed?.cleanedValidation ?? null)
+    // Price a claim-only plan only when the joint result established that the
+    // incumbent strategy holds or no conversion change exists. A withheld
+    // diagnostic schedule may have driven claim selection, so substituting an
+    // unvalidated claim-only plan would make Monte Carlo and the report describe
+    // a different recommendation.
+    return claimOnlyApplyAvailable({
+      claimChangeRecommended,
+      scheduleApplyAvailable: false,
+      incumbentHolds,
+      displayedConversionCount,
+    })
+      ? planForRecommendation
+      : null
+  }, [
+    planForRecommendation,
+    recommendedConversions,
+    claimChangeRecommended,
+    incumbentHolds,
+    displayedConversionCount,
+  ])
+  const validation = candidateWins
+    ? (tournament?.winnerValidation ?? null)
+    : (tournament?.retirementActionReadinessVeto?.vetoedValidation ??
+      postProcessed?.cleanedValidation ??
+      null)
+  const presentationValidation = validation === null
+    ? null
+    : publicationValidation(
+        validation,
+        tournament?.retirementActionReadinessVeto ?? null,
+      )
 
   const run = useCallback(() => {
     const token = ++runToken.current
@@ -239,30 +256,49 @@ export function OptimizePage() {
 
   const estateDelta = validation?.afterTaxEstateDelta ?? 0
   const taxDelta = validation?.lifetimeTaxDelta ?? 0
-  const totalConversions = recommendedConversions.reduce((sum, c) => sum + c.amount, 0)
+  const totalConversions = displayedConversions.reduce((sum, c) => sum + c.amount, 0)
   const rawConversions = totalScheduleConversions(schedule)
   const executedConversions = validation?.executedConversionTotal ?? 0
   const hasPostProcessingAdjustments = (postProcessed?.adjustments.length ?? 0) > 0
+  const recommendationState = presentationValidation?.recommendationState ?? 'neutral'
   const hasExecutionMismatch =
     !candidateWins &&
-    (hasPostProcessingAdjustments ||
+    (recommendationState === 'identityIncomplete' ||
+      hasPostProcessingAdjustments ||
       (validation?.firstMateriallyUnexecutedYear !== null && validation?.firstMateriallyUnexecutedYear !== undefined))
   const showRecommendedBars = shouldShowRecommendedScheduleBars(candidateWins, hasExecutionMismatch)
-  const recommendationState = validation?.recommendationState ?? 'neutral'
   const blocksApply = candidateWins
     ? false
     : recommendationState === 'rejected' ||
       recommendationState === 'unexecutable' ||
+      recommendationState === 'identityIncomplete' ||
       postProcessed?.recommendationSchedule === 'none'
   // A claim change can win on estate alone while the conversion side is
   // unappliable (incumbent holds, empty/infeasible schedule, or diagnostic-only
   // result). The claim card then carries its own apply control so the winning
   // claim change is never advertised without a way to install it.
   const scheduleApplyAvailable = recommendedConversions.length > 0 && !blocksApply
+  const claimOnlyApplyIsAvailable = claimOnlyApplyAvailable({
+    claimChangeRecommended,
+    scheduleApplyAvailable,
+    incumbentHolds,
+    displayedConversionCount,
+  })
+  const recommendationReportIsAvailable = claimRecommendationReportAvailable({
+    claimChangeRecommended,
+    scheduleApplyAvailable,
+    incumbentHolds,
+    displayedConversionCount,
+  })
 
   const chartRows = useMemo(
-    () => buildOptimizeChartRows({ schedule, recommendedConversions, postProcessed, candidateWins }),
-    [schedule, recommendedConversions, postProcessed, candidateWins],
+    () => buildOptimizeChartRows({
+      schedule,
+      recommendedConversions: displayedConversions,
+      postProcessed,
+      displayedScheduleAlreadyExecuted,
+    }),
+    [schedule, displayedConversions, postProcessed, displayedScheduleAlreadyExecuted],
   )
 
   const apply = (mode: 'optimized' | 'manual') => {
@@ -276,7 +312,7 @@ export function OptimizePage() {
   // change is still an actionable recommendation on its own (the current
   // conversion strategy already holds under the new claim ages).
   const applyClaimChangeOnly = () => {
-    if (!claimChangeRecommended) return
+    if (!claimOnlyApplyIsAvailable) return
     update((d) => applyOptimizeRecommendation(d, { claimAge, conversions: [], mode: 'optimized' }))
   }
 
@@ -287,7 +323,7 @@ export function OptimizePage() {
   )
 
   const downloadRecommendationReport = () => {
-    if (!optimizeResult) return
+    if (!optimizeResult || !recommendationReportIsAvailable) return
     // Report the plan the evidence section describes: when the optimizer recommends
     // a schedule, project that recommended plan so the headline results and ledger
     // appendix match the recommendation. When nothing beats the incumbent (no
@@ -361,7 +397,7 @@ export function OptimizePage() {
           <button
             type="button"
             className="btn btn-secondary btn-small"
-            disabled={!optimizeResult || running}
+            disabled={!optimizeResult || running || !recommendationReportIsAvailable}
             onClick={downloadRecommendationReport}
           >
             Download recommendation report
@@ -387,20 +423,20 @@ export function OptimizePage() {
                 ? 'Your current conversion strategy already holds under the new claim age, so applying changes only the Social Security claim age.'
                 : scheduleApplyAvailable
                   ? 'Everything below (the schedule, the estate and tax deltas, and the success rate) was computed assuming this claim change. Apply installs the new claim age and the conversion schedule together; the schedule alone would not be correct for your current claim ages.'
-                  : recommendedConversions.length === 0
+                  : displayedConversions.length === 0
                     ? 'No conversion change comes with this result, so the button here changes just the Social Security claim age. The estate gain above comes from the claim change itself.'
-                    : 'The conversion schedule from this run is diagnostic-only and cannot be applied, so the button here changes just the Social Security claim age. The estate gain above was measured with that schedule included, so the claim change alone may capture only part of it.'}
+                    : 'The conversion schedule from this run is diagnostic-only and cannot be applied. The estate gain above was measured with that schedule included, and the claim change alone was not separately validated, so no Apply action is offered.'}
             </p>
             {/* Claim-only recommendations show their success rate here (the
                 stats row below never renders for them); when a schedule comes
                 along, the normal stats row already shows the rate computed
                 against the same claim-patched plan via optimizedPlan. */}
-            {recommendedConversions.length === 0 && mcRate !== null ? (
+            {claimOnlyApplyIsAvailable && mcRate !== null ? (
               <p className="field-hint" style={{ margin: '0.45rem 0 0' }}>
                 Monte Carlo success rate with this claim change: {Math.round(mcRate * 100)}%.
               </p>
             ) : null}
-            {!scheduleApplyAvailable ? (
+            {claimOnlyApplyIsAvailable ? (
               <div style={{ marginTop: '0.75rem' }}>
                 <button type="button" className="btn btn-primary btn-small" disabled={readOnly} onClick={applyClaimChangeOnly}>
                   Apply claim change
@@ -455,7 +491,9 @@ export function OptimizePage() {
             )}
             <div style={{ marginTop: '0.75rem' }}>{rerunButton()}</div>
           </div>
-        ) : schedule.status === 'infeasible' && !candidateWins ? (
+        ) : schedule.status === 'infeasible' &&
+          !candidateWins &&
+          !tournament?.retirementActionReadinessVeto ? (
           <div className="card">
             <h2>Couldn't optimize this plan</h2>
             <p className="muted">
@@ -470,7 +508,9 @@ export function OptimizePage() {
             ) : null}
             <div style={{ marginTop: '0.75rem' }}>{rerunButton()}</div>
           </div>
-        ) : rawConversions < 1 && !candidateWins ? (
+        ) : rawConversions < 1 &&
+          !candidateWins &&
+          !tournament?.retirementActionReadinessVeto ? (
           <div className="card">
             <h2>No beneficial conversions found</h2>
             <p className="muted">
@@ -489,12 +529,14 @@ export function OptimizePage() {
             <div className="mc-hero">
               <div>
                 <h2 style={{ margin: '0 0 0.35rem', color: stateColor(recommendationState) }}>
-                  {validation ? recommendationHeading(validation) : 'The optimizer matches your current strategy.'}
+                  {presentationValidation
+                    ? recommendationHeading(presentationValidation)
+                    : 'The optimizer matches your current strategy.'}
                 </h2>
                 <p className="muted" style={{ margin: 0 }}>
-                  {validation
-                    ? recommendationBody(validation)
-                    : `${fmtMoney(totalConversions)} of conversions across ${recommendedConversions.length} year(s).`}
+                  {presentationValidation
+                    ? recommendationBody(presentationValidation)
+                    : `${fmtMoney(totalConversions)} of conversions across ${displayedConversions.length} year(s).`}
                 </p>
                 {candidateWins && tournament ? (
                   <p className="field-hint" style={{ margin: '0.45rem 0 0' }}>
@@ -527,7 +569,7 @@ export function OptimizePage() {
                     and tax deltas below are context, not the ranking metric.
                   </p>
                 ) : null}
-                {hasExecutionMismatch && validation ? (
+                {hasExecutionMismatch && validation && !displayedScheduleAlreadyExecuted ? (
                   <p className="field-hint" style={{ margin: '0.45rem 0 0' }}>
                     Raw optimizer request: {fmtMoney(rawConversions)}. Cleaned executable schedule:{' '}
                     {fmtMoney(totalConversions)}. Executed after cleaning: {fmtMoney(executedConversions)} (
@@ -558,9 +600,9 @@ export function OptimizePage() {
               />
               <DeltaStat
                 label="Success rate"
-                value={mcRate === null ? '…' : `${Math.round(mcRate * 100)}%`}
-                tone={mcRate !== null && mcRate >= 0.9 ? 'good' : 'neutral'}
-                help="Monte Carlo success probability for the proposed schedule (1,000 paths, lognormal markets), so you can confirm the conversions don't materially raise the risk of running out."
+                value={monteCarloSuccessValue(optimizedPlan !== null, mcRate)}
+                tone={optimizedPlan !== null && mcRate !== null && mcRate >= 0.9 ? 'good' : 'neutral'}
+                help="Monte Carlo success probability for the proposed plan (1,000 paths, lognormal markets), so you can confirm the recommendation doesn't materially raise the risk of running out."
               />
             </div>
 
@@ -571,7 +613,11 @@ export function OptimizePage() {
                   ? candidateReplacedMilp
                     ? 'Raw optimizer request, winning candidate schedule, and what your projection actually executed (nominal dollars).'
                     : 'Winning candidate schedule and what your projection actually executed (nominal dollars).'
-                  : 'Raw optimizer requests, cleaned schedule, and what your projection actually executed (nominal dollars).'}
+                  : withheldCandidateDisplayed
+                    ? 'Raw optimizer request and the withheld candidate schedule that your exact projection executed (nominal dollars).'
+                    : withheldRefinedMilpDisplayed
+                      ? 'Raw optimizer request and the withheld search-refined schedule that your exact projection executed (nominal dollars).'
+                      : 'Raw optimizer requests, cleaned schedule, and what your projection actually executed (nominal dollars).'}
               </p>
               <div style={{ width: '100%', height: 280 }}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -584,14 +630,26 @@ export function OptimizePage() {
                     {showRecommendedBars ? (
                       <Bar
                         dataKey="cleaned"
-                        name={candidateWins ? 'Recommended schedule' : 'Cleaned schedule'}
+                        name={candidateWins
+                          ? 'Recommended schedule'
+                          : withheldCandidateDisplayed
+                            ? 'Withheld candidate schedule'
+                            : withheldRefinedMilpDisplayed
+                              ? 'Withheld refined schedule'
+                              : 'Cleaned schedule'}
                         fill="var(--chart-2)"
                       />
                     ) : null}
                     {showRecommendedBars ? (
                       <Bar
                         dataKey="executed"
-                        name={candidateWins ? 'Executed recommendation' : 'Executed after cleaning'}
+                        name={candidateWins
+                          ? 'Executed recommendation'
+                          : withheldCandidateDisplayed
+                            ? 'Executed withheld candidate'
+                            : withheldRefinedMilpDisplayed
+                              ? 'Executed withheld refinement'
+                              : 'Executed after cleaning'}
                         fill="var(--chart-3)"
                       />
                     ) : null}
@@ -600,7 +658,10 @@ export function OptimizePage() {
               </div>
               <p className="field-hint">
                 Optimizer status: {schedule.status} · solved in {schedule.solveMs.toFixed(0)} ms. The optimizer reasons
-                over a simplified plan; the headline figures above come from re-running your full projection with the cleaned schedule.
+                over a simplified plan; the headline figures above come from{' '}
+                {displayedScheduleAlreadyExecuted
+                  ? 'the displayed exact-ledger schedule run through your full projection.'
+                  : 're-running your full projection with the cleaned schedule.'}
               </p>
             </div>
 

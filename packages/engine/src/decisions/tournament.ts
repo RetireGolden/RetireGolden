@@ -36,7 +36,26 @@ export function candidateEquivalenceKey(candidate: DecisionCandidate): string {
         .filter((c) => c.amount > 0)
         .sort((a, b) => a.year - b.year)
     : null
-  return canonicalJson({ patch: candidate.planPatch ?? null, conversions })
+  let readiness: { state: string; actionRequestIds?: string[] } | null
+  try {
+    const supplied = candidate.retirementActionReadiness as unknown
+    if (typeof supplied !== 'object' || supplied === null) {
+      readiness = supplied === undefined ? null : { state: 'malformed' }
+    } else {
+      const state = (supplied as Record<string, unknown>)['state']
+      const actionRequestIds = (supplied as Record<string, unknown>)['actionRequestIds']
+      readiness = state === 'identityComplete' &&
+        Array.isArray(actionRequestIds) &&
+        actionRequestIds.every((id) => typeof id === 'string')
+        ? { state, actionRequestIds: [...actionRequestIds].sort() }
+        : state === 'exploratoryNonActionable'
+          ? { state }
+          : { state: 'malformed' }
+    }
+  } catch {
+    readiness = { state: 'malformed' }
+  }
+  return canonicalJson({ patch: candidate.planPatch ?? null, conversions, readiness })
 }
 
 /** Drop candidates whose patch/schedule is equivalent to an earlier one (first wins). */

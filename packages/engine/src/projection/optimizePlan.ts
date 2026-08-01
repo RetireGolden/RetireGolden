@@ -45,6 +45,7 @@ import {
 import { expectedAccountReturnPct } from '../allocation/assetClasses.js'
 import { buildLognormalModelConfigForPlan } from '../montecarlo/marketModels.js'
 import { summarizeProjection, type ProjectionSummary } from './compare.js'
+import { allowLegacyAggregateDecisionCalculation } from './internal/legacyAggregateDecisionCalculation.js'
 import { simulatePlan, type SimulateOptions } from './simulate.js'
 import type { AcaSupportCode, OptimizerYearProbe, ProjectionResult } from './types.js'
 
@@ -406,6 +407,17 @@ export interface AcaActionabilityVeto {
   vetoedMilp: boolean
 }
 
+export interface RetirementActionReadinessVeto {
+  readonly reason: 'identityIncomplete'
+  readonly vetoedWinnerSource: 'candidate' | 'milp'
+  readonly vetoedCandidateId: string | null
+  readonly vetoedCandidateLabel: string | null
+  /** Exact calculated schedule retained solely for diagnostic display/reporting. */
+  readonly vetoedConversions: { year: number; amount: number }[]
+  /** Exact calculated metrics retained without making the schedule actionable. */
+  readonly vetoedValidation: ExactLedgerValidation
+}
+
 export interface ExactLedgerTournament {
   /** Objective policy that ranked this tournament (default `max-after-tax-estate`). */
   policyId: ObjectivePolicyId
@@ -442,10 +454,97 @@ export interface ExactLedgerTournament {
    * "nothing improved the plan").
    */
   acaActionabilityVeto: AcaActionabilityVeto | null
+  /**
+   * A calculated policy winner that was withheld because its aggregate
+   * conversion schedule lacks complete owner/source/destination identities.
+   */
+  retirementActionReadinessVeto: RetirementActionReadinessVeto | null
 }
 
 /** A candidate only replaces the MILP schedule when it wins by more than this. */
 const DEFAULT_TOURNAMENT_SWITCH_MARGIN_DOLLARS = 1_000
+
+function calculatedPostProcessedSchedule(
+  postProcessed: ExactLedgerPostProcessing | null,
+): ExactLedgerPostProcessing | null {
+  if (postProcessed === null) return null
+  const cleanedConversionTotal = postProcessed.cleanedSchedule.conversions.reduce(
+    (sum, conversion) => sum + conversion.amount,
+    0,
+  )
+  return postProcessed.recommendationSchedule === 'cleaned' ||
+    (postProcessed.stabilized &&
+      cleanedConversionTotal >= postProcessed.minimumRequestedConversionDollars &&
+      postProcessed.cleanedValidation.recommendationState === 'identityIncomplete')
+    ? postProcessed
+    : null
+}
+
+/**
+ * Choose the post-processed convergence result using only schedules that are
+ * eligible to participate in the calculated estate comparison. A raw estate
+ * delta from an unstabilized, undersized, or unexecutable schedule must never
+ * displace an eligible schedule merely because its invalid raw result prices
+ * higher.
+ */
+export function selectConvergencePostProcessing(
+  first: ExactLedgerPostProcessing,
+  converged: ExactLedgerPostProcessing | null,
+): 'first-solve' | 'converged' {
+  const eligibleFirst = calculatedPostProcessedSchedule(first)
+  const eligibleConverged = calculatedPostProcessedSchedule(converged)
+  const firstDelta = eligibleFirst?.cleanedValidation.afterTaxEstateDelta ?? -Infinity
+  const convergedDelta = eligibleConverged?.cleanedValidation.afterTaxEstateDelta ?? -Infinity
+  return firstDelta > convergedDelta ? 'first-solve' : 'converged'
+}
+
+/**
+ * A non-estate policy may legitimately rank a stabilized neutral/rejected MILP
+ * row by durability or tax. Keep this broader calculation seam out of the
+ * default estate tournament, where those states must not become a false holder.
+ */
+function policyRankablePostProcessedSchedule(
+  postProcessed: ExactLedgerPostProcessing | null,
+): ExactLedgerPostProcessing | null {
+  if (postProcessed === null) return null
+  const cleanedConversionTotal = postProcessed.cleanedSchedule.conversions.reduce(
+    (sum, conversion) => sum + conversion.amount,
+    0,
+  )
+  return postProcessed.stabilized &&
+    cleanedConversionTotal >= postProcessed.minimumRequestedConversionDollars &&
+    postProcessed.cleanedValidation.recommendationState !== 'unexecutable'
+    ? postProcessed
+    : null
+}
+
+function readinessVetoFor(
+  source: 'candidate' | 'milp',
+  candidateId: string | null,
+  candidateLabel: string | null,
+  conversions: { year: number; amount: number }[],
+  validation: ExactLedgerValidation,
+): RetirementActionReadinessVeto | null {
+  // Every positive-movement schedule produced here is still aggregate: it has
+  // exact amounts but no legal owner/source/destination identities. That is a
+  // publication veto regardless of how a custom policy ranked its estate
+  // validation (beneficial, neutral, or rejected).
+  return conversions.some((conversion) => conversion.amount > 0)
+    ? {
+        reason: 'identityIncomplete',
+        vetoedWinnerSource: source,
+        vetoedCandidateId: candidateId,
+        vetoedCandidateLabel: candidateLabel,
+        vetoedConversions: conversions.map((conversion) => ({ ...conversion })),
+        vetoedValidation: validation,
+      }
+    : null
+}
+
+function calculatedBeneficial(validation: ExactLedgerValidation): boolean {
+  return validation.recommendationState === 'beneficial' ||
+    validation.recommendationState === 'identityIncomplete'
+}
 
 /**
  * The plan's currently-installed conversion strategy as exact-ledger executed
@@ -575,7 +674,7 @@ export function buildAcaActionabilityVeto(
 function buildRichCandidates(plan: Plan, baselineResult: ProjectionResult, simulateOptions: SimulateOptions): RichCandidate[] {
   const ctx = decisionContext(plan, baselineResult, simulateOptions)
   return dedupeCandidates(simpleRothConversionGenerator.generate(ctx)).map((candidate) => {
-    const evaluation = evaluateCandidate(ctx, candidate)
+    const evaluation = evaluateCandidate(ctx, candidate, allowLegacyAggregateDecisionCalculation({}))
     return {
       evaluation: {
         id: candidate.id,
@@ -645,17 +744,42 @@ export function runExactLedgerTournament(
   // A non-default objective re-ranks the same evaluations through the shared
   // ranker instead of the estate-delta arbitration below.
   if (options.policy && options.policy.id !== 'max-after-tax-estate') {
-    return runPolicyRankedTournament(plan, baselineResult, postProcessed, simulateOptions, options.policy)
+    const ranked = runPolicyRankedTournament(
+      plan,
+      baselineResult,
+      postProcessed,
+      simulateOptions,
+      options.policy,
+    )
+    if (ranked.winnerSource !== 'candidate' && ranked.winnerSource !== 'milp') return ranked
+    const readinessVeto = ranked.winnerValidation === null
+      ? null
+      : readinessVetoFor(
+          ranked.winnerSource,
+          ranked.winnerCandidateId,
+          ranked.winnerLabel,
+          ranked.winnerConversions,
+          ranked.winnerValidation,
+        )
+    if (readinessVeto === null) return ranked
+    return fallbackTournament(
+      plan,
+      baselineResult,
+      ranked.candidates,
+      ranked.policyId,
+      null,
+      readinessVeto,
+    )
   }
   const margin = options.switchMarginDollars ?? DEFAULT_TOURNAMENT_SWITCH_MARGIN_DOLLARS
   const rich = buildRichCandidates(plan, baselineResult, simulateOptions)
   const candidates = rich.map((candidate) => candidate.evaluation)
+  const calculatedMilp = calculatedPostProcessedSchedule(postProcessed)
   const milpRecommended =
-    postProcessed !== null &&
-    postProcessed.recommendationSchedule === 'cleaned' &&
+    calculatedMilp !== null &&
     !hasNonActionableAca(baselineResult) &&
-    !hasNonActionableAca(postProcessed.cleanedResult)
-      ? postProcessed
+    !hasNonActionableAca(calculatedMilp.cleanedResult)
+      ? calculatedMilp
       : null
   const milpDelta = milpRecommended ? milpRecommended.cleanedValidation.afterTaxEstateDelta : 0
   const guardrailResult = milpRecommended?.cleanedResult ?? baselineResult
@@ -673,8 +797,8 @@ export function runExactLedgerTournament(
     const winnerValidation = evaluateExactLedgerSchedule(plan, best.conversions, baselineResult, best.result)
     const clearsMilpComparison = milpRecommended
       ? best.evaluation.afterTaxEstateDelta > milpDelta + margin
-      : winnerValidation.recommendationState === 'beneficial'
-    if (winnerValidation.recommendationState === 'beneficial' && clearsMilpComparison) {
+      : calculatedBeneficial(winnerValidation)
+    if (calculatedBeneficial(winnerValidation) && clearsMilpComparison) {
       let winner = {
         candidate: best,
         conversions: best.conversions,
@@ -691,9 +815,13 @@ export function runExactLedgerTournament(
         const ctx = decisionContext(plan, baselineResult, simulateOptions)
         const seeds = eligible.slice(0, 2).filter((candidate) => candidate.conversions.length > 0)
         for (const seed of seeds) {
-          const refined = refineConversionSchedule(ctx, seed.conversions, {
-            maxSimulations: options.search.maxSimulations,
-          })
+          const refined = refineConversionSchedule(
+            ctx,
+            seed.conversions,
+            allowLegacyAggregateDecisionCalculation({
+              maxSimulations: options.search.maxSimulations,
+            }),
+          )
           searchSimulations += refined.simulationCount
           if (!refined.improved || lastsThroughYear(refined.bestEvaluation.candidateResult) < guardrailLastsThroughYear) continue
           // Snap to exact-ledger executed amounts so the recommended schedule
@@ -706,7 +834,7 @@ export function runExactLedgerTournament(
             refined.bestEvaluation.candidateResult,
           )
           if (
-            refinedValidation.recommendationState === 'beneficial' &&
+            calculatedBeneficial(refinedValidation) &&
             refinedValidation.afterTaxEstateDelta > winner.estateDelta
           ) {
             winner = {
@@ -726,9 +854,35 @@ export function runExactLedgerTournament(
       // post-search).
       const displayCandidates = searchRefined
         ? candidates.map((row) =>
-            row.id === winner.candidate.evaluation.id ? { ...row, afterTaxEstateDelta: winner.estateDelta } : row,
+            row.id === winner.candidate.evaluation.id
+              ? {
+                  ...row,
+                  executedConversionTotal: winner.validation.executedConversionTotal,
+                  afterTaxEstateDelta: winner.validation.afterTaxEstateDelta,
+                  lifetimeTaxDelta: winner.validation.lifetimeTaxDelta,
+                  moneyLastsYearsDelta: winner.validation.moneyLastsYearsDelta,
+                }
+              : row,
           )
         : candidates
+      const readinessVeto = readinessVetoFor(
+        'candidate',
+        winner.candidate.evaluation.id,
+        winner.candidate.evaluation.label,
+        winner.conversions,
+        winner.validation,
+      )
+      if (readinessVeto !== null) {
+        return fallbackTournament(
+          plan,
+          baselineResult,
+          displayCandidates,
+          'max-after-tax-estate',
+          null,
+          readinessVeto,
+          { searchRefined, searchSimulations },
+        )
+      }
       return {
         policyId: 'max-after-tax-estate',
         candidates: displayCandidates,
@@ -741,6 +895,7 @@ export function runExactLedgerTournament(
         searchRefined,
         searchSimulations,
         acaActionabilityVeto: null,
+        retirementActionReadinessVeto: null,
       }
     }
   }
@@ -755,9 +910,13 @@ export function runExactLedgerTournament(
     let searchSimulations = 0
     if (options.search && winnerConversions.length > 0) {
       const ctx = decisionContext(plan, baselineResult, simulateOptions)
-      const refined = refineConversionSchedule(ctx, winnerConversions, {
-        maxSimulations: options.search.maxSimulations,
-      })
+      const refined = refineConversionSchedule(
+        ctx,
+        winnerConversions,
+        allowLegacyAggregateDecisionCalculation({
+          maxSimulations: options.search.maxSimulations,
+        }),
+      )
       searchSimulations = refined.simulationCount
       if (refined.improved && lastsThroughYear(refined.bestEvaluation.candidateResult) >= guardrailLastsThroughYear) {
         const executed = refined.bestEvaluation.conversionExecution?.executedByYear ?? refined.bestConversions
@@ -768,7 +927,7 @@ export function runExactLedgerTournament(
           refined.bestEvaluation.candidateResult,
         )
         if (
-          refinedValidation.recommendationState === 'beneficial' &&
+          calculatedBeneficial(refinedValidation) &&
           refinedValidation.afterTaxEstateDelta > milpRecommended.cleanedValidation.afterTaxEstateDelta
         ) {
           winnerConversions = executed
@@ -776,6 +935,24 @@ export function runExactLedgerTournament(
           searchRefined = true
         }
       }
+    }
+    const readinessVeto = readinessVetoFor(
+      'milp',
+      null,
+      null,
+      winnerConversions,
+      winnerValidation,
+    )
+    if (readinessVeto !== null) {
+      return fallbackTournament(
+        plan,
+        baselineResult,
+        candidates,
+        'max-after-tax-estate',
+        null,
+        readinessVeto,
+        { searchRefined, searchSimulations },
+      )
     }
     return {
       policyId: 'max-after-tax-estate',
@@ -789,6 +966,7 @@ export function runExactLedgerTournament(
       searchRefined,
       searchSimulations,
       acaActionabilityVeto: null,
+      retirementActionReadinessVeto: null,
     }
   }
   return fallbackTournament(
@@ -820,6 +998,11 @@ function fallbackTournament(
   candidates: SimpleCandidateEvaluation[],
   policyId: ObjectivePolicyId,
   acaActionabilityVeto: AcaActionabilityVeto | null,
+  retirementActionReadinessVeto: RetirementActionReadinessVeto | null = null,
+  search: Pick<ExactLedgerTournament, 'searchRefined' | 'searchSimulations'> = {
+    searchRefined: false,
+    searchSimulations: 0,
+  },
 ): ExactLedgerTournament {
   const incumbent = incumbentExecutedConversions(plan, baselineResult)
   if (incumbent) {
@@ -832,9 +1015,10 @@ function fallbackTournament(
       winnerConversions: incumbent,
       winnerValidation: null,
       marginOverMilpDollars: 0,
-      searchRefined: false,
-      searchSimulations: 0,
+      searchRefined: search.searchRefined,
+      searchSimulations: search.searchSimulations,
       acaActionabilityVeto,
+      retirementActionReadinessVeto,
     }
   }
   return {
@@ -846,9 +1030,10 @@ function fallbackTournament(
     winnerConversions: [],
     winnerValidation: null,
     marginOverMilpDollars: 0,
-    searchRefined: false,
-    searchSimulations: 0,
+    searchRefined: search.searchRefined,
+    searchSimulations: search.searchSimulations,
     acaActionabilityVeto,
+    retirementActionReadinessVeto,
   }
 }
 
@@ -872,12 +1057,12 @@ function runPolicyRankedTournament(
   const ctx = decisionContext(plan, baselineResult, simulateOptions)
   const rich = buildRichCandidates(plan, baselineResult, simulateOptions)
   const candidates = rich.map((candidate) => candidate.evaluation)
+  const calculatedMilp = policyRankablePostProcessedSchedule(postProcessed)
   const milpRecommended =
-    postProcessed !== null &&
-    postProcessed.recommendationSchedule === 'cleaned' &&
+    calculatedMilp !== null &&
     !hasNonActionableAca(baselineResult) &&
-    !hasNonActionableAca(postProcessed.cleanedResult)
-      ? postProcessed
+    !hasNonActionableAca(calculatedMilp.cleanedResult)
+      ? calculatedMilp
       : null
 
   const evaluations = rich.map((candidate) => candidate.fullEvaluation)
@@ -907,7 +1092,7 @@ function runPolicyRankedTournament(
       conversionExecution: null,
       traditionalDepletionYear: null,
       diagnostics: [],
-      recommendationState: milpRecommended.cleanedValidation.recommendationState === 'beneficial' ? 'beneficial' : 'neutral',
+      recommendationState: calculatedBeneficial(milpRecommended.cleanedValidation) ? 'beneficial' : 'neutral',
     }
     evaluations.push(milpEvaluation)
   }
@@ -940,6 +1125,7 @@ function runPolicyRankedTournament(
       searchRefined: false,
       searchSimulations: 0,
       acaActionabilityVeto: null,
+      retirementActionReadinessVeto: null,
     }
   }
   if (winner) {
@@ -960,6 +1146,7 @@ function runPolicyRankedTournament(
         searchRefined: false,
         searchSimulations: 0,
         acaActionabilityVeto: null,
+        retirementActionReadinessVeto: null,
       }
     }
   }
@@ -990,7 +1177,12 @@ function runPolicyRankedTournament(
   )
 }
 
-export type ExactLedgerRecommendationState = 'beneficial' | 'neutral' | 'rejected' | 'unexecutable'
+export type ExactLedgerRecommendationState =
+  | 'beneficial'
+  | 'neutral'
+  | 'rejected'
+  | 'unexecutable'
+  | 'identityIncomplete'
 export type ExactLedgerRecommendationSchedule = 'cleaned' | 'none'
 
 export interface ExactLedgerValidationOptions {
@@ -1046,6 +1238,8 @@ export interface ExactLedgerPostProcessing {
   iterationCount: number
   /** Trailing-year prune candidates evaluated (0 when the prune pass did not run). */
   pruneIterationCount: number
+  /** Resolved minimum used to decide whether the cleaned schedule was eligible. */
+  minimumRequestedConversionDollars: number
   recommendationSchedule: ExactLedgerRecommendationSchedule
 }
 
@@ -1100,7 +1294,7 @@ function scheduleWithConversions(schedule: OptimizedSchedule, conversions: { yea
  * as a separate blocking state ('diagnostic' in engine terms, 'unexecutable'
  * here for the optimizer UI contract).
  */
-export function evaluateExactLedgerSchedule(
+function evaluateExactLedgerScheduleCalculation(
   plan: Plan,
   requestedConversions: { year: number; amount: number }[],
   baselineResult: ProjectionResult,
@@ -1130,7 +1324,10 @@ export function evaluateExactLedgerSchedule(
       explanation: 'Requested conversion schedule compared with the exact ledger.',
       conversions: requestedConversions,
     },
-    { ...options, candidateResult },
+    allowLegacyAggregateDecisionCalculation({
+      ...options,
+      candidateResult,
+    }),
   )
   const execution = evaluation.conversionExecution!
   return {
@@ -1148,6 +1345,48 @@ export function evaluateExactLedgerSchedule(
     recommendationState:
       evaluation.recommendationState === 'diagnostic' ? 'unexecutable' : evaluation.recommendationState,
   }
+}
+
+function refuseAggregateScheduleRecommendation(
+  validation: ExactLedgerValidation,
+  requestedConversions: readonly { year: number; amount: number }[],
+): ExactLedgerValidation {
+  if (
+    requestedConversions.every((conversion) => conversion.amount <= 0) ||
+    validation.recommendationState === 'neutral' ||
+    validation.recommendationState === 'rejected' ||
+    validation.recommendationState === 'unexecutable'
+  ) {
+    return validation
+  }
+  return {
+    ...validation,
+    recommendationState: 'identityIncomplete',
+  }
+}
+
+/**
+ * Public optimizer validation retains exact calculation metrics, but an
+ * aggregate conversion schedule cannot become a recommendation until WS4
+ * allocates stable owner/source/destination action identities.
+ */
+export function evaluateExactLedgerSchedule(
+  plan: Plan,
+  requestedConversions: { year: number; amount: number }[],
+  baselineResult: ProjectionResult,
+  candidateResult: ProjectionResult,
+  options: ExactLedgerValidationOptions = {},
+): ExactLedgerValidation {
+  return refuseAggregateScheduleRecommendation(
+    evaluateExactLedgerScheduleCalculation(
+      plan,
+      requestedConversions,
+      baselineResult,
+      candidateResult,
+      options,
+    ),
+    requestedConversions,
+  )
 }
 
 function conversionsMatch(
@@ -1249,7 +1488,7 @@ export function postProcessExactLedgerSchedule(
 
   let cleanedSchedule = scheduleWithConversions(rawSchedule, currentConversions)
   let cleanedResult = simulatePlan(withOptimizedConversions(plan, cleanedSchedule.conversions), simulateOptions)
-  let cleanedValidation = evaluateExactLedgerSchedule(
+  let cleanedValidation = evaluateExactLedgerScheduleCalculation(
     plan,
     cleanedSchedule.conversions,
     baselineResult,
@@ -1285,7 +1524,13 @@ export function postProcessExactLedgerSchedule(
       candidate = candidate.slice(0, -1)
       pruneIterationCount++
       const prunedResult = simulatePlan(withOptimizedConversions(plan, candidate), simulateOptions)
-      const prunedValidation = evaluateExactLedgerSchedule(plan, candidate, baselineResult, prunedResult, options)
+      const prunedValidation = evaluateExactLedgerScheduleCalculation(
+        plan,
+        candidate,
+        baselineResult,
+        prunedResult,
+        options,
+      )
       const bestDelta = best?.validation.afterTaxEstateDelta ?? cleanedValidation.afterTaxEstateDelta
       if (prunedValidation.afterTaxEstateDelta > bestDelta) {
         best = { conversions: candidate, result: prunedResult, validation: prunedValidation }
@@ -1312,11 +1557,14 @@ export function postProcessExactLedgerSchedule(
   const minimumRequestedConversionDollars =
     options.minimumRequestedConversionDollars ?? DEFAULT_MINIMUM_REQUESTED_CONVERSION_DOLLARS
   const cleanedConversionTotal = cleanedSchedule.conversions.reduce((sum, conversion) => sum + conversion.amount, 0)
+  cleanedValidation = refuseAggregateScheduleRecommendation(
+    cleanedValidation,
+    cleanedSchedule.conversions,
+  )
   const recommendationSchedule =
     stabilized &&
     cleanedConversionTotal >= minimumRequestedConversionDollars &&
-    cleanedValidation.recommendationState !== 'rejected' &&
-    cleanedValidation.recommendationState !== 'unexecutable'
+    cleanedValidation.recommendationState === 'beneficial'
       ? 'cleaned'
       : 'none'
 
@@ -1331,6 +1579,7 @@ export function postProcessExactLedgerSchedule(
     stabilized,
     iterationCount,
     pruneIterationCount,
+    minimumRequestedConversionDollars,
     recommendationSchedule,
   }
 }
@@ -1563,15 +1812,7 @@ export async function optimizePlan(plan: Plan, opts: OptimizePlanOptions): Promi
   // prices higher, so convergence-enabled can never do worse than disabled.
   if (convergence.enabled && schedule !== firstSchedule) {
     const firstPostProcessed = postProcessExactLedgerSchedule(plan, firstSchedule, baselineResult, simulateOptions)
-    const convergedDelta =
-      postProcessed && postProcessed.recommendationSchedule === 'cleaned'
-        ? postProcessed.cleanedValidation.afterTaxEstateDelta
-        : -Infinity
-    const firstDelta =
-      firstPostProcessed.recommendationSchedule === 'cleaned'
-        ? firstPostProcessed.cleanedValidation.afterTaxEstateDelta
-        : -Infinity
-    if (firstDelta > convergedDelta) {
+    if (selectConvergencePostProcessing(firstPostProcessed, postProcessed) === 'first-solve') {
       schedule = firstSchedule
       input = firstInput
       postProcessed = firstPostProcessed
@@ -1619,7 +1860,13 @@ export interface OptimizePlanWithClaimResult extends OptimizePlanResult {
 
 /** Exact after-tax estate of a plan run with its tournament-recommended conversions installed. */
 function winnerExactEstate(plan: Plan, tournament: ExactLedgerTournament, simulateOptions: SimulateOptions): number {
-  return priceExecutedSchedule(plan, tournament.winnerConversions, simulateOptions).estate
+  // Readiness withholding is a publication decision, not a valuation result.
+  // Claim-age co-optimization must compare each claim combination with its
+  // calculated schedule even though that aggregate schedule is not Apply-safe.
+  const calculatedConversions =
+    tournament.retirementActionReadinessVeto?.vetoedConversions ??
+    tournament.winnerConversions
+  return priceExecutedSchedule(plan, calculatedConversions, simulateOptions).estate
 }
 
 /**
@@ -1630,8 +1877,11 @@ function winnerExactEstate(plan: Plan, tournament: ExactLedgerTournament, simula
  * estate. A claim switch must clear a small margin to avoid churn. The grid is
  * bounded (≤ 2 streams × 3 canonical ages), so the cost is a small multiple of a
  * single optimize; the exact ledger prices every pair, so the tournament remains
- * the guardrail for each. Returns the winning plan (current or claim-patched) and
- * its optimizer result plus a diagnostic of the joint decision.
+ * the guardrail for each. A pair whose calculated schedule is withheld for
+ * incomplete retirement-action identity remains valuation evidence only; its
+ * claim patch is not published separately. Returns the winning actionable plan
+ * (current or claim-patched) and its optimizer result plus a diagnostic of the
+ * joint decision.
  */
 export async function optimizePlanCoOptimizingClaimAge(
   plan: Plan,
@@ -1662,6 +1912,10 @@ export async function optimizePlanCoOptimizingClaimAge(
     const result = await optimizePlan(patchedPlan, opts)
     const estate = winnerExactEstate(patchedPlan, result.tournament, simulateOptions)
     evaluated++
+    // A claim patch and its calculated conversion schedule are one joint
+    // recommendation. Publishing only the claim change would let callers apply
+    // a different plan from the pair that actually won the exact-ledger test.
+    if (result.tournament.retirementActionReadinessVeto !== null) continue
     // The churn margin is charged against the FIXED current-claim floor, not
     // the running best — otherwise the winner is generator-order-dependent (a
     // slightly-worse candidate adopted first could lock out the true optimum

@@ -12,6 +12,10 @@
 import { evaluateCandidate, type EvaluateCandidateOptions } from './evaluateCandidate.js'
 import { maximizeAfterTaxEstate, type ObjectivePolicy } from './objectives.js'
 import type { DecisionCandidate, DecisionContext, ExactDecisionEvaluation } from './types.js'
+import {
+  allowLegacyAggregateDecisionCalculation,
+  isLegacyAggregateDecisionCalculation,
+} from '../projection/internal/legacyAggregateDecisionCalculation.js'
 
 export interface CoordinateDescentOptions {
   /** Hard cap on exact-ledger simulations (including the seed evaluation). */
@@ -84,11 +88,18 @@ export function refineConversionSchedule(
     explanation: 'Coordinate-descent mutation of the incumbent schedule, priced on the exact ledger.',
     planPatch: options.basePatch,
     conversions,
+    retirementActionReadiness: {
+      state: 'exploratoryNonActionable',
+      reason: 'This aggregate conversion schedule has not been allocated to legal owners, source accounts, and Roth destinations.',
+    },
   })
 
   const evaluate = (conversions: Array<{ year: number; amount: number }>, moveId: string): ExactDecisionEvaluation => {
     simulationCount++
-    return evaluateCandidate(ctx, makeCandidate(conversions, moveId), options.evaluation)
+    const evaluationOptions = isLegacyAggregateDecisionCalculation(options)
+      ? allowLegacyAggregateDecisionCalculation(options.evaluation ?? {})
+      : options.evaluation
+    return evaluateCandidate(ctx, makeCandidate(conversions, moveId), evaluationOptions)
   }
 
   let bestConversions = normalizeSchedule(seedConversions)

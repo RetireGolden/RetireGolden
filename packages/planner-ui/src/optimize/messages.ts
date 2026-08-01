@@ -75,6 +75,7 @@ export interface OptimizePostProcessing {
   stabilized: boolean
   iterationCount: number
   pruneIterationCount: number
+  minimumRequestedConversionDollars: number
   recommendationSchedule: ExactLedgerRecommendationSchedule
   cleanedExecutionByYear: { year: number; rothConversion: number }[]
 }
