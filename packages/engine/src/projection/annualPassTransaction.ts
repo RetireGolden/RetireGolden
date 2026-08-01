@@ -1,7 +1,12 @@
 import type { AssetAllocationPolicy } from '../model/plan.js'
 import type { RothBasisState } from '../strategies/rothBasis.js'
 import type { IraProRataYear } from '../strategies/iraBasis.js'
-import type { YearExpenses } from './types.js'
+import type { SimulatorAnnualRetirementRuntimeOccurrence } from
+  './annualRetirementRuntimeJournal.js'
+import type {
+  SimulatorRetirementRuntimeApplication,
+  YearExpenses,
+} from './types.js'
 
 /**
  * A simulator balance row at the post-contribution annual-pass boundary.
@@ -40,6 +45,11 @@ export interface SimulatorAnnualPassValueBinding<T> {
  */
 export interface SimulatorAnnualPassStateBindings {
   balances: SimulatorAnnualPassBalanceRecord[]
+  retirementRuntimeOccurrences:
+    SimulatorAnnualRetirementRuntimeOccurrence[]
+  retirementRuntimeApplications:
+    SimulatorRetirementRuntimeApplication[]
+  nextRetirementRuntimeMutationOrdinal: SimulatorAnnualPassValueBinding<number>
   iraProRata: Map<string, IraProRataYear>
   iraBasisByOwner: Map<string, number>
   rothBasis: Map<string, RothBasisState>
@@ -105,6 +115,11 @@ interface BalanceSnapshot {
 
 interface AnnualPassSnapshot {
   balances: BalanceSnapshot[]
+  retirementRuntimeOccurrences:
+    SimulatorAnnualRetirementRuntimeOccurrence[]
+  retirementRuntimeApplications:
+    SimulatorRetirementRuntimeApplication[]
+  nextRetirementRuntimeMutationOrdinal: number
   iraProRata: Array<[string, IraProRataYear]>
   iraBasisByOwner: Array<[string, number]>
   rothBasis: Array<[string, RothBasisState]>
@@ -158,6 +173,24 @@ function cloneExpenses(value: YearExpenses): YearExpenses {
   return { ...value }
 }
 
+function cloneRuntimeOccurrence(
+  value: Readonly<SimulatorAnnualRetirementRuntimeOccurrence>,
+): SimulatorAnnualRetirementRuntimeOccurrence {
+  return { ...value }
+}
+
+function cloneRuntimeApplication(
+  value: Readonly<SimulatorRetirementRuntimeApplication>,
+): SimulatorRetirementRuntimeApplication {
+  return value.applicationKind === 'aggregateRothDestinationCredit'
+    ? {
+        ...value,
+        producerOccurrenceKeys: [...value.producerOccurrenceKeys],
+        sourceOwnerPersonIds: [...value.sourceOwnerPersonIds],
+      }
+    : { ...value }
+}
+
 function snapshotMap<Key, Value>(
   source: ReadonlyMap<Key, Value>,
   cloneValue: (value: Value) => Value,
@@ -183,6 +216,12 @@ function restoreExpenses(target: YearExpenses, snapshot: YearExpenses): void {
 function captureSnapshot(bindings: SimulatorAnnualPassStateBindings): AnnualPassSnapshot {
   return {
     balances: bindings.balances.map((record) => ({ record, balance: record.balance, costBasis: record.costBasis })),
+    retirementRuntimeOccurrences:
+      bindings.retirementRuntimeOccurrences.map(cloneRuntimeOccurrence),
+    retirementRuntimeApplications:
+      bindings.retirementRuntimeApplications.map(cloneRuntimeApplication),
+    nextRetirementRuntimeMutationOrdinal:
+      bindings.nextRetirementRuntimeMutationOrdinal.read(),
     iraProRata: snapshotMap(bindings.iraProRata, cloneIraProRata),
     iraBasisByOwner: snapshotMap(bindings.iraBasisByOwner, (value) => value),
     rothBasis: snapshotMap(bindings.rothBasis, cloneRothBasis),
@@ -214,6 +253,20 @@ function restoreSnapshot(bindings: SimulatorAnnualPassStateBindings, snapshot: A
     record.costBasis = costBasis
   }
   bindings.balances.splice(0, bindings.balances.length, ...snapshot.balances.map(({ record }) => record))
+
+  bindings.retirementRuntimeOccurrences.splice(
+    0,
+    bindings.retirementRuntimeOccurrences.length,
+    ...snapshot.retirementRuntimeOccurrences.map(cloneRuntimeOccurrence),
+  )
+  bindings.retirementRuntimeApplications.splice(
+    0,
+    bindings.retirementRuntimeApplications.length,
+    ...snapshot.retirementRuntimeApplications.map(cloneRuntimeApplication),
+  )
+  bindings.nextRetirementRuntimeMutationOrdinal.write(
+    snapshot.nextRetirementRuntimeMutationOrdinal,
+  )
 
   restoreMap(bindings.iraProRata, snapshot.iraProRata, cloneIraProRata)
   restoreMap(bindings.iraBasisByOwner, snapshot.iraBasisByOwner, (value) => value)
