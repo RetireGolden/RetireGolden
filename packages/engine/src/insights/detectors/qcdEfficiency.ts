@@ -29,26 +29,26 @@ export function qcdEfficiencyAnnualTargets(
     const firstYear = years[0]
     const lastYear = years.at(-1)
     const charitable = plan.strategies.itemizedDeductions?.charitable ?? 0
-    const inflationRate = 1 + plan.assumptions.inflationPct / 100
     if (
       firstYear === undefined ||
       lastYear === undefined ||
       projection.startYear !== firstYear ||
       projection.endYear !== lastYear ||
       !(charitable > 0) ||
-      !Number.isFinite(inflationRate) ||
-      !(inflationRate > 0) ||
-      years.some((year, index) =>
-        !Number.isSafeInteger(year) ||
-        year < 1 ||
-        year !== firstYear + index,
+      projection.years.some((entry, index) =>
+        !Number.isFinite(entry.inflationScale) ||
+        !(entry.inflationScale! > 0) ||
+        (index === 0 && entry.inflationScale !== 1) ||
+        !Number.isSafeInteger(entry.year) ||
+        entry.year < 1 ||
+        entry.year !== firstYear + index
       )
     ) return null
 
-    const targets = years.map((year) => ({
-      year,
+    const targets = projection.years.map((entry) => ({
+      year: entry.year,
       requestedAmount: planDollarsToLedgerCents(
-        charitable * Math.pow(inflationRate, year - projection.startYear),
+        charitable * entry.inflationScale!,
       ),
     }))
     return targets.every((target) =>

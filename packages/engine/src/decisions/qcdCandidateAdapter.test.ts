@@ -74,24 +74,45 @@ function eligiblePlan(): Plan {
         evidenceId: 'p1-contribution-2027',
         provenance: { source: 'manual' },
       },
+      {
+        donorPersonId: 'p1',
+        taxYear: 2028,
+        amountCents: asUsdCents(0),
+        evidenceId: 'p1-contribution-2028',
+        provenance: { source: 'manual' },
+      },
     ],
   }
   return plan
 }
 
-function projectionResult(years: readonly number[]): ProjectionResult {
+function projectionResult(
+  plan: Readonly<Plan>,
+  years: readonly number[],
+  inflationScales?: readonly number[],
+): ProjectionResult {
+  let cumulativeInflation = 1
+  const annualInflation = 1 + plan.assumptions.inflationPct / 100
   return {
     startYear: years[0],
     endYear: years.at(-1),
-    years: years.map((year) => ({ year, people: [], balances: {} })),
+    years: years.map((year, index) => {
+      const inflationScale = inflationScales?.[index] ?? cumulativeInflation
+      cumulativeInflation *= annualInflation
+      return { year, inflationScale, people: [], balances: {} }
+    }),
   } as unknown as ProjectionResult
 }
 
-function exploratoryCandidate(plan: Plan, years: readonly number[] = [2026]) {
+function exploratoryCandidate(
+  plan: Plan,
+  years: readonly number[] = [2026],
+  inflationScales?: readonly number[],
+) {
   const card = qcdEfficiency.screen({
     plan,
     projection: {
-      result: projectionResult(years),
+      result: projectionResult(plan, years, inflationScales),
     },
   } as unknown as DetectorContext)
   if (card === null) throw new Error('fixture must emit QCD insight')
@@ -107,12 +128,13 @@ function adaptQcdEfficiencyDetectorCandidate(
   candidate: AdapterArguments[1],
   alternatives: AdapterArguments[2],
   years: readonly number[] = [2026],
+  inflationScales?: readonly number[],
 ) {
   return adaptQcdEfficiencyDetectorCandidateWithProjection(
     plan,
     candidate,
     alternatives,
-    projectionResult(years),
+    projectionResult(plan, years, inflationScales),
   )
 }
 
@@ -152,16 +174,20 @@ function annualAlternative(
   alternativeId: string,
   sourceAccountId: string,
   year: number,
+  inflationScale?: number,
 ): QcdEfficiencyCandidateAlternative {
   const option = alternative(alternativeId, sourceAccountId, {
     year,
     executionDate: `${year}-08-01`,
   })
-  const inflationFactor = Math.pow(
-    1 + plan.assumptions.inflationPct / 100,
-    year - 2026,
-  )
-  const requestedAmount = asPositiveUsdCents(Math.round(25_000 * inflationFactor))
+  let inflationFactor = 1
+  const annualInflation = 1 + plan.assumptions.inflationPct / 100
+  for (let currentYear = 2026; currentYear < year; currentYear++) {
+    inflationFactor *= annualInflation
+  }
+  const requestedAmount = asPositiveUsdCents(Math.round(
+    25_000 * (inflationScale ?? inflationFactor),
+  ))
   option.intent.requestedAmount = requestedAmount
   option.intent.sourceAllocation.requestedAmount = requestedAmount
   return option
@@ -313,6 +339,23 @@ describe('QCD efficiency candidate adapter', () => {
     if (outOfHorizon.status === 'blocked') {
       expect(outOfHorizon.issues.map((entry) => entry.kind)).toContain('invalidAlternative')
     }
+  })
+
+  it('uses the projection-published varying inflation path for annual targets', () => {
+    const plan = eligiblePlan()
+    const years = [2026, 2027, 2028]
+    const inflationScales = [1, 1.02, 1.0506]
+    const candidate = exploratoryCandidate(plan, years, inflationScales)
+    const result = adaptQcdEfficiencyDetectorCandidate(plan, candidate, [
+      annualAlternative(plan, '2028-option', 'ira-a', 2028, inflationScales[2]),
+      annualAlternative(plan, '2026-option', 'ira-a', 2026, inflationScales[0]),
+      annualAlternative(plan, '2027-option', 'ira-b', 2027, inflationScales[1]),
+    ], years, inflationScales)
+
+    expect(result.status).toBe('adapted')
+    if (result.status !== 'adapted') return
+    expect(result.requests.map((request) => request.requestedAmount))
+      .toEqual([25_000, 25_500, 26_265])
   })
 
   it.each([

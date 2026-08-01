@@ -4904,6 +4904,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     })
     const yearResult: YearResult = {
       year,
+      inflationScale: inflFactor,
       people: peopleStates,
       filingStatus: filingStatusForYear,
       incomes,

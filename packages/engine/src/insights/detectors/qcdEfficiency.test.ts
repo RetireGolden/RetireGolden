@@ -6,6 +6,7 @@ import type { DetectorContext } from '../types.js'
 import {
   QCD_EFFICIENCY_EXPLORATORY_REASON,
   qcdEfficiency,
+  qcdEfficiencyAnnualTargets,
 } from './qcdEfficiency.js'
 
 function context(): DetectorContext {
@@ -21,7 +22,7 @@ function context(): DetectorContext {
       result: {
         startYear: 2026,
         endYear: 2026,
-        years: [{ year: 2026, people: [], balances: {} }],
+        years: [{ year: 2026, inflationScale: 1, people: [], balances: {} }],
       },
     },
   } as unknown as DetectorContext
@@ -65,5 +66,38 @@ describe('QCD efficiency detector source integrity', () => {
     const noYear = context()
     noYear.projection.result.years = []
     expect(qcdEfficiency.screen(noYear)).toBeNull()
+  })
+
+  it('uses the simulator-published iterative inflation scale at exact-cent boundaries', () => {
+    const plan = singlePersonPlan({ dob: '1950-01-01' })
+    plan.assumptions.inflationPct = 1.37
+    const charitable = 1_000_000_061_728.35
+    plan.strategies.itemizedDeductions = {
+      stateAndLocalTaxes: 0,
+      mortgageInterest: 0,
+      charitable,
+    }
+    let iterativeScale = 1
+    const years = Array.from({ length: 55 }, (_, index) => {
+      const entry = {
+        year: 2026 + index,
+        inflationScale: iterativeScale,
+        people: [],
+        balances: {},
+      }
+      iterativeScale *= 1.0137
+      return entry
+    })
+    const targets = qcdEfficiencyAnnualTargets(plan, {
+      startYear: 2026,
+      endYear: 2080,
+      years,
+    } as never)
+
+    expect(targets).not.toBeNull()
+    const iterativeCents = Math.round(charitable * years[54]!.inflationScale * 100)
+    const directPowerCents = Math.round(charitable * Math.pow(1.0137, 54) * 100)
+    expect(targets?.[54]?.requestedAmount).toBe(iterativeCents)
+    expect(iterativeCents).not.toBe(directPowerCents)
   })
 })
