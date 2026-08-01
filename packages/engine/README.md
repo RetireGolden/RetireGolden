@@ -92,6 +92,17 @@ Source of truth: [github.com/RetireGolden/RetireGolden](https://github.com/Retir
   finalizer, exact-rejoins caller-supplied reconciliation and finalization, and
   publishes committed/refused evidence from the already-applied candidate. It
   never stages or applies a second balance delta and remains outside projection.
+- `probePlanOwnedNonRothIraAnnualPass` is the nonmoving annual transaction-control
+  boundary. It exact-rejoins a speculative movement with the truthful completed
+  PR107 inventory, internally builds the PR105 snapshot and finalization, and
+  invokes PR106 without applying a second delta. Its structurally bound pass
+  envelope owns the canonical assumptions and December 31 pool observation.
+  Exact effects return commit-ready or settled-no-movement control, valid
+  economic changes return reprobe, and incompatible or stale evidence rolls
+  back. A stable control binding is exposed for a later atomic consumer; this
+  boundary does not itself mutate simulator state. Caller penalty facts are
+  allow-listed planning evidence, not independent Plan, filing, or custodian
+  authority.
 - Parameters (tax brackets, limits, SSA tables, Medicare/FPL) are versioned
   data packs under `params/`, with provenance.
 

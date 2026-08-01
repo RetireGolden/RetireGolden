@@ -649,6 +649,20 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   differently bound reuse between post-candidate, penalty, finalization, and binding evidence while
   retaining exact same-role references. Unresolved penalty evidence remains non-actionable. This binder
   is still isolated from the annual simulator and is not custodian completion evidence.
+  The pure `probePlanOwnedNonRothIraAnnualPass` controller closes the speculative annual-pass loop without
+  changing simulator state. A speculative movement input/candidate requires no pre-pass runtime
+  attestation. After the full pass, the controller reruns the PR107 transaction against the truthful
+  inventory and original action-boundary opening balances, exact-rejoins the candidate, and internally
+  constructs the PR105 snapshot from canonical applications/transitions plus the complete December 31
+  owner-wide pool. A structurally derived completed-pass envelope binds the Plan, owner, year, ledger,
+  candidate, inventory, transaction, canonical assumption vector, and canonical year-end observations.
+  The controller rebuilds PR105, the annual finalization, and PR106; it projects per-allocation executed,
+  basis-return, ordinary-income, and allocated-penalty cents without duplicating their math. Exact effects
+  return either commit-ready positive control or settled no-movement control, valid changed economics
+  return reprobe, and incomplete, unified-ledger, stale, colliding, or malformed evidence returns rollback.
+  Every outer arm is nonmoving; a stable binding is exposed for a later atomic compare-and-swap consumer.
+  Penalty-prerequisite facts remain caller-supplied planning evidence, are explicitly allow-listed before
+  coordination, and do not by themselves establish Plan, filing, custodian, or simulator authority.
   A separate standalone `validateOwnedNonRothIraSeppCurrentPaymentCandidate` boundary can now validate
   one named owned-IRA SEPP scheduled-payment transition against canonical character/distribution
   coverage, explicit election and annual-schedule evidence, no-disqualifying-modification coverage,

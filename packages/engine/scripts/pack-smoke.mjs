@@ -57,6 +57,9 @@ const ownedIraPostCandidateEvidenceDeepApi = await import(
 const ownedIraPostCandidateExecutionDeepApi = await import(
   '@retiregolden/engine/actions/ownedNonRothIraAnnualPostCandidateExecution'
 )
+const ownedIraAnnualPassProbeDeepApi = await import(
+  '@retiregolden/engine/actions/ownedNonRothIraAnnualPassProbe'
+)
 const canonicalActionDeepImports = [
   'annualIraBasisAllocation',
   'annualRetirementPhysicalEventInventory',
@@ -71,6 +74,7 @@ const canonicalActionDeepImports = [
   'ownedNonRothIraAnnualPlanCoordinator',
   'ownedNonRothIraAnnualPostCandidateEvidence',
   'ownedNonRothIraAnnualPostCandidateExecution',
+  'ownedNonRothIraAnnualPassProbe',
   'ownedNonRothIraAnnualFinalization',
   'ownedNonRothIraMovementCandidate',
   'ownedNonRothIraPenaltyPrerequisite',
@@ -102,6 +106,7 @@ const {
   buildOwnedNonRothIraStagedDistributionDateEvidenceId,
   buildAnnualRetirementPhysicalEventInventory,
   buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput,
+  buildCompletePlanOwnedNonRothIraAnnualPassEvidence,
   classifyOwnedNonRothIraAnnualWithdrawals,
   classifyIndividuallyOwnedTaxableWithdrawal,
   coordinateOwnedNonRothIraAnnualWithdrawalCandidate,
@@ -115,11 +120,21 @@ const {
   parseRetirementActionRequest,
   planDollarsToLedgerCents,
   preparePlanOwnedNonRothIraAnnualCandidateTransaction,
+  probePlanOwnedNonRothIraAnnualPass,
   resolveOwnedNonRothIraAnnualWithdrawalEvidence,
   reconcileOwnedNonRothIraSeppAnnualSchedule,
   stageOwnedNonRothIraOrdinaryWithdrawalMovements,
   validateOwnedNonRothIraSeppCurrentPaymentCandidate,
 } = actionsApi
+assert.equal(
+  ownedIraAnnualPassProbeDeepApi
+    .buildCompletePlanOwnedNonRothIraAnnualPassEvidence,
+  buildCompletePlanOwnedNonRothIraAnnualPassEvidence,
+)
+assert.equal(
+  ownedIraAnnualPassProbeDeepApi.probePlanOwnedNonRothIraAnnualPass,
+  probePlanOwnedNonRothIraAnnualPass,
+)
 assert.equal(
   ownedIraCoordinatorDeepApi
     .buildOwnedNonRothIraStagedDistributionDateEvidenceId,

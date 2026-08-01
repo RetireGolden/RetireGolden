@@ -395,6 +395,26 @@ export {
   type PlanOwnedNonRothIraAnnualPostCandidateRefusedResult,
 } from './ownedNonRothIraAnnualPostCandidateExecution.js'
 export {
+  buildCompletePlanOwnedNonRothIraAnnualPassEvidence,
+  derivePlanOwnedNonRothIraAnnualPassSnapshotEvidenceIds,
+  probePlanOwnedNonRothIraAnnualPass,
+  type BuildCompletePlanOwnedNonRothIraAnnualPassEvidenceInput,
+  type CompletePlanOwnedNonRothIraAnnualPassEvidence,
+  type PlanOwnedNonRothIraAnnualPassAssumedEffect,
+  type PlanOwnedNonRothIraAnnualPassCommitResult,
+  type PlanOwnedNonRothIraAnnualPassControlBinding,
+  type PlanOwnedNonRothIraAnnualPassObservedEffect,
+  type PlanOwnedNonRothIraAnnualPassPositiveCommitResult,
+  type PlanOwnedNonRothIraAnnualPassReprobeResult,
+  type PlanOwnedNonRothIraAnnualPassRollbackIssue,
+  type PlanOwnedNonRothIraAnnualPassRollbackIssueKind,
+  type PlanOwnedNonRothIraAnnualPassRollbackResult,
+  type PlanOwnedNonRothIraAnnualPassSettledNoMovementResult,
+  type PlanOwnedNonRothIraAnnualPassSnapshotEvidenceIds,
+  type ProbePlanOwnedNonRothIraAnnualPassInput,
+  type ProbePlanOwnedNonRothIraAnnualPassResult,
+} from './ownedNonRothIraAnnualPassProbe.js'
+export {
   stageOwnedNonRothIraOrdinaryWithdrawalMovements,
   type OwnedNonRothIraMovementActionEvidence,
   type OwnedNonRothIraMovementAllocationEvidence,
