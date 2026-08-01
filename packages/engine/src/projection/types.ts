@@ -517,6 +517,12 @@ export interface YearResult {
   expenses: YearExpenses
   /** Contributions actually made this year (after IRS caps). */
   contributions: number
+  /**
+   * Employee contributions credited specifically to complete owner-wide
+   * non-Roth IRA pools. Published independently from runtime occurrence
+   * records so source replay can prove that no physical credit was omitted.
+   */
+  ownedNonRothIraContributions?: number
   /** Employer match contributions made this year. */
   employerMatch: number
   /** Forced traditional-account distributions (included in withdrawals.traditional). */

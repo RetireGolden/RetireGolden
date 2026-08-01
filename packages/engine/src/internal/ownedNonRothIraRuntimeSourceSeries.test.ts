@@ -165,6 +165,38 @@ describe('private owned-IRA runtime source-series validation', () => {
       })
   })
 
+  it('accepts a raw-reconciled aggregate conversion across a half-cent grouping edge', () => {
+    const plan = singlePersonPlan({ planningAge: 60 })
+    plan.id = 'aggregate-conversion-half-cent-grouping'
+    plan.accounts = [
+      traditional('ira-a', 215_290_346_950.2926),
+      traditional('ira-b', 793_861_452_834.0824),
+      roth('roth'),
+    ]
+    plan.strategies.rothConversion = {
+      mode: 'manual',
+      conversions: [{ year: TAX_YEAR, amount: 1_513_727_699_676.5625 }],
+    }
+
+    const years = project(plan)
+    const conversionTotal = years[0]!.retirementRuntimeSource!
+      .runtimeOccurrences
+      .filter((occurrence) => occurrence.kind === 'legacyRothConversion')
+      .reduce((total, occurrence) =>
+        total + occurrence.grossAmountPlanDollars, 0)
+    const aggregate = years[0]!.retirementRuntimeApplicationSource!
+      .applications.find((application) =>
+        application.applicationKind === 'aggregateRothDestinationCredit')
+    if (aggregate?.applicationKind !== 'aggregateRothDestinationCredit') {
+      throw new Error('expected aggregate conversion credit')
+    }
+    expect(conversionTotal).toBe(1_009_151_799_784.375)
+    expect(aggregate.destinationCreditedAmountPlanDollars)
+      .toBe(1_009_151_799_784.3749)
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, years))
+      .toMatchObject({ status: 'ownedNonRothIraRuntimeSourceSeriesComplete' })
+  })
+
   it('rejects a suffix that does not begin at the authoritative projection start', () => {
     const plan = singlePersonPlan({ planningAge: 61 })
     plan.id = 'suffix-rejected'
@@ -290,6 +322,31 @@ describe('private owned-IRA runtime source-series validation', () => {
       },
     ]
     const years = copy(project(plan))
+    const missingRollover = copy(years)
+    const missingRolloverKey = missingRollover[0]!.retirementRuntimeSource!
+      .runtimeOccurrences.find((occurrence) =>
+        occurrence.kind === 'rolloverInflow')!.producerOccurrenceKey
+    ;(missingRollover[0]!.retirementRuntimeSource!.runtimeOccurrences as unknown as
+      Array<{ producerOccurrenceKey: string }>).splice(
+      missingRollover[0]!.retirementRuntimeSource!.runtimeOccurrences
+        .findIndex((occurrence) =>
+          occurrence.producerOccurrenceKey === missingRolloverKey),
+      1,
+    )
+    ;(missingRollover[0]!.retirementRuntimeApplicationSource!.applications as unknown as
+      Array<{ producerOccurrenceKey: string | null }>).splice(
+      missingRollover[0]!.retirementRuntimeApplicationSource!.applications
+        .findIndex((application) =>
+          application.producerOccurrenceKey === missingRolloverKey),
+      1,
+    )
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(
+      plan, TAX_YEAR, missingRollover,
+    )).toMatchObject({
+      status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+      issues: [{ kind: 'sourceCoverageInvalid' }],
+    })
+
     const rolloverOccurrence = years[0]!.retirementRuntimeSource!
       .runtimeOccurrences.find((occurrence) => occurrence.kind === 'rolloverInflow')!
     const rolloverApplication = years[0]!.retirementRuntimeApplicationSource!
@@ -305,6 +362,11 @@ describe('private owned-IRA runtime source-series validation', () => {
     ;(rolloverApplication as {
       sourceBalanceAfterPlanDollars: number
     }).sourceBalanceAfterPlanDollars += 0.001
+    const pension = plan.accounts.find((account) => account.type === 'pension')
+    if (pension?.type !== 'pension' || pension.lumpSumOffer === undefined) {
+      throw new Error('expected pension offer')
+    }
+    pension.lumpSumOffer.amount += 0.001
 
     expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, years))
       .toMatchObject({
@@ -376,6 +438,40 @@ describe('private owned-IRA runtime source-series validation', () => {
     )
     expect(validateOwnedNonRothIraRuntimeSourceSeries(
       needPlan, TAX_YEAR, missingNeed,
+    )).toMatchObject({
+      status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+      issues: [{ kind: 'sourceCoverageInvalid' }],
+    })
+
+    const contributionPlan = singlePersonPlan({ planningAge: 60 })
+    contributionPlan.id = 'missing-owned-ira-contribution-source'
+    contributionPlan.incomes = [{
+      type: 'wages', id: 'wages', personId: 'p1', annualGross: 100_000,
+      endAge: null, realGrowthPct: 0,
+    }]
+    contributionPlan.accounts = [{
+      ...traditional('ira', 100_000), annualContribution: 5_000,
+    }]
+    const missingContribution = copy(project(contributionPlan))
+    const contributionOccurrence = missingContribution[0]!
+      .retirementRuntimeSource!.runtimeOccurrences.find((occurrence) =>
+        occurrence.kind === 'ownedIraContribution')!
+    ;(missingContribution[0]!.retirementRuntimeSource!.runtimeOccurrences as unknown as
+      Array<{ producerOccurrenceKey: string }>).splice(
+      missingContribution[0]!.retirementRuntimeSource!.runtimeOccurrences
+        .indexOf(contributionOccurrence),
+      1,
+    )
+    ;(missingContribution[0]!.retirementRuntimeApplicationSource!.applications as unknown as
+      Array<{ producerOccurrenceKey: string | null }>).splice(
+      missingContribution[0]!.retirementRuntimeApplicationSource!.applications
+        .findIndex((application) =>
+          application.producerOccurrenceKey ===
+            contributionOccurrence.producerOccurrenceKey),
+      1,
+    )
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(
+      contributionPlan, TAX_YEAR, missingContribution,
     )).toMatchObject({
       status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
       issues: [{ kind: 'sourceCoverageInvalid' }],
@@ -499,6 +595,60 @@ describe('private owned-IRA runtime source-series validation', () => {
         }],
       }],
     } as unknown as NonNullable<YearResult['retirementActionExecution']>
+
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, years))
+      .toMatchObject({
+        status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+        issues: [{ kind: 'exactActionStageRequired' }],
+      })
+  })
+
+  it('requires execution evidence for a Plan-declared exact owned-IRA action', () => {
+    const plan = singlePersonPlan({ planningAge: 60 })
+    plan.id = 'missing-exact-action-evidence'
+    plan.accounts = [traditional('ira', 1_000)]
+    plan.strategies.retirementActions = [{
+      actionId: 'owned-ira-withdrawal',
+      kind: 'ordinaryWithdrawal',
+      year: TAX_YEAR,
+      executionDate: '2026-06-15',
+      executionSequence: 1,
+      requestedAmount: 10_000,
+      provenance: { source: 'manual' },
+      personId: 'p1',
+      allocations: [{
+        allocationId: 'owned-ira-allocation',
+        sourceAccountId: 'ira',
+        requestedAmount: 10_000,
+      }],
+      purpose: { kind: 'spending' },
+    }] as Plan['strategies']['retirementActions']
+    const projected = project(plan)
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(
+      plan, TAX_YEAR, projected,
+    )).toMatchObject({
+      status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+      issues: [{ kind: 'exactActionStageRequired' }],
+    })
+
+    const missingNestedEvidence = copy(projected)
+    const mutableExecution = missingNestedEvidence[0]!
+      .retirementActionExecution as unknown as {
+        evidence: unknown[]
+        balances: unknown[]
+      }
+    mutableExecution.evidence = []
+    mutableExecution.balances = []
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(
+      plan, TAX_YEAR, missingNestedEvidence,
+    )).toMatchObject({
+      status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+      issues: [{ kind: 'exactActionStageRequired' }],
+    })
+
+    const years = copy(projected)
+    expect(years[0]!.retirementActionExecution).toBeDefined()
+    delete years[0]!.retirementActionExecution
 
     expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, years))
       .toMatchObject({

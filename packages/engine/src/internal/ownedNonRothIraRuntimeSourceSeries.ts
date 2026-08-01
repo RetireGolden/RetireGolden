@@ -276,14 +276,35 @@ function reconcilePublishedTotal(
 }
 
 function requireNoExactActionOwnedIraMovement(
+  plan: Readonly<Plan>,
   yearResult: Readonly<YearResult>,
   accountById: ReadonlyMap<string, Account>,
   taxYear: number,
 ): void {
+  const declaredOwnedIraSource = plan.strategies.retirementActions
+    .filter((request) => request.year === taxYear)
+    .flatMap((request) => {
+      if (request.kind === 'ordinaryWithdrawal' ||
+          request.kind === 'rothConversion') return request.allocations
+      if (request.kind === 'qcd') return [request.allocation]
+      return []
+    })
+    .map((allocation) => String(allocation.sourceAccountId))
+    .find((accountId) => {
+      const account = accountById.get(accountId)
+      return account !== undefined && isAggregatedIra(account)
+    })
+  if (declaredOwnedIraSource !== undefined) {
+    fail('exactActionStageRequired', 'A Plan-declared exact action from an owned IRA requires the later identity and tax-characterization stage before source replay', {
+      taxYear, sourceAccountId: declaredOwnedIraSource,
+    })
+  }
+
   const execution = yearResult.retirementActionExecution
   if (execution === undefined) return
-
-  for (const evidence of execution.evidence) {
+  const executionEvidence = execution.evidence
+  const executionBalances = execution.balances
+  for (const evidence of executionEvidence) {
     for (const allocation of evidence.allocations) {
       const accountId = String(allocation.sourceAccountId)
       const account = accountById.get(accountId)
@@ -297,7 +318,7 @@ function requireNoExactActionOwnedIraMovement(
     }
   }
 
-  for (const snapshot of execution.balances) {
+  for (const snapshot of executionBalances) {
     const accountId = String(snapshot.accountId)
     const account = accountById.get(accountId)
     if (!account || !isAggregatedIra(account)) continue
@@ -535,14 +556,9 @@ function aggregateRothCredit(
     'Aggregate conversion occurrence amount',
     context,
   )
-  const total = cents(rawTotal, 'Aggregate conversion occurrence amount', context)
-  cents(credit.destinationBalanceBeforePlanDollars, 'Roth destination opening balance', context)
-  const credited = cents(credit.destinationCreditedAmountPlanDollars, 'Roth destination credit', context)
-  cents(credit.destinationBalanceAfterPlanDollars, 'Roth destination closing balance', context)
   if (credit.destinationBalanceBeforePlanDollars +
       credit.destinationCreditedAmountPlanDollars !==
         credit.destinationBalanceAfterPlanDollars ||
-      credited !== total ||
       !rawTotalsReconcile(
         rawTotal,
         credit.destinationCreditedAmountPlanDollars,
@@ -550,6 +566,9 @@ function aggregateRothCredit(
       )) {
     fail('aggregateRothCreditInvalid', 'Aggregate Roth credit must reconcile all conversion occurrences and its destination balance', context)
   }
+  cents(credit.destinationBalanceBeforePlanDollars, 'Roth destination opening balance', context)
+  const credited = cents(credit.destinationCreditedAmountPlanDollars, 'Roth destination credit', context)
+  cents(credit.destinationBalanceAfterPlanDollars, 'Roth destination closing balance', context)
   if (owners.some((owner) => owner === null)) fail('aggregateRothCreditInvalid', 'Conversion sources require explicit owners', context)
   const withoutId = {
     status: 'aggregateDestinationCreditSourceReconciled' as const,
@@ -674,6 +693,25 @@ function validateUnchecked(
       occurrenceOrderId.set(occurrence.producerOccurrenceKey, occurrenceOrderAccountId(plan, occurrence, taxYear))
       occurrenceByKey.set(occurrence.producerOccurrenceKey, occurrence)
     }
+    for (const pension of plan.accounts) {
+      if (pension.type !== 'pension' ||
+          pension.lumpSumOffer?.electionYear !== taxYear ||
+          pension.lumpSumOffer.amount <= 0 ||
+          pension.lumpSumElection === undefined) continue
+      const target = accountById.get(pension.lumpSumElection.rolloverAccountId)
+      if (!target || !isAggregatedIra(target)) continue
+      const expectedKey = JSON.stringify([
+        'rolloverInflow', pension.id, target.id,
+      ])
+      const occurrence = occurrenceByKey.get(expectedKey)
+      if (occurrence?.kind !== 'rolloverInflow' ||
+          occurrence.grossAmountPlanDollars !== pension.lumpSumOffer.amount) {
+        fail('sourceCoverageInvalid', 'A Plan-declared owned-IRA pension rollover requires its canonical occurrence and exact elected amount', {
+          taxYear, sourceAccountId: target.id,
+          producerOccurrenceKey: expectedKey,
+        })
+      }
+    }
     reconcilePublishedTotal(
       occurrenceSource.runtimeOccurrences,
       ['ownedIraRmd', 'employerPlanRmd'],
@@ -706,6 +744,19 @@ function validateUnchecked(
       taxYear,
       accountOrder,
     )
+    if (yearResult.ownedNonRothIraContributions === undefined) {
+      fail('sourceMissing', 'Each year requires the independently published owned-IRA contribution total', {
+        taxYear,
+      })
+    }
+    reconcilePublishedTotal(
+      occurrenceSource.runtimeOccurrences,
+      ['ownedIraContribution', 'ownedIraEmployerContribution'],
+      yearResult.ownedNonRothIraContributions,
+      'owned non-Roth IRA contribution',
+      taxYear,
+      accountOrder,
+    )
     const legacyNeedBasedWithdrawalTotal = occurrenceTotalInPlanOrder(
       occurrenceSource.runtimeOccurrences,
       ['legacyNeedBasedWithdrawal'],
@@ -733,7 +784,9 @@ function validateUnchecked(
       })
     }
 
-    requireNoExactActionOwnedIraMovement(yearResult, accountById, taxYear)
+    requireNoExactActionOwnedIraMovement(
+      plan, yearResult, accountById, taxYear,
+    )
 
     for (const annuity of plan.accounts) {
       if (annuity.type !== 'annuity' || annuity.purchase?.year !== taxYear ||
