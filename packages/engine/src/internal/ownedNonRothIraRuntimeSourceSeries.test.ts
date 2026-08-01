@@ -429,6 +429,32 @@ describe('private owned-IRA runtime source-series validation', () => {
       .toMatchObject({ status: 'ownedNonRothIraRuntimeSourceSeriesComplete' })
   })
 
+  it('accepts untouched proportional need totals whose producer grouping differs by one ULP', () => {
+    const plan = singlePersonPlan({ planningAge: 60 })
+    plan.id = 'proportional-need-plan-order'
+    plan.strategies.withdrawalOrder = { mode: 'proportional' }
+    const balances = [
+      2016740934000.761, 2229254082204.5156, 1553252303668.4531,
+      1909328862952.9268, 1445858489394.2363, 1815506015990.2192,
+      1911472832640.0254, 2826640357288.6753, 1486397895170.6602,
+      2266689648559.258, 1294959002763.1467, 1876636974361.4966,
+      2290625081192.24, 1385438654866.326, 2506852467100.5254,
+      1334557260751.2712, 1963741914754.3252, 1788452436583.7554,
+      2278827603933.5635, 1212179866111.1594, 2092193412902.0332,
+      2060317538083.831, 1426762635661.9893, 2624356864903.8047,
+      2781347063637.755, 1243523408433.4946, 2598902992439.657,
+      1841317825205.6997, 2219210679729.67, 2826411037214.6084,
+    ]
+    plan.accounts = balances.map((balance, index) =>
+      traditional(`ira-${String(29 - index).padStart(2, '0')}`, balance))
+    plan.expenses.baseAnnual = 45_835_972_447_627.22
+
+    const years = project(plan)
+    expect(years[0]!.withdrawals.traditional).toBe(45_835_972_447_627.21)
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, years))
+      .toMatchObject({ status: 'ownedNonRothIraRuntimeSourceSeriesComplete' })
+  })
+
   it('blocks exact-action IRA movement pending identity and tax characterization', () => {
     const plan = singlePersonPlan({ planningAge: 60 })
     plan.id = 'exact-action-chain'

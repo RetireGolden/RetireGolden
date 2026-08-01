@@ -213,9 +213,16 @@ function rawTotalsReconcile(
   const scale = Math.max(1, Math.abs(left), Math.abs(right))
   const floatingPointTolerance = Number.EPSILON * scale *
     Math.max(8, operationCount * 4)
+  // At large magnitudes, adjacent IEEE-754 values can be farther apart than
+  // the ordinary micro-dollar cap. Do not demand precision the producer
+  // cannot represent, but retain the tighter operation-error bound.
+  const representableValueTolerance = Number.EPSILON * scale
   return Math.abs(left - right) <= Math.min(
-    MAX_RAW_RECONCILIATION_TOLERANCE_DOLLARS,
     floatingPointTolerance,
+    Math.max(
+      MAX_RAW_RECONCILIATION_TOLERANCE_DOLLARS,
+      representableValueTolerance,
+    ),
   )
 }
 
