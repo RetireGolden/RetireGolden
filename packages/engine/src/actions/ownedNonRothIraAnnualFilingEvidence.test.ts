@@ -358,6 +358,13 @@ describe('Plan-owned non-Roth IRA annual filing evidence', () => {
     }
   })
 
+  it('classifies a non-stable Plan account ID as Plan invalid', () => {
+    const value = clone()
+    ;(value.plan as Plan).accounts[0]!.id = ' '
+
+    expect(issueKinds(value)).toEqual(['planInvalid'])
+  })
+
   it.each([
     ['2031-04-14', 'deadlineAuthorityInvalid'],
     ['2031-04-16', 'deadlineAuthorityInvalid'],

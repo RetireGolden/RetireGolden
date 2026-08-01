@@ -527,6 +527,14 @@ function buildUnchecked(
   } catch {
     return blocked([issue('planInvalid', 'Plan must have a valid stable ID')])
   }
+  if (plan.accounts.some(
+    (account) => !accountIdSchema.safeParse(account.id).success,
+  )) {
+    return blocked([issue(
+      'planInvalid',
+      'Every Plan account must have a valid stable ID',
+    )])
+  }
   const matchingPeople = plan.household.people.filter(
     (person) => person.id === ownerPersonId,
   )
