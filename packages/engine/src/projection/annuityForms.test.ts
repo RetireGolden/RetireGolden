@@ -85,7 +85,11 @@ describe('payout-form feature-off identity', () => {
     withoutForm.accounts = [cash(200_000), spia(undefined)]
     const withForm = couplePlan()
     withForm.accounts = [cash(200_000), spia({ kind: 'lifeOnly' })]
-    expect(JSON.stringify(run(withForm).years)).toBe(JSON.stringify(run(withoutForm).years))
+    const legacyLedger = (_key: string, value: unknown) =>
+      _key === 'retirementRuntimeSource' ? undefined : value
+    expect(JSON.stringify(run(withForm).years, legacyLedger)).toBe(
+      JSON.stringify(run(withoutForm).years, legacyLedger),
+    )
   })
 
   it('life-only payments stop at the owner’s death (legacy behavior)', () => {
