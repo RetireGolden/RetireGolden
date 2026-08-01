@@ -295,9 +295,11 @@ function attemptStateMatchesYear(
   const applicationSource = year.retirementRuntimeApplicationSource
   if (!same(checkpoint.invariantState, snapshotInvariantState(state)) ||
       year.year !== stable.projectionStartTaxYear ||
-      occurrenceSource?.planId !== stable.planId ||
+      occurrenceSource === undefined ||
+      applicationSource === undefined ||
+      occurrenceSource.planId !== stable.planId ||
       occurrenceSource.taxYear !== stable.projectionStartTaxYear ||
-      applicationSource?.planId !== stable.planId ||
+      applicationSource.planId !== stable.planId ||
       applicationSource.taxYear !== stable.projectionStartTaxYear ||
       state.retirementRuntimeOccurrences.length <
         checkpoint.runtimeOccurrences.length ||

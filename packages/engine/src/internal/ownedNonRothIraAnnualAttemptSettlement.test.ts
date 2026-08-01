@@ -462,6 +462,34 @@ describe('private owned-IRA annual attempt settlement', () => {
     expect(stateBytes(simulatorState)).toBe(before)
   })
 
+  it('fails closed when a bound current-year result omits its runtime source', () => {
+    const plan = rmdPlan()
+    const years = cloneYears(project(plan))
+    const simulatorState = state(plan)
+    const before = stateBytes(simulatorState)
+    delete years[0]!.retirementRuntimeSource
+
+    const result = runOwnedNonRothIraAnnualSettlementAttempts({
+      state: simulatorState,
+      plan,
+      projectionStartTaxYear: TAX_YEAR,
+      initialAssumedEffects: [],
+      runAttempt: () => {
+        mutateAttemptState(simulatorState, project(plan))
+        return years
+      },
+    })
+
+    expect(result).toMatchObject({
+      status: 'rolledBack',
+      reason: 'attemptBindingMismatch',
+      attemptCount: 1,
+      pendingSettlement: null,
+      committedCarryforwards: null,
+    })
+    expect(stateBytes(simulatorState)).toBe(before)
+  })
+
   it.each([
     'occurrenceJournal',
     'applicationJournal',
