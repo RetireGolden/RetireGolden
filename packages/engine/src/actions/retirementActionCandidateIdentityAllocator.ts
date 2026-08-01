@@ -170,20 +170,14 @@ function exactPositiveCents(value: unknown): value is PositiveUsdCents {
   return positiveUsdCentsSchema.safeParse(value).success
 }
 
-function canonicalSourceIntents(value: unknown): UnknownRecord[] | null {
+function sourceIntentsWithCallerIndexes(
+  value: unknown,
+): Array<{ source: UnknownRecord; callerIndex: number }> | null {
   if (!Array.isArray(value) || value.length === 0) return null
-  return [...value]
-    .map(record)
-    .filter((item): item is UnknownRecord => item !== null)
-    .sort((left, right) => {
-      const leftId = typeof left['sourceAccountId'] === 'string'
-        ? left['sourceAccountId']
-        : ''
-      const rightId = typeof right['sourceAccountId'] === 'string'
-        ? right['sourceAccountId']
-        : ''
-      return compareUtf16CodeUnits(leftId, rightId)
-    })
+  return value.flatMap((item, callerIndex) => {
+    const source = record(item)
+    return source === null ? [] : [{ source, callerIndex }]
+  })
 }
 
 function matchingPeople(plan: Readonly<Plan>, personId: string): readonly Plan['household']['people'][number][] {
@@ -434,7 +428,7 @@ function allocateRetirementActionCandidateIdentityUnchecked(
   }
 
   const rawSources = candidate['sourceAllocations']
-  const sources = canonicalSourceIntents(rawSources)
+  const sources = sourceIntentsWithCallerIndexes(rawSources)
   if (sources === null || !Array.isArray(rawSources) || sources.length !== rawSources.length) {
     issues.push(issue(
       'missingIdentity',
@@ -451,7 +445,7 @@ function allocateRetirementActionCandidateIdentityUnchecked(
   const seenSourceIds = new Set<string>()
   let allocationTotal = 0n
   let allocationAmountsValid = sources !== null
-  for (const [index, source] of (sources ?? []).entries()) {
+  for (const { source, callerIndex: index } of sources ?? []) {
     for (const key of Object.keys(source).sort(compareUtf16CodeUnits)) {
       if (key !== 'sourceAccountId' && key !== 'requestedAmount') {
         issues.push(issue(
@@ -584,6 +578,18 @@ function allocateRetirementActionCandidateIdentityUnchecked(
   }
 
   if (
+    kind === 'rothConversion' &&
+    record(candidate['taxFunding'])?.['kind'] === 'linkedWithdrawal'
+  ) {
+    issues.push(issue(
+      'invalidIntent',
+      'taxFunding',
+      'Linked conversion funding requires coordinated pair allocation because each action references the other action identity.',
+      'required-facts-missing',
+    ))
+  }
+
+  if (
     issues.length > 0 ||
     !parsedPlanId.success ||
     personId === null ||
@@ -592,6 +598,9 @@ function allocateRetirementActionCandidateIdentityUnchecked(
     return blocked(issues)
   }
 
+  validSources.sort((left, right) =>
+    compareUtf16CodeUnits(left.sourceAccountId, right.sourceAccountId),
+  )
   const purposeIdentityFacts = kind === 'ordinaryWithdrawal'
     ? {
         kind: record(candidate['purpose'])?.['kind'] ?? null,
@@ -736,7 +745,9 @@ export function allocateRetirementActionCandidateIdentity(
   intent: RetirementActionCandidateIdentityIntent,
 ): RetirementActionCandidateIdentityAllocationResult {
   try {
-    return allocateRetirementActionCandidateIdentityUnchecked(plan, intent)
+    const planSnapshot = structuredClone(plan) as Plan
+    const intentSnapshot = structuredClone(intent) as RetirementActionCandidateIdentityIntent
+    return allocateRetirementActionCandidateIdentityUnchecked(planSnapshot, intentSnapshot)
   } catch {
     return blocked([issue(
       'invalidIntent',

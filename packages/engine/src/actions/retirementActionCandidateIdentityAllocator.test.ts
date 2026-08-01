@@ -328,6 +328,25 @@ describe('retirement-action candidate identity allocator', () => {
     expect(reasonCodes(missing)).toContain('conversion-destination-not-found')
   })
 
+  it('rejects linked conversion funding until identities can be allocated as one pair', () => {
+    const plan = singlePersonPlan()
+    plan.accounts = [traditionalAccount('trad-a', 100_000), ownedRoth('roth-a')]
+
+    const result = allocateRetirementActionCandidateIdentity(plan, conversionIntent({
+      taxFunding: {
+        kind: 'linkedWithdrawal',
+        withdrawalActionId: 'future-withdrawal' as never,
+      },
+    }))
+
+    expect(result.status).toBe('blocked')
+    expect(issueKinds(result)).toContain('invalidIntent')
+    expect(reasonCodes(result)).toContain('required-facts-missing')
+    if (result.status === 'blocked') {
+      expect(result.issues.some((entry) => entry.field === 'taxFunding')).toBe(true)
+    }
+  })
+
   it('rejects aggregate and category-shaped inputs without fabricating identity', () => {
     const plan = singlePersonPlan()
     plan.accounts = [ownedCash('cash-a')]
@@ -368,6 +387,50 @@ describe('retirement-action candidate identity allocator', () => {
     expect(result.status).toBe('blocked')
     expect(issueKinds(result)).toEqual(['invalidIntent'])
     expect(reasonCodes(result)).toEqual(['required-facts-missing'])
+  })
+
+  it('snapshots accessor-backed intent facts once before deriving identity', () => {
+    const plan = singlePersonPlan()
+    plan.accounts = [ownedCash('cash-a')]
+    let yearReads = 0
+    const accessorIntent = ordinaryIntent() as OrdinaryWithdrawalCandidateIdentityIntent
+    Object.defineProperty(accessorIntent, 'year', {
+      enumerable: true,
+      configurable: true,
+      get: () => {
+        yearReads += 1
+        return yearReads === 1 ? 2030 : 2031
+      },
+    })
+
+    const result = allocateRetirementActionCandidateIdentity(plan, accessorIntent)
+    const stable = allocateRetirementActionCandidateIdentity(plan, ordinaryIntent({ year: 2030 }))
+
+    expect(yearReads).toBe(1)
+    expect(result).toEqual(stable)
+  })
+
+  it('keeps caller indexes in diagnostics while canonicalizing valid source output', () => {
+    const plan = singlePersonPlan()
+    plan.accounts = [ownedCash('cash-a'), ownedCash('cash-b')]
+    const result = allocateUnknown(plan, {
+      ...ordinaryIntent(),
+      requestedAmount: 20_000,
+      sourceAllocations: [
+        { sourceAccountId: 'cash-b', requestedAmount: 10_000, unexpected: true },
+        { sourceAccountId: 'cash-a', requestedAmount: 10_000 },
+      ],
+    })
+
+    expect(result.status).toBe('blocked')
+    if (result.status === 'blocked') {
+      expect(result.issues.some((entry) =>
+        entry.field === 'sourceAllocations.0.unexpected'
+      )).toBe(true)
+      expect(result.issues.some((entry) =>
+        entry.field === 'sourceAllocations.1.unexpected'
+      )).toBe(false)
+    }
   })
 
   it('does not silently overwrite caller-supplied action or allocation identities', () => {
