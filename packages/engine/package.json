@@ -158,6 +158,10 @@
       "types": "./dist/actions/reasons.d.ts",
       "default": "./dist/actions/reasons.js"
     },
+    "./actions/retirementActionCandidateIdentityAllocator": {
+      "types": "./dist/actions/retirementActionCandidateIdentityAllocator.d.ts",
+      "default": "./dist/actions/retirementActionCandidateIdentityAllocator.js"
+    },
     "./actions/taxableWithdrawalCharacter": {
       "types": "./dist/actions/taxableWithdrawalCharacter.d.ts",
       "default": "./dist/actions/taxableWithdrawalCharacter.js"

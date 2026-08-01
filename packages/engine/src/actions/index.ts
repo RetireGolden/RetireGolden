@@ -62,6 +62,19 @@ export {
   type UsdCents,
 } from './money.js'
 export {
+  allocateRetirementActionCandidateIdentity,
+  type AllocatedRetirementActionCandidateIdentity,
+  type BlockedRetirementActionCandidateIdentity,
+  type OrdinaryWithdrawalCandidateIdentityIntent,
+  type RetirementActionCandidateIdentityAllocationResult,
+  type RetirementActionCandidateIdentityEvidence,
+  type RetirementActionCandidateIdentityIntent,
+  type RetirementActionCandidateIdentityIssue,
+  type RetirementActionCandidateIdentityIssueKind,
+  type RetirementActionCandidateSourceIntent,
+  type RothConversionCandidateIdentityIntent,
+} from './retirementActionCandidateIdentityAllocator.js'
+export {
   ledgerCentTotalToPlanDollars,
   ledgerCentsToPlanDollars,
   planDollarsToLedgerCents,
