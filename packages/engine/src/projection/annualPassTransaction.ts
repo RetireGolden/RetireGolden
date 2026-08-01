@@ -7,6 +7,8 @@ import type {
   SimulatorRetirementRuntimeApplication,
   YearExpenses,
 } from './types.js'
+import { SIMULATOR_ANNUAL_PASS_VALUE_BINDING_KEYS } from
+  '../internal/simulatorAnnualPassValueBindingKeys.js'
 
 /**
  * A simulator balance row at the post-contribution annual-pass boundary.
@@ -113,23 +115,8 @@ interface BalanceSnapshot {
   costBasis: number
 }
 
-const VALUE_BINDING_KEYS = [
-  'nextRetirementRuntimeMutationOrdinal',
-  'unassignedCash',
-  'priorYearPortfolioReturnPct',
-  'capitalLossPool',
-  'hsaReimbursablePool',
-  'depletionYear',
-  'conversionNontaxable',
-  'healthcare',
-  'qualifiedMedicalThisYear',
-  'hsaQualifiedCap',
-  'requiredSpendingBase',
-  'targetSpendingBase',
-] as const satisfies readonly (keyof SimulatorAnnualPassStateBindings)[]
-
 interface ValueBindingMethodSnapshot {
-  readonly key: typeof VALUE_BINDING_KEYS[number]
+  readonly key: typeof SIMULATOR_ANNUAL_PASS_VALUE_BINDING_KEYS[number]
   readonly binding: object
   readonly read: unknown
   readonly write: unknown
@@ -243,7 +230,8 @@ function restoreExpenses(target: YearExpenses, snapshot: YearExpenses): void {
 function captureSnapshot(bindings: SimulatorAnnualPassStateBindings): AnnualPassSnapshot {
   return {
     bindingReferences: { ...bindings },
-    valueBindingMethods: VALUE_BINDING_KEYS.map((key) => {
+    valueBindingMethods:
+      SIMULATOR_ANNUAL_PASS_VALUE_BINDING_KEYS.map((key) => {
       const binding = bindings[key]
       return {
         key,
@@ -251,7 +239,7 @@ function captureSnapshot(bindings: SimulatorAnnualPassStateBindings): AnnualPass
         read: binding.read,
         write: binding.write,
       }
-    }),
+      }),
     balances: bindings.balances.map((record) => ({ record, balance: record.balance, costBasis: record.costBasis })),
     retirementRuntimeOccurrences:
       bindings.retirementRuntimeOccurrences.map(cloneRuntimeOccurrence),

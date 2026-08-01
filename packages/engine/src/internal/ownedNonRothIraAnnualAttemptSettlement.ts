@@ -35,6 +35,8 @@ import {
   type OwnedNonRothIraContiguousReplayIssue,
   type OwnedNonRothIraContiguousReplayResult,
 } from './ownedNonRothIraContiguousReplay.js'
+import { SIMULATOR_ANNUAL_PASS_VALUE_BINDING_KEYS } from
+  './simulatorAnnualPassValueBindingKeys.js'
 
 export interface OwnedNonRothIraAnnualSettlementEffect {
   readonly taxYear: number
@@ -165,21 +167,6 @@ interface SettlementProbeInput {
   readonly issue: OwnedNonRothIraContiguousReplayIssue | null
 }
 
-const VALUE_BINDING_KEYS = [
-  'nextRetirementRuntimeMutationOrdinal',
-  'unassignedCash',
-  'priorYearPortfolioReturnPct',
-  'capitalLossPool',
-  'hsaReimbursablePool',
-  'depletionYear',
-  'conversionNontaxable',
-  'healthcare',
-  'qualifiedMedicalThisYear',
-  'hsaQualifiedCap',
-  'requiredSpendingBase',
-  'targetSpendingBase',
-] as const satisfies readonly (keyof SimulatorAnnualPassStateBindings)[]
-
 interface AttemptStateCheckpoint {
   readonly bindingReferences: {
     readonly [Key in keyof SimulatorAnnualPassStateBindings]:
@@ -191,7 +178,8 @@ interface AttemptStateCheckpoint {
       SimulatorAnnualPassStateBindings['balances'][number]['account']
   }[]
   readonly valueBindingMethods: readonly {
-    readonly key: typeof VALUE_BINDING_KEYS[number]
+    readonly key:
+      typeof SIMULATOR_ANNUAL_PASS_VALUE_BINDING_KEYS[number]
     readonly binding: object
     readonly read: unknown
     readonly write: unknown
@@ -309,7 +297,8 @@ function captureAttemptState(
       record,
       account: record.account,
     })),
-    valueBindingMethods: VALUE_BINDING_KEYS.map((key) => {
+    valueBindingMethods:
+      SIMULATOR_ANNUAL_PASS_VALUE_BINDING_KEYS.map((key) => {
       const binding = state[key]
       return {
         key,
@@ -317,7 +306,7 @@ function captureAttemptState(
         read: binding.read,
         write: binding.write,
       }
-    }),
+      }),
     runtimeOccurrences: state.retirementRuntimeOccurrences.map((value) => ({
       ...value,
     })),
