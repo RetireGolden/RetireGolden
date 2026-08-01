@@ -402,6 +402,83 @@ export interface SimulatorAnnualRetirementRuntimeSource {
     Readonly<SimulatorAnnualRetirementNonmovingLegacyQcdOverlay> | null
 }
 
+export type SimulatorRetirementRuntimeApplicationPhase =
+  | 'annuityPurchaseFunding'
+  | 'pensionLumpSumRollover'
+  | 'employeeContribution'
+  | 'ownerRmdDistribution'
+  | 'automaticSeppDistribution'
+  | 'legacyRothConversion'
+  | 'legacyNeedBasedWithdrawal'
+
+interface SimulatorRetirementRuntimeApplicationBase {
+  /** Exact key of the raw runtime occurrence that this mutation applied. */
+  readonly producerOccurrenceKey: string
+  /** Truthful simulator pass; not a civil date or authoritative schedule. */
+  readonly simulatorPhase: SimulatorRetirementRuntimeApplicationPhase
+  /** One-based order of captured retirement applications in this annual pass. */
+  readonly mutationOrdinal: number
+  /** Raw Plan identity is preserved; later replay rejects missing/invalid facts. */
+  readonly ownerPersonId: string | null
+  readonly sourceAccountId: string | null
+  readonly sourceBalanceBeforePlanDollars: number
+  readonly sourceBalanceAfterPlanDollars: number
+}
+
+export interface SimulatorRetirementRuntimeDebitApplication
+  extends SimulatorRetirementRuntimeApplicationBase {
+  readonly applicationKind: 'debit'
+  readonly appliedAmountPlanDollars: number
+}
+
+export interface SimulatorRetirementRuntimeCreditApplication
+  extends SimulatorRetirementRuntimeApplicationBase {
+  readonly applicationKind: 'credit'
+  readonly creditedAmountPlanDollars: number
+}
+
+export interface SimulatorRetirementRuntimeAggregateRothDestinationCredit {
+  readonly applicationKind: 'aggregateRothDestinationCredit'
+  readonly simulatorPhase: 'legacyRothConversionAggregateDestinationCredit'
+  readonly mutationOrdinal: number
+  readonly producerOccurrenceKey: null
+  readonly ownerPersonId: null
+  readonly sourceAccountId: null
+  readonly sourceBalanceBeforePlanDollars: null
+  readonly sourceBalanceAfterPlanDollars: null
+  /** Exact runtime occurrence keys whose debits produced this one legacy credit. */
+  readonly producerOccurrenceKeys: readonly string[]
+  readonly sourceOwnerPersonIds: readonly (string | null)[]
+  readonly destinationRothAccountId: string | null
+  readonly destinationOwnerPersonId: string | null
+  readonly destinationBalanceBeforePlanDollars: number
+  readonly destinationCreditedAmountPlanDollars: number
+  readonly destinationBalanceAfterPlanDollars: number
+}
+
+export type SimulatorRetirementRuntimeApplication =
+  | Readonly<SimulatorRetirementRuntimeDebitApplication>
+  | Readonly<SimulatorRetirementRuntimeCreditApplication>
+  | Readonly<SimulatorRetirementRuntimeAggregateRothDestinationCredit>
+
+/**
+ * Cheap simulator-owned balance transitions captured at the actual owned,
+ * non-inherited traditional-IRA mutation sites, plus the one unchanged legacy
+ * aggregate Roth destination credit when those sources fund a conversion. A
+ * later internal replay owns exact-cent conversion, occurrence/inventory
+ * rejoining, validation, identity, and sealing.
+ */
+export interface SimulatorAnnualRetirementRuntimeApplicationSource {
+  readonly status: 'runtimeApplicationSourcesCaptured'
+  readonly captureBoundary:
+    'atOwnedNonRothIraMutationSitesBeforeAnnualGrowth'
+  readonly applicationValidation: 'notRun'
+  readonly planId: string
+  readonly taxYear: number
+  readonly applications:
+    readonly Readonly<SimulatorRetirementRuntimeApplication>[]
+}
+
 export interface SimulatorOwnedNonRothIraPostGrowthAccountBalanceSource {
   readonly sourceAccountId: string
   readonly balancePlanDollars: number
@@ -460,6 +537,12 @@ export interface YearResult {
    */
   retirementRuntimeSource?:
     Readonly<SimulatorAnnualRetirementRuntimeSource>
+  /**
+   * Raw owned non-Roth IRA balance applications observed at their live ledger
+   * mutation sites. Additive only; no validation, identity, or sealing has run.
+   */
+  retirementRuntimeApplicationSource?:
+    Readonly<SimulatorAnnualRetirementRuntimeApplicationSource>
   /**
    * Projection-only raw post-growth balances for every complete owner-wide
    * owned non-Roth IRA pool. This additive source does not affect simulation
