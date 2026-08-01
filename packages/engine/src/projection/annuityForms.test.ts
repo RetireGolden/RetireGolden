@@ -89,7 +89,8 @@ describe('payout-form feature-off identity', () => {
       _key === 'retirementRuntimeSource' ||
       _key === 'retirementRuntimeApplicationSource' ||
       _key === 'ownedNonRothIraBalancesBeforeGrowth' ||
-      _key === 'ownedNonRothIraPostGrowthSource'
+      _key === 'ownedNonRothIraPostGrowthSource' ||
+      _key === 'ownedNonRothIraAnnualReplay'
         ? undefined
         : value
     expect(JSON.stringify(run(withForm).years, legacyLedger)).toBe(

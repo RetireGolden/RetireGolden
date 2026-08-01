@@ -22,6 +22,7 @@ function withoutAdditiveRetirementSources(result: ProjectionResult): unknown {
     Reflect.deleteProperty(year, 'retirementRuntimeApplicationSource')
     Reflect.deleteProperty(year, 'ownedNonRothIraBalancesBeforeGrowth')
     Reflect.deleteProperty(year, 'ownedNonRothIraPostGrowthSource')
+    Reflect.deleteProperty(year, 'ownedNonRothIraAnnualReplay')
   }
   return legacy
 }

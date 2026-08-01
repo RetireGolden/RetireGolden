@@ -1,7 +1,17 @@
 import type { AssetClassId } from '../model/plan.js'
 import type { FilingStatus } from '../params/types.js'
-import type { ExecuteOrdinaryWithdrawalsResult } from '../actions/index.js'
+import type {
+  AccountId,
+  AnnualIraBasisAllocationEvidence,
+  AnnualIraBasisRatio,
+  ExecuteOrdinaryWithdrawalsResult,
+  PersonId,
+  PlanId,
+  UsdCents,
+} from '../actions/index.js'
 import type { SimulatorAnnualRetirementRuntimeOccurrence } from './annualRetirementRuntimeJournal.js'
+import type { CompleteSimulatorOwnedNonRothIraAnnualObservation } from
+  './ownedNonRothIraAnnualObservation.js'
 
 /**
  * Projection engine types. The deterministic annual ledger is the core v2
@@ -527,6 +537,67 @@ export interface SimulatorAnnualOwnedNonRothIraPostGrowthSource {
     readonly Readonly<SimulatorOwnedNonRothIraPostGrowthOwnerPoolSource>[]
 }
 
+export interface SimulatorOwnedNonRothIraAggregateRothDestinationReplay {
+  readonly status: 'aggregateDestinationCreditSourceReconciled'
+  readonly destinationAttribution: 'aggregateOnlyNotSourceAllocated'
+  readonly actionability: 'notEstablished'
+  readonly destinationRothAccountId: AccountId
+  readonly destinationOwnerPersonId: PersonId
+  readonly destinationCreditedAmount: UsdCents
+  readonly producerOccurrenceKeys: readonly string[]
+  readonly sourceOwnerPersonIds: readonly PersonId[]
+  readonly evidenceId: string
+}
+
+export interface SimulatorOwnedNonRothIraAnnualOwnerReplay {
+  readonly ownerPersonId: PersonId
+  readonly taxYear: number
+  readonly openingBasisSource: 'planSeed' | 'priorYearCarryforward'
+  readonly openingBasisAmount: UsdCents
+  readonly taxYearNondeductibleContributionAmount: 0
+  readonly postYearNondeductibleContributionExcludedAmount: 0
+  readonly outstandingRolloverAmount: 0
+  readonly rolloverRepaymentAdjustmentAmount: 0
+  readonly annualObservation:
+    Readonly<CompleteSimulatorOwnedNonRothIraAnnualObservation>
+  readonly annualBasisRatio: Readonly<AnnualIraBasisRatio>
+  readonly line7AllocationEvidence: Readonly<AnnualIraBasisAllocationEvidence>
+  readonly line8AllocationEvidence: Readonly<AnnualIraBasisAllocationEvidence>
+  readonly nextYearOpeningBasisAmount: UsdCents
+  readonly sourceChainEvidenceId: string
+  readonly replayEvidenceId: string
+}
+
+export interface SimulatorOwnedNonRothIraAnnualReplay {
+  readonly taxYear: number
+  readonly ownerReplays:
+    readonly Readonly<SimulatorOwnedNonRothIraAnnualOwnerReplay>[]
+  readonly aggregateRothDestinationCredit:
+    Readonly<SimulatorOwnedNonRothIraAggregateRothDestinationReplay> | null
+  readonly evidenceId: string
+}
+
+/**
+ * Exact basis-character evidence published only after the private bounded
+ * annual-pass controller commits an observed-versus-assumed exact match.
+ * Commit here settles a simulator attempt; it does not establish legal
+ * movement, filing completeness, or implementation actionability.
+ */
+export interface SimulatorCommittedOwnedNonRothIraAnnualReplay {
+  readonly status: 'committedOwnedNonRothIraAnnualReplay'
+  readonly settlement: 'exactReplayEffectsMatched'
+  readonly evidenceScope: 'projectionModelOnlyNotRealWorldFilingCompleteness'
+  readonly movement: 'notCommitted'
+  readonly actionability: 'notEstablished'
+  readonly filingCompleteness: 'notEstablished'
+  readonly planId: PlanId
+  readonly projectionStartTaxYear: number
+  readonly taxYear: number
+  readonly sourceSeriesEvidenceId: string
+  readonly contiguousReplayEvidenceId: string
+  readonly annualReplay: Readonly<SimulatorOwnedNonRothIraAnnualReplay>
+}
+
 export interface YearResult {
   year: number
   people: PersonYearState[]
@@ -586,6 +657,14 @@ export interface YearResult {
    */
   ownedNonRothIraPostGrowthSource?:
     Readonly<SimulatorAnnualOwnedNonRothIraPostGrowthSource>
+  /**
+   * Present only for a private annual-pass attempt whose complete contiguous
+   * replay exactly matched the basis character used by simulator economics.
+   * A blocked or rolled-back replay is represented by absence, never by an
+   * empty substitute. A year without a settlement attempt is also absent.
+   */
+  ownedNonRothIraAnnualReplay?:
+    Readonly<SimulatorCommittedOwnedNonRothIraAnnualReplay>
   /**
    * Exact-cent action execution evidence. Present only when the Plan contains
    * one or more retirement-action requests for this projection year.

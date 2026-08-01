@@ -249,6 +249,11 @@ await assert.rejects(
   'the package-wide deny rule must not publish the simulator-owned source-series seam',
 )
 await assert.rejects(
+  import('@retiregolden/engine/internal/ownedNonRothIraAnnualReplayPublication'),
+  (error) => error?.code === 'ERR_PACKAGE_PATH_NOT_EXPORTED',
+  'the package-wide deny rule must not publish the replay publication builder',
+)
+await assert.rejects(
   import('@retiregolden/engine/projection/internal/ownedNonRothIraRuntimeSourceSeries'),
   (error) => error?.code === 'ERR_PACKAGE_PATH_NOT_EXPORTED',
   'the projection wildcard must not publish stale internal source-series artifacts',
@@ -1231,6 +1236,30 @@ const result = runPlan(planSchema.parse(plan), productionTaxCalculator(), 2026)
 assert.ok(Array.isArray(result.years) && result.years.length > 10, 'projection produced a multi-year ledger')
 assert.equal(result.years[0].year, 2026)
 assert.ok(Number.isFinite(result.endingNetWorth), 'ending net worth is a number')
+
+const replayPlan = singlePersonPlan({ planningAge: 90 })
+replayPlan.id = 'packed-replay-publication'
+replayPlan.accounts = [{
+  id: 'packed-replay-ira',
+  name: 'Packed replay IRA',
+  type: 'traditional',
+  ownerPersonId: 'p1',
+  kind: 'ira',
+  balance: 100,
+  annualReturnPct: 0,
+  annualContribution: 0,
+  nondeductibleBasis: 20,
+}]
+const replayResult = runPlan(
+  planSchema.parse(replayPlan),
+  productionTaxCalculator(),
+  2026,
+)
+assert.equal(
+  replayResult.years[0].ownedNonRothIraAnnualReplay?.status,
+  'committedOwnedNonRothIraAnnualReplay',
+  'packed root result must expose committed annual replay publication',
+)
 
 console.log(
   'pack smoke OK: projected ' + result.years.length + ' years (' + result.years[0].year + '-' +
