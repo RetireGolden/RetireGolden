@@ -222,6 +222,20 @@ describe('Plan-owned non-Roth IRA annual filing evidence', () => {
     expect(issueKinds(value)).toEqual(['projectionEvidenceRejected'])
   })
 
+  it('scans cyclic source wrappers without recursing forever', () => {
+    const value = clone()
+    const cycle: Record<string, unknown> = {}
+    cycle['self'] = cycle
+    cycle['payload'] = {
+      predicate: 'simulatorOwnedNonRothIraAnnualObservation',
+      evidenceScope: 'projectionModelOnlyNotRealWorldFilingCompleteness',
+    }
+    ;(value.sourceRecord as unknown as Record<string, unknown>)['cycle'] = cycle
+
+    expect(() => issueKinds(value)).not.toThrow()
+    expect(issueKinds(value)).toEqual(['projectionEvidenceRejected'])
+  })
+
   it('does not treat Plan nondeductibleBasis as a source record', () => {
     const value = clone()
     const valuePlan = value.plan as Plan

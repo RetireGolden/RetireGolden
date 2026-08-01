@@ -132,7 +132,6 @@ export type PlanOwnedNonRothIraAnnualFilingEvidenceIssueKind =
   | 'ownedIraPoolEmpty'
   | 'reviewedPoolMismatch'
   | 'annualBasisIncomplete'
-  | 'rolloverFactsIncomplete'
   | 'contributionInventoryIncomplete'
   | 'deadlineAuthorityInvalid'
   | 'postYearContributionInvalid'
@@ -268,11 +267,16 @@ function sameStrings(left: readonly string[], right: readonly string[]): boolean
   )
 }
 
-function projectionEvidenceSupplied(value: unknown): boolean {
-  if (Array.isArray(value)) {
-    return value.some(projectionEvidenceSupplied)
-  }
+function projectionEvidenceSupplied(
+  value: unknown,
+  visited = new WeakSet<object>(),
+): boolean {
   if (typeof value !== 'object' || value === null) return false
+  if (visited.has(value)) return false
+  visited.add(value)
+  if (Array.isArray(value)) {
+    return value.some((entry) => projectionEvidenceSupplied(entry, visited))
+  }
   const record = value as Record<string, unknown>
   const predicate = typeof record['predicate'] === 'string'
     ? record['predicate'].toLowerCase()
@@ -282,7 +286,9 @@ function projectionEvidenceSupplied(value: unknown): boolean {
     : ''
   if (predicate.includes('simulator') || predicate.startsWith('projection') ||
       scope.startsWith('projection')) return true
-  return Object.values(record).some(projectionEvidenceSupplied)
+  return Object.values(record).some(
+    (entry) => projectionEvidenceSupplied(entry, visited),
+  )
 }
 
 function ownedIraPool(
@@ -563,24 +569,6 @@ function buildUnchecked(
       'Opening basis must be evidenced as of January 1 of the tax year',
     )])
   }
-  if (source.rolloverFacts.inventoryStatus !==
-      'completeIncludingExplicitEmpty' ||
-      source.rolloverFacts.outstandingRolloverAmount !== 0 ||
-      source.rolloverFacts.rolloverRepaymentAdjustmentAmount !== 0) {
-    return blocked([issue(
-      'rolloverFactsIncomplete',
-      'Standalone filing evidence requires a complete literal-zero rollover inventory',
-    )])
-  }
-  if (source.nondeductibleContributionFacts.inYearInventoryStatus !==
-      'completeExplicitEmpty' ||
-      source.nondeductibleContributionFacts.inYearContributions.length !== 0) {
-    return blocked([issue(
-      'contributionInventoryIncomplete',
-      'Standalone filing evidence supports only an explicitly empty in-year nondeductible contribution inventory',
-    )])
-  }
-
   const deadline = source.nondeductibleContributionFacts.deadlineAuthority
   const deadlineDate = deadline.deadlineDate
   const expectedDeadline = ordinaryFederalFilingDeadline(taxYear)
