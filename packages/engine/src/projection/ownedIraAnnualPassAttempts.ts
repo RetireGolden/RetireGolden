@@ -81,6 +81,80 @@ export type OwnedIraAnnualPassAttemptsResult<DeferredEffect> =
   | OwnedIraAnnualPassAttemptsCommitted<DeferredEffect>
   | OwnedIraAnnualPassAttemptsRolledBack
 
+interface AnnualPassAttemptDriverContext<StableContext, AssumedEffect> {
+  readonly attemptNumber: number
+  readonly stable: Readonly<StableContext>
+  readonly assumedEffects: readonly Readonly<AssumedEffect>[]
+}
+
+interface AnnualPassAttemptDriverInput<
+  StableContext,
+  AssumedEffect,
+  ProbeInput,
+  DeferredEffect,
+> {
+  state: SimulatorAnnualPassStateBindings
+  stable: Readonly<StableContext>
+  initialAssumedEffects: readonly Readonly<AssumedEffect>[]
+  runAttempt(
+    context: Readonly<AnnualPassAttemptDriverContext<StableContext, AssumedEffect>>,
+    capability: Readonly<OwnedIraAnnualPassAttemptCapability<DeferredEffect>>,
+  ): Readonly<ProbeInput>
+}
+
+interface AnnualPassAttemptDriverProbeResult<AssumedEffect> {
+  readonly status: 'rollback' | 'reprobe' | 'commit'
+  readonly observedEffects: readonly Readonly<AssumedEffect>[]
+}
+
+interface AnnualPassAttemptDriverAdapter<
+  StableContext,
+  AssumedEffect,
+  ProbeInput,
+  ProbeResult extends AnnualPassAttemptDriverProbeResult<AssumedEffect>,
+  CommitProbeResult extends ProbeResult,
+  DeferredEffect,
+> {
+  snapshotStable(
+    input: Readonly<AnnualPassAttemptDriverInput<
+      StableContext,
+      AssumedEffect,
+      ProbeInput,
+      DeferredEffect
+    >>,
+  ): Readonly<StableContext>
+  validStableContext(stable: Readonly<StableContext>): boolean
+  canonicalizeEffects(
+    effects: readonly Readonly<AssumedEffect>[],
+  ): AssumedEffect[] | null
+  effectIdentity(effects: readonly Readonly<AssumedEffect>[]): string
+  inputMatchesAttempt(
+    input: Readonly<ProbeInput>,
+    stable: Readonly<StableContext>,
+    assumptions: readonly Readonly<AssumedEffect>[],
+  ): boolean
+  probe(input: Readonly<ProbeInput>): ProbeResult
+  resultBindingMatches(
+    result: ProbeResult,
+    input: Readonly<ProbeInput>,
+    stable: Readonly<StableContext>,
+  ): boolean
+  observedEffects(result: ProbeResult): readonly Readonly<AssumedEffect>[]
+  isCommitResult(result: ProbeResult): result is CommitProbeResult
+}
+
+interface AnnualPassAttemptDriverCommitted<CommitProbeResult, DeferredEffect> {
+  readonly status: 'committed'
+  readonly reason: 'exactProbeCommit'
+  readonly attemptCount: number
+  readonly probeResult: Readonly<CommitProbeResult>
+  readonly deferredEffects: readonly DeferredEffect[]
+}
+
+type AnnualPassAttemptDriverResult<CommitProbeResult, DeferredEffect> =
+  | AnnualPassAttemptDriverCommitted<CommitProbeResult, DeferredEffect>
+  | OwnedIraAnnualPassAttemptsRolledBack
+
 function deepFreeze<T>(value: T): Readonly<T> {
   if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
     for (const child of Object.values(value as Record<string, unknown>)) {
@@ -201,27 +275,33 @@ function rolledBack(
   })
 }
 
-/**
- * Runs bounded annual-pass attempts. Every attempt owns a fresh checkpoint;
- * reprobes first restore that checkpoint, then retry from the exact baseline.
- * Commit settles only the simulator pass and its deferred values; it does not
- * strengthen the canonical probe's action-movement or filing authority.
- */
-export function runOwnedIraAnnualPassAttempts<DeferredEffect = never>(
-  input: Readonly<RunOwnedIraAnnualPassAttemptsInput<DeferredEffect>>,
-): Readonly<OwnedIraAnnualPassAttemptsResult<DeferredEffect>> {
-  let stable: Readonly<OwnedIraAnnualPassStableContext>
+function runAnnualPassAttemptsWithAdapter<
+  StableContext,
+  AssumedEffect,
+  ProbeInput,
+  ProbeResult extends AnnualPassAttemptDriverProbeResult<AssumedEffect>,
+  CommitProbeResult extends ProbeResult,
+  DeferredEffect,
+>(
+  input: Readonly<AnnualPassAttemptDriverInput<
+    StableContext,
+    AssumedEffect,
+    ProbeInput,
+    DeferredEffect
+  >>,
+  adapter: Readonly<AnnualPassAttemptDriverAdapter<
+    StableContext,
+    AssumedEffect,
+    ProbeInput,
+    ProbeResult,
+    CommitProbeResult,
+    DeferredEffect
+  >>,
+): Readonly<AnnualPassAttemptDriverResult<CommitProbeResult, DeferredEffect>> {
+  let stable: Readonly<StableContext>
   try {
-    const stableSnapshot: OwnedIraAnnualPassStableContext = {
-      planId: input.stable.planId,
-      ownerPersonId: input.stable.ownerPersonId,
-      taxYear: input.stable.taxYear,
-      ledgerRunId: input.stable.ledgerRunId,
-      movementCandidateId: input.stable.movementCandidateId,
-      inventoryEvidenceId: input.stable.inventoryEvidenceId,
-      transactionEvidenceId: input.stable.transactionEvidenceId,
-    }
-    if (!validStableContext(stableSnapshot)) {
+    const stableSnapshot = adapter.snapshotStable(input)
+    if (!adapter.validStableContext(stableSnapshot)) {
       return rolledBack('stableContextInvalid', 0)
     }
     stable = deepFreeze(stableSnapshot)
@@ -229,11 +309,9 @@ export function runOwnedIraAnnualPassAttempts<DeferredEffect = never>(
     return rolledBack('stableContextInvalid', 0)
   }
 
-  let initialAssumptions:
-    PlanOwnedNonRothIraAnnualPassAssumedEffect[] | null
+  let initialAssumptions: AssumedEffect[] | null
   try {
-    initialAssumptions =
-      canonicalPlanOwnedNonRothIraAnnualPassEffects(input.initialAssumedEffects)
+    initialAssumptions = adapter.canonicalizeEffects(input.initialAssumedEffects)
   } catch {
     return rolledBack('assumptionVectorInvalid', 0)
   }
@@ -241,10 +319,9 @@ export function runOwnedIraAnnualPassAttempts<DeferredEffect = never>(
     return rolledBack('assumptionVectorInvalid', 0)
   }
 
-  let assumptions:
-    readonly Readonly<PlanOwnedNonRothIraAnnualPassAssumedEffect>[] =
-      deepFreeze(initialAssumptions)
-  const seen = new Set([assumptionIdentity(assumptions)])
+  let assumptions: readonly Readonly<AssumedEffect>[] =
+    deepFreeze(initialAssumptions)
+  const seen = new Set([adapter.effectIdentity(assumptions)])
 
   for (let attemptNumber = 1;
     attemptNumber <= MAX_ANNUAL_PASS_ATTEMPTS;
@@ -267,7 +344,7 @@ export function runOwnedIraAnnualPassAttempts<DeferredEffect = never>(
       },
     })
 
-    let probeInput: Readonly<ProbePlanOwnedNonRothIraAnnualPassInput>
+    let probeInput: Readonly<ProbeInput>
     try {
       probeInput = input.runAttempt(context, capability)
     } catch {
@@ -278,7 +355,7 @@ export function runOwnedIraAnnualPassAttempts<DeferredEffect = never>(
     callbackOpen = false
 
     try {
-      if (!inputMatchesAttempt(probeInput, stable, assumptions)) {
+      if (!adapter.inputMatchesAttempt(probeInput, stable, assumptions)) {
         transaction.rollback()
         return rolledBack('attemptBindingMismatch', attemptNumber)
       }
@@ -287,9 +364,9 @@ export function runOwnedIraAnnualPassAttempts<DeferredEffect = never>(
       return rolledBack('attemptBindingMismatch', attemptNumber)
     }
 
-    let probeResult: ReturnType<typeof probePlanOwnedNonRothIraAnnualPass>
+    let probeResult: ProbeResult
     try {
-      probeResult = probePlanOwnedNonRothIraAnnualPass(probeInput)
+      probeResult = adapter.probe(probeInput)
     } catch {
       transaction.rollback()
       return rolledBack('probeThrew', attemptNumber)
@@ -300,7 +377,7 @@ export function runOwnedIraAnnualPassAttempts<DeferredEffect = never>(
       return rolledBack('probeRollback', attemptNumber)
     }
     try {
-      if (!resultBindingMatches(probeResult, probeInput, stable)) {
+      if (!adapter.resultBindingMatches(probeResult, probeInput, stable)) {
         transaction.rollback()
         return rolledBack('probeControlBindingMismatch', attemptNumber)
       }
@@ -309,10 +386,10 @@ export function runOwnedIraAnnualPassAttempts<DeferredEffect = never>(
       return rolledBack('probeControlBindingMismatch', attemptNumber)
     }
 
-    let observed: PlanOwnedNonRothIraAnnualPassAssumedEffect[] | null
+    let observed: AssumedEffect[] | null
     try {
-      observed = canonicalPlanOwnedNonRothIraAnnualPassEffects(
-        probeResult.observedEffects,
+      observed = adapter.canonicalizeEffects(
+        adapter.observedEffects(probeResult),
       )
     } catch {
       transaction.rollback()
@@ -322,7 +399,7 @@ export function runOwnedIraAnnualPassAttempts<DeferredEffect = never>(
       transaction.rollback()
       return rolledBack('assumptionVectorInvalid', attemptNumber)
     }
-    if (probeResult.status === 'commit') {
+    if (adapter.isCommitResult(probeResult)) {
       let exactCommitEffects = false
       try {
         exactCommitEffects = same(observed, assumptions)
@@ -344,7 +421,7 @@ export function runOwnedIraAnnualPassAttempts<DeferredEffect = never>(
     }
 
     transaction.rollback()
-    const nextIdentity = assumptionIdentity(observed)
+    const nextIdentity = adapter.effectIdentity(observed)
     if (seen.has(nextIdentity)) {
       return rolledBack('assumptionCycle', attemptNumber)
     }
@@ -356,4 +433,69 @@ export function runOwnedIraAnnualPassAttempts<DeferredEffect = never>(
   }
 
   return rolledBack('attemptLimitExceeded', MAX_ANNUAL_PASS_ATTEMPTS)
+}
+
+type OwnedIraAnnualPassProbeResult = ReturnType<
+  typeof probePlanOwnedNonRothIraAnnualPass
+>
+
+const ownedIraAnnualPassAttemptAdapter = Object.freeze({
+  snapshotStable<DeferredEffect>(
+    input: Readonly<RunOwnedIraAnnualPassAttemptsInput<DeferredEffect>>,
+  ): OwnedIraAnnualPassStableContext {
+    return {
+      planId: input.stable.planId,
+      ownerPersonId: input.stable.ownerPersonId,
+      taxYear: input.stable.taxYear,
+      ledgerRunId: input.stable.ledgerRunId,
+      movementCandidateId: input.stable.movementCandidateId,
+      inventoryEvidenceId: input.stable.inventoryEvidenceId,
+      transactionEvidenceId: input.stable.transactionEvidenceId,
+    }
+  },
+  validStableContext,
+  canonicalizeEffects: canonicalPlanOwnedNonRothIraAnnualPassEffects,
+  effectIdentity: assumptionIdentity,
+  inputMatchesAttempt,
+  probe: probePlanOwnedNonRothIraAnnualPass,
+  resultBindingMatches(
+    result: OwnedIraAnnualPassProbeResult,
+    input: Readonly<ProbePlanOwnedNonRothIraAnnualPassInput>,
+    stable: Readonly<OwnedIraAnnualPassStableContext>,
+  ): boolean {
+    return result.status !== 'rollback' &&
+      resultBindingMatches(result, input, stable)
+  },
+  observedEffects(
+    result: OwnedIraAnnualPassProbeResult,
+  ): readonly Readonly<PlanOwnedNonRothIraAnnualPassAssumedEffect>[] {
+    return result.observedEffects
+  },
+  isCommitResult(
+    result: OwnedIraAnnualPassProbeResult,
+  ): result is PlanOwnedNonRothIraAnnualPassCommitResult {
+    return result.status === 'commit'
+  },
+})
+
+/**
+ * Runs bounded annual-pass attempts. Every attempt owns a fresh checkpoint;
+ * reprobes first restore that checkpoint, then retry from the exact baseline.
+ * Commit settles only the simulator pass and its deferred values; it does not
+ * strengthen the canonical probe's action-movement or filing authority.
+ */
+export function runOwnedIraAnnualPassAttempts<DeferredEffect = never>(
+  input: Readonly<RunOwnedIraAnnualPassAttemptsInput<DeferredEffect>>,
+): Readonly<OwnedIraAnnualPassAttemptsResult<DeferredEffect>> {
+  return runAnnualPassAttemptsWithAdapter<
+    OwnedIraAnnualPassStableContext,
+    PlanOwnedNonRothIraAnnualPassAssumedEffect,
+    ProbePlanOwnedNonRothIraAnnualPassInput,
+    OwnedIraAnnualPassProbeResult,
+    PlanOwnedNonRothIraAnnualPassCommitResult,
+    DeferredEffect
+  >(
+    input,
+    ownedIraAnnualPassAttemptAdapter,
+  )
 }
