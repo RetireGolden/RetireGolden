@@ -525,7 +525,7 @@ export function reportEvidenceFromOptimizeResult(result: OptimizeResult): Report
     winnerLabel,
     winnerSource:
       tournament.retirementActionReadinessVeto?.vetoedWinnerSource ??
-      tournament.winnerSource,
+      (withheldCleanedSchedule ? 'milp' : tournament.winnerSource),
     validation: validationEvidence(validation),
     candidates: tournament.candidates.map((candidate) => ({
       afterTaxEstateDelta: candidate.afterTaxEstateDelta,

@@ -413,6 +413,7 @@ describe('optimizer recommendation evidence', () => {
     expect(evidence.winnerLabel).toBe(
       "the solver's cleaned schedule (withheld pending account allocation)",
     )
+    expect(evidence.winnerSource).toBe('milp')
     expect(evidence.validation).toBeNull()
   })
 
