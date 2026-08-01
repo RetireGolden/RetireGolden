@@ -38,6 +38,7 @@ import {
   displayedCleanedConversions,
   displayedScheduleAlreadyExecuted as isDisplayedScheduleAlreadyExecuted,
   monteCarloSuccessValue,
+  positiveConversionCount,
   shouldShowRecommendedScheduleBars,
 } from './optimizePageChart'
 import {
@@ -164,6 +165,10 @@ export function OptimizePage() {
     () => displayedCleanedConversions(tournament, postProcessed),
     [tournament, postProcessed],
   )
+  const displayedConversionCount = useMemo(
+    () => positiveConversionCount(displayedConversions),
+    [displayedConversions],
+  )
   // Step 5 claim-age co-optimization: when a claim change won, the schedule and
   // every validation delta on this page were computed against the claim-patched
   // plan, so Monte Carlo, the report, and Apply must all start from it.
@@ -181,7 +186,7 @@ export function OptimizePage() {
       claimChangeRecommended,
       scheduleApplyAvailable: false,
       incumbentHolds,
-      displayedConversionCount: displayedConversions.length,
+      displayedConversionCount,
     })
       ? planForRecommendation
       : null
@@ -190,7 +195,7 @@ export function OptimizePage() {
     recommendedConversions,
     claimChangeRecommended,
     incumbentHolds,
-    displayedConversions,
+    displayedConversionCount,
   ])
   const validation = candidateWins
     ? (tournament?.winnerValidation ?? null)
@@ -277,13 +282,13 @@ export function OptimizePage() {
     claimChangeRecommended,
     scheduleApplyAvailable,
     incumbentHolds,
-    displayedConversionCount: displayedConversions.length,
+    displayedConversionCount,
   })
   const recommendationReportIsAvailable = claimRecommendationReportAvailable({
     claimChangeRecommended,
     scheduleApplyAvailable,
     incumbentHolds,
-    displayedConversionCount: displayedConversions.length,
+    displayedConversionCount,
   })
 
   const chartRows = useMemo(

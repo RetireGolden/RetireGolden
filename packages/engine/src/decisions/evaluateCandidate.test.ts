@@ -578,6 +578,54 @@ describe('evaluateCandidate', () => {
     expect(evaluation.diagnostics).toEqual([])
   })
 
+  it('does not let aggregate cancellations veto an identity-complete named action', () => {
+    const plan = tradHeavyPlan()
+    const sourceAccount = plan.accounts.find((account) => account.type === 'cash')!
+    sourceAccount.ownerPersonId = 'p1'
+    plan.strategies.qcdAnnual = 1_000
+    plan.strategies.rothConversion = {
+      mode: 'manual',
+      conversions: [{ year: 2027, amount: 25_000 }],
+    }
+    const request = {
+      actionId: 'named-action-with-aggregate-cancellations',
+      kind: 'ordinaryWithdrawal',
+      year: 2026,
+      executionSequence: 1,
+      requestedAmount: 1_000,
+      provenance: { source: 'generator', sourceId: 'aggregate-cancellation-test' },
+      personId: 'p1',
+      allocations: [{
+        allocationId: 'named-action-allocation',
+        sourceAccountId: sourceAccount.id,
+        requestedAmount: 1_000,
+      }],
+      purpose: { kind: 'spending' },
+    } as const
+    const ctx = createDecisionContext(plan, simOptions())
+
+    const evaluation = evaluateCandidate(
+      ctx,
+      rothCandidate({
+        category: 'withdrawal',
+        planPatch: {
+          strategies: {
+            qcdAnnual: 0,
+            rothConversion: { mode: 'none' },
+            retirementActions: [request],
+          },
+        },
+        retirementActionReadiness: {
+          state: 'identityComplete',
+          actionRequestIds: [request.actionId],
+        },
+      }),
+    )
+
+    expect(evaluation.recommendationState).not.toBe('diagnostic')
+    expect(evaluation.diagnostics).toEqual([])
+  })
+
   it('does not require readiness to cancel unchanged identity-bearing requests', () => {
     const plan = tradHeavyPlan()
     const sourceAccount = plan.accounts.find((account) => account.type === 'cash')!

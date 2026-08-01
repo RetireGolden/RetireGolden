@@ -14,6 +14,7 @@ import {
   displayedCleanedConversions,
   displayedScheduleAlreadyExecuted,
   monteCarloSuccessValue,
+  positiveConversionCount,
   shouldShowRecommendedScheduleBars,
 } from './optimizePageChart'
 
@@ -29,6 +30,18 @@ function schedule(conversions: { year: number; amount: number }[]): OptimizedSch
 }
 
 describe('OptimizePage tournament display helpers', () => {
+  it('counts only positive conversion years as movement', () => {
+    expect(positiveConversionCount([
+      { year: 2026, amount: 0 },
+      { year: 2027, amount: 5_000 },
+      { year: 2028, amount: 0 },
+    ])).toBe(1)
+    expect(positiveConversionCount([
+      { year: 2026, amount: 0 },
+      { year: 2027, amount: 0 },
+    ])).toBe(0)
+  })
+
   it('describes identity withholding without claiming an execution shortfall', () => {
     const validation = {
       recommendationState: 'identityIncomplete',

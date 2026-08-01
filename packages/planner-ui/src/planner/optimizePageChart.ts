@@ -9,6 +9,12 @@ export interface OptimizeChartRow {
   executed: number
 }
 
+export function positiveConversionCount(
+  conversions: readonly { year: number; amount: number }[],
+): number {
+  return conversions.filter((conversion) => conversion.amount > 0).length
+}
+
 export function actionableTournamentConversions(
   tournament: Pick<ExactLedgerTournament, 'winnerSource' | 'winnerConversions'> | null,
 ): { year: number; amount: number }[] {

@@ -101,16 +101,20 @@ function inspectRetirementActionPatch(
     const strategies = objectRecord(patch['strategies'])
     const base = objectRecord(baseStrategies)
     const materialized = objectRecord(materializedStrategies)
+    const finalStrategies = materialized ?? strategies
     const legacyValueChanged = (key: string): boolean =>
       strategies !== null &&
       Object.prototype.hasOwnProperty.call(strategies, key) &&
-      (base === null || strategyValueChanged(base, materialized ?? strategies, key))
+      (base === null || strategyValueChanged(base, finalStrategies, key))
     const retirementActionsChanged = legacyValueChanged('retirementActions')
     return {
       changesRetirementActions: RETIREMENT_ACTION_STRATEGY_KEYS.some(legacyValueChanged),
-      hasAggregateStrategy: [...AGGREGATE_RETIREMENT_ACTION_STRATEGY_KEYS].some(legacyValueChanged),
+      hasAggregateStrategy: [...AGGREGATE_RETIREMENT_ACTION_STRATEGY_KEYS].some((key) =>
+        legacyValueChanged(key) &&
+        aggregateStrategyRequestsMovement(key, finalStrategies?.[key]),
+      ),
       retirementActionRequests: retirementActionsChanged
-        ? (materialized ?? strategies)?.['retirementActions']
+        ? finalStrategies?.['retirementActions']
         : undefined,
     }
   }
@@ -252,6 +256,14 @@ function qcdStrategyRequestsMovement(value: unknown): boolean {
   // positive or malformed value remains gated until it is replaced by
   // identity-complete action requests.
   if (value === undefined || value === 0) return false
+  return true
+}
+
+function aggregateStrategyRequestsMovement(key: string, value: unknown): boolean {
+  if (key === 'rothConversion') return rothStrategyRequestsMovement(value)
+  if (key === 'qcdAnnual') return qcdStrategyRequestsMovement(value)
+  // A changed withdrawal order can redirect account movement even though it
+  // does not carry a dollar amount of its own.
   return true
 }
 
