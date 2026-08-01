@@ -25,6 +25,7 @@ import {
   type ReportValidationEvidence,
 } from './reportModel'
 import { retirementActionReadinessVetoExplanation } from '../planner/retirementActionReadinessVetoCopy'
+import { isCalculatedIdentityWithheldPostProcessing } from '../planner/optimizePageChart'
 
 export type {
   ReportClaimAgeEvidence,
@@ -493,7 +494,7 @@ export function reportEvidenceFromOptimizeResult(result: OptimizeResult): Report
   const withheldCleanedSchedule =
     tournament.winnerSource === 'none' &&
     tournament.retirementActionReadinessVeto === null &&
-    result.postProcessed?.cleanedValidation.recommendationState === 'identityIncomplete'
+    isCalculatedIdentityWithheldPostProcessing(result.postProcessed)
   const recommendationState = validation?.recommendationState ??
     (tournament.retirementActionReadinessVeto || withheldCleanedSchedule
       ? 'identityIncomplete'

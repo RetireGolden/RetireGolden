@@ -17,6 +17,21 @@ export function actionableTournamentConversions(
     : []
 }
 
+export function isCalculatedIdentityWithheldPostProcessing(
+  postProcessed: OptimizePostProcessing | null,
+): boolean {
+  if (
+    postProcessed === null ||
+    !postProcessed.stabilized ||
+    postProcessed.cleanedValidation.recommendationState !== 'identityIncomplete'
+  ) return false
+  const cleanedTotal = postProcessed.cleanedSchedule.conversions.reduce(
+    (sum, conversion) => sum + conversion.amount,
+    0,
+  )
+  return cleanedTotal >= postProcessed.minimumRequestedConversionDollars
+}
+
 export function displayedCleanedConversions(
   tournament: Pick<
     ExactLedgerTournament,
@@ -29,9 +44,9 @@ export function displayedCleanedConversions(
   const actionable = actionableTournamentConversions(tournament)
   if (actionable.length > 0) return actionable
   if (tournament?.winnerSource !== 'none') return []
-  return postProcessed?.cleanedValidation.recommendationState === 'identityIncomplete'
-      ? postProcessed.cleanedSchedule.conversions
-      : []
+  return isCalculatedIdentityWithheldPostProcessing(postProcessed)
+    ? postProcessed!.cleanedSchedule.conversions
+    : []
 }
 
 export function monteCarloSuccessValue(

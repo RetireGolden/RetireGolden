@@ -63,6 +63,8 @@ describe('OptimizePage tournament display helpers', () => {
     const postProcessed = {
       cleanedSchedule: schedule(conversions),
       cleanedValidation: { recommendationState: 'identityIncomplete' },
+      stabilized: true,
+      minimumRequestedConversionDollars: 1,
     } as never
 
     expect(actionableTournamentConversions(tournament)).toEqual([])
@@ -70,6 +72,20 @@ describe('OptimizePage tournament display helpers', () => {
     expect(displayedCleanedConversions(tournament, {
       cleanedSchedule: schedule(conversions),
       cleanedValidation: { recommendationState: 'neutral' },
+      stabilized: true,
+      minimumRequestedConversionDollars: 1,
+    } as never)).toEqual([])
+    expect(displayedCleanedConversions(tournament, {
+      cleanedSchedule: schedule(conversions),
+      cleanedValidation: { recommendationState: 'identityIncomplete' },
+      stabilized: false,
+      minimumRequestedConversionDollars: 1,
+    } as never)).toEqual([])
+    expect(displayedCleanedConversions(tournament, {
+      cleanedSchedule: schedule(conversions),
+      cleanedValidation: { recommendationState: 'identityIncomplete' },
+      stabilized: true,
+      minimumRequestedConversionDollars: 5_001,
     } as never)).toEqual([])
     expect(displayedCleanedConversions({
       winnerSource: 'incumbent',
