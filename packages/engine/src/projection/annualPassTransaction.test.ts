@@ -9,6 +9,7 @@ import {
 } from './annualPassTransaction.js'
 
 interface ScalarState {
+  nextRetirementRuntimeMutationOrdinal: number
   unassignedCash: number
   priorYearPortfolioReturnPct: number
   capitalLossPool: number
@@ -60,6 +61,7 @@ function fixture(): {
   originalBalances: SimulatorAnnualPassBalanceRecord[]
 } {
   const scalars: ScalarState = {
+    nextRetirementRuntimeMutationOrdinal: 3,
     unassignedCash: 1,
     priorYearPortfolioReturnPct: 2,
     capitalLossPool: 3,
@@ -78,6 +80,48 @@ function fixture(): {
   ]
   const bindings: SimulatorAnnualPassStateBindings = {
     balances: [...originalBalances],
+    retirementRuntimeOccurrences: [{
+      producerOccurrenceKey: '["ownedIraRmd","ira"]',
+      kind: 'ownedIraRmd',
+      grossAmountPlanDollars: 10,
+      ownerPersonId: 'owner',
+      sourceAccountId: 'ira',
+      executionDate: null,
+      executionSequence: null,
+      movementAuthorityId: null,
+    }],
+    retirementRuntimeApplications: [
+      {
+        applicationKind: 'debit',
+        producerOccurrenceKey: '["ownedIraRmd","ira"]',
+        simulatorPhase: 'ownerRmdDistribution',
+        mutationOrdinal: 1,
+        ownerPersonId: 'owner',
+        sourceAccountId: 'ira',
+        sourceBalanceBeforePlanDollars: 100,
+        appliedAmountPlanDollars: 10,
+        sourceBalanceAfterPlanDollars: 90,
+      },
+      {
+        applicationKind: 'aggregateRothDestinationCredit',
+        simulatorPhase: 'legacyRothConversionAggregateDestinationCredit',
+        mutationOrdinal: 2,
+        producerOccurrenceKey: null,
+        ownerPersonId: null,
+        sourceAccountId: null,
+        sourceBalanceBeforePlanDollars: null,
+        sourceBalanceAfterPlanDollars: null,
+        producerOccurrenceKeys: ['["legacyRothConversion","ira","roth"]'],
+        sourceOwnerPersonIds: ['owner'],
+        destinationRothAccountId: 'roth',
+        destinationOwnerPersonId: 'owner',
+        destinationBalanceBeforePlanDollars: 0,
+        destinationCreditedAmountPlanDollars: 5,
+        destinationBalanceAfterPlanDollars: 5,
+      },
+    ],
+    nextRetirementRuntimeMutationOrdinal:
+      valueBinding(scalars, 'nextRetirementRuntimeMutationOrdinal'),
     iraProRata: new Map([
       ['owner', { basis: 900, nontaxableFraction: 0.3 }],
       ['deleted-owner', { basis: 100, nontaxableFraction: 0.1 }],
@@ -163,6 +207,10 @@ function fixture(): {
 function stateBytes(bindings: SimulatorAnnualPassStateBindings): string {
   return JSON.stringify({
     balances: bindings.balances.map(({ account, balance, costBasis }) => ({ id: account.id, balance, costBasis })),
+    retirementRuntimeOccurrences: bindings.retirementRuntimeOccurrences,
+    retirementRuntimeApplications: bindings.retirementRuntimeApplications,
+    nextRetirementRuntimeMutationOrdinal:
+      bindings.nextRetirementRuntimeMutationOrdinal.read(),
     iraProRata: [...bindings.iraProRata],
     iraBasisByOwner: [...bindings.iraBasisByOwner],
     rothBasis: [...bindings.rothBasis],
@@ -198,6 +246,53 @@ function mutateEntireAnnualPass(bindings: SimulatorAnnualPassStateBindings): voi
   bindings.balances[0]!.costBasis = 904
   bindings.balances.push({ account: { id: 'added-balance' }, balance: 905, costBasis: 906 })
   bindings.balances.reverse()
+
+  ;(bindings.retirementRuntimeOccurrences[0]! as {
+    grossAmountPlanDollars: number
+  }).grossAmountPlanDollars = 999
+  bindings.retirementRuntimeOccurrences.push({
+    producerOccurrenceKey: '["automaticSeppDistribution","ira"]',
+    kind: 'automaticSeppDistribution',
+    grossAmountPlanDollars: 11,
+    ownerPersonId: 'owner',
+    sourceAccountId: 'ira',
+    executionDate: null,
+    executionSequence: null,
+    movementAuthorityId: null,
+  })
+  const firstApplication = bindings.retirementRuntimeApplications[0]!
+  if (firstApplication.applicationKind === 'aggregateRothDestinationCredit') {
+    throw new Error('expected debit application')
+  }
+  ;(firstApplication as {
+    sourceBalanceAfterPlanDollars: number
+  }).sourceBalanceAfterPlanDollars = 1
+  const aggregateApplication = bindings.retirementRuntimeApplications[1]!
+  if (aggregateApplication.applicationKind !==
+      'aggregateRothDestinationCredit') {
+    throw new Error('expected aggregate credit application')
+  }
+  ;(aggregateApplication.producerOccurrenceKeys as string[]).push('foreign')
+  ;(aggregateApplication.sourceOwnerPersonIds as Array<string | null>)
+    .push('foreign-owner')
+  bindings.retirementRuntimeApplications.push({
+    applicationKind: 'aggregateRothDestinationCredit',
+    simulatorPhase: 'legacyRothConversionAggregateDestinationCredit',
+    mutationOrdinal: 2,
+    producerOccurrenceKey: null,
+    ownerPersonId: null,
+    sourceAccountId: null,
+    sourceBalanceBeforePlanDollars: null,
+    sourceBalanceAfterPlanDollars: null,
+    producerOccurrenceKeys: ['["legacyRothConversion","ira","roth"]'],
+    sourceOwnerPersonIds: ['owner'],
+    destinationRothAccountId: 'roth',
+    destinationOwnerPersonId: 'owner',
+    destinationBalanceBeforePlanDollars: 0,
+    destinationCreditedAmountPlanDollars: 5,
+    destinationBalanceAfterPlanDollars: 5,
+  })
+  bindings.nextRetirementRuntimeMutationOrdinal.write(99)
 
   const proRata = bindings.iraProRata.get('owner')!
   proRata.basis = 801
@@ -277,11 +372,59 @@ function mutateEntireAnnualPass(bindings: SimulatorAnnualPassStateBindings): voi
 }
 
 describe('simulator annual-pass transaction', () => {
+  it('restores original binding references after hostile replacements', () => {
+    const { bindings } = fixture()
+    const references = { ...bindings }
+    const balanceRecords = [...bindings.balances]
+    const accounts = bindings.balances.map((record) => record.account)
+    const capitalLossPoolRead = bindings.capitalLossPool.read
+    const capitalLossPoolWrite = bindings.capitalLossPool.write
+    const transaction = beginSimulatorAnnualPassTransaction(bindings)
+
+    bindings.balances = bindings.balances.map((record) => ({
+      account: { ...record.account },
+      balance: record.balance,
+      costBasis: record.costBasis,
+    }))
+    bindings.retirementRuntimeOccurrences = [
+      ...bindings.retirementRuntimeOccurrences,
+    ]
+    bindings.iraBasisByOwner = new Map(bindings.iraBasisByOwner)
+    bindings.capitalLossPool = {
+      read: references.capitalLossPool.read,
+      write: references.capitalLossPool.write,
+    }
+    ;(references.capitalLossPool as {
+      read: () => number
+      write: (value: number) => void
+    }).read = () => capitalLossPoolRead() + 1
+    ;(references.capitalLossPool as {
+      read: () => number
+      write: (value: number) => void
+    }).write = () => {}
+    bindings.expenses = { ...bindings.expenses }
+
+    transaction.rollback()
+
+    for (const key of Object.keys(references) as
+      Array<keyof SimulatorAnnualPassStateBindings>) {
+      expect(bindings[key]).toBe(references[key])
+    }
+    bindings.balances.forEach((record, index) => {
+      expect(record).toBe(balanceRecords[index])
+      expect(record.account).toBe(accounts[index])
+    })
+    expect(bindings.capitalLossPool.read).toBe(capitalLossPoolRead)
+    expect(bindings.capitalLossPool.write).toBe(capitalLossPoolWrite)
+  })
+
   it('exactly rolls back every named container/local and restores balance member identity', () => {
     const { bindings, originalBalances } = fixture()
     const before = stateBytes(bindings)
     const originalContainers = {
       balances: bindings.balances,
+      retirementRuntimeOccurrences: bindings.retirementRuntimeOccurrences,
+      retirementRuntimeApplications: bindings.retirementRuntimeApplications,
       iraProRata: bindings.iraProRata,
       rothBasis: bindings.rothBasis,
       seppAmortAmount: bindings.seppAmortAmount,
@@ -302,6 +445,12 @@ describe('simulator annual-pass transaction', () => {
     expect(bindings.balances).toBe(originalContainers.balances)
     expect(bindings.balances[0]).toBe(originalBalances[0])
     expect(bindings.balances[1]).toBe(originalBalances[1])
+    expect(bindings.retirementRuntimeOccurrences).toBe(
+      originalContainers.retirementRuntimeOccurrences,
+    )
+    expect(bindings.retirementRuntimeApplications).toBe(
+      originalContainers.retirementRuntimeApplications,
+    )
     expect(bindings.iraProRata).toBe(originalContainers.iraProRata)
     expect(bindings.rothBasis).toBe(originalContainers.rothBasis)
     expect(bindings.seppAmortAmount).toBe(originalContainers.seppAmortAmount)

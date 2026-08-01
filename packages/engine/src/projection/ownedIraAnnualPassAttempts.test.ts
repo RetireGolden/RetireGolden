@@ -69,6 +69,9 @@ function valueBinding<T>(initial: T): SimulatorAnnualPassValueBinding<T> {
 function state(): SimulatorAnnualPassStateBindings {
   return {
     balances: [{ account: { id: 'balance' }, balance: 100, costBasis: 40 }],
+    retirementRuntimeOccurrences: [],
+    retirementRuntimeApplications: [],
+    nextRetirementRuntimeMutationOrdinal: valueBinding(1),
     iraProRata: new Map(),
     iraBasisByOwner: new Map(),
     rothBasis: new Map(),
@@ -113,6 +116,10 @@ function state(): SimulatorAnnualPassStateBindings {
 function stateBytes(value: SimulatorAnnualPassStateBindings): string {
   return JSON.stringify({
     balances: value.balances,
+    retirementRuntimeOccurrences: value.retirementRuntimeOccurrences,
+    retirementRuntimeApplications: value.retirementRuntimeApplications,
+    nextRetirementRuntimeMutationOrdinal:
+      value.nextRetirementRuntimeMutationOrdinal.read(),
     warnings: [...value.warnings],
     unassignedCash: value.unassignedCash.read(),
     expenses: value.expenses,

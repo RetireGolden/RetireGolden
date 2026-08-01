@@ -1,7 +1,14 @@
 import type { AssetAllocationPolicy } from '../model/plan.js'
 import type { RothBasisState } from '../strategies/rothBasis.js'
 import type { IraProRataYear } from '../strategies/iraBasis.js'
-import type { YearExpenses } from './types.js'
+import type { SimulatorAnnualRetirementRuntimeOccurrence } from
+  './annualRetirementRuntimeJournal.js'
+import type {
+  SimulatorRetirementRuntimeApplication,
+  YearExpenses,
+} from './types.js'
+import { SIMULATOR_ANNUAL_PASS_VALUE_BINDING_KEYS } from
+  '../internal/simulatorAnnualPassValueBindingKeys.js'
 
 /**
  * A simulator balance row at the post-contribution annual-pass boundary.
@@ -28,8 +35,8 @@ export interface SimulatorAnnualPassAllocationTrackState {
 
 /** A named read/write adapter for a mutable simulator local. */
 export interface SimulatorAnnualPassValueBinding<T> {
-  read(): T
-  write(value: T): void
+  readonly read: () => T
+  readonly write: (value: T) => void
 }
 
 /**
@@ -40,6 +47,11 @@ export interface SimulatorAnnualPassValueBinding<T> {
  */
 export interface SimulatorAnnualPassStateBindings {
   balances: SimulatorAnnualPassBalanceRecord[]
+  retirementRuntimeOccurrences:
+    SimulatorAnnualRetirementRuntimeOccurrence[]
+  retirementRuntimeApplications:
+    SimulatorRetirementRuntimeApplication[]
+  nextRetirementRuntimeMutationOrdinal: SimulatorAnnualPassValueBinding<number>
   iraProRata: Map<string, IraProRataYear>
   iraBasisByOwner: Map<string, number>
   rothBasis: Map<string, RothBasisState>
@@ -103,8 +115,25 @@ interface BalanceSnapshot {
   costBasis: number
 }
 
+interface ValueBindingMethodSnapshot {
+  readonly key: typeof SIMULATOR_ANNUAL_PASS_VALUE_BINDING_KEYS[number]
+  readonly binding: object
+  readonly read: unknown
+  readonly write: unknown
+}
+
 interface AnnualPassSnapshot {
+  bindingReferences: {
+    [Key in keyof SimulatorAnnualPassStateBindings]:
+      SimulatorAnnualPassStateBindings[Key]
+  }
+  valueBindingMethods: readonly ValueBindingMethodSnapshot[]
   balances: BalanceSnapshot[]
+  retirementRuntimeOccurrences:
+    SimulatorAnnualRetirementRuntimeOccurrence[]
+  retirementRuntimeApplications:
+    SimulatorRetirementRuntimeApplication[]
+  nextRetirementRuntimeMutationOrdinal: number
   iraProRata: Array<[string, IraProRataYear]>
   iraBasisByOwner: Array<[string, number]>
   rothBasis: Array<[string, RothBasisState]>
@@ -158,6 +187,24 @@ function cloneExpenses(value: YearExpenses): YearExpenses {
   return { ...value }
 }
 
+function cloneRuntimeOccurrence(
+  value: Readonly<SimulatorAnnualRetirementRuntimeOccurrence>,
+): SimulatorAnnualRetirementRuntimeOccurrence {
+  return { ...value }
+}
+
+function cloneRuntimeApplication(
+  value: Readonly<SimulatorRetirementRuntimeApplication>,
+): SimulatorRetirementRuntimeApplication {
+  return value.applicationKind === 'aggregateRothDestinationCredit'
+    ? {
+        ...value,
+        producerOccurrenceKeys: [...value.producerOccurrenceKeys],
+        sourceOwnerPersonIds: [...value.sourceOwnerPersonIds],
+      }
+    : { ...value }
+}
+
 function snapshotMap<Key, Value>(
   source: ReadonlyMap<Key, Value>,
   cloneValue: (value: Value) => Value,
@@ -182,7 +229,24 @@ function restoreExpenses(target: YearExpenses, snapshot: YearExpenses): void {
 
 function captureSnapshot(bindings: SimulatorAnnualPassStateBindings): AnnualPassSnapshot {
   return {
+    bindingReferences: { ...bindings },
+    valueBindingMethods:
+      SIMULATOR_ANNUAL_PASS_VALUE_BINDING_KEYS.map((key) => {
+      const binding = bindings[key]
+      return {
+        key,
+        binding,
+        read: binding.read,
+        write: binding.write,
+      }
+      }),
     balances: bindings.balances.map((record) => ({ record, balance: record.balance, costBasis: record.costBasis })),
+    retirementRuntimeOccurrences:
+      bindings.retirementRuntimeOccurrences.map(cloneRuntimeOccurrence),
+    retirementRuntimeApplications:
+      bindings.retirementRuntimeApplications.map(cloneRuntimeApplication),
+    nextRetirementRuntimeMutationOrdinal:
+      bindings.nextRetirementRuntimeMutationOrdinal.read(),
     iraProRata: snapshotMap(bindings.iraProRata, cloneIraProRata),
     iraBasisByOwner: snapshotMap(bindings.iraBasisByOwner, (value) => value),
     rothBasis: snapshotMap(bindings.rothBasis, cloneRothBasis),
@@ -209,11 +273,41 @@ function captureSnapshot(bindings: SimulatorAnnualPassStateBindings): AnnualPass
 }
 
 function restoreSnapshot(bindings: SimulatorAnnualPassStateBindings, snapshot: AnnualPassSnapshot): void {
+  // A hostile attempt can replace a binding property with an equal-valued
+  // container or adapter. Reattach every original reference before restoring
+  // values so rollback also restores simulator closure wiring.
+  Object.assign(bindings, snapshot.bindingReferences)
+  for (const { key, binding, read, write } of snapshot.valueBindingMethods) {
+    const restored = bindings[key] as unknown as {
+      read: unknown
+      write: unknown
+    }
+    if (restored !== binding) {
+      throw new Error('Simulator annual-pass binding restoration failed')
+    }
+    restored.read = read
+    restored.write = write
+  }
+
   for (const { record, balance, costBasis } of snapshot.balances) {
     record.balance = balance
     record.costBasis = costBasis
   }
   bindings.balances.splice(0, bindings.balances.length, ...snapshot.balances.map(({ record }) => record))
+
+  bindings.retirementRuntimeOccurrences.splice(
+    0,
+    bindings.retirementRuntimeOccurrences.length,
+    ...snapshot.retirementRuntimeOccurrences.map(cloneRuntimeOccurrence),
+  )
+  bindings.retirementRuntimeApplications.splice(
+    0,
+    bindings.retirementRuntimeApplications.length,
+    ...snapshot.retirementRuntimeApplications.map(cloneRuntimeApplication),
+  )
+  bindings.nextRetirementRuntimeMutationOrdinal.write(
+    snapshot.nextRetirementRuntimeMutationOrdinal,
+  )
 
   restoreMap(bindings.iraProRata, snapshot.iraProRata, cloneIraProRata)
   restoreMap(bindings.iraBasisByOwner, snapshot.iraBasisByOwner, (value) => value)
