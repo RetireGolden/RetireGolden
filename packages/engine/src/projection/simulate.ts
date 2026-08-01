@@ -4419,11 +4419,18 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // ledger, which preserves the signed result and carryforward.
       const optimizerCapitalGainsBase =
         Math.max(0, preWithdrawalCapitalResult) + incomes.qualifiedDividends
+      let optimizerOwnerTraditionalWithdrawal = 0
+      for (const state of balances) {
+        if (state.account.type !== 'traditional' ||
+            state.account.inherited) continue
+        optimizerOwnerTraditionalWithdrawal +=
+          withdrawalPlan.byAccountId.get(state.account.id) ?? 0
+      }
       const optimizerTraditionalGross =
-        rmdTotal + withdrawalPlan.byCategory.traditional
+        rmdTotal + optimizerOwnerTraditionalWithdrawal
       const optimizerTraditionalTaxable =
         (rmdTotal - rmdNontaxable) +
-        (withdrawalPlan.byCategory.traditional - iraNontaxableFinal)
+        (optimizerOwnerTraditionalWithdrawal - iraNontaxableFinal)
       let remainingTraditionalGross = 0
       let remainingTraditionalTaxable = 0
       let remainingConvertibleGross = 0

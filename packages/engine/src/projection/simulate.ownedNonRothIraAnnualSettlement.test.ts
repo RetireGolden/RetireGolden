@@ -235,6 +235,32 @@ describe('simulator owned non-Roth IRA exact annual settlement', () => {
       .toBeCloseTo(0.5, 12)
   })
 
+  it('excludes inherited draws from owner-traditional optimizer character', () => {
+    const plan = singlePersonPlan({ planningAge: 60 })
+    plan.id = 'settled-optimizer-inherited-separation'
+    plan.expenses.baseAnnual = 150
+    plan.accounts = [
+      ira('owner-ira', 100, 50),
+      {
+        ...ira('inherited-ira', 100),
+        inherited: {
+          ownerDeathYear: TAX_YEAR - 2,
+          decedentHadStartedRmds: false,
+        },
+      },
+    ]
+    const capture = vi.fn<(probe: OptimizerYearProbe) => void>()
+
+    const year = run(plan, TAX_YEAR, capture)[0]!
+
+    expect(year.withdrawals.traditional).toBe(150)
+    expect(year.inheritedDistribution).toBe(0)
+    expect(capture).toHaveBeenCalledTimes(1)
+    expect(capture.mock.calls[0]![0].incumbentTraditionalDistribution).toBe(100)
+    expect(capture.mock.calls[0]![0].traditionalWithdrawalTaxableFraction)
+      .toBeCloseTo(0.5, 12)
+  })
+
   it('linearizes an empty incumbent from the committed post-growth ratio', () => {
     const plan = singlePersonPlan({ planningAge: 60 })
     plan.id = 'settled-optimizer-empty-incumbent'
