@@ -243,6 +243,37 @@ describe('compareOptimizerExactLedgerResults', () => {
     )).toBeNull()
   })
 
+  it('rejects an investable account balance above its annual investable total', () => {
+    const result = projection([{
+      year: 2030,
+      balances: { cash: 200 },
+      investableTotal: 100,
+    }], { endingInvestable: 100 })
+
+    expect(compareOptimizerExactLedgerResults(
+      result,
+      structuredClone(result),
+    )).toBeNull()
+  })
+
+  it('does not apply the investable bound to a published property balance', () => {
+    const result = projection([{
+      year: 2030,
+      balances: { home: 200 },
+      investableTotal: 100,
+    }], { endingInvestable: 100 })
+    const plan = {
+      accounts: [{ type: 'property', id: 'home' }] as Plan['accounts'],
+      insurance: [],
+    }
+
+    expect(compareOptimizerExactLedgerResultsWithPlan(
+      result,
+      structuredClone(result),
+      plan,
+    )).not.toBeNull()
+  })
+
   it.each([
     Number.NaN,
     Number.POSITIVE_INFINITY,

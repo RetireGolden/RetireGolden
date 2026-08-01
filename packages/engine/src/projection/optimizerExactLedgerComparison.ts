@@ -144,12 +144,22 @@ function sameNumbers(left: readonly number[], right: readonly number[]): boolean
   return left.length === right.length && left.every((value, index) => value === right[index])
 }
 
+interface ExpectedPublishedBalanceIds {
+  readonly all: readonly string[]
+  readonly investable: readonly string[]
+}
+
 function expectedPublishedBalanceIds(
   plan: Readonly<Pick<Plan, 'accounts' | 'insurance'>>,
-): readonly string[] {
+): ExpectedPublishedBalanceIds {
   const ids: string[] = []
+  const investableIds: string[] = []
   for (const account of plan.accounts) {
-    if (account.type !== 'pension' && account.type !== 'annuity') ids.push(account.id)
+    if (account.type === 'pension' || account.type === 'annuity') continue
+    ids.push(account.id)
+    if (account.type !== 'property' && account.type !== 'debt') {
+      investableIds.push(account.id)
+    }
   }
   for (const policy of plan.insurance) {
     if (policy.kind === 'permanentLife') ids.push(policy.id)
@@ -158,7 +168,10 @@ function expectedPublishedBalanceIds(
       new Set(ids).size !== ids.length) {
     throw new TypeError('Plan balance identities must be nonempty and globally unique')
   }
-  return ids.sort(compareUtf16CodeUnits)
+  return {
+    all: ids.sort(compareUtf16CodeUnits),
+    investable: investableIds.sort(compareUtf16CodeUnits),
+  }
 }
 
 interface YearSnapshot {
@@ -278,15 +291,20 @@ export function compareOptimizerExactLedgerResults(
       ...allocated.accountIds,
     ])].sort(compareUtf16CodeUnits)
     const expectedAccountIds = expectedPublishedBalanceIds(plan)
-    if (evaluatedAccountIds.length !== expectedAccountIds.length ||
+    if (evaluatedAccountIds.length !== expectedAccountIds.all.length ||
         evaluatedAccountIds.some((accountId, index) =>
-          accountId !== expectedAccountIds[index])) return null
+          accountId !== expectedAccountIds.all[index])) return null
     for (const taxYear of aggregate.horizon.taxYears) {
-      const aggregateBalances = aggregate.years.get(taxYear)!.balances
-      const allocatedBalances = allocated.years.get(taxYear)!.balances
+      const aggregateYear = aggregate.years.get(taxYear)!
+      const allocatedYear = allocated.years.get(taxYear)!
+      const aggregateBalances = aggregateYear.balances
+      const allocatedBalances = allocatedYear.balances
       if (evaluatedAccountIds.some((accountId) =>
         !aggregateBalances.has(accountId) ||
         !allocatedBalances.has(accountId))) return null
+      if (expectedAccountIds.investable.some((accountId) =>
+        aggregateBalances.get(accountId)! > aggregateYear.investableTotal ||
+        allocatedBalances.get(accountId)! > allocatedYear.investableTotal)) return null
     }
 
     const keys: OptimizerExactLedgerComparisonKey[] = []
