@@ -159,7 +159,6 @@ export const noConversionGenerator: CandidateGenerator = {
         label: 'No Roth conversions',
         explanation: 'Runs the plan with no Roth conversions, in case the current schedule costs more than it saves.',
         planPatch: { strategies: { rothConversion: { mode: 'none' } } },
-        retirementActionReadiness: AGGREGATE_RETIREMENT_ACTION_EXPLORATION,
       },
     ]
   },

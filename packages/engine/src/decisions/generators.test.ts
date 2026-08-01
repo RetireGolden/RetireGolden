@@ -6,6 +6,7 @@ import { createDecisionContext, evaluateCandidate } from './evaluateCandidate.js
 import {
   assetLocationGenerator,
   milpScheduleGenerator,
+  noConversionGenerator,
   probabilityBandSpendingGuardrailGenerator,
   simpleRothConversionGenerator,
   socialSecurityClaimGridGenerator,
@@ -39,6 +40,22 @@ describe('simpleRothConversionGenerator ACA evidence gate', () => {
 })
 
 describe('aggregate retirement-action generator readiness', () => {
+  it('keeps the removal-only no-conversion candidate actionable without identities', () => {
+    const plan = noTraditionalPlan()
+    plan.strategies.rothConversion = {
+      mode: 'manual',
+      conversions: [{ year: 2027, amount: 1_000 }],
+    }
+    const ctx = createDecisionContext(plan, simOptions())
+    const [candidate] = noConversionGenerator.generate(ctx)
+
+    expect(candidate?.retirementActionReadiness).toBeUndefined()
+    const evaluation = evaluateCandidate(ctx, candidate!)
+    expect(evaluation.recommendationState).not.toBe('diagnostic')
+    expect(evaluation.diagnostics.join(' ')).not.toMatch(/identity|retirement-action/i)
+    expect(evaluation.candidateResult.years.reduce((sum, year) => sum + year.rothConversion, 0)).toBe(0)
+  })
+
   it('marks withdrawal candidates exploratory independent of account-array order', () => {
     const plan = noTraditionalPlan()
     const permutedPlan = { ...plan, accounts: [...plan.accounts].reverse() }

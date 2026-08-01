@@ -210,6 +210,48 @@ describe('evaluateCandidate', () => {
     expect(evaluation.diagnostics).toEqual([])
   })
 
+  it('does not treat optimized-at provenance metadata as a retirement-action change', () => {
+    const plan = tradHeavyPlan()
+    plan.strategies.rothConversion = {
+      mode: 'optimized',
+      conversions: [{ year: 2027, amount: 20_000 }],
+      optimizedAtIso: '2026-01-01T00:00:00.000Z',
+    }
+    const ctx = createDecisionContext(plan, simOptions())
+
+    for (const optimizedAtIso of [undefined, '2026-02-01T00:00:00.000Z']) {
+      const edited = structuredClone(plan)
+      const editedStrategy = edited.strategies.rothConversion
+      if (editedStrategy.mode !== 'optimized') throw new Error('expected optimized test strategy')
+      if (optimizedAtIso === undefined) {
+        delete editedStrategy.optimizedAtIso
+      } else {
+        editedStrategy.optimizedAtIso = optimizedAtIso
+      }
+      const canonicalPatch = canonicalPatchFor(plan, edited)
+      const wholeStrategyPatch = {
+        ...canonicalPatch,
+        operations: [{
+          op: 'set',
+          path: '/strategies/rothConversion',
+          before: { present: true, value: plan.strategies.rothConversion },
+          value: editedStrategy,
+        }],
+      } as never
+
+      for (const planPatch of [canonicalPatch, wholeStrategyPatch]) {
+        const evaluation = evaluateCandidate(
+          ctx,
+          rothCandidate({ planPatch }),
+          { candidateResult: ctx.baselineResult },
+        )
+
+        expect(evaluation.recommendationState).toBe('neutral')
+        expect(evaluation.diagnostics).toEqual([])
+      }
+    }
+  })
+
   it('does not gate a normalized legacy strategies override when only unrelated values change', () => {
     const plan = tradHeavyPlan()
     const ctx = createDecisionContext(plan, simOptions())

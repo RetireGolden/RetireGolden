@@ -1862,6 +1862,50 @@ describe('objective-mode tournament (sustainable-spending plan, Step 5)', () => 
       .toBeCloseTo(vetoedRow!.afterTaxEstateDelta, 6)
   })
 
+  it('withholds a nonempty aggregate policy winner even when estate validation rejects it', () => {
+    const plan = validate(coastFireGapPlan())
+    const baseline = simulatePlan(plan, opts)
+    const policy = {
+      ...maximizeAfterTaxEstate,
+      id: 'min-lifetime-tax-estate-floor' as const,
+      label: 'Force a rejected aggregate row for the readiness regression',
+      primaryMetric: (evaluation: ExactDecisionEvaluation) =>
+        evaluation.candidate.id === 'bracket-10' ? 1_000_000 : 0,
+      constraintViolations: () => [],
+    }
+
+    const tournament = runExactLedgerTournament(plan, baseline, null, opts, { policy })
+
+    expect(tournament.winnerSource).toBe('none')
+    expect(tournament.retirementActionReadinessVeto).toMatchObject({
+      reason: 'identityIncomplete',
+      vetoedWinnerSource: 'candidate',
+      vetoedCandidateId: 'bracket-10',
+      vetoedValidation: { recommendationState: 'rejected' },
+    })
+    expect(tournament.retirementActionReadinessVeto?.vetoedConversions.length).toBeGreaterThan(0)
+  })
+
+  it('updates every displayed winner metric after local search refinement', () => {
+    const plan = validate(tradHeavyPlan())
+    const baseline = simulatePlan(plan, opts)
+    const unrefined = runExactLedgerTournament(plan, baseline, null, opts)
+    const refined = runExactLedgerTournament(plan, baseline, null, opts, {
+      search: { maxSimulations: 100 },
+    })
+    const veto = refined.retirementActionReadinessVeto!
+    const row = refined.candidates.find((candidate) => candidate.id === veto.vetoedCandidateId)!
+    const seedRow = unrefined.candidates.find((candidate) => candidate.id === veto.vetoedCandidateId)!
+
+    expect(veto.vetoedValidation.afterTaxEstateDelta).toBeGreaterThan(seedRow.afterTaxEstateDelta)
+    expect(row).toMatchObject({
+      executedConversionTotal: veto.vetoedValidation.executedConversionTotal,
+      afterTaxEstateDelta: veto.vetoedValidation.afterTaxEstateDelta,
+      lifetimeTaxDelta: veto.vetoedValidation.lifetimeTaxDelta,
+      moneyLastsYearsDelta: veto.vetoedValidation.moneyLastsYearsDelta,
+    })
+  })
+
   it('keeps an identity-withheld MILP schedule in policy ranking and preserves its diagnostics', async () => {
     const plan = validate(tradHeavyPlan())
     const baseline = simulatePlan(plan, opts)

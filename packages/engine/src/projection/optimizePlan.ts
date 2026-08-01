@@ -487,7 +487,11 @@ function readinessVetoFor(
   conversions: { year: number; amount: number }[],
   validation: ExactLedgerValidation,
 ): RetirementActionReadinessVeto | null {
-  return validation.recommendationState === 'identityIncomplete'
+  // Every non-empty schedule produced here is still aggregate: it has exact
+  // amounts but no legal owner/source/destination identities. That is a
+  // publication veto regardless of how a custom policy ranked its estate
+  // validation (beneficial, neutral, or rejected).
+  return conversions.length > 0
     ? {
         reason: 'identityIncomplete',
         vetoedWinnerSource: source,
@@ -812,7 +816,15 @@ export function runExactLedgerTournament(
       // post-search).
       const displayCandidates = searchRefined
         ? candidates.map((row) =>
-            row.id === winner.candidate.evaluation.id ? { ...row, afterTaxEstateDelta: winner.estateDelta } : row,
+            row.id === winner.candidate.evaluation.id
+              ? {
+                  ...row,
+                  executedConversionTotal: winner.validation.executedConversionTotal,
+                  afterTaxEstateDelta: winner.validation.afterTaxEstateDelta,
+                  lifetimeTaxDelta: winner.validation.lifetimeTaxDelta,
+                  moneyLastsYearsDelta: winner.validation.moneyLastsYearsDelta,
+                }
+              : row,
           )
         : candidates
       const readinessVeto = readinessVetoFor(

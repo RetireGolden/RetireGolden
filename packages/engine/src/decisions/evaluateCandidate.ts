@@ -59,6 +59,17 @@ interface RetirementActionPatchInspection {
   retirementActionRequests: unknown
 }
 
+function strategyExecutionValue(key: string, value: unknown): unknown {
+  if (key !== 'rothConversion') return value
+  const strategy = objectRecord(value)
+  if (strategy === null || !Object.prototype.hasOwnProperty.call(strategy, 'optimizedAtIso')) {
+    return value
+  }
+  const execution = { ...strategy }
+  delete execution['optimizedAtIso']
+  return execution
+}
+
 function strategyValueChanged(
   before: Record<string, unknown> | null,
   after: Record<string, unknown> | null,
@@ -68,7 +79,8 @@ function strategyValueChanged(
   const hasAfter = after !== null && Object.prototype.hasOwnProperty.call(after, key)
   if (hasBefore !== hasAfter) return true
   if (!hasBefore) return false
-  return canonicalScenarioJson(before![key]) !== canonicalScenarioJson(after![key])
+  return canonicalScenarioJson(strategyExecutionValue(key, before![key])) !==
+    canonicalScenarioJson(strategyExecutionValue(key, after![key]))
 }
 
 function inspectRetirementActionPatch(
@@ -142,13 +154,24 @@ function inspectRetirementActionPatch(
     if (!RETIREMENT_ACTION_STRATEGY_KEYS.includes(strategyKey as typeof RETIREMENT_ACTION_STRATEGY_KEYS[number])) {
       continue
     }
+    // Optimizer provenance is display metadata. Setting or clearing it cannot
+    // move retirement-account money and therefore must not demand execution
+    // identities.
+    if (
+      strategyKey === 'rothConversion' &&
+      segments.length === 3 &&
+      segments[2] === 'optimizedAtIso'
+    ) {
+      continue
+    }
     const beforePresent = operation.before.present
     const afterPresent = operation.op === 'set'
     const operationChanged =
       beforePresent !== afterPresent ||
       (beforePresent &&
         afterPresent &&
-        canonicalScenarioJson(operation.before.value) !== canonicalScenarioJson(operation.value))
+        canonicalScenarioJson(strategyExecutionValue(strategyKey, operation.before.value)) !==
+          canonicalScenarioJson(strategyExecutionValue(strategyKey, operation.value)))
     if (!operationChanged) continue
     changesRetirementActions = true
     hasAggregateStrategy ||= AGGREGATE_RETIREMENT_ACTION_STRATEGY_KEYS.has(strategyKey)
@@ -189,10 +212,34 @@ function inspectCandidateRetirementActionPatch(
   )
 }
 
+function candidateOnlyRemovesAggregateRothConversions(
+  candidate: DecisionCandidate,
+  basePlan: Plan,
+): boolean {
+  if (candidate.conversions !== undefined) return false
+  const materialized = planForCandidate(basePlan, candidate)
+  if (!materialized.ok) return false
+
+  const before = objectRecord(basePlan.strategies)
+  const after = objectRecord(materialized.plan.strategies)
+  if (
+    basePlan.strategies.rothConversion.mode === 'none' ||
+    materialized.plan.strategies.rothConversion.mode !== 'none' ||
+    !strategyValueChanged(before, after, 'rothConversion')
+  ) {
+    return false
+  }
+  return !(['retirementActions', 'withdrawalOrder', 'qcdAnnual'] as const)
+    .some((key) => strategyValueChanged(before, after, key))
+}
+
 /** Whether the candidate's concrete change can cause retirement-account movement. */
 export function candidateChangesRetirementActions(candidate: DecisionCandidate, basePlan?: Plan): boolean {
   try {
     if (candidate.conversions !== undefined || candidate.retirementActionReadiness !== undefined) return true
+    if (basePlan !== undefined && candidateOnlyRemovesAggregateRothConversions(candidate, basePlan)) {
+      return false
+    }
     return inspectCandidateRetirementActionPatch(candidate, basePlan).changesRetirementActions
   } catch {
     // A hostile or malformed runtime candidate must be gated, never trusted.
