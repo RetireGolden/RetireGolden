@@ -425,6 +425,54 @@ describe('compareOptimizerExactLedgerResults', () => {
     )).not.toBeNull()
   })
 
+  it('accepts owner-grouped simulator rounding independent of interleaved Plan order', () => {
+    const balances = [
+      59_715_240_959_563.984,
+      551.471,
+      129.898,
+      661.666,
+      595.764,
+      164.891,
+    ]
+    const groupedAggregate =
+      balances[0]! + balances[2]! + balances[4]! +
+      (balances[1]! + balances[3]! + balances[5]!)
+    const accountIds = balances.map((_balance, index) => `ira-${index}`)
+    const result = projection(
+      [{
+        year: 2030,
+        investableTotal: groupedAggregate,
+        netWorth: groupedAggregate,
+        balances: Object.fromEntries(
+          accountIds.map((accountId, index) => [accountId, balances[index]!]),
+        ),
+      }],
+      {
+        endingInvestable: groupedAggregate,
+        endingNetWorth: groupedAggregate,
+        endingNondeductibleIraBasis: groupedAggregate,
+      },
+    )
+    const plan = comparisonPlan(accountIds)
+    plan.accounts = accountIds.map((id, index) => ({
+      type: 'traditional',
+      kind: 'ira',
+      id,
+      name: id,
+      ownerPersonId: index % 2 === 0 ? 'person-a' : 'person-b',
+      annualReturnPct: 0,
+      balance: 0,
+      nondeductibleBasis: balances[index],
+      annualContribution: 0,
+    }))
+
+    expect(compareOptimizerExactLedgerResultsWithPlan(
+      result,
+      structuredClone(result),
+      plan,
+    )).not.toBeNull()
+  })
+
   it('uses raw UTF-16 ordering and is invariant to balance-map insertion order', () => {
     const aggregate = projection([{ year: 2030, balances: { 'ä': 1, z: 2, a: 3 } }])
     const allocated = projection([{ year: 2030, balances: { a: 3, z: 2, 'ä': 1 } }])

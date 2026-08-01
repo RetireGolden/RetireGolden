@@ -139,15 +139,20 @@ function quantizeDecimalSum(values: readonly number[]): SafeMinorUnitInteger {
 
 /**
  * Bound the simulator's aggregate IRA basis without rejecting a valid result
- * solely because binary addition rounded the Plan-order balance sum one cent
- * above the exact-decimal sum. The exact sum remains order-independent; the
- * second bound mirrors the simulator's own Plan-order aggregation.
+ * solely because binary addition rounded an owner-grouped balance sum above
+ * the exact-decimal sum. Within the supported safe-cent domain, each binary
+ * addition can round upward by less than one cent, so n nonnegative balances
+ * need at most n - 1 additional cents regardless of grouping or order. This is
+ * only a conservative source-validity upper bound; ledger equality remains an
+ * exact safe-integer-cent comparison below.
  */
 function ownedIraBalanceUpperBound(values: readonly number[]): SafeMinorUnitInteger {
   const exact = quantizeDecimalSum(values)
   if (exact === Number.MAX_SAFE_INTEGER) return exact
-  const simulatorOrder = quantize(values.reduce((sum, value) => sum + value, 0), false)
-  return Math.max(exact, simulatorOrder)
+  return Math.min(
+    Number.MAX_SAFE_INTEGER,
+    exact + Math.max(0, values.length - 1),
+  )
 }
 
 function ownDataProperty(value: unknown, key: string): unknown {
@@ -248,9 +253,7 @@ function expectedPublishedBalanceIds(
   return {
     all: ids.sort(compareUtf16CodeUnits),
     investable: investableIds.sort(compareUtf16CodeUnits),
-    // Preserve Plan order here because the simulator aggregates owner IRA
-    // balances in Plan order. Exact-decimal summation remains order-independent.
-    ownedNonRothIras: ownedNonRothIraIds,
+    ownedNonRothIras: ownedNonRothIraIds.sort(compareUtf16CodeUnits),
   }
 }
 
