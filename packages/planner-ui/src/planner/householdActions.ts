@@ -1,7 +1,10 @@
 /** Pure plan mutations for household edits (kept out of the component file so
  *  they're testable and don't trip react-refresh's only-export-components rule). */
 
-import type { Plan } from '@retiregolden/engine/model/plan'
+import {
+  clearRetirementActionAnnualTaxFactsForOwners,
+  type Plan,
+} from '@retiregolden/engine/model/plan'
 import { clearDonorEligibilityFacts } from './eligibilityFactActions'
 
 /** Clear exact annual ACA facts after an edit that can stale their family,
@@ -39,6 +42,7 @@ export function removePartner(d: Plan, removedId: string) {
     .map((p) => (p.kind === 'permanentLife' && p.beneficiary === removedId ? { ...p, beneficiary: 'estate' as const } : p))
   d.careEvents = d.careEvents.filter((c) => c.personId !== removedId)
   clearDonorEligibilityFacts(d, removedId)
+  clearRetirementActionAnnualTaxFactsForOwners(d, [removedId, primaryId])
   // Annual ACA evidence names an exact tax family and coverage roster. It
   // cannot be safely rewritten after a household member is removed; clearing
   // it makes a still-enabled ACA request fail closed to the visible gross

@@ -20,7 +20,7 @@ assistant). The plan object inside them is identical and is the single source of
   "kind": "retiregolden.v2.backup",
   "backupVersion": 1,
   "exportedAtIso": "2026-07-08T12:00:00.000Z",
-  "plans": [ { "schemaVersion": 3, "id": "…", "name": "…", "…": "…" } ]
+  "plans": [ { "schemaVersion": 4, "id": "…", "name": "…", "…": "…" } ]
 }
 ```
 
@@ -44,9 +44,9 @@ assistant", and an assistant's tool takes a single plan, not a library:
 
 ```json
 {
-  "plan": { "schemaVersion": 3, "id": "…", "name": "…", "…": "…" },
+  "plan": { "schemaVersion": 4, "id": "…", "name": "…", "…": "…" },
   "startYear": 2026,
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "engineVersion": "0.1.5"
 }
 ```
@@ -98,7 +98,7 @@ A plan is the complete household model: `household` (people, filing status, stat
 IndexedDB reads, JSON imports, and migration output, so there is no separate (drifting) file spec.
 Field-level semantics are documented inline on the schema as doc comments.
 
-`schemaVersion` is currently **3**. Plan v3 adds the optional
+`schemaVersion` is currently **4**. Plan v3 added the optional
 `retirementActionEligibilityFacts` root for explicitly authored IRA
 classification, action-year SEP/SIMPLE activity, and deductible-IRA
 contribution evidence. Deductible-contribution records use `amountCents`, a
@@ -106,6 +106,15 @@ nonnegative integer count of US-dollar cents (for example, `$5,000.00` is
 `500000`). The root remains absent by default. Execution-time alive status and
 prior-QCD offset evidence are intentionally not persisted there; they must be
 supplied for the specific action request.
+
+Plan v4 adds the optional protected `retirementActionAnnualTaxFacts` root. Its
+owned non-Roth IRA records are filing-grade, real-world source snapshots bound
+to an exact Plan ID, owner, tax year, and complete current owner-wide IRA pool.
+They are never inferred from `nondeductibleBasis`, projections, or simulator
+state. A v3 → v4 migration does not invent this evidence and strips a
+same-named root smuggled into an older document. Because the records bind the
+Plan ID, any copy/import operation that re-keys a plan discards them; an import
+that preserves Plan identity preserves them exactly.
 
 Scenario entries written by older versions continue to carry a loose deep-override object in `patch`.
 The plan schema still accepts and preserves that representation. A newer scenario may carry the
@@ -131,10 +140,11 @@ See [Monte Carlo and scenarios](monte-carlo-and-scenarios.md#scenarios).
    file from a future build.
 4. **Validate before replace.** Import parses and validates the whole file before anything is
    written; a file that fails validation changes nothing.
-5. **Round trip is exact.** Export → import restores each plan's content byte-for-byte, with two
-   deliberate normalizations on import: plans get `origin: "user"` (library demos become yours),
-   and a plan whose `id` collides with an existing plan (or a reserved `example:*` id) is re-keyed
-   to a fresh id. Nothing else is rewritten.
+5. **Round trip preserves identity-bound facts only with identity.** Export → import restores each
+   plan's content byte-for-byte when its Plan ID is preserved, apart from `origin: "user"` (library
+   demos become yours). A plan whose `id` collides with an existing plan (or a reserved `example:*`
+   id) is re-keyed to a fresh ID, scenario patches are rebound, and Plan-ID-bound authoritative
+   annual tax facts are discarded rather than silently relabeled as evidence for another Plan.
 6. **Unknown fields are dropped, not errors.** Hand-added or third-party keys the schema doesn't
    know are stripped during validation. Round-tripping a file through the app keeps everything the
    schema defines and only that.

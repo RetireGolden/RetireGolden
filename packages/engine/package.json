@@ -27,6 +27,7 @@
     "schema/plan.v1.json",
     "schema/plan.v2.json",
     "schema/plan.v3.json",
+    "schema/plan.v4.json",
     "LICENSE",
     "README.md"
   ],
@@ -60,6 +61,7 @@
     "./schema/plan.v1.json": "./schema/plan.v1.json",
     "./schema/plan.v2.json": "./schema/plan.v2.json",
     "./schema/plan.v3.json": "./schema/plan.v3.json",
+    "./schema/plan.v4.json": "./schema/plan.v4.json",
     "./actions/annualIraBasisAllocation": {
       "types": "./dist/actions/annualIraBasisAllocation.d.ts",
       "default": "./dist/actions/annualIraBasisAllocation.js"
@@ -99,6 +101,14 @@
     "./actions/ownedNonRothIraAnnualExecution": {
       "types": "./dist/actions/ownedNonRothIraAnnualExecution.d.ts",
       "default": "./dist/actions/ownedNonRothIraAnnualExecution.js"
+    },
+    "./actions/ownedNonRothIraAnnualFilingEvidence": {
+      "types": "./dist/actions/ownedNonRothIraAnnualFilingEvidence.d.ts",
+      "default": "./dist/actions/ownedNonRothIraAnnualFilingEvidence.js"
+    },
+    "./actions/ownedNonRothIraAnnualFilingSourceResolver": {
+      "types": "./dist/actions/ownedNonRothIraAnnualFilingSourceResolver.d.ts",
+      "default": "./dist/actions/ownedNonRothIraAnnualFilingSourceResolver.js"
     },
     "./actions/ownedNonRothIraAnnualPlanCoordinator": {
       "types": "./dist/actions/ownedNonRothIraAnnualPlanCoordinator.d.ts",

@@ -1,4 +1,8 @@
-import type { Plan } from '@retiregolden/engine/model/plan'
+import {
+  clearRetirementActionAnnualTaxFactsForOwners,
+  type Account,
+  type Plan,
+} from '@retiregolden/engine/model/plan'
 
 const CIVIL_ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/
 
@@ -47,13 +51,39 @@ export function clearAccountEligibilityFacts(plan: Plan, accountId: string): voi
   )
 }
 
+interface OwnedIraPoolBinding {
+  accountId: string
+  ownerPersonId: string
+}
+
+function ownedIraPoolBinding(account: Account | undefined): OwnedIraPoolBinding | null {
+  return account?.type === 'traditional' &&
+    account.kind === 'ira' &&
+    account.inherited === undefined &&
+    account.ownerPersonId !== null
+    ? { accountId: account.id, ownerPersonId: account.ownerPersonId }
+    : null
+}
+
+function sameOwnedIraPoolBinding(
+  left: OwnedIraPoolBinding | null,
+  right: OwnedIraPoolBinding | null,
+): boolean {
+  return left?.accountId === right?.accountId &&
+    left?.ownerPersonId === right?.ownerPersonId
+}
+
 /** Remove the exact rendered row, then clear facts bound to that account. The
  * index matters for malformed imports that contain duplicate account IDs. */
 export function removeAccount(plan: Plan, accountIndex: number): void {
   const account = plan.accounts[accountIndex]
   if (account === undefined) return
+  const affectedOwner = ownedIraPoolBinding(account)?.ownerPersonId ?? null
   plan.accounts.splice(accountIndex, 1)
   clearAccountEligibilityFacts(plan, account.id)
+  if (affectedOwner !== null) {
+    clearRetirementActionAnnualTaxFactsForOwners(plan, [affectedOwner])
+  }
 }
 
 /** Apply an account edit and fail closed by dropping facts the new account
@@ -66,8 +96,27 @@ export function updateAccountField(
 ): void {
   const account = plan.accounts[accountIndex]
   if (account === undefined) return
+  const beforePoolBinding = ownedIraPoolBinding(account)
   ;(account as unknown as Record<string, unknown>)[key] = value
   const updated = plan.accounts[accountIndex]
+  const afterPoolBinding = ownedIraPoolBinding(updated)
+  if (!sameOwnedIraPoolBinding(beforePoolBinding, afterPoolBinding)) {
+    clearRetirementActionAnnualTaxFactsForOwners(
+      plan,
+      [
+        beforePoolBinding?.ownerPersonId,
+        afterPoolBinding?.ownerPersonId,
+      ].filter((owner): owner is string => owner !== undefined),
+    )
+  }
+  if (
+    updated !== undefined &&
+    (updated.type !== 'traditional' ||
+      updated.kind !== 'ira' ||
+      updated.inherited !== undefined)
+  ) {
+    Reflect.deleteProperty(updated, 'nondeductibleBasis')
+  }
   if (
     updated === undefined ||
     updated.type !== 'traditional' ||

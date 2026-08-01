@@ -8,7 +8,10 @@
  * import normalization.
  */
 
-import type { Plan } from '@retiregolden/engine/model/plan'
+import {
+  discardRetirementActionAnnualTaxFacts,
+  type Plan,
+} from '@retiregolden/engine/model/plan'
 import { rebindScenarioPatchesToPlan } from '@retiregolden/engine/scenarios/patch'
 import { isExamplePlanId } from './planOrigin'
 import { listPlanSummaries } from './planStore'
@@ -48,6 +51,7 @@ export async function normalizePlansForImport(plans: Plan[], existingIds?: Itera
       id,
       origin: 'user',
     } satisfies Plan
+    if (id !== plan.id) discardRetirementActionAnnualTaxFacts(imported)
     normalized.push(id === plan.id ? imported : rebindScenarioPatchesToPlan(imported))
   }
   return normalized

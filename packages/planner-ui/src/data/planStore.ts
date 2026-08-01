@@ -9,7 +9,11 @@ import { openDB, type IDBPDatabase } from 'idb'
 
 import { isUserPlan, planOriginFromRaw } from './planOrigin'
 import { migratePlanToCurrent, type MigrateResult } from '@retiregolden/engine/model/migrations'
-import { parsePlan, type Plan } from '@retiregolden/engine/model/plan'
+import {
+  discardRetirementActionAnnualTaxFacts,
+  parsePlan,
+  type Plan,
+} from '@retiregolden/engine/model/plan'
 import { rebindScenarioPatchesToPlan } from '@retiregolden/engine/scenarios/patch'
 
 const DB_NAME = 'retiregolden.v2'
@@ -130,6 +134,7 @@ export function cloneAsUserPlan(source: Plan, opts: DuplicatePlanOptions = {}): 
   clone.exampleSourceId = source.exampleSourceId
   clone.createdAtIso = nowIso
   clone.updatedAtIso = nowIso
+  discardRetirementActionAnnualTaxFacts(clone)
   return { clone: rebindScenarioPatchesToPlan(clone), nowIso }
 }
 
@@ -163,6 +168,7 @@ export function convertedFromExample(
     exampleSourceId: plan.exampleSourceId ?? plan.id.replace(/^example:/, ''),
     updatedAtIso: nowIso,
   }
+  discardRetirementActionAnnualTaxFacts(converted)
   const checked = parsePlan(rebindScenarioPatchesToPlan(converted))
   if (!checked.ok) return { ok: false, issues: checked.issues }
   return { ok: true, plan: checked.plan }

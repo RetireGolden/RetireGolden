@@ -1,4 +1,16 @@
-import { createEmptyPlan, parsePlan, type Account, type IncomeStream, type Plan } from '../model/plan.js'
+import { asUsdCents } from '../actions/money.js'
+import { asAccountId, asPersonId, asPlanId } from '../actions/identity.js'
+import {
+  createEmptyPlan,
+  parsePlan,
+  type Account,
+  type IncomeStream,
+  type Plan,
+} from '../model/plan.js'
+import {
+  ordinaryFederalFilingDeadline,
+  type PlanOwnedNonRothIraAnnualFilingSourceRecord,
+} from '../model/retirementActionAnnualTaxFacts.js'
 import { combineTaxCalculators, createFederalTaxCalculator } from '../tax/federalTax.js'
 import { createStateTaxCalculator } from '../tax/stateTax.js'
 import { simulatePlan } from '../projection/simulate.js'
@@ -96,6 +108,63 @@ export function couplePlan(opts: CouplePlanOptions = {}): Plan {
     },
   ]
   return plan
+}
+
+/** Compact valid filing-grade source for persistence and resolver tests. */
+export function ownedNonRothIraAnnualFilingSourceRecord(
+  plan: Pick<Plan, 'id'>,
+  ownerPersonId: string,
+  reviewedSourceAccountIds: string[],
+  taxYear = 2030,
+  idSuffix = `${ownerPersonId}-${taxYear}`,
+): PlanOwnedNonRothIraAnnualFilingSourceRecord {
+  const deadline = ordinaryFederalFilingDeadline(taxYear)
+  if (deadline === null) throw new Error('unsupported filing-source fixture tax year')
+  return {
+    predicate: 'completePlanOwnedNonRothIraAnnualFilingSourceRecord',
+    planId: asPlanId(plan.id),
+    ownerPersonId: asPersonId(ownerPersonId),
+    taxYear,
+    evidenceScope: 'realWorldTaxRecordNotProjection',
+    sourceRecordId: `filing-record-${idSuffix}`,
+    sourceEvidenceId: `filing-evidence-${idSuffix}`,
+    authority: {
+      acquisition: 'manual',
+      recordKind: 'filedForm8606',
+      sourceId: `authority-${idSuffix}`,
+      finalizedDate: deadline,
+    },
+    reviewedSourceAccountIds: reviewedSourceAccountIds.map(asAccountId),
+    openingBasis: {
+      asOfDate: `${taxYear}-01-01`,
+      openingBasisAmount: asUsdCents(0),
+      sourceEvidenceId: `opening-basis-${idSuffix}`,
+    },
+    rolloverFacts: {
+      inventoryStatus: 'completeIncludingExplicitEmpty',
+      outstandingRolloverAmount: 0,
+      rolloverRepaymentAdjustmentAmount: 0,
+      sourceEvidenceId: `rollovers-${idSuffix}`,
+    },
+    nondeductibleContributionFacts: {
+      inYearInventoryStatus: 'completeExplicitEmpty',
+      inYearContributions: [],
+      postYearWindowStatus: 'completeThroughOrdinaryDeadline',
+      completedThroughDate: deadline,
+      deadlineAuthority: {
+        authoritySourceId: `deadline-${idSuffix}`,
+        designatedTaxYear: taxYear,
+        deadlineStatus: 'authoritativeFederalDeadlineEstablished',
+        deadlineKind: 'ordinaryFederalFilingDeadlineExcludingDisasterRelief',
+        calendarAdjustmentStatus:
+          'weekendAndDistrictOfColumbiaHolidayAdjustmentApplied',
+        disasterReliefContributionStatus:
+          'noPostOrdinaryDeadlineContributionClaimed',
+        deadlineDate: deadline,
+      },
+      contributions: [],
+    },
+  }
 }
 
 export function setAcaYearContract(

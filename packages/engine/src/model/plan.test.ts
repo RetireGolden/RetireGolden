@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import { asUsdCents } from '../actions/money.js'
 import { createEmptyPlan, parsePlan, stateForYear, stateResidencySegmentsForYear, type Plan } from './plan.js'
-import { setAcaYearContract } from '../testing/planFixtures.js'
+import {
+  ownedNonRothIraAnnualFilingSourceRecord,
+  setAcaYearContract,
+  traditionalAccount,
+} from '../testing/planFixtures.js'
 
 let counter = 0
 const testIds = () => `id-${++counter}`
@@ -474,6 +478,158 @@ describe('parsePlan', () => {
     if (!result.ok) {
       expect(result.issues.length).toBeGreaterThan(0)
       expect(result.issues.every((i) => i.includes(':'))).toBe(true)
+    }
+  })
+})
+
+describe('Plan v4 annual filing-source persistence', () => {
+  function annualFactsPlan(): Plan {
+    const plan = validCouplePlan()
+    plan.accounts.push(traditionalAccount('ira-filing', 10_000, 'p1'))
+    plan.retirementActionAnnualTaxFacts = {
+      ownedNonRothIraAnnualFilingSourceRecords: [
+        ownedNonRothIraAnnualFilingSourceRecord(
+          plan,
+          'p1',
+          ['ira-filing'],
+        ),
+      ],
+    }
+    return plan
+  }
+
+  it('round-trips one authoritative source without deriving it from planning basis', () => {
+    const plan = annualFactsPlan()
+    const ira = plan.accounts.find((account) => account.id === 'ira-filing')
+    if (ira?.type !== 'traditional') throw new Error('expected traditional IRA')
+    ira.nondeductibleBasis = 999_999
+
+    const parsed = parsePlan(structuredClone(plan))
+    expect(parsed.ok).toBe(true)
+    if (parsed.ok) {
+      expect(parsed.plan.retirementActionAnnualTaxFacts).toEqual(
+        plan.retirementActionAnnualTaxFacts,
+      )
+      expect(
+        parsed.plan.retirementActionAnnualTaxFacts!
+          .ownedNonRothIraAnnualFilingSourceRecords[0]!.openingBasis
+          .openingBasisAmount,
+      ).toBe(0)
+    }
+  })
+
+  it('requires exact binding and boundary-wide unique source identifiers', () => {
+    const mutations: Array<(plan: Plan) => void> = [
+      (plan) => {
+        const record = plan.retirementActionAnnualTaxFacts!
+          .ownedNonRothIraAnnualFilingSourceRecords[0]!
+        record.planId = 'other-plan' as never
+      },
+      (plan) => {
+        plan.retirementActionAnnualTaxFacts!
+          .ownedNonRothIraAnnualFilingSourceRecords[0]!
+          .reviewedSourceAccountIds = []
+      },
+      (plan) => {
+        const records = plan.retirementActionAnnualTaxFacts!
+          .ownedNonRothIraAnnualFilingSourceRecords
+        records.push(structuredClone(records[0]!))
+      },
+      (plan) => {
+        const first = plan.retirementActionAnnualTaxFacts!
+          .ownedNonRothIraAnnualFilingSourceRecords[0]!
+        plan.accounts.push(traditionalAccount('ira-filing-2', 5_000, 'p2'))
+        const second = ownedNonRothIraAnnualFilingSourceRecord(
+          plan,
+          'p2',
+          ['ira-filing-2'],
+          2030,
+          'p2-2030',
+        )
+        second.sourceRecordId = first.sourceRecordId
+        second.sourceEvidenceId = first.sourceEvidenceId
+        plan.retirementActionAnnualTaxFacts!
+          .ownedNonRothIraAnnualFilingSourceRecords.push(second)
+      },
+      (plan) => {
+        plan.retirementActionAnnualTaxFacts!
+          .ownedNonRothIraAnnualFilingSourceRecords[0]!
+          .sourceRecordId = plan.id
+      },
+      (plan) => {
+        const records = plan.retirementActionAnnualTaxFacts!
+          .ownedNonRothIraAnnualFilingSourceRecords
+        const second = ownedNonRothIraAnnualFilingSourceRecord(
+          plan,
+          'p1',
+          ['ira-filing'],
+          2031,
+          'p1-2031',
+        )
+        second.authority.sourceId = records[0]!.openingBasis.sourceEvidenceId
+        records.push(second)
+      },
+    ]
+
+    for (const mutate of mutations) {
+      const plan = annualFactsPlan()
+      mutate(plan)
+      expect(parsePlan(plan).ok).toBe(false)
+    }
+  })
+
+  it('requires the exact ordinary federal filing deadline, not merely an April date', () => {
+    const plan = annualFactsPlan()
+    const record = ownedNonRothIraAnnualFilingSourceRecord(
+      plan,
+      'p1',
+      ['ira-filing'],
+      2023,
+      'wrong-deadline',
+    )
+    record.authority.finalizedDate = '2024-04-18'
+    record.nondeductibleContributionFacts.completedThroughDate = '2024-04-18'
+    record.nondeductibleContributionFacts.deadlineAuthority.deadlineDate = '2024-04-18'
+    plan.retirementActionAnnualTaxFacts = {
+      ownedNonRothIraAnnualFilingSourceRecords: [record],
+    }
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      expect(parsed.issues.join('\n')).toContain(
+        'ordinary contribution deadline must exact-match the supported federal calendar',
+      )
+    }
+  })
+
+  it('rejects malformed dates, cross-year contributions, and unsafe contribution totals', () => {
+    const plan = annualFactsPlan()
+    const record = plan.retirementActionAnnualTaxFacts!
+      .ownedNonRothIraAnnualFilingSourceRecords[0]!
+    record.nondeductibleContributionFacts.contributions = [{
+      sourceRecordId: 'contribution-record',
+      sourceEvidenceId: 'contribution-evidence',
+      sourceAccountId: 'ira-filing' as never,
+      designatedTaxYear: 2029,
+      contributionDate: '2031-04-31',
+      nondeductibleContributionAmount: Number.MAX_SAFE_INTEGER as never,
+    }, {
+      sourceRecordId: 'contribution-record-2',
+      sourceEvidenceId: 'contribution-evidence-2',
+      sourceAccountId: 'ira-filing' as never,
+      designatedTaxYear: 2030,
+      contributionDate: '2031-04-15',
+      nondeductibleContributionAmount: 1 as never,
+    }]
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      const issues = parsed.issues.join('\n')
+      expect(issues).toContain('expected a real canonical civil date')
+      expect(issues).toContain('must designate the source record tax year')
+      expect(issues).toContain('exceeds exact safe-integer cents')
     }
   })
 })

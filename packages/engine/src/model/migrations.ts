@@ -485,10 +485,25 @@ export const migratePlanV2ToV3: MigrationStep = (raw) => {
   return withoutEligibilityFacts
 }
 
+/**
+ * Pure v3 -> v4 migration. Filing-grade annual tax facts are never inferred
+ * from account planning basis or projection state. A same-named older root is
+ * untrusted and discarded instead of promoted across the version boundary.
+ */
+export const migratePlanV3ToV4: MigrationStep = (raw) => {
+  if (!Object.prototype.hasOwnProperty.call(raw, 'retirementActionAnnualTaxFacts')) {
+    return raw
+  }
+  const withoutAnnualTaxFacts = { ...raw }
+  Reflect.deleteProperty(withoutAnnualTaxFacts, 'retirementActionAnnualTaxFacts')
+  return withoutAnnualTaxFacts
+}
+
 /** Keyed by the version the step migrates FROM. */
 const defaultRegistry: Record<number, MigrationStep> = {
   1: migratePlanV1ToV2,
   2: migratePlanV2ToV3,
+  3: migratePlanV3ToV4,
 }
 
 function normalizeCurrentPlan(raw: Record<string, unknown>): Record<string, unknown> {
