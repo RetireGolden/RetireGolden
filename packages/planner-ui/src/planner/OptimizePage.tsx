@@ -595,9 +595,9 @@ export function OptimizePage() {
               />
               <DeltaStat
                 label="Success rate"
-                value={monteCarloSuccessValue(recommendedConversions.length > 0, mcRate)}
-                tone={recommendedConversions.length > 0 && mcRate !== null && mcRate >= 0.9 ? 'good' : 'neutral'}
-                help="Monte Carlo success probability for the proposed schedule (1,000 paths, lognormal markets), so you can confirm the conversions don't materially raise the risk of running out."
+                value={monteCarloSuccessValue(optimizedPlan !== null, mcRate)}
+                tone={optimizedPlan !== null && mcRate !== null && mcRate >= 0.9 ? 'good' : 'neutral'}
+                help="Monte Carlo success probability for the proposed plan (1,000 paths, lognormal markets), so you can confirm the recommendation doesn't materially raise the risk of running out."
               />
             </div>
 
