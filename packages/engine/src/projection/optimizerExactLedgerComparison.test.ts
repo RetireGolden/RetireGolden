@@ -432,6 +432,29 @@ describe('compareOptimizerExactLedgerResults', () => {
     )).toBeNull()
   })
 
+  it('fails closed on an empty secondary household identity', () => {
+    const result = projection(
+      [{
+        year: 2030,
+        investableTotal: 100,
+        netWorth: 100,
+        balances: { cash: 100 },
+      }],
+      { endingInvestable: 100, endingNetWorth: 100 },
+    )
+    const plan = comparisonPlan(['cash'])
+    plan.household.people[1] = {
+      ...plan.household.people[1]!,
+      id: '',
+    }
+
+    expect(compareOptimizerExactLedgerResultsWithPlan(
+      result,
+      structuredClone(result),
+      plan,
+    )).toBeNull()
+  })
+
   it('allows independent owner seed normalization at the exact-cent boundary', () => {
     const result = projection(
       [{

@@ -232,8 +232,10 @@ function expectedPublishedBalanceIds(
   const basisSeededOwnerIds: string[] = []
   const seededBasisByOwner = new Map<string, number>()
   const primaryPersonId = plan.household.people[0]?.id
-  const personIds = new Set(plan.household.people.map((person) => person.id))
-  if (typeof primaryPersonId !== 'string' || primaryPersonId.length === 0 ||
+  const rawPersonIds = plan.household.people.map((person) => person.id)
+  const personIds = new Set(rawPersonIds)
+  if (rawPersonIds.some((personId) => typeof personId !== 'string' || personId.length === 0) ||
+      typeof primaryPersonId !== 'string' ||
       personIds.size !== plan.household.people.length) {
     throw new TypeError('Plan household identities must be nonempty and unique')
   }
