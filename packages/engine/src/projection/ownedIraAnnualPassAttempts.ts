@@ -57,6 +57,7 @@ export type OwnedIraAnnualPassRollbackReason =
   | 'probeThrew'
   | 'probeRollback'
   | 'probeControlBindingMismatch'
+  | 'probeCommitEffectsMismatch'
   | 'assumptionCycle'
   | 'attemptLimitExceeded'
 
@@ -253,14 +254,18 @@ function rolledBack(
 export function runOwnedIraAnnualPassAttempts<DeferredEffect = never>(
   input: Readonly<RunOwnedIraAnnualPassAttemptsInput<DeferredEffect>>,
 ): Readonly<OwnedIraAnnualPassAttemptsResult<DeferredEffect>> {
-  let assumptions = canonicalEffects(input.initialAssumedEffects)
+  const initialAssumptions = canonicalEffects(input.initialAssumedEffects)
   if (!validStableContext(input.stable)) {
     return rolledBack('stableContextInvalid', 0)
   }
-  if (assumptions === null) return rolledBack('assumptionVectorInvalid', 0)
+  if (initialAssumptions === null) {
+    return rolledBack('assumptionVectorInvalid', 0)
+  }
 
   const stable = deepFreeze({ ...input.stable })
-  assumptions = deepFreeze(assumptions) as PlanOwnedNonRothIraAnnualPassAssumedEffect[]
+  let assumptions:
+    readonly Readonly<PlanOwnedNonRothIraAnnualPassAssumedEffect>[] =
+      deepFreeze(initialAssumptions)
   const seen = new Set([assumptionIdentity(assumptions)])
 
   for (let attemptNumber = 1;
@@ -326,7 +331,7 @@ export function runOwnedIraAnnualPassAttempts<DeferredEffect = never>(
     if (probeResult.status === 'commit') {
       if (!same(observed, assumptions)) {
         transaction.rollback()
-        return rolledBack('probeControlBindingMismatch', attemptNumber)
+        return rolledBack('probeCommitEffectsMismatch', attemptNumber)
       }
       const settlement = transaction.commit()
       return Object.freeze({
@@ -347,7 +352,7 @@ export function runOwnedIraAnnualPassAttempts<DeferredEffect = never>(
       return rolledBack('attemptLimitExceeded', attemptNumber)
     }
     seen.add(nextIdentity)
-    assumptions = deepFreeze(observed) as PlanOwnedNonRothIraAnnualPassAssumedEffect[]
+    assumptions = deepFreeze(observed)
   }
 
   return rolledBack('attemptLimitExceeded', MAX_ANNUAL_PASS_ATTEMPTS)

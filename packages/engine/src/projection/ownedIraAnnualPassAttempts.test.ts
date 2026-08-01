@@ -289,6 +289,34 @@ describe('owned IRA annual-pass attempt controller', () => {
     expect(stateBytes(simulatorState)).toBe(baseline)
   })
 
+  it('rolls back a commit whose observed effects differ from its assumptions', () => {
+    const simulatorState = state()
+    const baseline = stateBytes(simulatorState)
+    const expectedInput = probeInput([effect(10)], 1)
+    probeMock.mockReturnValue(
+      probeResult('commit', expectedInput, [effect(11)]),
+    )
+
+    const result = runOwnedIraAnnualPassAttempts<string>({
+      state: simulatorState,
+      stable,
+      initialAssumedEffects: [effect(10)],
+      runAttempt: (context, capability) => {
+        mutate(simulatorState, context.attemptNumber)
+        capability.defer('discarded')
+        return probeInput(context.assumedEffects, context.attemptNumber)
+      },
+    })
+
+    expect(result).toEqual({
+      status: 'rolledBack',
+      reason: 'probeCommitEffectsMismatch',
+      attemptCount: 1,
+      deferredEffects: [],
+    })
+    expect(stateBytes(simulatorState)).toBe(baseline)
+  })
+
   it('rolls back callback and probe exceptions without exposing effects', () => {
     for (const target of ['callback', 'probe'] as const) {
       const simulatorState = state()
