@@ -120,6 +120,7 @@ import {
   type PersonYearState,
   type ProjectedFilingStatus,
   type ProjectionResult,
+  type SimulatorRetirementRuntimeApplication,
   type TaxCalculator,
   type YearExpenses,
   type YearAcaResult,
@@ -155,6 +156,13 @@ export interface SimulateOptions {
 }
 
 const EPSILON = 0.005
+
+type SimulatorRetirementRuntimeApplicationWithoutOrdinal =
+  SimulatorRetirementRuntimeApplication extends infer Application
+    ? Application extends SimulatorRetirementRuntimeApplication
+      ? Omit<Application, 'mutationOrdinal'>
+      : never
+    : never
 
 function compareNullableUtf16(
   left: string | null,
@@ -822,6 +830,17 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       kind: SimulatorAnnualRetirementRuntimeOccurrence['kind'],
       ...binding: readonly unknown[]
     ): string => JSON.stringify([kind, ...binding])
+    const annualRetirementRuntimeApplications:
+      SimulatorRetirementRuntimeApplication[] = []
+    let nextRetirementRuntimeMutationOrdinal = 1
+    const recordAnnualRetirementRuntimeApplication = (
+      application: SimulatorRetirementRuntimeApplicationWithoutOrdinal,
+    ): void => {
+      annualRetirementRuntimeApplications.push({
+        ...application,
+        mutationOrdinal: nextRetirementRuntimeMutationOrdinal++,
+      } as SimulatorRetirementRuntimeApplication)
+    }
 
     // Prior Dec 31 balances (RMD base) — captured before this year's flows.
     const startOfYearBalance = new Map(balances.map((b) => [b.account.id, b.balance]))
@@ -883,6 +902,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (funded < premium - EPSILON) {
         warnings.add('An annuity premium exceeded its funding account balance and was reduced to the available amount.')
       }
+      const fundingBalanceBefore = funding.balance
       if (funding.account.type === 'taxable') {
         const sale = aggregateBasisSale({
           openingFairMarketValue: funding.balance,
@@ -899,8 +919,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       funding.balance -= funded
       if (funded > 0 && funding.account.type === 'traditional') {
         const kind = 'annuityFundingTransfer' as const
+        const producerOccurrenceKey = runtimeOccurrenceKey(
+          kind,
+          funding.account.id,
+          account.id,
+        )
         recordAnnualRetirementRuntimeOccurrence({
-          producerOccurrenceKey: runtimeOccurrenceKey(kind, funding.account.id, account.id),
+          producerOccurrenceKey,
           kind,
           grossAmountPlanDollars: funded,
           ownerPersonId: funding.account.ownerPersonId,
@@ -909,6 +934,18 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           executionSequence: null,
           movementAuthorityId: null,
         })
+        if (isAggregatedIra(funding.account)) {
+          recordAnnualRetirementRuntimeApplication({
+            applicationKind: 'debit',
+            producerOccurrenceKey,
+            simulatorPhase: 'annuityPurchaseFunding',
+            ownerPersonId: funding.account.ownerPersonId,
+            sourceAccountId: funding.account.id,
+            sourceBalanceBeforePlanDollars: fundingBalanceBefore,
+            appliedAmountPlanDollars: funded,
+            sourceBalanceAfterPlanDollars: funding.balance,
+          })
+        }
       }
       annuityInvestmentInContract.set(account.id, (annuityInvestmentInContract.get(account.id) ?? 0) + funded)
     }
@@ -923,11 +960,17 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (account.lumpSumOffer.electionYear !== year) continue
       const target = balances.find((b) => b.account.id === account.lumpSumElection!.rolloverAccountId)
       if (!target) continue
+      const targetBalanceBefore = target.balance
       target.balance += account.lumpSumOffer.amount
       if (account.lumpSumOffer.amount > 0 && target.account.type === 'traditional') {
         const kind = 'rolloverInflow' as const
+        const producerOccurrenceKey = runtimeOccurrenceKey(
+          kind,
+          account.id,
+          target.account.id,
+        )
         recordAnnualRetirementRuntimeOccurrence({
-          producerOccurrenceKey: runtimeOccurrenceKey(kind, account.id, target.account.id),
+          producerOccurrenceKey,
           kind,
           grossAmountPlanDollars: account.lumpSumOffer.amount,
           ownerPersonId: target.account.ownerPersonId,
@@ -936,6 +979,18 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           executionSequence: null,
           movementAuthorityId: null,
         })
+        if (isAggregatedIra(target.account)) {
+          recordAnnualRetirementRuntimeApplication({
+            applicationKind: 'credit',
+            producerOccurrenceKey,
+            simulatorPhase: 'pensionLumpSumRollover',
+            ownerPersonId: target.account.ownerPersonId,
+            sourceAccountId: target.account.id,
+            sourceBalanceBeforePlanDollars: targetBalanceBefore,
+            creditedAmountPlanDollars: account.lumpSumOffer.amount,
+            sourceBalanceAfterPlanDollars: target.balance,
+          })
+        }
       }
     }
 
@@ -2185,6 +2240,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         addition415cUsed.set(ownerId, (addition415cUsed.get(ownerId) ?? 0) + allowed)
       }
 
+      const contributionBalanceBefore = state.balance
       state.balance += allowed
       const contributionKind = account.type === 'traditional'
         ? account.kind === 'employer'
@@ -2192,8 +2248,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           : 'ownedIraContribution' as const
         : null
       if (contributionKind !== null) {
+        const producerOccurrenceKey = runtimeOccurrenceKey(
+          contributionKind,
+          account.id,
+        )
         recordAnnualRetirementRuntimeOccurrence({
-          producerOccurrenceKey: runtimeOccurrenceKey(contributionKind, account.id),
+          producerOccurrenceKey,
           kind: contributionKind,
           grossAmountPlanDollars: allowed,
           ownerPersonId: account.ownerPersonId,
@@ -2202,6 +2262,18 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           executionSequence: null,
           movementAuthorityId: null,
         })
+        if (isAggregatedIra(account)) {
+          recordAnnualRetirementRuntimeApplication({
+            applicationKind: 'credit',
+            producerOccurrenceKey,
+            simulatorPhase: 'employeeContribution',
+            ownerPersonId: account.ownerPersonId,
+            sourceAccountId: account.id,
+            sourceBalanceBeforePlanDollars: contributionBalanceBefore,
+            creditedAmountPlanDollars: allowed,
+            sourceBalanceAfterPlanDollars: state.balance,
+          })
+        }
       }
       if (account.type === 'taxable' || account.type === 'equityComp') state.costBasis += allowed
       // Direct Roth contributions add to the always-accessible basis (employer
@@ -2302,10 +2374,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       )
       const take = Math.min(rmd, state.balance)
       if (take <= 0) continue
+      const sourceBalanceBefore = state.balance
       state.balance -= take
       const kind = state.account.kind === 'ira' ? 'ownedIraRmd' as const : 'employerPlanRmd' as const
+      const producerOccurrenceKey = runtimeOccurrenceKey(kind, state.account.id)
       recordAnnualRetirementRuntimeOccurrence({
-        producerOccurrenceKey: runtimeOccurrenceKey(kind, state.account.id),
+        producerOccurrenceKey,
         kind,
         grossAmountPlanDollars: take,
         ownerPersonId: state.account.ownerPersonId,
@@ -2314,6 +2388,18 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         executionSequence: null,
         movementAuthorityId: null,
       })
+      if (isAggregatedIra(state.account)) {
+        recordAnnualRetirementRuntimeApplication({
+          applicationKind: 'debit',
+          producerOccurrenceKey,
+          simulatorPhase: 'ownerRmdDistribution',
+          ownerPersonId: state.account.ownerPersonId,
+          sourceAccountId: state.account.id,
+          sourceBalanceBeforePlanDollars: sourceBalanceBefore,
+          appliedAmountPlanDollars: take,
+          sourceBalanceAfterPlanDollars: state.balance,
+        })
+      }
       rmdTotal += take
       // Pro-rata return of basis on IRA RMDs (step 5); committed immediately.
       if (state.account.kind === 'ira') {
@@ -2353,11 +2439,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
       const take = Math.min(amount, state.balance)
       if (take <= 0) continue
+      const sourceBalanceBefore = state.balance
       state.balance -= take
       {
         const kind = 'automaticSeppDistribution' as const
+        const producerOccurrenceKey = runtimeOccurrenceKey(kind, state.account.id)
         recordAnnualRetirementRuntimeOccurrence({
-          producerOccurrenceKey: runtimeOccurrenceKey(kind, state.account.id),
+          producerOccurrenceKey,
           kind,
           grossAmountPlanDollars: take,
           ownerPersonId: state.account.ownerPersonId,
@@ -2366,6 +2454,18 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           executionSequence: null,
           movementAuthorityId: null,
         })
+        if (isAggregatedIra(state.account)) {
+          recordAnnualRetirementRuntimeApplication({
+            applicationKind: 'debit',
+            producerOccurrenceKey,
+            simulatorPhase: 'automaticSeppDistribution',
+            ownerPersonId: state.account.ownerPersonId,
+            sourceAccountId: state.account.id,
+            sourceBalanceBeforePlanDollars: sourceBalanceBefore,
+            appliedAmountPlanDollars: take,
+            sourceBalanceAfterPlanDollars: state.balance,
+          })
+        }
       }
       seppTotal += take
       // Pro-rata return of basis on IRA SEPP distributions (step 5).
@@ -3085,15 +3185,27 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           warnings.add('Roth conversions were requested but the plan has no Roth account; conversions skipped.')
         } else {
           let remaining = desired
+          const destinationBalanceBefore = rothTarget.balance
+          const conversionProducerOccurrenceKeys: string[] = []
+          const conversionSourceOwnerPersonIds: Array<string | null> = []
+          let ownedIraConversionCaptured = false
           for (const state of balances) {
             // Inherited accounts follow the 10-year rule and can't be converted.
             if (!isConvertibleToRoth(state.account) || remaining <= 0) continue
             const take = Math.min(state.balance, remaining)
+            const sourceBalanceBefore = state.balance
             state.balance -= take
             if (take > 0) {
               const kind = 'legacyRothConversion' as const
+              const producerOccurrenceKey = runtimeOccurrenceKey(
+                kind,
+                state.account.id,
+                rothTarget.account.id,
+              )
+              conversionProducerOccurrenceKeys.push(producerOccurrenceKey)
+              conversionSourceOwnerPersonIds.push(state.account.ownerPersonId)
               recordAnnualRetirementRuntimeOccurrence({
-                producerOccurrenceKey: runtimeOccurrenceKey(kind, state.account.id, rothTarget.account.id),
+                producerOccurrenceKey,
                 kind,
                 grossAmountPlanDollars: take,
                 ownerPersonId: state.account.ownerPersonId,
@@ -3102,6 +3214,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
                 executionSequence: null,
                 movementAuthorityId: null,
               })
+              if (isAggregatedIra(state.account)) {
+                ownedIraConversionCaptured = true
+                recordAnnualRetirementRuntimeApplication({
+                  applicationKind: 'debit',
+                  producerOccurrenceKey,
+                  simulatorPhase: 'legacyRothConversion',
+                  ownerPersonId: state.account.ownerPersonId,
+                  sourceAccountId: state.account.id,
+                  sourceBalanceBeforePlanDollars: sourceBalanceBefore,
+                  appliedAmountPlanDollars: take,
+                  sourceBalanceAfterPlanDollars: state.balance,
+                })
+              }
             }
             remaining -= take
             // Pro-rata return of basis on converted IRA dollars (step 5): the
@@ -3118,6 +3243,25 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           }
           rothConversion = desired - remaining
           rothTarget.balance += rothConversion
+          if (ownedIraConversionCaptured) {
+            recordAnnualRetirementRuntimeApplication({
+              applicationKind: 'aggregateRothDestinationCredit',
+              simulatorPhase:
+                'legacyRothConversionAggregateDestinationCredit',
+              producerOccurrenceKey: null,
+              ownerPersonId: null,
+              sourceAccountId: null,
+              sourceBalanceBeforePlanDollars: null,
+              sourceBalanceAfterPlanDollars: null,
+              producerOccurrenceKeys: conversionProducerOccurrenceKeys,
+              sourceOwnerPersonIds: conversionSourceOwnerPersonIds,
+              destinationRothAccountId: rothTarget.account.id,
+              destinationOwnerPersonId: rothTarget.account.ownerPersonId,
+              destinationBalanceBeforePlanDollars: destinationBalanceBefore,
+              destinationCreditedAmountPlanDollars: rothConversion,
+              destinationBalanceAfterPlanDollars: rothTarget.balance,
+            })
+          }
           // Converted principal starts its own 5-year recapture clock (the rule
           // that gates an early-retirement conversion ladder). The full amount
           // returns tax-free before earnings, but only the taxable portion is
@@ -4052,10 +4196,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     for (const state of balances) {
       const taken = withdrawalPlan.byAccountId.get(state.account.id) ?? 0
       if (taken <= 0) continue
+      const sourceBalanceBefore = state.balance
+      let ownedIraProducerOccurrenceKey: string | null = null
       if (state.account.type === 'traditional') {
         const kind = 'legacyNeedBasedWithdrawal' as const
+        const producerOccurrenceKey = runtimeOccurrenceKey(kind, state.account.id)
         recordAnnualRetirementRuntimeOccurrence({
-          producerOccurrenceKey: runtimeOccurrenceKey(kind, state.account.id),
+          producerOccurrenceKey,
           kind,
           grossAmountPlanDollars: taken,
           ownerPersonId: state.account.ownerPersonId,
@@ -4064,6 +4211,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           executionSequence: null,
           movementAuthorityId: null,
         })
+        if (isAggregatedIra(state.account)) {
+          ownedIraProducerOccurrenceKey = producerOccurrenceKey
+        }
       }
       if (state.account.type === 'taxable') {
         const sale = withdrawalPlan.taxableSales.get(state.account.id)
@@ -4078,6 +4228,18 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         state.balance -= taken
       } else {
         state.balance -= taken
+      }
+      if (ownedIraProducerOccurrenceKey !== null) {
+        recordAnnualRetirementRuntimeApplication({
+          applicationKind: 'debit',
+          producerOccurrenceKey: ownedIraProducerOccurrenceKey,
+          simulatorPhase: 'legacyNeedBasedWithdrawal',
+          ownerPersonId: state.account.ownerPersonId,
+          sourceAccountId: state.account.id,
+          sourceBalanceBeforePlanDollars: sourceBalanceBefore,
+          appliedAmountPlanDollars: taken,
+          sourceBalanceAfterPlanDollars: state.balance,
+        })
       }
     }
     // Commit the Roth basis ordering (contributions → conversions → earnings) once
@@ -4359,6 +4521,31 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         })
         : null,
     })
+    const retirementRuntimeApplicationSource = Object.freeze({
+      status: 'runtimeApplicationSourcesCaptured' as const,
+      captureBoundary:
+        'atOwnedNonRothIraMutationSitesBeforeAnnualGrowth' as const,
+      applicationValidation: 'notRun' as const,
+      planId: plan.id,
+      taxYear: year,
+      // Mutation order is evidence. Do not sort this array: account-order
+      // dependent legacy commits must remain visible to later replay.
+      applications: Object.freeze(
+        annualRetirementRuntimeApplications.map((application) =>
+          application.applicationKind === 'aggregateRothDestinationCredit'
+            ? Object.freeze({
+              ...application,
+              producerOccurrenceKeys: Object.freeze([
+                ...application.producerOccurrenceKeys,
+              ]),
+              sourceOwnerPersonIds: Object.freeze([
+                ...application.sourceOwnerPersonIds,
+              ]),
+            })
+            : Object.freeze({ ...application }),
+        ),
+      ),
+    })
     years.push({
       year,
       people: peopleStates,
@@ -4373,6 +4560,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       qcd,
       rothConversion,
       retirementRuntimeSource,
+      retirementRuntimeApplicationSource,
       ownedNonRothIraPostGrowthSource,
       ...(retirementActionExecution ? { retirementActionExecution } : {}),
       penalties,

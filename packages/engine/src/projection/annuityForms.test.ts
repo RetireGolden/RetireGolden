@@ -87,6 +87,7 @@ describe('payout-form feature-off identity', () => {
     withForm.accounts = [cash(200_000), spia({ kind: 'lifeOnly' })]
     const legacyLedger = (_key: string, value: unknown) =>
       _key === 'retirementRuntimeSource' ||
+      _key === 'retirementRuntimeApplicationSource' ||
       _key === 'ownedNonRothIraPostGrowthSource'
         ? undefined
         : value
