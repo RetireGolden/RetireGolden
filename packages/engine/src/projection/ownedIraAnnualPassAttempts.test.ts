@@ -31,7 +31,9 @@ vi.mock('../actions/ownedNonRothIraAnnualPassProbe.js', async (importOriginal) =
 import {
   runOwnedIraAnnualPassAttempts,
   type OwnedIraAnnualPassAttemptCapability,
+  type OwnedIraAnnualPassAttemptsResult,
   type OwnedIraAnnualPassStableContext,
+  type RunOwnedIraAnnualPassAttemptsInput,
 } from './ownedIraAnnualPassAttempts.js'
 
 const stable: OwnedIraAnnualPassStableContext = {
@@ -636,5 +638,54 @@ describe('owned IRA annual-pass attempt controller', () => {
   it('does not expose transaction settlement authority to the callback', () => {
     expectTypeOf<keyof OwnedIraAnnualPassAttemptCapability<string>>()
       .toEqualTypeOf<'defer'>()
+  })
+
+  it('preserves the exact public input and result contracts', () => {
+    expectTypeOf<keyof RunOwnedIraAnnualPassAttemptsInput<string>>()
+      .toEqualTypeOf<
+        'state' | 'stable' | 'initialAssumedEffects' | 'runAttempt'
+      >()
+    expectTypeOf<ReturnType<typeof runOwnedIraAnnualPassAttempts<string>>>()
+      .toEqualTypeOf<Readonly<OwnedIraAnnualPassAttemptsResult<string>>>()
+  })
+
+  it('uses only the module-owned adapter and preserves the committed probe object', () => {
+    const simulatorState = state()
+    const expectedInput = probeInput([effect(10)], 1)
+    const expectedProbeResult = probeResult('commit', expectedInput)
+    probeMock.mockReturnValue(expectedProbeResult)
+    let foreignAdapterReads = 0
+    const input: RunOwnedIraAnnualPassAttemptsInput<string> & {
+      readonly adapter?: unknown
+    } = {
+      state: simulatorState,
+      stable,
+      initialAssumedEffects: [effect(10)],
+      runAttempt: (context, capability) => {
+        mutate(simulatorState, context.attemptNumber)
+        capability.defer('fixed-adapter')
+        return probeInput(context.assumedEffects, context.attemptNumber)
+      },
+    }
+    Object.defineProperty(input, 'adapter', {
+      enumerable: true,
+      get: () => {
+        foreignAdapterReads += 1
+        throw new Error('caller-supplied adapter must remain inaccessible')
+      },
+    })
+
+    const result = runOwnedIraAnnualPassAttempts(input)
+
+    expect(result).toMatchObject({
+      status: 'committed',
+      reason: 'exactProbeCommit',
+      attemptCount: 1,
+      deferredEffects: ['fixed-adapter'],
+    })
+    expect(foreignAdapterReads).toBe(0)
+    expect(result.status === 'committed' && result.probeResult)
+      .toBe(expectedProbeResult)
+    expect(probeMock).toHaveBeenCalledTimes(1)
   })
 })
