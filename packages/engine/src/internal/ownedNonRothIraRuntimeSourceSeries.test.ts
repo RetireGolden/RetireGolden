@@ -401,18 +401,26 @@ describe('private owned-IRA runtime source-series validation', () => {
       tuple[2],
     ])
     const amount = occurrence.grossAmountPlanDollars
-    Object.assign(occurrence, {
-      producerOccurrenceKey: forgedKey,
-      ownerPersonId: 'p2',
-      sourceAccountId: 'p2-ira',
-    })
-    Object.assign(application, {
-      producerOccurrenceKey: forgedKey,
-      ownerPersonId: 'p2',
-      sourceAccountId: 'p2-ira',
-      sourceBalanceBeforePlanDollars: 10_000,
-      sourceBalanceAfterPlanDollars: 10_000 - amount,
-    })
+    const forgedOccurrence = occurrence as {
+      producerOccurrenceKey: string
+      ownerPersonId: string
+      sourceAccountId: string
+    }
+    forgedOccurrence.producerOccurrenceKey = forgedKey
+    forgedOccurrence.ownerPersonId = 'p2'
+    forgedOccurrence.sourceAccountId = 'p2-ira'
+    const forgedApplication = application as {
+      producerOccurrenceKey: string
+      ownerPersonId: string
+      sourceAccountId: string
+      sourceBalanceBeforePlanDollars: number
+      sourceBalanceAfterPlanDollars: number
+    }
+    forgedApplication.producerOccurrenceKey = forgedKey
+    forgedApplication.ownerPersonId = 'p2'
+    forgedApplication.sourceAccountId = 'p2-ira'
+    forgedApplication.sourceBalanceBeforePlanDollars = 10_000
+    forgedApplication.sourceBalanceAfterPlanDollars = 10_000 - amount
     const aggregate = years[0]!.retirementRuntimeApplicationSource!
       .applications.find((entry) =>
         entry.applicationKind === 'aggregateRothDestinationCredit')
