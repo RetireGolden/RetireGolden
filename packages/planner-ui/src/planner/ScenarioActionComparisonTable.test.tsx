@@ -114,6 +114,7 @@ describe('ScenarioActionComparisonTable', () => {
     expect(html).toContain('charity-designation')
     expect(html).toContain('$500.01')
     expect(html).toContain('Scheduled date 2035-08-01, sequence 2')
+    expect(html).not.toContain('.. Scheduled date')
     expect(html).toContain('qcd-action, other-action')
   })
 
@@ -167,7 +168,7 @@ describe('ScenarioActionComparisonTable', () => {
 
     const html = render(rows)
     expect(html).toContain('duplicateActionId: input indexes 0, 3.')
-    expect(html).toContain('actionYearMismatch: expected year 2030; request year 2031.')
+    expect(html).toContain('actionYearMismatch: expected year 2030; actual year 2031.')
   })
 
   it('states when the canonical comparison publishes no retirement actions', () => {

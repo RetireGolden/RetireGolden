@@ -63,12 +63,13 @@ function Reasons({ action }: { action: ActionSide }) {
 
 function diagnosticText(diagnostic: ScheduleDiagnostic): string {
   if (diagnostic.kind === 'actionYearMismatch') {
-    return `actionYearMismatch: expected year ${diagnostic.expectedYear}; request year ${diagnostic.actualYear}.`
+    return `actionYearMismatch: expected year ${diagnostic.expectedYear}; actual year ${diagnostic.actualYear}.`
   }
   if (diagnostic.kind === 'duplicateActionId') {
     return `duplicateActionId: input indexes ${diagnostic.inputIndexes.join(', ')}.`
   }
-  return `${diagnostic.reason.code}: ${diagnostic.reason.message} Scheduled date ${diagnostic.scheduledDate ?? '—'}, sequence ${diagnostic.executionSequence}; colliding action IDs ${diagnostic.collidingActionIds.join(', ')}.`
+  const reasonMessage = diagnostic.reason.message.replace(/[.!?]+$/u, '')
+  return `${diagnostic.reason.code}: ${reasonMessage}. Scheduled date ${diagnostic.scheduledDate ?? '—'}, sequence ${diagnostic.executionSequence}; colliding action IDs ${diagnostic.collidingActionIds.join(', ')}.`
 }
 
 function ScheduleDiagnostics({ diagnostics }: { diagnostics: readonly ScheduleDiagnostic[] }) {
