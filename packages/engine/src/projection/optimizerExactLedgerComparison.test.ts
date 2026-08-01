@@ -315,6 +315,25 @@ describe('compareOptimizerExactLedgerResults', () => {
     )).toBeNull()
   })
 
+  it('rejects combined investable account balances above the published total', () => {
+    const inconsistent = projection(
+      [{
+        year: 2030,
+        investableTotal: 100,
+        netWorth: 100,
+        balances: { first: 80, second: 80 },
+      }],
+      { endingInvestable: 100, endingNetWorth: 100 },
+    )
+    const plan = comparisonPlan(['first', 'second'])
+
+    expect(compareOptimizerExactLedgerResultsWithPlan(
+      inconsistent,
+      structuredClone(inconsistent),
+      plan,
+    )).toBeNull()
+  })
+
   it('bounds ending IRA basis with one exact-decimal sum, independent of float order', () => {
     const endingBasis = 40_000_000_000_000.01
     const result = projection(

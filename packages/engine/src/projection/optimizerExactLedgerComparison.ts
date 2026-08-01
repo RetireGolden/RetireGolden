@@ -108,7 +108,7 @@ function decimalTerm(value: number): DecimalTerm {
  * quantize the aggregate once. This avoids imposing JavaScript enumeration or
  * floating-addition order on a necessary aggregate bound.
  */
-function quantizeDecimalSum(values: readonly number[]): SafeMinorUnitInteger {
+function quantizeDecimalSumCents(values: readonly number[]): bigint {
   const terms = values.map(decimalTerm)
   let scale = 0
   for (const term of terms) scale = Math.max(scale, term.scale)
@@ -126,6 +126,11 @@ function quantizeDecimalSum(values: readonly number[]): SafeMinorUnitInteger {
     const remainder = coefficient % divisor
     cents = quotient + (remainder * 2n >= divisor ? 1n : 0n)
   }
+  return cents
+}
+
+function quantizeDecimalSum(values: readonly number[]): SafeMinorUnitInteger {
+  const cents = quantizeDecimalSumCents(values)
   if (cents > BigInt(Number.MAX_SAFE_INTEGER)) {
     // This value is used only as an upper bound for a separately validated
     // safe-integer ending basis. Any larger exact sum proves that every
@@ -137,12 +142,28 @@ function quantizeDecimalSum(values: readonly number[]): SafeMinorUnitInteger {
   return Number(cents)
 }
 
+function binaryAdditionRoundingAllowance(values: readonly number[]): bigint {
+  // After the first term, each additional nonnegative value can contribute
+  // less than one cent from its binary representation and less than one cent
+  // from the following addition at the safe-cent boundary.
+  return BigInt(2 * Math.max(0, values.length - 1))
+}
+
+function combinedBalancesFitPublishedTotal(
+  values: readonly number[],
+  publishedTotal: SafeMinorUnitInteger,
+): boolean {
+  return quantizeDecimalSumCents(values) <=
+    BigInt(publishedTotal) + binaryAdditionRoundingAllowance(values)
+}
+
 /**
  * Bound the simulator's aggregate IRA basis without rejecting a valid result
  * solely because binary addition rounded an owner-grouped balance sum above
  * the exact-decimal sum. Within the supported safe-cent domain, each binary
- * addition can round upward by less than one cent, so n nonnegative balances
- * need at most n - 1 additional cents regardless of grouping or order. This is
+ * added term and its binary addition can each move the aggregate by less than
+ * one cent, so n nonnegative balances need at most 2(n - 1) additional cents
+ * regardless of grouping or order. This is
  * only a conservative source-validity upper bound; ledger equality remains an
  * exact safe-integer-cent comparison below.
  */
@@ -151,7 +172,7 @@ function ownedIraBalanceUpperBound(values: readonly number[]): SafeMinorUnitInte
   if (exact === Number.MAX_SAFE_INTEGER) return exact
   return Math.min(
     Number.MAX_SAFE_INTEGER,
-    exact + Math.max(0, values.length - 1),
+    exact + Number(binaryAdditionRoundingAllowance(values)),
   )
 }
 
@@ -389,6 +410,19 @@ export function compareOptimizerExactLedgerResults(
       if (expectedAccountIds.investable.some((accountId) =>
         aggregateBalances.get(accountId)! > aggregateYear.investableTotal ||
         allocatedBalances.get(accountId)! > allocatedYear.investableTotal)) return null
+      const aggregateInvestableBalances = expectedAccountIds.investable.map(
+        (accountId) => aggregateYear.rawBalances.get(accountId)!,
+      )
+      const allocatedInvestableBalances = expectedAccountIds.investable.map(
+        (accountId) => allocatedYear.rawBalances.get(accountId)!,
+      )
+      if (!combinedBalancesFitPublishedTotal(
+        aggregateInvestableBalances,
+        aggregateYear.investableTotal,
+      ) || !combinedBalancesFitPublishedTotal(
+        allocatedInvestableBalances,
+        allocatedYear.investableTotal,
+      )) return null
     }
     const aggregateEndingYear = aggregate.years.get(aggregate.horizon.endYear)!
     const allocatedEndingYear = allocated.years.get(allocated.horizon.endYear)!
