@@ -107,6 +107,7 @@ const canonicalActionDeepImports = [
   'reasons',
   'retirementActionCandidateIdentityAllocator',
   'retirementActionManualReview',
+  'rothConversionExecution',
   'taxableWithdrawalCharacter',
 ]
 for (const moduleName of canonicalActionDeepImports) {
@@ -141,6 +142,7 @@ const {
   evaluateOwnedNonRothIraPenaltyPrerequisites,
   executeCashOrdinaryWithdrawals,
   executeOrdinaryWithdrawals,
+  executeRothConversions,
   executePlanOwnedNonRothIraAnnualPostCandidate,
   executePlanOwnedNonRothIraAnnualWithdrawals,
   ledgerCentsToPlanDollars,
@@ -155,6 +157,7 @@ const {
   stageOwnedNonRothIraOrdinaryWithdrawalMovements,
   validateOwnedNonRothIraSeppCurrentPaymentCandidate,
 } = actionsApi
+assert.equal(typeof executeRothConversions, 'function')
 assert.equal(
   candidateIdentityAllocatorDeepApi.allocateRetirementActionCandidateIdentity,
   allocateRetirementActionCandidateIdentity,

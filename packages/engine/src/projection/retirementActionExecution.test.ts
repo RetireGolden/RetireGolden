@@ -787,11 +787,15 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
         provenance: { source: 'manual' },
       }),
     ]
+    plan.strategies.rothConversion = {
+      mode: 'manual',
+      conversions: [{ year: 2026, amount: 20 }],
+    }
 
     const year = run(plan).years[0]!
     const evidence = year.retirementActionExecution?.evidence
 
-    expect(evidence).toHaveLength(2)
+    expect(evidence).toHaveLength(1)
     expect(evidence?.find((entry) => entry.actionId === 'tax-funding')).toMatchObject({
       disposition: {
         outcome: 'unsupported',
@@ -799,8 +803,16 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
         reasons: [{ code: 'conversion-tax-funding-evidence-unsupported' }],
       },
     })
-    expect(evidence?.find((entry) => entry.actionId === 'conversion')).toMatchObject({
-      disposition: { outcome: 'unsupported', executedAmount: 0 },
+    expect(year.rothConversionActionExecution?.evidence).toEqual([
+      expect.objectContaining({
+        actionId: 'conversion',
+        outcome: 'unsupported',
+        readiness: 'nonActionable',
+        executedAmount: 0,
+      }),
+    ])
+    expect(year.rothConversionActionExecution).toMatchObject({
+      committed: false,
     })
     expect(year.balances).toMatchObject({
       'cash-a': 100,
@@ -1249,7 +1261,15 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
     const year = run(plan).years[0]!
 
     expect(year.retirementActionExecution).toMatchObject({ committed: true })
-    expect(year.retirementActionExecution?.evidence).toHaveLength(6)
+    expect(year.retirementActionExecution?.evidence).toHaveLength(5)
+    expect(year.rothConversionActionExecution?.evidence).toEqual([
+      expect.objectContaining({
+        actionId: 'conversion',
+        outcome: 'unsupported',
+        readiness: 'nonActionable',
+        executedAmount: 0,
+      }),
+    ])
     expect(
       year.retirementActionExecution?.evidence.filter(
         (evidence) => evidence.disposition.executedAmount > 0,

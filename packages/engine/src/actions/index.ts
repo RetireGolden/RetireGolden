@@ -217,6 +217,17 @@ export {
   type TaxableSourcePenaltyCoverageEvidence,
 } from './execution.js'
 export {
+  executeRothConversions,
+  type ExecuteRothConversionsInput,
+  type ExecuteRothConversionsResult,
+  type RothConversionAllocationExecutionEvidence,
+  type RothConversionBalanceExecutionEvidence,
+  type RothConversionBalanceSnapshot,
+  type RothConversionExecutionEvidence,
+  type RothConversionExecutionScheduleIssue,
+  type RothConversionTaxFundingExecutionEvidence,
+} from './rothConversionExecution.js'
+export {
   annualRetirementActionExecutorSources,
   ordinaryWithdrawalPublicationEligibility,
   ordinaryWithdrawalPublicationSource,

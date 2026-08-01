@@ -6,6 +6,7 @@ import type {
   AnnualIraBasisRatio,
   AnnualRetirementActionPublication,
   ExecuteOrdinaryWithdrawalsResult,
+  ExecuteRothConversionsResult,
   PersonId,
   PlanId,
   UsdCents,
@@ -673,8 +674,8 @@ export interface YearResult {
   ownedNonRothIraAnnualReplay?:
     Readonly<SimulatorCommittedOwnedNonRothIraAnnualReplay>
   /**
-   * Exact-cent action execution evidence. Present only when the Plan contains
-   * one or more retirement-action requests for this projection year.
+   * Exact-cent ordinary-executor evidence. Named conversions publish through
+   * `rothConversionActionExecution` instead of this legacy mixed-kind result.
    */
   retirementActionExecution?: ExecuteOrdinaryWithdrawalsResult
   /**
@@ -686,6 +687,12 @@ export interface YearResult {
    * remain on their dedicated result fields.
    */
   retirementActionPublication?: AnnualRetirementActionPublication
+  /**
+   * Request-keyed named Roth-conversion movement evidence. A non-actionable
+   * result is published when annual basis, RMD-reserve, or funding proof is
+   * unavailable; absence means no named conversion request existed this year.
+   */
+  rothConversionActionExecution?: ExecuteRothConversionsResult
   /** Early-withdrawal penalties (10% traditional pre-59½, 20% HSA non-medical pre-65); not in `tax`. */
   penalties: number
   /** MAGI realized this year (drives IRMAA two years later and the ACA credit). */
