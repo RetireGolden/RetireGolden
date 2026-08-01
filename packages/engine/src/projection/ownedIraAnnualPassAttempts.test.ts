@@ -131,7 +131,7 @@ function probeInput(
         planId: stable.planId,
         taxYear: stable.taxYear,
         ledgerRunId: stable.ledgerRunId,
-        evidenceId: stable.inventoryEvidenceId,
+        evidenceId: 'runtime-inventory',
       },
     },
     annualPassEvidence: {

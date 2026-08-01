@@ -226,7 +226,6 @@ function inputMatchesAttempt(
     inventory.planId === stable.planId &&
     inventory.taxYear === stable.taxYear &&
     inventory.ledgerRunId === stable.ledgerRunId &&
-    inventory.evidenceId === stable.inventoryEvidenceId &&
     suppliedAssumptions !== null && same(suppliedAssumptions, assumptions)
 }
 
