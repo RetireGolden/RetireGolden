@@ -176,8 +176,9 @@ function sourceSnapshot(result: Readonly<ProjectionResult>): ResultSnapshot {
   let prior = 0
   for (const rawYear of rawYears) {
     const taxYear = ownDataProperty(rawYear, 'year')
-    if (!safeTaxYear(taxYear) || (taxYears.length > 0 && taxYear <= prior)) {
-      throw new TypeError('Exact-ledger years must be unique and strictly increasing')
+    if (!safeTaxYear(taxYear) ||
+        (taxYears.length > 0 && taxYear !== prior + 1)) {
+      throw new TypeError('Exact-ledger years must be unique, contiguous, and strictly increasing')
     }
     const balances = balanceSnapshot(ownDataProperty(rawYear, 'balances'))
     for (const accountId of balances.keys()) accountIds.add(accountId)
@@ -195,14 +196,23 @@ function sourceSnapshot(result: Readonly<ProjectionResult>): ResultSnapshot {
   if (taxYears[0] !== startYear || taxYears.at(-1) !== endYear) {
     throw new TypeError('Exact-ledger years do not match the horizon boundaries')
   }
+  const endingInvestable = quantize(
+    ownDataProperty(result, 'endingInvestable'), false,
+  )
+  const endingNetWorth = quantize(
+    ownDataProperty(result, 'endingNetWorth'), true,
+  )
+  const finalYear = years.get(endYear)!
+  if (endingInvestable !== finalYear.investableTotal ||
+      endingNetWorth !== finalYear.netWorth) {
+    throw new TypeError('Exact-ledger ending totals must match the final annual totals')
+  }
   return {
     horizon: { startYear, endYear, taxYears: taxYears as [number, ...number[]] },
     years,
     accountIds: [...accountIds],
-    endingInvestable: quantize(
-      ownDataProperty(result, 'endingInvestable'), false,
-    ),
-    endingNetWorth: quantize(ownDataProperty(result, 'endingNetWorth'), true),
+    endingInvestable,
+    endingNetWorth,
     endingNondeductibleIraBasis: quantize(
       ownDataProperty(result, 'endingNondeductibleIraBasis'), false,
     ),

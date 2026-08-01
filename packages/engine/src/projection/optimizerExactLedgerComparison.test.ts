@@ -78,14 +78,21 @@ describe('compareOptimizerExactLedgerResults', () => {
   })
 
   it('quantizes positive and negative half-cent ties exactly once', () => {
-    const result = projection([{
-      year: 2030,
-      tax: 1.005,
-      penalties: 0,
-      investableTotal: 2.0049,
-      netWorth: -0.0049,
-      balances: { zero: -0 },
-    }], { endingNetWorth: -1.005 })
+    const result = projection([
+      {
+        year: 2030,
+        tax: 1.005,
+        penalties: 0,
+        investableTotal: 2.0049,
+        netWorth: -0.0049,
+        balances: { zero: -0 },
+      },
+      {
+        year: 2031,
+        netWorth: -1.005,
+        balances: { zero: 0 },
+      },
+    ], { endingNetWorth: -1.005 })
     const evidence = compareOptimizerExactLedgerResults(result, structuredClone(result))!
     const amountFor = (kind: string, field?: string) => evidence.entries.find((entry) =>
       entry.key.kind === kind && (field === undefined ||
@@ -133,6 +140,28 @@ describe('compareOptimizerExactLedgerResults', () => {
     const allocated = structuredClone(aggregate)
     mutate(allocated)
     expect(compareOptimizerExactLedgerResults(aggregate, allocated)).toBeNull()
+  })
+
+  it('rejects a shared interior gap instead of omitting the missing year keys', () => {
+    const gapped = projection([
+      { year: 2030, balances: { roth: 40 } },
+      { year: 2032, balances: { roth: 45 } },
+    ])
+    expect(compareOptimizerExactLedgerResults(gapped, structuredClone(gapped))).toBeNull()
+  })
+
+  it.each([
+    ['ending investable', { endingInvestable: 100.01 }],
+    ['ending net worth', { endingNetWorth: 120.01 }],
+  ])('rejects internally inconsistent %s on both ledgers', (_label, endings) => {
+    const inconsistent = projection(
+      [{ year: 2030, balances: { roth: 100 } }],
+      endings,
+    )
+    expect(compareOptimizerExactLedgerResults(
+      inconsistent,
+      structuredClone(inconsistent),
+    )).toBeNull()
   })
 
   it('rejects an account missing from any source year instead of zero-filling it', () => {
