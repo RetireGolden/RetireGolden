@@ -1,5 +1,18 @@
-import type { ExactLedgerValidation } from '@retiregolden/engine/projection/optimizePlan'
+import type {
+  ExactLedgerValidation,
+  RetirementActionReadinessVeto,
+} from '@retiregolden/engine/projection/optimizePlan'
 import { fmtMoney, fmtMoneyCompact } from './format'
+
+/** Publication copy follows the readiness veto while retaining exact metrics. */
+export function publicationValidation(
+  validation: ExactLedgerValidation,
+  readinessVeto: RetirementActionReadinessVeto | null,
+): ExactLedgerValidation {
+  return readinessVeto === null
+    ? validation
+    : { ...validation, recommendationState: readinessVeto.reason }
+}
 
 export function recommendationHeading(validation: ExactLedgerValidation): string {
   switch (validation.recommendationState) {

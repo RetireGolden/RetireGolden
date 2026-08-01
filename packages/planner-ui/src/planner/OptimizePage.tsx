@@ -36,11 +36,16 @@ import {
   actionableTournamentConversions,
   buildOptimizeChartRows,
   displayedCleanedConversions,
+  displayedScheduleAlreadyExecuted as isDisplayedScheduleAlreadyExecuted,
   monteCarloSuccessValue,
   shouldShowRecommendedScheduleBars,
 } from './optimizePageChart'
 import { applyOptimizeRecommendation, claimEstateGain, planWithWinningClaim } from './optimizePageClaim'
-import { recommendationBody, recommendationHeading } from './optimizePageRecommendation'
+import {
+  publicationValidation,
+  recommendationBody,
+  recommendationHeading,
+} from './optimizePageRecommendation'
 import { currentStartYear, projectPlan, seedFromPlanId } from './useProjection'
 import { chartTooltipStyle } from './chartStyle'
 
@@ -132,7 +137,10 @@ export function OptimizePage() {
   const candidateWins = tournament?.winnerSource === 'candidate'
   const withheldCandidateDisplayed =
     tournament?.retirementActionReadinessVeto?.vetoedWinnerSource === 'candidate'
-  const candidateScheduleDisplayed = candidateWins || withheldCandidateDisplayed
+  const withheldRefinedMilpDisplayed =
+    tournament?.retirementActionReadinessVeto?.vetoedWinnerSource === 'milp' &&
+    tournament.searchRefined
+  const displayedScheduleAlreadyExecuted = isDisplayedScheduleAlreadyExecuted(tournament)
   // Nothing evaluated beat the plan's already-installed conversion strategy —
   // the usual state right after applying a winning schedule and re-running.
   // Rendered as a calm "no change recommended" card, not a rejected-schedule
@@ -167,6 +175,12 @@ export function OptimizePage() {
     : (tournament?.retirementActionReadinessVeto?.vetoedValidation ??
       postProcessed?.cleanedValidation ??
       null)
+  const presentationValidation = validation === null
+    ? null
+    : publicationValidation(
+        validation,
+        tournament?.retirementActionReadinessVeto ?? null,
+      )
 
   const run = useCallback(() => {
     const token = ++runToken.current
@@ -219,7 +233,7 @@ export function OptimizePage() {
   const rawConversions = totalScheduleConversions(schedule)
   const executedConversions = validation?.executedConversionTotal ?? 0
   const hasPostProcessingAdjustments = (postProcessed?.adjustments.length ?? 0) > 0
-  const recommendationState = validation?.recommendationState ?? 'neutral'
+  const recommendationState = presentationValidation?.recommendationState ?? 'neutral'
   const hasExecutionMismatch =
     !candidateWins &&
     (recommendationState === 'identityIncomplete' ||
@@ -243,9 +257,9 @@ export function OptimizePage() {
       schedule,
       recommendedConversions: displayedConversions,
       postProcessed,
-      candidateScheduleDisplayed,
+      displayedScheduleAlreadyExecuted,
     }),
-    [schedule, displayedConversions, postProcessed, candidateScheduleDisplayed],
+    [schedule, displayedConversions, postProcessed, displayedScheduleAlreadyExecuted],
   )
 
   const apply = (mode: 'optimized' | 'manual') => {
@@ -476,11 +490,13 @@ export function OptimizePage() {
             <div className="mc-hero">
               <div>
                 <h2 style={{ margin: '0 0 0.35rem', color: stateColor(recommendationState) }}>
-                  {validation ? recommendationHeading(validation) : 'The optimizer matches your current strategy.'}
+                  {presentationValidation
+                    ? recommendationHeading(presentationValidation)
+                    : 'The optimizer matches your current strategy.'}
                 </h2>
                 <p className="muted" style={{ margin: 0 }}>
-                  {validation
-                    ? recommendationBody(validation)
+                  {presentationValidation
+                    ? recommendationBody(presentationValidation)
                     : `${fmtMoney(totalConversions)} of conversions across ${displayedConversions.length} year(s).`}
                 </p>
                 {candidateWins && tournament ? (
@@ -514,7 +530,7 @@ export function OptimizePage() {
                     and tax deltas below are context, not the ranking metric.
                   </p>
                 ) : null}
-                {hasExecutionMismatch && validation && !candidateScheduleDisplayed ? (
+                {hasExecutionMismatch && validation && !displayedScheduleAlreadyExecuted ? (
                   <p className="field-hint" style={{ margin: '0.45rem 0 0' }}>
                     Raw optimizer request: {fmtMoney(rawConversions)}. Cleaned executable schedule:{' '}
                     {fmtMoney(totalConversions)}. Executed after cleaning: {fmtMoney(executedConversions)} (
@@ -560,7 +576,9 @@ export function OptimizePage() {
                     : 'Winning candidate schedule and what your projection actually executed (nominal dollars).'
                   : withheldCandidateDisplayed
                     ? 'Raw optimizer request and the withheld candidate schedule that your exact projection executed (nominal dollars).'
-                  : 'Raw optimizer requests, cleaned schedule, and what your projection actually executed (nominal dollars).'}
+                    : withheldRefinedMilpDisplayed
+                      ? 'Raw optimizer request and the withheld search-refined schedule that your exact projection executed (nominal dollars).'
+                      : 'Raw optimizer requests, cleaned schedule, and what your projection actually executed (nominal dollars).'}
               </p>
               <div style={{ width: '100%', height: 280 }}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -577,7 +595,9 @@ export function OptimizePage() {
                           ? 'Recommended schedule'
                           : withheldCandidateDisplayed
                             ? 'Withheld candidate schedule'
-                            : 'Cleaned schedule'}
+                            : withheldRefinedMilpDisplayed
+                              ? 'Withheld refined schedule'
+                              : 'Cleaned schedule'}
                         fill="var(--chart-2)"
                       />
                     ) : null}
@@ -588,7 +608,9 @@ export function OptimizePage() {
                           ? 'Executed recommendation'
                           : withheldCandidateDisplayed
                             ? 'Executed withheld candidate'
-                            : 'Executed after cleaning'}
+                            : withheldRefinedMilpDisplayed
+                              ? 'Executed withheld refinement'
+                              : 'Executed after cleaning'}
                         fill="var(--chart-3)"
                       />
                     ) : null}
@@ -598,8 +620,8 @@ export function OptimizePage() {
               <p className="field-hint">
                 Optimizer status: {schedule.status} · solved in {schedule.solveMs.toFixed(0)} ms. The optimizer reasons
                 over a simplified plan; the headline figures above come from{' '}
-                {candidateScheduleDisplayed
-                  ? 'the displayed candidate schedule run through your full projection.'
+                {displayedScheduleAlreadyExecuted
+                  ? 'the displayed exact-ledger schedule run through your full projection.'
                   : 're-running your full projection with the cleaned schedule.'}
               </p>
             </div>

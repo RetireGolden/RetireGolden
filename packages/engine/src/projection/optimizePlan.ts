@@ -842,6 +842,7 @@ export function runExactLedgerTournament(
           'max-after-tax-estate',
           null,
           readinessVeto,
+          { searchRefined, searchSimulations },
         )
       }
       return {
@@ -912,6 +913,7 @@ export function runExactLedgerTournament(
         'max-after-tax-estate',
         null,
         readinessVeto,
+        { searchRefined, searchSimulations },
       )
     }
     return {
@@ -959,6 +961,10 @@ function fallbackTournament(
   policyId: ObjectivePolicyId,
   acaActionabilityVeto: AcaActionabilityVeto | null,
   retirementActionReadinessVeto: RetirementActionReadinessVeto | null = null,
+  search: Pick<ExactLedgerTournament, 'searchRefined' | 'searchSimulations'> = {
+    searchRefined: false,
+    searchSimulations: 0,
+  },
 ): ExactLedgerTournament {
   const incumbent = incumbentExecutedConversions(plan, baselineResult)
   if (incumbent) {
@@ -971,8 +977,8 @@ function fallbackTournament(
       winnerConversions: incumbent,
       winnerValidation: null,
       marginOverMilpDollars: 0,
-      searchRefined: false,
-      searchSimulations: 0,
+      searchRefined: search.searchRefined,
+      searchSimulations: search.searchSimulations,
       acaActionabilityVeto,
       retirementActionReadinessVeto,
     }
@@ -986,8 +992,8 @@ function fallbackTournament(
     winnerConversions: [],
     winnerValidation: null,
     marginOverMilpDollars: 0,
-    searchRefined: false,
-    searchSimulations: 0,
+    searchRefined: search.searchRefined,
+    searchSimulations: search.searchSimulations,
     acaActionabilityVeto,
     retirementActionReadinessVeto,
   }
@@ -1822,7 +1828,13 @@ export interface OptimizePlanWithClaimResult extends OptimizePlanResult {
 
 /** Exact after-tax estate of a plan run with its tournament-recommended conversions installed. */
 function winnerExactEstate(plan: Plan, tournament: ExactLedgerTournament, simulateOptions: SimulateOptions): number {
-  return priceExecutedSchedule(plan, tournament.winnerConversions, simulateOptions).estate
+  // Readiness withholding is a publication decision, not a valuation result.
+  // Claim-age co-optimization must compare each claim combination with its
+  // calculated schedule even though that aggregate schedule is not Apply-safe.
+  const calculatedConversions =
+    tournament.retirementActionReadinessVeto?.vetoedConversions ??
+    tournament.winnerConversions
+  return priceExecutedSchedule(plan, calculatedConversions, simulateOptions).estate
 }
 
 /**

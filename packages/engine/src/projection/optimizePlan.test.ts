@@ -1290,9 +1290,14 @@ describe('co-optimized SS claim age (Step 5)', () => {
     }
     expect(joint.claimAge.jointExactEstate).toBeGreaterThanOrEqual(bestClaimOnly - 1)
 
-    // The returned plan/result are self-consistent: the recommended schedule
-    // priced on the winning plan reproduces the reported joint estate.
-    const finalPlan = withOptimizedConversions(joint.optimizedPlan, joint.tournament.winnerConversions)
+    // Readiness withholding blocks publication, not internal joint valuation:
+    // the calculated schedule priced on the winning claim plan reproduces the
+    // reported estate even though winnerConversions is intentionally empty.
+    const calculatedConversions =
+      joint.tournament.retirementActionReadinessVeto?.vetoedConversions ??
+      joint.tournament.winnerConversions
+    expect(calculatedConversions.length).toBeGreaterThan(0)
+    const finalPlan = withOptimizedConversions(joint.optimizedPlan, calculatedConversions)
     const finalEstate = summarizeProjection(finalPlan, simulatePlan(finalPlan, opts)).endingAfterTaxEstate
     expect(finalEstate).toBeCloseTo(joint.claimAge.jointExactEstate, 0)
   })
@@ -1897,6 +1902,8 @@ describe('objective-mode tournament (sustainable-spending plan, Step 5)', () => 
     const row = refined.candidates.find((candidate) => candidate.id === veto.vetoedCandidateId)!
     const seedRow = unrefined.candidates.find((candidate) => candidate.id === veto.vetoedCandidateId)!
 
+    expect(refined.searchRefined).toBe(true)
+    expect(refined.searchSimulations).toBeGreaterThan(0)
     expect(veto.vetoedValidation.afterTaxEstateDelta).toBeGreaterThan(seedRow.afterTaxEstateDelta)
     expect(row).toMatchObject({
       executedConversionTotal: veto.vetoedValidation.executedConversionTotal,

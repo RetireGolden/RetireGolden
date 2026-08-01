@@ -194,9 +194,13 @@ function inspectCandidateRetirementActionPatch(
   basePlan?: Plan,
 ): RetirementActionPatchInspection {
   const patch = objectRecord(candidate.planPatch)
-  if (basePlan === undefined || patch === null || isScenarioPatchEnvelope(patch)) {
+  if (basePlan === undefined || patch === null) {
     return inspectRetirementActionPatch(candidate.planPatch, basePlan?.strategies)
   }
+  // Classify the plan that applyScenarioPatch actually produced. Canonical
+  // patches deliberately accept an operation idempotently when the current
+  // value already equals its target, so trusting the document's stale
+  // `before` snapshot would turn an applied no-op into a false readiness gate.
   const materialized = planForCandidate(basePlan, { planPatch: candidate.planPatch })
   if (!materialized.ok) {
     return {
@@ -206,7 +210,7 @@ function inspectCandidateRetirementActionPatch(
     }
   }
   return inspectRetirementActionPatch(
-    candidate.planPatch,
+    { strategies: materialized.plan.strategies },
     basePlan.strategies,
     materialized.plan.strategies,
   )

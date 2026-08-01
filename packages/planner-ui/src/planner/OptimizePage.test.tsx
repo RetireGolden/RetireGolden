@@ -3,11 +3,16 @@ import { describe, expect, it } from 'vitest'
 
 import type { ExactLedgerValidation } from '@retiregolden/engine/projection/optimizePlan'
 import type { OptimizedSchedule } from '@retiregolden/engine/strategies/optimizer'
-import { recommendationBody, recommendationHeading } from './optimizePageRecommendation'
+import {
+  publicationValidation,
+  recommendationBody,
+  recommendationHeading,
+} from './optimizePageRecommendation'
 import {
   actionableTournamentConversions,
   buildOptimizeChartRows,
   displayedCleanedConversions,
+  displayedScheduleAlreadyExecuted,
   monteCarloSuccessValue,
   shouldShowRecommendedScheduleBars,
 } from './optimizePageChart'
@@ -37,6 +42,22 @@ describe('OptimizePage tournament display helpers', () => {
     expect(recommendationHeading(validation)).toMatch(/account allocation/i)
     expect(recommendationBody(validation)).toMatch(/priced and executed.*owner.*source IRA.*Roth destination/i)
     expect(recommendationBody(validation)).not.toMatch(/only .* could actually be converted/i)
+  })
+
+  it('uses the publication veto for headline copy while retaining exact metrics', () => {
+    const validation = {
+      recommendationState: 'rejected',
+      afterTaxEstateDelta: -5_000,
+      lifetimeTaxDelta: -10_000,
+    } as ExactLedgerValidation
+    const presented = publicationValidation(validation, {
+      reason: 'identityIncomplete',
+    } as never)
+
+    expect(presented.recommendationState).toBe('identityIncomplete')
+    expect(presented.afterTaxEstateDelta).toBe(-5_000)
+    expect(presented.lifetimeTaxDelta).toBe(-10_000)
+    expect(recommendationHeading(presented)).toMatch(/account allocation/i)
   })
 
   it('only exposes a tournament winner schedule for an actionable winner', () => {
@@ -124,6 +145,19 @@ describe('OptimizePage tournament display helpers', () => {
     expect(shouldShowRecommendedScheduleBars(false, false)).toBe(false)
   })
 
+  it('treats a search-refined withheld MILP schedule as exact-ledger executed', () => {
+    expect(displayedScheduleAlreadyExecuted({
+      winnerSource: 'none',
+      searchRefined: true,
+      retirementActionReadinessVeto: { vetoedWinnerSource: 'milp' },
+    } as never)).toBe(true)
+    expect(displayedScheduleAlreadyExecuted({
+      winnerSource: 'none',
+      searchRefined: false,
+      retirementActionReadinessVeto: { vetoedWinnerSource: 'milp' },
+    } as never)).toBe(false)
+  })
+
   it('builds chart execution from a displayed actionable or withheld candidate schedule', () => {
     const rows = buildOptimizeChartRows({
       schedule: schedule([{ year: 2026, amount: 1_000 }]),
@@ -134,7 +168,7 @@ describe('OptimizePage tournament display helpers', () => {
       postProcessed: {
         cleanedExecutionByYear: [{ year: 2026, rothConversion: 999 }],
       } as never,
-      candidateScheduleDisplayed: true,
+      displayedScheduleAlreadyExecuted: true,
     })
 
     expect(rows).toEqual([

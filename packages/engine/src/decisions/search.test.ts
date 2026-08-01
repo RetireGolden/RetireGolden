@@ -76,8 +76,12 @@ describe('refineConversionSchedule', () => {
     expect(unrefined.winnerSource).toBe('none')
     expect(refined.winnerSource).toBe('none')
     expect(refined.winnerValidation).toBeNull()
-    expect(refined.searchSimulations).toBe(0)
-    expect(refined.searchRefined).toBe(false)
+    // Publication is still withheld, but the internal refinement diagnostics
+    // survive fallback so consumers can pair the vetoed schedule with its
+    // matching exact execution.
+    expect(refined.searchSimulations).toBeGreaterThan(0)
+    expect(refined.searchRefined).toBe(true)
+    expect(refined.retirementActionReadinessVeto).not.toBeNull()
     // Determinism at the tournament level too.
     const rerun = runExactLedgerTournament(plan, baseline, null, opts, { search: { maxSimulations: 40 } })
     expect(rerun.winnerConversions).toEqual(refined.winnerConversions)

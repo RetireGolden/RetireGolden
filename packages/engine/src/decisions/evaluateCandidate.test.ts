@@ -210,6 +210,36 @@ describe('evaluateCandidate', () => {
     expect(evaluation.diagnostics).toEqual([])
   })
 
+  it('classifies an idempotently applied canonical strategy operation from the materialized plan', () => {
+    const plan = tradHeavyPlan()
+    plan.strategies.qcdAnnual = 1_000
+    const edited = structuredClone(plan)
+    edited.assumptions.inflationPct += 0.1
+    const seed = canonicalPatchFor(plan, edited)
+    const patch = {
+      ...seed,
+      operations: [
+        ...seed.operations,
+        {
+          op: 'set',
+          path: '/strategies/qcdAnnual',
+          before: { present: true, value: 0 },
+          value: 1_000,
+        },
+      ],
+    } as never
+    const ctx = createDecisionContext(plan, simOptions())
+
+    const evaluation = evaluateCandidate(
+      ctx,
+      rothCandidate({ planPatch: patch }),
+      { candidateResult: ctx.baselineResult },
+    )
+
+    expect(evaluation.recommendationState).toBe('neutral')
+    expect(evaluation.diagnostics).toEqual([])
+  })
+
   it('does not treat optimized-at provenance metadata as a retirement-action change', () => {
     const plan = tradHeavyPlan()
     plan.strategies.rothConversion = {

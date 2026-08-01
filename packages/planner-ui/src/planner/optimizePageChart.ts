@@ -49,6 +49,18 @@ export function displayedCleanedConversions(
     : []
 }
 
+export function displayedScheduleAlreadyExecuted(
+  tournament: Pick<
+    ExactLedgerTournament,
+    'winnerSource' | 'searchRefined' | 'retirementActionReadinessVeto'
+  > | null,
+): boolean {
+  if (tournament?.winnerSource === 'candidate') return true
+  const withheldSource = tournament?.retirementActionReadinessVeto?.vetoedWinnerSource
+  return withheldSource === 'candidate' ||
+    (withheldSource === 'milp' && tournament?.searchRefined === true)
+}
+
 export function monteCarloSuccessValue(
   hasRecommendationPlan: boolean,
   successRate: number | null,
@@ -61,18 +73,19 @@ export function buildOptimizeChartRows({
   schedule,
   recommendedConversions,
   postProcessed,
-  candidateScheduleDisplayed,
+  displayedScheduleAlreadyExecuted,
 }: {
   schedule: OptimizedSchedule | null
   recommendedConversions: { year: number; amount: number }[]
   postProcessed: OptimizePostProcessing | null
-  candidateScheduleDisplayed: boolean
+  displayedScheduleAlreadyExecuted: boolean
 }): OptimizeChartRow[] {
   const rawByYear = new Map(schedule?.conversions.map((c) => [c.year, c.amount]) ?? [])
   const cleanedByYear = new Map(recommendedConversions.map((c) => [c.year, c.amount]))
-  // A candidate schedule, actionable or withheld, is already its exact-ledger
-  // execution; the MILP path reports the cleaned re-run's executed amounts.
-  const executedByYear = candidateScheduleDisplayed
+  // A candidate schedule, or a search-refined withheld MILP schedule, already
+  // consists of exact-ledger executed amounts. An unrefined MILP path instead
+  // reports the cleaned re-run's stored execution evidence.
+  const executedByYear = displayedScheduleAlreadyExecuted
     ? cleanedByYear
     : new Map(postProcessed?.cleanedExecutionByYear.map((year) => [year.year, year.rothConversion]) ?? [])
   const years = [...new Set([...rawByYear.keys(), ...cleanedByYear.keys()])].sort((a, b) => a - b)
