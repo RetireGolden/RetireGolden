@@ -163,6 +163,89 @@ describe('private owned-IRA runtime source-series validation', () => {
       .toMatchObject({ status: 'ownedNonRothIraRuntimeSourceSeriesBlocked', issues: [{ kind: 'applicationOrderInvalid' }] })
   })
 
+  it('requires canonical producer-key serialization', () => {
+    const plan = singlePersonPlan({ dob: '1953-01-01', planningAge: 90 })
+    plan.id = 'canonical-key'
+    plan.accounts = [traditional('ira', 100_000)]
+    const years = copy(project(plan))
+    const occurrence = years[0]!.retirementRuntimeSource!.runtimeOccurrences[0]!
+    const application = years[0]!.retirementRuntimeApplicationSource!.applications[0]!
+    if (application.applicationKind === 'aggregateRothDestinationCredit') throw new Error('expected debit')
+    const parsed = JSON.parse(occurrence.producerOccurrenceKey) as unknown[]
+    const noncanonicalKey = `[ ${parsed.map((part) => JSON.stringify(part)).join(', ')} ]`
+    ;(occurrence as { producerOccurrenceKey: string }).producerOccurrenceKey = noncanonicalKey
+    ;(application as { producerOccurrenceKey: string }).producerOccurrenceKey = noncanonicalKey
+
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, years))
+      .toMatchObject({
+        status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+        issues: [{ kind: 'sourceIdentityInvalid' }],
+      })
+  })
+
+  it('preserves genuine fractional-cent RMD chains by normalizing from raw transitions', () => {
+    const plan = singlePersonPlan({ dob: '1953-01-01', planningAge: 90 })
+    plan.id = 'fractional-cent-rmd-chain'
+    plan.accounts = [traditional('ira', 100_000)]
+    plan.accounts[0]!.annualReturnPct = 5
+
+    const result = validateOwnedNonRothIraRuntimeSourceSeries(
+      plan, TAX_YEAR, project(plan, TAX_YEAR + 1),
+    )
+
+    expect(result.status).toBe('ownedNonRothIraRuntimeSourceSeriesComplete')
+    if (result.status !== 'ownedNonRothIraRuntimeSourceSeriesComplete') return
+    expect(result.years).toHaveLength(2)
+    for (const year of result.years) {
+      const application = year.ownerSources[0]!.applications[0]!
+      expect(
+        BigInt(application.sourceBalanceBefore) - BigInt(application.amount),
+      ).toBe(BigInt(application.sourceBalanceAfter))
+    }
+  })
+
+  it('rejoins occurrence coverage to every independently published annual movement total', () => {
+    const rmdPlan = singlePersonPlan({ dob: '1950-01-01', planningAge: 76 })
+    rmdPlan.id = 'missing-rmd-source'
+    rmdPlan.accounts = [traditional('ira', 100_000)]
+    const dropped = copy(project(rmdPlan))
+    const droppedKey = dropped[0]!.retirementRuntimeSource!.runtimeOccurrences
+      .find((occurrence) => occurrence.kind === 'ownedIraRmd')!.producerOccurrenceKey
+    ;(dropped[0]!.retirementRuntimeSource!.runtimeOccurrences as unknown as Array<{ producerOccurrenceKey: string }>)
+      .splice(dropped[0]!.retirementRuntimeSource!.runtimeOccurrences
+        .findIndex((occurrence) => occurrence.producerOccurrenceKey === droppedKey), 1)
+    ;(dropped[0]!.retirementRuntimeApplicationSource!.applications as unknown as Array<{ producerOccurrenceKey: string | null }>)
+      .splice(dropped[0]!.retirementRuntimeApplicationSource!.applications
+        .findIndex((application) => application.producerOccurrenceKey === droppedKey), 1)
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(rmdPlan, TAX_YEAR, dropped))
+      .toMatchObject({
+        status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+        issues: [{ kind: 'sourceCoverageInvalid' }],
+      })
+    const subcentMismatch = copy(project(rmdPlan))
+    subcentMismatch[0]!.rmd += 0.0001
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(
+      rmdPlan, TAX_YEAR, subcentMismatch,
+    )).toMatchObject({
+      status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+      issues: [{ kind: 'sourceCoverageInvalid' }],
+    })
+
+    const noMovementPlan = singlePersonPlan({ planningAge: 60 })
+    noMovementPlan.id = 'published-total-rejoins'
+    noMovementPlan.accounts = [traditional('ira', 100_000)]
+    for (const field of ['sepp', 'inheritedDistribution', 'rothConversion'] as const) {
+      const mismatched = copy(project(noMovementPlan))
+      mismatched[0]![field] = 1
+      expect(validateOwnedNonRothIraRuntimeSourceSeries(
+        noMovementPlan, TAX_YEAR, mismatched,
+      )).toMatchObject({
+        status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+        issues: [{ kind: 'sourceCoverageInvalid' }],
+      })
+    }
+  })
+
   it('fails the entire source series on a later balance-chain or pool-completeness break', () => {
     const plan = singlePersonPlan({ planningAge: 61 })
     plan.id = 'source-series-chain'
@@ -188,6 +271,13 @@ describe('private owned-IRA runtime source-series validation', () => {
     const missing = copy(project(plan))
     ;(missing[0]!.ownedNonRothIraPostGrowthSource!.ownerPools[0]!.accountBalances as unknown as unknown[]).pop()
     expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, missing))
+      .toMatchObject({ status: 'ownedNonRothIraRuntimeSourceSeriesBlocked', issues: [{ kind: 'postGrowthPoolInvalid' }] })
+
+    const unpublished = copy(project(plan))
+    const unpublishedBalance = unpublished[0]!.ownedNonRothIraPostGrowthSource!
+      .ownerPools[0]!.accountBalances[0]! as { balancePlanDollars: number }
+    unpublishedBalance.balancePlanDollars += 1
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, unpublished))
       .toMatchObject({ status: 'ownedNonRothIraRuntimeSourceSeriesBlocked', issues: [{ kind: 'postGrowthPoolInvalid' }] })
   })
 

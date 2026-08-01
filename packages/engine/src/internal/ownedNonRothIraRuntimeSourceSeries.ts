@@ -12,6 +12,7 @@ import type {
 } from '../projection/types.js'
 
 const MAX_SAFE_CENTS = BigInt(Number.MAX_SAFE_INTEGER)
+const MAX_RAW_RECONCILIATION_TOLERANCE_DOLLARS = 0.000001
 
 export type OwnedNonRothIraRuntimeSourceSeriesIssueKind =
   | 'planInvalid'
@@ -186,14 +187,58 @@ function cents(
   }
 }
 
-function sumCents(
-  values: readonly UsdCents[],
+function summedPlanDollars(
+  values: readonly number[],
   label: string,
   context: Omit<OwnedNonRothIraRuntimeSourceSeriesIssue, 'kind' | 'detail'>,
-): UsdCents {
-  const total = values.reduce((sum, value) => sum + BigInt(value), 0n)
-  if (total > MAX_SAFE_CENTS) fail('sourceAmountInvalid', `${label} exceeds the safe-integer range`, context)
-  return asUsdCents(Number(total))
+): number {
+  const total = values.reduce((sum, value) => sum + value, 0)
+  if (!Number.isFinite(total) || total < 0 || Object.is(total, -0)) {
+    fail('sourceAmountInvalid', `${label} must be a finite nonnegative Plan-dollar total`, context)
+  }
+  return total
+}
+
+function rawTotalsReconcile(
+  left: number,
+  right: number,
+  operationCount: number,
+): boolean {
+  const scale = Math.max(1, Math.abs(left), Math.abs(right))
+  const floatingPointTolerance = Number.EPSILON * scale *
+    Math.max(8, operationCount * 4)
+  return Math.abs(left - right) <= Math.min(
+    MAX_RAW_RECONCILIATION_TOLERANCE_DOLLARS,
+    floatingPointTolerance,
+  )
+}
+
+function reconcilePublishedTotal(
+  occurrences: readonly Readonly<SimulatorAnnualRetirementRuntimeOccurrence>[],
+  kinds: readonly SimulatorAnnualRetirementRuntimeOccurrence['kind'][],
+  publishedPlanDollars: number,
+  label: string,
+  taxYear: number,
+): void {
+  const selectedKinds = new Set(kinds)
+  const occurrenceTotal = summedPlanDollars(
+    occurrences
+      .filter((occurrence) => selectedKinds.has(occurrence.kind))
+      .map((occurrence) => occurrence.grossAmountPlanDollars),
+    `${label} occurrence total`,
+    { taxYear },
+  )
+  cents(occurrenceTotal, `${label} occurrence total`, { taxYear })
+  cents(publishedPlanDollars, `Published ${label} total`, { taxYear })
+  if (!rawTotalsReconcile(
+    occurrenceTotal,
+    publishedPlanDollars,
+    occurrences.length,
+  )) {
+    fail('sourceCoverageInvalid', `${label} occurrences must exact-rejoin the published annual total`, {
+      taxYear,
+    })
+  }
 }
 
 function compareNullableString(left: string | null, right: string | null): number {
@@ -294,7 +339,7 @@ function sourceCompatible(
 function parseKey(key: string, taxYear: number): unknown[] {
   try {
     const parsed: unknown = JSON.parse(key)
-    if (Array.isArray(parsed)) return parsed
+    if (Array.isArray(parsed) && JSON.stringify(parsed) === key) return parsed
   } catch {
     // Fail below with a source-bound diagnostic.
   }
@@ -413,13 +458,24 @@ function aggregateRothCredit(
       ordered.some((entry) => parseKey(entry.producerOccurrenceKey, taxYear)[2] !== destinationId)) {
     fail('aggregateRothCreditInvalid', 'Aggregate Roth credit must bind the common actual Plan Roth destination', context)
   }
-  const total = sumCents(ordered.map((entry) => cents(entry.grossAmountPlanDollars, 'Conversion occurrence amount', {
-    taxYear, producerOccurrenceKey: entry.producerOccurrenceKey,
-  })), 'Aggregate conversion amount', context)
-  const before = cents(credit.destinationBalanceBeforePlanDollars, 'Roth destination opening balance', context)
+  const rawTotal = summedPlanDollars(
+    ordered.map((entry) => entry.grossAmountPlanDollars),
+    'Aggregate conversion occurrence amount',
+    context,
+  )
+  const total = cents(rawTotal, 'Aggregate conversion occurrence amount', context)
+  cents(credit.destinationBalanceBeforePlanDollars, 'Roth destination opening balance', context)
   const credited = cents(credit.destinationCreditedAmountPlanDollars, 'Roth destination credit', context)
-  const after = cents(credit.destinationBalanceAfterPlanDollars, 'Roth destination closing balance', context)
-  if (credited !== total || BigInt(before) + BigInt(credited) !== BigInt(after)) {
+  cents(credit.destinationBalanceAfterPlanDollars, 'Roth destination closing balance', context)
+  if (credit.destinationBalanceBeforePlanDollars +
+      credit.destinationCreditedAmountPlanDollars !==
+        credit.destinationBalanceAfterPlanDollars ||
+      credited !== total ||
+      !rawTotalsReconcile(
+        rawTotal,
+        credit.destinationCreditedAmountPlanDollars,
+        ordered.length,
+      )) {
     fail('aggregateRothCreditInvalid', 'Aggregate Roth credit must reconcile all conversion occurrences and its destination balance', context)
   }
   if (owners.some((owner) => owner === null)) fail('aggregateRothCreditInvalid', 'Conversion sources require explicit owners', context)
@@ -543,6 +599,34 @@ function validateUnchecked(
       occurrenceOrderId.set(occurrence.producerOccurrenceKey, occurrenceOrderAccountId(plan, occurrence, taxYear))
       occurrenceByKey.set(occurrence.producerOccurrenceKey, occurrence)
     }
+    reconcilePublishedTotal(
+      occurrenceSource.runtimeOccurrences,
+      ['ownedIraRmd', 'employerPlanRmd'],
+      yearResult.rmd,
+      'RMD',
+      taxYear,
+    )
+    reconcilePublishedTotal(
+      occurrenceSource.runtimeOccurrences,
+      ['automaticSeppDistribution'],
+      yearResult.sepp,
+      'SEPP',
+      taxYear,
+    )
+    reconcilePublishedTotal(
+      occurrenceSource.runtimeOccurrences,
+      ['inheritedIraRmd'],
+      yearResult.inheritedDistribution,
+      'inherited distribution',
+      taxYear,
+    )
+    reconcilePublishedTotal(
+      occurrenceSource.runtimeOccurrences,
+      ['legacyRothConversion'],
+      yearResult.rothConversion,
+      'Roth conversion',
+      taxYear,
+    )
 
     const expectedOwners = [...pools.keys()]
     if (balanceSource.ownerPools.length !== expectedOwners.length) {
@@ -561,6 +645,12 @@ function validateUnchecked(
         const account = accounts[accountIndex]!
         if (raw.sourceAccountId !== account.id) {
           fail('postGrowthPoolInvalid', 'Post-growth balances must retain canonical account order including zero siblings', {
+            taxYear, ownerPersonId: owner, sourceAccountId: raw.sourceAccountId,
+          })
+        }
+        if (!Object.hasOwn(yearResult.balances, account.id) ||
+            yearResult.balances[account.id] !== raw.balancePlanDollars) {
+          fail('postGrowthPoolInvalid', 'Post-growth balances must exact-rejoin the published account balance', {
             taxYear, ownerPersonId: owner, sourceAccountId: raw.sourceAccountId,
           })
         }
@@ -616,19 +706,27 @@ function validateUnchecked(
         taxYear, ownerPersonId: occurrence.ownerPersonId!, sourceAccountId: occurrence.sourceAccountId!,
         producerOccurrenceKey: occurrence.producerOccurrenceKey,
       }
-      const amount = cents(application.applicationKind === 'debit'
-        ? application.appliedAmountPlanDollars : application.creditedAmountPlanDollars,
-      'Application amount', context)
+      const rawAmount = application.applicationKind === 'debit'
+        ? application.appliedAmountPlanDollars : application.creditedAmountPlanDollars
+      cents(rawAmount, 'Application amount', context)
       const before = cents(application.sourceBalanceBeforePlanDollars, 'Application opening balance', context)
       const after = cents(application.sourceBalanceAfterPlanDollars, 'Application closing balance', context)
       const occurrenceAmount = cents(occurrence.grossAmountPlanDollars, 'Occurrence amount', context)
       const sourceAccountId = asAccountId(occurrence.sourceAccountId!)
-      const expectedAfter = application.applicationKind === 'debit'
-        ? BigInt(before) - BigInt(amount) : BigInt(before) + BigInt(amount)
-      if (amount === 0 || amount !== occurrenceAmount || openingBalances.get(sourceAccountId) !== before ||
-          expectedAfter < 0n || expectedAfter !== BigInt(after)) {
+      const rawExpectedAfter = application.applicationKind === 'debit'
+        ? application.sourceBalanceBeforePlanDollars - rawAmount
+        : application.sourceBalanceBeforePlanDollars + rawAmount
+      const normalizedAmount = application.applicationKind === 'debit'
+        ? BigInt(before) - BigInt(after)
+        : BigInt(after) - BigInt(before)
+      if (rawAmount !== occurrence.grossAmountPlanDollars ||
+          occurrenceAmount === 0 ||
+          rawExpectedAfter !== application.sourceBalanceAfterPlanDollars ||
+          openingBalances.get(sourceAccountId) !== before ||
+          normalizedAmount <= 0n || normalizedAmount > MAX_SAFE_CENTS) {
         fail('balanceChainInvalid', 'Application must continue the exact per-account before/amount/after chain', context)
       }
+      const amount = asUsdCents(Number(normalizedAmount))
       openingBalances.set(sourceAccountId, after)
       if (occurrence.kind === 'annuityFundingTransfer') {
         fail('annuityStageRequired', 'Annuity funding leaves the captured owned-IRA pool and requires a broader transfer stage', context)
