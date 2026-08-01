@@ -89,6 +89,49 @@ function plan(): Plan {
   return value
 }
 
+function planWithIraContribution(): Plan {
+  const value = plan()
+  const contributionSource = value.accounts.find(
+    (account) => account.id === firstIraId,
+  )
+  if (contributionSource?.type !== 'traditional') {
+    throw new Error('Fixture drift')
+  }
+  contributionSource.annualContribution = 100
+  value.household.people[0]!.retirementAge = null
+  value.incomes = [{
+    type: 'wages',
+    id: 'wages',
+    personId: ownerPersonId,
+    annualGross: 10_000,
+    endAge: null,
+    realGrowthPct: 0,
+  }]
+  return value
+}
+
+function planWithSepEmployerContribution(): Plan {
+  const value = plan()
+  value.retirementActionEligibilityFacts = {
+    iraClassifications: [{
+      sourceAccountId: firstIraId,
+      subtype: 'sep',
+      evidenceId: 'first-ira-sep-classification',
+      provenance: { source: 'manual' },
+    }],
+    sepSimpleActivities: [{
+      sourceAccountId: firstIraId,
+      actionTaxYear: 2030,
+      planYearEndDate: '2030-12-31',
+      employerContributionMadeForPlanYear: true,
+      evidenceId: 'first-ira-sep-activity',
+      provenance: { source: 'manual' },
+    }],
+    deductibleIraContributions: [],
+  }
+  return value
+}
+
 function runtimeRecord(
   overrides: Partial<ResolvedAnnualRetirementPhysicalEventRecord> = {},
 ): ResolvedAnnualRetirementPhysicalEventRecord {
@@ -109,6 +152,19 @@ function runtimeRecord(
     upstreamEvidenceId: 'runtime-rmd-upstream',
     ...overrides,
   }
+}
+
+function contributionRecord(
+  overrides: Partial<ResolvedAnnualRetirementPhysicalEventRecord> = {},
+): ResolvedAnnualRetirementPhysicalEventRecord {
+  return runtimeRecord({
+    eventId: 'runtime-contribution',
+    movementAuthorityId: 'runtime-contribution-authority',
+    kind: 'ownedIraContribution',
+    origin: 'contributionLedger',
+    upstreamEvidenceId: 'runtime-contribution-upstream',
+    ...overrides,
+  })
 }
 
 function inventoryInput(
@@ -173,12 +229,40 @@ function input(
     opening.accountId,
     opening.openingBalance,
   ]))
-  const actualApplications = pool.events
-    .filter((event) =>
+  const actualApplications: Array<
+    PreparePlanOwnedNonRothIraAnnualPhysicalTransactionInput[
+      'actualApplications'
+    ][number]
+  > = []
+  const settledContributionApplications: Array<
+    PreparePlanOwnedNonRothIraAnnualPhysicalTransactionInput[
+      'settledContributionApplications'
+    ][number]
+  > = []
+  for (const event of pool.events) {
+    if (
+      event.kind === 'ownedIraContribution' ||
+      event.kind === 'ownedIraEmployerContribution'
+    ) {
+      const sourceBalanceBefore = running.get(event.sourceAccountId)!
+      const creditedAmount = asUsdCents(event.grossAmount)
+      const sourceBalanceAfter = asUsdCents(
+        sourceBalanceBefore + creditedAmount,
+      )
+      running.set(event.sourceAccountId, sourceBalanceAfter)
+      settledContributionApplications.push({
+        inventoryEventId: event.eventId,
+        sourceBalanceBefore,
+        creditedAmount,
+        sourceBalanceAfter,
+        stagingEvidenceId: `staging-${event.eventId}`,
+      })
+      continue
+    }
+    if (
       event.form8606Category === 'line7DistributionCandidate' ||
-      event.form8606Category === 'line8ConversionCandidate',
-    )
-    .map((event) => {
+      event.form8606Category === 'line8ConversionCandidate'
+    ) {
       const sourceBalanceBefore = running.get(event.sourceAccountId)!
       const executed = event.origin === 'planAction'
         ? executionByAllocation[event.allocationId] ?? Number(event.grossAmount)
@@ -188,19 +272,21 @@ function input(
         sourceBalanceBefore - executedAmount,
       )
       running.set(event.sourceAccountId, sourceBalanceAfter)
-      return {
+      actualApplications.push({
         inventoryEventId: event.eventId,
         sourceBalanceBefore,
         executedAmount,
         sourceBalanceAfter,
         stagingEvidenceId: `staging-${event.eventId}`,
-      }
-    })
+      })
+    }
+  }
   return {
     ...inventoryPart,
     ownerPersonId,
     openingBalances,
     actualApplications,
+    settledContributionApplications,
   }
 }
 
@@ -235,6 +321,7 @@ describe('preparePlanOwnedNonRothIraAnnualPhysicalTransaction', () => {
       line8GrossAmount: 2_000,
     })
     expect(result.applications).toHaveLength(3)
+    expect(result.settledContributionApplications).toEqual([])
     expect(result.applications.map((application) => ({
       allocationId: application.allocationId,
       lineScope: application.lineScope,
@@ -306,6 +393,7 @@ describe('preparePlanOwnedNonRothIraAnnualPhysicalTransaction', () => {
       expect.objectContaining({
         sourceAccountId: firstIraId,
         openingBalance: 30_000,
+        settledContributionAmount: 0,
         requestedAmount: 7_000,
         executedAmount: 6_000,
         unexecutedAmount: 1_000,
@@ -314,6 +402,7 @@ describe('preparePlanOwnedNonRothIraAnnualPhysicalTransaction', () => {
       expect.objectContaining({
         sourceAccountId: secondIraId,
         openingBalance: 20_000,
+        settledContributionAmount: 0,
         requestedAmount: 1_000,
         executedAmount: 0,
         unexecutedAmount: 1_000,
@@ -322,6 +411,7 @@ describe('preparePlanOwnedNonRothIraAnnualPhysicalTransaction', () => {
       expect.objectContaining({
         sourceAccountId: unchangedIraId,
         openingBalance: 10_000,
+        settledContributionAmount: 0,
         requestedAmount: 0,
         executedAmount: 0,
         unexecutedAmount: 0,
@@ -467,6 +557,7 @@ describe('preparePlanOwnedNonRothIraAnnualPhysicalTransaction', () => {
       ownerPersonId,
       openingBalances: [],
       actualApplications: [],
+      settledContributionApplications: [],
     })
     expect(result.status).toBe('annualPhysicalEventInventoryIncomplete')
     expect(result.issues).toEqual(expect.arrayContaining([
@@ -474,7 +565,7 @@ describe('preparePlanOwnedNonRothIraAnnualPhysicalTransaction', () => {
     ]))
   })
 
-  it('requires the QCD stage and rejects other same-pool physical activity', () => {
+  it('requires the QCD stage', () => {
     const qcdPlan = plan()
     qcdPlan.strategies.retirementActions.push({
       actionId: asActionId('qcd'),
@@ -503,32 +594,246 @@ describe('preparePlanOwnedNonRothIraAnnualPhysicalTransaction', () => {
     })
     expect(issueKinds(input(qcdPlan))).toContain('qcdStageRequired')
 
-    const contributionPlan = plan()
-    const contributionSource = contributionPlan.accounts.find(
-      (account) => account.id === firstIraId,
+    const qcdAndContributionPlan = planWithIraContribution()
+    qcdAndContributionPlan.strategies.retirementActions.push(
+      qcdPlan.strategies.retirementActions.at(-1)!,
     )
-    if (contributionSource?.type !== 'traditional') {
-      throw new Error('Fixture drift')
-    }
-    contributionSource.annualContribution = 100
-    contributionPlan.household.people[0]!.retirementAge = null
-    contributionPlan.incomes = [{
-      type: 'wages',
-      id: 'wages',
-      personId: ownerPersonId,
-      annualGross: 10_000,
-      endAge: null,
-      realGrowthPct: 0,
-    }]
-    const contribution = runtimeRecord({
-      eventId: 'runtime-contribution',
-      movementAuthorityId: 'runtime-contribution-authority',
-      kind: 'ownedIraContribution',
-      origin: 'contributionLedger',
-      upstreamEvidenceId: 'runtime-contribution-upstream',
+    expect(issueKinds(input(
+      qcdAndContributionPlan,
+      [contributionRecord()],
+    ))).toContain('qcdStageRequired')
+  })
+
+  it('settles owned-IRA contribution inflows without creating allocator entries', () => {
+    const result = prepared(input(
+      planWithIraContribution(),
+      [contributionRecord()],
+    ))
+    expect(result.settledContributionApplications).toEqual([
+      expect.objectContaining({
+        predicate: 'ownedNonRothIraSettledAnnualContributionApplication',
+        inventoryEventId: 'runtime-contribution',
+        eventOrigin: 'contributionLedger',
+        eventKind: 'ownedIraContribution',
+        movementAuthorityId: 'runtime-contribution-authority',
+        sourceAccountId: firstIraId,
+        scheduledDate: '2030-03-01',
+        scheduledSequence: 5,
+        inventoriedAmount: 1_000,
+        sourceBalanceBefore: 30_000,
+        creditedAmount: 1_000,
+        sourceBalanceAfter: 31_000,
+        inventoryEventUpstreamEvidenceId: 'runtime-contribution-upstream',
+      }),
+    ])
+    expect(result.settledContributionApplications[0]!.applicationEvidenceId)
+      .toMatch(/^owned-ira-unified-annual-settled-contribution-application:/)
+    expect(result.sourceBalanceTransitions[0]).toMatchObject({
+      sourceAccountId: firstIraId,
+      openingBalance: 30_000,
+      settledContributionAmount: 1_000,
+      requestedAmount: 7_000,
+      executedAmount: 6_000,
+      detachedClosingBalance: 25_000,
     })
-    expect(issueKinds(input(contributionPlan, [contribution])))
-      .toContain('unsupportedPoolActivity')
+    expect(result.applications).toHaveLength(3)
+    expect(result.line7Entries).toHaveLength(1)
+    expect(result.line8Entries).toHaveLength(1)
+  })
+
+  it('settles a SEP/SIMPLE employer contribution through the same inflow boundary', () => {
+    const result = prepared(input(planWithSepEmployerContribution(), [
+      contributionRecord({
+        kind: 'ownedIraEmployerContribution',
+        eventId: 'runtime-employer-contribution',
+        movementAuthorityId: 'runtime-employer-contribution-authority',
+        upstreamEvidenceId: 'runtime-employer-contribution-upstream',
+      }),
+    ]))
+    expect(result.settledContributionApplications).toEqual([
+      expect.objectContaining({
+        inventoryEventId: 'runtime-employer-contribution',
+        eventKind: 'ownedIraEmployerContribution',
+        creditedAmount: 1_000,
+      }),
+    ])
+  })
+
+  it('weaves contribution inflows and debits in canonical inventory chronology', () => {
+    const valuePlan = planWithIraContribution()
+    const records = [
+      contributionRecord(),
+      contributionRecord({
+        eventId: 'runtime-contribution-after-withdrawal',
+        movementAuthorityId: 'runtime-contribution-after-withdrawal-authority',
+        grossAmount: asPositiveUsdCents(500),
+        executionDate: '2030-07-01',
+        executionSequence: 15,
+        upstreamEvidenceId: 'runtime-contribution-after-withdrawal-upstream',
+      }),
+    ]
+    const canonical = input(valuePlan, records)
+    const result = prepared(canonical)
+    expect(result.settledContributionApplications.map((application) => ({
+      inventoryEventId: application.inventoryEventId,
+      sourceBalanceBefore: application.sourceBalanceBefore,
+      creditedAmount: application.creditedAmount,
+      sourceBalanceAfter: application.sourceBalanceAfter,
+    }))).toEqual([{
+      inventoryEventId: 'runtime-contribution',
+      sourceBalanceBefore: 30_000,
+      creditedAmount: 1_000,
+      sourceBalanceAfter: 31_000,
+    }, {
+      inventoryEventId: 'runtime-contribution-after-withdrawal',
+      sourceBalanceBefore: 27_000,
+      creditedAmount: 500,
+      sourceBalanceAfter: 27_500,
+    }])
+    expect(result.sourceBalanceTransitions[0]).toMatchObject({
+      settledContributionAmount: 1_500,
+      executedAmount: 6_000,
+      detachedClosingBalance: 25_500,
+    })
+
+    const permuted = {
+      ...canonical,
+      openingBalances: [...canonical.openingBalances].reverse(),
+      actualApplications: [...canonical.actualApplications].reverse(),
+      settledContributionApplications: [
+        ...canonical.settledContributionApplications,
+      ].reverse(),
+    }
+    expect(prepared(permuted)).toEqual(result)
+    expect(prepared(input(valuePlan, [...records].reverse()))).toEqual(result)
+  })
+
+  it.each([
+    ['missing', (
+      value: PreparePlanOwnedNonRothIraAnnualPhysicalTransactionInput,
+    ) => {
+      value.settledContributionApplications = []
+    }, 'contributionApplicationMissing'],
+    ['duplicate', (
+      value: PreparePlanOwnedNonRothIraAnnualPhysicalTransactionInput,
+    ) => {
+      value.settledContributionApplications = [
+        ...value.settledContributionApplications,
+        value.settledContributionApplications[0]!,
+      ]
+    }, 'contributionApplicationDuplicate'],
+    ['foreign', (
+      value: PreparePlanOwnedNonRothIraAnnualPhysicalTransactionInput,
+    ) => {
+      value.settledContributionApplications = [{
+        ...value.settledContributionApplications[0]!,
+        inventoryEventId: value.actualApplications[0]!.inventoryEventId,
+        stagingEvidenceId: 'foreign-contribution-staging',
+      }]
+    }, 'contributionApplicationForeign'],
+  ] as const)(
+    'rejects %s settled contribution event coverage',
+    (_label, mutate, kind) => {
+      const value = input(planWithIraContribution(), [contributionRecord()])
+      mutate(value)
+      expect(issueKinds(value)).toContain(kind)
+    },
+  )
+
+  it('rejects a contribution event smuggled into line-7/line-8 applications', () => {
+    const value = input(planWithIraContribution(), [contributionRecord()])
+    const contribution = value.settledContributionApplications[0]!
+    value.actualApplications = [{
+      inventoryEventId: contribution.inventoryEventId,
+      sourceBalanceBefore: contribution.sourceBalanceBefore,
+      executedAmount: asUsdCents(0),
+      sourceBalanceAfter: contribution.sourceBalanceBefore,
+      stagingEvidenceId: 'wrong-role-contribution-staging',
+    }, ...value.actualApplications]
+    expect(issueKinds(value)).toContain('actualApplicationForeign')
+  })
+
+  it.each([
+    ['wrong before', (
+      value: PreparePlanOwnedNonRothIraAnnualPhysicalTransactionInput,
+    ) => {
+      value.settledContributionApplications = [{
+        ...value.settledContributionApplications[0]!,
+        sourceBalanceBefore: asUsdCents(29_999),
+        sourceBalanceAfter: asUsdCents(30_999),
+      }]
+    }, 'sourceBalanceMismatch'],
+    ['wrong credit', (
+      value: PreparePlanOwnedNonRothIraAnnualPhysicalTransactionInput,
+    ) => {
+      value.settledContributionApplications = [{
+        ...value.settledContributionApplications[0]!,
+        creditedAmount: asUsdCents(999),
+        sourceBalanceAfter: asUsdCents(30_999),
+      }]
+    }, 'contributionCreditMismatch'],
+    ['zero credit', (
+      value: PreparePlanOwnedNonRothIraAnnualPhysicalTransactionInput,
+    ) => {
+      value.settledContributionApplications = [{
+        ...value.settledContributionApplications[0]!,
+        creditedAmount: asUsdCents(0),
+        sourceBalanceAfter: asUsdCents(30_000),
+      }]
+    }, 'contributionCreditMismatch'],
+    ['wrong after', (
+      value: PreparePlanOwnedNonRothIraAnnualPhysicalTransactionInput,
+    ) => {
+      value.settledContributionApplications = [{
+        ...value.settledContributionApplications[0]!,
+        sourceBalanceAfter: asUsdCents(30_999),
+      }]
+    }, 'sourceArithmeticMismatch'],
+  ] as const)(
+    'rejects settled contribution %s staging arithmetic',
+    (_label, mutate, kind) => {
+      const value = input(planWithIraContribution(), [contributionRecord()])
+      mutate(value)
+      expect(issueKinds(value)).toContain(kind)
+    },
+  )
+
+  it('rejects malformed and colliding settled contribution evidence', () => {
+    const malformed = input(planWithIraContribution(), [contributionRecord()])
+    Object.assign(malformed.settledContributionApplications[0] as object, {
+      sourceAccountId: secondIraId,
+    })
+    expect(issueKinds(malformed)).toContain('contributionApplicationInvalid')
+
+    const unsafe = input(planWithIraContribution(), [contributionRecord()])
+    unsafe.settledContributionApplications = [{
+      ...unsafe.settledContributionApplications[0]!,
+      creditedAmount: Number.MAX_SAFE_INTEGER + 1 as never,
+    }]
+    expect(issueKinds(unsafe)).toContain('contributionApplicationInvalid')
+
+    const crossRole = input(planWithIraContribution(), [contributionRecord()])
+    crossRole.settledContributionApplications = [{
+      ...crossRole.settledContributionApplications[0]!,
+      stagingEvidenceId: firstIraId,
+    }]
+    expect(issueKinds(crossRole)).toContain('identifierCollision')
+
+    const original = structuralId.deriveActionStructuralId
+    const spy = vi.spyOn(structuralId, 'deriveActionStructuralId')
+      .mockImplementation((prefix, parts) =>
+        prefix ===
+          'owned-ira-unified-annual-settled-contribution-application'
+          ? firstIraId
+          : original(prefix, parts))
+    try {
+      expect(issueKinds(input(
+        planWithIraContribution(),
+        [contributionRecord()],
+      ))).toContain('identifierCollision')
+    } finally {
+      spy.mockRestore()
+    }
   })
 
   it.each([
@@ -660,6 +965,43 @@ describe('preparePlanOwnedNonRothIraAnnualPhysicalTransaction', () => {
       })
   })
 
+  it('fails closed on hostile settled contribution getters', () => {
+    const value = input(planWithIraContribution(), [contributionRecord()])
+    Object.defineProperty(value, 'settledContributionApplications', {
+      get(): never {
+        throw new Error('hostile getter')
+      },
+    })
+    expect(preparePlanOwnedNonRothIraAnnualPhysicalTransaction(value))
+      .toMatchObject({
+        status: 'unifiedAnnualPhysicalTransactionBlocked',
+        movement: 'notCommitted',
+        actionability: 'notEstablished',
+        transactionEvidenceId: null,
+        inventory: null,
+        issues: [{ kind: 'hostileInput' }],
+      })
+  })
+
+  it('fails closed on hostile settled contribution application fields', () => {
+    const value = input(planWithIraContribution(), [contributionRecord()])
+    Object.defineProperty(value.settledContributionApplications[0],
+      'creditedAmount', {
+        get(): never {
+          throw new Error('hostile getter')
+        },
+      })
+    expect(preparePlanOwnedNonRothIraAnnualPhysicalTransaction(value))
+      .toMatchObject({
+        status: 'unifiedAnnualPhysicalTransactionBlocked',
+        movement: 'notCommitted',
+        actionability: 'notEstablished',
+        transactionEvidenceId: null,
+        inventory: null,
+        issues: [{ kind: 'hostileInput' }],
+      })
+  })
+
   it('returns detached immutable evidence without mutating inputs', () => {
     const value = input()
     const before = JSON.stringify(value)
@@ -670,5 +1012,16 @@ describe('preparePlanOwnedNonRothIraAnnualPhysicalTransaction', () => {
     expect(Object.isFrozen(result.applications[0])).toBe(true)
     expect(Object.isFrozen(result.stagedDestinationCredits[0])).toBe(true)
     expect(Object.isFrozen(result.sourceBalanceTransitions[0])).toBe(true)
+
+    const contributionResult = prepared(input(
+      planWithIraContribution(),
+      [contributionRecord()],
+    ))
+    expect(Object.isFrozen(
+      contributionResult.settledContributionApplications,
+    )).toBe(true)
+    expect(Object.isFrozen(
+      contributionResult.settledContributionApplications[0],
+    )).toBe(true)
   })
 })
