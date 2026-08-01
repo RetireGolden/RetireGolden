@@ -4497,6 +4497,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               : 1,
         rmd: rmdTotal,
         rmdTaxable: Math.max(0, rmdTotal - rmdNontaxable),
+        incumbentTraditionalDistribution: optimizerTraditionalGross,
         traditionalWithdrawalTaxableFraction:
           optimizerTraditionalGross > 0
             ? Math.min(
@@ -5105,11 +5106,18 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             optimizerProbe: {
               ...settledAnnualPass.optimizerProbe,
               traditionalWithdrawalTaxableFraction:
-                traditionalFraction ?? settledAnnualPass.optimizerProbe
-                  .traditionalWithdrawalTaxableFraction,
+                settledAnnualPass.optimizerProbe
+                  .incumbentTraditionalDistribution > 0
+                  ? settledAnnualPass.optimizerProbe
+                    .traditionalWithdrawalTaxableFraction
+                  : traditionalFraction ?? settledAnnualPass.optimizerProbe
+                    .traditionalWithdrawalTaxableFraction,
               rothConversionTaxableFraction:
-                conversionFraction ?? settledAnnualPass.optimizerProbe
-                  .rothConversionTaxableFraction,
+                settledAnnualPass.optimizerProbe.incumbentRothConversion > 0
+                  ? settledAnnualPass.optimizerProbe
+                    .rothConversionTaxableFraction
+                  : conversionFraction ?? settledAnnualPass.optimizerProbe
+                    .rothConversionTaxableFraction,
             },
           }
         }

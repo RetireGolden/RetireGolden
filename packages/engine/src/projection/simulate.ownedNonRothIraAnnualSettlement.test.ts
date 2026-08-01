@@ -18,8 +18,9 @@ function ira(
   id: string,
   balance: number,
   basis = 0,
+  ownerPersonId = 'p1',
 ): Extract<Account, { type: 'traditional' }> {
-  const account = traditionalAccount(id, balance, 'p1', 'ira')
+  const account = traditionalAccount(id, balance, ownerPersonId, 'ira')
   if (account.type !== 'traditional') throw new Error('expected IRA')
   return {
     ...account,
@@ -180,7 +181,58 @@ describe('simulator owned non-Roth IRA exact annual settlement', () => {
     expect(capture.mock.calls[0]![0].incumbentModeledMagiBeforeTaxableWithdrawalGains)
       .toBeCloseTo(0.02, 12)
     expect(capture.mock.calls[0]![0].rothConversionTaxableFraction)
-      .toBeCloseTo(5 / 6, 12)
+      .toBeCloseTo(2 / 3, 12)
+  })
+
+  it('preserves exact incumbent conversion character across mixed owners', () => {
+    const plan = singlePersonPlan({ planningAge: 60 })
+    plan.id = 'settled-optimizer-incumbent-conversion'
+    plan.household.people.push({
+      ...plan.household.people[0]!,
+      id: 'p2',
+      name: 'Spouse',
+    })
+    plan.expenses.baseAnnual = 0
+    plan.accounts = [
+      ira('ira-p1', 100, 50),
+      ira('ira-p2', 100, 0, 'p2'),
+      roth(),
+    ]
+    plan.strategies.rothConversion = {
+      mode: 'manual',
+      conversions: [{ year: TAX_YEAR, amount: 50 }],
+    }
+    const capture = vi.fn<(probe: OptimizerYearProbe) => void>()
+
+    run(plan, TAX_YEAR, capture)
+
+    expect(capture).toHaveBeenCalledTimes(1)
+    expect(capture.mock.calls[0]![0].incumbentRothConversion).toBe(50)
+    expect(capture.mock.calls[0]![0].rothConversionTaxableFraction)
+      .toBeCloseTo(0.5, 12)
+  })
+
+  it('preserves exact incumbent distribution character across mixed owners', () => {
+    const plan = singlePersonPlan({ planningAge: 60 })
+    plan.id = 'settled-optimizer-incumbent-distribution'
+    plan.household.people.push({
+      ...plan.household.people[0]!,
+      id: 'p2',
+      name: 'Spouse',
+    })
+    plan.expenses.baseAnnual = 50
+    plan.accounts = [
+      ira('ira-p1', 100, 50),
+      ira('ira-p2', 100, 0, 'p2'),
+    ]
+    const capture = vi.fn<(probe: OptimizerYearProbe) => void>()
+
+    run(plan, TAX_YEAR, capture)
+
+    expect(capture).toHaveBeenCalledTimes(1)
+    expect(capture.mock.calls[0]![0].incumbentTraditionalDistribution).toBe(50)
+    expect(capture.mock.calls[0]![0].traditionalWithdrawalTaxableFraction)
+      .toBeCloseTo(0.5, 12)
   })
 
   it('linearizes an empty incumbent from the committed post-growth ratio', () => {

@@ -161,6 +161,12 @@ export interface OptimizerYearProbe {
   /** Taxable part of `rmd` after exact owned-IRA basis character. */
   rmdTaxable?: number
   /**
+   * Gross incumbent owner-traditional distributions (forced plus
+   * discretionary). Settlement uses this to distinguish an exact realized-flow
+   * fraction from a no-flow marginal balance fraction.
+   */
+  incumbentTraditionalDistribution: number
+  /**
    * Incumbent taxable share of gross owner-traditional withdrawals. The LP
    * applies this exact-ledger linearization to both forced and discretionary
    * dollars; absent preserves the historical all-taxable assumption.
