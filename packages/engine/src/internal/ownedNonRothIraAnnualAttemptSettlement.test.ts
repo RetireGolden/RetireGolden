@@ -37,6 +37,7 @@ vi.mock('./ownedNonRothIraContiguousReplay.js', async (importOriginal) => {
 })
 
 import {
+  captureOwnedNonRothIraAnnualAttemptStateEvidence,
   runOwnedNonRothIraAnnualSettlementAttempts,
   type OwnedNonRothIraAnnualSettlementEffect,
 } from './ownedNonRothIraAnnualAttemptSettlement.js'
@@ -278,6 +279,65 @@ describe('private owned-IRA annual attempt settlement', () => {
     )
     expect(simulatorState.retirementRuntimeOccurrences).not.toHaveLength(0)
     expect(Object.isFrozen(result.pendingSettlement)).toBe(true)
+  })
+
+  it('commits only a complete current-attempt annual-tail state binding', () => {
+    const plan = rmdPlan()
+    const canonicalYears = project(plan)
+    const simulatorState = state(plan)
+    const result = runOwnedNonRothIraAnnualSettlementAttempts({
+      state: simulatorState,
+      plan,
+      projectionStartTaxYear: TAX_YEAR,
+      initialAssumedEffects: [],
+      runAttempt: () => {
+        const years = cloneYears(canonicalYears)
+        mutateAttemptState(simulatorState, years)
+        simulatorState.balances[0]!.costBasis = 7
+        simulatorState.warnings.add('bound-annual-warning')
+        return years
+      },
+      captureAttemptStateEvidence: (context, year) =>
+        captureOwnedNonRothIraAnnualAttemptStateEvidence({
+          state: simulatorState,
+          planId: context.stable.planId,
+          taxYear: year.year,
+          attemptNumber: context.attemptNumber,
+        }),
+    })
+
+    expect(result.status).toBe('committed')
+    expect(simulatorState.balances[0]!.costBasis).toBe(7)
+    expect(simulatorState.warnings).toContain('bound-annual-warning')
+
+    const staleState = state(plan)
+    const before = stateBytes(staleState)
+    const stale = runOwnedNonRothIraAnnualSettlementAttempts({
+      state: staleState,
+      plan,
+      projectionStartTaxYear: TAX_YEAR,
+      initialAssumedEffects: [],
+      runAttempt: () => {
+        const years = cloneYears(canonicalYears)
+        mutateAttemptState(staleState, years)
+        return years
+      },
+      captureAttemptStateEvidence: (context, year) => {
+        const evidence = captureOwnedNonRothIraAnnualAttemptStateEvidence({
+          state: staleState,
+          planId: context.stable.planId,
+          taxYear: year.year,
+          attemptNumber: context.attemptNumber,
+        })
+        staleState.warnings.add('mutation-after-evidence')
+        return evidence
+      },
+    })
+    expect(stale).toMatchObject({
+      status: 'rolledBack',
+      reason: 'attemptBindingMismatch',
+    })
+    expect(stateBytes(staleState)).toBe(before)
   })
 
   it.each([

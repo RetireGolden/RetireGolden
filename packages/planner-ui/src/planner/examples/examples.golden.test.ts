@@ -65,7 +65,9 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   'guardrails-flex-goals': { depletionYear: 2041, endingInvestable: 0, lifetimeTax: 7_903.47, lifetimeRoth: 0 },
   'annuity-purchases-estate': { depletionYear: null, endingInvestable: 3167948.18, lifetimeTax: 394965.43, lifetimeRoth: 827479.46 },
   'glidepath-allocation': { depletionYear: null, endingInvestable: 1_260_922.58, lifetimeTax: 356_793.44, lifetimeRoth: 776_566.11 },
-  'hsa-property-depth': { depletionYear: 2043, endingInvestable: 0, lifetimeTax: 34_819.83, lifetimeRoth: 179_963.25 },
+  // Re-baselined for exact committed Form 8606 line-8 character: generated
+  // conversions now size gross dollars against their taxable fraction.
+  'hsa-property-depth': { depletionYear: 2043, endingInvestable: 0, lifetimeTax: 34_800.61, lifetimeRoth: 179_968.99 },
   // A-B control variants for direct Plan Compare (fixed target, no annuity, static allocation, no HSA)
   'fixed-target-spending': { depletionYear: 2034, endingInvestable: 0, lifetimeTax: 7_491.75, lifetimeRoth: 0 },
   'no-annuity-brokerage': { depletionYear: null, endingInvestable: 3610277.06, lifetimeTax: 318495.46, lifetimeRoth: 1242014.22 },
@@ -80,7 +82,7 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   'all-401k-no-bridge': { depletionYear: 2060, endingInvestable: 0, lifetimeTax: 1_139_812.12, lifetimeRoth: 0 },
   'brokerage-bridge-401k': { depletionYear: 2062, endingInvestable: 0, lifetimeTax: 1_068_315.12, lifetimeRoth: 0 },
   'no-head-start-grad': { depletionYear: null, endingInvestable: 14_722_864.54, lifetimeTax: 5_275_288.49, lifetimeRoth: 0 },
-  'trump-account-head-start': { depletionYear: null, endingInvestable: 22_294_439.49, lifetimeTax: 7_402_872.99, lifetimeRoth: 0 },
+  'trump-account-head-start': { depletionYear: null, endingInvestable: 22_293_798.15, lifetimeTax: 7_403_311.42, lifetimeRoth: 0 },
 }
 
 describe('example plan golden KPIs', () => {

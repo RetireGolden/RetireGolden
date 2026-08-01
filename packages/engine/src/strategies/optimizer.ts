@@ -101,6 +101,10 @@ export interface OptimizerYear {
    * as `wt`). Default 0.
    */
   baselineRmd?: number
+  /** Taxable share of gross owner-traditional withdrawals (default 1). */
+  traditionalWithdrawalTaxableFraction?: number
+  /** Taxable share of gross Roth conversions (default 1). */
+  rothConversionTaxableFraction?: number
   /** Scales IRMAA thresholds for years beyond the published pack. */
   inflationScale: number
   /** Nominal growth applied to end-of-year balances this year, e.g. 0.05. */
@@ -405,6 +409,14 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
     const wtax = `wtax${t}` // taxable-brokerage withdrawal (realizes LTCG on the gain fraction)
     const save = `save${t}` // surplus cash routed back to the tax-free bucket
     const ti = `ti${t}` // taxable ordinary income (post standard deduction, ≥0)
+    const traditionalTaxableFraction = Math.min(
+      1,
+      Math.max(0, y.traditionalWithdrawalTaxableFraction ?? 1),
+    )
+    const conversionTaxableFraction = Math.min(
+      1,
+      Math.max(0, y.rothConversionTaxableFraction ?? 1),
+    )
 
     // OBBBA senior deduction in-solve (ground-truth 2026 law sync, Step 2).
     // Eligible years add the full per-person deduction to the constant and a
@@ -457,7 +469,12 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
     // (taxable ordinary) ti ≥ grossOrdinary − deduction, ti ≥ 0. Minimising tax
     // pins ti to max(0, gross−ded) since every tax term is increasing in ti.
     //   gross = ordinaryBase + conv + wt + wi (+ taxSS variable when PWL active)
-    const tiFloor: Terms = { [ti]: 1, [conv]: -1, [wt]: -1, [wi]: -1 }
+    const tiFloor: Terms = {
+      [ti]: 1,
+      [conv]: -conversionTaxableFraction,
+      [wt]: -traditionalTaxableFraction,
+      [wi]: -1,
+    }
     if (ssPwlActive) tiFloor[taxSs] = -1
     // The phase-out variable raises the floor: ti ≥ gross − ded + srd.
     if (srdPwlActive) tiFloor[srd] = -1
@@ -473,7 +490,11 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
         (y.capitalGainsBase ?? 0) +
         (ssB.provisionalIncomeAddbacks ?? 0) +
         0.5 * B
-      const piVars: Terms = { [conv]: 1, [wt]: 1, [wi]: 1 }
+      const piVars: Terms = {
+        [conv]: conversionTaxableFraction,
+        [wt]: traditionalTaxableFraction,
+        [wi]: 1,
+      }
       if (hasTaxable && taxableGainWeight > 0) piVars[wtax] = taxableGainWeight
       // taxSS ≥ max(0, 0.5·(PI−T1), tier1Cap + 0.85·(PI−T2)) — the convex
       // phase-in mirroring the ledger's `taxableSocialSecurity`: above T2 the
@@ -507,7 +528,11 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
     // ledger prices the surcharge. Matches the pre-PWL behavior exactly when
     // both are absent (constant taxable SS rides inside ordinaryIncomeBase).
     magiBase.push(ordinaryBase + (y.capitalGainsBase ?? 0))
-    const myMagiTerms: Terms = { [conv]: 1, [wt]: 1, [wi]: 1 }
+    const myMagiTerms: Terms = {
+      [conv]: conversionTaxableFraction,
+      [wt]: traditionalTaxableFraction,
+      [wi]: 1,
+    }
     if (hasTaxable && taxableGainWeight > 0) myMagiTerms[wtax] = taxableGainWeight
     if (ssPwlActive) myMagiTerms[taxSs] = 1
     magiTerms.push(myMagiTerms)

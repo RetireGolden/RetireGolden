@@ -4,7 +4,7 @@ import {
   type AnnualIraBasisAllocationEvidence,
   type AnnualIraBasisRatio,
 } from '../actions/annualIraBasisAllocation.js'
-import { asActionId, asAllocationId, type PersonId } from '../actions/identity.js'
+import type { PersonId } from '../actions/identity.js'
 import { asPositiveUsdCents, asUsdCents, type UsdCents } from '../actions/money.js'
 import { planDollarsToLedgerCents } from '../actions/planBalanceAdapter.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from '../actions/structuralId.js'
@@ -21,6 +21,8 @@ import {
   type NormalizedOwnedNonRothIraApplication,
   type OwnedNonRothIraRuntimeSourceSeriesIssue,
 } from './ownedNonRothIraRuntimeSourceSeries.js'
+import { deriveOwnedNonRothIraReplayAllocationIdentity } from
+  './ownedNonRothIraReplayIdentity.js'
 
 const MAX_SAFE_CENTS = BigInt(Number.MAX_SAFE_INTEGER)
 
@@ -156,16 +158,17 @@ function entry(
   taxYear: number,
   application: Readonly<NormalizedOwnedNonRothIraApplication>,
 ): AnnualIraBasisAllocationEntryInput {
-  const actionId = asActionId(deriveActionStructuralId(
-    'projection-owned-ira-runtime-replay-action',
-    [planId, taxYear, application.producerOccurrenceKey, application.occurrenceKind],
-  ))
+  const identity = deriveOwnedNonRothIraReplayAllocationIdentity({
+    planId,
+    taxYear,
+    producerOccurrenceKey: application.producerOccurrenceKey,
+    occurrenceKind: application.occurrenceKind,
+    sourceAccountId: application.sourceAccountId,
+    mutationOrdinal: application.mutationOrdinal,
+  })
   return {
-    actionId,
-    allocationId: asAllocationId(deriveActionStructuralId(
-      'projection-owned-ira-runtime-replay-allocation',
-      [actionId, application.sourceAccountId, application.mutationOrdinal],
-    )),
+    actionId: identity.actionId,
+    allocationId: identity.allocationId,
     sourceAccountId: application.sourceAccountId,
     scheduledDate: null,
     scheduledSequence: application.mutationOrdinal,

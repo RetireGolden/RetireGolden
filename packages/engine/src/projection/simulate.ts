@@ -85,6 +85,14 @@ import {
 } from '../actions/index.js'
 import { compareUtf16CodeUnits } from '../actions/structuralId.js'
 import { type SimulatorAnnualRetirementRuntimeOccurrence } from './annualRetirementRuntimeJournal.js'
+import type { SimulatorAnnualPassStateBindings } from './annualPassTransaction.js'
+import {
+  captureOwnedNonRothIraAnnualAttemptStateEvidence,
+  runOwnedNonRothIraAnnualSettlementAttempts,
+  type OwnedNonRothIraAnnualSettlementEffect,
+} from '../internal/ownedNonRothIraAnnualAttemptSettlement.js'
+import { deriveOwnedNonRothIraReplayAllocationIdentity } from
+  '../internal/ownedNonRothIraReplayIdentity.js'
 import { effectiveBirthYear, fraForBirthYear, fraTotalMonths, survivorFraForBirthYear } from '../socialSecurity/nra.js'
 import {
   computePiaFromEarnings,
@@ -153,6 +161,13 @@ export interface SimulateOptions {
    * when omitted, so a normal projection is unaffected. @see OptimizerYearProbe
    */
   captureOptimizerInputs?: (probe: OptimizerYearProbe) => void
+}
+
+function annualPassValueBinding<T>(
+  read: () => T,
+  write: (value: T) => void,
+): { read(): T; write(value: T): void } {
+  return { read, write }
 }
 
 const EPSILON = 0.005
@@ -742,6 +757,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   }
 
   const years: YearResult[] = []
+  let ownedNonRothIraSettlementEnabled = iraBasisByOwner.size > 0
   let depletionYear: number | null = null
 
   // Spending policy (planning-depth roadmap §4). Under withdrawal-rate or
@@ -835,11 +851,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     let nextRetirementRuntimeMutationOrdinal = 1
     const recordAnnualRetirementRuntimeApplication = (
       application: SimulatorRetirementRuntimeApplicationWithoutOrdinal,
-    ): void => {
-      annualRetirementRuntimeApplications.push({
+    ): SimulatorRetirementRuntimeApplication => {
+      const recorded = {
         ...application,
         mutationOrdinal: nextRetirementRuntimeMutationOrdinal++,
-      } as SimulatorRetirementRuntimeApplication)
+      } as SimulatorRetirementRuntimeApplication
+      annualRetirementRuntimeApplications.push(recorded)
+      return recorded
     }
 
     // Prior Dec 31 balances (RMD base) — captured before this year's flows.
@@ -2331,12 +2349,105 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
     }
 
+    const iraProRata = new Map<string, IraProRataYear>()
+    let conversionNontaxable = 0
+
+    const runPostContributionAnnualPass = (
+      assumedEffects:
+        readonly Readonly<OwnedNonRothIraAnnualSettlementEffect>[],
+    ): { yearResult: YearResult; optimizerProbe: OptimizerYearProbe | null } => {
+    let rmdNontaxable = 0
+    let seppNontaxable = 0
+    const assumedEffectByIdentity = new Map(
+      assumedEffects
+        .filter((effect) => effect.taxYear === year)
+        .map((effect) => [
+          JSON.stringify([effect.actionId, effect.allocationId]),
+          effect,
+        ]),
+    )
+    const resolveAssumedCharacter = (input: {
+      ownerPersonId: string
+      calculationScope:
+        'form8606Line7Distributions' | 'form8606Line8NetConversions'
+      occurrenceKind:
+        | 'ownedIraRmd'
+        | 'automaticSeppDistribution'
+        | 'legacyNeedBasedWithdrawal'
+        | 'legacyRothConversion'
+      producerOccurrenceKey: string
+      sourceAccountId: string
+      mutationOrdinal: number
+      grossAmountPlanDollars: number
+      remainingBasisPlanDollars?: number
+    }): { basisReturn: number; ordinaryIncome: number } | null => {
+      let grossAmount: ReturnType<typeof planDollarsToLedgerCents>
+      let remainingBasis:
+        ReturnType<typeof planDollarsToLedgerCents> | null = null
+      try {
+        grossAmount = planDollarsToLedgerCents(input.grossAmountPlanDollars)
+        if (input.remainingBasisPlanDollars !== undefined) {
+          remainingBasis = planDollarsToLedgerCents(
+            input.remainingBasisPlanDollars,
+          )
+        }
+      } catch {
+        return null
+      }
+      const identity = deriveOwnedNonRothIraReplayAllocationIdentity({
+        planId: plan.id,
+        taxYear: year,
+        producerOccurrenceKey: input.producerOccurrenceKey,
+        occurrenceKind: input.occurrenceKind,
+        sourceAccountId: input.sourceAccountId,
+        mutationOrdinal: input.mutationOrdinal,
+      })
+      const effect = assumedEffectByIdentity.get(JSON.stringify([
+        identity.actionId,
+        identity.allocationId,
+      ]))
+      if (effect === undefined ||
+          effect.ownerPersonId !== input.ownerPersonId ||
+          effect.calculationScope !== input.calculationScope ||
+          effect.actionId !== identity.actionId ||
+          effect.allocationId !== identity.allocationId ||
+          effect.sourceAccountId !== input.sourceAccountId ||
+          effect.grossAmount !== grossAmount ||
+          (remainingBasis !== null && effect.basisReturnAmount > remainingBasis)) {
+        return null
+      }
+      return {
+        basisReturn: ledgerCentsToPlanDollars(effect.basisReturnAmount),
+        ordinaryIncome: ledgerCentsToPlanDollars(effect.ordinaryIncomeAmount),
+      }
+    }
+    const splitWithAssumedCharacter = (
+      state: IraProRataYear,
+      amount: number,
+      input: Omit<Parameters<typeof resolveAssumedCharacter>[0],
+        'grossAmountPlanDollars' | 'remainingBasisPlanDollars'>,
+    ) => {
+      const assumed = resolveAssumedCharacter({
+        ...input,
+        grossAmountPlanDollars: amount,
+        remainingBasisPlanDollars: state.basis,
+      })
+      if (assumed === null) return splitIraDistribution(state, amount)
+      return {
+        nontaxable: assumed.basisReturn,
+        taxable: assumed.ordinaryIncome,
+        next: {
+          basis: Math.max(0, state.basis - assumed.basisReturn),
+          nontaxableFraction: state.nontaxableFraction,
+        },
+      }
+    }
+
     // Fix this year's Form-8606 pro-rata fraction per owner (step 5) from the
     // aggregated pre-distribution IRA balance — after contributions, before
     // any RMD/SEPP/conversion/withdrawal depletes it. Forced flows and
     // conversions commit against this state as they happen; need-based
     // withdrawal probes stay pure and commit once at the end of the year.
-    const iraProRata = new Map<string, IraProRataYear>()
     for (const [ownerId, basis] of iraBasisByOwner) {
       if (basis <= 0) continue
       let aggregateBalance = 0
@@ -2347,10 +2458,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
       iraProRata.set(ownerId, openIraProRataYear(basis, aggregateBalance))
     }
-    let rmdNontaxable = 0
-    let seppNontaxable = 0
-    let conversionNontaxable = 0
-
     // --- RMDs: forced traditional distributions (SECURE 2.0) ---------------
     let rmdTotal = 0
     for (const state of balances) {
@@ -2390,8 +2497,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         executionSequence: null,
         movementAuthorityId: null,
       })
+      let ownedIraApplication:
+        SimulatorRetirementRuntimeApplication | null = null
       if (isAggregatedIra(state.account)) {
-        recordAnnualRetirementRuntimeApplication({
+        ownedIraApplication = recordAnnualRetirementRuntimeApplication({
           applicationKind: 'debit',
           producerOccurrenceKey,
           simulatorPhase: 'ownerRmdDistribution',
@@ -2406,8 +2515,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // Pro-rata return of basis on IRA RMDs (step 5); committed immediately.
       if (state.account.kind === 'ira') {
         const proRata = iraProRata.get(ownerId)
-        if (proRata) {
-          const split = splitIraDistribution(proRata, take)
+        if (proRata && ownedIraApplication?.applicationKind === 'debit') {
+          const split = splitWithAssumedCharacter(proRata, take, {
+            ownerPersonId: ownerId,
+            calculationScope: 'form8606Line7Distributions',
+            occurrenceKind: 'ownedIraRmd',
+            producerOccurrenceKey,
+            sourceAccountId: state.account.id,
+            mutationOrdinal: ownedIraApplication.mutationOrdinal,
+          })
           iraProRata.set(ownerId, split.next)
           rmdNontaxable += split.nontaxable
         }
@@ -2443,39 +2559,46 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (take <= 0) continue
       const sourceBalanceBefore = state.balance
       state.balance -= take
-      {
-        const kind = 'automaticSeppDistribution' as const
-        const producerOccurrenceKey = runtimeOccurrenceKey(kind, state.account.id)
-        recordAnnualRetirementRuntimeOccurrence({
+      const kind = 'automaticSeppDistribution' as const
+      const producerOccurrenceKey = runtimeOccurrenceKey(kind, state.account.id)
+      recordAnnualRetirementRuntimeOccurrence({
+        producerOccurrenceKey,
+        kind,
+        grossAmountPlanDollars: take,
+        ownerPersonId: state.account.ownerPersonId,
+        sourceAccountId: state.account.id,
+        executionDate: null,
+        executionSequence: null,
+        movementAuthorityId: null,
+      })
+      let ownedIraApplication:
+        SimulatorRetirementRuntimeApplication | null = null
+      if (isAggregatedIra(state.account)) {
+        ownedIraApplication = recordAnnualRetirementRuntimeApplication({
+          applicationKind: 'debit',
           producerOccurrenceKey,
-          kind,
-          grossAmountPlanDollars: take,
+          simulatorPhase: 'automaticSeppDistribution',
           ownerPersonId: state.account.ownerPersonId,
           sourceAccountId: state.account.id,
-          executionDate: null,
-          executionSequence: null,
-          movementAuthorityId: null,
+          sourceBalanceBeforePlanDollars: sourceBalanceBefore,
+          appliedAmountPlanDollars: take,
+          sourceBalanceAfterPlanDollars: state.balance,
         })
-        if (isAggregatedIra(state.account)) {
-          recordAnnualRetirementRuntimeApplication({
-            applicationKind: 'debit',
-            producerOccurrenceKey,
-            simulatorPhase: 'automaticSeppDistribution',
-            ownerPersonId: state.account.ownerPersonId,
-            sourceAccountId: state.account.id,
-            sourceBalanceBeforePlanDollars: sourceBalanceBefore,
-            appliedAmountPlanDollars: take,
-            sourceBalanceAfterPlanDollars: state.balance,
-          })
-        }
       }
       seppTotal += take
       // Pro-rata return of basis on IRA SEPP distributions (step 5).
       if (state.account.kind === 'ira') {
         const ownerId = state.account.ownerPersonId ?? primary.id
         const proRata = iraProRata.get(ownerId)
-        if (proRata) {
-          const split = splitIraDistribution(proRata, take)
+        if (proRata && ownedIraApplication?.applicationKind === 'debit') {
+          const split = splitWithAssumedCharacter(proRata, take, {
+            ownerPersonId: ownerId,
+            calculationScope: 'form8606Line7Distributions',
+            occurrenceKind: kind,
+            producerOccurrenceKey,
+            sourceAccountId: state.account.id,
+            mutationOrdinal: ownedIraApplication.mutationOrdinal,
+          })
           iraProRata.set(ownerId, split.next)
           seppNontaxable += split.nontaxable
         }
@@ -3037,6 +3160,78 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         pack.federalTax.capitalLossOrdinaryOffsetLimit,
       ).netCapitalGain
 
+    const assumedLine8ByOwner = new Map<string, {
+      gross: number
+      taxable: number
+    }>()
+    for (const effect of assumedEffects) {
+      if (effect.taxYear !== year ||
+          effect.calculationScope !== 'form8606Line8NetConversions') continue
+      const current = assumedLine8ByOwner.get(effect.ownerPersonId) ?? {
+        gross: 0,
+        taxable: 0,
+      }
+      current.gross += ledgerCentsToPlanDollars(effect.grossAmount)
+      current.taxable += ledgerCentsToPlanDollars(
+        effect.ordinaryIncomeAmount,
+      )
+      assumedLine8ByOwner.set(effect.ownerPersonId, current)
+    }
+    const ownedIraConversionTaxableFraction = (ownerPersonId: string) => {
+      const assumed = assumedLine8ByOwner.get(ownerPersonId)
+      if (assumed !== undefined && assumed.gross > 0) {
+        return Math.min(1, Math.max(0, assumed.taxable / assumed.gross))
+      }
+      return Math.min(
+        1,
+        Math.max(
+          0,
+          1 - (iraProRata.get(ownerPersonId)?.nontaxableFraction ?? 0),
+        ),
+      )
+    }
+    const conversionTaxableAmountForGross = (grossTarget: number): number => {
+      let remainingGross = Math.max(0, grossTarget)
+      let taxable = 0
+      for (const state of balances) {
+        if (!isConvertibleToRoth(state.account) || remainingGross <= 0) continue
+        const gross = Math.min(state.balance, remainingGross)
+        const fraction = isAggregatedIra(state.account)
+          ? ownedIraConversionTaxableFraction(
+            state.account.ownerPersonId ?? primary.id,
+          )
+          : 1
+        taxable += gross * fraction
+        remainingGross -= gross
+      }
+      return taxable
+    }
+    const conversionGrossAmountForTaxable = (
+      taxableTarget: number,
+    ): number => {
+      let remainingTaxable = Math.max(0, taxableTarget)
+      let gross = 0
+      for (const state of balances) {
+        if (!isConvertibleToRoth(state.account)) continue
+        const fraction = isAggregatedIra(state.account)
+          ? ownedIraConversionTaxableFraction(
+            state.account.ownerPersonId ?? primary.id,
+          )
+          : 1
+        if (fraction <= 0) {
+          gross += state.balance
+          continue
+        }
+        const take = Math.min(state.balance, remainingTaxable / fraction)
+        gross += take
+        remainingTaxable -= take * fraction
+        if (remainingTaxable <= EPSILON) break
+      }
+      // Preserve the requested-above-capacity signal so the execution path can
+      // retain its existing reduced-conversion warning.
+      return remainingTaxable > EPSILON ? gross + remainingTaxable : gross
+    }
+
     // Taxable safety-net floor, conversion side (step 7): trim a fill-to-target
     // conversion so its estimated tax bill stays payable from liquid dollars
     // above the floor after this year's pre-tax cash need. Manual/optimized
@@ -3067,7 +3262,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // they raise the headroom rather than being clamped away.
       const netLiquid = liquid + preConversionInflows - expenses.total - contributions
       const headroom = Math.max(0, netLiquid - floorNominal)
-      const taxOf = (extraOrdinary: number): number => {
+      const taxOf = (grossConversion: number): number => {
+        const extraOrdinary = conversionTaxableAmountForGross(
+          grossConversion,
+        )
         const netted = applyCapitalLossCarryforward(
           capitalLossPool,
           Math.max(0, incomeBeforeConversion + extraOrdinary),
@@ -3173,7 +3371,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           itemizedDeductions,
         })
         if (sized.ok) {
-          desired = sized.amount
+          desired = conversionGrossAmountForTaxable(sized.amount)
           if (desired > 0.01 && safetyNetFloorToday > 0) desired = trimConversionForFloor(desired)
         } else if (sized.reason === 'bad_target') {
           warnings.add('The Roth-conversion target is invalid for this plan (unknown bracket or tier); no conversion made.')
@@ -3197,9 +3395,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             const take = Math.min(state.balance, remaining)
             const sourceBalanceBefore = state.balance
             state.balance -= take
+            let producerOccurrenceKey: string | null = null
+            let ownedIraApplication:
+              SimulatorRetirementRuntimeApplication | null = null
             if (take > 0) {
               const kind = 'legacyRothConversion' as const
-              const producerOccurrenceKey = runtimeOccurrenceKey(
+              producerOccurrenceKey = runtimeOccurrenceKey(
                 kind,
                 state.account.id,
                 rothTarget.account.id,
@@ -3218,7 +3419,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               })
               if (isAggregatedIra(state.account)) {
                 ownedIraConversionCaptured = true
-                recordAnnualRetirementRuntimeApplication({
+                ownedIraApplication = recordAnnualRetirementRuntimeApplication({
                   applicationKind: 'debit',
                   producerOccurrenceKey,
                   simulatorPhase: 'legacyRothConversion',
@@ -3236,8 +3437,16 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             if (take > 0 && state.account.kind === 'ira') {
               const ownerId = state.account.ownerPersonId ?? primary.id
               const proRata = iraProRata.get(ownerId)
-              if (proRata) {
-                const split = splitIraDistribution(proRata, take)
+              if (proRata && producerOccurrenceKey !== null &&
+                  ownedIraApplication?.applicationKind === 'debit') {
+                const split = splitWithAssumedCharacter(proRata, take, {
+                  ownerPersonId: ownerId,
+                  calculationScope: 'form8606Line8NetConversions',
+                  occurrenceKind: 'legacyRothConversion',
+                  producerOccurrenceKey,
+                  sourceAccountId: state.account.id,
+                  mutationOrdinal: ownedIraApplication.mutationOrdinal,
+                })
                 iraProRata.set(ownerId, split.next)
                 conversionNontaxable += split.nontaxable
               }
@@ -3365,24 +3574,86 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // the year they turned 55 (IRAs never qualify); "separation" is approximated
     // by the owner's retirement age. 72(t) SEPP distributions are taken outside
     // this need-based flow (above), so they're already penalty-free.
-    const penaltiesFor = (byAccountId: Map<string, number>): number => {
-      let total = 0
-      // Per-owner taxable fraction of aggregated-IRA draws (step 5). The 10%
-      // additional tax applies only to the portion included in gross income
-      // (IRS Topic 557), so nondeductible basis returned pro-rata is not
-      // penalized. Computed against the same current pro-rata state as
-      // `iraBasisEffect`, so the two stay consistent within an iteration.
-      const iraTaxableFraction = new Map<string, number>()
-      for (const [ownerId, proRata] of iraProRata) {
-        let taken = 0
-        for (const state of balances) {
-          if (!isAggregatedIra(state.account)) continue
-          if ((state.account.ownerPersonId ?? primary.id) !== ownerId) continue
-          taken += byAccountId.get(state.account.id) ?? 0
-        }
-        if (taken <= 0) continue
-        iraTaxableFraction.set(ownerId, splitIraDistribution(proRata, taken).taxable / taken)
+    interface NeedBasedOwnedIraCharacter {
+      readonly nontaxable: number
+      readonly taxableBySourceAccountId: ReadonlyMap<string, number>
+    }
+    const needBasedOwnedIraCharacter = (
+      byAccountId: ReadonlyMap<string, number>,
+    ): NeedBasedOwnedIraCharacter => {
+      const entriesByOwner = new Map<string, Array<{
+        sourceAccountId: string
+        grossAmount: number
+        assumed: { basisReturn: number; ordinaryIncome: number } | null
+      }>>()
+      let predictedOrdinal = nextRetirementRuntimeMutationOrdinal
+      for (const state of balances) {
+        if (!isAggregatedIra(state.account)) continue
+        const grossAmount = byAccountId.get(state.account.id) ?? 0
+        if (grossAmount <= 0) continue
+        const ownerPersonId = state.account.ownerPersonId ?? primary.id
+        const producerOccurrenceKey = runtimeOccurrenceKey(
+          'legacyNeedBasedWithdrawal',
+          state.account.id,
+        )
+        const assumed = resolveAssumedCharacter({
+          ownerPersonId,
+          calculationScope: 'form8606Line7Distributions',
+          occurrenceKind: 'legacyNeedBasedWithdrawal',
+          producerOccurrenceKey,
+          sourceAccountId: state.account.id,
+          mutationOrdinal: predictedOrdinal,
+          grossAmountPlanDollars: grossAmount,
+        })
+        predictedOrdinal += 1
+        entriesByOwner.set(ownerPersonId, [
+          ...(entriesByOwner.get(ownerPersonId) ?? []),
+          { sourceAccountId: state.account.id, grossAmount, assumed },
+        ])
       }
+      let nontaxable = 0
+      const taxableBySourceAccountId = new Map<string, number>()
+      for (const [ownerPersonId, entries] of entriesByOwner) {
+        if (entries.every((entry) => entry.assumed !== null)) {
+          for (const entry of entries) {
+            const assumed = entry.assumed!
+            nontaxable += assumed.basisReturn
+            taxableBySourceAccountId.set(
+              entry.sourceAccountId,
+              (taxableBySourceAccountId.get(entry.sourceAccountId) ?? 0) +
+                assumed.ordinaryIncome,
+            )
+          }
+          continue
+        }
+        const grossAmount = entries.reduce(
+          (total, entry) => total + entry.grossAmount,
+          0,
+        )
+        const proRata = iraProRata.get(ownerPersonId)
+        const split = proRata === undefined
+          ? { nontaxable: 0, taxable: grossAmount }
+          : splitIraDistribution(proRata, grossAmount)
+        nontaxable += split.nontaxable
+        const taxableFraction = grossAmount > 0
+          ? split.taxable / grossAmount
+          : 1
+        for (const entry of entries) {
+          taxableBySourceAccountId.set(
+            entry.sourceAccountId,
+            (taxableBySourceAccountId.get(entry.sourceAccountId) ?? 0) +
+              entry.grossAmount * taxableFraction,
+          )
+        }
+      }
+      return { nontaxable, taxableBySourceAccountId }
+    }
+
+    const penaltiesFor = (
+      byAccountId: Map<string, number>,
+      iraCharacter = needBasedOwnedIraCharacter(byAccountId),
+    ): number => {
+      let total = 0
       for (const state of balances) {
         const taken = byAccountId.get(state.account.id) ?? 0
         if (taken <= 0) continue
@@ -3393,7 +3664,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           // taxable portion of an IRA with nondeductible basis; other
           // traditional accounts (employer plans, no basis) penalize in full.
           const penalizable = isAggregatedIra(state.account)
-            ? taken * (iraTaxableFraction.get(ownerId) ?? 1)
+            ? iraCharacter.taxableBySourceAccountId.get(state.account.id) ??
+              taken
             : taken
           total +=
             penalizable *
@@ -3487,21 +3759,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // Pro-rata (Form 8606) return-of-basis in a candidate's need-based IRA
     // draws (step 5). Pure — probed against the uncommitted per-owner year
     // state; the pools commit once, after the final plan.
-    const iraBasisEffect = (byAccountId: Map<string, number>): number => {
-      if (iraProRata.size === 0) return 0
-      let nontaxable = 0
-      for (const [ownerId, proRata] of iraProRata) {
-        let taken = 0
-        for (const state of balances) {
-          if (!isAggregatedIra(state.account)) continue
-          if ((state.account.ownerPersonId ?? primary.id) !== ownerId) continue
-          taken += byAccountId.get(state.account.id) ?? 0
-        }
-        nontaxable += splitIraDistribution(proRata, taken).nontaxable
-      }
-      return nontaxable
-    }
-
     // Withdrawals hold the safety-net floor (nominal) back from liquid accounts.
     const floorReserveNominal = safetyNetFloorToday > 0 ? safetyNetFloorToday * inflFactor : 0
 
@@ -3515,7 +3772,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       acaEvaluationCount++
       const withdrawalPlan = planWithdrawals(need, balances, withdrawalStrategy, year, floorReserveNominal)
       const rothEffect = rothEarlyEffect(withdrawalPlan.byAccountId)
-      const iraNontaxableProbe = iraBasisEffect(withdrawalPlan.byAccountId)
+      const iraCharacterProbe = needBasedOwnedIraCharacter(
+        withdrawalPlan.byAccountId,
+      )
+      const iraNontaxableProbe = iraCharacterProbe.nontaxable
       let candidateHsaCap = hsaQualifiedCap
       let hsaProbe = hsaEffect(withdrawalPlan.byAccountId, candidateHsaCap)
       let nettedProbe!: ReturnType<typeof applyCapitalLossCarryforward>
@@ -3618,7 +3878,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         acaSupportCodes.push('hsa-cap-fixed-point-nonconvergent')
         candidateHealthcare = healthcareExcludingAcaEnrollment + acaGrossEnrollmentPremium
       }
-      const penalties = penaltiesFor(withdrawalPlan.byAccountId) + rothEffect.penalty + hsaProbe.penalty
+      const penalties = penaltiesFor(
+        withdrawalPlan.byAccountId,
+        iraCharacterProbe,
+      ) + rothEffect.penalty + hsaProbe.penalty
       return {
         withdrawalPlan,
         tax,
@@ -3915,7 +4178,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const surplus = Math.max(0, cashInflows - expenses.total - contributions - tax - penalties)
     const rothEffectFinal = rothEarlyEffect(withdrawalPlan.byAccountId)
     const hsaEffectFinal = hsaEffect(withdrawalPlan.byAccountId)
-    const iraNontaxableFinal = iraBasisEffect(withdrawalPlan.byAccountId)
+    const iraCharacterFinal = needBasedOwnedIraCharacter(
+      withdrawalPlan.byAccountId,
+    )
+    const iraNontaxableFinal = iraCharacterFinal.nontaxable
     if (withdrawalPlan.reserveUsed > EPSILON) {
       warnings.add('Spending needs dipped into the taxable safety-net floor after all other accounts were exhausted.')
     }
@@ -4129,6 +4395,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // `incomeBeforeConversion` already nets out preTaxContributions and QCD and
     // includes RMD, so subtracting RMD leaves the non-traditional ordinary
     // income; the baseline taxable-SS portion is folded in as a constant.
+    let optimizerProbe: OptimizerYearProbe | null = null
     if (opts.captureOptimizerInputs) {
       let startTraditional = 0
       let startInheritedTraditional = 0
@@ -4140,14 +4407,43 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         }
       }
       const optimizerOrdinaryIncomeBase =
-        Math.max(0, incomeBeforeConversion - rmdTotal - inheritedTotal) + taxableSs
+        Math.max(
+          0,
+          incomeBeforeConversion -
+            (rmdTotal - rmdNontaxable) -
+            inheritedTotal,
+        ) + taxableSs
       // Deliberate conservative MILP boundary: the linear optimizer does not
       // model a signed capital-loss pool, so it never receives a negative base.
       // Candidate schedules are still repriced authoritatively by this exact
       // ledger, which preserves the signed result and carryforward.
       const optimizerCapitalGainsBase =
         Math.max(0, preWithdrawalCapitalResult) + incomes.qualifiedDividends
-      opts.captureOptimizerInputs({
+      const optimizerTraditionalGross =
+        rmdTotal + withdrawalPlan.byCategory.traditional
+      const optimizerTraditionalTaxable =
+        (rmdTotal - rmdNontaxable) +
+        (withdrawalPlan.byCategory.traditional - iraNontaxableFinal)
+      let remainingTraditionalGross = 0
+      let remainingTraditionalTaxable = 0
+      let remainingConvertibleGross = 0
+      for (const state of balances) {
+        if (state.account.type === 'traditional' &&
+            !state.account.inherited) {
+          const gross = Math.max(0, state.balance)
+          const fraction = isAggregatedIra(state.account)
+            ? ownedIraConversionTaxableFraction(
+              state.account.ownerPersonId ?? primary.id,
+            )
+            : 1
+          remainingTraditionalGross += gross
+          remainingTraditionalTaxable += gross * fraction
+        }
+        if (isConvertibleToRoth(state.account)) {
+          remainingConvertibleGross += Math.max(0, state.balance)
+        }
+      }
+      optimizerProbe = {
         year,
         ordinaryIncomeBase: optimizerOrdinaryIncomeBase,
         spendingNeed: expenses.total + contributions,
@@ -4177,21 +4473,48 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         incumbentModeledMagiBeforeTaxableWithdrawalGains:
           optimizerOrdinaryIncomeBase +
           optimizerCapitalGainsBase +
-          rmdTotal +
+          (rmdTotal - rmdNontaxable) +
           inheritedTotal +
-          rothConversion +
-          withdrawalPlan.byCategory.traditional,
+          (rothConversion - conversionNontaxable) +
+          withdrawalPlan.byCategory.traditional -
+          iraNontaxableFinal,
         incumbentTaxableWithdrawal: withdrawalPlan.byCategory.taxable,
         acaModeledAllowablePtc: yearAcaResult?.modeledAllowablePtc ?? null,
         acaCliffState: yearAcaResult?.cliffState ?? null,
         incumbentRothConversion: rothConversion,
+        rothConversionTaxableFraction:
+          rothConversion > 0
+            ? Math.min(
+              1,
+              Math.max(
+                0,
+                (rothConversion - conversionNontaxable) / rothConversion,
+              ),
+            )
+            : remainingConvertibleGross > 0
+              ? conversionTaxableAmountForGross(remainingConvertibleGross) /
+                remainingConvertibleGross
+              : 1,
         rmd: rmdTotal,
+        rmdTaxable: Math.max(0, rmdTotal - rmdNontaxable),
+        traditionalWithdrawalTaxableFraction:
+          optimizerTraditionalGross > 0
+            ? Math.min(
+              1,
+              Math.max(
+                0,
+                optimizerTraditionalTaxable / optimizerTraditionalGross,
+              ),
+            )
+            : remainingTraditionalGross > 0
+              ? remainingTraditionalTaxable / remainingTraditionalGross
+              : 1,
         startTraditional,
         inheritedDistribution: inheritedTotal,
         startInheritedTraditional,
         peopleAged65Plus,
         ssa44IrmaaRedetermination: ssa44ActiveInYear(year),
-      })
+      }
     }
 
     // --- apply flows -------------------------------------------------------
@@ -4566,7 +4889,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         ),
       ),
     })
-    years.push({
+    const yearResult: YearResult = {
       year,
       people: peopleStates,
       filingStatus: filingStatusForYear,
@@ -4621,7 +4944,192 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       hecmDraw,
       hecmLoanBalance: hecmLoanTotal,
       netWorth: investableTotal + propertyTotal - debtTotal + insuranceCashValueTotal + ladderValueTotal - hecmEffectiveDebt,
-    })
+    }
+    return { yearResult, optimizerProbe }
+    }
+
+    const annualPassState: SimulatorAnnualPassStateBindings = {
+      balances,
+      retirementRuntimeOccurrences: annualRetirementRuntimeOccurrences,
+      retirementRuntimeApplications: annualRetirementRuntimeApplications,
+      nextRetirementRuntimeMutationOrdinal: annualPassValueBinding(
+        () => nextRetirementRuntimeMutationOrdinal,
+        (value) => { nextRetirementRuntimeMutationOrdinal = value },
+      ),
+      iraProRata,
+      iraBasisByOwner,
+      rothBasis,
+      propertyValues,
+      hecmStates,
+      insuranceCashValues,
+      allocationTrack,
+      seppAmortAmount,
+      magiHistory,
+      warnings,
+      unassignedCash: annualPassValueBinding(
+        () => unassignedCash,
+        (value) => { unassignedCash = value },
+      ),
+      priorYearPortfolioReturnPct: annualPassValueBinding(
+        () => priorYearPortfolioReturnPct,
+        (value) => { priorYearPortfolioReturnPct = value },
+      ),
+      capitalLossPool: annualPassValueBinding(
+        () => capitalLossPool,
+        (value) => { capitalLossPool = value },
+      ),
+      hsaReimbursablePool: annualPassValueBinding(
+        () => hsaReimbursablePool,
+        (value) => { hsaReimbursablePool = value },
+      ),
+      depletionYear: annualPassValueBinding(
+        () => depletionYear,
+        (value) => { depletionYear = value },
+      ),
+      conversionNontaxable: annualPassValueBinding(
+        () => conversionNontaxable,
+        (value) => { conversionNontaxable = value },
+      ),
+      healthcare: annualPassValueBinding(
+        () => healthcare,
+        (value) => { healthcare = value },
+      ),
+      qualifiedMedicalThisYear: annualPassValueBinding(
+        () => qualifiedMedicalThisYear,
+        (value) => { qualifiedMedicalThisYear = value },
+      ),
+      hsaQualifiedCap: annualPassValueBinding(
+        () => hsaQualifiedCap,
+        (value) => { hsaQualifiedCap = value },
+      ),
+      requiredSpendingBase: annualPassValueBinding(
+        () => requiredSpendingBase,
+        (value) => { requiredSpendingBase = value },
+      ),
+      targetSpendingBase: annualPassValueBinding(
+        () => targetSpendingBase,
+        (value) => { targetSpendingBase = value },
+      ),
+      expenses,
+    }
+
+    const basisSeededOwners = new Set<string>()
+    const annualSettlementPlan: Plan = {
+      ...plan,
+      accounts: plan.accounts.map((account): Account => {
+        const openingBalance = startOfYearBalance.get(account.id)
+        const annualAccount = openingBalance === undefined
+          ? account
+          : { ...account, balance: openingBalance }
+        if (!isAggregatedIra(annualAccount)) return annualAccount
+        const ownerPersonId = annualAccount.ownerPersonId ?? primary.id
+        const nondeductibleBasis = basisSeededOwners.has(ownerPersonId)
+          ? 0
+          : iraBasisByOwner.get(ownerPersonId) ?? 0
+        basisSeededOwners.add(ownerPersonId)
+        return { ...annualAccount, nondeductibleBasis }
+      }),
+    }
+
+    let settledAnnualPass: ReturnType<typeof runPostContributionAnnualPass>
+    if (ownedNonRothIraSettlementEnabled) {
+      let finalAttempt:
+        ReturnType<typeof runPostContributionAnnualPass> | null = null
+      const settlement = runOwnedNonRothIraAnnualSettlementAttempts({
+        state: annualPassState,
+        plan: annualSettlementPlan,
+        projectionStartTaxYear: year,
+        initialAssumedEffects: [],
+        runAttempt: (context) => {
+          const attempt = runPostContributionAnnualPass(
+            context.assumedEffects,
+          )
+          finalAttempt = attempt
+          return [attempt.yearResult]
+        },
+        captureAttemptStateEvidence: (context, yearResult) =>
+          captureOwnedNonRothIraAnnualAttemptStateEvidence({
+            state: annualPassState,
+            planId: context.stable.planId,
+            taxYear: yearResult.year,
+            attemptNumber: context.attemptNumber,
+          }),
+      })
+      if (settlement.status === 'committed' && finalAttempt !== null) {
+        settledAnnualPass = finalAttempt
+        if (settledAnnualPass.optimizerProbe !== null) {
+          const annualReplay = settlement.pendingSettlement.replay
+            .annualReplays[0]!
+          const taxableFractionByOwner = new Map<string, number>(
+            annualReplay.ownerReplays.map((owner) => {
+              const ratio = owner.annualBasisRatio
+              const nontaxableFraction =
+                ratio.representation === 'exactMinorUnitRational'
+                  ? ratio.numeratorMinorUnits / ratio.denominatorMinorUnits
+                  : 0
+              return [
+                owner.ownerPersonId,
+                Math.min(1, Math.max(0, 1 - nontaxableFraction)),
+              ] as const
+            }),
+          )
+          const weightedTaxableFraction = (
+            eligible: (account: Account) => boolean,
+          ): number | null => {
+            let gross = 0
+            let taxable = 0
+            for (const account of plan.accounts) {
+              if (!eligible(account)) continue
+              const balance = Math.max(
+                0,
+                settledAnnualPass.yearResult.balances[account.id] ?? 0,
+              )
+              if (balance <= 0) continue
+              const fraction = isAggregatedIra(account)
+                ? taxableFractionByOwner.get(
+                  account.ownerPersonId ?? primary.id,
+                ) ?? 1
+                : 1
+              gross += balance
+              taxable += balance * fraction
+            }
+            return gross > 0 ? taxable / gross : null
+          }
+          const traditionalFraction = weightedTaxableFraction((account) =>
+            account.type === 'traditional' && !account.inherited)
+          const conversionFraction = weightedTaxableFraction(
+            isConvertibleToRoth,
+          )
+          settledAnnualPass = {
+            ...settledAnnualPass,
+            optimizerProbe: {
+              ...settledAnnualPass.optimizerProbe,
+              traditionalWithdrawalTaxableFraction:
+                traditionalFraction ?? settledAnnualPass.optimizerProbe
+                  .traditionalWithdrawalTaxableFraction,
+              rothConversionTaxableFraction:
+                conversionFraction ?? settledAnnualPass.optimizerProbe
+                  .rothConversionTaxableFraction,
+            },
+          }
+        }
+        for (const carryforward of settlement.committedCarryforwards) {
+          iraBasisByOwner.set(
+            carryforward.ownerPersonId,
+            ledgerCentsToPlanDollars(carryforward.openingBasisAmount),
+          )
+        }
+      } else {
+        ownedNonRothIraSettlementEnabled = false
+        settledAnnualPass = runPostContributionAnnualPass([])
+      }
+    } else {
+      settledAnnualPass = runPostContributionAnnualPass([])
+    }
+    years.push(settledAnnualPass.yearResult)
+    if (settledAnnualPass.optimizerProbe !== null) {
+      opts.captureOptimizerInputs?.(settledAnnualPass.optimizerProbe)
+    }
   }
 
   const last = years[years.length - 1]
