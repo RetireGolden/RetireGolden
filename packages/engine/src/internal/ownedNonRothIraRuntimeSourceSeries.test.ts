@@ -114,6 +114,57 @@ describe('private owned-IRA runtime source-series validation', () => {
       .not.toHaveProperty('destinationBalanceAfterAmount')
   })
 
+  it('rejects a conversion credit forged onto a non-selected Plan Roth account', () => {
+    const plan = singlePersonPlan({ planningAge: 60 })
+    plan.id = 'forged-roth-destination'
+    plan.accounts = [
+      traditional('ira', 10_000),
+      roth('first-roth'),
+      roth('second-roth'),
+    ]
+    plan.strategies.rothConversion = {
+      mode: 'manual', conversions: [{ year: TAX_YEAR, amount: 1_000 }],
+    }
+    const years = copy(project(plan))
+    const occurrences = years[0]!.retirementRuntimeSource!.runtimeOccurrences
+    const applications = years[0]!.retirementRuntimeApplicationSource!.applications
+    const replacementKeys = new Map<string, string>()
+    for (const occurrence of occurrences) {
+      if (occurrence.kind !== 'legacyRothConversion') continue
+      const tuple = JSON.parse(occurrence.producerOccurrenceKey) as unknown[]
+      const replacement = JSON.stringify([tuple[0], tuple[1], 'second-roth'])
+      replacementKeys.set(occurrence.producerOccurrenceKey, replacement)
+      ;(occurrence as { producerOccurrenceKey: string }).producerOccurrenceKey = replacement
+    }
+    for (const application of applications) {
+      if (application.applicationKind === 'aggregateRothDestinationCredit') {
+        const mutable = application as unknown as {
+          producerOccurrenceKeys: string[]
+          destinationRothAccountId: string
+          destinationBalanceBeforePlanDollars: number
+          destinationCreditedAmountPlanDollars: number
+          destinationBalanceAfterPlanDollars: number
+        }
+        mutable.producerOccurrenceKeys = mutable.producerOccurrenceKeys
+          .map((key) => replacementKeys.get(key) ?? key)
+        mutable.destinationRothAccountId = 'second-roth'
+        mutable.destinationBalanceBeforePlanDollars = 0
+        mutable.destinationBalanceAfterPlanDollars =
+          mutable.destinationCreditedAmountPlanDollars
+      } else {
+        ;(application as { producerOccurrenceKey: string }).producerOccurrenceKey =
+          replacementKeys.get(application.producerOccurrenceKey) ??
+          application.producerOccurrenceKey
+      }
+    }
+
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, years))
+      .toMatchObject({
+        status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+        issues: [{ kind: 'aggregateRothCreditInvalid' }],
+      })
+  })
+
   it('rejects a suffix that does not begin at the authoritative projection start', () => {
     const plan = singlePersonPlan({ planningAge: 61 })
     plan.id = 'suffix-rejected'
@@ -302,6 +353,33 @@ describe('private owned-IRA runtime source-series validation', () => {
         issues: [{ kind: 'sourceCoverageInvalid' }],
       })
     }
+
+    const needPlan = singlePersonPlan({ planningAge: 60 })
+    needPlan.id = 'missing-need-withdrawal-source'
+    needPlan.accounts = [traditional('ira', 100_000)]
+    needPlan.expenses.baseAnnual = 1_000
+    const missingNeed = copy(project(needPlan))
+    const needOccurrence = missingNeed[0]!.retirementRuntimeSource!
+      .runtimeOccurrences.find((occurrence) =>
+        occurrence.kind === 'legacyNeedBasedWithdrawal')!
+    ;(missingNeed[0]!.retirementRuntimeSource!.runtimeOccurrences as unknown as
+      Array<{ producerOccurrenceKey: string }>).splice(
+      missingNeed[0]!.retirementRuntimeSource!.runtimeOccurrences.indexOf(needOccurrence),
+      1,
+    )
+    ;(missingNeed[0]!.retirementRuntimeApplicationSource!.applications as unknown as
+      Array<{ producerOccurrenceKey: string | null }>).splice(
+      missingNeed[0]!.retirementRuntimeApplicationSource!.applications
+        .findIndex((application) =>
+          application.producerOccurrenceKey === needOccurrence.producerOccurrenceKey),
+      1,
+    )
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(
+      needPlan, TAX_YEAR, missingNeed,
+    )).toMatchObject({
+      status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+      issues: [{ kind: 'sourceCoverageInvalid' }],
+    })
   })
 
   it('fails the entire source series on a later balance-chain or pool-completeness break', () => {
@@ -339,15 +417,68 @@ describe('private owned-IRA runtime source-series validation', () => {
       .toMatchObject({ status: 'ownedNonRothIraRuntimeSourceSeriesBlocked', issues: [{ kind: 'postGrowthPoolInvalid' }] })
   })
 
-  it('reconciles large multi-account totals in simulator Plan order', () => {
+  it('reconciles Plan-order annual totals larger than one UsdCents value', () => {
     const plan = singlePersonPlan({ dob: '1950-01-01', planningAge: 76 })
     plan.id = 'large-plan-order-total'
-    plan.accounts = Array.from({ length: 20 }, (_, index) =>
-      traditional(`ira-${String(20 - index).padStart(2, '0')}`, 40_000_000_000_000))
+    plan.accounts = Array.from({ length: 30 }, (_, index) =>
+      traditional(`ira-${String(30 - index).padStart(2, '0')}`, 80_000_000_000_000))
 
-    expect(validateOwnedNonRothIraRuntimeSourceSeries(
-      plan, TAX_YEAR, project(plan),
-    )).toMatchObject({ status: 'ownedNonRothIraRuntimeSourceSeriesComplete' })
+    const years = project(plan)
+    expect(years[0]!.rmd).toBeGreaterThan(Number.MAX_SAFE_INTEGER / 100)
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, years))
+      .toMatchObject({ status: 'ownedNonRothIraRuntimeSourceSeriesComplete' })
+  })
+
+  it('blocks exact-action IRA movement pending identity and tax characterization', () => {
+    const plan = singlePersonPlan({ planningAge: 60 })
+    plan.id = 'exact-action-chain'
+    plan.accounts = [traditional('ira', 1_000), roth('roth')]
+    plan.strategies.rothConversion = {
+      mode: 'manual', conversions: [{ year: TAX_YEAR, amount: 100 }],
+    }
+    const years = copy(project(plan))
+    const conversion = years[0]!.retirementRuntimeApplicationSource!.applications
+      .find((application) =>
+        application.applicationKind !== 'aggregateRothDestinationCredit' &&
+        application.simulatorPhase === 'legacyRothConversion')
+    if (!conversion || conversion.applicationKind === 'aggregateRothDestinationCredit') {
+      throw new Error('expected conversion debit')
+    }
+    ;(conversion as {
+      sourceBalanceBeforePlanDollars: number
+      sourceBalanceAfterPlanDollars: number
+    }).sourceBalanceBeforePlanDollars = 900
+    ;(conversion as {
+      sourceBalanceAfterPlanDollars: number
+    }).sourceBalanceAfterPlanDollars = 800
+    const rawEnd = years[0]!.ownedNonRothIraPostGrowthSource!
+      .ownerPools[0]!.accountBalances[0]! as { balancePlanDollars: number }
+    rawEnd.balancePlanDollars = 800
+    years[0]!.balances.ira = 800
+    years[0]!.retirementActionExecution = {
+      committed: true,
+      scheduleIssues: [],
+      balances: [{
+        accountId: 'ira',
+        openingBalance: 100_000,
+        closingBalance: 90_000,
+      }],
+      taxableBases: [],
+      evidence: [{
+        allocations: [{
+          sourceAccountId: 'ira',
+          executedAmount: 10_000,
+          balanceBefore: 100_000,
+          balanceAfter: 90_000,
+        }],
+      }],
+    } as unknown as NonNullable<YearResult['retirementActionExecution']>
+
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, years))
+      .toMatchObject({
+        status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+        issues: [{ kind: 'exactActionStageRequired' }],
+      })
   })
 
   it('snapshots each post-growth balance scalar once before validation and emission', () => {
@@ -399,6 +530,18 @@ describe('private owned-IRA runtime source-series validation', () => {
     ]
     expect(validateOwnedNonRothIraRuntimeSourceSeries(annuityPlan, TAX_YEAR, project(annuityPlan)))
       .toMatchObject({ status: 'ownedNonRothIraRuntimeSourceSeriesBlocked', issues: [{ kind: 'annuityStageRequired' }] })
+
+    const missingAnnuitySources = copy(project(annuityPlan))
+    ;(missingAnnuitySources[0]!.retirementRuntimeSource!.runtimeOccurrences as unknown as unknown[])
+      .splice(0)
+    ;(missingAnnuitySources[0]!.retirementRuntimeApplicationSource!.applications as unknown as unknown[])
+      .splice(0)
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(
+      annuityPlan, TAX_YEAR, missingAnnuitySources,
+    )).toMatchObject({
+      status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+      issues: [{ kind: 'annuityStageRequired' }],
+    })
   })
 
   it('fails closed without rereading hostile rejected year input', () => {

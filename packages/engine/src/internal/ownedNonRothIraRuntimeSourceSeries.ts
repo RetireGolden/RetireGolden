@@ -27,6 +27,7 @@ export type OwnedNonRothIraRuntimeSourceSeriesIssueKind =
   | 'postGrowthPoolInvalid'
   | 'qcdStageRequired'
   | 'annuityStageRequired'
+  | 'exactActionStageRequired'
   | 'aggregateRothCreditInvalid'
   | 'sourceSeriesConstructionInvalid'
 
@@ -218,14 +219,13 @@ function rawTotalsReconcile(
   )
 }
 
-function reconcilePublishedTotal(
+function occurrenceTotalInPlanOrder(
   occurrences: readonly Readonly<SimulatorAnnualRetirementRuntimeOccurrence>[],
   kinds: readonly SimulatorAnnualRetirementRuntimeOccurrence['kind'][],
-  publishedPlanDollars: number,
   label: string,
   taxYear: number,
   accountOrder: ReadonlyMap<string, number>,
-): void {
+): { total: number; count: number } {
   const selectedKinds = new Set(kinds)
   const selectedOccurrences = occurrences
     .filter((occurrence) => selectedKinds.has(occurrence.kind))
@@ -237,16 +237,70 @@ function reconcilePublishedTotal(
     `${label} occurrence total`,
     { taxYear },
   )
-  cents(occurrenceTotal, `${label} occurrence total`, { taxYear })
-  cents(publishedPlanDollars, `Published ${label} total`, { taxYear })
+  return { total: occurrenceTotal, count: selectedOccurrences.length }
+}
+
+function reconcilePublishedTotal(
+  occurrences: readonly Readonly<SimulatorAnnualRetirementRuntimeOccurrence>[],
+  kinds: readonly SimulatorAnnualRetirementRuntimeOccurrence['kind'][],
+  publishedPlanDollars: number,
+  label: string,
+  taxYear: number,
+  accountOrder: ReadonlyMap<string, number>,
+): void {
+  const occurrenceTotal = occurrenceTotalInPlanOrder(
+    occurrences, kinds, label, taxYear, accountOrder,
+  )
+  if (!Number.isFinite(publishedPlanDollars) || publishedPlanDollars < 0 ||
+      Object.is(publishedPlanDollars, -0)) {
+    fail('sourceAmountInvalid', `Published ${label} total must be finite, nonnegative, and not negative zero`, {
+      taxYear,
+    })
+  }
   if (!rawTotalsReconcile(
-    occurrenceTotal,
+    occurrenceTotal.total,
     publishedPlanDollars,
-    selectedOccurrences.length,
+    occurrenceTotal.count,
   )) {
     fail('sourceCoverageInvalid', `${label} occurrences must exact-rejoin the published annual total`, {
       taxYear,
     })
+  }
+}
+
+function requireNoExactActionOwnedIraMovement(
+  yearResult: Readonly<YearResult>,
+  accountById: ReadonlyMap<string, Account>,
+  taxYear: number,
+): void {
+  const execution = yearResult.retirementActionExecution
+  if (execution === undefined) return
+
+  for (const evidence of execution.evidence) {
+    for (const allocation of evidence.allocations) {
+      const accountId = String(allocation.sourceAccountId)
+      const account = accountById.get(accountId)
+      if (!account || !isAggregatedIra(account)) continue
+      const executedAmount = allocation.executedAmount
+      if (executedAmount !== 0) {
+        fail('exactActionStageRequired', 'Exact-action owned-IRA movement requires an identity and tax-characterization stage before source replay', {
+          taxYear, sourceAccountId: accountId,
+        })
+      }
+    }
+  }
+
+  for (const snapshot of execution.balances) {
+    const accountId = String(snapshot.accountId)
+    const account = accountById.get(accountId)
+    if (!account || !isAggregatedIra(account)) continue
+    const openingBalance = snapshot.openingBalance
+    const closingBalance = snapshot.closingBalance
+    if (closingBalance !== openingBalance) {
+      fail('exactActionStageRequired', 'Exact-action owned-IRA movement requires an identity and tax-characterization stage before source replay', {
+        taxYear, sourceAccountId: accountId,
+      })
+    }
   }
 }
 
@@ -462,10 +516,12 @@ function aggregateRothCredit(
   }
   const destinationId = credit.destinationRothAccountId
   const destination = plan.accounts.find((account) => account.id === destinationId)
+  const simulatorDestination = plan.accounts.find((account) => account.type === 'roth')
   if (destinationId === null || destination?.type !== 'roth' ||
+      simulatorDestination?.id !== destinationId ||
       credit.destinationOwnerPersonId === null || destination.ownerPersonId !== credit.destinationOwnerPersonId ||
       ordered.some((entry) => parseKey(entry.producerOccurrenceKey, taxYear)[2] !== destinationId)) {
-    fail('aggregateRothCreditInvalid', 'Aggregate Roth credit must bind the common actual Plan Roth destination', context)
+    fail('aggregateRothCreditInvalid', 'Aggregate Roth credit must bind the simulator-selected first Plan Roth destination', context)
   }
   const rawTotal = summedPlanDollars(
     ordered.map((entry) => entry.grossAmountPlanDollars),
@@ -643,6 +699,52 @@ function validateUnchecked(
       taxYear,
       accountOrder,
     )
+    const legacyNeedBasedWithdrawalTotal = occurrenceTotalInPlanOrder(
+      occurrenceSource.runtimeOccurrences,
+      ['legacyNeedBasedWithdrawal'],
+      'legacy need-based traditional withdrawal',
+      taxYear,
+      accountOrder,
+    )
+    const reconstructedTraditionalWithdrawal =
+      ((legacyNeedBasedWithdrawalTotal.total + yearResult.rmd) + yearResult.sepp) +
+      yearResult.inheritedDistribution
+    if (!Number.isFinite(yearResult.withdrawals.traditional) ||
+        yearResult.withdrawals.traditional < 0 ||
+        Object.is(yearResult.withdrawals.traditional, -0)) {
+      fail('sourceAmountInvalid', 'Published traditional withdrawal total must be finite, nonnegative, and not negative zero', {
+        taxYear,
+      })
+    }
+    if (!rawTotalsReconcile(
+      reconstructedTraditionalWithdrawal,
+      yearResult.withdrawals.traditional,
+      legacyNeedBasedWithdrawalTotal.count + 3,
+    )) {
+      fail('sourceCoverageInvalid', 'Legacy need-based withdrawal occurrences plus RMD, SEPP, and inherited totals must exact-rejoin published traditional withdrawals', {
+        taxYear,
+      })
+    }
+
+    requireNoExactActionOwnedIraMovement(yearResult, accountById, taxYear)
+
+    for (const annuity of plan.accounts) {
+      if (annuity.type !== 'annuity' || annuity.purchase?.year !== taxYear ||
+          annuity.purchase.premium <= 0) continue
+      const funding = accountById.get(annuity.purchase.fundingAccountId)
+      if (!funding || !isAggregatedIra(funding)) continue
+      const sourceAccountId = asAccountId(funding.id)
+      if ((openingRawBalances.get(sourceAccountId) ?? 0) <= 0) continue
+      const expectedKey = JSON.stringify([
+        'annuityFundingTransfer', funding.id, annuity.id,
+      ])
+      if (!occurrenceByKey.has(expectedKey)) {
+        fail('annuityStageRequired', 'A funded Plan annuity purchase requires its owned-IRA transfer source', {
+          taxYear, sourceAccountId: funding.id,
+          producerOccurrenceKey: expectedKey,
+        })
+      }
+    }
 
     const expectedOwners = [...pools.keys()]
     if (balanceSource.ownerPools.length !== expectedOwners.length) {
