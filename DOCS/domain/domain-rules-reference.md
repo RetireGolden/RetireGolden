@@ -613,6 +613,16 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   provisional Form 8606 line-7/line-8/QCD categories, and a typed choice between the isolated standalone
   executor and a future unified annual ledger. It commits no balance or basis, computes no tax or
   penalty, changes no `YearResult`, and establishes neither movement nor actionability.
+  The pure `preparePlanOwnedNonRothIraAnnualCandidateTransaction` boundary consumes only that
+  standalone-compatible inventory branch. It rebuilds the inventory, derives the exact canonical
+  Plan-owned action/source batch and classification lineage, and stages physical movement against one
+  caller-supplied exact-cent opening balance per requested source. Its frozen allocation applications
+  and opening-to-candidate-closing source transitions reconcile exact staged proceeds and carry a
+  collision-checked structural transaction ID. The transaction is applied to detached evidence only:
+  `movement` remains `notCommitted`, `actionability` remains `notEstablished`, and it publishes no
+  December 31 snapshot, basis allocation, tax character, penalty, finalization, or simulator mutation.
+  Runtime activity, mixed owners, conversions/QCDs, and non-owned sources retain the inventory's typed
+  unified-ledger requirement; incomplete activity and malformed chronology pass through fail-closed.
   The pure `buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput` boundary consumes only the
   standalone-compatible branch of that inventory. It reruns both inventory construction and canonical
   movement staging, exact-rejoins the supplied staged candidate, and requires an exactly-once

@@ -80,6 +80,13 @@ Source of truth: [github.com/RetireGolden/RetireGolden](https://github.com/Retir
   exact-rejoins the canonical candidate, complete December 31 owner pool, basis,
   and contribution-window evidence into a frozen classifier input without
   classifying, executing, or integrating with projection.
+- `preparePlanOwnedNonRothIraAnnualCandidateTransaction` is the pure provisional
+  producer for that batch. It rebuilds the annual physical-event inventory,
+  derives the exact Plan-owned action/source batch, and stages it against
+  caller-supplied exact-cent balances. Its frozen applications and source
+  transitions apply only to a detached snapshot: movement and actionability
+  remain unestablished, and it publishes no December 31, tax, penalty, basis,
+  or finalization claim.
 - `executePlanOwnedNonRothIraAnnualPostCandidate` is the matching pure commit
   binder. It rebuilds that evidence, reruns the candidate-level annual
   finalizer, exact-rejoins caller-supplied reconciliation and finalization, and
