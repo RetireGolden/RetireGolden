@@ -350,7 +350,13 @@ function claimPlanIdentifiers(
     claimIdentifier(claimed, careEvent.id, 'careEventId', [planId, careEvent], issues)
   }
   for (const ladder of plan.incomeFloor?.ladders ?? []) {
-    claimIdentifier(claimed, ladder.id, 'tipsLadderId', [planId, ladder], issues)
+    claimIdentifier(
+      claimed,
+      ladder.id,
+      'incomeFloorLadderId',
+      [planId, ladder],
+      issues,
+    )
   }
   for (const income of plan.incomes) {
     claimIdentifier(claimed, income.id, 'incomeStreamId', [planId, income], issues)
