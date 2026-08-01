@@ -2,7 +2,11 @@
 import { describe, expect, it } from 'vitest'
 
 import type { OptimizedSchedule } from '@retiregolden/engine/strategies/optimizer'
-import { buildOptimizeChartRows, shouldShowRecommendedScheduleBars } from './optimizePageChart'
+import {
+  actionableTournamentConversions,
+  buildOptimizeChartRows,
+  shouldShowRecommendedScheduleBars,
+} from './optimizePageChart'
 
 function schedule(conversions: { year: number; amount: number }[]): OptimizedSchedule {
   return {
@@ -16,6 +20,20 @@ function schedule(conversions: { year: number; amount: number }[]): OptimizedSch
 }
 
 describe('OptimizePage tournament display helpers', () => {
+  it('only exposes a tournament winner schedule for an actionable winner', () => {
+    const conversions = [{ year: 2026, amount: 5_000 }]
+    const tournament = (winnerSource: 'candidate' | 'milp' | 'incumbent' | 'none') => ({
+      winnerSource,
+      winnerConversions: conversions,
+    })
+
+    expect(actionableTournamentConversions(tournament('candidate'))).toBe(conversions)
+    expect(actionableTournamentConversions(tournament('milp'))).toBe(conversions)
+    expect(actionableTournamentConversions(tournament('incumbent'))).toEqual([])
+    expect(actionableTournamentConversions(tournament('none'))).toEqual([])
+    expect(actionableTournamentConversions(null)).toEqual([])
+  })
+
   it('shows recommended bars when a candidate wins even without a cleanup mismatch', () => {
     expect(shouldShowRecommendedScheduleBars(true, false)).toBe(true)
     expect(shouldShowRecommendedScheduleBars(false, true)).toBe(true)

@@ -1,4 +1,5 @@
 import type { OptimizedSchedule } from '@retiregolden/engine/strategies/optimizer'
+import type { ExactLedgerTournament } from '@retiregolden/engine/projection/optimizePlan'
 import type { OptimizePostProcessing } from '../optimize/messages'
 
 export interface OptimizeChartRow {
@@ -6,6 +7,14 @@ export interface OptimizeChartRow {
   requested: number
   cleaned: number
   executed: number
+}
+
+export function actionableTournamentConversions(
+  tournament: Pick<ExactLedgerTournament, 'winnerSource' | 'winnerConversions'> | null,
+): { year: number; amount: number }[] {
+  return tournament?.winnerSource === 'candidate' || tournament?.winnerSource === 'milp'
+    ? tournament.winnerConversions
+    : []
 }
 
 export function buildOptimizeChartRows({

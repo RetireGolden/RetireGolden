@@ -33,7 +33,11 @@ import { CheckboxField, HelpTip, SelectField } from './fields'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { fmtMoney, fmtMoneyCompact } from './format'
 import { LEARN } from './learnLinks'
-import { buildOptimizeChartRows, shouldShowRecommendedScheduleBars } from './optimizePageChart'
+import {
+  actionableTournamentConversions,
+  buildOptimizeChartRows,
+  shouldShowRecommendedScheduleBars,
+} from './optimizePageChart'
 import { applyOptimizeRecommendation, claimEstateGain, planWithWinningClaim } from './optimizePageClaim'
 import { currentStartYear, projectPlan, seedFromPlanId } from './useProjection'
 import { chartTooltipStyle } from './chartStyle'
@@ -168,15 +172,9 @@ export function OptimizePage() {
   // fresh solver proposal that loses to the incumbent shows scary negatives).
   const incumbentHolds = tournament?.winnerSource === 'incumbent'
   const candidateReplacedMilp = candidateWins && postProcessed?.recommendationSchedule === 'cleaned'
-  const displaySchedule = postProcessed?.cleanedSchedule ?? schedule
   const recommendedConversions = useMemo(
-    () =>
-      incumbentHolds
-        ? [] // the plan already holds the best schedule — nothing to apply or Monte-Carlo
-        : candidateWins
-          ? tournament!.winnerConversions
-          : (displaySchedule?.conversions ?? []),
-    [incumbentHolds, candidateWins, tournament, displaySchedule],
+    () => actionableTournamentConversions(tournament),
+    [tournament],
   )
   // Step 5 claim-age co-optimization: when a claim change won, the schedule and
   // every validation delta on this page were computed against the claim-patched

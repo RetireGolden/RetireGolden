@@ -1634,14 +1634,12 @@ export async function optimizePlan(plan: Plan, opts: OptimizePlanOptions): Promi
   // prices higher, so convergence-enabled can never do worse than disabled.
   if (convergence.enabled && schedule !== firstSchedule) {
     const firstPostProcessed = postProcessExactLedgerSchedule(plan, firstSchedule, baselineResult, simulateOptions)
-    const convergedDelta =
-      postProcessed && postProcessed.recommendationSchedule === 'cleaned'
-        ? postProcessed.cleanedValidation.afterTaxEstateDelta
-        : -Infinity
-    const firstDelta =
-      firstPostProcessed.recommendationSchedule === 'cleaned'
-        ? firstPostProcessed.cleanedValidation.afterTaxEstateDelta
-        : -Infinity
+    // Recommendation withholding is a presentation/actionability decision, not
+    // a valuation result. Compare the exact cleaned deltas even when both
+    // schedules are withheld, otherwise two `none` results collapse to
+    // -Infinity and silently prefer the converged schedule.
+    const convergedDelta = postProcessed?.cleanedValidation.afterTaxEstateDelta ?? -Infinity
+    const firstDelta = firstPostProcessed.cleanedValidation.afterTaxEstateDelta
     if (firstDelta > convergedDelta) {
       schedule = firstSchedule
       input = firstInput

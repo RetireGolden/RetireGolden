@@ -181,6 +181,35 @@ describe('evaluateCandidate', () => {
     expect(evaluation.diagnostics).toEqual([])
   })
 
+  it('does not gate a normalized legacy strategies override when only unrelated values change', () => {
+    const plan = tradHeavyPlan()
+    const ctx = createDecisionContext(plan, simOptions())
+    const edits = [
+      {
+        ...plan.strategies,
+        taxableSafetyNetFloor: (plan.strategies.taxableSafetyNetFloor ?? 0) + 1_000,
+      },
+      {
+        ...plan.strategies,
+        itemizedDeductions: {
+          stateAndLocalTaxes: 1_000,
+          mortgageInterest: 0,
+          charitable: 0,
+        },
+      },
+    ]
+
+    for (const strategies of edits) {
+      const evaluation = evaluateCandidate(
+        ctx,
+        rothCandidate({ planPatch: { strategies } }),
+        { candidateResult: ctx.baselineResult },
+      )
+      expect(evaluation.recommendationState).toBe('neutral')
+      expect(evaluation.diagnostics).toEqual([])
+    }
+  })
+
   it('rejects incomplete or aggregate identity-complete evidence', () => {
     const ctx = createDecisionContext(tradHeavyPlan(), simOptions())
     const incomplete = evaluateCandidate(
@@ -258,7 +287,9 @@ describe('evaluateCandidate', () => {
 
   it('accepts matching identity-bearing request evidence independent of account and evidence order', () => {
     const plan = tradHeavyPlan()
-    const sourceAccountId = plan.accounts.find((account) => account.type === 'cash')!.id
+    const sourceAccount = plan.accounts.find((account) => account.type === 'cash')!
+    sourceAccount.ownerPersonId = 'p1'
+    const sourceAccountId = sourceAccount.id
     const requests = [
       {
         actionId: 'decision-action-b',
@@ -300,16 +331,114 @@ describe('evaluateCandidate', () => {
           planPatch: { strategies: { retirementActions: candidateRequests } },
           retirementActionReadiness: { state: 'identityComplete', actionRequestIds: [...evidenceIds] },
         }),
-        { candidateResult: ctx.baselineResult },
       )
-      expect(evaluation.recommendationState).toBe('neutral')
+      expect(evaluation.recommendationState).not.toBe('diagnostic')
       expect(evaluation.diagnostics).toEqual([])
     }
   })
 
+  it('does not accept identity tags without matching execution evidence', () => {
+    const plan = tradHeavyPlan()
+    const sourceAccount = plan.accounts.find((account) => account.type === 'cash')!
+    sourceAccount.ownerPersonId = 'p1'
+    const request = {
+      actionId: 'tagged-but-unexecuted',
+      kind: 'ordinaryWithdrawal',
+      year: 2026,
+      executionSequence: 1,
+      requestedAmount: 5_000,
+      provenance: { source: 'generator', sourceId: 'missing-execution-test' },
+      personId: 'p1',
+      allocations: [{
+        allocationId: 'tagged-but-unexecuted-allocation',
+        sourceAccountId: sourceAccount.id,
+        requestedAmount: 5_000,
+      }],
+      purpose: { kind: 'spending' },
+    }
+    const ctx = createDecisionContext(plan, simOptions())
+    const evaluation = evaluateCandidate(
+      ctx,
+      rothCandidate({
+        category: 'withdrawal',
+        planPatch: { strategies: { retirementActions: [request] } },
+        retirementActionReadiness: {
+          state: 'identityComplete',
+          actionRequestIds: [request.actionId],
+        },
+      }),
+      { candidateResult: ctx.baselineResult },
+    )
+
+    expect(evaluation.recommendationState).toBe('diagnostic')
+    expect(evaluation.diagnostics.join(' ')).toMatch(/exactly one matching committed, actionable/i)
+  })
+
+  it('requires every certified request to have committed actionable exact-ledger evidence', () => {
+    const plan = tradHeavyPlan()
+    const ownedCash = plan.accounts.find((account) => account.type === 'cash')!
+    ownedCash.ownerPersonId = 'p1'
+    const jointCash = {
+      ...ownedCash,
+      id: 'joint-cash-for-readiness-test',
+      name: 'Joint cash',
+      ownerPersonId: null,
+      balance: 20_000,
+    } as typeof ownedCash
+    plan.accounts.push(jointCash)
+    const requests = [
+      {
+        actionId: 'actionable-owned-cash',
+        kind: 'ordinaryWithdrawal',
+        year: 2026,
+        executionSequence: 1,
+        requestedAmount: 5_000,
+        provenance: { source: 'generator', sourceId: 'execution-readiness-test' },
+        personId: 'p1',
+        allocations: [{
+          allocationId: 'actionable-owned-cash-allocation',
+          sourceAccountId: ownedCash.id,
+          requestedAmount: 5_000,
+        }],
+        purpose: { kind: 'spending' },
+      },
+      {
+        actionId: 'non-actionable-joint-cash',
+        kind: 'ordinaryWithdrawal',
+        year: 2026,
+        executionSequence: 2,
+        requestedAmount: 5_000,
+        provenance: { source: 'generator', sourceId: 'execution-readiness-test' },
+        personId: 'p1',
+        allocations: [{
+          allocationId: 'non-actionable-joint-cash-allocation',
+          sourceAccountId: jointCash.id,
+          requestedAmount: 5_000,
+        }],
+        purpose: { kind: 'spending' },
+      },
+    ]
+    const evaluation = evaluateCandidate(
+      createDecisionContext(plan, simOptions()),
+      rothCandidate({
+        category: 'withdrawal',
+        planPatch: { strategies: { retirementActions: requests } },
+        retirementActionReadiness: {
+          state: 'identityComplete',
+          actionRequestIds: requests.map((request) => request.actionId),
+        },
+      }),
+    )
+
+    expect(evaluation.recommendationState).toBe('diagnostic')
+    expect(evaluation.diagnostics.join(' ')).toMatch(/committed, actionable exact-ledger execution/i)
+  })
+
   it('extracts matching request identities from a whole-strategies canonical operation', () => {
     const plan = tradHeavyPlan()
-    const sourceAccountId = plan.accounts.find((account) => account.type === 'cash')!.id
+    const sourceAccount = plan.accounts.find((account) => account.type === 'cash')!
+    sourceAccount.ownerPersonId = 'p1'
+    const sourceAccountId = sourceAccount.id
     const edited = structuredClone(plan)
     edited.strategies.retirementActions = [{
       actionId: 'canonical-decision-action',
@@ -348,10 +477,9 @@ describe('evaluateCandidate', () => {
           actionRequestIds: ['canonical-decision-action'],
         },
       }),
-      { candidateResult: ctx.baselineResult },
     )
 
-    expect(evaluation.recommendationState).toBe('neutral')
+    expect(evaluation.recommendationState).not.toBe('diagnostic')
     expect(evaluation.diagnostics).toEqual([])
   })
 

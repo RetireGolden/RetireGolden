@@ -59,12 +59,6 @@ interface RetirementActionPatchInspection {
   retirementActionRequests: unknown
 }
 
-function hasRetirementActionStrategy(record: Record<string, unknown> | null): boolean {
-  return record !== null && RETIREMENT_ACTION_STRATEGY_KEYS.some((key) =>
-    Object.prototype.hasOwnProperty.call(record, key),
-  )
-}
-
 function strategyValueChanged(
   before: Record<string, unknown> | null,
   after: Record<string, unknown> | null,
@@ -77,7 +71,10 @@ function strategyValueChanged(
   return canonicalScenarioJson(before![key]) !== canonicalScenarioJson(after![key])
 }
 
-function inspectRetirementActionPatch(planPatch: unknown): RetirementActionPatchInspection {
+function inspectRetirementActionPatch(
+  planPatch: unknown,
+  baseStrategies?: Plan['strategies'],
+): RetirementActionPatchInspection {
   const patch = objectRecord(planPatch)
   if (patch === null) {
     return {
@@ -89,12 +86,18 @@ function inspectRetirementActionPatch(planPatch: unknown): RetirementActionPatch
 
   if (!isScenarioPatchEnvelope(patch)) {
     const strategies = objectRecord(patch['strategies'])
+    const base = objectRecord(baseStrategies)
+    const legacyValueChanged = (key: string): boolean =>
+      strategies !== null &&
+      Object.prototype.hasOwnProperty.call(strategies, key) &&
+      (base === null || strategyValueChanged(base, strategies, key))
+    const retirementActionsChanged = legacyValueChanged('retirementActions')
     return {
-      changesRetirementActions: hasRetirementActionStrategy(strategies),
-      hasAggregateStrategy: strategies !== null && [...AGGREGATE_RETIREMENT_ACTION_STRATEGY_KEYS].some((key) =>
-        Object.prototype.hasOwnProperty.call(strategies, key),
-      ),
-      retirementActionRequests: strategies?.['retirementActions'],
+      changesRetirementActions: RETIREMENT_ACTION_STRATEGY_KEYS.some(legacyValueChanged),
+      hasAggregateStrategy: [...AGGREGATE_RETIREMENT_ACTION_STRATEGY_KEYS].some(legacyValueChanged),
+      retirementActionRequests: retirementActionsChanged
+        ? strategies?.['retirementActions']
+        : undefined,
     }
   }
 
@@ -154,18 +157,21 @@ function inspectRetirementActionPatch(planPatch: unknown): RetirementActionPatch
 }
 
 /** Whether the candidate's concrete change can cause retirement-account movement. */
-export function candidateChangesRetirementActions(candidate: DecisionCandidate): boolean {
+export function candidateChangesRetirementActions(candidate: DecisionCandidate, basePlan?: Plan): boolean {
   try {
     if (candidate.conversions !== undefined || candidate.retirementActionReadiness !== undefined) return true
-    return inspectRetirementActionPatch(candidate.planPatch).changesRetirementActions
+    return inspectRetirementActionPatch(candidate.planPatch, basePlan?.strategies).changesRetirementActions
   } catch {
     // A hostile or malformed runtime candidate must be gated, never trusted.
     return true
   }
 }
 
-function patchedRetirementActionIds(candidate: DecisionCandidate): string[] | null {
-  const requests = inspectRetirementActionPatch(candidate.planPatch).retirementActionRequests
+function patchedRetirementActionIds(candidate: DecisionCandidate, basePlan?: Plan): string[] | null {
+  const requests = inspectRetirementActionPatch(
+    candidate.planPatch,
+    basePlan?.strategies,
+  ).retirementActionRequests
   if (!Array.isArray(requests)) return null
 
   const ids: string[] = []
@@ -191,8 +197,8 @@ function sameUniqueStringSet(left: string[], right: string[]): boolean {
  * Return the fail-closed diagnostic for retirement-action readiness, or null
  * when the candidate carries complete identity-bearing request evidence.
  */
-function inspectRetirementActionReadiness(candidate: DecisionCandidate): string | null {
-  if (!candidateChangesRetirementActions(candidate)) return null
+function inspectRetirementActionReadiness(candidate: DecisionCandidate, basePlan?: Plan): string | null {
+  if (!candidateChangesRetirementActions(candidate, basePlan)) return null
 
   const readiness = candidate.retirementActionReadiness
   if (!readiness) {
@@ -213,11 +219,11 @@ function inspectRetirementActionReadiness(candidate: DecisionCandidate): string 
   if (candidate.conversions !== undefined) {
     return 'Identity-complete retirement-action evidence cannot certify an aggregate conversion schedule.'
   }
-  if (inspectRetirementActionPatch(candidate.planPatch).hasAggregateStrategy) {
+  if (inspectRetirementActionPatch(candidate.planPatch, basePlan?.strategies).hasAggregateStrategy) {
     return 'Identity-complete retirement-action evidence cannot certify an aggregate withdrawal, conversion, or QCD strategy.'
   }
 
-  const patchedIds = patchedRetirementActionIds(candidate)
+  const patchedIds = patchedRetirementActionIds(candidate, basePlan)
   const evidenceIds = readinessRecord['actionRequestIds']
   if (
     patchedIds === null ||
@@ -232,11 +238,59 @@ function inspectRetirementActionReadiness(candidate: DecisionCandidate): string 
   return null
 }
 
-export function retirementActionReadinessDiagnostic(candidate: DecisionCandidate): string | null {
+export function retirementActionReadinessDiagnostic(candidate: DecisionCandidate, basePlan?: Plan): string | null {
   try {
-    return inspectRetirementActionReadiness(candidate)
+    return inspectRetirementActionReadiness(candidate, basePlan)
   } catch {
     return 'Retirement-action candidate has incomplete readiness evidence and cannot be recommended.'
+  }
+}
+
+function inspectRetirementActionExecution(
+  candidate: DecisionCandidate,
+  candidateResult: ProjectionResult,
+  basePlan: Plan,
+): string | null {
+  const patchedIds = patchedRetirementActionIds(candidate, basePlan)
+  if (patchedIds === null || patchedIds.length === 0) {
+    return 'Retirement-action execution evidence is incomplete or does not exactly match the candidate request IDs.'
+  }
+
+  const requestedIds = new Set(patchedIds)
+  const evidenceCountById = new Map<string, number>()
+  for (const year of candidateResult.years) {
+    const execution = objectRecord(year.retirementActionExecution)
+    const evidence = execution?.['evidence']
+    if (!Array.isArray(evidence)) continue
+
+    for (const entry of evidence) {
+      const evidenceRecord = objectRecord(entry)
+      const actionId = evidenceRecord?.['actionId']
+      if (typeof actionId !== 'string' || !requestedIds.has(actionId)) continue
+      evidenceCountById.set(actionId, (evidenceCountById.get(actionId) ?? 0) + 1)
+      if (execution?.['committed'] !== true || evidenceRecord?.['readiness'] !== 'actionable') {
+        return `Retirement-action request ${actionId} does not have matching committed, actionable exact-ledger execution evidence.`
+      }
+    }
+  }
+
+  for (const actionId of patchedIds) {
+    if (evidenceCountById.get(actionId) !== 1) {
+      return `Retirement-action request ${actionId} does not have exactly one matching committed, actionable exact-ledger execution record.`
+    }
+  }
+  return null
+}
+
+function retirementActionExecutionDiagnostic(
+  candidate: DecisionCandidate,
+  candidateResult: ProjectionResult,
+  basePlan: Plan,
+): string | null {
+  try {
+    return inspectRetirementActionExecution(candidate, candidateResult, basePlan)
+  } catch {
+    return 'Retirement-action execution evidence is incomplete and cannot support a recommendation.'
   }
 }
 
@@ -487,9 +541,15 @@ export function evaluateCandidate(
     )
   }
   const hasUnsafeAcaEvidence = unsafeBaselineAcaYears.length > 0 || unsafeCandidateAcaYears.length > 0
-  const retirementActionDiagnostic = isLegacyAggregateDecisionCalculation(options)
+  const legacyAggregateCalculation = isLegacyAggregateDecisionCalculation(options)
+  const retirementActionReadiness = legacyAggregateCalculation
     ? null
-    : retirementActionReadinessDiagnostic(candidate)
+    : retirementActionReadinessDiagnostic(candidate, ctx.plan)
+  const retirementActionDiagnostic =
+    retirementActionReadiness ??
+    (legacyAggregateCalculation || !candidateChangesRetirementActions(candidate, ctx.plan)
+      ? null
+      : retirementActionExecutionDiagnostic(candidate, candidateResult, ctx.plan))
   if (retirementActionDiagnostic) diagnostics.push(retirementActionDiagnostic)
 
   return {
