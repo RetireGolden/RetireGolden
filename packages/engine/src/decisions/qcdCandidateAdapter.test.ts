@@ -6,10 +6,11 @@ import type { QcdCandidateIdentityIntent } from '../actions/retirementActionCand
 import { qcdEfficiency } from '../insights/detectors/qcdEfficiency.js'
 import type { DetectorContext } from '../insights/types.js'
 import type { Plan } from '../model/plan.js'
+import type { ProjectionResult } from '../projection/types.js'
 import { singlePersonPlan, traditionalAccount } from '../testing/planFixtures.js'
 import { candidateFromInsight } from './insightsAdapter.js'
 import {
-  adaptQcdEfficiencyDetectorCandidate,
+  adaptQcdEfficiencyDetectorCandidate as adaptQcdEfficiencyDetectorCandidateWithProjection,
   type QcdEfficiencyCandidateAlternative,
 } from './qcdCandidateAdapter.js'
 
@@ -78,19 +79,41 @@ function eligiblePlan(): Plan {
   return plan
 }
 
+function projectionResult(years: readonly number[]): ProjectionResult {
+  return {
+    startYear: years[0],
+    endYear: years.at(-1),
+    years: years.map((year) => ({ year, people: [], balances: {} })),
+  } as unknown as ProjectionResult
+}
+
 function exploratoryCandidate(plan: Plan, years: readonly number[] = [2026]) {
   const card = qcdEfficiency.screen({
     plan,
     projection: {
-      result: {
-        years: years.map((year) => ({ year, people: [], balances: {} })),
-      },
+      result: projectionResult(years),
     },
   } as unknown as DetectorContext)
   if (card === null) throw new Error('fixture must emit QCD insight')
   const candidate = candidateFromInsight(card, card.action)
   if (candidate === null) throw new Error('fixture must emit modelable candidate')
   return candidate
+}
+
+type AdapterArguments = Parameters<typeof adaptQcdEfficiencyDetectorCandidateWithProjection>
+
+function adaptQcdEfficiencyDetectorCandidate(
+  plan: AdapterArguments[0],
+  candidate: AdapterArguments[1],
+  alternatives: AdapterArguments[2],
+  years: readonly number[] = [2026],
+) {
+  return adaptQcdEfficiencyDetectorCandidateWithProjection(
+    plan,
+    candidate,
+    alternatives,
+    projectionResult(years),
+  )
 }
 
 function alternative(
@@ -122,6 +145,26 @@ function alternative(
       priorQcdOffsetApplied: asUsdCents(0),
     },
   }
+}
+
+function annualAlternative(
+  plan: Plan,
+  alternativeId: string,
+  sourceAccountId: string,
+  year: number,
+): QcdEfficiencyCandidateAlternative {
+  const option = alternative(alternativeId, sourceAccountId, {
+    year,
+    executionDate: `${year}-08-01`,
+  })
+  const inflationFactor = Math.pow(
+    1 + plan.assumptions.inflationPct / 100,
+    year - 2026,
+  )
+  const requestedAmount = asPositiveUsdCents(Math.round(25_000 * inflationFactor))
+  option.intent.requestedAmount = requestedAmount
+  option.intent.sourceAllocation.requestedAmount = requestedAmount
+  return option
 }
 
 describe('QCD efficiency candidate adapter', () => {
@@ -216,19 +259,20 @@ describe('QCD efficiency candidate adapter', () => {
 
   it('requires and materializes one eligible QCD for every detector projection year', () => {
     const plan = eligiblePlan()
+    plan.assumptions.inflationPct = 3
     const candidate = exploratoryCandidate(plan, [2026, 2027])
     const result = adaptQcdEfficiencyDetectorCandidate(plan, candidate, [
-      alternative('2027-option', 'ira-b', {
-        year: 2027,
-        executionDate: '2027-08-01',
-      }),
+      annualAlternative(plan, '2027-option', 'ira-b', 2027),
       alternative('2026-option', 'ira-a'),
-    ])
+    ], [2026, 2027])
 
     expect(result.status).toBe('adapted')
     if (result.status !== 'adapted') return
     expect(result.selectedAlternativeIds).toEqual(['2026-option', '2027-option'])
     expect(result.requests.map((request) => request.year)).toEqual([2026, 2027])
+    expect(result.requests[1]!.requestedAmount).toBeGreaterThan(
+      result.requests[0]!.requestedAmount,
+    )
     expect(result.candidate.planPatch).toMatchObject({
       strategies: {
         qcdAnnual: 0,
@@ -237,7 +281,10 @@ describe('QCD efficiency candidate adapter', () => {
       },
     })
     expect(result.candidate.metadata).toMatchObject({
-      qcdTargetYears: [2026, 2027],
+      qcdAnnualTargets: [
+        { year: 2026, requestedAmount: result.requests[0]!.requestedAmount },
+        { year: 2027, requestedAmount: result.requests[1]!.requestedAmount },
+      ],
       qcdSelectedAlternativeIds: ['2026-option', '2027-option'],
     })
   })
@@ -247,7 +294,7 @@ describe('QCD efficiency candidate adapter', () => {
     const candidate = exploratoryCandidate(plan, [2026, 2027])
     const incomplete = adaptQcdEfficiencyDetectorCandidate(plan, candidate, [
       alternative('2026-only', 'ira-a'),
-    ])
+    ], [2026, 2027])
     expect(incomplete.status).toBe('blocked')
     if (incomplete.status === 'blocked') {
       expect(incomplete.issues.some((entry) => entry.detail.includes('target year 2027')))
@@ -256,15 +303,12 @@ describe('QCD efficiency candidate adapter', () => {
 
     const outOfHorizon = adaptQcdEfficiencyDetectorCandidate(plan, candidate, [
       alternative('2026-option', 'ira-a'),
-      alternative('2027-option', 'ira-b', {
-        year: 2027,
-        executionDate: '2027-08-01',
-      }),
+      annualAlternative(plan, '2027-option', 'ira-b', 2027),
       alternative('2099-option', 'ira-a', {
         year: 2099,
         executionDate: '2099-08-01',
       }),
-    ])
+    ], [2026, 2027])
     expect(outOfHorizon.status).toBe('blocked')
     if (outOfHorizon.status === 'blocked') {
       expect(outOfHorizon.issues.map((entry) => entry.kind)).toContain('invalidAlternative')
@@ -353,6 +397,21 @@ describe('QCD efficiency candidate adapter', () => {
       [alternative('forged-display', 'ira-a')],
     )
     expect(forgedDisplay.status).toBe('blocked')
+
+    const forgedHorizon = structuredClone(candidate)
+    forgedHorizon.metadata = {
+      qcdAnnualTargets: [{ year: 2027, requestedAmount: 25_500 }],
+    }
+    const forgedHorizonResult = adaptQcdEfficiencyDetectorCandidate(
+      plan,
+      forgedHorizon,
+      [annualAlternative(plan, 'forged-horizon', 'ira-a', 2027)],
+    )
+    expect(forgedHorizonResult.status).toBe('blocked')
+    if (forgedHorizonResult.status === 'blocked') {
+      expect(forgedHorizonResult.issues.map((entry) => entry.kind))
+        .toContain('invalidExploratoryCandidate')
+    }
 
     const malformed = alternative('only', 'ira-a') as QcdEfficiencyCandidateAlternative & {
       unexpected?: boolean
