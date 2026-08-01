@@ -170,6 +170,12 @@ describe('compareOptimizerExactLedgerResults', () => {
     expect(compareOptimizerExactLedgerResults(aggregate, twoYearResult())).toBeNull()
   })
 
+  it('accepts whitespace-only IDs from the Plan account contract', () => {
+    const result = projection([{ year: 2030, balances: { '   ': 100 } }])
+    expect(compareOptimizerExactLedgerResults(result, structuredClone(result))
+      ?.evaluatedAccountIds).toEqual(['   '])
+  })
+
   it.each([
     Number.NaN,
     Number.POSITIVE_INFINITY,
@@ -182,9 +188,21 @@ describe('compareOptimizerExactLedgerResults', () => {
     expect(compareOptimizerExactLedgerResults(aggregate, twoYearResult())).toBeNull()
   })
 
-  it.each(['', '   '])('rejects malformed account identity %j', (accountId) => {
+  it('rejects the empty account identity', () => {
+    const accountId = ''
     const aggregate = projection([{ year: 2030, balances: { [accountId]: 1 } }])
     expect(compareOptimizerExactLedgerResults(aggregate, structuredClone(aggregate))).toBeNull()
+  })
+
+  it('rejects ending IRA basis above ending investable on both ledgers', () => {
+    const inconsistent = projection(
+      [{ year: 2030, balances: { traditional: 100 } }],
+      { endingNondeductibleIraBasis: 100.01 },
+    )
+    expect(compareOptimizerExactLedgerResults(
+      inconsistent,
+      structuredClone(inconsistent),
+    )).toBeNull()
   })
 
   it('uses raw UTF-16 ordering and is invariant to balance-map insertion order', () => {

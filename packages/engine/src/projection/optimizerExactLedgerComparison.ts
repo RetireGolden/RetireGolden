@@ -1,4 +1,3 @@
-import { accountIdSchema } from '../actions/identity.js'
 import { planDollarsToLedgerCents } from '../actions/planBalanceAdapter.js'
 import { compareUtf16CodeUnits } from '../actions/structuralId.js'
 import type { ProjectionResult } from './types.js'
@@ -126,8 +125,8 @@ function balanceSnapshot(value: unknown): ReadonlyMap<string, SafeMinorUnitInteg
   }
   const snapshot = new Map<string, SafeMinorUnitInteger>()
   for (const key of Reflect.ownKeys(balances)) {
-    if (typeof key !== 'string' || !accountIdSchema.safeParse(key).success) {
-      throw new TypeError('Exact-ledger balance keys must be stable account IDs')
+    if (typeof key !== 'string' || key.length === 0) {
+      throw new TypeError('Exact-ledger balance keys must be nonempty Plan account IDs')
     }
     const descriptor = Object.getOwnPropertyDescriptor(balances, key)
     if (descriptor === undefined || !descriptor.enumerable ||
@@ -202,10 +201,14 @@ function sourceSnapshot(result: Readonly<ProjectionResult>): ResultSnapshot {
   const endingNetWorth = quantize(
     ownDataProperty(result, 'endingNetWorth'), true,
   )
+  const endingNondeductibleIraBasis = quantize(
+    ownDataProperty(result, 'endingNondeductibleIraBasis'), false,
+  )
   const finalYear = years.get(endYear)!
   if (endingInvestable !== finalYear.investableTotal ||
-      endingNetWorth !== finalYear.netWorth) {
-    throw new TypeError('Exact-ledger ending totals must match the final annual totals')
+      endingNetWorth !== finalYear.netWorth ||
+      endingNondeductibleIraBasis > endingInvestable) {
+    throw new TypeError('Exact-ledger ending totals violate projection invariants')
   }
   return {
     horizon: { startYear, endYear, taxYears: taxYears as [number, ...number[]] },
@@ -213,9 +216,7 @@ function sourceSnapshot(result: Readonly<ProjectionResult>): ResultSnapshot {
     accountIds: [...accountIds],
     endingInvestable,
     endingNetWorth,
-    endingNondeductibleIraBasis: quantize(
-      ownDataProperty(result, 'endingNondeductibleIraBasis'), false,
-    ),
+    endingNondeductibleIraBasis,
   }
 }
 
