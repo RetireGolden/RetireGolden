@@ -3,6 +3,11 @@ import type { Detector } from '../types.js'
 export const QCD_EFFICIENCY_EXPLORATORY_REASON =
   'This calculation-only QCD preview does not identify a donor, eligible owned IRA, execution date, charity designation, or complete eligibility evidence.'
 
+export function qcdEfficiencyRationale(charitable: number): string {
+  const charitableStr = '$' + Math.round(charitable).toLocaleString('en-US')
+  return `You are donating ${charitableStr} per year outside a QCD. The model can price an exploratory QCD comparison, but it cannot call the transfer implementation-ready until a donor, eligible owned IRA, exact execution date, charity designation, and complete eligibility evidence are supplied.`
+}
+
 export const qcdEfficiency: Detector = {
   id: 'qcd-efficiency',
   category: 'withdrawals-charitable',
@@ -12,13 +17,11 @@ export const qcdEfficiency: Detector = {
     if (ctx.plan.strategies.qcdAnnual >= charitable) return null
     if (!ctx.projection.result.years[0]) return null
 
-    const charitableStr = '$' + Math.round(charitable).toLocaleString()
-
     return {
       id: 'qcd-efficiency',
       category: 'withdrawals-charitable',
       title: 'Compare QCDs for your charitable giving',
-      rationale: `You are donating ${charitableStr} per year outside a QCD. The model can price an exploratory QCD comparison, but it cannot call the transfer implementation-ready until a donor, eligible owned IRA, exact execution date, charity designation, and complete eligibility evidence are supplied.`,
+      rationale: qcdEfficiencyRationale(charitable),
       impact: {
         qualitative: 'Previews donating pre-tax IRA assets directly to charity, which counts toward RMDs and lowers modeled taxable income.',
       },

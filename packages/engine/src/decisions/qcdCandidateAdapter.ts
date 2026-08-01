@@ -25,7 +25,10 @@ import {
   evaluateRetirementActionEligibilityFromPlan,
   type RetirementActionEligibilityDecision,
 } from '../strategies/accountEligibility.js'
-import { QCD_EFFICIENCY_EXPLORATORY_REASON } from '../insights/detectors/qcdEfficiency.js'
+import {
+  QCD_EFFICIENCY_EXPLORATORY_REASON,
+  qcdEfficiencyRationale,
+} from '../insights/detectors/qcdEfficiency.js'
 import type { DecisionCandidate } from './types.js'
 import {
   inspectCompleteRetirementActionCandidateSchedule,
@@ -74,6 +77,9 @@ export interface QcdEfficiencyAlternativeEvidence {
   executionSequence: number | null
   requestedAmount: number | null
   charityDesignationId: string | null
+  personAliveEvidenceId: string | null
+  priorQcdOffsetEvidenceId: string | null
+  priorQcdOffsetApplied: number | null
   disposition: 'eligible' | 'blocked'
   reasonCodes: readonly string[]
 }
@@ -158,6 +164,7 @@ function alternativeEvidence(
   const intent = record(outer?.['intent'])
   const source = record(intent?.['sourceAllocation'])
   const charity = record(intent?.['charity'])
+  const runtimeFacts = record(outer?.['runtimeFacts'])
   return {
     alternativeId: stringOrNull(outer?.['alternativeId']) ?? '',
     donorPersonId: stringOrNull(intent?.['donorPersonId']) as PersonId | null,
@@ -171,6 +178,11 @@ function alternativeEvidence(
       ? intent?.['requestedAmount'] as number
       : null,
     charityDesignationId: stringOrNull(charity?.['designationId']),
+    personAliveEvidenceId: stringOrNull(runtimeFacts?.['personAliveEvidenceId']),
+    priorQcdOffsetEvidenceId: stringOrNull(runtimeFacts?.['priorQcdOffsetEvidenceId']),
+    priorQcdOffsetApplied: Number.isSafeInteger(runtimeFacts?.['priorQcdOffsetApplied'])
+      ? runtimeFacts?.['priorQcdOffsetApplied'] as number
+      : null,
     disposition,
     reasonCodes,
   }
@@ -203,7 +215,7 @@ function exactExploratoryCandidate(
       outer['source'] !== 'detector' ||
       outer['category'] !== 'withdrawal' ||
       outer['label'] !== 'Donations routed as QCDs' ||
-      typeof outer['explanation'] !== 'string' ||
+      outer['explanation'] !== qcdEfficiencyRationale(charitable) ||
       patch === null ||
       !keysExactly(patch, ['strategies']) ||
       strategies === null ||
@@ -394,13 +406,32 @@ export function adaptQcdEfficiencyDetectorCandidate(
     seenRuntimeEvidenceIds.add(personAliveEvidenceId)
     seenRuntimeEvidenceIds.add(priorQcdOffsetEvidenceId)
 
+    const intentRecord = record(outer['intent'])
+    const provenanceRecord = record(intentRecord?.['provenance'])
+    const sourceAllocationRecord = record(intentRecord?.['sourceAllocation'])
+    const charityRecord = record(intentRecord?.['charity'])
+    if (
+      intentRecord === null ||
+      provenanceRecord === null ||
+      sourceAllocationRecord === null ||
+      charityRecord === null
+    ) {
+      evidence.push(alternativeEvidence(alternative, 'blocked', ['required-facts-missing']))
+      issues.push(localIssue(
+        'invalidAlternative',
+        `alternatives.${index}.intent`,
+        'Every alternative requires an inspectable QCD intent, provenance, source allocation, and charity designation.',
+      ))
+      continue
+    }
+
     const intent = alternative.intent
     if (
-      intent.kind !== 'qcd' ||
-      intent.provenance.source !== 'generator' ||
-      intent.provenance.sourceId !== 'qcd-efficiency' ||
-      intent.requestedAmount !== charitableCents ||
-      intent.sourceAllocation.requestedAmount !== charitableCents
+      intentRecord['kind'] !== 'qcd' ||
+      provenanceRecord['source'] !== 'generator' ||
+      provenanceRecord['sourceId'] !== 'qcd-efficiency' ||
+      intentRecord['requestedAmount'] !== charitableCents ||
+      sourceAllocationRecord['requestedAmount'] !== charitableCents
     ) {
       const entry = alternativeEvidence(alternative, 'blocked', ['allocation-total-mismatch'])
       evidence.push(entry)

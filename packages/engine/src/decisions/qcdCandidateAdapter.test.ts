@@ -167,6 +167,14 @@ describe('QCD efficiency candidate adapter', () => {
     expect(first.allocationEvidence.alternatives).toHaveLength(2)
     expect(first.allocationEvidence.alternatives.every((entry) => entry.disposition === 'eligible'))
       .toBe(true)
+    expect(first.allocationEvidence.alternatives).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        alternativeId: 'option-a',
+        personAliveEvidenceId: 'alive-option-a',
+        priorQcdOffsetEvidenceId: 'offset-option-a',
+        priorQcdOffsetApplied: 0,
+      }),
+    ]))
   })
 
   it('retains rejected alternatives while selecting an accepted source', () => {
@@ -275,6 +283,13 @@ describe('QCD efficiency candidate adapter', () => {
 
     const plan = eligiblePlan()
     const candidate = exploratoryCandidate(plan)
+    const forgedDisplay = adaptQcdEfficiencyDetectorCandidate(
+      plan,
+      { ...candidate, explanation: 'Trust me: this is a sourced QCD.' },
+      [alternative('forged-display', 'ira-a')],
+    )
+    expect(forgedDisplay.status).toBe('blocked')
+
     const malformed = alternative('only', 'ira-a') as QcdEfficiencyCandidateAlternative & {
       unexpected?: boolean
     }
@@ -284,6 +299,35 @@ describe('QCD efficiency candidate adapter', () => {
     if (malformedResult.status === 'blocked') {
       expect(malformedResult.issues.map((entry) => entry.kind)).toContain('invalidAlternative')
     }
+
+    const missingIntent = {
+      alternativeId: 'missing-intent',
+      runtimeFacts: {
+        personAliveEvidenceId: 'alive-missing-intent',
+        donorAlive: true,
+        priorQcdOffsetEvidenceId: 'offset-missing-intent',
+        priorQcdOffsetApplied: 0,
+      },
+    }
+    expect(() => adaptQcdEfficiencyDetectorCandidate(
+      plan,
+      candidate,
+      [missingIntent] as never,
+    )).not.toThrow()
+    expect(adaptQcdEfficiencyDetectorCandidate(
+      plan,
+      candidate,
+      [missingIntent] as never,
+    ).status).toBe('blocked')
+
+    const hostileAlternative = new Proxy({}, {
+      ownKeys: () => { throw new Error('hostile alternative') },
+    })
+    expect(adaptQcdEfficiencyDetectorCandidate(
+      plan,
+      candidate,
+      [hostileAlternative] as never,
+    ).status).toBe('blocked')
 
     const duplicatedIdentity = adaptQcdEfficiencyDetectorCandidate(plan, candidate, [
       alternative('duplicate-a', 'ira-a'),
