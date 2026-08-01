@@ -630,11 +630,12 @@ function validateUnchecked(
   const accountById = new Map(plan.accounts.map((account) => [account.id, account]))
   const accountOrder = new Map(plan.accounts.map((account, index) => [account.id, index]))
   const pools = ownedPools(plan)
+  const ownedAccounts = [...pools.values()].flat()
   const personIds = new Set(plan.household.people.map((person) => person.id))
-  let openingBalances = new Map<AccountId, UsdCents>([...pools.values()].flat().map((account) => [
+  let openingBalances = new Map<AccountId, UsdCents>(ownedAccounts.map((account) => [
     asAccountId(account.id), cents(account.balance, 'Plan opening IRA balance', { sourceAccountId: account.id }),
   ]))
-  let openingRawBalances = new Map<AccountId, number>([...pools.values()].flat().map((account) => [
+  let openingRawBalances = new Map<AccountId, number>(ownedAccounts.map((account) => [
     asAccountId(account.id), account.balance,
   ]))
   const normalizedYears: NormalizedOwnedNonRothIraRuntimeSourceYear[] = []
@@ -812,6 +813,8 @@ function validateUnchecked(
     }
     const postGrowthBalances = new Map<AccountId, UsdCents>()
     const postGrowthRawBalances = new Map<AccountId, number>()
+    const preGrowthBalances = new Map<AccountId, UsdCents>()
+    const preGrowthRawBalances = new Map<AccountId, number>()
     const ownerBalances = new Map<PersonId, NormalizedOwnedNonRothIraYearEndBalance[]>()
     const publishedBalances = yearResult.balances
     for (let ownerIndex = 0; ownerIndex < expectedOwners.length; ownerIndex += 1) {
@@ -838,9 +841,21 @@ function validateUnchecked(
           })
         }
         const sourceAccountId = asAccountId(account.id)
+        const rawBalanceBeforeGrowthPlanDollars =
+          raw.balanceBeforeGrowthPlanDollars
+        const balanceBeforeGrowthAmount = cents(
+          rawBalanceBeforeGrowthPlanDollars,
+          'Pre-growth IRA balance',
+          { taxYear, ownerPersonId: owner, sourceAccountId },
+        )
         const balanceAmount = cents(rawBalancePlanDollars, 'Post-growth IRA balance', {
           taxYear, ownerPersonId: owner, sourceAccountId,
         })
+        preGrowthBalances.set(sourceAccountId, balanceBeforeGrowthAmount)
+        preGrowthRawBalances.set(
+          sourceAccountId,
+          rawBalanceBeforeGrowthPlanDollars,
+        )
         postGrowthBalances.set(sourceAccountId, balanceAmount)
         postGrowthRawBalances.set(sourceAccountId, rawBalancePlanDollars)
         return { sourceAccountId, balancePlanDollars: rawBalancePlanDollars, balanceAmount }
@@ -945,6 +960,25 @@ function validateUnchecked(
         fail('sourceCoverageInvalid', 'Every owned-IRA occurrence must have one supported application', {
           taxYear, producerOccurrenceKey: occurrence.producerOccurrenceKey,
         })
+      }
+    }
+    for (const account of ownedAccounts) {
+      const sourceAccountId = asAccountId(account.id)
+      if (
+        openingRawBalances.get(sourceAccountId) !==
+          preGrowthRawBalances.get(sourceAccountId) ||
+        openingBalances.get(sourceAccountId) !==
+          preGrowthBalances.get(sourceAccountId)
+      ) {
+        fail(
+          'balanceChainInvalid',
+          'The completed application chain must exact-rejoin the live pre-growth account observation',
+          {
+            taxYear,
+            ownerPersonId: account.ownerPersonId!,
+            sourceAccountId,
+          },
+        )
       }
     }
 

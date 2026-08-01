@@ -375,6 +375,61 @@ describe('private owned-IRA runtime source-series validation', () => {
       })
   })
 
+  it('rejoins each account application chain to its live pre-growth observation', () => {
+    const plan = couplePlan({ p1PlanningAge: 60, p2PlanningAge: 60 })
+    plan.id = 'cross-owner-application-forgery'
+    plan.accounts = [
+      traditional('p1-ira', 10_000, 'p1'),
+      traditional('p2-ira', 10_000, 'p2'),
+      roth('p1-roth'),
+    ]
+    plan.strategies.rothConversion = {
+      mode: 'manual', conversions: [{ year: TAX_YEAR, amount: 1_000 }],
+    }
+    const years = copy(project(plan))
+    const occurrence = years[0]!.retirementRuntimeSource!
+      .runtimeOccurrences.find((entry) =>
+        entry.kind === 'legacyRothConversion')!
+    const application = years[0]!.retirementRuntimeApplicationSource!
+      .applications.find((entry) =>
+        entry.applicationKind !== 'aggregateRothDestinationCredit')!
+    const originalKey = occurrence.producerOccurrenceKey
+    const tuple = JSON.parse(originalKey) as unknown[]
+    const forgedKey = JSON.stringify([
+      tuple[0],
+      'p2-ira',
+      tuple[2],
+    ])
+    const amount = occurrence.grossAmountPlanDollars
+    Object.assign(occurrence, {
+      producerOccurrenceKey: forgedKey,
+      ownerPersonId: 'p2',
+      sourceAccountId: 'p2-ira',
+    })
+    Object.assign(application, {
+      producerOccurrenceKey: forgedKey,
+      ownerPersonId: 'p2',
+      sourceAccountId: 'p2-ira',
+      sourceBalanceBeforePlanDollars: 10_000,
+      sourceBalanceAfterPlanDollars: 10_000 - amount,
+    })
+    const aggregate = years[0]!.retirementRuntimeApplicationSource!
+      .applications.find((entry) =>
+        entry.applicationKind === 'aggregateRothDestinationCredit')
+    if (aggregate?.applicationKind !== 'aggregateRothDestinationCredit') {
+      throw new Error('expected aggregate conversion credit')
+    }
+    ;(aggregate as unknown as { producerOccurrenceKeys: string[] })
+      .producerOccurrenceKeys = aggregate.producerOccurrenceKeys.map((key) =>
+        key === originalKey ? forgedKey : key)
+
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, years))
+      .toMatchObject({
+        status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+        issues: [{ kind: 'balanceChainInvalid' }],
+      })
+  })
+
   it('rejoins occurrence coverage to every independently published annual movement total', () => {
     const rmdPlan = singlePersonPlan({ dob: '1950-01-01', planningAge: 76 })
     rmdPlan.id = 'missing-rmd-source'

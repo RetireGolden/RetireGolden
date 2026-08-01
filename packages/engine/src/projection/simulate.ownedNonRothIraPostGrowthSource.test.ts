@@ -97,14 +97,26 @@ describe('simulate owned non-Roth IRA post-growth source capture', () => {
       {
         ownerPersonId: 'p1',
         accountBalances: [
-          { sourceAccountId: 'p1-requested', balancePlanDollars: 10 },
-          { sourceAccountId: 'p1-zero-sibling', balancePlanDollars: 0 },
+          {
+            sourceAccountId: 'p1-requested',
+            balanceBeforeGrowthPlanDollars: 10,
+            balancePlanDollars: 10,
+          },
+          {
+            sourceAccountId: 'p1-zero-sibling',
+            balanceBeforeGrowthPlanDollars: 0,
+            balancePlanDollars: 0,
+          },
         ],
       },
       {
         ownerPersonId: 'p2',
         accountBalances: [
-          { sourceAccountId: 'p2-ira', balancePlanDollars: 30 },
+          {
+            sourceAccountId: 'p2-ira',
+            balanceBeforeGrowthPlanDollars: 30,
+            balancePlanDollars: 30,
+          },
         ],
       },
     ])
@@ -144,8 +156,16 @@ describe('simulate owned non-Roth IRA post-growth source capture', () => {
     const second = sourceOf(run(secondPlan)[0]!)
     expect(second).toEqual(first)
     expect(first.ownerPools[0]!.accountBalances).toEqual([
-      { sourceAccountId: 'duplicate-ira', balancePlanDollars: 10 },
-      { sourceAccountId: 'duplicate-ira', balancePlanDollars: 20 },
+      {
+        sourceAccountId: 'duplicate-ira',
+        balanceBeforeGrowthPlanDollars: 10,
+        balancePlanDollars: 10,
+      },
+      {
+        sourceAccountId: 'duplicate-ira',
+        balanceBeforeGrowthPlanDollars: 20,
+        balancePlanDollars: 20,
+      },
     ])
     expect(first.annualObservationValidation).toBe('notRun')
   })
@@ -183,6 +203,12 @@ describe('simulate owned non-Roth IRA post-growth source capture', () => {
       sourceOf(year).ownerPools[0]!
         .accountBalances[0]!.balancePlanDollars,
     )
+    const balancesBeforeGrowth = years.map((year) =>
+      sourceOf(year).ownerPools[0]!
+        .accountBalances[0]!.balanceBeforeGrowthPlanDollars,
+    )
+    expect(balancesBeforeGrowth[0]).toBeCloseTo(110, 10)
+    expect(balancesBeforeGrowth[1]).toBeCloseTo(131, 10)
     expect(capturedBalances[0]).toBeCloseTo(121, 10)
     expect(capturedBalances[1]).toBeCloseTo(144.1, 10)
     expect(capturedBalances).toEqual(years.map((year) => year.balances.ira))
@@ -204,7 +230,11 @@ describe('simulate owned non-Roth IRA post-growth source capture', () => {
       {
         ownerPersonId: null,
         accountBalances: [
-          { sourceAccountId: 'unowned-ira', balancePlanDollars: 10 },
+          {
+            sourceAccountId: 'unowned-ira',
+            balanceBeforeGrowthPlanDollars: 10,
+            balancePlanDollars: 10,
+          },
         ],
       },
     ])
@@ -240,7 +270,11 @@ describe('simulate owned non-Roth IRA post-growth source capture', () => {
       {
         ownerPersonId: 'p1',
         accountBalances: [
-          { sourceAccountId: 'owned-ira', balancePlanDollars: 10 },
+          {
+            sourceAccountId: 'owned-ira',
+            balanceBeforeGrowthPlanDollars: 10,
+            balancePlanDollars: 10,
+          },
         ],
       },
     ])

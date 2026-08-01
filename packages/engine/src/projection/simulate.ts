@@ -4347,6 +4347,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
     }
 
+    const ownedNonRothIraBalanceBeforeGrowth = new Map<BalanceState, number>()
+    for (const state of balances) {
+      if (isAggregatedIra(state.account)) {
+        ownedNonRothIraBalanceBeforeGrowth.set(state, state.balance)
+      }
+    }
+
     const shockPct = returnShockAt(year)
     // Wealth-weighted total return the ledger actually applies this year
     // (including distributed taxable yield — a distribution, not a loss).
@@ -4388,7 +4395,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
 
     const ownedNonRothIraBalancesByOwner = new Map<
       string | null,
-      Array<{ sourceAccountId: string; balancePlanDollars: number }>
+      Array<{
+        sourceAccountId: string
+        balanceBeforeGrowthPlanDollars: number
+        balancePlanDollars: number
+      }>
     >()
     for (const state of balances) {
       if (!isAggregatedIra(state.account)) continue
@@ -4399,6 +4410,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const accountBalances = ownedNonRothIraBalancesByOwner.get(ownerPersonId) ?? []
       accountBalances.push({
         sourceAccountId: state.account.id,
+        balanceBeforeGrowthPlanDollars:
+          ownedNonRothIraBalanceBeforeGrowth.get(state)!,
         balancePlanDollars: state.balance,
       })
       ownedNonRothIraBalancesByOwner.set(ownerPersonId, accountBalances)

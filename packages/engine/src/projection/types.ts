@@ -482,6 +482,8 @@ export interface SimulatorAnnualRetirementRuntimeApplicationSource {
 
 export interface SimulatorOwnedNonRothIraPostGrowthAccountBalanceSource {
   readonly sourceAccountId: string
+  /** Live ledger balance after every annual mutation and immediately before growth. */
+  readonly balanceBeforeGrowthPlanDollars: number
   readonly balancePlanDollars: number
 }
 
