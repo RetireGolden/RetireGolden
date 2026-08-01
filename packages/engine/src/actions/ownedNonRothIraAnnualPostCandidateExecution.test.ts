@@ -38,6 +38,11 @@ const owner = asPersonId('p1')
 const planId = asPlanId('post-candidate-execution-plan')
 const requestedIra = asAccountId('ira-requested')
 const siblingIra = asAccountId('ira-unrequested')
+// These two end-to-end penalty cases intentionally coordinate the annual
+// evidence once to construct the expected finalization and again inside the
+// binder. The synchronous structural hashing is substantially slower under V8
+// coverage instrumentation on GitHub's Linux runners.
+const COVERAGE_INSTRUMENTED_BINDER_TIMEOUT_MS = 60_000
 
 type Mutable<T> = { -readonly [Key in keyof T]: T[Key] }
 type MutablePostCandidateInput = Mutable<
@@ -926,7 +931,7 @@ describe('post-candidate owned non-Roth IRA annual execution', () => {
     if (result.status !== 'postCandidateAnnualWithdrawalCommitted') return
     expect(result.actions[0]?.penaltyEvaluations[0]?.outcome)
       .toBe('penaltyApplies')
-  })
+  }, COVERAGE_INSTRUMENTED_BINDER_TIMEOUT_MS)
 
   it('accepts shared same-rate evidence across two penalty evaluations', () => {
     const input = twoPaymentExecutionInput('1990-01-01', siblingIra)
@@ -1019,7 +1024,7 @@ describe('post-candidate owned non-Roth IRA annual execution', () => {
     }
     expect(executePlanOwnedNonRothIraAnnualPostCandidate(input).status)
       .toBe('postCandidateAnnualWithdrawalCommitted')
-  }, 15_000)
+  }, COVERAGE_INSTRUMENTED_BINDER_TIMEOUT_MS)
 
   it.each([
     'snapshot',
