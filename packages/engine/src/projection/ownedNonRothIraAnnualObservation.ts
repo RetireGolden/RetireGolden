@@ -28,6 +28,13 @@ export interface BuildSimulatorOwnedNonRothIraAnnualObservationInput {
   ledgerRunId: string
   observationBoundary: 'sealedAfterAllAnnualTransactionsAndGrowth'
   startOfTaxYearIraBasis: number
+  /**
+   * Preserves an already-normalized simulator aggregate that cannot make an
+   * exact cents -> Plan dollars -> cents round trip.
+   *
+   * @internal
+   */
+  startOfTaxYearIraBasisAmount?: UsdCents
   yearEndBalances:
     readonly Readonly<SimulatorOwnedNonRothIraYearEndBalanceObservation>[]
 }
@@ -448,6 +455,7 @@ function buildSimulatorOwnedNonRothIraAnnualObservationUnchecked(
   const ledgerRunId = input.ledgerRunId
   const observationBoundary = input.observationBoundary
   const startOfTaxYearIraBasis = input.startOfTaxYearIraBasis
+  const startOfTaxYearIraBasisAmount = input.startOfTaxYearIraBasisAmount
   const rawYearEndBalances = input.yearEndBalances
   const issues: SimulatorOwnedNonRothIraAnnualObservationIssue[] = []
   const parsedPlan = planSchema.safeParse(rawPlan)
@@ -518,7 +526,9 @@ function buildSimulatorOwnedNonRothIraAnnualObservationUnchecked(
 
   let openingBasisAmount: UsdCents
   try {
-    openingBasisAmount = planDollarsToLedgerCents(startOfTaxYearIraBasis)
+    openingBasisAmount = startOfTaxYearIraBasisAmount === undefined
+      ? planDollarsToLedgerCents(startOfTaxYearIraBasis)
+      : asUsdCents(startOfTaxYearIraBasisAmount)
   } catch (error) {
     return blocked([{
       kind: 'startOfTaxYearBasisInvalid',
