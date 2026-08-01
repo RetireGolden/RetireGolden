@@ -188,6 +188,16 @@ describe('compareOptimizerExactLedgerResults', () => {
     expect(compareOptimizerExactLedgerResults(gapped, structuredClone(gapped))).toBeNull()
   })
 
+  it('accepts safe tax years beyond the four-digit Plan DOB domain', () => {
+    const result = projection([
+      { year: 10_118, balances: { cash: 100 } },
+      { year: 10_119, balances: { cash: 100 } },
+    ])
+
+    expect(compareOptimizerExactLedgerResults(result, structuredClone(result))
+      ?.evaluatedTaxYears).toEqual([10_118, 10_119])
+  })
+
   it.each([
     ['ending investable', { endingInvestable: 100.01 }],
     ['ending net worth', { endingNetWorth: 120.01 }],
