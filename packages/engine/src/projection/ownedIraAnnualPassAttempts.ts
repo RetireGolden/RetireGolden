@@ -104,6 +104,12 @@ function same(left: unknown, right: unknown): boolean {
       left.length === right.length &&
       left.every((value, index) => same(value, right[index]))
   }
+  const leftPrototype = Object.getPrototypeOf(left)
+  const rightPrototype = Object.getPrototypeOf(right)
+  if ((leftPrototype !== Object.prototype && leftPrototype !== null) ||
+      (rightPrototype !== Object.prototype && rightPrototype !== null)) {
+    return false
+  }
   const leftRecord = left as Record<string, unknown>
   const rightRecord = right as Record<string, unknown>
   const leftKeys = Object.keys(leftRecord).sort(compareUtf16CodeUnits)
@@ -254,15 +260,27 @@ function rolledBack(
 export function runOwnedIraAnnualPassAttempts<DeferredEffect = never>(
   input: Readonly<RunOwnedIraAnnualPassAttemptsInput<DeferredEffect>>,
 ): Readonly<OwnedIraAnnualPassAttemptsResult<DeferredEffect>> {
-  const initialAssumptions = canonicalEffects(input.initialAssumedEffects)
-  if (!validStableContext(input.stable)) {
+  let stable: Readonly<OwnedIraAnnualPassStableContext>
+  try {
+    if (!validStableContext(input.stable)) {
+      return rolledBack('stableContextInvalid', 0)
+    }
+    stable = deepFreeze({ ...input.stable })
+  } catch {
     return rolledBack('stableContextInvalid', 0)
+  }
+
+  let initialAssumptions:
+    PlanOwnedNonRothIraAnnualPassAssumedEffect[] | null
+  try {
+    initialAssumptions = canonicalEffects(input.initialAssumedEffects)
+  } catch {
+    return rolledBack('assumptionVectorInvalid', 0)
   }
   if (initialAssumptions === null) {
     return rolledBack('assumptionVectorInvalid', 0)
   }
 
-  const stable = deepFreeze({ ...input.stable })
   let assumptions:
     readonly Readonly<PlanOwnedNonRothIraAnnualPassAssumedEffect>[] =
       deepFreeze(initialAssumptions)
@@ -323,13 +341,25 @@ export function runOwnedIraAnnualPassAttempts<DeferredEffect = never>(
       return rolledBack('probeControlBindingMismatch', attemptNumber)
     }
 
-    const observed = canonicalEffects(probeResult.observedEffects)
+    let observed: PlanOwnedNonRothIraAnnualPassAssumedEffect[] | null
+    try {
+      observed = canonicalEffects(probeResult.observedEffects)
+    } catch {
+      transaction.rollback()
+      return rolledBack('assumptionVectorInvalid', attemptNumber)
+    }
     if (observed === null) {
       transaction.rollback()
       return rolledBack('assumptionVectorInvalid', attemptNumber)
     }
     if (probeResult.status === 'commit') {
-      if (!same(observed, assumptions)) {
+      let exactCommitEffects = false
+      try {
+        exactCommitEffects = same(observed, assumptions)
+      } catch {
+        // Preserve the same fail-closed disposition as any unequal commit vector.
+      }
+      if (!exactCommitEffects) {
         transaction.rollback()
         return rolledBack('probeCommitEffectsMismatch', attemptNumber)
       }

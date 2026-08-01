@@ -6,6 +6,7 @@ import {
   asAllocationId,
   asPersonId,
   asPlanId,
+  type PlanId,
 } from '../actions/identity.js'
 import { asUsdCents } from '../actions/money.js'
 import type {
@@ -311,6 +312,78 @@ describe('owned IRA annual-pass attempt controller', () => {
     expect(result).toEqual({
       status: 'rolledBack',
       reason: 'probeCommitEffectsMismatch',
+      attemptCount: 1,
+      deferredEffects: [],
+    })
+    expect(stateBytes(simulatorState)).toBe(baseline)
+  })
+
+  it('fails closed for hostile initial assumptions after validating stable context', () => {
+    const hostile = effect(10) as unknown as Record<string, unknown>
+    Object.defineProperty(hostile, 'actionId', {
+      enumerable: true,
+      get: () => { throw new Error('hostile initial assumption') },
+    })
+    const runAttempt = vi.fn()
+
+    expect(runOwnedIraAnnualPassAttempts<string>({
+      state: state(),
+      stable: { ...stable, planId: '' as PlanId },
+      initialAssumedEffects: [
+        hostile as unknown as PlanOwnedNonRothIraAnnualPassAssumedEffect,
+      ],
+      runAttempt,
+    })).toMatchObject({
+      status: 'rolledBack',
+      reason: 'stableContextInvalid',
+      attemptCount: 0,
+    })
+    expect(runAttempt).not.toHaveBeenCalled()
+
+    expect(runOwnedIraAnnualPassAttempts<string>({
+      state: state(),
+      stable,
+      initialAssumedEffects: [
+        hostile as unknown as PlanOwnedNonRothIraAnnualPassAssumedEffect,
+      ],
+      runAttempt,
+    })).toMatchObject({
+      status: 'rolledBack',
+      reason: 'assumptionVectorInvalid',
+      attemptCount: 0,
+    })
+    expect(runAttempt).not.toHaveBeenCalled()
+  })
+
+  it('rolls back hostile observed assumptions without exposing state or effects', () => {
+    const simulatorState = state()
+    const baseline = stateBytes(simulatorState)
+    const expectedInput = probeInput([effect(10)], 1)
+    const hostile = effect(11) as unknown as Record<string, unknown>
+    Object.defineProperty(hostile, 'executedAmount', {
+      enumerable: true,
+      get: () => { throw new Error('hostile observed assumption') },
+    })
+    probeMock.mockReturnValue(probeResult(
+      'reprobe',
+      expectedInput,
+      [hostile as unknown as PlanOwnedNonRothIraAnnualPassAssumedEffect],
+    ))
+
+    const result = runOwnedIraAnnualPassAttempts<string>({
+      state: simulatorState,
+      stable,
+      initialAssumedEffects: [effect(10)],
+      runAttempt: (context, capability) => {
+        mutate(simulatorState, context.attemptNumber)
+        capability.defer('discarded')
+        return probeInput(context.assumedEffects, context.attemptNumber)
+      },
+    })
+
+    expect(result).toEqual({
+      status: 'rolledBack',
+      reason: 'assumptionVectorInvalid',
       attemptCount: 1,
       deferredEffects: [],
     })
