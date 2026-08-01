@@ -399,6 +399,11 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
   const magiBase: number[] = []
   const magiTerms: Terms[] = []
 
+  const taxableFractionOrOne = (value: number | undefined): number =>
+    Number.isFinite(value)
+      ? Math.min(1, Math.max(0, value!))
+      : 1
+
   for (let t = 0; t < n; t++) {
     const y = years[t]!
     const g = 1 + y.growth
@@ -409,13 +414,11 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
     const wtax = `wtax${t}` // taxable-brokerage withdrawal (realizes LTCG on the gain fraction)
     const save = `save${t}` // surplus cash routed back to the tax-free bucket
     const ti = `ti${t}` // taxable ordinary income (post standard deduction, ≥0)
-    const traditionalTaxableFraction = Math.min(
-      1,
-      Math.max(0, y.traditionalWithdrawalTaxableFraction ?? 1),
+    const traditionalTaxableFraction = taxableFractionOrOne(
+      y.traditionalWithdrawalTaxableFraction,
     )
-    const conversionTaxableFraction = Math.min(
-      1,
-      Math.max(0, y.rothConversionTaxableFraction ?? 1),
+    const conversionTaxableFraction = taxableFractionOrOne(
+      y.rothConversionTaxableFraction,
     )
 
     // OBBBA senior deduction in-solve (ground-truth 2026 law sync, Step 2).

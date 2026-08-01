@@ -69,6 +69,31 @@ describe('optimizer model builder', () => {
     )
   })
 
+  it.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+    'falls back to all-taxable coefficients for non-finite fraction %s',
+    (invalidFraction) => {
+      const lp = buildOptimizerModel({
+        years: [year({
+          traditionalWithdrawalTaxableFraction: invalidFraction,
+          rothConversionTaxableFraction: invalidFraction,
+          acaMagiMax: 5_000,
+        })],
+        openingTrad: 100_000,
+        openingInheritedTrad: 0,
+        openingOther: 0,
+        liquidationRate: 0.5,
+      }).lp
+
+      expect(lp).toContain(
+        ' tifloor0: + 1 ti0 - 1 conv0 - 1 wt0 - 1 wi0',
+      )
+      expect(lp).toContain(
+        ' acamagi0: + 1 conv0 + 1 wt0 + 1 wi0 <= 5000',
+      )
+      expect(lp).not.toMatch(/NaN|Infinity/)
+    },
+  )
+
   it('changes the raw compressed schedule when actionable ACA MAGI binds', async () => {
     const base: OptimizerInput = {
       years: [year()],
