@@ -514,7 +514,7 @@ export function OptimizePage() {
                     and tax deltas below are context, not the ranking metric.
                   </p>
                 ) : null}
-                {hasExecutionMismatch && validation ? (
+                {hasExecutionMismatch && validation && !candidateScheduleDisplayed ? (
                   <p className="field-hint" style={{ margin: '0.45rem 0 0' }}>
                     Raw optimizer request: {fmtMoney(rawConversions)}. Cleaned executable schedule:{' '}
                     {fmtMoney(totalConversions)}. Executed after cleaning: {fmtMoney(executedConversions)} (
@@ -597,7 +597,10 @@ export function OptimizePage() {
               </div>
               <p className="field-hint">
                 Optimizer status: {schedule.status} · solved in {schedule.solveMs.toFixed(0)} ms. The optimizer reasons
-                over a simplified plan; the headline figures above come from re-running your full projection with the cleaned schedule.
+                over a simplified plan; the headline figures above come from{' '}
+                {candidateScheduleDisplayed
+                  ? 'the displayed candidate schedule run through your full projection.'
+                  : 're-running your full projection with the cleaned schedule.'}
               </p>
             </div>
 
