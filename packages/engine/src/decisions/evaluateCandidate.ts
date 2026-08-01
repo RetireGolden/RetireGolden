@@ -247,6 +247,14 @@ function rothStrategyRequestsMovement(value: unknown): boolean {
   return true
 }
 
+function qcdStrategyRequestsMovement(value: unknown): boolean {
+  // Missing/zero aggregate QCD configuration cancels future movement. Any
+  // positive or malformed value remains gated until it is replaced by
+  // identity-complete action requests.
+  if (value === undefined || value === 0) return false
+  return true
+}
+
 function retirementActionRequestsOnlyRemoved(before: unknown, after: unknown): boolean {
   if (!Array.isArray(before) || !Array.isArray(after)) return false
   const beforeById = new Map<string, string>()
@@ -288,8 +296,11 @@ function candidateOnlyRemovesRetirementActions(
 
   const before = objectRecord(basePlan.strategies)
   const after = objectRecord(materialized.plan.strategies)
-  if (strategyValueChanged(before, after, 'withdrawalOrder') ||
-      strategyValueChanged(before, after, 'qcdAnnual')) return false
+  if (strategyValueChanged(before, after, 'withdrawalOrder')) return false
+  if (
+    strategyValueChanged(before, after, 'qcdAnnual') &&
+    qcdStrategyRequestsMovement(materialized.plan.strategies.qcdAnnual)
+  ) return false
   if (
     strategyValueChanged(before, after, 'rothConversion') &&
     rothStrategyRequestsMovement(materialized.plan.strategies.rothConversion)

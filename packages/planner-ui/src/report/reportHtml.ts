@@ -519,6 +519,29 @@ export function reportEvidenceFromOptimizeResult(result: OptimizeResult): Report
           : tournament.winnerSource === 'incumbent'
             ? 'current plan strategy'
             : 'none')
+  const candidateRows = tournament.candidates.map((candidate) => ({
+    afterTaxEstateDelta: candidate.afterTaxEstateDelta,
+    candidateId: candidate.id,
+    label: candidate.label,
+    lifetimeTaxDelta: candidate.lifetimeTaxDelta,
+    lossReason: lossReasonForCandidate(tournament, validation, candidate),
+    moneyLastsYearsDelta: candidate.moneyLastsYearsDelta,
+  }))
+  const readinessVeto = tournament.retirementActionReadinessVeto
+  if (
+    readinessVeto?.vetoedWinnerSource === 'milp' &&
+    !candidateRows.some((candidate) => candidate.candidateId === 'milp-cleaned-schedule')
+  ) {
+    const vetoed = readinessVeto.vetoedValidation
+    candidateRows.push({
+      afterTaxEstateDelta: vetoed.afterTaxEstateDelta,
+      candidateId: 'milp-cleaned-schedule',
+      label: readinessVeto.vetoedCandidateLabel ?? "the solver's cleaned schedule",
+      lifetimeTaxDelta: vetoed.lifetimeTaxDelta,
+      lossReason: retirementActionReadinessVetoExplanation(readinessVeto),
+      moneyLastsYearsDelta: vetoed.moneyLastsYearsDelta,
+    })
+  }
   return {
     objectiveId: tournament.policyId,
     objectiveLabel: policy.label,
@@ -528,14 +551,7 @@ export function reportEvidenceFromOptimizeResult(result: OptimizeResult): Report
       tournament.retirementActionReadinessVeto?.vetoedWinnerSource ??
       (withheldCleanedSchedule ? 'milp' : tournament.winnerSource),
     validation: validationEvidence(validation),
-    candidates: tournament.candidates.map((candidate) => ({
-      afterTaxEstateDelta: candidate.afterTaxEstateDelta,
-      candidateId: candidate.id,
-      label: candidate.label,
-      lifetimeTaxDelta: candidate.lifetimeTaxDelta,
-      lossReason: lossReasonForCandidate(tournament, validation, candidate),
-      moneyLastsYearsDelta: candidate.moneyLastsYearsDelta,
-    })),
+    candidates: candidateRows,
     claimAge: result.claimAge?.enabled
       ? {
           combinationsEvaluated: result.claimAge.combinationsEvaluated,

@@ -154,6 +154,23 @@ describe('evaluateCandidate', () => {
     expect(falselyCertified.diagnostics.join(' ')).toMatch(/aggregate.*QCD/i)
   })
 
+  it('does not gate a patch that only cancels a positive aggregate QCD strategy', () => {
+    const plan = tradHeavyPlan()
+    plan.strategies.qcdAnnual = 1_000
+    const edited = structuredClone(plan)
+    edited.strategies.qcdAnnual = 0
+    const ctx = createDecisionContext(plan, simOptions())
+
+    const evaluation = evaluateCandidate(
+      ctx,
+      rothCandidate({ planPatch: canonicalPatchFor(plan, edited) }),
+      { candidateResult: ctx.baselineResult },
+    )
+
+    expect(evaluation.recommendationState).toBe('neutral')
+    expect(evaluation.diagnostics).toEqual([])
+  })
+
   it('does not treat an unrelated whole-strategies operation as an aggregate action change', () => {
     const plan = tradHeavyPlan()
     const edited = structuredClone(plan)

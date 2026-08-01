@@ -421,14 +421,7 @@ describe('optimizer recommendation evidence', () => {
     const evidence = reportEvidenceFromOptimizeResult({
       tournament: {
         policyId: 'max-after-tax-estate',
-        candidates: [{
-          id: 'milp-cleaned-schedule',
-          label: 'Optimizer cleaned schedule',
-          executedConversionTotal: 50_000,
-          afterTaxEstateDelta: 2_000,
-          lifetimeTaxDelta: -5_000,
-          moneyLastsYearsDelta: 0,
-        }],
+        candidates: [],
         winnerSource: 'none',
         winnerCandidateId: null,
         winnerLabel: null,
@@ -464,6 +457,13 @@ describe('optimizer recommendation evidence', () => {
     } as never)
 
     expect(evidence.winnerSource).toBe('milp')
+    expect(evidence.candidates[0]).toMatchObject({
+      candidateId: 'milp-cleaned-schedule',
+      label: "the solver's cleaned schedule",
+      afterTaxEstateDelta: 2_000,
+      lifetimeTaxDelta: -5_000,
+      moneyLastsYearsDelta: 0,
+    })
     expect(evidence.candidates[0]?.lossReason).toMatch(
       /owner, source IRA, and Roth destination/i,
     )
