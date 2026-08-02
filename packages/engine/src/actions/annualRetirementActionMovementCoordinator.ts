@@ -4,6 +4,9 @@ import {
   type Plan,
 } from '../model/plan.js'
 import {
+  planOwnedNonRothIraAnnualFilingSourceIdentifierClaims,
+} from '../model/retirementActionAnnualTaxFacts.js'
+import {
   buildAnnualRetirementPhysicalEventInventory,
   type AnnualRetirementChronologyInvalidResult,
   type AnnualRetirementInventoryIncompleteResult,
@@ -257,7 +260,7 @@ function claimedIdentifiers(
   claimed: Set<string>
   collisionDetail: string | null
 }> {
-  const planIdentifiers = retirementActionPlanReservedIdentifiers(plan)
+  const planIdentifiers = completePlanReservedIdentifiers(plan)
   const claimed = new Set(planIdentifiers)
   const importedRoles = new Map<string, string>()
   let collisionDetail: string | null = null
@@ -303,6 +306,19 @@ function claimedIdentifiers(
   // Action, allocation, owner, and source IDs intentionally rejoin the Plan
   // namespace and therefore are not imported as new evidence identities.
   return { claimed, collisionDetail }
+}
+
+function completePlanReservedIdentifiers(plan: Readonly<Plan>): Set<string> {
+  const reserved = new Set(retirementActionPlanReservedIdentifiers(plan))
+  for (const record of (
+    plan.retirementActionAnnualTaxFacts
+      ?.ownedNonRothIraAnnualFilingSourceRecords ?? []
+  )) {
+    for (const claim of (
+      planOwnedNonRothIraAnnualFilingSourceIdentifierClaims(record)
+    )) reserved.add(claim.value)
+  }
+  return reserved
 }
 
 function inventoryEventIdsByAction(

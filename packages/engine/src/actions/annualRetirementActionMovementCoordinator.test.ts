@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { Plan } from '../model/plan.js'
 import {
   cashAccount,
+  ownedNonRothIraAnnualFilingSourceRecord,
   singlePersonPlan,
   traditionalAccount,
 } from '../testing/planFixtures.js'
@@ -489,6 +490,33 @@ describe('coordinateAnnualRetirementActionMovement', () => {
     expect(result.assignments[0]?.request.provenance.sourceId).toBe(
       result.runtimeInventoryEvidenceId,
     )
+  })
+
+  it('rejects imported evidence colliding with an annual filing-source ID', () => {
+    const collisionPlan = basePlan()
+    collisionPlan.retirementActionAnnualTaxFacts = {
+      ownedNonRothIraAnnualFilingSourceRecords: [{
+        ...ownedNonRothIraAnnualFilingSourceRecord(
+          collisionPlan,
+          ownerPersonId,
+          [ownedIraId, siblingIraId],
+          2030,
+        ),
+        sourceEvidenceId: 'runtime-inventory-evidence',
+      }],
+    }
+    const collisionInput = input(collisionPlan)
+    expect(buildAnnualRetirementPhysicalEventInventory(collisionInput).status)
+      .toBe('annualPhysicalEventInventoryBuilt')
+
+    const result = coordinateAnnualRetirementActionMovement(collisionInput)
+    expect(result).toMatchObject({
+      status: 'annualRetirementActionMovementCoordinationBlocked',
+      issues: [{
+        kind: 'identifierCollision',
+        detail: expect.stringContaining('runtime inventory evidence ID'),
+      }],
+    })
   })
 
   it('omits schema-valid explicit undefined request fields before hashing', () => {
