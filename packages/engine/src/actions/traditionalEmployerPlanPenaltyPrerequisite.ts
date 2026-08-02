@@ -221,16 +221,16 @@ function structural(value: unknown, ancestors = new WeakSet<object>()): unknown 
   if (typeof value === 'bigint') return ['bigint', value.toString()]
   if (typeof value === 'number') return ['number', Number.isFinite(value) ? (Object.is(value, -0) ? '-0' : value) : String(value)]
   if (typeof value !== 'object') return [typeof value, typeof value === 'symbol' || typeof value === 'function' ? String(value) : value]
-  if (ancestors.has(value) || (Array.isArray(value) && Object.keys(value).some((key) => String(Number(key)) !== key || Number(key) >= value.length)) || (!Array.isArray(value) && Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(value) !== null)) throw new TypeError('Employer penalty evidence must be acyclic plain data')
+  if (ancestors.has(value) || Object.values(Object.getOwnPropertyDescriptors(value)).some((descriptor) => descriptor.enumerable && ('get' in descriptor || 'set' in descriptor)) || (Array.isArray(value) && Object.keys(value).some((key) => String(Number(key)) !== key || Number(key) >= value.length)) || (!Array.isArray(value) && Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(value) !== null)) throw new TypeError('Employer penalty evidence must be acyclic plain data')
   ancestors.add(value)
   const result = Array.isArray(value) ? ['array', value.map((entry) => structural(entry, ancestors))] : ['object', Object.keys(value).sort().map((key) => [key, structural((value as Record<string, unknown>)[key], ancestors)])]
   ancestors.delete(value)
   return result
 }
 
-function stableId(prefix: string, parts: readonly unknown[]): string {
-  return `${prefix}:${JSON.stringify(structural(parts))}`
-}
+function stableId(prefix: string, parts: readonly unknown[]): string { return `${prefix}:${JSON.stringify(structural(parts))}` }
+
+function clonePlain<T>(value: T): T { structural(value); return structuredClone(value) }
 
 function requireDistinctEvidenceIds(ids: readonly string[]): void { if (new Set(ids).size !== ids.length) throw new RangeError('Negative employer-penalty facts must use distinct evidence IDs') }
 
@@ -369,7 +369,7 @@ function disabilityEvidence(
     (value.qualifiedOnEvaluationDate && (qualificationDate === null || qualificationDate > identity.evaluationDate)) ||
     (!value.qualifiedOnEvaluationDate && qualificationDate !== null && qualificationDate <= identity.evaluationDate)
   ) throw new RangeError('Disability evidence must exactly bind dated participant status')
-  return structuredClone({ ...value, disabilityQualificationDate: qualificationDate }) as
+  return { ...clonePlain(value), disabilityQualificationDate: qualificationDate } as
     QualifiedDisabilityEventEvidence | RejectedDisabilityStatusEvidence
 }
 
@@ -392,7 +392,7 @@ function seppAssessment(
       exception: 'employerPlanSepp', disposition: 'refused',
       characterCoverageEvidenceId: coverage.evidenceId,
       characterEvidenceIds: coverage.characterEvidenceIds,
-      statusEvidence: structuredClone(value), authorityEvidenceIds: [value.seppStatusEvidenceId], evidenceId,
+      statusEvidence: clonePlain(value), authorityEvidenceIds: [value.seppStatusEvidenceId], evidenceId,
     }
   }
   const election = value.election
@@ -458,7 +458,7 @@ function seppAssessment(
     disposition: qualified ? 'provisional' : 'refused',
     characterCoverageEvidenceId: coverage.evidenceId,
     characterEvidenceIds: coverage.characterEvidenceIds,
-    statusEvidence: structuredClone(value), authorityEvidenceIds: distinctIds,
+    statusEvidence: clonePlain(value), authorityEvidenceIds: distinctIds,
     evidenceId,
   }
 }
@@ -481,7 +481,7 @@ function otherAssessment(
   return {
     exception: 'otherStatutoryException',
     disposition,
-    attestation: structuredClone(value),
+    attestation: clonePlain(value),
     evidenceId: stableId('employer-other-exception', [identity, value]),
   }
 }
@@ -510,7 +510,7 @@ function unsupported(
     ageEvidence,
     ruleOf55Assessment: ruleOf55,
     disabilityEvidence: disability,
-    otherExceptionAttestation: other === null ? null : structuredClone(other),
+    otherExceptionAttestation: other === null ? null : clonePlain(other),
     seppAssessment: sepp,
     evidenceId: stableId('employer-penalty-unsupported', [
       identity, coverage.evidenceId, ageEvidence.evidenceId, missingEvidence,

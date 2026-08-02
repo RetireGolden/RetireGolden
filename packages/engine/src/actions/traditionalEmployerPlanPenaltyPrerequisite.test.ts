@@ -797,6 +797,23 @@ describe('traditional employer-plan penalty prerequisite', () => {
     expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)).toThrow(/plain data/)
   })
 
+  it('rejects accessor-backed metadata without invoking the getter', () => {
+    const value = input({ separationDate: '2029-12-31' })
+    const metadata = {}
+    let reads = 0
+    Object.defineProperty(metadata, 'unstable', {
+      enumerable: true,
+      get: () => {
+        reads += 1
+        return reads
+      },
+    })
+    Reflect.set(value.otherExceptionAttestation!, 'metadata', metadata)
+
+    expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)).toThrow(/plain data/)
+    expect(reads).toBe(0)
+  })
+
   it('clones nested attestation metadata before freezing returned evidence', () => {
     const value = input({ separationDate: '2029-12-31' })
     const metadata = { nested: { retained: true } }
