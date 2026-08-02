@@ -383,6 +383,36 @@ describe('RetirementActionsEditor', () => {
     )
   })
 
+  it('excludes employer-plan conversion sources and explains the unsupported boundary', async () => {
+    const plan = editorPlan()
+    const target = migratedAction('legacyAggregateRothConversion')
+    const source = plan.accounts.find((account) => account.id === 'source-ira')!
+    if (source.type !== 'traditional') throw new Error('expected traditional source')
+    source.kind = 'employer'
+    source.name = 'Employer 401(k)'
+    plan.strategies.retirementActions = [target]
+    const mounted = await mount(plan)
+    const owner = plan.household.people[0]!
+
+    await change(controlByLabel(mounted.container, 'Person'), owner.id)
+    const sourceOptions = Array.from(
+      controlByLabel<HTMLSelectElement>(mounted.container, 'Source account').options,
+    ).slice(1)
+    expect(sourceOptions).toEqual([])
+    expect(mounted.container.textContent).toContain(
+      'No supported conversion source is available for this person.',
+    )
+    expect(mounted.container.textContent).toContain(
+      'employer-plan conversions remain unsupported until plan-availability evidence is modeled.',
+    )
+
+    const save = Array.from(mounted.container.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Save reviewed action',
+    )
+    await act(async () => save!.click())
+    expect(mounted.current().strategies.retirementActions).toEqual([target])
+  })
+
   it('disambiguates same-name account choices with type, kind, and stable ID', async () => {
     const plan = editorPlan()
     const owner = plan.household.people[0]!

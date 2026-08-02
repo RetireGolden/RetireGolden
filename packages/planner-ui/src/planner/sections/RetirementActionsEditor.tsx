@@ -50,7 +50,9 @@ function accountOptions(
       if (kind === 'legacyAggregateWithdrawal') {
         return ORDINARY_SOURCE_TYPES.has(account.type)
       }
-      return account.type === 'traditional' && account.inherited === undefined
+      return account.type === 'traditional' &&
+        account.kind === 'ira' &&
+        account.inherited === undefined
     })
     .sort((left, right) => left.id < right.id ? -1 : left.id > right.id ? 1 : 0)
     .map((account) => ({ value: account.id, label: accountOptionLabel(account) }))
@@ -102,6 +104,7 @@ function ManualReviewRow({
       target,
       draft,
       plan.strategies.retirementActions,
+      plan.accounts,
     )
     if (!built.ok) {
       setIssues(built.issues)
@@ -167,6 +170,14 @@ function ManualReviewRow({
             fullSourceAmountConfirmed: false,
           }))}
         />
+        {target.kind === 'legacyAggregateRothConversion' &&
+        draft.personId !== '' && sources.length === 0 ? (
+          <div className="callout callout--warn" role="status">
+            <strong>No supported conversion source is available for this person.</strong>{' '}
+            Manual review currently requires an individually owned, non-inherited traditional IRA;
+            employer-plan conversions remain unsupported until plan-availability evidence is modeled.
+          </div>
+        ) : null}
         <CheckboxField
           label={`Assign the full ${formatPositiveUsdCents(target.requestedAmount)} to this source`}
           value={draft.fullSourceAmountConfirmed}

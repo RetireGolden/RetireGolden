@@ -5,6 +5,7 @@ import {
   type LegacyAggregateRetirementActionRequest,
 } from '@retiregolden/engine/actions/contract'
 import { asPositiveUsdCents } from '@retiregolden/engine/actions/money'
+import type { Plan } from '@retiregolden/engine/model/plan'
 
 import {
   buildRetirementActionManualIntent,
@@ -55,12 +56,24 @@ function scheduledAction(executionDate: string, executionSequence: number) {
   return result.request
 }
 
+const supportedPlanAccounts: Plan['accounts'] = [{
+  type: 'traditional',
+  id: 'ira-a',
+  name: 'Traditional IRA',
+  ownerPersonId: 'person-a',
+  annualReturnPct: null,
+  kind: 'ira',
+  balance: 100_000,
+  annualContribution: 0,
+}]
+
 describe('buildRetirementActionManualIntent', () => {
   it('starts fail-closed and does not infer a person, account, date, sequence, or purpose', () => {
     const result = buildRetirementActionManualIntent(
       migrated('legacyAggregateWithdrawal'),
       emptyRetirementActionManualEditorDraft(),
       [],
+      supportedPlanAccounts,
     )
 
     expect(result).toEqual({
@@ -88,7 +101,12 @@ describe('buildRetirementActionManualIntent', () => {
       withdrawalPurpose: 'taxPayment' as const,
     }
 
-    expect(buildRetirementActionManualIntent(target, draft, [])).toEqual({
+    expect(buildRetirementActionManualIntent(
+      target,
+      draft,
+      [],
+      supportedPlanAccounts,
+    )).toEqual({
       ok: true,
       intent: {
         kind: 'ordinaryWithdrawal',
@@ -118,7 +136,12 @@ describe('buildRetirementActionManualIntent', () => {
       executionSequence: '1',
       conversionTaxFunding: 'externalCash' as const,
     }
-    expect(buildRetirementActionManualIntent(target, incomplete, [])).toEqual({
+    expect(buildRetirementActionManualIntent(
+      target,
+      incomplete,
+      [],
+      supportedPlanAccounts,
+    )).toEqual({
       ok: false,
       issues: [
         'Choose the exact Roth destination account.',
@@ -136,6 +159,7 @@ describe('buildRetirementActionManualIntent', () => {
         externalCashAttested: true,
       },
       [],
+      supportedPlanAccounts,
     )
     expect(built).toMatchObject({
       ok: true,
@@ -162,12 +186,48 @@ describe('buildRetirementActionManualIntent', () => {
         conversionTaxFunding: 'conversionPrincipalWithholding',
       },
       [],
+      supportedPlanAccounts,
     )
 
     expect(result).toEqual({
       ok: false,
       issues: [
         'Conversion-principal withholding is not supported. Choose external cash or no tax funding expected.',
+      ],
+    })
+  })
+
+  it('rejects an employer-plan conversion source before replacement', () => {
+    const target = migrated('legacyAggregateRothConversion')
+    const employerAccounts: Plan['accounts'] = [{
+      type: 'traditional',
+      id: 'employer-401k',
+      name: 'Employer 401(k)',
+      ownerPersonId: 'person-a',
+      annualReturnPct: null,
+      kind: 'employer',
+      balance: 100_000,
+      annualContribution: 0,
+    }]
+
+    expect(buildRetirementActionManualIntent(
+      target,
+      {
+        ...emptyRetirementActionManualEditorDraft(),
+        personId: 'person-a',
+        sourceAccountId: 'employer-401k',
+        destinationRothAccountId: 'roth-a',
+        fullSourceAmountConfirmed: true,
+        executionDate: '2034-06-15',
+        executionSequence: '1',
+        conversionTaxFunding: 'noneExpected',
+      },
+      [],
+      employerAccounts,
+    )).toEqual({
+      ok: false,
+      issues: [
+        'Employer-plan conversion sources are not supported until plan-availability evidence is modeled. Choose a traditional IRA.',
       ],
     })
   })
@@ -186,7 +246,7 @@ describe('buildRetirementActionManualIntent', () => {
         ...base,
         executionDate,
         executionSequence: '1',
-      }, [])
+      }, [], supportedPlanAccounts)
       expect(result.ok).toBe(false)
     }
     for (const executionSequence of ['', '0', '-1', '1.5', '9007199254740992']) {
@@ -194,7 +254,7 @@ describe('buildRetirementActionManualIntent', () => {
         ...base,
         executionDate: '2034-01-01',
         executionSequence,
-      }, [])
+      }, [], supportedPlanAccounts)
       expect(result.ok).toBe(false)
     }
   })
@@ -215,6 +275,7 @@ describe('buildRetirementActionManualIntent', () => {
       target,
       draft,
       [target, scheduledAction('2034-06-15', 7)],
+      supportedPlanAccounts,
     )).toEqual({
       ok: false,
       issues: [
@@ -225,6 +286,7 @@ describe('buildRetirementActionManualIntent', () => {
       target,
       draft,
       [target, scheduledAction('2034-06-15', 8)],
+      supportedPlanAccounts,
     ).ok).toBe(true)
   })
 

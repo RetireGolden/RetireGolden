@@ -112,6 +112,16 @@ function executionSlotAlreadyUsed(
   )
 }
 
+function employerConversionSourceSelected(
+  sourceAccountId: string,
+  planAccounts: readonly Plan['accounts'][number][],
+): boolean {
+  const matches = planAccounts.filter((account) => account.id === sourceAccountId)
+  return matches.length === 1 &&
+    matches[0]!.type === 'traditional' &&
+    matches[0]!.kind === 'employer'
+}
+
 function positiveDollarsToCents(value: number | null): ReturnType<typeof asPositiveUsdCents> | null {
   if (value === null || !Number.isFinite(value) || value <= 0) return null
   try {
@@ -139,6 +149,7 @@ export function buildRetirementActionManualIntent(
   target: Readonly<EditableMigratedRetirementAction>,
   draft: Readonly<RetirementActionManualEditorDraft>,
   preservedActions: readonly Readonly<RetirementActionRequest>[],
+  planAccounts: readonly Plan['accounts'][number][],
 ): BuildRetirementActionManualIntentResult {
   const issues: string[] = []
   if (draft.personId.trim() === '') issues.push('Choose the person responsible for this action.')
@@ -168,6 +179,11 @@ export function buildRetirementActionManualIntent(
   if (target.kind === 'legacyAggregateWithdrawal') {
     if (draft.withdrawalPurpose === '') issues.push('Choose the withdrawal purpose.')
   } else {
+    if (employerConversionSourceSelected(draft.sourceAccountId, planAccounts)) {
+      issues.push(
+        'Employer-plan conversion sources are not supported until plan-availability evidence is modeled. Choose a traditional IRA.',
+      )
+    }
     if (draft.destinationRothAccountId.trim() === '') {
       issues.push('Choose the exact Roth destination account.')
     }
