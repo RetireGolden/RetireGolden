@@ -16,11 +16,12 @@ import {
 } from '../actions/annualRetirementActionPublication.js'
 import type { OrdinaryWithdrawalExecutionScheduleIssue } from '../actions/execution.js'
 import type { RothConversionExecutionScheduleIssue } from '../actions/rothConversionExecution.js'
-import type {
-  AccountId,
-  ActionId,
-  AllocationId,
-  PersonId,
+import {
+  asActionId,
+  type AccountId,
+  type ActionId,
+  type AllocationId,
+  type PersonId,
 } from '../actions/identity.js'
 import { asUsdCents, type PositiveUsdCents, type UsdCents } from '../actions/money.js'
 import type { ActionReason } from '../actions/reasons.js'
@@ -402,7 +403,12 @@ export function normalizeScenarioActionRows(
 
     const conversionExecution = year.rothConversionActionExecution
     for (const evidence of conversionExecution?.evidence ?? []) {
-      const actionId = evidence.request.actionId
+      const actionId = asActionId(evidence.actionId)
+      if (evidence.request.actionId !== actionId) {
+        throw new Error(
+          `Conversion execution action identity does not match request for actionId "${actionId}"`,
+        )
+      }
       if (seenActionIds.has(actionId)) {
         throw new Error(
           `Duplicate retirement-action execution evidence for actionId "${actionId}"`,

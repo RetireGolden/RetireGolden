@@ -234,6 +234,19 @@ describe('normalizeScenarioActionRows', () => {
     expect(normalizeScenarioActionScheduleDiagnostics([collisionYear]).map(
       (diagnostic) => diagnostic.actionId,
     )).toEqual(['conversion', 'conversion-b'])
+
+    const forgedExecution = structuredClone(execution) as unknown as {
+      evidence: Array<{ actionId: ReturnType<typeof asActionId> }>
+    }
+    forgedExecution.evidence[0]!.actionId = asActionId('ordinary-authority')
+    const rawYear = {
+      ...yearResult(2030, [executionEvidence({ actionId: 'ordinary-authority' })]),
+      rothConversionActionExecution: forgedExecution,
+    } as unknown as YearResult
+
+    expect(() => normalizeScenarioActionRows([rawYear])).toThrow(
+      'Conversion execution action identity does not match request',
+    )
   })
 
   it('normalizes ordinary execution cents and identities independent of evidence order', () => {
