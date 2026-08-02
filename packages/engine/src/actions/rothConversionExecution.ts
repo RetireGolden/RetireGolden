@@ -124,7 +124,10 @@ function unchangedBalances(
 ): RothConversionBalanceExecutionEvidence[] {
   return [...snapshots]
     .map((snapshot) => ({ ...snapshot, closingBalance: snapshot.openingBalance }))
-    .sort((left, right) => compareUtf16CodeUnits(left.accountId, right.accountId))
+    .sort((left, right) =>
+      compareUtf16CodeUnits(left.accountId, right.accountId) ||
+      left.openingBalance - right.openingBalance,
+    )
 }
 
 function nonActionableEvidence(
@@ -180,7 +183,12 @@ function scheduleIssues(requests: readonly RothConversionRequest[]): RothConvers
   const issues: RothConversionExecutionScheduleIssue[] = []
   const actionIds = new Set<string>()
   const positions = new Set<string>()
-  for (const request of requests) {
+  const scheduled = [...requests].sort((left, right) =>
+    compareUtf16CodeUnits(left.executionDate ?? '\uffff', right.executionDate ?? '\uffff') ||
+    left.executionSequence - right.executionSequence ||
+    compareUtf16CodeUnits(left.actionId, right.actionId),
+  )
+  for (const request of scheduled) {
     if (actionIds.has(request.actionId)) {
       issues.push({ kind: 'duplicateActionId', actionId: request.actionId, detail: 'Conversion action IDs must be unique.' })
     }

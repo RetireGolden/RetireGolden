@@ -189,10 +189,17 @@ describe('executeRothConversions', () => {
   it('rejects duplicate schedule identities before publishing evidence', () => {
     const first = request('conversion-a', 1)
     const duplicatePosition = request('conversion-b', 1)
-    expect(executeRothConversions(input([first, duplicatePosition]))).toMatchObject({
+    const forward = executeRothConversions(input([first, duplicatePosition]))
+    const reverse = executeRothConversions(input([duplicatePosition, first]))
+
+    expect(reverse).toEqual(forward)
+    expect(forward).toMatchObject({
       committed: false,
       evidence: [],
-      scheduleIssues: [{ kind: 'duplicateSchedulePosition' }],
+      scheduleIssues: [{
+        kind: 'duplicateSchedulePosition',
+        actionId: 'conversion-b',
+      }],
     })
   })
 
@@ -206,11 +213,21 @@ describe('executeRothConversions', () => {
     )).toBe(true)
 
     const duplicateBalance = input()
+    const conflictingSnapshot = {
+      ...duplicateBalance.openingBalances[0]!,
+      openingBalance: asUsdCents(9_000),
+    }
     duplicateBalance.openingBalances = [
       ...duplicateBalance.openingBalances,
-      duplicateBalance.openingBalances[0]!,
+      conflictingSnapshot,
     ]
-    expect(executeRothConversions(duplicateBalance)).toMatchObject({
+    const forward = executeRothConversions(duplicateBalance)
+    const reversed = executeRothConversions({
+      ...duplicateBalance,
+      openingBalances: [...duplicateBalance.openingBalances].reverse(),
+    })
+    expect(reversed).toEqual(forward)
+    expect(forward).toMatchObject({
       committed: false,
       evidence: [],
       scheduleIssues: [{ kind: 'invalidInput' }],
