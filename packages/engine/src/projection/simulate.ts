@@ -75,14 +75,13 @@ import {
 import {
   asAccountId,
   asPersonId,
+  assessOrdinaryWithdrawalPlanBoundary,
   executeOrdinaryWithdrawals,
-  ledgerCentTotalToPlanDollars,
   ledgerCentsToPlanDollars,
   ordinaryWithdrawalPublicationEligibility,
   ordinaryWithdrawalPublicationSource,
   planDollarsToLedgerCents,
   publishAnnualRetirementActions,
-  signedLedgerCentTotalToPlanDollars,
   type ExecuteOrdinaryWithdrawalsResult,
   type TaxableAccountOpeningSnapshot,
 } from '../actions/index.js'
@@ -2862,167 +2861,34 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           taxableAccountSnapshots,
           runtimeEvidence: { personAliveEvidence },
         })
+        const boundary = assessOrdinaryWithdrawalPlanBoundary(
+          retirementActionExecution,
+        )
         const unrepresentableClosingBalanceAccountIds = new Set(
-          retirementActionExecution.balances
-            .filter((snapshot) => snapshot.closingBalance !== snapshot.openingBalance)
-            .filter((snapshot) => {
-              try {
-                ledgerCentsToPlanDollars(snapshot.closingBalance)
-                return false
-              } catch {
-                return true
-              }
-            })
-            .map((snapshot) => String(snapshot.accountId)),
+          boundary.unrepresentableClosingBalanceAccountIds.map(String),
         )
         const unrepresentableClosingBasisAccountIds = new Set(
-          retirementActionExecution.taxableBases
-            .filter(
-              (snapshot) =>
-                snapshot.closingCostBasis !== snapshot.openingCostBasis,
-            )
-            .filter((snapshot) => {
-              try {
-                ledgerCentsToPlanDollars(snapshot.closingCostBasis)
-                return false
-              } catch {
-                return true
-              }
-            })
-            .map((snapshot) => String(snapshot.accountId)),
+          boundary.unrepresentableClosingBasisAccountIds.map(String),
         )
-
-        const sourceIdsByClass = {
-          cash: new Set<string>(),
-          equityCompensation: new Set<string>(),
-          taxable: new Set<string>(),
-          all: new Set<string>(),
+        const aggregateFailureSourceAccountIds = new Set(
+          boundary.aggregateFailureSourceAccountIds.map(String),
+        )
+        if (boundary.totals.cash !== null) {
+          retirementActionCash = boundary.totals.cash
         }
-        for (const evidence of retirementActionExecution.evidence) {
-          if (evidence.readiness !== 'actionable') continue
-          for (const coverage of evidence.penaltyCoverage) {
-            if (coverage.executedAmount <= 0) continue
-            const sourceAccountId = String(coverage.sourceAccountId)
-            sourceIdsByClass[coverage.sourceClass].add(sourceAccountId)
-            sourceIdsByClass.all.add(sourceAccountId)
-          }
-        }
-        // Keep every annual subtotal exact until its Plan-number boundary.
-        // A representable per-account closing does not prove that a sum across
-        // several safe-integer sources is itself representable.
-        const retirementActionCashCents =
-          retirementActionExecution.evidence.reduce(
-            (total, evidence) =>
-              total +
-              evidence.taxCharacter.reduce(
-                (characterTotal, character) =>
-                  characterTotal +
-                  (character.sourceClass === 'cash'
-                    ? BigInt(character.amount)
-                    : 0n),
-                0n,
-              ),
-            0n,
-          )
-        const retirementActionEquityCompensationCents =
-          retirementActionExecution.evidence.reduce(
-            (total, evidence) =>
-              total +
-              evidence.taxCharacter.reduce(
-                (characterTotal, character) =>
-                  characterTotal +
-                  (character.sourceClass === 'equityCompensation'
-                    ? BigInt(character.amount)
-                    : 0n),
-                0n,
-              ),
-            0n,
-          )
-        const retirementActionTaxableProceedsCents =
-          retirementActionExecution.evidence.reduce(
-            (total, evidence) =>
-              total +
-              (evidence.readiness === 'actionable'
-                ? evidence.penaltyCoverage.reduce(
-                  (coverageTotal, coverage) =>
-                    coverageTotal +
-                    (coverage.sourceClass === 'taxable'
-                      ? BigInt(coverage.executedAmount)
-                      : 0n),
-                  0n,
-                )
-                : 0n),
-            0n,
-          )
-        const retirementActionProceedsCents =
-          retirementActionExecution.evidence.reduce(
-            (total, evidence) =>
-              total + BigInt(evidence.disposition.executedAmount),
-            0n,
-          )
-        const retirementActionCapitalCents =
-          retirementActionExecution.evidence.reduce(
-            (total, evidence) =>
-              total +
-              evidence.taxCharacter.reduce((characterTotal, character) => {
-                if (character.sourceClass !== 'taxable') return characterTotal
-                if (character.kind === 'capitalGain') {
-                  return characterTotal + BigInt(character.amount)
-                }
-                if (character.kind === 'capitalLoss') {
-                  return characterTotal - BigInt(character.amount)
-                }
-                return characterTotal
-              }, 0n),
-            0n,
-          )
-
-        const aggregateFailureSourceAccountIds = new Set<string>()
-        try {
-          retirementActionCash = ledgerCentTotalToPlanDollars(
-            retirementActionCashCents,
-          )
-        } catch {
-          sourceIdsByClass.cash.forEach((id) =>
-            aggregateFailureSourceAccountIds.add(id),
-          )
-        }
-        try {
+        if (boundary.totals.equityCompensation !== null) {
           retirementActionEquityCompensation =
-            ledgerCentTotalToPlanDollars(
-              retirementActionEquityCompensationCents,
-            )
-        } catch {
-          sourceIdsByClass.equityCompensation.forEach((id) =>
-            aggregateFailureSourceAccountIds.add(id),
-          )
+            boundary.totals.equityCompensation
         }
-        try {
-          retirementActionTaxableProceeds =
-            ledgerCentTotalToPlanDollars(
-              retirementActionTaxableProceedsCents,
-            )
-        } catch {
-          sourceIdsByClass.taxable.forEach((id) =>
-            aggregateFailureSourceAccountIds.add(id),
-          )
+        if (boundary.totals.taxableProceeds !== null) {
+          retirementActionTaxableProceeds = boundary.totals.taxableProceeds
         }
-        try {
-          retirementActionProceeds = ledgerCentTotalToPlanDollars(
-            retirementActionProceedsCents,
-          )
-        } catch {
-          sourceIdsByClass.all.forEach((id) =>
-            aggregateFailureSourceAccountIds.add(id),
-          )
+        if (boundary.totals.proceeds !== null) {
+          retirementActionProceeds = boundary.totals.proceeds
         }
-        try {
+        if (boundary.totals.capitalGainOrLoss !== null) {
           retirementActionCapitalGainOrLoss =
-            signedLedgerCentTotalToPlanDollars(retirementActionCapitalCents)
-        } catch {
-          sourceIdsByClass.taxable.forEach((id) =>
-            aggregateFailureSourceAccountIds.add(id),
-          )
+            boundary.totals.capitalGainOrLoss
         }
         if (
           unrepresentableClosingBalanceAccountIds.size === 0 &&
