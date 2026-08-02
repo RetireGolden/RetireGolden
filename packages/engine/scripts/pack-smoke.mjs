@@ -37,10 +37,13 @@ const { simulatePlan, planSchema, CURRENT_PLAN_SCHEMA_VERSION } = await import('
 const { packForYear } = await import('@retiregolden/engine/params')
 const scenarioActionRowsDeepApi = await import('@retiregolden/engine/scenarios/actionRows')
 const actionsApi = await import('@retiregolden/engine/actions')
+const decisionsApi = await import('@retiregolden/engine/decisions')
+const qcdCandidateAdapterDeepApi = await import(
+  '@retiregolden/engine/decisions/qcdCandidateAdapter'
+)
 const candidateIdentityAllocatorDeepApi = await import(
   '@retiregolden/engine/actions/retirementActionCandidateIdentityAllocator'
 )
-const decisionsApi = await import('@retiregolden/engine/decisions')
 const ordinaryWithdrawalCandidateAdapterDeepApi = await import(
   '@retiregolden/engine/decisions/ordinaryWithdrawalCandidateAdapter'
 )
@@ -256,6 +259,10 @@ assert.equal(typeof simulatePlan, 'function')
 assert.equal(typeof scenarioActionRowsDeepApi.normalizeScenarioActionRows, 'function')
 assert.equal(typeof scenarioActionRowsDeepApi.compareScenarioActionRows, 'function')
 assert.equal(typeof scenarioActionRowsDeepApi.normalizeScenarioActionScheduleDiagnostics, 'function')
+assert.equal(
+  qcdCandidateAdapterDeepApi.adaptQcdEfficiencyDetectorCandidate,
+  decisionsApi.adaptQcdEfficiencyDetectorCandidate,
+)
 assert.equal(simulate.simulatePlan, simulatePlan)
 assert.equal(asActionId('smoke-action'), 'smoke-action')
 assert.equal(moneyDeepApi.asUsdCents, asUsdCents)

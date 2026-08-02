@@ -130,6 +130,7 @@ describe('retirement-action candidate identity allocator', () => {
     expect(first.status).toBe('allocated')
     if (first.status !== 'allocated') return
     expect(first.request.kind).toBe('ordinaryWithdrawal')
+    if (first.request.kind !== 'ordinaryWithdrawal') return
     expect(first.request.requestedAmount).toBe(12_345)
     expect(first.request.allocations.reduce(
       (sum, allocation) => sum + allocation.requestedAmount,

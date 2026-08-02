@@ -187,6 +187,7 @@ describe('manual retirement-action review and replacement', () => {
     const allocated = allocateRetirementActionCandidateIdentity(plan, intent)
     expect(allocated.status).toBe('allocated')
     if (allocated.status !== 'allocated') return
+    if (allocated.request.kind !== 'ordinaryWithdrawal') return
     plan.strategies.retirementActions = [allocated.request]
 
     const result = review(plan, allocated.request.actionId, intent)
@@ -1010,6 +1011,7 @@ describe('manual retirement-action review and replacement', () => {
     const allocated = allocateRetirementActionCandidateIdentity(plan, ordinaryIntent())
     expect(allocated.status).toBe('allocated')
     if (allocated.status !== 'allocated') return
+    if (allocated.request.kind !== 'ordinaryWithdrawal') return
     const generatedAllocationId = allocated.request.allocations[0]!.allocationId
     plan.strategies.retirementActions = [legacyWithdrawal(generatedAllocationId)]
 

@@ -2,6 +2,7 @@ import type { Plan } from '../model/plan.js'
 import type { ProjectionResult } from '../projection/types.js'
 import type { ProjectionSummary } from '../projection/compare.js'
 import type { ParameterPack } from '../params/types.js'
+import type { RetirementActionCandidateReadiness } from '../decisions/types.js'
 
 export type InsightCategory =
   | 'tax-brackets'
@@ -42,8 +43,23 @@ export interface InsightCard {
 
 export type InsightAction =
   | { kind: 'advisory' }
-  | { kind: 'preview-scenario'; scenarioName: string; patch: Record<string, unknown> }
-  | { kind: 'apply-toggle'; patch: Record<string, unknown> }
+  | {
+      kind: 'preview-scenario'
+      scenarioName: string
+      patch: Record<string, unknown>
+      /** Required when the preview changes retirement-account movement. */
+      retirementActionReadiness?: RetirementActionCandidateReadiness
+      /** Detector-authored provenance consumed by a narrow candidate adapter. */
+      candidateMetadata?: Record<string, unknown>
+    }
+  | {
+      kind: 'apply-toggle'
+      patch: Record<string, unknown>
+      /** Required when the toggle changes retirement-account movement. */
+      retirementActionReadiness?: RetirementActionCandidateReadiness
+      /** Detector-authored provenance consumed by a narrow candidate adapter. */
+      candidateMetadata?: Record<string, unknown>
+    }
 
 export interface DetectorProjection {
   result: ProjectionResult

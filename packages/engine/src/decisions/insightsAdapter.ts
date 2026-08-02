@@ -36,6 +36,12 @@ export function candidateFromInsight(
     label: action.kind === 'preview-scenario' ? action.scenarioName : card.title,
     explanation: card.rationale,
     planPatch: action.patch,
+    ...(action.retirementActionReadiness === undefined
+      ? {}
+      : { retirementActionReadiness: action.retirementActionReadiness }),
+    ...(action.candidateMetadata === undefined
+      ? {}
+      : { metadata: action.candidateMetadata }),
   }
 }
 

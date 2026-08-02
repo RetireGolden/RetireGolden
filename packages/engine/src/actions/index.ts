@@ -66,6 +66,7 @@ export {
   type AllocatedRetirementActionCandidateIdentity,
   type BlockedRetirementActionCandidateIdentity,
   type OrdinaryWithdrawalCandidateIdentityIntent,
+  type QcdCandidateIdentityIntent,
   type RetirementActionCandidateIdentityAllocationResult,
   type RetirementActionCandidateIdentityEvidence,
   type RetirementActionCandidateIdentityIntent,

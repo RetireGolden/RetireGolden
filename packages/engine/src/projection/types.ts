@@ -600,6 +600,12 @@ export interface SimulatorCommittedOwnedNonRothIraAnnualReplay {
 
 export interface YearResult {
   year: number
+  /**
+   * Exact cumulative general-inflation factor used by this simulation year.
+   * `simulatePlan` always publishes it; optionality preserves compatibility
+   * for external consumers that construct partial YearResult fixtures.
+   */
+  inflationScale?: number
   people: PersonYearState[]
   /** Filing treatment used for federal/state thresholds in this projection year. */
   filingStatus: ProjectedFilingStatus
