@@ -31,6 +31,7 @@ export interface AnnualQcdRmdPoolOpeningSnapshot {
   readonly upstreamEvidenceId: string
 }
 export interface AnnualQcdRmdPoolStagedTransition extends AnnualQcdRmdPoolOpeningSnapshot {
+  readonly openingEvidenceId: string
   readonly evidenceId: string
   readonly rmdSatisfiedAfter: UsdCents
   readonly rmdRemainingAfter: UsdCents
@@ -99,13 +100,23 @@ export type StageAnnualQcdPhysicalExecutionResult =
   | AnnualQcdPhysicalExecutionBlocked
 class StageError extends Error {
   readonly kind: AnnualQcdPhysicalExecutionIssue['kind']
-  constructor(kind: AnnualQcdPhysicalExecutionIssue['kind'], detail: string) {
+  readonly taxYear: number | null
+  constructor(
+    kind: AnnualQcdPhysicalExecutionIssue['kind'],
+    detail: string,
+    taxYear: number | null = null,
+  ) {
     super(detail)
     this.kind = kind
+    this.taxYear = taxYear
   }
 }
-function fail(kind: AnnualQcdPhysicalExecutionIssue['kind'], detail: string): never {
-  throw new StageError(kind, detail)
+function fail(
+  kind: AnnualQcdPhysicalExecutionIssue['kind'],
+  detail: string,
+  taxYear: number | null = null,
+): never {
+  throw new StageError(kind, detail, taxYear)
 }
 
 function deepFreeze<T>(value: T): Readonly<T> {
@@ -128,7 +139,7 @@ function blocked(error: unknown): AnnualQcdPhysicalExecutionBlocked {
     committed: false,
     movement: 'notCommitted',
     taxCharacterStatus: 'awaitingAnnualQcdPostPass',
-    taxYear: null,
+    taxYear: error instanceof StageError ? error.taxYear : null,
     detachedBalances: [],
     rmdPools: [],
     applications: [],
@@ -174,7 +185,42 @@ function canonicalPrerequisite(
   if (rebuilt.status !== 'evaluated' || JSON.stringify(rebuilt) !== JSON.stringify(prerequisite)) {
     fail('prerequisiteInvalid', 'QCD prerequisite differs from its authoritative Plan evaluation.')
   }
+  if (rebuilt.evidence.some((entry) => entry.eligibility.decision.status !== 'accepted')) {
+    fail(
+      'prerequisiteInvalid',
+      'QCD physical staging requires accepted physical and legal eligibility for every action.',
+      rebuilt.taxYear,
+    )
+  }
   return rebuilt.requests
+}
+
+function claimIdentifiers(value: unknown, claimed: Set<string>, key: string | null = null): void {
+  if (Array.isArray(value)) {
+    for (const entry of value) claimIdentifiers(entry, claimed, key)
+    return
+  }
+  if (value === null || typeof value !== 'object') {
+    if (typeof value === 'string' && key !== null &&
+        (key.endsWith('Id') || key.endsWith('Ids'))) {
+      claimed.add(value)
+    }
+    return
+  }
+  for (const [childKey, child] of Object.entries(value as Record<string, unknown>)) {
+    claimIdentifiers(child, claimed, childKey)
+  }
+}
+
+function claimedPrerequisiteIdentifiers(
+  prerequisite: Readonly<AnnualQcdExecutionPrerequisitesEvaluated>,
+): Set<string> {
+  const claimed = new Set<string>()
+  claimIdentifiers(prerequisite, claimed)
+  for (const entry of prerequisite.evidence) {
+    claimed.add(deriveActionStructuralId('annual-qcd-execution-prerequisite', [entry]))
+  }
+  return claimed
 }
 
 function canonicalBalances(
@@ -201,6 +247,7 @@ function canonicalPools(
   input: readonly Readonly<AnnualQcdRmdPoolOpeningSnapshot>[],
   requests: readonly Readonly<QualifiedCharitableDistributionRequest>[],
   plan: Readonly<Plan>,
+  claimedIdentifiers: Set<string>,
 ): AnnualQcdRmdPoolStagedTransition[] {
   const ids = new Set<string>()
   const evidenceIds = new Set<string>()
@@ -218,29 +265,38 @@ function canonicalPools(
     const required = usdCentsSchema.parse(raw.rmdRequiredAmount)
     const satisfied = usdCentsSchema.parse(raw.rmdSatisfiedBefore)
     const remaining = usdCentsSchema.parse(raw.rmdRemainingBefore)
-    const evidenceId = deriveActionStructuralId('annual-qcd-owned-ira-rmd-pool', [
+    const openingEvidenceId = deriveActionStructuralId('annual-qcd-owned-ira-rmd-pool-opening', [
       poolId, raw.taxYear, donorPersonId, sourceAccountIds, required, satisfied, remaining, upstreamEvidenceId,
     ])
-    const allEvidenceIds = [evidenceId, upstreamEvidenceId]
+    const newIdentifiers = [poolId, openingEvidenceId, upstreamEvidenceId]
     if (raw.predicate !== 'annualQcdOwnedIraRmdPoolOpeningSnapshot' || raw.scope !== 'ownedIra' ||
         raw.taxYear !== requests[0]!.year || sourceAccountIds.length === 0 ||
         new Set(sourceAccountIds).size !== sourceAccountIds.length ||
         JSON.stringify(sourceAccountIds) !== JSON.stringify(completeAccountIds) ||
         BigInt(satisfied) + BigInt(remaining) !== BigInt(required) || ids.has(poolId) ||
-        new Set(allEvidenceIds).size !== allEvidenceIds.length ||
-        allEvidenceIds.some((id) => evidenceIds.has(id)) ||
+        new Set(newIdentifiers).size !== newIdentifiers.length ||
+        newIdentifiers.some((id) => evidenceIds.has(id) || claimedIdentifiers.has(id)) ||
         sourceAccountIds.some((id) => claimedAccounts.has(id))) {
       fail('rmdEvidenceInvalid', `RMD pool "${poolId}" is malformed, duplicated, or overlaps another pool.`)
     }
     ids.add(poolId)
-    allEvidenceIds.forEach((id) => evidenceIds.add(id))
+    newIdentifiers.forEach((id) => {
+      evidenceIds.add(id)
+      claimedIdentifiers.add(id)
+    })
     sourceAccountIds.forEach((id) => claimedAccounts.add(id))
     return {
-      ...raw,
-      poolId, donorPersonId,
+      predicate: 'annualQcdOwnedIraRmdPoolOpeningSnapshot' as const,
+      poolId,
+      taxYear: raw.taxYear,
+      donorPersonId,
+      scope: 'ownedIra' as const,
       sourceAccountIds: sourceAccountIds as [AccountId, ...AccountId[]],
       rmdRequiredAmount: required, rmdSatisfiedBefore: satisfied,
-      rmdRemainingBefore: remaining, evidenceId, upstreamEvidenceId,
+      rmdRemainingBefore: remaining,
+      upstreamEvidenceId,
+      openingEvidenceId,
+      evidenceId: openingEvidenceId,
       rmdSatisfiedAfter: satisfied, rmdRemainingAfter: remaining,
     }
   }).sort((left, right) => compareUtf16CodeUnits(left.poolId, right.poolId))
@@ -255,14 +311,15 @@ function canonicalPools(
   return pools
 }
 
-function stageUnchecked(input: StageAnnualQcdPhysicalExecutionInput): AnnualQcdPhysicalExecutionStaged {
-  const parsedPlan = parsePlan(input.plan)
-  if (!parsedPlan.ok) fail('prerequisiteInvalid', 'QCD physical staging requires one valid authoritative Plan.')
-  const plan = parsedPlan.plan
-  const requests = canonicalPrerequisite(input.prerequisite, plan, input.runtimeEvidence)
+function stageKnownYear(
+  input: StageAnnualQcdPhysicalExecutionInput,
+  plan: Readonly<Plan>,
+  requests: readonly Readonly<QualifiedCharitableDistributionRequest>[],
+): AnnualQcdPhysicalExecutionStaged {
+  const claimedIdentifiers = claimedPrerequisiteIdentifiers(input.prerequisite)
   const sourceIds = new Set(requests.map((request) => request.allocation.sourceAccountId))
   const detachedBalances = canonicalBalances(input.openingBalances, sourceIds)
-  const pools = canonicalPools(input.rmdPools, requests, plan)
+  const pools = canonicalPools(input.rmdPools, requests, plan, claimedIdentifiers)
   const workingBalances = new Map(
     detachedBalances.map((entry) => [entry.accountId, entry.openingBalance]),
   )
@@ -321,10 +378,14 @@ function stageUnchecked(input: StageAnnualQcdPhysicalExecutionInput): AnnualQcdP
         rmdRemainingBefore,
         rmdSatisfied,
         rmdRemainingAfter,
-        pool.sourceAccountIds, pool.evidenceId,
+        pool.sourceAccountIds, pool.openingEvidenceId,
         pool.upstreamEvidenceId,
       ],
     )
+    if (claimedIdentifiers.has(stagingEvidenceId)) {
+      fail('rmdEvidenceInvalid', `QCD staging evidence for "${request.actionId}" collides with an upstream identifier.`)
+    }
+    claimedIdentifiers.add(stagingEvidenceId)
     applications.push({
       predicate: 'annualQcdDetachedPhysicalApplication',
       request, prerequisiteEvidenceId,
@@ -342,9 +403,20 @@ function stageUnchecked(input: StageAnnualQcdPhysicalExecutionInput): AnnualQcdP
   }))
   const finalPools = pools.map((pool) => ({
     ...pool,
+    evidenceId: deriveActionStructuralId('annual-qcd-owned-ira-rmd-pool-transition', [
+      pool.openingEvidenceId,
+      workingPools.get(pool.poolId)!.satisfied,
+      workingPools.get(pool.poolId)!.remaining,
+    ]),
     rmdSatisfiedAfter: workingPools.get(pool.poolId)!.satisfied,
     rmdRemainingAfter: workingPools.get(pool.poolId)!.remaining,
   }))
+  for (const pool of finalPools) {
+    if (claimedIdentifiers.has(pool.evidenceId)) {
+      fail('rmdEvidenceInvalid', `RMD pool "${pool.poolId}" closing evidence collides with another identifier.`)
+    }
+    claimedIdentifiers.add(pool.evidenceId)
+  }
   return deepFreeze({
     status: 'annualQcdPhysicalExecutionStaged',
     committed: false,
@@ -356,6 +428,21 @@ function stageUnchecked(input: StageAnnualQcdPhysicalExecutionInput): AnnualQcdP
     applications,
     issues: [],
   })
+}
+
+function stageUnchecked(input: StageAnnualQcdPhysicalExecutionInput): AnnualQcdPhysicalExecutionStaged {
+  const parsedPlan = parsePlan(input.plan)
+  if (!parsedPlan.ok) fail('prerequisiteInvalid', 'QCD physical staging requires one valid authoritative Plan.')
+  const plan = parsedPlan.plan
+  const requests = canonicalPrerequisite(input.prerequisite, plan, input.runtimeEvidence)
+  try {
+    return stageKnownYear(input, plan, requests)
+  } catch (error) {
+    if (error instanceof StageError && error.taxYear === null) {
+      throw new StageError(error.kind, error.message, input.prerequisite.taxYear)
+    }
+    throw error
+  }
 }
 
 /** Stage exact QCD source/RMD transitions on detached snapshots; no balance or tax character is committed. */

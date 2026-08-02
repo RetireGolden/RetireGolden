@@ -205,6 +205,20 @@ describe('stageAnnualQcdPhysicalExecution', () => {
       .not.toBe(result.applications[0]?.stagingEvidenceId)
   })
 
+  it('refuses to stage an evaluated action whose physical or legal eligibility was not accepted', () => {
+    const ineligible = request('qcd-ineligible', 25_000, {
+      charity: {
+        ...charity,
+        eligibleOrganizationAttested: false,
+      },
+    })
+
+    const result = stageAnnualQcdPhysicalExecution(input([ineligible]))
+
+    expectBlocked(result, 'prerequisiteInvalid')
+    expect(result.taxYear).toBe(2026)
+  })
+
   it('trims physical movement to the exact available source balance', () => {
     const result = stageAnnualQcdPhysicalExecution(input([request()], [balance(9_000)]))
 
@@ -242,6 +256,10 @@ describe('stageAnnualQcdPhysicalExecution', () => {
 
   it('caps RMD satisfaction at the exact opening RMD remaining', () => {
     const result = stageAnnualQcdPhysicalExecution(input())
+    const smallerExecution = stageAnnualQcdPhysicalExecution(input(
+      [request()],
+      [balance(5_000)],
+    ))
 
     expect(result).toMatchObject({
       status: 'annualQcdPhysicalExecutionStaged',
@@ -252,6 +270,10 @@ describe('stageAnnualQcdPhysicalExecution', () => {
         rmdRemainingAfter: 0,
       }],
     })
+    expect(smallerExecution.rmdPools[0]?.openingEvidenceId)
+      .toBe(result.rmdPools[0]?.openingEvidenceId)
+    expect(smallerExecution.rmdPools[0]?.evidenceId)
+      .not.toBe(result.rmdPools[0]?.evidenceId)
   })
 
   it('still stages the distribution when no RMD remains', () => {
@@ -325,7 +347,35 @@ describe('stageAnnualQcdPhysicalExecution', () => {
         stageAnnualQcdPhysicalExecution(input([request()], [balance()], [invalidPool])),
         'rmdEvidenceInvalid',
       )
+      expect(stageAnnualQcdPhysicalExecution(input([request()], [balance()], [invalidPool])).taxYear)
+        .toBe(2026)
     }
+  })
+
+  it('rejects an RMD identity collision with prerequisite evidence', () => {
+    const result = stageAnnualQcdPhysicalExecution(input(
+      [request()],
+      [balance()],
+      [pool({ upstreamEvidenceId: 'alive-qcd-a' })],
+    ))
+
+    expectBlocked(result, 'rmdEvidenceInvalid')
+    expect(result.taxYear).toBe(2026)
+  })
+
+  it('does not republish unknown fields from an untrusted RMD snapshot', () => {
+    const untrustedPool = {
+      ...pool(),
+      injected: { authority: 'attacker-controlled' },
+    }
+    const result = stageAnnualQcdPhysicalExecution(input(
+      [request()],
+      [balance()],
+      [untrustedPool],
+    ))
+
+    expect(result.status).toBe('annualQcdPhysicalExecutionStaged')
+    expect(result.rmdPools[0]).not.toHaveProperty('injected')
   })
 
   it('blocks missing or duplicate opening balances atomically', () => {
