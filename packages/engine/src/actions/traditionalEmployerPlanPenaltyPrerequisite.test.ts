@@ -259,6 +259,13 @@ describe('traditional employer-plan penalty prerequisite', () => {
     })
   })
 
+  it('rejects reused separation and disability IDs before Rule of 55 acceptance', () => {
+    const value = input()
+    Reflect.set(value.disabilityEvidence!, 'disabilityEvidenceId', value.separationEvidence!.separationEvidenceId)
+
+    expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)).toThrow(/distinct evidence IDs/)
+  })
+
   it('does not qualify otherwise-identical prior-year separation', () => {
     const result = evaluateTraditionalEmployerPlanPenaltyPrerequisite(
       input({ separationDate: '2029-12-31' }),

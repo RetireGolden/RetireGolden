@@ -612,10 +612,10 @@ export function evaluateTraditionalEmployerPlanPenaltyPrerequisite(
         separationEvidenceId: separation.separationEvidenceId,
         evidenceId: stableId('employer-rule-of-55', [identity, separation, ageEvidence.evidenceId, rule55Qualified]),
       }
+      if (disability !== null) requireDistinctEvidenceIds([separation.separationEvidenceId, disability.disabilityEvidenceId])
       if (rule55Qualified) outcome = 'ruleOf55Qualified'
       else {
         if (disability === null) return unsupported(identity, coverage, ageEvidence, 'disability', null, ruleOf55Assessment)
-        requireDistinctEvidenceIds([separation.separationEvidenceId, disability.disabilityEvidenceId])
         if (input.seppEvidence === null) return unsupported(identity, coverage, ageEvidence, 'sepp', null, ruleOf55Assessment, null, disability)
         sepp = seppAssessment(input.seppEvidence, identity, separationDate, coverage)
         requireDistinctEvidenceIds([separation.separationEvidenceId, disability.disabilityEvidenceId, ...sepp.authorityEvidenceIds])
