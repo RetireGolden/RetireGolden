@@ -11,7 +11,11 @@ import { createRoot } from 'react-dom/client'
 import { MemoryRouter } from 'react-router'
 
 import type { MonteCarloSummary } from '@retiregolden/engine/montecarlo/run'
-import type { ExactLedgerTournament, ExactLedgerValidation } from '@retiregolden/engine/projection/optimizePlan'
+import type {
+  ExactLedgerTournament,
+  ExactLedgerValidation,
+  RetirementActionReadinessVeto,
+} from '@retiregolden/engine/projection/optimizePlan'
 import { WhyRecommendationPanel, WhySuccessPanel } from './explainPanels'
 import { RETIREMENT_ACTION_READINESS_VETO_ROW_NOTE } from './retirementActionReadinessVetoCopy'
 
@@ -124,6 +128,12 @@ function fakeValidation(
   rest: Partial<ExactLedgerValidation> = {},
 ): ExactLedgerValidation {
   return { afterTaxEstateDelta, lifetimeTaxDelta: 0, moneyLastsYearsDelta: 0, executedConversionTotal: 0, ...rest } as ExactLedgerValidation
+}
+
+function fakeVetoedResult(): RetirementActionReadinessVeto['vetoedResult'] {
+  // The explainer never reads the retained result; it only needs a typed
+  // placeholder proving the veto fixture carries the new authoritative seam.
+  return { years: [] } as unknown as RetirementActionReadinessVeto['vetoedResult']
 }
 
 function fakeTournament(overrides: Partial<ExactLedgerTournament> = {}): ExactLedgerTournament {
@@ -247,6 +257,7 @@ describe('WhyRecommendationPanel', () => {
               executedConversionTotal: 180_000,
               recommendationState: 'identityIncomplete',
             }),
+            vetoedResult: fakeVetoedResult(),
           },
         })}
         objectiveLabel="Minimize lifetime tax with estate floor"
@@ -281,6 +292,7 @@ describe('WhyRecommendationPanel', () => {
               executedConversionTotal: 210_000,
               recommendationState: 'identityIncomplete',
             }),
+            vetoedResult: fakeVetoedResult(),
           },
         })}
         objectiveLabel="Minimize lifetime tax with estate floor"
