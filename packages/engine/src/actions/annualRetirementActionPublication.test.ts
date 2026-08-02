@@ -703,6 +703,50 @@ describe('annual retirement-action publication', () => {
   )
 
   it.each([
+    ['omitted', undefined, false],
+    ['empty', '', false],
+    ['malformed', '2030-02-30', false],
+    ['outside', '2029-06-15', false],
+    ['valid', '2030-06-15', true],
+  ] as const)(
+    'requires an explicit valid in-year date for a %s equity vesting refusal',
+    (_label, executionDate, accepted) => {
+      const action = request(
+        'ordinaryWithdrawal',
+        `ordinary-vesting-${_label}`,
+        executionDate ?? '2030-01-01',
+        1,
+      )
+      if (action.kind !== 'ordinaryWithdrawal') throw new Error('fixture drift')
+      if (executionDate === undefined) {
+        delete (action as { executionDate?: string }).executionDate
+      }
+      const allocation = action.allocations[0]!
+      const reasons = [
+        ...(executionDate !== undefined && executionDate !== '2030-06-15'
+          ? [createActionReason('required-facts-missing', {
+              personId: action.personId,
+            })]
+          : []),
+        createActionReason('withdrawal-source-not-spendable', {
+          accountId: allocation.sourceAccountId,
+          allocationId: allocation.allocationId,
+        }),
+      ]
+      const publish = () => publishAnnualRetirementActions({
+        taxYear: 2030,
+        requests: [action],
+        sources: [source('ordinaryWithdrawalExecutor', [
+          recordForBlockingReasons(action, reasons),
+        ])],
+      })
+
+      if (accepted) expect(publish()).toBeDefined()
+      else expect(publish).toThrow(/date reason differs/i)
+    },
+  )
+
+  it.each([
     ['ownedNonRothIraExecutor', 'qcd'],
     ['rothConversionExecutor', 'qcd'],
     ['qcdExecutor', 'rothConversion'],

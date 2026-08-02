@@ -1299,6 +1299,12 @@ function assertRecordBinding(
     ) {
       throw new Error(`Executor date reason differs for action "${request.actionId}"`)
     }
+    if (
+      reason.code === 'withdrawal-source-not-spendable' &&
+      (scheduleState.kind !== 'valid' || scheduleState.undated !== 0)
+    ) {
+      throw new Error(`Executor date reason differs for action "${request.actionId}"`)
+    }
     if (reason.personId !== undefined && reason.personId !== record.personId) {
       throw new Error(`Executor reason person differs for action "${request.actionId}"`)
     }
