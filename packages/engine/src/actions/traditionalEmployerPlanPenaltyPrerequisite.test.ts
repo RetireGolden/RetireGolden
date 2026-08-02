@@ -683,6 +683,15 @@ describe('traditional employer-plan penalty prerequisite', () => {
       .toThrow(/exactly bind identity and taxable treatment/)
   })
 
+  it('fails closed when legacy zero-character evidence omits action identity', () => {
+    const value = input({ executedAmount: 0, separationDate: null })
+    value.characterization = structuredClone(value.characterization)
+    Reflect.deleteProperty(value.characterization.acceptedSourceEligibility, 'actionId')
+
+    expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(value))
+      .toThrow(/exactly bind identity and taxable treatment/)
+  })
+
   it('rejects character evidence borrowed from another action', () => {
     const value = input({ separationDate: '2029-12-31' })
     value.characterization = structuredClone(value.characterization)
@@ -775,6 +784,15 @@ describe('traditional employer-plan penalty prerequisite', () => {
   ])('rejects non-plain %s metadata before deriving evidence identity', (_name, metadata) => {
     const value = input({ separationDate: '2029-12-31' })
     Reflect.set(value.otherExceptionAttestation!, 'metadata', metadata)
+
+    expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)).toThrow(/plain data/)
+  })
+
+  it('rejects custom enumerable array properties before deriving evidence identity', () => {
+    const value = input({ separationDate: '2029-12-31' })
+    const items = ['record']
+    Reflect.set(items, 'source', 'authority-a')
+    Reflect.set(value.otherExceptionAttestation!, 'metadata', { items })
 
     expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)).toThrow(/plain data/)
   })

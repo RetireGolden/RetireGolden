@@ -86,7 +86,7 @@ export interface TraditionalEmployerPlanWithdrawalBasisEvidence {
 
 export interface AcceptedTraditionalEmployerPlanSourceEligibilityEvidence {
   predicate: 'employerDistributionEligibility'
-  actionId: ActionId
+  actionId?: ActionId
   allocationId: AllocationId
   sourceAccountId: AccountId
   participantPersonId: PersonId

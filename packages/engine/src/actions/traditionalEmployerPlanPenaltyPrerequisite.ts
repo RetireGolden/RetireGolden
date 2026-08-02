@@ -221,7 +221,7 @@ function structural(value: unknown, ancestors = new WeakSet<object>()): unknown 
   if (typeof value === 'bigint') return ['bigint', value.toString()]
   if (typeof value === 'number') return ['number', Number.isFinite(value) ? (Object.is(value, -0) ? '-0' : value) : String(value)]
   if (typeof value !== 'object') return [typeof value, typeof value === 'symbol' || typeof value === 'function' ? String(value) : value]
-  if (ancestors.has(value) || (!Array.isArray(value) && Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(value) !== null)) throw new TypeError('Employer penalty evidence must be acyclic plain data')
+  if (ancestors.has(value) || (Array.isArray(value) && Object.keys(value).some((key) => String(Number(key)) !== key || Number(key) >= value.length)) || (!Array.isArray(value) && Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(value) !== null)) throw new TypeError('Employer penalty evidence must be acyclic plain data')
   ancestors.add(value)
   const result = Array.isArray(value) ? ['array', value.map((entry) => structural(entry, ancestors))] : ['object', Object.keys(value).sort().map((key) => [key, structural((value as Record<string, unknown>)[key], ancestors)])]
   ancestors.delete(value)
