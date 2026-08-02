@@ -637,6 +637,17 @@ export {
   type UnsupportedBeneficiaryTraditionalIraResidualRmdMovementResult,
 } from './beneficiaryTraditionalIraResidualRmdMovementCandidate.js'
 export {
+  prepareBeneficiaryTraditionalIraResidualRmdPhysicalTransaction,
+  type BeneficiaryTraditionalIraNoResidualRmdPhysicalTransactionResult,
+  type BeneficiaryTraditionalIraPostResidualRmdSourceBalanceTransition,
+  type BeneficiaryTraditionalIraPostResidualRmdTransition,
+  type BeneficiaryTraditionalIraResidualRmdDetachedApplication,
+  type BeneficiaryTraditionalIraResidualRmdPhysicalTransactionPreparedResult,
+  type PrepareBeneficiaryTraditionalIraResidualRmdPhysicalTransactionInput,
+  type PrepareBeneficiaryTraditionalIraResidualRmdPhysicalTransactionResult,
+  type UnsupportedBeneficiaryTraditionalIraResidualRmdPhysicalTransactionResult,
+} from './beneficiaryTraditionalIraResidualRmdPhysicalTransaction.js'
+export {
   evaluateOwnedNonRothIraPenaltyPrerequisites,
   type Age59HalfReachedPenaltyEvaluation,
   type DisabilityQualifiedPenaltyEvaluation,
