@@ -436,6 +436,7 @@ describe('evaluateAnnualQcdExecutionPrerequisites', () => {
       const action = request()
       const plan = planFixture()
       let durableEvidenceId = 'ira-a-classification'
+      const secretSourceId = `private-${durableRole}`
       if (durableRole === 'SEP activity') {
         durableEvidenceId = 'ira-a-sep-activity'
         plan.retirementActionEligibilityFacts!.iraClassifications = [{
@@ -448,18 +449,24 @@ describe('evaluateAnnualQcdExecutionPrerequisites', () => {
           planYearEndDate: '2026-12-31',
           employerContributionMadeForPlanYear: false,
           evidenceId: durableEvidenceId,
-          provenance: { source: 'manual' },
+          provenance: { source: 'import', sourceId: secretSourceId },
         }]
+      } else {
+        plan.retirementActionEligibilityFacts!.iraClassifications[0]!.provenance = {
+          source: 'import', sourceId: secretSourceId,
+        }
       }
       const runtime = runtimeEvidence([action])
       runtime.personAliveEvidence![0]!.evidenceId = durableEvidenceId
 
-      expect(evaluateAnnualQcdExecutionPrerequisites({
+      const result = evaluateAnnualQcdExecutionPrerequisites({
         taxYear: 2026, plan, requests: [action], runtimeEvidence: runtime,
-      })).toMatchObject({
+      })
+      expect(result).toMatchObject({
         status: 'blocked',
         issues: [{ kind: 'evidenceIdReused' }],
       })
+      expect(JSON.stringify(result)).not.toContain(secretSourceId)
     },
   )
 

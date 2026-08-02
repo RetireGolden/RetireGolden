@@ -371,7 +371,9 @@ function evidenceIdentityIssues(
       evidenceId: record.evidenceId,
       role: 'iraClassification',
       actionId: null,
-      stableIdentity: JSON.stringify(['iraClassification', record]),
+      stableIdentity: JSON.stringify([
+        'iraClassification', record.sourceAccountId, record.subtype,
+      ]),
     })
   }
   for (const record of
@@ -383,7 +385,9 @@ function evidenceIdentityIssues(
       evidenceId: record.evidenceId,
       role: 'sepSimpleActivity',
       actionId: null,
-      stableIdentity: JSON.stringify(['sepSimpleActivity', record]),
+      stableIdentity: JSON.stringify([
+        'sepSimpleActivity', record.sourceAccountId, record.actionTaxYear,
+      ]),
     })
   }
 
