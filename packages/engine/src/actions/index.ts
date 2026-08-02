@@ -552,6 +552,16 @@ export {
   type UnsupportedBeneficiaryTraditionalIraDeathPenaltyResult,
 } from './beneficiaryTraditionalIraDeathPenalty.js'
 export {
+  stageBeneficiaryTraditionalIraMovementCandidate,
+  type BeneficiaryTraditionalIraMovementCandidateEvidence,
+  type BeneficiaryTraditionalIraPhysicalSourceSnapshotEvidence,
+  type BeneficiaryTraditionalIraSourceDebitEvidence,
+  type StageBeneficiaryTraditionalIraMovementCandidateInput,
+  type StageBeneficiaryTraditionalIraMovementCandidateResult,
+  type StagedBeneficiaryTraditionalIraMovementCandidateResult,
+  type UnsupportedBeneficiaryTraditionalIraMovementCandidateResult,
+} from './beneficiaryTraditionalIraMovementCandidate.js'
+export {
   evaluateOwnedNonRothIraPenaltyPrerequisites,
   type Age59HalfReachedPenaltyEvaluation,
   type DisabilityQualifiedPenaltyEvaluation,
