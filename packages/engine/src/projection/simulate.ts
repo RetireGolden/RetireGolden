@@ -76,6 +76,7 @@ import {
   asAccountId,
   asPersonId,
   assessOrdinaryWithdrawalPlanBoundary,
+  evaluateRetirementActionSchedule,
   executeOrdinaryWithdrawals,
   executeRothConversions,
   ledgerCentsToPlanDollars,
@@ -2671,12 +2672,17 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const currentYearOrdinaryActions = currentYearActions.filter(
       (request) => request.kind === 'ordinaryWithdrawal',
     )
-    const currentYearOrdinaryExecutionActions = currentYearActions.filter(
-      (request) => request.kind !== 'rothConversion',
-    )
     const currentYearConversionActions = currentYearActions.filter(
       (request) => request.kind === 'rothConversion',
     )
+    const currentYearSchedule = evaluateRetirementActionSchedule(
+      year,
+      currentYearActions,
+    )
+    const annualScheduleBlocked = currentYearSchedule.scheduleIssues.length > 0
+    const currentYearOrdinaryExecutionActions = annualScheduleBlocked
+      ? currentYearActions
+      : currentYearActions.filter((request) => request.kind !== 'rothConversion')
     let retirementActionExecution: ExecuteOrdinaryWithdrawalsResult | undefined
     let rothConversionActionExecution: ExecuteRothConversionsResult | undefined
     let retirementActionCash = 0
@@ -2974,7 +2980,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // ordinary withdrawals, immediately before aggregate conversion sizing.
     // Complete annual Form-8606 line-8, RMD-reserve, and tax-liability funding
     // evidence do not exist at this simulator boundary, so none is invented.
-    if (currentYearConversionActions.length > 0) {
+    if (currentYearConversionActions.length > 0 && !annualScheduleBlocked) {
       const conversionAccountIds = new Set<string>(
         currentYearConversionActions.flatMap((request) => [
           request.destinationRothAccountId,

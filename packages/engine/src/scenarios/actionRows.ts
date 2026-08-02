@@ -1,8 +1,8 @@
 /**
  * Canonical identity-bearing retirement-action rows for scenario consumers.
  *
- * The published annual execution result (evidence, canonical requests, and
- * schedule issues) is the sole source of truth here. In particular, this
+ * The published annual execution results (evidence, canonical requests, and
+ * schedule issues) are the sole source of truth here. In particular, this
  * module never reconstructs identities from account array order or from
  * legacy aggregate ledger totals.
  */
@@ -14,6 +14,7 @@ import {
   type AnnualRetirementActionScheduleDiagnostic as PublishedScheduleDiagnostic,
 } from '../actions/annualRetirementActionPublication.js'
 import type { OrdinaryWithdrawalExecutionScheduleIssue } from '../actions/execution.js'
+import type { RothConversionExecutionScheduleIssue } from '../actions/rothConversionExecution.js'
 import type {
   AccountId,
   ActionId,
@@ -233,6 +234,74 @@ function canonicalRow(
   }
 }
 
+function sharedScheduleIssues(
+  issues: readonly Readonly<
+    OrdinaryWithdrawalExecutionScheduleIssue | RothConversionExecutionScheduleIssue
+  >[],
+): readonly Readonly<OrdinaryWithdrawalExecutionScheduleIssue>[] {
+  const invalid = issues.find((issue) => issue.kind === 'invalidInput')
+  if (invalid !== undefined) {
+    throw new Error(
+      'Cannot normalize schedule-aborted retirement action: invalidInput has no published typed refusal reason',
+    )
+  }
+  return issues as readonly Readonly<OrdinaryWithdrawalExecutionScheduleIssue>[]
+}
+
+function appendScheduleAbortedRows(
+  requests: readonly Readonly<RetirementActionRequest>[],
+  issues: readonly Readonly<OrdinaryWithdrawalExecutionScheduleIssue>[],
+  rows: ScenarioActionRow[],
+  seenActionIds: Set<ActionId>,
+): void {
+  if (issues.length === 0) return
+  const issueWithoutPublishedReason = issues.find(
+    (issue) => issue.kind !== 'executionSequenceConflict',
+  )
+  if (issueWithoutPublishedReason !== undefined) {
+    throw new Error(
+      `Cannot normalize schedule-aborted retirement action: ${issueWithoutPublishedReason.kind} has no published typed refusal reason`,
+    )
+  }
+  const batchConflictReasons = [
+    ...new Map(
+      issues
+        .filter((issue) => issue.kind === 'executionSequenceConflict')
+        .map((issue) => [issue.reason.code, { ...issue.reason }]),
+    ).values(),
+  ].sort((left, right) => compareUtf16CodeUnits(left.code, right.code))
+  for (const request of requests) {
+    if (seenActionIds.has(request.actionId)) {
+      throw new Error(
+        `Duplicate retirement-action published request for actionId "${request.actionId}"`,
+      )
+    }
+    seenActionIds.add(request.actionId)
+    rows.push({
+      actionId: request.actionId,
+      kind: request.kind,
+      year: request.year,
+      personId: requestPersonId(request),
+      destinationAccountId: destinationAccountId(request),
+      charityDesignationId: charityDesignationId(request),
+      requestedAmountCents: request.requestedAmount,
+      executedAmountCents: asUsdCents(0),
+      unexecutedAmountCents: request.requestedAmount,
+      readiness: 'nonActionable',
+      outcome: 'refused',
+      sourceAllocations: requestAllocations(request).map((allocation) => ({
+        allocationId: allocation.allocationId,
+        sourceAccountId: allocation.sourceAccountId,
+        resolution: 'unresolved',
+        requestedAmountCents: allocation.requestedAmount,
+        executedAmountCents: asUsdCents(0),
+        unexecutedAmountCents: allocation.requestedAmount,
+      })),
+      reasons: batchConflictReasons.map((reason) => ({ ...reason })),
+    })
+  }
+}
+
 /** Normalize published annual execution results into deterministic rows. */
 export function normalizeScenarioActionRows(
   years: readonly Readonly<YearResult>[],
@@ -291,53 +360,65 @@ export function normalizeScenarioActionRows(
       })
     }
 
-    if ((execution?.scheduleIssues.length ?? 0) > 0) {
-      const issueWithoutPublishedReason = execution!.scheduleIssues.find(
-        (issue) => issue.kind !== 'executionSequenceConflict',
-      )
-      if (issueWithoutPublishedReason !== undefined) {
+    appendScheduleAbortedRows(
+      execution?.requests ?? [],
+      execution?.scheduleIssues ?? [],
+      rows,
+      seenActionIds,
+    )
+
+    const conversionExecution = year.rothConversionActionExecution
+    for (const evidence of conversionExecution?.evidence ?? []) {
+      const actionId = evidence.request.actionId
+      if (seenActionIds.has(actionId)) {
         throw new Error(
-          `Cannot normalize schedule-aborted retirement action: ${issueWithoutPublishedReason.kind} has no published typed refusal reason`,
+          `Duplicate retirement-action execution evidence for actionId "${actionId}"`,
         )
       }
-      const batchConflictReasons = [
-        ...new Map(
-          execution!.scheduleIssues
-            .filter((issue) => issue.kind === 'executionSequenceConflict')
-            .map((issue) => [issue.reason.code, { ...issue.reason }]),
-        ).values(),
-      ].sort((left, right) => compareUtf16CodeUnits(left.code, right.code))
-      for (const request of execution?.requests ?? []) {
-        if (seenActionIds.has(request.actionId)) {
-          throw new Error(
-            `Duplicate retirement-action published request for actionId "${request.actionId}"`,
+      seenActionIds.add(actionId)
+      rows.push({
+        actionId,
+        kind: evidence.kind,
+        year: evidence.year,
+        personId: evidence.request.personId,
+        destinationAccountId: evidence.request.destinationRothAccountId,
+        charityDesignationId: null,
+        requestedAmountCents: evidence.request.requestedAmount,
+        executedAmountCents: asUsdCents(evidence.executedAmount),
+        unexecutedAmountCents: asUsdCents(evidence.unexecutedAmount),
+        readiness: evidence.readiness,
+        outcome: evidence.outcome,
+        sourceAllocations: evidence.allocations.map((allocation) => {
+          const requestedAllocation = evidence.request.allocations.find(
+            (candidate) => candidate.allocationId === allocation.allocationId,
           )
-        }
-        seenActionIds.add(request.actionId)
-        rows.push({
-          actionId: request.actionId,
-          kind: request.kind,
-          year: request.year,
-          personId: requestPersonId(request),
-          destinationAccountId: destinationAccountId(request),
-          charityDesignationId: charityDesignationId(request),
-          requestedAmountCents: request.requestedAmount,
-          executedAmountCents: asUsdCents(0),
-          unexecutedAmountCents: request.requestedAmount,
-          readiness: 'nonActionable',
-          outcome: 'refused',
-          sourceAllocations: requestAllocations(request).map((allocation) => ({
-            allocationId: allocation.allocationId,
-            sourceAccountId: allocation.sourceAccountId,
-            resolution: 'unresolved',
-            requestedAmountCents: allocation.requestedAmount,
-            executedAmountCents: asUsdCents(0),
-            unexecutedAmountCents: allocation.requestedAmount,
-          })),
-          reasons: batchConflictReasons.map((reason) => ({ ...reason })),
-        })
-      }
+          if (
+            requestedAllocation === undefined ||
+            requestedAllocation.sourceAccountId !== allocation.sourceAccountId ||
+            requestedAllocation.requestedAmount !== allocation.requestedAmount
+          ) {
+            throw new Error(
+              `Conversion execution allocation does not match request for actionId "${actionId}"`,
+            )
+          }
+          return {
+            allocationId: requestedAllocation.allocationId,
+            sourceAccountId: requestedAllocation.sourceAccountId,
+            resolution: allocation.resolution,
+            requestedAmountCents: requestedAllocation.requestedAmount,
+            executedAmountCents: asUsdCents(allocation.executedAmount),
+            unexecutedAmountCents: asUsdCents(allocation.unexecutedAmount),
+          }
+        }),
+        reasons: evidence.reasons.map((reason) => ({ ...reason })),
+      })
     }
+    appendScheduleAbortedRows(
+      conversionExecution?.requests ?? [],
+      sharedScheduleIssues(conversionExecution?.scheduleIssues ?? []),
+      rows,
+      seenActionIds,
+    )
   }
 
   return rows.sort((left, right) =>
@@ -396,7 +477,12 @@ export function normalizeScenarioActionScheduleDiagnostics(
     .flatMap((year) => {
       const publication = canonicalPublication(year)
       return publication === undefined
-        ? (year.retirementActionExecution?.scheduleIssues ?? []).flatMap(issueDiagnostics)
+        ? [
+            ...(year.retirementActionExecution?.scheduleIssues ?? []),
+            ...sharedScheduleIssues(
+              year.rothConversionActionExecution?.scheduleIssues ?? [],
+            ),
+          ].flatMap(issueDiagnostics)
         : publication.scheduleDiagnostics.map(publishedDiagnostic)
     })
     .sort(

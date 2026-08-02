@@ -822,6 +822,79 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
     expect(year.withdrawals.total).toBe(0)
   })
 
+  it('fails a mixed ordinary/conversion schedule collision as one annual batch', () => {
+    const plan = basePlan()
+    plan.accounts = [
+      cash('cash-a', 100),
+      {
+        type: 'traditional',
+        id: 'traditional',
+        name: 'Traditional',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 100,
+        annualContribution: 0,
+      },
+      {
+        type: 'roth',
+        id: 'roth',
+        name: 'Roth',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 0,
+        annualContribution: 0,
+      },
+    ]
+    plan.strategies.retirementActions = [
+      withdrawal({
+        actionId: 'ordinary',
+        accountId: 'cash-a',
+        dollars: 10,
+        executionDate: '2026-12-31',
+        sequence: 1,
+      }),
+      parsedAction({
+        actionId: 'conversion',
+        kind: 'rothConversion',
+        personId: 'p1',
+        year: 2026,
+        executionDate: '2026-12-31',
+        executionSequence: 1,
+        requestedAmount: 5_000,
+        allocations: [{
+          allocationId: 'conversion-allocation',
+          sourceAccountId: 'traditional',
+          requestedAmount: 5_000,
+        }],
+        destinationRothAccountId: 'roth',
+        taxFunding: { kind: 'noneExpected' },
+        provenance: { source: 'manual' },
+      }),
+    ]
+
+    const year = run(plan).years[0]!
+
+    expect(year.retirementActionExecution).toMatchObject({
+      committed: false,
+      evidence: [],
+      scheduleIssues: [{
+        kind: 'executionSequenceConflict',
+        collidingActionIds: ['conversion', 'ordinary'],
+      }],
+    })
+    expect(year.retirementActionExecution?.requests.map(
+      (request) => request.actionId,
+    )).toEqual(['conversion', 'ordinary'])
+    expect(year).not.toHaveProperty('rothConversionActionExecution')
+    expect(year.balances).toMatchObject({
+      'cash-a': 100,
+      traditional: 100,
+      roth: 0,
+    })
+  })
+
   it('executes an action only in its requested year and omits evidence otherwise', () => {
     const plan = basePlan()
     plan.accounts = [cash('cash-a', 100)]

@@ -9,6 +9,10 @@ import {
   type ActionReason,
 } from './reasons.js'
 import { compareUtf16CodeUnits } from './structuralId.js'
+import {
+  evaluateRetirementActionSchedule,
+  type OrdinaryWithdrawalExecutionScheduleIssue,
+} from './execution.js'
 import type { Plan } from '../model/plan.js'
 import {
   evaluateRetirementActionEligibilityFromPlan,
@@ -37,6 +41,7 @@ export interface RothConversionBalanceExecutionEvidence {
 export interface RothConversionAllocationExecutionEvidence {
   allocationId: string
   sourceAccountId: string
+  resolution: 'resolved' | 'unresolved'
   requestedAmount: number
   executedAmount: 0
   unexecutedAmount: number
@@ -78,14 +83,17 @@ export interface RothConversionExecutionEvidence {
   provenance: RothConversionRequest['provenance']
 }
 
-export interface RothConversionExecutionScheduleIssue {
-  kind: 'invalidInput' | 'duplicateActionId' | 'duplicateSchedulePosition'
-  actionId: string | null
-  detail: string
-}
+export type RothConversionExecutionScheduleIssue =
+  | OrdinaryWithdrawalExecutionScheduleIssue
+  | Readonly<{
+      kind: 'invalidInput'
+      actionId: null
+      detail: string
+    }>
 
 export interface ExecuteRothConversionsResult {
   committed: false
+  requests: readonly Readonly<RothConversionRequest>[]
   scheduleIssues: readonly RothConversionExecutionScheduleIssue[]
   balances: readonly RothConversionBalanceExecutionEvidence[]
   evidence: readonly RothConversionExecutionEvidence[]
@@ -133,6 +141,7 @@ function unchangedBalances(
 function nonActionableEvidence(
   request: RothConversionRequest,
   reasons: readonly ActionReason[],
+  resolvedSourceAccountIds: ReadonlySet<string>,
 ): RothConversionExecutionEvidence {
   const canonical = canonicalReasons(reasons)
   const outcome = canonical.some((reason) => reason.outcome === 'unsupported')
@@ -160,6 +169,9 @@ function nonActionableEvidence(
       .sort((left, right) => compareUtf16CodeUnits(left.allocationId, right.allocationId))
       .map((allocation) => ({
         ...allocation,
+        resolution: resolvedSourceAccountIds.has(allocation.sourceAccountId)
+          ? 'resolved' as const
+          : 'unresolved' as const,
         executedAmount: 0,
         unexecutedAmount: allocation.requestedAmount,
         taxableConvertedAmount: 0,
@@ -179,44 +191,26 @@ function nonActionableEvidence(
   }
 }
 
-function scheduleIssues(requests: readonly RothConversionRequest[]): RothConversionExecutionScheduleIssue[] {
-  const issues: RothConversionExecutionScheduleIssue[] = []
-  const actionIds = new Set<string>()
-  const positions = new Set<string>()
-  const scheduled = [...requests].sort((left, right) =>
-    compareUtf16CodeUnits(left.executionDate ?? '\uffff', right.executionDate ?? '\uffff') ||
-    left.executionSequence - right.executionSequence ||
-    compareUtf16CodeUnits(left.actionId, right.actionId),
-  )
-  for (const request of scheduled) {
-    if (actionIds.has(request.actionId)) {
-      issues.push({ kind: 'duplicateActionId', actionId: request.actionId, detail: 'Conversion action IDs must be unique.' })
-    }
-    actionIds.add(request.actionId)
-    const position = JSON.stringify([request.executionDate ?? null, request.executionSequence])
-    if (positions.has(position)) {
-      issues.push({ kind: 'duplicateSchedulePosition', actionId: request.actionId, detail: 'Conversion schedule positions must be unique.' })
-    }
-    positions.add(position)
-  }
-  return issues
-}
-
 function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConversionsResult {
   if (!Number.isSafeInteger(input.year) || input.year < 1 || input.year > 9999) {
-    return { committed: false, scheduleIssues: [{ kind: 'invalidInput', actionId: null, detail: 'Execution year is invalid.' }], balances: [], evidence: [] }
+    return { committed: false, requests: [], scheduleIssues: [{ kind: 'invalidInput', actionId: null, detail: 'Execution year is invalid.' }], balances: [], evidence: [] }
   }
-  const requests = input.requests.map((request) => rothConversionRequestSchema.parse(request))
+  const parsedRequests = input.requests.map((request) => rothConversionRequestSchema.parse(request))
+  const scheduleState = evaluateRetirementActionSchedule(input.year, parsedRequests)
+  const requests = scheduleState.requests.map((request) =>
+    rothConversionRequestSchema.parse(request),
+  )
   const snapshots = input.openingBalances.map((snapshot) => ({
     accountId: accountIdSchema.parse(snapshot.accountId),
     openingBalance: usdCentsSchema.parse(snapshot.openingBalance),
   }))
   const snapshotCounts = new Map<string, number>()
   for (const snapshot of snapshots) snapshotCounts.set(snapshot.accountId, (snapshotCounts.get(snapshot.accountId) ?? 0) + 1)
-  const issues = scheduleIssues(requests)
+  const issues = scheduleState.scheduleIssues
   if (issues.length > 0 || [...snapshotCounts.values()].some((count) => count !== 1)) {
     return {
       committed: false,
+      requests,
       scheduleIssues: issues.length > 0 ? issues : [{ kind: 'invalidInput', actionId: null, detail: 'Opening balances must have unique account IDs.' }],
       balances: unchangedBalances(snapshots),
       evidence: [],
@@ -227,6 +221,7 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
   if (hasDuplicates(accountIds)) {
     return {
       committed: false,
+      requests,
       scheduleIssues: [{
         kind: 'invalidInput',
         actionId: null,
@@ -242,17 +237,7 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
     snapshots.map((snapshot) => [String(snapshot.accountId), snapshot.openingBalance]),
   )
   const evidence: RothConversionExecutionEvidence[] = []
-  const scheduled = requests.map((request) => ({
-    ...request,
-    allocations: [...request.allocations].sort((left, right) =>
-      compareUtf16CodeUnits(left.allocationId, right.allocationId)),
-  })).sort((left, right) =>
-    compareUtf16CodeUnits(left.executionDate ?? '\uffff', right.executionDate ?? '\uffff') ||
-    left.executionSequence - right.executionSequence ||
-    compareUtf16CodeUnits(left.actionId, right.actionId),
-  )
-
-  for (const request of scheduled) {
+  for (const request of requests) {
     // These three annual facts must be produced and validated for the complete
     // owner-wide action group before any member can move. This prerequisite
     // intentionally accepts no shallow substitute and therefore cannot mark a
@@ -272,35 +257,49 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
     const preflight = evaluateRetirementActionEligibilityFromPlan(request, input.plan as Plan, input.runtimeEvidence ?? {})
     if (preflight.status !== 'accepted') reasons.push(...preflight.reasons)
     const destination = accounts.get(request.destinationRothAccountId)
-    if (!openingByAccountId.has(request.destinationRothAccountId)) {
+    if (destination === undefined) {
       reasons.push(createActionReason('conversion-destination-not-found', { accountId: request.destinationRothAccountId }))
-    }
-    if (destination?.type !== 'roth' || destination.kind !== 'ira' || destination.ownerPersonId !== request.personId) {
+    } else if (destination.type !== 'roth' || destination.kind !== 'ira' || destination.ownerPersonId !== request.personId) {
       reasons.push(createActionReason('conversion-destination-incompatible', { accountId: request.destinationRothAccountId }))
     }
+    if (destination !== undefined && !openingByAccountId.has(request.destinationRothAccountId)) {
+      reasons.push(createActionReason('required-facts-missing', {
+        personId: request.personId,
+        accountId: request.destinationRothAccountId,
+      }))
+    }
 
+    const resolvedSourceAccountIds = new Set<string>()
     for (const allocation of request.allocations) {
       const source = accounts.get(allocation.sourceAccountId)
       const opening = openingByAccountId.get(allocation.sourceAccountId)
-      if (source === undefined || opening === undefined) {
+      if (source === undefined) {
         reasons.push(createActionReason('source-account-not-found', { accountId: allocation.sourceAccountId, allocationId: allocation.allocationId }))
         continue
       }
-      if (source.type !== 'traditional' || source.kind !== 'ira' || source.inherited !== undefined || source.ownerPersonId !== request.personId) {
+      resolvedSourceAccountIds.add(allocation.sourceAccountId)
+      if (source.type !== 'traditional' || source.inherited !== undefined || source.ownerPersonId !== request.personId) {
         reasons.push(createActionReason('conversion-source-not-convertible', { accountId: allocation.sourceAccountId, allocationId: allocation.allocationId }))
       }
-      if (opening === 0) {
+      if (opening === undefined) {
+        reasons.push(createActionReason('required-facts-missing', {
+          personId: request.personId,
+          accountId: allocation.sourceAccountId,
+          allocationId: allocation.allocationId,
+        }))
+      } else if (opening === 0) {
         reasons.push(createActionReason('conversion-balance-unavailable', {
           accountId: allocation.sourceAccountId,
           allocationId: allocation.allocationId,
         }))
       }
     }
-    evidence.push(nonActionableEvidence(request, reasons))
+    evidence.push(nonActionableEvidence(request, reasons, resolvedSourceAccountIds))
   }
 
   return deepFreeze({
     committed: false,
+    requests,
     scheduleIssues: [],
     balances: unchangedBalances(snapshots),
     evidence,
@@ -320,6 +319,7 @@ export function executeRothConversions(input: ExecuteRothConversionsInput): Exec
   } catch {
     return deepFreeze({
       committed: false,
+      requests: [],
       scheduleIssues: [{ kind: 'invalidInput', actionId: null, detail: 'Conversion execution input could not be inspected losslessly.' }],
       balances: [],
       evidence: [],

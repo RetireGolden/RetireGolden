@@ -179,6 +179,7 @@ export {
 } from './contract.js'
 export {
   assessOrdinaryWithdrawalPlanBoundary,
+  evaluateRetirementActionSchedule,
   executeCashOrdinaryWithdrawals,
   executeOrdinaryWithdrawals,
   type AcceptedCashSourceEligibilityEvidence,
@@ -209,6 +210,7 @@ export {
   type OrdinaryWithdrawalPlanBoundaryAssessment,
   type OrdinaryWithdrawalPartialActionDisposition,
   type OrdinaryWithdrawalTaxCharacter,
+  type RetirementActionScheduleState,
   type ResolvedCashSourceAllocationExecutionEvidence,
   type ResolvedIndividuallyOwnedSourceAllocationExecutionEvidence,
   type SourceAllocationExecutionEvidence,

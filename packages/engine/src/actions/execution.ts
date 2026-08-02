@@ -535,6 +535,12 @@ export type OrdinaryWithdrawalExecutionScheduleIssue =
       reason: ActionReason<'action-sequence-conflict'>
     }>
 
+export interface RetirementActionScheduleState {
+  /** Canonical immutable requests in execution chronology. */
+  requests: readonly Readonly<RetirementActionRequest>[]
+  scheduleIssues: readonly OrdinaryWithdrawalExecutionScheduleIssue[]
+}
+
 /** The original WS3.1 cash-only compatibility contract. */
 export type CashExecutedActionDisposition = Readonly<
   Omit<ExecutedActionDisposition, 'executedAmount' | 'reasons'> & {
@@ -894,6 +900,53 @@ function scheduleIssues(
     const leftKey = JSON.stringify(left)
     const rightKey = JSON.stringify(right)
     return compareUtf16CodeUnits(leftKey, rightKey)
+  })
+}
+
+function buildRetirementActionScheduleState(
+  year: number,
+  requests: readonly RetirementActionRequest[],
+): RetirementActionScheduleState & { scheduled: readonly ScheduledRequest[] } {
+  const scheduled = requests.map(normalizeSchedule).sort(
+    (left, right) =>
+      compareUtf16CodeUnits(left.chronologyKey, right.chronologyKey) ||
+      (left.sequence ?? Number.MAX_SAFE_INTEGER) -
+        (right.sequence ?? Number.MAX_SAFE_INTEGER) ||
+      compareUtf16CodeUnits(left.request.actionId, right.request.actionId),
+  )
+  const publishedRequests = deepFreeze(scheduled.map((item) => {
+    const request = structuredClone(item.request)
+    if (request.kind === 'ordinaryWithdrawal' || request.kind === 'rothConversion') {
+      request.allocations = [...canonicalAllocations(request)]
+    }
+    return request
+  }))
+  return {
+    scheduled,
+    requests: publishedRequests,
+    scheduleIssues: scheduleIssues(year, scheduled),
+  }
+}
+
+/**
+ * Canonical annual schedule state shared by the simulator's kind dispatch and
+ * the exact executors. Requests with an invalid schedule remain visible but
+ * cannot create a same-slot collision until they have a real execution date.
+ */
+export function evaluateRetirementActionSchedule(
+  year: number,
+  inputRequests: readonly RetirementActionRequest[],
+): Readonly<RetirementActionScheduleState> {
+  const requests = inputRequests.map((request) =>
+    retirementActionRequestSchema.parse(request),
+  )
+  if (!Number.isSafeInteger(year) || year < 1 || year > 9999) {
+    throw new RangeError('Execution year must be a four-digit positive calendar year')
+  }
+  const state = buildRetirementActionScheduleState(year, requests)
+  return deepFreeze({
+    requests: state.requests,
+    scheduleIssues: state.scheduleIssues,
   })
 }
 
@@ -1475,24 +1528,13 @@ function executeOrdinaryWithdrawalsInScope(
       taxUnit: structuredClone(snapshot.taxUnit),
     }),
   )
-  const scheduled = requests.map(normalizeSchedule).sort(
-    (left, right) =>
-      compareUtf16CodeUnits(left.chronologyKey, right.chronologyKey) ||
-      (left.sequence ?? Number.MAX_SAFE_INTEGER) -
-        (right.sequence ?? Number.MAX_SAFE_INTEGER) ||
-      compareUtf16CodeUnits(left.request.actionId, right.request.actionId),
-  )
-  const publishedRequests = deepFreeze(scheduled.map((item) => {
-    const request = structuredClone(item.request)
-    if (request.kind === 'ordinaryWithdrawal' || request.kind === 'rothConversion') {
-      request.allocations = [...canonicalAllocations(request)]
-    }
-    return request
-  }))
   if (!Number.isSafeInteger(input.year) || input.year < 1 || input.year > 9999) {
     throw new RangeError('Execution year must be a four-digit positive calendar year')
   }
-  const detectedScheduleIssues = scheduleIssues(input.year, scheduled)
+  const scheduleState = buildRetirementActionScheduleState(input.year, requests)
+  const scheduled = scheduleState.scheduled
+  const publishedRequests = scheduleState.requests
+  const detectedScheduleIssues = scheduleState.scheduleIssues
   const snapshotCounts = new Map<string, number>()
   for (const snapshot of openingBalances) {
     snapshotCounts.set(snapshot.accountId, (snapshotCounts.get(snapshot.accountId) ?? 0) + 1)

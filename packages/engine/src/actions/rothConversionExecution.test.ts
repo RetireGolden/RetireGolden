@@ -92,6 +92,7 @@ describe('executeRothConversions', () => {
 
     expect(result).toMatchObject({
       committed: false,
+      requests: [expect.objectContaining({ actionId: 'conversion-a' })],
       scheduleIssues: [],
       balances: [
         { accountId: 'roth-a', openingBalance: 1_000, closingBalance: 1_000 },
@@ -164,7 +165,7 @@ describe('executeRothConversions', () => {
     )).toBe(true)
   })
 
-  it('adds source and destination refusal reasons without weakening fail-closed status', () => {
+  it('preserves potentially convertible employer-plan support evidence', () => {
     const value = input()
     const valuePlan = value.plan as Plan
     valuePlan.accounts.find((account) => account.id === 'roth-a')!.ownerPersonId = 'p2'
@@ -181,8 +182,11 @@ describe('executeRothConversions', () => {
     expect(result.evidence[0]?.reasons.map((reason) => reason.code)).toEqual(
       expect.arrayContaining([
         'conversion-destination-incompatible',
-        'conversion-source-not-convertible',
+        'conversion-plan-availability-unknown',
       ]),
+    )
+    expect(result.evidence[0]?.reasons.map((reason) => reason.code)).not.toContain(
+      'conversion-source-not-convertible',
     )
   })
 
@@ -197,10 +201,58 @@ describe('executeRothConversions', () => {
       committed: false,
       evidence: [],
       scheduleIssues: [{
-        kind: 'duplicateSchedulePosition',
-        actionId: 'conversion-b',
+        kind: 'executionSequenceConflict',
+        collidingActionIds: ['conversion-a', 'conversion-b'],
       }],
     })
+  })
+
+  it('publishes each missing-date request instead of colliding null schedule slots', () => {
+    const undated = (actionId: string) => rothConversionRequestSchema.parse({
+      ...request(actionId, 1),
+      executionDate: undefined,
+    })
+
+    const result = executeRothConversions(input([
+      undated('conversion-a'),
+      undated('conversion-b'),
+    ]))
+
+    expect(result.scheduleIssues).toEqual([])
+    expect(result.evidence.map((entry) => entry.actionId)).toEqual([
+      'conversion-a',
+      'conversion-b',
+    ])
+    expect(result.evidence.every((entry) =>
+      entry.reasons.some((reason) => reason.code === 'conversion-date-missing') &&
+      entry.executedAmount === 0,
+    )).toBe(true)
+  })
+
+  it('distinguishes missing balance evidence from missing source or destination accounts', () => {
+    const value = input()
+    value.openingBalances = value.openingBalances.filter(
+      (snapshot) =>
+        snapshot.accountId !== 'traditional-a' && snapshot.accountId !== 'roth-a',
+    )
+
+    const evidence = executeRothConversions(value).evidence[0]!
+    const sourceReasons = evidence.reasons.filter(
+      (reason) => reason.accountId === 'traditional-a',
+    )
+
+    expect(sourceReasons.map((reason) => reason.code)).toContain('required-facts-missing')
+    expect(sourceReasons.map((reason) => reason.code)).not.toContain('source-account-not-found')
+    expect(evidence.allocations.find(
+      (allocation) => allocation.sourceAccountId === 'traditional-a',
+    )?.resolution).toBe('resolved')
+    const destinationReasons = evidence.reasons.filter(
+      (reason) => reason.accountId === 'roth-a',
+    )
+    expect(destinationReasons.map((reason) => reason.code)).toContain('required-facts-missing')
+    expect(destinationReasons.map((reason) => reason.code)).not.toContain(
+      'conversion-destination-not-found',
+    )
   })
 
   it('rejects duplicate account and balance identities with unchanged snapshots', () => {

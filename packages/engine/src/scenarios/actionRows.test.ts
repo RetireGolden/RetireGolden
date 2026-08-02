@@ -12,8 +12,11 @@ import {
   ordinaryWithdrawalPublicationSource,
   publishAnnualRetirementActions,
 } from '../actions/annualRetirementActionPublication.js'
+import { rothConversionRequestSchema } from '../actions/contract.js'
+import { executeRothConversions } from '../actions/rothConversionExecution.js'
 import { createActionReason, type ActionReason } from '../actions/reasons.js'
 import type { YearResult } from '../projection/types.js'
+import { singlePersonPlan, traditionalAccount } from '../testing/planFixtures.js'
 import {
   compareScenarioActionRows,
   normalizeScenarioActionScheduleDiagnostics,
@@ -124,6 +127,103 @@ function yearResult(
 }
 
 describe('normalizeScenarioActionRows', () => {
+  it('normalizes named conversion evidence from its dedicated annual result', () => {
+    const plan = singlePersonPlan({ dob: '1960-01-01', planningAge: 100 })
+    plan.accounts = [
+      traditionalAccount('traditional', 100, 'p1'),
+      {
+        id: 'roth',
+        name: 'Roth',
+        type: 'roth',
+        kind: 'ira',
+        ownerPersonId: 'p1',
+        balance: 0,
+        annualContribution: 0,
+        annualReturnPct: 0,
+      },
+    ]
+    const request = rothConversionRequestSchema.parse({
+      actionId: 'conversion',
+      kind: 'rothConversion',
+      personId: 'p1',
+      year: 2030,
+      executionDate: '2030-12-15',
+      executionSequence: 1,
+      requestedAmount: 10_000,
+      allocations: [{
+        allocationId: 'conversion-allocation',
+        sourceAccountId: 'traditional',
+        requestedAmount: 10_000,
+      }],
+      destinationRothAccountId: 'roth',
+      taxFunding: { kind: 'noneExpected' },
+      provenance: { source: 'manual' },
+    })
+    const execution = executeRothConversions({
+      year: 2030,
+      plan,
+      requests: [request],
+      openingBalances: [
+        { accountId: 'traditional', openingBalance: asUsdCents(10_000) },
+        { accountId: 'roth', openingBalance: asUsdCents(0) },
+      ],
+    })
+
+    const row = normalizeScenarioActionRows([{
+      year: 2030,
+      rothConversionActionExecution: execution,
+    } as unknown as YearResult])[0]!
+
+    expect(row).toMatchObject({
+      actionId: 'conversion',
+      kind: 'rothConversion',
+      personId: 'p1',
+      destinationAccountId: 'roth',
+      requestedAmountCents: 10_000,
+      executedAmountCents: 0,
+      unexecutedAmountCents: 10_000,
+      readiness: 'nonActionable',
+      outcome: 'unsupported',
+      sourceAllocations: [{
+        allocationId: 'conversion-allocation',
+        sourceAccountId: 'traditional',
+        resolution: 'resolved',
+        requestedAmountCents: 10_000,
+        executedAmountCents: 0,
+        unexecutedAmountCents: 10_000,
+      }],
+    })
+
+    const colliding = rothConversionRequestSchema.parse({
+      ...request,
+      actionId: 'conversion-b',
+      allocations: [{
+        ...request.allocations[0]!,
+        allocationId: 'conversion-allocation-b',
+      }],
+    })
+    const collisionExecution = executeRothConversions({
+      year: 2030,
+      plan,
+      requests: [colliding, request],
+      openingBalances: [
+        { accountId: 'traditional', openingBalance: asUsdCents(10_000) },
+        { accountId: 'roth', openingBalance: asUsdCents(0) },
+      ],
+    })
+    const collisionYear = {
+      year: 2030,
+      rothConversionActionExecution: collisionExecution,
+    } as unknown as YearResult
+
+    expect(normalizeScenarioActionRows([collisionYear]).map(
+      (entry) => entry.actionId,
+    )).toEqual(['conversion', 'conversion-b'])
+    expect(normalizeScenarioActionScheduleDiagnostics([collisionYear]).map(
+      (diagnostic) => diagnostic.actionId,
+    )).toEqual(['conversion', 'conversion-b'])
+  })
+
   it('normalizes ordinary execution cents and identities independent of evidence order', () => {
     const actionA = executionEvidence({
       actionId: 'action-a',
