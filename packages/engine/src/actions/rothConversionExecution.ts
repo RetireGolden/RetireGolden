@@ -259,7 +259,7 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
     const destination = accounts.get(request.destinationRothAccountId)
     if (destination === undefined) {
       reasons.push(createActionReason('conversion-destination-not-found', { accountId: request.destinationRothAccountId }))
-    } else if (destination.type !== 'roth' || destination.kind !== 'ira' || destination.ownerPersonId !== request.personId) {
+    } else if (destination.type !== 'roth') {
       reasons.push(createActionReason('conversion-destination-incompatible', { accountId: request.destinationRothAccountId }))
     }
     if (destination !== undefined && !openingByAccountId.has(request.destinationRothAccountId)) {

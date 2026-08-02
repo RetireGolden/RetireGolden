@@ -181,13 +181,28 @@ describe('executeRothConversions', () => {
     })
     expect(result.evidence[0]?.reasons.map((reason) => reason.code)).toEqual(
       expect.arrayContaining([
-        'conversion-destination-incompatible',
+        'conversion-destination-owner-mismatch',
         'conversion-plan-availability-unknown',
       ]),
     )
-    expect(result.evidence[0]?.reasons.map((reason) => reason.code)).not.toContain(
-      'conversion-source-not-convertible',
+    const reasonCodes = result.evidence[0]?.reasons.map((reason) => reason.code)
+    expect(reasonCodes).not.toContain('conversion-destination-incompatible')
+    expect(reasonCodes).not.toContain('conversion-source-not-convertible')
+  })
+
+  it('preserves potentially compatible employer Roth destination evidence', () => {
+    const value = input()
+    const destination = (value.plan as Plan).accounts.find(
+      (account) => account.id === 'roth-a',
     )
+    if (destination?.type !== 'roth') throw new Error('fixture drift')
+    destination.kind = 'employer'
+
+    const evidence = executeRothConversions(value).evidence[0]!
+    const reasonCodes = evidence.reasons.map((reason) => reason.code)
+
+    expect(reasonCodes).toContain('conversion-employer-destination-unsupported')
+    expect(reasonCodes).not.toContain('conversion-destination-incompatible')
   })
 
   it('rejects duplicate schedule identities before publishing evidence', () => {
@@ -227,6 +242,24 @@ describe('executeRothConversions', () => {
       entry.reasons.some((reason) => reason.code === 'conversion-date-missing') &&
       entry.executedAmount === 0,
     )).toBe(true)
+  })
+
+  it('rejects a request from a different execution year before publishing evidence', () => {
+    const result = executeRothConversions({
+      ...input(),
+      year: year + 1,
+    })
+
+    expect(result).toMatchObject({
+      committed: false,
+      evidence: [],
+      scheduleIssues: [{
+        kind: 'actionYearMismatch',
+        actionId: 'conversion-a',
+        expectedYear: year + 1,
+        actualYear: year,
+      }],
+    })
   })
 
   it('distinguishes missing balance evidence from missing source or destination accounts', () => {
