@@ -82,6 +82,10 @@ function validInput(
     rmdPoolEvidence: {
       predicate:
         'completeBeneficiaryTraditionalIraRmdPoolForBeneficiaryDecedentAndTaxYear',
+      actionId,
+      allocationId,
+      sourceAccountId,
+      evaluationDate: '2030-06-15',
       beneficiaryPersonId,
       inheritedFromPersonId: decedentPersonId,
       poolId: 'rmd-pool',
@@ -478,6 +482,35 @@ describe('beneficiary traditional IRA withdrawal character', () => {
     for (const value of values) expectInheritedFactsMissing(value)
   })
 
+  it('rejects duplicate annual action and source pairs across allocations', () => {
+    const value = validInput(60, 40, 50, 70)
+    value.line7Distributions = [
+      line7Entry(60),
+      line7Entry(10, {
+        allocationId: asAllocationId('allocation-b'),
+      }),
+    ]
+    expectInheritedFactsMissing(value)
+  })
+
+  it('binds the RMD snapshot to the exact current execution record', () => {
+    const mutations = [
+      { actionId: asActionId('wrong-action') },
+      { allocationId: asAllocationId('wrong-allocation') },
+      { sourceAccountId: otherAccountId },
+      { evaluationDate: '2030-06-14' },
+      { evaluationDate: '2030-6-15' },
+    ]
+    for (const mutation of mutations) {
+      const value = validInput()
+      value.rmdPoolEvidence = {
+        ...value.rmdPoolEvidence!,
+        ...mutation,
+      }
+      expectInheritedFactsMissing(value)
+    }
+  })
+
   it('requires explicit line 8 zero, correct RMD arithmetic, and separate pools', () => {
     const line8 = validInput()
     line8.basisPoolEvidence = {
@@ -529,8 +562,14 @@ describe('beneficiary traditional IRA withdrawal character', () => {
     badSchedule.line7Distributions = [
       line7Entry(60, { scheduledSequence: 0 }),
     ]
+    const badNestedId = validInput()
+    badNestedId.line7Distributions = [{
+      ...line7Entry(),
+      actionId: 1n,
+    } as unknown as AnnualIraBasisAllocationEntryInput]
     expectInheritedFactsMissing(badMoney)
     expectInheritedFactsMissing(badSchedule)
+    expectInheritedFactsMissing(badNestedId)
   })
 
   it('derives deterministic evidence IDs from all canonical basis facts', () => {

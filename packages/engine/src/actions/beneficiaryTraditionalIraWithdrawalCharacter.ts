@@ -59,6 +59,10 @@ export interface CompleteBeneficiaryTraditionalIraBasisPoolEvidence {
 
 export interface CompleteBeneficiaryTraditionalIraRmdPoolEvidence {
   predicate: 'completeBeneficiaryTraditionalIraRmdPoolForBeneficiaryDecedentAndTaxYear'
+  actionId: ActionId
+  allocationId: AllocationId
+  sourceAccountId: AccountId
+  evaluationDate: string
   beneficiaryPersonId: PersonId
   inheritedFromPersonId: PersonId
   poolId: string
@@ -382,6 +386,10 @@ export function classifyBeneficiaryTraditionalIraWithdrawal(
   if (
     rmd.predicate !==
       'completeBeneficiaryTraditionalIraRmdPoolForBeneficiaryDecedentAndTaxYear' ||
+    rmd.actionId !== actionId ||
+    rmd.allocationId !== allocationId ||
+    rmd.sourceAccountId !== sourceAccountId ||
+    rmd.evaluationDate !== evaluationDate ||
     !exactPoolIdentity(rmd, identity) ||
     !nonblank(rmd.poolId) ||
     rmdAccounts === null ||
@@ -394,6 +402,7 @@ export function classifyBeneficiaryTraditionalIraWithdrawal(
     return unsupported(identity)
   }
 
+  const annualActionSources = new Set<string>()
   if (
     new Set([
       inheritance.inheritanceEvidenceId,
@@ -403,10 +412,28 @@ export function classifyBeneficiaryTraditionalIraWithdrawal(
     basis.poolId === rmd.poolId ||
     !Array.isArray(input.line7Distributions) ||
     input.line7Distributions.some(
-      (entry) =>
-        entry === null ||
-        typeof entry !== 'object' ||
-        !basisAccounts.includes(entry.sourceAccountId),
+      (entry) => {
+        const parsedActionId = actionIdSchema.safeParse(entry?.actionId)
+        const parsedSourceAccountId = accountIdSchema.safeParse(
+          entry?.sourceAccountId,
+        )
+        if (
+          entry === null ||
+          typeof entry !== 'object' ||
+          !parsedActionId.success ||
+          !parsedSourceAccountId.success ||
+          !basisAccounts.includes(parsedSourceAccountId.data)
+        ) {
+          return true
+        }
+        const actionSource = JSON.stringify([
+          parsedActionId.data,
+          parsedSourceAccountId.data,
+        ])
+        if (annualActionSources.has(actionSource)) return true
+        annualActionSources.add(actionSource)
+        return false
+      },
     )
   ) {
     return unsupported(identity)
