@@ -196,6 +196,7 @@ export interface UnsupportedTraditionalEmployerPlanPenaltyEvidence extends Emplo
   characterCoverage: Readonly<TraditionalEmployerPlanPenaltyCharacterCoverageEvidence>
   ageEvidence: Readonly<TraditionalEmployerPlanPenaltyAgeEvidence>
   ruleOf55Assessment: Readonly<TraditionalEmployerPlanRuleOf55Assessment> | null
+  disabilityEvidence: Readonly<QualifiedDisabilityEventEvidence | RejectedDisabilityStatusEvidence> | null
   otherExceptionAttestation: Readonly<TraditionalEmployerPlanOtherExceptionAttestation> | null
   seppAssessment: Readonly<TraditionalEmployerPlanSeppAssessment> | null
   evidenceId: string
@@ -220,18 +221,14 @@ export interface UnsupportedTraditionalEmployerPlanPenaltyResult {
 export type EvaluateTraditionalEmployerPlanPenaltyPrerequisiteResult = AcceptedTraditionalEmployerPlanPenaltyResult | UnsupportedTraditionalEmployerPlanPenaltyResult
 
 function nonblank(value: unknown, label: string): string {
-  if (typeof value !== 'string' || value.trim().length === 0) {
-    throw new TypeError(`${label} must be a nonblank stable identifier`)
-  }
+  if (typeof value !== 'string' || value.trim().length === 0) throw new TypeError(`${label} must be a nonblank stable identifier`)
   return value
 }
 
 function civilDate(value: unknown, label: string): string {
   if (typeof value !== 'string') throw new RangeError(`${label} must be a canonical civil date`)
   const parsed = parseCivilIsoDate(value)
-  if (parsed === null || formatCivilDate(parsed) !== value) {
-    throw new RangeError(`${label} must be a canonical civil date`)
-  }
+  if (parsed === null || formatCivilDate(parsed) !== value) throw new RangeError(`${label} must be a canonical civil date`)
   return value
 }
 
@@ -239,11 +236,11 @@ function structural(value: unknown): unknown {
   if (value === null || typeof value !== 'object') {
     return typeof value === 'bigint' ? ['bigint', value.toString()] : value
   }
-  if (Array.isArray(value)) return value.map(structural)
-  return Object.keys(value as object).sort().map((key) => [
+  if (Array.isArray(value)) return ['array', value.map(structural)]
+  return ['object', Object.keys(value as object).sort().map((key) => [
     key,
     structural((value as Record<string, unknown>)[key]),
-  ])
+  ])]
 }
 
 function stableId(prefix: string, parts: readonly unknown[]): string {
@@ -282,13 +279,12 @@ function characterCoverage(
   const preDistributionAccountValue = positiveUsdCentsSchema.parse(basis.preDistributionAccountValue)
   const afterTaxBasis = usdCentsSchema.parse(basis.afterTaxEmployeeBasisBeforeDistribution)
   const exactBasisReturn = exactCentProRataNearestHalfUp(
-    BigInt(executedAmount),
-    BigInt(afterTaxBasis),
-    BigInt(preDistributionAccountValue),
+    BigInt(executedAmount), BigInt(afterTaxBasis), BigInt(preDistributionAccountValue),
   )
   if (
     accepted.predicate !== 'employerDistributionEligibility' ||
     accepted.sourceClass !== 'traditionalEmployerPlan' ||
+    accepted.actionId !== identity.actionId ||
     accepted.allocationId !== identity.allocationId ||
     accepted.sourceAccountId !== identity.sourceAccountId ||
     accepted.participantPersonId !== identity.participantPersonId ||
@@ -500,6 +496,7 @@ function unsupported(
   other: Readonly<TraditionalEmployerPlanOtherExceptionAttestation> | null,
   ruleOf55: Readonly<TraditionalEmployerPlanRuleOf55Assessment> | null = null,
   sepp: Readonly<TraditionalEmployerPlanSeppAssessment> | null = null,
+  disability: Readonly<QualifiedDisabilityEventEvidence | RejectedDisabilityStatusEvidence> | null = null,
 ): Readonly<UnsupportedTraditionalEmployerPlanPenaltyResult> {
   const code = missingEvidence === 'separation'
     ? 'withdrawal-rule-of-55-evidence-missing'
@@ -514,11 +511,12 @@ function unsupported(
     characterCoverage: coverage,
     ageEvidence,
     ruleOf55Assessment: ruleOf55,
+    disabilityEvidence: disability,
     otherExceptionAttestation: other === null ? null : { ...other },
     seppAssessment: sepp,
     evidenceId: stableId('employer-penalty-unsupported', [
       identity, coverage.evidenceId, ageEvidence.evidenceId, missingEvidence,
-      ruleOf55?.evidenceId ?? null, other, sepp?.evidenceId ?? null,
+      ruleOf55?.evidenceId ?? null, disability, other, sepp?.evidenceId ?? null,
     ]),
   }
   return deepFreeze({
@@ -586,9 +584,10 @@ export function evaluateTraditionalEmployerPlanPenaltyPrerequisite(
     if (disability?.qualifiedOnEvaluationDate) outcome = 'disabilityQualified'
     else {
       const separation = input.separationEvidence
-      if (separation === null) return unsupported(identity, coverage, ageEvidence, 'separation', null)
+      if (separation === null) return unsupported(identity, coverage, ageEvidence, 'separation', null, null, null, disability)
       const separationDate = civilDate(separation.separationDate, 'Employer separation date')
       if (
+        separationDate < birthDate ||
         separation.predicate !== 'sponsoringEmployerSeparationForPenalty' ||
         separation.sourceAccountId !== identity.sourceAccountId ||
         separation.participantPersonId !== identity.participantPersonId ||
@@ -618,7 +617,7 @@ export function evaluateTraditionalEmployerPlanPenaltyPrerequisite(
       if (rule55Qualified) outcome = 'ruleOf55Qualified'
       else {
         if (disability === null) return unsupported(identity, coverage, ageEvidence, 'disability', null, ruleOf55Assessment)
-        if (input.seppEvidence === null) return unsupported(identity, coverage, ageEvidence, 'sepp', null, ruleOf55Assessment)
+        if (input.seppEvidence === null) return unsupported(identity, coverage, ageEvidence, 'sepp', null, ruleOf55Assessment, null, disability)
         sepp = seppAssessment(input.seppEvidence, identity, separationDate, coverage)
         if (sepp.disposition === 'provisional') {
           return unsupported(
@@ -629,15 +628,16 @@ export function evaluateTraditionalEmployerPlanPenaltyPrerequisite(
             null,
             ruleOf55Assessment,
             sepp,
+            disability,
           )
         }
         else {
           if (input.otherExceptionAttestation === null) {
-            return unsupported(identity, coverage, ageEvidence, 'otherExceptionAttestation', null, ruleOf55Assessment)
+            return unsupported(identity, coverage, ageEvidence, 'otherExceptionAttestation', null, ruleOf55Assessment, sepp, disability)
           }
           other = otherAssessment(input.otherExceptionAttestation, identity)
           if (other.disposition === 'unsupported') {
-            return unsupported(identity, coverage, ageEvidence, 'otherExceptionAdjudication', other.attestation, ruleOf55Assessment)
+            return unsupported(identity, coverage, ageEvidence, 'otherExceptionAdjudication', other.attestation, ruleOf55Assessment, sepp, disability)
           }
           outcome = 'penaltyApplies'
           rateEvidence = {

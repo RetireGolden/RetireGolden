@@ -178,6 +178,10 @@
       "types": "./dist/actions/rothConversionExecution.d.ts",
       "default": "./dist/actions/rothConversionExecution.js"
     },
+    "./actions/traditionalEmployerPlanPenaltyPrerequisite": {
+      "types": "./dist/actions/traditionalEmployerPlanPenaltyPrerequisite.d.ts",
+      "default": "./dist/actions/traditionalEmployerPlanPenaltyPrerequisite.js"
+    },
     "./actions/taxableWithdrawalCharacter": {
       "types": "./dist/actions/taxableWithdrawalCharacter.d.ts",
       "default": "./dist/actions/taxableWithdrawalCharacter.js"

@@ -67,6 +67,7 @@ describe('traditional employer-plan withdrawal character', () => {
       reasons: [],
       acceptedSourceEligibility: {
         predicate: 'employerDistributionEligibility',
+        actionId: 'withdrawal',
         allocationId: 'allocation',
         sourceAccountId: 'employer-plan',
         participantPersonId: 'participant',

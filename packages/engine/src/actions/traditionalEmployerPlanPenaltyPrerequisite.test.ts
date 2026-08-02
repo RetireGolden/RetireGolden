@@ -341,6 +341,35 @@ describe('traditional employer-plan penalty prerequisite', () => {
     })
   })
 
+  it('preserves rejected disability identity when separation evidence is missing', () => {
+    const firstInput = input({ separationDate: null })
+    const secondInput = input({ separationDate: null })
+    secondInput.disabilityEvidence = {
+      ...rejectedDisability(),
+      disabilityEvidenceId: 'alternate-not-disabled',
+    }
+
+    const first = evaluateTraditionalEmployerPlanPenaltyPrerequisite(firstInput)
+    const second = evaluateTraditionalEmployerPlanPenaltyPrerequisite(secondInput)
+    expect(first).toMatchObject({
+      status: 'unsupported',
+      evidence: {
+        missingEvidence: 'separation',
+        disabilityEvidence: { disabilityEvidenceId: 'not-disabled' },
+      },
+    })
+    expect(second.evidence.evidenceId).not.toBe(first.evidence.evidenceId)
+  })
+
+  it('rejects a zero-character classification borrowed from another action', () => {
+    const value = input({ executedAmount: 0, separationDate: null })
+    value.characterization = structuredClone(value.characterization)
+    ;(value.characterization.acceptedSourceEligibility as { actionId: string }).actionId = 'foreign-action'
+
+    expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(value))
+      .toThrow(/exactly bind identity/)
+  })
+
   it('accepts a dated disability that qualified by the distribution date', () => {
     const value = input({ separationDate: null })
     value.disabilityEvidence = {
@@ -557,14 +586,29 @@ describe('traditional employer-plan penalty prerequisite', () => {
   })
 
   it('fails closed when SEPP status is absent', () => {
-    const value = input({ separationDate: '2029-12-31' })
-    value.seppEvidence = null
+    const firstInput = input({ separationDate: '2029-12-31' })
+    firstInput.seppEvidence = null
+    const secondInput = input({ separationDate: '2029-12-31' })
+    secondInput.disabilityEvidence = {
+      ...rejectedDisability(),
+      disabilityEvidenceId: 'alternate-not-disabled',
+    }
+    secondInput.seppEvidence = null
 
-    expect(evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)).toMatchObject({
+    const first = evaluateTraditionalEmployerPlanPenaltyPrerequisite(firstInput)
+    const second = evaluateTraditionalEmployerPlanPenaltyPrerequisite(secondInput)
+    expect(first).toMatchObject({
       status: 'unsupported',
       reasons: [{ code: 'withdrawal-sepp-evidence-missing' }],
-      evidence: { missingEvidence: 'sepp' },
+      evidence: {
+        missingEvidence: 'sepp',
+        disabilityEvidence: { disabilityEvidenceId: 'not-disabled' },
+      },
     })
+    expect(second.evidence.disabilityEvidence).toMatchObject({
+      disabilityEvidenceId: 'alternate-not-disabled',
+    })
+    expect(first.evidence.evidenceId).not.toBe(second.evidence.evidenceId)
   })
 
   it('fails closed without an explicit negative other-exception attestation', () => {
@@ -573,7 +617,11 @@ describe('traditional employer-plan penalty prerequisite', () => {
 
     expect(evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)).toMatchObject({
       status: 'unsupported',
-      evidence: { missingEvidence: 'otherExceptionAttestation' },
+      evidence: {
+        missingEvidence: 'otherExceptionAttestation',
+        disabilityEvidence: { qualifiedOnEvaluationDate: false },
+        seppAssessment: { disposition: 'refused' },
+      },
     })
   })
 
@@ -590,6 +638,8 @@ describe('traditional employer-plan penalty prerequisite', () => {
           otherExceptionClaimed: true,
           exceptionDescription: 'domestic-relations order',
         },
+        disabilityEvidence: { qualifiedOnEvaluationDate: false },
+        seppAssessment: { disposition: 'refused' },
       },
     })
   })
@@ -654,6 +704,26 @@ describe('traditional employer-plan penalty prerequisite', () => {
 
     expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(value))
       .toThrow(/equal accepted source-availability evidence/)
+  })
+
+  it('rejects authoritative separation evidence dated before participant birth', () => {
+    const value = input({ separationDate: '1975-06-14' })
+
+    expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(value))
+      .toThrow(/named sponsoring plan and participant/)
+  })
+
+  it('distinguishes arrays from objects in structural evidence identities', () => {
+    const objectInput = input({ separationDate: '2029-12-31' })
+    Reflect.set(objectInput.otherExceptionAttestation!, 'metadata', { a: 'b' })
+    const arrayInput = input({ separationDate: '2029-12-31' })
+    Reflect.set(arrayInput.otherExceptionAttestation!, 'metadata', [['a', 'b']])
+
+    const objectResult = evaluateTraditionalEmployerPlanPenaltyPrerequisite(objectInput)
+    const arrayResult = evaluateTraditionalEmployerPlanPenaltyPrerequisite(arrayInput)
+    expect(objectResult.status).toBe('accepted')
+    expect(arrayResult.status).toBe('accepted')
+    expect(objectResult.evidence.evidenceId).not.toBe(arrayResult.evidence.evidenceId)
   })
 
   it('returns stable deeply frozen structural evidence', () => {
