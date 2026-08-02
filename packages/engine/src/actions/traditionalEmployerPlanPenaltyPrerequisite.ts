@@ -221,9 +221,9 @@ function structural(value: unknown, seen = new WeakSet<object>()): unknown {
   if (typeof value === 'bigint') return ['bigint', value.toString()]
   if (typeof value === 'number') return ['number', Number.isFinite(value) ? (Object.is(value, -0) ? '-0' : value) : String(value)]
   if (typeof value !== 'object') return [typeof value, typeof value === 'symbol' || typeof value === 'function' ? String(value) : value]
-  if (seen.has(value) || Object.values(Object.getOwnPropertyDescriptors(value)).some((descriptor) => descriptor.enumerable && ('get' in descriptor || 'set' in descriptor)) || (Array.isArray(value) && Object.keys(value).some((key) => String(Number(key)) !== key || Number(key) >= value.length)) || (!Array.isArray(value) && Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(value) !== null)) throw new TypeError('Employer penalty evidence must be non-aliased acyclic plain data')
+  if (seen.has(value) || Object.values(Object.getOwnPropertyDescriptors(value)).some((descriptor) => 'get' in descriptor || 'set' in descriptor) || (Array.isArray(value) && Reflect.ownKeys(value).some((key) => key !== 'length' && (typeof key !== 'string' || !Object.prototype.propertyIsEnumerable.call(value, key) || String(Number(key)) !== key || Number(key) >= value.length))) || (!Array.isArray(value) && Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(value) !== null)) throw new TypeError('Employer penalty evidence must be non-aliased acyclic plain data')
   seen.add(value)
-  const result = Array.isArray(value) ? ['array', value.map((entry) => structural(entry, seen))] : ['object', Object.keys(value).sort().map((key) => [key, structural((value as Record<string, unknown>)[key], seen)])]
+  const result = Array.isArray(value) ? ['array', Array.prototype.map.call(value, (entry: unknown) => structural(entry, seen))] : ['object', Object.keys(value).sort().map((key) => [key, structural((value as Record<string, unknown>)[key], seen)])]
   return result
 }
 

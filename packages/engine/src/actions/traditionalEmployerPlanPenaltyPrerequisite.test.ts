@@ -797,6 +797,34 @@ describe('traditional employer-plan penalty prerequisite', () => {
     expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)).toThrow(/plain data/)
   })
 
+  it('rejects non-enumerable array behavior without invoking it', () => {
+    const mapInput = input({ separationDate: '2029-12-31' })
+    const mapItems = ['record']
+    let mapCalls = 0
+    Object.defineProperty(mapItems, 'map', {
+      value: () => {
+        mapCalls += 1
+        return []
+      },
+    })
+    Reflect.set(mapInput.otherExceptionAttestation!, 'metadata', { items: mapItems })
+    expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(mapInput)).toThrow(/plain data/)
+    expect(mapCalls).toBe(0)
+
+    const indexInput = input({ separationDate: '2029-12-31' })
+    const indexItems = ['record']
+    let indexReads = 0
+    Object.defineProperty(indexItems, '0', {
+      get: () => {
+        indexReads += 1
+        return 'record'
+      },
+    })
+    Reflect.set(indexInput.otherExceptionAttestation!, 'metadata', { items: indexItems })
+    expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(indexInput)).toThrow(/plain data/)
+    expect(indexReads).toBe(0)
+  })
+
   it('rejects accessor-backed metadata without invoking the getter', () => {
     const value = input({ separationDate: '2029-12-31' })
     const metadata = {}
