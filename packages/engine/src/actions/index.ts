@@ -1,3 +1,4 @@
+export * from './annualQcdDeductionTreatmentCoordinator.js'
 export * from './annualQcdItemizedLiabilityReconciliation.js'
 export {
   stageAnnualQcdItemizedSection170Ledger,
