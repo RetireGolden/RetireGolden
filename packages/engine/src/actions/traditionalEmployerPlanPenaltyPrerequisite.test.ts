@@ -825,6 +825,25 @@ describe('traditional employer-plan penalty prerequisite', () => {
     expect(indexReads).toBe(0)
   })
 
+  it('rejects inherited sparse-array behavior without invoking it', () => {
+    const value = input({ separationDate: '2029-12-31' })
+    const items: unknown[] = []
+    items.length = 1
+    const prototype = Object.create(Array.prototype)
+    let reads = 0
+    Object.defineProperty(prototype, '0', {
+      get: () => {
+        reads += 1
+        return 'record'
+      },
+    })
+    Object.setPrototypeOf(items, prototype)
+    Reflect.set(value.otherExceptionAttestation!, 'metadata', { items })
+
+    expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)).toThrow(/plain data/)
+    expect(reads).toBe(0)
+  })
+
   it('rejects accessor-backed metadata without invoking the getter', () => {
     const value = input({ separationDate: '2029-12-31' })
     const metadata = {}
