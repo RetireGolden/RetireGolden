@@ -619,6 +619,14 @@ export {
   type UnsupportedBeneficiaryTraditionalIraAnnualSimulatorDeltaResult,
 } from './beneficiaryTraditionalIraAnnualSimulatorDelta.js'
 export {
+  prepareBeneficiaryTraditionalIraResidualRmdAllocation,
+  type BeneficiaryTraditionalIraResidualRmdAllocationPreparedResult,
+  type BeneficiaryTraditionalIraResidualRmdSourceAllocation,
+  type PrepareBeneficiaryTraditionalIraResidualRmdAllocationInput,
+  type PrepareBeneficiaryTraditionalIraResidualRmdAllocationResult,
+  type UnsupportedBeneficiaryTraditionalIraResidualRmdAllocationResult,
+} from './beneficiaryTraditionalIraResidualRmdAllocation.js'
+export {
   evaluateOwnedNonRothIraPenaltyPrerequisites,
   type Age59HalfReachedPenaltyEvaluation,
   type DisabilityQualifiedPenaltyEvaluation,
