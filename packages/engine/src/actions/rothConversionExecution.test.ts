@@ -572,6 +572,67 @@ describe('executeRothConversions', () => {
     expect(laterReasonCodes).not.toContain('conversion-balance-unavailable')
   })
 
+  it.each([
+    'person-not-alive',
+    'conversion-destination-incompatible',
+    'required-facts-missing',
+  ] as const)(
+    'does not consume diagnostic capacity after a nonaccepted %s preflight',
+    (refusalReason) => {
+      const firstBase = request('conversion-refused', 1, [{
+        allocationId: 'allocation-refused',
+        sourceAccountId: 'traditional-a',
+        requestedAmount: 8_000,
+      }])
+      const first = refusalReason === 'conversion-destination-incompatible'
+        ? rothConversionRequestSchema.parse({
+            ...firstBase,
+            destinationRothAccountId: 'traditional-b',
+          })
+        : firstBase
+      const later = request('conversion-later', 2, [{
+        allocationId: 'allocation-later',
+        sourceAccountId: 'traditional-a',
+        requestedAmount: 8_000,
+      }])
+      const value = input([later, first])
+      value.openingBalances = value.openingBalances.map((snapshot) =>
+        snapshot.accountId === 'traditional-a'
+          ? { ...snapshot, openingBalance: asUsdCents(10_000) }
+          : snapshot,
+      )
+      if (refusalReason === 'person-not-alive') {
+        value.runtimeEvidence = {
+          personAliveEvidence: value.runtimeEvidence?.personAliveEvidence?.map(
+            (evidence) => evidence.actionId === first.actionId
+              ? { ...evidence, alive: false }
+              : evidence,
+          ),
+        }
+      } else if (refusalReason === 'required-facts-missing') {
+        value.runtimeEvidence = {
+          personAliveEvidence: value.runtimeEvidence?.personAliveEvidence?.filter(
+            (evidence) => evidence.actionId !== first.actionId,
+          ),
+        }
+      }
+
+      const result = executeRothConversions(value)
+      const [refusedEvidence, laterEvidence] = result.evidence
+
+      expect(refusedEvidence?.reasons.map((reason) => reason.code)).toContain(
+        refusalReason,
+      )
+      expect(laterEvidence?.actionId).toBe('conversion-later')
+      const laterReasonCodes = laterEvidence?.reasons.map((reason) => reason.code)
+      expect(laterReasonCodes).not.toContain('conversion-balance-trimmed')
+      expect(laterReasonCodes).not.toContain('conversion-balance-unavailable')
+      expect(result.balances.find(
+        (balance) => balance.accountId === 'traditional-a',
+      )).toMatchObject({ openingBalance: 10_000, closingBalance: 10_000 })
+    },
+  )
+
   it('rejects duplicate account and balance identities with unchanged snapshots', () => {
     const duplicatePlan = input()
     ;(duplicatePlan.plan as Plan).accounts.push({ ...(duplicatePlan.plan as Plan).accounts[0]! })

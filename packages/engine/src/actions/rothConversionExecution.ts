@@ -279,6 +279,15 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
     const resolvedSourceAccountIds = new Set<string>()
     const hasUnresolvedSource = request.allocations.some((allocation) =>
       !accounts.has(allocation.sourceAccountId))
+    const canConsumeDiagnosticCapacity =
+      preflight.status === 'accepted' &&
+      destination !== undefined &&
+      openingByAccountId.has(request.destinationRothAccountId) &&
+      request.allocations.every((allocation) => {
+        const source = accounts.get(allocation.sourceAccountId)
+        return source?.type === 'traditional' &&
+          remainingByAccountId.has(allocation.sourceAccountId)
+      })
     for (const allocation of request.allocations) {
       const source = accounts.get(allocation.sourceAccountId)
       const remaining = remainingByAccountId.get(allocation.sourceAccountId)
@@ -307,7 +316,7 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
           allocationId: allocation.allocationId,
         }))
       }
-      if (!hasUnresolvedSource && remaining !== undefined) {
+      if (canConsumeDiagnosticCapacity && remaining !== undefined) {
         remainingByAccountId.set(
           allocation.sourceAccountId,
           asUsdCents(Math.max(0, remaining - allocation.requestedAmount)),
