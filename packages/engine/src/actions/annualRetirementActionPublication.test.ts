@@ -640,6 +640,58 @@ describe('annual retirement-action publication', () => {
     })).toThrow(/multiple executors/i)
   })
 
+  it('preserves omitted ordinary-withdrawal dates as valid year-end schedules', () => {
+    const action = request(
+      'ordinaryWithdrawal',
+      'ordinary-omitted-date-blocker',
+      '2030-01-01',
+      1,
+    )
+    if (action.kind !== 'ordinaryWithdrawal') throw new Error('fixture drift')
+    delete (action as { executionDate?: string }).executionDate
+
+    expect(publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [action],
+      sources: [source('ordinaryWithdrawalExecutor', [refusedRecord(action)])],
+    })?.records).toHaveLength(1)
+  })
+
+  it.each([
+    ['empty', ''],
+    ['malformed', '2030-02-30'],
+    ['outside', '2029-06-15'],
+  ] as const)(
+    'requires the ordinary-withdrawal %s-date blocker',
+    (_label, executionDate) => {
+      const action = request(
+        'ordinaryWithdrawal',
+        `ordinary-${_label}-date-blocker`,
+        executionDate,
+        1,
+      )
+      if (action.kind !== 'ordinaryWithdrawal') throw new Error('fixture drift')
+
+      expect(() => publishAnnualRetirementActions({
+        taxYear: 2030,
+        requests: [action],
+        sources: [source('ordinaryWithdrawalExecutor', [refusedRecord(action)])],
+      })).toThrow(/date reason missing/i)
+
+      expect(publishAnnualRetirementActions({
+        taxYear: 2030,
+        requests: [action],
+        sources: [source('ordinaryWithdrawalExecutor', [
+          recordForBlockingReasons(action, [
+            createActionReason('required-facts-missing', {
+              personId: action.personId,
+            }),
+          ]),
+        ])],
+      })?.records).toHaveLength(1)
+    },
+  )
+
   it.each([
     ['ownedNonRothIraExecutor', 'qcd'],
     ['rothConversionExecutor', 'qcd'],
@@ -696,6 +748,127 @@ describe('annual retirement-action publication', () => {
       requests: [action],
       sources: [source('ordinaryWithdrawalExecutor', [fallbackRecord])],
     })?.records).toHaveLength(1)
+  })
+
+  it('accepts a canonical QCD charity preflight blocker beside its scope reason', () => {
+    const action = qcdRequest(
+      'canonical-ordinary-qcd-multireason-fallback',
+      '2030-06-15',
+      1,
+    )
+    if (action.kind !== 'qcd') throw new Error('fixture drift')
+    action.charity.directFromCustodianAttested = false
+    const fallbackRecord = recordForBlockingReasons(action, [
+      createActionReason('required-facts-missing', {
+        personId: action.donorPersonId,
+      }),
+      createActionReason('qcd-direct-charity-unconfirmed'),
+    ])
+
+    expect(publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [action],
+      sources: [source('ordinaryWithdrawalExecutor', [fallbackRecord])],
+    })?.records).toHaveLength(1)
+  })
+
+  it.each([
+    ['rothConversion', 'conversion-basis-evidence-missing'],
+    ['qcd', 'qcd-rmd-evidence-missing'],
+  ] as const)(
+    'rejects the ordinary executor %s fallback with later-stage %s evidence',
+    (kind, laterStageReasonCode) => {
+      const action = kind === 'qcd'
+        ? qcdRequest('foreign-later-stage-reason', '2030-06-15', 1)
+        : request('rothConversion', 'foreign-later-stage-reason', '2030-06-15', 1)
+      const actionPersonId = action.kind === 'qcd'
+        ? action.donorPersonId
+        : action.kind === 'rothConversion'
+          ? action.personId
+          : undefined
+      if (actionPersonId === undefined) throw new Error('fixture drift')
+      const fallbackRecord = recordForBlockingReasons(action, [
+        createActionReason('required-facts-missing', {
+          personId: actionPersonId,
+        }),
+        createActionReason(laterStageReasonCode),
+      ])
+
+      expect(() => publishAnnualRetirementActions({
+        taxYear: 2030,
+        requests: [action],
+        sources: [source('ordinaryWithdrawalExecutor', [fallbackRecord])],
+      })).toThrow(/executor source kind differs/i)
+    },
+  )
+
+  it('rejects malformed allocation structure before mixed-kind fallback ownership', () => {
+    const duplicateSource = request(
+      'rothConversion',
+      'mixed-fallback-duplicate-source',
+      '2030-06-15',
+      1,
+    )
+    const duplicateAllocation = request(
+      'rothConversion',
+      'mixed-fallback-duplicate-allocation',
+      '2030-06-15',
+      1,
+    )
+    const amountMismatch = request(
+      'rothConversion',
+      'mixed-fallback-amount-mismatch',
+      '2030-06-15',
+      1,
+    )
+    if (
+      duplicateSource.kind !== 'rothConversion' ||
+      duplicateAllocation.kind !== 'rothConversion' ||
+      amountMismatch.kind !== 'rothConversion'
+    ) {
+      throw new Error('fixture drift')
+    }
+    duplicateSource.allocations = [
+      {
+        allocationId: asAllocationId('duplicate-source-first'),
+        sourceAccountId: asAccountId('duplicate-source'),
+        requestedAmount: asPositiveUsdCents(5_000),
+      },
+      {
+        allocationId: asAllocationId('duplicate-source-second'),
+        sourceAccountId: asAccountId('duplicate-source'),
+        requestedAmount: asPositiveUsdCents(5_000),
+      },
+    ]
+    duplicateAllocation.allocations = [
+      {
+        allocationId: asAllocationId('duplicate-allocation'),
+        sourceAccountId: asAccountId('duplicate-allocation-first'),
+        requestedAmount: asPositiveUsdCents(5_000),
+      },
+      {
+        allocationId: asAllocationId('duplicate-allocation'),
+        sourceAccountId: asAccountId('duplicate-allocation-second'),
+        requestedAmount: asPositiveUsdCents(5_000),
+      },
+    ]
+    amountMismatch.allocations = [{
+      allocationId: asAllocationId('amount-mismatch'),
+      sourceAccountId: asAccountId('amount-mismatch'),
+      requestedAmount: asPositiveUsdCents(9_000),
+    }]
+
+    for (const malformedAction of [
+      duplicateSource,
+      duplicateAllocation,
+      amountMismatch,
+    ]) {
+      expect(() => publishAnnualRetirementActions({
+        taxYear: 2030,
+        requests: [malformedAction],
+        sources: [source('ordinaryWithdrawalExecutor', [record(malformedAction)])],
+      })).toThrow(/duplicate source|duplicate allocation|exactly sum/i)
+    }
   })
 
   it('rejects non-canonical ordinary-executor mixed-kind evidence', () => {

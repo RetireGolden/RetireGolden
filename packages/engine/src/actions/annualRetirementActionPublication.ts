@@ -303,6 +303,51 @@ function isConflictOnlyRecord(
   )
 }
 
+// Structural allocation reasons cannot reach publication: the canonical request
+// schema rejects duplicate IDs/sources and amount mismatches before execution.
+const conversionPreflightReasonCodes = new Set<ActionReason['code']>([
+  'conversion-date-missing',
+  'conversion-date-invalid',
+  'conversion-date-outside-action-year',
+  'person-not-found',
+  'person-not-alive',
+  'required-facts-missing',
+  'source-account-not-found',
+  'conversion-source-owner-mismatch',
+  'conversion-source-not-convertible',
+  'conversion-inherited-source',
+  'conversion-plan-availability-unknown',
+  'conversion-ira-subtype-unknown',
+  'conversion-simple-two-year-rule-unknown',
+  'conversion-simple-two-year-period-open',
+  'conversion-destination-not-found',
+  'conversion-destination-owner-mismatch',
+  'conversion-destination-incompatible',
+  'conversion-employer-destination-unsupported',
+  'conversion-principal-withholding-unsupported',
+])
+
+const qcdPreflightReasonCodes = new Set<ActionReason['code']>([
+  'qcd-date-missing',
+  'qcd-date-invalid',
+  'qcd-date-outside-action-year',
+  'person-not-found',
+  'person-not-alive',
+  'required-facts-missing',
+  'source-account-not-found',
+  'qcd-before-age-70-half',
+  'qcd-source-owner-mismatch',
+  'qcd-source-not-ira',
+  'qcd-roth-source-unsupported',
+  'qcd-inherited-basis-unsupported',
+  'qcd-sep-simple-activity-unknown',
+  'qcd-ongoing-sep-simple',
+  'qcd-split-interest-unsupported',
+  'qcd-direct-charity-unconfirmed',
+  'qcd-entire-distribution-deductibility-unconfirmed',
+  'qcd-contribution-history-unknown',
+])
+
 function isCanonicalOrdinaryMixedKindFallback(
   record: Readonly<{
     readiness: string
@@ -352,6 +397,12 @@ function isCanonicalOrdinaryMixedKindFallback(
     request.kind === 'legacyAggregateWithdrawal' ||
     request.kind === 'legacyAggregateRothConversion' ||
     request.kind === 'legacyAggregateQcd'
+  const allowedCurrentReasonCodes =
+    request.kind === 'rothConversion'
+      ? conversionPreflightReasonCodes
+      : request.kind === 'qcd'
+        ? qcdPreflightReasonCodes
+        : null
   return record.readiness === 'nonActionable' &&
     record.outcome === 'unsupported' &&
     record.executedAmount === 0 &&
@@ -362,7 +413,10 @@ function isCanonicalOrdinaryMixedKindFallback(
       allocation.executedAmount === 0 &&
       allocation.unexecutedAmount === allocation.requestedAmount) &&
     hasCanonicalScopeReason &&
-    (!legacyAggregate || record.reasons.length === 1)
+    (legacyAggregate
+      ? record.reasons.length === 1
+      : allowedCurrentReasonCodes !== null &&
+        record.reasons.every((reason) => allowedCurrentReasonCodes.has(reason.code)))
 }
 
 const destinationAccountReasonCodes = new Set<ActionReason['code']>([
@@ -955,7 +1009,11 @@ function assertRecordBinding(
   const reasonCodes = new Set(record.reasons.map((reason) => reason.code))
   const conflictOnly = isConflictOnlyRecord(record)
   const requiredDateReasonCode =
-    request.kind === 'rothConversion'
+    request.kind === 'ordinaryWithdrawal'
+      ? request.executionDate !== undefined && scheduleState.kind !== 'valid'
+        ? 'required-facts-missing'
+        : undefined
+      : request.kind === 'rothConversion'
       ? scheduleState.kind === 'missingDate'
         ? 'conversion-date-missing'
         : scheduleState.kind === 'invalidDate'
