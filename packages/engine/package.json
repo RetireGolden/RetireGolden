@@ -162,6 +162,10 @@
       "types": "./dist/actions/retirementActionCandidateIdentityAllocator.d.ts",
       "default": "./dist/actions/retirementActionCandidateIdentityAllocator.js"
     },
+    "./actions/retirementActionManualReview": {
+      "types": "./dist/actions/retirementActionManualReview.d.ts",
+      "default": "./dist/actions/retirementActionManualReview.js"
+    },
     "./actions/taxableWithdrawalCharacter": {
       "types": "./dist/actions/taxableWithdrawalCharacter.d.ts",
       "default": "./dist/actions/taxableWithdrawalCharacter.js"
