@@ -608,14 +608,34 @@ function evaluateUnchecked(
     }])
   }
 
-  const parsedRequests = input.requests.map((request) =>
-    qualifiedCharitableDistributionRequestSchema.parse(request))
+  const parsedRequests: QualifiedCharitableDistributionRequest[] = []
+  for (const request of input.requests) {
+    const parsed = qualifiedCharitableDistributionRequestSchema.safeParse(request)
+    if (!parsed.success) {
+      return blocked(input.taxYear, [{
+        kind: 'invalidInput',
+        actionId: null,
+        detail: 'Each QCD request must satisfy the canonical qualified charitable distribution request schema.',
+      }])
+    }
+    parsedRequests.push(parsed.data)
+  }
   const scheduleState = evaluateRetirementActionSchedule(
     input.taxYear,
     parsedRequests,
   )
-  const requests = scheduleState.requests.map((request) =>
-    qualifiedCharitableDistributionRequestSchema.parse(request))
+  const requests: QualifiedCharitableDistributionRequest[] = []
+  for (const request of scheduleState.requests) {
+    const parsed = qualifiedCharitableDistributionRequestSchema.safeParse(request)
+    if (!parsed.success) {
+      return blocked(input.taxYear, [{
+        kind: 'invalidInput',
+        actionId: null,
+        detail: 'Each scheduled QCD request must satisfy the canonical qualified charitable distribution request schema.',
+      }])
+    }
+    requests.push(parsed.data)
+  }
   const scheduleBlockers = scheduleState.scheduleIssues.filter((issue) =>
     issue.kind !== 'executionSequenceConflict')
   if (scheduleBlockers.length > 0) {

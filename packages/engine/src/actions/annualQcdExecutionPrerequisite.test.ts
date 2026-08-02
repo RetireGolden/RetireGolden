@@ -745,9 +745,14 @@ describe('evaluateAnnualQcdExecutionPrerequisites', () => {
     })
     expect(malformed).toMatchObject({
       status: 'blocked',
+      taxYear: 2026,
       publicationSource: null,
       evidence: [],
-      issues: [{ kind: 'invalidInput' }],
+      issues: [{
+        kind: 'invalidInput',
+        actionId: null,
+        detail: 'Each QCD request must satisfy the canonical qualified charitable distribution request schema.',
+      }],
     })
   })
 
