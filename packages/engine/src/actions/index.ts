@@ -657,6 +657,16 @@ export {
   type UnsupportedBeneficiaryTraditionalIraResidualRmdActionIdentityResult,
 } from './beneficiaryTraditionalIraResidualRmdActionIdentity.js'
 export {
+  prepareBeneficiaryTraditionalIraResidualRmdAnnualRefinalization,
+  type BeneficiaryTraditionalIraNoResidualRmdAnnualRefinalizationResult,
+  type BeneficiaryTraditionalIraResidualInheritanceBinding,
+  type BeneficiaryTraditionalIraResidualRmdAnnualEvidenceRefinalizedResult,
+  type BeneficiaryTraditionalIraResidualRmdRefinalizedLineage,
+  type PrepareBeneficiaryTraditionalIraResidualRmdAnnualRefinalizationInput,
+  type PrepareBeneficiaryTraditionalIraResidualRmdAnnualRefinalizationResult,
+  type UnsupportedBeneficiaryTraditionalIraResidualRmdAnnualRefinalizationResult,
+} from './beneficiaryTraditionalIraResidualRmdAnnualRefinalization.js'
+export {
   evaluateOwnedNonRothIraPenaltyPrerequisites,
   type Age59HalfReachedPenaltyEvaluation,
   type DisabilityQualifiedPenaltyEvaluation,
