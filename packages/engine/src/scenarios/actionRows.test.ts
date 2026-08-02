@@ -245,6 +245,34 @@ describe('normalizeScenarioActionRows', () => {
     expect(normalizeScenarioActionScheduleDiagnostics([publishedYear]))
       .toEqual(normalizeScenarioActionScheduleDiagnostics([legacyYear]))
 
+    const ordinarySource = ordinaryWithdrawalPublicationSource(execution)
+    const foreignSourcePublication = publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: execution.requests,
+      sources: [{
+        ...ordinarySource,
+        executorSource: 'ownedNonRothIraExecutor',
+      }],
+    })
+    expect(() => normalizeScenarioActionRows([{
+      ...legacyYear,
+      retirementActionPublication: foreignSourcePublication,
+    } as YearResult])).toThrow(/does not cover the legacy/i)
+
+    const foreignDiagnosticPublication = publication === undefined
+      ? undefined
+      : {
+          ...publication,
+          scheduleDiagnostics: publication.scheduleDiagnostics.map((diagnostic) => ({
+            ...diagnostic,
+            executorSource: 'ownedNonRothIraExecutor' as const,
+          })),
+        }
+    expect(() => normalizeScenarioActionScheduleDiagnostics([{
+      ...legacyYear,
+      retirementActionPublication: foreignDiagnosticPublication,
+    } as YearResult])).toThrow(/does not cover the legacy/i)
+
     const canonicalSupersetYear = {
       ...legacyYear,
       retirementActionExecution: {

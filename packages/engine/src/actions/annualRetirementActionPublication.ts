@@ -305,7 +305,7 @@ function isConflictOnlyRecord(
 
 // Structural allocation reasons cannot reach publication: the canonical request
 // schema rejects duplicate IDs/sources and amount mismatches before execution.
-const conversionPreflightReasonCodes = new Set<ActionReason['code']>([
+const conversionPreflightReasonCodeList = [
   'conversion-date-missing',
   'conversion-date-invalid',
   'conversion-date-outside-action-year',
@@ -325,9 +325,9 @@ const conversionPreflightReasonCodes = new Set<ActionReason['code']>([
   'conversion-destination-incompatible',
   'conversion-employer-destination-unsupported',
   'conversion-principal-withholding-unsupported',
-])
+] as const satisfies readonly ActionReason['code'][]
 
-const qcdPreflightReasonCodes = new Set<ActionReason['code']>([
+const qcdPreflightReasonCodeList = [
   'qcd-date-missing',
   'qcd-date-invalid',
   'qcd-date-outside-action-year',
@@ -346,7 +346,126 @@ const qcdPreflightReasonCodes = new Set<ActionReason['code']>([
   'qcd-direct-charity-unconfirmed',
   'qcd-entire-distribution-deductibility-unconfirmed',
   'qcd-contribution-history-unknown',
-])
+] as const satisfies readonly ActionReason['code'][]
+
+const conversionPreflightReasonCodes = new Set<ActionReason['code']>(
+  conversionPreflightReasonCodeList,
+)
+const qcdPreflightReasonCodes = new Set<ActionReason['code']>(
+  qcdPreflightReasonCodeList,
+)
+
+type PreflightReasonCode =
+  | (typeof conversionPreflightReasonCodeList)[number]
+  | (typeof qcdPreflightReasonCodeList)[number]
+
+type PreflightIdentifierShape =
+  | 'none'
+  | 'person'
+  | 'source-account'
+  | 'source-allocation'
+  | 'person-source-allocation'
+  | 'destination-account'
+  | 'person-destination-account'
+
+// These are the exact identifier roles emitted by account eligibility. A code
+// alone is not evidence that the ordinary executor reached that producer path.
+const preflightIdentifierShapes = {
+  'conversion-date-missing': 'none',
+  'conversion-date-invalid': 'none',
+  'conversion-date-outside-action-year': 'none',
+  'qcd-date-missing': 'none',
+  'qcd-date-invalid': 'none',
+  'qcd-date-outside-action-year': 'none',
+  'person-not-found': 'person',
+  'person-not-alive': 'person',
+  'required-facts-missing': 'person',
+  'source-account-not-found': 'source-allocation',
+  'conversion-source-owner-mismatch': 'person-source-allocation',
+  'conversion-source-not-convertible': 'source-allocation',
+  'conversion-inherited-source': 'source-allocation',
+  'conversion-plan-availability-unknown': 'source-allocation',
+  'conversion-ira-subtype-unknown': 'source-allocation',
+  'conversion-simple-two-year-rule-unknown': 'source-allocation',
+  'conversion-simple-two-year-period-open': 'source-allocation',
+  'conversion-destination-not-found': 'destination-account',
+  'conversion-destination-owner-mismatch': 'person-destination-account',
+  'conversion-destination-incompatible': 'destination-account',
+  'conversion-employer-destination-unsupported': 'destination-account',
+  'conversion-principal-withholding-unsupported': 'none',
+  'qcd-before-age-70-half': 'person',
+  'qcd-source-owner-mismatch': 'person-source-allocation',
+  'qcd-source-not-ira': 'source-account',
+  'qcd-roth-source-unsupported': 'source-account',
+  'qcd-inherited-basis-unsupported': 'source-account',
+  'qcd-sep-simple-activity-unknown': 'source-account',
+  'qcd-ongoing-sep-simple': 'source-account',
+  'qcd-split-interest-unsupported': 'none',
+  'qcd-direct-charity-unconfirmed': 'none',
+  'qcd-entire-distribution-deductibility-unconfirmed': 'none',
+  'qcd-contribution-history-unknown': 'person',
+} as const satisfies Readonly<Record<
+  PreflightReasonCode,
+  PreflightIdentifierShape
+>>
+
+function isPreflightReasonCode(
+  code: ActionReason['code'],
+): code is PreflightReasonCode {
+  return code in preflightIdentifierShapes
+}
+
+function preflightReasonHasCanonicalIdentifiers(
+  reason: Readonly<{
+    code: ActionReason['code']
+    personId?: string
+    accountId?: string
+    allocationId?: string
+  }>,
+  request: Readonly<RetirementActionRequest>,
+): boolean {
+  if (!isPreflightReasonCode(reason.code)) return false
+  const personId = request.kind === 'rothConversion'
+    ? request.personId
+    : request.kind === 'qcd'
+      ? request.donorPersonId
+      : undefined
+  const allocations = request.kind === 'rothConversion'
+    ? request.allocations
+    : request.kind === 'qcd'
+      ? [request.allocation]
+      : []
+  const hasNoPerson = reason.personId === undefined
+  const hasNoAccount = reason.accountId === undefined
+  const hasNoAllocation = reason.allocationId === undefined
+  const matchesSourceAccount = reason.accountId !== undefined &&
+    allocations.some((allocation) =>
+      allocation.sourceAccountId === reason.accountId)
+  const matchesSourceAllocation = reason.accountId !== undefined &&
+    reason.allocationId !== undefined &&
+    allocations.some((allocation) =>
+      allocation.sourceAccountId === reason.accountId &&
+      allocation.allocationId === reason.allocationId)
+  const matchesDestination = request.kind === 'rothConversion' &&
+    reason.accountId === request.destinationRothAccountId
+
+  switch (preflightIdentifierShapes[reason.code]) {
+    case 'none':
+      return hasNoPerson && hasNoAccount && hasNoAllocation
+    case 'person':
+      return reason.personId === personId && hasNoAccount && hasNoAllocation
+    case 'source-account':
+      return hasNoPerson && matchesSourceAccount && hasNoAllocation
+    case 'source-allocation':
+      return hasNoPerson && matchesSourceAllocation
+    case 'person-source-allocation':
+      return reason.personId === personId && matchesSourceAllocation
+    case 'destination-account':
+      return hasNoPerson && matchesDestination && hasNoAllocation
+    case 'person-destination-account':
+      return reason.personId === personId && matchesDestination && hasNoAllocation
+  }
+}
 
 function isCanonicalOrdinaryMixedKindFallback(
   record: Readonly<{
@@ -416,7 +535,10 @@ function isCanonicalOrdinaryMixedKindFallback(
     (legacyAggregate
       ? record.reasons.length === 1
       : allowedCurrentReasonCodes !== null &&
-        record.reasons.every((reason) => allowedCurrentReasonCodes.has(reason.code)))
+        record.reasons.every((reason) =>
+          allowedCurrentReasonCodes.has(reason.code) &&
+          isPreflightReasonCode(reason.code) &&
+          preflightReasonHasCanonicalIdentifiers(reason, request)))
 }
 
 const destinationAccountReasonCodes = new Set<ActionReason['code']>([
@@ -1033,7 +1155,13 @@ function assertRecordBinding(
   if (
     !conflictOnly &&
     requiredDateReasonCode !== undefined &&
-    !reasonCodes.has(requiredDateReasonCode)
+    !record.reasons.some((reason) =>
+      reason.code === requiredDateReasonCode &&
+      (request.kind === 'ordinaryWithdrawal'
+        ? reason.personId === request.personId
+        : reason.personId === undefined) &&
+      reason.accountId === undefined &&
+      reason.allocationId === undefined)
   ) {
     throw new Error(`Executor date reason missing for action "${request.actionId}"`)
   }
@@ -1104,8 +1232,16 @@ function assertRecordBinding(
       }
     }
   }
+  const hasPhysicalBalanceReason = record.reasons.some((reason) =>
+    physicalBalanceReasonCodes.has(reason.code))
   if (
-    record.reasons.some((reason) => physicalBalanceReasonCodes.has(reason.code)) &&
+    hasPhysicalBalanceReason &&
+    record.allocations.some((allocation) => allocation.resolution !== 'resolved')
+  ) {
+    throw new Error(`Executor reason resolution differs for action "${request.actionId}"`)
+  }
+  if (
+    hasPhysicalBalanceReason &&
     record.reasons.some((reason) =>
       !physicalBalanceReasonCodes.has(reason.code) &&
       (reason.outcome === 'refused' || reason.outcome === 'unsupported'))

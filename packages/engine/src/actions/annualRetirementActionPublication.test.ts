@@ -678,6 +678,16 @@ describe('annual retirement-action publication', () => {
         sources: [source('ordinaryWithdrawalExecutor', [refusedRecord(action)])],
       })).toThrow(/date reason missing/i)
 
+      expect(() => publishAnnualRetirementActions({
+        taxYear: 2030,
+        requests: [action],
+        sources: [source('ordinaryWithdrawalExecutor', [
+          recordForBlockingReasons(action, [
+            createActionReason('required-facts-missing'),
+          ]),
+        ])],
+      })).toThrow(/date reason missing/i)
+
       expect(publishAnnualRetirementActions({
         taxYear: 2030,
         requests: [action],
@@ -748,6 +758,36 @@ describe('annual retirement-action publication', () => {
       requests: [action],
       sources: [source('ordinaryWithdrawalExecutor', [fallbackRecord])],
     })?.records).toHaveLength(1)
+  })
+
+  it('requires the canonical destination role on mixed-kind conversion preflight reasons', () => {
+    const action = request(
+      'rothConversion',
+      'canonical-ordinary-destination-fallback',
+      '2030-06-15',
+      1,
+    )
+    if (action.kind !== 'rothConversion') throw new Error('fixture drift')
+    const scopeReason = createActionReason('required-facts-missing', {
+      personId: action.personId,
+    })
+    const publish = (destinationReason: ReturnType<typeof createActionReason>) =>
+      publishAnnualRetirementActions({
+        taxYear: 2030,
+        requests: [action],
+        sources: [source('ordinaryWithdrawalExecutor', [
+          recordForBlockingReasons(action, [scopeReason, destinationReason]),
+        ])],
+      })
+
+    expect(() => publish(createActionReason('conversion-destination-not-found', {
+      personId: action.personId,
+    }))).toThrow(/executor source kind differs/i)
+    expect(() => publish(createActionReason('conversion-destination-not-found')))
+      .toThrow(/executor source kind differs/i)
+    expect(publish(createActionReason('conversion-destination-not-found', {
+      accountId: action.destinationRothAccountId,
+    }))?.records).toHaveLength(1)
   })
 
   it('accepts a canonical QCD charity preflight blocker beside its scope reason', () => {
@@ -958,8 +998,22 @@ describe('annual retirement-action publication', () => {
           ),
         ]),
         source('ordinaryWithdrawalExecutor', [
-          record(malformedA),
-          record(malformedB),
+          recordForReason(
+            malformedA,
+            createActionReason('required-facts-missing', {
+              personId: malformedA.kind === 'ordinaryWithdrawal'
+                ? malformedA.personId
+                : undefined,
+            }),
+          ),
+          recordForReason(
+            malformedB,
+            createActionReason('required-facts-missing', {
+              personId: malformedB.kind === 'ordinaryWithdrawal'
+                ? malformedB.personId
+                : undefined,
+            }),
+          ),
         ]),
       ],
     })
@@ -1519,6 +1573,43 @@ describe('annual retirement-action publication', () => {
 
     expect(() => publish('unresolved')).toThrow(/reason resolution differs/i)
     expect(publish('resolved')?.records).toHaveLength(1)
+  })
+
+  it('requires every source to resolve before an identifier-free balance refusal', () => {
+    const action = request(
+      'ordinaryWithdrawal',
+      'mixed-resolution-balance-reason',
+      '2030-06-15',
+      1,
+    )
+    if (action.kind !== 'ordinaryWithdrawal') throw new Error('fixture drift')
+    action.allocations = [
+      {
+        allocationId: asAllocationId('resolved-allocation'),
+        sourceAccountId: asAccountId('resolved-source'),
+        requestedAmount: asPositiveUsdCents(5_000),
+      },
+      {
+        allocationId: asAllocationId('unresolved-allocation'),
+        sourceAccountId: asAccountId('unresolved-source'),
+        requestedAmount: asPositiveUsdCents(5_000),
+      },
+    ]
+    const baseRecord = record(action)
+
+    expect(() => publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [action],
+      sources: [source('ordinaryWithdrawalExecutor', [{
+        ...baseRecord,
+        outcome: 'refused',
+        allocations: baseRecord.allocations.map((allocation, index) => ({
+          ...allocation,
+          resolution: index === 0 ? 'resolved' as const : 'unresolved' as const,
+        })),
+        reasons: [createActionReason('source-balance-unavailable')],
+      }])],
+    })).toThrow(/reason resolution differs/i)
   })
 
   it('rejects an identifier-free resolved source reason across multiple allocations', () => {

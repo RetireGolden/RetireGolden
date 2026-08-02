@@ -94,7 +94,10 @@ function canonicalPublication(year: Readonly<YearResult>) {
       publication.records.map((record) => [record.actionId, record]),
     )
     const publishedDiagnosticBindings = new Set(
-      publication.scheduleDiagnostics.map(scheduleDiagnosticBinding),
+      publication.scheduleDiagnostics
+        .filter((diagnostic) =>
+          diagnostic.executorSource === 'ordinaryWithdrawalExecutor')
+        .map(scheduleDiagnosticBinding),
     )
     if (legacy.requests.some((request) => {
       const record = publishedById.get(request.actionId)
@@ -104,7 +107,9 @@ function canonicalPublication(year: Readonly<YearResult>) {
       )
     }) || legacySource.records.some((legacyRecord) => {
       const record = publishedById.get(legacyRecord.actionId)
-      return record === undefined || executionBinding(record) !== executionBinding(legacyRecord)
+      return record === undefined ||
+        record.executorSource !== 'ordinaryWithdrawalExecutor' ||
+        executionBinding(record) !== executionBinding(legacyRecord)
     }) || legacySource.scheduleDiagnostics.some((legacyDiagnostic) => {
       const binding = scheduleDiagnosticBinding(legacyDiagnostic)
       return !publishedDiagnosticBindings.has(binding)
