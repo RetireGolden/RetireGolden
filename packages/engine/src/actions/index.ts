@@ -34,6 +34,16 @@ export {
   type UnresolvedAnnualRetirementPhysicalActivityRecord,
 } from './annualRetirementPhysicalEventInventory.js'
 export {
+  coordinateAnnualRetirementActionMovement,
+  type AnnualRetirementActionExecutorAssignment,
+  type AnnualRetirementActionMovementCoordinatedResult,
+  type AnnualRetirementActionMovementCoordinationBlockedResult,
+  type AnnualRetirementActionMovementCoordinationIssue,
+  type AnnualRetirementMovementEventReference,
+  type CoordinateAnnualRetirementActionMovementResult,
+  type StandaloneOwnedNonRothIraMovementBatch,
+} from './annualRetirementActionMovementCoordinator.js'
+export {
   accountIdSchema,
   actionIdSchema,
   allocationIdSchema,

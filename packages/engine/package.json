@@ -66,6 +66,10 @@
       "types": "./dist/actions/annualIraBasisAllocation.d.ts",
       "default": "./dist/actions/annualIraBasisAllocation.js"
     },
+    "./actions/annualRetirementActionMovementCoordinator": {
+      "types": "./dist/actions/annualRetirementActionMovementCoordinator.d.ts",
+      "default": "./dist/actions/annualRetirementActionMovementCoordinator.js"
+    },
     "./actions/annualRetirementPhysicalEventInventory": {
       "types": "./dist/actions/annualRetirementPhysicalEventInventory.d.ts",
       "default": "./dist/actions/annualRetirementPhysicalEventInventory.js"
