@@ -29,6 +29,9 @@ export type ConversionTaxFundingChoice =
   | 'noneExpected'
   | 'conversionPrincipalWithholding'
 
+export const RETIREMENT_ACTION_CONVERSION_EXECUTOR_BOUNDARY =
+  'Roth-conversion review cannot be completed until canonical conversion movement is executable. This migrated conversion remains under review.'
+
 /**
  * Every blank is intentional. A migrated aggregate action has no trustworthy
  * person/account/date/sequence identity to seed these controls from.
@@ -248,6 +251,7 @@ export function buildRetirementActionManualIntent(
   if (target.kind === 'legacyAggregateWithdrawal') {
     if (draft.withdrawalPurpose === '') issues.push('Choose the withdrawal purpose.')
   } else {
+    issues.push(RETIREMENT_ACTION_CONVERSION_EXECUTOR_BOUNDARY)
     if (draft.destinationRothAccountId.trim() === '') {
       issues.push('Choose the exact Roth destination account.')
     }

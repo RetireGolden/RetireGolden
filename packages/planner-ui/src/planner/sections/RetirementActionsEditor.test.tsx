@@ -538,12 +538,16 @@ describe('RetirementActionsEditor', () => {
     ])
   })
 
-  it('replaces a migrated conversion only after every identity and funding choice is made', async () => {
+  it('keeps a fully reviewed conversion visible until canonical movement is executable', async () => {
     const plan = editorPlan()
     const target = migratedAction('legacyAggregateRothConversion')
     plan.strategies.retirementActions = [target]
     const mounted = await mount(plan)
     const owner = plan.household.people[0]!
+
+    expect(mounted.container.textContent).toContain(
+      'Roth-conversion review cannot be completed until canonical conversion movement is executable.',
+    )
 
     await change(controlByLabel(mounted.container, 'Person'), owner.id)
     await change(controlByLabel(mounted.container, 'Source account'), 'source-ira')
@@ -566,18 +570,11 @@ describe('RetirementActionsEditor', () => {
     )
     await act(async () => save!.click())
 
-    expect(mounted.current().strategies.retirementActions).toEqual([
-      expect.objectContaining({
-        kind: 'rothConversion',
-        personId: owner.id,
-        destinationRothAccountId: 'destination-roth',
-        executionDate: '2034-09-01',
-        executionSequence: 4,
-        requestedAmount: target.requestedAmount,
-        taxFunding: { kind: 'noneExpected' },
-        allocations: [expect.objectContaining({ sourceAccountId: 'source-ira' })],
-      }),
-    ])
+    expect(mounted.current().strategies.retirementActions).toEqual([target])
+    expect(mounted.container.textContent).toContain(
+      'This migrated conversion remains under review.',
+    )
+    expect(mounted.container.textContent).toContain('Needs source review')
     expect(parsePlan(mounted.current()).ok).toBe(true)
   })
 

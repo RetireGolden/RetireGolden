@@ -11,6 +11,7 @@ import {
   buildRetirementActionManualIntent,
   emptyRetirementActionManualEditorDraft,
   formatPositiveUsdCents,
+  RETIREMENT_ACTION_CONVERSION_EXECUTOR_BOUNDARY,
   retirementActionManualSourceSupportIssue,
 } from './retirementActionManualEditor'
 
@@ -168,6 +169,7 @@ describe('buildRetirementActionManualIntent', () => {
     )).toEqual({
       ok: false,
       issues: [
+        RETIREMENT_ACTION_CONVERSION_EXECUTOR_BOUNDARY,
         'Choose the exact Roth destination account.',
         'Enter a positive exact-cent tax-funding amount.',
         'Confirm that the external cash is available for conversion taxes.',
@@ -185,13 +187,9 @@ describe('buildRetirementActionManualIntent', () => {
       [],
       supportedPlan,
     )
-    expect(built).toMatchObject({
-      ok: true,
-      intent: {
-        kind: 'rothConversion',
-        destinationRothAccountId: 'roth-a',
-        taxFunding: { kind: 'externalCash', amount: 7, attested: true },
-      },
+    expect(built).toEqual({
+      ok: false,
+      issues: [RETIREMENT_ACTION_CONVERSION_EXECUTOR_BOUNDARY],
     })
   })
 
@@ -216,6 +214,7 @@ describe('buildRetirementActionManualIntent', () => {
     expect(result).toEqual({
       ok: false,
       issues: [
+        RETIREMENT_ACTION_CONVERSION_EXECUTOR_BOUNDARY,
         'Conversion-principal withholding is not supported. Choose external cash or no tax funding expected.',
       ],
     })
@@ -255,6 +254,7 @@ describe('buildRetirementActionManualIntent', () => {
       ok: false,
       issues: [
         'Employer-plan conversion sources are not supported until plan-availability evidence is modeled. Choose a traditional IRA.',
+        RETIREMENT_ACTION_CONVERSION_EXECUTOR_BOUNDARY,
       ],
     })
   })
