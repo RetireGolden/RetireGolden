@@ -12,7 +12,7 @@ import type {
   ExactLedgerConvergenceDiagnostics,
   ExactLedgerRecommendationSchedule,
   ExactLedgerScheduleAdjustment,
-  ExactLedgerTournament,
+  ExactLedgerTournamentSummary,
   ExactLedgerValidation,
 } from '@retiregolden/engine/projection/optimizePlan'
 import type { OptimizedSchedule } from '@retiregolden/engine/strategies/optimizer'
@@ -55,8 +55,8 @@ export interface OptimizeRequest {
 export interface OptimizeResult {
   schedule: OptimizedSchedule
   postProcessed: OptimizePostProcessing | null
-  /** Bounded simple-candidate tournament; contains no ProjectionResult, so it is structured-clone safe as-is. */
-  tournament: ExactLedgerTournament
+  /** Bounded simple-candidate tournament; authoritative ProjectionResult evidence stays engine-side. */
+  tournament: ExactLedgerTournamentSummary
   /** Convergence-loop diagnostics (Step 1); plain scalars, structured-clone safe. */
   convergence: ExactLedgerConvergenceDiagnostics
   /**

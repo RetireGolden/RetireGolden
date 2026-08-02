@@ -38,6 +38,9 @@ const { packForYear } = await import('@retiregolden/engine/params')
 const scenarioActionRowsDeepApi = await import('@retiregolden/engine/scenarios/actionRows')
 const actionsApi = await import('@retiregolden/engine/actions')
 const decisionsApi = await import('@retiregolden/engine/decisions')
+const optimizerAllocatedCandidateComparisonDeepApi = await import(
+  '@retiregolden/engine/projection/optimizerAllocatedCandidateComparison'
+)
 const qcdCandidateAdapterDeepApi = await import(
   '@retiregolden/engine/decisions/qcdCandidateAdapter'
 )
@@ -52,6 +55,10 @@ const ordinaryWithdrawalCandidateAdapterDeepApi = await import(
 )
 const rothConversionCandidateAdapterDeepApi = await import(
   '@retiregolden/engine/decisions/rothConversionCandidateAdapter'
+)
+assert.equal(
+  typeof optimizerAllocatedCandidateComparisonDeepApi.compareOptimizerAllocatedCandidate,
+  'function',
 )
 const ownedIraCoordinatorDeepApi = await import(
   '@retiregolden/engine/actions/ownedNonRothIraAnnualCandidateCoordinator'

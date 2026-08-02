@@ -10,6 +10,8 @@ import {
   optimizePlan,
   optimizePlanCoOptimizingClaimAge,
   type ExactLedgerPostProcessing,
+  type ExactLedgerTournament,
+  type ExactLedgerTournamentSummary,
   type OptimizePlanOptions,
 } from '@retiregolden/engine/projection/optimizePlan'
 import { combineTaxCalculators, createFederalTaxCalculator } from '@retiregolden/engine/tax/federalTax'
@@ -33,6 +35,22 @@ function summarizePostProcessing(postProcessed: ExactLedgerPostProcessing | null
       year: year.year,
       rothConversion: year.rothConversion,
     })),
+  }
+}
+
+function summarizeTournament(tournament: ExactLedgerTournament): ExactLedgerTournamentSummary {
+  const veto = tournament.retirementActionReadinessVeto
+  if (veto === null) return tournament
+  return {
+    ...tournament,
+    retirementActionReadinessVeto: {
+      reason: veto.reason,
+      vetoedWinnerSource: veto.vetoedWinnerSource,
+      vetoedCandidateId: veto.vetoedCandidateId,
+      vetoedCandidateLabel: veto.vetoedCandidateLabel,
+      vetoedConversions: veto.vetoedConversions,
+      vetoedValidation: veto.vetoedValidation,
+    },
   }
 }
 
@@ -85,9 +103,21 @@ export async function runOptimizeRequest(
       req.plan,
       planOptions,
     )
-    return { schedule, postProcessed: summarizePostProcessing(postProcessed), tournament, convergence, claimAge }
+    return {
+      schedule,
+      postProcessed: summarizePostProcessing(postProcessed),
+      tournament: summarizeTournament(tournament),
+      convergence,
+      claimAge,
+    }
   }
 
   const { schedule, postProcessed, tournament, convergence } = await optimizePlan(req.plan, planOptions)
-  return { schedule, postProcessed: summarizePostProcessing(postProcessed), tournament, convergence, claimAge: null }
+  return {
+    schedule,
+    postProcessed: summarizePostProcessing(postProcessed),
+    tournament: summarizeTournament(tournament),
+    convergence,
+    claimAge: null,
+  }
 }
