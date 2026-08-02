@@ -448,6 +448,18 @@ export {
   type HsaReimbursementPriorHistoryEvidence,
 } from './annualHsaReimbursementLedger.js'
 export {
+  classifyAnnualHsaWithdrawalCharacter,
+  type AnnualHsaWithdrawalCharacterAccepted,
+  type AnnualHsaWithdrawalCharacterIdentifierCollision,
+  type AnnualHsaWithdrawalCharacterLedgerBlocked,
+  type ClassifyAnnualHsaWithdrawalCharacterResult,
+  type HsaOrdinaryIncomeWithdrawalCharacter,
+  type HsaQualifiedTaxFreeWithdrawalCharacter,
+  type HsaWithdrawalAllocationCharacterCoverage,
+  type HsaWithdrawalCharacterEvidence,
+  type HsaWithdrawalTaxCharacter,
+} from './annualHsaWithdrawalCharacter.js'
+export {
   classifyOwnedNonRothIraAnnualWithdrawals,
   type ClassifyOwnedNonRothIraAnnualWithdrawalsInput,
   type ClassifyOwnedNonRothIraAnnualWithdrawalsResult,

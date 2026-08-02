@@ -78,6 +78,10 @@
       "types": "./dist/actions/annualOwnedNonRothIraPoolCapacity.d.ts",
       "default": "./dist/actions/annualOwnedNonRothIraPoolCapacity.js"
     },
+    "./actions/annualHsaWithdrawalCharacter": {
+      "types": "./dist/actions/annualHsaWithdrawalCharacter.d.ts",
+      "default": "./dist/actions/annualHsaWithdrawalCharacter.js"
+    },
     "./actions/annualQcdExecutionPrerequisite": {
       "types": "./dist/actions/annualQcdExecutionPrerequisite.d.ts",
       "default": "./dist/actions/annualQcdExecutionPrerequisite.js"
