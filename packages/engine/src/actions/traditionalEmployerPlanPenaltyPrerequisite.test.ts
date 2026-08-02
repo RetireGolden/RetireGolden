@@ -478,6 +478,19 @@ describe('traditional employer-plan penalty prerequisite', () => {
     },
   )
 
+  it('refuses a first SEPP payment with nonzero opening schedule totals', () => {
+    const value = input({ separationDate: '2029-12-31' })
+    const sepp = currentSepp(value)
+    sepp.payment.scheduledPaymentSequence = 1
+    sepp.payment.previousScheduleStateId = null
+    value.seppEvidence = sepp
+
+    expect(evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)).toMatchObject({
+      status: 'accepted',
+      evidence: { outcome: 'penaltyApplies', seppAssessment: { disposition: 'refused' } },
+    })
+  })
+
   it('binds unsupported evidence ID to the provisional SEPP assessment ID', () => {
     const firstInput = input({ separationDate: '2029-12-31' })
     firstInput.seppEvidence = currentSepp(firstInput)
@@ -749,6 +762,16 @@ describe('traditional employer-plan penalty prerequisite', () => {
     expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)).toThrow(/acyclic/)
   })
 
+  it.each([
+    ['Date', new Date('2030-01-01T00:00:00.000Z')],
+    ['Map', new Map([['authority', 'record']])],
+  ])('rejects non-plain %s metadata before deriving evidence identity', (_name, metadata) => {
+    const value = input({ separationDate: '2029-12-31' })
+    Reflect.set(value.otherExceptionAttestation!, 'metadata', metadata)
+
+    expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)).toThrow(/plain data/)
+  })
+
   it('clones nested attestation metadata before freezing returned evidence', () => {
     const value = input({ separationDate: '2029-12-31' })
     const metadata = { nested: { retained: true } }
@@ -829,6 +852,24 @@ describe('traditional employer-plan penalty prerequisite', () => {
     expect(firstResult.evidence.evidenceId).not.toBe(secondResult.evidence.evidenceId)
   })
 
+  it('binds validated account-balance facts into character coverage identity', () => {
+    const first = evaluateTraditionalEmployerPlanPenaltyPrerequisite(
+      input({ accountValue: 100, basis: 40 }),
+    )
+    const second = evaluateTraditionalEmployerPlanPenaltyPrerequisite(
+      input({ accountValue: 200, basis: 80 }),
+    )
+
+    expect(first.evidence.characterCoverage).toMatchObject({
+      executedAmount: 60, basisReturnExcludedAmount: 24, taxableTreatmentAmount: 36,
+    })
+    expect(second.evidence.characterCoverage).toMatchObject({
+      executedAmount: 60, basisReturnExcludedAmount: 24, taxableTreatmentAmount: 36,
+    })
+    expect(first.evidence.characterCoverage.evidenceId)
+      .not.toBe(second.evidence.characterCoverage.evidenceId)
+  })
+
   it('rejects accepted source availability dated before participant birth', () => {
     const value = input({ birthDate: '1970-01-01', separationDate: null })
     value.characterization = structuredClone(value.characterization)
@@ -853,6 +894,23 @@ describe('traditional employer-plan penalty prerequisite', () => {
     sepp.payment.currentDistributionGrossAmount = asUsdCents(
       sepp.payment.currentDistributionGrossAmount - 1,
     )
+    sepp.payment.currentDistributionEvidenceId = value.separationEvidence!.separationEvidenceId
+    value.seppEvidence = sepp
+
+    expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)).toThrow(/distinct evidence IDs/)
+  })
+
+  it('rejects reused negative IDs before missing-attestation unsupported return', () => {
+    const value = input({ separationDate: '2029-12-31' })
+    value.otherExceptionAttestation = null
+    Reflect.set(value.seppEvidence!, 'seppStatusEvidenceId', value.separationEvidence!.separationEvidenceId)
+
+    expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)).toThrow(/distinct evidence IDs/)
+  })
+
+  it('rejects reused negative IDs before provisional-SEPP unsupported return', () => {
+    const value = input({ separationDate: '2029-12-31' })
+    const sepp = currentSepp(value)
     sepp.payment.currentDistributionEvidenceId = value.separationEvidence!.separationEvidenceId
     value.seppEvidence = sepp
 

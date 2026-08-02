@@ -131,12 +131,10 @@ export interface TraditionalEmployerPlanRuleOf55Assessment {
 }
 
 export interface TraditionalEmployerPlanSeppAssessment {
-  exception: 'employerPlanSepp'
-  disposition: 'provisional' | 'refused'
+  exception: 'employerPlanSepp'; disposition: 'provisional' | 'refused'
   characterCoverageEvidenceId: string; characterEvidenceIds: readonly string[]
   authorityEvidenceIds: readonly string[]
-  statusEvidence: Readonly<TraditionalEmployerPlanSeppEvidence>
-  evidenceId: string
+  statusEvidence: Readonly<TraditionalEmployerPlanSeppEvidence>; evidenceId: string
 }
 
 export interface TraditionalEmployerPlanOtherExceptionAssessment {
@@ -223,7 +221,7 @@ function structural(value: unknown, ancestors = new WeakSet<object>()): unknown 
   if (typeof value === 'bigint') return ['bigint', value.toString()]
   if (typeof value === 'number') return ['number', Number.isFinite(value) ? (Object.is(value, -0) ? '-0' : value) : String(value)]
   if (typeof value !== 'object') return [typeof value, typeof value === 'symbol' || typeof value === 'function' ? String(value) : value]
-  if (ancestors.has(value)) throw new TypeError('Employer penalty evidence must be acyclic')
+  if (ancestors.has(value) || (!Array.isArray(value) && Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(value) !== null)) throw new TypeError('Employer penalty evidence must be acyclic plain data')
   ancestors.add(value)
   const result = Array.isArray(value) ? ['array', value.map((entry) => structural(entry, ancestors))] : ['object', Object.keys(value).sort().map((key) => [key, structural((value as Record<string, unknown>)[key], ancestors)])]
   ancestors.delete(value)
@@ -233,6 +231,8 @@ function structural(value: unknown, ancestors = new WeakSet<object>()): unknown 
 function stableId(prefix: string, parts: readonly unknown[]): string {
   return `${prefix}:${JSON.stringify(structural(parts))}`
 }
+
+function requireDistinctEvidenceIds(ids: readonly string[]): void { if (new Set(ids).size !== ids.length) throw new RangeError('Negative employer-penalty facts must use distinct evidence IDs') }
 
 function deepFreeze<T>(value: T, visited = new WeakSet<object>()): Readonly<T> {
   if (value !== null && typeof value === 'object' && !visited.has(value)) {
@@ -334,7 +334,7 @@ function characterCoverage(
 
   const evidenceId = stableId('employer-penalty-character-coverage', [
     identity, executedAmount, basisReturnExcludedAmount, taxableTreatmentAmount,
-    availability, basis.basisEvidenceId, characterEvidenceIds,
+    availability, preDistributionAccountValue, afterTaxBasis, basis.basisEvidenceId, characterEvidenceIds,
   ])
   return {
     predicate: 'completeEmployerPlanPenaltyCharacterCoverageForAllocation',
@@ -440,7 +440,7 @@ function seppAssessment(
   const scheduledAfter = usdCentsSchema.parse(payment.scheduledGrossAmountThroughAfter)
   const actualAfter = usdCentsSchema.parse(payment.actualQualifyingGrossAmountPaidAfter)
   const qualified =
-    noModificationDate >= identity.evaluationDate &&
+    noModificationDate >= identity.evaluationDate && (payment.scheduledPaymentSequence !== 1 || (scheduledBefore === 0 && actualBefore === 0)) &&
     scheduledBefore === actualBefore &&
     currentScheduled === coverage.executedAmount &&
     currentGross === coverage.executedAmount &&
@@ -615,8 +615,10 @@ export function evaluateTraditionalEmployerPlanPenaltyPrerequisite(
       if (rule55Qualified) outcome = 'ruleOf55Qualified'
       else {
         if (disability === null) return unsupported(identity, coverage, ageEvidence, 'disability', null, ruleOf55Assessment)
+        requireDistinctEvidenceIds([separation.separationEvidenceId, disability.disabilityEvidenceId])
         if (input.seppEvidence === null) return unsupported(identity, coverage, ageEvidence, 'sepp', null, ruleOf55Assessment, null, disability)
         sepp = seppAssessment(input.seppEvidence, identity, separationDate, coverage)
+        requireDistinctEvidenceIds([separation.separationEvidenceId, disability.disabilityEvidenceId, ...sepp.authorityEvidenceIds])
         if (sepp.disposition === 'provisional') {
           return unsupported(
             identity,
@@ -634,8 +636,7 @@ export function evaluateTraditionalEmployerPlanPenaltyPrerequisite(
             return unsupported(identity, coverage, ageEvidence, 'otherExceptionAttestation', null, ruleOf55Assessment, sepp, disability)
           }
           other = otherAssessment(input.otherExceptionAttestation, identity)
-          const negativeIds = [separation.separationEvidenceId, disability.disabilityEvidenceId, other.attestation.attestationEvidenceId, ...sepp.authorityEvidenceIds]
-          if (new Set(negativeIds).size !== negativeIds.length) throw new RangeError('Negative employer-penalty facts must use distinct evidence IDs')
+          requireDistinctEvidenceIds([separation.separationEvidenceId, disability.disabilityEvidenceId, other.attestation.attestationEvidenceId, ...sepp.authorityEvidenceIds])
           if (other.disposition === 'unsupported') {
             return unsupported(identity, coverage, ageEvidence, 'otherExceptionAdjudication', other.attestation, ruleOf55Assessment, sepp, disability)
           }
