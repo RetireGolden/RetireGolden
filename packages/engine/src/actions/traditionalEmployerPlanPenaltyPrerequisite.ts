@@ -51,7 +51,7 @@ export interface TraditionalEmployerPlanSeppCurrentPaymentEvidence
   election: Readonly<{
     electionId: string
     scheduleId: string
-    method: 'rmd' | 'amortization'
+    method: 'rmd' | 'amortization' | 'fixedAnnuitization'
     electionStartDate: string
     participantPersonId: PersonId
     sourceAccountId: AccountId
@@ -77,8 +77,7 @@ export interface TraditionalEmployerPlanSeppCurrentPaymentEvidence
   }>
 }
 
-export type TraditionalEmployerPlanSeppEvidence = TraditionalEmployerPlanNoSeppEvidence |
-  TraditionalEmployerPlanSeppCurrentPaymentEvidence
+export type TraditionalEmployerPlanSeppEvidence = TraditionalEmployerPlanNoSeppEvidence | TraditionalEmployerPlanSeppCurrentPaymentEvidence
 
 export interface TraditionalEmployerPlanOtherExceptionAttestation extends EmployerPenaltyIdentity {
   predicate: 'otherEmployerPlanPenaltyExceptionAttestation'
@@ -196,6 +195,7 @@ export interface UnsupportedTraditionalEmployerPlanPenaltyEvidence extends Emplo
   missingEvidence: TraditionalEmployerPlanPenaltyMissingEvidence
   characterCoverage: Readonly<TraditionalEmployerPlanPenaltyCharacterCoverageEvidence>
   ageEvidence: Readonly<TraditionalEmployerPlanPenaltyAgeEvidence>
+  ruleOf55Assessment: Readonly<TraditionalEmployerPlanRuleOf55Assessment> | null
   otherExceptionAttestation: Readonly<TraditionalEmployerPlanOtherExceptionAttestation> | null
   seppAssessment: Readonly<TraditionalEmployerPlanSeppAssessment> | null
   evidenceId: string
@@ -217,8 +217,7 @@ export interface UnsupportedTraditionalEmployerPlanPenaltyResult {
   evidence: Readonly<UnsupportedTraditionalEmployerPlanPenaltyEvidence>
 }
 
-export type EvaluateTraditionalEmployerPlanPenaltyPrerequisiteResult = AcceptedTraditionalEmployerPlanPenaltyResult |
-  UnsupportedTraditionalEmployerPlanPenaltyResult
+export type EvaluateTraditionalEmployerPlanPenaltyPrerequisiteResult = AcceptedTraditionalEmployerPlanPenaltyResult | UnsupportedTraditionalEmployerPlanPenaltyResult
 
 function nonblank(value: unknown, label: string): string {
   if (typeof value !== 'string' || value.trim().length === 0) {
@@ -280,12 +279,8 @@ function characterCoverage(
   const executedAmount = usdCentsSchema.parse(basis.executedAmount)
   const basisReturnExcludedAmount = usdCentsSchema.parse(basis.basisRecoveredAmount)
   const ordinaryIncomeAmount = usdCentsSchema.parse(basis.ordinaryIncomeAmount)
-  const preDistributionAccountValue = positiveUsdCentsSchema.parse(
-    basis.preDistributionAccountValue,
-  )
-  const afterTaxBasis = usdCentsSchema.parse(
-    basis.afterTaxEmployeeBasisBeforeDistribution,
-  )
+  const preDistributionAccountValue = positiveUsdCentsSchema.parse(basis.preDistributionAccountValue)
+  const afterTaxBasis = usdCentsSchema.parse(basis.afterTaxEmployeeBasisBeforeDistribution)
   const exactBasisReturn = exactCentProRataNearestHalfUp(
     BigInt(executedAmount),
     BigInt(afterTaxBasis),
@@ -362,6 +357,7 @@ function characterCoverage(
 function disabilityEvidence(
   value: EvaluateTraditionalEmployerPlanPenaltyPrerequisiteInput['disabilityEvidence'],
   identity: EmployerPenaltyIdentity,
+  birthDate: string,
 ): QualifiedDisabilityEventEvidence | RejectedDisabilityStatusEvidence | null {
   if (value === null) return null
   if (value.qualifiedOnEvaluationDate !== true && value.qualifiedOnEvaluationDate !== false) {
@@ -375,6 +371,7 @@ function disabilityEvidence(
     personIdSchema.parse(value.disabledPersonId) !== identity.participantPersonId ||
     civilDate(value.evaluationDate, 'Disability evaluation date') !== identity.evaluationDate ||
     !nonblank(value.disabilityEvidenceId, 'Disability evidence ID') ||
+    (qualificationDate !== null && qualificationDate < birthDate) ||
     (value.qualifiedOnEvaluationDate && (qualificationDate === null || qualificationDate > identity.evaluationDate)) ||
     (!value.qualifiedOnEvaluationDate && qualificationDate !== null && qualificationDate <= identity.evaluationDate)
   ) throw new RangeError('Disability evidence must exactly bind dated participant status')
@@ -419,7 +416,7 @@ function seppAssessment(
   if (
     nonblank(election.electionId, 'Employer SEPP election ID') !== election.electionId ||
     !nonblank(election.scheduleId, 'Employer SEPP schedule ID') ||
-    (election.method !== 'rmd' && election.method !== 'amortization') ||
+    (election.method !== 'rmd' && election.method !== 'amortization' && election.method !== 'fixedAnnuitization') ||
     election.participantPersonId !== identity.participantPersonId ||
     election.sourceAccountId !== identity.sourceAccountId ||
     !nonblank(election.electionEvidenceId, 'Employer SEPP election evidence ID') ||
@@ -501,6 +498,7 @@ function unsupported(
   ageEvidence: TraditionalEmployerPlanPenaltyAgeEvidence,
   missingEvidence: TraditionalEmployerPlanPenaltyMissingEvidence,
   other: Readonly<TraditionalEmployerPlanOtherExceptionAttestation> | null,
+  ruleOf55: Readonly<TraditionalEmployerPlanRuleOf55Assessment> | null = null,
   sepp: Readonly<TraditionalEmployerPlanSeppAssessment> | null = null,
 ): Readonly<UnsupportedTraditionalEmployerPlanPenaltyResult> {
   const code = missingEvidence === 'separation'
@@ -515,11 +513,12 @@ function unsupported(
     missingEvidence,
     characterCoverage: coverage,
     ageEvidence,
+    ruleOf55Assessment: ruleOf55,
     otherExceptionAttestation: other === null ? null : { ...other },
     seppAssessment: sepp,
     evidenceId: stableId('employer-penalty-unsupported', [
       identity, coverage.evidenceId, ageEvidence.evidenceId, missingEvidence,
-      other, sepp?.evidenceId ?? null,
+      ruleOf55?.evidenceId ?? null, other, sepp?.evidenceId ?? null,
     ]),
   }
   return deepFreeze({
@@ -583,7 +582,7 @@ export function evaluateTraditionalEmployerPlanPenaltyPrerequisite(
   let finalPenaltyAmount = asUsdCents(0)
 
   if (taxableTreatmentAmount > 0 && identity.evaluationDate < age59HalfDate) {
-    disability = disabilityEvidence(input.disabilityEvidence, identity)
+    disability = disabilityEvidence(input.disabilityEvidence, identity, birthDate)
     if (disability?.qualifiedOnEvaluationDate) outcome = 'disabilityQualified'
     else {
       const separation = input.separationEvidence
@@ -618,8 +617,8 @@ export function evaluateTraditionalEmployerPlanPenaltyPrerequisite(
       }
       if (rule55Qualified) outcome = 'ruleOf55Qualified'
       else {
-        if (disability === null) return unsupported(identity, coverage, ageEvidence, 'disability', null)
-        if (input.seppEvidence === null) return unsupported(identity, coverage, ageEvidence, 'sepp', null)
+        if (disability === null) return unsupported(identity, coverage, ageEvidence, 'disability', null, ruleOf55Assessment)
+        if (input.seppEvidence === null) return unsupported(identity, coverage, ageEvidence, 'sepp', null, ruleOf55Assessment)
         sepp = seppAssessment(input.seppEvidence, identity, separationDate, coverage)
         if (sepp.disposition === 'provisional') {
           return unsupported(
@@ -628,16 +627,17 @@ export function evaluateTraditionalEmployerPlanPenaltyPrerequisite(
             ageEvidence,
             'seppAnnualReconciliation',
             null,
+            ruleOf55Assessment,
             sepp,
           )
         }
         else {
           if (input.otherExceptionAttestation === null) {
-            return unsupported(identity, coverage, ageEvidence, 'otherExceptionAttestation', null)
+            return unsupported(identity, coverage, ageEvidence, 'otherExceptionAttestation', null, ruleOf55Assessment)
           }
           other = otherAssessment(input.otherExceptionAttestation, identity)
           if (other.disposition === 'unsupported') {
-            return unsupported(identity, coverage, ageEvidence, 'otherExceptionAdjudication', other.attestation)
+            return unsupported(identity, coverage, ageEvidence, 'otherExceptionAdjudication', other.attestation, ruleOf55Assessment)
           }
           outcome = 'penaltyApplies'
           rateEvidence = {

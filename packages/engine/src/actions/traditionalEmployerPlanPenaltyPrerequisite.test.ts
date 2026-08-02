@@ -375,14 +375,23 @@ describe('traditional employer-plan penalty prerequisite', () => {
   })
 
   it('fails closed when disability status is missing after Rule of 55 rejection', () => {
-    const value = input({ separationDate: '2029-12-31' })
-    value.disabilityEvidence = null
+    const firstInput = input({ separationDate: '2029-12-31' })
+    firstInput.disabilityEvidence = null
+    const secondInput = input({ separationDate: '2029-12-30' })
+    secondInput.disabilityEvidence = null
 
-    expect(evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)).toMatchObject({
+    const first = evaluateTraditionalEmployerPlanPenaltyPrerequisite(firstInput)
+    const second = evaluateTraditionalEmployerPlanPenaltyPrerequisite(secondInput)
+    expect(first).toMatchObject({
       status: 'unsupported',
       reasons: [{ code: 'withdrawal-penalty-evidence-missing' }],
-      evidence: { missingEvidence: 'disability' },
+      evidence: {
+        missingEvidence: 'disability',
+        ruleOf55Assessment: { disposition: 'refused', separationDate: '2029-12-31' },
+      },
     })
+    expect(second.evidence.ruleOf55Assessment).toMatchObject({ separationDate: '2029-12-30' })
+    expect(first.evidence.evidenceId).not.toBe(second.evidence.evidenceId)
   })
 
   it('rejects a future date serialized as currently qualified disability', () => {
@@ -400,25 +409,45 @@ describe('traditional employer-plan penalty prerequisite', () => {
       .toThrow(/dated participant status/)
   })
 
-  it('keeps a conforming current SEPP payment provisional for annual reconciliation', () => {
-    const value = input({ separationDate: '2029-12-31' })
-    value.seppEvidence = currentSepp(value)
+  it('rejects disability qualification evidence dated before participant birth', () => {
+    const value = input({ separationDate: null })
+    value.disabilityEvidence = {
+      kind: 'disability',
+      disabledPersonId: ids.participantPersonId,
+      disabilityQualificationDate: '1975-06-14',
+      evaluationDate: value.evaluationDate,
+      qualifiedOnEvaluationDate: true,
+      disabilityEvidenceId: 'pre-birth-disability',
+    }
 
-    expect(evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)).toMatchObject({
-      status: 'unsupported',
-      reasons: [{ code: 'withdrawal-sepp-evidence-missing' }],
-      evidence: {
-        outcome: 'unsupported',
-        missingEvidence: 'seppAnnualReconciliation',
-        seppAssessment: {
-          disposition: 'provisional',
-          characterCoverageEvidenceId: expect.stringMatching(/^employer-penalty-character-coverage:/),
-          characterEvidenceIds: expect.any(Array),
-        },
-      },
-    })
-    expect(Object.isFrozen(value.seppEvidence)).toBe(false)
+    expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(value))
+      .toThrow(/dated participant status/)
   })
+
+  it.each(['rmd', 'amortization', 'fixedAnnuitization'] as const)(
+    'keeps a conforming %s current SEPP payment provisional for annual reconciliation',
+    (method) => {
+      const value = input({ separationDate: '2029-12-31' })
+      const sepp = currentSepp(value)
+      sepp.election.method = method
+      value.seppEvidence = sepp
+
+      expect(evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)).toMatchObject({
+        status: 'unsupported',
+        reasons: [{ code: 'withdrawal-sepp-evidence-missing' }],
+        evidence: {
+          outcome: 'unsupported',
+          missingEvidence: 'seppAnnualReconciliation',
+          seppAssessment: {
+            disposition: 'provisional',
+            characterCoverageEvidenceId: expect.stringMatching(/^employer-penalty-character-coverage:/),
+            characterEvidenceIds: expect.any(Array),
+          },
+        },
+      })
+      expect(Object.isFrozen(value.seppEvidence)).toBe(false)
+    },
+  )
 
   it('binds unsupported evidence ID to the provisional SEPP assessment ID', () => {
     const firstInput = input({ separationDate: '2029-12-31' })
