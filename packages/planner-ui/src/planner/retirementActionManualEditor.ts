@@ -24,6 +24,8 @@ import {
 } from '@retiregolden/engine/actions/planBalanceAdapter'
 import { addCalendarMonths, parseCivilIsoDate } from '@retiregolden/engine/actions/civilDate'
 import type { Plan } from '@retiregolden/engine/model/plan'
+import { simulatePlan } from '@retiregolden/engine/projection/simulate'
+import type { TaxCalculator } from '@retiregolden/engine/projection/types'
 import type {
   NonpersistedActionPersonAliveEvidence,
 } from '@retiregolden/engine/strategies/accountEligibility'
@@ -215,6 +217,8 @@ function hasUnambiguousProjectedTaxUnit(
 export function retirementActionManualExecutionIssue(
   plan: Readonly<Plan>,
   replacementActionId: string,
+  projectionStartYear: number,
+  taxCalculator: TaxCalculator,
 ): string | null {
   const replacements = plan.strategies.retirementActions.filter(
     (action) => action.actionId === replacementActionId,
@@ -357,6 +361,33 @@ export function retirementActionManualExecutionIssue(
     (accountId) => sourceIds.has(String(accountId)),
   )) {
     return 'This withdrawal would make a same-year retirement-action total that cannot be represented exactly in the Plan. Choose another source or amount.'
+  }
+
+  if (replacement.year < projectionStartYear) {
+    return `The reviewed withdrawal is scheduled before the current projection starts in ${projectionStartYear}, so its action-year source state cannot be established. The migrated row remains under review.`
+  }
+  let projectedExecution: ReturnType<typeof executeOrdinaryWithdrawals> | undefined
+  try {
+    const projection = simulatePlan(structuredClone(plan), {
+      startYear: projectionStartYear,
+      horizonEndYear: replacement.year,
+      taxCalculator,
+    })
+    const projectedYear = projection.years.find((year) => year.year === replacement.year)
+    projectedExecution = projectedYear?.retirementActionExecution
+  } catch {
+    return 'The reviewed withdrawal could not be previewed through its projected action-year source state. The migrated row remains under review.'
+  }
+  const projectedEvidence = projectedExecution?.evidence.find(
+    (entry) => entry.actionId === replacement.actionId,
+  )
+  if (
+    projectedExecution?.committed !== true ||
+    projectedEvidence === undefined ||
+    projectedEvidence.readiness !== 'actionable' ||
+    projectedEvidence.disposition.executedAmount <= 0
+  ) {
+    return 'The reviewed withdrawal would execute no funds from its projected action-year source state after prior-year activity. Choose another source or keep the migrated row under review.'
   }
   return null
 }

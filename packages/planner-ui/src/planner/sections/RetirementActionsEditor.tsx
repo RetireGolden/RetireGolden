@@ -5,6 +5,7 @@ import { reviewAndReplaceRetirementActionManually } from
 import type { Plan } from '@retiregolden/engine/model/plan'
 
 import { usePlan } from '../planContextCore'
+import { currentStartYear, taxCalculatorFor } from '../useProjection'
 import {
   CheckboxField,
   DateField,
@@ -173,6 +174,8 @@ function ManualReviewRow({
     const executionIssue = retirementActionManualExecutionIssue(
       result.plan,
       result.replacement.actionId,
+      currentStartYear(),
+      taxCalculatorFor(result.plan),
     )
     if (executionIssue !== null) {
       setIssues([executionIssue])

@@ -78,7 +78,7 @@ function editorPlan(): Plan {
       name: 'Cash reserve',
       ownerPersonId: owner.id,
       annualReturnPct: null,
-      balance: 20_000,
+      balance: 10_000_000,
       annualContribution: 0,
     },
     {
@@ -112,6 +112,19 @@ function editorPlan(): Plan {
     sepSimpleActivities: [],
     deductibleIraContributions: [],
   }
+  plan.incomes = []
+  plan.insurance = []
+  plan.careEvents = []
+  plan.expenses.baseAnnual = 0
+  plan.expenses.phases = []
+  plan.expenses.oneTimeGoals = []
+  plan.expenses.healthcare.pre65MonthlyPremiumPerPerson = 0
+  plan.expenses.healthcare.applyAcaCredit = false
+  plan.expenses.healthcare.medicareExtrasMonthlyPerPerson = 0
+  plan.strategies.rothConversion = { mode: 'none' }
+  plan.assumptions.defaultReturnPct = 0
+  plan.assumptions.inflationPct = 0
+  plan.assumptions.healthcareExtraInflationPct = 0
   plan.strategies.retirementActions = []
   return plan
 }
