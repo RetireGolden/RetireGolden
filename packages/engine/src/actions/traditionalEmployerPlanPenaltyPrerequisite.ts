@@ -586,39 +586,39 @@ export function evaluateTraditionalEmployerPlanPenaltyPrerequisite(
     disability = disabilityEvidence(input.disabilityEvidence, identity)
     if (disability?.qualifiedOnEvaluationDate) outcome = 'disabilityQualified'
     else {
-    const separation = input.separationEvidence
-    if (separation === null) return unsupported(identity, coverage, ageEvidence, 'separation', null)
-    const separationDate = civilDate(separation.separationDate, 'Employer separation date')
-    if (
-      separation.predicate !== 'sponsoringEmployerSeparationForPenalty' ||
-      separation.sourceAccountId !== identity.sourceAccountId ||
-      separation.participantPersonId !== identity.participantPersonId ||
-      separation.authoritative !== true ||
-      !nonblank(separation.separationEvidenceId, 'Employer separation evidence ID')
-    ) throw new RangeError('Separation evidence must bind the named sponsoring plan and participant')
-    const availability = input.characterization.acceptedSourceEligibility.availabilityEvidence
-    if (
-      availability.eventKind === 'separationFromService' &&
-      availability.eventDate !== separationDate
-    ) throw new RangeError('Penalty separation date must equal accepted source-availability evidence')
-    const separationYear = Number(separationDate.slice(0, 4))
-    const rule55Qualified = separationDate <= identity.evaluationDate &&
-      separationYear >= ageEvidence.calendarYearParticipantAttains55
-    ruleOf55Assessment = {
-      exception: 'ruleOf55',
-      disposition: rule55Qualified ? 'accepted' : 'refused',
-      sourceAccountId: identity.sourceAccountId,
-      participantPersonId: identity.participantPersonId,
-      evaluationDate: identity.evaluationDate,
-      separationDate,
-      separationYear,
-      calendarYearParticipantAttains55: ageEvidence.calendarYearParticipantAttains55,
-      separationEvidenceId: separation.separationEvidenceId,
-      evidenceId: stableId('employer-rule-of-55', [identity, separation, ageEvidence.evidenceId, rule55Qualified]),
-    }
-    if (rule55Qualified) outcome = 'ruleOf55Qualified'
-    else {
-      if (disability === null) return unsupported(identity, coverage, ageEvidence, 'disability', null)
+      const separation = input.separationEvidence
+      if (separation === null) return unsupported(identity, coverage, ageEvidence, 'separation', null)
+      const separationDate = civilDate(separation.separationDate, 'Employer separation date')
+      if (
+        separation.predicate !== 'sponsoringEmployerSeparationForPenalty' ||
+        separation.sourceAccountId !== identity.sourceAccountId ||
+        separation.participantPersonId !== identity.participantPersonId ||
+        separation.authoritative !== true ||
+        !nonblank(separation.separationEvidenceId, 'Employer separation evidence ID')
+      ) throw new RangeError('Separation evidence must bind the named sponsoring plan and participant')
+      const availability = input.characterization.acceptedSourceEligibility.availabilityEvidence
+      if (
+        availability.eventKind === 'separationFromService' &&
+        availability.eventDate !== separationDate
+      ) throw new RangeError('Penalty separation date must equal accepted source-availability evidence')
+      const separationYear = Number(separationDate.slice(0, 4))
+      const rule55Qualified = separationDate <= identity.evaluationDate &&
+        separationYear >= ageEvidence.calendarYearParticipantAttains55
+      ruleOf55Assessment = {
+        exception: 'ruleOf55',
+        disposition: rule55Qualified ? 'accepted' : 'refused',
+        sourceAccountId: identity.sourceAccountId,
+        participantPersonId: identity.participantPersonId,
+        evaluationDate: identity.evaluationDate,
+        separationDate,
+        separationYear,
+        calendarYearParticipantAttains55: ageEvidence.calendarYearParticipantAttains55,
+        separationEvidenceId: separation.separationEvidenceId,
+        evidenceId: stableId('employer-rule-of-55', [identity, separation, ageEvidence.evidenceId, rule55Qualified]),
+      }
+      if (rule55Qualified) outcome = 'ruleOf55Qualified'
+      else {
+        if (disability === null) return unsupported(identity, coverage, ageEvidence, 'disability', null)
         if (input.seppEvidence === null) return unsupported(identity, coverage, ageEvidence, 'sepp', null)
         sepp = seppAssessment(input.seppEvidence, identity, separationDate, coverage)
         if (sepp.disposition === 'provisional') {
@@ -651,7 +651,7 @@ export function evaluateTraditionalEmployerPlanPenaltyPrerequisite(
           const product = BigInt(taxableTreatmentAmount)
           finalPenaltyAmount = asUsdCents(Number(product / 10n + (product % 10n >= 5n ? 1n : 0n)))
         }
-    }
+      }
     }
   }
 
