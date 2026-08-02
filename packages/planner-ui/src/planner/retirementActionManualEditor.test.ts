@@ -11,6 +11,7 @@ import {
   buildRetirementActionManualIntent,
   emptyRetirementActionManualEditorDraft,
   formatPositiveUsdCents,
+  retirementActionManualSourceSupportIssue,
 } from './retirementActionManualEditor'
 
 function migrated(
@@ -56,16 +57,39 @@ function scheduledAction(executionDate: string, executionSequence: number) {
   return result.request
 }
 
-const supportedPlanAccounts: Plan['accounts'] = [{
-  type: 'traditional',
-  id: 'ira-a',
-  name: 'Traditional IRA',
-  ownerPersonId: 'person-a',
-  annualReturnPct: null,
-  kind: 'ira',
-  balance: 100_000,
-  annualContribution: 0,
-}]
+const supportedPlan: Pick<Plan, 'accounts' | 'retirementActionEligibilityFacts'> = {
+  accounts: [
+    {
+      type: 'cash',
+      id: 'cash-a',
+      name: 'Cash',
+      ownerPersonId: 'person-a',
+      annualReturnPct: null,
+      balance: 10_000,
+      annualContribution: 0,
+    },
+    {
+      type: 'traditional',
+      id: 'ira-a',
+      name: 'Traditional IRA',
+      ownerPersonId: 'person-a',
+      annualReturnPct: null,
+      kind: 'ira',
+      balance: 100_000,
+      annualContribution: 0,
+    },
+  ],
+  retirementActionEligibilityFacts: {
+    iraClassifications: [{
+      evidenceId: 'ira-a-classification',
+      provenance: { source: 'manual' },
+      sourceAccountId: 'ira-a',
+      subtype: 'traditional',
+    }],
+    sepSimpleActivities: [],
+    deductibleIraContributions: [],
+  },
+}
 
 describe('buildRetirementActionManualIntent', () => {
   it('starts fail-closed and does not infer a person, account, date, sequence, or purpose', () => {
@@ -73,7 +97,7 @@ describe('buildRetirementActionManualIntent', () => {
       migrated('legacyAggregateWithdrawal'),
       emptyRetirementActionManualEditorDraft(),
       [],
-      supportedPlanAccounts,
+      supportedPlan,
     )
 
     expect(result).toEqual({
@@ -94,7 +118,7 @@ describe('buildRetirementActionManualIntent', () => {
     const draft = {
       ...emptyRetirementActionManualEditorDraft(),
       personId: 'person-a',
-      sourceAccountId: 'ira-a',
+      sourceAccountId: 'cash-a',
       fullSourceAmountConfirmed: true,
       executionDate: '2034-06-15',
       executionSequence: '7',
@@ -105,7 +129,7 @@ describe('buildRetirementActionManualIntent', () => {
       target,
       draft,
       [],
-      supportedPlanAccounts,
+      supportedPlan,
     )).toEqual({
       ok: true,
       intent: {
@@ -117,7 +141,7 @@ describe('buildRetirementActionManualIntent', () => {
         personId: 'person-a',
         provenance: { source: 'manual' },
         sourceAllocations: [{
-          sourceAccountId: 'ira-a',
+          sourceAccountId: 'cash-a',
           requestedAmount: target.requestedAmount,
         }],
         purpose: { kind: 'taxPayment' },
@@ -140,7 +164,7 @@ describe('buildRetirementActionManualIntent', () => {
       target,
       incomplete,
       [],
-      supportedPlanAccounts,
+      supportedPlan,
     )).toEqual({
       ok: false,
       issues: [
@@ -159,7 +183,7 @@ describe('buildRetirementActionManualIntent', () => {
         externalCashAttested: true,
       },
       [],
-      supportedPlanAccounts,
+      supportedPlan,
     )
     expect(built).toMatchObject({
       ok: true,
@@ -186,7 +210,7 @@ describe('buildRetirementActionManualIntent', () => {
         conversionTaxFunding: 'conversionPrincipalWithholding',
       },
       [],
-      supportedPlanAccounts,
+      supportedPlan,
     )
 
     expect(result).toEqual({
@@ -199,16 +223,19 @@ describe('buildRetirementActionManualIntent', () => {
 
   it('rejects an employer-plan conversion source before replacement', () => {
     const target = migrated('legacyAggregateRothConversion')
-    const employerAccounts: Plan['accounts'] = [{
-      type: 'traditional',
-      id: 'employer-401k',
-      name: 'Employer 401(k)',
-      ownerPersonId: 'person-a',
-      annualReturnPct: null,
-      kind: 'employer',
-      balance: 100_000,
-      annualContribution: 0,
-    }]
+    const employerPlan: Pick<Plan, 'accounts' | 'retirementActionEligibilityFacts'> = {
+      accounts: [{
+        type: 'traditional',
+        id: 'employer-401k',
+        name: 'Employer 401(k)',
+        ownerPersonId: 'person-a',
+        annualReturnPct: null,
+        kind: 'employer',
+        balance: 100_000,
+        annualContribution: 0,
+      }],
+      retirementActionEligibilityFacts: undefined,
+    }
 
     expect(buildRetirementActionManualIntent(
       target,
@@ -223,7 +250,7 @@ describe('buildRetirementActionManualIntent', () => {
         conversionTaxFunding: 'noneExpected',
       },
       [],
-      employerAccounts,
+      employerPlan,
     )).toEqual({
       ok: false,
       issues: [
@@ -232,12 +259,131 @@ describe('buildRetirementActionManualIntent', () => {
     })
   })
 
+  it('pins the public manual-review source support matrix', () => {
+    const owner = 'person-a'
+    const ordinaryAccounts: Plan['accounts'] = [
+      supportedPlan.accounts[0]!,
+      {
+        type: 'taxable', id: 'taxable-a', name: 'Taxable', ownerPersonId: owner,
+        annualReturnPct: null, balance: 10_000, costBasis: 8_000, annualContribution: 0,
+      },
+      {
+        type: 'equityComp', id: 'equity-final', name: 'Vested equity', ownerPersonId: owner,
+        annualReturnPct: null, balance: 10_000, costBasis: 8_000, annualContribution: 0,
+        vestingMode: 'final', vestDate: null,
+      },
+      {
+        type: 'equityComp', id: 'equity-cliff', name: 'Cliff equity', ownerPersonId: owner,
+        annualReturnPct: null, balance: 10_000, costBasis: 8_000, annualContribution: 0,
+        vestingMode: 'cliff', vestDate: '2034-09-01',
+      },
+      supportedPlan.accounts[1]!,
+      {
+        type: 'roth', id: 'roth-a', name: 'Roth IRA', ownerPersonId: owner,
+        annualReturnPct: null, kind: 'ira', balance: 10_000, annualContribution: 0,
+      },
+      {
+        type: 'hsa', id: 'hsa-a', name: 'HSA', ownerPersonId: owner,
+        annualReturnPct: null, balance: 10_000, annualContribution: 0,
+      },
+    ]
+    const ordinaryPlan = { ...supportedPlan, accounts: ordinaryAccounts }
+    expect(ordinaryAccounts.map((account) =>
+      retirementActionManualSourceSupportIssue(
+        'legacyAggregateWithdrawal', account, '2034-06-15', ordinaryPlan,
+      ) === null,
+    )).toEqual([true, true, true, false, false, false, false])
+    expect(retirementActionManualSourceSupportIssue(
+      'legacyAggregateWithdrawal', ordinaryAccounts[3]!, '2034-09-01', ordinaryPlan,
+    )).toBeNull()
+
+    const conversionAccounts: Plan['accounts'] = [
+      ...(['traditional', 'sep', 'simple', 'simple'] as const).map((subtype, index) => ({
+        type: 'traditional' as const,
+        id: `ira-${subtype}-${index}`,
+        name: `${subtype} IRA`,
+        ownerPersonId: owner,
+        annualReturnPct: null,
+        kind: 'ira' as const,
+        balance: 10_000,
+        annualContribution: 0,
+      })),
+      {
+        type: 'traditional', id: 'ira-missing', name: 'Unclassified IRA', ownerPersonId: owner,
+        annualReturnPct: null, kind: 'ira', balance: 10_000, annualContribution: 0,
+      },
+      {
+        type: 'traditional', id: 'employer-a', name: '401(k)', ownerPersonId: owner,
+        annualReturnPct: null, kind: 'employer', balance: 10_000, annualContribution: 0,
+      },
+    ]
+    const conversionPlan: Pick<Plan, 'accounts' | 'retirementActionEligibilityFacts'> = {
+      accounts: conversionAccounts,
+      retirementActionEligibilityFacts: {
+        iraClassifications: [
+          { evidenceId: 'c-traditional', provenance: { source: 'manual' }, sourceAccountId: conversionAccounts[0]!.id, subtype: 'traditional' },
+          { evidenceId: 'c-sep', provenance: { source: 'manual' }, sourceAccountId: conversionAccounts[1]!.id, subtype: 'sep' },
+          { evidenceId: 'c-simple-mature', provenance: { source: 'manual' }, sourceAccountId: conversionAccounts[2]!.id, subtype: 'simple', simpleParticipationStartDate: '2030-01-01' },
+          { evidenceId: 'c-simple-open', provenance: { source: 'manual' }, sourceAccountId: conversionAccounts[3]!.id, subtype: 'simple', simpleParticipationStartDate: '2033-01-01' },
+        ],
+        sepSimpleActivities: [],
+        deductibleIraContributions: [],
+      },
+    }
+    expect(conversionAccounts.map((account) =>
+      retirementActionManualSourceSupportIssue(
+        'legacyAggregateRothConversion', account, '2034-06-15', conversionPlan,
+      ) === null,
+    )).toEqual([true, true, true, false, false, false])
+  })
+
+  it('refuses unsupported injected ordinary, cliff, and unclassified IRA selections', () => {
+    const withdrawalTarget = migrated('legacyAggregateWithdrawal')
+    const withdrawalDraft = {
+      ...emptyRetirementActionManualEditorDraft(),
+      personId: 'person-a',
+      fullSourceAmountConfirmed: true,
+      executionDate: '2034-06-15',
+      executionSequence: '1',
+      withdrawalPurpose: 'spending' as const,
+    }
+    const unsupportedAccounts: Plan['accounts'] = [
+      supportedPlan.accounts[1]!,
+      {
+        type: 'equityComp', id: 'equity-cliff', name: 'Cliff equity', ownerPersonId: 'person-a',
+        annualReturnPct: null, balance: 10_000, costBasis: 8_000, annualContribution: 0,
+        vestingMode: 'cliff', vestDate: '2034-09-01',
+      },
+    ]
+    for (const account of unsupportedAccounts) {
+      expect(buildRetirementActionManualIntent(
+        withdrawalTarget,
+        { ...withdrawalDraft, sourceAccountId: account.id },
+        [],
+        { ...supportedPlan, accounts: [account] },
+      ).ok).toBe(false)
+    }
+
+    const conversionTarget = migrated('legacyAggregateRothConversion')
+    expect(buildRetirementActionManualIntent(
+      conversionTarget,
+      {
+        ...emptyRetirementActionManualEditorDraft(),
+        personId: 'person-a', sourceAccountId: 'ira-a', destinationRothAccountId: 'roth-a',
+        fullSourceAmountConfirmed: true, executionDate: '2034-06-15', executionSequence: '1',
+        conversionTaxFunding: 'noneExpected',
+      },
+      [],
+      { ...supportedPlan, retirementActionEligibilityFacts: undefined },
+    ).ok).toBe(false)
+  })
+
   it('rejects invalid or wrong-year dates and unsafe/nonpositive sequences', () => {
     const target = migrated('legacyAggregateWithdrawal')
     const base = {
       ...emptyRetirementActionManualEditorDraft(),
       personId: 'person-a',
-      sourceAccountId: 'ira-a',
+      sourceAccountId: 'cash-a',
       fullSourceAmountConfirmed: true,
       withdrawalPurpose: 'spending' as const,
     }
@@ -246,7 +392,7 @@ describe('buildRetirementActionManualIntent', () => {
         ...base,
         executionDate,
         executionSequence: '1',
-      }, [], supportedPlanAccounts)
+      }, [], supportedPlan)
       expect(result.ok).toBe(false)
     }
     for (const executionSequence of ['', '0', '-1', '1.5', '9007199254740992']) {
@@ -254,7 +400,7 @@ describe('buildRetirementActionManualIntent', () => {
         ...base,
         executionDate: '2034-01-01',
         executionSequence,
-      }, [], supportedPlanAccounts)
+      }, [], supportedPlan)
       expect(result.ok).toBe(false)
     }
   })
@@ -264,7 +410,7 @@ describe('buildRetirementActionManualIntent', () => {
     const draft = {
       ...emptyRetirementActionManualEditorDraft(),
       personId: 'person-a',
-      sourceAccountId: 'ira-a',
+      sourceAccountId: 'cash-a',
       fullSourceAmountConfirmed: true,
       executionDate: '2034-06-15',
       executionSequence: '7',
@@ -275,7 +421,7 @@ describe('buildRetirementActionManualIntent', () => {
       target,
       draft,
       [target, scheduledAction('2034-06-15', 7)],
-      supportedPlanAccounts,
+      supportedPlan,
     )).toEqual({
       ok: false,
       issues: [
@@ -286,7 +432,7 @@ describe('buildRetirementActionManualIntent', () => {
       target,
       draft,
       [target, scheduledAction('2034-06-15', 8)],
-      supportedPlanAccounts,
+      supportedPlan,
     ).ok).toBe(true)
   })
 

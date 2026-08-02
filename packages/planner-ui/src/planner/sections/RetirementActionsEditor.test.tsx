@@ -71,6 +71,15 @@ function editorPlan(): Plan {
   const owner = plan.household.people[0]!
   plan.accounts = [
     {
+      type: 'cash',
+      id: 'source-cash',
+      name: 'Cash reserve',
+      ownerPersonId: owner.id,
+      annualReturnPct: null,
+      balance: 20_000,
+      annualContribution: 0,
+    },
+    {
       type: 'traditional',
       id: 'source-ira',
       name: 'Traditional IRA',
@@ -91,6 +100,16 @@ function editorPlan(): Plan {
       annualContribution: 0,
     },
   ]
+  plan.retirementActionEligibilityFacts = {
+    iraClassifications: [{
+      evidenceId: 'source-ira-classification',
+      provenance: { source: 'manual' },
+      sourceAccountId: 'source-ira',
+      subtype: 'traditional',
+    }],
+    sepSimpleActivities: [],
+    deductibleIraContributions: [],
+  }
   plan.strategies.retirementActions = []
   return plan
 }
@@ -222,6 +241,38 @@ describe('RetirementActionsEditor', () => {
     ])
   })
 
+  it('offers only executor-supported ordinary sources at the selected date', async () => {
+    const plan = editorPlan()
+    const owner = plan.household.people[0]!
+    plan.accounts = [
+      { type: 'cash', id: 'cash-a', name: 'Cash', ownerPersonId: owner.id, annualReturnPct: null, balance: 10_000, annualContribution: 0 },
+      { type: 'taxable', id: 'taxable-a', name: 'Taxable', ownerPersonId: owner.id, annualReturnPct: null, balance: 10_000, costBasis: 8_000, annualContribution: 0 },
+      { type: 'equityComp', id: 'equity-final', name: 'Vested equity', ownerPersonId: owner.id, annualReturnPct: null, balance: 10_000, costBasis: 8_000, annualContribution: 0, vestingMode: 'final', vestDate: null },
+      { type: 'equityComp', id: 'equity-cliff', name: 'Cliff equity', ownerPersonId: owner.id, annualReturnPct: null, balance: 10_000, costBasis: 8_000, annualContribution: 0, vestingMode: 'cliff', vestDate: '2034-09-01' },
+      { type: 'traditional', id: 'traditional-a', name: 'Traditional IRA', ownerPersonId: owner.id, annualReturnPct: null, kind: 'ira', balance: 10_000, annualContribution: 0 },
+      { type: 'roth', id: 'roth-a', name: 'Roth IRA', ownerPersonId: owner.id, annualReturnPct: null, kind: 'ira', balance: 10_000, annualContribution: 0 },
+      { type: 'hsa', id: 'hsa-a', name: 'HSA', ownerPersonId: owner.id, annualReturnPct: null, balance: 10_000, annualContribution: 0 },
+    ]
+    plan.strategies.retirementActions = [migratedAction('legacyAggregateWithdrawal')]
+    const mounted = await mount(plan)
+    await change(controlByLabel(mounted.container, 'Person'), owner.id)
+    await change(controlByLabel(mounted.container, 'Execution date'), '2034-06-15')
+    const source = controlByLabel<HTMLSelectElement>(mounted.container, 'Source account')
+    expect(Array.from(source.options).slice(1).map((option) => option.value)).toEqual([
+      'cash-a',
+      'equity-final',
+      'taxable-a',
+    ])
+
+    await change(controlByLabel(mounted.container, 'Execution date'), '2034-09-01')
+    expect(Array.from(source.options).slice(1).map((option) => option.value)).toEqual([
+      'cash-a',
+      'equity-cliff',
+      'equity-final',
+      'taxable-a',
+    ])
+  })
+
   it('uses the engine adapter to replace a migrated withdrawal after explicit review', async () => {
     const plan = editorPlan()
     const target = migratedAction('legacyAggregateWithdrawal')
@@ -230,7 +281,7 @@ describe('RetirementActionsEditor', () => {
     const owner = plan.household.people[0]!
 
     await change(controlByLabel(mounted.container, 'Person'), owner.id)
-    await change(controlByLabel(mounted.container, 'Source account'), 'source-ira')
+    await change(controlByLabel(mounted.container, 'Source account'), 'source-cash')
     const confirm = controlByLabel<HTMLInputElement>(
       mounted.container,
       'Assign the full $25,000.00 to this source',
@@ -253,7 +304,7 @@ describe('RetirementActionsEditor', () => {
       executionDate: '2034-06-15',
       executionSequence: 3,
       provenance: { source: 'manual' },
-      allocations: [{ sourceAccountId: 'source-ira', requestedAmount: target.requestedAmount }],
+      allocations: [{ sourceAccountId: 'source-cash', requestedAmount: target.requestedAmount }],
       purpose: { kind: 'spending' },
     })
     expect(replacement.actionId).not.toBe(target.actionId)
@@ -273,7 +324,7 @@ describe('RetirementActionsEditor', () => {
     )!
 
     await change(controlByLabel(secondRow, 'Person'), owner.id)
-    await change(controlByLabel(secondRow, 'Source account'), 'source-ira')
+    await change(controlByLabel(secondRow, 'Source account'), 'source-cash')
     await change(controlByLabel(secondRow, 'Execution date'), '2034-11-20')
     await change(controlByLabel(secondRow, 'Execution sequence'), '9')
 
@@ -281,7 +332,7 @@ describe('RetirementActionsEditor', () => {
       `[data-retirement-action-id="${first.actionId}"]`,
     )!
     await change(controlByLabel(firstRow, 'Person'), owner.id)
-    await change(controlByLabel(firstRow, 'Source account'), 'source-ira')
+    await change(controlByLabel(firstRow, 'Source account'), 'source-cash')
     await act(async () => controlByLabel<HTMLInputElement>(
       firstRow,
       'Assign the full $25,000.00 to this source',
@@ -298,7 +349,7 @@ describe('RetirementActionsEditor', () => {
       `[data-retirement-action-id="${second.actionId}"]`,
     )!
     expect(controlByLabel(preservedSecondRow, 'Person').value).toBe(owner.id)
-    expect(controlByLabel(preservedSecondRow, 'Source account').value).toBe('source-ira')
+    expect(controlByLabel(preservedSecondRow, 'Source account').value).toBe('source-cash')
     expect(controlByLabel(preservedSecondRow, 'Execution date').value).toBe('2034-11-20')
     expect(controlByLabel(preservedSecondRow, 'Execution sequence').value).toBe('9')
     expect(mounted.current().strategies.retirementActions).toEqual([
@@ -316,7 +367,7 @@ describe('RetirementActionsEditor', () => {
     const owner = plan.household.people[0]!
 
     await change(controlByLabel(mounted.container, 'Person'), owner.id)
-    await change(controlByLabel(mounted.container, 'Source account'), 'source-ira')
+    await change(controlByLabel(mounted.container, 'Source account'), 'source-cash')
     await act(async () => controlByLabel<HTMLInputElement>(
       mounted.container,
       'Assign the full $25,000.00 to this source',
@@ -400,12 +451,34 @@ describe('RetirementActionsEditor', () => {
     ).slice(1)
     expect(sourceOptions).toEqual([])
     expect(mounted.container.textContent).toContain(
-      'No supported conversion source is available for this person.',
+      'No currently executable source is available for this person.',
     )
     expect(mounted.container.textContent).toContain(
-      'employer-plan conversions remain unsupported until plan-availability evidence is modeled.',
+      'Employer-plan conversion sources are not supported until plan-availability evidence is modeled.',
     )
 
+    const save = Array.from(mounted.container.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Save reviewed action',
+    )
+    await act(async () => save!.click())
+    expect(mounted.current().strategies.retirementActions).toEqual([target])
+  })
+
+  it('keeps an unclassified IRA conversion visibly under review', async () => {
+    const plan = editorPlan()
+    const target = migratedAction('legacyAggregateRothConversion')
+    plan.retirementActionEligibilityFacts!.iraClassifications = []
+    plan.strategies.retirementActions = [target]
+    const mounted = await mount(plan)
+    const owner = plan.household.people[0]!
+
+    await change(controlByLabel(mounted.container, 'Person'), owner.id)
+    expect(Array.from(
+      controlByLabel<HTMLSelectElement>(mounted.container, 'Source account').options,
+    ).slice(1)).toEqual([])
+    expect(mounted.container.textContent).toContain(
+      'This IRA needs exactly one explicit subtype classification before it can be reviewed as a conversion source.',
+    )
     const save = Array.from(mounted.container.querySelectorAll('button')).find(
       (button) => button.textContent?.trim() === 'Save reviewed action',
     )
@@ -438,6 +511,12 @@ describe('RetirementActionsEditor', () => {
         annualContribution: 0,
       },
     )
+    plan.retirementActionEligibilityFacts!.iraClassifications.push({
+      evidenceId: 'source-ira-2-classification',
+      provenance: { source: 'manual' },
+      sourceAccountId: 'source-ira-2',
+      subtype: 'traditional',
+    })
     plan.strategies.retirementActions = [migratedAction('legacyAggregateRothConversion')]
     const mounted = await mount(plan)
 

@@ -11,7 +11,7 @@ import {
   ledgerCentsToPlanDollars,
   planDollarsToLedgerCents,
 } from '@retiregolden/engine/actions/planBalanceAdapter'
-import { parseCivilIsoDate } from '@retiregolden/engine/actions/civilDate'
+import { addCalendarMonths, parseCivilIsoDate } from '@retiregolden/engine/actions/civilDate'
 import type { Plan } from '@retiregolden/engine/model/plan'
 
 export type EditableMigratedRetirementAction = Extract<
@@ -112,14 +112,70 @@ function executionSlotAlreadyUsed(
   )
 }
 
-function employerConversionSourceSelected(
-  sourceAccountId: string,
-  planAccounts: readonly Plan['accounts'][number][],
+type ManualSourceSupportPlan = Readonly<
+  Pick<Plan, 'accounts' | 'retirementActionEligibilityFacts'>
+>
+
+export function retirementActionManualSourceCandidate(
+  kind: EditableMigratedRetirementAction['kind'],
+  account: Plan['accounts'][number],
 ): boolean {
-  const matches = planAccounts.filter((account) => account.id === sourceAccountId)
-  return matches.length === 1 &&
-    matches[0]!.type === 'traditional' &&
-    matches[0]!.kind === 'employer'
+  if (kind === 'legacyAggregateRothConversion') {
+    return account.type === 'traditional' && account.inherited === undefined
+  }
+  return ['cash', 'taxable', 'equityComp', 'traditional', 'roth', 'hsa'].includes(
+    account.type,
+  )
+}
+
+export function retirementActionManualSourceSupportIssue(
+  kind: EditableMigratedRetirementAction['kind'],
+  account: Plan['accounts'][number],
+  executionDate: string,
+  plan: ManualSourceSupportPlan,
+): string | null {
+  if (kind === 'legacyAggregateWithdrawal') {
+    if (account.type !== 'cash' && account.type !== 'taxable' && account.type !== 'equityComp') {
+      return 'Manual withdrawal review currently supports only cash, taxable, and vested equity-compensation sources.'
+    }
+    if (account.type !== 'equityComp' || account.vestingMode === 'final') return null
+    if (account.vestDate === null || parseCivilIsoDate(account.vestDate) === null) {
+      return 'This cliff-vesting equity-compensation source has no valid vest date and cannot be reviewed as executable.'
+    }
+    if (parseCivilIsoDate(executionDate) === null) {
+      return `Choose an execution date on or after ${account.vestDate} before selecting this cliff-vesting equity-compensation source.`
+    }
+    return executionDate < account.vestDate
+      ? `This equity-compensation source does not vest until ${account.vestDate}. Choose an execution date on or after that date.`
+      : null
+  }
+
+  if (account.type !== 'traditional' || account.inherited !== undefined) {
+    return 'Manual conversion review currently requires a non-inherited traditional IRA source.'
+  }
+  if (account.kind === 'employer') {
+    return 'Employer-plan conversion sources are not supported until plan-availability evidence is modeled. Choose a traditional IRA.'
+  }
+  const classifications = plan.retirementActionEligibilityFacts?.iraClassifications.filter(
+    (record) => record.sourceAccountId === account.id,
+  ) ?? []
+  if (classifications.length !== 1) {
+    return 'This IRA needs exactly one explicit subtype classification before it can be reviewed as a conversion source.'
+  }
+  const classification = classifications[0]!
+  if (classification.subtype !== 'simple') return null
+  const periodEnd = classification.simpleParticipationStartDate === undefined
+    ? null
+    : addCalendarMonths(classification.simpleParticipationStartDate, 24)
+  if (periodEnd === null) {
+    return 'This SIMPLE IRA needs an explicit participation start date before conversion review.'
+  }
+  if (parseCivilIsoDate(executionDate) === null) {
+    return `Choose an execution date on or after ${periodEnd} before selecting this SIMPLE IRA.`
+  }
+  return executionDate < periodEnd
+    ? `This SIMPLE IRA cannot be converted before ${periodEnd}. Choose an execution date on or after that date.`
+    : null
 }
 
 function positiveDollarsToCents(value: number | null): ReturnType<typeof asPositiveUsdCents> | null {
@@ -149,7 +205,7 @@ export function buildRetirementActionManualIntent(
   target: Readonly<EditableMigratedRetirementAction>,
   draft: Readonly<RetirementActionManualEditorDraft>,
   preservedActions: readonly Readonly<RetirementActionRequest>[],
-  planAccounts: readonly Plan['accounts'][number][],
+  plan: ManualSourceSupportPlan,
 ): BuildRetirementActionManualIntentResult {
   const issues: string[] = []
   if (draft.personId.trim() === '') issues.push('Choose the person responsible for this action.')
@@ -176,14 +232,22 @@ export function buildRetirementActionManualIntent(
     )
   }
 
+  const selectedSourceMatches = plan.accounts.filter(
+    (account) => account.id === draft.sourceAccountId,
+  )
+  if (selectedSourceMatches.length === 1) {
+    const sourceIssue = retirementActionManualSourceSupportIssue(
+      target.kind,
+      selectedSourceMatches[0]!,
+      draft.executionDate,
+      plan,
+    )
+    if (sourceIssue !== null) issues.push(sourceIssue)
+  }
+
   if (target.kind === 'legacyAggregateWithdrawal') {
     if (draft.withdrawalPurpose === '') issues.push('Choose the withdrawal purpose.')
   } else {
-    if (employerConversionSourceSelected(draft.sourceAccountId, planAccounts)) {
-      issues.push(
-        'Employer-plan conversion sources are not supported until plan-availability evidence is modeled. Choose a traditional IRA.',
-      )
-    }
     if (draft.destinationRothAccountId.trim() === '') {
       issues.push('Choose the exact Roth destination account.')
     }

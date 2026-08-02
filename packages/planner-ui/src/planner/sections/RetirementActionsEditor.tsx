@@ -17,19 +17,12 @@ import {
   emptyRetirementActionManualEditorDraft,
   formatPositiveUsdCents,
   migratedRetirementActionsNeedingReview,
+  retirementActionManualSourceCandidate,
+  retirementActionManualSourceSupportIssue,
   retirementActionReviewLabel,
   type EditableMigratedRetirementAction,
   type RetirementActionManualEditorDraft,
 } from '../retirementActionManualEditor'
-
-const ORDINARY_SOURCE_TYPES = new Set([
-  'cash',
-  'taxable',
-  'equityComp',
-  'traditional',
-  'roth',
-  'hsa',
-])
 
 function accountOptionLabel(account: Plan['accounts'][number]): string {
   const classification = account.type === 'traditional' || account.type === 'roth'
@@ -42,20 +35,44 @@ function accountOptions(
   plan: Readonly<Plan>,
   personId: string,
   kind: EditableMigratedRetirementAction['kind'],
+  executionDate: string,
 ) {
   if (personId === '') return []
   return plan.accounts
     .filter((account) => {
       if (account.ownerPersonId !== personId) return false
-      if (kind === 'legacyAggregateWithdrawal') {
-        return ORDINARY_SOURCE_TYPES.has(account.type)
-      }
-      return account.type === 'traditional' &&
-        account.kind === 'ira' &&
-        account.inherited === undefined
+      return retirementActionManualSourceCandidate(kind, account) &&
+        retirementActionManualSourceSupportIssue(
+          kind,
+          account,
+          executionDate,
+          plan,
+        ) === null
     })
     .sort((left, right) => left.id < right.id ? -1 : left.id > right.id ? 1 : 0)
     .map((account) => ({ value: account.id, label: accountOptionLabel(account) }))
+}
+
+function sourceBoundaryIssues(
+  plan: Readonly<Plan>,
+  personId: string,
+  kind: EditableMigratedRetirementAction['kind'],
+  executionDate: string,
+): readonly string[] {
+  if (personId === '') return []
+  const issues = plan.accounts
+    .filter((account) =>
+      account.ownerPersonId === personId &&
+      retirementActionManualSourceCandidate(kind, account),
+    )
+    .map((account) => retirementActionManualSourceSupportIssue(
+      kind,
+      account,
+      executionDate,
+      plan,
+    ))
+    .filter((issue): issue is string => issue !== null)
+  return [...new Set(issues)]
 }
 
 function destinationOptions(plan: Readonly<Plan>, personId: string) {
@@ -87,8 +104,12 @@ function ManualReviewRow({
     label: `${person.name} (ID ${person.id})`,
   }))
   const sources = useMemo(
-    () => accountOptions(plan, draft.personId, target.kind),
-    [draft.personId, plan, target.kind],
+    () => accountOptions(plan, draft.personId, target.kind, draft.executionDate),
+    [draft.executionDate, draft.personId, plan, target.kind],
+  )
+  const unavailableSourceIssues = useMemo(
+    () => sourceBoundaryIssues(plan, draft.personId, target.kind, draft.executionDate),
+    [draft.executionDate, draft.personId, plan, target.kind],
   )
   const destinations = useMemo(
     () => destinationOptions(plan, draft.personId),
@@ -104,7 +125,7 @@ function ManualReviewRow({
       target,
       draft,
       plan.strategies.retirementActions,
-      plan.accounts,
+      plan,
     )
     if (!built.ok) {
       setIssues(built.issues)
@@ -170,12 +191,14 @@ function ManualReviewRow({
             fullSourceAmountConfirmed: false,
           }))}
         />
-        {target.kind === 'legacyAggregateRothConversion' &&
-        draft.personId !== '' && sources.length === 0 ? (
+        {draft.personId !== '' && sources.length === 0 ? (
           <div className="callout callout--warn" role="status">
-            <strong>No supported conversion source is available for this person.</strong>{' '}
-            Manual review currently requires an individually owned, non-inherited traditional IRA;
-            employer-plan conversions remain unsupported until plan-availability evidence is modeled.
+            <strong>No currently executable source is available for this person.</strong>
+            {unavailableSourceIssues.length > 0 ? (
+              <ul>
+                {unavailableSourceIssues.map((issue) => <li key={issue}>{issue}</li>)}
+              </ul>
+            ) : null}
           </div>
         ) : null}
         <CheckboxField
@@ -188,7 +211,25 @@ function ManualReviewRow({
           label="Execution date"
           value={draft.executionDate}
           hint={`Must fall in ${target.year}; the action will not be moved to another date.`}
-          onCommit={(executionDate) => set('executionDate', executionDate)}
+          onCommit={(executionDate) => setDraft((current) => {
+            const selectedSource = plan.accounts.find(
+              (account) => account.id === current.sourceAccountId,
+            )
+            const sourceRemainsSupported = selectedSource !== undefined &&
+              retirementActionManualSourceSupportIssue(
+                target.kind,
+                selectedSource,
+                executionDate,
+                plan,
+              ) === null
+            return {
+              ...current,
+              executionDate,
+              ...(sourceRemainsSupported
+                ? {}
+                : { sourceAccountId: '', fullSourceAmountConfirmed: false }),
+            }
+          })}
         />
         <TextField
           label="Execution sequence"
