@@ -93,6 +93,9 @@ function canonicalPublication(year: Readonly<YearResult>) {
     const publishedById = new Map(
       publication.records.map((record) => [record.actionId, record]),
     )
+    const publishedDiagnosticBindings = new Set(
+      publication.scheduleDiagnostics.map(scheduleDiagnosticBinding),
+    )
     if (legacy.requests.some((request) => {
       const record = publishedById.get(request.actionId)
       return (
@@ -104,8 +107,7 @@ function canonicalPublication(year: Readonly<YearResult>) {
       return record === undefined || executionBinding(record) !== executionBinding(legacyRecord)
     }) || legacySource.scheduleDiagnostics.some((legacyDiagnostic) => {
       const binding = scheduleDiagnosticBinding(legacyDiagnostic)
-      return !publication.scheduleDiagnostics.some((publishedDiagnostic) =>
-        scheduleDiagnosticBinding(publishedDiagnostic) === binding)
+      return !publishedDiagnosticBindings.has(binding)
     })) {
       throw new Error(
         'Canonical retirement-action publication does not cover the legacy annual executor result',

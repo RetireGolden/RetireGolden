@@ -886,6 +886,125 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
     expect(year.withdrawals).toMatchObject({ cash: 20, total: 20 })
   })
 
+  it('publishes truthful batch-abort reasons for non-colliding mixed kinds', () => {
+    const plan = basePlan()
+    plan.accounts = [
+      cash('cash-a', 100),
+      {
+        type: 'traditional',
+        id: 'ira',
+        name: 'IRA',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 100,
+        annualContribution: 0,
+      },
+      {
+        type: 'roth',
+        id: 'roth',
+        name: 'Roth IRA',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 0,
+        annualContribution: 0,
+      },
+    ]
+    plan.strategies.retirementActions = [
+      withdrawal({
+        actionId: 'conflict-a',
+        accountId: 'cash-a',
+        dollars: 10,
+        executionDate: '2026-06-01',
+      }),
+      withdrawal({
+        actionId: 'conflict-b',
+        accountId: 'cash-a',
+        dollars: 10,
+        executionDate: '2026-06-01',
+      }),
+      parsedAction({
+        actionId: 'conversion',
+        kind: 'rothConversion',
+        personId: 'p1',
+        year: 2026,
+        executionDate: '2026-07-01',
+        executionSequence: 1,
+        requestedAmount: 1_000,
+        allocations: [{
+          allocationId: 'conversion-allocation',
+          sourceAccountId: 'ira',
+          requestedAmount: 1_000,
+        }],
+        destinationRothAccountId: 'roth',
+        taxFunding: { kind: 'noneExpected' },
+        provenance: { source: 'manual' },
+      }),
+      parsedAction({
+        actionId: 'qcd',
+        kind: 'qcd',
+        donorPersonId: 'p1',
+        year: 2026,
+        executionDate: '2026-08-01',
+        executionSequence: 1,
+        requestedAmount: 1_000,
+        allocation: {
+          allocationId: 'qcd-allocation',
+          sourceAccountId: 'ira',
+          requestedAmount: 1_000,
+        },
+        charity: {
+          designationId: 'charity',
+          name: 'Public Charity',
+          designationKind: 'eligiblePublicCharity',
+          directFromCustodianAttested: true,
+          eligibleOrganizationAttested: true,
+          notDonorAdvisedFundOrSupportingOrganizationAttested: true,
+          notSplitInterestEntityAttested: true,
+          entireDistributionOtherwiseDeductibleAttested: true,
+        },
+        provenance: { source: 'manual' },
+      }),
+      parsedAction({
+        actionId: 'legacy-withdrawal',
+        kind: 'legacyAggregateWithdrawal',
+        year: 2026,
+        requestedAmount: 1_000,
+        legacyCategory: 'cash',
+        provenance: { source: 'migration' },
+      }),
+    ]
+
+    const year = run(plan).years[0]!
+    const publication = year.retirementActionPublication!
+
+    expect(year.retirementActionExecution).toMatchObject({
+      committed: false,
+      evidence: [],
+    })
+    expect(publication.records).toHaveLength(5)
+    expect(publication.records.every((record) =>
+      record.outcome === 'refused' &&
+      record.readiness === 'nonActionable' &&
+      record.executedAmount === 0)).toBe(true)
+    expect(Object.fromEntries(publication.records.map((record) => [
+      record.actionId,
+      record.reasons.map((reason) => reason.code),
+    ]))).toEqual({
+      'conflict-a': ['action-sequence-conflict'],
+      'conflict-b': ['action-sequence-conflict'],
+      conversion: ['action-batch-schedule-conflict'],
+      qcd: ['action-batch-schedule-conflict'],
+      'legacy-withdrawal': ['action-batch-schedule-conflict'],
+    })
+    expect(year.balances).toMatchObject({
+      'cash-a': 100,
+      ira: 100,
+      roth: 0,
+    })
+  })
+
   it('keeps duplicate action IDs in the legacy executor diagnostics without publishing', () => {
     const plan = basePlan()
     plan.accounts = [cash('cash-a', 100)]

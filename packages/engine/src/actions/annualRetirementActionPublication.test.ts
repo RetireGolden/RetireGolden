@@ -1132,7 +1132,7 @@ describe('annual retirement-action publication', () => {
         ...conflictRecord(conversion),
         reasons: [createActionReason('action-batch-schedule-conflict')],
       }])],
-    })).toThrow(/reason kind differs/i)
+    })).toThrow(/batch conflict reason differs/i)
   })
 
   it('does not let a wrong-slot diagnostic authorize a conflict reason', () => {

@@ -368,9 +368,6 @@ function reasonAppliesToKind(
   if (code === 'source-balance-trimmed' || code === 'source-balance-unavailable') {
     return kind === 'ordinaryWithdrawal'
   }
-  if (code === 'action-batch-schedule-conflict') {
-    return kind === 'ordinaryWithdrawal'
-  }
   if (code.startsWith('withdrawal-')) return kind === 'ordinaryWithdrawal'
   if (code.startsWith('qcd-')) return kind === 'qcd'
   if (code.startsWith('conversion-')) {
@@ -1021,9 +1018,7 @@ export function publishAnnualRetirementActions(
       record.reasons.some((reason) =>
         reason.code === 'action-batch-schedule-conflict') &&
       (
-        record.kind !== 'ordinaryWithdrawal' ||
         record.executorSource !== 'ordinaryWithdrawalExecutor' ||
-        recordScheduleKey === null ||
         diagnostics.some((diagnostic) =>
           diagnostic.executorSource === record.executorSource &&
           diagnostic.actionId === record.actionId) ||
