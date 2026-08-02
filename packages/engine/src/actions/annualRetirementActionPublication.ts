@@ -1455,9 +1455,22 @@ function assertRecordBinding(
   const hasPhysicalBalanceReason = record.reasons.some((reason) =>
     physicalBalanceReasonCodes.has(reason.code))
   const stagedNonmovingConversionAmountState = stagedNonmovingConversion
+  const mixedResolutionConversionBalanceReasonsAreBound =
+    request.kind === 'rothConversion' &&
+    record.reasons
+      .filter((reason) => physicalBalanceReasonCodes.has(reason.code))
+      .every((reason) => {
+        const allocation = reason.allocationId === undefined
+          ? undefined
+          : record.allocations.find((candidate) =>
+              candidate.allocationId === reason.allocationId)
+        return allocation?.resolution === 'resolved' &&
+          reason.accountId === allocation.sourceAccountId
+      })
   if (
     hasPhysicalBalanceReason &&
-    record.allocations.some((allocation) => allocation.resolution !== 'resolved')
+    record.allocations.some((allocation) => allocation.resolution !== 'resolved') &&
+    !mixedResolutionConversionBalanceReasonsAreBound
   ) {
     throw new Error(`Executor reason resolution differs for action "${request.actionId}"`)
   }

@@ -388,7 +388,7 @@ describe('executeRothConversions', () => {
     })).not.toThrow()
   })
 
-  it('does not mix unresolved sources with resolved physical-balance evidence', () => {
+  it('retains known balance diagnostics beside an independently unresolved source', () => {
     const value = input()
     const valuePlan = value.plan as Plan
     valuePlan.accounts = valuePlan.accounts.filter((account) =>
@@ -400,11 +400,21 @@ describe('executeRothConversions', () => {
         : snapshot)
 
     const result = executeRothConversions(value)
-    const reasonCodes = result.evidence[0]!.reasons.map((reason) => reason.code)
+    const reasons = result.evidence[0]!.reasons
 
-    expect(reasonCodes).toContain('source-account-not-found')
-    expect(reasonCodes).not.toContain('conversion-balance-trimmed')
-    expect(reasonCodes).not.toContain('conversion-balance-unavailable')
+    expect(reasons).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        code: 'source-account-not-found',
+        allocationId: 'allocation-b',
+      }),
+      expect.objectContaining({
+        code: 'conversion-balance-trimmed',
+        allocationId: 'allocation-a',
+      }),
+    ]))
+    expect(reasons.map((reason) => reason.code)).not.toContain(
+      'conversion-balance-unavailable',
+    )
     expect(() => publishAnnualRetirementActions({
       taxYear: year,
       requests: result.requests,

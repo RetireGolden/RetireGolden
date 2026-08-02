@@ -277,8 +277,6 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
     }
 
     const resolvedSourceAccountIds = new Set<string>()
-    const hasUnresolvedSource = request.allocations.some((allocation) =>
-      !accounts.has(allocation.sourceAccountId))
     const canConsumeDiagnosticCapacity =
       preflight.status === 'accepted' &&
       destination !== undefined &&
@@ -305,12 +303,12 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
           accountId: allocation.sourceAccountId,
           allocationId: allocation.allocationId,
         }))
-      } else if (!hasUnresolvedSource && remaining === 0) {
+      } else if (remaining === 0) {
         reasons.push(createActionReason('conversion-balance-unavailable', {
           accountId: allocation.sourceAccountId,
           allocationId: allocation.allocationId,
         }))
-      } else if (!hasUnresolvedSource && remaining < allocation.requestedAmount) {
+      } else if (remaining < allocation.requestedAmount) {
         reasons.push(createActionReason('conversion-balance-trimmed', {
           accountId: allocation.sourceAccountId,
           allocationId: allocation.allocationId,
