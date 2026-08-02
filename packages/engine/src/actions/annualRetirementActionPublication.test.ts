@@ -10,7 +10,7 @@ import {
   asPersonId,
 } from './identity.js'
 import { asPositiveUsdCents, asUsdCents } from './money.js'
-import { createActionReason } from './reasons.js'
+import { ACTION_REASON_REGISTRY, createActionReason } from './reasons.js'
 import {
   publishAnnualRetirementActions,
   type AnnualRetirementActionPublicationSource,
@@ -233,6 +233,42 @@ function refusedRecord(
       accountId: allocation.sourceAccountId,
       allocationId: allocation.allocationId,
     })],
+  }
+}
+
+function recordForReason(
+  action: RetirementActionRequest,
+  reason: AnnualRetirementActionRecord['reasons'][number],
+): Omit<AnnualRetirementActionRecord, 'executorSource'> {
+  if (reason.outcome === 'adjusted') {
+    return { ...executedRecord(action), reasons: [reason] }
+  }
+  if (reason.outcome === 'partial') {
+    const baseRecord = record(action)
+    const allocation = baseRecord.allocations[0]
+    if (allocation === undefined) throw new Error('fixture drift')
+    const executedAmount = asUsdCents(Number(allocation.requestedAmount) / 2)
+    return {
+      ...baseRecord,
+      readiness: 'actionable',
+      outcome: 'partial',
+      executedDate: baseRecord.scheduledDate,
+      executedSequence: baseRecord.scheduledSequence,
+      executedAmount,
+      unexecutedAmount: executedAmount,
+      allocations: [{
+        ...allocation,
+        resolution: 'resolved',
+        executedAmount,
+        unexecutedAmount: executedAmount,
+      }],
+      reasons: [reason],
+    }
+  }
+  return {
+    ...record(action),
+    outcome: reason.outcome,
+    reasons: [reason],
   }
 }
 
@@ -944,48 +980,121 @@ describe('annual retirement-action publication', () => {
     ])
   })
 
-  it.each([
+  const resolvedSourceReasonCodes = [
+      'source-owner-mismatch',
+      'joint-source-acting-person-mismatch',
+      'source-balance-trimmed',
+      'source-balance-unavailable',
+      'withdrawal-taxable-basis-unsupported',
+      'withdrawal-employer-basis-unsupported',
+      'withdrawal-roth-ira-character-unsupported',
+      'withdrawal-designated-roth-character-unsupported',
+      'withdrawal-source-not-spendable',
+      'withdrawal-penalty-evidence-missing',
+      'withdrawal-plan-availability-unknown',
+      'withdrawal-plan-not-available',
+      'withdrawal-rule-of-55-evidence-missing',
+      'withdrawal-sepp-evidence-missing',
+      'withdrawal-inherited-facts-missing',
+      'withdrawal-hsa-qualification-unknown',
+      'withdrawal-source-type-unsupported',
+      'conversion-source-owner-mismatch',
+      'conversion-source-not-convertible',
+      'conversion-ira-subtype-unknown',
+      'conversion-simple-two-year-rule-unknown',
+      'conversion-simple-two-year-period-open',
+      'conversion-plan-availability-unknown',
+      'conversion-plan-not-available',
+      'conversion-employer-basis-unsupported',
+      'conversion-inherited-source',
+      'conversion-rmd-reserve-unavailable',
+      'conversion-basis-evidence-missing',
+      'conversion-balance-trimmed',
+      'conversion-balance-unavailable',
+      'qcd-source-owner-mismatch',
+      'qcd-source-not-ira',
+      'qcd-sep-simple-activity-unknown',
+      'qcd-ongoing-sep-simple',
+      'qcd-roth-source-unsupported',
+      'qcd-taxable-amount-trimmed',
+      'qcd-inherited-basis-unsupported',
+      'qcd-rmd-evidence-missing',
+      'qcd-balance-trimmed',
+      'qcd-balance-unavailable',
+  ] as const
+  const sourceResolutionCases: ReadonlyArray<readonly [
+    reasonCode: keyof typeof ACTION_REASON_REGISTRY,
+    outcome: 'adjusted' | 'partial' | 'refused' | 'unsupported',
+    requiredResolution: 'resolved' | 'unresolved' | 'either',
+  ]> = [
     ['source-account-not-found', 'refused', 'unresolved'],
-    ['source-owner-mismatch', 'refused', 'either'],
-    ['source-balance-unavailable', 'refused', 'resolved'],
-    ['withdrawal-source-not-spendable', 'refused', 'either'],
     ['required-facts-missing', 'unsupported', 'either'],
-  ] as const)(
+    ...resolvedSourceReasonCodes.map((reasonCode) => [
+      reasonCode,
+      ACTION_REASON_REGISTRY[reasonCode].outcome,
+      'resolved' as const,
+    ] as const),
+  ]
+
+  it.each(sourceResolutionCases)(
     'binds source predicate %s to %s allocation evidence',
     (reasonCode, outcome, requiredResolution) => {
-      const action = request(
-        'ordinaryWithdrawal',
-        `resolution-${reasonCode}`,
-        '2030-06-15',
-        1,
-      )
-      if (action.kind !== 'ordinaryWithdrawal') throw new Error('fixture drift')
-      const allocation = action.allocations[0]!
+      const action = reasonCode.startsWith('conversion-')
+        ? request(
+            'rothConversion',
+            `resolution-${reasonCode}`,
+            '2030-06-15',
+            1,
+          )
+        : reasonCode.startsWith('qcd-')
+          ? qcdRequest(`resolution-${reasonCode}`, '2030-06-15', 1)
+          : request(
+              'ordinaryWithdrawal',
+              `resolution-${reasonCode}`,
+              '2030-06-15',
+              1,
+            )
+      const allocation = action.kind === 'qcd'
+        ? action.allocation
+        : action.kind === 'ordinaryWithdrawal' || action.kind === 'rothConversion'
+          ? action.allocations[0]!
+          : undefined
+      if (allocation === undefined) throw new Error('fixture drift')
+      const personId = action.kind === 'qcd'
+        ? action.donorPersonId
+        : action.kind === 'ordinaryWithdrawal' || action.kind === 'rothConversion'
+          ? action.personId
+          : undefined
       const reason = createActionReason(reasonCode, {
-        personId: action.personId,
+        personId,
         accountId: allocation.sourceAccountId,
         allocationId: allocation.allocationId,
       })
+      expect(reason.outcome).toBe(outcome)
+      const executorSource = action.kind === 'qcd'
+        ? 'qcdExecutor'
+        : action.kind === 'rothConversion'
+          ? 'rothConversionExecutor'
+          : 'ordinaryWithdrawalExecutor'
 
       for (const resolution of ['resolved', 'unresolved'] as const) {
+        const reasonRecord = recordForReason(action, reason)
         const publish = () => publishAnnualRetirementActions({
           taxYear: 2030,
           requests: [action],
-          sources: [source('ordinaryWithdrawalExecutor', [{
-            ...record(action),
-            outcome,
-            allocations: record(action).allocations.map((entry) => ({
+          sources: [source(executorSource, [{
+            ...reasonRecord,
+            allocations: reasonRecord.allocations.map((entry) => ({
               ...entry,
               resolution,
             })),
-            reasons: [reason],
           }])],
         })
         if (
           requiredResolution === 'either' ||
           requiredResolution === resolution
         ) expect(publish).not.toThrow()
-        else expect(publish).toThrow(/reason resolution differs/i)
+        else expect(publish).toThrow(/resolution differs/i)
       }
     },
   )
@@ -1032,6 +1141,130 @@ describe('annual retirement-action publication', () => {
 
     expect(() => publish('unresolved')).toThrow(/reason resolution differs/i)
     expect(publish('resolved')?.records).toHaveLength(1)
+  })
+
+  it.each([
+    ['ordinaryWithdrawal', 'source-balance-trimmed'],
+    ['rothConversion', 'conversion-balance-trimmed'],
+  ] as const)(
+    'binds %s trim evidence to the exact partial allocation',
+    (kind, reasonCode) => {
+      const action = request(
+        kind,
+        `allocation-amount-${kind}`,
+        '2030-06-15',
+        1,
+      )
+      if (action.kind !== kind) throw new Error('fixture drift')
+      action.allocations = [
+        {
+          allocationId: asAllocationId('allocation-full'),
+          sourceAccountId: asAccountId('source-full'),
+          requestedAmount: asPositiveUsdCents(4_000),
+        },
+        {
+          allocationId: asAllocationId('allocation-partial'),
+          sourceAccountId: asAccountId('source-partial'),
+          requestedAmount: asPositiveUsdCents(3_000),
+        },
+        {
+          allocationId: asAllocationId('allocation-zero'),
+          sourceAccountId: asAccountId('source-zero'),
+          requestedAmount: asPositiveUsdCents(3_000),
+        },
+      ]
+      const baseRecord = record(action)
+      const evidenceById = new Map(baseRecord.allocations.map((allocation) => [
+        allocation.allocationId,
+        allocation,
+      ]))
+      const allocations = [
+        {
+          ...evidenceById.get(asAllocationId('allocation-full'))!,
+          resolution: 'resolved' as const,
+          executedAmount: asUsdCents(4_000),
+          unexecutedAmount: asUsdCents(0),
+        },
+        {
+          ...evidenceById.get(asAllocationId('allocation-partial'))!,
+          resolution: 'resolved' as const,
+          executedAmount: asUsdCents(1_500),
+          unexecutedAmount: asUsdCents(1_500),
+        },
+        {
+          ...evidenceById.get(asAllocationId('allocation-zero'))!,
+          resolution: 'resolved' as const,
+          executedAmount: asUsdCents(0),
+          unexecutedAmount: asUsdCents(3_000),
+        },
+      ]
+      const executorSource = kind === 'rothConversion'
+        ? 'rothConversionExecutor'
+        : 'ordinaryWithdrawalExecutor'
+      const publish = (allocationId: 'allocation-full' | 'allocation-partial' | 'allocation-zero') => {
+        const allocation = evidenceById.get(asAllocationId(allocationId))!
+        return publishAnnualRetirementActions({
+          taxYear: 2030,
+          requests: [action],
+          sources: [source(executorSource, [{
+            ...baseRecord,
+            readiness: 'actionable',
+            outcome: 'partial',
+            executedDate: baseRecord.scheduledDate,
+            executedSequence: baseRecord.scheduledSequence,
+            executedAmount: asUsdCents(5_500),
+            unexecutedAmount: asUsdCents(4_500),
+            allocations,
+            reasons: [createActionReason(reasonCode, {
+              accountId: allocation.sourceAccountId,
+              allocationId: allocation.allocationId,
+            })],
+          }])],
+        })
+      }
+
+      expect(publish('allocation-partial')?.records).toHaveLength(1)
+      expect(() => publish('allocation-full')).toThrow(/reason amounts differ/i)
+      expect(() => publish('allocation-zero')).toThrow(/reason amounts differ/i)
+    },
+  )
+
+  it('binds QCD balance reasons without constraining non-balance adjustments', () => {
+    const action = qcdRequest('qcd-allocation-amounts', '2030-06-15', 1)
+    if (action.kind !== 'qcd') throw new Error('fixture drift')
+    const allocation = action.allocation
+    const trimReason = createActionReason('qcd-balance-trimmed', {
+      accountId: allocation.sourceAccountId,
+      allocationId: allocation.allocationId,
+    })
+    const unavailableReason = createActionReason('qcd-balance-unavailable', {
+      accountId: allocation.sourceAccountId,
+      allocationId: allocation.allocationId,
+    })
+
+    expect(publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [action],
+      sources: [source('qcdExecutor', [recordForReason(action, trimReason)])],
+    })?.records).toHaveLength(1)
+    expect(publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [action],
+      sources: [source('qcdExecutor', [{
+        ...recordForReason(action, unavailableReason),
+        allocations: recordForReason(action, unavailableReason).allocations.map(
+          (entry) => ({ ...entry, resolution: 'resolved' as const }),
+        ),
+      }])],
+    })?.records).toHaveLength(1)
+    expect(publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [action],
+      sources: [source('qcdExecutor', [{
+        ...executedRecord(action),
+        reasons: [createActionReason('qcd-person-limit-trimmed')],
+      }])],
+    })?.records).toHaveLength(1)
   })
 
   it.each([
@@ -1587,10 +1820,12 @@ describe('annual retirement-action publication', () => {
 
   it('binds every conversion and QCD date reason to the exact schedule state', () => {
     const scheduleStates = [
-      { state: 'missingDate', executionDate: undefined },
-      { state: 'invalidDate', executionDate: '2030-02-30' },
-      { state: 'outsideActionYear', executionDate: '2031-01-01' },
-      { state: 'valid', executionDate: '2030-06-15' },
+      { label: 'omitted', state: 'missingDate', executionDate: undefined },
+      { label: 'empty', state: 'missingDate', executionDate: '' },
+      { label: 'whitespace', state: 'invalidDate', executionDate: ' ' },
+      { label: 'malformed', state: 'invalidDate', executionDate: '2030-02-30' },
+      { label: 'outside', state: 'outsideActionYear', executionDate: '2031-01-01' },
+      { label: 'valid', state: 'valid', executionDate: '2030-06-15' },
     ] as const
     const families = [
       {
@@ -1629,7 +1864,7 @@ describe('annual retirement-action publication', () => {
     for (const family of families) {
       for (const schedule of scheduleStates) {
         for (const reasonCase of family.reasons) {
-          const actionId = `${family.name}-${schedule.state}-${reasonCase.state}`
+          const actionId = `${family.name}-${schedule.label}-${reasonCase.state}`
           const action = family.build(actionId, schedule.executionDate, 1)
           const reason = createActionReason(reasonCase.code)
           const publish = () => publishAnnualRetirementActions({

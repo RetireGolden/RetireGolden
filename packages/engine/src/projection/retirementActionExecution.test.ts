@@ -1695,6 +1695,9 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
         expect.objectContaining({ code: 'source-owner-mismatch' }),
       ]),
     )
+    expect(
+      year.retirementActionExecution?.evidence[1]?.allocations[0]?.resolution,
+    ).toBe('resolved')
     expect(year.retirementActionExecution?.taxableBases).toEqual([])
     expect(year.withdrawals).toMatchObject({ cash: 10, taxable: 0, total: 10 })
     expect(year.balances).toMatchObject({

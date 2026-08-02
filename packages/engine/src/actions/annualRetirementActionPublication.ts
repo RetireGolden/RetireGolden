@@ -306,62 +306,70 @@ const preCanonicalReasonCodes = new Set<ActionReason['code']>([
   'allocation-total-mismatch',
 ])
 
+const sourceReasonResolutionRequirements = {
+  'source-account-not-found': 'unresolved',
+  'source-owner-mismatch': 'resolved',
+  'joint-source-acting-person-mismatch': 'resolved',
+  'required-facts-missing': 'either',
+  'source-balance-trimmed': 'resolved',
+  'source-balance-unavailable': 'resolved',
+  'withdrawal-taxable-basis-unsupported': 'resolved',
+  'withdrawal-employer-basis-unsupported': 'resolved',
+  'withdrawal-roth-ira-character-unsupported': 'resolved',
+  'withdrawal-designated-roth-character-unsupported': 'resolved',
+  'withdrawal-source-not-spendable': 'resolved',
+  'withdrawal-penalty-evidence-missing': 'resolved',
+  'withdrawal-plan-availability-unknown': 'resolved',
+  'withdrawal-plan-not-available': 'resolved',
+  'withdrawal-rule-of-55-evidence-missing': 'resolved',
+  'withdrawal-sepp-evidence-missing': 'resolved',
+  'withdrawal-inherited-facts-missing': 'resolved',
+  'withdrawal-hsa-qualification-unknown': 'resolved',
+  'withdrawal-source-type-unsupported': 'resolved',
+  'conversion-source-owner-mismatch': 'resolved',
+  'conversion-source-not-convertible': 'resolved',
+  'conversion-ira-subtype-unknown': 'resolved',
+  'conversion-simple-two-year-rule-unknown': 'resolved',
+  'conversion-simple-two-year-period-open': 'resolved',
+  'conversion-plan-availability-unknown': 'resolved',
+  'conversion-plan-not-available': 'resolved',
+  'conversion-employer-basis-unsupported': 'resolved',
+  'conversion-inherited-source': 'resolved',
+  'conversion-rmd-reserve-unavailable': 'resolved',
+  'conversion-basis-evidence-missing': 'resolved',
+  'conversion-balance-trimmed': 'resolved',
+  'conversion-balance-unavailable': 'resolved',
+  'qcd-source-owner-mismatch': 'resolved',
+  'qcd-source-not-ira': 'resolved',
+  'qcd-sep-simple-activity-unknown': 'resolved',
+  'qcd-ongoing-sep-simple': 'resolved',
+  'qcd-roth-source-unsupported': 'resolved',
+  'qcd-taxable-amount-trimmed': 'resolved',
+  'qcd-inherited-basis-unsupported': 'resolved',
+  'qcd-rmd-evidence-missing': 'resolved',
+  'qcd-balance-trimmed': 'resolved',
+  'qcd-balance-unavailable': 'resolved',
+} as const satisfies Readonly<Partial<Record<
+  ActionReason['code'],
+  'resolved' | 'unresolved' | 'either'
+>>>
+
 const sourceIdentifierReasonCodes = new Set<ActionReason['code']>([
-  'source-account-not-found',
-  'duplicate-source-account',
-  'duplicate-allocation-id',
-  'allocation-total-mismatch',
-  'source-owner-mismatch',
-  'joint-source-acting-person-mismatch',
-  'required-facts-missing',
-  'source-balance-trimmed',
-  'source-balance-unavailable',
-  'withdrawal-taxable-basis-unsupported',
-  'withdrawal-employer-basis-unsupported',
-  'withdrawal-roth-ira-character-unsupported',
-  'withdrawal-designated-roth-character-unsupported',
-  'withdrawal-source-not-spendable',
-  'withdrawal-penalty-evidence-missing',
-  'withdrawal-plan-availability-unknown',
-  'withdrawal-plan-not-available',
-  'withdrawal-rule-of-55-evidence-missing',
-  'withdrawal-sepp-evidence-missing',
-  'withdrawal-inherited-facts-missing',
-  'withdrawal-hsa-qualification-unknown',
-  'withdrawal-source-type-unsupported',
-  'conversion-source-owner-mismatch',
-  'conversion-source-not-convertible',
-  'conversion-ira-subtype-unknown',
-  'conversion-simple-two-year-rule-unknown',
-  'conversion-simple-two-year-period-open',
-  'conversion-plan-availability-unknown',
-  'conversion-plan-not-available',
-  'conversion-employer-basis-unsupported',
-  'conversion-inherited-source',
-  'conversion-rmd-reserve-unavailable',
-  'conversion-basis-evidence-missing',
-  'conversion-balance-trimmed',
-  'conversion-balance-unavailable',
-  'qcd-source-owner-mismatch',
-  'qcd-source-not-ira',
-  'qcd-sep-simple-activity-unknown',
-  'qcd-ongoing-sep-simple',
-  'qcd-roth-source-unsupported',
-  'qcd-taxable-amount-trimmed',
-  'qcd-inherited-basis-unsupported',
-  'qcd-rmd-evidence-missing',
-  'qcd-balance-trimmed',
-  'qcd-balance-unavailable',
+  ...preCanonicalReasonCodes,
+  ...Object.keys(sourceReasonResolutionRequirements) as ActionReason['code'][],
 ])
 
-const resolvedSourceReasonCodes = new Set<ActionReason['code']>([
-  'source-balance-trimmed',
-  'source-balance-unavailable',
-  'conversion-balance-trimmed',
-  'conversion-balance-unavailable',
-  'qcd-balance-trimmed',
-  'qcd-balance-unavailable',
-])
+const balanceReasonAllocationStates = {
+  'source-balance-trimmed': 'partial',
+  'source-balance-unavailable': 'unavailable',
+  'conversion-balance-trimmed': 'partial',
+  'conversion-balance-unavailable': 'unavailable',
+  'qcd-balance-trimmed': 'partial',
+  'qcd-balance-unavailable': 'unavailable',
+} as const satisfies Readonly<Partial<Record<
+  ActionReason['code'],
+  'partial' | 'unavailable'
+>>>
 
 function reasonAppliesToKind(
   kind: RetirementActionRequest['kind'],
@@ -487,6 +495,7 @@ function retirementActionScheduleState(
       sequence: record.scheduledSequence,
     }
   }
+  if (record.scheduledDate.length === 0) return { kind: 'missingDate' }
   const parsed = parseCivilIsoDate(record.scheduledDate)
   if (parsed === null) return { kind: 'invalidDate' }
   if (parsed.year !== record.year) return { kind: 'outsideActionYear' }
@@ -893,8 +902,17 @@ function assertRecordBinding(
     ) {
       throw new Error(`Executor reason identifiers differ for action "${request.actionId}"`)
     }
+    const resolutionRequirement = (
+      sourceReasonResolutionRequirements as Readonly<Partial<Record<
+        ActionReason['code'],
+        'resolved' | 'unresolved' | 'either'
+      >>>
+    )[reason.code]
+    const candidateAllocations = boundRecordAllocation === undefined
+      ? record.allocations
+      : [boundRecordAllocation]
     if (
-      reason.code === 'source-account-not-found' &&
+      resolutionRequirement === 'unresolved' &&
       (
         boundRecordAllocation === undefined ||
         boundRecordAllocation.resolution !== 'unresolved'
@@ -903,15 +921,27 @@ function assertRecordBinding(
       throw new Error(`Executor reason resolution differs for action "${request.actionId}"`)
     }
     if (
-      resolvedSourceReasonCodes.has(reason.code) &&
-      (
-        boundRecordAllocation === undefined
-          ? !record.allocations.some((allocation) =>
-              allocation.resolution === 'resolved')
-          : boundRecordAllocation.resolution !== 'resolved'
-      )
+      resolutionRequirement === 'resolved' &&
+      !candidateAllocations.some((allocation) =>
+        allocation.resolution === 'resolved')
     ) {
       throw new Error(`Executor reason resolution differs for action "${request.actionId}"`)
+    }
+    const balanceState = (
+      balanceReasonAllocationStates as Readonly<Partial<Record<
+        ActionReason['code'],
+        'partial' | 'unavailable'
+      >>>
+    )[reason.code]
+    const balanceStateMatches = balanceState === undefined ||
+      candidateAllocations.some((allocation) =>
+        allocation.resolution === 'resolved' &&
+        (balanceState === 'partial'
+          ? allocation.executedAmount > 0 && allocation.unexecutedAmount > 0
+          : allocation.executedAmount === 0 &&
+            allocation.unexecutedAmount === allocation.requestedAmount))
+    if (!balanceStateMatches) {
+      throw new Error(`Executor reason amounts differ for action "${request.actionId}"`)
     }
   }
 }
