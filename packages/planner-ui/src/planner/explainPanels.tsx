@@ -9,7 +9,7 @@
 import { Link } from 'react-router'
 
 import type { MonteCarloSummary } from '@retiregolden/engine/montecarlo/run'
-import type { ExactLedgerTournament } from '@retiregolden/engine/projection/optimizePlan'
+import type { ExactLedgerTournamentSummary } from '@retiregolden/engine/projection/optimizePlan'
 import { ACA_VETO_ROW_NOTE, acaVetoExplanation } from './acaVetoCopy'
 import { fmtMoney, fmtMoneyCompact } from './format'
 import {
@@ -110,7 +110,7 @@ export function WhyRecommendationPanel({
   tournament,
   objectiveLabel,
 }: {
-  tournament: ExactLedgerTournament
+  tournament: ExactLedgerTournamentSummary
   objectiveLabel: string
 }) {
   const estateObjective = tournament.policyId === 'max-after-tax-estate'

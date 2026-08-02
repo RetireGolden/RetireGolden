@@ -467,6 +467,20 @@ export interface ExactLedgerTournament {
   retirementActionReadinessVeto: RetirementActionReadinessVeto | null
 }
 
+/** Worker/UI-safe veto summary; the authoritative result remains engine-side. */
+export type RetirementActionReadinessVetoSummary = Omit<
+  RetirementActionReadinessVeto,
+  'vetoedResult'
+>
+
+/** Worker/UI-safe tournament representation with no retained ProjectionResult. */
+export type ExactLedgerTournamentSummary = Omit<
+  ExactLedgerTournament,
+  'retirementActionReadinessVeto'
+> & Readonly<{
+  retirementActionReadinessVeto: RetirementActionReadinessVetoSummary | null
+}>
+
 /** A candidate only replaces the MILP schedule when it wins by more than this. */
 const DEFAULT_TOURNAMENT_SWITCH_MARGIN_DOLLARS = 1_000
 

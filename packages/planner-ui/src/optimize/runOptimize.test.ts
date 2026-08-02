@@ -96,6 +96,8 @@ describe('runOptimizeRequest', () => {
     expect(['milp', 'candidate', 'incumbent', 'none']).toContain(tournament.winnerSource)
     expect(Array.isArray(tournament.winnerConversions)).toBe(true)
     expect(tournament).not.toHaveProperty('result')
+    expect(tournament.retirementActionReadinessVeto).not.toBeNull()
+    expect(tournament.retirementActionReadinessVeto).not.toHaveProperty('vetoedResult')
     expect(() => structuredClone(tournament)).not.toThrow()
 
     // Claim-age co-optimization is opt-in; a plain request reports null.

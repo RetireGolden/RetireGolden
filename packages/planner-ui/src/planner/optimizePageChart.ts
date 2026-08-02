@@ -1,5 +1,5 @@
 import type { OptimizedSchedule } from '@retiregolden/engine/strategies/optimizer'
-import type { ExactLedgerTournament } from '@retiregolden/engine/projection/optimizePlan'
+import type { ExactLedgerTournamentSummary } from '@retiregolden/engine/projection/optimizePlan'
 import type { OptimizePostProcessing } from '../optimize/messages'
 
 export interface OptimizeChartRow {
@@ -16,7 +16,7 @@ export function positiveConversionCount(
 }
 
 export function actionableTournamentConversions(
-  tournament: Pick<ExactLedgerTournament, 'winnerSource' | 'winnerConversions'> | null,
+  tournament: Pick<ExactLedgerTournamentSummary, 'winnerSource' | 'winnerConversions'> | null,
 ): { year: number; amount: number }[] {
   return tournament?.winnerSource === 'candidate' || tournament?.winnerSource === 'milp'
     ? tournament.winnerConversions
@@ -40,7 +40,7 @@ export function isCalculatedIdentityWithheldPostProcessing(
 
 export function displayedCleanedConversions(
   tournament: Pick<
-    ExactLedgerTournament,
+    ExactLedgerTournamentSummary,
     'winnerSource' | 'winnerConversions' | 'retirementActionReadinessVeto'
   > | null,
   postProcessed: OptimizePostProcessing | null,
@@ -57,7 +57,7 @@ export function displayedCleanedConversions(
 
 export function displayedScheduleAlreadyExecuted(
   tournament: Pick<
-    ExactLedgerTournament,
+    ExactLedgerTournamentSummary,
     'winnerSource' | 'searchRefined' | 'retirementActionReadinessVeto'
   > | null,
 ): boolean {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { asAccountId, asPersonId } from '../actions/identity.js'
+import { asAccountId, asActionId, asAllocationId, asPersonId } from '../actions/identity.js'
 import { asPositiveUsdCents } from '../actions/money.js'
 import type { RothConversionCandidateIdentityIntent } from '../actions/retirementActionCandidateIdentityAllocator.js'
 import { createDecisionContext, evaluateCandidate } from '../decisions/evaluateCandidate.js'
@@ -156,6 +156,58 @@ describe('compareOptimizerAllocatedCandidate', () => {
     const input = bridgeFixture()
     input.readinessVeto.vetoedResult.years[0]!.rothConversion = 1
     input.allocatedEvaluation.candidateResult.years[0]!.rothConversion = 1
+
+    expect(compareOptimizerAllocatedCandidate(input)).not.toBeNull()
+  })
+
+  it('subtracts preserved named-conversion execution before matching the allocated increment', () => {
+    const input = bridgeFixture()
+    const patchStrategies = input.allocatedEvaluation.candidate.planPatch?.['strategies'] as {
+      retirementActions: Array<{
+        actionId: string
+        executionSequence: number
+        requestedAmount: number
+        provenance: { source: 'manual' | 'generator'; sourceId?: string }
+        allocations: Array<{
+          allocationId: string
+          sourceAccountId: string
+          requestedAmount: number
+        }>
+      }>
+    }
+    const allocatedRequest = patchStrategies.retirementActions.at(-1)!
+    const preservedRequest = {
+      ...structuredClone(allocatedRequest),
+      actionId: asActionId('preserved-conversion'),
+      executionSequence: 2,
+      requestedAmount: asPositiveUsdCents(2_000_00),
+      provenance: { source: 'manual' as const },
+      allocations: [{
+        allocationId: asAllocationId('preserved-allocation'),
+        sourceAccountId: asAccountId('trad-a'),
+        requestedAmount: asPositiveUsdCents(2_000_00),
+      }],
+    }
+    input.plan.strategies.retirementActions = [preservedRequest as never]
+    patchStrategies.retirementActions.unshift(preservedRequest)
+
+    for (const result of [
+      input.readinessVeto.vetoedResult,
+      input.allocatedEvaluation.candidateResult,
+    ]) {
+      const year = result.years.find((entry) => entry.year === 2027)!
+      year.rothConversion = 7_000
+      ;(year as unknown as Record<string, unknown>)['retirementActionPublication'] = {
+        taxYear: 2027,
+        records: [{
+          actionId: preservedRequest.actionId,
+          kind: 'rothConversion',
+          year: 2027,
+          request: structuredClone(preservedRequest),
+          executedAmount: preservedRequest.requestedAmount,
+        }],
+      }
+    }
 
     expect(compareOptimizerAllocatedCandidate(input)).not.toBeNull()
   })

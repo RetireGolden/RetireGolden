@@ -12,7 +12,10 @@ import { objectivePolicies } from '@retiregolden/engine/decisions'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import type { ProjectionSummary } from '@retiregolden/engine/projection/compare'
 import type { ProjectionResult } from '@retiregolden/engine/projection/types'
-import type { ExactLedgerTournament, ExactLedgerValidation } from '@retiregolden/engine/projection/optimizePlan'
+import type {
+  ExactLedgerTournamentSummary,
+  ExactLedgerValidation,
+} from '@retiregolden/engine/projection/optimizePlan'
 import type { OptimizeResult } from '../optimize/messages'
 import { acaVetoYears, formatYearList } from '../planner/acaVetoCopy'
 import { fmtMoney } from '../planner/format'
@@ -440,9 +443,9 @@ export function buildStandaloneReportHtml(input: StandaloneReportInput): string 
 }
 
 function lossReasonForCandidate(
-  tournament: ExactLedgerTournament,
+  tournament: ExactLedgerTournamentSummary,
   validation: ExactLedgerValidation | null,
-  candidate: ExactLedgerTournament['candidates'][number],
+  candidate: ExactLedgerTournamentSummary['candidates'][number],
 ): string {
   if (tournament.winnerCandidateId === candidate.id) return 'Selected winner on the full year-by-year projection.'
   const readinessVeto = tournament.retirementActionReadinessVeto

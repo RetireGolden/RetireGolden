@@ -1,10 +1,10 @@
-import type { RetirementActionReadinessVeto } from '@retiregolden/engine/projection/optimizePlan'
+import type { RetirementActionReadinessVetoSummary } from '@retiregolden/engine/projection/optimizePlan'
 
 export const RETIREMENT_ACTION_READINESS_VETO_ROW_NOTE =
   'calculated winner; withheld pending account allocation'
 
 export function retirementActionReadinessVetoExplanation(
-  veto: RetirementActionReadinessVeto,
+  veto: RetirementActionReadinessVetoSummary,
 ): string {
   const source = veto.vetoedWinnerSource === 'milp'
     ? "The solver's calculated schedule"

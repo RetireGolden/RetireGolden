@@ -195,6 +195,77 @@ function committedExecutionCentsByYear(
   return byYear
 }
 
+function preservedConversionRequests(
+  plan: Readonly<Plan>,
+  allocatedActionIds: ReadonlySet<string>,
+): RothConversionRequest[] | null {
+  const requests: RothConversionRequest[] = []
+  const seenActionIds = new Set<string>()
+  for (const rawRequest of plan.strategies.retirementActions) {
+    if (record(rawRequest)?.['kind'] !== 'rothConversion') continue
+    const parsed = rothConversionRequestSchema.safeParse(rawRequest)
+    if (!parsed.success || allocatedActionIds.has(parsed.data.actionId) ||
+        seenActionIds.has(parsed.data.actionId)) return null
+    seenActionIds.add(parsed.data.actionId)
+    requests.push(parsed.data)
+  }
+  return requests
+}
+
+function publishedExecutionCentsByYear(
+  result: Readonly<ExactDecisionEvaluation['candidateResult']>,
+  requests: readonly Readonly<RothConversionRequest>[],
+): Map<number, number> | null {
+  const activeYears = new Set(result.years.map((year) => year.year))
+  const requestById = new Map<string, Readonly<RothConversionRequest>>(
+    requests
+      .filter((request) => activeYears.has(request.year))
+      .map((request) => [request.actionId, request]),
+  )
+  const seen = new Set<string>()
+  const byYear = new Map<number, number>()
+  for (const year of result.years) {
+    const publication = record(year.retirementActionPublication)
+    if (publication !== null && publication['taxYear'] !== year.year) return null
+    const records = publication?.['records']
+    if (!Array.isArray(records)) continue
+    for (const rawRecord of records) {
+      const entry = record(rawRecord)
+      const actionId = entry?.['actionId']
+      if (entry === null || !nonBlank(actionId)) continue
+      const request = requestById.get(actionId)
+      if (request === undefined) continue
+      const parsedRequest = rothConversionRequestSchema.safeParse(entry['request'])
+      const executedAmount = entry['executedAmount']
+      if (seen.has(actionId) || entry['kind'] !== 'rothConversion' ||
+          entry['year'] !== request.year || year.year !== request.year ||
+          !parsedRequest.success || canonicalJson(parsedRequest.data) !== canonicalJson(request) ||
+          !Number.isSafeInteger(executedAmount) || (executedAmount as number) < 0 ||
+          (executedAmount as number) > request.requestedAmount) return null
+      seen.add(actionId)
+      if ((executedAmount as number) === 0) continue
+      const next = (byYear.get(request.year) ?? 0) + (executedAmount as number)
+      if (!Number.isSafeInteger(next) || next > Number.MAX_SAFE_INTEGER) return null
+      byYear.set(request.year, next)
+    }
+  }
+  return seen.size === requestById.size ? byYear : null
+}
+
+function subtractYearCents(
+  total: ReadonlyMap<number, number>,
+  preserved: ReadonlyMap<number, number>,
+): Map<number, number> | null {
+  const residual = new Map(total)
+  for (const [year, cents] of preserved) {
+    const next = (residual.get(year) ?? 0) - cents
+    if (!Number.isSafeInteger(next) || next < 0) return null
+    if (next === 0) residual.delete(year)
+    else residual.set(year, next)
+  }
+  return residual
+}
+
 function resultConversionCentsByYear(
   result: Readonly<ExactDecisionEvaluation['candidateResult']>,
 ): Map<number, number> | null {
@@ -244,12 +315,28 @@ export function compareOptimizerAllocatedCandidate(
     const executedCents = committedExecutionCentsByYear(evaluation, allocated.requests)
     const vetoedResultCents = resultConversionCentsByYear(veto.vetoedResult)
     const allocatedResultCents = resultConversionCentsByYear(evaluation.candidateResult)
+    const allocatedActionIds = new Set(allocated.actionIds)
+    const preservedRequests = preservedConversionRequests(plan, allocatedActionIds)
+    const vetoedPreservedCents = preservedRequests === null
+      ? null
+      : publishedExecutionCentsByYear(veto.vetoedResult, preservedRequests)
+    const allocatedPreservedCents = preservedRequests === null
+      ? null
+      : publishedExecutionCentsByYear(evaluation.candidateResult, preservedRequests)
+    const vetoedIncrementCents = vetoedResultCents === null || vetoedPreservedCents === null
+      ? null
+      : subtractYearCents(vetoedResultCents, vetoedPreservedCents)
+    const allocatedIncrementCents = allocatedResultCents === null || allocatedPreservedCents === null
+      ? null
+      : subtractYearCents(allocatedResultCents, allocatedPreservedCents)
     if (requestedCents === null || executedCents === null || vetoedResultCents === null ||
-        allocatedResultCents === null ||
+        allocatedResultCents === null || preservedRequests === null ||
+        vetoedPreservedCents === null || allocatedPreservedCents === null ||
+        vetoedIncrementCents === null || allocatedIncrementCents === null ||
         !sameYearCents(winnerCents, requestedCents) ||
         !sameYearCents(winnerCents, executedCents) ||
-        !sameYearCents(winnerCents, vetoedResultCents) ||
-        !sameYearCents(winnerCents, allocatedResultCents)) return null
+        !sameYearCents(winnerCents, vetoedIncrementCents) ||
+        !sameYearCents(winnerCents, allocatedIncrementCents)) return null
 
     const exactLedgerComparison = compareOptimizerExactLedgerResults(
       veto.vetoedResult,
