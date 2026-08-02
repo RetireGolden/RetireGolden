@@ -47,6 +47,9 @@ const qcdCandidateAdapterDeepApi = await import(
 const candidateIdentityAllocatorDeepApi = await import(
   '@retiregolden/engine/actions/retirementActionCandidateIdentityAllocator'
 )
+const annualOwnedIraPoolCapacityDeepApi = await import(
+  '@retiregolden/engine/actions/annualOwnedNonRothIraPoolCapacity'
+)
 const annualQcdPrerequisiteDeepApi = await import(
   '@retiregolden/engine/actions/annualQcdExecutionPrerequisite'
 )
@@ -95,6 +98,7 @@ const ownedIraAnnualPassProbeDeepApi = await import(
 )
 const canonicalActionDeepImports = [
   'annualIraBasisAllocation',
+  'annualOwnedNonRothIraPoolCapacity',
   'annualQcdExecutionPrerequisite',
   'annualQcdPhysicalExecution',
   'annualRetirementActionPublication',
@@ -144,6 +148,7 @@ const {
   asPositiveUsdCents,
   asUsdCents,
   allocateRetirementActionCandidateIdentity,
+  buildAnnualOwnedNonRothIraPoolCapacity,
   evaluateAnnualQcdExecutionPrerequisites,
   stageAnnualQcdPhysicalExecution,
   buildOwnedNonRothIraSeppAnnualDistributionInventoryEvidence,
@@ -186,6 +191,11 @@ assert.equal(
   allocateRetirementActionCandidateIdentity,
 )
 assert.equal(typeof allocateRetirementActionCandidateIdentity, 'function')
+assert.equal(
+  annualOwnedIraPoolCapacityDeepApi.buildAnnualOwnedNonRothIraPoolCapacity,
+  buildAnnualOwnedNonRothIraPoolCapacity,
+)
+assert.equal(typeof buildAnnualOwnedNonRothIraPoolCapacity, 'function')
 assert.equal(
   annualQcdPrerequisiteDeepApi.evaluateAnnualQcdExecutionPrerequisites,
   evaluateAnnualQcdExecutionPrerequisites,

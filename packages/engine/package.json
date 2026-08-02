@@ -66,6 +66,10 @@
       "types": "./dist/actions/annualIraBasisAllocation.d.ts",
       "default": "./dist/actions/annualIraBasisAllocation.js"
     },
+    "./actions/annualOwnedNonRothIraPoolCapacity": {
+      "types": "./dist/actions/annualOwnedNonRothIraPoolCapacity.d.ts",
+      "default": "./dist/actions/annualOwnedNonRothIraPoolCapacity.js"
+    },
     "./actions/annualQcdExecutionPrerequisite": {
       "types": "./dist/actions/annualQcdExecutionPrerequisite.d.ts",
       "default": "./dist/actions/annualQcdExecutionPrerequisite.js"
