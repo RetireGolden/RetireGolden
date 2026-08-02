@@ -44,6 +44,9 @@ const qcdCandidateAdapterDeepApi = await import(
 const candidateIdentityAllocatorDeepApi = await import(
   '@retiregolden/engine/actions/retirementActionCandidateIdentityAllocator'
 )
+const annualQcdPrerequisiteDeepApi = await import(
+  '@retiregolden/engine/actions/annualQcdExecutionPrerequisite'
+)
 const ordinaryWithdrawalCandidateAdapterDeepApi = await import(
   '@retiregolden/engine/decisions/ordinaryWithdrawalCandidateAdapter'
 )
@@ -82,6 +85,7 @@ const ownedIraAnnualPassProbeDeepApi = await import(
 )
 const canonicalActionDeepImports = [
   'annualIraBasisAllocation',
+  'annualQcdExecutionPrerequisite',
   'annualRetirementActionPublication',
   'annualRetirementPhysicalEventInventory',
   'civilDate',
@@ -129,6 +133,7 @@ const {
   asPositiveUsdCents,
   asUsdCents,
   allocateRetirementActionCandidateIdentity,
+  evaluateAnnualQcdExecutionPrerequisites,
   buildOwnedNonRothIraSeppAnnualDistributionInventoryEvidence,
   buildOwnedNonRothIraSeppCompletePriorElectionHistoryEvidence,
   buildOwnedNonRothIraSeppPriorPaymentHistoryEvidence,
@@ -169,6 +174,11 @@ assert.equal(
   allocateRetirementActionCandidateIdentity,
 )
 assert.equal(typeof allocateRetirementActionCandidateIdentity, 'function')
+assert.equal(
+  annualQcdPrerequisiteDeepApi.evaluateAnnualQcdExecutionPrerequisites,
+  evaluateAnnualQcdExecutionPrerequisites,
+)
+assert.equal(typeof evaluateAnnualQcdExecutionPrerequisites, 'function')
 assert.equal(typeof reviewAndReplaceRetirementActionManually, 'function')
 assert.equal(
   ordinaryWithdrawalCandidateAdapterDeepApi
