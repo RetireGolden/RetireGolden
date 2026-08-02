@@ -56,6 +56,9 @@ const annualQcdPrerequisiteDeepApi = await import(
 const annualQcdPhysicalDeepApi = await import(
   '@retiregolden/engine/actions/annualQcdPhysicalExecution'
 )
+const annualQcdResidualDeepApi = await import(
+  '@retiregolden/engine/actions/annualQcdResidualForm8606'
+)
 const annualQcdPostPassDeepApi = await import(
   '@retiregolden/engine/actions/annualQcdTaxCharacterPostPass'
 )
@@ -104,6 +107,7 @@ const canonicalActionDeepImports = [
   'annualOwnedNonRothIraPoolCapacity',
   'annualQcdExecutionPrerequisite',
   'annualQcdPhysicalExecution',
+  'annualQcdResidualForm8606',
   'annualQcdTaxCharacterPostPass',
   'annualRetirementActionPublication',
   'annualRetirementPhysicalEventInventory',
@@ -155,6 +159,7 @@ const {
   buildAnnualOwnedNonRothIraPoolCapacity,
   evaluateAnnualQcdExecutionPrerequisites,
   stageAnnualQcdPhysicalExecution,
+  stageAnnualQcdResidualForm8606,
   stageAnnualQcdTaxCharacterPostPass,
   buildOwnedNonRothIraSeppAnnualDistributionInventoryEvidence,
   buildOwnedNonRothIraSeppCompletePriorElectionHistoryEvidence,
@@ -211,6 +216,11 @@ assert.equal(
   stageAnnualQcdPhysicalExecution,
 )
 assert.equal(typeof stageAnnualQcdPhysicalExecution, 'function')
+assert.equal(
+  annualQcdResidualDeepApi.stageAnnualQcdResidualForm8606,
+  stageAnnualQcdResidualForm8606,
+)
+assert.equal(typeof stageAnnualQcdResidualForm8606, 'function')
 assert.equal(
   annualQcdPostPassDeepApi.stageAnnualQcdTaxCharacterPostPass,
   stageAnnualQcdTaxCharacterPostPass,

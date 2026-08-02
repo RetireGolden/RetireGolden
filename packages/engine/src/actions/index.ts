@@ -39,6 +39,16 @@ export {
   type StageAnnualQcdPhysicalExecutionResult,
 } from './annualQcdPhysicalExecution.js'
 export {
+  stageAnnualQcdResidualForm8606,
+  type AnnualQcdResidualForm8606Blocked,
+  type AnnualQcdResidualForm8606Issue,
+  type AnnualQcdResidualForm8606PoolEvidence,
+  type AnnualQcdResidualForm8606Staged,
+  type AnnualQcdResidualRemainderBinding,
+  type StageAnnualQcdResidualForm8606Input,
+  type StageAnnualQcdResidualForm8606Result,
+} from './annualQcdResidualForm8606.js'
+export {
   stageAnnualQcdTaxCharacterPostPass,
   type AnnualQcdPersonalLimitEvidence,
   type AnnualQcdPostPassApplication,

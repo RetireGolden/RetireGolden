@@ -78,6 +78,10 @@
       "types": "./dist/actions/annualQcdPhysicalExecution.d.ts",
       "default": "./dist/actions/annualQcdPhysicalExecution.js"
     },
+    "./actions/annualQcdResidualForm8606": {
+      "types": "./dist/actions/annualQcdResidualForm8606.d.ts",
+      "default": "./dist/actions/annualQcdResidualForm8606.js"
+    },
     "./actions/annualQcdTaxCharacterPostPass": {
       "types": "./dist/actions/annualQcdTaxCharacterPostPass.d.ts",
       "default": "./dist/actions/annualQcdTaxCharacterPostPass.js"
