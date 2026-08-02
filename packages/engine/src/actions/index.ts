@@ -206,6 +206,7 @@ export {
 } from './execution.js'
 export {
   annualRetirementActionExecutorSources,
+  ordinaryWithdrawalPublicationEligibility,
   ordinaryWithdrawalPublicationSource,
   publishAnnualRetirementActions,
   type AnnualRetirementActionAllocationRecord,
@@ -214,6 +215,7 @@ export {
   type AnnualRetirementActionPublicationSource,
   type AnnualRetirementActionRecord,
   type AnnualRetirementActionScheduleDiagnostic,
+  type OrdinaryWithdrawalPublicationEligibility,
   type PublishAnnualRetirementActionsInput,
 } from './annualRetirementActionPublication.js'
 export {

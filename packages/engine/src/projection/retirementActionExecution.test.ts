@@ -6,7 +6,9 @@ import {
   asAllocationId,
   asPersonId,
   asPositiveUsdCents,
+  ordinaryWithdrawalPublicationEligibility,
   parseRetirementActionRequest,
+  type ExecuteOrdinaryWithdrawalsResult,
   type OrdinaryWithdrawalRequest,
   type RetirementActionRequest,
 } from '../actions/index.js'
@@ -874,8 +876,81 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
       committed: false,
       evidence: [],
     })
+    expect(year.retirementActionPublication).toMatchObject({
+      scheduleDiagnostics: [
+        { actionId: 'conflict-a', kind: 'executionSequenceConflict' },
+        { actionId: 'conflict-b', kind: 'executionSequenceConflict' },
+      ],
+    })
     expect(year.balances['cash-a']).toBe(80)
     expect(year.withdrawals).toMatchObject({ cash: 20, total: 20 })
+  })
+
+  it('keeps duplicate action IDs in the legacy executor diagnostics without publishing', () => {
+    const plan = basePlan()
+    plan.accounts = [cash('cash-a', 100)]
+    plan.strategies.retirementActions = [
+      withdrawal({
+        actionId: 'duplicate-action',
+        accountId: 'cash-a',
+        dollars: 10,
+        sequence: 1,
+      }),
+      withdrawal({
+        actionId: 'unique-before-mutation',
+        accountId: 'cash-a',
+        dollars: 10,
+        sequence: 2,
+      }),
+    ]
+    const executionPlan = validate(plan)
+    executionPlan.strategies.retirementActions[1]!.actionId =
+      asActionId('duplicate-action')
+
+    const year = simulatePlan(executionPlan, {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: noTax,
+    }).years[0]!
+
+    expect(year.retirementActionExecution).toMatchObject({
+      committed: false,
+      evidence: [],
+      scheduleIssues: [{
+        kind: 'duplicateActionId',
+        actionId: 'duplicate-action',
+        inputIndexes: [0, 1],
+      }],
+    })
+    expect(year).not.toHaveProperty('retirementActionPublication')
+  })
+
+  it.each([
+    {
+      kind: 'actionYearMismatch' as const,
+      actionId: asActionId('wrong-year'),
+      expectedYear: 2026,
+      actualYear: 2027,
+    },
+    {
+      kind: 'duplicateActionId' as const,
+      actionId: asActionId('duplicate'),
+      inputIndexes: [0, 1] as [number, number],
+    },
+  ])('classifies $kind as legacy-only at the simulator publication boundary', (issue) => {
+    const execution: ExecuteOrdinaryWithdrawalsResult = {
+      committed: false,
+      requests: [],
+      scheduleIssues: [issue],
+      balances: [],
+      taxableBases: [],
+      evidence: [],
+    }
+
+    expect(ordinaryWithdrawalPublicationEligibility(execution)).toEqual({
+      kind: 'legacyScheduleDiagnosticsOnly',
+      unsupportedIssueKinds: [issue.kind],
+    })
   })
 
   it('binds annual alive evidence and owner identity before movement', () => {

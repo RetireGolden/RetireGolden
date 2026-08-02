@@ -12,6 +12,7 @@ import { parseCivilIsoDate } from './civilDate.js'
 import type {
   ExecuteOrdinaryWithdrawalsResult,
   OrdinaryWithdrawalExecutionEvidence,
+  OrdinaryWithdrawalExecutionScheduleIssue,
 } from './execution.js'
 import {
   accountIdSchema,
@@ -213,6 +214,21 @@ function requestAllocations(
   }
   return []
 }
+
+type UnsupportedLegacyScheduleIssueKind = Exclude<
+  OrdinaryWithdrawalExecutionScheduleIssue['kind'],
+  'executionSequenceConflict'
+>
+
+export type OrdinaryWithdrawalPublicationEligibility =
+  | Readonly<{ kind: 'publicationEligible' }>
+  | Readonly<{
+      kind: 'legacyScheduleDiagnosticsOnly'
+      unsupportedIssueKinds: readonly [
+        UnsupportedLegacyScheduleIssueKind,
+        ...UnsupportedLegacyScheduleIssueKind[],
+      ]
+    }>
 
 function allocationOrder(
   left: Readonly<SourceAllocationRequest>,
@@ -467,15 +483,31 @@ const dateReasonScheduleStates: Partial<
  * contract. Balance, character, and penalty artifacts remain on the native
  * executor result.
  */
+export function ordinaryWithdrawalPublicationEligibility(
+  execution: Readonly<ExecuteOrdinaryWithdrawalsResult>,
+): Readonly<OrdinaryWithdrawalPublicationEligibility> {
+  const unsupportedIssueKinds = [...new Set(
+    execution.scheduleIssues.flatMap((issue) =>
+      issue.kind === 'executionSequenceConflict' ? [] : [issue.kind]),
+  )].sort(compareUtf16CodeUnits) as UnsupportedLegacyScheduleIssueKind[]
+  return unsupportedIssueKinds.length === 0
+    ? { kind: 'publicationEligible' }
+    : {
+        kind: 'legacyScheduleDiagnosticsOnly',
+        unsupportedIssueKinds: [
+          unsupportedIssueKinds[0]!,
+          ...unsupportedIssueKinds.slice(1),
+        ],
+      }
+}
+
 export function ordinaryWithdrawalPublicationSource(
   execution: Readonly<ExecuteOrdinaryWithdrawalsResult>,
 ): Readonly<AnnualRetirementActionPublicationSource> {
-  if (
-    execution.scheduleIssues.some((issue) =>
-      issue.kind !== 'executionSequenceConflict')
-  ) {
+  const eligibility = ordinaryWithdrawalPublicationEligibility(execution)
+  if (eligibility.kind === 'legacyScheduleDiagnosticsOnly') {
     throw new Error(
-      'Cannot publish an annual action batch whose schedule failure has no typed refusal reason',
+      `Cannot publish an annual action batch whose legacy schedule issues have no canonical typed refusal reasons: ${eligibility.unsupportedIssueKinds.join(', ')}`,
     )
   }
 
