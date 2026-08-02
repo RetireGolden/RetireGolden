@@ -5,6 +5,7 @@ import {
 } from './annualQcdDeductionTreatmentCoordinator.js'
 import type { AnnualQcdExecutionPrerequisiteEvidence } from './annualQcdExecutionPrerequisite.js'
 import { stageAnnualQcdPhysicalExecution, type AnnualQcdPhysicalApplication } from './annualQcdPhysicalExecution.js'
+import { parseCivilIsoDate } from './civilDate.js'
 import { stageAnnualQcdResidualForm8606, type AnnualQcdResidualRemainderBinding } from './annualQcdResidualForm8606.js'
 import type { AnnualQcdPostPassApplication } from './annualQcdTaxCharacterPostPass.js'
 import type { AccountId, ActionId, AllocationId, PersonId } from './identity.js'
@@ -107,9 +108,10 @@ type QcdIraEligibilityFact = Readonly<AnnualQcdExecutionPrerequisiteEvidence>['e
 // physical trim. Shared with `finalize` so the source diagnosis survives even
 // when the upstream prerequisite rejects the action before physical staging.
 function sepSimpleActivityAccepted(fact: QcdIraEligibilityFact): boolean {
-  return fact?.subtype === 'traditional' ? fact.qcdActivity.kind === 'notApplicable'
+  return fact?.subtype === 'traditional' ? fact.qcdActivity?.kind === 'notApplicable'
     : fact?.qcdActivity?.kind === 'employerContribution' && fact.qcdActivity.actionTaxYear === 2026 &&
-      fact.qcdActivity.planYearEndDate.trim().length > 0 && fact.qcdActivity.evidenceId.trim().length > 0 &&
+      parseCivilIsoDate(fact.qcdActivity.planYearEndDate)?.year === 2026 &&
+      fact.qcdActivity.evidenceId.trim().length > 0 &&
       fact.qcdActivity.employerContributionMadeForPlanYear === false
 }
 function acceptedSource(prerequisite: Readonly<AnnualQcdExecutionPrerequisiteEvidence>, postPass: Readonly<AnnualQcdPostPassApplication>): Readonly<AcceptedQcdSourceEligibilityEvidence> {
@@ -136,8 +138,11 @@ function finalize(input: CoordinateAnnualQcdDeductionTreatmentInput): AnnualQcdD
   if (physical.status !== 'annualQcdPhysicalExecutionStaged' || physical.taxYear !== 2026) {
     // The prerequisite rejects an ineligible SEP/SIMPLE source before physical
     // staging can succeed. Diagnose that as the source refusal the registry
-    // names rather than reporting a generic physical failure.
-    if (input.postPassInput.physicalInput.prerequisite.evidence.some((entry) => !sepSimpleActivityAccepted(entry.eligibility.source.iraEligibilityFact))) {
+    // names rather than reporting a generic physical failure — but only when
+    // the prerequisite is what actually failed, so a balance or schedule
+    // failure keeps its own diagnosis instead of being masked.
+    if (physical.status === 'annualQcdPhysicalExecutionBlocked' && physical.issues[0]?.kind === 'prerequisiteInvalid' &&
+      input.postPassInput.physicalInput.prerequisite.evidence.some((entry) => !sepSimpleActivityAccepted(entry.eligibility.source.iraEligibilityFact))) {
       fail('sourceInvalid', 'QCD character source/action evidence is not an accepted owned traditional IRA source.')
     }
     fail('physicalInvalid', 'Canonical 2026 QCD physical rebuilding failed.')

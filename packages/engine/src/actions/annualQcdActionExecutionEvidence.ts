@@ -179,7 +179,11 @@ function actionEvidence(action: Readonly<AnnualQcdUnifiedFinalizationActionEvide
     donor.age70HalfThresholdDate, 'executed', donor.aliveEvidence.evidenceId, claimed) : null
   const rmdSatisfiedBefore = asUsdCents(context.rmdPool.rmdRequiredAmount - context.application.rmdRemainingBefore)
   const rmdPool = { poolId: context.rmdPool.poolId, scope: 'donorOwnedIraRmdPool' as const, donorPersonId: physical.ownerPersonId,
-    inheritedFromPersonId: null, accountIds: context.rmdPool.sourceAccountIds, taxYear: physical.taxYear, rmdRequiredAmount: context.rmdPool.rmdRequiredAmount,
+    // Canonical order: the staged pool identity is derived from a sorted copy,
+    // so publishing the caller's array order would make this record — and the
+    // execution and publication digests built from it — depend on caller input
+    // ordering for otherwise byte-identical annual QCD runs.
+    inheritedFromPersonId: null, accountIds: [...context.rmdPool.sourceAccountIds].sort(compareUtf16CodeUnits), taxYear: physical.taxYear, rmdRequiredAmount: context.rmdPool.rmdRequiredAmount,
     rmdSatisfiedBefore, rmdRemainingBefore: context.application.rmdRemainingBefore, rmdSatisfiedByAction: context.application.rmdSatisfiedByAction,
     rmdRemainingAfter: context.application.rmdRemainingAfter, upstreamEvidenceId: context.rmdPool.upstreamEvidenceId }
   const taxablePool = { scope: 'donorOwnedNonRothIras' as const, inheritedFromPersonId: null, accountIds: context.pool.baseForm8606Facts.accountIds,

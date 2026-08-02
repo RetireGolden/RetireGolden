@@ -81,6 +81,18 @@ function evidenceRole(record: Record<string, unknown>): string {
   if (record.donorPersonId !== undefined && record.taxYear !== undefined && record.amountCents !== undefined) return 'deductibleContributionEvidenceId'
   return `evidenceId:${String(record.predicate ?? 'untyped')}`
 }
+// One SEP/SIMPLE activity fact is reachable in two legitimate shapes: the Plan's
+// persisted `sepSimpleActivities` record (carrying `sourceAccountId` and
+// `provenance`) and the eligibility context's `qcdActivity` reprojection of the
+// same fact (carrying `kind`). Comparing whole records would reject every
+// accepted SEP/SIMPLE QCD as an identifier collision, so this role is compared
+// on the fields that actually carry its meaning. Two genuinely different
+// activity facts sharing one evidence ID still collide.
+const SEP_SIMPLE_SEMANTIC_KEYS = ['actionTaxYear', 'planYearEndDate', 'employerContributionMadeForPlanYear'] as const
+function semanticProjection(role: string, record: Record<string, unknown>): unknown {
+  if (role !== 'sepSimpleActivityEvidenceId') return record
+  return Object.fromEntries(SEP_SIMPLE_SEMANTIC_KEYS.map((key) => [key, record[key]]))
+}
 function validateEvidenceRoles(value: unknown, roles = new Map<string, string>(), semantics = new Map<string, string>()): void {
   if (value === null || typeof value !== 'object') return
   const record = value as Record<string, unknown>
@@ -89,7 +101,7 @@ function validateEvidenceRoles(value: unknown, roles = new Map<string, string>()
       const role = key === 'evidenceId' ? evidenceRole(record) : key; const priorRole = roles.get(child)
       if (priorRole !== undefined && priorRole !== role) fail('identifierCollision', 'One evidence ID claims incompatible upstream evidence roles.')
       roles.set(child, role)
-      if (key === 'evidenceId') { const semantic = canonical(record); const prior = semantics.get(child)
+      if (key === 'evidenceId') { const semantic = canonical(semanticProjection(role, record)); const prior = semantics.get(child)
         if (prior !== undefined && prior !== semantic) fail('identifierCollision', 'One evidence ID claims incompatible upstream evidence facts.')
         semantics.set(child, semantic) }
     } else validateEvidenceRoles(child, roles, semantics)
