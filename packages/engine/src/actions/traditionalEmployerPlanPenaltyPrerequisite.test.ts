@@ -847,6 +847,18 @@ describe('traditional employer-plan penalty prerequisite', () => {
     expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)).toThrow(/distinct evidence IDs/)
   })
 
+  it('rejects current-payment SEPP authority IDs reused across negative facts', () => {
+    const value = input({ separationDate: '2029-12-31' })
+    const sepp = currentSepp(value)
+    sepp.payment.currentDistributionGrossAmount = asUsdCents(
+      sepp.payment.currentDistributionGrossAmount - 1,
+    )
+    sepp.payment.currentDistributionEvidenceId = value.separationEvidence!.separationEvidenceId
+    value.seppEvidence = sepp
+
+    expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)).toThrow(/distinct evidence IDs/)
+  })
+
   it('returns stable deeply frozen structural evidence', () => {
     const first = evaluateTraditionalEmployerPlanPenaltyPrerequisite(
       input({ separationDate: '2029-12-31' }),

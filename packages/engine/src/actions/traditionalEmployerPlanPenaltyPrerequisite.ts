@@ -133,8 +133,8 @@ export interface TraditionalEmployerPlanRuleOf55Assessment {
 export interface TraditionalEmployerPlanSeppAssessment {
   exception: 'employerPlanSepp'
   disposition: 'provisional' | 'refused'
-  characterCoverageEvidenceId: string
-  characterEvidenceIds: readonly string[]
+  characterCoverageEvidenceId: string; characterEvidenceIds: readonly string[]
+  authorityEvidenceIds: readonly string[]
   statusEvidence: Readonly<TraditionalEmployerPlanSeppEvidence>
   evidenceId: string
 }
@@ -392,7 +392,7 @@ function seppAssessment(
       exception: 'employerPlanSepp', disposition: 'refused',
       characterCoverageEvidenceId: coverage.evidenceId,
       characterEvidenceIds: coverage.characterEvidenceIds,
-      statusEvidence: structuredClone(value), evidenceId,
+      statusEvidence: structuredClone(value), authorityEvidenceIds: [value.seppStatusEvidenceId], evidenceId,
     }
   }
   const election = value.election
@@ -458,7 +458,7 @@ function seppAssessment(
     disposition: qualified ? 'provisional' : 'refused',
     characterCoverageEvidenceId: coverage.evidenceId,
     characterEvidenceIds: coverage.characterEvidenceIds,
-    statusEvidence: structuredClone(value),
+    statusEvidence: structuredClone(value), authorityEvidenceIds: distinctIds,
     evidenceId,
   }
 }
@@ -634,7 +634,7 @@ export function evaluateTraditionalEmployerPlanPenaltyPrerequisite(
             return unsupported(identity, coverage, ageEvidence, 'otherExceptionAttestation', null, ruleOf55Assessment, sepp, disability)
           }
           other = otherAssessment(input.otherExceptionAttestation, identity)
-          const negativeIds = [separation.separationEvidenceId, disability.disabilityEvidenceId, other.attestation.attestationEvidenceId, sepp.statusEvidence.status === 'none' ? sepp.statusEvidence.seppStatusEvidenceId : sepp.evidenceId]
+          const negativeIds = [separation.separationEvidenceId, disability.disabilityEvidenceId, other.attestation.attestationEvidenceId, ...sepp.authorityEvidenceIds]
           if (new Set(negativeIds).size !== negativeIds.length) throw new RangeError('Negative employer-penalty facts must use distinct evidence IDs')
           if (other.disposition === 'unsupported') {
             return unsupported(identity, coverage, ageEvidence, 'otherExceptionAdjudication', other.attestation, ruleOf55Assessment, sepp, disability)
