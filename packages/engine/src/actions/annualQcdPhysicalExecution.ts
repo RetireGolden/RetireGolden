@@ -161,6 +161,30 @@ function cents(value: bigint, label: string): UsdCents {
   return asUsdCents(Number(value))
 }
 
+function canonicalStructure(value: unknown): unknown {
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') return value
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) throw new TypeError('Canonical structures require finite numbers.')
+    return value
+  }
+  if (Array.isArray(value)) {
+    return value.map((entry) => entry === undefined ? null : canonicalStructure(entry))
+  }
+  if (typeof value === 'object') {
+    const normalized: Record<string, unknown> = {}
+    for (const key of Object.keys(value as Record<string, unknown>).sort(compareUtf16CodeUnits)) {
+      const entry = (value as Record<string, unknown>)[key]
+      if (entry !== undefined) normalized[key] = canonicalStructure(entry)
+    }
+    return normalized
+  }
+  throw new TypeError('Canonical structures require JSON-compatible values.')
+}
+
+function canonicalJson(value: unknown): string {
+  return JSON.stringify(canonicalStructure(value))
+}
+
 function canonicalPrerequisite(
   prerequisite: Readonly<AnnualQcdExecutionPrerequisitesEvaluated>,
   plan: Readonly<Plan>,
@@ -184,7 +208,7 @@ function canonicalPrerequisite(
   const rebuilt = evaluateAnnualQcdExecutionPrerequisites({
     taxYear: prerequisite.taxYear, plan, requests, runtimeEvidence,
   })
-  if (rebuilt.status !== 'evaluated' || JSON.stringify(rebuilt) !== JSON.stringify(prerequisite)) {
+  if (rebuilt.status !== 'evaluated' || canonicalJson(rebuilt) !== canonicalJson(prerequisite)) {
     fail('prerequisiteInvalid', 'QCD prerequisite differs from its authoritative Plan evaluation.')
   }
   if (rebuilt.evidence.some((entry) => entry.eligibility.decision.status !== 'accepted')) {
@@ -220,9 +244,24 @@ function claimedPrerequisiteIdentifiers(
   const claimed = new Set<string>()
   claimIdentifiers(prerequisite, claimed)
   for (const entry of prerequisite.evidence) {
-    claimed.add(deriveActionStructuralId('annual-qcd-execution-prerequisite', [entry]))
+    const evidenceId = deriveActionStructuralId('annual-qcd-execution-prerequisite', [entry])
+    if (claimed.has(evidenceId)) {
+      fail(
+        'prerequisiteInvalid',
+        `Derived QCD prerequisite evidence for "${entry.actionId}" collides with an input identifier.`,
+        prerequisite.taxYear,
+      )
+    }
+    claimed.add(evidenceId)
   }
   return claimed
+}
+
+function derivedPrerequisiteEvidenceIds(
+  prerequisite: Readonly<AnnualQcdExecutionPrerequisitesEvaluated>,
+): Set<string> {
+  return new Set(prerequisite.evidence.map((entry) =>
+    deriveActionStructuralId('annual-qcd-execution-prerequisite', [entry])))
 }
 
 function canonicalBalances(
@@ -329,7 +368,17 @@ function stageKnownYear(
   requests: readonly Readonly<QualifiedCharitableDistributionRequest>[],
 ): AnnualQcdPhysicalExecutionStaged {
   const claimedIdentifiers = claimedPrerequisiteIdentifiers(input.prerequisite)
-  claimIdentifiers(plan, claimedIdentifiers)
+  const planIdentifiers = new Set<string>()
+  claimIdentifiers(plan, planIdentifiers)
+  const derivedPrerequisiteIds = derivedPrerequisiteEvidenceIds(input.prerequisite)
+  if ([...derivedPrerequisiteIds].some((id) => planIdentifiers.has(id))) {
+    fail(
+      'prerequisiteInvalid',
+      'Derived QCD prerequisite evidence collides with an authoritative Plan identifier.',
+      input.prerequisite.taxYear,
+    )
+  }
+  planIdentifiers.forEach((id) => claimedIdentifiers.add(id))
   const sourceIds = new Set(requests.map((request) => request.allocation.sourceAccountId))
   const detachedBalances = canonicalBalances(input.openingBalances, sourceIds)
   detachedBalances.forEach((entry) => claimedIdentifiers.add(entry.accountId))

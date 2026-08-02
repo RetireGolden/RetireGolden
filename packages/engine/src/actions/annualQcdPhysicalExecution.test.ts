@@ -7,6 +7,7 @@ import type { QualifiedCharitableDistributionRequest } from './contract.js'
 import type { AccountOpeningBalanceSnapshot } from './execution.js'
 import { asAccountId, asActionId, asAllocationId, asPersonId } from './identity.js'
 import { asPositiveUsdCents, asUsdCents } from './money.js'
+import { deriveActionStructuralId } from './structuralId.js'
 import {
   evaluateAnnualQcdExecutionPrerequisites,
   type AnnualQcdExecutionPrerequisitesEvaluated,
@@ -162,6 +163,17 @@ function expectBlocked(
   })
 }
 
+function reverseObjectKeyOrder(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(reverseObjectKeyOrder)
+  if (value === null || typeof value !== 'object') return value
+  return Object.fromEntries(
+    Object.entries(value).reverse().map(([key, entry]) => [
+      key,
+      reverseObjectKeyOrder(entry),
+    ]),
+  )
+}
+
 describe('stageAnnualQcdPhysicalExecution', () => {
   it('stages a full detached source debit and copied charity without committing', () => {
     const value = input()
@@ -218,6 +230,18 @@ describe('stageAnnualQcdPhysicalExecution', () => {
 
     expectBlocked(result, 'prerequisiteInvalid')
     expect(result.taxYear).toBe(2026)
+  })
+
+  it('accepts an exact prerequisite independently of serialized object-key order', () => {
+    const value = input()
+    const reordered = {
+      ...value,
+      prerequisite: reverseObjectKeyOrder(value.prerequisite) as
+        AnnualQcdExecutionPrerequisitesEvaluated,
+    }
+
+    expect(stageAnnualQcdPhysicalExecution(reordered).status)
+      .toBe('annualQcdPhysicalExecutionStaged')
   })
 
   it('trims physical movement to the exact available source balance', () => {
@@ -434,6 +458,26 @@ describe('stageAnnualQcdPhysicalExecution', () => {
     ))
 
     expectBlocked(result, 'rmdEvidenceInvalid')
+  })
+
+  it('rejects a Plan identity that collides with derived prerequisite evidence', () => {
+    const baseline = input()
+    const derivedPrerequisiteId = deriveActionStructuralId(
+      'annual-qcd-execution-prerequisite',
+      [baseline.prerequisite.evidence[0]!],
+    )
+    const plan = planFixture()
+    plan.id = derivedPrerequisiteId as typeof plan.id
+
+    const result = stageAnnualQcdPhysicalExecution(input(
+      [request()],
+      [balance()],
+      [pool()],
+      undefined,
+      plan,
+    ))
+
+    expectBlocked(result, 'prerequisiteInvalid')
   })
 
   it('blocks malformed RMD arithmetic and missing upstream identity atomically', () => {
