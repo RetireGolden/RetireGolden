@@ -190,7 +190,7 @@ function ManualReviewRow({
       ) : null}
       {unavailablePeople.length > 0 ? (
         <div className="callout callout--warn" role="status">
-          <strong>Some account owners are unavailable for this action year.</strong>
+          <strong>Some household members are unavailable for this action year.</strong>
           <ul>
             {unavailablePeople.map((issue) => <li key={issue}>{issue}</li>)}
           </ul>
@@ -326,6 +326,7 @@ function ManualReviewRow({
                 label="Tax-funding amount"
                 value={draft.taxFundingAmountDollars}
                 allowNull
+                fractionDigits={2}
                 onCommit={(taxFundingAmountDollars) => setDraft((current) => ({
                   ...current,
                   taxFundingAmountDollars,

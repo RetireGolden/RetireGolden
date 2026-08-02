@@ -257,6 +257,9 @@ describe('RetirementActionsEditor', () => {
     expect(personOptions).toEqual([livingOwner.id])
     expect(personOptions).not.toContain(deceasedOwner.id)
     expect(mounted.container.textContent).toContain(
+      'Some household members are unavailable for this action year.',
+    )
+    expect(mounted.container.textContent).toContain(
       `${deceasedOwner.name} (ID ${deceasedOwner.id}) is not modeled alive in 2034; their last modeled-alive year is 2033.`,
     )
     expect(mounted.container.textContent).toContain('Needs source review')
@@ -689,6 +692,34 @@ describe('RetirementActionsEditor', () => {
     expect(mounted.container.textContent).toContain(
       'Enter a positive exact-cent tax-funding amount.',
     )
+  })
+
+  it('displays and preserves an exact-cent tax-funding amount', async () => {
+    const plan = editorPlan()
+    const target = migratedAction('legacyAggregateRothConversion')
+    plan.strategies.retirementActions = [target]
+    const mounted = await mount(plan)
+    const owner = plan.household.people[0]!
+
+    await completeConversionIdentityReview(mounted.container, owner.id)
+    const amount = controlByLabel<HTMLInputElement>(mounted.container, 'Tax-funding amount')
+    await change(amount, '0.07')
+    expect(amount.value).toBe('0.07')
+
+    await act(async () => controlByLabel<HTMLInputElement>(
+      mounted.container,
+      'I confirm this external cash is available',
+    ).click())
+    expect(amount.value).toBe('0.07')
+
+    const save = Array.from(mounted.container.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Save reviewed action',
+    )
+    await act(async () => save!.click())
+    expect(mounted.container.textContent).not.toContain(
+      'Enter a positive exact-cent tax-funding amount.',
+    )
+    expect(mounted.current().strategies.retirementActions).toEqual([target])
   })
 
   it('revokes external-cash attestation whenever its amount changes', async () => {

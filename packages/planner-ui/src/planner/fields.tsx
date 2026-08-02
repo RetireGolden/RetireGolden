@@ -202,6 +202,12 @@ interface NumericProps extends BaseProps {
   allowNull?: boolean
 }
 
+interface MoneyFieldProps extends NumericProps {
+  onInvalid?: () => void
+  /** Omit for the existing whole-dollar display; use 2 for exact-cent inputs. */
+  fractionDigits?: 0 | 2
+}
+
 function useLocalText(formatted: string) {
   const [text, setText] = useState(formatted)
   const [focused, setFocused] = useState(false)
@@ -224,9 +230,20 @@ export function MoneyField({
   onCommit,
   allowNull,
   onInvalid,
-}: NumericProps & { onInvalid?: () => void }) {
+  fractionDigits,
+}: MoneyFieldProps) {
   const id = useId()
-  const { text, setText, setFocused } = useLocalText(value === null ? '' : fmtMoney(value))
+  const formatted = value === null
+    ? ''
+    : fractionDigits === undefined
+      ? fmtMoney(value)
+      : value.toLocaleString('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: fractionDigits,
+          maximumFractionDigits: fractionDigits,
+        })
+  const { text, setText, setFocused } = useLocalText(formatted)
   return (
     <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id}>
       <div className="input-affix">
