@@ -110,6 +110,7 @@ const canonicalActionDeepImports = [
   'retirementActionManualReview',
   'rothConversionExecution',
   'taxableWithdrawalCharacter',
+  'traditionalEmployerPlanPenaltyPrerequisite',
 ]
 for (const moduleName of canonicalActionDeepImports) {
   const moduleApi = await import('@retiregolden/engine/actions/' + moduleName)

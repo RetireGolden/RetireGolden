@@ -279,6 +279,17 @@ export {
   type UnsupportedTraditionalEmployerPlanBasisClassification,
 } from './traditionalEmployerPlanWithdrawalCharacter.js'
 export {
+  evaluateTraditionalEmployerPlanPenaltyPrerequisite,
+  type EvaluateTraditionalEmployerPlanPenaltyPrerequisiteInput,
+  type EvaluateTraditionalEmployerPlanPenaltyPrerequisiteResult,
+  type TraditionalEmployerPlanNoSeppEvidence,
+  type TraditionalEmployerPlanOtherExceptionAttestation,
+  type TraditionalEmployerPlanPenaltyParticipantEvidence,
+  type TraditionalEmployerPlanSeparationEvidence,
+  type TraditionalEmployerPlanSeppCurrentPaymentEvidence,
+  type TraditionalEmployerPlanSeppEvidence,
+} from './traditionalEmployerPlanPenaltyPrerequisite.js'
+export {
   allocateAnnualIraBasis,
   type AllocateAnnualIraBasisInput,
   type AnnualIraBasisAllocationEntry,
