@@ -41,6 +41,15 @@ let counter = 0
 const testIds = () => `optp-${++counter}`
 const fixedNow = () => new Date('2026-06-11T00:00:00.000Z')
 
+function calculatedConversions(result: ProjectionResult): Array<{ year: number; amount: number }> {
+  return result.years
+    .filter((year) => year.rothConversion > 1)
+    .map((year) => ({
+      year: year.year,
+      amount: Math.round(year.rothConversion * 100) / 100,
+    }))
+}
+
 /** Retired single filer, traditional-heavy, modest spending: ripe for conversions. */
 function tradHeavyPlan(): Plan {
   const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
@@ -1782,6 +1791,8 @@ describe('exact-ledger candidate tournament', () => {
       vetoedValidation: { recommendationState: 'identityIncomplete' },
     })
     expect(tournament.retirementActionReadinessVeto?.vetoedConversions.length).toBeGreaterThan(0)
+    expect(calculatedConversions(tournament.retirementActionReadinessVeto!.vetoedResult))
+      .toEqual(tournament.retirementActionReadinessVeto!.vetoedConversions)
   })
 
   it('holds an explicitly applied incumbent schedule when nothing beats it', () => {
@@ -1910,6 +1921,7 @@ describe('objective-mode tournament (sustainable-spending plan, Step 5)', () => 
     expect(refined.searchRefined).toBe(true)
     expect(refined.searchSimulations).toBeGreaterThan(0)
     expect(veto.vetoedValidation.afterTaxEstateDelta).toBeGreaterThan(seedRow.afterTaxEstateDelta)
+    expect(calculatedConversions(veto.vetoedResult)).toEqual(veto.vetoedConversions)
     expect(row).toMatchObject({
       executedConversionTotal: veto.vetoedValidation.executedConversionTotal,
       afterTaxEstateDelta: veto.vetoedValidation.afterTaxEstateDelta,
@@ -1949,6 +1961,8 @@ describe('objective-mode tournament (sustainable-spending plan, Step 5)', () => 
     })
     expect(tournament.retirementActionReadinessVeto?.vetoedConversions)
       .toEqual(optimized.postProcessed?.cleanedSchedule.conversions)
+    expect(tournament.retirementActionReadinessVeto?.vetoedResult)
+      .toBe(optimized.postProcessed?.cleanedResult)
 
     for (const recommendationState of ['neutral', 'rejected'] as const) {
       const policyValidButEstateNonbeneficial = {
@@ -1988,6 +2002,8 @@ describe('objective-mode tournament (sustainable-spending plan, Step 5)', () => 
       })
       expect(ranked.retirementActionReadinessVeto?.vetoedConversions)
         .toEqual(optimized.postProcessed?.cleanedSchedule.conversions)
+      expect(ranked.retirementActionReadinessVeto?.vetoedResult)
+        .toBe(optimized.postProcessed?.cleanedResult)
     }
 
     const cleanedTotal = optimized.postProcessed!.cleanedSchedule.conversions

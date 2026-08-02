@@ -416,6 +416,12 @@ export interface RetirementActionReadinessVeto {
   readonly vetoedConversions: { year: number; amount: number }[]
   /** Exact calculated metrics retained without making the schedule actionable. */
   readonly vetoedValidation: ExactLedgerValidation
+  /**
+   * Authoritative exact-ledger result that produced the ranked aggregate
+   * schedule. Allocation bridges compare against this result; callers must not
+   * reconstruct it from the summary metrics or conversion totals.
+   */
+  readonly vetoedResult: ProjectionResult
 }
 
 export interface ExactLedgerTournament {
@@ -524,6 +530,7 @@ function readinessVetoFor(
   candidateLabel: string | null,
   conversions: { year: number; amount: number }[],
   validation: ExactLedgerValidation,
+  result: ProjectionResult,
 ): RetirementActionReadinessVeto | null {
   // Every positive-movement schedule produced here is still aggregate: it has
   // exact amounts but no legal owner/source/destination identities. That is a
@@ -537,6 +544,7 @@ function readinessVetoFor(
         vetoedCandidateLabel: candidateLabel,
         vetoedConversions: conversions.map((conversion) => ({ ...conversion })),
         vetoedValidation: validation,
+        vetoedResult: result,
       }
     : null
 }
@@ -744,23 +752,32 @@ export function runExactLedgerTournament(
   // A non-default objective re-ranks the same evaluations through the shared
   // ranker instead of the estate-delta arbitration below.
   if (options.policy && options.policy.id !== 'max-after-tax-estate') {
-    const ranked = runPolicyRankedTournament(
+    const policyRanked = runPolicyRankedTournament(
       plan,
       baselineResult,
       postProcessed,
       simulateOptions,
       options.policy,
     )
+    const ranked = policyRanked.tournament
     if (ranked.winnerSource !== 'candidate' && ranked.winnerSource !== 'milp') return ranked
-    const readinessVeto = ranked.winnerValidation === null
-      ? null
-      : readinessVetoFor(
-          ranked.winnerSource,
-          ranked.winnerCandidateId,
-          ranked.winnerLabel,
-          ranked.winnerConversions,
-          ranked.winnerValidation,
-        )
+    if (ranked.winnerValidation === null || policyRanked.winnerResult === null) {
+      return fallbackTournament(
+        plan,
+        baselineResult,
+        ranked.candidates,
+        ranked.policyId,
+        null,
+      )
+    }
+    const readinessVeto = readinessVetoFor(
+      ranked.winnerSource,
+      ranked.winnerCandidateId,
+      ranked.winnerLabel,
+      ranked.winnerConversions,
+      ranked.winnerValidation,
+      policyRanked.winnerResult,
+    )
     if (readinessVeto === null) return ranked
     return fallbackTournament(
       plan,
@@ -804,6 +821,7 @@ export function runExactLedgerTournament(
         conversions: best.conversions,
         validation: winnerValidation,
         estateDelta: best.evaluation.afterTaxEstateDelta,
+        result: best.result,
       }
       let searchRefined = false
       let searchSimulations = 0
@@ -842,6 +860,7 @@ export function runExactLedgerTournament(
               conversions: executed,
               validation: refinedValidation,
               estateDelta: refinedValidation.afterTaxEstateDelta,
+              result: refined.bestEvaluation.candidateResult,
             }
             searchRefined = true
           }
@@ -871,6 +890,7 @@ export function runExactLedgerTournament(
         winner.candidate.evaluation.label,
         winner.conversions,
         winner.validation,
+        winner.result,
       )
       if (readinessVeto !== null) {
         return fallbackTournament(
@@ -906,6 +926,7 @@ export function runExactLedgerTournament(
     // estate-delta improvement, and the money-lasts guardrail intact.
     let winnerConversions = milpRecommended.cleanedSchedule.conversions
     let winnerValidation: ExactLedgerValidation = milpRecommended.cleanedValidation
+    let winnerResult = milpRecommended.cleanedResult
     let searchRefined = false
     let searchSimulations = 0
     if (options.search && winnerConversions.length > 0) {
@@ -932,6 +953,7 @@ export function runExactLedgerTournament(
         ) {
           winnerConversions = executed
           winnerValidation = refinedValidation
+          winnerResult = refined.bestEvaluation.candidateResult
           searchRefined = true
         }
       }
@@ -942,6 +964,7 @@ export function runExactLedgerTournament(
       null,
       winnerConversions,
       winnerValidation,
+      winnerResult,
     )
     if (readinessVeto !== null) {
       return fallbackTournament(
@@ -1047,13 +1070,18 @@ function fallbackTournament(
  * produced by the exact ledger. Phase 4 search refinement is skipped here —
  * it climbs the estate objective specifically.
  */
+interface PolicyRankedTournamentResult {
+  readonly tournament: ExactLedgerTournament
+  readonly winnerResult: ProjectionResult | null
+}
+
 function runPolicyRankedTournament(
   plan: Plan,
   baselineResult: ProjectionResult,
   postProcessed: ExactLedgerPostProcessing | null,
   simulateOptions: SimulateOptions,
   policy: ObjectivePolicy,
-): ExactLedgerTournament {
+): PolicyRankedTournamentResult {
   const ctx = decisionContext(plan, baselineResult, simulateOptions)
   const rich = buildRichCandidates(plan, baselineResult, simulateOptions)
   const candidates = rich.map((candidate) => candidate.evaluation)
@@ -1114,18 +1142,21 @@ function runPolicyRankedTournament(
 
   if (winner && milpEvaluation && winner.evaluation === milpEvaluation && milpRecommended) {
     return {
-      policyId: policy.id,
-      candidates,
-      winnerSource: 'milp',
-      winnerCandidateId: null,
-      winnerLabel: null,
-      winnerConversions: milpRecommended.cleanedSchedule.conversions,
-      winnerValidation: milpRecommended.cleanedValidation,
-      marginOverMilpDollars: 0,
-      searchRefined: false,
-      searchSimulations: 0,
-      acaActionabilityVeto: null,
-      retirementActionReadinessVeto: null,
+      tournament: {
+        policyId: policy.id,
+        candidates,
+        winnerSource: 'milp',
+        winnerCandidateId: null,
+        winnerLabel: null,
+        winnerConversions: milpRecommended.cleanedSchedule.conversions,
+        winnerValidation: milpRecommended.cleanedValidation,
+        marginOverMilpDollars: 0,
+        searchRefined: false,
+        searchSimulations: 0,
+        acaActionabilityVeto: null,
+        retirementActionReadinessVeto: null,
+      },
+      winnerResult: milpRecommended.cleanedResult,
     }
   }
   if (winner) {
@@ -1133,48 +1164,54 @@ function runPolicyRankedTournament(
     if (richWinner && richWinner.conversions.length > 0) {
       const winnerValidation = evaluateExactLedgerSchedule(plan, richWinner.conversions, baselineResult, richWinner.result)
       return {
-        policyId: policy.id,
-        candidates,
-        winnerSource: 'candidate',
-        winnerCandidateId: richWinner.evaluation.id,
-        winnerLabel: richWinner.evaluation.label,
-        winnerConversions: richWinner.conversions,
-        winnerValidation,
-        marginOverMilpDollars: milpRecommended
-          ? richWinner.evaluation.afterTaxEstateDelta - milpRecommended.cleanedValidation.afterTaxEstateDelta
-          : 0,
-        searchRefined: false,
-        searchSimulations: 0,
-        acaActionabilityVeto: null,
-        retirementActionReadinessVeto: null,
+        tournament: {
+          policyId: policy.id,
+          candidates,
+          winnerSource: 'candidate',
+          winnerCandidateId: richWinner.evaluation.id,
+          winnerLabel: richWinner.evaluation.label,
+          winnerConversions: richWinner.conversions,
+          winnerValidation,
+          marginOverMilpDollars: milpRecommended
+            ? richWinner.evaluation.afterTaxEstateDelta - milpRecommended.cleanedValidation.afterTaxEstateDelta
+            : 0,
+          searchRefined: false,
+          searchSimulations: 0,
+          acaActionabilityVeto: null,
+          retirementActionReadinessVeto: null,
+        },
+        winnerResult: richWinner.result,
       }
     }
   }
-  return fallbackTournament(
-    plan,
-    baselineResult,
-    candidates,
-    policy.id,
+  return {
+    tournament: fallbackTournament(
+      plan,
+      baselineResult,
+      candidates,
+      policy.id,
     // "Improves" here is the policy's own primary metric, not the estate
     // delta — under a non-estate objective a blocked would-be winner can be
     // estate-neutral (e.g. a pure lifetime-tax saver) and must still be
     // reported as vetoed. The solver's schedule keeps the estate test: the
     // after-tax estate is the MILP's own objective.
-    buildAcaActionabilityVeto(
-      baselineResult,
-      rich.map((candidate) => ({
-        id: candidate.evaluation.id,
-        improves: policy.primaryMetric(candidate.fullEvaluation, ctx) > minimumImprovement,
-        result: candidate.result,
-      })),
-      postProcessed
-        ? {
-            improves: postProcessed.cleanedValidation.afterTaxEstateDelta > DECISION_NEUTRAL_TOLERANCE_DOLLARS,
-            result: postProcessed.cleanedResult,
-          }
-        : null,
+      buildAcaActionabilityVeto(
+        baselineResult,
+        rich.map((candidate) => ({
+          id: candidate.evaluation.id,
+          improves: policy.primaryMetric(candidate.fullEvaluation, ctx) > minimumImprovement,
+          result: candidate.result,
+        })),
+        postProcessed
+          ? {
+              improves: postProcessed.cleanedValidation.afterTaxEstateDelta > DECISION_NEUTRAL_TOLERANCE_DOLLARS,
+              result: postProcessed.cleanedResult,
+            }
+          : null,
+      ),
     ),
-  )
+    winnerResult: null,
+  }
 }
 
 export type ExactLedgerRecommendationState =
