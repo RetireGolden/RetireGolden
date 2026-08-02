@@ -305,6 +305,19 @@ const destinationInspectionReasonCodes = new Set(
     code !== 'conversion-destination-not-found'),
 )
 
+const destinationClassificationReasonCodes = new Set<ActionReason['code']>([
+  'conversion-destination-incompatible',
+  'conversion-roth-simple-destination-unsupported',
+  'conversion-employer-destination-unsupported',
+])
+
+const mutuallyExclusivePersonReasonPairs = [
+  ['person-not-found', 'person-not-alive'],
+  ['person-not-found', 'qcd-before-age-70-half'],
+  ['person-not-found', 'qcd-contribution-history-unknown'],
+  ['qcd-before-age-70-half', 'qcd-contribution-history-unknown'],
+] as const satisfies readonly (readonly [ActionReason['code'], ActionReason['code']])[]
+
 const preCanonicalReasonCodes = new Set<ActionReason['code']>([
   'duplicate-source-account',
   'duplicate-allocation-id',
@@ -375,6 +388,39 @@ const balanceReasonAllocationStates = {
   ActionReason['code'],
   'partial' | 'unavailable'
 >>>
+
+const physicalBalanceReasonCodes = new Set<ActionReason['code']>(
+  Object.keys(balanceReasonAllocationStates) as ActionReason['code'][],
+)
+
+const mutuallyExclusiveAllocationReasonGroups: readonly ReadonlySet<
+  ActionReason['code']
+>[] = [
+  new Set([
+    'source-owner-mismatch',
+    'joint-source-acting-person-mismatch',
+  ]),
+  new Set([
+    'withdrawal-plan-availability-unknown',
+    'withdrawal-plan-not-available',
+  ]),
+  new Set([
+    'conversion-source-not-convertible',
+    'conversion-inherited-source',
+    'conversion-plan-availability-unknown',
+    'conversion-plan-not-available',
+    'conversion-ira-subtype-unknown',
+    'conversion-simple-two-year-rule-unknown',
+    'conversion-simple-two-year-period-open',
+  ]),
+  new Set([
+    'qcd-source-not-ira',
+    'qcd-roth-source-unsupported',
+    'qcd-inherited-basis-unsupported',
+    'qcd-sep-simple-activity-unknown',
+    'qcd-ongoing-sep-simple',
+  ]),
+]
 
 function reasonAppliesToKind(
   kind: RetirementActionRequest['kind'],
@@ -837,6 +883,41 @@ function assertRecordBinding(
     [...destinationInspectionReasonCodes].some((code) => reasonCodes.has(code))
   ) {
     throw new Error(`Executor destination resolution differs for action "${request.actionId}"`)
+  }
+  if (
+    [...destinationClassificationReasonCodes].filter((code) =>
+      reasonCodes.has(code)).length > 1
+  ) {
+    throw new Error(`Executor destination classification differs for action "${request.actionId}"`)
+  }
+  if (mutuallyExclusivePersonReasonPairs.some(([left, right]) =>
+    reasonCodes.has(left) && reasonCodes.has(right))) {
+    throw new Error(`Executor person resolution differs for action "${request.actionId}"`)
+  }
+  for (const allocation of record.allocations) {
+    for (const group of mutuallyExclusiveAllocationReasonGroups) {
+      const matchingCodes = new Set(record.reasons
+        .filter((reason) =>
+          group.has(reason.code) &&
+          (reason.allocationId === undefined ||
+            reason.allocationId === allocation.allocationId) &&
+          (reason.accountId === undefined ||
+            reason.accountId === allocation.sourceAccountId))
+        .map((reason) => reason.code))
+      if (matchingCodes.size > 1) {
+        throw new Error(
+          `Executor source classification differs for action "${request.actionId}"`,
+        )
+      }
+    }
+  }
+  if (
+    record.reasons.some((reason) => physicalBalanceReasonCodes.has(reason.code)) &&
+    record.reasons.some((reason) =>
+      !physicalBalanceReasonCodes.has(reason.code) &&
+      (reason.outcome === 'refused' || reason.outcome === 'unsupported'))
+  ) {
+    throw new Error(`Executor reason phase differs for action "${request.actionId}"`)
   }
   for (const reason of record.reasons) {
     if (preCanonicalReasonCodes.has(reason.code)) {
