@@ -460,6 +460,24 @@ export {
   type HsaWithdrawalTaxCharacter,
 } from './annualHsaWithdrawalCharacter.js'
 export {
+  evaluateAnnualHsaPenalty,
+  type AnnualHsaPenaltyBlocked,
+  type AnnualHsaPenaltyEvaluated,
+  type AnnualHsaPenaltyIssue,
+  type EvaluateAnnualHsaPenaltyInput,
+  type EvaluateAnnualHsaPenaltyResult,
+  type HsaAge65PenaltyEvaluation,
+  type HsaAllocationPenaltyCoverage,
+  type HsaDisabilityPenaltyEvaluation,
+  type HsaFixedTwentyPercentPenaltyRateEvidence,
+  type HsaPenaltyAge65Evidence,
+  type HsaPenaltyAppliesEvaluation,
+  type HsaPenaltyDisabilityStatusEvidence,
+  type HsaPenaltyOwnerBirthEvidence,
+  type HsaQualifiedMedicalPenaltyEvaluation,
+  type HsaSegmentPenaltyEvaluation,
+} from './annualHsaPenaltyEvaluation.js'
+export {
   classifyOwnedNonRothIraAnnualWithdrawals,
   type ClassifyOwnedNonRothIraAnnualWithdrawalsInput,
   type ClassifyOwnedNonRothIraAnnualWithdrawalsResult,
