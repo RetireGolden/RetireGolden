@@ -431,6 +431,23 @@ export {
   type NotApplicableAnnualIraBasisRatio,
 } from './annualIraBasisAllocation.js'
 export {
+  evaluateAnnualHsaReimbursementLedger,
+  type AnnualHsaReimbursementLedgerBlocked,
+  type AnnualHsaReimbursementLedgerEvaluated,
+  type AnnualHsaReimbursementLedgerIssue,
+  type CompleteHsaFamilyReimbursementScopeEvidence,
+  type EvaluateAnnualHsaReimbursementLedgerInput,
+  type EvaluateAnnualHsaReimbursementLedgerResult,
+  type HsaExecutedAllocationEvidence,
+  type HsaQualifiedExpenseConsumptionEvidence,
+  type HsaQualifiedMedicalExpenseRecord,
+  type HsaOwnerEstablishmentEvidence,
+  type HsaReimbursementClaim,
+  type HsaReimbursementExpenseStateRecord,
+  type HsaReimbursementLedgerEntry,
+  type HsaReimbursementPriorHistoryEvidence,
+} from './annualHsaReimbursementLedger.js'
+export {
   classifyOwnedNonRothIraAnnualWithdrawals,
   type ClassifyOwnedNonRothIraAnnualWithdrawalsInput,
   type ClassifyOwnedNonRothIraAnnualWithdrawalsResult,
