@@ -570,8 +570,8 @@ describe('annual retirement-action publication', () => {
       ...record(first),
       readiness: 'actionable' as const,
       outcome: 'executed' as const,
-      executedDate: first.executionDate ?? null,
-      executedSequence: first.executionSequence,
+      executedDate: record(first).scheduledDate,
+      executedSequence: record(first).scheduledSequence,
       executedAmount: first.requestedAmount,
       unexecutedAmount: asUsdCents(0),
       allocations: record(first).allocations.map((allocation) => ({

@@ -289,7 +289,7 @@ describe('normalizeScenarioActionRows', () => {
         ...allocation,
         resolution: 'resolved' as const,
       })),
-    }
+    } as unknown as OrdinaryWithdrawalExecutionEvidence
     const executedYear = yearResult(2030, [executed], [], [executed.request])
     const executedPublication = publishAnnualRetirementActions({
       taxYear: 2030,
@@ -316,7 +316,7 @@ describe('normalizeScenarioActionRows', () => {
           allocationId: asAllocationId('stale-allocation'),
         })],
       },
-    }
+    } as unknown as OrdinaryWithdrawalExecutionEvidence
     expect(() => normalizeScenarioActionRows([{
       ...executedYear,
       retirementActionExecution: {
