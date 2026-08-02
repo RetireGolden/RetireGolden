@@ -16,9 +16,11 @@ import {
   emptyRetirementActionManualEditorDraft,
   formatPositiveUsdCents,
   RETIREMENT_ACTION_CONVERSION_EXECUTOR_BOUNDARY,
+  retirementActionManualExecutionIssue,
   retirementActionManualPersonSupportIssue,
   retirementActionManualSourceSupportIssue,
 } from './retirementActionManualEditor'
+import { createSamplePlan } from '../testSupport/samplePlan'
 
 const DEFAULT_REQUESTED_AMOUNT = asPositiveUsdCents(1_234_56)
 
@@ -797,5 +799,129 @@ describe('buildRetirementActionManualIntent', () => {
   it('formats exact cents without dropping the fractional amount', () => {
     expect(formatPositiveUsdCents(7)).toBe('$0.07')
     expect(formatPositiveUsdCents(123_456)).toBe('$1,234.56')
+  })
+})
+
+function exactWithdrawal(
+  actionId: string,
+  sourceAccountId: string,
+  requestedAmount: number,
+  executionDate: string,
+  executionSequence: number,
+) {
+  const parsed = parseRetirementActionRequest({
+    actionId,
+    kind: 'ordinaryWithdrawal',
+    year: 2034,
+    executionDate,
+    executionSequence,
+    requestedAmount: asPositiveUsdCents(requestedAmount),
+    provenance: { source: 'manual' },
+    personId: 'person-a',
+    allocations: [{
+      allocationId: `${actionId}-allocation`,
+      sourceAccountId,
+      requestedAmount: asPositiveUsdCents(requestedAmount),
+    }],
+    purpose: { kind: 'spending' },
+  })
+  if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+  return parsed.request
+}
+
+function executionPreviewPlan(): Plan {
+  const plan = createSamplePlan()
+  plan.household.filingStatus = 'single'
+  plan.household.people = [{
+    id: 'person-a',
+    name: 'Person A',
+    dob: '1974-01-01',
+    sex: 'average',
+    retirementAge: 65,
+    longevity: { planningAge: 90, source: 'manual' },
+  }]
+  plan.accounts = []
+  plan.strategies.retirementActions = []
+  return plan
+}
+
+describe('retirementActionManualExecutionIssue', () => {
+  it('uses executor basis rounding to reject an unrepresentable taxable closing basis', () => {
+    const plan = executionPreviewPlan()
+    plan.accounts = [{
+      type: 'taxable',
+      id: 'taxable-a',
+      name: 'Taxable',
+      ownerPersonId: 'person-a',
+      annualReturnPct: null,
+      balance: ledgerCentsToPlanDollars(asUsdCents(9_007_199_254_740_990)),
+      costBasis: ledgerCentsToPlanDollars(asUsdCents(9_007_199_254_740_989)),
+      annualContribution: 0,
+    }]
+    const action = exactWithdrawal('taxable-sale', 'taxable-a', 2, '2034-01-01', 1)
+    plan.strategies.retirementActions = [action]
+
+    expect(retirementActionManualExecutionIssue(plan, action.actionId)).toBe(
+      'The reviewed taxable withdrawal would leave a cost basis that cannot be represented exactly in the Plan. Choose another source or amount.',
+    )
+  })
+
+  it('rejects an unrepresentable same-year total independently of request order', () => {
+    const plan = executionPreviewPlan()
+    plan.accounts = [
+      {
+        type: 'cash', id: 'cash-large', name: 'Large cash', ownerPersonId: 'person-a',
+        annualReturnPct: null,
+        balance: ledgerCentsToPlanDollars(asUsdCents(9_007_199_254_740_990)),
+        annualContribution: 0,
+      },
+      {
+        type: 'cash', id: 'cash-cent', name: 'One cent', ownerPersonId: 'person-a',
+        annualReturnPct: null, balance: 0.01, annualContribution: 0,
+      },
+    ]
+    const large = exactWithdrawal(
+      'large-withdrawal',
+      'cash-large',
+      9_007_199_254_740_990,
+      '2034-01-01',
+      1,
+    )
+    const cent = exactWithdrawal('cent-withdrawal', 'cash-cent', 1, '2034-01-02', 1)
+    const expected =
+      'This withdrawal would make a same-year retirement-action total that cannot be represented exactly in the Plan. Choose another source or amount.'
+
+    plan.strategies.retirementActions = [large, cent]
+    expect(retirementActionManualExecutionIssue(plan, cent.actionId)).toBe(expected)
+    plan.strategies.retirementActions = [cent, large]
+    expect(retirementActionManualExecutionIssue(plan, cent.actionId)).toBe(expected)
+  })
+
+  it('accepts a truthful positive partial after an earlier same-year withdrawal', () => {
+    const plan = executionPreviewPlan()
+    plan.accounts = [{
+      type: 'cash', id: 'cash-shared', name: 'Shared chronology cash',
+      ownerPersonId: 'person-a', annualReturnPct: null, balance: 1, annualContribution: 0,
+    }]
+    const first = exactWithdrawal('first', 'cash-shared', 75, '2034-01-01', 1)
+    const partial = exactWithdrawal('partial', 'cash-shared', 75, '2034-01-02', 1)
+    plan.strategies.retirementActions = [partial, first]
+
+    expect(retirementActionManualExecutionIssue(plan, partial.actionId)).toBeNull()
+  })
+
+  it('rejects a reviewed withdrawal depleted by an earlier same-year action', () => {
+    const plan = executionPreviewPlan()
+    plan.accounts = [{
+      type: 'cash', id: 'cash-shared', name: 'Shared chronology cash',
+      ownerPersonId: 'person-a', annualReturnPct: null, balance: 1, annualContribution: 0,
+    }]
+    const first = exactWithdrawal('first', 'cash-shared', 100, '2034-01-01', 1)
+    const depleted = exactWithdrawal('depleted', 'cash-shared', 1, '2034-01-02', 1)
+    plan.strategies.retirementActions = [depleted, first]
+
+    expect(retirementActionManualExecutionIssue(plan, depleted.actionId)).toBe(
+      'The reviewed withdrawal would execute no funds after earlier same-year actions. Choose another source, date, or sequence.',
+    )
   })
 })

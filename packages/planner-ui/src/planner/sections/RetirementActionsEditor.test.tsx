@@ -467,6 +467,79 @@ describe('RetirementActionsEditor', () => {
     expect(mounted.container.textContent).not.toContain('Needs source review')
   })
 
+  it('keeps a sequentially reviewed row when its same-year total cannot cross the Plan boundary', async () => {
+    const plan = editorPlan()
+    const owner = plan.household.people[0]!
+    plan.accounts = [
+      {
+        type: 'cash', id: 'cash-large', name: 'Large cash', ownerPersonId: owner.id,
+        annualReturnPct: null,
+        balance: ledgerCentsToPlanDollars(asUsdCents(9_007_199_254_740_990)),
+        annualContribution: 0,
+      },
+      {
+        type: 'cash', id: 'cash-cent', name: 'One cent', ownerPersonId: owner.id,
+        annualReturnPct: null, balance: 0.01, annualContribution: 0,
+      },
+    ]
+    plan.retirementActionEligibilityFacts = {
+      iraClassifications: [],
+      sepSimpleActivities: [],
+      deductibleIraContributions: [],
+    }
+    const first = migratedAction(
+      'legacyAggregateWithdrawal',
+      'migrated-large',
+      asPositiveUsdCents(9_007_199_254_740_990),
+    )
+    const second = migratedAction(
+      'legacyAggregateWithdrawal',
+      'migrated-cent',
+      asPositiveUsdCents(1),
+    )
+    plan.strategies.retirementActions = [first, second]
+    const mounted = await mount(plan)
+
+    const firstRow = mounted.container.querySelector<HTMLElement>(
+      `[data-retirement-action-id="${first.actionId}"]`,
+    )!
+    await change(controlByLabel(firstRow, 'Person'), owner.id)
+    await change(controlByLabel(firstRow, 'Source account'), 'cash-large')
+    await act(async () => firstRow.querySelector<HTMLInputElement>(
+      'input[type="checkbox"]',
+    )!.click())
+    await change(controlByLabel(firstRow, 'Execution date'), '2034-01-01')
+    await change(controlByLabel(firstRow, 'Execution sequence'), '1')
+    await change(controlByLabel(firstRow, 'Withdrawal purpose'), 'spending')
+    await act(async () => Array.from(firstRow.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Save reviewed action',
+    )!.click())
+
+    const secondRow = mounted.container.querySelector<HTMLElement>(
+      `[data-retirement-action-id="${second.actionId}"]`,
+    )!
+    await change(controlByLabel(secondRow, 'Person'), owner.id)
+    await change(controlByLabel(secondRow, 'Source account'), 'cash-cent')
+    await act(async () => secondRow.querySelector<HTMLInputElement>(
+      'input[type="checkbox"]',
+    )!.click())
+    await change(controlByLabel(secondRow, 'Execution date'), '2034-01-02')
+    await change(controlByLabel(secondRow, 'Execution sequence'), '1')
+    await change(controlByLabel(secondRow, 'Withdrawal purpose'), 'spending')
+    await act(async () => Array.from(secondRow.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Save reviewed action',
+    )!.click())
+
+    expect(mounted.current().strategies.retirementActions).toEqual([
+      expect.objectContaining({ kind: 'ordinaryWithdrawal' }),
+      second,
+    ])
+    expect(secondRow.textContent).toContain(
+      'same-year retirement-action total that cannot be represented exactly',
+    )
+    expect(secondRow.textContent).toContain('Needs source review')
+  })
+
   it('preserves another review row draft when an earlier action is replaced', async () => {
     const plan = editorPlan()
     const first = migratedAction('legacyAggregateWithdrawal', 'migrated-first')

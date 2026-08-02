@@ -5,8 +5,18 @@ import type {
 import type {
   RetirementActionCandidateIdentityIntent,
 } from '@retiregolden/engine/actions/retirementActionCandidateIdentityAllocator'
-import { asPersonId, type AccountId, type PersonId } from '@retiregolden/engine/actions/identity'
+import {
+  asAccountId,
+  asPersonId,
+  type AccountId,
+  type PersonId,
+} from '@retiregolden/engine/actions/identity'
 import { asPositiveUsdCents, asUsdCents } from '@retiregolden/engine/actions/money'
+import {
+  assessOrdinaryWithdrawalPlanBoundary,
+  executeOrdinaryWithdrawals,
+  type TaxableAccountOpeningSnapshot,
+} from '@retiregolden/engine/actions/execution'
 import {
   ledgerCentTotalToPlanDollars,
   ledgerCentsToPlanDollars,
@@ -14,6 +24,9 @@ import {
 } from '@retiregolden/engine/actions/planBalanceAdapter'
 import { addCalendarMonths, parseCivilIsoDate } from '@retiregolden/engine/actions/civilDate'
 import type { Plan } from '@retiregolden/engine/model/plan'
+import type {
+  NonpersistedActionPersonAliveEvidence,
+} from '@retiregolden/engine/strategies/accountEligibility'
 
 export type EditableMigratedRetirementAction = Extract<
   LegacyAggregateRetirementActionRequest,
@@ -154,24 +167,198 @@ function projectedFilingStatus(
   return 'single'
 }
 
-function hasUnambiguousProjectedTaxUnit(
+function projectedTaxUnit(
   plan: ManualSourceSupportPlan,
   actionYear: number,
-): boolean {
+): Readonly<{
+  memberPersonIds: readonly [PersonId, ...PersonId[]]
+  filingStatus: ReturnType<typeof projectedFilingStatus>
+}> | null {
   const alivePeople = plan.household.people.filter(
     (person) => retirementActionManualPersonSupportIssue(person, actionYear) === null,
   )
+  let memberPersonIds: PersonId[]
   try {
-    alivePeople.map((person) => asPersonId(person.id))
+    memberPersonIds = alivePeople
+      .map((person) => asPersonId(person.id))
+      .sort((left, right) => left < right ? -1 : left > right ? 1 : 0)
   } catch {
-    return false
+    return null
   }
   const filingStatus = projectedFilingStatus(plan, actionYear, alivePeople.length)
-  return (filingStatus === 'marriedFilingJointly' && alivePeople.length === 2) ||
+  const unambiguous =
+    (filingStatus === 'marriedFilingJointly' && alivePeople.length === 2) ||
     (
       (filingStatus === 'single' || filingStatus === 'qualifyingSurvivingSpouse') &&
       alivePeople.length === 1
     )
+  return unambiguous
+    ? {
+        memberPersonIds: memberPersonIds as [PersonId, ...PersonId[]],
+        filingStatus,
+      }
+    : null
+}
+
+function hasUnambiguousProjectedTaxUnit(
+  plan: ManualSourceSupportPlan,
+  actionYear: number,
+): boolean {
+  return projectedTaxUnit(plan, actionYear) !== null
+}
+
+/**
+ * Preview every action in the replacement's year through the canonical exact-
+ * cent executor. This catches chronology, proportional taxable-basis rounding,
+ * and annual Plan-number totals before the migrated row is removed.
+ */
+export function retirementActionManualExecutionIssue(
+  plan: Readonly<Plan>,
+  replacementActionId: string,
+): string | null {
+  const replacements = plan.strategies.retirementActions.filter(
+    (action) => action.actionId === replacementActionId,
+  )
+  if (replacements.length !== 1 || replacements[0]!.kind !== 'ordinaryWithdrawal') {
+    return 'The reviewed replacement could not be identified for exact-cent execution preview.'
+  }
+  const replacement = replacements[0]!
+  const requests = plan.strategies.retirementActions.filter(
+    (action) => action.year === replacement.year,
+  )
+  const openingBalances = plan.accounts.flatMap((account) => {
+    if (
+      account.type !== 'cash' &&
+      account.type !== 'taxable' &&
+      account.type !== 'equityComp'
+    ) return []
+    try {
+      return [{
+        accountId: asAccountId(account.id),
+        openingBalance: planDollarsToLedgerCents(account.balance),
+      }]
+    } catch {
+      return []
+    }
+  })
+
+  const taxUnit = projectedTaxUnit(plan, replacement.year)
+  const taxableAccountSnapshots: TaxableAccountOpeningSnapshot[] =
+    taxUnit === null
+      ? []
+      : plan.accounts.flatMap((account) => {
+          if (account.type !== 'taxable' || account.ownerPersonId === null) return []
+          try {
+            const accountId = asAccountId(account.id)
+            const ownerPersonId = asPersonId(account.ownerPersonId)
+            if (!taxUnit.memberPersonIds.includes(ownerPersonId)) return []
+            const identity = JSON.stringify([
+              replacement.year,
+              taxUnit.filingStatus,
+              taxUnit.memberPersonIds,
+              accountId,
+              ownerPersonId,
+            ])
+            return [{
+              accountId,
+              openingCostBasis: planDollarsToLedgerCents(account.costBasis),
+              ownership: {
+                accountOwnerPersonIds: [ownerPersonId],
+                accountOwnershipEvidenceId: `planner-preview-ownership:${identity}`,
+                beneficialOwnershipShare: {
+                  representation: 'exactRational' as const,
+                  numerator: 1 as const,
+                  denominator: 1 as const,
+                  intermediateArithmetic: 'bigintRational' as const,
+                },
+                attributionEvidenceId: `planner-preview-attribution:${identity}`,
+              },
+              taxUnit: {
+                taxUnitId: `planner-preview-tax-unit:${identity}`,
+                taxUnitMemberPersonIds: taxUnit.memberPersonIds,
+                federalFilingStatus: taxUnit.filingStatus,
+                stateFilingStatusId: `planner-preview-state-filing:${identity}`,
+                taxUnitEvidenceId: `planner-preview-tax-unit-evidence:${identity}`,
+                taxYear: replacement.year,
+              },
+            }]
+          } catch {
+            return []
+          }
+        })
+  const personAliveEvidence = requests.flatMap(
+    (request): NonpersistedActionPersonAliveEvidence[] => {
+      if (
+        request.kind === 'legacyAggregateWithdrawal' ||
+        request.kind === 'legacyAggregateRothConversion' ||
+        request.kind === 'legacyAggregateQcd'
+      ) return []
+      const personId = request.kind === 'qcd' ? request.donorPersonId : request.personId
+      const person = plan.household.people.find((candidate) => candidate.id === personId)
+      return [{
+        evidenceId: `planner-preview-alive:${JSON.stringify([
+          request.actionId,
+          personId,
+          replacement.year,
+          request.executionDate ?? null,
+        ])}`,
+        actionId: request.actionId,
+        personId,
+        actionYear: replacement.year,
+        actionDate: request.executionDate ?? null,
+        alive: person !== undefined &&
+          retirementActionManualPersonSupportIssue(person, replacement.year) === null,
+      }]
+    },
+  )
+
+  let execution: ReturnType<typeof executeOrdinaryWithdrawals>
+  try {
+    execution = executeOrdinaryWithdrawals({
+      year: replacement.year,
+      plan,
+      requests,
+      openingBalances,
+      taxableAccountSnapshots,
+      runtimeEvidence: { personAliveEvidence },
+    })
+  } catch {
+    return 'The reviewed replacement could not be previewed losslessly. The migrated row remains under review.'
+  }
+  if (!execution.committed) {
+    return 'The reviewed replacement conflicts with another same-year execution slot. Choose a unique date and sequence.'
+  }
+  const evidence = execution.evidence.find(
+    (entry) => entry.actionId === replacement.actionId,
+  )
+  if (
+    evidence === undefined ||
+    evidence.readiness !== 'actionable' ||
+    evidence.disposition.executedAmount <= 0
+  ) {
+    return 'The reviewed withdrawal would execute no funds after earlier same-year actions. Choose another source, date, or sequence.'
+  }
+
+  const sourceIds = new Set(replacement.allocations.map(
+    (allocation) => String(allocation.sourceAccountId),
+  ))
+  const boundary = assessOrdinaryWithdrawalPlanBoundary(execution)
+  if (boundary.unrepresentableClosingBasisAccountIds.some(
+    (accountId) => sourceIds.has(String(accountId)),
+  )) {
+    return 'The reviewed taxable withdrawal would leave a cost basis that cannot be represented exactly in the Plan. Choose another source or amount.'
+  }
+  if (boundary.unrepresentableClosingBalanceAccountIds.some(
+    (accountId) => sourceIds.has(String(accountId)),
+  )) {
+    return 'The reviewed withdrawal would leave a source balance that cannot be represented exactly in the Plan. Choose another source or amount.'
+  }
+  if (boundary.aggregateFailureSourceAccountIds.some(
+    (accountId) => sourceIds.has(String(accountId)),
+  )) {
+    return 'This withdrawal would make a same-year retirement-action total that cannot be represented exactly in the Plan. Choose another source or amount.'
+  }
+  return null
 }
 
 export function retirementActionManualSourceCandidate(

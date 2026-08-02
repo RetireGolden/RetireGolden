@@ -18,6 +18,7 @@ import {
   formatPositiveUsdCents,
   migratedRetirementActionsNeedingReview,
   RETIREMENT_ACTION_CONVERSION_EXECUTOR_BOUNDARY,
+  retirementActionManualExecutionIssue,
   retirementActionManualPersonSupportIssue,
   retirementActionManualSourceCandidate,
   retirementActionManualSourceSupportIssue,
@@ -167,6 +168,14 @@ function ManualReviewRow({
     })
     if (result.status !== 'replacementReady') {
       setIssues(result.issues.map((entry) => entry.detail))
+      return
+    }
+    const executionIssue = retirementActionManualExecutionIssue(
+      result.plan,
+      result.replacement.actionId,
+    )
+    if (executionIssue !== null) {
+      setIssues([executionIssue])
       return
     }
     update((next) => {

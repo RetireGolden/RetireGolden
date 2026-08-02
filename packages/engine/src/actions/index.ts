@@ -168,6 +168,7 @@ export {
   type WithdrawalPurpose,
 } from './contract.js'
 export {
+  assessOrdinaryWithdrawalPlanBoundary,
   executeCashOrdinaryWithdrawals,
   executeOrdinaryWithdrawals,
   type AcceptedCashSourceEligibilityEvidence,
@@ -195,6 +196,7 @@ export {
   type OrdinaryWithdrawalExecutedActionDisposition,
   type OrdinaryWithdrawalExecutionEvidence,
   type OrdinaryWithdrawalExecutionScheduleIssue,
+  type OrdinaryWithdrawalPlanBoundaryAssessment,
   type OrdinaryWithdrawalPartialActionDisposition,
   type OrdinaryWithdrawalTaxCharacter,
   type ResolvedCashSourceAllocationExecutionEvidence,
