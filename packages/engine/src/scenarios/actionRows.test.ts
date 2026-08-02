@@ -320,6 +320,18 @@ describe('normalizeScenarioActionRows', () => {
     } as unknown as YearResult])).toThrow(
       'Conversion execution evidence differs',
     )
+
+    const forgedOutcomeExecution = {
+      ...execution,
+      evidence: execution.evidence.map((entry) => ({
+        ...entry,
+        outcome: 'executed' as const,
+      })),
+    }
+    expect(() => normalizeScenarioActionRows([{
+      year: 2030,
+      rothConversionActionExecution: forgedOutcomeExecution,
+    } as unknown as YearResult])).toThrow(/readiness/)
   })
 
   it('normalizes ordinary execution cents and identities independent of evidence order', () => {
@@ -883,6 +895,6 @@ describe('compareScenarioActionRows', () => {
         request('action-a', 'allocation-a'),
         request('action-a', 'allocation-a-copy'),
       ]),
-    ])).toThrow('Duplicate retirement-action published request')
+    ])).toThrow('Duplicate retirement-action executor request')
   })
 })

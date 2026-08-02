@@ -1027,6 +1027,54 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
     expect(year.retirementActionPublication?.records.every(
       (record) => record.executorSource === 'rothConversionExecutor',
     )).toBe(true)
+
+    const qcdCollisionPlan = structuredClone(plan)
+    qcdCollisionPlan.strategies.retirementActions = [
+      conversion('a'),
+      parsedAction({
+        actionId: 'qcd',
+        kind: 'qcd',
+        donorPersonId: 'p1',
+        year: 2026,
+        executionDate: '2026-12-31',
+        executionSequence: 1,
+        requestedAmount: 5_000,
+        allocation: {
+          allocationId: 'qcd-allocation',
+          sourceAccountId: 'traditional',
+          requestedAmount: 5_000,
+        },
+        charity: {
+          designationId: 'charity',
+          name: 'Public Charity',
+          designationKind: 'eligiblePublicCharity',
+          directFromCustodianAttested: true,
+          eligibleOrganizationAttested: true,
+          notDonorAdvisedFundOrSupportingOrganizationAttested: true,
+          notSplitInterestEntityAttested: true,
+          entireDistributionOtherwiseDeductibleAttested: true,
+        },
+        provenance: { source: 'manual' },
+      }),
+    ]
+
+    const qcdCollisionYear = run(qcdCollisionPlan).years[0]!
+
+    expect(qcdCollisionYear.retirementActionExecution).toMatchObject({
+      committed: false,
+      evidence: [],
+      scheduleIssues: [{
+        kind: 'executionSequenceConflict',
+        collidingActionIds: ['conversion-a', 'qcd'],
+      }],
+    })
+    expect(qcdCollisionYear.retirementActionExecution?.requests.map(
+      (request) => request.actionId,
+    )).toEqual(['conversion-a', 'qcd'])
+    expect(qcdCollisionYear).not.toHaveProperty('rothConversionActionExecution')
+    expect(qcdCollisionYear.retirementActionPublication?.executorSources).toEqual([
+      'ordinaryWithdrawalExecutor',
+    ])
   })
 
   it('executes an action only in its requested year and omits evidence otherwise', () => {

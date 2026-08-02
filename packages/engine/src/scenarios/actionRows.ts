@@ -10,6 +10,7 @@
 import type { RetirementActionRequest, SourceAllocationRequest } from '../actions/contract.js'
 import {
   ordinaryWithdrawalPublicationSource,
+  publishAnnualRetirementActions,
   rothConversionPublicationSource,
   type AnnualRetirementActionRecord,
   type AnnualRetirementActionScheduleDiagnostic as PublishedScheduleDiagnostic,
@@ -307,7 +308,7 @@ function appendScheduleAbortedRows(
   for (const request of requests) {
     if (seenActionIds.has(request.actionId)) {
       throw new Error(
-        `Duplicate retirement-action published request for actionId "${request.actionId}"`,
+        `Duplicate retirement-action executor request for actionId "${request.actionId}"`,
       )
     }
     seenActionIds.add(request.actionId)
@@ -474,7 +475,12 @@ export function normalizeScenarioActionRows(
       })
     }
     if (conversionExecution !== undefined) {
-      rothConversionPublicationSource(conversionExecution)
+      const conversionSource = rothConversionPublicationSource(conversionExecution)
+      publishAnnualRetirementActions({
+        taxYear: year.year,
+        requests: conversionExecution.requests,
+        sources: [conversionSource],
+      })
     }
     appendScheduleAbortedRows(
       conversionExecution?.requests ?? [],

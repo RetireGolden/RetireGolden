@@ -1230,7 +1230,6 @@ function isStagedNonmovingConversionRecord(
   return reasonCodes.has('conversion-basis-evidence-missing') &&
     reasonCodes.has('conversion-rmd-reserve-unavailable') &&
     reasonCodes.has('conversion-tax-funding-evidence-unsupported') &&
-    record.reasons[0]?.outcome === 'unsupported' &&
     record.reasons.every((reason) =>
       reason.outcome === 'unsupported' ||
       reason.outcome === 'refused' ||

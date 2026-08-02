@@ -1456,6 +1456,41 @@ describe('annual retirement-action publication', () => {
     ])
   })
 
+  it('recognizes staged conversion reason sets independent of reason order', () => {
+    const action = request(
+      'rothConversion',
+      'reason-order-conversion',
+      '2030-06-15',
+      1,
+    )
+    if (action.kind !== 'rothConversion') throw new Error('fixture drift')
+    const baseRecord = record(action)
+    const allocation = baseRecord.allocations[0]!
+    const stagedRecord = {
+      ...baseRecord,
+      allocations: [{ ...allocation, resolution: 'resolved' as const }],
+      reasons: [
+        createActionReason('conversion-balance-trimmed', {
+          accountId: allocation.sourceAccountId,
+          allocationId: allocation.allocationId,
+        }),
+        createActionReason('conversion-basis-evidence-missing', {
+          personId: action.personId,
+        }),
+        createActionReason('conversion-rmd-reserve-unavailable', {
+          personId: action.personId,
+        }),
+        createActionReason('conversion-tax-funding-evidence-unsupported'),
+      ],
+    }
+
+    expect(() => publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [action],
+      sources: [source('rothConversionExecutor', [stagedRecord])],
+    })).not.toThrow()
+  })
+
   const resolvedSourceReasonCodes = [
       'source-owner-mismatch',
       'joint-source-acting-person-mismatch',

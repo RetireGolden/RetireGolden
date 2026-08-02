@@ -2677,17 +2677,20 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const currentYearConversionActions = currentYearActions.filter(
       (request) => request.kind === 'rothConversion',
     )
+    const currentYearNonConversionActions = currentYearActions.filter(
+      (request) => request.kind !== 'rothConversion',
+    )
     const currentYearSchedule = evaluateRetirementActionSchedule(
       year,
       currentYearActions,
     )
     const mixedKindScheduleBlocked =
       currentYearSchedule.scheduleIssues.length > 0 &&
-      currentYearOrdinaryActions.length > 0 &&
+      currentYearNonConversionActions.length > 0 &&
       currentYearConversionActions.length > 0
     const currentYearOrdinaryExecutionActions = mixedKindScheduleBlocked
       ? currentYearActions
-      : currentYearActions.filter((request) => request.kind !== 'rothConversion')
+      : currentYearNonConversionActions
     let retirementActionExecution: ExecuteOrdinaryWithdrawalsResult | undefined
     let rothConversionActionExecution: ExecuteRothConversionsResult | undefined
     let retirementActionCash = 0
