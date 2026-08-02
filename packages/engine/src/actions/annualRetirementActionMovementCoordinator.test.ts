@@ -479,6 +479,18 @@ describe('coordinateAnnualRetirementActionMovement', () => {
     })
   })
 
+  it('allows imported evidence IDs to match Plan reference-only metadata', () => {
+    const referencePlan = basePlan()
+    const firstAction = referencePlan.strategies.retirementActions[0]
+    if (firstAction === undefined) throw new Error('fixture drift')
+    firstAction.provenance.sourceId = 'runtime-inventory-evidence'
+
+    const result = coordinated(input(referencePlan))
+    expect(result.assignments[0]?.request.provenance.sourceId).toBe(
+      result.runtimeInventoryEvidenceId,
+    )
+  })
+
   it('omits schema-valid explicit undefined request fields before hashing', () => {
     const explicitUndefinedPlan = basePlan()
     const firstAction = explicitUndefinedPlan.strategies.retirementActions[0]

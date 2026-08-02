@@ -1,4 +1,8 @@
-import { planSchema, type Plan } from '../model/plan.js'
+import {
+  planSchema,
+  retirementActionPlanReservedIdentifiers,
+  type Plan,
+} from '../model/plan.js'
 import {
   buildAnnualRetirementPhysicalEventInventory,
   type AnnualRetirementChronologyInvalidResult,
@@ -253,7 +257,7 @@ function claimedIdentifiers(
   claimed: Set<string>
   collisionDetail: string | null
 }> {
-  const planIdentifiers = identifierValues(plan)
+  const planIdentifiers = retirementActionPlanReservedIdentifiers(plan)
   const claimed = new Set(planIdentifiers)
   const importedRoles = new Map<string, string>()
   let collisionDetail: string | null = null
@@ -299,33 +303,6 @@ function claimedIdentifiers(
   // Action, allocation, owner, and source IDs intentionally rejoin the Plan
   // namespace and therefore are not imported as new evidence identities.
   return { claimed, collisionDetail }
-}
-
-function identifierValues(
-  value: unknown,
-  key = '',
-  result = new Set<string>(),
-  seen = new WeakSet<object>(),
-): Set<string> {
-  if (typeof value === 'string') {
-    if (key === 'id' || key.endsWith('Id')) result.add(value)
-    return result
-  }
-  if (value === null || typeof value !== 'object' || seen.has(value)) {
-    return result
-  }
-  seen.add(value)
-  for (const [childKey, child] of Object.entries(
-    value as Record<string, unknown>,
-  )) {
-    if (Array.isArray(child) && childKey.endsWith('Ids')) {
-      for (const item of child) {
-        if (typeof item === 'string') result.add(item)
-      }
-    }
-    identifierValues(child, childKey, result, seen)
-  }
-  return result
 }
 
 function inventoryEventIdsByAction(
