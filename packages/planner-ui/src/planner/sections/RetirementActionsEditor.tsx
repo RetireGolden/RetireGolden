@@ -1,0 +1,329 @@
+import { useMemo, useState } from 'react'
+
+import { reviewAndReplaceRetirementActionManually } from
+  '@retiregolden/engine/actions/retirementActionManualReview'
+import type { Plan } from '@retiregolden/engine/model/plan'
+
+import { usePlan } from '../planContextCore'
+import {
+  CheckboxField,
+  DateField,
+  MoneyField,
+  SelectField,
+  TextField,
+} from '../fields'
+import {
+  buildRetirementActionManualIntent,
+  emptyRetirementActionManualEditorDraft,
+  formatPositiveUsdCents,
+  migratedRetirementActionsNeedingReview,
+  retirementActionReviewLabel,
+  type EditableMigratedRetirementAction,
+  type RetirementActionManualEditorDraft,
+} from '../retirementActionManualEditor'
+
+const ORDINARY_SOURCE_TYPES = new Set([
+  'cash',
+  'taxable',
+  'equityComp',
+  'traditional',
+  'roth',
+  'hsa',
+])
+
+function accountOptions(
+  plan: Readonly<Plan>,
+  personId: string,
+  kind: EditableMigratedRetirementAction['kind'],
+) {
+  if (personId === '') return []
+  return plan.accounts
+    .filter((account) => {
+      if (account.ownerPersonId !== personId) return false
+      if (kind === 'legacyAggregateWithdrawal') {
+        return ORDINARY_SOURCE_TYPES.has(account.type)
+      }
+      return account.type === 'traditional' && account.inherited === undefined
+    })
+    .sort((left, right) => left.id < right.id ? -1 : left.id > right.id ? 1 : 0)
+    .map((account) => ({ value: account.id, label: `${account.name} (${account.type})` }))
+}
+
+function destinationOptions(plan: Readonly<Plan>, personId: string) {
+  if (personId === '') return []
+  return plan.accounts
+    .filter((account) =>
+      account.ownerPersonId === personId &&
+      account.type === 'roth' &&
+      account.kind === 'ira',
+    )
+    .sort((left, right) => left.id < right.id ? -1 : left.id > right.id ? 1 : 0)
+    .map((account) => ({ value: account.id, label: `${account.name} (Roth IRA)` }))
+}
+
+function ManualReviewRow({
+  target,
+  plan,
+}: {
+  target: Readonly<EditableMigratedRetirementAction>
+  plan: Readonly<Plan>
+}) {
+  const { update } = usePlan()
+  const [draft, setDraft] = useState<RetirementActionManualEditorDraft>(
+    emptyRetirementActionManualEditorDraft,
+  )
+  const [issues, setIssues] = useState<readonly string[]>([])
+  const people = plan.household.people.map((person) => ({
+    value: person.id,
+    label: person.name,
+  }))
+  const sources = useMemo(
+    () => accountOptions(plan, draft.personId, target.kind),
+    [draft.personId, plan, target.kind],
+  )
+  const destinations = useMemo(
+    () => destinationOptions(plan, draft.personId),
+    [draft.personId, plan],
+  )
+  const set = <K extends keyof RetirementActionManualEditorDraft>(
+    key: K,
+    value: RetirementActionManualEditorDraft[K],
+  ) => setDraft((current) => ({ ...current, [key]: value }))
+
+  const submit = () => {
+    const built = buildRetirementActionManualIntent(target, draft)
+    if (!built.ok) {
+      setIssues(built.issues)
+      return
+    }
+    const result = reviewAndReplaceRetirementActionManually({
+      plan,
+      targetActionId: target.actionId,
+      replacementIntent: built.intent,
+    })
+    if (result.status !== 'replacementReady') {
+      setIssues(result.issues.map((entry) => entry.detail))
+      return
+    }
+    update((next) => {
+      next.strategies.retirementActions = structuredClone(
+        result.plan.strategies.retirementActions,
+      )
+    })
+    setIssues([])
+  }
+
+  const showFundingAmount =
+    target.kind === 'legacyAggregateRothConversion' &&
+    (
+      draft.conversionTaxFunding === 'externalCash' ||
+      draft.conversionTaxFunding === 'conversionPrincipalWithholding'
+    )
+
+  return (
+    <div className="item-row" data-retirement-action-id={target.actionId}>
+      <div className="item-row-head">
+        <span className="item-row-title">
+          <span className="type-chip">Needs source review</span>
+          {retirementActionReviewLabel(target)} · {target.year} ·{' '}
+          {formatPositiveUsdCents(target.requestedAmount)}
+        </span>
+      </div>
+      <p className="card-hint">
+        This amount came from an aggregate schedule. Choose every identity and execution fact;
+        nothing below is preselected from account order or household position.
+      </p>
+      <div className="form-grid">
+        <SelectField
+          label="Person"
+          value={draft.personId}
+          placeholder="Choose a person"
+          options={people}
+          onCommit={(personId) => setDraft((current) => ({
+            ...current,
+            personId,
+            sourceAccountId: '',
+            destinationRothAccountId: '',
+            fullSourceAmountConfirmed: false,
+          }))}
+        />
+        <SelectField
+          label="Source account"
+          value={draft.sourceAccountId}
+          placeholder="Choose a source account"
+          options={sources}
+          hint={`This bounded review assigns one source. The exact preserved amount is ${formatPositiveUsdCents(target.requestedAmount)}.`}
+          onCommit={(sourceAccountId) => setDraft((current) => ({
+            ...current,
+            sourceAccountId,
+            fullSourceAmountConfirmed: false,
+          }))}
+        />
+        <CheckboxField
+          label={`Assign the full ${formatPositiveUsdCents(target.requestedAmount)} to this source`}
+          value={draft.fullSourceAmountConfirmed}
+          onCommit={(fullSourceAmountConfirmed) =>
+            set('fullSourceAmountConfirmed', fullSourceAmountConfirmed)}
+        />
+        <DateField
+          label="Execution date"
+          value={draft.executionDate}
+          hint={`Must fall in ${target.year}; the action will not be moved to another date.`}
+          onCommit={(executionDate) => set('executionDate', executionDate)}
+        />
+        <TextField
+          label="Execution sequence"
+          value={draft.executionSequence}
+          hint="Positive whole number; actions on the same date run in this order."
+          onCommit={(executionSequence) => set('executionSequence', executionSequence)}
+        />
+        {target.kind === 'legacyAggregateWithdrawal' ? (
+          <SelectField
+            label="Withdrawal purpose"
+            value={draft.withdrawalPurpose}
+            placeholder="Choose a purpose"
+            options={[
+              { value: 'spending', label: 'Spending' },
+              { value: 'goal', label: 'Goal' },
+              { value: 'taxPayment', label: 'Tax payment' },
+              { value: 'other', label: 'Other' },
+            ]}
+            onCommit={(withdrawalPurpose) => set('withdrawalPurpose', withdrawalPurpose)}
+          />
+        ) : (
+          <>
+            <SelectField
+              label="Roth destination account"
+              value={draft.destinationRothAccountId}
+              placeholder="Choose a Roth IRA"
+              options={destinations}
+              onCommit={(destinationRothAccountId) =>
+                set('destinationRothAccountId', destinationRothAccountId)}
+            />
+            <SelectField
+              label="Conversion tax funding"
+              value={draft.conversionTaxFunding}
+              placeholder="Choose tax funding"
+              options={[
+                { value: 'externalCash', label: 'External cash' },
+                { value: 'conversionPrincipalWithholding', label: 'Withhold conversion principal' },
+                { value: 'noneExpected', label: 'No tax funding expected' },
+              ]}
+              onCommit={(conversionTaxFunding) => {
+                setDraft((current) => ({
+                  ...current,
+                  conversionTaxFunding,
+                  taxFundingAmountDollars: null,
+                  externalCashAttested: false,
+                }))
+              }}
+            />
+            {showFundingAmount ? (
+              <MoneyField
+                label="Tax-funding amount"
+                value={draft.taxFundingAmountDollars}
+                allowNull
+                onCommit={(taxFundingAmountDollars) => setDraft((current) => ({
+                  ...current,
+                  taxFundingAmountDollars,
+                  externalCashAttested: false,
+                }))}
+                onInvalid={() => setDraft((current) => ({
+                  ...current,
+                  taxFundingAmountDollars: null,
+                  externalCashAttested: false,
+                }))}
+              />
+            ) : null}
+            {draft.conversionTaxFunding === 'externalCash' ? (
+              <CheckboxField
+                label="I confirm this external cash is available"
+                value={draft.externalCashAttested}
+                onCommit={(externalCashAttested) =>
+                  set('externalCashAttested', externalCashAttested)}
+              />
+            ) : null}
+          </>
+        )}
+      </div>
+      {issues.length > 0 ? (
+        <div className="callout callout--warn" role="alert">
+          <strong>Source review is incomplete.</strong>
+          <ul>
+            {issues.map((entry) => <li key={entry}>{entry}</li>)}
+          </ul>
+        </div>
+      ) : null}
+      <div className="add-row">
+        <button type="button" className="btn btn-primary btn-small" onClick={submit}>
+          Save reviewed action
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function QcdManualReviewRow({
+  plan,
+  targetActionId,
+  year,
+  requestedAmount,
+}: {
+  plan: Readonly<Plan>
+  targetActionId: Plan['strategies']['retirementActions'][number]['actionId']
+  year: number
+  requestedAmount: number
+}) {
+  const result = useMemo(
+    () => reviewAndReplaceRetirementActionManually({ plan, targetActionId }),
+    [plan, targetActionId],
+  )
+  const detail = result.status === 'manualReviewRequired'
+    ? result.issues[0].detail
+    : 'This QCD could not enter manual source review.'
+  return (
+    <div className="item-row" data-retirement-action-id={targetActionId}>
+      <div className="item-row-head">
+        <span className="item-row-title">
+          <span className="type-chip">Needs source review</span>
+          Qualified charitable distribution · {year} · {formatPositiveUsdCents(requestedAmount)}
+        </span>
+      </div>
+      <div className="callout callout--warn" role="status">
+        <strong>Manual review required — QCD source editing is not supported yet.</strong>{' '}
+        {detail}
+      </div>
+    </div>
+  )
+}
+
+/** Public Strategy-screen control for resolving migrated aggregate actions. */
+export function RetirementActionsEditor() {
+  const { plan } = usePlan()
+  const actions = migratedRetirementActionsNeedingReview(plan)
+  if (actions.length === 0) return null
+
+  return (
+    <div className="card">
+      <h2>Retirement actions</h2>
+      <p className="card-hint">
+        Migrated aggregate actions stay non-actionable until their execution source is reviewed.
+      </p>
+      {actions.map((action) => action.kind === 'legacyAggregateQcd' ? (
+        <QcdManualReviewRow
+          key={action.actionId}
+          plan={plan}
+          targetActionId={action.actionId}
+          year={action.year}
+          requestedAmount={action.requestedAmount}
+        />
+      ) : (
+        <ManualReviewRow
+          key={action.actionId}
+          plan={plan}
+          target={action}
+        />
+      ))}
+    </div>
+  )
+}

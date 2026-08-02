@@ -214,7 +214,17 @@ function useLocalText(formatted: string) {
   return { text, setText, focused, setFocused }
 }
 
-export function MoneyField({ label, hint, help, learn, source, value, onCommit, allowNull }: NumericProps) {
+export function MoneyField({
+  label,
+  hint,
+  help,
+  learn,
+  source,
+  value,
+  onCommit,
+  allowNull,
+  onInvalid,
+}: NumericProps & { onInvalid?: () => void }) {
   const id = useId()
   const { text, setText, setFocused } = useLocalText(value === null ? '' : fmtMoney(value))
   return (
@@ -232,6 +242,7 @@ export function MoneyField({ label, hint, help, learn, source, value, onCommit, 
             const parsed = parseAmount(e.target.value)
             if (parsed !== null) onCommit(parsed)
             else if (e.target.value.trim() === '') onCommit(allowNull ? null : 0)
+            else onInvalid?.()
           }}
         />
       </div>
