@@ -586,6 +586,90 @@ describe('annual retirement-action publication', () => {
     },
   )
 
+  it('rejects action-specific reasons on an unrelated request kind', () => {
+    const action = request(
+      'ordinaryWithdrawal',
+      'wrong-reason-kind',
+      '2030-06-15',
+      1,
+    )
+    const baseRecord = record(action)
+    const executedRecord = {
+      ...baseRecord,
+      readiness: 'actionable' as const,
+      outcome: 'executed' as const,
+      executedDate: baseRecord.scheduledDate,
+      executedSequence: baseRecord.scheduledSequence,
+      executedAmount: baseRecord.requestedAmount,
+      unexecutedAmount: asUsdCents(0),
+      allocations: baseRecord.allocations.map((allocation) => ({
+        ...allocation,
+        resolution: 'resolved' as const,
+        executedAmount: allocation.requestedAmount,
+        unexecutedAmount: asUsdCents(0),
+      })),
+      reasons: [createActionReason('qcd-person-limit-trimmed')],
+    }
+
+    expect(() => publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [action],
+      sources: [source('ordinaryWithdrawalExecutor', [executedRecord])],
+    })).toThrow(/reason kind differs/i)
+  })
+
+  it('validates diagnostic slots and excludes invalid records from membership', () => {
+    const first = request('ordinaryWithdrawal', 'undated-first', '2030-01-01', 1)
+    const second = request('ordinaryWithdrawal', 'undated-second', '2030-01-01', 1)
+    const invalid = request('rothConversion', 'undated-conversion', '2030-01-01', 1)
+    delete (first as { executionDate?: string }).executionDate
+    delete (second as { executionDate?: string }).executionDate
+    delete (invalid as { executionDate?: string }).executionDate
+    const diagnostic = (actionId: string, members: readonly string[]) => ({
+      kind: 'executionSequenceConflict' as const,
+      actionId: asActionId(actionId),
+      year: 2030,
+      scheduledDate: null,
+      executionSequence: 1,
+      collidingActionIds: members.map(asActionId) as [
+        ReturnType<typeof asActionId>,
+        ReturnType<typeof asActionId>,
+        ...ReturnType<typeof asActionId>[],
+      ],
+      reason: createActionReason('action-sequence-conflict'),
+    })
+    const validConflictSource = {
+      executorSource: 'ordinaryWithdrawalExecutor',
+      records: [conflictRecord(first), conflictRecord(second), record(invalid)],
+      scheduleDiagnostics: [
+        diagnostic(first.actionId, [first.actionId, second.actionId]),
+        diagnostic(second.actionId, [first.actionId, second.actionId]),
+      ],
+    } as unknown as AnnualRetirementActionPublicationSource
+
+    expect(publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [first, second, invalid],
+      sources: [validConflictSource],
+    })?.scheduleDiagnostics).toHaveLength(2)
+
+    const invalidPeer = request('rothConversion', 'undated-conversion-peer', '2030-01-01', 1)
+    delete (invalidPeer as { executionDate?: string }).executionDate
+    const invalidConflictSource = {
+      executorSource: 'rothConversionExecutor',
+      records: [conflictRecord(invalid), conflictRecord(invalidPeer)],
+      scheduleDiagnostics: [
+        diagnostic(invalid.actionId, [invalid.actionId, invalidPeer.actionId]),
+        diagnostic(invalidPeer.actionId, [invalid.actionId, invalidPeer.actionId]),
+      ],
+    } as unknown as AnnualRetirementActionPublicationSource
+    expect(() => publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [invalid, invalidPeer],
+      sources: [invalidConflictSource],
+    })).toThrow(/diagnostic differs/i)
+  })
+
   it('binds canonical conflict diagnostics to the complete schedule group', () => {
     const first = request(
       'ordinaryWithdrawal',

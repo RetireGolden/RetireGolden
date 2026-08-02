@@ -276,6 +276,27 @@ function canonicalReasons(
     reasonOrder(outcome, left, right))
 }
 
+function reasonAppliesToKind(
+  kind: RetirementActionRequest['kind'],
+  code: ActionReason['code'],
+): boolean {
+  if (code === 'withdrawal-aggregate-unallocated') {
+    return kind === 'legacyAggregateWithdrawal'
+  }
+  if (code === 'conversion-aggregate-unallocated') {
+    return kind === 'legacyAggregateRothConversion'
+  }
+  if (code === 'qcd-aggregate-unallocated') return kind === 'legacyAggregateQcd'
+  if (code.startsWith('withdrawal-')) return kind === 'ordinaryWithdrawal'
+  if (code.startsWith('qcd-')) return kind === 'qcd'
+  if (code.startsWith('conversion-')) {
+    return kind === 'rothConversion' ||
+      (kind === 'ordinaryWithdrawal' &&
+        code === 'conversion-tax-funding-evidence-unsupported')
+  }
+  return true
+}
+
 function canonicalRequest(
   rawRequest: Readonly<RetirementActionRequest>,
 ): Readonly<RetirementActionRequest> {
@@ -555,6 +576,9 @@ function assertRecordBinding(
   )
   const destinationId = destinationAccountId(request)
   for (const reason of record.reasons) {
+    if (!reasonAppliesToKind(record.kind, reason.code)) {
+      throw new Error(`Executor reason kind differs for action "${request.actionId}"`)
+    }
     if (reason.personId !== undefined && reason.personId !== record.personId) {
       throw new Error(`Executor reason person differs for action "${request.actionId}"`)
     }
@@ -714,7 +738,8 @@ export function publishAnnualRetirementActions(
       diagnostic.year !== input.taxYear ||
       diagnostic.reason.code !== 'action-sequence-conflict' ||
       diagnostic.scheduledDate !== record.scheduledDate ||
-      diagnostic.executionSequence !== record.scheduledSequence
+      diagnostic.executionSequence !== record.scheduledSequence ||
+      scheduleKey(record) === null
     ) {
       throw new Error(
         `Schedule conflict diagnostic differs for action "${diagnostic.actionId}"`,
@@ -739,11 +764,11 @@ export function publishAnnualRetirementActions(
       )
     }
     const collisionIds = new Set(diagnostic.collidingActionIds)
+    const diagnosticScheduleKey = scheduleKey(record)
     const groupIds = records
       .filter((candidate) =>
         candidate.executorSource === diagnostic.executorSource &&
-        candidate.scheduledDate === diagnostic.scheduledDate &&
-        candidate.scheduledSequence === diagnostic.executionSequence)
+        scheduleKey(candidate) === diagnosticScheduleKey)
       .map((candidate) => candidate.actionId)
     if (
       collisionIds.size !== diagnostic.collidingActionIds.length ||
