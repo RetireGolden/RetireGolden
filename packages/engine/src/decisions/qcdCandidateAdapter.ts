@@ -13,7 +13,10 @@ import {
   type PersonId,
 } from '../actions/identity.js'
 import type { UsdCents } from '../actions/money.js'
-import { compareUtf16CodeUnits } from '../actions/structuralId.js'
+import {
+  compareUtf16CodeUnits,
+  deriveActionStructuralId,
+} from '../actions/structuralId.js'
 import { createActionReason, type ActionReason } from '../actions/reasons.js'
 import type { Plan } from '../model/plan.js'
 import type { ProjectionResult } from '../projection/types.js'
@@ -77,10 +80,19 @@ export interface QcdEfficiencyAlternativeEvidence {
   requestedAmount: number | null
   charityDesignationId: string | null
   personAliveEvidenceId: string | null
+  donorAlive: true | null
   priorQcdOffsetEvidenceId: string | null
   priorQcdOffsetApplied: number | null
   disposition: 'eligible' | 'blocked'
   reasonCodes: readonly string[]
+}
+
+export interface QcdEfficiencyExploratorySourceProvenance {
+  detectorId: 'qcd-efficiency'
+  exploratoryCandidateId: 'insight-qcd-efficiency'
+  source: 'detector'
+  relationship: 'callerSuppliedIdentitiesBoundToExactDetectorAnnualTargets'
+  annualTargets: readonly QcdEfficiencyAnnualTarget[]
 }
 
 export type AdaptedQcdEfficiencyCandidate = Readonly<{
@@ -89,6 +101,7 @@ export type AdaptedQcdEfficiencyCandidate = Readonly<{
   selectedAlternativeIds: readonly string[]
   requests: readonly QualifiedCharitableDistributionRequest[]
   identityEvidence: readonly RetirementActionCandidateIdentityEvidence[]
+  exploratorySourceProvenance: QcdEfficiencyExploratorySourceProvenance
   allocationEvidence: Readonly<{
     policy: 'eligibleAlternativeCanonicalIdentityTuple'
     selectedAlternativeIds: readonly string[]
@@ -178,6 +191,7 @@ function alternativeEvidence(
       : null,
     charityDesignationId: stringOrNull(charity?.['designationId']),
     personAliveEvidenceId: stringOrNull(runtimeFacts?.['personAliveEvidenceId']),
+    donorAlive: runtimeFacts?.['donorAlive'] === true ? true : null,
     priorQcdOffsetEvidenceId: stringOrNull(runtimeFacts?.['priorQcdOffsetEvidenceId']),
     priorQcdOffsetApplied: Number.isSafeInteger(runtimeFacts?.['priorQcdOffsetApplied'])
       ? runtimeFacts?.['priorQcdOffsetApplied'] as number
@@ -288,6 +302,29 @@ function canonicalAlternativeKey(evidence: QcdEfficiencyAlternativeEvidence): st
 
 function eligibilityReasons(decision: RetirementActionEligibilityDecision): readonly ActionReason[] {
   return decision.status === 'accepted' ? [] : decision.reasons
+}
+
+function adaptedCandidateId(
+  exploratoryCandidateId: string,
+  selected: readonly {
+    request: QualifiedCharitableDistributionRequest
+    evidence: QcdEfficiencyAlternativeEvidence
+  }[],
+): string {
+  const requests = selected.map((entry) => entry.request)
+  const selectedEvidence = selected
+    .map((entry) => entry.evidence)
+    .sort((left, right) => compareUtf16CodeUnits(
+      canonicalAlternativeKey(left),
+      canonicalAlternativeKey(right),
+    ))
+  return deriveActionStructuralId('retirement-action-qcd-efficiency-candidate', [
+    exploratoryCandidateId,
+    [...requests].sort((left, right) =>
+      compareUtf16CodeUnits(left.actionId, right.actionId),
+    ),
+    selectedEvidence,
+  ])
 }
 
 /**
@@ -653,12 +690,34 @@ export function adaptQcdEfficiencyDetectorCandidate(
     ),
   )
 
+  let concreteCandidateId: string
+  try {
+    concreteCandidateId = adaptedCandidateId(
+      candidateSnapshot.id,
+      selected,
+    )
+  } catch {
+    return blocked([localIssue(
+      'invalidAlternative',
+      'alternatives',
+      'The selected explicit QCD requests could not produce a stable adapted candidate ID.',
+    )], evidence)
+  }
+  const exploratorySourceProvenance: QcdEfficiencyExploratorySourceProvenance = {
+    detectorId: 'qcd-efficiency',
+    exploratoryCandidateId: 'insight-qcd-efficiency',
+    source: 'detector',
+    relationship: 'callerSuppliedIdentitiesBoundToExactDetectorAnnualTargets',
+    annualTargets: expectedTargets,
+  }
+
   const candidate: DecisionCandidate = {
-    id: candidateSnapshot.id,
+    id: concreteCandidateId,
     source: candidateSnapshot.source,
     category: candidateSnapshot.category,
-    label: candidateSnapshot.label,
-    explanation: candidateSnapshot.explanation,
+    label: `Explicit QCD schedule after exploring: ${candidateSnapshot.label}`,
+    explanation:
+      'Caller-supplied donor, IRA, date, and charity identities were bound to every exact annual target from the QCD efficiency preview; final execution evidence remains authoritative.',
     planPatch: {
       strategies: {
         qcdAnnual: 0,
@@ -671,13 +730,14 @@ export function adaptQcdEfficiencyDetectorCandidate(
     },
     retirementActionReadiness: {
       state: 'identityComplete',
-      actionRequestIds: retirementActions.map((action) => action.actionId),
+      actionRequestIds: selected.map((entry) => entry.request.actionId),
     },
     metadata: {
       qcdAllocationPolicy: 'eligibleAlternativeCanonicalIdentityTuple',
       qcdAnnualTargets: expectedTargets,
       qcdSelectedAlternativeIds: selected.map((entry) => entry.alternative.alternativeId),
       qcdAlternatives: canonicalAlternativeEvidence,
+      qcdExploratorySourceProvenance: exploratorySourceProvenance,
     },
   }
 
@@ -696,6 +756,7 @@ export function adaptQcdEfficiencyDetectorCandidate(
     selectedAlternativeIds: selected.map((entry) => entry.alternative.alternativeId),
     requests: selected.map((entry) => entry.request),
     identityEvidence: selected.map((entry) => entry.identityEvidence),
+    exploratorySourceProvenance,
     allocationEvidence: {
       policy: 'eligibleAlternativeCanonicalIdentityTuple',
       selectedAlternativeIds: selected.map((entry) => entry.alternative.alternativeId),

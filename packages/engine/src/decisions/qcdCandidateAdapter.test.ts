@@ -9,6 +9,7 @@ import type { Plan } from '../model/plan.js'
 import type { ProjectionResult } from '../projection/types.js'
 import { singlePersonPlan, traditionalAccount } from '../testing/planFixtures.js'
 import { candidateFromInsight } from './insightsAdapter.js'
+import { retirementActionReadinessDiagnostic } from './evaluateCandidate.js'
 import {
   adaptQcdEfficiencyDetectorCandidate as adaptQcdEfficiencyDetectorCandidateWithProjection,
   type QcdEfficiencyCandidateAlternative,
@@ -219,13 +220,30 @@ describe('QCD efficiency candidate adapter', () => {
       exploratoryCandidate(permutedPlan),
       [alternative('option-a', 'ira-a'), alternative('option-b', 'ira-b')],
     )
+    const differentSelection = adaptQcdEfficiencyDetectorCandidate(
+      plan,
+      exploratoryCandidate(plan),
+      [alternative('option-b', 'ira-b')],
+    )
 
     expect(first.status).toBe('adapted')
     expect(second.status).toBe('adapted')
-    if (first.status !== 'adapted' || second.status !== 'adapted') return
+    expect(differentSelection.status).toBe('adapted')
+    if (
+      first.status !== 'adapted' ||
+      second.status !== 'adapted' ||
+      differentSelection.status !== 'adapted'
+    ) return
     expect(first.selectedAlternativeIds).toEqual(['option-a'])
     expect(second.selectedAlternativeIds).toEqual(['option-a'])
     expect(second.requests).toEqual(first.requests)
+    expect(second.candidate.id).toBe(first.candidate.id)
+    expect(first.candidate.id).toMatch(
+      /^retirement-action-qcd-efficiency-candidate:[0-9a-f]{64}$/,
+    )
+    expect(differentSelection.candidate.id).not.toBe(first.candidate.id)
+    expect(first.candidate.label).toMatch(/^Explicit QCD schedule after exploring:/)
+    expect(first.candidate.explanation).toMatch(/caller-supplied donor, IRA, date, and charity/i)
     expect(first.requests[0]).toMatchObject({
       kind: 'qcd',
       donorPersonId: 'p1',
@@ -244,6 +262,15 @@ describe('QCD efficiency candidate adapter', () => {
       state: 'identityComplete',
       actionRequestIds: [first.requests[0]!.actionId],
     })
+    expect(first.exploratorySourceProvenance).toEqual({
+      detectorId: 'qcd-efficiency',
+      exploratoryCandidateId: 'insight-qcd-efficiency',
+      source: 'detector',
+      relationship: 'callerSuppliedIdentitiesBoundToExactDetectorAnnualTargets',
+      annualTargets: [{ year: 2026, requestedAmount: 25_000 }],
+    })
+    expect(first.candidate.metadata?.qcdExploratorySourceProvenance)
+      .toEqual(first.exploratorySourceProvenance)
     expect(first.allocationEvidence.alternatives).toHaveLength(2)
     expect(first.allocationEvidence.alternatives.every((entry) => entry.disposition === 'eligible'))
       .toBe(true)
@@ -251,6 +278,7 @@ describe('QCD efficiency candidate adapter', () => {
       expect.objectContaining({
         alternativeId: 'option-a',
         personAliveEvidenceId: 'alive-option-a',
+        donorAlive: true,
         priorQcdOffsetEvidenceId: 'offset-option-a',
         priorQcdOffsetApplied: 0,
       }),
@@ -281,6 +309,85 @@ describe('QCD efficiency candidate adapter', () => {
     expect(result.candidate.metadata?.qcdAlternatives).toEqual(
       result.allocationEvidence.alternatives,
     )
+  })
+
+  it('binds adapted candidate identity to the complete selected request provenance', () => {
+    const plan = eligiblePlan()
+    const firstAlternative = alternative('selected', 'ira-a')
+    firstAlternative.intent.provenance.scenarioId = 'scenario-a'
+    const secondAlternative = alternative('selected', 'ira-a')
+    secondAlternative.intent.provenance.scenarioId = 'scenario-b'
+    const changedEvidenceAlternative = alternative('selected', 'ira-a')
+    changedEvidenceAlternative.intent.provenance.scenarioId = 'scenario-a'
+    changedEvidenceAlternative.runtimeFacts.personAliveEvidenceId = 'changed-alive-evidence'
+
+    const first = adaptQcdEfficiencyDetectorCandidate(
+      plan,
+      exploratoryCandidate(plan),
+      [firstAlternative],
+    )
+    const second = adaptQcdEfficiencyDetectorCandidate(
+      plan,
+      exploratoryCandidate(plan),
+      [secondAlternative],
+    )
+    const changedEvidence = adaptQcdEfficiencyDetectorCandidate(
+      plan,
+      exploratoryCandidate(plan),
+      [changedEvidenceAlternative],
+    )
+
+    expect(first.status).toBe('adapted')
+    expect(second.status).toBe('adapted')
+    expect(changedEvidence.status).toBe('adapted')
+    if (
+      first.status !== 'adapted' ||
+      second.status !== 'adapted' ||
+      changedEvidence.status !== 'adapted'
+    ) return
+    expect(first.requests[0]!.actionId).toBe(second.requests[0]!.actionId)
+    expect(first.candidate.id).not.toBe(second.candidate.id)
+    expect(changedEvidence.requests).toEqual(first.requests)
+    expect(changedEvidence.candidate.id).not.toBe(first.candidate.id)
+  })
+
+  it('certifies only newly appended QCD IDs when preserving an existing current schedule', () => {
+    const plan = eligiblePlan()
+    const seed = adaptQcdEfficiencyDetectorCandidate(
+      plan,
+      exploratoryCandidate(plan),
+      [alternative('seed', 'ira-a')],
+    )
+    expect(seed.status).toBe('adapted')
+    if (seed.status !== 'adapted') return
+    plan.strategies.retirementActions = [{
+      ...seed.requests[0]!,
+      actionId: 'existing-qcd' as never,
+      executionDate: '2026-07-01',
+      allocation: {
+        ...seed.requests[0]!.allocation,
+        allocationId: 'existing-qcd-allocation' as never,
+      },
+    }]
+
+    const result = adaptQcdEfficiencyDetectorCandidate(
+      plan,
+      exploratoryCandidate(plan),
+      [alternative('new', 'ira-b')],
+    )
+
+    expect(result.status).toBe('adapted')
+    if (result.status !== 'adapted') return
+    expect(result.candidate.retirementActionReadiness).toEqual({
+      state: 'identityComplete',
+      actionRequestIds: [result.requests[0]!.actionId],
+    })
+    expect(result.candidate.planPatch).toMatchObject({
+      strategies: {
+        retirementActions: [plan.strategies.retirementActions[0], result.requests[0]],
+      },
+    })
+    expect(retirementActionReadinessDiagnostic(result.candidate, plan)).toBeNull()
   })
 
   it('requires and materializes one eligible QCD for every detector projection year', () => {
