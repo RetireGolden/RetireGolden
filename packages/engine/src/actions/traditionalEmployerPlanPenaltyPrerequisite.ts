@@ -1,19 +1,15 @@
 import { addCalendarMonths, formatCivilDate, parseCivilIsoDate } from './civilDate.js'
 import { exactCentProRataNearestHalfUp } from './exactCentProRata.js'
-import {
-  accountIdSchema, actionIdSchema, allocationIdSchema, personIdSchema,
-  type AccountId, type ActionId, type AllocationId, type PersonId,
-} from './identity.js'
+import { accountIdSchema, actionIdSchema, allocationIdSchema, personIdSchema,
+  type AccountId, type ActionId, type AllocationId, type PersonId } from './identity.js'
 import { asUsdCents, positiveUsdCentsSchema, usdCentsSchema, type UsdCents } from './money.js'
 import { createActionReason, type ActionReason } from './reasons.js'
 import type { QualifiedDisabilityEventEvidence, RejectedDisabilityStatusEvidence } from './ownedNonRothIraPenaltyPrerequisite.js'
 import type { AcceptedTraditionalEmployerPlanWithdrawalClassification } from './traditionalEmployerPlanWithdrawalCharacter.js'
 
-interface EmployerPenaltyIdentity {
-  actionId: ActionId
-  allocationId: AllocationId
-  sourceAccountId: AccountId
-  participantPersonId: PersonId
+type EmployerPenaltyIdentity = {
+  actionId: ActionId; allocationId: AllocationId
+  sourceAccountId: AccountId; participantPersonId: PersonId
   evaluationDate: string
 }
 
@@ -150,8 +146,7 @@ export interface TraditionalEmployerPlanOtherExceptionAssessment {
   evidenceId: string
 }
 
-type EmployerPenaltyOutcome = 'noTaxableExposure' | 'age59HalfReached' |
-  'ruleOf55Qualified' | 'disabilityQualified' | 'penaltyApplies'
+type EmployerPenaltyOutcome = 'noTaxableExposure' | 'age59HalfReached' | 'ruleOf55Qualified' | 'disabilityQualified' | 'penaltyApplies'
 
 export interface AcceptedTraditionalEmployerPlanPenaltyEvidence extends EmployerPenaltyIdentity {
   predicate: 'employerPenaltyExceptionEvidence'
@@ -177,8 +172,7 @@ export interface AcceptedTraditionalEmployerPlanPenaltyEvidence extends Employer
   evidenceId: string
 }
 
-export type TraditionalEmployerPlanPenaltyMissingEvidence = 'separation' | 'disability' | 'sepp' |
-  'seppAnnualReconciliation' | 'otherExceptionAttestation' | 'otherExceptionAdjudication'
+export type TraditionalEmployerPlanPenaltyMissingEvidence = 'separation' | 'disability' | 'sepp' | 'seppAnnualReconciliation' | 'otherExceptionAttestation' | 'otherExceptionAdjudication'
 
 export interface UnsupportedTraditionalEmployerPlanPenaltyEvidence extends EmployerPenaltyIdentity {
   predicate: 'employerPenaltyExceptionEvidence'
@@ -223,23 +217,27 @@ function civilDate(value: unknown, label: string): string {
   return value
 }
 
-function structural(value: unknown): unknown {
+function structural(value: unknown, ancestors = new WeakSet<object>()): unknown {
   if (value === null) return ['null']
   if (value === undefined) return ['undefined']
   if (typeof value === 'bigint') return ['bigint', value.toString()]
   if (typeof value === 'number') return ['number', Number.isFinite(value) ? (Object.is(value, -0) ? '-0' : value) : String(value)]
   if (typeof value !== 'object') return [typeof value, typeof value === 'symbol' || typeof value === 'function' ? String(value) : value]
-  if (Array.isArray(value)) return ['array', value.map(structural)]
-  return ['object', Object.keys(value).sort().map((key) => [key, structural((value as Record<string, unknown>)[key])])]
+  if (ancestors.has(value)) throw new TypeError('Employer penalty evidence must be acyclic')
+  ancestors.add(value)
+  const result = Array.isArray(value) ? ['array', value.map((entry) => structural(entry, ancestors))] : ['object', Object.keys(value).sort().map((key) => [key, structural((value as Record<string, unknown>)[key], ancestors)])]
+  ancestors.delete(value)
+  return result
 }
 
 function stableId(prefix: string, parts: readonly unknown[]): string {
   return `${prefix}:${JSON.stringify(structural(parts))}`
 }
 
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child)
+function deepFreeze<T>(value: T, visited = new WeakSet<object>()): Readonly<T> {
+  if (value !== null && typeof value === 'object' && !visited.has(value)) {
+    visited.add(value)
+    for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child, visited)
     Object.freeze(value)
   }
   return value as Readonly<T>
@@ -257,6 +255,7 @@ function characterCoverage(
   characterization: Readonly<AcceptedTraditionalEmployerPlanWithdrawalClassification>,
   identity: EmployerPenaltyIdentity,
   taxableTreatmentAmount: UsdCents,
+  birthDate: string,
 ): TraditionalEmployerPlanPenaltyCharacterCoverageEvidence {
   if (characterization.status !== 'accepted' || characterization.reasons.length !== 0) {
     throw new RangeError('Employer penalty requires accepted traditional-plan character')
@@ -285,7 +284,7 @@ function characterCoverage(
     executedAmount > preDistributionAccountValue ||
     availability.kind !== 'distributableEvent' ||
     !['separationFromService', 'inServiceWithdrawal', 'planTermination', 'requiredDistribution'].includes(availability.eventKind) ||
-    availabilityDate > identity.evaluationDate ||
+    availabilityDate < birthDate || availabilityDate > identity.evaluationDate ||
     availability.availableOnEvaluationDate !== true ||
     !nonblank(availability.planTermsEvidenceId, 'Employer distribution plan-terms evidence ID') ||
     basis.rule !== 'proRataSingleDistribution' ||
@@ -335,7 +334,7 @@ function characterCoverage(
 
   const evidenceId = stableId('employer-penalty-character-coverage', [
     identity, executedAmount, basisReturnExcludedAmount, taxableTreatmentAmount,
-    basis.basisEvidenceId, characterEvidenceIds,
+    availability, basis.basisEvidenceId, characterEvidenceIds,
   ])
   return {
     predicate: 'completeEmployerPlanPenaltyCharacterCoverageForAllocation',
@@ -541,7 +540,6 @@ export function evaluateTraditionalEmployerPlanPenaltyPrerequisite(
     evaluationDate: civilDate(input.evaluationDate, 'Employer penalty evaluation date'),
   }
   const taxableTreatmentAmount = usdCentsSchema.parse(input.taxableTreatmentAmount)
-  const coverage = characterCoverage(input.characterization, identity, taxableTreatmentAmount)
   const participant = input.participantEvidence
   const birthDate = civilDate(participant.birthDate, 'Employer-plan participant birth date')
   if (
@@ -554,6 +552,7 @@ export function evaluateTraditionalEmployerPlanPenaltyPrerequisite(
   if (identity.evaluationDate < birthDate) {
     throw new RangeError('Employer penalty evaluation date cannot precede participant birth')
   }
+  const coverage = characterCoverage(input.characterization, identity, taxableTreatmentAmount, birthDate)
   if (age59HalfDate === null || birth.year + 55 > 9999) {
     throw new RangeError('Employer-plan penalty age threshold is outside civil-date range')
   }
@@ -635,6 +634,8 @@ export function evaluateTraditionalEmployerPlanPenaltyPrerequisite(
             return unsupported(identity, coverage, ageEvidence, 'otherExceptionAttestation', null, ruleOf55Assessment, sepp, disability)
           }
           other = otherAssessment(input.otherExceptionAttestation, identity)
+          const negativeIds = [separation.separationEvidenceId, disability.disabilityEvidenceId, other.attestation.attestationEvidenceId, sepp.statusEvidence.status === 'none' ? sepp.statusEvidence.seppStatusEvidenceId : sepp.evidenceId]
+          if (new Set(negativeIds).size !== negativeIds.length) throw new RangeError('Negative employer-penalty facts must use distinct evidence IDs')
           if (other.disposition === 'unsupported') {
             return unsupported(identity, coverage, ageEvidence, 'otherExceptionAdjudication', other.attestation, ruleOf55Assessment, sepp, disability)
           }

@@ -708,6 +708,9 @@ describe('traditional employer-plan penalty prerequisite', () => {
 
   it('rejects authoritative separation evidence dated before participant birth', () => {
     const value = input({ separationDate: '1975-06-14' })
+    value.characterization = structuredClone(value.characterization)
+    Reflect.set(value.characterization.acceptedSourceEligibility.availabilityEvidence, 'eventKind', 'inServiceWithdrawal')
+    Reflect.set(value.characterization.acceptedSourceEligibility.availabilityEvidence, 'eventDate', '2030-01-02')
 
     expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(value))
       .toThrow(/named sponsoring plan and participant/)
@@ -735,6 +738,15 @@ describe('traditional employer-plan penalty prerequisite', () => {
     })
 
     expect(new Set(evidenceIds).size).toBe(values.length)
+  })
+
+  it('fails closed on cyclic evidence metadata without recursing indefinitely', () => {
+    const value = input({ separationDate: '2029-12-31' })
+    const metadata: Record<string, unknown> = {}
+    metadata.self = metadata
+    Reflect.set(value.otherExceptionAttestation!, 'metadata', metadata)
+
+    expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)).toThrow(/acyclic/)
   })
 
   it('clones nested attestation metadata before freezing returned evidence', () => {
@@ -802,6 +814,37 @@ describe('traditional employer-plan penalty prerequisite', () => {
     if (field === 'eventDate') Reflect.set(availability, 'eventKind', 'inServiceWithdrawal')
 
     expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)).toThrow()
+  })
+
+  it('binds authoritative source-availability facts into character coverage identity', () => {
+    const first = input()
+    const second = input()
+    second.characterization = structuredClone(second.characterization)
+    Reflect.set(second.characterization.acceptedSourceEligibility.availabilityEvidence, 'planTermsEvidenceId', 'alternate-plan-terms')
+
+    const firstResult = evaluateTraditionalEmployerPlanPenaltyPrerequisite(first)
+    const secondResult = evaluateTraditionalEmployerPlanPenaltyPrerequisite(second)
+    expect(firstResult.evidence.characterCoverage.evidenceId)
+      .not.toBe(secondResult.evidence.characterCoverage.evidenceId)
+    expect(firstResult.evidence.evidenceId).not.toBe(secondResult.evidence.evidenceId)
+  })
+
+  it('rejects accepted source availability dated before participant birth', () => {
+    const value = input({ birthDate: '1970-01-01', separationDate: null })
+    value.characterization = structuredClone(value.characterization)
+    Reflect.set(value.characterization.acceptedSourceEligibility.availabilityEvidence, 'eventDate', '1969-12-31')
+
+    expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)).toThrow(/exactly bind/)
+  })
+
+  it('rejects authority evidence IDs reused across negative facts', () => {
+    const value = input({ separationDate: '2029-12-31' })
+    const reusedId = value.separationEvidence!.separationEvidenceId
+    Reflect.set(value.disabilityEvidence!, 'disabilityEvidenceId', reusedId)
+    Reflect.set(value.seppEvidence!, 'seppStatusEvidenceId', reusedId)
+    Reflect.set(value.otherExceptionAttestation!, 'attestationEvidenceId', reusedId)
+
+    expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)).toThrow(/distinct evidence IDs/)
   })
 
   it('returns stable deeply frozen structural evidence', () => {
