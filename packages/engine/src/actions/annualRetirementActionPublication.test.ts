@@ -640,6 +640,22 @@ describe('annual retirement-action publication', () => {
     })).toThrow(/multiple executors/i)
   })
 
+  it.each([
+    ['ownedNonRothIraExecutor', 'qcd'],
+    ['rothConversionExecutor', 'qcd'],
+    ['qcdExecutor', 'rothConversion'],
+  ] as const)('rejects %s ownership of a %s record', (executorSource, kind) => {
+    const action = kind === 'qcd'
+      ? qcdRequest(`foreign-${executorSource}`, '2030-06-15', 1)
+      : request('rothConversion', `foreign-${executorSource}`, '2030-06-15', 1)
+
+    expect(() => publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [action],
+      sources: [source(executorSource, [record(action)])],
+    })).toThrow(/executor source kind differs/i)
+  })
+
   it('rejects undiagnosed cross-executor schedule collisions', () => {
     const withdrawal = request(
       'ordinaryWithdrawal',
@@ -1239,6 +1255,43 @@ describe('annual retirement-action publication', () => {
     expect(publish('resolved')?.records).toHaveLength(1)
   })
 
+  it('rejects an identifier-free resolved source reason across multiple allocations', () => {
+    const action = request(
+      'rothConversion',
+      'ambiguous-resolved-source-reason',
+      '2030-06-15',
+      1,
+    )
+    if (action.kind !== 'rothConversion') throw new Error('fixture drift')
+    action.allocations = [
+      {
+        allocationId: asAllocationId('ambiguous-first'),
+        sourceAccountId: asAccountId('ambiguous-source-first'),
+        requestedAmount: asPositiveUsdCents(5_000),
+      },
+      {
+        allocationId: asAllocationId('ambiguous-second'),
+        sourceAccountId: asAccountId('ambiguous-source-second'),
+        requestedAmount: asPositiveUsdCents(5_000),
+      },
+    ]
+    const baseRecord = record(action)
+
+    expect(() => publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [action],
+      sources: [source('rothConversionExecutor', [{
+        ...baseRecord,
+        outcome: 'refused',
+        allocations: baseRecord.allocations.map((allocation) => ({
+          ...allocation,
+          resolution: 'resolved' as const,
+        })),
+        reasons: [createActionReason('conversion-source-not-convertible')],
+      }])],
+    })).toThrow(/reason identifiers differ/i)
+  })
+
   it.each([
     ['ordinaryWithdrawal', 'source-balance-trimmed'],
     ['rothConversion', 'conversion-balance-trimmed'],
@@ -1479,6 +1532,26 @@ describe('annual retirement-action publication', () => {
     },
   )
 
+  it('requires principal-withholding conversions to publish their blocking reason', () => {
+    const action = request(
+      'rothConversion',
+      'principal-withholding-reason-required',
+      '2030-06-15',
+      1,
+    )
+    if (action.kind !== 'rothConversion') throw new Error('fixture drift')
+    action.taxFunding = {
+      kind: 'conversionPrincipalWithholding',
+      amount: asPositiveUsdCents(1_000),
+    }
+
+    expect(() => publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [action],
+      sources: [source('rothConversionExecutor', [executedRecord(action)])],
+    })).toThrow(/funding reason missing/i)
+  })
+
   it.each([
     [{ kind: 'noneExpected' } as const, false],
     [{
@@ -1525,11 +1598,12 @@ describe('annual retirement-action publication', () => {
           ? [action]
           : [action, linkedWithdrawal],
         sources: [
-          source('rothConversionExecutor', [{
-            ...record(action),
-            outcome: 'refused',
-            reasons: [createActionReason('conversion-tax-funding-unallocated')],
-          }]),
+          source('rothConversionExecutor', [recordForBlockingReasons(action, [
+            createActionReason('conversion-tax-funding-unallocated'),
+            ...(taxFunding.kind === 'conversionPrincipalWithholding'
+              ? [createActionReason('conversion-principal-withholding-unsupported')]
+              : []),
+          ])]),
           ...(linkedWithdrawal === null
             ? []
             : [source('ordinaryWithdrawalExecutor', [record(linkedWithdrawal)])]),
@@ -1739,11 +1813,16 @@ describe('annual retirement-action publication', () => {
       )
       if (conversion.kind !== 'rothConversion') throw new Error('fixture drift')
       conversion.taxFunding = taxFunding
+      const conversionRecord = taxFunding.kind === 'conversionPrincipalWithholding'
+        ? recordForBlockingReasons(conversion, [
+            createActionReason('conversion-principal-withholding-unsupported'),
+          ])
+        : record(conversion)
 
       expect(() => publishAnnualRetirementActions({
         taxYear: 2030,
         requests: [conversion],
-        sources: [source('rothConversionExecutor', [record(conversion)])],
+        sources: [source('rothConversionExecutor', [conversionRecord])],
       })).not.toThrow()
     },
   )
@@ -1872,17 +1951,44 @@ describe('annual retirement-action publication', () => {
       const action = qcdRequest('qcd-charity-reason', '2030-06-15', 1)
       if (action.kind !== 'qcd') throw new Error('fixture drift')
       Object.assign(action.charity, charityPatch)
+      const reasons = [createActionReason(reasonCode)]
+      if (
+        reasonCode === 'qcd-split-interest-unsupported' &&
+        action.charity.designationKind === 'splitInterestEntity'
+      ) {
+        reasons.push(createActionReason('qcd-direct-charity-unconfirmed'))
+      }
       const publish = () => publishAnnualRetirementActions({
         taxYear: 2030,
         requests: [action],
-        sources: [source('qcdExecutor', [{
-          ...record(action),
-          reasons: [createActionReason(reasonCode)],
-        }])],
+        sources: [source('qcdExecutor', [recordForBlockingReasons(action, reasons)])],
       })
 
       if (accepted) expect(publish).not.toThrow()
       else expect(publish).toThrow(/charity reason differs/i)
+    },
+  )
+
+  it.each([
+    [{ designationKind: 'donorAdvisedFund' }],
+    [{ designationKind: 'splitInterestEntity' }],
+    [{ directFromCustodianAttested: false }],
+    [{ eligibleOrganizationAttested: false }],
+    [{ notDonorAdvisedFundOrSupportingOrganizationAttested: false }],
+    [{ notSplitInterestEntityAttested: false }],
+    [{ entireDistributionOtherwiseDeductibleAttested: false }],
+  ] as const)(
+    'requires blocking QCD charity reasons for ineligible request evidence %#',
+    (charityPatch) => {
+      const action = qcdRequest('qcd-charity-reason-required', '2030-06-15', 1)
+      if (action.kind !== 'qcd') throw new Error('fixture drift')
+      Object.assign(action.charity, charityPatch)
+
+      expect(() => publishAnnualRetirementActions({
+        taxYear: 2030,
+        requests: [action],
+        sources: [source('qcdExecutor', [executedRecord(action)])],
+      })).toThrow(/charity reason missing/i)
     },
   )
 
@@ -2244,6 +2350,7 @@ describe('annual retirement-action publication', () => {
           { state: 'missingDate', code: 'conversion-date-missing' },
           { state: 'invalidDate', code: 'conversion-date-invalid' },
           { state: 'outsideActionYear', code: 'conversion-date-outside-action-year' },
+          { state: 'valid', code: 'conversion-simple-two-year-period-open' },
         ] as const,
         build: (actionId: string, executionDate: string | undefined) => {
           const action = request(
@@ -2266,6 +2373,7 @@ describe('annual retirement-action publication', () => {
           { state: 'invalidDate', code: 'qcd-date-invalid' },
           { state: 'outsideActionYear', code: 'qcd-date-outside-action-year' },
           { state: 'valid', code: 'qcd-before-age-70-half' },
+          { state: 'valid', code: 'qcd-contribution-history-unknown' },
         ] as const,
         build: qcdRequest,
       },
@@ -2277,17 +2385,27 @@ describe('annual retirement-action publication', () => {
           const actionId = `${family.name}-${schedule.label}-${reasonCase.state}`
           const action = family.build(actionId, schedule.executionDate, 1)
           const reason = createActionReason(reasonCase.code)
+          const resultRecord = record(action)
           const publish = () => publishAnnualRetirementActions({
             taxYear: 2030,
             requests: [action],
             sources: [source(family.executorSource, [{
-              ...record(action),
+              ...resultRecord,
               outcome: reason.outcome === 'unsupported' ? 'unsupported' : 'refused',
+              allocations: reasonCase.code === 'conversion-simple-two-year-period-open'
+                ? resultRecord.allocations.map((allocation) => ({
+                    ...allocation,
+                    resolution: 'resolved' as const,
+                  }))
+                : resultRecord.allocations,
               reasons: [reason],
             }])],
           })
 
-          if (schedule.state === reasonCase.state) expect(publish).not.toThrow()
+          const expectedState = schedule.state === reasonCase.state ||
+            (reasonCase.code === 'qcd-before-age-70-half' &&
+              schedule.state === 'outsideActionYear')
+          if (expectedState) expect(publish).not.toThrow()
           else expect(publish).toThrow(/date reason differs/i)
         }
       }
@@ -2486,7 +2604,7 @@ describe('annual retirement-action publication', () => {
         ...validBatchSource,
         executorSource: 'rothConversionExecutor',
       }],
-    })).toThrow(/batch conflict reason differs/i)
+    })).toThrow(/executor source kind differs/i)
 
     expect(() => publishAnnualRetirementActions({
       taxYear: 2030,
@@ -2705,4 +2823,50 @@ describe('annual retirement-action publication', () => {
       records: [executedFirst, conflictRecord(second)],
     })).toThrow(/remains actionable/i)
   })
+
+  it.each(['rothConversion', 'qcd'] as const)(
+    'rejects extra %s refusal reasons on diagnosed conflict records',
+    (kind) => {
+      const first = kind === 'qcd'
+        ? qcdRequest('specialized-conflict-first', '2030-06-15', 1)
+        : request('rothConversion', 'specialized-conflict-first', '2030-06-15', 1)
+      const second = kind === 'qcd'
+        ? qcdRequest('specialized-conflict-second', '2030-06-15', 1)
+        : request('rothConversion', 'specialized-conflict-second', '2030-06-15', 1)
+      const executorSource = kind === 'qcd'
+        ? 'qcdExecutor' as const
+        : 'rothConversionExecutor' as const
+      if (first.kind !== 'qcd' && first.kind !== 'rothConversion') {
+        throw new Error('fixture drift')
+      }
+      const extraReason = first.kind === 'qcd'
+        ? createActionReason('qcd-spouse-pooling-refused')
+        : createActionReason('conversion-destination-incompatible', {
+            accountId: first.destinationRothAccountId,
+          })
+      const diagnostic = (actionId: ReturnType<typeof asActionId>) => ({
+        kind: 'executionSequenceConflict' as const,
+        actionId,
+        year: 2030,
+        scheduledDate: '2030-06-15',
+        executionSequence: 1,
+        collidingActionIds: [first.actionId, second.actionId],
+        reason: createActionReason('action-sequence-conflict'),
+      })
+      const conflictSource = {
+        executorSource,
+        records: [{
+          ...conflictRecord(first),
+          reasons: [createActionReason('action-sequence-conflict'), extraReason],
+        }, conflictRecord(second)],
+        scheduleDiagnostics: [diagnostic(first.actionId), diagnostic(second.actionId)],
+      } as unknown as AnnualRetirementActionPublicationSource
+
+      expect(() => publishAnnualRetirementActions({
+        taxYear: 2030,
+        requests: [first, second],
+        sources: [conflictSource],
+      })).toThrow(/conflict record remains actionable/i)
+    },
+  )
 })

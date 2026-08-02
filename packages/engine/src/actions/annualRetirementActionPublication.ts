@@ -559,15 +559,17 @@ function retirementActionScheduleState(
 }
 
 const dateReasonScheduleStates: Partial<
-  Record<ActionReason['code'], RetirementActionScheduleState['kind']>
+  Record<ActionReason['code'], readonly RetirementActionScheduleState['kind'][]>
 > = {
-  'conversion-date-missing': 'missingDate',
-  'conversion-date-invalid': 'invalidDate',
-  'conversion-date-outside-action-year': 'outsideActionYear',
-  'qcd-date-missing': 'missingDate',
-  'qcd-date-invalid': 'invalidDate',
-  'qcd-date-outside-action-year': 'outsideActionYear',
-  'qcd-before-age-70-half': 'valid',
+  'conversion-date-missing': ['missingDate'],
+  'conversion-date-invalid': ['invalidDate'],
+  'conversion-date-outside-action-year': ['outsideActionYear'],
+  'conversion-simple-two-year-period-open': ['valid'],
+  'qcd-date-missing': ['missingDate'],
+  'qcd-date-invalid': ['invalidDate'],
+  'qcd-date-outside-action-year': ['outsideActionYear'],
+  'qcd-before-age-70-half': ['valid', 'outsideActionYear'],
+  'qcd-contribution-history-unknown': ['valid'],
 }
 
 /**
@@ -879,6 +881,39 @@ function assertRecordBinding(
   const destinationId = destinationAccountId(request)
   const reasonCodes = new Set(record.reasons.map((reason) => reason.code))
   if (
+    request.kind === 'rothConversion' &&
+    request.taxFunding.kind === 'conversionPrincipalWithholding' &&
+    !reasonCodes.has('conversion-principal-withholding-unsupported')
+  ) {
+    throw new Error(`Executor funding reason missing for action "${request.actionId}"`)
+  }
+  if (request.kind === 'qcd') {
+    const charity = request.charity
+    const requiredCharityReasonCodes: ActionReason['code'][] = []
+    if (
+      charity.designationKind === 'splitInterestEntity' ||
+      !charity.notSplitInterestEntityAttested
+    ) {
+      requiredCharityReasonCodes.push('qcd-split-interest-unsupported')
+    }
+    if (
+      charity.designationKind !== 'eligiblePublicCharity' ||
+      !charity.directFromCustodianAttested ||
+      !charity.eligibleOrganizationAttested ||
+      !charity.notDonorAdvisedFundOrSupportingOrganizationAttested
+    ) {
+      requiredCharityReasonCodes.push('qcd-direct-charity-unconfirmed')
+    }
+    if (!charity.entireDistributionOtherwiseDeductibleAttested) {
+      requiredCharityReasonCodes.push(
+        'qcd-entire-distribution-deductibility-unconfirmed',
+      )
+    }
+    if (requiredCharityReasonCodes.some((code) => !reasonCodes.has(code))) {
+      throw new Error(`Executor charity reason missing for action "${request.actionId}"`)
+    }
+  }
+  if (
     reasonCodes.has('conversion-destination-not-found') &&
     [...destinationInspectionReasonCodes].some((code) => reasonCodes.has(code))
   ) {
@@ -964,7 +999,10 @@ function assertRecordBinding(
       }
     }
     const requiredScheduleState = dateReasonScheduleStates[reason.code]
-    if (requiredScheduleState !== undefined && scheduleState.kind !== requiredScheduleState) {
+    if (
+      requiredScheduleState !== undefined &&
+      !requiredScheduleState.includes(scheduleState.kind)
+    ) {
       throw new Error(`Executor date reason differs for action "${request.actionId}"`)
     }
     if (reason.personId !== undefined && reason.personId !== record.personId) {
@@ -1013,6 +1051,14 @@ function assertRecordBinding(
     const candidateAllocations = boundRecordAllocation === undefined
       ? record.allocations
       : [boundRecordAllocation]
+    if (
+      resolutionRequirement === 'resolved' &&
+      !physicalBalanceReasonCodes.has(reason.code) &&
+      boundRecordAllocation === undefined &&
+      record.allocations.length !== 1
+    ) {
+      throw new Error(`Executor reason identifiers differ for action "${request.actionId}"`)
+    }
     if (
       resolutionRequirement === 'unresolved' &&
       (
@@ -1120,6 +1166,16 @@ export function publishAnnualRetirementActions(
           `Executor record "${record.actionId}" belongs to ${record.year}, not ${input.taxYear}`,
         )
       }
+      const specializedSourceOwnsKind =
+        source.executorSource === 'ordinaryWithdrawalExecutor' ||
+        (source.executorSource === 'ownedNonRothIraExecutor' &&
+          request.kind === 'ordinaryWithdrawal') ||
+        (source.executorSource === 'rothConversionExecutor' &&
+          request.kind === 'rothConversion') ||
+        (source.executorSource === 'qcdExecutor' && request.kind === 'qcd')
+      if (!specializedSourceOwnsKind) {
+        throw new Error(`Executor source kind differs for action "${record.actionId}"`)
+      }
       if (records.some((current) => current.actionId === record.actionId)) {
         throw new Error(`Multiple executors published action "${record.actionId}"`)
       }
@@ -1214,13 +1270,8 @@ export function publishAnnualRetirementActions(
         allocation.resolution !== 'unresolved' ||
         allocation.executedAmount !== 0 ||
         allocation.unexecutedAmount !== allocation.requestedAmount) ||
-      !record.reasons.some((reason) =>
-        JSON.stringify(reason) === JSON.stringify(diagnostic.reason)) ||
-      (record.executorSource === 'ordinaryWithdrawalExecutor' &&
-        (
-          record.reasons.length !== 1 ||
-          JSON.stringify(record.reasons[0]) !== JSON.stringify(diagnostic.reason)
-        ))
+      record.reasons.length !== 1 ||
+      JSON.stringify(record.reasons[0]) !== JSON.stringify(diagnostic.reason)
     ) {
       throw new Error(
         `Schedule conflict record remains actionable for action "${diagnostic.actionId}"`,
