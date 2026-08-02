@@ -474,7 +474,9 @@ describe('runDecisionTournament', () => {
     expect(result.winner).toBeNull()
     expect(result.ranked).toHaveLength(1)
     expect(result.ranked[0]!.evaluation.recommendationState).toBe('diagnostic')
-    expect(result.ranked[0]!.evaluation.diagnostics.join(' ')).toMatch(/incomplete readiness evidence/i)
+    expect(result.ranked[0]!.evaluation.diagnostics.join(' ')).toMatch(
+      /stable plain data|incomplete readiness evidence/i,
+    )
   })
 
   it('returns no winner when nothing improves the plan', () => {

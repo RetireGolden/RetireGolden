@@ -22,6 +22,7 @@ import { summarizeProjection, type ProjectionSummary } from '../projection/compa
 import { simulatePlan } from '../projection/simulate.js'
 import type { ProjectionResult } from '../projection/types.js'
 import { isLegacyAggregateDecisionCalculation } from '../projection/internal/legacyAggregateDecisionCalculation.js'
+import { inspectCompleteRetirementActionCandidateSchedule } from './retirementActionCandidateSchedule.js'
 import type {
   ConversionExecution,
   DecisionCandidate,
@@ -51,6 +52,13 @@ function objectRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : null
+}
+
+function strictNoAggregateConversionSentinel(value: unknown): boolean {
+  const strategy = objectRecord(value)
+  return strategy !== null &&
+    Object.keys(strategy).length === 1 &&
+    strategy['mode'] === 'none'
 }
 
 interface RetirementActionPatchInspection {
@@ -244,11 +252,34 @@ function conversionScheduleRequestsMovement(value: unknown): boolean {
 
 function rothStrategyRequestsMovement(value: unknown): boolean {
   const strategy = objectRecord(value)
-  if (strategy?.['mode'] === 'none') return false
+  if (strictNoAggregateConversionSentinel(strategy)) return false
   if (strategy?.['mode'] === 'manual' || strategy?.['mode'] === 'optimized') {
     return conversionScheduleRequestsMovement(strategy['conversions'])
   }
   return true
+}
+
+function explicitRothConversionSentinelDiagnostic(
+  candidate: DecisionCandidate,
+  basePlan: Plan | undefined,
+  patchInspection: RetirementActionPatchInspection,
+): string | null {
+  const materialized = basePlan === undefined ? null : planForCandidate(basePlan, candidate)
+  if (materialized !== null && !materialized.ok) {
+    return 'Identity-complete Roth conversion requests require the strict no-aggregate-conversion sentinel so the aggregate strategy cannot execute alongside the explicit schedule.'
+  }
+  const requests = materialized?.plan.strategies.retirementActions ??
+    patchInspection.retirementActionRequests
+  const schedule = inspectCompleteRetirementActionCandidateSchedule(requests)
+  if (!schedule.ok || !schedule.actions.some((action) => action.kind === 'rothConversion')) {
+    return null
+  }
+
+  const finalRothStrategy = materialized?.plan.strategies.rothConversion ??
+    objectRecord(objectRecord(candidate.planPatch)?.['strategies'])?.['rothConversion']
+  return strictNoAggregateConversionSentinel(finalRothStrategy)
+    ? null
+    : 'Identity-complete Roth conversion requests require the strict no-aggregate-conversion sentinel so the aggregate strategy cannot execute alongside the explicit schedule.'
 }
 
 function qcdStrategyRequestsMovement(value: unknown): boolean {
@@ -418,9 +449,17 @@ function inspectRetirementActionReadiness(candidate: DecisionCandidate, basePlan
   ) {
     return 'Identity-complete retirement-action evidence cannot certify an aggregate conversion schedule.'
   }
-  if (inspectCandidateRetirementActionPatch(candidate, basePlan).hasAggregateStrategy) {
-    return 'Identity-complete retirement-action evidence cannot certify an aggregate withdrawal, conversion, or QCD strategy.'
+  const patchInspection = inspectCandidateRetirementActionPatch(candidate, basePlan)
+  if (patchInspection.hasAggregateStrategy) {
+    return 'Identity-complete retirement-action evidence cannot certify an aggregate withdrawal or QCD strategy and permits aggregate conversion only as the strict no-aggregate-conversion sentinel alongside a complete request schedule.'
   }
+
+  const conversionSentinelDiagnostic = explicitRothConversionSentinelDiagnostic(
+    candidate,
+    basePlan,
+    patchInspection,
+  )
+  if (conversionSentinelDiagnostic !== null) return conversionSentinelDiagnostic
 
   const patchedIds = patchedRetirementActionIds(candidate, basePlan)
   const evidenceIds = readinessRecord['actionRequestIds']
