@@ -70,6 +70,10 @@
       "types": "./dist/actions/annualQcdExecutionPrerequisite.d.ts",
       "default": "./dist/actions/annualQcdExecutionPrerequisite.js"
     },
+    "./actions/annualQcdPhysicalExecution": {
+      "types": "./dist/actions/annualQcdPhysicalExecution.d.ts",
+      "default": "./dist/actions/annualQcdPhysicalExecution.js"
+    },
     "./actions/annualRetirementActionMovementCoordinator": {
       "types": "./dist/actions/annualRetirementActionMovementCoordinator.d.ts",
       "default": "./dist/actions/annualRetirementActionMovementCoordinator.js"

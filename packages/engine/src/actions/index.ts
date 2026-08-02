@@ -23,6 +23,18 @@ export {
   type EvaluateAnnualQcdExecutionPrerequisitesResult,
 } from './annualQcdExecutionPrerequisite.js'
 export {
+  stageAnnualQcdPhysicalExecution,
+  type AnnualQcdDetachedBalanceTransition,
+  type AnnualQcdPhysicalApplication,
+  type AnnualQcdPhysicalExecutionBlocked,
+  type AnnualQcdPhysicalExecutionIssue,
+  type AnnualQcdPhysicalExecutionStaged,
+  type AnnualQcdRmdPoolOpeningSnapshot,
+  type AnnualQcdRmdPoolStagedTransition,
+  type StageAnnualQcdPhysicalExecutionInput,
+  type StageAnnualQcdPhysicalExecutionResult,
+} from './annualQcdPhysicalExecution.js'
+export {
   annualRetirementResolvedRuntimeEventKinds,
   annualRetirementRuntimeEventKinds,
   buildAnnualRetirementPhysicalEventInventory,
