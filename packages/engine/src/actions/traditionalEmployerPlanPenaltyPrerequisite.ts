@@ -215,16 +215,15 @@ function civilDate(value: unknown, label: string): string {
   return value
 }
 
-function structural(value: unknown, ancestors = new WeakSet<object>()): unknown {
+function structural(value: unknown, seen = new WeakSet<object>()): unknown {
   if (value === null) return ['null']
   if (value === undefined) return ['undefined']
   if (typeof value === 'bigint') return ['bigint', value.toString()]
   if (typeof value === 'number') return ['number', Number.isFinite(value) ? (Object.is(value, -0) ? '-0' : value) : String(value)]
   if (typeof value !== 'object') return [typeof value, typeof value === 'symbol' || typeof value === 'function' ? String(value) : value]
-  if (ancestors.has(value) || Object.values(Object.getOwnPropertyDescriptors(value)).some((descriptor) => descriptor.enumerable && ('get' in descriptor || 'set' in descriptor)) || (Array.isArray(value) && Object.keys(value).some((key) => String(Number(key)) !== key || Number(key) >= value.length)) || (!Array.isArray(value) && Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(value) !== null)) throw new TypeError('Employer penalty evidence must be acyclic plain data')
-  ancestors.add(value)
-  const result = Array.isArray(value) ? ['array', value.map((entry) => structural(entry, ancestors))] : ['object', Object.keys(value).sort().map((key) => [key, structural((value as Record<string, unknown>)[key], ancestors)])]
-  ancestors.delete(value)
+  if (seen.has(value) || Object.values(Object.getOwnPropertyDescriptors(value)).some((descriptor) => descriptor.enumerable && ('get' in descriptor || 'set' in descriptor)) || (Array.isArray(value) && Object.keys(value).some((key) => String(Number(key)) !== key || Number(key) >= value.length)) || (!Array.isArray(value) && Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(value) !== null)) throw new TypeError('Employer penalty evidence must be non-aliased acyclic plain data')
+  seen.add(value)
+  const result = Array.isArray(value) ? ['array', value.map((entry) => structural(entry, seen))] : ['object', Object.keys(value).sort().map((key) => [key, structural((value as Record<string, unknown>)[key], seen)])]
   return result
 }
 

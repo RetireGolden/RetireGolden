@@ -814,6 +814,20 @@ describe('traditional employer-plan penalty prerequisite', () => {
     expect(reads).toBe(0)
   })
 
+  it('rejects shared metadata references while accepting duplicated plain values', () => {
+    const sharedInput = input({ separationDate: '2029-12-31' })
+    const shared = { retained: true }
+    Reflect.set(sharedInput.otherExceptionAttestation!, 'metadata', { a: shared, b: shared })
+    const duplicatedInput = input({ separationDate: '2029-12-31' })
+    Reflect.set(duplicatedInput.otherExceptionAttestation!, 'metadata', {
+      a: { retained: true },
+      b: { retained: true },
+    })
+
+    expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(sharedInput)).toThrow(/non-aliased/)
+    expect(evaluateTraditionalEmployerPlanPenaltyPrerequisite(duplicatedInput).status).toBe('accepted')
+  })
+
   it('clones nested attestation metadata before freezing returned evidence', () => {
     const value = input({ separationDate: '2029-12-31' })
     const metadata = { nested: { retained: true } }
