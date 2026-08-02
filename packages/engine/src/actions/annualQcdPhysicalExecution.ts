@@ -204,7 +204,7 @@ function claimIdentifiers(value: unknown, claimed: Set<string>, key: string | nu
   }
   if (value === null || typeof value !== 'object') {
     if (typeof value === 'string' && key !== null &&
-        (key.endsWith('Id') || key.endsWith('Ids'))) {
+        (key === 'id' || key.endsWith('Id') || key.endsWith('Ids'))) {
       claimed.add(value)
     }
     return
@@ -329,6 +329,7 @@ function stageKnownYear(
   requests: readonly Readonly<QualifiedCharitableDistributionRequest>[],
 ): AnnualQcdPhysicalExecutionStaged {
   const claimedIdentifiers = claimedPrerequisiteIdentifiers(input.prerequisite)
+  claimIdentifiers(plan, claimedIdentifiers)
   const sourceIds = new Set(requests.map((request) => request.allocation.sourceAccountId))
   const detachedBalances = canonicalBalances(input.openingBalances, sourceIds)
   detachedBalances.forEach((entry) => claimedIdentifiers.add(entry.accountId))

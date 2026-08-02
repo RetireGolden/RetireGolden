@@ -421,6 +421,21 @@ describe('stageAnnualQcdPhysicalExecution', () => {
     expectBlocked(result, 'rmdEvidenceInvalid')
   })
 
+  it('reserves unrelated authoritative Plan entity IDs against RMD evidence', () => {
+    const plan = planFixture()
+    const collidingPool = pool({ upstreamEvidenceId: plan.id })
+
+    const result = stageAnnualQcdPhysicalExecution(input(
+      [request()],
+      [balance()],
+      [collidingPool],
+      undefined,
+      plan,
+    ))
+
+    expectBlocked(result, 'rmdEvidenceInvalid')
+  })
+
   it('blocks malformed RMD arithmetic and missing upstream identity atomically', () => {
     const badEquation = pool({ rmdRemainingBefore: asUsdCents(7_999) })
     const missingUpstream = pool({ upstreamEvidenceId: ' ' })
