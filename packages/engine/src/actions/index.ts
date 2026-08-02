@@ -562,6 +562,17 @@ export {
   type UnsupportedBeneficiaryTraditionalIraMovementCandidateResult,
 } from './beneficiaryTraditionalIraMovementCandidate.js'
 export {
+  finalizeBeneficiaryTraditionalIraAnnualEvidence,
+  type BeneficiaryTraditionalIraAnnualBatchMemberManifest,
+  type CompleteBeneficiaryTraditionalIraAnnualBatchManifest,
+  type CompleteBeneficiaryTraditionalIraAnnualEvidence,
+  type FinalBeneficiaryTraditionalIraAnnualMemberEvidence,
+  type FinalizeBeneficiaryTraditionalIraAnnualEvidenceInput,
+  type FinalizeBeneficiaryTraditionalIraAnnualEvidenceResult,
+  type FinalizedBeneficiaryTraditionalIraAnnualEvidenceResult,
+  type UnsupportedBeneficiaryTraditionalIraAnnualEvidenceResult,
+} from './beneficiaryTraditionalIraAnnualFinalization.js'
+export {
   evaluateOwnedNonRothIraPenaltyPrerequisites,
   type Age59HalfReachedPenaltyEvaluation,
   type DisabilityQualifiedPenaltyEvaluation,
