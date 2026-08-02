@@ -292,6 +292,79 @@ function canonicalReasons(
     reasonOrder(outcome, left, right))
 }
 
+function isConflictOnlyRecord(
+  record: Readonly<{
+    reasons: readonly Readonly<{ code: ActionReason['code'] }>[]
+  }>,
+): boolean {
+  return record.reasons.length === 1 && (
+    record.reasons[0]?.code === 'action-sequence-conflict' ||
+    record.reasons[0]?.code === 'action-batch-schedule-conflict'
+  )
+}
+
+function isCanonicalOrdinaryMixedKindFallback(
+  record: Readonly<{
+    readiness: string
+    outcome: string
+    executedAmount: number
+    unexecutedAmount: number
+    requestedAmount: number
+    executedDate: string | null
+    executedSequence: number | null
+    allocations: readonly Readonly<{
+      executedAmount: number
+      unexecutedAmount: number
+      requestedAmount: number
+    }>[]
+    reasons: readonly Readonly<{
+      code: ActionReason['code']
+      personId?: string
+      accountId?: string
+      allocationId?: string
+    }>[]
+  }>,
+  request: Readonly<RetirementActionRequest>,
+): boolean {
+  if (request.kind === 'ordinaryWithdrawal') {
+    return false
+  }
+  const expectedCode =
+    request.kind === 'legacyAggregateWithdrawal'
+      ? 'withdrawal-aggregate-unallocated'
+      : request.kind === 'legacyAggregateRothConversion'
+        ? 'conversion-aggregate-unallocated'
+        : request.kind === 'legacyAggregateQcd'
+          ? 'qcd-aggregate-unallocated'
+          : 'required-facts-missing'
+  const expectedPersonId =
+    request.kind === 'rothConversion'
+      ? request.personId
+      : request.kind === 'qcd'
+        ? request.donorPersonId
+        : undefined
+  const hasCanonicalScopeReason = record.reasons.some((reason) =>
+    reason.code === expectedCode &&
+    reason.personId === expectedPersonId &&
+    reason.accountId === undefined &&
+    reason.allocationId === undefined)
+  const legacyAggregate =
+    request.kind === 'legacyAggregateWithdrawal' ||
+    request.kind === 'legacyAggregateRothConversion' ||
+    request.kind === 'legacyAggregateQcd'
+  return record.readiness === 'nonActionable' &&
+    record.outcome === 'unsupported' &&
+    record.executedAmount === 0 &&
+    record.unexecutedAmount === record.requestedAmount &&
+    record.executedDate === null &&
+    record.executedSequence === null &&
+    record.allocations.every((allocation) =>
+      allocation.executedAmount === 0 &&
+      allocation.unexecutedAmount === allocation.requestedAmount) &&
+    hasCanonicalScopeReason &&
+    (!legacyAggregate || record.reasons.length === 1)
+}
+
 const destinationAccountReasonCodes = new Set<ActionReason['code']>([
   'conversion-destination-not-found',
   'conversion-destination-owner-mismatch',
@@ -564,7 +637,7 @@ const dateReasonScheduleStates: Partial<
   'conversion-date-missing': ['missingDate'],
   'conversion-date-invalid': ['invalidDate'],
   'conversion-date-outside-action-year': ['outsideActionYear'],
-  'conversion-simple-two-year-period-open': ['valid'],
+  'conversion-simple-two-year-period-open': ['valid', 'outsideActionYear'],
   'qcd-date-missing': ['missingDate'],
   'qcd-date-invalid': ['invalidDate'],
   'qcd-date-outside-action-year': ['outsideActionYear'],
@@ -880,14 +953,41 @@ function assertRecordBinding(
   )
   const destinationId = destinationAccountId(request)
   const reasonCodes = new Set(record.reasons.map((reason) => reason.code))
+  const conflictOnly = isConflictOnlyRecord(record)
+  const requiredDateReasonCode =
+    request.kind === 'rothConversion'
+      ? scheduleState.kind === 'missingDate'
+        ? 'conversion-date-missing'
+        : scheduleState.kind === 'invalidDate'
+          ? 'conversion-date-invalid'
+          : scheduleState.kind === 'outsideActionYear'
+            ? 'conversion-date-outside-action-year'
+            : undefined
+      : request.kind === 'qcd'
+        ? scheduleState.kind === 'missingDate'
+          ? 'qcd-date-missing'
+          : scheduleState.kind === 'invalidDate'
+            ? 'qcd-date-invalid'
+            : scheduleState.kind === 'outsideActionYear'
+              ? 'qcd-date-outside-action-year'
+              : undefined
+        : undefined
   if (
+    !conflictOnly &&
+    requiredDateReasonCode !== undefined &&
+    !reasonCodes.has(requiredDateReasonCode)
+  ) {
+    throw new Error(`Executor date reason missing for action "${request.actionId}"`)
+  }
+  if (
+    !conflictOnly &&
     request.kind === 'rothConversion' &&
     request.taxFunding.kind === 'conversionPrincipalWithholding' &&
     !reasonCodes.has('conversion-principal-withholding-unsupported')
   ) {
     throw new Error(`Executor funding reason missing for action "${request.actionId}"`)
   }
-  if (request.kind === 'qcd') {
+  if (!conflictOnly && request.kind === 'qcd') {
     const charity = request.charity
     const requiredCharityReasonCodes: ActionReason['code'][] = []
     if (
@@ -1167,7 +1267,12 @@ export function publishAnnualRetirementActions(
         )
       }
       const specializedSourceOwnsKind =
-        source.executorSource === 'ordinaryWithdrawalExecutor' ||
+        (source.executorSource === 'ordinaryWithdrawalExecutor' &&
+          (
+            request.kind === 'ordinaryWithdrawal' ||
+            isConflictOnlyRecord(record) ||
+            isCanonicalOrdinaryMixedKindFallback(record, request)
+          )) ||
         (source.executorSource === 'ownedNonRothIraExecutor' &&
           request.kind === 'ordinaryWithdrawal') ||
         (source.executorSource === 'rothConversionExecutor' &&
