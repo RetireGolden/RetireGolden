@@ -6,6 +6,7 @@ import {
   type RetirementActionCandidateIdentityIssue,
   type RothConversionCandidateIdentityIntent,
 } from '../actions/retirementActionCandidateIdentityAllocator.js'
+import { deriveActionStructuralId } from '../actions/structuralId.js'
 import type { Plan } from '../model/plan.js'
 import { applyScenarioPatch } from '../scenarios/scenarios.js'
 import {
@@ -35,7 +36,7 @@ export type FillTargetRothConversionCandidateAdapterIssue =
 export type AdaptedFillTargetRothConversionCandidate = Readonly<{
   status: 'adapted'
   candidate: DecisionCandidate
-  fillTargetProvenance: FillTargetRothConversionGeneratorProvenance
+  exploratorySourceProvenance: FillTargetRothConversionExploratorySourceProvenance
   identityEvidence: readonly RetirementActionCandidateIdentityEvidence[]
 }>
 
@@ -60,12 +61,15 @@ type FillTargetStrategy = Readonly<{
   endYear: number
 }>
 
-export interface FillTargetRothConversionGeneratorProvenance {
+export interface FillTargetRothConversionExploratorySourceProvenance {
   generatorId: 'roth-fill-to-target'
-  candidateId: string
+  exploratoryCandidateId: string
   source: 'heuristic'
   category: 'roth' | 'tax-cliff'
-  strategy: FillTargetStrategy
+  relationship: 'callerSuppliedExplicitScheduleAfterExploration'
+  /** Exploratory context only; it does not certify the caller-supplied amounts. */
+  strategyContext: FillTargetStrategy
+  metadataContext: Record<string, unknown> | null
 }
 
 function record(value: unknown): UnknownRecord | null {
@@ -343,6 +347,19 @@ function compareAllocatedRequests(
     compareUtf16(left.request.actionId, right.request.actionId)
 }
 
+function adaptedCandidateId(
+  exploratoryCandidateId: string,
+  allocations: readonly { request: RothConversionRequest }[],
+): string {
+  const actionRequestIds = allocations
+    .map((allocation) => allocation.request.actionId)
+    .sort(compareUtf16)
+  return deriveActionStructuralId('retirement-action-fill-target-candidate', [
+    exploratoryCandidateId,
+    actionRequestIds,
+  ])
+}
+
 function executionSlotConflict(
   actions: readonly CurrentRetirementActionCandidateRequest[],
 ): { index: number; firstIndex: number; scheduleGroup: string; sequence: number } | null {
@@ -503,12 +520,28 @@ export function adaptFillTargetRothConversionGeneratorCandidate(
     )
   }
 
+  let concreteCandidateId: string
+  try {
+    concreteCandidateId = adaptedCandidateId(
+      candidateSnapshot.id,
+      allocatedRequests,
+    )
+  } catch {
+    return issue(
+      'invalidConversionIntent',
+      'intents',
+      'The explicit conversion action identities could not produce a stable adapted candidate ID.',
+    )
+  }
+
   const candidate: DecisionCandidate = {
-    id: candidateSnapshot.id,
+    id: concreteCandidateId,
     source: candidateSnapshot.source,
     category: candidateSnapshot.category,
-    label: candidateSnapshot.label,
-    explanation: candidateSnapshot.explanation,
+    label: `Explicit schedule after exploring: ${candidateSnapshot.label}`,
+    explanation:
+      `Caller-supplied dated conversion requests adapted after exploring ${candidateSnapshot.id}; ` +
+      'the fill-target strategy is context only and does not certify these amounts.',
     planPatch: {
       strategies: {
         rothConversion: { mode: 'none' },
@@ -519,9 +552,6 @@ export function adaptFillTargetRothConversionGeneratorCandidate(
       state: 'identityComplete',
       actionRequestIds: allocatedRequests.map((allocation) => allocation.request.actionId),
     },
-    ...(candidateSnapshot.metadata === undefined
-      ? {}
-      : { metadata: candidateSnapshot.metadata }),
   }
 
   const materialized = applyScenarioPatch(planSnapshot, candidate.planPatch!)
@@ -536,12 +566,14 @@ export function adaptFillTargetRothConversionGeneratorCandidate(
   return {
     status: 'adapted',
     candidate,
-    fillTargetProvenance: {
+    exploratorySourceProvenance: {
       generatorId: 'roth-fill-to-target',
-      candidateId: candidateSnapshot.id,
+      exploratoryCandidateId: candidateSnapshot.id,
       source: 'heuristic',
       category: candidateSnapshot.category as 'roth' | 'tax-cliff',
-      strategy: { ...strategy },
+      relationship: 'callerSuppliedExplicitScheduleAfterExploration',
+      strategyContext: { ...strategy },
+      metadataContext: candidateSnapshot.metadata ?? null,
     },
     identityEvidence: allocatedRequests.map((allocation) => allocation.evidence),
   }

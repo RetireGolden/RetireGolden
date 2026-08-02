@@ -28,6 +28,7 @@ import { simpleRothConversionGenerator } from './generators.js'
 import {
   adaptFillTargetRothConversionGeneratorCandidate,
 } from './rothConversionCandidateAdapter.js'
+import { runDecisionTournament } from './tournament.js'
 import type {
   CurrentRetirementActionCandidateRequest,
 } from './retirementActionCandidateSchedule.js'
@@ -159,15 +160,17 @@ describe('fill-target Roth conversion candidate adapter', () => {
     expect(result.status).toBe('adapted')
     if (result.status !== 'adapted') return
     expect(result.candidate).toMatchObject({
-      id: exploratory.id,
       source: exploratory.source,
       category: exploratory.category,
-      label: exploratory.label,
-      explanation: exploratory.explanation,
-      metadata: exploratory.metadata,
+      label: `Explicit schedule after exploring: ${exploratory.label}`,
+      explanation:
+        'Caller-supplied dated conversion requests adapted after exploring bracket-12; ' +
+        'the fill-target strategy is context only and does not certify these amounts.',
       retirementActionReadiness: { state: 'identityComplete' },
     })
-    expect(result.candidate.metadata).toEqual(exploratory.metadata)
+    expect(result.candidate.id).toMatch(/^retirement-action-fill-target-candidate:/)
+    expect(result.candidate.id).not.toBe(exploratory.id)
+    expect(result.candidate.metadata).toBeUndefined()
     expect(result.candidate.conversions).toBeUndefined()
     const strategies = result.candidate.planPatch?.['strategies'] as Record<string, unknown>
     expect(Object.keys(strategies)).toEqual(['rothConversion', 'retirementActions'])
@@ -200,12 +203,14 @@ describe('fill-target Roth conversion candidate adapter', () => {
     expect(result.identityEvidence.map((evidence) => evidence.sourceAccountIds))
       .toEqual([['trad-a'], ['trad-a']])
     const exploratoryStrategies = exploratory.planPatch?.['strategies'] as Record<string, unknown>
-    expect(result.fillTargetProvenance).toEqual({
+    expect(result.exploratorySourceProvenance).toEqual({
       generatorId: 'roth-fill-to-target',
-      candidateId: exploratory.id,
+      exploratoryCandidateId: exploratory.id,
       source: 'heuristic',
       category: 'roth',
-      strategy: exploratoryStrategies['rothConversion'],
+      relationship: 'callerSuppliedExplicitScheduleAfterExploration',
+      strategyContext: exploratoryStrategies['rothConversion'],
+      metadataContext: exploratory.metadata,
     })
     expect(retirementActionReadinessDiagnostic(result.candidate)).toBeNull()
   })
@@ -245,6 +250,93 @@ describe('fill-target Roth conversion candidate adapter', () => {
       .toEqual(['2027-04-01', '2029-10-01'])
   })
 
+  it('derives one order-invariant candidate ID from the concrete action set', () => {
+    const plan = planWithConversionAccounts()
+    const exploratory = exploratoryCandidate(plan)
+    const first = conversionIntent(exploratory.id)
+    const second = conversionIntent(exploratory.id, {
+      year: 2028,
+      executionDate: '2028-10-01',
+      executionSequence: 3,
+      requestedAmount: asPositiveUsdCents(7_500_00),
+      sourceAllocations: [{
+        sourceAccountId: asAccountId('trad-a'),
+        requestedAmount: asPositiveUsdCents(7_500_00),
+      }],
+    })
+
+    const forward = adaptFillTargetRothConversionGeneratorCandidate(
+      plan,
+      exploratory,
+      [first, second],
+    )
+    const reordered = adaptFillTargetRothConversionGeneratorCandidate(
+      { ...plan, accounts: [...plan.accounts].reverse() },
+      exploratory,
+      [second, first],
+    )
+    const changedByOneCent = adaptFillTargetRothConversionGeneratorCandidate(
+      plan,
+      exploratory,
+      [conversionIntent(exploratory.id, {
+        requestedAmount: asPositiveUsdCents(5_000_01),
+        sourceAllocations: [{
+          sourceAccountId: asAccountId('trad-a'),
+          requestedAmount: asPositiveUsdCents(5_000_01),
+        }],
+      }), second],
+    )
+
+    expect(forward.status).toBe('adapted')
+    expect(reordered.status).toBe('adapted')
+    expect(changedByOneCent.status).toBe('adapted')
+    if (
+      forward.status !== 'adapted' ||
+      reordered.status !== 'adapted' ||
+      changedByOneCent.status !== 'adapted'
+    ) return
+    expect(reordered).toEqual(forward)
+    expect(changedByOneCent.candidate.id).not.toBe(forward.candidate.id)
+    expect(changedByOneCent.exploratorySourceProvenance)
+      .toEqual(forward.exploratorySourceProvenance)
+  })
+
+  it('gives distinct adaptations deterministic tournament tie-break identities', () => {
+    const plan = planWithConversionAccounts()
+    const exploratory = exploratoryCandidate(plan)
+    const first = adaptFillTargetRothConversionGeneratorCandidate(
+      plan,
+      exploratory,
+      [conversionIntent(exploratory.id)],
+    )
+    const second = adaptFillTargetRothConversionGeneratorCandidate(
+      plan,
+      exploratory,
+      [conversionIntent(exploratory.id, {
+        requestedAmount: asPositiveUsdCents(5_000_01),
+        sourceAllocations: [{
+          sourceAccountId: asAccountId('trad-a'),
+          requestedAmount: asPositiveUsdCents(5_000_01),
+        }],
+      })],
+    )
+    expect(first.status).toBe('adapted')
+    expect(second.status).toBe('adapted')
+    if (first.status !== 'adapted' || second.status !== 'adapted') return
+
+    const ctx = createDecisionContext(plan, simOptions())
+    const rank = (candidates: DecisionCandidate[]) => runDecisionTournament(
+      ctx,
+      [{ id: 'adapted-fill-targets', generate: () => candidates }],
+    ).ranked.map((row) => row.evaluation.candidate.id)
+    const forward = rank([first.candidate, second.candidate])
+    const reversed = rank([second.candidate, first.candidate])
+
+    expect(new Set(forward).size).toBe(2)
+    expect(reversed).toEqual(forward)
+    expect(forward).toEqual([...forward].sort())
+  })
+
   it('preserves whole-horizon, windowed, IRMAA, and ACA generator provenance', () => {
     const plan = planWithConversionAccounts()
     const ctx = createDecisionContext(plan, simOptions())
@@ -276,15 +368,16 @@ describe('fill-target Roth conversion candidate adapter', () => {
       expect(result.status).toBe('adapted')
       if (result.status !== 'adapted') continue
       expect(result.candidate).toMatchObject({
-        id: candidate.id,
         category: candidate.category,
-        label: candidate.label,
-        explanation: candidate.explanation,
+        label: `Explicit schedule after exploring: ${candidate.label}`,
       })
-      expect(result.fillTargetProvenance).toMatchObject({
+      expect(result.candidate.id).not.toBe(candidate.id)
+      expect(result.exploratorySourceProvenance).toMatchObject({
         generatorId: 'roth-fill-to-target',
-        candidateId: candidate.id,
+        exploratoryCandidateId: candidate.id,
         category: candidate.category,
+        relationship: 'callerSuppliedExplicitScheduleAfterExploration',
+        strategyContext: strategy,
       })
     }
   })
