@@ -413,6 +413,55 @@ function conflictFallbackRecord(
   }
 }
 
+type RetirementActionScheduleState =
+  | Readonly<{
+      kind: 'valid'
+      effectiveDate: string
+      undated: 0 | 1
+      sequence: number
+    }>
+  | Readonly<{
+      kind: 'missingDate' | 'invalidDate' | 'outsideActionYear' | 'unscheduled'
+    }>
+
+function retirementActionScheduleState(
+  record: Pick<
+    AnnualRetirementActionRecord,
+    'kind' | 'year' | 'scheduledDate' | 'scheduledSequence'
+  >,
+): RetirementActionScheduleState {
+  if (record.scheduledSequence === null) return { kind: 'unscheduled' }
+  if (record.scheduledDate === null) {
+    if (record.kind !== 'ordinaryWithdrawal') return { kind: 'missingDate' }
+    return {
+      kind: 'valid',
+      effectiveDate: `${String(record.year).padStart(4, '0')}-12-31`,
+      undated: 1,
+      sequence: record.scheduledSequence,
+    }
+  }
+  const parsed = parseCivilIsoDate(record.scheduledDate)
+  if (parsed === null) return { kind: 'invalidDate' }
+  if (parsed.year !== record.year) return { kind: 'outsideActionYear' }
+  return {
+    kind: 'valid',
+    effectiveDate: record.scheduledDate,
+    undated: 0,
+    sequence: record.scheduledSequence,
+  }
+}
+
+const dateReasonScheduleStates: Partial<
+  Record<ActionReason['code'], RetirementActionScheduleState['kind']>
+> = {
+  'conversion-date-missing': 'missingDate',
+  'conversion-date-invalid': 'invalidDate',
+  'conversion-date-outside-action-year': 'outsideActionYear',
+  'qcd-date-missing': 'missingDate',
+  'qcd-date-invalid': 'invalidDate',
+  'qcd-date-outside-action-year': 'outsideActionYear',
+}
+
 /**
  * Detach the ordinary executor's rich result into the common annual record
  * contract. Balance, character, and penalty artifacts remain on the native
@@ -477,27 +526,19 @@ export function ordinaryWithdrawalPublicationSource(
 }
 
 function scheduleKey(record: Readonly<AnnualRetirementActionRecord>): string | null {
-  if (record.scheduledSequence === null) return null
-  if (record.scheduledDate === null) {
-    if (record.kind !== 'ordinaryWithdrawal') return null
-  } else {
-    const parsed = parseCivilIsoDate(record.scheduledDate)
-    if (parsed === null || parsed.year !== record.year) return null
-  }
-  const date = record.scheduledDate ?? `${String(record.year).padStart(4, '0')}-12-31`
-  const undated = record.scheduledDate === null ? 1 : 0
-  return JSON.stringify([date, undated, record.scheduledSequence])
+  const state = retirementActionScheduleState(record)
+  return state.kind === 'valid'
+    ? JSON.stringify([state.effectiveDate, state.undated, state.sequence])
+    : null
 }
 
 function schedulePosition(
   record: Readonly<AnnualRetirementActionRecord>,
 ): readonly [date: string, undated: number, sequence: number] | null {
-  if (record.scheduledSequence === null) return null
-  return [
-    record.scheduledDate ?? `${String(record.year).padStart(4, '0')}-12-31`,
-    record.scheduledDate === null ? 1 : 0,
-    record.scheduledSequence,
-  ]
+  const state = retirementActionScheduleState(record)
+  return state.kind === 'valid'
+    ? [state.effectiveDate, state.undated, state.sequence]
+    : null
 }
 
 function recordOrder(
@@ -548,6 +589,7 @@ function assertRecordBinding(
   ) {
     throw new Error(`Executor schedule binding differs for action "${request.actionId}"`)
   }
+  const scheduleState = retirementActionScheduleState(record)
 
   actionExecutionDispositionSchema.parse({
     outcome: record.outcome,
@@ -564,11 +606,9 @@ function assertRecordBinding(
     throw new Error(`Executor amounts do not reconcile for action "${request.actionId}"`)
   }
   const positiveMovement = record.executedAmount > 0
-  const effectiveScheduledDate =
-    record.scheduledDate ??
-      (record.kind === 'ordinaryWithdrawal'
-        ? `${String(record.year).padStart(4, '0')}-12-31`
-        : null)
+  const effectiveScheduledDate = scheduleState.kind === 'valid'
+    ? scheduleState.effectiveDate
+    : null
   const scheduledCivilDate = effectiveScheduledDate === null
     ? null
     : parseCivilIsoDate(effectiveScheduledDate)
@@ -637,6 +677,10 @@ function assertRecordBinding(
   for (const reason of record.reasons) {
     if (!reasonAppliesToKind(record.kind, reason.code)) {
       throw new Error(`Executor reason kind differs for action "${request.actionId}"`)
+    }
+    const requiredScheduleState = dateReasonScheduleStates[reason.code]
+    if (requiredScheduleState !== undefined && scheduleState.kind !== requiredScheduleState) {
+      throw new Error(`Executor date reason differs for action "${request.actionId}"`)
     }
     if (reason.personId !== undefined && reason.personId !== record.personId) {
       throw new Error(`Executor reason person differs for action "${request.actionId}"`)
@@ -858,6 +902,18 @@ export function publishAnnualRetirementActions(
           `Schedule conflict has no per-action diagnostic for "${actionId}"`,
         )
       }
+    }
+  }
+
+  for (const record of records) {
+    if (
+      record.reasons.some((reason) => reason.code === 'action-sequence-conflict') &&
+      !diagnostics.some((diagnostic) =>
+        diagnostic.executorSource === record.executorSource)
+    ) {
+      throw new Error(
+        `Schedule conflict reason has no source diagnostic for action "${record.actionId}"`,
+      )
     }
   }
 

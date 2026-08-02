@@ -52,6 +52,38 @@ function request(
       }
 }
 
+function qcdRequest(
+  actionId: string,
+  executionDate: string | undefined,
+  sequence: number,
+): RetirementActionRequest {
+  return {
+    actionId: asActionId(actionId),
+    kind: 'qcd',
+    donorPersonId: asPersonId('person-1'),
+    year: 2030,
+    ...(executionDate === undefined ? {} : { executionDate }),
+    executionSequence: sequence,
+    requestedAmount: asPositiveUsdCents(10_000),
+    allocation: {
+      allocationId: asAllocationId(`allocation-${actionId}`),
+      sourceAccountId: asAccountId(`source-${actionId}`),
+      requestedAmount: asPositiveUsdCents(10_000),
+    },
+    charity: {
+      designationId: `charity-${actionId}`,
+      name: 'Eligible charity',
+      designationKind: 'eligiblePublicCharity',
+      directFromCustodianAttested: true,
+      eligibleOrganizationAttested: true,
+      notDonorAdvisedFundOrSupportingOrganizationAttested: true,
+      notSplitInterestEntityAttested: true,
+      entireDistributionOtherwiseDeductibleAttested: true,
+    },
+    provenance: { source: 'manual' },
+  }
+}
+
 function record(
   action: RetirementActionRequest,
 ): Omit<AnnualRetirementActionRecord, 'executorSource'> {
@@ -683,6 +715,125 @@ describe('annual retirement-action publication', () => {
     expect(() => publishReason(createActionReason('conversion-destination-not-found', {
       accountId: sourceAccountId,
     }))).toThrow(/reason account differs/i)
+  })
+
+  it('binds every conversion and QCD date reason to the exact schedule state', () => {
+    const scheduleStates = [
+      { state: 'missingDate', executionDate: undefined },
+      { state: 'invalidDate', executionDate: '2030-02-30' },
+      { state: 'outsideActionYear', executionDate: '2031-01-01' },
+      { state: 'valid', executionDate: '2030-06-15' },
+    ] as const
+    const families = [
+      {
+        name: 'conversion',
+        executorSource: 'rothConversionExecutor' as const,
+        reasons: [
+          { state: 'missingDate', code: 'conversion-date-missing' },
+          { state: 'invalidDate', code: 'conversion-date-invalid' },
+          { state: 'outsideActionYear', code: 'conversion-date-outside-action-year' },
+        ] as const,
+        build: (actionId: string, executionDate: string | undefined) => {
+          const action = request(
+            'rothConversion',
+            actionId,
+            executionDate ?? '2030-01-01',
+            1,
+          )
+          if (executionDate === undefined) {
+            delete (action as { executionDate?: string }).executionDate
+          }
+          return action
+        },
+      },
+      {
+        name: 'qcd',
+        executorSource: 'qcdExecutor' as const,
+        reasons: [
+          { state: 'missingDate', code: 'qcd-date-missing' },
+          { state: 'invalidDate', code: 'qcd-date-invalid' },
+          { state: 'outsideActionYear', code: 'qcd-date-outside-action-year' },
+        ] as const,
+        build: qcdRequest,
+      },
+    ] as const
+
+    for (const family of families) {
+      for (const schedule of scheduleStates) {
+        for (const reasonCase of family.reasons) {
+          const actionId = `${family.name}-${schedule.state}-${reasonCase.state}`
+          const action = family.build(actionId, schedule.executionDate, 1)
+          const reason = createActionReason(reasonCase.code)
+          const publish = () => publishAnnualRetirementActions({
+            taxYear: 2030,
+            requests: [action],
+            sources: [source(family.executorSource, [{
+              ...record(action),
+              outcome: reason.outcome === 'unsupported' ? 'unsupported' : 'refused',
+              reasons: [reason],
+            }])],
+          })
+
+          if (schedule.state === reasonCase.state) expect(publish).not.toThrow()
+          else expect(publish).toThrow(/date reason differs/i)
+        }
+      }
+    }
+  })
+
+  it('orders only valid schedule states in canonical chronology', () => {
+    const validDated = request(
+      'rothConversion',
+      'valid-dated',
+      '2030-06-15',
+      1,
+    )
+    const validUndated = request(
+      'ordinaryWithdrawal',
+      'valid-undated',
+      '2030-01-01',
+      1,
+    )
+    delete (validUndated as { executionDate?: string }).executionDate
+    const invalid = request(
+      'rothConversion',
+      'a-invalid',
+      '2030-02-30',
+      1,
+    )
+    const outside = request(
+      'rothConversion',
+      'b-outside',
+      '2029-01-01',
+      1,
+    )
+    const actions = [outside, invalid, validUndated, validDated]
+    const publication = publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: actions,
+      sources: [source('ordinaryWithdrawalExecutor', actions.map(record))],
+    })
+
+    expect(publication?.records.map(({ actionId }) => actionId)).toEqual([
+      'valid-dated',
+      'valid-undated',
+      'a-invalid',
+      'b-outside',
+    ])
+  })
+
+  it('rejects a conflict reason without a matching diagnostic', () => {
+    const action = request(
+      'ordinaryWithdrawal',
+      'unsubstantiated-conflict',
+      '2030-06-15',
+      1,
+    )
+    expect(() => publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [action],
+      sources: [source('ordinaryWithdrawalExecutor', [conflictRecord(action)])],
+    })).toThrow(/conflict reason has no source diagnostic/i)
   })
 
   it('validates diagnostic slots and excludes invalid records from membership', () => {
