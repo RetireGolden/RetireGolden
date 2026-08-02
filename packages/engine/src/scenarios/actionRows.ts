@@ -64,6 +64,22 @@ function executionBinding(
   })
 }
 
+function scheduleDiagnosticBinding(
+  diagnostic: Omit<PublishedScheduleDiagnostic, 'executorSource'> |
+    Readonly<PublishedScheduleDiagnostic>,
+): string {
+  return JSON.stringify({
+    kind: diagnostic.kind,
+    actionId: diagnostic.actionId,
+    year: diagnostic.year,
+    scheduledDate: diagnostic.scheduledDate,
+    executionSequence: diagnostic.executionSequence,
+    collidingActionIds: [...diagnostic.collidingActionIds]
+      .sort(compareUtf16CodeUnits),
+    reason: diagnostic.reason,
+  })
+}
+
 function canonicalPublication(year: Readonly<YearResult>) {
   const publication = year.retirementActionPublication
   const legacy = year.retirementActionExecution
@@ -73,6 +89,7 @@ function canonicalPublication(year: Readonly<YearResult>) {
     )
   }
   if (publication !== undefined && legacy !== undefined) {
+    const legacySource = ordinaryWithdrawalPublicationSource(legacy)
     const publishedById = new Map(
       publication.records.map((record) => [record.actionId, record]),
     )
@@ -82,9 +99,13 @@ function canonicalPublication(year: Readonly<YearResult>) {
         record === undefined ||
         requestBinding(record.request) !== requestBinding(request)
       )
-    }) || ordinaryWithdrawalPublicationSource(legacy).records.some((legacyRecord) => {
+    }) || legacySource.records.some((legacyRecord) => {
       const record = publishedById.get(legacyRecord.actionId)
       return record === undefined || executionBinding(record) !== executionBinding(legacyRecord)
+    }) || legacySource.scheduleDiagnostics.some((legacyDiagnostic) => {
+      const binding = scheduleDiagnosticBinding(legacyDiagnostic)
+      return !publication.scheduleDiagnostics.some((publishedDiagnostic) =>
+        scheduleDiagnosticBinding(publishedDiagnostic) === binding)
     })) {
       throw new Error(
         'Canonical retirement-action publication does not cover the legacy annual executor result',

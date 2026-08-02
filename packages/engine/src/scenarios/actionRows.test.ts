@@ -274,6 +274,20 @@ describe('normalizeScenarioActionRows', () => {
     expect(() => normalizeScenarioActionRows([staleLegacyYear]))
       .toThrow(/does not cover the legacy/i)
 
+    const staleScheduleYear = {
+      ...legacyYear,
+      retirementActionExecution: {
+        ...execution,
+        scheduleIssues: [{
+          ...conflict,
+          executionSequence: 2,
+        }],
+      },
+      retirementActionPublication: publication,
+    } as YearResult
+    expect(() => normalizeScenarioActionRows([staleScheduleYear]))
+      .toThrow(/does not cover the legacy/i)
+
     const executedRaw = executionEvidence({
       actionId: 'stale-execution',
       allocations: [{

@@ -222,6 +222,60 @@ function allocationOrder(
     compareUtf16CodeUnits(left.sourceAccountId, right.sourceAccountId)
 }
 
+const adjustedReasonOrder = [
+  'qcd-person-limit-trimmed',
+  'qcd-contribution-offset-applied',
+  'qcd-taxable-amount-trimmed',
+] as const
+
+function reasonGroup(
+  outcome: ActionOutcome,
+  reason: Readonly<ActionReason>,
+): number {
+  if (outcome === 'partial') return reason.outcome === 'partial' ? 0 : 1
+  if (outcome === 'unsupported') return reason.outcome === 'unsupported' ? 0 : 1
+  return 0
+}
+
+function reasonOrder(
+  outcome: ActionOutcome,
+  left: Readonly<ActionReason>,
+  right: Readonly<ActionReason>,
+): number {
+  const groupDifference = reasonGroup(outcome, left) - reasonGroup(outcome, right)
+  if (groupDifference !== 0) return groupDifference
+  if (left.outcome === 'adjusted' && right.outcome === 'adjusted') {
+    const adjustedDifference = adjustedReasonOrder.indexOf(
+      left.code as (typeof adjustedReasonOrder)[number],
+    ) - adjustedReasonOrder.indexOf(
+      right.code as (typeof adjustedReasonOrder)[number],
+    )
+    if (adjustedDifference !== 0) return adjustedDifference
+  }
+  return compareUtf16CodeUnits(left.code, right.code) ||
+    compareUtf16CodeUnits(left.personId ?? '', right.personId ?? '') ||
+    compareUtf16CodeUnits(left.accountId ?? '', right.accountId ?? '') ||
+    compareUtf16CodeUnits(left.allocationId ?? '', right.allocationId ?? '')
+}
+
+function canonicalReasons(
+  outcome: ActionOutcome,
+  reasons: readonly Readonly<ActionReason>[],
+): ActionReason[] {
+  const byStructure = new Map<string, ActionReason>()
+  for (const reason of reasons) {
+    const key = JSON.stringify([
+      reason.code,
+      reason.personId ?? null,
+      reason.accountId ?? null,
+      reason.allocationId ?? null,
+    ])
+    if (!byStructure.has(key)) byStructure.set(key, { ...reason } as ActionReason)
+  }
+  return [...byStructure.values()].sort((left, right) =>
+    reasonOrder(outcome, left, right))
+}
+
 function canonicalRequest(
   rawRequest: Readonly<RetirementActionRequest>,
 ): Readonly<RetirementActionRequest> {
@@ -329,7 +383,10 @@ export function ordinaryWithdrawalPublicationSource(
         readiness: evidence.disposition.readiness,
         outcome: evidence.disposition.outcome,
         allocations: allocationRecords(evidence),
-        reasons: evidence.disposition.reasons.map((reason) => ({ ...reason })),
+        reasons: canonicalReasons(
+          evidence.disposition.outcome,
+          evidence.disposition.reasons,
+        ),
       }))
 
   return {
@@ -432,10 +489,21 @@ function assertRecordBinding(
       (record.kind === 'ordinaryWithdrawal'
         ? `${String(record.year).padStart(4, '0')}-12-31`
         : null)
+  const scheduledCivilDate = effectiveScheduledDate === null
+    ? null
+    : parseCivilIsoDate(effectiveScheduledDate)
+  const executedCivilDate = record.executedDate === null
+    ? null
+    : parseCivilIsoDate(record.executedDate)
   if (
     positiveMovement !==
       (record.executedDate !== null && record.executedSequence !== null) ||
     ((record.executedDate === null) !== (record.executedSequence === null)) ||
+    (positiveMovement &&
+      (scheduledCivilDate === null ||
+        scheduledCivilDate.year !== record.year ||
+        executedCivilDate === null ||
+        executedCivilDate.year !== record.year)) ||
     (positiveMovement &&
       (record.executedDate !== effectiveScheduledDate ||
         record.executedSequence !== record.scheduledSequence))
@@ -592,6 +660,7 @@ export function publishAnnualRetirementActions(
       assertRecordBinding(boundRecord, request)
       records.push({
         ...boundRecord,
+        reasons: canonicalReasons(boundRecord.outcome, parsedReasons),
         executorSource: source.executorSource,
       })
     }

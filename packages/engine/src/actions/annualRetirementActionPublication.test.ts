@@ -251,6 +251,51 @@ describe('annual retirement-action publication', () => {
       .toEqual(['allocation-a', 'allocation-z'])
   })
 
+  it('deduplicates and canonically groups blocking reasons', () => {
+    const action = request(
+      'ordinaryWithdrawal',
+      'reason-order',
+      '2030-06-15',
+      1,
+    )
+    if (action.kind !== 'ordinaryWithdrawal') {
+      throw new Error('expected ordinary withdrawal')
+    }
+    const allocation = action.allocations[0]!
+    const required = createActionReason('required-facts-missing', {
+      personId: action.personId,
+      accountId: allocation.sourceAccountId,
+      allocationId: allocation.allocationId,
+    })
+    const unsupported = createActionReason('withdrawal-source-type-unsupported', {
+      accountId: allocation.sourceAccountId,
+      allocationId: allocation.allocationId,
+    })
+    const refused = createActionReason('source-account-not-found', {
+      accountId: allocation.sourceAccountId,
+      allocationId: allocation.allocationId,
+    })
+    const publish = (reasons: AnnualRetirementActionRecord['reasons']) =>
+      publishAnnualRetirementActions({
+        taxYear: 2030,
+        requests: [action],
+        sources: [source('ordinaryWithdrawalExecutor', [{
+          ...record(action),
+          reasons,
+        }])],
+      })
+
+    const reordered = publish([unsupported, refused, required, unsupported])
+    const canonical = publish([required, unsupported, refused])
+
+    expect(reordered).toEqual(canonical)
+    expect(reordered?.records[0]?.reasons.map((reason) => reason.code)).toEqual([
+      'required-facts-missing',
+      'withdrawal-source-type-unsupported',
+      'source-account-not-found',
+    ])
+  })
+
   it('orders same-date execution sequences numerically', () => {
     const second = request(
       'ordinaryWithdrawal',
@@ -505,6 +550,41 @@ describe('annual retirement-action publication', () => {
       }],
     })).toThrow(/reason allocation differs/i)
   })
+
+  it.each(['2030-02-30', '2031-01-01'])(
+    'rejects positive movement on invalid civil schedule %s',
+    (executionDate) => {
+      const action = request(
+        'ordinaryWithdrawal',
+        `invalid-movement-${executionDate}`,
+        executionDate,
+        1,
+      )
+      const baseRecord = record(action)
+      const executedRecord = {
+        ...baseRecord,
+        readiness: 'actionable' as const,
+        outcome: 'executed' as const,
+        executedDate: baseRecord.scheduledDate,
+        executedSequence: baseRecord.scheduledSequence,
+        executedAmount: baseRecord.requestedAmount,
+        unexecutedAmount: asUsdCents(0),
+        allocations: baseRecord.allocations.map((allocation) => ({
+          ...allocation,
+          resolution: 'resolved' as const,
+          executedAmount: allocation.requestedAmount,
+          unexecutedAmount: asUsdCents(0),
+        })),
+        reasons: [],
+      }
+
+      expect(() => publishAnnualRetirementActions({
+        taxYear: 2030,
+        requests: [action],
+        sources: [source('ordinaryWithdrawalExecutor', [executedRecord])],
+      })).toThrow(/movement chronology differs/i)
+    },
+  )
 
   it('binds canonical conflict diagnostics to the complete schedule group', () => {
     const first = request(
