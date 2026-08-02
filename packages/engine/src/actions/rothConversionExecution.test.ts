@@ -90,6 +90,24 @@ function input(requests: readonly RothConversionRequest[] = [request()]): Execut
   }
 }
 
+function setAtPath(
+  value: unknown,
+  path: readonly (string | number)[],
+  replacement: unknown,
+): void {
+  let cursor: unknown = value
+  for (const segment of path.slice(0, -1)) {
+    if (cursor === null || typeof cursor !== 'object') {
+      throw new Error('Fixture path does not resolve to an object')
+    }
+    cursor = Reflect.get(cursor, segment)
+  }
+  if (cursor === null || typeof cursor !== 'object') {
+    throw new Error('Fixture path does not resolve to an object')
+  }
+  Reflect.set(cursor, path.at(-1)!, replacement)
+}
+
 describe('executeRothConversions', () => {
   it('publishes request-keyed prerequisite evidence without moving money', () => {
     const result = executeRothConversions(input())
@@ -223,6 +241,28 @@ describe('executeRothConversions', () => {
     expect(reasonCodes).not.toContain('conversion-destination-incompatible')
   })
 
+  it('publishes only the canonical inherited-source classification', () => {
+    const value = input()
+    const source = (value.plan as Plan).accounts.find((account) =>
+      account.id === 'traditional-a')
+    if (source?.type !== 'traditional') throw new Error('fixture drift')
+    source.inherited = {
+      ownerDeathYear: 2025,
+      decedentHadStartedRmds: true,
+    }
+
+    const result = executeRothConversions(value)
+    const reasonCodes = result.evidence[0]!.reasons.map((reason) => reason.code)
+
+    expect(reasonCodes).toContain('conversion-inherited-source')
+    expect(reasonCodes).not.toContain('conversion-source-not-convertible')
+    expect(() => publishAnnualRetirementActions({
+      taxYear: year,
+      requests: result.requests,
+      sources: [rothConversionPublicationSource(result)],
+    })).not.toThrow()
+  })
+
   it('rejects duplicate schedule identities before publishing evidence', () => {
     const first = request('conversion-a', 1)
     const duplicatePosition = request('conversion-b', 1)
@@ -250,6 +290,31 @@ describe('executeRothConversions', () => {
         { actionId: 'conversion-b' },
       ],
     })
+  })
+
+  it('publishes a noncolliding conversion sibling as batch-aborted', () => {
+    const first = request('conversion-a', 1)
+    const second = request('conversion-b', 1)
+    const sibling = request('conversion-c', 2, [{
+      allocationId: 'allocation-c',
+      sourceAccountId: 'traditional-a',
+      requestedAmount: 1_000,
+    }])
+    const result = executeRothConversions(input([first, second, sibling]))
+    const publication = publishAnnualRetirementActions({
+      taxYear: year,
+      requests: result.requests,
+      sources: [rothConversionPublicationSource(result)],
+    })
+
+    expect(publication?.records.find((entry) =>
+      entry.actionId === sibling.actionId)).toMatchObject({
+      readiness: 'nonActionable',
+      outcome: 'refused',
+      executedAmount: 0,
+      reasons: [{ code: 'action-batch-schedule-conflict' }],
+    })
+    expect(publication?.scheduleDiagnostics).toHaveLength(2)
   })
 
   it('publishes each missing-date request instead of colliding null schedule slots', () => {
@@ -316,7 +381,63 @@ describe('executeRothConversions', () => {
     expect(destinationReasons.map((reason) => reason.code)).not.toContain(
       'conversion-destination-not-found',
     )
+    expect(() => publishAnnualRetirementActions({
+      taxYear: year,
+      requests: [evidence.request],
+      sources: [rothConversionPublicationSource(executeRothConversions(value))],
+    })).not.toThrow()
   })
+
+  it('does not mix unresolved sources with resolved physical-balance evidence', () => {
+    const value = input()
+    const valuePlan = value.plan as Plan
+    valuePlan.accounts = valuePlan.accounts.filter((account) =>
+      account.id !== 'traditional-b')
+    value.openingBalances = value.openingBalances
+      .filter((snapshot) => snapshot.accountId !== 'traditional-b')
+      .map((snapshot) => snapshot.accountId === 'traditional-a'
+        ? { ...snapshot, openingBalance: asUsdCents(5_000) }
+        : snapshot)
+
+    const result = executeRothConversions(value)
+    const reasonCodes = result.evidence[0]!.reasons.map((reason) => reason.code)
+
+    expect(reasonCodes).toContain('source-account-not-found')
+    expect(reasonCodes).not.toContain('conversion-balance-trimmed')
+    expect(reasonCodes).not.toContain('conversion-balance-unavailable')
+    expect(() => publishAnnualRetirementActions({
+      taxYear: year,
+      requests: result.requests,
+      sources: [rothConversionPublicationSource(result)],
+    })).not.toThrow()
+  })
+
+  it.each([
+    [['committed'], true],
+    [['balances', 0, 'closingBalance'], 1_001],
+    [['evidence', 0, 'destinationCreditAmount'], 1],
+    [['evidence', 0, 'executedAmount'], 1],
+    [['evidence', 0, 'taxableConvertedAmount'], 1],
+    [['evidence', 0, 'nontaxableConvertedAmount'], 1],
+    [['evidence', 0, 'allocations', 0, 'taxableConvertedAmount'], 1],
+    [['evidence', 0, 'allocations', 0, 'nontaxableConvertedAmount'], 1],
+    [['evidence', 0, 'allocations', 0, 'basisEvidenceId'], 'forged-basis'],
+    [['evidence', 0, 'allocations', 0, 'rmdReserveEvidenceId'], 'forged-rmd'],
+    [['evidence', 0, 'taxFunding', 'status'], 'funded'],
+    [['evidence', 0, 'taxFunding', 'requiredFundingAmount'], 1],
+    [['evidence', 0, 'taxFunding', 'fundedAmount'], 1],
+    [['evidence', 0, 'taxFunding', 'evidenceId'], 'forged-funding'],
+  ] as const)(
+    'rejects forged nonmoving staging evidence at %j',
+    (path, replacement) => {
+      const forged: unknown = structuredClone(executeRothConversions(input()))
+      setAtPath(forged, path, replacement)
+
+      expect(() => rothConversionPublicationSource(
+        forged as ReturnType<typeof executeRothConversions>,
+      )).toThrow(/conversion/i)
+    },
+  )
 
   it('publishes a trim reason when a positive source balance is below its allocation', () => {
     const value = input()

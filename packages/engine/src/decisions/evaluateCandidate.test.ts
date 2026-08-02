@@ -826,7 +826,9 @@ describe('evaluateCandidate', () => {
     )
 
     expect(evaluation.recommendationState).toBe('diagnostic')
-    expect(evaluation.diagnostics.join(' ')).toMatch(/committed, actionable exact-ledger execution/i)
+    const diagnostics = evaluation.diagnostics.join(' ')
+    expect(diagnostics).toMatch(/committed, actionable exact-ledger execution/i)
+    expect(diagnostics).toContain('joint-source-acting-person-mismatch')
   })
 
   it('extracts matching request identities from a whole-strategies canonical operation', () => {

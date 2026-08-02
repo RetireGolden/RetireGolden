@@ -843,6 +843,54 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
     expect(year.withdrawals.total).toBe(0)
   })
 
+  it('rejects a source-aliased conversion destination before simulation', () => {
+    const plan = basePlan()
+    plan.accounts = [
+      {
+        type: 'traditional',
+        id: 'traditional',
+        name: 'Traditional',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 100,
+        annualContribution: 0,
+      },
+      {
+        type: 'roth',
+        id: 'roth',
+        name: 'Roth',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 0,
+        annualContribution: 0,
+      },
+    ]
+    const conversion = parsedAction({
+      actionId: 'aliased-conversion',
+      kind: 'rothConversion',
+      personId: 'p1',
+      year: 2026,
+      executionDate: '2026-12-31',
+      executionSequence: 1,
+      requestedAmount: 5_000,
+      allocations: [{
+        allocationId: 'aliased-conversion-allocation',
+        sourceAccountId: 'traditional',
+        requestedAmount: 5_000,
+      }],
+      destinationRothAccountId: 'roth',
+      taxFunding: { kind: 'noneExpected' },
+      provenance: { source: 'manual' },
+    })
+    if (conversion.kind !== 'rothConversion') throw new Error('fixture drift')
+    conversion.destinationRothAccountId = conversion.allocations[0]!.sourceAccountId
+    plan.strategies.retirementActions = [conversion]
+
+    expect(() => run(plan)).toThrow(/destination aliases a source/i)
+  })
+
   it('fails a mixed ordinary/conversion schedule collision as one annual batch', () => {
     const plan = basePlan()
     plan.accounts = [

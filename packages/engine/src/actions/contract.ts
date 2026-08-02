@@ -121,6 +121,25 @@ function validateAllocations(
   }
 }
 
+function validateConversionAllocations(
+  request: Readonly<{
+    allocations: readonly SourceAllocationRequest[]
+    destinationRothAccountId: AccountId
+    requestedAmount: PositiveUsdCents
+  }>,
+  ctx: z.RefinementCtx,
+): void {
+  validateAllocations(request.allocations, request.requestedAmount, ctx)
+  if (request.allocations.some((allocation) =>
+    allocation.sourceAccountId === request.destinationRothAccountId)) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['destinationRothAccountId'],
+      message: 'conversion destination aliases a source account',
+    })
+  }
+}
+
 export const withdrawalPurposeSchema = z
   .object({
     kind: z.enum(['spending', 'goal', 'taxPayment', 'other']),
@@ -198,7 +217,7 @@ export const rothConversionRequestSchema = z
   })
   .strict()
   .superRefine((request, ctx) => {
-    validateAllocations(request.allocations, request.requestedAmount, ctx)
+    validateConversionAllocations(request, ctx)
   })
 export type RothConversionRequest = z.infer<typeof rothConversionRequestSchema>
 
@@ -325,7 +344,7 @@ const persistedRothConversionRequestSchema = z
     taxFunding: persistedConversionTaxFundingSchema,
   })
   .superRefine((request, ctx) => {
-    validateAllocations(request.allocations, request.requestedAmount, ctx)
+    validateConversionAllocations(request, ctx)
   })
 
 const persistedQualifiedCharitableDistributionRequestSchema = z

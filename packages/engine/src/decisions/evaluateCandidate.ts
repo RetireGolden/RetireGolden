@@ -513,12 +513,16 @@ function inspectRetirementActionExecution(
         if (evidenceRecord === null) continue
         const actionId = evidenceRecord['actionId']
         if (typeof actionId !== 'string' || !requestedIds.has(actionId)) continue
-        const reasonCodes = Array.isArray(evidenceRecord['reasons'])
-          ? [...new Set(evidenceRecord['reasons'].flatMap((reason) => {
+        const dispositionRecord = objectRecord(evidenceRecord['disposition'])
+        const rawReasons = Array.isArray(evidenceRecord['reasons'])
+          ? evidenceRecord['reasons']
+          : Array.isArray(dispositionRecord?.['reasons'])
+            ? dispositionRecord['reasons']
+            : []
+        const reasonCodes = [...new Set(rawReasons.flatMap((reason) => {
               const code = objectRecord(reason)?.['code']
               return typeof code === 'string' ? [code] : []
             }))].sort()
-          : []
         const records = evidenceById.get(actionId) ?? []
         records.push({
           committed: execution?.['committed'] === true,

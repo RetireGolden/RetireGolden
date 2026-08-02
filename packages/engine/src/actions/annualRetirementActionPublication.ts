@@ -948,7 +948,13 @@ function conversionAllocationRecords(
     if (
       requestAllocation === undefined ||
       requestAllocation.sourceAccountId !== allocation.sourceAccountId ||
-      requestAllocation.requestedAmount !== allocation.requestedAmount
+      requestAllocation.requestedAmount !== allocation.requestedAmount ||
+      allocation.executedAmount !== 0 ||
+      allocation.unexecutedAmount !== requestAllocation.requestedAmount ||
+      allocation.taxableConvertedAmount !== 0 ||
+      allocation.nontaxableConvertedAmount !== 0 ||
+      allocation.basisEvidenceId !== null ||
+      allocation.rmdReserveEvidenceId !== null
     ) {
       throw new Error(
         `Conversion allocation evidence differs for action "${evidence.request.actionId}"`,
@@ -987,6 +993,15 @@ export function rothConversionPublicationEligibility(
 export function rothConversionPublicationSource(
   execution: Readonly<ExecuteRothConversionsResult>,
 ): Readonly<AnnualRetirementActionPublicationSource> {
+  if (
+    execution.committed !== false ||
+    execution.balances.some((balance) =>
+      balance.openingBalance !== balance.closingBalance)
+  ) {
+    throw new Error(
+      'Cannot publish conversion staging evidence with committed movement',
+    )
+  }
   if (execution.scheduleIssues.length > 0 && execution.evidence.length > 0) {
     throw new Error(
       'Cannot publish conversion evidence from a schedule-aborted annual batch',
@@ -1031,7 +1046,20 @@ export function rothConversionPublicationSource(
           evidence.scheduledSequence !== evidence.request.executionSequence ||
           evidence.destinationRothAccountId !==
             evidence.request.destinationRothAccountId ||
-          evidence.requestedAmount !== evidence.request.requestedAmount
+          evidence.requestedAmount !== evidence.request.requestedAmount ||
+          evidence.destinationCreditAmount !== 0 ||
+          evidence.executedAmount !== 0 ||
+          evidence.unexecutedAmount !== evidence.request.requestedAmount ||
+          evidence.taxableConvertedAmount !== 0 ||
+          evidence.nontaxableConvertedAmount !== 0 ||
+          evidence.executedDate !== null ||
+          evidence.executedSequence !== null ||
+          evidence.readiness !== 'nonActionable' ||
+          evidence.taxFunding.kind !== evidence.request.taxFunding.kind ||
+          evidence.taxFunding.status !== 'unsupported' ||
+          evidence.taxFunding.requiredFundingAmount !== null ||
+          evidence.taxFunding.fundedAmount !== null ||
+          evidence.taxFunding.evidenceId !== null
         ) {
           throw new Error(
             `Conversion execution evidence differs for action "${evidence.request.actionId}"`,
@@ -1497,7 +1525,13 @@ function assertRecordBinding(
       throw new Error(`Executor reason allocation differs for action "${request.actionId}"`)
     }
     const sourceIdentifiersAllowed = sourceIdentifierReasonCodes.has(reason.code)
-    const destinationAccountAllowed = destinationAccountReasonCodes.has(reason.code)
+    const destinationScopedMissingFacts =
+      reason.code === 'required-facts-missing' &&
+      reason.allocationId === undefined &&
+      reason.accountId === destinationId
+    const destinationAccountAllowed =
+      destinationAccountReasonCodes.has(reason.code) ||
+      destinationScopedMissingFacts
     const boundRecordAllocation = reasonAllocation === undefined
       ? reason.accountId === undefined
         ? undefined
@@ -1827,7 +1861,6 @@ export function publishAnnualRetirementActions(
   for (const record of records) {
     const recordScheduleKey = scheduleKey(record)
     const sourceConflictAborted =
-      record.executorSource === 'ordinaryWithdrawalExecutor' &&
       conflictDiagnosticSources.has(record.executorSource)
     const recordDiagnosed = diagnosedConflictRecords.has(JSON.stringify([
       record.executorSource,
@@ -1888,7 +1921,6 @@ export function publishAnnualRetirementActions(
       record.reasons.some((reason) =>
         reason.code === 'action-batch-schedule-conflict') &&
       (
-        record.executorSource !== 'ordinaryWithdrawalExecutor' ||
         recordDiagnosed ||
         !conflictDiagnosticSources.has(record.executorSource)
       )

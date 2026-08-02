@@ -276,6 +276,8 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
     }
 
     const resolvedSourceAccountIds = new Set<string>()
+    const hasUnresolvedSource = request.allocations.some((allocation) =>
+      !accounts.has(allocation.sourceAccountId))
     for (const allocation of request.allocations) {
       const source = accounts.get(allocation.sourceAccountId)
       const opening = openingByAccountId.get(allocation.sourceAccountId)
@@ -284,7 +286,7 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
         continue
       }
       resolvedSourceAccountIds.add(allocation.sourceAccountId)
-      if (source.type !== 'traditional' || source.inherited !== undefined || source.ownerPersonId !== request.personId) {
+      if (source.type !== 'traditional') {
         reasons.push(createActionReason('conversion-source-not-convertible', { accountId: allocation.sourceAccountId, allocationId: allocation.allocationId }))
       }
       if (opening === undefined) {
@@ -293,12 +295,12 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
           accountId: allocation.sourceAccountId,
           allocationId: allocation.allocationId,
         }))
-      } else if (opening === 0) {
+      } else if (!hasUnresolvedSource && opening === 0) {
         reasons.push(createActionReason('conversion-balance-unavailable', {
           accountId: allocation.sourceAccountId,
           allocationId: allocation.allocationId,
         }))
-      } else if (opening < allocation.requestedAmount) {
+      } else if (!hasUnresolvedSource && opening < allocation.requestedAmount) {
         reasons.push(createActionReason('conversion-balance-trimmed', {
           accountId: allocation.sourceAccountId,
           allocationId: allocation.allocationId,
