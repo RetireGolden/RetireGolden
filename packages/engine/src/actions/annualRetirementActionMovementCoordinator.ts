@@ -333,13 +333,11 @@ export function coordinateAnnualRetirementActionMovement(
 ): Readonly<CoordinateAnnualRetirementActionMovementResult> {
   const parsedPlan = planSchema.safeParse(input.plan)
   if (!parsedPlan.success) {
-    const invalidInventory = buildAnnualRetirementPhysicalEventInventory(input)
-    return invalidInventory.status === 'annualPhysicalEventInventoryBuilt'
-      ? collisionBlocked(
-          invalidInventory,
-          'Plan input changed while the coordinator was establishing its immutable snapshot',
-        )
-      : invalidInventory
+    // The inventory applies the same Plan schema, so this parse failure fixes
+    // its result to the typed incomplete arm rather than the built arm.
+    return buildAnnualRetirementPhysicalEventInventory(input) as Readonly<
+      AnnualRetirementInventoryIncompleteResult
+    >
   }
   const plan = parsedPlan.data
   const inventory = buildAnnualRetirementPhysicalEventInventory({

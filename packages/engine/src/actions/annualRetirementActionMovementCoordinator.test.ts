@@ -483,7 +483,16 @@ describe('coordinateAnnualRetirementActionMovement', () => {
     })
   })
 
-  it('passes incomplete and chronology-invalid inventory failures through', () => {
+  it('passes invalid, incomplete, and chronology-invalid inventory failures through', () => {
+    const invalidInput = input()
+    const invalidPlan = structuredClone(invalidInput.plan as Plan)
+    const invalidPlanRecord = invalidPlan as unknown as { id: unknown }
+    invalidPlanRecord.id = ''
+    invalidInput.plan = invalidPlan
+    expect(coordinateAnnualRetirementActionMovement(invalidInput)).toEqual(
+      buildAnnualRetirementPhysicalEventInventory(invalidInput),
+    )
+
     const incompleteInput = input(basePlan(), [unresolved()])
     expect(coordinateAnnualRetirementActionMovement(incompleteInput)).toEqual(
       buildAnnualRetirementPhysicalEventInventory(incompleteInput),
