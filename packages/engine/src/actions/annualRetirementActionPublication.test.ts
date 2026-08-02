@@ -788,6 +788,47 @@ describe('annual retirement-action publication', () => {
     },
   )
 
+  it.each([
+    [{ kind: 'noneExpected' } as const, false],
+    [{
+      kind: 'linkedWithdrawal',
+      withdrawalActionId: asActionId('linked-tax-withdrawal'),
+    } as const, true],
+    [{
+      kind: 'externalCash',
+      amount: asPositiveUsdCents(1_000),
+      attested: true,
+    } as const, true],
+    [{
+      kind: 'conversionPrincipalWithholding',
+      amount: asPositiveUsdCents(1_000),
+    } as const, true],
+  ])(
+    'binds unallocated-funding reasons to conversion funding mode %#',
+    (taxFunding, accepted) => {
+      const action = request(
+        'rothConversion',
+        `unallocated-reason-${taxFunding.kind}`,
+        '2030-06-15',
+        1,
+      )
+      if (action.kind !== 'rothConversion') throw new Error('fixture drift')
+      action.taxFunding = taxFunding
+      const publish = () => publishAnnualRetirementActions({
+        taxYear: 2030,
+        requests: [action],
+        sources: [source('rothConversionExecutor', [{
+          ...record(action),
+          outcome: 'refused',
+          reasons: [createActionReason('conversion-tax-funding-unallocated')],
+        }])],
+      })
+
+      if (accepted) expect(publish).not.toThrow()
+      else expect(publish).toThrow(/funding reason differs/i)
+    },
+  )
+
   it('binds ordinary conversion-funding reasons to the exact linked withdrawal', () => {
     const withdrawal = request(
       'ordinaryWithdrawal',
@@ -876,6 +917,48 @@ describe('annual retirement-action publication', () => {
 
       if (accepted) expect(publish).not.toThrow()
       else expect(publish).toThrow(/charity reason differs/i)
+    },
+  )
+
+  it.each([
+    ['source-owner-mismatch', 'ordinaryWithdrawal', true],
+    ['source-owner-mismatch', 'rothConversion', false],
+    ['source-owner-mismatch', 'qcd', false],
+    ['joint-source-acting-person-mismatch', 'ordinaryWithdrawal', true],
+    ['joint-source-acting-person-mismatch', 'rothConversion', false],
+    ['joint-source-acting-person-mismatch', 'qcd', false],
+  ] as const)(
+    'binds generic ownership reason %s to %s',
+    (reasonCode, kind, accepted) => {
+      const action = kind === 'qcd'
+        ? qcdRequest(`ownership-${reasonCode}-${kind}`, '2030-06-15', 1)
+        : request(kind, `ownership-${reasonCode}-${kind}`, '2030-06-15', 1)
+      const allocation = action.kind === 'qcd'
+        ? action.allocation
+        : action.kind === 'ordinaryWithdrawal' || action.kind === 'rothConversion'
+          ? action.allocations[0]!
+          : undefined
+      if (allocation === undefined) throw new Error('fixture drift')
+      const executorSource = action.kind === 'qcd'
+        ? 'qcdExecutor'
+        : action.kind === 'rothConversion'
+          ? 'rothConversionExecutor'
+          : 'ordinaryWithdrawalExecutor'
+      const publish = () => publishAnnualRetirementActions({
+        taxYear: 2030,
+        requests: [action],
+        sources: [source(executorSource, [{
+          ...record(action),
+          outcome: 'refused',
+          reasons: [createActionReason(reasonCode, {
+            accountId: allocation.sourceAccountId,
+            allocationId: allocation.allocationId,
+          })],
+        }])],
+      })
+
+      if (accepted) expect(publish).not.toThrow()
+      else expect(publish).toThrow(/reason kind differs/i)
     },
   )
 
@@ -1091,6 +1174,69 @@ describe('annual retirement-action publication', () => {
       createActionReason('action-batch-schedule-conflict'),
     ])
 
+    if (foreign.kind !== 'ordinaryWithdrawal') throw new Error('fixture drift')
+    const allocation = foreign.allocations[0]!
+    const half = asUsdCents(Number(foreign.requestedAmount) / 2)
+    const invalidBatchRecords = [
+      ['executed', {
+        ...record(foreign),
+        readiness: 'actionable' as const,
+        outcome: 'executed' as const,
+        executedDate: foreign.executionDate ?? null,
+        executedSequence: foreign.executionSequence,
+        executedAmount: asUsdCents(foreign.requestedAmount),
+        unexecutedAmount: asUsdCents(0),
+        allocations: record(foreign).allocations.map((entry) => ({
+          ...entry,
+          resolution: 'resolved' as const,
+          executedAmount: entry.requestedAmount,
+          unexecutedAmount: asUsdCents(0),
+        })),
+        reasons: [],
+      }],
+      ['partial', {
+        ...record(foreign),
+        readiness: 'actionable' as const,
+        outcome: 'partial' as const,
+        executedDate: foreign.executionDate ?? null,
+        executedSequence: foreign.executionSequence,
+        executedAmount: half,
+        unexecutedAmount: half,
+        allocations: record(foreign).allocations.map((entry) => ({
+          ...entry,
+          resolution: 'resolved' as const,
+          executedAmount: half,
+          unexecutedAmount: half,
+        })),
+        reasons: [createActionReason('source-balance-trimmed', {
+          accountId: allocation.sourceAccountId,
+          allocationId: allocation.allocationId,
+        })],
+      }],
+      ['unsupported', record(foreign)],
+      ['wrong-reason', {
+        ...conflictRecord(foreign),
+        reasons: [createActionReason('source-account-not-found', {
+          accountId: allocation.sourceAccountId,
+          allocationId: allocation.allocationId,
+        })],
+      }],
+      ['missing-reason', {
+        ...conflictRecord(foreign),
+        reasons: [],
+      }],
+    ] as const
+    for (const [label, invalidRecord] of invalidBatchRecords) {
+      expect(() => publishAnnualRetirementActions({
+        taxYear: 2030,
+        requests: [first, second, foreign],
+        sources: [{
+          ...validBatchSource,
+          records: [...validBatchSource.records.slice(0, 2), invalidRecord],
+        }],
+      }), label).toThrow(/batch conflict disposition differs|invalid_type|expected object/i)
+    }
+
     expect(() => publishAnnualRetirementActions({
       taxYear: 2030,
       requests: [first, second, foreign],
@@ -1098,7 +1244,7 @@ describe('annual retirement-action publication', () => {
         ...validBatchSource,
         records: [...validBatchSource.records.slice(0, 2), conflictRecord(foreign)],
       }],
-    })).toThrow(/conflict reason has no source diagnostic.*foreign-reason-bearing-record/i)
+    })).toThrow(/batch conflict disposition differs|conflict reason has no source diagnostic/i)
 
     expect(() => publishAnnualRetirementActions({
       taxYear: 2030,
@@ -1197,7 +1343,15 @@ describe('annual retirement-action publication', () => {
     })
     const validConflictSource = {
       executorSource: 'ordinaryWithdrawalExecutor',
-      records: [conflictRecord(first), conflictRecord(second), record(invalid)],
+      records: [
+        conflictRecord(first),
+        conflictRecord(second),
+        {
+          ...record(invalid),
+          outcome: 'refused',
+          reasons: [createActionReason('action-batch-schedule-conflict')],
+        },
+      ],
       scheduleDiagnostics: [
         diagnostic(first.actionId, [first.actionId, second.actionId]),
         diagnostic(second.actionId, [first.actionId, second.actionId]),

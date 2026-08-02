@@ -368,6 +368,12 @@ function reasonAppliesToKind(
   if (code === 'source-balance-trimmed' || code === 'source-balance-unavailable') {
     return kind === 'ordinaryWithdrawal'
   }
+  if (
+    code === 'source-owner-mismatch' ||
+    code === 'joint-source-acting-person-mismatch'
+  ) {
+    return kind === 'ordinaryWithdrawal'
+  }
   if (code.startsWith('withdrawal-')) return kind === 'ordinaryWithdrawal'
   if (code.startsWith('qcd-')) return kind === 'qcd'
   if (code.startsWith('conversion-')) {
@@ -737,6 +743,15 @@ function assertRecordBinding(
     ) {
       throw new Error(`Executor funding reason differs for action "${request.actionId}"`)
     }
+    if (
+      reason.code === 'conversion-tax-funding-unallocated' &&
+      (
+        request.kind !== 'rothConversion' ||
+        request.taxFunding.kind === 'noneExpected'
+      )
+    ) {
+      throw new Error(`Executor funding reason differs for action "${request.actionId}"`)
+    }
     if (request.kind === 'qcd') {
       const charity = request.charity
       const charityReasonApplies =
@@ -983,8 +998,46 @@ export function publishAnnualRetirementActions(
     }
   }
 
+  const conflictDiagnosticSources = new Set(
+    diagnostics.map((diagnostic) => diagnostic.executorSource),
+  )
+  const diagnosedConflictRecords = new Set(
+    diagnostics.map((diagnostic) => JSON.stringify([
+      diagnostic.executorSource,
+      diagnostic.actionId,
+    ])),
+  )
   for (const record of records) {
     const recordScheduleKey = scheduleKey(record)
+    const sourceConflictAborted =
+      record.executorSource === 'ordinaryWithdrawalExecutor' &&
+      conflictDiagnosticSources.has(record.executorSource)
+    const recordDiagnosed = diagnosedConflictRecords.has(JSON.stringify([
+      record.executorSource,
+      record.actionId,
+    ]))
+    if (
+      sourceConflictAborted &&
+      !recordDiagnosed &&
+      (
+        record.readiness !== 'nonActionable' ||
+        record.outcome !== 'refused' ||
+        record.executedAmount !== 0 ||
+        record.unexecutedAmount !== record.requestedAmount ||
+        record.executedDate !== null ||
+        record.executedSequence !== null ||
+        record.allocations.some((allocation) =>
+          allocation.resolution !== 'unresolved' ||
+          allocation.executedAmount !== 0 ||
+          allocation.unexecutedAmount !== allocation.requestedAmount) ||
+        record.reasons.length !== 1 ||
+        record.reasons[0]?.code !== 'action-batch-schedule-conflict'
+      )
+    ) {
+      throw new Error(
+        `Schedule batch conflict disposition differs for action "${record.actionId}"`,
+      )
+    }
     if (
       record.kind === 'ordinaryWithdrawal' &&
       record.reasons.some((reason) =>
@@ -1019,12 +1072,8 @@ export function publishAnnualRetirementActions(
         reason.code === 'action-batch-schedule-conflict') &&
       (
         record.executorSource !== 'ordinaryWithdrawalExecutor' ||
-        diagnostics.some((diagnostic) =>
-          diagnostic.executorSource === record.executorSource &&
-          diagnostic.actionId === record.actionId) ||
-        !diagnostics.some((diagnostic) =>
-          diagnostic.kind === 'executionSequenceConflict' &&
-          diagnostic.executorSource === record.executorSource)
+        recordDiagnosed ||
+        !conflictDiagnosticSources.has(record.executorSource)
       )
     ) {
       throw new Error(
