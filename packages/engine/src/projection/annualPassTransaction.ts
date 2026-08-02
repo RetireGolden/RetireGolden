@@ -111,6 +111,8 @@ export class SimulatorAnnualPassTransactionSettledError extends Error {
 
 interface BalanceSnapshot {
   record: SimulatorAnnualPassBalanceRecord
+  account: SimulatorAnnualPassBalanceRecord['account']
+  accountId: string
   balance: number
   costBasis: number
 }
@@ -240,7 +242,13 @@ function captureSnapshot(bindings: SimulatorAnnualPassStateBindings): AnnualPass
         write: binding.write,
       }
       }),
-    balances: bindings.balances.map((record) => ({ record, balance: record.balance, costBasis: record.costBasis })),
+    balances: bindings.balances.map((record) => ({
+      record,
+      account: record.account,
+      accountId: record.account.id,
+      balance: record.balance,
+      costBasis: record.costBasis,
+    })),
     retirementRuntimeOccurrences:
       bindings.retirementRuntimeOccurrences.map(cloneRuntimeOccurrence),
     retirementRuntimeApplications:
@@ -289,7 +297,15 @@ function restoreSnapshot(bindings: SimulatorAnnualPassStateBindings, snapshot: A
     restored.write = write
   }
 
-  for (const { record, balance, costBasis } of snapshot.balances) {
+  for (const { record, account, accountId, balance, costBasis } of snapshot.balances) {
+    const mutableRecord = record as {
+      account: { id: string }
+      balance: number
+      costBasis: number
+    }
+    const mutableAccount = account as { id: string }
+    mutableRecord.account = mutableAccount
+    mutableAccount.id = accountId
     record.balance = balance
     record.costBasis = costBasis
   }
