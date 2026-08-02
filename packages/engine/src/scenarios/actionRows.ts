@@ -415,6 +415,48 @@ export function normalizeScenarioActionRows(
         )
       }
       seenActionIds.add(actionId)
+
+      const requestedAllocationsById = new Map<
+        string,
+        (typeof evidence.request.allocations)[number]
+      >(
+        evidence.request.allocations.map((allocation) => [
+          allocation.allocationId,
+          allocation,
+        ]),
+      )
+      const seenAllocationIds = new Set<string>()
+      const sourceAllocations = evidence.allocations.map((allocation) => {
+        const requestedAllocation = requestedAllocationsById.get(allocation.allocationId)
+        if (
+          seenAllocationIds.has(allocation.allocationId) ||
+          requestedAllocation === undefined ||
+          requestedAllocation.sourceAccountId !== allocation.sourceAccountId ||
+          requestedAllocation.requestedAmount !== allocation.requestedAmount
+        ) {
+          throw new Error(
+            `Conversion execution allocation does not match request for actionId "${actionId}"`,
+          )
+        }
+        seenAllocationIds.add(allocation.allocationId)
+        return {
+          allocationId: requestedAllocation.allocationId,
+          sourceAccountId: requestedAllocation.sourceAccountId,
+          resolution: allocation.resolution,
+          requestedAmountCents: requestedAllocation.requestedAmount,
+          executedAmountCents: asUsdCents(allocation.executedAmount),
+          unexecutedAmountCents: asUsdCents(allocation.unexecutedAmount),
+        }
+      })
+      if (
+        requestedAllocationsById.size !== evidence.request.allocations.length ||
+        seenAllocationIds.size !== requestedAllocationsById.size
+      ) {
+        throw new Error(
+          `Conversion execution allocation set does not match request for actionId "${actionId}"`,
+        )
+      }
+
       rows.push({
         actionId,
         kind: evidence.kind,
@@ -427,28 +469,7 @@ export function normalizeScenarioActionRows(
         unexecutedAmountCents: asUsdCents(evidence.unexecutedAmount),
         readiness: evidence.readiness,
         outcome: evidence.outcome,
-        sourceAllocations: evidence.allocations.map((allocation) => {
-          const requestedAllocation = evidence.request.allocations.find(
-            (candidate) => candidate.allocationId === allocation.allocationId,
-          )
-          if (
-            requestedAllocation === undefined ||
-            requestedAllocation.sourceAccountId !== allocation.sourceAccountId ||
-            requestedAllocation.requestedAmount !== allocation.requestedAmount
-          ) {
-            throw new Error(
-              `Conversion execution allocation does not match request for actionId "${actionId}"`,
-            )
-          }
-          return {
-            allocationId: requestedAllocation.allocationId,
-            sourceAccountId: requestedAllocation.sourceAccountId,
-            resolution: allocation.resolution,
-            requestedAmountCents: requestedAllocation.requestedAmount,
-            executedAmountCents: asUsdCents(allocation.executedAmount),
-            unexecutedAmountCents: asUsdCents(allocation.unexecutedAmount),
-          }
-        }),
+        sourceAllocations,
         reasons: evidence.reasons.map((reason) => ({ ...reason })),
       })
     }

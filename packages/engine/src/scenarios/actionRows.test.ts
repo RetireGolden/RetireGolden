@@ -247,6 +247,65 @@ describe('normalizeScenarioActionRows', () => {
     expect(() => normalizeScenarioActionRows([rawYear])).toThrow(
       'Conversion execution action identity does not match request',
     )
+
+    const multiAllocationPlan = structuredClone(plan)
+    multiAllocationPlan.accounts.push(
+      traditionalAccount('traditional-b', 100, 'p1'),
+    )
+    const multiAllocationRequest = rothConversionRequestSchema.parse({
+      ...request,
+      actionId: 'conversion-multi',
+      requestedAmount: 10_000,
+      allocations: [
+        {
+          allocationId: 'conversion-allocation-a',
+          sourceAccountId: 'traditional',
+          requestedAmount: 4_000,
+        },
+        {
+          allocationId: 'conversion-allocation-b',
+          sourceAccountId: 'traditional-b',
+          requestedAmount: 6_000,
+        },
+      ],
+    })
+    const multiAllocationExecution = executeRothConversions({
+      year: 2030,
+      plan: multiAllocationPlan,
+      requests: [multiAllocationRequest],
+      openingBalances: [
+        { accountId: 'traditional', openingBalance: asUsdCents(10_000) },
+        { accountId: 'traditional-b', openingBalance: asUsdCents(10_000) },
+        { accountId: 'roth', openingBalance: asUsdCents(0) },
+      ],
+    })
+    const canonicalEvidence = multiAllocationExecution.evidence[0]!
+    const missingAllocationExecution = {
+      ...multiAllocationExecution,
+      evidence: [{
+        ...canonicalEvidence,
+        allocations: canonicalEvidence.allocations.slice(0, 1),
+      }],
+    }
+    const duplicateAllocationExecution = {
+      ...multiAllocationExecution,
+      evidence: [{
+        ...canonicalEvidence,
+        allocations: [
+          canonicalEvidence.allocations[0]!,
+          canonicalEvidence.allocations[0]!,
+        ],
+      }],
+    }
+
+    for (const forged of [missingAllocationExecution, duplicateAllocationExecution]) {
+      expect(() => normalizeScenarioActionRows([{
+        year: 2030,
+        rothConversionActionExecution: forged,
+      } as unknown as YearResult])).toThrow(
+        'Conversion execution allocation',
+      )
+    }
   })
 
   it('normalizes ordinary execution cents and identities independent of evidence order', () => {
