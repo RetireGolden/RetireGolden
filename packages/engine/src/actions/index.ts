@@ -443,6 +443,17 @@ export {
   type StageAnnualHsaPhysicalMovementCandidateInput,
 } from './annualHsaPhysicalMovementCandidate.js'
 export {
+  establishAnnualHsaOpeningAuthority,
+  type AnnualHsaOpeningAuthority,
+  type CompleteHsaRuntimeInflowInventory,
+  type EstablishAnnualHsaOpeningAuthorityInput,
+  type ExplicitEmptyHsaRuntimeInflowInventory,
+  type HsaAnnualStartBalanceEvidence,
+  type HsaRuntimeInflowInventory,
+  type HsaSourceOpeningAuthority,
+  type SettledHsaRuntimeCreditEvidence,
+} from './annualHsaOpeningAuthority.js'
+export {
   evaluateAnnualHsaReimbursementLedger,
   type AnnualHsaReimbursementLedgerBlocked,
   type AnnualHsaReimbursementLedgerEvaluated,

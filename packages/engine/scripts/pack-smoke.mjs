@@ -96,8 +96,15 @@ const annualRetirementInventoryDeepApi = await import(
 const annualHsaTreatmentBindingDeepApi = await import(
   '@retiregolden/engine/actions/annualHsaTreatmentBindingCoordinator'
 )
+const annualHsaOpeningAuthorityDeepApi = await import(
+  '@retiregolden/engine/actions/annualHsaOpeningAuthority'
+)
 assert.equal(
   typeof annualHsaTreatmentBindingDeepApi.coordinateAnnualHsaTreatmentBinding,
+  'function',
+)
+assert.equal(
+  typeof annualHsaOpeningAuthorityDeepApi.establishAnnualHsaOpeningAuthority,
   'function',
 )
 const ownedIraPostCandidateEvidenceDeepApi = await import(
@@ -110,6 +117,7 @@ const ownedIraAnnualPassProbeDeepApi = await import(
   '@retiregolden/engine/actions/ownedNonRothIraAnnualPassProbe'
 )
 const canonicalActionDeepImports = [
+  'annualHsaOpeningAuthority',
   'annualHsaPenaltyEvaluation',
   'annualHsaPhysicalMovementCandidate',
   'annualHsaTreatmentBindingCoordinator',
