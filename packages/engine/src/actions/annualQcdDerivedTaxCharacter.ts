@@ -101,6 +101,17 @@ function segment(kind: QcdFinalDerivedTaxCharacter['kind'], amountCents: UsdCent
   return deepFreeze({ sourceClass: 'qcd', kind, sourceAccountId: postPass.sourceAccountId,
     amountCents, exactAmountAuthority: 'cents', characterEvidence }) as Readonly<QcdFinalDerivedTaxCharacter>
 }
+type QcdIraEligibilityFact = Readonly<AnnualQcdExecutionPrerequisiteEvidence>['eligibility']['source']['iraEligibilityFact']
+// An ongoing or unproven SEP/SIMPLE plan is a *source* refusal in the frozen
+// registry (`qcd-ongoing-sep-simple`, `qcd-sep-simple-activity-unknown`), not a
+// physical trim. Shared with `finalize` so the source diagnosis survives even
+// when the upstream prerequisite rejects the action before physical staging.
+function sepSimpleActivityAccepted(fact: QcdIraEligibilityFact): boolean {
+  return fact?.subtype === 'traditional' ? fact.qcdActivity.kind === 'notApplicable'
+    : fact?.qcdActivity?.kind === 'employerContribution' && fact.qcdActivity.actionTaxYear === 2026 &&
+      fact.qcdActivity.planYearEndDate.trim().length > 0 && fact.qcdActivity.evidenceId.trim().length > 0 &&
+      fact.qcdActivity.employerContributionMadeForPlanYear === false
+}
 function acceptedSource(prerequisite: Readonly<AnnualQcdExecutionPrerequisiteEvidence>, postPass: Readonly<AnnualQcdPostPassApplication>): Readonly<AcceptedQcdSourceEligibilityEvidence> {
   const source = prerequisite.eligibility.source; const fact = source.iraEligibilityFact
   const request = prerequisite.request
@@ -111,10 +122,7 @@ function acceptedSource(prerequisite: Readonly<AnnualQcdExecutionPrerequisiteEvi
     source.allocationId === postPass.allocationId && source.sourceAccountId === postPass.sourceAccountId &&
     source.ownerPersonId === postPass.donorPersonId && source.accountType === 'traditional' &&
     source.retirementAccountKind === 'ira' && source.inheritance === 'owned' && fact?.sourceAccountId === postPass.sourceAccountId
-  const activityAccepted = fact?.subtype === 'traditional' ? fact.qcdActivity.kind === 'notApplicable'
-    : fact?.qcdActivity?.kind === 'employerContribution' && fact.qcdActivity.actionTaxYear === 2026 &&
-      fact.qcdActivity.planYearEndDate.trim().length > 0 && fact.qcdActivity.evidenceId.trim().length > 0 &&
-      fact.qcdActivity.employerContributionMadeForPlanYear === false
+  const activityAccepted = sepSimpleActivityAccepted(fact)
   if (!exactRequest || !exactOwnedTraditionalIra || !activityAccepted) fail('sourceInvalid', 'QCD character source/action evidence is not an accepted owned traditional IRA source.')
   if (fact === null) fail('sourceInvalid', 'QCD accepted source requires exact IRA classification evidence.')
   if (fact.subtype === 'traditional') return deepFreeze({ sourceIraAccountId: postPass.sourceAccountId, donorPersonId: postPass.donorPersonId,
@@ -125,7 +133,15 @@ function acceptedSource(prerequisite: Readonly<AnnualQcdExecutionPrerequisiteEvi
 }
 function finalize(input: CoordinateAnnualQcdDeductionTreatmentInput): AnnualQcdDerivedTaxCharacterFinal {
   const physical = stageAnnualQcdPhysicalExecution(input.postPassInput.physicalInput)
-  if (physical.status !== 'annualQcdPhysicalExecutionStaged' || physical.taxYear !== 2026) fail('physicalInvalid', 'Canonical 2026 QCD physical rebuilding failed.')
+  if (physical.status !== 'annualQcdPhysicalExecutionStaged' || physical.taxYear !== 2026) {
+    // The prerequisite rejects an ineligible SEP/SIMPLE source before physical
+    // staging can succeed. Diagnose that as the source refusal the registry
+    // names rather than reporting a generic physical failure.
+    if (input.postPassInput.physicalInput.prerequisite.evidence.some((entry) => !sepSimpleActivityAccepted(entry.eligibility.source.iraEligibilityFact))) {
+      fail('sourceInvalid', 'QCD character source/action evidence is not an accepted owned traditional IRA source.')
+    }
+    fail('physicalInvalid', 'Canonical 2026 QCD physical rebuilding failed.')
+  }
   const residual = stageAnnualQcdResidualForm8606({ postPassInput: input.postPassInput })
   if (residual.status !== 'annualQcdResidualForm8606Staged' || residual.taxYear !== 2026) fail('residualInvalid', 'Canonical 2026 QCD residual rebuilding failed.')
   const deduction = coordinateAnnualQcdDeductionTreatment(input)
