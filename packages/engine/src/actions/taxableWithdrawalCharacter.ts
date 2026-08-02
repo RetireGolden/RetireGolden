@@ -16,6 +16,7 @@ import {
   type PositiveUsdCents,
   type UsdCents,
 } from './money.js'
+import { exactCentProRataNearestHalfUp } from './exactCentProRata.js'
 import { formatCivilDate, parseCivilIsoDate } from './civilDate.js'
 
 export type TaxableWithdrawalFederalFilingStatus =
@@ -188,12 +189,6 @@ function deepFreeze<T>(value: T): Readonly<T> {
   return value as Readonly<T>
 }
 
-function exactHalfUp(numerator: bigint, denominator: bigint): bigint {
-  const quotient = numerator / denominator
-  const remainder = numerator % denominator
-  return quotient + (remainder * 2n >= denominator ? 1n : 0n)
-}
-
 function centsFromBigInt(value: bigint): UsdCents {
   if (value < 0n || value > BigInt(Number.MAX_SAFE_INTEGER)) {
     throw new RangeError('Exact taxable character arithmetic exceeded the safe-integer range')
@@ -332,9 +327,9 @@ function assertResult(
 ): void {
   const accepted = result.acceptedSourceEligibility
   const basis = accepted.basisEvidence
-  const expectedRecovered = exactHalfUp(
-    BigInt(basis.executedAmount) *
-      BigInt(basis.aggregateBasisRatio.numeratorMinorUnits),
+  const expectedRecovered = exactCentProRataNearestHalfUp(
+    BigInt(basis.executedAmount),
+    BigInt(basis.aggregateBasisRatio.numeratorMinorUnits),
     BigInt(basis.aggregateBasisRatio.denominatorMinorUnits),
   )
   const expectedSigned = BigInt(basis.executedAmount) - expectedRecovered
@@ -411,9 +406,9 @@ export function classifyIndividuallyOwnedTaxableWithdrawal(
   input: ClassifyIndividuallyOwnedTaxableWithdrawalInput,
 ): Readonly<ClassifyIndividuallyOwnedTaxableWithdrawalResult> {
   const value = validateInput(input)
-  const recoveredBigInt = exactHalfUp(
-    BigInt(value.executedAmount) *
-      BigInt(value.remainingCostBasisBeforeExecution),
+  const recoveredBigInt = exactCentProRataNearestHalfUp(
+    BigInt(value.executedAmount),
+    BigInt(value.remainingCostBasisBeforeExecution),
     BigInt(value.preExecutionFairMarketValue),
   )
   const basisRecoveredAmount = centsFromBigInt(recoveredBigInt)
