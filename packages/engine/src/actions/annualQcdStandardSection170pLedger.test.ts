@@ -47,7 +47,7 @@ function fixture(
   const year = options.year ?? 2026
   const requests = specs.map((spec) => request(spec, year))
   const donors = [...new Set(requests.map((entry) => entry.donorPersonId))].sort()
-  const rawPlan = donors.includes(asPersonId('p2'))
+  const rawPlan = options.joint || donors.includes(asPersonId('p2'))
     ? couplePlan({ p1Dob: '1955-01-31', p2Dob: '1955-01-31', p1PlanningAge: 90, p2PlanningAge: 90 })
     : singlePersonPlan({ dob: '1955-01-31', planningAge: 90 })
   rawPlan.accounts = donors.map((donor) => traditionalAccount(`ira-${donor}`, 1_000_000, donor))
@@ -137,7 +137,7 @@ function fixture(
   })
   return { postPassInput: { physicalInput: { prerequisite, plan: parsed.plan, runtimeEvidence,
     openingBalances, rmdPools }, poolCapacityInputs },
-    taxUnits: options.joint ? [taxUnit(donors, 'joint')] : donors.map((donor) => taxUnit([donor], donor)) }
+    taxUnits: options.joint ? [taxUnit(parsed.plan.household.people.map((person) => asPersonId(person.id)), 'joint')] : donors.map((donor) => taxUnit([donor], donor)) }
 }
 function staged(input: StageAnnualQcdStandardSection170pLedgerInput) {
   const result = stageAnnualQcdStandardSection170pLedger(input)
@@ -188,6 +188,13 @@ describe('stageAnnualQcdStandardSection170pLedger', () => {
     ])
     expect(ledger.finalTotalDeductionAppliedCents).toBe(3_150_000)
     expect(ledger.annualClaimedDeductionCents).toBe(150_000)
+  })
+
+  it('owns only the supplied tax-unit action subset', () => {
+    const input = fixture([{ id: 'p1-qcd', donor: 'p1', amount: 100, date: '2026-06-01' }, { id: 'p2-qcd', donor: 'p2', amount: 100, date: '2026-07-01' }])
+    Object.assign(input, { taxUnits: [input.taxUnits[0]!] })
+    expect(staged(input).taxUnits[0]!.orderedActionEvidence.map((entry) => entry.actionId)).toEqual(['p1-qcd'])
+    expect(staged(fixture(undefined, { joint: true })).taxUnits[0]!.taxUnit.taxUnitMemberPersonIds).toEqual(['p1', 'p2'])
   })
 
   it('lets exhausted 60% capacity block claims without inventing carryover', () => {
@@ -254,6 +261,8 @@ describe('stageAnnualQcdStandardSection170pLedger', () => {
     ['taxUnitInvalid', (input: StageAnnualQcdStandardSection170pLedgerInput) => Object.assign(input.taxUnits[0]!, { liabilityRun: { liabilityRunKind: 'candidateT1', candidateFundingVectorEvidenceId: '' } })],
     ['taxUnitInvalid', (input: StageAnnualQcdStandardSection170pLedgerInput) => Object.assign(input.taxUnits[0]!, { contributionBaseEvidenceId: '' })],
     ['taxUnitInvalid', (input: StageAnnualQcdStandardSection170pLedgerInput) => Object.assign(input.taxUnits[0]!, { adjustedGrossIncomeBeforeCharitableDeductionCents: 0.5 })],
+    ['taxUnitInvalid', (input: StageAnnualQcdStandardSection170pLedgerInput) => Object.assign(input.taxUnits[0]!.taxUnit, { taxUnitMemberPersonIds: [asPersonId('p1'), asPersonId('p1')] })],
+    ['taxUnitInvalid', (input: StageAnnualQcdStandardSection170pLedgerInput) => Object.assign(input.taxUnits[0]!.taxUnit, { taxUnitMemberPersonIds: [asPersonId('foreign'), asPersonId('p1')] })],
   ] as const)('fails closed for %s source mismatch', (kind, mutate) => {
     const input = fixture(); mutate(input)
     expect(stageAnnualQcdStandardSection170pLedger(input)).toMatchObject({

@@ -257,10 +257,12 @@ function stageUnchecked(input: StageAnnualQcdStandardSection170pLedgerInput): An
   }
   const requests = new Map(input.postPassInput.physicalInput.prerequisite.requests.map((entry) => [entry.actionId, entry]))
   const sorted = [...input.taxUnits].sort((left, right) => compareUtf16CodeUnits(left.taxUnit.taxUnitId, right.taxUnit.taxUnitId))
+  const planPeople = new Set(input.postPassInput.physicalInput.plan.household.people.map((person) => person.id))
+  if (sorted.some((entry) => entry.taxUnit.taxUnitMemberPersonIds.some((personId) => !planPeople.has(personId)))) fail('taxUnitInvalid', 'Every tax-unit member must resolve in the authoritative Plan.')
   if (new Set(sorted.map((entry) => entry.taxUnit.taxUnitId)).size !== sorted.length || new Set(sorted.map((entry) => entry.taxUnit.taxUnitEvidenceId)).size !== sorted.length) fail('taxUnitInvalid', 'Tax-unit evidence must be unique.')
   const members = new Set<PersonId>(); const actions = new Set<string>()
   const taxUnits = sorted.map((entry) => buildTaxUnit(entry, residual, requests, members, actions))
-  if (actions.size !== residual.postPass.applications.length) fail('taxUnitInvalid', 'Tax units must cover every QCD action exactly once.')
+  if (actions.size !== residual.postPass.applications.filter((entry) => members.has(entry.donorPersonId)).length) fail('taxUnitInvalid', 'Tax units must cover their QCD action subset exactly once.')
   return deepFreeze({ status: 'annualQcdStandardSection170pStaged', committed: false,
     movement: 'notCommitted', itemizedAndSection68Status: 'notOwnedByStandardLedger',
     taxYear: 2026, residualEvidenceId: residual.evidenceId, taxUnits, issues: [] })
