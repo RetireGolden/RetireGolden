@@ -6,7 +6,7 @@ import type {
 } from '../actions/execution.js'
 import { asAccountId, asActionId, asAllocationId } from '../actions/identity.js'
 import { asPersonId } from '../actions/identity.js'
-import { asPositiveUsdCents } from '../actions/money.js'
+import { asPositiveUsdCents, asUsdCents } from '../actions/money.js'
 import type { RetirementActionRequest } from '../actions/contract.js'
 import {
   ordinaryWithdrawalPublicationSource,
@@ -273,6 +273,58 @@ describe('normalizeScenarioActionRows', () => {
     } as YearResult
     expect(() => normalizeScenarioActionRows([staleLegacyYear]))
       .toThrow(/does not cover the legacy/i)
+
+    const executedRaw = executionEvidence({
+      actionId: 'stale-execution',
+      allocations: [{
+        allocationId: 'stale-allocation',
+        sourceAccountId: 'stale-source',
+        requestedAmountCents: 10_000,
+        executedAmountCents: 10_000,
+      }],
+    })
+    const executed = {
+      ...executedRaw,
+      allocations: executedRaw.allocations.map((allocation) => ({
+        ...allocation,
+        resolution: 'resolved' as const,
+      })),
+    }
+    const executedYear = yearResult(2030, [executed], [], [executed.request])
+    const executedPublication = publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: executedYear.retirementActionExecution!.requests,
+      sources: [ordinaryWithdrawalPublicationSource(
+        executedYear.retirementActionExecution!,
+      )],
+    })
+    const staleEvidence = {
+      ...executed,
+      allocations: executed.allocations.map((allocation) => ({
+        ...allocation,
+        executedAmount: asUsdCents(9_000),
+        unexecutedAmount: asUsdCents(1_000),
+      })),
+      disposition: {
+        outcome: 'partial' as const,
+        readiness: 'actionable' as const,
+        requestedAmount: asPositiveUsdCents(10_000),
+        executedAmount: asUsdCents(9_000),
+        unexecutedAmount: asUsdCents(1_000),
+        reasons: [createActionReason('source-balance-trimmed', {
+          accountId: asAccountId('stale-source'),
+          allocationId: asAllocationId('stale-allocation'),
+        })],
+      },
+    }
+    expect(() => normalizeScenarioActionRows([{
+      ...executedYear,
+      retirementActionExecution: {
+        ...executedYear.retirementActionExecution!,
+        evidence: [staleEvidence],
+      },
+      retirementActionPublication: executedPublication,
+    }])).toThrow(/does not cover the legacy/i)
   })
 
   it('preserves exact partial cents and complete trim reason objects without aliasing', () => {

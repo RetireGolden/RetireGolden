@@ -101,6 +101,16 @@ function source(
   return { executorSource, records, scheduleDiagnostics: [] }
 }
 
+function conflictRecord(
+  action: RetirementActionRequest,
+): Omit<AnnualRetirementActionRecord, 'executorSource'> {
+  return {
+    ...record(action),
+    outcome: 'refused',
+    reasons: [createActionReason('action-sequence-conflict')],
+  }
+}
+
 describe('annual retirement-action publication', () => {
   it('composes detached multi-kind records in canonical chronology', () => {
     const withdrawal = request(
@@ -198,6 +208,49 @@ describe('annual retirement-action publication', () => {
     expect(reverse).toEqual(forward)
   })
 
+  it('canonicalizes request and execution allocation order', () => {
+    const action = request(
+      'ordinaryWithdrawal',
+      'allocation-order',
+      '2030-06-15',
+      1,
+    )
+    const allocations = [
+      {
+        allocationId: asAllocationId('allocation-z'),
+        sourceAccountId: asAccountId('source-z'),
+        requestedAmount: asPositiveUsdCents(6_000),
+      },
+      {
+        allocationId: asAllocationId('allocation-a'),
+        sourceAccountId: asAccountId('source-a'),
+        requestedAmount: asPositiveUsdCents(4_000),
+      },
+    ]
+    const unsorted = { ...action, allocations }
+    const executorRequest = { ...unsorted, allocations: [...allocations].reverse() }
+    const executorRecord = {
+      ...record(executorRequest),
+      request: executorRequest,
+      allocations: [...record(executorRequest).allocations].reverse(),
+    }
+
+    const publication = publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [unsorted],
+      sources: [source('ordinaryWithdrawalExecutor', [executorRecord])],
+    })!
+
+    expect(publication.records[0]?.request).toMatchObject({
+      allocations: [
+        expect.objectContaining({ allocationId: 'allocation-a' }),
+        expect.objectContaining({ allocationId: 'allocation-z' }),
+      ],
+    })
+    expect(publication.records[0]?.allocations.map(({ allocationId }) => allocationId))
+      .toEqual(['allocation-a', 'allocation-z'])
+  })
+
   it('orders same-date execution sequences numerically', () => {
     const second = request(
       'ordinaryWithdrawal',
@@ -269,6 +322,29 @@ describe('annual retirement-action publication', () => {
         source('rothConversionExecutor', [record(conversion)]),
       ],
     })).toThrow(/schedule collision/i)
+  })
+
+  it('does not invent collisions for executor-refused invalid schedules', () => {
+    const missingDateA = request('rothConversion', 'missing-date-a', '2030-01-01', 1)
+    const missingDateB = request('rothConversion', 'missing-date-b', '2030-01-01', 1)
+    delete (missingDateA as { executionDate?: string }).executionDate
+    delete (missingDateB as { executionDate?: string }).executionDate
+    const malformedA = request('ordinaryWithdrawal', 'malformed-a', '2030-99-99', 2)
+    const malformedB = request('ordinaryWithdrawal', 'malformed-b', '2030-99-99', 2)
+
+    const publication = publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [missingDateA, missingDateB, malformedA, malformedB],
+      sources: [source('ordinaryWithdrawalExecutor', [
+        record(missingDateA),
+        record(missingDateB),
+        record(malformedA),
+        record(malformedB),
+      ])],
+    })
+
+    expect(publication?.records).toHaveLength(4)
+    expect(publication?.scheduleDiagnostics).toEqual([])
   })
 
   it('rejects foreign or malformed normalized records', () => {
@@ -394,6 +470,40 @@ describe('annual retirement-action publication', () => {
         inputIndexes: [0, 1],
       }],
     })).toThrow(/invalid value|executionSequenceConflict/i)
+    expect(() => publish({
+      ...source('ordinaryWithdrawalExecutor', [validRecord]),
+      records: [{
+        ...validRecord,
+        executedDate: validRecord.scheduledDate,
+      }],
+    })).toThrow(/movement chronology differs/i)
+    expect(() => publish({
+      ...source('ordinaryWithdrawalExecutor', [validRecord]),
+      records: [{
+        ...validRecord,
+        reasons: [createActionReason('required-facts-missing', {
+          personId: asPersonId('foreign-person'),
+        })],
+      }],
+    })).toThrow(/reason person differs/i)
+    expect(() => publish({
+      ...source('ordinaryWithdrawalExecutor', [validRecord]),
+      records: [{
+        ...validRecord,
+        reasons: [createActionReason('required-facts-missing', {
+          accountId: asAccountId('foreign-account'),
+        })],
+      }],
+    })).toThrow(/reason account differs/i)
+    expect(() => publish({
+      ...source('ordinaryWithdrawalExecutor', [validRecord]),
+      records: [{
+        ...validRecord,
+        reasons: [createActionReason('required-facts-missing', {
+          allocationId: asAllocationId('foreign-allocation'),
+        })],
+      }],
+    })).toThrow(/reason allocation differs/i)
   })
 
   it('binds canonical conflict diagnostics to the complete schedule group', () => {
@@ -424,8 +534,11 @@ describe('annual retirement-action publication', () => {
     }
     const conflictSource = {
       executorSource: 'ordinaryWithdrawalExecutor',
-      records: [record(first), record(second)],
-      scheduleDiagnostics: [firstDiagnostic, secondDiagnostic],
+      records: [conflictRecord(first), conflictRecord(second)],
+      scheduleDiagnostics: [{
+        ...firstDiagnostic,
+        collidingActionIds: [second.actionId, first.actionId],
+      }, secondDiagnostic],
     } as unknown as AnnualRetirementActionPublicationSource
     const publish = (candidate: unknown) =>
       publishAnnualRetirementActions({
@@ -434,7 +547,10 @@ describe('annual retirement-action publication', () => {
         sources: [candidate as AnnualRetirementActionPublicationSource],
       })
 
-    expect(publish(conflictSource)?.scheduleDiagnostics).toHaveLength(2)
+    const publication = publish(conflictSource)!
+    expect(publication.scheduleDiagnostics).toHaveLength(2)
+    expect(publication.scheduleDiagnostics[0]?.collidingActionIds)
+      .toEqual([first.actionId, second.actionId])
     expect(() => publish({
       ...conflictSource,
       scheduleDiagnostics: [{
@@ -450,5 +566,25 @@ describe('annual retirement-action publication', () => {
       }],
     }))
       .toThrow(/differs|action-sequence-conflict/i)
+    const executedFirst = {
+      ...record(first),
+      readiness: 'actionable' as const,
+      outcome: 'executed' as const,
+      executedDate: first.executionDate ?? null,
+      executedSequence: first.executionSequence,
+      executedAmount: first.requestedAmount,
+      unexecutedAmount: asUsdCents(0),
+      allocations: record(first).allocations.map((allocation) => ({
+        ...allocation,
+        resolution: 'resolved' as const,
+        executedAmount: allocation.requestedAmount,
+        unexecutedAmount: asUsdCents(0),
+      })),
+      reasons: [],
+    }
+    expect(() => publish({
+      ...conflictSource,
+      records: [executedFirst, conflictRecord(second)],
+    })).toThrow(/remains actionable/i)
   })
 })

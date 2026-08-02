@@ -8,9 +8,10 @@
  */
 
 import type { RetirementActionRequest, SourceAllocationRequest } from '../actions/contract.js'
-import type {
-  AnnualRetirementActionRecord,
-  AnnualRetirementActionScheduleDiagnostic as PublishedScheduleDiagnostic,
+import {
+  ordinaryWithdrawalPublicationSource,
+  type AnnualRetirementActionRecord,
+  type AnnualRetirementActionScheduleDiagnostic as PublishedScheduleDiagnostic,
 } from '../actions/annualRetirementActionPublication.js'
 import type { OrdinaryWithdrawalExecutionScheduleIssue } from '../actions/execution.js'
 import type {
@@ -23,6 +24,45 @@ import { asUsdCents, type PositiveUsdCents, type UsdCents } from '../actions/mon
 import type { ActionReason } from '../actions/reasons.js'
 import { compareUtf16CodeUnits } from '../actions/structuralId.js'
 import type { YearResult } from '../projection/types.js'
+
+function requestBinding(
+  request: Readonly<RetirementActionRequest>,
+): string {
+  if (request.kind !== 'ordinaryWithdrawal' && request.kind !== 'rothConversion') {
+    return JSON.stringify(request)
+  }
+  return JSON.stringify({
+    ...request,
+    allocations: [...request.allocations].sort((left, right) =>
+      compareUtf16CodeUnits(left.allocationId, right.allocationId) ||
+      compareUtf16CodeUnits(left.sourceAccountId, right.sourceAccountId)),
+  })
+}
+
+function executionBinding(
+  record: Omit<AnnualRetirementActionRecord, 'executorSource'> |
+    Readonly<AnnualRetirementActionRecord>,
+): string {
+  return JSON.stringify({
+    actionId: record.actionId,
+    kind: record.kind,
+    personId: record.personId,
+    year: record.year,
+    scheduledDate: record.scheduledDate,
+    scheduledSequence: record.scheduledSequence,
+    executedDate: record.executedDate,
+    executedSequence: record.executedSequence,
+    requestedAmount: record.requestedAmount,
+    executedAmount: record.executedAmount,
+    unexecutedAmount: record.unexecutedAmount,
+    readiness: record.readiness,
+    outcome: record.outcome,
+    allocations: [...record.allocations].sort((left, right) =>
+      compareUtf16CodeUnits(left.allocationId, right.allocationId) ||
+      compareUtf16CodeUnits(left.sourceAccountId, right.sourceAccountId)),
+    reasons: record.reasons,
+  })
+}
 
 function canonicalPublication(year: Readonly<YearResult>) {
   const publication = year.retirementActionPublication
@@ -40,8 +80,11 @@ function canonicalPublication(year: Readonly<YearResult>) {
       const record = publishedById.get(request.actionId)
       return (
         record === undefined ||
-        JSON.stringify(record.request) !== JSON.stringify(request)
+        requestBinding(record.request) !== requestBinding(request)
       )
+    }) || ordinaryWithdrawalPublicationSource(legacy).records.some((legacyRecord) => {
+      const record = publishedById.get(legacyRecord.actionId)
+      return record === undefined || executionBinding(record) !== executionBinding(legacyRecord)
     })) {
       throw new Error(
         'Canonical retirement-action publication does not cover the legacy annual executor result',

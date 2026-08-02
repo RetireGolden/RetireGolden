@@ -8,6 +8,7 @@ import {
   type RetirementActionRequest,
   type SourceAllocationRequest,
 } from './contract.js'
+import { parseCivilIsoDate } from './civilDate.js'
 import type {
   ExecuteOrdinaryWithdrawalsResult,
   OrdinaryWithdrawalExecutionEvidence,
@@ -213,6 +214,35 @@ function requestAllocations(
   return []
 }
 
+function allocationOrder(
+  left: Readonly<SourceAllocationRequest>,
+  right: Readonly<SourceAllocationRequest>,
+): number {
+  return compareUtf16CodeUnits(left.allocationId, right.allocationId) ||
+    compareUtf16CodeUnits(left.sourceAccountId, right.sourceAccountId)
+}
+
+function canonicalRequest(
+  rawRequest: Readonly<RetirementActionRequest>,
+): Readonly<RetirementActionRequest> {
+  const request = retirementActionRequestSchema.parse(rawRequest)
+  if (request.kind !== 'ordinaryWithdrawal' && request.kind !== 'rothConversion') {
+    return request
+  }
+  return {
+    ...request,
+    allocations: [...request.allocations].sort(allocationOrder),
+  }
+}
+
+function destinationAccountId(
+  request: Readonly<RetirementActionRequest>,
+): AccountId | null {
+  return request.kind === 'rothConversion'
+    ? request.destinationRothAccountId
+    : null
+}
+
 function conflictFallbackRecord(
   request: Readonly<RetirementActionRequest>,
 ): Omit<AnnualRetirementActionRecord, 'executorSource'> {
@@ -311,6 +341,12 @@ export function ordinaryWithdrawalPublicationSource(
 
 function scheduleKey(record: Readonly<AnnualRetirementActionRecord>): string | null {
   if (record.scheduledSequence === null) return null
+  if (record.scheduledDate === null) {
+    if (record.kind !== 'ordinaryWithdrawal') return null
+  } else {
+    const parsed = parseCivilIsoDate(record.scheduledDate)
+    if (parsed === null || parsed.year !== record.year) return null
+  }
   const date = record.scheduledDate ?? `${String(record.year).padStart(4, '0')}-12-31`
   const undated = record.scheduledDate === null ? 1 : 0
   return JSON.stringify([date, undated, record.scheduledSequence])
@@ -399,6 +435,7 @@ function assertRecordBinding(
   if (
     positiveMovement !==
       (record.executedDate !== null && record.executedSequence !== null) ||
+    ((record.executedDate === null) !== (record.executedSequence === null)) ||
     (positiveMovement &&
       (record.executedDate !== effectiveScheduledDate ||
         record.executedSequence !== record.scheduledSequence))
@@ -444,6 +481,38 @@ function assertRecordBinding(
   ) {
     throw new Error(`Executor allocation totals differ for action "${request.actionId}"`)
   }
+
+  const sourceAccountIds = new Set(
+    expectedAllocations.map((allocation) => allocation.sourceAccountId),
+  )
+  const destinationId = destinationAccountId(request)
+  for (const reason of record.reasons) {
+    if (reason.personId !== undefined && reason.personId !== record.personId) {
+      throw new Error(`Executor reason person differs for action "${request.actionId}"`)
+    }
+    const reasonAllocation = reason.allocationId === undefined
+      ? undefined
+      : expectedAllocations.find((allocation) =>
+          allocation.allocationId === reason.allocationId)
+    if (reason.allocationId !== undefined && reasonAllocation === undefined) {
+      throw new Error(`Executor reason allocation differs for action "${request.actionId}"`)
+    }
+    if (
+      reason.accountId !== undefined &&
+      !sourceAccountIds.has(reason.accountId) &&
+      reason.accountId !== destinationId
+    ) {
+      throw new Error(`Executor reason account differs for action "${request.actionId}"`)
+    }
+    if (
+      reasonAllocation !== undefined &&
+      reason.accountId !== undefined &&
+      reason.accountId !== reasonAllocation.sourceAccountId &&
+      reason.accountId !== destinationId
+    ) {
+      throw new Error(`Executor reason identifiers differ for action "${request.actionId}"`)
+    }
+  }
 }
 
 /**
@@ -469,8 +538,7 @@ export function publishAnnualRetirementActions(
     throw new Error('Annual retirement-action publication has requests but no executor source')
   }
 
-  const requests = input.requests.map((request) =>
-    retirementActionRequestSchema.parse(request))
+  const requests = input.requests.map(canonicalRequest)
   const requestById = new Map<ActionId, Readonly<RetirementActionRequest>>()
   for (const request of requests) {
     if (request.year !== input.taxYear) {
@@ -506,7 +574,7 @@ export function publishAnnualRetirementActions(
       if (records.some((current) => current.actionId === record.actionId)) {
         throw new Error(`Multiple executors published action "${record.actionId}"`)
       }
-      const parsedRecordRequest = retirementActionRequestSchema.parse(record.request)
+      const parsedRecordRequest = canonicalRequest(record.request)
       if (JSON.stringify(parsedRecordRequest) !== JSON.stringify(request)) {
         throw new Error(`Executor request binding differs for action "${record.actionId}"`)
       }
@@ -516,7 +584,9 @@ export function publishAnnualRetirementActions(
       const boundRecord: Omit<AnnualRetirementActionRecord, 'executorSource'> = {
         ...record,
         request: parsedRecordRequest,
-        allocations: record.allocations.map((allocation) => ({ ...allocation })),
+        allocations: record.allocations
+          .map((allocation) => ({ ...allocation }))
+          .sort(allocationOrder),
         reasons: parsedReasons,
       }
       assertRecordBinding(boundRecord, request)
@@ -534,7 +604,9 @@ export function publishAnnualRetirementActions(
       return {
         ...diagnostic,
         executorSource: source.executorSource,
-        collidingActionIds: atLeastTwoActionIds(diagnostic.collidingActionIds),
+        collidingActionIds: atLeastTwoActionIds(
+          [...diagnostic.collidingActionIds].sort(compareUtf16CodeUnits),
+        ),
         reason: actionReasonSchema.parse(diagnostic.reason) as ActionReason<
           'action-sequence-conflict'
         >,
@@ -577,6 +649,24 @@ export function publishAnnualRetirementActions(
     ) {
       throw new Error(
         `Schedule conflict diagnostic differs for action "${diagnostic.actionId}"`,
+      )
+    }
+    if (
+      record.readiness !== 'nonActionable' ||
+      record.outcome !== 'refused' ||
+      record.executedAmount !== 0 ||
+      record.unexecutedAmount !== record.requestedAmount ||
+      record.executedDate !== null ||
+      record.executedSequence !== null ||
+      record.allocations.some((allocation) =>
+        allocation.resolution !== 'unresolved' ||
+        allocation.executedAmount !== 0 ||
+        allocation.unexecutedAmount !== allocation.requestedAmount) ||
+      !record.reasons.some((reason) =>
+        JSON.stringify(reason) === JSON.stringify(diagnostic.reason))
+    ) {
+      throw new Error(
+        `Schedule conflict record remains actionable for action "${diagnostic.actionId}"`,
       )
     }
     const collisionIds = new Set(diagnostic.collidingActionIds)
