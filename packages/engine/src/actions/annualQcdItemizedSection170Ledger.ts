@@ -307,10 +307,12 @@ function stageUnchecked(input: StageAnnualQcdItemizedSection170LedgerInput): Ann
   }
   const claimedDonors = new Set<PersonId>(); const claimedActions = new Set<string>()
   const taxUnits = [...input.taxUnits].sort((left, right) => compareUtf16CodeUnits(left.taxUnit.taxUnitId, right.taxUnit.taxUnitId))
+  const planPeople = new Set(input.postPassInput.physicalInput.plan.household.people.map((person) => person.id))
+  if (taxUnits.some((entry) => entry.taxUnit.taxUnitMemberPersonIds.some((personId) => !planPeople.has(personId)))) fail('taxUnitInvalid', 'Every tax-unit member must resolve in the authoritative Plan.')
   if (new Set(taxUnits.map((entry) => entry.taxUnit.taxUnitId)).size !== taxUnits.length ||
       new Set(taxUnits.map((entry) => entry.taxUnit.taxUnitEvidenceId)).size !== taxUnits.length) fail('taxUnitInvalid', 'Tax-unit evidence must be unique.')
   const evidence = taxUnits.map((entry) => taxUnit(entry, residual, requests, claimedDonors, claimedActions))
-  if (claimedActions.size !== residual.postPass.applications.length) fail('taxUnitInvalid', 'Tax units must cover every QCD action exactly once.')
+  if (claimedActions.size !== residual.postPass.applications.filter((entry) => claimedDonors.has(entry.donorPersonId)).length) fail('taxUnitInvalid', 'Tax units must cover their QCD action subset exactly once.')
   return deepFreeze({
     status: 'annualQcdItemizedSection170Staged', committed: false, movement: 'notCommitted',
     section68Status: 'awaitingSection68Reconciliation', taxYear: 2026,

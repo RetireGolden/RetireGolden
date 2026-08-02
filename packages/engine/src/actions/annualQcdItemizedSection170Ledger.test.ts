@@ -54,7 +54,7 @@ function fixture(
   const year = options.year ?? 2026
   const requests = specs.map((spec) => request(spec, year))
   const donors = [...new Set(requests.map((entry) => entry.donorPersonId))].sort()
-  const rawPlan = donors.includes(asPersonId('p2'))
+  const rawPlan = options.joint || donors.includes(asPersonId('p2'))
     ? couplePlan({ p1Dob: '1955-01-31', p2Dob: '1955-01-31', p1PlanningAge: 90, p2PlanningAge: 90 })
     : singlePersonPlan({ dob: '1955-01-31', planningAge: 90 })
   rawPlan.accounts = donors.map((donor) => traditionalAccount(`ira-${donor}`, 1_000_000, donor))
@@ -157,7 +157,7 @@ function fixture(
         evidenceId: `carry-${entry.actionId}` })),
   })
   const taxUnits = options.joint
-    ? [taxUnit(donors, 'joint')]
+    ? [taxUnit(parsed.plan.household.people.map((person) => asPersonId(person.id)), 'joint')]
     : donors.map((donor) => taxUnit([donor], donor))
   return {
     postPassInput: {
@@ -234,6 +234,13 @@ describe('stageAnnualQcdItemizedSection170Ledger', () => {
     expect(actions[1]!.beforeAction).toBe(actions[0]!.afterAction)
   })
 
+  it('owns only the supplied tax-unit action subset', () => {
+    const input = fixture([{ id: 'p1-qcd', donor: 'p1', amount: 100, date: '2026-06-01' }, { id: 'p2-qcd', donor: 'p2', amount: 100, date: '2026-07-01' }])
+    Object.assign(input, { taxUnits: [input.taxUnits[0]!] })
+    expect(staged(input).taxUnits[0]!.orderedActionEvidence.map((entry) => entry.actionId)).toEqual(['p1-qcd'])
+    expect(staged(fixture(undefined, { joint: true })).taxUnits[0]!.taxUnit.taxUnitMemberPersonIds).toEqual(['p1', 'p2'])
+  })
+
   it('emits a literal zero treatment while preserving the authoritative source run', () => {
     const result = staged(fixture(undefined, { taxableCapacity: { p1: 1_000 } }))
     expect(result.taxUnits[0]!.orderedActionEvidence[0]).toMatchObject({
@@ -271,6 +278,8 @@ describe('stageAnnualQcdItemizedSection170Ledger', () => {
     ['taxUnitInvalid', (input: StageAnnualQcdItemizedSection170LedgerInput) => { Object.assign(input.taxUnits[0]!.taxUnit, { taxYear: 2027 }) }],
     ['taxUnitInvalid', (input: StageAnnualQcdItemizedSection170LedgerInput) => { Object.assign(input.taxUnits[0]!, { liabilityRun: { liabilityRunKind: 'candidateT1', candidateFundingVectorEvidenceId: '' } }) }],
     ['ledgerInvalid', (input: StageAnnualQcdItemizedSection170LedgerInput) => { Object.assign(input.taxUnits[0]!, { priorCashPercentageLimitUsedCents: 6_001 }) }],
+    ['taxUnitInvalid', (input: StageAnnualQcdItemizedSection170LedgerInput) => { Object.assign(input.taxUnits[0]!.taxUnit, { taxUnitMemberPersonIds: [asPersonId('p1'), asPersonId('p1')] }) }],
+    ['taxUnitInvalid', (input: StageAnnualQcdItemizedSection170LedgerInput) => { Object.assign(input.taxUnits[0]!.taxUnit, { taxUnitMemberPersonIds: [asPersonId('foreign'), asPersonId('p1')] }) }],
   ] as const)('fails closed with %s evidence', (kind, mutate) => {
     const input = fixture() as unknown as StageAnnualQcdItemizedSection170LedgerInput
     mutate(input)
