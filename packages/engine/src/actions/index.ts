@@ -331,6 +331,16 @@ export {
   type UnsupportedBeneficiaryTraditionalIraWithdrawalClassification,
 } from './beneficiaryTraditionalIraWithdrawalCharacter.js'
 export {
+  evaluateBeneficiaryTraditionalIraDeathPenalty,
+  type AcceptedBeneficiaryTraditionalIraDeathPenaltyResult,
+  type BeneficiaryTraditionalIraDeathBeneficiaryEvidence,
+  type BeneficiaryTraditionalIraDeathPenaltyEvidence,
+  type BeneficiaryTraditionalIraPenaltyCharacterBinding,
+  type EvaluateBeneficiaryTraditionalIraDeathPenaltyInput,
+  type EvaluateBeneficiaryTraditionalIraDeathPenaltyResult,
+  type UnsupportedBeneficiaryTraditionalIraDeathPenaltyResult,
+} from './beneficiaryTraditionalIraDeathPenalty.js'
+export {
   evaluateOwnedNonRothIraPenaltyPrerequisites,
   type Age59HalfReachedPenaltyEvaluation,
   type DisabilityQualifiedPenaltyEvaluation,
