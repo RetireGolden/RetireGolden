@@ -474,6 +474,104 @@ describe('executeRothConversions', () => {
     )
   })
 
+  it.each([
+    [
+      'conversion-balance-trimmed',
+      10_000,
+      8_000,
+      8_000,
+    ],
+    [
+      'conversion-balance-unavailable',
+      10_000,
+      10_000,
+      1_000,
+    ],
+  ] as const)(
+    'tracks chronological source availability for %s diagnostics without moving money',
+    (expectedReason, openingBalance, firstAmount, secondAmount) => {
+      const first = request('conversion-first', 1, [{
+        allocationId: 'allocation-first',
+        sourceAccountId: 'traditional-a',
+        requestedAmount: firstAmount,
+      }])
+      const second = request('conversion-second', 2, [{
+        allocationId: 'allocation-second',
+        sourceAccountId: 'traditional-a',
+        requestedAmount: secondAmount,
+      }])
+      const value = input([second, first])
+      value.openingBalances = value.openingBalances.map((snapshot) =>
+        snapshot.accountId === 'traditional-a'
+          ? { ...snapshot, openingBalance: asUsdCents(openingBalance) }
+          : snapshot,
+      )
+
+      const result = executeRothConversions(value)
+      const [firstEvidence, secondEvidence] = result.evidence
+      const firstReasonCodes = firstEvidence?.reasons.map((reason) => reason.code)
+      const secondReasonCodes = secondEvidence?.reasons.map((reason) => reason.code)
+      const mutuallyExclusiveReason = expectedReason === 'conversion-balance-trimmed'
+        ? 'conversion-balance-unavailable'
+        : 'conversion-balance-trimmed'
+
+      expect(firstEvidence?.actionId).toBe('conversion-first')
+      expect(firstReasonCodes).not.toContain('conversion-balance-trimmed')
+      expect(firstReasonCodes).not.toContain('conversion-balance-unavailable')
+      expect(secondEvidence?.actionId).toBe('conversion-second')
+      expect(secondReasonCodes).toContain(expectedReason)
+      expect(secondReasonCodes).not.toContain(mutuallyExclusiveReason)
+      expect(result.balances.find(
+        (balance) => balance.accountId === 'traditional-a',
+      )).toMatchObject({
+        openingBalance,
+        closingBalance: openingBalance,
+      })
+      expect(() => publishAnnualRetirementActions({
+        taxYear: year,
+        requests: result.requests,
+        sources: [rothConversionPublicationSource(result)],
+      })).not.toThrow()
+    },
+  )
+
+  it('does not consume diagnostic capacity for an earlier unresolved-source action', () => {
+    const unresolved = request('conversion-unresolved', 1, [
+      {
+        allocationId: 'allocation-known',
+        sourceAccountId: 'traditional-a',
+        requestedAmount: 8_000,
+      },
+      {
+        allocationId: 'allocation-missing',
+        sourceAccountId: 'missing-source',
+        requestedAmount: 1_000,
+      },
+    ])
+    const later = request('conversion-later', 2, [{
+      allocationId: 'allocation-later',
+      sourceAccountId: 'traditional-a',
+      requestedAmount: 8_000,
+    }])
+    const value = input([later, unresolved])
+    value.openingBalances = value.openingBalances.map((snapshot) =>
+      snapshot.accountId === 'traditional-a'
+        ? { ...snapshot, openingBalance: asUsdCents(10_000) }
+        : snapshot,
+    )
+
+    const result = executeRothConversions(value)
+    const [unresolvedEvidence, laterEvidence] = result.evidence
+
+    expect(unresolvedEvidence?.reasons.map((reason) => reason.code)).toContain(
+      'source-account-not-found',
+    )
+    expect(laterEvidence?.actionId).toBe('conversion-later')
+    const laterReasonCodes = laterEvidence?.reasons.map((reason) => reason.code)
+    expect(laterReasonCodes).not.toContain('conversion-balance-trimmed')
+    expect(laterReasonCodes).not.toContain('conversion-balance-unavailable')
+  })
+
   it('rejects duplicate account and balance identities with unchanged snapshots', () => {
     const duplicatePlan = input()
     ;(duplicatePlan.plan as Plan).accounts.push({ ...(duplicatePlan.plan as Plan).accounts[0]! })

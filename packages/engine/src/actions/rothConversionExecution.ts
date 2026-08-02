@@ -3,7 +3,7 @@ import {
   type RothConversionRequest,
 } from './contract.js'
 import { accountIdSchema } from './identity.js'
-import { usdCentsSchema, type UsdCents } from './money.js'
+import { asUsdCents, usdCentsSchema, type UsdCents } from './money.js'
 import {
   createActionReason,
   type ActionReason,
@@ -242,6 +242,7 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
   const openingByAccountId = new Map(
     snapshots.map((snapshot) => [String(snapshot.accountId), snapshot.openingBalance]),
   )
+  const remainingByAccountId = new Map(openingByAccountId)
   const evidence: RothConversionExecutionEvidence[] = []
   for (const request of requests) {
     // These three annual facts must be produced and validated for the complete
@@ -280,7 +281,7 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
       !accounts.has(allocation.sourceAccountId))
     for (const allocation of request.allocations) {
       const source = accounts.get(allocation.sourceAccountId)
-      const opening = openingByAccountId.get(allocation.sourceAccountId)
+      const remaining = remainingByAccountId.get(allocation.sourceAccountId)
       if (source === undefined) {
         reasons.push(createActionReason('source-account-not-found', { accountId: allocation.sourceAccountId, allocationId: allocation.allocationId }))
         continue
@@ -289,22 +290,28 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
       if (source.type !== 'traditional') {
         reasons.push(createActionReason('conversion-source-not-convertible', { accountId: allocation.sourceAccountId, allocationId: allocation.allocationId }))
       }
-      if (opening === undefined) {
+      if (remaining === undefined) {
         reasons.push(createActionReason('required-facts-missing', {
           personId: request.personId,
           accountId: allocation.sourceAccountId,
           allocationId: allocation.allocationId,
         }))
-      } else if (!hasUnresolvedSource && opening === 0) {
+      } else if (!hasUnresolvedSource && remaining === 0) {
         reasons.push(createActionReason('conversion-balance-unavailable', {
           accountId: allocation.sourceAccountId,
           allocationId: allocation.allocationId,
         }))
-      } else if (!hasUnresolvedSource && opening < allocation.requestedAmount) {
+      } else if (!hasUnresolvedSource && remaining < allocation.requestedAmount) {
         reasons.push(createActionReason('conversion-balance-trimmed', {
           accountId: allocation.sourceAccountId,
           allocationId: allocation.allocationId,
         }))
+      }
+      if (!hasUnresolvedSource && remaining !== undefined) {
+        remainingByAccountId.set(
+          allocation.sourceAccountId,
+          asUsdCents(Math.max(0, remaining - allocation.requestedAmount)),
+        )
       }
     }
     evidence.push(nonActionableEvidence(request, reasons, resolvedSourceAccountIds))
