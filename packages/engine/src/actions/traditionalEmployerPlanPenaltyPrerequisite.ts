@@ -150,12 +150,8 @@ export interface TraditionalEmployerPlanOtherExceptionAssessment {
   evidenceId: string
 }
 
-type EmployerPenaltyOutcome =
-  | 'noTaxableExposure'
-  | 'age59HalfReached'
-  | 'ruleOf55Qualified'
-  | 'disabilityQualified'
-  | 'penaltyApplies'
+type EmployerPenaltyOutcome = 'noTaxableExposure' | 'age59HalfReached' |
+  'ruleOf55Qualified' | 'disabilityQualified' | 'penaltyApplies'
 
 export interface AcceptedTraditionalEmployerPlanPenaltyEvidence extends EmployerPenaltyIdentity {
   predicate: 'employerPenaltyExceptionEvidence'
@@ -181,13 +177,8 @@ export interface AcceptedTraditionalEmployerPlanPenaltyEvidence extends Employer
   evidenceId: string
 }
 
-export type TraditionalEmployerPlanPenaltyMissingEvidence =
-  | 'separation'
-  | 'disability'
-  | 'sepp'
-  | 'seppAnnualReconciliation'
-  | 'otherExceptionAttestation'
-  | 'otherExceptionAdjudication'
+export type TraditionalEmployerPlanPenaltyMissingEvidence = 'separation' | 'disability' | 'sepp' |
+  'seppAnnualReconciliation' | 'otherExceptionAttestation' | 'otherExceptionAdjudication'
 
 export interface UnsupportedTraditionalEmployerPlanPenaltyEvidence extends EmployerPenaltyIdentity {
   predicate: 'employerPenaltyExceptionEvidence'
@@ -233,14 +224,13 @@ function civilDate(value: unknown, label: string): string {
 }
 
 function structural(value: unknown): unknown {
-  if (value === null || typeof value !== 'object') {
-    return typeof value === 'bigint' ? ['bigint', value.toString()] : value
-  }
+  if (value === null) return ['null']
+  if (value === undefined) return ['undefined']
+  if (typeof value === 'bigint') return ['bigint', value.toString()]
+  if (typeof value === 'number') return ['number', Number.isFinite(value) ? (Object.is(value, -0) ? '-0' : value) : String(value)]
+  if (typeof value !== 'object') return [typeof value, typeof value === 'symbol' || typeof value === 'function' ? String(value) : value]
   if (Array.isArray(value)) return ['array', value.map(structural)]
-  return ['object', Object.keys(value as object).sort().map((key) => [
-    key,
-    structural((value as Record<string, unknown>)[key]),
-  ])]
+  return ['object', Object.keys(value).sort().map((key) => [key, structural((value as Record<string, unknown>)[key])])]
 }
 
 function stableId(prefix: string, parts: readonly unknown[]): string {
@@ -273,6 +263,8 @@ function characterCoverage(
   }
   const accepted = characterization.acceptedSourceEligibility
   const basis = accepted.basisEvidence
+  const availability = accepted.availabilityEvidence
+  const availabilityDate = civilDate(availability.eventDate, 'Employer distribution availability event date')
   const executedAmount = usdCentsSchema.parse(basis.executedAmount)
   const basisReturnExcludedAmount = usdCentsSchema.parse(basis.basisRecoveredAmount)
   const ordinaryIncomeAmount = usdCentsSchema.parse(basis.ordinaryIncomeAmount)
@@ -289,6 +281,13 @@ function characterCoverage(
     accepted.sourceAccountId !== identity.sourceAccountId ||
     accepted.participantPersonId !== identity.participantPersonId ||
     accepted.evaluationDate !== identity.evaluationDate ||
+    afterTaxBasis > preDistributionAccountValue ||
+    executedAmount > preDistributionAccountValue ||
+    availability.kind !== 'distributableEvent' ||
+    !['separationFromService', 'inServiceWithdrawal', 'planTermination', 'requiredDistribution'].includes(availability.eventKind) ||
+    availabilityDate > identity.evaluationDate ||
+    availability.availableOnEvaluationDate !== true ||
+    !nonblank(availability.planTermsEvidenceId, 'Employer distribution plan-terms evidence ID') ||
     basis.rule !== 'proRataSingleDistribution' ||
     basis.sourcePlanAccountId !== identity.sourceAccountId ||
     basis.aggregateBasisRatio.representation !== 'exactMinorUnitRational' ||
@@ -483,7 +482,7 @@ function otherAssessment(
   return {
     exception: 'otherStatutoryException',
     disposition,
-    attestation: { ...value },
+    attestation: structuredClone(value),
     evidenceId: stableId('employer-other-exception', [identity, value]),
   }
 }

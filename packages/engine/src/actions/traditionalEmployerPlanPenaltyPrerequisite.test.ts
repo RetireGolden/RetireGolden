@@ -726,6 +726,69 @@ describe('traditional employer-plan penalty prerequisite', () => {
     expect(objectResult.evidence.evidenceId).not.toBe(arrayResult.evidence.evidenceId)
   })
 
+  it('tags null-like and non-finite metadata distinctly in structural evidence identities', () => {
+    const values = [null, undefined, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, -0]
+    const evidenceIds = values.map((metadata) => {
+      const value = input({ separationDate: '2029-12-31' })
+      Reflect.set(value.otherExceptionAttestation!, 'metadata', metadata)
+      return evaluateTraditionalEmployerPlanPenaltyPrerequisite(value).evidence.evidenceId
+    })
+
+    expect(new Set(evidenceIds).size).toBe(values.length)
+  })
+
+  it('clones nested attestation metadata before freezing returned evidence', () => {
+    const value = input({ separationDate: '2029-12-31' })
+    const metadata = { nested: { retained: true } }
+    Reflect.set(value.otherExceptionAttestation!, 'metadata', metadata)
+
+    const result = evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)
+    expect(result.status).toBe('accepted')
+    if (result.status !== 'accepted') throw new Error('expected accepted penalty')
+    const returned = Reflect.get(result.evidence.otherExceptionAssessment!.attestation, 'metadata') as typeof metadata
+    expect(returned).not.toBe(metadata)
+    expect(Object.isFrozen(returned.nested)).toBe(true)
+    expect(Object.isFrozen(metadata.nested)).toBe(false)
+    metadata.nested.retained = false
+    expect(returned.nested.retained).toBe(true)
+  })
+
+  it('rechecks persisted character account-balance bounds', () => {
+    const overdrawn = input({ separationDate: '2029-12-31', executedAmount: 100, accountValue: 100, basis: 0 })
+    overdrawn.characterization = structuredClone(overdrawn.characterization)
+    const overdrawnBasis = overdrawn.characterization.acceptedSourceEligibility.basisEvidence
+    Reflect.set(overdrawnBasis, 'executedAmount', asUsdCents(200))
+    Reflect.set(overdrawnBasis, 'ordinaryIncomeAmount', asUsdCents(200))
+    Reflect.set(overdrawn.characterization.taxCharacter[0]!, 'amount', asPositiveUsdCents(200))
+    Reflect.set(overdrawn.characterization.taxCharacter[0]!.characterEvidence, 'segmentAmount', asPositiveUsdCents(200))
+    overdrawn.taxableTreatmentAmount = asUsdCents(200)
+
+    const excessBasis = input({ separationDate: '2029-12-31', executedAmount: 0, accountValue: 100, basis: 40 })
+    excessBasis.characterization = structuredClone(excessBasis.characterization)
+    const excessBasisEvidence = excessBasis.characterization.acceptedSourceEligibility.basisEvidence
+    Reflect.set(excessBasisEvidence, 'afterTaxEmployeeBasisBeforeDistribution', asUsdCents(120))
+    Reflect.set(excessBasisEvidence.aggregateBasisRatio, 'numeratorMinorUnits', asUsdCents(120))
+
+    expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(overdrawn)).toThrow(/exactly bind/)
+    expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(excessBasis)).toThrow(/exactly bind/)
+  })
+
+  it.each([
+    ['future event', 'eventDate', '2030-06-16'],
+    ['noncanonical event', 'eventDate', '2030-1-02'],
+    ['blank plan evidence', 'planTermsEvidenceId', ' '],
+    ['unavailable event', 'availableOnEvaluationDate', false],
+    ['unknown event kind', 'eventKind', 'unmodeledEvent'],
+  ] as const)('revalidates accepted distribution availability: %s', (_name, field, replacement) => {
+    const value = input()
+    value.characterization = structuredClone(value.characterization)
+    const availability = value.characterization.acceptedSourceEligibility.availabilityEvidence
+    Reflect.set(availability, field, replacement)
+    if (field === 'eventDate') Reflect.set(availability, 'eventKind', 'inServiceWithdrawal')
+
+    expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)).toThrow()
+  })
+
   it('returns stable deeply frozen structural evidence', () => {
     const first = evaluateTraditionalEmployerPlanPenaltyPrerequisite(
       input({ separationDate: '2029-12-31' }),
