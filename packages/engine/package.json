@@ -90,6 +90,10 @@
       "types": "./dist/actions/annualHsaPhysicalMovementCandidate.d.ts",
       "default": "./dist/actions/annualHsaPhysicalMovementCandidate.js"
     },
+    "./actions/annualHsaTreatmentBindingCoordinator": {
+      "types": "./dist/actions/annualHsaTreatmentBindingCoordinator.d.ts",
+      "default": "./dist/actions/annualHsaTreatmentBindingCoordinator.js"
+    },
     "./actions/annualQcdExecutionPrerequisite": {
       "types": "./dist/actions/annualQcdExecutionPrerequisite.d.ts",
       "default": "./dist/actions/annualQcdExecutionPrerequisite.js"

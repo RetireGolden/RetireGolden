@@ -490,6 +490,17 @@ export {
   type HsaSegmentPenaltyEvaluation,
 } from './annualHsaPenaltyEvaluation.js'
 export {
+  coordinateAnnualHsaTreatmentBinding,
+  type AnnualHsaTreatmentBindingBlocked,
+  type AnnualHsaTreatmentBindingIssue,
+  type AnnualHsaTreatmentBindingIssueKind,
+  type AnnualHsaTreatmentBindingPrepared,
+  type CoordinateAnnualHsaTreatmentBindingInput,
+  type CoordinateAnnualHsaTreatmentBindingResult,
+  type HsaAllocationReimbursementClaims,
+  type HsaPreparedTreatmentBinding,
+} from './annualHsaTreatmentBindingCoordinator.js'
+export {
   classifyOwnedNonRothIraAnnualWithdrawals,
   type ClassifyOwnedNonRothIraAnnualWithdrawalsInput,
   type ClassifyOwnedNonRothIraAnnualWithdrawalsResult,

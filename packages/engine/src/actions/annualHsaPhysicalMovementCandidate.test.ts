@@ -91,6 +91,10 @@ function replaceAt<T>(values: readonly T[], index: number, value: T): readonly T
   return values.map((item, itemIndex) => itemIndex === index ? value : item)
 }
 
+function reverseKeys<T extends object>(value: T): T {
+  return Object.fromEntries(Object.entries(value).reverse()) as T
+}
+
 describe('stageAnnualHsaPhysicalMovementCandidate', () => {
   afterEach(() => vi.restoreAllMocks())
 
@@ -141,6 +145,14 @@ describe('stageAnnualHsaPhysicalMovementCandidate', () => {
     left.openingBalances = [...left.openingBalances].reverse()
     left.requests = left.requests.map((item) => ({ ...item, allocations: [...item.allocations].reverse() }))
     expect(stageAnnualHsaPhysicalMovementCandidate(left)).toEqual(stageAnnualHsaPhysicalMovementCandidate(validInput()))
+  })
+
+  it('canonicalizes request, source, and opening object property insertion order', () => {
+    const input = validInput()
+    input.requests = input.requests.map((item) => reverseKeys({ ...item, provenance: reverseKeys(item.provenance), purpose: reverseKeys(item.purpose), allocations: item.allocations.map(reverseKeys) }))
+    input.sourceEvidence = input.sourceEvidence.map(reverseKeys)
+    input.openingBalances = input.openingBalances.map(reverseKeys)
+    expect(stageAnnualHsaPhysicalMovementCandidate(input)).toEqual(stageAnnualHsaPhysicalMovementCandidate(validInput()))
   })
 
   it('uses canonical allocation order and preserves zero siblings', () => {

@@ -260,7 +260,7 @@ export function stageAnnualHsaPhysicalMovementCandidate(
     claim(idRegistry, ownerPersonId, ['person', ownerPersonId])
     claim(idRegistry, accountOwnershipEvidenceId, ['ownership', sourceAccountId, ownerPersonId])
     claim(idRegistry, hsaClassificationEvidenceId, ['classification', sourceAccountId, ownerPersonId])
-    return { ...rawEvidence, sourceAccountId, ownerPersonId, accountOwnershipEvidenceId, hsaClassificationEvidenceId }
+    return { predicate: rawEvidence.predicate, sourceAccountId, ownerPersonId, accountType: rawEvidence.accountType, ownership: rawEvidence.ownership, accountOwnershipEvidenceId, hsaClassificationEvidenceId, authoritative: rawEvidence.authoritative }
   }).sort((left, right) => compareUtf16CodeUnits(left.sourceAccountId, right.sourceAccountId))
   const sourceById = new Map<AccountId, OwnedHsaPhysicalSourceEvidence>()
   for (const source of sources) {
@@ -277,7 +277,7 @@ export function stageAnnualHsaPhysicalMovementCandidate(
     claim(idRegistry, sourceAccountId, ['account', sourceAccountId])
     claim(idRegistry, ownerPersonId, ['person', ownerPersonId])
     claim(idRegistry, openingBalanceEvidenceId, ['opening', sourceAccountId, ownerPersonId, input.taxYear, openingBalance])
-    return { ...rawOpening, sourceAccountId, ownerPersonId, openingBalance, openingBalanceEvidenceId }
+    return { predicate: rawOpening.predicate, boundary: rawOpening.boundary, sourceAccountId, ownerPersonId, taxYear: rawOpening.taxYear, openingBalance, openingBalanceEvidenceId, authoritative: rawOpening.authoritative }
   }).sort((left, right) => compareUtf16CodeUnits(left.sourceAccountId, right.sourceAccountId))
   const openingById = new Map<AccountId, HsaDetachedBatchOpeningBalanceSnapshot>()
   for (const opening of openings) {
