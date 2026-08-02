@@ -8,6 +8,10 @@ import {
   executeRothConversions,
   type ExecuteRothConversionsInput,
 } from './rothConversionExecution.js'
+import {
+  publishAnnualRetirementActions,
+  rothConversionPublicationSource,
+} from './annualRetirementActionPublication.js'
 
 const year = 2030
 
@@ -121,6 +125,20 @@ describe('executeRothConversions', () => {
     )
     expect(Object.isFrozen(result)).toBe(true)
     expect(Object.isFrozen(result.evidence[0])).toBe(true)
+    const publication = publishAnnualRetirementActions({
+      taxYear: year,
+      requests: result.requests,
+      sources: [rothConversionPublicationSource(result)],
+    })
+    expect(publication).toMatchObject({
+      taxYear: year,
+      executorSources: ['rothConversionExecutor'],
+      records: [{
+        actionId: 'conversion-a',
+        executorSource: 'rothConversionExecutor',
+        executedAmount: 0,
+      }],
+    })
   })
 
   it('is stable under request, account, and allocation permutations', () => {
@@ -220,6 +238,18 @@ describe('executeRothConversions', () => {
         collidingActionIds: ['conversion-a', 'conversion-b'],
       }],
     })
+    const publicationSource = rothConversionPublicationSource(forward)
+    expect(publicationSource).toMatchObject({
+      executorSource: 'rothConversionExecutor',
+      records: [
+        { actionId: 'conversion-a', executedAmount: 0 },
+        { actionId: 'conversion-b', executedAmount: 0 },
+      ],
+      scheduleDiagnostics: [
+        { actionId: 'conversion-a' },
+        { actionId: 'conversion-b' },
+      ],
+    })
   })
 
   it('publishes each missing-date request instead of colliding null schedule slots', () => {
@@ -314,6 +344,13 @@ describe('executeRothConversions', () => {
     expect(result.balances.find(
       (balance) => balance.accountId === 'traditional-a',
     )).toMatchObject({ openingBalance: 5_000, closingBalance: 5_000 })
+    expect(publishAnnualRetirementActions({
+      taxYear: year,
+      requests: result.requests,
+      sources: [rothConversionPublicationSource(result)],
+    })?.records[0]?.reasons.map((reason) => reason.code)).toContain(
+      'conversion-balance-trimmed',
+    )
   })
 
   it('rejects duplicate account and balance identities with unchanged snapshots', () => {

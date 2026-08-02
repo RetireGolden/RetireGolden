@@ -84,6 +84,8 @@ import {
   ordinaryWithdrawalPublicationSource,
   planDollarsToLedgerCents,
   publishAnnualRetirementActions,
+  rothConversionPublicationEligibility,
+  rothConversionPublicationSource,
   type ExecuteOrdinaryWithdrawalsResult,
   type ExecuteRothConversionsResult,
   type TaxableAccountOpeningSnapshot,
@@ -4838,18 +4840,37 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         ),
       ),
     })
-    const retirementActionPublicationEligibility = retirementActionExecution === undefined
+    const ordinaryPublicationEligibility = retirementActionExecution === undefined
       ? undefined
       : ordinaryWithdrawalPublicationEligibility(retirementActionExecution)
+    const conversionPublicationEligibility =
+      rothConversionActionExecution === undefined
+        ? undefined
+        : rothConversionPublicationEligibility(rothConversionActionExecution)
+    const retirementActionPublicationEligible =
+      ordinaryPublicationEligibility?.kind !== 'legacyScheduleDiagnosticsOnly' &&
+      conversionPublicationEligibility?.kind !== 'legacyScheduleDiagnosticsOnly'
+    const retirementActionPublicationSources = retirementActionPublicationEligible
+      ? [
+          ...(retirementActionExecution === undefined
+            ? []
+            : [ordinaryWithdrawalPublicationSource(retirementActionExecution)]),
+          ...(rothConversionActionExecution === undefined
+            ? []
+            : [rothConversionPublicationSource(rothConversionActionExecution)]),
+        ]
+      : []
+    const retirementActionPublicationRequests = [
+      ...(retirementActionExecution?.requests ?? []),
+      ...(rothConversionActionExecution?.requests ?? []),
+    ]
     const retirementActionPublication =
-      retirementActionExecution !== undefined &&
-      retirementActionPublicationEligibility?.kind === 'publicationEligible'
+      retirementActionPublicationSources.length > 0 &&
+      retirementActionPublicationEligible
         ? publishAnnualRetirementActions({
             taxYear: year,
-            requests: retirementActionExecution.requests,
-            sources: [
-              ordinaryWithdrawalPublicationSource(retirementActionExecution),
-            ],
+            requests: retirementActionPublicationRequests,
+            sources: retirementActionPublicationSources,
           })
         : undefined
     const yearResult: YearResult = {

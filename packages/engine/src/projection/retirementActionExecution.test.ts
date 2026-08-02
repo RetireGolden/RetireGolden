@@ -814,6 +814,27 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
     expect(year.rothConversionActionExecution).toMatchObject({
       committed: false,
     })
+    expect(year.retirementActionPublication).toMatchObject({
+      executorSources: [
+        'ordinaryWithdrawalExecutor',
+        'rothConversionExecutor',
+      ],
+    })
+    expect(Object.fromEntries(year.retirementActionPublication!.records.map(
+      (record) => [record.actionId, {
+        executorSource: record.executorSource,
+        executedAmount: record.executedAmount,
+      }],
+    ))).toEqual({
+      'tax-funding': {
+        executorSource: 'ordinaryWithdrawalExecutor',
+        executedAmount: 0,
+      },
+      conversion: {
+        executorSource: 'rothConversionExecutor',
+        executedAmount: 0,
+      },
+    })
     expect(year.balances).toMatchObject({
       'cash-a': 100,
       traditional: 100,

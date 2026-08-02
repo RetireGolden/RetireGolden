@@ -234,6 +234,8 @@ export {
   ordinaryWithdrawalPublicationEligibility,
   ordinaryWithdrawalPublicationSource,
   publishAnnualRetirementActions,
+  rothConversionPublicationEligibility,
+  rothConversionPublicationSource,
   type AnnualRetirementActionAllocationRecord,
   type AnnualRetirementActionExecutorSource,
   type AnnualRetirementActionPublication,
@@ -242,6 +244,7 @@ export {
   type AnnualRetirementActionScheduleDiagnostic,
   type OrdinaryWithdrawalPublicationEligibility,
   type PublishAnnualRetirementActionsInput,
+  type RothConversionPublicationEligibility,
 } from './annualRetirementActionPublication.js'
 export {
   classifyIndividuallyOwnedTaxableWithdrawal,

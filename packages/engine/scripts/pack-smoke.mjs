@@ -82,6 +82,7 @@ const ownedIraAnnualPassProbeDeepApi = await import(
 )
 const canonicalActionDeepImports = [
   'annualIraBasisAllocation',
+  'annualRetirementActionPublication',
   'annualRetirementPhysicalEventInventory',
   'civilDate',
   'contract',
@@ -150,6 +151,8 @@ const {
   planDollarsToLedgerCents,
   preparePlanOwnedNonRothIraAnnualCandidateTransaction,
   probePlanOwnedNonRothIraAnnualPass,
+  rothConversionPublicationEligibility,
+  rothConversionPublicationSource,
   resolveOwnedNonRothIraAnnualWithdrawalEvidence,
   resolvePlanOwnedNonRothIraAnnualFilingSources,
   reviewAndReplaceRetirementActionManually,
@@ -158,6 +161,8 @@ const {
   validateOwnedNonRothIraSeppCurrentPaymentCandidate,
 } = actionsApi
 assert.equal(typeof executeRothConversions, 'function')
+assert.equal(typeof rothConversionPublicationEligibility, 'function')
+assert.equal(typeof rothConversionPublicationSource, 'function')
 assert.equal(
   candidateIdentityAllocatorDeepApi.allocateRetirementActionCandidateIdentity,
   allocateRetirementActionCandidateIdentity,

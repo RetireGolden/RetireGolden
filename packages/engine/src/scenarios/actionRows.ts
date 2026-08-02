@@ -10,6 +10,7 @@
 import type { RetirementActionRequest, SourceAllocationRequest } from '../actions/contract.js'
 import {
   ordinaryWithdrawalPublicationSource,
+  rothConversionPublicationSource,
   type AnnualRetirementActionRecord,
   type AnnualRetirementActionScheduleDiagnostic as PublishedScheduleDiagnostic,
 } from '../actions/annualRetirementActionPublication.js'
@@ -84,6 +85,7 @@ function scheduleDiagnosticBinding(
 function canonicalPublication(year: Readonly<YearResult>) {
   const publication = year.retirementActionPublication
   const legacy = year.retirementActionExecution
+  const conversion = year.rothConversionActionExecution
   if (publication !== undefined && publication.taxYear !== year.year) {
     throw new Error(
       'Canonical retirement-action publication belongs to a different annual result',
@@ -117,6 +119,37 @@ function canonicalPublication(year: Readonly<YearResult>) {
     })) {
       throw new Error(
         'Canonical retirement-action publication does not cover the legacy annual executor result',
+      )
+    }
+  }
+  if (publication !== undefined && conversion !== undefined) {
+    const conversionSource = rothConversionPublicationSource(conversion)
+    const publishedById = new Map(
+      publication.records.map((record) => [record.actionId, record]),
+    )
+    const publishedDiagnosticBindings = new Set(
+      publication.scheduleDiagnostics
+        .filter((diagnostic) =>
+          diagnostic.executorSource === 'rothConversionExecutor')
+        .map(scheduleDiagnosticBinding),
+    )
+    if (conversion.requests.some((request) => {
+      const record = publishedById.get(request.actionId)
+      return (
+        record === undefined ||
+        requestBinding(record.request) !== requestBinding(request)
+      )
+    }) || conversionSource.records.some((conversionRecord) => {
+      const record = publishedById.get(conversionRecord.actionId)
+      return record === undefined ||
+        record.executorSource !== 'rothConversionExecutor' ||
+        executionBinding(record) !== executionBinding(conversionRecord)
+    }) || conversionSource.scheduleDiagnostics.some((conversionDiagnostic) => {
+      const binding = scheduleDiagnosticBinding(conversionDiagnostic)
+      return !publishedDiagnosticBindings.has(binding)
+    })) {
+      throw new Error(
+        'Canonical retirement-action publication does not cover the conversion annual executor result',
       )
     }
   }

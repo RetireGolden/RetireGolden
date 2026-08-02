@@ -11,6 +11,7 @@ import type { RetirementActionRequest } from '../actions/contract.js'
 import {
   ordinaryWithdrawalPublicationSource,
   publishAnnualRetirementActions,
+  rothConversionPublicationSource,
 } from '../actions/annualRetirementActionPublication.js'
 import { rothConversionRequestSchema } from '../actions/contract.js'
 import { executeRothConversions } from '../actions/rothConversionExecution.js'
@@ -169,9 +170,15 @@ describe('normalizeScenarioActionRows', () => {
       ],
     })
 
+    const publication = publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: execution.requests,
+      sources: [rothConversionPublicationSource(execution)],
+    })
     const row = normalizeScenarioActionRows([{
       year: 2030,
       rothConversionActionExecution: execution,
+      retirementActionPublication: publication,
     } as unknown as YearResult])[0]!
 
     expect(row).toMatchObject({
@@ -214,6 +221,11 @@ describe('normalizeScenarioActionRows', () => {
     const collisionYear = {
       year: 2030,
       rothConversionActionExecution: collisionExecution,
+      retirementActionPublication: publishAnnualRetirementActions({
+        taxYear: 2030,
+        requests: collisionExecution.requests,
+        sources: [rothConversionPublicationSource(collisionExecution)],
+      }),
     } as unknown as YearResult
 
     expect(normalizeScenarioActionRows([collisionYear]).map(
