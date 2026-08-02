@@ -682,6 +682,70 @@ describe('annual retirement-action publication', () => {
     })).toThrow(/reason kind differs/i)
   })
 
+  it.each([
+    'duplicate-source-account',
+    'duplicate-allocation-id',
+    'allocation-total-mismatch',
+  ] as const)(
+    'rejects the pre-canonical allocation reason %s from executor publication',
+    (reasonCode) => {
+      const action = request(
+        'ordinaryWithdrawal',
+        `pre-canonical-reason-${reasonCode}`,
+        '2030-06-15',
+        1,
+      )
+      const allocation = action.kind === 'ordinaryWithdrawal'
+        ? action.allocations[0]!
+        : undefined
+      if (allocation === undefined) throw new Error('fixture drift')
+
+      expect(() => publishAnnualRetirementActions({
+        taxYear: 2030,
+        requests: [action],
+        sources: [source('ordinaryWithdrawalExecutor', [{
+          ...record(action),
+          outcome: 'refused',
+          reasons: [createActionReason(reasonCode, {
+            accountId: allocation.sourceAccountId,
+            allocationId: allocation.allocationId,
+          })],
+        }])],
+      })).toThrow(/reason phase differs/i)
+    },
+  )
+
+  it('continues to publish post-canonical source-resolution reasons', () => {
+    const action = request(
+      'ordinaryWithdrawal',
+      'runtime-source-resolution-reason',
+      '2030-06-15',
+      1,
+    )
+    if (action.kind !== 'ordinaryWithdrawal') throw new Error('fixture drift')
+    const allocation = action.allocations[0]!
+
+    const publication = publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [action],
+      sources: [source('ordinaryWithdrawalExecutor', [{
+        ...record(action),
+        outcome: 'refused',
+        reasons: [createActionReason('source-account-not-found', {
+          accountId: allocation.sourceAccountId,
+          allocationId: allocation.allocationId,
+        })],
+      }])],
+    })
+
+    expect(publication?.records[0]?.reasons).toEqual([
+      createActionReason('source-account-not-found', {
+        accountId: allocation.sourceAccountId,
+        allocationId: allocation.allocationId,
+      }),
+    ])
+  })
+
   it('binds reason account identifiers to source and destination roles', () => {
     const action = request(
       'rothConversion',

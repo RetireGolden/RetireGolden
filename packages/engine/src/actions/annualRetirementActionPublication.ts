@@ -300,6 +300,12 @@ const destinationAccountReasonCodes = new Set<ActionReason['code']>([
   'conversion-employer-destination-unsupported',
 ])
 
+const preCanonicalReasonCodes = new Set<ActionReason['code']>([
+  'duplicate-source-account',
+  'duplicate-allocation-id',
+  'allocation-total-mismatch',
+])
+
 const sourceIdentifierReasonCodes = new Set<ActionReason['code']>([
   'source-account-not-found',
   'duplicate-source-account',
@@ -707,6 +713,9 @@ function assertRecordBinding(
   )
   const destinationId = destinationAccountId(request)
   for (const reason of record.reasons) {
+    if (preCanonicalReasonCodes.has(reason.code)) {
+      throw new Error(`Executor reason phase differs for action "${request.actionId}"`)
+    }
     if (!reasonAppliesToKind(record.kind, reason.code)) {
       throw new Error(`Executor reason kind differs for action "${request.actionId}"`)
     }
