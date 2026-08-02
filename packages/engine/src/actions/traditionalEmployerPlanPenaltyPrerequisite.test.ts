@@ -814,6 +814,34 @@ describe('traditional employer-plan penalty prerequisite', () => {
     expect(reads).toBe(0)
   })
 
+  it('rejects accessor-backed outer and basis fields before invoking either getter', () => {
+    const outerInput = input()
+    let outerReads = 0
+    Object.defineProperty(outerInput, 'actionId', {
+      enumerable: true,
+      get: () => {
+        outerReads += 1
+        return ids.actionId
+      },
+    })
+    expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(outerInput)).toThrow(/plain data/)
+    expect(outerReads).toBe(0)
+
+    const basisInput = input()
+    basisInput.characterization = structuredClone(basisInput.characterization)
+    const basis = basisInput.characterization.acceptedSourceEligibility.basisEvidence
+    let basisReads = 0
+    Object.defineProperty(basis, 'basisEvidenceId', {
+      enumerable: true,
+      get: () => {
+        basisReads += 1
+        return basisReads === 1 ? 'employer-basis' : 'unstable-basis'
+      },
+    })
+    expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(basisInput)).toThrow(/plain data/)
+    expect(basisReads).toBe(0)
+  })
+
   it('rejects shared metadata references while accepting duplicated plain values', () => {
     const sharedInput = input({ separationDate: '2029-12-31' })
     const shared = { retained: true }

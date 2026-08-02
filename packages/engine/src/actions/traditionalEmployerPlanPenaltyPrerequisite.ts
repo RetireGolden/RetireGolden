@@ -263,6 +263,7 @@ function characterCoverage(
   const basis = accepted.basisEvidence
   const availability = accepted.availabilityEvidence
   const availabilityDate = civilDate(availability.eventDate, 'Employer distribution availability event date')
+  const basisEvidenceId = nonblank(basis.basisEvidenceId, 'Employer basis evidence ID')
   const executedAmount = usdCentsSchema.parse(basis.executedAmount)
   const basisReturnExcludedAmount = usdCentsSchema.parse(basis.basisRecoveredAmount)
   const ordinaryIncomeAmount = usdCentsSchema.parse(basis.ordinaryIncomeAmount)
@@ -314,7 +315,7 @@ function characterCoverage(
       segment.sourceClass !== 'traditionalEmployerPlan' ||
       segment.characterEvidence.rule !== 'employerPlanProRataBasis' ||
       segment.characterEvidence.allocationId !== identity.allocationId ||
-      segment.characterEvidence.basisEvidenceId !== basis.basisEvidenceId ||
+      segment.characterEvidence.basisEvidenceId !== basisEvidenceId ||
       segment.characterEvidence.segmentAmount !== amount
     ) throw new RangeError('Employer penalty character contains foreign or mismatched evidence')
     kinds.add(segment.kind)
@@ -333,7 +334,7 @@ function characterCoverage(
 
   const evidenceId = stableId('employer-penalty-character-coverage', [
     identity, executedAmount, basisReturnExcludedAmount, taxableTreatmentAmount,
-    availability, preDistributionAccountValue, afterTaxBasis, basis.basisEvidenceId, characterEvidenceIds,
+    availability, preDistributionAccountValue, afterTaxBasis, basisEvidenceId, characterEvidenceIds,
   ])
   return {
     predicate: 'completeEmployerPlanPenaltyCharacterCoverageForAllocation',
@@ -341,7 +342,7 @@ function characterCoverage(
     executedAmount,
     basisReturnExcludedAmount,
     taxableTreatmentAmount,
-    basisEvidenceId: nonblank(basis.basisEvidenceId, 'Employer basis evidence ID'),
+    basisEvidenceId,
     characterEvidenceIds,
     evidenceId,
   }
@@ -531,15 +532,16 @@ function unsupported(
 export function evaluateTraditionalEmployerPlanPenaltyPrerequisite(
   input: Readonly<EvaluateTraditionalEmployerPlanPenaltyPrerequisiteInput>,
 ): Readonly<EvaluateTraditionalEmployerPlanPenaltyPrerequisiteResult> {
+  const snapshot = clonePlain(input)
   const identity: EmployerPenaltyIdentity = {
-    actionId: actionIdSchema.parse(input.actionId),
-    allocationId: allocationIdSchema.parse(input.allocationId),
-    sourceAccountId: accountIdSchema.parse(input.sourceAccountId),
-    participantPersonId: personIdSchema.parse(input.participantPersonId),
-    evaluationDate: civilDate(input.evaluationDate, 'Employer penalty evaluation date'),
+    actionId: actionIdSchema.parse(snapshot.actionId),
+    allocationId: allocationIdSchema.parse(snapshot.allocationId),
+    sourceAccountId: accountIdSchema.parse(snapshot.sourceAccountId),
+    participantPersonId: personIdSchema.parse(snapshot.participantPersonId),
+    evaluationDate: civilDate(snapshot.evaluationDate, 'Employer penalty evaluation date'),
   }
-  const taxableTreatmentAmount = usdCentsSchema.parse(input.taxableTreatmentAmount)
-  const participant = input.participantEvidence
+  const taxableTreatmentAmount = usdCentsSchema.parse(snapshot.taxableTreatmentAmount)
+  const participant = snapshot.participantEvidence
   const birthDate = civilDate(participant.birthDate, 'Employer-plan participant birth date')
   if (
     participant.predicate !== 'employerPlanParticipantBirthDateForPenalty' ||
@@ -551,7 +553,7 @@ export function evaluateTraditionalEmployerPlanPenaltyPrerequisite(
   if (identity.evaluationDate < birthDate) {
     throw new RangeError('Employer penalty evaluation date cannot precede participant birth')
   }
-  const coverage = characterCoverage(input.characterization, identity, taxableTreatmentAmount, birthDate)
+  const coverage = characterCoverage(snapshot.characterization, identity, taxableTreatmentAmount, birthDate)
   if (age59HalfDate === null || birth.year + 55 > 9999) {
     throw new RangeError('Employer-plan penalty age threshold is outside civil-date range')
   }
@@ -577,10 +579,10 @@ export function evaluateTraditionalEmployerPlanPenaltyPrerequisite(
   let finalPenaltyAmount = asUsdCents(0)
 
   if (taxableTreatmentAmount > 0 && identity.evaluationDate < age59HalfDate) {
-    disability = disabilityEvidence(input.disabilityEvidence, identity, birthDate)
+    disability = disabilityEvidence(snapshot.disabilityEvidence, identity, birthDate)
     if (disability?.qualifiedOnEvaluationDate) outcome = 'disabilityQualified'
     else {
-      const separation = input.separationEvidence
+      const separation = snapshot.separationEvidence
       if (separation === null) return unsupported(identity, coverage, ageEvidence, 'separation', null, null, null, disability)
       const separationDate = civilDate(separation.separationDate, 'Employer separation date')
       if (
@@ -591,7 +593,7 @@ export function evaluateTraditionalEmployerPlanPenaltyPrerequisite(
         separation.authoritative !== true ||
         !nonblank(separation.separationEvidenceId, 'Employer separation evidence ID')
       ) throw new RangeError('Separation evidence must bind the named sponsoring plan and participant')
-      const availability = input.characterization.acceptedSourceEligibility.availabilityEvidence
+      const availability = snapshot.characterization.acceptedSourceEligibility.availabilityEvidence
       if (
         availability.eventKind === 'separationFromService' &&
         availability.eventDate !== separationDate
@@ -615,8 +617,8 @@ export function evaluateTraditionalEmployerPlanPenaltyPrerequisite(
       if (rule55Qualified) outcome = 'ruleOf55Qualified'
       else {
         if (disability === null) return unsupported(identity, coverage, ageEvidence, 'disability', null, ruleOf55Assessment)
-        if (input.seppEvidence === null) return unsupported(identity, coverage, ageEvidence, 'sepp', null, ruleOf55Assessment, null, disability)
-        sepp = seppAssessment(input.seppEvidence, identity, separationDate, coverage)
+        if (snapshot.seppEvidence === null) return unsupported(identity, coverage, ageEvidence, 'sepp', null, ruleOf55Assessment, null, disability)
+        sepp = seppAssessment(snapshot.seppEvidence, identity, separationDate, coverage)
         requireDistinctEvidenceIds([separation.separationEvidenceId, disability.disabilityEvidenceId, ...sepp.authorityEvidenceIds])
         if (sepp.disposition === 'provisional') {
           return unsupported(
@@ -631,10 +633,10 @@ export function evaluateTraditionalEmployerPlanPenaltyPrerequisite(
           )
         }
         else {
-          if (input.otherExceptionAttestation === null) {
+          if (snapshot.otherExceptionAttestation === null) {
             return unsupported(identity, coverage, ageEvidence, 'otherExceptionAttestation', null, ruleOf55Assessment, sepp, disability)
           }
-          other = otherAssessment(input.otherExceptionAttestation, identity)
+          other = otherAssessment(snapshot.otherExceptionAttestation, identity)
           requireDistinctEvidenceIds([separation.separationEvidenceId, disability.disabilityEvidenceId, other.attestation.attestationEvidenceId, ...sepp.authorityEvidenceIds])
           if (other.disposition === 'unsupported') {
             return unsupported(identity, coverage, ageEvidence, 'otherExceptionAdjudication', other.attestation, ruleOf55Assessment, sepp, disability)
