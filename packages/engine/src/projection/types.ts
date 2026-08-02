@@ -4,6 +4,7 @@ import type {
   AccountId,
   AnnualIraBasisAllocationEvidence,
   AnnualIraBasisRatio,
+  AnnualRetirementActionPublication,
   ExecuteOrdinaryWithdrawalsResult,
   PersonId,
   PlanId,
@@ -676,6 +677,15 @@ export interface YearResult {
    * one or more retirement-action requests for this projection year.
    */
   retirementActionExecution?: ExecuteOrdinaryWithdrawalsResult
+  /**
+   * Canonical identity-bearing publication across annual action executors.
+   * Present when the ordinary executor result is publication-eligible: either
+   * clean execution evidence or conflict-only schedule diagnostics. Omitted for
+   * legacy-only action-year-mismatch or duplicate-action-ID schedule issues,
+   * which remain on `retirementActionExecution`. Executor-specific artifacts
+   * remain on their dedicated result fields.
+   */
+  retirementActionPublication?: AnnualRetirementActionPublication
   /** Early-withdrawal penalties (10% traditional pre-59½, 20% HSA non-medical pre-65); not in `tax`. */
   penalties: number
   /** MAGI realized this year (drives IRMAA two years later and the ACA credit). */

@@ -6,7 +6,9 @@ import {
   asAllocationId,
   asPersonId,
   asPositiveUsdCents,
+  ordinaryWithdrawalPublicationEligibility,
   parseRetirementActionRequest,
+  type ExecuteOrdinaryWithdrawalsResult,
   type OrdinaryWithdrawalRequest,
   type RetirementActionRequest,
 } from '../actions/index.js'
@@ -171,6 +173,50 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
       outcome: 'executed',
       executedAmount: 5_000,
     })
+    expect(year.retirementActionPublication).toMatchObject({
+      executorSources: ['ordinaryWithdrawalExecutor'],
+      scheduleDiagnostics: [],
+      records: [{ actionId: 'withdraw-50' }],
+    })
+    expect(year.retirementActionPublication?.records)
+      .not.toBe(year.retirementActionExecution?.evidence)
+    expect(year.retirementActionPublication?.records[0]?.request)
+      .not.toBe(year.retirementActionExecution?.evidence[0]?.request)
+  })
+
+  it('publishes the executor-canonical request when Plan allocations are unsorted', () => {
+    const plan = basePlan()
+    plan.accounts = [cash('cash-z', 100), cash('cash-a', 100)]
+    plan.expenses.baseAnnual = 20
+    const action = withdrawal({
+      actionId: 'unsorted-allocations',
+      accountId: 'cash-z',
+      dollars: 20,
+    })
+    action.allocations = [
+      {
+        allocationId: asAllocationId('allocation-z'),
+        sourceAccountId: asAccountId('cash-z'),
+        requestedAmount: asPositiveUsdCents(1_000),
+      },
+      {
+        allocationId: asAllocationId('allocation-a'),
+        sourceAccountId: asAccountId('cash-a'),
+        requestedAmount: asPositiveUsdCents(1_000),
+      },
+    ]
+    plan.strategies.retirementActions = [action]
+
+    const year = run(plan).years[0]!
+
+    expect(
+      year.retirementActionPublication?.records[0]?.request.kind ===
+        'ordinaryWithdrawal'
+        ? year.retirementActionPublication.records[0].request.allocations.map(
+          (allocation) => allocation.allocationId,
+        )
+        : [],
+    ).toEqual(['allocation-a', 'allocation-z'])
   })
 
   it('prices final equity compensation once as ordinary income, never as gain', () => {
@@ -830,8 +876,200 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
       committed: false,
       evidence: [],
     })
+    expect(year.retirementActionPublication).toMatchObject({
+      scheduleDiagnostics: [
+        { actionId: 'conflict-a', kind: 'executionSequenceConflict' },
+        { actionId: 'conflict-b', kind: 'executionSequenceConflict' },
+      ],
+    })
     expect(year.balances['cash-a']).toBe(80)
     expect(year.withdrawals).toMatchObject({ cash: 20, total: 20 })
+  })
+
+  it('publishes truthful batch-abort reasons for non-colliding mixed kinds', () => {
+    const plan = basePlan()
+    plan.accounts = [
+      cash('cash-a', 100),
+      {
+        type: 'traditional',
+        id: 'ira',
+        name: 'IRA',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 100,
+        annualContribution: 0,
+      },
+      {
+        type: 'roth',
+        id: 'roth',
+        name: 'Roth IRA',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 0,
+        annualContribution: 0,
+      },
+    ]
+    plan.strategies.retirementActions = [
+      withdrawal({
+        actionId: 'conflict-a',
+        accountId: 'cash-a',
+        dollars: 10,
+        executionDate: '2026-06-01',
+      }),
+      withdrawal({
+        actionId: 'conflict-b',
+        accountId: 'cash-a',
+        dollars: 10,
+        executionDate: '2026-06-01',
+      }),
+      parsedAction({
+        actionId: 'conversion',
+        kind: 'rothConversion',
+        personId: 'p1',
+        year: 2026,
+        executionDate: '2026-07-01',
+        executionSequence: 1,
+        requestedAmount: 1_000,
+        allocations: [{
+          allocationId: 'conversion-allocation',
+          sourceAccountId: 'ira',
+          requestedAmount: 1_000,
+        }],
+        destinationRothAccountId: 'roth',
+        taxFunding: { kind: 'noneExpected' },
+        provenance: { source: 'manual' },
+      }),
+      parsedAction({
+        actionId: 'qcd',
+        kind: 'qcd',
+        donorPersonId: 'p1',
+        year: 2026,
+        executionDate: '2026-08-01',
+        executionSequence: 1,
+        requestedAmount: 1_000,
+        allocation: {
+          allocationId: 'qcd-allocation',
+          sourceAccountId: 'ira',
+          requestedAmount: 1_000,
+        },
+        charity: {
+          designationId: 'charity',
+          name: 'Public Charity',
+          designationKind: 'eligiblePublicCharity',
+          directFromCustodianAttested: true,
+          eligibleOrganizationAttested: true,
+          notDonorAdvisedFundOrSupportingOrganizationAttested: true,
+          notSplitInterestEntityAttested: true,
+          entireDistributionOtherwiseDeductibleAttested: true,
+        },
+        provenance: { source: 'manual' },
+      }),
+      parsedAction({
+        actionId: 'legacy-withdrawal',
+        kind: 'legacyAggregateWithdrawal',
+        year: 2026,
+        requestedAmount: 1_000,
+        legacyCategory: 'cash',
+        provenance: { source: 'migration' },
+      }),
+    ]
+
+    const year = run(plan).years[0]!
+    const publication = year.retirementActionPublication!
+
+    expect(year.retirementActionExecution).toMatchObject({
+      committed: false,
+      evidence: [],
+    })
+    expect(publication.records).toHaveLength(5)
+    expect(publication.records.every((record) =>
+      record.outcome === 'refused' &&
+      record.readiness === 'nonActionable' &&
+      record.executedAmount === 0)).toBe(true)
+    expect(Object.fromEntries(publication.records.map((record) => [
+      record.actionId,
+      record.reasons.map((reason) => reason.code),
+    ]))).toEqual({
+      'conflict-a': ['action-sequence-conflict'],
+      'conflict-b': ['action-sequence-conflict'],
+      conversion: ['action-batch-schedule-conflict'],
+      qcd: ['action-batch-schedule-conflict'],
+      'legacy-withdrawal': ['action-batch-schedule-conflict'],
+    })
+    expect(year.balances).toMatchObject({
+      'cash-a': 100,
+      ira: 100,
+      roth: 0,
+    })
+  })
+
+  it('keeps duplicate action IDs in the legacy executor diagnostics without publishing', () => {
+    const plan = basePlan()
+    plan.accounts = [cash('cash-a', 100)]
+    plan.strategies.retirementActions = [
+      withdrawal({
+        actionId: 'duplicate-action',
+        accountId: 'cash-a',
+        dollars: 10,
+        sequence: 1,
+      }),
+      withdrawal({
+        actionId: 'unique-before-mutation',
+        accountId: 'cash-a',
+        dollars: 10,
+        sequence: 2,
+      }),
+    ]
+    const executionPlan = validate(plan)
+    executionPlan.strategies.retirementActions[1]!.actionId =
+      asActionId('duplicate-action')
+
+    const year = simulatePlan(executionPlan, {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: noTax,
+    }).years[0]!
+
+    expect(year.retirementActionExecution).toMatchObject({
+      committed: false,
+      evidence: [],
+      scheduleIssues: [{
+        kind: 'duplicateActionId',
+        actionId: 'duplicate-action',
+        inputIndexes: [0, 1],
+      }],
+    })
+    expect(year).not.toHaveProperty('retirementActionPublication')
+  })
+
+  it.each([
+    {
+      kind: 'actionYearMismatch' as const,
+      actionId: asActionId('wrong-year'),
+      expectedYear: 2026,
+      actualYear: 2027,
+    },
+    {
+      kind: 'duplicateActionId' as const,
+      actionId: asActionId('duplicate'),
+      inputIndexes: [0, 1] as [number, number],
+    },
+  ])('classifies $kind as legacy-only at the simulator publication boundary', (issue) => {
+    const execution: ExecuteOrdinaryWithdrawalsResult = {
+      committed: false,
+      requests: [],
+      scheduleIssues: [issue],
+      balances: [],
+      taxableBases: [],
+      evidence: [],
+    }
+
+    expect(ordinaryWithdrawalPublicationEligibility(execution)).toEqual({
+      kind: 'legacyScheduleDiagnosticsOnly',
+      unsupportedIssueKinds: [issue.kind],
+    })
   })
 
   it('binds annual alive evidence and owner identity before movement', () => {
@@ -1457,6 +1695,9 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
         expect.objectContaining({ code: 'source-owner-mismatch' }),
       ]),
     )
+    expect(
+      year.retirementActionExecution?.evidence[1]?.allocations[0]?.resolution,
+    ).toBe('resolved')
     expect(year.retirementActionExecution?.taxableBases).toEqual([])
     expect(year.withdrawals).toMatchObject({ cash: 10, taxable: 0, total: 10 })
     expect(year.balances).toMatchObject({

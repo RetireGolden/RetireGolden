@@ -78,7 +78,10 @@ import {
   executeOrdinaryWithdrawals,
   ledgerCentTotalToPlanDollars,
   ledgerCentsToPlanDollars,
+  ordinaryWithdrawalPublicationEligibility,
+  ordinaryWithdrawalPublicationSource,
   planDollarsToLedgerCents,
+  publishAnnualRetirementActions,
   signedLedgerCentTotalToPlanDollars,
   type ExecuteOrdinaryWithdrawalsResult,
   type TaxableAccountOpeningSnapshot,
@@ -4902,6 +4905,20 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         ),
       ),
     })
+    const retirementActionPublicationEligibility = retirementActionExecution === undefined
+      ? undefined
+      : ordinaryWithdrawalPublicationEligibility(retirementActionExecution)
+    const retirementActionPublication =
+      retirementActionExecution !== undefined &&
+      retirementActionPublicationEligibility?.kind === 'publicationEligible'
+        ? publishAnnualRetirementActions({
+            taxYear: year,
+            requests: retirementActionExecution.requests,
+            sources: [
+              ordinaryWithdrawalPublicationSource(retirementActionExecution),
+            ],
+          })
+        : undefined
     const yearResult: YearResult = {
       year,
       inflationScale: inflFactor,
@@ -4922,6 +4939,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       retirementRuntimeApplicationSource,
       ownedNonRothIraPostGrowthSource,
       ...(retirementActionExecution ? { retirementActionExecution } : {}),
+      ...(retirementActionPublication === undefined
+        ? {}
+        : { retirementActionPublication }),
       penalties,
       magi: magiHistory.get(year)!,
       ...(yearAcaResult ? { aca: yearAcaResult } : {}),

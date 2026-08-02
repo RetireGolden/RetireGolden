@@ -781,11 +781,13 @@ function unresolvedAllocationEvidence(
       ownerPersonIds =
         account.ownerPersonId === null ? [] : [asPersonId(account.ownerPersonId)]
     } catch {
+      // The source account resolved by ID even though it has no valid owner
+      // identity; preserve that distinction for the ownership refusal.
       return {
         ...allocation,
-        resolution: 'unresolved',
-        ownerPersonIds: null,
-        actingPersonId: null,
+        resolution: 'resolved',
+        ownerPersonIds: [],
+        actingPersonId,
         balanceBefore: before,
         executedAmount: asUsdCents(0),
         unexecutedAmount: asUsdCents(allocation.requestedAmount),

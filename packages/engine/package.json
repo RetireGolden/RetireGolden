@@ -70,6 +70,10 @@
       "types": "./dist/actions/annualRetirementPhysicalEventInventory.d.ts",
       "default": "./dist/actions/annualRetirementPhysicalEventInventory.js"
     },
+    "./actions/annualRetirementActionPublication": {
+      "types": "./dist/actions/annualRetirementActionPublication.d.ts",
+      "default": "./dist/actions/annualRetirementActionPublication.js"
+    },
     "./actions/civilDate": {
       "types": "./dist/actions/civilDate.d.ts",
       "default": "./dist/actions/civilDate.js"
