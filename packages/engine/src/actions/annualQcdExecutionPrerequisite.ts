@@ -149,7 +149,7 @@ export type AnnualQcdPublicationRecord = Readonly<
   readonly executedDate: null
   readonly executedSequence: null
   readonly readiness: 'nonActionable'
-  readonly outcome: Extract<ActionOutcome, 'unsupported'>
+  readonly outcome: Extract<ActionOutcome, 'refused' | 'unsupported'>
   readonly allocations: readonly [Readonly<AnnualQcdPublicationAllocationRecord>]
   }
 >
@@ -326,7 +326,12 @@ function deductibleContributionEvidenceSnapshot(
 
 interface AnnualQcdEvidenceIdentityClaim {
   readonly evidenceId: string
-  readonly role: 'personAlive' | 'priorQcdOffset' | 'deductibleContribution'
+  readonly role:
+    | 'personAlive'
+    | 'priorQcdOffset'
+    | 'iraClassification'
+    | 'sepSimpleActivity'
+    | 'deductibleContribution'
   readonly actionId: ActionId | null
   readonly stableIdentity: string
 }
@@ -354,6 +359,31 @@ function evidenceIdentityIssues(
       role: 'priorQcdOffset',
       actionId: evidence.actionId,
       stableIdentity: JSON.stringify(['priorQcdOffset', evidence.actionId]),
+    })
+  }
+
+  const requestedSources = new Set<string>(requests.map((request) =>
+    request.allocation.sourceAccountId))
+  for (const record of
+    plan.retirementActionEligibilityFacts?.iraClassifications ?? []) {
+    if (!requestedSources.has(record.sourceAccountId)) continue
+    claims.push({
+      evidenceId: record.evidenceId,
+      role: 'iraClassification',
+      actionId: null,
+      stableIdentity: JSON.stringify(['iraClassification', record]),
+    })
+  }
+  for (const record of
+    plan.retirementActionEligibilityFacts?.sepSimpleActivities ?? []) {
+    if (!requests.some((request) =>
+      request.allocation.sourceAccountId === record.sourceAccountId &&
+      request.year === record.actionTaxYear)) continue
+    claims.push({
+      evidenceId: record.evidenceId,
+      role: 'sepSimpleActivity',
+      actionId: null,
+      stableIdentity: JSON.stringify(['sepSimpleActivity', record]),
     })
   }
 
@@ -516,13 +546,17 @@ function publicationRecord(
   sourceResolution: AnnualQcdSourceEligibilitySnapshot['resolution'],
   eligibilityDecision: Readonly<RetirementActionEligibilityDecision>,
   conflict: QcdScheduleConflict | null,
+  batchConflictAborted: boolean,
 ): AnnualQcdPublicationRecord {
   const zero = asUsdCents(0)
-  const reasons = canonicalBlockingReasons([
-    ...ANNUAL_STAGE_REASONS,
-    ...eligibilityDecision.reasons,
-    ...(conflict === null ? [] : [conflict.reason]),
-  ])
+  const reasons = batchConflictAborted
+    ? [createActionReason('action-batch-schedule-conflict')]
+    : canonicalBlockingReasons([
+        ...ANNUAL_STAGE_REASONS.filter((reason) =>
+          sourceResolution === 'resolved' || reason.code !== 'qcd-rmd-evidence-missing'),
+        ...eligibilityDecision.reasons,
+        ...(conflict === null ? [] : [conflict.reason]),
+      ])
   return {
     request,
     actionId: request.actionId,
@@ -537,11 +571,11 @@ function publicationRecord(
     executedAmount: zero,
     unexecutedAmount: asUsdCents(request.requestedAmount),
     readiness: 'nonActionable',
-    outcome: 'unsupported',
+    outcome: batchConflictAborted ? 'refused' : 'unsupported',
     allocations: [{
       allocationId: request.allocation.allocationId,
       sourceAccountId: request.allocation.sourceAccountId,
-      resolution: sourceResolution === 'resolved'
+      resolution: !batchConflictAborted && sourceResolution === 'resolved'
         ? 'resolved'
         : 'unresolved',
       requestedAmount: request.allocation.requestedAmount,
@@ -644,11 +678,13 @@ function evaluateUnchecked(
       request,
       runtimeEvidence,
     )
+    const conflict = conflictFor(request.actionId, conflicts)
     const record = publicationRecord(
       request,
       source.resolution,
       decision,
-      conflictFor(request.actionId, conflicts),
+      conflict,
+      conflicts.length > 0 && conflict === null,
     )
     evidence.push({
       actionId: request.actionId,

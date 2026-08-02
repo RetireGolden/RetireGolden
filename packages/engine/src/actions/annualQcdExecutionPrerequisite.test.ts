@@ -430,6 +430,66 @@ describe('evaluateAnnualQcdExecutionPrerequisites', () => {
     })
   })
 
+  it.each(['IRA classification', 'SEP activity'] as const)(
+    'blocks runtime evidence IDs reused by relevant %s evidence',
+    (durableRole) => {
+      const action = request()
+      const plan = planFixture()
+      let durableEvidenceId = 'ira-a-classification'
+      if (durableRole === 'SEP activity') {
+        durableEvidenceId = 'ira-a-sep-activity'
+        plan.retirementActionEligibilityFacts!.iraClassifications = [{
+          sourceAccountId: 'ira-a', subtype: 'sep',
+          evidenceId: 'ira-a-sep-classification',
+          provenance: { source: 'manual' },
+        }]
+        plan.retirementActionEligibilityFacts!.sepSimpleActivities = [{
+          sourceAccountId: 'ira-a', actionTaxYear: 2026,
+          planYearEndDate: '2026-12-31',
+          employerContributionMadeForPlanYear: false,
+          evidenceId: durableEvidenceId,
+          provenance: { source: 'manual' },
+        }]
+      }
+      const runtime = runtimeEvidence([action])
+      runtime.personAliveEvidence![0]!.evidenceId = durableEvidenceId
+
+      expect(evaluateAnnualQcdExecutionPrerequisites({
+        taxYear: 2026, plan, requests: [action], runtimeEvidence: runtime,
+      })).toMatchObject({
+        status: 'blocked',
+        issues: [{ kind: 'evidenceIdReused' }],
+      })
+    },
+  )
+
+  it.each(['unrequested source', 'different activity year'] as const)(
+    'does not claim evidence from an %s',
+    (irrelevantBinding) => {
+      const action = request()
+      const plan = planFixture()
+      const runtime = runtimeEvidence([action])
+      const reusedId = runtime.personAliveEvidence![0]!.evidenceId
+      if (irrelevantBinding === 'unrequested source') {
+        plan.retirementActionEligibilityFacts!.iraClassifications.push({
+          sourceAccountId: 'ira-unused', subtype: 'traditional',
+          evidenceId: reusedId, provenance: { source: 'manual' },
+        })
+      } else {
+        plan.retirementActionEligibilityFacts!.sepSimpleActivities.push({
+          sourceAccountId: 'ira-a', actionTaxYear: 2025,
+          planYearEndDate: '2025-12-31',
+          employerContributionMadeForPlanYear: false,
+          evidenceId: reusedId, provenance: { source: 'manual' },
+        })
+      }
+
+      expect(evaluateAnnualQcdExecutionPrerequisites({
+        taxYear: 2026, plan, requests: [action], runtimeEvidence: runtime,
+      }).status).toBe('evaluated')
+    },
+  )
+
   it('adds deterministic schedule diagnostics without replacing unsupported prerequisites', () => {
     const first = request('qcd-a')
     const second = request('qcd-b')
@@ -504,6 +564,62 @@ describe('evaluateAnnualQcdExecutionPrerequisites', () => {
       }),
     ]))
   })
+
+  it('publishes canonical batch fallbacks for records outside a colliding slot', () => {
+    const first = request('qcd-a')
+    const second = request('qcd-b')
+    const unaffected = request('qcd-c', { executionDate: '2026-09-01' })
+    const result = evaluateAnnualQcdExecutionPrerequisites({
+      taxYear: 2026,
+      plan: planFixture(),
+      requests: [unaffected, second, first],
+      runtimeEvidence: runtimeEvidence([first, second, unaffected]),
+    })
+
+    expect(result.status).toBe('evaluated')
+    if (result.status !== 'evaluated') return
+    expect(result.publicationSource.records.find((record) =>
+      record.actionId === 'qcd-c')).toMatchObject({
+      outcome: 'refused',
+      allocations: [{ resolution: 'unresolved' }],
+      reasons: [{ code: 'action-batch-schedule-conflict' }],
+    })
+    expect(() => publishAnnualRetirementActions({
+      taxYear: 2026,
+      requests: result.requests,
+      sources: [result.publicationSource],
+    })).not.toThrow()
+  })
+
+  it.each(['missing', 'ambiguous'] as const)(
+    'omits resolved-source annual reasons when the QCD source is %s',
+    (sourceState) => {
+      const action = request()
+      const plan = planFixture()
+      plan.accounts = sourceState === 'missing'
+        ? []
+        : [plan.accounts[0]!, structuredClone(plan.accounts[0]!)]
+      const result = evaluateAnnualQcdExecutionPrerequisites({
+        taxYear: 2026,
+        plan,
+        requests: [action],
+        runtimeEvidence: runtimeEvidence([action]),
+      })
+
+      expect(result.status).toBe('evaluated')
+      if (result.status !== 'evaluated') return
+      expect(result.publicationSource.records[0]).toMatchObject({
+        allocations: [{ resolution: 'unresolved' }],
+      })
+      expect(result.publicationSource.records[0]?.reasons.map((reason) => reason.code))
+        .not.toContain('qcd-rmd-evidence-missing')
+      expect(() => publishAnnualRetirementActions({
+        taxYear: 2026,
+        requests: result.requests,
+        sources: [result.publicationSource],
+      })).not.toThrow()
+    },
+  )
 
   it.each([
     'inherited source',
