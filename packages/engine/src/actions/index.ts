@@ -1,3 +1,4 @@
+export * from './annualQcdDerivedTaxCharacter.js'
 export * from './annualQcdDeductionTreatmentCoordinator.js'
 export * from './annualQcdItemizedLiabilityReconciliation.js'
 export {
