@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { parsePlan, type Plan } from '../model/plan.js'
-import { singlePersonPlan, traditionalAccount } from '../testing/planFixtures.js'
+import { couplePlan, singlePersonPlan, traditionalAccount } from '../testing/planFixtures.js'
 import type { RetirementActionEligibilityRuntimeEvidence } from '../strategies/accountEligibility.js'
 import type { QualifiedCharitableDistributionRequest } from './contract.js'
 import type { AccountOpeningBalanceSnapshot } from './execution.js'
@@ -140,8 +140,9 @@ function input(
   openingBalances: readonly AccountOpeningBalanceSnapshot[] = [balance()],
   rmdPools: readonly AnnualQcdRmdPoolOpeningSnapshot[] = [pool()],
   runtimeOverride?: RetirementActionEligibilityRuntimeEvidence,
+  planOverride: Plan = planFixture(),
 ): StageAnnualQcdPhysicalExecutionInput {
-  const parsedPlan = parsePlan(planFixture())
+  const parsedPlan = parsePlan(planOverride)
   if (!parsedPlan.ok) throw new Error('Fixture Plan was invalid')
   const plan = parsedPlan.plan
   const runtime = runtimeOverride ?? runtimeEvidence(requests)
@@ -263,7 +264,11 @@ describe('stageAnnualQcdPhysicalExecution', () => {
 
     expect(result).toMatchObject({
       status: 'annualQcdPhysicalExecutionStaged',
-      rmdPools: [{ rmdSatisfiedAfter: 10_000, rmdRemainingAfter: 0 }],
+      rmdPools: [{
+        predicate: 'annualQcdOwnedIraRmdPoolStagedTransition',
+        rmdSatisfiedAfter: 10_000,
+        rmdRemainingAfter: 0,
+      }],
       applications: [{
         rmdRemainingBefore: 8_000,
         rmdSatisfiedByAction: 8_000,
@@ -335,6 +340,84 @@ describe('stageAnnualQcdPhysicalExecution', () => {
       sourceAccountIds: [asAccountId('ira-a'), asAccountId('ira-spouse')],
     })
     const result = stageAnnualQcdPhysicalExecution(input([request()], [balance()], [mixed]))
+    expectBlocked(result, 'rmdEvidenceInvalid')
+  })
+
+  it('rejects a valid RMD pool that is unrelated to every request in the batch', () => {
+    const plan = couplePlan({
+      p1Dob: '1955-01-31',
+      p2Dob: '1955-02-01',
+      p1PlanningAge: 90,
+      p2PlanningAge: 90,
+    })
+    plan.accounts = [
+      traditionalAccount('ira-a', 100_000, 'p1'),
+      traditionalAccount('ira-p2', 100_000, 'p2'),
+    ]
+    plan.retirementActionEligibilityFacts = {
+      iraClassifications: [
+        {
+          sourceAccountId: 'ira-a',
+          subtype: 'traditional',
+          evidenceId: 'ira-a-classification',
+          provenance: { source: 'manual' },
+        },
+        {
+          sourceAccountId: 'ira-p2',
+          subtype: 'traditional',
+          evidenceId: 'ira-p2-classification',
+          provenance: { source: 'manual' },
+        },
+      ],
+      sepSimpleActivities: [],
+      deductibleIraContributions: [2025, 2026].map((taxYear) => ({
+        donorPersonId: 'p1',
+        taxYear,
+        amountCents: asUsdCents(0),
+        evidenceId: `p1-contribution-${taxYear}`,
+        provenance: { source: 'manual' as const, sourceId: `ledger-${taxYear}` },
+      })),
+    }
+    const unrelated = pool({
+      poolId: 'p2-owned-ira-2026',
+      donorPersonId: asPersonId('p2'),
+      sourceAccountIds: [asAccountId('ira-p2')],
+      upstreamEvidenceId: 'p2-rmd-upstream',
+    })
+
+    const result = stageAnnualQcdPhysicalExecution(input(
+      [request()],
+      [balance()],
+      [pool(), unrelated],
+      undefined,
+      plan,
+    ))
+
+    expectBlocked(result, 'rmdEvidenceInvalid')
+  })
+
+  it('reserves every RMD-pool source account against pool and evidence identities', () => {
+    const plan = planFixture()
+    plan.accounts.push(traditionalAccount('ira-sibling', 40_000))
+    plan.retirementActionEligibilityFacts!.iraClassifications.push({
+      sourceAccountId: 'ira-sibling',
+      subtype: 'traditional',
+      evidenceId: 'ira-sibling-classification',
+      provenance: { source: 'manual' },
+    })
+    const collidingPool = pool({
+      sourceAccountIds: [asAccountId('ira-a'), asAccountId('ira-sibling')],
+      upstreamEvidenceId: 'ira-sibling',
+    })
+
+    const result = stageAnnualQcdPhysicalExecution(input(
+      [request()],
+      [balance()],
+      [collidingPool],
+      undefined,
+      plan,
+    ))
+
     expectBlocked(result, 'rmdEvidenceInvalid')
   })
 

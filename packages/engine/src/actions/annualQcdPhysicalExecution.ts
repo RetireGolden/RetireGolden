@@ -30,7 +30,9 @@ export interface AnnualQcdRmdPoolOpeningSnapshot {
   readonly rmdRemainingBefore: UsdCents
   readonly upstreamEvidenceId: string
 }
-export interface AnnualQcdRmdPoolStagedTransition extends AnnualQcdRmdPoolOpeningSnapshot {
+export interface AnnualQcdRmdPoolStagedTransition
+  extends Omit<AnnualQcdRmdPoolOpeningSnapshot, 'predicate'> {
+  readonly predicate: 'annualQcdOwnedIraRmdPoolStagedTransition'
   readonly openingEvidenceId: string
   readonly evidenceId: string
   readonly rmdSatisfiedAfter: UsdCents
@@ -269,13 +271,14 @@ function canonicalPools(
       poolId, raw.taxYear, donorPersonId, sourceAccountIds, required, satisfied, remaining, upstreamEvidenceId,
     ])
     const newIdentifiers = [poolId, openingEvidenceId, upstreamEvidenceId]
+    const reservedIdentifiers = new Set([...claimedIdentifiers, ...sourceAccountIds])
     if (raw.predicate !== 'annualQcdOwnedIraRmdPoolOpeningSnapshot' || raw.scope !== 'ownedIra' ||
         raw.taxYear !== requests[0]!.year || sourceAccountIds.length === 0 ||
         new Set(sourceAccountIds).size !== sourceAccountIds.length ||
         JSON.stringify(sourceAccountIds) !== JSON.stringify(completeAccountIds) ||
         BigInt(satisfied) + BigInt(remaining) !== BigInt(required) || ids.has(poolId) ||
         new Set(newIdentifiers).size !== newIdentifiers.length ||
-        newIdentifiers.some((id) => evidenceIds.has(id) || claimedIdentifiers.has(id)) ||
+        newIdentifiers.some((id) => evidenceIds.has(id) || reservedIdentifiers.has(id)) ||
         sourceAccountIds.some((id) => claimedAccounts.has(id))) {
       fail('rmdEvidenceInvalid', `RMD pool "${poolId}" is malformed, duplicated, or overlaps another pool.`)
     }
@@ -284,9 +287,10 @@ function canonicalPools(
       evidenceIds.add(id)
       claimedIdentifiers.add(id)
     })
+    sourceAccountIds.forEach((id) => claimedIdentifiers.add(id))
     sourceAccountIds.forEach((id) => claimedAccounts.add(id))
     return {
-      predicate: 'annualQcdOwnedIraRmdPoolOpeningSnapshot' as const,
+      predicate: 'annualQcdOwnedIraRmdPoolStagedTransition' as const,
       poolId,
       taxYear: raw.taxYear,
       donorPersonId,
@@ -308,6 +312,14 @@ function canonicalPools(
       fail('rmdEvidenceInvalid', `QCD action "${request.actionId}" requires one donor/source RMD pool.`)
     }
   }
+  for (const pool of pools) {
+    const selected = requests.some((request) =>
+      pool.donorPersonId === request.donorPersonId &&
+      pool.sourceAccountIds.includes(request.allocation.sourceAccountId))
+    if (!selected) {
+      fail('rmdEvidenceInvalid', `RMD pool "${pool.poolId}" is unrelated to the annual QCD batch.`)
+    }
+  }
   return pools
 }
 
@@ -319,6 +331,7 @@ function stageKnownYear(
   const claimedIdentifiers = claimedPrerequisiteIdentifiers(input.prerequisite)
   const sourceIds = new Set(requests.map((request) => request.allocation.sourceAccountId))
   const detachedBalances = canonicalBalances(input.openingBalances, sourceIds)
+  detachedBalances.forEach((entry) => claimedIdentifiers.add(entry.accountId))
   const pools = canonicalPools(input.rmdPools, requests, plan, claimedIdentifiers)
   const workingBalances = new Map(
     detachedBalances.map((entry) => [entry.accountId, entry.openingBalance]),
