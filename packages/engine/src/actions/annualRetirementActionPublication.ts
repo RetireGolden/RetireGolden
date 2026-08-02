@@ -14,6 +14,11 @@ import type {
   OrdinaryWithdrawalExecutionEvidence,
   OrdinaryWithdrawalExecutionScheduleIssue,
 } from './execution.js'
+import type {
+  ExecuteRothConversionsResult,
+  RothConversionExecutionEvidence,
+  RothConversionExecutionScheduleIssue,
+} from './rothConversionExecution.js'
 import {
   accountIdSchema,
   actionIdSchema,
@@ -230,6 +235,21 @@ export type OrdinaryWithdrawalPublicationEligibility =
       ]
     }>
 
+type UnsupportedConversionScheduleIssueKind = Exclude<
+  RothConversionExecutionScheduleIssue['kind'],
+  'executionSequenceConflict'
+>
+
+export type RothConversionPublicationEligibility =
+  | Readonly<{ kind: 'publicationEligible' }>
+  | Readonly<{
+      kind: 'legacyScheduleDiagnosticsOnly'
+      unsupportedIssueKinds: readonly [
+        UnsupportedConversionScheduleIssueKind,
+        ...UnsupportedConversionScheduleIssueKind[],
+      ]
+    }>
+
 function allocationOrder(
   left: Readonly<SourceAllocationRequest>,
   right: Readonly<SourceAllocationRequest>,
@@ -301,6 +321,19 @@ function isConflictOnlyRecord(
     record.reasons[0]?.code === 'action-sequence-conflict' ||
     record.reasons[0]?.code === 'action-batch-schedule-conflict'
   )
+}
+
+function sameActionReason(
+  left: Readonly<ActionReason>,
+  right: Readonly<ActionReason>,
+): boolean {
+  return left.code === right.code &&
+    left.predicate === right.predicate &&
+    left.outcome === right.outcome &&
+    left.message === right.message &&
+    left.personId === right.personId &&
+    left.accountId === right.accountId &&
+    left.allocationId === right.allocationId
 }
 
 // Structural allocation reasons cannot reach publication: the canonical request
@@ -914,6 +947,177 @@ export function ordinaryWithdrawalPublicationSource(
   }
 }
 
+function conversionAllocationRecords(
+  evidence: Readonly<RothConversionExecutionEvidence>,
+): AnnualRetirementActionAllocationRecord[] {
+  const requestedAllocationIds = new Set<string>(
+    evidence.request.allocations.map((allocation) => allocation.allocationId),
+  )
+  const evidenceAllocationIds = new Set<string>(
+    evidence.allocations.map((allocation) => allocation.allocationId),
+  )
+  if (
+    evidence.allocations.length !== evidence.request.allocations.length ||
+    requestedAllocationIds.size !== evidence.request.allocations.length ||
+    evidenceAllocationIds.size !== evidence.allocations.length ||
+    requestedAllocationIds.size !== evidenceAllocationIds.size ||
+    [...evidenceAllocationIds].some((allocationId) =>
+      !requestedAllocationIds.has(allocationId))
+  ) {
+    throw new Error(
+      `Conversion allocation evidence is incomplete for action "${evidence.request.actionId}"`,
+    )
+  }
+  return evidence.allocations.map((allocation) => {
+    const requestAllocation = evidence.request.allocations.find((candidate) =>
+      candidate.allocationId === allocation.allocationId)
+    if (
+      requestAllocation === undefined ||
+      requestAllocation.sourceAccountId !== allocation.sourceAccountId ||
+      requestAllocation.requestedAmount !== allocation.requestedAmount ||
+      allocation.executedAmount !== 0 ||
+      allocation.unexecutedAmount !== requestAllocation.requestedAmount ||
+      allocation.taxableConvertedAmount !== 0 ||
+      allocation.nontaxableConvertedAmount !== 0 ||
+      allocation.basisEvidenceId !== null ||
+      allocation.rmdReserveEvidenceId !== null
+    ) {
+      throw new Error(
+        `Conversion allocation evidence differs for action "${evidence.request.actionId}"`,
+      )
+    }
+    return {
+      allocationId: requestAllocation.allocationId,
+      sourceAccountId: requestAllocation.sourceAccountId,
+      resolution: allocation.resolution,
+      requestedAmount: requestAllocation.requestedAmount,
+      executedAmount: asUsdCents(allocation.executedAmount),
+      unexecutedAmount: asUsdCents(allocation.unexecutedAmount),
+    }
+  })
+}
+
+export function rothConversionPublicationEligibility(
+  execution: Readonly<ExecuteRothConversionsResult>,
+): Readonly<RothConversionPublicationEligibility> {
+  const unsupportedIssueKinds = [...new Set(
+    execution.scheduleIssues.flatMap((issue) =>
+      issue.kind === 'executionSequenceConflict' ? [] : [issue.kind]),
+  )].sort(compareUtf16CodeUnits) as UnsupportedConversionScheduleIssueKind[]
+  return unsupportedIssueKinds.length === 0
+    ? { kind: 'publicationEligible' }
+    : {
+        kind: 'legacyScheduleDiagnosticsOnly',
+        unsupportedIssueKinds: [
+          unsupportedIssueKinds[0]!,
+          ...unsupportedIssueKinds.slice(1),
+        ],
+      }
+}
+
+/** Detach named-conversion staging evidence into the common annual contract. */
+export function rothConversionPublicationSource(
+  execution: Readonly<ExecuteRothConversionsResult>,
+): Readonly<AnnualRetirementActionPublicationSource> {
+  if (
+    execution.committed !== false ||
+    execution.balances.some((balance) =>
+      balance.openingBalance !== balance.closingBalance)
+  ) {
+    throw new Error(
+      'Cannot publish conversion staging evidence with committed movement',
+    )
+  }
+  if (execution.scheduleIssues.length > 0 && execution.evidence.length > 0) {
+    throw new Error(
+      'Cannot publish conversion evidence from a schedule-aborted annual batch',
+    )
+  }
+  const eligibility = rothConversionPublicationEligibility(execution)
+  if (eligibility.kind === 'legacyScheduleDiagnosticsOnly') {
+    throw new Error(
+      `Cannot publish a conversion batch whose schedule issues have no canonical typed refusal reasons: ${eligibility.unsupportedIssueKinds.join(', ')}`,
+    )
+  }
+
+  const diagnostics: Array<
+    WithoutExecutorSource<AnnualRetirementActionScheduleDiagnostic>
+  > = []
+  for (const issue of execution.scheduleIssues) {
+    if (issue.kind !== 'executionSequenceConflict') continue
+    for (const actionId of issue.collidingActionIds) {
+      diagnostics.push({
+        ...issue,
+        actionId,
+        collidingActionIds: [...issue.collidingActionIds],
+        reason: { ...issue.reason },
+      })
+    }
+  }
+
+  const diagnosedActionIds = new Set(
+    diagnostics.map((diagnostic) => diagnostic.actionId),
+  )
+  const records = execution.scheduleIssues.length > 0
+    ? execution.requests.map((request) => scheduleFailureFallbackRecord(
+        request,
+        diagnosedActionIds.has(request.actionId),
+      ))
+    : execution.evidence.map((evidence) => {
+        if (
+          evidence.actionId !== evidence.request.actionId ||
+          evidence.kind !== evidence.request.kind ||
+          evidence.year !== evidence.request.year ||
+          evidence.scheduledDate !== (evidence.request.executionDate ?? null) ||
+          evidence.scheduledSequence !== evidence.request.executionSequence ||
+          evidence.destinationRothAccountId !==
+            evidence.request.destinationRothAccountId ||
+          evidence.requestedAmount !== evidence.request.requestedAmount ||
+          evidence.destinationCreditAmount !== 0 ||
+          evidence.executedAmount !== 0 ||
+          evidence.unexecutedAmount !== evidence.request.requestedAmount ||
+          evidence.taxableConvertedAmount !== 0 ||
+          evidence.nontaxableConvertedAmount !== 0 ||
+          evidence.executedDate !== null ||
+          evidence.executedSequence !== null ||
+          evidence.readiness !== 'nonActionable' ||
+          evidence.taxFunding.kind !== evidence.request.taxFunding.kind ||
+          evidence.taxFunding.status !== 'unsupported' ||
+          evidence.taxFunding.requiredFundingAmount !== null ||
+          evidence.taxFunding.fundedAmount !== null ||
+          evidence.taxFunding.evidenceId !== null
+        ) {
+          throw new Error(
+            `Conversion execution evidence differs for action "${evidence.request.actionId}"`,
+          )
+        }
+        return {
+          request: evidence.request,
+          actionId: evidence.request.actionId,
+          kind: evidence.request.kind,
+          personId: evidence.request.personId,
+          year: evidence.request.year,
+          scheduledDate: evidence.scheduledDate,
+          scheduledSequence: evidence.scheduledSequence,
+          executedDate: evidence.executedDate,
+          executedSequence: evidence.executedSequence,
+          requestedAmount: evidence.request.requestedAmount,
+          executedAmount: asUsdCents(evidence.executedAmount),
+          unexecutedAmount: asUsdCents(evidence.unexecutedAmount),
+          readiness: evidence.readiness,
+          outcome: evidence.outcome,
+          allocations: conversionAllocationRecords(evidence),
+          reasons: canonicalReasons(evidence.outcome, evidence.reasons),
+        }
+      })
+
+  return {
+    executorSource: 'rothConversionExecutor',
+    records,
+    scheduleDiagnostics: diagnostics,
+  }
+}
+
 function scheduleKey(record: Readonly<AnnualRetirementActionRecord>): string | null {
   const state = retirementActionScheduleState(record)
   return state.kind === 'valid'
@@ -1020,6 +1224,31 @@ function deepFreeze<T>(value: T): Readonly<T> {
   return value as Readonly<T>
 }
 
+function isStagedNonmovingConversionRecord(
+  record: Omit<AnnualRetirementActionRecord, 'executorSource'>,
+): boolean {
+  if (
+    record.kind !== 'rothConversion' ||
+    record.outcome !== 'unsupported' ||
+    record.readiness !== 'nonActionable' ||
+    record.executedAmount !== 0 ||
+    record.unexecutedAmount !== record.requestedAmount ||
+    record.executedDate !== null ||
+    record.executedSequence !== null ||
+    record.allocations.some((allocation) =>
+      allocation.executedAmount !== 0 ||
+      allocation.unexecutedAmount !== allocation.requestedAmount)
+  ) return false
+  const reasonCodes = new Set(record.reasons.map((reason) => reason.code))
+  return reasonCodes.has('conversion-basis-evidence-missing') &&
+    reasonCodes.has('conversion-rmd-reserve-unavailable') &&
+    reasonCodes.has('conversion-tax-funding-evidence-unsupported') &&
+    record.reasons.every((reason) =>
+      reason.outcome === 'unsupported' ||
+      reason.outcome === 'refused' ||
+      reason.code === 'conversion-balance-trimmed')
+}
+
 function assertRecordBinding(
   record: Omit<AnnualRetirementActionRecord, 'executorSource'>,
   request: Readonly<RetirementActionRequest>,
@@ -1045,14 +1274,17 @@ function assertRecordBinding(
   }
   const scheduleState = retirementActionScheduleState(record)
 
-  actionExecutionDispositionSchema.parse({
-    outcome: record.outcome,
-    readiness: record.readiness,
-    requestedAmount: record.requestedAmount,
-    executedAmount: record.executedAmount,
-    unexecutedAmount: record.unexecutedAmount,
-    reasons: record.reasons,
-  })
+  const stagedNonmovingConversion = isStagedNonmovingConversionRecord(record)
+  if (!stagedNonmovingConversion) {
+    actionExecutionDispositionSchema.parse({
+      outcome: record.outcome,
+      readiness: record.readiness,
+      requestedAmount: record.requestedAmount,
+      executedAmount: record.executedAmount,
+      unexecutedAmount: record.unexecutedAmount,
+      reasons: record.reasons,
+    })
+  }
   if (
     BigInt(record.executedAmount) + BigInt(record.unexecutedAmount) !==
       BigInt(record.requestedAmount)
@@ -1234,14 +1466,29 @@ function assertRecordBinding(
   }
   const hasPhysicalBalanceReason = record.reasons.some((reason) =>
     physicalBalanceReasonCodes.has(reason.code))
+  const stagedNonmovingConversionAmountState = stagedNonmovingConversion
+  const mixedResolutionConversionBalanceReasonsAreBound =
+    request.kind === 'rothConversion' &&
+    record.reasons
+      .filter((reason) => physicalBalanceReasonCodes.has(reason.code))
+      .every((reason) => {
+        const allocation = reason.allocationId === undefined
+          ? undefined
+          : record.allocations.find((candidate) =>
+              candidate.allocationId === reason.allocationId)
+        return allocation?.resolution === 'resolved' &&
+          reason.accountId === allocation.sourceAccountId
+      })
   if (
     hasPhysicalBalanceReason &&
-    record.allocations.some((allocation) => allocation.resolution !== 'resolved')
+    record.allocations.some((allocation) => allocation.resolution !== 'resolved') &&
+    !mixedResolutionConversionBalanceReasonsAreBound
   ) {
     throw new Error(`Executor reason resolution differs for action "${request.actionId}"`)
   }
   if (
     hasPhysicalBalanceReason &&
+    !stagedNonmovingConversionAmountState &&
     record.reasons.some((reason) =>
       !physicalBalanceReasonCodes.has(reason.code) &&
       (reason.outcome === 'refused' || reason.outcome === 'unsupported'))
@@ -1316,7 +1563,13 @@ function assertRecordBinding(
       throw new Error(`Executor reason allocation differs for action "${request.actionId}"`)
     }
     const sourceIdentifiersAllowed = sourceIdentifierReasonCodes.has(reason.code)
-    const destinationAccountAllowed = destinationAccountReasonCodes.has(reason.code)
+    const destinationScopedMissingFacts =
+      reason.code === 'required-facts-missing' &&
+      reason.allocationId === undefined &&
+      reason.accountId === destinationId
+    const destinationAccountAllowed =
+      destinationAccountReasonCodes.has(reason.code) ||
+      destinationScopedMissingFacts
     const boundRecordAllocation = reasonAllocation === undefined
       ? reason.accountId === undefined
         ? undefined
@@ -1351,11 +1604,20 @@ function assertRecordBinding(
     const candidateAllocations = boundRecordAllocation === undefined
       ? record.allocations
       : [boundRecordAllocation]
+    const ownerWideConversionPrerequisite =
+      (
+        reason.code === 'conversion-basis-evidence-missing' ||
+        reason.code === 'conversion-rmd-reserve-unavailable'
+      ) &&
+      reason.personId === record.personId &&
+      reason.accountId === undefined &&
+      reason.allocationId === undefined
     if (
       resolutionRequirement === 'resolved' &&
       !physicalBalanceReasonCodes.has(reason.code) &&
       boundRecordAllocation === undefined &&
-      record.allocations.length !== 1
+      record.allocations.length !== 1 &&
+      !ownerWideConversionPrerequisite
     ) {
       throw new Error(`Executor reason identifiers differ for action "${request.actionId}"`)
     }
@@ -1370,6 +1632,7 @@ function assertRecordBinding(
     }
     if (
       resolutionRequirement === 'resolved' &&
+      !ownerWideConversionPrerequisite &&
       !candidateAllocations.some((allocation) =>
         allocation.resolution === 'resolved')
     ) {
@@ -1381,7 +1644,15 @@ function assertRecordBinding(
         'partial' | 'unavailable'
       >>>
     )[reason.code]
+    const stagedConversionTrimMatches =
+      reason.code === 'conversion-balance-trimmed' &&
+      stagedNonmovingConversionAmountState &&
+      boundRecordAllocation?.resolution === 'resolved' &&
+      boundRecordAllocation.executedAmount === 0 &&
+      boundRecordAllocation.unexecutedAmount ===
+        boundRecordAllocation.requestedAmount
     const balanceStateMatches = balanceState === undefined ||
+      stagedConversionTrimMatches ||
       (boundRecordAllocation === undefined
         ? balanceState === 'partial'
           ? record.executedAmount > 0 && record.unexecutedAmount > 0
@@ -1564,19 +1835,25 @@ export function publishAnnualRetirementActions(
         `Schedule conflict diagnostic differs for action "${diagnostic.actionId}"`,
       )
     }
+    const preservesQcdPrerequisiteTruth =
+      record.executorSource === 'qcdExecutor'
     if (
       record.readiness !== 'nonActionable' ||
-      record.outcome !== 'refused' ||
+      (!preservesQcdPrerequisiteTruth && record.outcome !== 'refused') ||
       record.executedAmount !== 0 ||
       record.unexecutedAmount !== record.requestedAmount ||
       record.executedDate !== null ||
       record.executedSequence !== null ||
       record.allocations.some((allocation) =>
-        allocation.resolution !== 'unresolved' ||
+        (!preservesQcdPrerequisiteTruth &&
+          allocation.resolution !== 'unresolved') ||
         allocation.executedAmount !== 0 ||
         allocation.unexecutedAmount !== allocation.requestedAmount) ||
-      record.reasons.length !== 1 ||
-      JSON.stringify(record.reasons[0]) !== JSON.stringify(diagnostic.reason)
+      (preservesQcdPrerequisiteTruth
+        ? !record.reasons.some((reason) =>
+            sameActionReason(reason, diagnostic.reason))
+        : record.reasons.length !== 1 ||
+          !sameActionReason(record.reasons[0]!, diagnostic.reason))
     ) {
       throw new Error(
         `Schedule conflict record remains actionable for action "${diagnostic.actionId}"`,
@@ -1628,7 +1905,6 @@ export function publishAnnualRetirementActions(
   for (const record of records) {
     const recordScheduleKey = scheduleKey(record)
     const sourceConflictAborted =
-      record.executorSource === 'ordinaryWithdrawalExecutor' &&
       conflictDiagnosticSources.has(record.executorSource)
     const recordDiagnosed = diagnosedConflictRecords.has(JSON.stringify([
       record.executorSource,
@@ -1689,7 +1965,6 @@ export function publishAnnualRetirementActions(
       record.reasons.some((reason) =>
         reason.code === 'action-batch-schedule-conflict') &&
       (
-        record.executorSource !== 'ordinaryWithdrawalExecutor' ||
         recordDiagnosed ||
         !conflictDiagnosticSources.has(record.executorSource)
       )

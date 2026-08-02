@@ -495,26 +495,56 @@ function inspectRetirementActionExecution(
   }
 
   const requestedIds = new Set(patchedIds)
-  const evidenceCountById = new Map<string, number>()
+  const evidenceById = new Map<
+    string,
+    Array<{ committed: boolean; readiness: unknown; reasonCodes: readonly string[] }>
+  >()
   for (const year of candidateResult.years) {
-    const execution = objectRecord(year.retirementActionExecution)
-    const evidence = execution?.['evidence']
-    if (!Array.isArray(evidence)) continue
+    for (const rawExecution of [
+      year.retirementActionExecution,
+      year.rothConversionActionExecution,
+    ]) {
+      const execution = objectRecord(rawExecution)
+      const evidence = execution?.['evidence']
+      if (!Array.isArray(evidence)) continue
 
-    for (const entry of evidence) {
-      const evidenceRecord = objectRecord(entry)
-      const actionId = evidenceRecord?.['actionId']
-      if (typeof actionId !== 'string' || !requestedIds.has(actionId)) continue
-      evidenceCountById.set(actionId, (evidenceCountById.get(actionId) ?? 0) + 1)
-      if (execution?.['committed'] !== true || evidenceRecord?.['readiness'] !== 'actionable') {
-        return `Retirement-action request ${actionId} does not have matching committed, actionable exact-ledger execution evidence.`
+      for (const entry of evidence) {
+        const evidenceRecord = objectRecord(entry)
+        if (evidenceRecord === null) continue
+        const actionId = evidenceRecord['actionId']
+        if (typeof actionId !== 'string' || !requestedIds.has(actionId)) continue
+        const dispositionRecord = objectRecord(evidenceRecord['disposition'])
+        const rawReasons = Array.isArray(evidenceRecord['reasons'])
+          ? evidenceRecord['reasons']
+          : Array.isArray(dispositionRecord?.['reasons'])
+            ? dispositionRecord['reasons']
+            : []
+        const reasonCodes = [...new Set(rawReasons.flatMap((reason) => {
+              const code = objectRecord(reason)?.['code']
+              return typeof code === 'string' ? [code] : []
+            }))].sort()
+        const records = evidenceById.get(actionId) ?? []
+        records.push({
+          committed: execution?.['committed'] === true,
+          readiness: evidenceRecord?.['readiness'],
+          reasonCodes,
+        })
+        evidenceById.set(actionId, records)
       }
     }
   }
 
   for (const actionId of patchedIds) {
-    if (evidenceCountById.get(actionId) !== 1) {
+    const records = evidenceById.get(actionId) ?? []
+    if (records.length !== 1) {
       return `Retirement-action request ${actionId} does not have exactly one matching committed, actionable exact-ledger execution record.`
+    }
+    const record = records[0]!
+    if (!record.committed || record.readiness !== 'actionable') {
+      const blockingReasons = record.reasonCodes.length > 0
+        ? ` Blocking reasons: ${record.reasonCodes.join(', ')}.`
+        : ''
+      return `Retirement-action request ${actionId} does not have matching committed, actionable exact-ledger execution evidence.${blockingReasons}`
     }
   }
   return null

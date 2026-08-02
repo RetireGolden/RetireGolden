@@ -883,6 +883,16 @@ describe('Plan retirement-action persistence', () => {
     expect(persisted['purpose']).not.toHaveProperty('memo')
   })
 
+  it('rejects a persisted conversion whose destination aliases a source', () => {
+    const raw = actionPlanRaw()
+    const conversion = actions(raw).find((action) =>
+      action['kind'] === 'rothConversion')!
+    const allocations = conversion['allocations'] as Array<Record<string, unknown>>
+    conversion['destinationRothAccountId'] = allocations[0]!['sourceAccountId']
+
+    expect(parsePlan(raw).ok).toBe(false)
+  })
+
   it('defaults an omitted v2 action schedule to empty', () => {
     const raw = actionPlanRaw()
     delete (raw['strategies'] as Record<string, unknown>)['retirementActions']

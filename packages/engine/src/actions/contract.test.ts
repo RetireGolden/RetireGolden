@@ -279,6 +279,12 @@ describe('retirement action request contracts', () => {
       }).success,
     ).toBe(false)
     expect(
+      rothConversionRequestSchema.safeParse({
+        ...requests[1],
+        destinationRothAccountId: requests[1].allocations[0].sourceAccountId,
+      }).success,
+    ).toBe(false)
+    expect(
       qualifiedCharitableDistributionRequestSchema.safeParse({
         ...requests[2],
         allocation: { ...requests[2].allocation, requestedAmount: 4_999 },

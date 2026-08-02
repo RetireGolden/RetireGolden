@@ -727,6 +727,48 @@ describe('evaluateCandidate', () => {
     expect(evaluation.diagnostics.join(' ')).toMatch(/exactly one matching committed, actionable/i)
   })
 
+  it('consumes named conversion execution evidence and its blocking reasons', () => {
+    const plan = tradHeavyPlan()
+    const source = plan.accounts.find((account) => account.type === 'traditional')!
+    const destination = plan.accounts.find((account) => account.type === 'roth')!
+    const request = {
+      actionId: 'named-conversion-diagnostic',
+      kind: 'rothConversion',
+      personId: 'p1',
+      year: 2026,
+      executionDate: '2026-12-15',
+      executionSequence: 1,
+      requestedAmount: 10_000,
+      allocations: [{
+        allocationId: 'named-conversion-diagnostic-allocation',
+        sourceAccountId: source.id,
+        requestedAmount: 10_000,
+      }],
+      destinationRothAccountId: destination.id,
+      taxFunding: { kind: 'noneExpected' },
+      provenance: { source: 'generator', sourceId: 'conversion-diagnostic-test' },
+    } as const
+    const evaluation = evaluateCandidate(
+      createDecisionContext(plan, simOptions()),
+      rothCandidate({
+        planPatch: { strategies: { retirementActions: [request] } },
+        retirementActionReadiness: {
+          state: 'identityComplete',
+          actionRequestIds: [request.actionId],
+        },
+      }),
+    )
+
+    const diagnostics = evaluation.diagnostics.join(' ')
+    expect(evaluation.recommendationState).toBe('diagnostic')
+    expect(diagnostics).toContain(request.actionId)
+    expect(diagnostics).toContain('conversion-basis-evidence-missing')
+    expect(diagnostics).not.toMatch(/exactly one matching/i)
+    expect(evaluation.candidateResult.years.flatMap((year) =>
+      year.rothConversionActionExecution?.evidence ?? []).map((evidence) =>
+      evidence.actionId)).toContain(request.actionId)
+  })
+
   it('requires every certified request to have committed actionable exact-ledger evidence', () => {
     const plan = tradHeavyPlan()
     const ownedCash = plan.accounts.find((account) => account.type === 'cash')!
@@ -784,7 +826,9 @@ describe('evaluateCandidate', () => {
     )
 
     expect(evaluation.recommendationState).toBe('diagnostic')
-    expect(evaluation.diagnostics.join(' ')).toMatch(/committed, actionable exact-ledger execution/i)
+    const diagnostics = evaluation.diagnostics.join(' ')
+    expect(diagnostics).toMatch(/committed, actionable exact-ledger execution/i)
+    expect(diagnostics).toContain('joint-source-acting-person-mismatch')
   })
 
   it('extracts matching request identities from a whole-strategies canonical operation', () => {

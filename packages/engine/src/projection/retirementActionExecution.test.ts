@@ -787,11 +787,15 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
         provenance: { source: 'manual' },
       }),
     ]
+    plan.strategies.rothConversion = {
+      mode: 'manual',
+      conversions: [{ year: 2026, amount: 20 }],
+    }
 
     const year = run(plan).years[0]!
     const evidence = year.retirementActionExecution?.evidence
 
-    expect(evidence).toHaveLength(2)
+    expect(evidence).toHaveLength(1)
     expect(evidence?.find((entry) => entry.actionId === 'tax-funding')).toMatchObject({
       disposition: {
         outcome: 'unsupported',
@@ -799,8 +803,37 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
         reasons: [{ code: 'conversion-tax-funding-evidence-unsupported' }],
       },
     })
-    expect(evidence?.find((entry) => entry.actionId === 'conversion')).toMatchObject({
-      disposition: { outcome: 'unsupported', executedAmount: 0 },
+    expect(year.rothConversionActionExecution?.evidence).toEqual([
+      expect.objectContaining({
+        actionId: 'conversion',
+        outcome: 'unsupported',
+        readiness: 'nonActionable',
+        executedAmount: 0,
+      }),
+    ])
+    expect(year.rothConversionActionExecution).toMatchObject({
+      committed: false,
+    })
+    expect(year.retirementActionPublication).toMatchObject({
+      executorSources: [
+        'ordinaryWithdrawalExecutor',
+        'rothConversionExecutor',
+      ],
+    })
+    expect(Object.fromEntries(year.retirementActionPublication!.records.map(
+      (record) => [record.actionId, {
+        executorSource: record.executorSource,
+        executedAmount: record.executedAmount,
+      }],
+    ))).toEqual({
+      'tax-funding': {
+        executorSource: 'ordinaryWithdrawalExecutor',
+        executedAmount: 0,
+      },
+      conversion: {
+        executorSource: 'rothConversionExecutor',
+        executedAmount: 0,
+      },
     })
     expect(year.balances).toMatchObject({
       'cash-a': 100,
@@ -808,6 +841,240 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
       roth: 0,
     })
     expect(year.withdrawals.total).toBe(0)
+  })
+
+  it('rejects a source-aliased conversion destination before simulation', () => {
+    const plan = basePlan()
+    plan.accounts = [
+      {
+        type: 'traditional',
+        id: 'traditional',
+        name: 'Traditional',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 100,
+        annualContribution: 0,
+      },
+      {
+        type: 'roth',
+        id: 'roth',
+        name: 'Roth',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 0,
+        annualContribution: 0,
+      },
+    ]
+    const conversion = parsedAction({
+      actionId: 'aliased-conversion',
+      kind: 'rothConversion',
+      personId: 'p1',
+      year: 2026,
+      executionDate: '2026-12-31',
+      executionSequence: 1,
+      requestedAmount: 5_000,
+      allocations: [{
+        allocationId: 'aliased-conversion-allocation',
+        sourceAccountId: 'traditional',
+        requestedAmount: 5_000,
+      }],
+      destinationRothAccountId: 'roth',
+      taxFunding: { kind: 'noneExpected' },
+      provenance: { source: 'manual' },
+    })
+    if (conversion.kind !== 'rothConversion') throw new Error('fixture drift')
+    conversion.destinationRothAccountId = conversion.allocations[0]!.sourceAccountId
+    plan.strategies.retirementActions = [conversion]
+
+    expect(() => run(plan)).toThrow(/destination aliases a source/i)
+  })
+
+  it('fails a mixed ordinary/conversion schedule collision as one annual batch', () => {
+    const plan = basePlan()
+    plan.accounts = [
+      cash('cash-a', 100),
+      {
+        type: 'traditional',
+        id: 'traditional',
+        name: 'Traditional',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 100,
+        annualContribution: 0,
+      },
+      {
+        type: 'roth',
+        id: 'roth',
+        name: 'Roth',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 0,
+        annualContribution: 0,
+      },
+    ]
+    plan.strategies.retirementActions = [
+      withdrawal({
+        actionId: 'ordinary',
+        accountId: 'cash-a',
+        dollars: 10,
+        executionDate: '2026-12-31',
+        sequence: 1,
+      }),
+      parsedAction({
+        actionId: 'conversion',
+        kind: 'rothConversion',
+        personId: 'p1',
+        year: 2026,
+        executionDate: '2026-12-31',
+        executionSequence: 1,
+        requestedAmount: 5_000,
+        allocations: [{
+          allocationId: 'conversion-allocation',
+          sourceAccountId: 'traditional',
+          requestedAmount: 5_000,
+        }],
+        destinationRothAccountId: 'roth',
+        taxFunding: { kind: 'noneExpected' },
+        provenance: { source: 'manual' },
+      }),
+    ]
+
+    const year = run(plan).years[0]!
+
+    expect(year.retirementActionExecution).toMatchObject({
+      committed: false,
+      evidence: [],
+      scheduleIssues: [{
+        kind: 'executionSequenceConflict',
+        collidingActionIds: ['conversion', 'ordinary'],
+      }],
+    })
+    expect(year.retirementActionExecution?.requests.map(
+      (request) => request.actionId,
+    )).toEqual(['conversion', 'ordinary'])
+    expect(year).not.toHaveProperty('rothConversionActionExecution')
+    expect(year.balances).toMatchObject({
+      'cash-a': 100,
+      traditional: 100,
+      roth: 0,
+    })
+  })
+
+  it('publishes conversion-only schedule collisions through the conversion executor', () => {
+    const plan = basePlan()
+    plan.accounts = [
+      {
+        type: 'traditional',
+        id: 'traditional',
+        name: 'Traditional',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 100,
+        annualContribution: 0,
+      },
+      {
+        type: 'roth',
+        id: 'roth',
+        name: 'Roth',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 0,
+        annualContribution: 0,
+      },
+    ]
+    const conversion = (suffix: string) => parsedAction({
+      actionId: `conversion-${suffix}`,
+      kind: 'rothConversion',
+      personId: 'p1',
+      year: 2026,
+      executionDate: '2026-12-31',
+      executionSequence: 1,
+      requestedAmount: 5_000,
+      allocations: [{
+        allocationId: `conversion-allocation-${suffix}`,
+        sourceAccountId: 'traditional',
+        requestedAmount: 5_000,
+      }],
+      destinationRothAccountId: 'roth',
+      taxFunding: { kind: 'noneExpected' },
+      provenance: { source: 'manual' },
+    })
+    plan.strategies.retirementActions = [conversion('b'), conversion('a')]
+
+    const year = run(plan).years[0]!
+
+    expect(year).not.toHaveProperty('retirementActionExecution')
+    expect(year.rothConversionActionExecution).toMatchObject({
+      committed: false,
+      evidence: [],
+      scheduleIssues: [{
+        kind: 'executionSequenceConflict',
+        collidingActionIds: ['conversion-a', 'conversion-b'],
+      }],
+    })
+    expect(year.rothConversionActionExecution?.requests.map(
+      (request) => request.actionId,
+    )).toEqual(['conversion-a', 'conversion-b'])
+    expect(year.retirementActionPublication?.executorSources).toEqual([
+      'rothConversionExecutor',
+    ])
+    expect(year.retirementActionPublication?.records.every(
+      (record) => record.executorSource === 'rothConversionExecutor',
+    )).toBe(true)
+
+    const qcdCollisionPlan = structuredClone(plan)
+    qcdCollisionPlan.strategies.retirementActions = [
+      conversion('a'),
+      parsedAction({
+        actionId: 'qcd',
+        kind: 'qcd',
+        donorPersonId: 'p1',
+        year: 2026,
+        executionDate: '2026-12-31',
+        executionSequence: 1,
+        requestedAmount: 5_000,
+        allocation: {
+          allocationId: 'qcd-allocation',
+          sourceAccountId: 'traditional',
+          requestedAmount: 5_000,
+        },
+        charity: {
+          designationId: 'charity',
+          name: 'Public Charity',
+          designationKind: 'eligiblePublicCharity',
+          directFromCustodianAttested: true,
+          eligibleOrganizationAttested: true,
+          notDonorAdvisedFundOrSupportingOrganizationAttested: true,
+          notSplitInterestEntityAttested: true,
+          entireDistributionOtherwiseDeductibleAttested: true,
+        },
+        provenance: { source: 'manual' },
+      }),
+    ]
+
+    const qcdCollisionYear = run(qcdCollisionPlan).years[0]!
+
+    expect(qcdCollisionYear.retirementActionExecution).toMatchObject({
+      committed: false,
+      evidence: [],
+      scheduleIssues: [{
+        kind: 'executionSequenceConflict',
+        collidingActionIds: ['conversion-a', 'qcd'],
+      }],
+    })
+    expect(qcdCollisionYear.retirementActionExecution?.requests.map(
+      (request) => request.actionId,
+    )).toEqual(['conversion-a', 'qcd'])
+    expect(qcdCollisionYear).not.toHaveProperty('rothConversionActionExecution')
+    expect(qcdCollisionYear.retirementActionPublication?.executorSources).toEqual([
+      'ordinaryWithdrawalExecutor',
+    ])
   })
 
   it('executes an action only in its requested year and omits evidence otherwise', () => {
@@ -1249,7 +1516,15 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
     const year = run(plan).years[0]!
 
     expect(year.retirementActionExecution).toMatchObject({ committed: true })
-    expect(year.retirementActionExecution?.evidence).toHaveLength(6)
+    expect(year.retirementActionExecution?.evidence).toHaveLength(5)
+    expect(year.rothConversionActionExecution?.evidence).toEqual([
+      expect.objectContaining({
+        actionId: 'conversion',
+        outcome: 'unsupported',
+        readiness: 'nonActionable',
+        executedAmount: 0,
+      }),
+    ])
     expect(
       year.retirementActionExecution?.evidence.filter(
         (evidence) => evidence.disposition.executedAmount > 0,

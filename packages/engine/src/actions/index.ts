@@ -179,6 +179,7 @@ export {
 } from './contract.js'
 export {
   assessOrdinaryWithdrawalPlanBoundary,
+  evaluateRetirementActionSchedule,
   executeCashOrdinaryWithdrawals,
   executeOrdinaryWithdrawals,
   type AcceptedCashSourceEligibilityEvidence,
@@ -209,6 +210,7 @@ export {
   type OrdinaryWithdrawalPlanBoundaryAssessment,
   type OrdinaryWithdrawalPartialActionDisposition,
   type OrdinaryWithdrawalTaxCharacter,
+  type RetirementActionScheduleState,
   type ResolvedCashSourceAllocationExecutionEvidence,
   type ResolvedIndividuallyOwnedSourceAllocationExecutionEvidence,
   type SourceAllocationExecutionEvidence,
@@ -217,10 +219,23 @@ export {
   type TaxableSourcePenaltyCoverageEvidence,
 } from './execution.js'
 export {
+  executeRothConversions,
+  type ExecuteRothConversionsInput,
+  type ExecuteRothConversionsResult,
+  type RothConversionAllocationExecutionEvidence,
+  type RothConversionBalanceExecutionEvidence,
+  type RothConversionBalanceSnapshot,
+  type RothConversionExecutionEvidence,
+  type RothConversionExecutionScheduleIssue,
+  type RothConversionTaxFundingExecutionEvidence,
+} from './rothConversionExecution.js'
+export {
   annualRetirementActionExecutorSources,
   ordinaryWithdrawalPublicationEligibility,
   ordinaryWithdrawalPublicationSource,
   publishAnnualRetirementActions,
+  rothConversionPublicationEligibility,
+  rothConversionPublicationSource,
   type AnnualRetirementActionAllocationRecord,
   type AnnualRetirementActionExecutorSource,
   type AnnualRetirementActionPublication,
@@ -229,6 +244,7 @@ export {
   type AnnualRetirementActionScheduleDiagnostic,
   type OrdinaryWithdrawalPublicationEligibility,
   type PublishAnnualRetirementActionsInput,
+  type RothConversionPublicationEligibility,
 } from './annualRetirementActionPublication.js'
 export {
   classifyIndividuallyOwnedTaxableWithdrawal,

@@ -76,13 +76,18 @@ import {
   asAccountId,
   asPersonId,
   assessOrdinaryWithdrawalPlanBoundary,
+  evaluateRetirementActionSchedule,
   executeOrdinaryWithdrawals,
+  executeRothConversions,
   ledgerCentsToPlanDollars,
   ordinaryWithdrawalPublicationEligibility,
   ordinaryWithdrawalPublicationSource,
   planDollarsToLedgerCents,
   publishAnnualRetirementActions,
+  rothConversionPublicationEligibility,
+  rothConversionPublicationSource,
   type ExecuteOrdinaryWithdrawalsResult,
+  type ExecuteRothConversionsResult,
   type TaxableAccountOpeningSnapshot,
 } from '../actions/index.js'
 import { compareUtf16CodeUnits } from '../actions/structuralId.js'
@@ -2666,20 +2671,38 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const currentYearActions = plan.strategies.retirementActions.filter(
       (request) => request.year === year,
     )
+    const currentYearOrdinaryActions = currentYearActions.filter(
+      (request) => request.kind === 'ordinaryWithdrawal',
+    )
+    const currentYearConversionActions = currentYearActions.filter(
+      (request) => request.kind === 'rothConversion',
+    )
+    const currentYearNonConversionActions = currentYearActions.filter(
+      (request) => request.kind !== 'rothConversion',
+    )
+    const currentYearSchedule = evaluateRetirementActionSchedule(
+      year,
+      currentYearActions,
+    )
+    const mixedKindScheduleBlocked =
+      currentYearSchedule.scheduleIssues.length > 0 &&
+      currentYearNonConversionActions.length > 0 &&
+      currentYearConversionActions.length > 0
+    const currentYearOrdinaryExecutionActions = mixedKindScheduleBlocked
+      ? currentYearActions
+      : currentYearNonConversionActions
     let retirementActionExecution: ExecuteOrdinaryWithdrawalsResult | undefined
+    let rothConversionActionExecution: ExecuteRothConversionsResult | undefined
     let retirementActionCash = 0
     let retirementActionEquityCompensation = 0
     let retirementActionOrdinaryIncome = 0
     let retirementActionProceeds = 0
     let retirementActionTaxableProceeds = 0
     let retirementActionCapitalGainOrLoss = 0
-    if (currentYearActions.length > 0) {
+    if (currentYearOrdinaryExecutionActions.length > 0) {
       const ordinarySourceAccountIds = new Set<string>(
-        currentYearActions.flatMap((request) =>
-          request.kind === 'ordinaryWithdrawal'
-            ? request.allocations
-              .map((allocation) => allocation.sourceAccountId)
-            : [],
+        currentYearOrdinaryActions.flatMap((request) =>
+          request.allocations.map((allocation) => allocation.sourceAccountId),
         ),
       )
       let openingBalances = [...balances]
@@ -2826,7 +2849,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
                 return []
               }
             })
-      const personAliveEvidence = currentYearActions.flatMap(
+      const personAliveEvidence = currentYearOrdinaryExecutionActions.flatMap(
         (request): NonpersistedActionPersonAliveEvidence[] => {
           if (
             request.kind === 'legacyAggregateWithdrawal' ||
@@ -2856,7 +2879,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         retirementActionExecution = executeOrdinaryWithdrawals({
           year,
           plan,
-          requests: currentYearActions,
+          requests: currentYearOrdinaryExecutionActions,
           openingBalances,
           taxableAccountSnapshots,
           runtimeEvidence: { personAliveEvidence },
@@ -2957,6 +2980,54 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         }
       }
       retirementActionOrdinaryIncome = retirementActionEquityCompensation
+    }
+
+    // Named conversions do not inherit the legacy aggregate strategy's
+    // first-source/first-Roth movement authority. Publish request-keyed,
+    // fail-closed evidence from balances after forced distributions and named
+    // ordinary withdrawals, immediately before aggregate conversion sizing.
+    // Complete annual Form-8606 line-8, RMD-reserve, and tax-liability funding
+    // evidence do not exist at this simulator boundary, so none is invented.
+    if (currentYearConversionActions.length > 0 && !mixedKindScheduleBlocked) {
+      const conversionAccountIds = new Set<string>(
+        currentYearConversionActions.flatMap((request) => [
+          request.destinationRothAccountId,
+          ...request.allocations.map((allocation) => allocation.sourceAccountId),
+        ]),
+      )
+      const openingBalances = [...balances]
+        .filter((state) => conversionAccountIds.has(state.account.id))
+        .sort((left, right) => compareUtf16CodeUnits(left.account.id, right.account.id))
+        .flatMap((state) => {
+          try {
+            return [{
+              accountId: asAccountId(state.account.id),
+              openingBalance: planDollarsToLedgerCents(state.balance),
+            }]
+          } catch {
+            return []
+          }
+        })
+      const personAliveEvidence = currentYearConversionActions.map((request) => ({
+        evidenceId: `projection-alive:${JSON.stringify([
+          request.actionId,
+          request.personId,
+          year,
+          request.executionDate ?? null,
+        ])}`,
+        actionId: request.actionId,
+        personId: request.personId,
+        actionYear: year,
+        actionDate: request.executionDate ?? null,
+        alive: peopleStates.find((state) => state.personId === request.personId)?.alive ?? false,
+      }))
+      rothConversionActionExecution = executeRothConversions({
+        year,
+        plan,
+        requests: currentYearConversionActions,
+        openingBalances,
+        runtimeEvidence: { personAliveEvidence },
+      })
     }
 
     // --- Roth conversions (after RMDs — RMDs must be satisfied first) -------
@@ -3186,7 +3257,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }
 
     let rothConversion = 0
-    const rc = plan.strategies.rothConversion
+    // A named request is authoritative for this year even when blocked. An
+    // aggregate fallback would debit different sources and hide that result.
+    const rc = currentYearConversionActions.length > 0
+      ? { mode: 'none' as const }
+      : plan.strategies.rothConversion
     const acaSizingInput = acaActive
       ? acaContract
         ? {
@@ -4771,18 +4846,37 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         ),
       ),
     })
-    const retirementActionPublicationEligibility = retirementActionExecution === undefined
+    const ordinaryPublicationEligibility = retirementActionExecution === undefined
       ? undefined
       : ordinaryWithdrawalPublicationEligibility(retirementActionExecution)
+    const conversionPublicationEligibility =
+      rothConversionActionExecution === undefined
+        ? undefined
+        : rothConversionPublicationEligibility(rothConversionActionExecution)
+    const retirementActionPublicationEligible =
+      ordinaryPublicationEligibility?.kind !== 'legacyScheduleDiagnosticsOnly' &&
+      conversionPublicationEligibility?.kind !== 'legacyScheduleDiagnosticsOnly'
+    const retirementActionPublicationSources = retirementActionPublicationEligible
+      ? [
+          ...(retirementActionExecution === undefined
+            ? []
+            : [ordinaryWithdrawalPublicationSource(retirementActionExecution)]),
+          ...(rothConversionActionExecution === undefined
+            ? []
+            : [rothConversionPublicationSource(rothConversionActionExecution)]),
+        ]
+      : []
+    const retirementActionPublicationRequests = [
+      ...(retirementActionExecution?.requests ?? []),
+      ...(rothConversionActionExecution?.requests ?? []),
+    ]
     const retirementActionPublication =
-      retirementActionExecution !== undefined &&
-      retirementActionPublicationEligibility?.kind === 'publicationEligible'
+      retirementActionPublicationSources.length > 0 &&
+      retirementActionPublicationEligible
         ? publishAnnualRetirementActions({
             taxYear: year,
-            requests: retirementActionExecution.requests,
-            sources: [
-              ordinaryWithdrawalPublicationSource(retirementActionExecution),
-            ],
+            requests: retirementActionPublicationRequests,
+            sources: retirementActionPublicationSources,
           })
         : undefined
     const yearResult: YearResult = {
@@ -4808,6 +4902,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       ...(retirementActionPublication === undefined
         ? {}
         : { retirementActionPublication }),
+      ...(rothConversionActionExecution ? { rothConversionActionExecution } : {}),
       penalties,
       magi: magiHistory.get(year)!,
       ...(yearAcaResult ? { aca: yearAcaResult } : {}),
