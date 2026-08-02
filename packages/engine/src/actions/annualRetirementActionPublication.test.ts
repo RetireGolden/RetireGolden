@@ -618,6 +618,73 @@ describe('annual retirement-action publication', () => {
     })).toThrow(/reason kind differs/i)
   })
 
+  it('reserves ordinary source-balance reasons for ordinary withdrawals', () => {
+    const action = request(
+      'rothConversion',
+      'conversion-ordinary-balance-reason',
+      '2030-06-15',
+      1,
+    )
+    const baseRecord = record(action)
+    const partialRecord = {
+      ...baseRecord,
+      readiness: 'actionable' as const,
+      outcome: 'partial' as const,
+      executedDate: baseRecord.scheduledDate,
+      executedSequence: baseRecord.scheduledSequence,
+      executedAmount: asUsdCents(5_000),
+      unexecutedAmount: asUsdCents(5_000),
+      allocations: baseRecord.allocations.map((allocation) => ({
+        ...allocation,
+        resolution: 'resolved' as const,
+        executedAmount: asUsdCents(5_000),
+        unexecutedAmount: asUsdCents(5_000),
+      })),
+      reasons: [createActionReason('source-balance-trimmed')],
+    }
+
+    expect(() => publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [action],
+      sources: [source('rothConversionExecutor', [partialRecord])],
+    })).toThrow(/reason kind differs/i)
+  })
+
+  it('binds reason account identifiers to source and destination roles', () => {
+    const action = request(
+      'rothConversion',
+      'conversion-account-role',
+      '2030-06-15',
+      1,
+    )
+    if (action.kind !== 'rothConversion') throw new Error('expected conversion')
+    const sourceAccountId = action.allocations[0]!.sourceAccountId
+    const destinationAccountId = action.destinationRothAccountId
+    const publishReason = (reason: AnnualRetirementActionRecord['reasons'][number]) =>
+      publishAnnualRetirementActions({
+        taxYear: 2030,
+        requests: [action],
+        sources: [source('rothConversionExecutor', [{
+          ...record(action),
+          outcome: 'refused',
+          reasons: [reason],
+        }])],
+      })
+
+    expect(publishReason(createActionReason('source-account-not-found', {
+      accountId: sourceAccountId,
+    }))?.records).toHaveLength(1)
+    expect(publishReason(createActionReason('conversion-destination-not-found', {
+      accountId: destinationAccountId,
+    }))?.records).toHaveLength(1)
+    expect(() => publishReason(createActionReason('source-account-not-found', {
+      accountId: destinationAccountId,
+    }))).toThrow(/reason account differs/i)
+    expect(() => publishReason(createActionReason('conversion-destination-not-found', {
+      accountId: sourceAccountId,
+    }))).toThrow(/reason account differs/i)
+  })
+
   it('validates diagnostic slots and excludes invalid records from membership', () => {
     const first = request('ordinaryWithdrawal', 'undated-first', '2030-01-01', 1)
     const second = request('ordinaryWithdrawal', 'undated-second', '2030-01-01', 1)

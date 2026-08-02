@@ -276,6 +276,62 @@ function canonicalReasons(
     reasonOrder(outcome, left, right))
 }
 
+const destinationAccountReasonCodes = new Set<ActionReason['code']>([
+  'conversion-destination-not-found',
+  'conversion-destination-owner-mismatch',
+  'conversion-destination-incompatible',
+  'conversion-roth-simple-destination-unsupported',
+  'conversion-employer-destination-unsupported',
+])
+
+const sourceIdentifierReasonCodes = new Set<ActionReason['code']>([
+  'source-account-not-found',
+  'duplicate-source-account',
+  'duplicate-allocation-id',
+  'allocation-total-mismatch',
+  'source-owner-mismatch',
+  'joint-source-acting-person-mismatch',
+  'required-facts-missing',
+  'source-balance-trimmed',
+  'source-balance-unavailable',
+  'withdrawal-taxable-basis-unsupported',
+  'withdrawal-employer-basis-unsupported',
+  'withdrawal-roth-ira-character-unsupported',
+  'withdrawal-designated-roth-character-unsupported',
+  'withdrawal-source-not-spendable',
+  'withdrawal-penalty-evidence-missing',
+  'withdrawal-plan-availability-unknown',
+  'withdrawal-plan-not-available',
+  'withdrawal-rule-of-55-evidence-missing',
+  'withdrawal-sepp-evidence-missing',
+  'withdrawal-inherited-facts-missing',
+  'withdrawal-hsa-qualification-unknown',
+  'withdrawal-source-type-unsupported',
+  'conversion-source-owner-mismatch',
+  'conversion-source-not-convertible',
+  'conversion-ira-subtype-unknown',
+  'conversion-simple-two-year-rule-unknown',
+  'conversion-simple-two-year-period-open',
+  'conversion-plan-availability-unknown',
+  'conversion-plan-not-available',
+  'conversion-employer-basis-unsupported',
+  'conversion-inherited-source',
+  'conversion-rmd-reserve-unavailable',
+  'conversion-basis-evidence-missing',
+  'conversion-balance-trimmed',
+  'conversion-balance-unavailable',
+  'qcd-source-owner-mismatch',
+  'qcd-source-not-ira',
+  'qcd-sep-simple-activity-unknown',
+  'qcd-ongoing-sep-simple',
+  'qcd-roth-source-unsupported',
+  'qcd-taxable-amount-trimmed',
+  'qcd-inherited-basis-unsupported',
+  'qcd-rmd-evidence-missing',
+  'qcd-balance-trimmed',
+  'qcd-balance-unavailable',
+])
+
 function reasonAppliesToKind(
   kind: RetirementActionRequest['kind'],
   code: ActionReason['code'],
@@ -287,6 +343,9 @@ function reasonAppliesToKind(
     return kind === 'legacyAggregateRothConversion'
   }
   if (code === 'qcd-aggregate-unallocated') return kind === 'legacyAggregateQcd'
+  if (code === 'source-balance-trimmed' || code === 'source-balance-unavailable') {
+    return kind === 'ordinaryWithdrawal'
+  }
   if (code.startsWith('withdrawal-')) return kind === 'ordinaryWithdrawal'
   if (code.startsWith('qcd-')) return kind === 'qcd'
   if (code.startsWith('conversion-')) {
@@ -589,18 +648,23 @@ function assertRecordBinding(
     if (reason.allocationId !== undefined && reasonAllocation === undefined) {
       throw new Error(`Executor reason allocation differs for action "${request.actionId}"`)
     }
-    if (
-      reason.accountId !== undefined &&
-      !sourceAccountIds.has(reason.accountId) &&
-      reason.accountId !== destinationId
-    ) {
-      throw new Error(`Executor reason account differs for action "${request.actionId}"`)
+    const sourceIdentifiersAllowed = sourceIdentifierReasonCodes.has(reason.code)
+    const destinationAccountAllowed = destinationAccountReasonCodes.has(reason.code)
+    if (reason.allocationId !== undefined && !sourceIdentifiersAllowed) {
+      throw new Error(`Executor reason identifiers differ for action "${request.actionId}"`)
+    }
+    if (reason.accountId !== undefined) {
+      const accountMatchesRole = destinationAccountAllowed
+        ? reason.accountId === destinationId
+        : sourceIdentifiersAllowed && sourceAccountIds.has(reason.accountId)
+      if (!accountMatchesRole) {
+        throw new Error(`Executor reason account differs for action "${request.actionId}"`)
+      }
     }
     if (
       reasonAllocation !== undefined &&
       reason.accountId !== undefined &&
-      reason.accountId !== reasonAllocation.sourceAccountId &&
-      reason.accountId !== destinationId
+      reason.accountId !== reasonAllocation.sourceAccountId
     ) {
       throw new Error(`Executor reason identifiers differ for action "${request.actionId}"`)
     }
