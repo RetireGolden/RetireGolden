@@ -84,6 +84,26 @@ function qcdRequest(
   }
 }
 
+function legacyRequest(
+  kind:
+    | 'legacyAggregateWithdrawal'
+    | 'legacyAggregateRothConversion'
+    | 'legacyAggregateQcd',
+  actionId: string,
+): RetirementActionRequest {
+  const common = {
+    actionId: asActionId(actionId),
+    year: 2030,
+    requestedAmount: asPositiveUsdCents(10_000),
+    provenance: { source: 'migration' as const },
+  }
+  if (kind === 'legacyAggregateWithdrawal') {
+    return { ...common, kind, legacyCategory: 'cash' }
+  }
+  if (kind === 'legacyAggregateRothConversion') return { ...common, kind }
+  return { ...common, kind, legacyField: 'qcdAnnual' }
+}
+
 function record(
   action: RetirementActionRequest,
 ): Omit<AnnualRetirementActionRecord, 'executorSource'> {
@@ -141,6 +161,62 @@ function conflictRecord(
     outcome: 'refused',
     reasons: [createActionReason('action-sequence-conflict')],
   }
+}
+
+function executedRecord(
+  action: RetirementActionRequest,
+): Omit<AnnualRetirementActionRecord, 'executorSource'> {
+  const baseRecord = record(action)
+  return {
+    ...baseRecord,
+    readiness: 'actionable',
+    outcome: 'executed',
+    executedDate: baseRecord.scheduledDate,
+    executedSequence: baseRecord.scheduledSequence,
+    executedAmount: baseRecord.requestedAmount,
+    unexecutedAmount: asUsdCents(0),
+    allocations: baseRecord.allocations.map((allocation) => ({
+      ...allocation,
+      resolution: 'resolved',
+      executedAmount: allocation.requestedAmount,
+      unexecutedAmount: asUsdCents(0),
+    })),
+    reasons: [],
+  }
+}
+
+function linkedConversionPair(
+  conversionActionId = 'linked-conversion',
+  withdrawalActionId = 'linked-withdrawal',
+): readonly [
+  withdrawal: RetirementActionRequest,
+  conversion: RetirementActionRequest,
+] {
+  const withdrawal = request(
+    'ordinaryWithdrawal',
+    withdrawalActionId,
+    '2030-05-01',
+    1,
+  )
+  const conversion = request(
+    'rothConversion',
+    conversionActionId,
+    '2030-06-01',
+    1,
+  )
+  if (
+    withdrawal.kind !== 'ordinaryWithdrawal' ||
+    conversion.kind !== 'rothConversion'
+  ) throw new Error('fixture drift')
+  withdrawal.purpose = {
+    kind: 'taxPayment',
+    referenceId: conversion.actionId,
+  }
+  conversion.taxFunding = {
+    kind: 'linkedWithdrawal',
+    withdrawalActionId: withdrawal.actionId,
+  }
+  return [withdrawal, conversion]
 }
 
 describe('annual retirement-action publication', () => {
@@ -683,6 +759,74 @@ describe('annual retirement-action publication', () => {
   })
 
   it.each([
+    ['legacyAggregateWithdrawal', 'withdrawal-aggregate-unallocated', true],
+    ['legacyAggregateWithdrawal', 'conversion-aggregate-unallocated', false],
+    ['legacyAggregateWithdrawal', 'qcd-aggregate-unallocated', false],
+    ['legacyAggregateRothConversion', 'withdrawal-aggregate-unallocated', false],
+    ['legacyAggregateRothConversion', 'conversion-aggregate-unallocated', true],
+    ['legacyAggregateRothConversion', 'qcd-aggregate-unallocated', false],
+    ['legacyAggregateQcd', 'withdrawal-aggregate-unallocated', false],
+    ['legacyAggregateQcd', 'conversion-aggregate-unallocated', false],
+    ['legacyAggregateQcd', 'qcd-aggregate-unallocated', true],
+  ] as const)(
+    'binds legacy kind %s to aggregate reason %s',
+    (kind, reasonCode, accepted) => {
+      const action = legacyRequest(kind, `${kind}-${reasonCode}`)
+      const publish = () => publishAnnualRetirementActions({
+        taxYear: 2030,
+        requests: [action],
+        sources: [source('ordinaryWithdrawalExecutor', [{
+          ...record(action),
+          reasons: [createActionReason(reasonCode)],
+        }])],
+      })
+
+      if (accepted) expect(publish).not.toThrow()
+      else expect(publish).toThrow(/reason kind differs/i)
+    },
+  )
+
+  it.each([
+    'legacyAggregateWithdrawal',
+    'legacyAggregateRothConversion',
+    'legacyAggregateQcd',
+  ] as const)(
+    'rejects generic executor reasons for legacy kind %s despite identifiers',
+    (kind) => {
+      const action = legacyRequest(kind, `${kind}-generic-reason`)
+      for (const reason of [
+        createActionReason('required-facts-missing'),
+        createActionReason('required-facts-missing', {
+          personId: asPersonId('foreign-person'),
+          accountId: asAccountId('foreign-account'),
+          allocationId: asAllocationId('foreign-allocation'),
+        }),
+        createActionReason('person-not-found'),
+        createActionReason('person-not-found', {
+          personId: asPersonId('foreign-person'),
+        }),
+        createActionReason('source-account-not-found'),
+        createActionReason('source-account-not-found', {
+          accountId: asAccountId('foreign-account'),
+          allocationId: asAllocationId('foreign-allocation'),
+        }),
+      ]) {
+        expect(() => publishAnnualRetirementActions({
+          taxYear: 2030,
+          requests: [action],
+          sources: [source('ordinaryWithdrawalExecutor', [{
+            ...record(action),
+            outcome: reason.code === 'required-facts-missing'
+              ? 'unsupported'
+              : 'refused',
+            reasons: [reason],
+          }])],
+        }), reason.code).toThrow(/reason kind differs/i)
+      }
+    },
+  )
+
+  it.each([
     'duplicate-source-account',
     'duplicate-allocation-id',
     'allocation-total-mismatch',
@@ -772,15 +916,36 @@ describe('annual retirement-action publication', () => {
       )
       if (action.kind !== 'rothConversion') throw new Error('fixture drift')
       action.taxFunding = taxFunding
+      const linkedWithdrawal = taxFunding.kind === 'linkedWithdrawal'
+        ? request(
+            'ordinaryWithdrawal',
+            taxFunding.withdrawalActionId,
+            '2030-05-01',
+            1,
+          )
+        : null
+      if (linkedWithdrawal?.kind === 'ordinaryWithdrawal') {
+        linkedWithdrawal.purpose = {
+          kind: 'taxPayment',
+          referenceId: action.actionId,
+        }
+      }
       const publish = () => publishAnnualRetirementActions({
         taxYear: 2030,
-        requests: [action],
-        sources: [source('rothConversionExecutor', [{
-          ...record(action),
-          reasons: [createActionReason(
-            'conversion-principal-withholding-unsupported',
-          )],
-        }])],
+        requests: linkedWithdrawal === null
+          ? [action]
+          : [action, linkedWithdrawal],
+        sources: [
+          source('rothConversionExecutor', [{
+            ...record(action),
+            reasons: [createActionReason(
+              'conversion-principal-withholding-unsupported',
+            )],
+          }]),
+          ...(linkedWithdrawal === null
+            ? []
+            : [source('ordinaryWithdrawalExecutor', [record(linkedWithdrawal)])]),
+        ],
       })
 
       if (accepted) expect(publish).not.toThrow()
@@ -814,14 +979,35 @@ describe('annual retirement-action publication', () => {
       )
       if (action.kind !== 'rothConversion') throw new Error('fixture drift')
       action.taxFunding = taxFunding
+      const linkedWithdrawal = taxFunding.kind === 'linkedWithdrawal'
+        ? request(
+            'ordinaryWithdrawal',
+            taxFunding.withdrawalActionId,
+            '2030-05-01',
+            1,
+          )
+        : null
+      if (linkedWithdrawal?.kind === 'ordinaryWithdrawal') {
+        linkedWithdrawal.purpose = {
+          kind: 'taxPayment',
+          referenceId: action.actionId,
+        }
+      }
       const publish = () => publishAnnualRetirementActions({
         taxYear: 2030,
-        requests: [action],
-        sources: [source('rothConversionExecutor', [{
-          ...record(action),
-          outcome: 'refused',
-          reasons: [createActionReason('conversion-tax-funding-unallocated')],
-        }])],
+        requests: linkedWithdrawal === null
+          ? [action]
+          : [action, linkedWithdrawal],
+        sources: [
+          source('rothConversionExecutor', [{
+            ...record(action),
+            outcome: 'refused',
+            reasons: [createActionReason('conversion-tax-funding-unallocated')],
+          }]),
+          ...(linkedWithdrawal === null
+            ? []
+            : [source('ordinaryWithdrawalExecutor', [record(linkedWithdrawal)])]),
+        ],
       })
 
       if (accepted) expect(publish).not.toThrow()
@@ -843,6 +1029,11 @@ describe('annual retirement-action publication', () => {
       1,
     )
     if (conversion.kind !== 'rothConversion') throw new Error('fixture drift')
+    if (withdrawal.kind !== 'ordinaryWithdrawal') throw new Error('fixture drift')
+    withdrawal.purpose = {
+      kind: 'taxPayment',
+      referenceId: conversion.actionId,
+    }
     const withdrawalRecord = {
       ...record(withdrawal),
       reasons: [createActionReason(
@@ -863,7 +1054,7 @@ describe('annual retirement-action publication', () => {
 
     expect(() => publish(withdrawal.actionId)).not.toThrow()
     expect(() => publish(asActionId('foreign-withdrawal')))
-      .toThrow(/funding linkage differs/i)
+      .toThrow(/linked conversion funding differs|funding linkage differs/i)
     conversion.taxFunding = { kind: 'noneExpected' }
     expect(() => publishAnnualRetirementActions({
       taxYear: 2030,
@@ -873,6 +1064,193 @@ describe('annual retirement-action publication', () => {
         source('rothConversionExecutor', [record(conversion)]),
       ],
     })).toThrow(/funding linkage differs/i)
+  })
+
+  it('publishes executed linked funding from generic sources independent of order', () => {
+    const [withdrawal, conversion] = linkedConversionPair(
+      'executed-linked-conversion',
+      'executed-linked-withdrawal',
+    )
+    const forward = publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [withdrawal, conversion],
+      sources: [
+        source('ordinaryWithdrawalExecutor', [executedRecord(withdrawal)]),
+        source('rothConversionExecutor', [executedRecord(conversion)]),
+      ],
+    })
+    const reverse = publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [conversion, withdrawal],
+      sources: [
+        source('rothConversionExecutor', [executedRecord(conversion)]),
+        source('ordinaryWithdrawalExecutor', [executedRecord(withdrawal)]),
+      ],
+    })
+
+    expect(reverse).toEqual(forward)
+    expect(forward?.records.every((entry) => entry.outcome === 'executed'))
+      .toBe(true)
+  })
+
+  it('publishes linked refusal evidence independent of order', () => {
+    const [withdrawal, conversion] = linkedConversionPair(
+      'refused-linked-conversion',
+      'refused-linked-withdrawal',
+    )
+    const withdrawalRecord = {
+      ...record(withdrawal),
+      reasons: [createActionReason(
+        'conversion-tax-funding-evidence-unsupported',
+      )],
+    }
+    const conversionRecord = record(conversion)
+    const forward = publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [withdrawal, conversion],
+      sources: [
+        source('ordinaryWithdrawalExecutor', [withdrawalRecord]),
+        source('rothConversionExecutor', [conversionRecord]),
+      ],
+    })
+    const reverse = publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [conversion, withdrawal],
+      sources: [
+        source('rothConversionExecutor', [conversionRecord]),
+        source('ordinaryWithdrawalExecutor', [withdrawalRecord]),
+      ],
+    })
+
+    expect(reverse).toEqual(forward)
+    expect(forward?.records.find((entry) =>
+      entry.actionId === withdrawal.actionId)?.reasons).toEqual([
+      createActionReason('conversion-tax-funding-evidence-unsupported'),
+    ])
+  })
+
+  it.each([
+    ['externalCash', {
+      kind: 'externalCash',
+      amount: asPositiveUsdCents(1_000),
+      attested: true,
+    }],
+    ['conversionPrincipalWithholding', {
+      kind: 'conversionPrincipalWithholding',
+      amount: asPositiveUsdCents(1_000),
+    }],
+    ['noneExpected', { kind: 'noneExpected' }],
+  ] as const)(
+    'does not require a linked request for %s conversion funding',
+    (_label, taxFunding) => {
+      const conversion = request(
+        'rothConversion',
+        `unlinked-${taxFunding.kind}`,
+        '2030-06-01',
+        1,
+      )
+      if (conversion.kind !== 'rothConversion') throw new Error('fixture drift')
+      conversion.taxFunding = taxFunding
+
+      expect(() => publishAnnualRetirementActions({
+        taxYear: 2030,
+        requests: [conversion],
+        sources: [source('rothConversionExecutor', [record(conversion)])],
+      })).not.toThrow()
+    },
+  )
+
+  it('rejects malformed linked funding independent of request order', () => {
+    const malformedCases: Array<readonly [
+      label: string,
+      requests: readonly RetirementActionRequest[],
+    ]> = []
+
+    const [, absentConversion] = linkedConversionPair(
+      'absent-link-conversion',
+      'absent-link-withdrawal',
+    )
+    malformedCases.push(['absent target', [absentConversion]])
+
+    const [, wrongKindConversion] = linkedConversionPair(
+      'wrong-kind-conversion',
+      'wrong-kind-target',
+    )
+    malformedCases.push([
+      'wrong target kind',
+      [wrongKindConversion, qcdRequest('wrong-kind-target', '2030-05-01', 1)],
+    ])
+
+    const [wrongPersonWithdrawal, wrongPersonConversion] = linkedConversionPair(
+      'wrong-person-conversion',
+      'wrong-person-withdrawal',
+    )
+    if (wrongPersonWithdrawal.kind !== 'ordinaryWithdrawal') {
+      throw new Error('fixture drift')
+    }
+    wrongPersonWithdrawal.personId = asPersonId('person-2')
+    malformedCases.push([
+      'wrong person',
+      [wrongPersonWithdrawal, wrongPersonConversion],
+    ])
+
+    const [wrongYearWithdrawal, wrongYearConversion] = linkedConversionPair(
+      'wrong-year-conversion',
+      'wrong-year-withdrawal',
+    )
+    wrongYearWithdrawal.year = 2031
+    malformedCases.push([
+      'wrong year',
+      [wrongYearWithdrawal, wrongYearConversion],
+    ])
+
+    const [wrongPurposeWithdrawal, wrongPurposeConversion] =
+      linkedConversionPair('wrong-purpose-conversion', 'wrong-purpose-withdrawal')
+    if (wrongPurposeWithdrawal.kind !== 'ordinaryWithdrawal') {
+      throw new Error('fixture drift')
+    }
+    wrongPurposeWithdrawal.purpose = { kind: 'spending' }
+    malformedCases.push([
+      'nonreciprocal purpose',
+      [wrongPurposeWithdrawal, wrongPurposeConversion],
+    ])
+
+    const [wrongReferenceWithdrawal, wrongReferenceConversion] =
+      linkedConversionPair('wrong-reference-conversion', 'wrong-reference-withdrawal')
+    if (wrongReferenceWithdrawal.kind !== 'ordinaryWithdrawal') {
+      throw new Error('fixture drift')
+    }
+    wrongReferenceWithdrawal.purpose = {
+      kind: 'taxPayment',
+      referenceId: asActionId('foreign-conversion'),
+    }
+    malformedCases.push([
+      'nonreciprocal reference',
+      [wrongReferenceWithdrawal, wrongReferenceConversion],
+    ])
+
+    const [sharedWithdrawal, firstConversion] = linkedConversionPair(
+      'first-shared-conversion',
+      'shared-withdrawal',
+    )
+    const [, secondConversion] = linkedConversionPair(
+      'second-shared-conversion',
+      'shared-withdrawal',
+    )
+    malformedCases.push([
+      'ambiguous target',
+      [sharedWithdrawal, firstConversion, secondConversion],
+    ])
+
+    for (const [label, requests] of malformedCases) {
+      for (const orderedRequests of [requests, [...requests].reverse()]) {
+        expect(() => publishAnnualRetirementActions({
+          taxYear: 2030,
+          requests: orderedRequests,
+          sources: [source('rothConversionExecutor', [])],
+        }), label).toThrow(/linked conversion funding differs|belongs to/i)
+      }
+    }
   })
 
   it.each([

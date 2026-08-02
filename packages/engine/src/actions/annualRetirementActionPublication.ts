@@ -358,13 +358,20 @@ function reasonAppliesToKind(
   kind: RetirementActionRequest['kind'],
   code: ActionReason['code'],
 ): boolean {
-  if (code === 'withdrawal-aggregate-unallocated') {
-    return kind === 'legacyAggregateWithdrawal'
+  if (
+    kind === 'legacyAggregateWithdrawal' ||
+    kind === 'legacyAggregateRothConversion' ||
+    kind === 'legacyAggregateQcd'
+  ) {
+    const aggregateReasonCode =
+      kind === 'legacyAggregateWithdrawal'
+        ? 'withdrawal-aggregate-unallocated'
+        : kind === 'legacyAggregateRothConversion'
+          ? 'conversion-aggregate-unallocated'
+          : 'qcd-aggregate-unallocated'
+    return code === aggregateReasonCode ||
+      code === 'action-batch-schedule-conflict'
   }
-  if (code === 'conversion-aggregate-unallocated') {
-    return kind === 'legacyAggregateRothConversion'
-  }
-  if (code === 'qcd-aggregate-unallocated') return kind === 'legacyAggregateQcd'
   if (code === 'source-balance-trimmed' || code === 'source-balance-unavailable') {
     return kind === 'ordinaryWithdrawal'
   }
@@ -592,6 +599,46 @@ function schedulePosition(
   return state.kind === 'valid'
     ? [state.effectiveDate, state.undated, state.sequence]
     : null
+}
+
+function assertLinkedWithdrawalRequests(
+  requests: readonly Readonly<RetirementActionRequest>[],
+  requestById: ReadonlyMap<ActionId, Readonly<RetirementActionRequest>>,
+): void {
+  const conversionIdsByWithdrawalId = new Map<ActionId, ActionId[]>()
+  for (const request of requests) {
+    if (
+      request.kind !== 'rothConversion' ||
+      request.taxFunding.kind !== 'linkedWithdrawal'
+    ) continue
+    const withdrawalId = request.taxFunding.withdrawalActionId
+    const conversionIds = conversionIdsByWithdrawalId.get(withdrawalId)
+    if (conversionIds === undefined) {
+      conversionIdsByWithdrawalId.set(withdrawalId, [request.actionId])
+    } else {
+      conversionIds.push(request.actionId)
+    }
+  }
+  for (const request of requests) {
+    if (
+      request.kind !== 'rothConversion' ||
+      request.taxFunding.kind !== 'linkedWithdrawal'
+    ) continue
+    const withdrawalId = request.taxFunding.withdrawalActionId
+    const withdrawal = requestById.get(withdrawalId)
+    if (
+      conversionIdsByWithdrawalId.get(withdrawalId)?.length !== 1 ||
+      withdrawal?.kind !== 'ordinaryWithdrawal' ||
+      withdrawal.personId !== request.personId ||
+      withdrawal.year !== request.year ||
+      withdrawal.purpose.kind !== 'taxPayment' ||
+      withdrawal.purpose.referenceId !== request.actionId
+    ) {
+      throw new Error(
+        `Linked conversion funding differs for action "${request.actionId}"`,
+      )
+    }
+  }
 }
 
 function recordOrder(
@@ -844,6 +891,7 @@ export function publishAnnualRetirementActions(
     }
     requestById.set(request.actionId, request)
   }
+  assertLinkedWithdrawalRequests(requests, requestById)
 
   const sourceKinds = new Set<AnnualRetirementActionExecutorSource>()
   const records: AnnualRetirementActionRecord[] = []
