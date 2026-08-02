@@ -640,3 +640,16 @@ export {
   type StageOwnedNonRothIraOrdinaryWithdrawalMovementsInput,
   type StageOwnedNonRothIraOrdinaryWithdrawalMovementsResult,
 } from './ownedNonRothIraMovementCandidate.js'
+export {
+  buildAnnualSection68ItemizedDeductionEvidence,
+  type AnnualSection68ItemizedActionInput,
+  type AnnualSection68ItemizedDeductionEvidence,
+  type AnnualSection68ItemizedDeductionIssue,
+  type AnnualSection68ItemizedDeductionIssueKind,
+  type AnnualSection68LiabilityRunBinding,
+  type BuildAnnualSection68ItemizedDeductionEvidenceInput,
+  type BuildAnnualSection68ItemizedDeductionEvidenceResult,
+  type Section68ItemizedActionAttributionEvidence,
+  type Section68ItemizedDeductionStateEvidence,
+  type Section68ThresholdBinding,
+} from './annualSection68ItemizedDeduction.js'
