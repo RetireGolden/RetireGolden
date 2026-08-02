@@ -5,7 +5,10 @@ import {
   type LegacyAggregateRetirementActionRequest,
 } from '@retiregolden/engine/actions/contract'
 import { asPositiveUsdCents, asUsdCents } from '@retiregolden/engine/actions/money'
-import { ledgerCentsToPlanDollars } from '@retiregolden/engine/actions/planBalanceAdapter'
+import {
+  ledgerCentsToPlanDollars,
+  planDollarsToLedgerCents,
+} from '@retiregolden/engine/actions/planBalanceAdapter'
 import type { Plan } from '@retiregolden/engine/model/plan'
 
 import {
@@ -17,8 +20,11 @@ import {
   retirementActionManualSourceSupportIssue,
 } from './retirementActionManualEditor'
 
+const DEFAULT_REQUESTED_AMOUNT = asPositiveUsdCents(1_234_56)
+
 function migrated(
   kind: 'legacyAggregateWithdrawal' | 'legacyAggregateRothConversion',
+  requestedAmount = DEFAULT_REQUESTED_AMOUNT,
 ): Extract<
   LegacyAggregateRetirementActionRequest,
   { kind: 'legacyAggregateWithdrawal' | 'legacyAggregateRothConversion' }
@@ -27,7 +33,7 @@ function migrated(
     actionId: `migrated-${kind}`,
     kind,
     year: 2034,
-    requestedAmount: asPositiveUsdCents(1_234_56),
+    requestedAmount,
     provenance: { source: 'migration', sourceId: 'plan-v1' },
     ...(kind === 'legacyAggregateWithdrawal' ? { legacyCategory: 'traditional' } : {}),
   })
@@ -361,11 +367,13 @@ describe('buildRetirementActionManualIntent', () => {
     const ordinaryPlan = { ...supportedPlan, accounts: ordinaryAccounts }
     expect(ordinaryAccounts.map((account) =>
       retirementActionManualSourceSupportIssue(
-        'legacyAggregateWithdrawal', account, '2034-06-15', 2034, ordinaryPlan,
+        'legacyAggregateWithdrawal', account, '2034-06-15', 2034,
+        DEFAULT_REQUESTED_AMOUNT, ordinaryPlan,
       ) === null,
     )).toEqual([true, true, true, false, false, false, false])
     expect(retirementActionManualSourceSupportIssue(
-      'legacyAggregateWithdrawal', ordinaryAccounts[3]!, '2034-09-01', 2034, ordinaryPlan,
+      'legacyAggregateWithdrawal', ordinaryAccounts[3]!, '2034-09-01', 2034,
+      DEFAULT_REQUESTED_AMOUNT, ordinaryPlan,
     )).toBeNull()
 
     const conversionAccounts: Plan['accounts'] = [
@@ -407,7 +415,8 @@ describe('buildRetirementActionManualIntent', () => {
     }
     expect(conversionAccounts.map((account) =>
       retirementActionManualSourceSupportIssue(
-        'legacyAggregateRothConversion', account, '2034-06-15', 2034, conversionPlan,
+        'legacyAggregateRothConversion', account, '2034-06-15', 2034,
+        DEFAULT_REQUESTED_AMOUNT, conversionPlan,
       ) === null,
     )).toEqual([true, true, true, false, false, false])
   })
@@ -465,7 +474,8 @@ describe('buildRetirementActionManualIntent', () => {
     twoLivingSingle.household.people.push(secondPerson)
 
     expect(retirementActionManualSourceSupportIssue(
-      'legacyAggregateWithdrawal', taxableAccount, '2034-06-15', 2034, twoLivingSingle,
+      'legacyAggregateWithdrawal', taxableAccount, '2034-06-15', 2034,
+      DEFAULT_REQUESTED_AMOUNT, twoLivingSingle,
     )).toBe(
       'Taxable-account withdrawal review requires an unambiguous projected tax unit; 2 household members are modeled alive in 2034 under Single status.',
     )
@@ -473,14 +483,16 @@ describe('buildRetirementActionManualIntent', () => {
     const twoLivingJoint = structuredClone(twoLivingSingle)
     twoLivingJoint.household.filingStatus = 'marriedFilingJointly'
     expect(retirementActionManualSourceSupportIssue(
-      'legacyAggregateWithdrawal', taxableAccount, '2034-06-15', 2034, twoLivingJoint,
+      'legacyAggregateWithdrawal', taxableAccount, '2034-06-15', 2034,
+      DEFAULT_REQUESTED_AMOUNT, twoLivingJoint,
     )).toBeNull()
 
     const oneLivingSingle = structuredClone(twoLivingSingle)
     oneLivingSingle.household.people[1]!.dob = '1973-01-01'
     oneLivingSingle.household.people[1]!.longevity.planningAge = 60
     expect(retirementActionManualSourceSupportIssue(
-      'legacyAggregateWithdrawal', taxableAccount, '2034-06-15', 2034, oneLivingSingle,
+      'legacyAggregateWithdrawal', taxableAccount, '2034-06-15', 2034,
+      DEFAULT_REQUESTED_AMOUNT, oneLivingSingle,
     )).toBeNull()
 
     const target = migrated('legacyAggregateWithdrawal')
@@ -522,7 +534,8 @@ describe('buildRetirementActionManualIntent', () => {
     const boundaryPlan = { ...supportedPlan, accounts: boundaryAccounts }
     for (const account of boundaryAccounts) {
       expect(retirementActionManualSourceSupportIssue(
-        'legacyAggregateWithdrawal', account, '2034-06-15', 2034, boundaryPlan,
+        'legacyAggregateWithdrawal', account, '2034-06-15', 2034,
+        DEFAULT_REQUESTED_AMOUNT, boundaryPlan,
       )).toBeNull()
     }
 
@@ -543,7 +556,8 @@ describe('buildRetirementActionManualIntent', () => {
     ]
     const overPlan = { ...supportedPlan, accounts: overAccounts }
     expect(overAccounts.map((account) => retirementActionManualSourceSupportIssue(
-      'legacyAggregateWithdrawal', account, '2034-06-15', 2034, overPlan,
+      'legacyAggregateWithdrawal', account, '2034-06-15', 2034,
+      DEFAULT_REQUESTED_AMOUNT, overPlan,
     ))).toEqual([
       'This source account balance cannot be represented in the exact-cent execution ledger. Reduce the balance before completing review.',
       'This source account balance cannot be represented in the exact-cent execution ledger. Reduce the balance before completing review.',
@@ -563,6 +577,60 @@ describe('buildRetirementActionManualIntent', () => {
         withdrawalPurpose: 'spending',
       }, [], { ...supportedPlan, accounts: [account] }).ok).toBe(false)
     }
+  })
+
+  it('rejects zero and unrepresentable closing balances while allowing truthful partials', () => {
+    const requestedAmount = asPositiveUsdCents(3)
+    const target = migrated('legacyAggregateWithdrawal', requestedAmount)
+    const boundary = ledgerCentsToPlanDollars(asUsdCents(Number.MAX_SAFE_INTEGER - 1))
+    expect(planDollarsToLedgerCents(boundary)).toBe(9_007_199_254_740_990)
+    const base = {
+      ownerPersonId: 'person-a',
+      annualReturnPct: null,
+      annualContribution: 0,
+    }
+    const accountsAt = (balance: number): Plan['accounts'] => [
+      { type: 'cash', id: 'cash-a', name: 'Cash', balance, ...base },
+      {
+        type: 'equityComp', id: 'equity-a', name: 'Equity', balance,
+        costBasis: 0, vestingMode: 'final', vestDate: null, ...base,
+      },
+      {
+        type: 'taxable', id: 'taxable-a', name: 'Taxable', balance,
+        costBasis: 0, ...base,
+      },
+    ]
+    const supportIssues = (accounts: Plan['accounts']) => accounts.map((account) =>
+      retirementActionManualSourceSupportIssue(
+        'legacyAggregateWithdrawal', account, '2034-06-15', 2034,
+        requestedAmount, { ...supportedPlan, accounts },
+      ))
+    const buildWith = (account: Plan['accounts'][number]) =>
+      buildRetirementActionManualIntent(target, {
+        ...emptyRetirementActionManualEditorDraft(),
+        personId: 'person-a',
+        sourceAccountId: account.id,
+        fullSourceAmountConfirmed: true,
+        executionDate: '2034-06-15',
+        executionSequence: '1',
+        withdrawalPurpose: 'spending',
+      }, [], { ...supportedPlan, accounts: [account] })
+
+    const closingBoundaryAccounts = accountsAt(boundary)
+    expect(supportIssues(closingBoundaryAccounts)).toEqual(Array(3).fill(
+      'This source account would have a closing balance that cannot be represented exactly in the Plan after the reviewed withdrawal. Choose another funded source.',
+    ))
+    for (const account of closingBoundaryAccounts) expect(buildWith(account).ok).toBe(false)
+
+    const zeroAccounts = accountsAt(0)
+    expect(supportIssues(zeroAccounts)).toEqual(Array(3).fill(
+      'This source account has no available exact-cent balance for the reviewed withdrawal. Choose a funded source.',
+    ))
+    for (const account of zeroAccounts) expect(buildWith(account).ok).toBe(false)
+
+    const partialAccounts = accountsAt(0.02)
+    expect(supportIssues(partialAccounts)).toEqual([null, null, null])
+    for (const account of partialAccounts) expect(buildWith(account).ok).toBe(true)
   })
 
   it('refuses unsupported injected ordinary, cliff, and unclassified IRA selections', () => {

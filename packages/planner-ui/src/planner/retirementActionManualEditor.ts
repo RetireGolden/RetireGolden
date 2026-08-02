@@ -6,8 +6,9 @@ import type {
   RetirementActionCandidateIdentityIntent,
 } from '@retiregolden/engine/actions/retirementActionCandidateIdentityAllocator'
 import { asPersonId, type AccountId, type PersonId } from '@retiregolden/engine/actions/identity'
-import { asPositiveUsdCents } from '@retiregolden/engine/actions/money'
+import { asPositiveUsdCents, asUsdCents } from '@retiregolden/engine/actions/money'
 import {
+  ledgerCentTotalToPlanDollars,
   ledgerCentsToPlanDollars,
   planDollarsToLedgerCents,
 } from '@retiregolden/engine/actions/planBalanceAdapter'
@@ -190,6 +191,7 @@ export function retirementActionManualSourceSupportIssue(
   account: Plan['accounts'][number],
   executionDate: string,
   actionYear: number,
+  requestedAmount: EditableMigratedRetirementAction['requestedAmount'],
   plan: ManualSourceSupportPlan,
 ): string | null {
   const owners = plan.household.people.filter((person) => person.id === account.ownerPersonId)
@@ -203,10 +205,26 @@ export function retirementActionManualSourceSupportIssue(
     if (account.type !== 'cash' && account.type !== 'taxable' && account.type !== 'equityComp') {
       return 'Manual withdrawal review currently supports only cash, taxable, and vested equity-compensation sources.'
     }
+    let openingBalance: ReturnType<typeof planDollarsToLedgerCents>
     try {
-      planDollarsToLedgerCents(account.balance)
+      openingBalance = planDollarsToLedgerCents(account.balance)
     } catch {
       return 'This source account balance cannot be represented in the exact-cent execution ledger. Reduce the balance before completing review.'
+    }
+    if (openingBalance === 0) {
+      return 'This source account has no available exact-cent balance for the reviewed withdrawal. Choose a funded source.'
+    }
+    const executedAmount = Math.min(openingBalance, requestedAmount)
+    const closingBalance = asUsdCents(openingBalance - executedAmount)
+    try {
+      ledgerCentTotalToPlanDollars(BigInt(executedAmount))
+    } catch {
+      return 'The prospective executed amount cannot be represented exactly in the Plan. Choose another funded source.'
+    }
+    try {
+      ledgerCentsToPlanDollars(closingBalance)
+    } catch {
+      return 'This source account would have a closing balance that cannot be represented exactly in the Plan after the reviewed withdrawal. Choose another funded source.'
     }
     if (account.type === 'taxable') {
       try {
@@ -342,6 +360,7 @@ export function buildRetirementActionManualIntent(
       selectedSourceMatches[0]!,
       draft.executionDate,
       target.year,
+      target.requestedAmount,
       plan,
     )
     if (sourceIssue !== null) issues.push(sourceIssue)

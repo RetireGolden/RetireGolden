@@ -39,6 +39,7 @@ function accountOptions(
   kind: EditableMigratedRetirementAction['kind'],
   executionDate: string,
   actionYear: number,
+  requestedAmount: EditableMigratedRetirementAction['requestedAmount'],
 ) {
   if (personId === '') return []
   return plan.accounts
@@ -50,6 +51,7 @@ function accountOptions(
           account,
           executionDate,
           actionYear,
+          requestedAmount,
           plan,
         ) === null
     })
@@ -63,6 +65,7 @@ function sourceBoundaryIssues(
   kind: EditableMigratedRetirementAction['kind'],
   executionDate: string,
   actionYear: number,
+  requestedAmount: EditableMigratedRetirementAction['requestedAmount'],
 ): readonly string[] {
   if (personId === '') return []
   const issues = plan.accounts
@@ -75,6 +78,7 @@ function sourceBoundaryIssues(
       account,
       executionDate,
       actionYear,
+      requestedAmount,
       plan,
     ))
     .filter((issue): issue is string => issue !== null)
@@ -115,8 +119,15 @@ function ManualReviewRow({
       label: `${person.name} (ID ${person.id})`,
     }))
   const sources = useMemo(
-    () => accountOptions(plan, draft.personId, target.kind, draft.executionDate, target.year),
-    [draft.executionDate, draft.personId, plan, target.kind, target.year],
+    () => accountOptions(
+      plan,
+      draft.personId,
+      target.kind,
+      draft.executionDate,
+      target.year,
+      target.requestedAmount,
+    ),
+    [draft.executionDate, draft.personId, plan, target.kind, target.requestedAmount, target.year],
   )
   const unavailableSourceIssues = useMemo(
     () => sourceBoundaryIssues(
@@ -125,8 +136,9 @@ function ManualReviewRow({
       target.kind,
       draft.executionDate,
       target.year,
+      target.requestedAmount,
     ),
-    [draft.executionDate, draft.personId, plan, target.kind, target.year],
+    [draft.executionDate, draft.personId, plan, target.kind, target.requestedAmount, target.year],
   )
   const destinations = useMemo(
     () => destinationOptions(plan, draft.personId),
@@ -254,6 +266,7 @@ function ManualReviewRow({
                 selectedSource,
                 executionDate,
                 target.year,
+                target.requestedAmount,
                 plan,
               ) === null
             return {

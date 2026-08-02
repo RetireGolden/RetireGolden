@@ -31,12 +31,13 @@ afterEach(async () => {
 function migratedAction(
   kind: 'legacyAggregateWithdrawal' | 'legacyAggregateRothConversion' | 'legacyAggregateQcd',
   id = `migrated-${kind}`,
+  requestedAmount = asPositiveUsdCents(25_000_00),
 ) {
   const parsed = parseRetirementActionRequest({
     actionId: id,
     kind,
     year: 2034,
-    requestedAmount: asPositiveUsdCents(25_000_00),
+    requestedAmount,
     provenance: { source: 'migration', sourceId: 'plan-v1' },
     ...(kind === 'legacyAggregateWithdrawal' ? { legacyCategory: 'traditional' } : {}),
     ...(kind === 'legacyAggregateQcd' ? { legacyField: 'qcdAnnual' } : {}),
@@ -358,6 +359,41 @@ describe('RetirementActionsEditor', () => {
     )
     expect(mounted.container.textContent).toContain(
       'This taxable source account cost basis cannot be represented in the exact-cent execution ledger.',
+    )
+    expect(mounted.container.textContent).toContain('Needs source review')
+  })
+
+  it('explains zero and unrepresentable prospective closing balances', async () => {
+    const plan = editorPlan()
+    const owner = plan.household.people[0]!
+    const boundary = ledgerCentsToPlanDollars(asUsdCents(Number.MAX_SAFE_INTEGER - 1))
+    plan.accounts = [
+      {
+        type: 'cash', id: 'cash-zero', name: 'Cash', ownerPersonId: owner.id,
+        annualReturnPct: null, balance: 0, annualContribution: 0,
+      },
+      {
+        type: 'equityComp', id: 'equity-boundary', name: 'Equity', ownerPersonId: owner.id,
+        annualReturnPct: null, balance: boundary, costBasis: 0,
+        annualContribution: 0, vestingMode: 'final', vestDate: null,
+      },
+    ]
+    plan.strategies.retirementActions = [migratedAction(
+      'legacyAggregateWithdrawal',
+      'migrated-closing-boundary',
+      asPositiveUsdCents(3),
+    )]
+    const mounted = await mount(plan)
+
+    await change(controlByLabel(mounted.container, 'Person'), owner.id)
+    expect(Array.from(
+      controlByLabel<HTMLSelectElement>(mounted.container, 'Source account').options,
+    ).slice(1)).toEqual([])
+    expect(mounted.container.textContent).toContain(
+      'This source account has no available exact-cent balance for the reviewed withdrawal.',
+    )
+    expect(mounted.container.textContent).toContain(
+      'This source account would have a closing balance that cannot be represented exactly in the Plan after the reviewed withdrawal.',
     )
     expect(mounted.container.textContent).toContain('Needs source review')
   })
