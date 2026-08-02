@@ -361,16 +361,16 @@ export function coordinateAnnualRetirementActionMovement(
       ]
       const expectedAllocationCount = allocationIds(action).length
       return {
-      actionId: actionIdSchema.parse(action.actionId),
-      kind: action.kind,
-      request: canonicalRequest(action),
-      executorSource: executorFor(action, accountById),
-      inventoryCoverage: inventoryEventIds.length === expectedAllocationCount
-        ? 'complete'
-        : inventoryEventIds.length === 0
-          ? 'absent'
-          : 'partial',
-      inventoryEventIds,
+        actionId: actionIdSchema.parse(action.actionId),
+        kind: action.kind,
+        request: canonicalRequest(action),
+        executorSource: executorFor(action, accountById),
+        inventoryCoverage: inventoryEventIds.length === expectedAllocationCount
+          ? 'complete'
+          : inventoryEventIds.length === 0
+            ? 'absent'
+            : 'partial',
+        inventoryEventIds,
       }
     },
   )

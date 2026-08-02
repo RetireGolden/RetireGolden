@@ -458,6 +458,31 @@ describe('coordinateAnnualRetirementActionMovement', () => {
     })
   })
 
+  it('rejects a derived standalone batch ID colliding with an unused Plan identifier', () => {
+    const original = coordinated(input(basePlan()))
+    const batchEvidenceId = original.firstSupportedBatch?.evidenceId
+    if (batchEvidenceId === undefined) throw new Error('fixture drift')
+    const collidingPlan = basePlan()
+    const unusedCash = collidingPlan.accounts.find(
+      (account) => account.id === cashId,
+    )
+    if (unusedCash === undefined) throw new Error('fixture drift')
+    unusedCash.id = asAccountId(batchEvidenceId)
+
+    const result = coordinateAnnualRetirementActionMovement(input(collidingPlan))
+    expect(result).toMatchObject({
+      status: 'annualRetirementActionMovementCoordinationBlocked',
+      movement: 'notCommitted',
+      actionability: 'notEstablished',
+      coordinatorEvidenceId: null,
+      firstSupportedBatch: null,
+      issues: [{
+        kind: 'identifierCollision',
+        detail: expect.stringContaining('batch evidence ID'),
+      }],
+    })
+  })
+
   it('passes incomplete and chronology-invalid inventory failures through', () => {
     const incompleteInput = input(basePlan(), [unresolved()])
     expect(coordinateAnnualRetirementActionMovement(incompleteInput)).toEqual(
