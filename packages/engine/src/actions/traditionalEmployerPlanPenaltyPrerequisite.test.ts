@@ -844,6 +844,20 @@ describe('traditional employer-plan penalty prerequisite', () => {
     expect(reads).toBe(0)
   })
 
+  it('rejects hidden and symbol-keyed object state', () => {
+    const hiddenInput = input({ separationDate: '2029-12-31' })
+    const hiddenMetadata = { visible: true }
+    Object.defineProperty(hiddenMetadata, 'hidden', { value: hiddenMetadata })
+    Reflect.set(hiddenInput.otherExceptionAttestation!, 'metadata', hiddenMetadata)
+    expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(hiddenInput)).toThrow(/plain data/)
+
+    const symbolInput = input({ separationDate: '2029-12-31' })
+    const symbolMetadata = { visible: true }
+    Reflect.set(symbolMetadata, Symbol('hidden'), 'authority')
+    Reflect.set(symbolInput.otherExceptionAttestation!, 'metadata', symbolMetadata)
+    expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(symbolInput)).toThrow(/plain data/)
+  })
+
   it('rejects accessor-backed metadata without invoking the getter', () => {
     const value = input({ separationDate: '2029-12-31' })
     const metadata = {}
