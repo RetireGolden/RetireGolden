@@ -80,7 +80,7 @@ function characterizationInput(
       form8606Line8NetConversionAmount: 0,
       evidenceId: 'basis-pool-record',
     },
-    line7Distributions: [line7Entry(executedAmount)],
+    line7Distributions: [line7Entry(line7Amount)],
     rmdPoolEvidence: {
       predicate:
         'completeBeneficiaryTraditionalIraRmdPoolForBeneficiaryDecedentAndTaxYear',
@@ -123,7 +123,8 @@ function validInput(): EvaluateBeneficiaryTraditionalIraDeathPenaltyInput {
 }
 
 function expectUnsupported(input: EvaluateBeneficiaryTraditionalIraDeathPenaltyInput): void {
-  expect(evaluateBeneficiaryTraditionalIraDeathPenalty(input)).toEqual({
+  const result = evaluateBeneficiaryTraditionalIraDeathPenalty(input)
+  expect(result).toEqual({
     status: 'unsupported',
     reasons: [{
       code: 'withdrawal-inherited-facts-missing',
@@ -135,6 +136,9 @@ function expectUnsupported(input: EvaluateBeneficiaryTraditionalIraDeathPenaltyI
     characterization: null,
     penaltyEvidence: null,
   })
+  expect(Object.isFrozen(result)).toBe(true)
+  expect(Object.isFrozen(result.reasons)).toBe(true)
+  expect(Object.isFrozen(result.reasons[0])).toBe(true)
 }
 
 describe('beneficiary traditional IRA death penalty evidence', () => {

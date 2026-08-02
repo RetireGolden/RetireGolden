@@ -113,11 +113,11 @@ const DEATH_EVIDENCE_KEYS = [
 function unsupported(): Readonly<
   UnsupportedBeneficiaryTraditionalIraDeathPenaltyResult
 > {
-  return Object.freeze({
+  return deepFreeze({
     status: 'unsupported',
-    reasons: Object.freeze([
+    reasons: [
       createActionReason('withdrawal-inherited-facts-missing'),
-    ]) as readonly [Readonly<ActionReason>],
+    ] as [ActionReason],
     characterization: null,
     penaltyEvidence: null,
   })
