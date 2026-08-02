@@ -78,6 +78,10 @@
       "types": "./dist/actions/annualQcdPhysicalExecution.d.ts",
       "default": "./dist/actions/annualQcdPhysicalExecution.js"
     },
+    "./actions/annualQcdTaxCharacterPostPass": {
+      "types": "./dist/actions/annualQcdTaxCharacterPostPass.d.ts",
+      "default": "./dist/actions/annualQcdTaxCharacterPostPass.js"
+    },
     "./actions/annualRetirementActionMovementCoordinator": {
       "types": "./dist/actions/annualRetirementActionMovementCoordinator.d.ts",
       "default": "./dist/actions/annualRetirementActionMovementCoordinator.js"
