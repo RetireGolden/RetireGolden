@@ -458,6 +458,42 @@ describe('coordinateAnnualRetirementActionMovement', () => {
     })
   })
 
+  it('rejects an imported inventory ID colliding with an unused Plan identifier', () => {
+    const collisionInput = input()
+    collisionInput.runtimeInventoryAttestation = {
+      ...collisionInput.runtimeInventoryAttestation,
+      evidenceId: cashId,
+    }
+    expect(buildAnnualRetirementPhysicalEventInventory(collisionInput).status)
+      .toBe('annualPhysicalEventInventoryBuilt')
+
+    const result = coordinateAnnualRetirementActionMovement(collisionInput)
+    expect(result).toMatchObject({
+      status: 'annualRetirementActionMovementCoordinationBlocked',
+      coordinatorEvidenceId: null,
+      firstSupportedBatch: null,
+      issues: [{
+        kind: 'identifierCollision',
+        detail: expect.stringContaining('runtime inventory evidence ID'),
+      }],
+    })
+  })
+
+  it('omits schema-valid explicit undefined request fields before hashing', () => {
+    const explicitUndefinedPlan = basePlan()
+    const firstAction = explicitUndefinedPlan.strategies.retirementActions[0]
+    if (firstAction === undefined) throw new Error('fixture drift')
+    firstAction.provenance.sourceId = undefined
+
+    const explicit = coordinated(input(explicitUndefinedPlan))
+    const omitted = coordinated(input(basePlan()))
+    expect(explicit).toEqual(omitted)
+    expect(Object.hasOwn(
+      explicit.assignments[0]?.request.provenance ?? {},
+      'sourceId',
+    )).toBe(false)
+  })
+
   it('rejects a derived standalone batch ID colliding with an unused Plan identifier', () => {
     const original = coordinated(input(basePlan()))
     const batchEvidenceId = original.firstSupportedBatch?.evidenceId

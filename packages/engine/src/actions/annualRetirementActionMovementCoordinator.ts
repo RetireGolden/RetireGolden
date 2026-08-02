@@ -187,22 +187,32 @@ function executorFor(
   return null
 }
 
+function omitExplicitUndefined(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(omitExplicitUndefined)
+  if (value === null || typeof value !== 'object') return value
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([, child]) => child !== undefined)
+      .map(([key, child]) => [key, omitExplicitUndefined(child)]),
+  )
+}
+
 function canonicalRequest(
   action: CurrentRetirementAction,
 ): RetirementActionRequest {
-  if (action.kind === 'qcd') {
-    return retirementActionRequestSchema.parse(action)
-  }
-  return retirementActionRequestSchema.parse({
-    ...action,
-    allocations: [...action.allocations].sort((left, right) =>
-      compareUtf16CodeUnits(left.allocationId, right.allocationId) ||
-      compareUtf16CodeUnits(
-        left.sourceAccountId,
-        right.sourceAccountId,
-      ),
-    ),
-  })
+  const parsed = action.kind === 'qcd'
+    ? retirementActionRequestSchema.parse(action)
+    : retirementActionRequestSchema.parse({
+        ...action,
+        allocations: [...action.allocations].sort((left, right) =>
+          compareUtf16CodeUnits(left.allocationId, right.allocationId) ||
+          compareUtf16CodeUnits(
+            left.sourceAccountId,
+            right.sourceAccountId,
+          ),
+        ),
+      })
+  return retirementActionRequestSchema.parse(omitExplicitUndefined(parsed))
 }
 
 function assignmentEvidenceParts(
@@ -239,33 +249,56 @@ function eventEvidenceParts(
 function claimedIdentifiers(
   plan: Plan,
   inventory: Readonly<AnnualRetirementInventoryBuiltResult>,
-  actions: readonly CurrentRetirementAction[],
-): Set<string> {
-  const claimed = identifierValues(plan)
-  for (const value of [
-    inventory.planId,
-    inventory.ledgerRunId,
-    inventory.runtimeInventoryEvidenceId,
-    inventory.runtimeInventoryUpstreamEvidenceId,
-    inventory.inventoryEvidenceId,
-  ]) claimed.add(value)
+): Readonly<{
+  claimed: Set<string>
+  collisionDetail: string | null
+}> {
+  const planIdentifiers = identifierValues(plan)
+  const claimed = new Set(planIdentifiers)
+  const importedRoles = new Map<string, string>()
+  let collisionDetail: string | null = null
+  const claimImported = (
+    value: string,
+    role: string,
+    allowSameRoleReuse = false,
+  ): void => {
+    if (collisionDetail !== null) return
+    const existingRole = importedRoles.get(value)
+    if (existingRole !== undefined) {
+      if (allowSameRoleReuse && existingRole === role) return
+      collisionDetail = `${role} collides with imported ${existingRole}`
+      return
+    }
+    if (planIdentifiers.has(value)) {
+      collisionDetail = `${role} collides with a Plan identifier`
+      return
+    }
+    importedRoles.set(value, role)
+    claimed.add(value)
+  }
+  for (const [value, role] of [
+    [inventory.ledgerRunId, 'inventory ledger run ID'],
+    [inventory.runtimeInventoryEvidenceId, 'runtime inventory evidence ID'],
+    [
+      inventory.runtimeInventoryUpstreamEvidenceId,
+      'runtime inventory upstream evidence ID',
+    ],
+    [inventory.inventoryEvidenceId, 'annual inventory evidence ID'],
+  ] as const) claimImported(value, role)
   for (const event of inventory.events) {
-    claimed.add(event.eventId)
-    claimed.add(event.ownerPersonId)
-    claimed.add(event.sourceAccountId)
-    if (event.origin === 'planAction') {
-      claimed.add(event.actionId)
-      claimed.add(event.allocationId)
-    } else {
-      claimed.add(event.movementAuthorityId)
-      claimed.add(event.upstreamEvidenceId)
+    claimImported(event.eventId, 'inventory event ID')
+    if (event.origin !== 'planAction') {
+      claimImported(
+        event.movementAuthorityId,
+        'runtime movement authority ID',
+        true,
+      )
+      claimImported(event.upstreamEvidenceId, 'runtime upstream evidence ID')
     }
   }
-  for (const action of actions) {
-    claimed.add(action.actionId)
-    for (const allocationId of allocationIds(action)) claimed.add(allocationId)
-  }
-  return claimed
+  // Action, allocation, owner, and source IDs intentionally rejoin the Plan
+  // namespace and therefore are not imported as new evidence identities.
+  return { claimed, collisionDetail }
 }
 
 function identifierValues(
@@ -398,7 +431,11 @@ export function coordinateAnnualRetirementActionMovement(
         : null,
     }))
 
-  const claimed = claimedIdentifiers(plan, inventory, actions)
+  const claimedResult = claimedIdentifiers(plan, inventory)
+  if (claimedResult.collisionDetail !== null) {
+    return collisionBlocked(inventory, claimedResult.collisionDetail)
+  }
+  const claimed = claimedResult.claimed
   let firstSupportedBatch: StandaloneOwnedNonRothIraMovementBatch | null = null
   if (inventory.compatibility.status ===
       'standaloneOwnedIraExecutorCompatible' &&
