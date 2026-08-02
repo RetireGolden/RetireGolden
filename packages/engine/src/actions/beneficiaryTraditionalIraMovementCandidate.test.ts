@@ -443,6 +443,19 @@ describe('beneficiary traditional IRA movement candidate', () => {
     expectUnsupported(extra)
   })
 
+  it('rejects sparse and decorated source snapshot arrays', () => {
+    const sparse = validInput()
+    ;(sparse.sourceSnapshots as unknown[]).length = 2
+    expectUnsupported(sparse)
+
+    const decorated = validInput()
+    Object.defineProperty(decorated.sourceSnapshots!, 'extra', {
+      enumerable: true,
+      value: 'extra',
+    })
+    expectUnsupported(decorated)
+  })
+
   it('canonicalizes upstream account order before deriving candidate identity', () => {
     const first = stageBeneficiaryTraditionalIraMovementCandidate(validInput())
     const reordered = validInput()
