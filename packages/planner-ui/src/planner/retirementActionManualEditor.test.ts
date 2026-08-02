@@ -4,7 +4,8 @@ import {
   parseRetirementActionRequest,
   type LegacyAggregateRetirementActionRequest,
 } from '@retiregolden/engine/actions/contract'
-import { asPositiveUsdCents } from '@retiregolden/engine/actions/money'
+import { asPositiveUsdCents, asUsdCents } from '@retiregolden/engine/actions/money'
+import { ledgerCentsToPlanDollars } from '@retiregolden/engine/actions/planBalanceAdapter'
 import type { Plan } from '@retiregolden/engine/model/plan'
 
 import {
@@ -497,6 +498,71 @@ describe('buildRetirementActionManualIntent', () => {
         'Taxable-account withdrawal review requires an unambiguous projected tax unit; 2 household members are modeled alive in 2034 under Single status.',
       ],
     })
+  })
+
+  it('pins exact-cent execution snapshot boundaries for every ordinary source shape', () => {
+    const boundary = ledgerCentsToPlanDollars(asUsdCents(Number.MAX_SAFE_INTEGER - 1))
+    const oneCentOver = boundary + 0.01
+    const base = {
+      ownerPersonId: 'person-a',
+      annualReturnPct: null,
+      annualContribution: 0,
+    }
+    const boundaryAccounts: Plan['accounts'] = [
+      { type: 'cash', id: 'cash-boundary', name: 'Cash', balance: boundary, ...base },
+      {
+        type: 'equityComp', id: 'equity-boundary', name: 'Equity', balance: boundary,
+        costBasis: 0, vestingMode: 'final', vestDate: null, ...base,
+      },
+      {
+        type: 'taxable', id: 'taxable-boundary', name: 'Taxable', balance: boundary,
+        costBasis: boundary, ...base,
+      },
+    ]
+    const boundaryPlan = { ...supportedPlan, accounts: boundaryAccounts }
+    for (const account of boundaryAccounts) {
+      expect(retirementActionManualSourceSupportIssue(
+        'legacyAggregateWithdrawal', account, '2034-06-15', 2034, boundaryPlan,
+      )).toBeNull()
+    }
+
+    const overAccounts: Plan['accounts'] = [
+      { type: 'cash', id: 'cash-over', name: 'Cash', balance: oneCentOver, ...base },
+      {
+        type: 'equityComp', id: 'equity-over', name: 'Equity', balance: oneCentOver,
+        costBasis: 0, vestingMode: 'final', vestDate: null, ...base,
+      },
+      {
+        type: 'taxable', id: 'taxable-balance-over', name: 'Taxable', balance: oneCentOver,
+        costBasis: boundary, ...base,
+      },
+      {
+        type: 'taxable', id: 'taxable-basis-over', name: 'Taxable', balance: boundary,
+        costBasis: oneCentOver, ...base,
+      },
+    ]
+    const overPlan = { ...supportedPlan, accounts: overAccounts }
+    expect(overAccounts.map((account) => retirementActionManualSourceSupportIssue(
+      'legacyAggregateWithdrawal', account, '2034-06-15', 2034, overPlan,
+    ))).toEqual([
+      'This source account balance cannot be represented in the exact-cent execution ledger. Reduce the balance before completing review.',
+      'This source account balance cannot be represented in the exact-cent execution ledger. Reduce the balance before completing review.',
+      'This source account balance cannot be represented in the exact-cent execution ledger. Reduce the balance before completing review.',
+      'This taxable source account cost basis cannot be represented in the exact-cent execution ledger. Reduce the cost basis before completing review.',
+    ])
+
+    const target = migrated('legacyAggregateWithdrawal')
+    for (const account of overAccounts) {
+      expect(buildRetirementActionManualIntent(target, {
+        ...emptyRetirementActionManualEditorDraft(),
+        personId: 'person-a',
+        sourceAccountId: account.id,
+        fullSourceAmountConfirmed: true,
+        executionDate: '2034-06-15',
+        executionSequence: '1',
+        withdrawalPurpose: 'spending',
+      }, [], { ...supportedPlan, accounts: [account] }).ok).toBe(false)
+    }
   })
 
   it('refuses unsupported injected ordinary, cliff, and unclassified IRA selections', () => {

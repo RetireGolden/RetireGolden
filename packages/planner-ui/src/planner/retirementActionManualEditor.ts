@@ -203,6 +203,18 @@ export function retirementActionManualSourceSupportIssue(
     if (account.type !== 'cash' && account.type !== 'taxable' && account.type !== 'equityComp') {
       return 'Manual withdrawal review currently supports only cash, taxable, and vested equity-compensation sources.'
     }
+    try {
+      planDollarsToLedgerCents(account.balance)
+    } catch {
+      return 'This source account balance cannot be represented in the exact-cent execution ledger. Reduce the balance before completing review.'
+    }
+    if (account.type === 'taxable') {
+      try {
+        planDollarsToLedgerCents(account.costBasis)
+      } catch {
+        return 'This taxable source account cost basis cannot be represented in the exact-cent execution ledger. Reduce the cost basis before completing review.'
+      }
+    }
     if (account.type === 'taxable' && !hasUnambiguousProjectedTaxUnit(plan, actionYear)) {
       const aliveCount = plan.household.people.filter(
         (person) => retirementActionManualPersonSupportIssue(person, actionYear) === null,

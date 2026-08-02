@@ -6,7 +6,8 @@ import { MemoryRouter } from 'react-router'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { parseRetirementActionRequest } from '@retiregolden/engine/actions/contract'
-import { asPositiveUsdCents } from '@retiregolden/engine/actions/money'
+import { asPositiveUsdCents, asUsdCents } from '@retiregolden/engine/actions/money'
+import { ledgerCentsToPlanDollars } from '@retiregolden/engine/actions/planBalanceAdapter'
 import { parsePlan, type Plan } from '@retiregolden/engine/model/plan'
 
 import { PlanCtx } from '../planContextCore'
@@ -320,6 +321,40 @@ describe('RetirementActionsEditor', () => {
     expect(sourceOptions).not.toContain('taxable-a')
     expect(mounted.container.textContent).toContain(
       'Taxable-account withdrawal review requires an unambiguous projected tax unit; 2 household members are modeled alive in 2034 under Single status.',
+    )
+    expect(mounted.container.textContent).toContain('Needs source review')
+  })
+
+  it('filters sources whose execution snapshots exceed the exact-cent boundary', async () => {
+    const plan = editorPlan()
+    const owner = plan.household.people[0]!
+    const boundary = ledgerCentsToPlanDollars(asUsdCents(Number.MAX_SAFE_INTEGER - 1))
+    const oneCentOver = boundary + 0.01
+    plan.accounts = [
+      {
+        type: 'cash', id: 'cash-over', name: 'Cash', ownerPersonId: owner.id,
+        annualReturnPct: null, balance: oneCentOver, annualContribution: 0,
+      },
+      {
+        type: 'taxable', id: 'taxable-basis-over', name: 'Taxable', ownerPersonId: owner.id,
+        annualReturnPct: null, balance: boundary, costBasis: oneCentOver,
+        annualContribution: 0,
+      },
+    ]
+    plan.strategies.retirementActions = [migratedAction('legacyAggregateWithdrawal')]
+    const mounted = await mount(plan)
+
+    await change(controlByLabel(mounted.container, 'Person'), owner.id)
+    const sourceOptions = Array.from(
+      controlByLabel<HTMLSelectElement>(mounted.container, 'Source account').options,
+    ).slice(1)
+
+    expect(sourceOptions).toEqual([])
+    expect(mounted.container.textContent).toContain(
+      'This source account balance cannot be represented in the exact-cent execution ledger.',
+    )
+    expect(mounted.container.textContent).toContain(
+      'This taxable source account cost basis cannot be represented in the exact-cent execution ledger.',
     )
     expect(mounted.container.textContent).toContain('Needs source review')
   })
