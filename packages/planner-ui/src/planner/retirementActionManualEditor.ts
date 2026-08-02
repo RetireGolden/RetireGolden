@@ -5,7 +5,7 @@ import type {
 import type {
   RetirementActionCandidateIdentityIntent,
 } from '@retiregolden/engine/actions/retirementActionCandidateIdentityAllocator'
-import type { AccountId, PersonId } from '@retiregolden/engine/actions/identity'
+import { asPersonId, type AccountId, type PersonId } from '@retiregolden/engine/actions/identity'
 import { asPositiveUsdCents } from '@retiregolden/engine/actions/money'
 import {
   ledgerCentsToPlanDollars,
@@ -116,8 +116,62 @@ function executionSlotAlreadyUsed(
 }
 
 type ManualSourceSupportPlan = Readonly<
-  Pick<Plan, 'accounts' | 'retirementActionEligibilityFacts'>
+  Pick<Plan, 'accounts' | 'household' | 'retirementActionEligibilityFacts'>
 >
+
+function projectedLastAliveYear(person: Plan['household']['people'][number]): number {
+  return Number(person.dob.slice(0, 4)) + person.longevity.planningAge
+}
+
+export function retirementActionManualPersonSupportIssue(
+  person: Plan['household']['people'][number],
+  actionYear: number,
+): string | null {
+  const lastAliveYear = projectedLastAliveYear(person)
+  return actionYear <= lastAliveYear
+    ? null
+    : `${person.name} (ID ${person.id}) is not modeled alive in ${actionYear}; their last modeled-alive year is ${lastAliveYear}.`
+}
+
+function projectedFilingStatus(
+  plan: ManualSourceSupportPlan,
+  actionYear: number,
+  aliveCount: number,
+): 'single' | 'marriedFilingJointly' | 'qualifyingSurvivingSpouse' {
+  if (plan.household.filingStatus !== 'marriedFilingJointly') return 'single'
+  if (aliveCount >= 2) return 'marriedFilingJointly'
+  if (
+    aliveCount === 1 &&
+    plan.household.people.length === 2 &&
+    plan.household.hasQualifyingDependent
+  ) {
+    const firstDeathYear = Math.min(...plan.household.people.map(projectedLastAliveYear))
+    if (actionYear > firstDeathYear && actionYear <= firstDeathYear + 2) {
+      return 'qualifyingSurvivingSpouse'
+    }
+  }
+  return 'single'
+}
+
+function hasUnambiguousProjectedTaxUnit(
+  plan: ManualSourceSupportPlan,
+  actionYear: number,
+): boolean {
+  const alivePeople = plan.household.people.filter(
+    (person) => retirementActionManualPersonSupportIssue(person, actionYear) === null,
+  )
+  try {
+    alivePeople.map((person) => asPersonId(person.id))
+  } catch {
+    return false
+  }
+  const filingStatus = projectedFilingStatus(plan, actionYear, alivePeople.length)
+  return (filingStatus === 'marriedFilingJointly' && alivePeople.length === 2) ||
+    (
+      (filingStatus === 'single' || filingStatus === 'qualifyingSurvivingSpouse') &&
+      alivePeople.length === 1
+    )
+}
 
 export function retirementActionManualSourceCandidate(
   kind: EditableMigratedRetirementAction['kind'],
@@ -135,11 +189,25 @@ export function retirementActionManualSourceSupportIssue(
   kind: EditableMigratedRetirementAction['kind'],
   account: Plan['accounts'][number],
   executionDate: string,
+  actionYear: number,
   plan: ManualSourceSupportPlan,
 ): string | null {
+  const owners = plan.household.people.filter((person) => person.id === account.ownerPersonId)
+  if (owners.length !== 1) {
+    return 'The selected source account must have exactly one household owner.'
+  }
+  const ownerIssue = retirementActionManualPersonSupportIssue(owners[0]!, actionYear)
+  if (ownerIssue !== null) return ownerIssue
+
   if (kind === 'legacyAggregateWithdrawal') {
     if (account.type !== 'cash' && account.type !== 'taxable' && account.type !== 'equityComp') {
       return 'Manual withdrawal review currently supports only cash, taxable, and vested equity-compensation sources.'
+    }
+    if (account.type === 'taxable' && !hasUnambiguousProjectedTaxUnit(plan, actionYear)) {
+      const aliveCount = plan.household.people.filter(
+        (person) => retirementActionManualPersonSupportIssue(person, actionYear) === null,
+      ).length
+      return `Taxable-account withdrawal review requires an unambiguous projected tax unit; ${aliveCount} household members are modeled alive in ${actionYear} under ${plan.household.filingStatus === 'single' ? 'Single' : 'Married filing jointly'} status.`
     }
     if (account.type !== 'equityComp' || account.vestingMode === 'final') return null
     if (account.vestDate === null || parseCivilIsoDate(account.vestDate) === null) {
@@ -243,6 +311,7 @@ export function buildRetirementActionManualIntent(
       target.kind,
       selectedSourceMatches[0]!,
       draft.executionDate,
+      target.year,
       plan,
     )
     if (sourceIssue !== null) issues.push(sourceIssue)

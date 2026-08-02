@@ -241,6 +241,26 @@ describe('RetirementActionsEditor', () => {
     ])
   })
 
+  it('excludes owners after their projection last-alive year and explains the boundary', async () => {
+    const plan = editorPlan()
+    const deceasedOwner = plan.household.people[0]!
+    const livingOwner = plan.household.people[1]!
+    deceasedOwner.dob = '1973-01-01'
+    deceasedOwner.longevity = { planningAge: 60, source: 'manual' }
+    plan.strategies.retirementActions = [migratedAction('legacyAggregateWithdrawal')]
+    const mounted = await mount(plan)
+
+    const personOptions = Array.from(
+      controlByLabel<HTMLSelectElement>(mounted.container, 'Person').options,
+    ).slice(1).map((option) => option.value)
+    expect(personOptions).toEqual([livingOwner.id])
+    expect(personOptions).not.toContain(deceasedOwner.id)
+    expect(mounted.container.textContent).toContain(
+      `${deceasedOwner.name} (ID ${deceasedOwner.id}) is not modeled alive in 2034; their last modeled-alive year is 2033.`,
+    )
+    expect(mounted.container.textContent).toContain('Needs source review')
+  })
+
   it('offers only executor-supported ordinary sources at the selected date', async () => {
     const plan = editorPlan()
     const owner = plan.household.people[0]!
@@ -271,6 +291,37 @@ describe('RetirementActionsEditor', () => {
       'equity-final',
       'taxable-a',
     ])
+  })
+
+  it('keeps taxable sources under review for two living Single filers', async () => {
+    const plan = editorPlan()
+    const owner = plan.household.people[0]!
+    plan.household.filingStatus = 'single'
+    plan.accounts.push({
+      type: 'taxable',
+      id: 'taxable-a',
+      name: 'Taxable',
+      ownerPersonId: owner.id,
+      annualReturnPct: null,
+      balance: 10_000,
+      costBasis: 8_000,
+      annualContribution: 0,
+    })
+    plan.strategies.retirementActions = [migratedAction('legacyAggregateWithdrawal')]
+    const mounted = await mount(plan)
+
+    await change(controlByLabel(mounted.container, 'Person'), owner.id)
+    await change(controlByLabel(mounted.container, 'Execution date'), '2034-06-15')
+    const sourceOptions = Array.from(
+      controlByLabel<HTMLSelectElement>(mounted.container, 'Source account').options,
+    ).slice(1).map((option) => option.value)
+
+    expect(sourceOptions).toContain('source-cash')
+    expect(sourceOptions).not.toContain('taxable-a')
+    expect(mounted.container.textContent).toContain(
+      'Taxable-account withdrawal review requires an unambiguous projected tax unit; 2 household members are modeled alive in 2034 under Single status.',
+    )
+    expect(mounted.container.textContent).toContain('Needs source review')
   })
 
   it('uses the engine adapter to replace a migrated withdrawal after explicit review', async () => {

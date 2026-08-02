@@ -18,6 +18,7 @@ import {
   formatPositiveUsdCents,
   migratedRetirementActionsNeedingReview,
   RETIREMENT_ACTION_CONVERSION_EXECUTOR_BOUNDARY,
+  retirementActionManualPersonSupportIssue,
   retirementActionManualSourceCandidate,
   retirementActionManualSourceSupportIssue,
   retirementActionReviewLabel,
@@ -37,6 +38,7 @@ function accountOptions(
   personId: string,
   kind: EditableMigratedRetirementAction['kind'],
   executionDate: string,
+  actionYear: number,
 ) {
   if (personId === '') return []
   return plan.accounts
@@ -47,6 +49,7 @@ function accountOptions(
           kind,
           account,
           executionDate,
+          actionYear,
           plan,
         ) === null
     })
@@ -59,6 +62,7 @@ function sourceBoundaryIssues(
   personId: string,
   kind: EditableMigratedRetirementAction['kind'],
   executionDate: string,
+  actionYear: number,
 ): readonly string[] {
   if (personId === '') return []
   const issues = plan.accounts
@@ -70,6 +74,7 @@ function sourceBoundaryIssues(
       kind,
       account,
       executionDate,
+      actionYear,
       plan,
     ))
     .filter((issue): issue is string => issue !== null)
@@ -100,17 +105,28 @@ function ManualReviewRow({
     emptyRetirementActionManualEditorDraft,
   )
   const [issues, setIssues] = useState<readonly string[]>([])
-  const people = plan.household.people.map((person) => ({
-    value: person.id,
-    label: `${person.name} (ID ${person.id})`,
-  }))
+  const unavailablePeople = plan.household.people
+    .map((person) => retirementActionManualPersonSupportIssue(person, target.year))
+    .filter((issue): issue is string => issue !== null)
+  const people = plan.household.people
+    .filter((person) => retirementActionManualPersonSupportIssue(person, target.year) === null)
+    .map((person) => ({
+      value: person.id,
+      label: `${person.name} (ID ${person.id})`,
+    }))
   const sources = useMemo(
-    () => accountOptions(plan, draft.personId, target.kind, draft.executionDate),
-    [draft.executionDate, draft.personId, plan, target.kind],
+    () => accountOptions(plan, draft.personId, target.kind, draft.executionDate, target.year),
+    [draft.executionDate, draft.personId, plan, target.kind, target.year],
   )
   const unavailableSourceIssues = useMemo(
-    () => sourceBoundaryIssues(plan, draft.personId, target.kind, draft.executionDate),
-    [draft.executionDate, draft.personId, plan, target.kind],
+    () => sourceBoundaryIssues(
+      plan,
+      draft.personId,
+      target.kind,
+      draft.executionDate,
+      target.year,
+    ),
+    [draft.executionDate, draft.personId, plan, target.kind, target.year],
   )
   const destinations = useMemo(
     () => destinationOptions(plan, draft.personId),
@@ -172,6 +188,14 @@ function ManualReviewRow({
           Draft facts may still be entered below, but saving cannot replace this migrated row.
         </div>
       ) : null}
+      {unavailablePeople.length > 0 ? (
+        <div className="callout callout--warn" role="status">
+          <strong>Some account owners are unavailable for this action year.</strong>
+          <ul>
+            {unavailablePeople.map((issue) => <li key={issue}>{issue}</li>)}
+          </ul>
+        </div>
+      ) : null}
       <div className="form-grid">
         <SelectField
           label="Person"
@@ -198,14 +222,16 @@ function ManualReviewRow({
             fullSourceAmountConfirmed: false,
           }))}
         />
-        {draft.personId !== '' && sources.length === 0 ? (
+        {draft.personId !== '' && unavailableSourceIssues.length > 0 ? (
           <div className="callout callout--warn" role="status">
-            <strong>No currently executable source is available for this person.</strong>
-            {unavailableSourceIssues.length > 0 ? (
-              <ul>
-                {unavailableSourceIssues.map((issue) => <li key={issue}>{issue}</li>)}
-              </ul>
-            ) : null}
+            <strong>
+              {sources.length === 0
+                ? 'No currently executable source is available for this person.'
+                : 'Some source accounts are unavailable for this review.'}
+            </strong>
+            <ul>
+              {unavailableSourceIssues.map((issue) => <li key={issue}>{issue}</li>)}
+            </ul>
           </div>
         ) : null}
         <CheckboxField
@@ -227,6 +253,7 @@ function ManualReviewRow({
                 target.kind,
                 selectedSource,
                 executionDate,
+                target.year,
                 plan,
               ) === null
             return {

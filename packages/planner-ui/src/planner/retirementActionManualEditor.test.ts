@@ -12,6 +12,7 @@ import {
   emptyRetirementActionManualEditorDraft,
   formatPositiveUsdCents,
   RETIREMENT_ACTION_CONVERSION_EXECUTOR_BOUNDARY,
+  retirementActionManualPersonSupportIssue,
   retirementActionManualSourceSupportIssue,
 } from './retirementActionManualEditor'
 
@@ -58,7 +59,25 @@ function scheduledAction(executionDate: string, executionSequence: number) {
   return result.request
 }
 
-const supportedPlan: Pick<Plan, 'accounts' | 'retirementActionEligibilityFacts'> = {
+const supportedPlan: Pick<
+  Plan,
+  'accounts' | 'household' | 'retirementActionEligibilityFacts'
+> = {
+  household: {
+    filingStatus: 'single',
+    hasQualifyingDependent: false,
+    state: 'KY',
+    stateMoves: [],
+    capitalLossCarryforward: 0,
+    people: [{
+      id: 'person-a',
+      name: 'Person A',
+      dob: '1974-01-01',
+      sex: 'average',
+      retirementAge: 65,
+      longevity: { planningAge: 90, source: 'manual' },
+    }],
+  },
   accounts: [
     {
       type: 'cash',
@@ -222,7 +241,11 @@ describe('buildRetirementActionManualIntent', () => {
 
   it('rejects an employer-plan conversion source before replacement', () => {
     const target = migrated('legacyAggregateRothConversion')
-    const employerPlan: Pick<Plan, 'accounts' | 'retirementActionEligibilityFacts'> = {
+    const employerPlan: Pick<
+      Plan,
+      'accounts' | 'household' | 'retirementActionEligibilityFacts'
+    > = {
+      household: supportedPlan.household,
       accounts: [{
         type: 'traditional',
         id: 'employer-401k',
@@ -290,11 +313,11 @@ describe('buildRetirementActionManualIntent', () => {
     const ordinaryPlan = { ...supportedPlan, accounts: ordinaryAccounts }
     expect(ordinaryAccounts.map((account) =>
       retirementActionManualSourceSupportIssue(
-        'legacyAggregateWithdrawal', account, '2034-06-15', ordinaryPlan,
+        'legacyAggregateWithdrawal', account, '2034-06-15', 2034, ordinaryPlan,
       ) === null,
     )).toEqual([true, true, true, false, false, false, false])
     expect(retirementActionManualSourceSupportIssue(
-      'legacyAggregateWithdrawal', ordinaryAccounts[3]!, '2034-09-01', ordinaryPlan,
+      'legacyAggregateWithdrawal', ordinaryAccounts[3]!, '2034-09-01', 2034, ordinaryPlan,
     )).toBeNull()
 
     const conversionAccounts: Plan['accounts'] = [
@@ -317,7 +340,11 @@ describe('buildRetirementActionManualIntent', () => {
         annualReturnPct: null, kind: 'employer', balance: 10_000, annualContribution: 0,
       },
     ]
-    const conversionPlan: Pick<Plan, 'accounts' | 'retirementActionEligibilityFacts'> = {
+    const conversionPlan: Pick<
+      Plan,
+      'accounts' | 'household' | 'retirementActionEligibilityFacts'
+    > = {
+      household: supportedPlan.household,
       accounts: conversionAccounts,
       retirementActionEligibilityFacts: {
         iraClassifications: [
@@ -332,9 +359,97 @@ describe('buildRetirementActionManualIntent', () => {
     }
     expect(conversionAccounts.map((account) =>
       retirementActionManualSourceSupportIssue(
-        'legacyAggregateRothConversion', account, '2034-06-15', conversionPlan,
+        'legacyAggregateRothConversion', account, '2034-06-15', 2034, conversionPlan,
       ) === null,
     )).toEqual([true, true, true, false, false, false])
+  })
+
+  it('matches the projection last-alive boundary and rejects a deceased owner injection', () => {
+    const livingOwner = supportedPlan.household.people[0]!
+    expect(retirementActionManualPersonSupportIssue(livingOwner, 2064)).toBeNull()
+    expect(retirementActionManualPersonSupportIssue(livingOwner, 2065)).toBe(
+      'Person A (ID person-a) is not modeled alive in 2065; their last modeled-alive year is 2064.',
+    )
+
+    const deceasedPlan = structuredClone(supportedPlan)
+    deceasedPlan.household.people[0]!.dob = '1973-01-01'
+    deceasedPlan.household.people[0]!.longevity.planningAge = 60
+    const target = migrated('legacyAggregateWithdrawal')
+    const result = buildRetirementActionManualIntent(target, {
+      ...emptyRetirementActionManualEditorDraft(),
+      personId: 'person-a',
+      sourceAccountId: 'cash-a',
+      fullSourceAmountConfirmed: true,
+      executionDate: '2034-06-15',
+      executionSequence: '1',
+      withdrawalPurpose: 'spending',
+    }, [], deceasedPlan)
+
+    expect(result).toEqual({
+      ok: false,
+      issues: [
+        'Person A (ID person-a) is not modeled alive in 2034; their last modeled-alive year is 2033.',
+      ],
+    })
+  })
+
+  it('matches the projection tax-unit predicate for taxable sources', () => {
+    const taxableAccount: Plan['accounts'][number] = {
+      type: 'taxable',
+      id: 'taxable-a',
+      name: 'Taxable',
+      ownerPersonId: 'person-a',
+      annualReturnPct: null,
+      balance: 10_000,
+      costBasis: 8_000,
+      annualContribution: 0,
+    }
+    const secondPerson: Plan['household']['people'][number] = {
+      id: 'person-b',
+      name: 'Person B',
+      dob: '1975-01-01',
+      sex: 'average',
+      retirementAge: 65,
+      longevity: { planningAge: 90, source: 'manual' },
+    }
+    const twoLivingSingle = structuredClone(supportedPlan)
+    twoLivingSingle.accounts = [taxableAccount]
+    twoLivingSingle.household.people.push(secondPerson)
+
+    expect(retirementActionManualSourceSupportIssue(
+      'legacyAggregateWithdrawal', taxableAccount, '2034-06-15', 2034, twoLivingSingle,
+    )).toBe(
+      'Taxable-account withdrawal review requires an unambiguous projected tax unit; 2 household members are modeled alive in 2034 under Single status.',
+    )
+
+    const twoLivingJoint = structuredClone(twoLivingSingle)
+    twoLivingJoint.household.filingStatus = 'marriedFilingJointly'
+    expect(retirementActionManualSourceSupportIssue(
+      'legacyAggregateWithdrawal', taxableAccount, '2034-06-15', 2034, twoLivingJoint,
+    )).toBeNull()
+
+    const oneLivingSingle = structuredClone(twoLivingSingle)
+    oneLivingSingle.household.people[1]!.dob = '1973-01-01'
+    oneLivingSingle.household.people[1]!.longevity.planningAge = 60
+    expect(retirementActionManualSourceSupportIssue(
+      'legacyAggregateWithdrawal', taxableAccount, '2034-06-15', 2034, oneLivingSingle,
+    )).toBeNull()
+
+    const target = migrated('legacyAggregateWithdrawal')
+    expect(buildRetirementActionManualIntent(target, {
+      ...emptyRetirementActionManualEditorDraft(),
+      personId: 'person-a',
+      sourceAccountId: 'taxable-a',
+      fullSourceAmountConfirmed: true,
+      executionDate: '2034-06-15',
+      executionSequence: '1',
+      withdrawalPurpose: 'spending',
+    }, [], twoLivingSingle)).toEqual({
+      ok: false,
+      issues: [
+        'Taxable-account withdrawal review requires an unambiguous projected tax unit; 2 household members are modeled alive in 2034 under Single status.',
+      ],
+    })
   })
 
   it('refuses unsupported injected ordinary, cliff, and unclassified IRA selections', () => {
