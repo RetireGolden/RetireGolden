@@ -304,6 +304,22 @@ export {
   type OwnedNonRothIraWithdrawalTaxCharacter,
 } from './ownedNonRothIraWithdrawalCharacter.js'
 export {
+  classifyBeneficiaryTraditionalIraWithdrawal,
+  type AcceptedBeneficiaryTraditionalIraSourceEligibilityEvidence,
+  type AcceptedBeneficiaryTraditionalIraWithdrawalClassification,
+  type BeneficiaryTraditionalIraAnnualBasisEvidence,
+  type BeneficiaryTraditionalIraBasisReturnTaxCharacter,
+  type BeneficiaryTraditionalIraInheritanceEvidence,
+  type BeneficiaryTraditionalIraOrdinaryIncomeTaxCharacter,
+  type BeneficiaryTraditionalIraRmdSnapshot,
+  type BeneficiaryTraditionalIraWithdrawalTaxCharacter,
+  type ClassifyBeneficiaryTraditionalIraWithdrawalInput,
+  type ClassifyBeneficiaryTraditionalIraWithdrawalResult,
+  type CompleteBeneficiaryTraditionalIraBasisPoolEvidence,
+  type CompleteBeneficiaryTraditionalIraRmdPoolEvidence,
+  type UnsupportedBeneficiaryTraditionalIraWithdrawalClassification,
+} from './beneficiaryTraditionalIraWithdrawalCharacter.js'
+export {
   evaluateOwnedNonRothIraPenaltyPrerequisites,
   type Age59HalfReachedPenaltyEvaluation,
   type DisabilityQualifiedPenaltyEvaluation,
