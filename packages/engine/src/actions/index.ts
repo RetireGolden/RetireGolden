@@ -246,6 +246,23 @@ export {
   type TaxableWithdrawalTaxUnitEvidence,
 } from './taxableWithdrawalCharacter.js'
 export {
+  classifyTraditionalEmployerPlanWithdrawal,
+  type AcceptedTraditionalEmployerPlanSourceEligibilityEvidence,
+  type AcceptedTraditionalEmployerPlanWithdrawalClassification,
+  type ClassifyTraditionalEmployerPlanWithdrawalInput,
+  type ClassifyTraditionalEmployerPlanWithdrawalResult,
+  type TraditionalEmployerPlanBasisReturnTaxCharacter,
+  type TraditionalEmployerPlanBasisSnapshot,
+  type TraditionalEmployerPlanDistributableEventKind,
+  type TraditionalEmployerPlanDistributionAvailabilityEvidence,
+  type TraditionalEmployerPlanOrdinaryIncomeTaxCharacter,
+  type TraditionalEmployerPlanWithdrawalBasisEvidence,
+  type TraditionalEmployerPlanWithdrawalTaxCharacter,
+  type UnavailableTraditionalEmployerPlanWithdrawalClassification,
+  type UnknownTraditionalEmployerPlanAvailabilityClassification,
+  type UnsupportedTraditionalEmployerPlanBasisClassification,
+} from './traditionalEmployerPlanWithdrawalCharacter.js'
+export {
   allocateAnnualIraBasis,
   type AllocateAnnualIraBasisInput,
   type AnnualIraBasisAllocationEntry,
