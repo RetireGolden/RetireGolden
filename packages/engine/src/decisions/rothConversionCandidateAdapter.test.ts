@@ -337,6 +337,48 @@ describe('fill-target Roth conversion candidate adapter', () => {
     expect(forward).toEqual([...forward].sort())
   })
 
+  it('binds request provenance into deterministic tournament tie-break identities', () => {
+    const plan = planWithConversionAccounts()
+    const exploratory = exploratoryCandidate(plan)
+    const first = adaptFillTargetRothConversionGeneratorCandidate(
+      plan,
+      exploratory,
+      [conversionIntent(exploratory.id)],
+    )
+    const second = adaptFillTargetRothConversionGeneratorCandidate(
+      plan,
+      exploratory,
+      [conversionIntent(exploratory.id, {
+        provenance: {
+          source: 'generator',
+          sourceId: exploratory.id,
+          scenarioId: 'scenario-b',
+        },
+      })],
+    )
+    expect(first.status).toBe('adapted')
+    expect(second.status).toBe('adapted')
+    if (first.status !== 'adapted' || second.status !== 'adapted') return
+
+    const firstAction = candidateSchedule(first)[0]!
+    const secondAction = candidateSchedule(second)[0]!
+    expect(secondAction.actionId).toBe(firstAction.actionId)
+    expect(secondAction.provenance).not.toEqual(firstAction.provenance)
+    expect(second.candidate.id).not.toBe(first.candidate.id)
+
+    const ctx = createDecisionContext(plan, simOptions())
+    const rank = (candidates: DecisionCandidate[]) => runDecisionTournament(
+      ctx,
+      [{ id: 'provenance-distinct-fill-targets', generate: () => candidates }],
+    ).ranked.map((row) => row.evaluation.candidate.id)
+    const forward = rank([first.candidate, second.candidate])
+    const reversed = rank([second.candidate, first.candidate])
+
+    expect(new Set(forward).size).toBe(2)
+    expect(reversed).toEqual(forward)
+    expect(forward).toEqual([...forward].sort())
+  })
+
   it('preserves whole-horizon, windowed, IRMAA, and ACA generator provenance', () => {
     const plan = planWithConversionAccounts()
     const ctx = createDecisionContext(plan, simOptions())

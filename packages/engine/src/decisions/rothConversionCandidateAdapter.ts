@@ -351,12 +351,12 @@ function adaptedCandidateId(
   exploratoryCandidateId: string,
   allocations: readonly { request: RothConversionRequest }[],
 ): string {
-  const actionRequestIds = allocations
-    .map((allocation) => allocation.request.actionId)
-    .sort(compareUtf16)
+  const requests = allocations
+    .map((allocation) => allocation.request)
+    .sort((left, right) => compareUtf16(left.actionId, right.actionId))
   return deriveActionStructuralId('retirement-action-fill-target-candidate', [
     exploratoryCandidateId,
-    actionRequestIds,
+    requests,
   ])
 }
 
