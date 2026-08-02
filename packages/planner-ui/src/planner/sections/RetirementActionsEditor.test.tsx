@@ -44,6 +44,28 @@ function migratedAction(
   return parsed.request
 }
 
+function scheduledWithdrawal(plan: Plan, executionDate: string, executionSequence: number) {
+  const owner = plan.household.people[0]!
+  const parsed = parseRetirementActionRequest({
+    actionId: 'preserved-withdrawal',
+    kind: 'ordinaryWithdrawal',
+    year: 2034,
+    executionDate,
+    executionSequence,
+    requestedAmount: asPositiveUsdCents(100_00),
+    provenance: { source: 'manual' },
+    personId: owner.id,
+    allocations: [{
+      allocationId: 'preserved-withdrawal-allocation',
+      sourceAccountId: 'source-ira',
+      requestedAmount: asPositiveUsdCents(100_00),
+    }],
+    purpose: { kind: 'spending' },
+  })
+  if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+  return parsed.request
+}
+
 function editorPlan(): Plan {
   const plan = createSamplePlan()
   const owner = plan.household.people[0]!
@@ -267,6 +289,34 @@ describe('RetirementActionsEditor', () => {
     ])
   })
 
+  it('blocks Save when a preserved action already uses the chosen execution slot', async () => {
+    const plan = editorPlan()
+    const target = migratedAction('legacyAggregateWithdrawal')
+    const preserved = scheduledWithdrawal(plan, '2034-06-15', 3)
+    plan.strategies.retirementActions = [target, preserved]
+    const mounted = await mount(plan)
+    const owner = plan.household.people[0]!
+
+    await change(controlByLabel(mounted.container, 'Person'), owner.id)
+    await change(controlByLabel(mounted.container, 'Source account'), 'source-ira')
+    await act(async () => controlByLabel<HTMLInputElement>(
+      mounted.container,
+      'Assign the full $25,000.00 to this source',
+    ).click())
+    await change(controlByLabel(mounted.container, 'Execution date'), '2034-06-15')
+    await change(controlByLabel(mounted.container, 'Execution sequence'), '3')
+    await change(controlByLabel(mounted.container, 'Withdrawal purpose'), 'spending')
+    const save = Array.from(mounted.container.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Save reviewed action',
+    )
+    await act(async () => save!.click())
+
+    expect(mounted.current().strategies.retirementActions).toEqual([target, preserved])
+    expect(mounted.container.textContent).toContain(
+      'Another retirement action already uses this execution date and sequence.',
+    )
+  })
+
   it('requires an explicit Roth destination and tax-funding decision', async () => {
     const plan = editorPlan()
     plan.strategies.retirementActions = [migratedAction('legacyAggregateRothConversion')]
@@ -283,6 +333,52 @@ describe('RetirementActionsEditor', () => {
     expect(Array.from(
       controlByLabel<HTMLSelectElement>(mounted.container, 'Roth destination account').options,
     ).map((option) => option.value)).toContain('destination-roth')
+  })
+
+  it('disambiguates same-name account choices with type, kind, and stable ID', async () => {
+    const plan = editorPlan()
+    const owner = plan.household.people[0]!
+    plan.accounts.push(
+      {
+        type: 'traditional',
+        id: 'source-ira-2',
+        name: 'Traditional IRA',
+        ownerPersonId: owner.id,
+        annualReturnPct: null,
+        kind: 'ira',
+        balance: 200_000,
+        annualContribution: 0,
+      },
+      {
+        type: 'roth',
+        id: 'destination-roth-2',
+        name: 'Roth IRA',
+        ownerPersonId: owner.id,
+        annualReturnPct: null,
+        kind: 'ira',
+        balance: 20_000,
+        annualContribution: 0,
+      },
+    )
+    plan.strategies.retirementActions = [migratedAction('legacyAggregateRothConversion')]
+    const mounted = await mount(plan)
+
+    await change(controlByLabel(mounted.container, 'Person'), owner.id)
+    const sourceLabels = Array.from(
+      controlByLabel<HTMLSelectElement>(mounted.container, 'Source account').options,
+    ).slice(1).map((option) => option.textContent)
+    const destinationLabels = Array.from(
+      controlByLabel<HTMLSelectElement>(mounted.container, 'Roth destination account').options,
+    ).slice(1).map((option) => option.textContent)
+
+    expect(sourceLabels).toEqual([
+      'Traditional IRA (traditional/ira; ID source-ira)',
+      'Traditional IRA (traditional/ira; ID source-ira-2)',
+    ])
+    expect(destinationLabels).toEqual([
+      'Roth IRA (roth/ira; ID destination-roth)',
+      'Roth IRA (roth/ira; ID destination-roth-2)',
+    ])
   })
 
   it('replaces a migrated conversion only after every identity and funding choice is made', async () => {

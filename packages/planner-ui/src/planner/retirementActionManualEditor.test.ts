@@ -34,11 +34,33 @@ function migrated(
   return result.request
 }
 
+function scheduledAction(executionDate: string, executionSequence: number) {
+  const result = parseRetirementActionRequest({
+    actionId: 'preserved-action',
+    kind: 'ordinaryWithdrawal',
+    year: 2034,
+    executionDate,
+    executionSequence,
+    requestedAmount: asPositiveUsdCents(100),
+    provenance: { source: 'manual' },
+    personId: 'person-a',
+    allocations: [{
+      allocationId: 'preserved-allocation',
+      sourceAccountId: 'ira-a',
+      requestedAmount: asPositiveUsdCents(100),
+    }],
+    purpose: { kind: 'spending' },
+  })
+  if (!result.ok) throw new Error(result.issues.join('; '))
+  return result.request
+}
+
 describe('buildRetirementActionManualIntent', () => {
   it('starts fail-closed and does not infer a person, account, date, sequence, or purpose', () => {
     const result = buildRetirementActionManualIntent(
       migrated('legacyAggregateWithdrawal'),
       emptyRetirementActionManualEditorDraft(),
+      [],
     )
 
     expect(result).toEqual({
@@ -66,7 +88,7 @@ describe('buildRetirementActionManualIntent', () => {
       withdrawalPurpose: 'taxPayment' as const,
     }
 
-    expect(buildRetirementActionManualIntent(target, draft)).toEqual({
+    expect(buildRetirementActionManualIntent(target, draft, [])).toEqual({
       ok: true,
       intent: {
         kind: 'ordinaryWithdrawal',
@@ -96,7 +118,7 @@ describe('buildRetirementActionManualIntent', () => {
       executionSequence: '1',
       conversionTaxFunding: 'externalCash' as const,
     }
-    expect(buildRetirementActionManualIntent(target, incomplete)).toEqual({
+    expect(buildRetirementActionManualIntent(target, incomplete, [])).toEqual({
       ok: false,
       issues: [
         'Choose the exact Roth destination account.',
@@ -105,12 +127,16 @@ describe('buildRetirementActionManualIntent', () => {
       ],
     })
 
-    const built = buildRetirementActionManualIntent(target, {
-      ...incomplete,
-      destinationRothAccountId: 'roth-a',
-      taxFundingAmountDollars: 0.07,
-      externalCashAttested: true,
-    })
+    const built = buildRetirementActionManualIntent(
+      target,
+      {
+        ...incomplete,
+        destinationRothAccountId: 'roth-a',
+        taxFundingAmountDollars: 0.07,
+        externalCashAttested: true,
+      },
+      [],
+    )
     expect(built).toMatchObject({
       ok: true,
       intent: {
@@ -135,7 +161,7 @@ describe('buildRetirementActionManualIntent', () => {
         ...base,
         executionDate,
         executionSequence: '1',
-      })
+      }, [])
       expect(result.ok).toBe(false)
     }
     for (const executionSequence of ['', '0', '-1', '1.5', '9007199254740992']) {
@@ -143,9 +169,38 @@ describe('buildRetirementActionManualIntent', () => {
         ...base,
         executionDate: '2034-01-01',
         executionSequence,
-      })
+      }, [])
       expect(result.ok).toBe(false)
     }
+  })
+
+  it('rejects an execution slot already used by a preserved current action', () => {
+    const target = migrated('legacyAggregateWithdrawal')
+    const draft = {
+      ...emptyRetirementActionManualEditorDraft(),
+      personId: 'person-a',
+      sourceAccountId: 'ira-a',
+      fullSourceAmountConfirmed: true,
+      executionDate: '2034-06-15',
+      executionSequence: '7',
+      withdrawalPurpose: 'spending' as const,
+    }
+
+    expect(buildRetirementActionManualIntent(
+      target,
+      draft,
+      [target, scheduledAction('2034-06-15', 7)],
+    )).toEqual({
+      ok: false,
+      issues: [
+        'Another retirement action already uses this execution date and sequence. Choose an unused sequence.',
+      ],
+    })
+    expect(buildRetirementActionManualIntent(
+      target,
+      draft,
+      [target, scheduledAction('2034-06-15', 8)],
+    ).ok).toBe(true)
   })
 
   it('formats exact cents without dropping the fractional amount', () => {

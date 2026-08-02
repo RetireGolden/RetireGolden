@@ -94,6 +94,24 @@ function exactDateForYear(value: string, year: number): boolean {
   return parseCivilIsoDate(value)?.year === year
 }
 
+function executionSlotAlreadyUsed(
+  targetActionId: string,
+  preservedActions: readonly RetirementActionRequest[],
+  executionDate: string,
+  executionSequence: number,
+): boolean {
+  return preservedActions.some((action) =>
+    action.actionId !== targetActionId &&
+    (
+      action.kind === 'ordinaryWithdrawal' ||
+      action.kind === 'rothConversion' ||
+      action.kind === 'qcd'
+    ) &&
+    action.executionDate === executionDate &&
+    action.executionSequence === executionSequence,
+  )
+}
+
 function positiveDollarsToCents(value: number | null): ReturnType<typeof asPositiveUsdCents> | null {
   if (value === null || !Number.isFinite(value) || value <= 0) return null
   try {
@@ -120,6 +138,7 @@ export function formatPositiveUsdCents(cents: number): string {
 export function buildRetirementActionManualIntent(
   target: Readonly<EditableMigratedRetirementAction>,
   draft: Readonly<RetirementActionManualEditorDraft>,
+  preservedActions: readonly Readonly<RetirementActionRequest>[],
 ): BuildRetirementActionManualIntentResult {
   const issues: string[] = []
   if (draft.personId.trim() === '') issues.push('Choose the person responsible for this action.')
@@ -132,6 +151,19 @@ export function buildRetirementActionManualIntent(
   }
   const executionSequence = exactExecutionSequence(draft.executionSequence)
   if (executionSequence === null) issues.push('Enter a positive whole-number execution sequence.')
+  else if (
+    exactDateForYear(draft.executionDate, target.year) &&
+    executionSlotAlreadyUsed(
+      target.actionId,
+      preservedActions,
+      draft.executionDate,
+      executionSequence,
+    )
+  ) {
+    issues.push(
+      'Another retirement action already uses this execution date and sequence. Choose an unused sequence.',
+    )
+  }
 
   if (target.kind === 'legacyAggregateWithdrawal') {
     if (draft.withdrawalPurpose === '') issues.push('Choose the withdrawal purpose.')

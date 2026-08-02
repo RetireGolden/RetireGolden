@@ -31,6 +31,13 @@ const ORDINARY_SOURCE_TYPES = new Set([
   'hsa',
 ])
 
+function accountOptionLabel(account: Plan['accounts'][number]): string {
+  const classification = account.type === 'traditional' || account.type === 'roth'
+    ? `${account.type}/${account.kind}`
+    : account.type
+  return `${account.name} (${classification}; ID ${account.id})`
+}
+
 function accountOptions(
   plan: Readonly<Plan>,
   personId: string,
@@ -46,7 +53,7 @@ function accountOptions(
       return account.type === 'traditional' && account.inherited === undefined
     })
     .sort((left, right) => left.id < right.id ? -1 : left.id > right.id ? 1 : 0)
-    .map((account) => ({ value: account.id, label: `${account.name} (${account.type})` }))
+    .map((account) => ({ value: account.id, label: accountOptionLabel(account) }))
 }
 
 function destinationOptions(plan: Readonly<Plan>, personId: string) {
@@ -58,7 +65,7 @@ function destinationOptions(plan: Readonly<Plan>, personId: string) {
       account.kind === 'ira',
     )
     .sort((left, right) => left.id < right.id ? -1 : left.id > right.id ? 1 : 0)
-    .map((account) => ({ value: account.id, label: `${account.name} (Roth IRA)` }))
+    .map((account) => ({ value: account.id, label: accountOptionLabel(account) }))
 }
 
 function ManualReviewRow({
@@ -91,7 +98,11 @@ function ManualReviewRow({
   ) => setDraft((current) => ({ ...current, [key]: value }))
 
   const submit = () => {
-    const built = buildRetirementActionManualIntent(target, draft)
+    const built = buildRetirementActionManualIntent(
+      target,
+      draft,
+      plan.strategies.retirementActions,
+    )
     if (!built.ok) {
       setIssues(built.issues)
       return
