@@ -71,6 +71,19 @@ describe('QCD candidate identity allocation', () => {
     })
   })
 
+  it('preserves an omitted execution date without inventing one', () => {
+    const plan = singlePersonPlan()
+    plan.accounts = [traditionalAccount('ira-a', 100_000)]
+    const intent = qcdIntent({ executionDate: undefined })
+
+    const result = allocateRetirementActionCandidateIdentity(plan, intent)
+
+    expect(result.status).toBe('allocated')
+    if (result.status !== 'allocated') return
+    expect(result.request.kind).toBe('qcd')
+    expect(result.request.executionDate).toBeUndefined()
+  })
+
   it('fails closed for cross-owner, joint, employer, inherited, and ambiguous sources', () => {
     const plan = couplePlan()
     const joint = traditionalAccount('joint', 100_000)

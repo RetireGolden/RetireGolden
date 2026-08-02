@@ -493,6 +493,27 @@ describe('QCD efficiency candidate adapter', () => {
     expect(result.allocationEvidence.alternatives[0]?.reasonCodes).toContain(code)
   })
 
+  it('keeps an omitted execution date explicit and non-actionable', () => {
+    const plan = eligiblePlan()
+    const option = alternative('undated', 'ira-a', { executionDate: undefined })
+
+    const result = adaptQcdEfficiencyDetectorCandidate(
+      plan,
+      exploratoryCandidate(plan),
+      [option],
+    )
+
+    expect(result.status).toBe('blocked')
+    expect(result.allocationEvidence.alternatives).toEqual([
+      expect.objectContaining({
+        alternativeId: 'undated',
+        executionDate: null,
+        disposition: 'blocked',
+        reasonCodes: expect.arrayContaining(['qcd-date-missing']),
+      }),
+    ])
+  })
+
   it('uses Plan-bound SEP activity evidence and blocks an ongoing SEP without fallback', () => {
     const inactive = eligiblePlan()
     inactive.retirementActionEligibilityFacts!.iraClassifications[0] = {

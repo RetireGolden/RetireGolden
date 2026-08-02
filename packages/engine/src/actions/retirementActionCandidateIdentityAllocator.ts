@@ -75,7 +75,7 @@ export interface RothConversionCandidateIdentityIntent
 export interface QcdCandidateIdentityIntent {
   kind: 'qcd'
   year: number
-  executionDate: string
+  executionDate?: string
   executionSequence: number
   requestedAmount: PositiveUsdCents
   donorPersonId: PersonId
