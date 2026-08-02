@@ -292,24 +292,62 @@ function reviewedIdentityRecords(
   }
 }
 
-function targetIdentityReferences(
-  target: RetirementActionRequest,
+function actionIdentityReferences(
+  action: RetirementActionRequest,
 ): ReviewedIdentityReferences | null {
-  if (target.kind === 'ordinaryWithdrawal' || target.kind === 'rothConversion') {
+  if (action.kind === 'ordinaryWithdrawal' || action.kind === 'rothConversion') {
     return {
-      personId: target.personId,
-      sourceAccountIds: target.allocations.map((allocation) => allocation.sourceAccountId),
-      destinationRothAccountId: target.kind === 'rothConversion'
-        ? target.destinationRothAccountId
+      personId: action.personId,
+      sourceAccountIds: action.allocations.map((allocation) => allocation.sourceAccountId),
+      destinationRothAccountId: action.kind === 'rothConversion'
+        ? action.destinationRothAccountId
         : null,
     }
   }
-  if (target.kind === 'qcd') {
+  if (action.kind === 'qcd') {
     return {
-      personId: target.donorPersonId,
-      sourceAccountIds: [target.allocation.sourceAccountId],
+      personId: action.donorPersonId,
+      sourceAccountIds: [action.allocation.sourceAccountId],
       destinationRothAccountId: null,
     }
+  }
+  return null
+}
+
+function targetIdentitySemanticsIssue(
+  target: RetirementActionRequest,
+  records: ReviewedIdentityRecords,
+): RetirementActionManualReviewIssue | null {
+  const differentlyOwnedSource = records.sourceAccounts.find((account) =>
+    account.ownerPersonId !== null && account.ownerPersonId !== records.person.id,
+  )
+  if (differentlyOwnedSource !== undefined) {
+    return issue(
+      'invalidInput',
+      target.kind === 'qcd' ? 'target.allocation.sourceAccountId' : 'target.allocations',
+      `Target source account "${differentlyOwnedSource.id}" is owned by a different person.`,
+    )
+  }
+  if (
+    target.kind === 'rothConversion' &&
+    records.destinationRothAccount?.type !== 'roth'
+  ) {
+    return issue(
+      'invalidInput',
+      'target.destinationRothAccountId',
+      'The target conversion destination must resolve to a Roth account.',
+    )
+  }
+  if (
+    records.destinationRothAccount !== null &&
+    records.destinationRothAccount.ownerPersonId !== null &&
+    records.destinationRothAccount.ownerPersonId !== records.person.id
+  ) {
+    return issue(
+      'invalidInput',
+      'target.destinationRothAccountId',
+      `Target destination account "${records.destinationRothAccount.id}" is owned by a different person.`,
+    )
   }
   return null
 }
@@ -503,6 +541,25 @@ function reviewUnchecked(
     return manualReviewRequired(input.plan, target, targetIndex)
   }
 
+  const targetReferences = actionIdentityReferences(target)
+  const originalTargetIdentityRecords = targetReferences === null
+    ? null
+    : reviewedIdentityRecords(input.plan, targetReferences)
+  if (targetReferences !== null && originalTargetIdentityRecords === null) {
+    return blocked([issue(
+      'invalidInput',
+      'target',
+      'The target action identity references must resolve uniquely in the Plan.',
+    )], target)
+  }
+  if (originalTargetIdentityRecords !== null) {
+    const semanticsIssue = targetIdentitySemanticsIssue(
+      target,
+      originalTargetIdentityRecords,
+    )
+    if (semanticsIssue !== null) return blocked([semanticsIssue], target)
+  }
+
   const replacement = record(rawInput['replacementIntent'])
   if (replacement === null) {
     return blocked([issue(
@@ -672,7 +729,6 @@ function reviewUnchecked(
       'Canonical allocation evidence did not resolve to unique reviewed identity records.',
     )], target)
   }
-  const targetReferences = targetIdentityReferences(target)
   const targetIdentityRecords = targetReferences === null
     ? null
     : reviewedIdentityRecords(replacementPlanResult.data, targetReferences)
@@ -682,6 +738,21 @@ function reviewUnchecked(
       'target',
       'The target action identity references must resolve uniquely in the Plan.',
     )], target)
+  }
+  const preservedIdentityRecords: Array<ReviewedIdentityRecords | null> = []
+  for (const action of parsedActions) {
+    const references = actionIdentityReferences(action)
+    const records = references === null
+      ? null
+      : reviewedIdentityRecords(replacementPlanResult.data, references)
+    if (references !== null && records === null) {
+      return blocked([issue(
+        'replacementInvariantViolation',
+        'plan.strategies.retirementActions',
+        'A preserved action did not resolve to unique reviewed identity records.',
+      )], target)
+    }
+    preservedIdentityRecords.push(records)
   }
   const reviewEvidenceId = deriveActionStructuralId('retirement-action-manual-review', [
     normalizeOptionalUndefinedFields({
@@ -693,6 +764,7 @@ function reviewUnchecked(
       identityRecords: {
         replacement: replacementIdentityRecords,
         target: targetIdentityRecords,
+        preserved: preservedIdentityRecords,
       },
     }),
   ])

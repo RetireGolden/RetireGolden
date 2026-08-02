@@ -443,6 +443,151 @@ describe('manual retirement-action review and replacement', () => {
     expect(changedDestination.evidence.evidenceId).not.toBe(baseline.evidence.evidenceId)
   })
 
+  it('validates target ownership and Roth destination semantics before omission', () => {
+    const crossOwnerPlan = couplePlan({ p1PlanningAge: 100, p2PlanningAge: 100 })
+    crossOwnerPlan.accounts = [
+      ownedCash('cash-a'),
+      ownedCash('target-source', 'p2'),
+      traditionalAccount('traditional-a', 1_000, 'p1'),
+      ownedRoth('roth-a'),
+    ]
+    crossOwnerPlan.strategies.retirementActions = [action({
+      actionId: 'cross-owner-target',
+      kind: 'ordinaryWithdrawal',
+      year: 2030,
+      executionSequence: 1,
+      requestedAmount: 10_000,
+      provenance: { source: 'manual' },
+      personId: 'p1',
+      allocations: [{
+        allocationId: 'cross-owner-allocation',
+        sourceAccountId: 'target-source',
+        requestedAmount: 10_000,
+      }],
+      purpose: { kind: 'spending' },
+    })]
+
+    const nonRothDestinationPlan = basePlan()
+    nonRothDestinationPlan.accounts.push(
+      traditionalAccount('non-roth-destination', 1_000, 'p1'),
+    )
+    nonRothDestinationPlan.strategies.retirementActions = [action({
+      actionId: 'non-roth-destination-target',
+      kind: 'rothConversion',
+      year: 2030,
+      executionSequence: 1,
+      requestedAmount: 20_000,
+      provenance: { source: 'manual' },
+      personId: 'p1',
+      allocations: [{
+        allocationId: 'conversion-source-allocation',
+        sourceAccountId: 'traditional-a',
+        requestedAmount: 20_000,
+      }],
+      destinationRothAccountId: 'non-roth-destination',
+      taxFunding: { kind: 'noneExpected' },
+    })]
+
+    const crossOwnerDestinationPlan = couplePlan({
+      p1PlanningAge: 100,
+      p2PlanningAge: 100,
+    })
+    crossOwnerDestinationPlan.accounts = [
+      traditionalAccount('traditional-a', 1_000, 'p1'),
+      ownedRoth('roth-a'),
+      ownedRoth('target-roth', 'p2'),
+    ]
+    crossOwnerDestinationPlan.strategies.retirementActions = [action({
+      actionId: 'cross-owner-destination-target',
+      kind: 'rothConversion',
+      year: 2030,
+      executionSequence: 1,
+      requestedAmount: 20_000,
+      provenance: { source: 'manual' },
+      personId: 'p1',
+      allocations: [{
+        allocationId: 'cross-owner-conversion-allocation',
+        sourceAccountId: 'traditional-a',
+        requestedAmount: 20_000,
+      }],
+      destinationRothAccountId: 'target-roth',
+      taxFunding: { kind: 'noneExpected' },
+    })]
+
+    const crossOwner = review(
+      crossOwnerPlan,
+      'cross-owner-target',
+      ordinaryIntent(),
+    )
+    const nonRothDestination = review(
+      nonRothDestinationPlan,
+      'non-roth-destination-target',
+      conversionIntent(),
+    )
+    const crossOwnerDestination = review(
+      crossOwnerDestinationPlan,
+      'cross-owner-destination-target',
+      conversionIntent(),
+    )
+
+    expect(crossOwner).toMatchObject({
+      status: 'blocked',
+      outcome: 'refused',
+      issues: [{ kind: 'invalidInput', field: 'target.allocations' }],
+    })
+    expect(nonRothDestination).toMatchObject({
+      status: 'blocked',
+      outcome: 'refused',
+      issues: [{ kind: 'invalidInput', field: 'target.destinationRothAccountId' }],
+    })
+    expect(crossOwnerDestination).toMatchObject({
+      status: 'blocked',
+      outcome: 'refused',
+      issues: [{ kind: 'invalidInput', field: 'target.destinationRothAccountId' }],
+    })
+  })
+
+  it('binds identity records referenced only by preserved actions into evidence', () => {
+    const cashPlan = basePlan()
+    cashPlan.accounts.push(ownedCash('preserved-source'))
+    cashPlan.strategies.retirementActions = [
+      legacyWithdrawal(),
+      action({
+        actionId: 'preserved-action',
+        kind: 'ordinaryWithdrawal',
+        year: 2031,
+        executionSequence: 1,
+        requestedAmount: 5_000,
+        provenance: { source: 'manual' },
+        personId: 'p1',
+        allocations: [{
+          allocationId: 'preserved-allocation',
+          sourceAccountId: 'preserved-source',
+          requestedAmount: 5_000,
+        }],
+        purpose: { kind: 'spending' },
+      }),
+    ]
+    const taxablePlan = structuredClone(cashPlan)
+    const preservedSourceIndex = taxablePlan.accounts.findIndex(
+      (account) => account.id === 'preserved-source',
+    )
+    taxablePlan.accounts[preservedSourceIndex] = {
+      ...taxableAccount('preserved-source', 1_000, 1_000),
+      ownerPersonId: 'p1',
+    }
+
+    const cash = review(cashPlan, 'legacy-withdrawal', ordinaryIntent())
+    const taxable = review(taxablePlan, 'legacy-withdrawal', ordinaryIntent())
+
+    expect(cash.status).toBe('replacementReady')
+    expect(taxable.status).toBe('replacementReady')
+    if (cash.status !== 'replacementReady' || taxable.status !== 'replacementReady') return
+    expect(taxable.replacement.actionId).toBe(cash.replacement.actionId)
+    expect(taxable.evidence.preservedActionIds).toEqual(cash.evidence.preservedActionIds)
+    expect(taxable.evidence.evidenceId).not.toBe(cash.evidence.evidenceId)
+  })
+
   it.each(['legacyAggregateQcd', 'qcd'] as const)(
     'keeps %s explicit, unsupported, and non-mutating until a canonical QCD allocator exists',
     (kind) => {
