@@ -205,6 +205,18 @@ export {
   type TaxableSourcePenaltyCoverageEvidence,
 } from './execution.js'
 export {
+  annualRetirementActionExecutorSources,
+  ordinaryWithdrawalPublicationSource,
+  publishAnnualRetirementActions,
+  type AnnualRetirementActionAllocationRecord,
+  type AnnualRetirementActionExecutorSource,
+  type AnnualRetirementActionPublication,
+  type AnnualRetirementActionPublicationSource,
+  type AnnualRetirementActionRecord,
+  type AnnualRetirementActionScheduleDiagnostic,
+  type PublishAnnualRetirementActionsInput,
+} from './annualRetirementActionPublication.js'
+export {
   classifyIndividuallyOwnedTaxableWithdrawal,
   type ClassifyIndividuallyOwnedTaxableWithdrawalInput,
   type ClassifyIndividuallyOwnedTaxableWithdrawalResult,

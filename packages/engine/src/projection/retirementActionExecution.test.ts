@@ -171,6 +171,15 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
       outcome: 'executed',
       executedAmount: 5_000,
     })
+    expect(year.retirementActionPublication).toMatchObject({
+      executorSources: ['ordinaryWithdrawalExecutor'],
+      scheduleDiagnostics: [],
+      records: [{ actionId: 'withdraw-50' }],
+    })
+    expect(year.retirementActionPublication?.records)
+      .not.toBe(year.retirementActionExecution?.evidence)
+    expect(year.retirementActionPublication?.records[0]?.request)
+      .not.toBe(year.retirementActionExecution?.evidence[0]?.request)
   })
 
   it('prices final equity compensation once as ordinary income, never as gain', () => {

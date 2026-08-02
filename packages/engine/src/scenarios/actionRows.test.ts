@@ -8,6 +8,10 @@ import { asAccountId, asActionId, asAllocationId } from '../actions/identity.js'
 import { asPersonId } from '../actions/identity.js'
 import { asPositiveUsdCents } from '../actions/money.js'
 import type { RetirementActionRequest } from '../actions/contract.js'
+import {
+  ordinaryWithdrawalPublicationSource,
+  publishAnnualRetirementActions,
+} from '../actions/annualRetirementActionPublication.js'
 import { createActionReason, type ActionReason } from '../actions/reasons.js'
 import type { YearResult } from '../projection/types.js'
 import {
@@ -43,6 +47,11 @@ function executionEvidence(input: EvidenceInput): OrdinaryWithdrawalExecutionEvi
     : 'nonActionable'
   const kind = input.kind ?? 'ordinaryWithdrawal'
   const personId = input.personId === undefined ? 'person-1' : input.personId
+  const requestedAllocations = (input.allocations ?? []).map((allocation) => ({
+    allocationId: allocation.allocationId,
+    sourceAccountId: allocation.sourceAccountId,
+    requestedAmount: allocation.requestedAmountCents,
+  }))
   const request = input.request ?? {
     actionId: input.actionId,
     kind,
@@ -51,7 +60,7 @@ function executionEvidence(input: EvidenceInput): OrdinaryWithdrawalExecutionEvi
     requestedAmount,
     provenance: { source: 'manual' },
     ...(kind === 'ordinaryWithdrawal'
-      ? { personId, allocations: [], purpose: { kind: 'spending' } }
+      ? { personId, allocations: requestedAllocations, purpose: { kind: 'spending' } }
       : {}),
   }
 
@@ -174,6 +183,96 @@ describe('normalizeScenarioActionRows', () => {
       },
     ])
     expect(forward[0]?.sourceAllocations).not.toBe(actionA.allocations)
+  })
+
+  it('reads rows and schedule diagnostics from the canonical annual publication', () => {
+    const action = executionEvidence({
+      actionId: 'published-action',
+      allocations: [{
+        allocationId: 'published-allocation',
+        sourceAccountId: 'published-source',
+        requestedAmountCents: 10_000,
+        executedAmountCents: 0,
+      }],
+    })
+    const peer = executionEvidence({
+      actionId: 'published-peer',
+      allocations: [{
+        allocationId: 'peer-allocation',
+        sourceAccountId: 'peer-source',
+        requestedAmountCents: 10_000,
+        executedAmountCents: 0,
+      }],
+    })
+    const conflict: OrdinaryWithdrawalExecutionScheduleIssue = {
+      kind: 'executionSequenceConflict',
+      year: 2030,
+      scheduledDate: null,
+      executionSequence: 1,
+      collidingActionIds: [
+        asActionId('published-action'),
+        asActionId('published-peer'),
+      ],
+      reason: createActionReason('action-sequence-conflict'),
+    }
+    const legacyYear = yearResult(
+      2030,
+      [],
+      [conflict],
+      [action.request, peer.request],
+    )
+    const execution = legacyYear.retirementActionExecution!
+    const publication = publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: execution.requests,
+      sources: [ordinaryWithdrawalPublicationSource(execution)],
+    })
+    const yearWithoutLegacy = structuredClone(legacyYear)
+    delete yearWithoutLegacy.retirementActionExecution
+    const publishedYear = {
+      ...yearWithoutLegacy,
+      retirementActionPublication: publication,
+    } as YearResult
+
+    expect(publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [],
+      sources: [],
+    }))
+      .toBeUndefined()
+    expect(normalizeScenarioActionRows([publishedYear]))
+      .toEqual(normalizeScenarioActionRows([legacyYear]))
+    expect(normalizeScenarioActionScheduleDiagnostics([publishedYear]))
+      .toEqual(normalizeScenarioActionScheduleDiagnostics([legacyYear]))
+
+    const canonicalSupersetYear = {
+      ...legacyYear,
+      retirementActionExecution: {
+        ...execution,
+        requests: [action.request],
+      },
+      retirementActionPublication: publication,
+    } as YearResult
+    expect(normalizeScenarioActionRows([canonicalSupersetYear])).toHaveLength(2)
+
+    expect(() => normalizeScenarioActionRows([{
+      ...publishedYear,
+      year: 2031,
+    }])).toThrow(/different annual result/i)
+
+    const staleLegacyYear = {
+      ...legacyYear,
+      retirementActionExecution: {
+        ...execution,
+        requests: [{
+          ...action.request,
+          requestedAmount: asPositiveUsdCents(10_001),
+        }],
+      },
+      retirementActionPublication: publication,
+    } as YearResult
+    expect(() => normalizeScenarioActionRows([staleLegacyYear]))
+      .toThrow(/does not cover the legacy/i)
   })
 
   it('preserves exact partial cents and complete trim reason objects without aliasing', () => {

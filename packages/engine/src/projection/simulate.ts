@@ -78,7 +78,9 @@ import {
   executeOrdinaryWithdrawals,
   ledgerCentTotalToPlanDollars,
   ledgerCentsToPlanDollars,
+  ordinaryWithdrawalPublicationSource,
   planDollarsToLedgerCents,
+  publishAnnualRetirementActions,
   signedLedgerCentTotalToPlanDollars,
   type ExecuteOrdinaryWithdrawalsResult,
   type TaxableAccountOpeningSnapshot,
@@ -4922,6 +4924,17 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       retirementRuntimeApplicationSource,
       ownedNonRothIraPostGrowthSource,
       ...(retirementActionExecution ? { retirementActionExecution } : {}),
+      ...(retirementActionExecution
+        ? {
+            retirementActionPublication: publishAnnualRetirementActions({
+              taxYear: year,
+              requests: currentYearActions,
+              sources: [
+                ordinaryWithdrawalPublicationSource(retirementActionExecution),
+              ],
+            }),
+          }
+        : {}),
       penalties,
       magi: magiHistory.get(year)!,
       ...(yearAcaResult ? { aca: yearAcaResult } : {}),

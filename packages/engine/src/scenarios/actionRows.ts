@@ -8,6 +8,10 @@
  */
 
 import type { RetirementActionRequest, SourceAllocationRequest } from '../actions/contract.js'
+import type {
+  AnnualRetirementActionRecord,
+  AnnualRetirementActionScheduleDiagnostic as PublishedScheduleDiagnostic,
+} from '../actions/annualRetirementActionPublication.js'
 import type { OrdinaryWithdrawalExecutionScheduleIssue } from '../actions/execution.js'
 import type {
   AccountId,
@@ -19,6 +23,33 @@ import { asUsdCents, type PositiveUsdCents, type UsdCents } from '../actions/mon
 import type { ActionReason } from '../actions/reasons.js'
 import { compareUtf16CodeUnits } from '../actions/structuralId.js'
 import type { YearResult } from '../projection/types.js'
+
+function canonicalPublication(year: Readonly<YearResult>) {
+  const publication = year.retirementActionPublication
+  const legacy = year.retirementActionExecution
+  if (publication !== undefined && publication.taxYear !== year.year) {
+    throw new Error(
+      'Canonical retirement-action publication belongs to a different annual result',
+    )
+  }
+  if (publication !== undefined && legacy !== undefined) {
+    const publishedById = new Map(
+      publication.records.map((record) => [record.actionId, record]),
+    )
+    if (legacy.requests.some((request) => {
+      const record = publishedById.get(request.actionId)
+      return (
+        record === undefined ||
+        JSON.stringify(record.request) !== JSON.stringify(request)
+      )
+    })) {
+      throw new Error(
+        'Canonical retirement-action publication does not cover the legacy annual executor result',
+      )
+    }
+  }
+  return publication
+}
 
 export interface ScenarioActionSourceAllocation {
   readonly allocationId: AllocationId
@@ -104,6 +135,33 @@ function charityDesignationId(
   return request.kind === 'qcd' ? request.charity.designationId : null
 }
 
+function canonicalRow(
+  record: Readonly<AnnualRetirementActionRecord>,
+): ScenarioActionRow {
+  return {
+    actionId: record.actionId,
+    kind: record.kind,
+    year: record.year,
+    personId: record.personId,
+    destinationAccountId: destinationAccountId(record.request),
+    charityDesignationId: charityDesignationId(record.request),
+    requestedAmountCents: record.requestedAmount,
+    executedAmountCents: record.executedAmount,
+    unexecutedAmountCents: record.unexecutedAmount,
+    readiness: record.readiness,
+    outcome: record.outcome,
+    sourceAllocations: record.allocations.map((allocation) => ({
+      allocationId: allocation.allocationId,
+      sourceAccountId: allocation.sourceAccountId,
+      resolution: allocation.resolution,
+      requestedAmountCents: allocation.requestedAmount,
+      executedAmountCents: allocation.executedAmount,
+      unexecutedAmountCents: allocation.unexecutedAmount,
+    })),
+    reasons: record.reasons.map((reason) => ({ ...reason })),
+  }
+}
+
 /** Normalize published annual execution results into deterministic rows. */
 export function normalizeScenarioActionRows(
   years: readonly Readonly<YearResult>[],
@@ -112,6 +170,20 @@ export function normalizeScenarioActionRows(
   const seenActionIds = new Set<ActionId>()
 
   for (const year of years) {
+    const publication = canonicalPublication(year)
+    if (publication !== undefined) {
+      for (const record of publication.records) {
+        if (seenActionIds.has(record.actionId)) {
+          throw new Error(
+            `Duplicate retirement-action publication record for actionId "${record.actionId}"`,
+          )
+        }
+        seenActionIds.add(record.actionId)
+        rows.push(canonicalRow(record))
+      }
+      continue
+    }
+
     const execution = year.retirementActionExecution
     for (const evidence of execution?.evidence ?? []) {
       if (seenActionIds.has(evidence.actionId)) {
@@ -231,14 +303,31 @@ function issueDiagnostics(
   }))
 }
 
+function publishedDiagnostic(
+  diagnostic: Readonly<PublishedScheduleDiagnostic>,
+): ScenarioActionScheduleDiagnostic {
+  return {
+    kind: diagnostic.kind,
+    actionId: diagnostic.actionId,
+    year: diagnostic.year,
+    scheduledDate: diagnostic.scheduledDate,
+    executionSequence: diagnostic.executionSequence,
+    collidingActionIds: [...diagnostic.collidingActionIds],
+    reason: { ...diagnostic.reason },
+  }
+}
+
 /** Expand schedule-level refusals into deterministic per-action diagnostics. */
 export function normalizeScenarioActionScheduleDiagnostics(
   years: readonly Readonly<YearResult>[],
 ): readonly Readonly<ScenarioActionScheduleDiagnostic>[] {
   return years
-    .flatMap((year) =>
-      (year.retirementActionExecution?.scheduleIssues ?? []).flatMap(issueDiagnostics),
-    )
+    .flatMap((year) => {
+      const publication = canonicalPublication(year)
+      return publication === undefined
+        ? (year.retirementActionExecution?.scheduleIssues ?? []).flatMap(issueDiagnostics)
+        : publication.scheduleDiagnostics.map(publishedDiagnostic)
+    })
     .sort(
       (left, right) =>
         compareUtf16CodeUnits(left.actionId, right.actionId) ||
