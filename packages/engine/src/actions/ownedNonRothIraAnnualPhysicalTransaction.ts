@@ -11,6 +11,11 @@ import {
   type OwnedNonRothIraAnnualPhysicalEventPoolView,
 } from './annualRetirementPhysicalEventInventory.js'
 import type { AnnualIraBasisAllocationEntryInput } from './annualIraBasisAllocation.js'
+import {
+  evaluateAnnualQcdExecutionPrerequisites,
+  type AnnualQcdExecutionPrerequisiteEvidence,
+  type EvaluateAnnualQcdExecutionPrerequisitesInput,
+} from './annualQcdExecutionPrerequisite.js'
 import type { AccountOpeningBalanceSnapshot } from './execution.js'
 import {
   accountIdSchema,
@@ -60,6 +65,7 @@ export interface PreparePlanOwnedNonRothIraAnnualPhysicalTransactionInput
     readonly Readonly<StagedOwnedNonRothIraAnnualEventApplicationInput>[]
   settledContributionApplications:
     readonly Readonly<StagedOwnedNonRothIraAnnualContributionApplicationInput>[]
+  qcdPrerequisiteInput?: Readonly<EvaluateAnnualQcdExecutionPrerequisitesInput>
 }
 
 export type OwnedNonRothIraAnnualPhysicalTransactionIssueKind =
@@ -68,6 +74,11 @@ export type OwnedNonRothIraAnnualPhysicalTransactionIssueKind =
   | 'ownerPoolMissing'
   | 'ownerPoolAmbiguous'
   | 'qcdStageRequired'
+  | 'qcdStageInvalid'
+  | 'qcdApplicationDuplicate'
+  | 'qcdApplicationMissing'
+  | 'qcdApplicationForeign'
+  | 'qcdApplicationMismatch'
   | 'unsupportedPoolActivity'
   | 'openingBalanceInvalid'
   | 'openingBalanceDuplicate'
@@ -153,9 +164,20 @@ export interface OwnedNonRothIraAnnualLine8PhysicalApplication
   destinationCreditEvidenceId: string
 }
 
+export interface OwnedNonRothIraAnnualQcdPhysicalApplication
+  extends OwnedNonRothIraAnnualPhysicalApplicationBase {
+  lineScope: 'qcdCharitableDistributions'
+  destinationRothAccountId: null
+  destinationCreditEvidenceId: null
+  qcdPrerequisiteEvidence: Readonly<AnnualQcdExecutionPrerequisiteEvidence>
+  qcdPrerequisiteEvidenceId: string
+  charityCreditEvidenceId: string
+}
+
 export type OwnedNonRothIraAnnualPhysicalApplication =
   | Readonly<OwnedNonRothIraAnnualLine7PhysicalApplication>
   | Readonly<OwnedNonRothIraAnnualLine8PhysicalApplication>
+  | Readonly<OwnedNonRothIraAnnualQcdPhysicalApplication>
 
 export interface OwnedNonRothIraSettledAnnualContributionApplication {
   predicate: 'ownedNonRothIraSettledAnnualContributionApplication'
@@ -216,6 +238,24 @@ export interface OwnedNonRothIraDetachedAnnualRothDestinationCredit {
   evidenceId: string
 }
 
+export interface OwnedNonRothIraDetachedAnnualQcdCharityCredit {
+  predicate: 'ownedNonRothIraDetachedAnnualQcdCharityCredit'
+  planId: PlanId
+  ownerPersonId: PersonId
+  taxYear: number
+  ledgerRunId: string
+  inventoryEvidenceId: string
+  inventoryEventId: string
+  actionId: ActionId
+  allocationId: AllocationId
+  sourceAccountId: AccountId
+  charity: NonNullable<Extract<AnnualRetirementPhysicalEvent, { origin: 'planAction' }>['charity']>
+  stagedCreditAmount: UsdCents
+  creditStatus: 'detachedCandidateNotCommitted'
+  upstreamEvidenceId: string
+  evidenceId: string
+}
+
 export interface PlanOwnedNonRothIraAnnualPhysicalTransactionPreparedResult
   extends TransactionResultBase {
   status: 'unifiedAnnualPhysicalTransactionPrepared'
@@ -232,6 +272,8 @@ export interface PlanOwnedNonRothIraAnnualPhysicalTransactionPreparedResult
     readonly Readonly<OwnedNonRothIraDetachedAnnualSourceBalanceTransition>[]
   stagedDestinationCredits:
     readonly Readonly<OwnedNonRothIraDetachedAnnualRothDestinationCredit>[]
+  stagedQcdCharityCredits:
+    readonly Readonly<OwnedNonRothIraDetachedAnnualQcdCharityCredit>[]
   line7Entries: readonly Readonly<AnnualIraBasisAllocationEntryInput>[]
   line8Entries: readonly Readonly<AnnualIraBasisAllocationEntryInput>[]
   line7GrossAmount: UsdCents
@@ -366,6 +408,24 @@ function identifierValues(
   return result
 }
 
+function evidenceIdentifierValues(
+  value: unknown,
+  key = '',
+  result = new Set<string>(),
+  seen = new WeakSet<object>(),
+): Set<string> {
+  if (typeof value === 'string') {
+    if (key === 'evidenceId' || key.endsWith('EvidenceId')) result.add(value)
+    return result
+  }
+  if (value === null || typeof value !== 'object' || seen.has(value)) return result
+  seen.add(value)
+  for (const [childKey, child] of Object.entries(value as Record<string, unknown>)) {
+    evidenceIdentifierValues(child, childKey, result, seen)
+  }
+  return result
+}
+
 function claimIdentifier(
   claimed: Set<string>,
   value: string,
@@ -448,7 +508,10 @@ function safeSum(
 
 function eventLineScope(
   event: AnnualRetirementPhysicalEvent,
-): 'form8606Line7Distributions' | 'form8606Line8NetConversions' {
+): 'form8606Line7Distributions' | 'form8606Line8NetConversions' | 'qcdCharitableDistributions' {
+  if (event.form8606Category === 'qcdCandidateAwaitingAnnualQcdStage') {
+    return 'qcdCharitableDistributions'
+  }
   return event.form8606Category === 'line8ConversionCandidate'
     ? 'form8606Line8NetConversions'
     : 'form8606Line7Distributions'
@@ -543,11 +606,28 @@ function prepare(
   const pool = selectedPool(inventory, ownerPersonId, issues)
   if (pool === null) return blocked(inventory, issues)
 
-  if (pool.qcdCandidateAwaitingAnnualQcdStage.events.length > 0) {
+  const plan = planSchema.parse(input.plan)
+  const qcdEvents = pool.qcdCandidateAwaitingAnnualQcdStage.events
+  let qcdPrerequisites: readonly Readonly<AnnualQcdExecutionPrerequisiteEvidence>[] = []
+  if (qcdEvents.length > 0 && input.qcdPrerequisiteInput === undefined) {
     issues.push(issue(
       'qcdStageRequired',
-      'Owned IRA QCD events require their annual QCD stage before this line-7/line-8 transaction can be complete',
+      'Owned IRA QCD events require their rebuilt preflight/candidate evidence before the unified transaction can be complete',
     ))
+  } else if (input.qcdPrerequisiteInput !== undefined) {
+    const rebuilt = evaluateAnnualQcdExecutionPrerequisites({
+      ...input.qcdPrerequisiteInput,
+      taxYear: inventory.taxYear,
+      plan,
+    })
+    if (rebuilt.status !== 'evaluated' || rebuilt.taxYear !== inventory.taxYear) {
+      issues.push(issue(
+        'qcdStageInvalid',
+        'QCD preflight/candidate evidence must rebuild successfully for this exact transaction Plan and tax year',
+      ))
+    } else {
+      qcdPrerequisites = rebuilt.evidence
+    }
   }
   const settledContributionEvents =
     pool.nonForm8606OrForeignPoolEvent.events.filter(
@@ -564,8 +644,8 @@ function prepare(
     ))
   }
 
-  const plan = planSchema.parse(input.plan)
   const claimed = identifierValues(plan)
+  const planEvidenceIds = evidenceIdentifierValues(plan)
   for (const declaration of inventoryDeclarationEntries(inventory)) {
     claim(claimed, declaration.value, declaration.label, issues)
   }
@@ -671,6 +751,67 @@ function prepare(
     }
   }
 
+  const qcdPrerequisiteByEventId = new Map<
+    string,
+    Readonly<AnnualQcdExecutionPrerequisiteEvidence>
+  >()
+  const qcdEventByAction = new Map(qcdEvents.flatMap((event) =>
+    event.origin === 'planAction' ? [[event.actionId, event] as const] : [],
+  ))
+  const seenQcdActions = new Set<ActionId>()
+  for (const prerequisite of qcdPrerequisites.filter(
+    (entry) => entry.request.donorPersonId === ownerPersonId,
+  )) {
+    if (seenQcdActions.has(prerequisite.actionId)) {
+      issues.push(issue(
+        'qcdApplicationDuplicate',
+        'QCD preflight evidence must contain one member per owner action',
+      ))
+      continue
+    }
+    seenQcdActions.add(prerequisite.actionId)
+    const event = qcdEventByAction.get(prerequisite.actionId)
+    if (event === undefined) {
+      issues.push(issue(
+        'qcdApplicationForeign',
+        'QCD preflight evidence is foreign to the selected owner inventory',
+      ))
+      continue
+    }
+    const request = prerequisite.request
+    if (
+      event.origin !== 'planAction' || event.kind !== 'qcd' ||
+      event.allocationId !== request.allocation.allocationId ||
+      event.sourceAccountId !== request.allocation.sourceAccountId ||
+      event.ownerPersonId !== request.donorPersonId ||
+      event.eventDate !== request.executionDate ||
+      event.eventSequence !== request.executionSequence ||
+      event.grossAmount !== request.requestedAmount ||
+      JSON.stringify(event.charity) !== JSON.stringify(request.charity)
+    ) {
+      issues.push(issue(
+        'qcdApplicationMismatch',
+        'QCD preflight action/allocation/source/charity/chronology/amount evidence must exactly match its inventory event',
+        { inventoryEventId: event.eventId, sourceAccountId: event.sourceAccountId },
+      ))
+      continue
+    }
+    for (const evidenceId of evidenceIdentifierValues(prerequisite)) {
+      if (planEvidenceIds.has(evidenceId)) claimed.add(evidenceId)
+      else claim(claimed, evidenceId, 'QCD nested preflight evidence ID', issues)
+    }
+    qcdPrerequisiteByEventId.set(event.eventId, prerequisite)
+  }
+  for (const event of qcdEvents) {
+    if (!qcdPrerequisiteByEventId.has(event.eventId)) {
+      issues.push(issue(
+        'qcdApplicationMissing',
+        'Every selected owner QCD inventory event requires one exact rebuilt preflight member',
+        { inventoryEventId: event.eventId, sourceAccountId: event.sourceAccountId },
+      ))
+    }
+  }
+
   const expectedContributionById = new Map(
     settledContributionEvents.map((event) => [event.eventId, event]),
   )
@@ -737,11 +878,15 @@ function prepare(
     OwnedNonRothIraSettledAnnualContributionApplication[] = []
   const stagedDestinationCredits:
     OwnedNonRothIraDetachedAnnualRothDestinationCredit[] = []
+  const stagedQcdCharityCredits:
+    OwnedNonRothIraDetachedAnnualQcdCharityCredit[] = []
   const runtimeActionIds = new Map<string, ActionId>()
   const sourceChainEvidenceByEventId = new Map<string, readonly unknown[]>()
 
   const stagedEvents = pool.events.filter((event) =>
-    expectedById.has(event.eventId) || expectedContributionById.has(event.eventId),
+    expectedById.has(event.eventId) ||
+    qcdPrerequisiteByEventId.has(event.eventId) ||
+    expectedContributionById.has(event.eventId),
   )
   for (const event of stagedEvents) {
     if (isSettledContributionEvent(event)) {
@@ -824,8 +969,32 @@ function prepare(
       )
       continue
     }
-    const actual = actualByEventId.get(event.eventId)!
     const currentBalance = currentBalanceBySource.get(event.sourceAccountId)!
+    const qcdPrerequisite = qcdPrerequisiteByEventId.get(event.eventId)
+    const qcdPrerequisiteEvidenceId = qcdPrerequisite === undefined ? null
+      : deriveActionStructuralId(
+        'annual-qcd-execution-prerequisite',
+        [qcdPrerequisite],
+      )
+    if (qcdPrerequisiteEvidenceId !== null) {
+      claim(
+        claimed,
+        qcdPrerequisiteEvidenceId,
+        'Derived QCD prerequisite evidence ID',
+        issues,
+      )
+    }
+    const actual = qcdPrerequisite === undefined
+      ? actualByEventId.get(event.eventId)!
+      : {
+          inventoryEventId: event.eventId,
+          sourceBalanceBefore: currentBalance,
+          executedAmount: asUsdCents(Math.min(event.grossAmount, currentBalance)),
+          sourceBalanceAfter: asUsdCents(
+            currentBalance - Math.min(event.grossAmount, currentBalance),
+          ),
+          stagingEvidenceId: qcdPrerequisiteEvidenceId!,
+        }
     if (actual.sourceBalanceBefore !== currentBalance) {
       issues.push(issue(
         'sourceBalanceMismatch',
@@ -906,7 +1075,7 @@ function prepare(
     }
     const applicationEvidenceId = deriveActionStructuralId(
       'owned-ira-unified-annual-physical-application',
-      [applicationWithoutEvidence],
+      [applicationWithoutEvidence, qcdPrerequisite ?? null],
     )
     claim(
       claimed,
@@ -915,7 +1084,60 @@ function prepare(
       issues,
     )
 
-    if (lineScope === 'form8606Line7Distributions') {
+    if (lineScope === 'qcdCharitableDistributions') {
+      if (
+        event.origin !== 'planAction' || event.kind !== 'qcd' ||
+        event.charity === null || qcdPrerequisite === undefined ||
+        qcdPrerequisiteEvidenceId === null
+      ) {
+        issues.push(issue(
+          'qcdApplicationMismatch',
+          'A QCD application requires one Plan QCD event, charity, and rebuilt preflight member',
+          { inventoryEventId: event.eventId, sourceAccountId: event.sourceAccountId },
+        ))
+      } else {
+        const creditWithoutEvidence = {
+          predicate: 'ownedNonRothIraDetachedAnnualQcdCharityCredit' as const,
+          planId: inventory.planId,
+          ownerPersonId,
+          taxYear: inventory.taxYear,
+          ledgerRunId: inventory.ledgerRunId,
+          inventoryEvidenceId: inventory.inventoryEvidenceId,
+          inventoryEventId: event.eventId,
+          actionId,
+          allocationId,
+          sourceAccountId: event.sourceAccountId,
+          charity: event.charity,
+          stagedCreditAmount: actual.executedAmount,
+          creditStatus: 'detachedCandidateNotCommitted' as const,
+          upstreamEvidenceId: applicationEvidenceId,
+        }
+        const charityCreditEvidenceId = deriveActionStructuralId(
+          'owned-ira-unified-annual-qcd-charity-credit',
+          [creditWithoutEvidence],
+        )
+        claim(
+          claimed,
+          charityCreditEvidenceId,
+          'Derived QCD charity-credit evidence ID',
+          issues,
+        )
+        stagedQcdCharityCredits.push({
+          ...creditWithoutEvidence,
+          evidenceId: charityCreditEvidenceId,
+        })
+        applications.push({
+          ...applicationWithoutEvidence,
+          lineScope,
+          destinationRothAccountId: null,
+          destinationCreditEvidenceId: null,
+          qcdPrerequisiteEvidence: qcdPrerequisite,
+          qcdPrerequisiteEvidenceId,
+          charityCreditEvidenceId,
+          applicationEvidenceId,
+        })
+      }
+    } else if (lineScope === 'form8606Line7Distributions') {
       applications.push({
         ...applicationWithoutEvidence,
         lineScope,
@@ -1162,6 +1384,7 @@ function prepare(
     settledContributionApplications,
     sourceBalanceTransitions,
     stagedDestinationCredits,
+    stagedQcdCharityCredits,
     line7Entries,
     line8Entries,
     line7GrossAmount,
@@ -1194,6 +1417,7 @@ function prepare(
     settledContributionApplications,
     sourceBalanceTransitions,
     stagedDestinationCredits,
+    stagedQcdCharityCredits,
     line7Entries,
     line8Entries,
     line7GrossAmount,
@@ -1205,9 +1429,10 @@ function prepare(
 }
 
 /**
- * Rejoins complete annual inventory events to caller-supplied physical staging
- * facts. The result is detached evidence only: it neither mutates source/Roth
- * balances nor establishes tax character, actionability, or movement authority.
+ * Rejoins complete annual inventory events to physical staging facts. Rebuilt
+ * QCD preflight members become candidates whose debit and charity credit are
+ * staged exactly once by this chronology. The detached result neither mutates
+ * balances nor establishes QCD tax character, actionability, or movement authority.
  */
 export function preparePlanOwnedNonRothIraAnnualPhysicalTransaction(
   input: Readonly<PreparePlanOwnedNonRothIraAnnualPhysicalTransactionInput>,
