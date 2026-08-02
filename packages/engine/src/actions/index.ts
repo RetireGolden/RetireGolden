@@ -594,6 +594,17 @@ export {
   type UnsupportedBeneficiaryTraditionalIraAnnualPhysicalTransactionResult,
 } from './beneficiaryTraditionalIraAnnualPhysicalTransaction.js'
 export {
+  preparePlanBeneficiaryTraditionalIraAnnualApplication,
+  type BeneficiaryTraditionalIraAnnualOpeningBalanceEvidence,
+  type BeneficiaryTraditionalIraPlanInheritanceBinding,
+  type PlanBeneficiaryTraditionalIraAnnualApplicationPreparedResult,
+  type PlanBeneficiaryTraditionalIraSourceBinding,
+  type PlanBeneficiaryTraditionalIraSourcesBoundEvidence,
+  type PreparePlanBeneficiaryTraditionalIraAnnualApplicationInput,
+  type PreparePlanBeneficiaryTraditionalIraAnnualApplicationResult,
+  type UnsupportedPlanBeneficiaryTraditionalIraAnnualApplicationResult,
+} from './beneficiaryTraditionalIraAnnualPlanApplication.js'
+export {
   evaluateOwnedNonRothIraPenaltyPrerequisites,
   type Age59HalfReachedPenaltyEvaluation,
   type DisabilityQualifiedPenaltyEvaluation,
