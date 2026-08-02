@@ -103,6 +103,10 @@ const ownedIraAnnualPassProbeDeepApi = await import(
   '@retiregolden/engine/actions/ownedNonRothIraAnnualPassProbe'
 )
 const canonicalActionDeepImports = [
+  'annualHsaPenaltyEvaluation',
+  'annualHsaPhysicalMovementCandidate',
+  'annualHsaReimbursementLedger',
+  'annualHsaWithdrawalCharacter',
   'annualIraBasisAllocation',
   'annualOwnedNonRothIraPoolCapacity',
   'annualQcdExecutionPrerequisite',

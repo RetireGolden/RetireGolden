@@ -431,6 +431,18 @@ export {
   type NotApplicableAnnualIraBasisRatio,
 } from './annualIraBasisAllocation.js'
 export {
+  stageAnnualHsaPhysicalMovementCandidate,
+  type AnnualHsaPhysicalMovementCandidate,
+  type HsaDetachedBatchOpeningBalanceSnapshot,
+  type HsaPhysicalActionDisposition,
+  type HsaPhysicalAllocationApplication,
+  type HsaPhysicalApplicationStatus,
+  type HsaPhysicalCandidateSourceBalance,
+  type HsaStagedPhysicalDistribution,
+  type OwnedHsaPhysicalSourceEvidence,
+  type StageAnnualHsaPhysicalMovementCandidateInput,
+} from './annualHsaPhysicalMovementCandidate.js'
+export {
   evaluateAnnualHsaReimbursementLedger,
   type AnnualHsaReimbursementLedgerBlocked,
   type AnnualHsaReimbursementLedgerEvaluated,

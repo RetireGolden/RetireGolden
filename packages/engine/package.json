@@ -86,6 +86,10 @@
       "types": "./dist/actions/annualHsaPenaltyEvaluation.d.ts",
       "default": "./dist/actions/annualHsaPenaltyEvaluation.js"
     },
+    "./actions/annualHsaPhysicalMovementCandidate": {
+      "types": "./dist/actions/annualHsaPhysicalMovementCandidate.d.ts",
+      "default": "./dist/actions/annualHsaPhysicalMovementCandidate.js"
+    },
     "./actions/annualQcdExecutionPrerequisite": {
       "types": "./dist/actions/annualQcdExecutionPrerequisite.d.ts",
       "default": "./dist/actions/annualQcdExecutionPrerequisite.js"
