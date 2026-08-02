@@ -182,6 +182,41 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
       .not.toBe(year.retirementActionExecution?.evidence[0]?.request)
   })
 
+  it('publishes the executor-canonical request when Plan allocations are unsorted', () => {
+    const plan = basePlan()
+    plan.accounts = [cash('cash-z', 100), cash('cash-a', 100)]
+    plan.expenses.baseAnnual = 20
+    const action = withdrawal({
+      actionId: 'unsorted-allocations',
+      accountId: 'cash-z',
+      dollars: 20,
+    })
+    action.allocations = [
+      {
+        allocationId: asAllocationId('allocation-z'),
+        sourceAccountId: asAccountId('cash-z'),
+        requestedAmount: asPositiveUsdCents(1_000),
+      },
+      {
+        allocationId: asAllocationId('allocation-a'),
+        sourceAccountId: asAccountId('cash-a'),
+        requestedAmount: asPositiveUsdCents(1_000),
+      },
+    ]
+    plan.strategies.retirementActions = [action]
+
+    const year = run(plan).years[0]!
+
+    expect(
+      year.retirementActionPublication?.records[0]?.request.kind ===
+        'ordinaryWithdrawal'
+        ? year.retirementActionPublication.records[0].request.allocations.map(
+          (allocation) => allocation.allocationId,
+        )
+        : [],
+    ).toEqual(['allocation-a', 'allocation-z'])
+  })
+
   it('prices final equity compensation once as ordinary income, never as gain', () => {
     const plan = basePlan()
     plan.accounts = [

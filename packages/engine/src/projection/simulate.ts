@@ -4928,7 +4928,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         ? {
             retirementActionPublication: publishAnnualRetirementActions({
               taxYear: year,
-              requests: currentYearActions,
+              requests: retirementActionExecution.requests,
               sources: [
                 ordinaryWithdrawalPublicationSource(retirementActionExecution),
               ],
