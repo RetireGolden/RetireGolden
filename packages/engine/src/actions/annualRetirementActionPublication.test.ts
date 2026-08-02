@@ -185,6 +185,57 @@ function executedRecord(
   }
 }
 
+function partialRecord(
+  action: RetirementActionRequest,
+): Omit<AnnualRetirementActionRecord, 'executorSource'> {
+  if (action.kind !== 'ordinaryWithdrawal' && action.kind !== 'rothConversion') {
+    throw new Error('fixture drift')
+  }
+  const baseRecord = record(action)
+  const allocation = baseRecord.allocations[0]!
+  const executedAmount = asUsdCents(Number(action.requestedAmount) / 2)
+  return {
+    ...baseRecord,
+    readiness: 'actionable',
+    outcome: 'partial',
+    executedDate: baseRecord.scheduledDate,
+    executedSequence: baseRecord.scheduledSequence,
+    executedAmount,
+    unexecutedAmount: executedAmount,
+    allocations: [{
+      ...allocation,
+      resolution: 'resolved',
+      executedAmount,
+      unexecutedAmount: executedAmount,
+    }],
+    reasons: [createActionReason(
+      action.kind === 'ordinaryWithdrawal'
+        ? 'source-balance-trimmed'
+        : 'conversion-balance-trimmed',
+      {
+        accountId: allocation.sourceAccountId,
+        allocationId: allocation.allocationId,
+      },
+    )],
+  }
+}
+
+function refusedRecord(
+  action: RetirementActionRequest,
+): Omit<AnnualRetirementActionRecord, 'executorSource'> {
+  const baseRecord = record(action)
+  const allocation = baseRecord.allocations[0]
+  if (allocation === undefined) throw new Error('fixture drift')
+  return {
+    ...baseRecord,
+    outcome: 'refused',
+    reasons: [createActionReason('source-account-not-found', {
+      accountId: allocation.sourceAccountId,
+      allocationId: allocation.allocationId,
+    })],
+  }
+}
+
 function linkedConversionPair(
   conversionActionId = 'linked-conversion',
   withdrawalActionId = 'linked-withdrawal',
@@ -379,9 +430,8 @@ describe('annual retirement-action publication', () => {
       accountId: allocation.sourceAccountId,
       allocationId: allocation.allocationId,
     })
-    const refused = createActionReason('source-account-not-found', {
-      accountId: allocation.sourceAccountId,
-      allocationId: allocation.allocationId,
+    const refused = createActionReason('person-not-found', {
+      personId: action.personId,
     })
     const publish = (reasons: AnnualRetirementActionRecord['reasons']) =>
       publishAnnualRetirementActions({
@@ -389,6 +439,10 @@ describe('annual retirement-action publication', () => {
         requests: [action],
         sources: [source('ordinaryWithdrawalExecutor', [{
           ...record(action),
+          allocations: record(action).allocations.map((entry) => ({
+            ...entry,
+            resolution: 'resolved' as const,
+          })),
           reasons,
         }])],
       })
@@ -400,7 +454,7 @@ describe('annual retirement-action publication', () => {
     expect(reordered?.records[0]?.reasons.map((reason) => reason.code)).toEqual([
       'required-facts-missing',
       'withdrawal-source-type-unsupported',
-      'source-account-not-found',
+      'person-not-found',
     ])
   })
 
@@ -891,6 +945,96 @@ describe('annual retirement-action publication', () => {
   })
 
   it.each([
+    ['source-account-not-found', 'refused', 'unresolved'],
+    ['source-owner-mismatch', 'refused', 'either'],
+    ['source-balance-unavailable', 'refused', 'resolved'],
+    ['withdrawal-source-not-spendable', 'refused', 'either'],
+    ['required-facts-missing', 'unsupported', 'either'],
+  ] as const)(
+    'binds source predicate %s to %s allocation evidence',
+    (reasonCode, outcome, requiredResolution) => {
+      const action = request(
+        'ordinaryWithdrawal',
+        `resolution-${reasonCode}`,
+        '2030-06-15',
+        1,
+      )
+      if (action.kind !== 'ordinaryWithdrawal') throw new Error('fixture drift')
+      const allocation = action.allocations[0]!
+      const reason = createActionReason(reasonCode, {
+        personId: action.personId,
+        accountId: allocation.sourceAccountId,
+        allocationId: allocation.allocationId,
+      })
+
+      for (const resolution of ['resolved', 'unresolved'] as const) {
+        const publish = () => publishAnnualRetirementActions({
+          taxYear: 2030,
+          requests: [action],
+          sources: [source('ordinaryWithdrawalExecutor', [{
+            ...record(action),
+            outcome,
+            allocations: record(action).allocations.map((entry) => ({
+              ...entry,
+              resolution,
+            })),
+            reasons: [reason],
+          }])],
+        })
+        if (
+          requiredResolution === 'either' ||
+          requiredResolution === resolution
+        ) expect(publish).not.toThrow()
+        else expect(publish).toThrow(/reason resolution differs/i)
+      }
+    },
+  )
+
+  it('requires a missing-source reason to identify an allocation', () => {
+    const action = request(
+      'ordinaryWithdrawal',
+      'unbound-missing-source-reason',
+      '2030-06-15',
+      1,
+    )
+    expect(() => publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [action],
+      sources: [source('ordinaryWithdrawalExecutor', [{
+        ...record(action),
+        outcome: 'refused',
+        reasons: [createActionReason('source-account-not-found')],
+      }])],
+    })).toThrow(/reason resolution differs/i)
+  })
+
+  it('requires identifier-free balance reasons to have a resolved source', () => {
+    const action = request(
+      'ordinaryWithdrawal',
+      'unbound-post-resolution-reason',
+      '2030-06-15',
+      1,
+    )
+    const publish = (resolution: 'resolved' | 'unresolved') =>
+      publishAnnualRetirementActions({
+        taxYear: 2030,
+        requests: [action],
+        sources: [source('ordinaryWithdrawalExecutor', [{
+          ...record(action),
+          outcome: 'refused',
+          allocations: record(action).allocations.map((entry) => ({
+            ...entry,
+            resolution,
+          })),
+          reasons: [createActionReason('source-balance-unavailable')],
+        }])],
+      })
+
+    expect(() => publish('unresolved')).toThrow(/reason resolution differs/i)
+    expect(publish('resolved')?.records).toHaveLength(1)
+  })
+
+  it.each([
     [{ kind: 'noneExpected' } as const, false],
     [{
       kind: 'linkedWithdrawal',
@@ -1130,6 +1274,68 @@ describe('annual retirement-action publication', () => {
   })
 
   it.each([
+    ['executed', 'executed', true],
+    ['executed', 'partial', true],
+    ['partial', 'executed', true],
+    ['partial', 'partial', true],
+    ['executed', 'refused', false],
+    ['refused', 'executed', false],
+    ['partial', 'unsupported', false],
+    ['unsupported', 'partial', false],
+    ['refused', 'unsupported', true],
+    ['unsupported', 'refused', true],
+    ['unsupported', 'unsupported', true],
+  ] as const)(
+    'binds linked withdrawal %s and conversion %s movement atomically',
+    (withdrawalDisposition, conversionDisposition, accepted) => {
+      const [withdrawal, conversion] = linkedConversionPair(
+        `atomic-${withdrawalDisposition}-${conversionDisposition}-conversion`,
+        `atomic-${withdrawalDisposition}-${conversionDisposition}-withdrawal`,
+      )
+      const dispositionRecord = (
+        action: RetirementActionRequest,
+        disposition: 'executed' | 'partial' | 'refused' | 'unsupported',
+      ) => disposition === 'executed'
+        ? executedRecord(action)
+        : disposition === 'partial'
+          ? partialRecord(action)
+          : disposition === 'refused'
+            ? refusedRecord(action)
+            : record(action)
+      const withdrawalRecord = dispositionRecord(
+        withdrawal,
+        withdrawalDisposition,
+      )
+      const conversionRecord = dispositionRecord(
+        conversion,
+        conversionDisposition,
+      )
+      const forward = () => publishAnnualRetirementActions({
+        taxYear: 2030,
+        requests: [withdrawal, conversion],
+        sources: [
+          source('ordinaryWithdrawalExecutor', [withdrawalRecord]),
+          source('rothConversionExecutor', [conversionRecord]),
+        ],
+      })
+      const reverse = () => publishAnnualRetirementActions({
+        taxYear: 2030,
+        requests: [conversion, withdrawal],
+        sources: [
+          source('rothConversionExecutor', [conversionRecord]),
+          source('ordinaryWithdrawalExecutor', [withdrawalRecord]),
+        ],
+      })
+
+      if (accepted) expect(reverse()).toEqual(forward())
+      else {
+        expect(forward).toThrow(/linked conversion funding disposition differs/i)
+        expect(reverse).toThrow(/linked conversion funding disposition differs/i)
+      }
+    },
+  )
+
+  it.each([
     ['externalCash', {
       kind: 'externalCash',
       amount: asPositiveUsdCents(1_000),
@@ -1328,6 +1534,10 @@ describe('annual retirement-action publication', () => {
         sources: [source(executorSource, [{
           ...record(action),
           outcome: 'refused',
+          allocations: record(action).allocations.map((entry) => ({
+            ...entry,
+            resolution: 'resolved' as const,
+          })),
           reasons: [createActionReason(reasonCode, {
             accountId: allocation.sourceAccountId,
             allocationId: allocation.allocationId,

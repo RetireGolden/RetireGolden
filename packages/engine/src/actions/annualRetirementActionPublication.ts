@@ -354,6 +354,15 @@ const sourceIdentifierReasonCodes = new Set<ActionReason['code']>([
   'qcd-balance-unavailable',
 ])
 
+const resolvedSourceReasonCodes = new Set<ActionReason['code']>([
+  'source-balance-trimmed',
+  'source-balance-unavailable',
+  'conversion-balance-trimmed',
+  'conversion-balance-unavailable',
+  'qcd-balance-trimmed',
+  'qcd-balance-unavailable',
+])
+
 function reasonAppliesToKind(
   kind: RetirementActionRequest['kind'],
   code: ActionReason['code'],
@@ -641,6 +650,31 @@ function assertLinkedWithdrawalRequests(
   }
 }
 
+function assertLinkedWithdrawalRecordAtomicity(
+  requests: readonly Readonly<RetirementActionRequest>[],
+  records: readonly Readonly<AnnualRetirementActionRecord>[],
+): void {
+  const recordById = new Map(records.map((record) => [record.actionId, record]))
+  for (const request of requests) {
+    if (
+      request.kind !== 'rothConversion' ||
+      request.taxFunding.kind !== 'linkedWithdrawal'
+    ) continue
+    const conversionRecord = recordById.get(request.actionId)
+    const withdrawalRecord = recordById.get(request.taxFunding.withdrawalActionId)
+    if (
+      conversionRecord === undefined ||
+      withdrawalRecord === undefined ||
+      (conversionRecord.executedAmount > 0) !==
+        (withdrawalRecord.executedAmount > 0)
+    ) {
+      throw new Error(
+        `Linked conversion funding disposition differs for action "${request.actionId}"`,
+      )
+    }
+  }
+}
+
 function recordOrder(
   left: Readonly<AnnualRetirementActionRecord>,
   right: Readonly<AnnualRetirementActionRecord>,
@@ -834,6 +868,13 @@ function assertRecordBinding(
     }
     const sourceIdentifiersAllowed = sourceIdentifierReasonCodes.has(reason.code)
     const destinationAccountAllowed = destinationAccountReasonCodes.has(reason.code)
+    const boundRecordAllocation = reasonAllocation === undefined
+      ? reason.accountId === undefined
+        ? undefined
+        : record.allocations.find((allocation) =>
+            allocation.sourceAccountId === reason.accountId)
+      : record.allocations.find((allocation) =>
+          allocation.allocationId === reasonAllocation.allocationId)
     if (reason.allocationId !== undefined && !sourceIdentifiersAllowed) {
       throw new Error(`Executor reason identifiers differ for action "${request.actionId}"`)
     }
@@ -851,6 +892,26 @@ function assertRecordBinding(
       reason.accountId !== reasonAllocation.sourceAccountId
     ) {
       throw new Error(`Executor reason identifiers differ for action "${request.actionId}"`)
+    }
+    if (
+      reason.code === 'source-account-not-found' &&
+      (
+        boundRecordAllocation === undefined ||
+        boundRecordAllocation.resolution !== 'unresolved'
+      )
+    ) {
+      throw new Error(`Executor reason resolution differs for action "${request.actionId}"`)
+    }
+    if (
+      resolvedSourceReasonCodes.has(reason.code) &&
+      (
+        boundRecordAllocation === undefined
+          ? !record.allocations.some((allocation) =>
+              allocation.resolution === 'resolved')
+          : boundRecordAllocation.resolution !== 'resolved'
+      )
+    ) {
+      throw new Error(`Executor reason resolution differs for action "${request.actionId}"`)
     }
   }
 }
@@ -961,6 +1022,7 @@ export function publishAnnualRetirementActions(
   if (missing.length > 0) {
     throw new Error(`Annual publication omitted actions: ${missing.sort(compareUtf16CodeUnits).join(', ')}`)
   }
+  assertLinkedWithdrawalRecordAtomicity(requests, records)
 
   const diagnosticKeys = new Set<string>()
   for (const diagnostic of diagnostics) {
