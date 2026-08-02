@@ -370,7 +370,7 @@ function disabilityEvidence(
     (value.qualifiedOnEvaluationDate && (qualificationDate === null || qualificationDate > identity.evaluationDate)) ||
     (!value.qualifiedOnEvaluationDate && qualificationDate !== null && qualificationDate <= identity.evaluationDate)
   ) throw new RangeError('Disability evidence must exactly bind dated participant status')
-  return { ...value, disabilityQualificationDate: qualificationDate } as
+  return structuredClone({ ...value, disabilityQualificationDate: qualificationDate }) as
     QualifiedDisabilityEventEvidence | RejectedDisabilityStatusEvidence
 }
 
@@ -511,7 +511,7 @@ function unsupported(
     ageEvidence,
     ruleOf55Assessment: ruleOf55,
     disabilityEvidence: disability,
-    otherExceptionAttestation: other === null ? null : { ...other },
+    otherExceptionAttestation: other === null ? null : structuredClone(other),
     seppAssessment: sepp,
     evidenceId: stableId('employer-penalty-unsupported', [
       identity, coverage.evidenceId, ageEvidence.evidenceId, missingEvidence,

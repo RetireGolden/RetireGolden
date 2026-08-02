@@ -753,6 +753,21 @@ describe('traditional employer-plan penalty prerequisite', () => {
     expect(returned.nested.retained).toBe(true)
   })
 
+  it('clones nested disability metadata before freezing returned evidence', () => {
+    const value = input({ separationDate: '2029-12-31' })
+    const metadata = { nested: { retained: true } }
+    Reflect.set(value.disabilityEvidence!, 'metadata', metadata)
+
+    const result = evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)
+    expect(result.status).toBe('accepted')
+    const returned = Reflect.get(result.evidence.disabilityEvidence!, 'metadata') as typeof metadata
+    expect(returned).not.toBe(metadata)
+    expect(Object.isFrozen(returned.nested)).toBe(true)
+    expect(Object.isFrozen(metadata.nested)).toBe(false)
+    metadata.nested.retained = false
+    expect(returned.nested.retained).toBe(true)
+  })
+
   it('rechecks persisted character account-balance bounds', () => {
     const overdrawn = input({ separationDate: '2029-12-31', executedAmount: 100, accountValue: 100, basis: 0 })
     overdrawn.characterization = structuredClone(overdrawn.characterization)
