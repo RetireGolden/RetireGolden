@@ -46,9 +46,11 @@ function deepFreeze<T>(value: T): Readonly<T> {
 function canonicalJson(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`
   if (value !== null && typeof value === 'object') {
-    return `{${Object.keys(value as UnknownRecord)
+    const objectValue = value as UnknownRecord
+    return `{${Object.keys(objectValue)
+      .filter((key) => objectValue[key] !== undefined)
       .sort(compareUtf16CodeUnits)
-      .map((key) => `${JSON.stringify(key)}:${canonicalJson((value as UnknownRecord)[key])}`)
+      .map((key) => `${JSON.stringify(key)}:${canonicalJson(objectValue[key])}`)
       .join(',')}}`
   }
   const serialized = JSON.stringify(value)
@@ -200,8 +202,9 @@ function resultConversionCentsByYear(
   for (const year of result.years) {
     if (typeof year.rothConversion !== 'number' || !Number.isFinite(year.rothConversion) ||
         year.rothConversion < 0) return null
+    if (year.rothConversion <= 1) continue
     const cents = planDollarsToLedgerCents(year.rothConversion)
-    if (cents > 0) byYear.set(year.year, cents)
+    byYear.set(year.year, cents)
   }
   return byYear
 }

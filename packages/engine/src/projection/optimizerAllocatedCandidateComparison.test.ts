@@ -134,6 +134,32 @@ describe('compareOptimizerAllocatedCandidate', () => {
     expect(Object.isFrozen(evidence?.exactLedgerComparison.entries)).toBe(true)
   })
 
+  it('treats explicit undefined optional request fields as canonical JSON omission', () => {
+    const input = bridgeFixture()
+    const patchRequest = (
+      input.allocatedEvaluation.candidate.planPatch?.['strategies'] as {
+        retirementActions: Array<{ provenance: { scenarioId?: string } }>
+      }
+    ).retirementActions.at(-1)!
+    patchRequest.provenance.scenarioId = undefined
+    const year = input.allocatedEvaluation.candidateResult.years
+      .find((entry) => entry.year === 2027)!
+    const execution = year.rothConversionActionExecution as unknown as {
+      evidence: Array<{ request: { provenance: { scenarioId?: string } } }>
+    }
+    execution.evidence[0]!.request.provenance.scenarioId = undefined
+
+    expect(compareOptimizerAllocatedCandidate(input)).not.toBeNull()
+  })
+
+  it('ignores result conversion noise at the optimizer schedule threshold', () => {
+    const input = bridgeFixture()
+    input.readinessVeto.vetoedResult.years[0]!.rothConversion = 1
+    input.allocatedEvaluation.candidateResult.years[0]!.rothConversion = 1
+
+    expect(compareOptimizerAllocatedCandidate(input)).not.toBeNull()
+  })
+
   it.each([
     ['diagnostic evaluation', (input: OptimizerAllocatedCandidateComparisonInput) => {
       ;(input.allocatedEvaluation as ExactDecisionEvaluation).recommendationState = 'diagnostic'
