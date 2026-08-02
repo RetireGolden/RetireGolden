@@ -1928,6 +1928,43 @@ describe('annual retirement-action publication', () => {
     }))).toThrow(/reason account differs/i)
   })
 
+  it.each([
+    'conversion-destination-owner-mismatch',
+    'conversion-destination-incompatible',
+    'conversion-roth-simple-destination-unsupported',
+    'conversion-employer-destination-unsupported',
+  ] as const)('rejects a missing conversion destination paired with %s', (reasonCode) => {
+    const action = request(
+      'rothConversion',
+      'conversion-destination-resolution',
+      '2030-06-15',
+      1,
+    )
+    if (action.kind !== 'rothConversion') throw new Error('expected conversion')
+    const destinationAccountId = action.destinationRothAccountId
+    const missingReason = createActionReason('conversion-destination-not-found', {
+      accountId: destinationAccountId,
+    })
+    const inspectionReason = createActionReason(reasonCode, {
+      ...(reasonCode === 'conversion-destination-owner-mismatch'
+        ? { personId: action.personId }
+        : {}),
+      accountId: destinationAccountId,
+    })
+
+    expect(() => publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [action],
+      sources: [source('rothConversionExecutor', [{
+        ...record(action),
+        outcome: inspectionReason.outcome === 'unsupported' ? 'unsupported' : 'refused',
+        reasons: inspectionReason.outcome === 'unsupported'
+          ? [inspectionReason, missingReason]
+          : [missingReason, inspectionReason],
+      }])],
+    })).toThrow(/destination resolution differs/i)
+  })
+
   it('binds every conversion and QCD date reason to the exact schedule state', () => {
     const scheduleStates = [
       { label: 'omitted', state: 'missingDate', executionDate: undefined },
@@ -1966,6 +2003,7 @@ describe('annual retirement-action publication', () => {
           { state: 'missingDate', code: 'qcd-date-missing' },
           { state: 'invalidDate', code: 'qcd-date-invalid' },
           { state: 'outsideActionYear', code: 'qcd-date-outside-action-year' },
+          { state: 'valid', code: 'qcd-before-age-70-half' },
         ] as const,
         build: qcdRequest,
       },

@@ -300,6 +300,11 @@ const destinationAccountReasonCodes = new Set<ActionReason['code']>([
   'conversion-employer-destination-unsupported',
 ])
 
+const destinationInspectionReasonCodes = new Set(
+  [...destinationAccountReasonCodes].filter((code) =>
+    code !== 'conversion-destination-not-found'),
+)
+
 const preCanonicalReasonCodes = new Set<ActionReason['code']>([
   'duplicate-source-account',
   'duplicate-allocation-id',
@@ -516,6 +521,7 @@ const dateReasonScheduleStates: Partial<
   'qcd-date-missing': 'missingDate',
   'qcd-date-invalid': 'invalidDate',
   'qcd-date-outside-action-year': 'outsideActionYear',
+  'qcd-before-age-70-half': 'valid',
 }
 
 /**
@@ -825,6 +831,13 @@ function assertRecordBinding(
     expectedAllocations.map((allocation) => allocation.sourceAccountId),
   )
   const destinationId = destinationAccountId(request)
+  const reasonCodes = new Set(record.reasons.map((reason) => reason.code))
+  if (
+    reasonCodes.has('conversion-destination-not-found') &&
+    [...destinationInspectionReasonCodes].some((code) => reasonCodes.has(code))
+  ) {
+    throw new Error(`Executor destination resolution differs for action "${request.actionId}"`)
+  }
   for (const reason of record.reasons) {
     if (preCanonicalReasonCodes.has(reason.code)) {
       throw new Error(`Executor reason phase differs for action "${request.actionId}"`)
