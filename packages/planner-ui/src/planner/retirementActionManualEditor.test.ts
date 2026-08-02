@@ -147,6 +147,31 @@ describe('buildRetirementActionManualIntent', () => {
     })
   })
 
+  it('keeps conversion-principal withholding explicitly unsupported and non-saveable', () => {
+    const target = migrated('legacyAggregateRothConversion')
+    const result = buildRetirementActionManualIntent(
+      target,
+      {
+        ...emptyRetirementActionManualEditorDraft(),
+        personId: 'person-a',
+        sourceAccountId: 'ira-a',
+        destinationRothAccountId: 'roth-a',
+        fullSourceAmountConfirmed: true,
+        executionDate: '2034-06-15',
+        executionSequence: '1',
+        conversionTaxFunding: 'conversionPrincipalWithholding',
+      },
+      [],
+    )
+
+    expect(result).toEqual({
+      ok: false,
+      issues: [
+        'Conversion-principal withholding is not supported. Choose external cash or no tax funding expected.',
+      ],
+    })
+  })
+
   it('rejects invalid or wrong-year dates and unsafe/nonpositive sequences', () => {
     const target = migrated('legacyAggregateWithdrawal')
     const base = {

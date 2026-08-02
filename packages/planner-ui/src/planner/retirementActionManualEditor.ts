@@ -173,14 +173,15 @@ export function buildRetirementActionManualIntent(
     }
     if (draft.conversionTaxFunding === '') {
       issues.push('Choose how conversion taxes are funded.')
-    } else if (
-      draft.conversionTaxFunding === 'externalCash' ||
-      draft.conversionTaxFunding === 'conversionPrincipalWithholding'
-    ) {
+    } else if (draft.conversionTaxFunding === 'conversionPrincipalWithholding') {
+      issues.push(
+        'Conversion-principal withholding is not supported. Choose external cash or no tax funding expected.',
+      )
+    } else if (draft.conversionTaxFunding === 'externalCash') {
       if (positiveDollarsToCents(draft.taxFundingAmountDollars) === null) {
         issues.push('Enter a positive exact-cent tax-funding amount.')
       }
-      if (draft.conversionTaxFunding === 'externalCash' && !draft.externalCashAttested) {
+      if (!draft.externalCashAttested) {
         issues.push('Confirm that the external cash is available for conversion taxes.')
       }
     }

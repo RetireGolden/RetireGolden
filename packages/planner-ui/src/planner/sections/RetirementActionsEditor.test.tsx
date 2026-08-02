@@ -204,6 +204,24 @@ describe('RetirementActionsEditor', () => {
     }
   })
 
+  it('disambiguates household members with duplicate names using stable IDs', async () => {
+    const plan = editorPlan()
+    const first = plan.household.people[0]!
+    const second = plan.household.people[1]!
+    second.name = first.name
+    plan.strategies.retirementActions = [migratedAction('legacyAggregateWithdrawal')]
+    const mounted = await mount(plan)
+
+    const labels = Array.from(
+      controlByLabel<HTMLSelectElement>(mounted.container, 'Person').options,
+    ).slice(1).map((option) => option.textContent)
+
+    expect(labels).toEqual([
+      `${first.name} (ID ${first.id})`,
+      `${second.name} (ID ${second.id})`,
+    ])
+  })
+
   it('uses the engine adapter to replace a migrated withdrawal after explicit review', async () => {
     const plan = editorPlan()
     const target = migratedAction('legacyAggregateWithdrawal')
@@ -333,6 +351,36 @@ describe('RetirementActionsEditor', () => {
     expect(Array.from(
       controlByLabel<HTMLSelectElement>(mounted.container, 'Roth destination account').options,
     ).map((option) => option.value)).toContain('destination-roth')
+  })
+
+  it('keeps principal withholding visible but blocks replacement as unsupported', async () => {
+    const plan = editorPlan()
+    const target = migratedAction('legacyAggregateRothConversion')
+    plan.strategies.retirementActions = [target]
+    const mounted = await mount(plan)
+    const owner = plan.household.people[0]!
+
+    await completeConversionIdentityReview(mounted.container, owner.id)
+    await change(
+      controlByLabel(mounted.container, 'Conversion tax funding'),
+      'conversionPrincipalWithholding',
+    )
+    expect(mounted.container.textContent).toContain(
+      'Conversion-principal withholding is not supported.',
+    )
+    expect(Array.from(mounted.container.querySelectorAll('label')).some(
+      (label) => label.textContent?.trim() === 'Tax-funding amount',
+    )).toBe(false)
+
+    const save = Array.from(mounted.container.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Save reviewed action',
+    )
+    await act(async () => save!.click())
+
+    expect(mounted.current().strategies.retirementActions).toEqual([target])
+    expect(mounted.container.textContent).toContain(
+      'Choose external cash or no tax funding expected.',
+    )
   })
 
   it('disambiguates same-name account choices with type, kind, and stable ID', async () => {

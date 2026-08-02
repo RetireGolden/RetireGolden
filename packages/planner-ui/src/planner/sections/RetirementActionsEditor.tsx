@@ -82,7 +82,7 @@ function ManualReviewRow({
   const [issues, setIssues] = useState<readonly string[]>([])
   const people = plan.household.people.map((person) => ({
     value: person.id,
-    label: person.name,
+    label: `${person.name} (ID ${person.id})`,
   }))
   const sources = useMemo(
     () => accountOptions(plan, draft.personId, target.kind),
@@ -126,10 +126,7 @@ function ManualReviewRow({
 
   const showFundingAmount =
     target.kind === 'legacyAggregateRothConversion' &&
-    (
-      draft.conversionTaxFunding === 'externalCash' ||
-      draft.conversionTaxFunding === 'conversionPrincipalWithholding'
-    )
+    draft.conversionTaxFunding === 'externalCash'
 
   return (
     <div className="item-row" data-retirement-action-id={target.actionId}>
@@ -217,7 +214,10 @@ function ManualReviewRow({
               placeholder="Choose tax funding"
               options={[
                 { value: 'externalCash', label: 'External cash' },
-                { value: 'conversionPrincipalWithholding', label: 'Withhold conversion principal' },
+                {
+                  value: 'conversionPrincipalWithholding',
+                  label: 'Withhold conversion principal (unsupported)',
+                },
                 { value: 'noneExpected', label: 'No tax funding expected' },
               ]}
               onCommit={(conversionTaxFunding) => {
@@ -229,6 +229,12 @@ function ManualReviewRow({
                 }))
               }}
             />
+            {draft.conversionTaxFunding === 'conversionPrincipalWithholding' ? (
+              <div className="callout callout--warn" role="status">
+                <strong>Conversion-principal withholding is not supported.</strong>{' '}
+                Choose external cash or no tax funding expected to complete this review.
+              </div>
+            ) : null}
             {showFundingAmount ? (
               <MoneyField
                 label="Tax-funding amount"
