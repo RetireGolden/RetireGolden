@@ -169,6 +169,53 @@ describe('buildRetirementActionManualIntent', () => {
     })
   })
 
+  it('fails closed when the selected person is removed before submission', () => {
+    const target = migrated('legacyAggregateWithdrawal')
+    const changedPlan = structuredClone(supportedPlan)
+    changedPlan.household.people = [{
+      ...changedPlan.household.people[0]!,
+      id: 'person-b',
+      name: 'Person B',
+    }]
+    changedPlan.accounts[0]!.ownerPersonId = 'person-b'
+
+    expect(buildRetirementActionManualIntent(target, {
+      ...emptyRetirementActionManualEditorDraft(),
+      personId: 'person-a',
+      sourceAccountId: 'cash-a',
+      fullSourceAmountConfirmed: true,
+      executionDate: '2034-06-15',
+      executionSequence: '1',
+      withdrawalPurpose: 'spending',
+    }, [], changedPlan)).toEqual({
+      ok: false,
+      issues: [
+        'The selected person is no longer available in this Plan. Choose a current household member.',
+      ],
+    })
+  })
+
+  it('fails closed when the selected source account is removed before submission', () => {
+    const target = migrated('legacyAggregateWithdrawal')
+    const changedPlan = structuredClone(supportedPlan)
+    changedPlan.accounts = changedPlan.accounts.filter((account) => account.id !== 'cash-a')
+
+    expect(buildRetirementActionManualIntent(target, {
+      ...emptyRetirementActionManualEditorDraft(),
+      personId: 'person-a',
+      sourceAccountId: 'cash-a',
+      fullSourceAmountConfirmed: true,
+      executionDate: '2034-06-15',
+      executionSequence: '1',
+      withdrawalPurpose: 'spending',
+    }, [], changedPlan)).toEqual({
+      ok: false,
+      issues: [
+        'The selected source account is no longer available in this Plan. Choose the exact source account again.',
+      ],
+    })
+  })
+
   it('requires explicit conversion destination and funding facts', () => {
     const target = migrated('legacyAggregateRothConversion')
     const incomplete = {

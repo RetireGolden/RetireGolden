@@ -279,8 +279,29 @@ export function buildRetirementActionManualIntent(
   plan: ManualSourceSupportPlan,
 ): BuildRetirementActionManualIntentResult {
   const issues: string[] = []
-  if (draft.personId.trim() === '') issues.push('Choose the person responsible for this action.')
-  if (draft.sourceAccountId.trim() === '') issues.push('Choose the exact source account.')
+  const personSelected = draft.personId.trim() !== ''
+  const selectedPeopleMatches = personSelected
+    ? plan.household.people.filter((person) => person.id === draft.personId)
+    : []
+  if (!personSelected) {
+    issues.push('Choose the person responsible for this action.')
+  } else if (selectedPeopleMatches.length === 0) {
+    issues.push('The selected person is no longer available in this Plan. Choose a current household member.')
+  } else if (selectedPeopleMatches.length !== 1) {
+    issues.push('The selected person ID is duplicated in this Plan. Choose a unique household member.')
+  }
+
+  const sourceSelected = draft.sourceAccountId.trim() !== ''
+  const selectedSourceMatches = sourceSelected
+    ? plan.accounts.filter((account) => account.id === draft.sourceAccountId)
+    : []
+  if (!sourceSelected) {
+    issues.push('Choose the exact source account.')
+  } else if (selectedSourceMatches.length === 0) {
+    issues.push('The selected source account is no longer available in this Plan. Choose the exact source account again.')
+  } else if (selectedSourceMatches.length !== 1) {
+    issues.push('The selected source account ID is duplicated in this Plan. Choose a unique source account.')
+  }
   if (!draft.fullSourceAmountConfirmed) {
     issues.push('Confirm that the full preserved amount belongs to the selected source account.')
   }
@@ -303,9 +324,6 @@ export function buildRetirementActionManualIntent(
     )
   }
 
-  const selectedSourceMatches = plan.accounts.filter(
-    (account) => account.id === draft.sourceAccountId,
-  )
   if (selectedSourceMatches.length === 1) {
     const sourceIssue = retirementActionManualSourceSupportIssue(
       target.kind,
