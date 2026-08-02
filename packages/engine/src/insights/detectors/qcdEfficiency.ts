@@ -1,4 +1,8 @@
 import { planDollarsToLedgerCents } from '../../actions/planBalanceAdapter.js'
+import {
+  compareUtf16CodeUnits,
+  deriveActionStructuralId,
+} from '../../actions/structuralId.js'
 import type { Plan } from '../../model/plan.js'
 import type { ProjectionResult } from '../../projection/types.js'
 import type { Detector } from '../types.js'
@@ -61,6 +65,51 @@ export function qcdEfficiencyAnnualTargets(
   }
 }
 
+/**
+ * Bind a QCD detector result to the Plan revision and exact projection path
+ * that produced its annual targets. Only target-relevant Plan facts are
+ * included; identity collections are deliberately excluded so harmless
+ * account/evidence array permutations do not change this binding.
+ */
+export function qcdEfficiencyProjectionBindingId(
+  plan: Readonly<Plan>,
+  projection: Readonly<ProjectionResult>,
+): string | null {
+  try {
+    const annualTargets = qcdEfficiencyAnnualTargets(plan, projection)
+    if (annualTargets === null) return null
+    const horizonPeople = plan.household.people
+      .map((person) => ({
+        personId: person.id,
+        dob: person.dob,
+        planningAge: person.longevity.planningAge,
+      }))
+      .sort((left, right) => compareUtf16CodeUnits(left.personId, right.personId))
+    return deriveActionStructuralId('qcd-efficiency-projection-binding', [{
+      sourcePlan: {
+        schemaVersion: plan.schemaVersion,
+        planId: plan.id,
+        updatedAtIso: plan.updatedAtIso,
+        charitable: plan.strategies.itemizedDeductions?.charitable ?? 0,
+        qcdAnnual: plan.strategies.qcdAnnual,
+        inflationPct: plan.assumptions.inflationPct,
+        horizonPeople,
+      },
+      projectionPath: {
+        startYear: projection.startYear,
+        endYear: projection.endYear,
+        years: projection.years.map((entry) => ({
+          year: entry.year,
+          inflationScale: entry.inflationScale,
+        })),
+      },
+      annualTargets,
+    }])
+  } catch {
+    return null
+  }
+}
+
 export const qcdEfficiency: Detector = {
   id: 'qcd-efficiency',
   category: 'withdrawals-charitable',
@@ -69,7 +118,11 @@ export const qcdEfficiency: Detector = {
     if (charitable <= 0) return null
     if (ctx.plan.strategies.qcdAnnual >= charitable) return null
     const qcdAnnualTargets = qcdEfficiencyAnnualTargets(ctx.plan, ctx.projection.result)
-    if (qcdAnnualTargets === null) return null
+    const qcdProjectionBindingId = qcdEfficiencyProjectionBindingId(
+      ctx.plan,
+      ctx.projection.result,
+    )
+    if (qcdAnnualTargets === null || qcdProjectionBindingId === null) return null
 
     return {
       id: 'qcd-efficiency',
@@ -99,7 +152,7 @@ export const qcdEfficiency: Detector = {
           state: 'exploratoryNonActionable',
           reason: QCD_EFFICIENCY_EXPLORATORY_REASON,
         },
-        candidateMetadata: { qcdAnnualTargets },
+        candidateMetadata: { qcdAnnualTargets, qcdProjectionBindingId },
       },
     }
   },

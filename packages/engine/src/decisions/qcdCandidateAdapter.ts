@@ -28,6 +28,7 @@ import {
 import {
   QCD_EFFICIENCY_EXPLORATORY_REASON,
   qcdEfficiencyAnnualTargets,
+  qcdEfficiencyProjectionBindingId,
   qcdEfficiencyRationale,
   type QcdEfficiencyAnnualTarget,
 } from '../insights/detectors/qcdEfficiency.js'
@@ -92,6 +93,7 @@ export interface QcdEfficiencyExploratorySourceProvenance {
   exploratoryCandidateId: 'insight-qcd-efficiency'
   source: 'detector'
   relationship: 'callerSuppliedIdentitiesBoundToExactDetectorAnnualTargets'
+  projectionBindingId: string
   annualTargets: readonly QcdEfficiencyAnnualTarget[]
 }
 
@@ -205,6 +207,7 @@ function exactExploratoryCandidate(
   plan: Readonly<Plan>,
   candidate: Readonly<DecisionCandidate>,
   expectedTargets: readonly QcdEfficiencyAnnualTarget[],
+  expectedProjectionBindingId: string,
 ): QcdEfficiencyCandidateIssue | null {
   try {
     const outer = record(candidate)
@@ -215,6 +218,16 @@ function exactExploratoryCandidate(
     const itemized = record(strategies?.['itemizedDeductions'])
     const planItemized = plan.strategies.itemizedDeductions
     const charitable = planItemized?.charitable ?? 0
+    if (
+      metadata !== null &&
+      metadata['qcdProjectionBindingId'] !== expectedProjectionBindingId
+    ) {
+      return localIssue(
+        'invalidExploratoryCandidate',
+        'metadata.qcdProjectionBindingId',
+        'The detector candidate and projection are not bound to the current Plan revision and exact inflation path.',
+      )
+    }
     if (
       outer === null ||
       !keysExactly(outer, [
@@ -251,7 +264,7 @@ function exactExploratoryCandidate(
       readiness['state'] !== 'exploratoryNonActionable' ||
       readiness['reason'] !== QCD_EFFICIENCY_EXPLORATORY_REASON ||
       metadata === null ||
-      !keysExactly(metadata, ['qcdAnnualTargets']) ||
+      !keysExactly(metadata, ['qcdAnnualTargets', 'qcdProjectionBindingId']) ||
       !Array.isArray(metadata['qcdAnnualTargets']) ||
       metadata['qcdAnnualTargets'].length !== expectedTargets.length ||
       metadata['qcdAnnualTargets'].some((target, index) => {
@@ -306,6 +319,7 @@ function eligibilityReasons(decision: RetirementActionEligibilityDecision): read
 
 function adaptedCandidateId(
   exploratoryCandidateId: string,
+  projectionBindingId: string,
   selected: readonly {
     request: QualifiedCharitableDistributionRequest
     evidence: QcdEfficiencyAlternativeEvidence
@@ -320,6 +334,7 @@ function adaptedCandidateId(
     ))
   return deriveActionStructuralId('retirement-action-qcd-efficiency-candidate', [
     exploratoryCandidateId,
+    projectionBindingId,
     [...requests].sort((left, right) =>
       compareUtf16CodeUnits(left.actionId, right.actionId),
     ),
@@ -370,7 +385,11 @@ export function adaptQcdEfficiencyDetectorCandidate(
   }
 
   const expectedTargets = qcdEfficiencyAnnualTargets(planSnapshot, projectionSnapshot)
-  if (expectedTargets === null) {
+  const projectionBindingId = qcdEfficiencyProjectionBindingId(
+    planSnapshot,
+    projectionSnapshot,
+  )
+  if (expectedTargets === null || projectionBindingId === null) {
     return blocked([localIssue(
       'invalidExploratoryCandidate',
       'detectorProjection',
@@ -381,6 +400,7 @@ export function adaptQcdEfficiencyDetectorCandidate(
     planSnapshot,
     candidateSnapshot,
     expectedTargets,
+    projectionBindingId,
   )
   if (invalidCandidate !== null) return blocked([invalidCandidate])
   const targetYears = expectedTargets.map((target) => target.year)
@@ -694,6 +714,7 @@ export function adaptQcdEfficiencyDetectorCandidate(
   try {
     concreteCandidateId = adaptedCandidateId(
       candidateSnapshot.id,
+      projectionBindingId,
       selected,
     )
   } catch {
@@ -708,6 +729,7 @@ export function adaptQcdEfficiencyDetectorCandidate(
     exploratoryCandidateId: 'insight-qcd-efficiency',
     source: 'detector',
     relationship: 'callerSuppliedIdentitiesBoundToExactDetectorAnnualTargets',
+    projectionBindingId,
     annualTargets: expectedTargets,
   }
 

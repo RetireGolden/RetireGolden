@@ -46,6 +46,9 @@ describe('QCD efficiency detector source integrity', () => {
       },
       candidateMetadata: {
         qcdAnnualTargets: [{ year: 2026, requestedAmount: 250_000 }],
+        qcdProjectionBindingId: expect.stringMatching(
+          /^qcd-efficiency-projection-binding:[0-9a-f]{64}$/,
+        ),
       },
     })
     const candidate = candidateFromInsight(card!, card!.action)
@@ -53,8 +56,11 @@ describe('QCD efficiency detector source integrity', () => {
       state: 'exploratoryNonActionable',
       reason: QCD_EFFICIENCY_EXPLORATORY_REASON,
     })
-    expect(candidate?.metadata).toEqual({
+    expect(candidate?.metadata).toMatchObject({
       qcdAnnualTargets: [{ year: 2026, requestedAmount: 250_000 }],
+      qcdProjectionBindingId: expect.stringMatching(
+        /^qcd-efficiency-projection-binding:[0-9a-f]{64}$/,
+      ),
     })
   })
 

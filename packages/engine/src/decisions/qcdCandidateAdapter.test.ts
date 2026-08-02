@@ -267,6 +267,9 @@ describe('QCD efficiency candidate adapter', () => {
       exploratoryCandidateId: 'insight-qcd-efficiency',
       source: 'detector',
       relationship: 'callerSuppliedIdentitiesBoundToExactDetectorAnnualTargets',
+      projectionBindingId: expect.stringMatching(
+        /^qcd-efficiency-projection-binding:[0-9a-f]{64}$/,
+      ),
       annualTargets: [{ year: 2026, requestedAmount: 25_000 }],
     })
     expect(first.candidate.metadata?.qcdExploratorySourceProvenance)
@@ -463,6 +466,68 @@ describe('QCD efficiency candidate adapter', () => {
     if (result.status !== 'adapted') return
     expect(result.requests.map((request) => request.requestedAmount))
       .toEqual([25_000, 25_500, 26_265])
+  })
+
+  it('rejects a retained projection after target-driving Plan facts change', () => {
+    const sourcePlan = eligiblePlan()
+    sourcePlan.assumptions.inflationPct = 2
+    const years = [2026, 2027]
+    const retainedProjection = projectionResult(sourcePlan, years)
+    const retainedCandidate = exploratoryCandidate(sourcePlan, years)
+    const currentPlan = structuredClone(sourcePlan)
+    currentPlan.assumptions.inflationPct = 3
+
+    const stale = adaptQcdEfficiencyDetectorCandidateWithProjection(
+      currentPlan,
+      retainedCandidate,
+      [
+        alternative('2026-option', 'ira-a'),
+        annualAlternative(sourcePlan, '2027-option', 'ira-b', 2027),
+      ],
+      retainedProjection,
+    )
+
+    expect(stale.status).toBe('blocked')
+    if (stale.status === 'blocked') {
+      expect(stale.issues).toContainEqual(expect.objectContaining({
+        kind: 'invalidExploratoryCandidate',
+        field: 'metadata.qcdProjectionBindingId',
+      }))
+    }
+  })
+
+  it('keeps projection binding stable across irrelevant Plan array permutations', () => {
+    const sourcePlan = eligiblePlan()
+    const years = [2026, 2027]
+    const retainedProjection = projectionResult(sourcePlan, years)
+    const retainedCandidate = exploratoryCandidate(sourcePlan, years)
+    const permutedPlan: Plan = {
+      ...sourcePlan,
+      accounts: [...sourcePlan.accounts].reverse(),
+      retirementActionEligibilityFacts: {
+        iraClassifications: [
+          ...sourcePlan.retirementActionEligibilityFacts!.iraClassifications,
+        ].reverse(),
+        sepSimpleActivities: [
+          ...sourcePlan.retirementActionEligibilityFacts!.sepSimpleActivities,
+        ].reverse(),
+        deductibleIraContributions: [
+          ...sourcePlan.retirementActionEligibilityFacts!.deductibleIraContributions,
+        ].reverse(),
+      },
+    }
+
+    const result = adaptQcdEfficiencyDetectorCandidateWithProjection(
+      permutedPlan,
+      retainedCandidate,
+      [
+        alternative('2026-option', 'ira-a'),
+        annualAlternative(sourcePlan, '2027-option', 'ira-b', 2027),
+      ],
+      retainedProjection,
+    )
+
+    expect(result.status).toBe('adapted')
   })
 
   it.each([
