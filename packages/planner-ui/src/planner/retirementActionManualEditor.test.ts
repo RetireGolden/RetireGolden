@@ -198,6 +198,7 @@ describe('buildRetirementActionManualIntent', () => {
       ok: false,
       issues: [
         'The selected person is no longer available in this Plan. Choose a current household member.',
+        'This source account is owned by a different household member than the selected person.',
       ],
     })
   })
@@ -368,12 +369,12 @@ describe('buildRetirementActionManualIntent', () => {
     expect(ordinaryAccounts.map((account) =>
       retirementActionManualSourceSupportIssue(
         'legacyAggregateWithdrawal', account, '2034-06-15', 2034,
-        DEFAULT_REQUESTED_AMOUNT, ordinaryPlan,
+        DEFAULT_REQUESTED_AMOUNT, 'person-a', ordinaryPlan,
       ) === null,
     )).toEqual([true, true, true, false, false, false, false])
     expect(retirementActionManualSourceSupportIssue(
       'legacyAggregateWithdrawal', ordinaryAccounts[3]!, '2034-09-01', 2034,
-      DEFAULT_REQUESTED_AMOUNT, ordinaryPlan,
+      DEFAULT_REQUESTED_AMOUNT, 'person-a', ordinaryPlan,
     )).toBeNull()
 
     const conversionAccounts: Plan['accounts'] = [
@@ -416,7 +417,7 @@ describe('buildRetirementActionManualIntent', () => {
     expect(conversionAccounts.map((account) =>
       retirementActionManualSourceSupportIssue(
         'legacyAggregateRothConversion', account, '2034-06-15', 2034,
-        DEFAULT_REQUESTED_AMOUNT, conversionPlan,
+        DEFAULT_REQUESTED_AMOUNT, 'person-a', conversionPlan,
       ) === null,
     )).toEqual([true, true, true, false, false, false])
   })
@@ -475,7 +476,7 @@ describe('buildRetirementActionManualIntent', () => {
 
     expect(retirementActionManualSourceSupportIssue(
       'legacyAggregateWithdrawal', taxableAccount, '2034-06-15', 2034,
-      DEFAULT_REQUESTED_AMOUNT, twoLivingSingle,
+      DEFAULT_REQUESTED_AMOUNT, 'person-a', twoLivingSingle,
     )).toBe(
       'Taxable-account withdrawal review requires an unambiguous projected tax unit; 2 household members are modeled alive in 2034 under Single status.',
     )
@@ -484,7 +485,7 @@ describe('buildRetirementActionManualIntent', () => {
     twoLivingJoint.household.filingStatus = 'marriedFilingJointly'
     expect(retirementActionManualSourceSupportIssue(
       'legacyAggregateWithdrawal', taxableAccount, '2034-06-15', 2034,
-      DEFAULT_REQUESTED_AMOUNT, twoLivingJoint,
+      DEFAULT_REQUESTED_AMOUNT, 'person-a', twoLivingJoint,
     )).toBeNull()
 
     const oneLivingSingle = structuredClone(twoLivingSingle)
@@ -492,7 +493,7 @@ describe('buildRetirementActionManualIntent', () => {
     oneLivingSingle.household.people[1]!.longevity.planningAge = 60
     expect(retirementActionManualSourceSupportIssue(
       'legacyAggregateWithdrawal', taxableAccount, '2034-06-15', 2034,
-      DEFAULT_REQUESTED_AMOUNT, oneLivingSingle,
+      DEFAULT_REQUESTED_AMOUNT, 'person-a', oneLivingSingle,
     )).toBeNull()
 
     const target = migrated('legacyAggregateWithdrawal')
@@ -510,6 +511,67 @@ describe('buildRetirementActionManualIntent', () => {
         'Taxable-account withdrawal review requires an unambiguous projected tax unit; 2 household members are modeled alive in 2034 under Single status.',
       ],
     })
+  })
+
+  it('matches allocator acting-owner semantics for every ordinary source shape', () => {
+    const secondPerson: Plan['household']['people'][number] = {
+      id: 'person-b',
+      name: 'Person B',
+      dob: '1975-01-01',
+      sex: 'average',
+      retirementAge: 65,
+      longevity: { planningAge: 90, source: 'manual' },
+    }
+    const plan = structuredClone(supportedPlan)
+    plan.household.people.push(secondPerson)
+    plan.household.filingStatus = 'marriedFilingJointly'
+    const accountsFor = (ownerPersonId: string | null): Plan['accounts'] => [
+      {
+        type: 'cash', id: 'cash-owner', name: 'Cash', ownerPersonId,
+        annualReturnPct: null, balance: 100, annualContribution: 0,
+      },
+      {
+        type: 'taxable', id: 'taxable-owner', name: 'Taxable', ownerPersonId,
+        annualReturnPct: null, balance: 100, costBasis: 80, annualContribution: 0,
+      },
+      {
+        type: 'equityComp', id: 'equity-owner', name: 'Equity', ownerPersonId,
+        annualReturnPct: null, balance: 100, costBasis: 80, annualContribution: 0,
+        vestingMode: 'final', vestDate: null,
+      },
+    ]
+    const supportIssues = (accounts: Plan['accounts']) => accounts.map((account) =>
+      retirementActionManualSourceSupportIssue(
+        'legacyAggregateWithdrawal', account, '2034-06-15', 2034,
+        DEFAULT_REQUESTED_AMOUNT, 'person-a', { ...plan, accounts },
+      ))
+    const target = migrated('legacyAggregateWithdrawal')
+    const buildWith = (account: Plan['accounts'][number]) =>
+      buildRetirementActionManualIntent(target, {
+        ...emptyRetirementActionManualEditorDraft(),
+        personId: 'person-a',
+        sourceAccountId: account.id,
+        fullSourceAmountConfirmed: true,
+        executionDate: '2034-06-15',
+        executionSequence: '1',
+        withdrawalPurpose: 'spending',
+      }, [], { ...plan, accounts: [account] })
+
+    const validAccounts = accountsFor('person-a')
+    expect(supportIssues(validAccounts)).toEqual([null, null, null])
+    for (const account of validAccounts) expect(buildWith(account).ok).toBe(true)
+
+    const mismatchedAccounts = accountsFor('person-b')
+    expect(supportIssues(mismatchedAccounts)).toEqual(Array(3).fill(
+      'This source account is owned by a different household member than the selected person.',
+    ))
+    for (const account of mismatchedAccounts) expect(buildWith(account).ok).toBe(false)
+
+    const jointAccounts = accountsFor(null)
+    expect(supportIssues(jointAccounts)).toEqual(Array(3).fill(
+      'This jointly owned source does not record the individual acting-owner identity required for manual review.',
+    ))
+    for (const account of jointAccounts) expect(buildWith(account).ok).toBe(false)
   })
 
   it('pins exact-cent execution snapshot boundaries for every ordinary source shape', () => {
@@ -535,7 +597,7 @@ describe('buildRetirementActionManualIntent', () => {
     for (const account of boundaryAccounts) {
       expect(retirementActionManualSourceSupportIssue(
         'legacyAggregateWithdrawal', account, '2034-06-15', 2034,
-        DEFAULT_REQUESTED_AMOUNT, boundaryPlan,
+        DEFAULT_REQUESTED_AMOUNT, 'person-a', boundaryPlan,
       )).toBeNull()
     }
 
@@ -557,7 +619,7 @@ describe('buildRetirementActionManualIntent', () => {
     const overPlan = { ...supportedPlan, accounts: overAccounts }
     expect(overAccounts.map((account) => retirementActionManualSourceSupportIssue(
       'legacyAggregateWithdrawal', account, '2034-06-15', 2034,
-      DEFAULT_REQUESTED_AMOUNT, overPlan,
+      DEFAULT_REQUESTED_AMOUNT, 'person-a', overPlan,
     ))).toEqual([
       'This source account balance cannot be represented in the exact-cent execution ledger. Reduce the balance before completing review.',
       'This source account balance cannot be represented in the exact-cent execution ledger. Reduce the balance before completing review.',
@@ -603,7 +665,7 @@ describe('buildRetirementActionManualIntent', () => {
     const supportIssues = (accounts: Plan['accounts']) => accounts.map((account) =>
       retirementActionManualSourceSupportIssue(
         'legacyAggregateWithdrawal', account, '2034-06-15', 2034,
-        requestedAmount, { ...supportedPlan, accounts },
+        requestedAmount, 'person-a', { ...supportedPlan, accounts },
       ))
     const buildWith = (account: Plan['accounts'][number]) =>
       buildRetirementActionManualIntent(target, {

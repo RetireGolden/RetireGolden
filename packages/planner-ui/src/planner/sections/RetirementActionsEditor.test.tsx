@@ -329,6 +329,36 @@ describe('RetirementActionsEditor', () => {
     expect(mounted.container.textContent).toContain('Needs source review')
   })
 
+  it('filters cross-owner and joint sources using acting-owner semantics', async () => {
+    const plan = editorPlan()
+    const actingPerson = plan.household.people[0]!
+    const otherPerson = plan.household.people[1]!
+    plan.accounts = [
+      {
+        type: 'cash', id: 'other-cash', name: 'Other cash', ownerPersonId: otherPerson.id,
+        annualReturnPct: null, balance: 100, annualContribution: 0,
+      },
+      {
+        type: 'taxable', id: 'joint-taxable', name: 'Joint taxable', ownerPersonId: null,
+        annualReturnPct: null, balance: 100, costBasis: 80, annualContribution: 0,
+      },
+    ]
+    plan.strategies.retirementActions = [migratedAction('legacyAggregateWithdrawal')]
+    const mounted = await mount(plan)
+
+    await change(controlByLabel(mounted.container, 'Person'), actingPerson.id)
+    expect(Array.from(
+      controlByLabel<HTMLSelectElement>(mounted.container, 'Source account').options,
+    ).slice(1)).toEqual([])
+    expect(mounted.container.textContent).toContain(
+      'This source account is owned by a different household member than the selected person.',
+    )
+    expect(mounted.container.textContent).toContain(
+      'This jointly owned source does not record the individual acting-owner identity required for manual review.',
+    )
+    expect(mounted.container.textContent).toContain('Needs source review')
+  })
+
   it('filters sources whose execution snapshots exceed the exact-cent boundary', async () => {
     const plan = editorPlan()
     const owner = plan.household.people[0]!

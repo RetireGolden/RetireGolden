@@ -44,7 +44,6 @@ function accountOptions(
   if (personId === '') return []
   return plan.accounts
     .filter((account) => {
-      if (account.ownerPersonId !== personId) return false
       return retirementActionManualSourceCandidate(kind, account) &&
         retirementActionManualSourceSupportIssue(
           kind,
@@ -52,6 +51,7 @@ function accountOptions(
           executionDate,
           actionYear,
           requestedAmount,
+          personId,
           plan,
         ) === null
     })
@@ -70,7 +70,6 @@ function sourceBoundaryIssues(
   if (personId === '') return []
   const issues = plan.accounts
     .filter((account) =>
-      account.ownerPersonId === personId &&
       retirementActionManualSourceCandidate(kind, account),
     )
     .map((account) => retirementActionManualSourceSupportIssue(
@@ -79,6 +78,7 @@ function sourceBoundaryIssues(
       executionDate,
       actionYear,
       requestedAmount,
+      personId,
       plan,
     ))
     .filter((issue): issue is string => issue !== null)
@@ -267,6 +267,7 @@ function ManualReviewRow({
                 executionDate,
                 target.year,
                 target.requestedAmount,
+                draft.personId,
                 plan,
               ) === null
             return {

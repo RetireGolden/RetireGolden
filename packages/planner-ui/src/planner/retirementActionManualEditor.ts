@@ -192,8 +192,15 @@ export function retirementActionManualSourceSupportIssue(
   executionDate: string,
   actionYear: number,
   requestedAmount: EditableMigratedRetirementAction['requestedAmount'],
+  actingPersonId: string,
   plan: ManualSourceSupportPlan,
 ): string | null {
+  if (account.ownerPersonId === null) {
+    return 'This jointly owned source does not record the individual acting-owner identity required for manual review.'
+  }
+  if (account.ownerPersonId !== actingPersonId) {
+    return 'This source account is owned by a different household member than the selected person.'
+  }
   const owners = plan.household.people.filter((person) => person.id === account.ownerPersonId)
   if (owners.length !== 1) {
     return 'The selected source account must have exactly one household owner.'
@@ -361,6 +368,7 @@ export function buildRetirementActionManualIntent(
       draft.executionDate,
       target.year,
       target.requestedAmount,
+      draft.personId,
       plan,
     )
     if (sourceIssue !== null) issues.push(sourceIssue)
