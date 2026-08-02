@@ -228,7 +228,9 @@ describe('compareScenarioPlans', () => {
         unexecutedAmountCents: 100,
         readiness: 'nonActionable',
         outcome: 'refused',
-        reasons: [{ code: 'action-sequence-conflict' }],
+        reasons: row.actionId === 'independent'
+          ? [{ code: 'action-batch-schedule-conflict' }]
+          : [{ code: 'action-sequence-conflict' }],
         sourceAllocations: [{
           allocationId:
             row.actionId === 'collision-a'

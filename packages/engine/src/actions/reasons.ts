@@ -66,6 +66,11 @@ const actionReasonRegistry = {
     outcome: 'refused',
     message: 'Give same-day actions a unique execution sequence; IDs do not prove transaction order.',
   },
+  'action-batch-schedule-conflict': {
+    predicate: 'reconcileActionSchedule',
+    outcome: 'refused',
+    message: "Another request's schedule collision aborted this annual action batch before execution.",
+  },
   'source-balance-trimmed': {
     predicate: 'sourceBalanceAvailable',
     outcome: 'partial',

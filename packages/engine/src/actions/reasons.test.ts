@@ -55,14 +55,14 @@ const LOCKED_UNSUPPORTED_CODES = [
 ] as const satisfies readonly UnsupportedActionReasonCode[]
 
 describe('action reason registry', () => {
-  it('exhaustively owns 75 codes across 38 predicates and four disjoint outcomes', () => {
-    expect(actionReasonCodes).toHaveLength(75)
-    expect(new Set(actionReasonCodes).size).toBe(75)
+  it('exhaustively owns 76 codes across 38 predicates and four disjoint outcomes', () => {
+    expect(actionReasonCodes).toHaveLength(76)
+    expect(new Set(actionReasonCodes).size).toBe(76)
     expect(actionPredicateNames).toHaveLength(38)
     expect(partialActionReasonCodes).toHaveLength(3)
     expect(taxTreatmentAdjustmentReasonCodes).toHaveLength(3)
     expect(unsupportedActionReasonCodes).toHaveLength(36)
-    expect(refusedActionReasonCodes).toHaveLength(33)
+    expect(refusedActionReasonCodes).toHaveLength(34)
   })
 
   it('preserves the locked unsupported set exactly', () => {

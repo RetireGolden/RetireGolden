@@ -679,9 +679,11 @@ export interface YearResult {
   retirementActionExecution?: ExecuteOrdinaryWithdrawalsResult
   /**
    * Canonical identity-bearing publication across annual action executors.
-   * Present whenever an executor published requests, schedule diagnostics, or
-   * action evidence for this year. Executor-specific artifacts remain on their
-   * dedicated result fields.
+   * Present when the ordinary executor result is publication-eligible: either
+   * clean execution evidence or conflict-only schedule diagnostics. Omitted for
+   * legacy-only action-year-mismatch or duplicate-action-ID schedule issues,
+   * which remain on `retirementActionExecution`. Executor-specific artifacts
+   * remain on their dedicated result fields.
    */
   retirementActionPublication?: AnnualRetirementActionPublication
   /** Early-withdrawal penalties (10% traditional pre-59½, 20% HSA non-medical pre-65); not in `tax`. */
