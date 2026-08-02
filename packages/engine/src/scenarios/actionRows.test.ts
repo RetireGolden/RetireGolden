@@ -306,6 +306,20 @@ describe('normalizeScenarioActionRows', () => {
         'Conversion execution allocation',
       )
     }
+
+    const forgedMovementExecution = {
+      ...execution,
+      evidence: execution.evidence.map((entry) => ({
+        ...entry,
+        executedAmount: asUsdCents(1),
+      })),
+    }
+    expect(() => normalizeScenarioActionRows([{
+      year: 2030,
+      rothConversionActionExecution: forgedMovementExecution,
+    } as unknown as YearResult])).toThrow(
+      'Conversion execution evidence differs',
+    )
   })
 
   it('normalizes ordinary execution cents and identities independent of evidence order', () => {

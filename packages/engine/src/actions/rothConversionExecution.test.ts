@@ -714,7 +714,7 @@ describe('executeRothConversions', () => {
     })
   })
 
-  it('fails closed without invoking hostile getters', () => {
+  it('fails closed when hostile getters throw during input inspection', () => {
     const value = input()
     Object.defineProperty(value, 'year', {
       enumerable: true,

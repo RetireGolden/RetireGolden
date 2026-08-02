@@ -2681,8 +2681,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       year,
       currentYearActions,
     )
-    const annualScheduleBlocked = currentYearSchedule.scheduleIssues.length > 0
-    const currentYearOrdinaryExecutionActions = annualScheduleBlocked
+    const mixedKindScheduleBlocked =
+      currentYearSchedule.scheduleIssues.length > 0 &&
+      currentYearOrdinaryActions.length > 0 &&
+      currentYearConversionActions.length > 0
+    const currentYearOrdinaryExecutionActions = mixedKindScheduleBlocked
       ? currentYearActions
       : currentYearActions.filter((request) => request.kind !== 'rothConversion')
     let retirementActionExecution: ExecuteOrdinaryWithdrawalsResult | undefined
@@ -2982,7 +2985,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // ordinary withdrawals, immediately before aggregate conversion sizing.
     // Complete annual Form-8606 line-8, RMD-reserve, and tax-liability funding
     // evidence do not exist at this simulator boundary, so none is invented.
-    if (currentYearConversionActions.length > 0 && !annualScheduleBlocked) {
+    if (currentYearConversionActions.length > 0 && !mixedKindScheduleBlocked) {
       const conversionAccountIds = new Set<string>(
         currentYearConversionActions.flatMap((request) => [
           request.destinationRothAccountId,

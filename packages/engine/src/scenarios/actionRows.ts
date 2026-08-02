@@ -473,6 +473,9 @@ export function normalizeScenarioActionRows(
         reasons: evidence.reasons.map((reason) => ({ ...reason })),
       })
     }
+    if (conversionExecution !== undefined) {
+      rothConversionPublicationSource(conversionExecution)
+    }
     appendScheduleAbortedRows(
       conversionExecution?.requests ?? [],
       sharedScheduleIssues(conversionExecution?.scheduleIssues ?? []),

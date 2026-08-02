@@ -964,6 +964,71 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
     })
   })
 
+  it('publishes conversion-only schedule collisions through the conversion executor', () => {
+    const plan = basePlan()
+    plan.accounts = [
+      {
+        type: 'traditional',
+        id: 'traditional',
+        name: 'Traditional',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 100,
+        annualContribution: 0,
+      },
+      {
+        type: 'roth',
+        id: 'roth',
+        name: 'Roth',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 0,
+        annualContribution: 0,
+      },
+    ]
+    const conversion = (suffix: string) => parsedAction({
+      actionId: `conversion-${suffix}`,
+      kind: 'rothConversion',
+      personId: 'p1',
+      year: 2026,
+      executionDate: '2026-12-31',
+      executionSequence: 1,
+      requestedAmount: 5_000,
+      allocations: [{
+        allocationId: `conversion-allocation-${suffix}`,
+        sourceAccountId: 'traditional',
+        requestedAmount: 5_000,
+      }],
+      destinationRothAccountId: 'roth',
+      taxFunding: { kind: 'noneExpected' },
+      provenance: { source: 'manual' },
+    })
+    plan.strategies.retirementActions = [conversion('b'), conversion('a')]
+
+    const year = run(plan).years[0]!
+
+    expect(year).not.toHaveProperty('retirementActionExecution')
+    expect(year.rothConversionActionExecution).toMatchObject({
+      committed: false,
+      evidence: [],
+      scheduleIssues: [{
+        kind: 'executionSequenceConflict',
+        collidingActionIds: ['conversion-a', 'conversion-b'],
+      }],
+    })
+    expect(year.rothConversionActionExecution?.requests.map(
+      (request) => request.actionId,
+    )).toEqual(['conversion-a', 'conversion-b'])
+    expect(year.retirementActionPublication?.executorSources).toEqual([
+      'rothConversionExecutor',
+    ])
+    expect(year.retirementActionPublication?.records.every(
+      (record) => record.executorSource === 'rothConversionExecutor',
+    )).toBe(true)
+  })
+
   it('executes an action only in its requested year and omits evidence otherwise', () => {
     const plan = basePlan()
     plan.accounts = [cash('cash-a', 100)]
