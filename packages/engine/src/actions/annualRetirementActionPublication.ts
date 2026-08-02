@@ -950,7 +950,20 @@ export function ordinaryWithdrawalPublicationSource(
 function conversionAllocationRecords(
   evidence: Readonly<RothConversionExecutionEvidence>,
 ): AnnualRetirementActionAllocationRecord[] {
-  if (evidence.allocations.length !== evidence.request.allocations.length) {
+  const requestedAllocationIds = new Set<string>(
+    evidence.request.allocations.map((allocation) => allocation.allocationId),
+  )
+  const evidenceAllocationIds = new Set<string>(
+    evidence.allocations.map((allocation) => allocation.allocationId),
+  )
+  if (
+    evidence.allocations.length !== evidence.request.allocations.length ||
+    requestedAllocationIds.size !== evidence.request.allocations.length ||
+    evidenceAllocationIds.size !== evidence.allocations.length ||
+    requestedAllocationIds.size !== evidenceAllocationIds.size ||
+    [...evidenceAllocationIds].some((allocationId) =>
+      !requestedAllocationIds.has(allocationId))
+  ) {
     throw new Error(
       `Conversion allocation evidence is incomplete for action "${evidence.request.actionId}"`,
     )

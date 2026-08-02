@@ -449,6 +449,17 @@ describe('executeRothConversions', () => {
     },
   )
 
+  it('rejects duplicated allocation evidence that omits a requested allocation', () => {
+    const canonical = executeRothConversions(input())
+    const duplicate = structuredClone(canonical.evidence[0]!.allocations[0]!)
+    const forged: unknown = structuredClone(canonical)
+    setAtPath(forged, ['evidence', 0, 'allocations'], [duplicate, duplicate])
+
+    expect(() => rothConversionPublicationSource(
+      forged as ReturnType<typeof executeRothConversions>,
+    )).toThrow(/allocation evidence is incomplete/i)
+  })
+
   it('publishes a trim reason when a positive source balance is below its allocation', () => {
     const value = input()
     value.openingBalances = value.openingBalances.map((snapshot) =>
