@@ -323,6 +323,19 @@ function isConflictOnlyRecord(
   )
 }
 
+function sameActionReason(
+  left: Readonly<ActionReason>,
+  right: Readonly<ActionReason>,
+): boolean {
+  return left.code === right.code &&
+    left.predicate === right.predicate &&
+    left.outcome === right.outcome &&
+    left.message === right.message &&
+    left.personId === right.personId &&
+    left.accountId === right.accountId &&
+    left.allocationId === right.allocationId
+}
+
 // Structural allocation reasons cannot reach publication: the canonical request
 // schema rejects duplicate IDs/sources and amount mismatches before execution.
 const conversionPreflightReasonCodeList = [
@@ -1797,19 +1810,25 @@ export function publishAnnualRetirementActions(
         `Schedule conflict diagnostic differs for action "${diagnostic.actionId}"`,
       )
     }
+    const preservesQcdPrerequisiteTruth =
+      record.executorSource === 'qcdExecutor'
     if (
       record.readiness !== 'nonActionable' ||
-      record.outcome !== 'refused' ||
+      (!preservesQcdPrerequisiteTruth && record.outcome !== 'refused') ||
       record.executedAmount !== 0 ||
       record.unexecutedAmount !== record.requestedAmount ||
       record.executedDate !== null ||
       record.executedSequence !== null ||
       record.allocations.some((allocation) =>
-        allocation.resolution !== 'unresolved' ||
+        (!preservesQcdPrerequisiteTruth &&
+          allocation.resolution !== 'unresolved') ||
         allocation.executedAmount !== 0 ||
         allocation.unexecutedAmount !== allocation.requestedAmount) ||
-      record.reasons.length !== 1 ||
-      JSON.stringify(record.reasons[0]) !== JSON.stringify(diagnostic.reason)
+      (preservesQcdPrerequisiteTruth
+        ? !record.reasons.some((reason) =>
+            sameActionReason(reason, diagnostic.reason))
+        : record.reasons.length !== 1 ||
+          !sameActionReason(record.reasons[0]!, diagnostic.reason))
     ) {
       throw new Error(
         `Schedule conflict record remains actionable for action "${diagnostic.actionId}"`,

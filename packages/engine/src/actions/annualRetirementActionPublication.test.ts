@@ -3324,7 +3324,7 @@ describe('annual retirement-action publication', () => {
   )
 
   it.each(['rothConversion', 'qcd'] as const)(
-    'rejects extra %s refusal reasons on diagnosed conflict records',
+    'applies source-specific %s prerequisite truth on diagnosed conflict records',
     (kind) => {
       const first = kind === 'qcd'
         ? qcdRequest('specialized-conflict-first', '2030-06-15', 1)
@@ -3361,11 +3361,65 @@ describe('annual retirement-action publication', () => {
         scheduleDiagnostics: [diagnostic(first.actionId), diagnostic(second.actionId)],
       } as unknown as AnnualRetirementActionPublicationSource
 
-      expect(() => publishAnnualRetirementActions({
+      const publish = () => publishAnnualRetirementActions({
         taxYear: 2030,
         requests: [first, second],
         sources: [conflictSource],
-      })).toThrow(/conflict record remains actionable/i)
+      })
+      if (kind === 'qcd') expect(publish()?.records).toHaveLength(2)
+      else expect(publish).toThrow(/conflict record remains actionable/i)
     },
   )
+
+  it('round-trips QCD prerequisite truth through a diagnosed collision', () => {
+    const first = qcdRequest('qcd-prerequisite-conflict-first', '2030-06-15', 1)
+    const second = qcdRequest('qcd-prerequisite-conflict-second', '2030-06-15', 1)
+    if (first.kind !== 'qcd' || second.kind !== 'qcd') {
+      throw new Error('fixture drift')
+    }
+    second.allocation.sourceAccountId = first.allocation.sourceAccountId
+    const diagnostic = (actionId: ReturnType<typeof asActionId>) => ({
+      kind: 'executionSequenceConflict' as const,
+      actionId,
+      year: 2030,
+      scheduledDate: '2030-06-15',
+      executionSequence: 1,
+      collidingActionIds: [first.actionId, second.actionId] as const,
+      reason: createActionReason('action-sequence-conflict'),
+    })
+    const prerequisiteReasons = [
+      createActionReason('qcd-nonqcd-deduction-unsupported'),
+      createActionReason('qcd-rmd-evidence-missing'),
+      createActionReason('qcd-tax-year-limit-unsupported'),
+      createActionReason('action-sequence-conflict'),
+    ]
+    const collisionRecord = (action: typeof first) => ({
+      ...conflictRecord(action),
+      outcome: 'unsupported' as const,
+      allocations: conflictRecord(action).allocations.map((allocation) => ({
+        ...allocation,
+        resolution: 'resolved' as const,
+      })),
+      reasons: prerequisiteReasons,
+    })
+
+    const publication = publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [first, second],
+      sources: [{
+        executorSource: 'qcdExecutor',
+        records: [collisionRecord(first), collisionRecord(second)],
+        scheduleDiagnostics: [diagnostic(first.actionId), diagnostic(second.actionId)],
+      }],
+    })
+
+    expect(publication?.records).toHaveLength(2)
+    expect(publication?.records).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        outcome: 'unsupported',
+        allocations: [expect.objectContaining({ resolution: 'resolved' })],
+        reasons: prerequisiteReasons,
+      }),
+    ]))
+  })
 })
