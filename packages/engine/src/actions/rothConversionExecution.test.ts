@@ -288,6 +288,34 @@ describe('executeRothConversions', () => {
     )
   })
 
+  it('publishes a trim reason when a positive source balance is below its allocation', () => {
+    const value = input()
+    value.openingBalances = value.openingBalances.map((snapshot) =>
+      snapshot.accountId === 'traditional-a'
+        ? { ...snapshot, openingBalance: asUsdCents(5_000) }
+        : snapshot,
+    )
+
+    const result = executeRothConversions(value)
+    const allocationReasons = result.evidence[0]!.reasons.filter(
+      (reason) => reason.allocationId === 'allocation-a',
+    )
+
+    expect(allocationReasons.map((reason) => reason.code)).toContain(
+      'conversion-balance-trimmed',
+    )
+    expect(allocationReasons.map((reason) => reason.code)).not.toContain(
+      'conversion-balance-unavailable',
+    )
+    expect(result.evidence[0]).toMatchObject({
+      executedAmount: 0,
+      unexecutedAmount: 10_000,
+    })
+    expect(result.balances.find(
+      (balance) => balance.accountId === 'traditional-a',
+    )).toMatchObject({ openingBalance: 5_000, closingBalance: 5_000 })
+  })
+
   it('rejects duplicate account and balance identities with unchanged snapshots', () => {
     const duplicatePlan = input()
     ;(duplicatePlan.plan as Plan).accounts.push({ ...(duplicatePlan.plan as Plan).accounts[0]! })
@@ -317,6 +345,30 @@ describe('executeRothConversions', () => {
       evidence: [],
       scheduleIssues: [{ kind: 'invalidInput' }],
     })
+  })
+
+  it('deep-freezes schedule-aborted and invalid early-return results', () => {
+    const collision = executeRothConversions(input([
+      request('conversion-a', 1),
+      request('conversion-b', 1),
+    ]))
+    const invalidYear = executeRothConversions({ ...input(), year: 0 })
+    const duplicatePlanInput = input()
+    ;(duplicatePlanInput.plan as Plan).accounts.push({
+      ...(duplicatePlanInput.plan as Plan).accounts[0]!,
+    })
+    const duplicatePlan = executeRothConversions(duplicatePlanInput)
+
+    for (const result of [collision, invalidYear, duplicatePlan]) {
+      expect(Object.isFrozen(result)).toBe(true)
+      expect(Object.isFrozen(result.requests)).toBe(true)
+      expect(Object.isFrozen(result.scheduleIssues)).toBe(true)
+      expect(Object.isFrozen(result.scheduleIssues[0])).toBe(true)
+      expect(Object.isFrozen(result.balances)).toBe(true)
+    }
+    expect(Object.isFrozen(collision.requests[0])).toBe(true)
+    expect(Object.isFrozen(collision.requests[0]!.allocations)).toBe(true)
+    expect(Object.isFrozen(collision.balances[0])).toBe(true)
   })
 
   it('does not overflow or alter a maximum-safe destination snapshot', () => {

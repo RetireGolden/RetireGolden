@@ -107,6 +107,12 @@ function deepFreeze<T>(value: T): Readonly<T> {
   return value as Readonly<T>
 }
 
+function immutableResult(
+  result: ExecuteRothConversionsResult,
+): ExecuteRothConversionsResult {
+  return deepFreeze(result) as ExecuteRothConversionsResult
+}
+
 function hasDuplicates(values: readonly string[]): boolean {
   return new Set(values).size !== values.length
 }
@@ -193,7 +199,7 @@ function nonActionableEvidence(
 
 function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConversionsResult {
   if (!Number.isSafeInteger(input.year) || input.year < 1 || input.year > 9999) {
-    return { committed: false, requests: [], scheduleIssues: [{ kind: 'invalidInput', actionId: null, detail: 'Execution year is invalid.' }], balances: [], evidence: [] }
+    return immutableResult({ committed: false, requests: [], scheduleIssues: [{ kind: 'invalidInput', actionId: null, detail: 'Execution year is invalid.' }], balances: [], evidence: [] })
   }
   const parsedRequests = input.requests.map((request) => rothConversionRequestSchema.parse(request))
   const scheduleState = evaluateRetirementActionSchedule(input.year, parsedRequests)
@@ -208,18 +214,18 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
   for (const snapshot of snapshots) snapshotCounts.set(snapshot.accountId, (snapshotCounts.get(snapshot.accountId) ?? 0) + 1)
   const issues = scheduleState.scheduleIssues
   if (issues.length > 0 || [...snapshotCounts.values()].some((count) => count !== 1)) {
-    return {
+    return immutableResult({
       committed: false,
       requests,
       scheduleIssues: issues.length > 0 ? issues : [{ kind: 'invalidInput', actionId: null, detail: 'Opening balances must have unique account IDs.' }],
       balances: unchangedBalances(snapshots),
       evidence: [],
-    }
+    })
   }
 
   const accountIds = input.plan.accounts.map((account) => account.id)
   if (hasDuplicates(accountIds)) {
-    return {
+    return immutableResult({
       committed: false,
       requests,
       scheduleIssues: [{
@@ -229,7 +235,7 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
       }],
       balances: unchangedBalances(snapshots),
       evidence: [],
-    }
+    })
   }
 
   const accounts = new Map(input.plan.accounts.map((account) => [account.id, account] as const))
@@ -292,18 +298,23 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
           accountId: allocation.sourceAccountId,
           allocationId: allocation.allocationId,
         }))
+      } else if (opening < allocation.requestedAmount) {
+        reasons.push(createActionReason('conversion-balance-trimmed', {
+          accountId: allocation.sourceAccountId,
+          allocationId: allocation.allocationId,
+        }))
       }
     }
     evidence.push(nonActionableEvidence(request, reasons, resolvedSourceAccountIds))
   }
 
-  return deepFreeze({
+  return immutableResult({
     committed: false,
     requests,
     scheduleIssues: [],
     balances: unchangedBalances(snapshots),
     evidence,
-  }) as ExecuteRothConversionsResult
+  })
 }
 
 /**
@@ -317,12 +328,12 @@ export function executeRothConversions(input: ExecuteRothConversionsInput): Exec
     const snapshot = structuredClone(input) as ExecuteRothConversionsInput
     return executeUnchecked(snapshot)
   } catch {
-    return deepFreeze({
+    return immutableResult({
       committed: false,
       requests: [],
       scheduleIssues: [{ kind: 'invalidInput', actionId: null, detail: 'Conversion execution input could not be inspected losslessly.' }],
       balances: [],
       evidence: [],
-    }) as ExecuteRothConversionsResult
+    })
   }
 }
