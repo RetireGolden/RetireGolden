@@ -605,6 +605,20 @@ export {
   type UnsupportedPlanBeneficiaryTraditionalIraAnnualApplicationResult,
 } from './beneficiaryTraditionalIraAnnualPlanApplication.js'
 export {
+  prepareBeneficiaryTraditionalIraAnnualSimulatorDelta,
+  type BeneficiaryTraditionalIraAnnualSimulatorDeltaPreparedResult,
+  type BeneficiaryTraditionalIraSimulatorAccountOpeningBalance,
+  type BeneficiaryTraditionalIraSimulatorActionApplicationDelta,
+  type BeneficiaryTraditionalIraSimulatorLedgerIdentity,
+  type BeneficiaryTraditionalIraSimulatorRmdLedgerDelta,
+  type BeneficiaryTraditionalIraSimulatorSourceDebitDelta,
+  type BeneficiaryTraditionalIraSimulatorUnchangedAccountEvidence,
+  type DetachedSimulatorAnnualAccountBalanceSnapshot,
+  type PrepareBeneficiaryTraditionalIraAnnualSimulatorDeltaInput,
+  type PrepareBeneficiaryTraditionalIraAnnualSimulatorDeltaResult,
+  type UnsupportedBeneficiaryTraditionalIraAnnualSimulatorDeltaResult,
+} from './beneficiaryTraditionalIraAnnualSimulatorDelta.js'
+export {
   evaluateOwnedNonRothIraPenaltyPrerequisites,
   type Age59HalfReachedPenaltyEvaluation,
   type DisabilityQualifiedPenaltyEvaluation,
