@@ -544,6 +544,14 @@ export function ordinaryWithdrawalPublicationEligibility(
 export function ordinaryWithdrawalPublicationSource(
   execution: Readonly<ExecuteOrdinaryWithdrawalsResult>,
 ): Readonly<AnnualRetirementActionPublicationSource> {
+  if (
+    execution.committed === (execution.scheduleIssues.length > 0) ||
+    (execution.scheduleIssues.length > 0 && execution.evidence.length > 0)
+  ) {
+    throw new Error(
+      'Cannot publish ordinary-withdrawal evidence whose commit state differs from its schedule abort state',
+    )
+  }
   const eligibility = ordinaryWithdrawalPublicationEligibility(execution)
   if (eligibility.kind === 'legacyScheduleDiagnosticsOnly') {
     throw new Error(
@@ -934,12 +942,18 @@ function assertRecordBinding(
       >>>
     )[reason.code]
     const balanceStateMatches = balanceState === undefined ||
-      candidateAllocations.some((allocation) =>
-        allocation.resolution === 'resolved' &&
-        (balanceState === 'partial'
-          ? allocation.executedAmount > 0 && allocation.unexecutedAmount > 0
-          : allocation.executedAmount === 0 &&
-            allocation.unexecutedAmount === allocation.requestedAmount))
+      (boundRecordAllocation === undefined
+        ? balanceState === 'partial'
+          ? record.executedAmount > 0 && record.unexecutedAmount > 0
+          : record.executedAmount === 0 &&
+            record.unexecutedAmount === record.requestedAmount
+        : boundRecordAllocation.resolution === 'resolved' &&
+          (balanceState === 'partial'
+            ? boundRecordAllocation.executedAmount > 0 &&
+              boundRecordAllocation.unexecutedAmount > 0
+            : boundRecordAllocation.executedAmount === 0 &&
+              boundRecordAllocation.unexecutedAmount ===
+                boundRecordAllocation.requestedAmount))
     if (!balanceStateMatches) {
       throw new Error(`Executor reason amounts differ for action "${request.actionId}"`)
     }
@@ -979,6 +993,15 @@ export function publishAnnualRetirementActions(
     }
     if (requestById.has(request.actionId)) {
       throw new Error(`Duplicate annual retirement-action request "${request.actionId}"`)
+    }
+    if (
+      request.kind === 'rothConversion' &&
+      request.allocations.some((allocation) =>
+        allocation.sourceAccountId === request.destinationRothAccountId)
+    ) {
+      throw new Error(
+        `Conversion destination aliases a source for action "${request.actionId}"`,
+      )
     }
     requestById.set(request.actionId, request)
   }
@@ -1098,7 +1121,12 @@ export function publishAnnualRetirementActions(
         allocation.executedAmount !== 0 ||
         allocation.unexecutedAmount !== allocation.requestedAmount) ||
       !record.reasons.some((reason) =>
-        JSON.stringify(reason) === JSON.stringify(diagnostic.reason))
+        JSON.stringify(reason) === JSON.stringify(diagnostic.reason)) ||
+      (record.executorSource === 'ordinaryWithdrawalExecutor' &&
+        (
+          record.reasons.length !== 1 ||
+          JSON.stringify(record.reasons[0]) !== JSON.stringify(diagnostic.reason)
+        ))
     ) {
       throw new Error(
         `Schedule conflict record remains actionable for action "${diagnostic.actionId}"`,

@@ -11,7 +11,9 @@ import {
 } from './identity.js'
 import { asPositiveUsdCents, asUsdCents } from './money.js'
 import { ACTION_REASON_REGISTRY, createActionReason } from './reasons.js'
+import type { ExecuteOrdinaryWithdrawalsResult } from './execution.js'
 import {
+  ordinaryWithdrawalPublicationSource,
   publishAnnualRetirementActions,
   type AnnualRetirementActionPublicationSource,
   type AnnualRetirementActionRecord,
@@ -369,6 +371,69 @@ describe('annual retirement-action publication', () => {
       requests: [],
       sources: [],
     })).toThrow(/1 through 9999/i)
+  })
+
+  it('binds ordinary publication adaptation to the executor commit state', () => {
+    const action = request(
+      'ordinaryWithdrawal',
+      'adapter-commit-state',
+      '2030-06-15',
+      1,
+    )
+    const issue = {
+      kind: 'executionSequenceConflict' as const,
+      year: 2030,
+      scheduledDate: '2030-06-15',
+      executionSequence: 1,
+      collidingActionIds: [
+        action.actionId,
+        asActionId('adapter-commit-peer'),
+      ] as [ReturnType<typeof asActionId>, ReturnType<typeof asActionId>],
+      reason: createActionReason('action-sequence-conflict'),
+    }
+    const execution = (
+      committed: boolean,
+      scheduleIssues: readonly typeof issue[],
+      hasEvidence: boolean,
+    ) => ({
+      committed,
+      requests: [action],
+      scheduleIssues,
+      balances: [],
+      taxableBases: [],
+      evidence: hasEvidence ? [executedRecord(action)] : [],
+    }) as unknown as ExecuteOrdinaryWithdrawalsResult
+
+    expect(() => ordinaryWithdrawalPublicationSource(
+      execution(false, [], true),
+    )).toThrow(/commit state differs/i)
+    expect(() => ordinaryWithdrawalPublicationSource(
+      execution(true, [issue], false),
+    )).toThrow(/commit state differs/i)
+    expect(() => ordinaryWithdrawalPublicationSource(
+      execution(false, [issue], true),
+    )).toThrow(/commit state differs/i)
+    expect(() => ordinaryWithdrawalPublicationSource(
+      execution(false, [issue], false),
+    )).not.toThrow()
+  })
+
+  it('rejects a conversion whose destination aliases a source', () => {
+    const conversion = request(
+      'rothConversion',
+      'aliased-conversion-destination',
+      '2030-06-15',
+      1,
+    )
+    if (conversion.kind !== 'rothConversion') throw new Error('fixture drift')
+    conversion.destinationRothAccountId =
+      conversion.allocations[0]!.sourceAccountId
+
+    expect(() => publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [conversion],
+      sources: [source('rothConversionExecutor', [executedRecord(conversion)])],
+    })).toThrow(/destination aliases a source/i)
   })
 
   it('is invariant to request and source order', () => {
@@ -1228,6 +1293,51 @@ describe('annual retirement-action publication', () => {
       expect(() => publish('allocation-zero')).toThrow(/reason amounts differ/i)
     },
   )
+
+  it('publishes an identifier-free aggregate trim across full and empty sources', () => {
+    const action = request(
+      'ordinaryWithdrawal',
+      'aggregate-full-empty-trim',
+      '2030-06-15',
+      1,
+    )
+    if (action.kind !== 'ordinaryWithdrawal') throw new Error('fixture drift')
+    action.allocations = [
+      {
+        allocationId: asAllocationId('allocation-full'),
+        sourceAccountId: asAccountId('source-full'),
+        requestedAmount: asPositiveUsdCents(5_000),
+      },
+      {
+        allocationId: asAllocationId('allocation-empty'),
+        sourceAccountId: asAccountId('source-empty'),
+        requestedAmount: asPositiveUsdCents(5_000),
+      },
+    ]
+    const baseRecord = record(action)
+    const publication = publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [action],
+      sources: [source('ordinaryWithdrawalExecutor', [{
+        ...baseRecord,
+        readiness: 'actionable',
+        outcome: 'partial',
+        executedDate: baseRecord.scheduledDate,
+        executedSequence: baseRecord.scheduledSequence,
+        executedAmount: asUsdCents(5_000),
+        unexecutedAmount: asUsdCents(5_000),
+        allocations: baseRecord.allocations.map((allocation, index) => ({
+          ...allocation,
+          resolution: 'resolved' as const,
+          executedAmount: asUsdCents(index === 0 ? 5_000 : 0),
+          unexecutedAmount: asUsdCents(index === 0 ? 0 : 5_000),
+        })),
+        reasons: [createActionReason('source-balance-trimmed')],
+      }])],
+    })
+
+    expect(publication?.records[0]?.outcome).toBe('partial')
+  })
 
   it('binds QCD balance reasons without constraining non-balance adjustments', () => {
     const action = qcdRequest('qcd-allocation-amounts', '2030-06-15', 1)
@@ -2249,6 +2359,16 @@ describe('annual retirement-action publication', () => {
     expect(publication.scheduleDiagnostics).toHaveLength(2)
     expect(publication.scheduleDiagnostics[0]?.collidingActionIds)
       .toEqual([first.actionId, second.actionId])
+    expect(() => publish({
+      ...conflictSource,
+      records: [{
+        ...conflictRecord(first),
+        reasons: [
+          createActionReason('action-sequence-conflict'),
+          createActionReason('person-not-found'),
+        ],
+      }, conflictRecord(second)],
+    })).toThrow(/conflict record remains actionable/i)
     expect(() => publish({
       ...conflictSource,
       scheduleDiagnostics: [{
