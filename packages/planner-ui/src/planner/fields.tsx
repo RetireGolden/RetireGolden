@@ -202,6 +202,12 @@ interface NumericProps extends BaseProps {
   allowNull?: boolean
 }
 
+interface MoneyFieldProps extends NumericProps {
+  onInvalid?: () => void
+  /** Omit for the existing whole-dollar display; use 2 for exact-cent inputs. */
+  fractionDigits?: 0 | 2
+}
+
 function useLocalText(formatted: string) {
   const [text, setText] = useState(formatted)
   const [focused, setFocused] = useState(false)
@@ -214,9 +220,30 @@ function useLocalText(formatted: string) {
   return { text, setText, focused, setFocused }
 }
 
-export function MoneyField({ label, hint, help, learn, source, value, onCommit, allowNull }: NumericProps) {
+export function MoneyField({
+  label,
+  hint,
+  help,
+  learn,
+  source,
+  value,
+  onCommit,
+  allowNull,
+  onInvalid,
+  fractionDigits,
+}: MoneyFieldProps) {
   const id = useId()
-  const { text, setText, setFocused } = useLocalText(value === null ? '' : fmtMoney(value))
+  const formatted = value === null
+    ? ''
+    : fractionDigits === undefined
+      ? fmtMoney(value)
+      : value.toLocaleString('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: fractionDigits,
+          maximumFractionDigits: fractionDigits,
+        })
+  const { text, setText, setFocused } = useLocalText(formatted)
   return (
     <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id}>
       <div className="input-affix">
@@ -232,6 +259,7 @@ export function MoneyField({ label, hint, help, learn, source, value, onCommit, 
             const parsed = parseAmount(e.target.value)
             if (parsed !== null) onCommit(parsed)
             else if (e.target.value.trim() === '') onCommit(allowNull ? null : 0)
+            else onInvalid?.()
           }}
         />
       </div>

@@ -39,6 +39,11 @@ import {
   type IndividuallyOwnedTaxableWithdrawalTaxCharacter,
   type TaxableWithdrawalTaxUnitEvidence,
 } from './taxableWithdrawalCharacter.js'
+import {
+  ledgerCentTotalToPlanDollars,
+  ledgerCentsToPlanDollars,
+  signedLedgerCentTotalToPlanDollars,
+} from './planBalanceAdapter.js'
 
 export interface AccountOpeningBalanceSnapshot {
   accountId: AccountId
@@ -352,6 +357,161 @@ export interface ExecuteOrdinaryWithdrawalsResult {
   balances: readonly AccountBalanceExecutionEvidence[]
   taxableBases: readonly TaxableAccountBasisExecutionEvidence[]
   evidence: readonly OrdinaryWithdrawalExecutionEvidence[]
+}
+
+export interface OrdinaryWithdrawalPlanBoundaryAssessment {
+  unrepresentableClosingBalanceAccountIds: readonly AccountId[]
+  unrepresentableClosingBasisAccountIds: readonly AccountId[]
+  aggregateFailureSourceAccountIds: readonly AccountId[]
+  totals: Readonly<{
+    cash: number | null
+    equityCompensation: number | null
+    taxableProceeds: number | null
+    proceeds: number | null
+    capitalGainOrLoss: number | null
+  }>
+}
+
+/**
+ * Evaluate the only lossy boundary after exact-cent ordinary-withdrawal
+ * execution: publishing closing values and annual totals back into Plan
+ * numbers. Both projection and planner preview consume this function so
+ * proportional basis math and same-year aggregation are never reimplemented
+ * by a UI caller.
+ */
+export function assessOrdinaryWithdrawalPlanBoundary(
+  result: Readonly<ExecuteOrdinaryWithdrawalsResult>,
+): Readonly<OrdinaryWithdrawalPlanBoundaryAssessment> {
+  const unrepresentableClosingBalanceAccountIds = result.balances
+    .filter((snapshot) => snapshot.closingBalance !== snapshot.openingBalance)
+    .flatMap((snapshot) => {
+      try {
+        ledgerCentsToPlanDollars(snapshot.closingBalance)
+        return []
+      } catch {
+        return [snapshot.accountId]
+      }
+    })
+  const unrepresentableClosingBasisAccountIds = result.taxableBases
+    .filter((snapshot) => snapshot.closingCostBasis !== snapshot.openingCostBasis)
+    .flatMap((snapshot) => {
+      try {
+        ledgerCentsToPlanDollars(snapshot.closingCostBasis)
+        return []
+      } catch {
+        return [snapshot.accountId]
+      }
+    })
+
+  const sourceIdsByClass = {
+    cash: new Set<AccountId>(),
+    equityCompensation: new Set<AccountId>(),
+    taxable: new Set<AccountId>(),
+    all: new Set<AccountId>(),
+  }
+  for (const evidence of result.evidence) {
+    if (evidence.readiness !== 'actionable') continue
+    for (const coverage of evidence.penaltyCoverage) {
+      if (coverage.executedAmount <= 0) continue
+      sourceIdsByClass[coverage.sourceClass].add(coverage.sourceAccountId)
+      sourceIdsByClass.all.add(coverage.sourceAccountId)
+    }
+  }
+
+  const cashCents = result.evidence.reduce(
+    (total, evidence) => total + evidence.taxCharacter.reduce(
+      (characterTotal, character) => characterTotal +
+        (character.sourceClass === 'cash' ? BigInt(character.amount) : 0n),
+      0n,
+    ),
+    0n,
+  )
+  const equityCompensationCents = result.evidence.reduce(
+    (total, evidence) => total + evidence.taxCharacter.reduce(
+      (characterTotal, character) => characterTotal +
+        (character.sourceClass === 'equityCompensation'
+          ? BigInt(character.amount)
+          : 0n),
+      0n,
+    ),
+    0n,
+  )
+  const taxableProceedsCents = result.evidence.reduce(
+    (total, evidence) => total + (evidence.readiness === 'actionable'
+      ? evidence.penaltyCoverage.reduce(
+        (coverageTotal, coverage) => coverageTotal +
+          (coverage.sourceClass === 'taxable'
+            ? BigInt(coverage.executedAmount)
+            : 0n),
+        0n,
+      )
+      : 0n),
+    0n,
+  )
+  const proceedsCents = result.evidence.reduce(
+    (total, evidence) => total + BigInt(evidence.disposition.executedAmount),
+    0n,
+  )
+  const capitalCents = result.evidence.reduce(
+    (total, evidence) => total + evidence.taxCharacter.reduce(
+      (characterTotal, character) => {
+        if (character.sourceClass !== 'taxable') return characterTotal
+        if (character.kind === 'capitalGain') {
+          return characterTotal + BigInt(character.amount)
+        }
+        if (character.kind === 'capitalLoss') {
+          return characterTotal - BigInt(character.amount)
+        }
+        return characterTotal
+      },
+      0n,
+    ),
+    0n,
+  )
+
+  const aggregateFailureSourceAccountIds = new Set<AccountId>()
+  function convertUnsigned(
+    cents: bigint,
+    sourceIds: ReadonlySet<AccountId>,
+  ): number | null {
+    try {
+      return ledgerCentTotalToPlanDollars(cents)
+    } catch {
+      sourceIds.forEach((id) => aggregateFailureSourceAccountIds.add(id))
+      return null
+    }
+  }
+  function convertSigned(
+    cents: bigint,
+    sourceIds: ReadonlySet<AccountId>,
+  ): number | null {
+    try {
+      return signedLedgerCentTotalToPlanDollars(cents)
+    } catch {
+      sourceIds.forEach((id) => aggregateFailureSourceAccountIds.add(id))
+      return null
+    }
+  }
+
+  const totals = {
+    cash: convertUnsigned(cashCents, sourceIdsByClass.cash),
+    equityCompensation: convertUnsigned(
+      equityCompensationCents,
+      sourceIdsByClass.equityCompensation,
+    ),
+    taxableProceeds: convertUnsigned(
+      taxableProceedsCents,
+      sourceIdsByClass.taxable,
+    ),
+    proceeds: convertUnsigned(proceedsCents, sourceIdsByClass.all),
+    capitalGainOrLoss: convertSigned(capitalCents, sourceIdsByClass.taxable),
+  }
+  return deepFreeze({
+    unrepresentableClosingBalanceAccountIds,
+    unrepresentableClosingBasisAccountIds,
+    aggregateFailureSourceAccountIds: [...aggregateFailureSourceAccountIds],
+    totals,
+  })
 }
 
 export type OrdinaryWithdrawalExecutionScheduleIssue =

@@ -1,6 +1,6 @@
 /** Strategy section: withdrawal order, Roth conversions, rebalancing. */
 
-import { useId } from 'react'
+import { lazy, Suspense, useId } from 'react'
 
 import { usePlan } from '../planContextCore'
 import { CheckboxField, MoneyField, NumberField, SelectField } from '../fields'
@@ -10,6 +10,11 @@ import { LEARN } from '../learnLinks'
 import { fmtMoney } from '../format'
 import { provenanceSource } from '../provenanceLinks'
 import { Issues } from './shared'
+
+const RetirementActionsEditor = lazy(async () => {
+  const module = await import('./RetirementActionsEditor')
+  return { default: module.RetirementActionsEditor }
+})
 
 /**
  * Full account-order detail for each withdrawal mode, shown as a hint under
@@ -91,6 +96,10 @@ export function StrategySection() {
           {WITHDRAWAL_ORDER_HINTS[w.mode]}
         </p>
       </div>
+
+      <Suspense fallback={null}>
+        <RetirementActionsEditor />
+      </Suspense>
 
       <div className="card">
         <h2>Roth conversions</h2>
