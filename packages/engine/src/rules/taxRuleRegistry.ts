@@ -1410,6 +1410,28 @@ const registry = {
     implementedBy: ['packages/engine/src/socialSecurity/claimFactor.ts'],
   },
 
+  'usc-42-402-e-2-widow-full-pia': {
+    title: 'A widow benefit is the whole PIA, not half of it',
+    statement:
+      'The widow or widower insurance benefit is equal to the primary insurance amount of the deceased individual, subject to the reductions the subsection supplies. It is not the one-half fraction that applies to a spouse of a living worker, so the amount payable roughly doubles at the moment the relationship changes from spousal to survivor.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The engine takes the base as the greater of what the deceased actually received and 82.5 percent of their PIA, which is the widow limit of section 402(k)(3) and POMS RS 00615.300 rather than 402(e) itself. That floor only binds where the deceased claimed early, so it never lowers the 402(e)(2)(A) result -- it raises it.',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 402(e)(2)(A)',
+      url: 'https://www.law.cornell.edu/uscode/text/42/402',
+      quotedText:
+        'such widow\u2019s insurance benefit for each month shall be equal to the primary insurance amount (as determined for purposes of this subsection after application of subparagraphs (B) and (C)) of such deceased individual.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/socialSecurity/survivorBenefit.ts'],
+  },
+
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)

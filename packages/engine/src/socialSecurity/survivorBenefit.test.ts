@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+
+import { describeRule } from '../rules/describeRule.js'
 import {
   SURVIVOR_EARLIEST_AGE,
   SURVIVOR_MAX_REDUCTION,
@@ -13,6 +15,35 @@ const SURVIVOR_FRA_1962PLUS = 66 * 12 + 8
 const SURVIVOR_FRA_1951TO56 = 66 * 12
 
 const age = (years: number, months = 0) => ({ years, months })
+
+describe('widow benefit base', () => {
+  // 42 U.S.C. 402(e)(2)(A) sets the widow benefit at the deceased's PRIMARY
+  // INSURANCE AMOUNT -- the whole of it. The one-half fraction of 402(b)(2)
+  // belongs to a spouse of a LIVING worker, and carrying it across to the
+  // survivor case halves the benefit at exactly the point a household can
+  // least afford it.
+  //
+  // Deceased PIA 2,000 who claimed at their own full retirement age, survivor
+  // claiming at their unreduced survivor FRA:
+  //   402(e)(2)(A):        2,000
+  //   spousal half:        1,000
+  describeRule('usc-42-402-e-2-widow-full-pia', {
+    readings: { fullPrimaryInsuranceAmount: 2_000, halfAsForALivingWorkerSpouse: 1_000 },
+    accepted: 'fullPrimaryInsuranceAmount',
+  }, ({ accepted, readings }) => {
+    it('pays the whole primary insurance amount to an unreduced survivor', () => {
+      const monthly = survivorBenefitMonthly({
+        deceasedPiaMonthly: 2_000,
+        deceasedActualMonthly: 2_000,
+        survivorClaimAge: { years: 67, months: 0 },
+        survivorFraMonths: 66 * 12 + 8,
+      })
+
+      expect(monthly).toBeCloseTo(accepted, 6)
+      expect(monthly).not.toBeCloseTo(readings.halfAsForALivingWorkerSpouse, 6)
+    })
+  })
+})
 
 describe('survivorReductionFactor', () => {
   it('is 1.0 at/after the survivor FRA', () => {
