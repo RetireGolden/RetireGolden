@@ -78,9 +78,18 @@ export function buildAnnualOwnedNonRothIraPoolCapacity(
         BigInt(form8606BaseEffectiveBasisAmount),
     ),
   )
-  const accountIds = [
-    ...annualBasisEvidence.completePoolEvidence.accountIds,
-  ] as [AccountId, ...AccountId[]]
+  // The published type promises a non-empty pool. Prove it rather than assert
+  // it: an unchecked cast over an empty pool would emit `accountIds: []` while
+  // its own declared type says that cannot happen, and every downstream
+  // consumer joins against this list.
+  const poolAccountIds = [...annualBasisEvidence.completePoolEvidence.accountIds]
+  const [firstAccountId, ...remainingAccountIds] = poolAccountIds
+  if (firstAccountId === undefined) {
+    throw new RangeError(
+      'Annual IRA pool capacity requires a complete pool with at least one account',
+    )
+  }
+  const accountIds: [AccountId, ...AccountId[]] = [firstAccountId, ...remainingAccountIds]
   const capacityIdentityParts = [
     annualBasisEvidence.ownerPersonId,
     annualBasisEvidence.ownerWideNonRothIraPoolId,
