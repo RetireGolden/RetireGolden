@@ -2885,13 +2885,57 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       inheritedTotal += take
     }
 
-    // QCD: charitable dollars routed out of the RMD, excluded from income.
-    // Age 70½ eligibility approximated as age attained ≥ 71.
+    // QCD: charitable dollars distributed from an IRA and excluded from income.
+    //
+    // IRC 408(d)(8) turns on the donor having attained age 70½ and does not
+    // require an RMD, so this is not "dollars routed out of the RMD". Gating on
+    // rmdTotal > 0 removed the entire pre-RMD window -- ages 70½ to the
+    // applicable age, which is 75 for the 1960-and-later cohort, about four and
+    // a half years -- and that window is where a QCD is most valuable, because
+    // there is no RMD to carry the gift out of income.
+    //
+    // Age 70½ is resolved from the birth month rather than approximated: a
+    // person born in months 1-6 reaches 70½ inside the year they attain 70.
+    // Within-year timing is not modelled, so a gift dated before the
+    // half-birthday counts; that is the annual-granularity convention.
     let qcd = 0
-    if (plan.strategies.qcdAnnual > 0 && rmdTotal > 0) {
-      const anyEligible = peopleStates.some((s) => s.alive && s.ageAttained >= 71)
-      if (anyEligible) {
-        qcd = Math.min(plan.strategies.qcdAnnual * inflFactor, rmdTotal, pack.rmd.qcdAnnualLimit * limitGrowth)
+    // Gross dollars routed out of the RMD. The RMD already counted these as a
+    // cash inflow, so this is what cash must give back.
+    let qcdFromRmd = 0
+    // Income reduction. Only the RMD entered income, and 408(d)(8)(D) limits a
+    // QCD to what would otherwise be includible, so this is the taxable share
+    // of the routed dollars -- never the gross, and never the pre-RMD part,
+    // which never entered income at all and would be a phantom deduction.
+    let qcdIncomeOffset = 0
+    if (plan.strategies.qcdAnnual > 0) {
+      const donorIds = new Set(peopleStates
+        .filter((s) => s.alive && (s.ageAttained >= 71 ||
+          (s.ageAttained === 70 && (birthMonthByPerson.get(s.personId) ?? 1) <= 6)))
+        .map((s) => s.personId))
+      if (donorIds.size > 0) {
+        const requested = Math.min(
+          plan.strategies.qcdAnnual * inflFactor,
+          pack.rmd.qcdAnnualLimit * limitGrowth,
+        )
+        qcdFromRmd = Math.min(requested, rmdTotal)
+        qcdIncomeOffset = Math.max(0, Math.min(qcdFromRmd, rmdTotal - rmdNontaxable))
+        const beyondRmd = requested - qcdFromRmd
+        if (beyondRmd > 0) {
+          const sources = balances.filter((state) =>
+            state.account.type === 'traditional' && state.account.kind === 'ira' &&
+            followsOwnerRmds(state.account) && state.balance > 0 &&
+            donorIds.has(state.account.ownerPersonId ?? primary.id))
+          const available = sources.reduce((sum, state) => sum + state.balance, 0)
+          let remaining = Math.min(beyondRmd, available)
+          for (const state of sources) {
+            if (remaining <= 0) break
+            const take = Math.min(state.balance, remaining)
+            state.balance -= take
+            remaining -= take
+            qcd += take
+          }
+        }
+        qcd += qcdFromRmd
       }
     }
 
@@ -3271,7 +3315,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       preTaxContributions +
       rmdTotal -
       rmdNontaxable -
-      qcd +
+      qcdIncomeOffset +
       seppTotal -
       seppNontaxable +
       inheritedTotal +
@@ -3300,7 +3344,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const agesAlive = peopleStates.filter((s) => s.alive).map((s) => s.ageAttained)
     const privateRetirementBase = Math.max(
       0,
-      privateRetirementOrdinary + rmdTotal - rmdNontaxable - qcd + seppTotal - seppNontaxable + inheritedTotal,
+      privateRetirementOrdinary + rmdTotal - rmdNontaxable - qcdIncomeOffset + seppTotal -
+        seppNontaxable + inheritedTotal,
     )
     const publicPensionBase = Math.max(0, publicPensionOrdinary)
     if (plan.assumptions.stateEffectiveTaxPct <= 0) {
@@ -3425,7 +3470,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         incomes.total -
         taxableYieldReinvested +
         rmdTotal -
-        qcd +
+        qcdFromRmd +
         seppTotal +
         inheritedTotal +
         propertySaleProceedsTotal +
@@ -3709,7 +3754,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       incomes.total -
       taxableYieldReinvested +
       rmdTotal -
-      qcd +
+      qcdFromRmd +
       seppTotal +
       inheritedTotal +
       propertySaleProceedsTotal +
