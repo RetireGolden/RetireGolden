@@ -1544,7 +1544,7 @@ const registry = {
     classification: 'settled',
     contraryReading: null,
     conventionRationale:
-      'Only the 10,000 dollar leg is indexed; the 150 percent leg is pinned to 2024 and does not move, so the operative amount stays at 11,250 until the indexed leg overtakes it. IRS Notice 2025-67 holds it at 11,250 for 2026 while the ordinary catch-up rises to 8,000, which is why the pack figure is not simply 150 percent of 8,000. The engine carries the base deferral limit’s inflation factor onto this amount as well, so projected years past the pack year overstate it until the indexed leg catches up; the age-55 HSA addition, which is not indexed at all, is registered separately for the opposite reason.',
+      'The two legs of 414(v)(2)(E)(i) are a 10,000 dollar floor and 150 percent of the 2024 amount, and the greater of them is the adjusted dollar amount. That is why the 2026 figure is 11,250 rather than 150 percent of the current 8,000 catch-up, as IRS Notice 2025-67 confirms. Section 414(v)(2)(C) then adjusts the adjusted dollar amount itself annually for years after 2025, so the engine is right to carry the inflation factor onto the whole figure in projected years. The age-55 HSA addition is registered separately because section 223(g) omits it from indexing entirely — the same shape of rule with the opposite answer.',
     authority: [{
       kind: 'statute',
       citation: 'IRC 414(v)(2)(B)(i)',
