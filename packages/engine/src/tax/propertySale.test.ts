@@ -1,11 +1,44 @@
 import { describe, expect, it } from 'vitest'
 
+import { describeRule } from '../rules/describeRule.js'
+
 import { packForYear } from '../params/index.js'
 import { propertySaleTax } from './propertySale.js'
 
 const pack = packForYear(2026).pack
 
 describe('property disposition tax (§121 / recapture)', () => {
+  // IRC 121(d)(6) removes the depreciation portion from the exclusion's reach
+  // BEFORE the cap applies. Running the cap against the whole gain instead
+  // lets the exclusion swallow recapture that the statute says it cannot
+  // touch, and the error only shows when the post-recapture gain is below the
+  // cap while the whole gain is above it.
+  //
+  // Sale 660,000, basis 400,000, no selling costs -> gain 260,000, of which
+  // 50,000 is post-1997 depreciation. Single, so the cap is 250,000:
+  //   recapture carved out first:  exclusion reaches 210,000
+  //   cap against the whole gain:  exclusion reaches 250,000
+  describeRule('irc-121-d-6-exclusion-cannot-reach-recapture', {
+    readings: { exclusionAppliesAfterRecapture: 210_000, exclusionAppliesToWholeGain: 250_000 },
+    accepted: 'exclusionAppliesAfterRecapture',
+  }, ({ accepted, readings }) => {
+    it('carves recapture out before applying the exclusion cap', () => {
+      const r = propertySaleTax({
+        salePrice: 660_000,
+        costBasis: 400_000,
+        sellingCostPct: 0,
+        depreciationRecapture: 50_000,
+        primaryResidence: true,
+        filingStatus: 'single',
+        pack,
+      })
+
+      expect(r.excludedGain).toBeCloseTo(accepted, 6)
+      expect(r.excludedGain).not.toBeCloseTo(readings.exclusionAppliesToWholeGain, 6)
+      expect(r.ordinaryGain).toBeCloseTo(50_000, 6)
+    })
+  })
+
   it('taxes only the gain above basis, net of selling costs', () => {
     const r = propertySaleTax({ salePrice: 300_000, costBasis: 200_000, sellingCostPct: 6, filingStatus: 'single', pack })
     // Amount realized = 300k − 18k = 282k; gain = 82k, all capital.

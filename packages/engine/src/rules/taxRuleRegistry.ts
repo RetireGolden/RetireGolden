@@ -1593,6 +1593,59 @@ const registry = {
     ],
   },
 
+  'irc-121-d-6-exclusion-cannot-reach-recapture': {
+    title: 'The residence exclusion cannot reach depreciation recapture',
+    statement:
+      'Gain on a principal residence owned and used as such for two of the preceding five years is excluded up to 250,000 dollars, or 500,000 on a joint return. The exclusion does not apply to gain up to the depreciation adjustments attributable to periods after 6 May 1997, so recapture is carved out first and the cap then applies only to what remains.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The engine takes recapture as an input rather than deriving it from a depreciation schedule, and prices it at ordinary rates rather than the section 1250 25 percent maximum. Both are planning-grade stand-ins; the ordering that this rule fixes is not.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 121(a)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/121',
+      quotedText:
+        'Gross income shall not include gain from the sale or exchange of property if, during the 5-year period ending on the date of the sale or exchange, such property has been owned and used by the taxpayer as the taxpayer\u2019s principal residence for periods aggregating 2 years or more.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 121(d)(6)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/121',
+      quotedText:
+        'Subsection (a) shall not apply to so much of the gain from the sale of any property as does not exceed the portion of the depreciation adjustments (as defined in section 1250(b)(3)) attributable to periods after May 6, 1997, in respect of such property.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/tax/propertySale.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
+  'usc-31-3124-a-federal-obligations-state-exempt': {
+    title: 'Interest on federal obligations is outside every state income tax base',
+    statement:
+      'Stocks and obligations of the United States Government are exempt from taxation by a State or its subdivisions, and the exemption reaches any form of taxation that would require the interest to be counted in computing a tax. Only a nondiscriminatory corporate franchise tax and an estate or inheritance tax are excepted, neither of which is a state income tax on an individual.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'This is why the exemption is applied uniformly rather than per state pack: it is federal law binding every state, so no state entry can opt into taxing it. The engine subtracts the interest from the state base because it arrives inside ordinary income.',
+    authority: [{
+      kind: 'statute',
+      citation: '31 U.S.C. 3124(a)',
+      url: 'https://www.law.cornell.edu/uscode/text/31/3124',
+      quotedText:
+        'Stocks and obligations of the United States Government are exempt from taxation by a State or political subdivision of a State. The exemption applies to each form of taxation that would require the obligation, the interest on the obligation, or both, to be considered in computing a tax, except - (1) a nondiscriminatory franchise tax or another nonproperty tax instead of a franchise tax, imposed on a corporation; and (2) an estate or inheritance tax.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/tax/stateTax.ts'],
+  },
+
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)
