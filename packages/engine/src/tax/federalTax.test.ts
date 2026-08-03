@@ -318,11 +318,27 @@ describe('standard deduction structure', () => {
       expect(publishedYears).toContain(LATEST_PACK_YEAR)
 
       for (const year of publishedYears) {
-        const single = computeFederalTax(input({ year, ordinaryIncome: 100_000 }))
+        // peopleAged65Plus is pinned rather than left to the helper's
+        // default: the senior deduction rides on top of whichever base is
+        // larger, so a nonzero value would land in BOTH figures and pull the
+        // ratio off two while the pack relationship was still intact. The
+        // assertion still goes through computeFederalTax on purpose -- see
+        // the note below.
+        const single = computeFederalTax(input({
+          year, ordinaryIncome: 100_000, peopleAged65Plus: 0,
+        }))
         const joint = computeFederalTax(input({
           year, filingStatus: 'marriedFilingJointly', ordinaryIncome: 100_000,
+          peopleAged65Plus: 0,
         }))
 
+        // Read off the computed deduction, not pack.federalTax.standardDeduction.
+        // Asserting on the pack constants would prove only that two numbers in
+        // a data file sit at 2:1, and would stay green if federalTax.ts stopped
+        // sourcing the joint amount from the pack at all -- a silent pass for
+        // the failure that would actually reach a user. Going through the
+        // engine costs a loud, labelled red if an unrelated deduction ever
+        // contaminates the ratio, which is the cheaper of the two mistakes.
         const ratio = joint.deduction / single.deduction
         expect(ratio, `pack ${year}`).toBeCloseTo(accepted, 10)
         expect(ratio, `pack ${year}`).not.toBeCloseTo(readings.anyOtherRatio, 3)
