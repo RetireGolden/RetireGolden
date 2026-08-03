@@ -149,6 +149,35 @@ function expectUnsupported(input: EvaluateBeneficiaryTraditionalIraDeathPenaltyI
 }
 
 describe('beneficiary traditional IRA death penalty evidence', () => {
+  it('never reads the election status through a caller-supplied accessor', () => {
+    let reads = 0
+    const hostile = validInput()
+    Object.defineProperty(hostile, 'spousalElection', {
+      configurable: true,
+      enumerable: true,
+      get() {
+        reads += 1
+        // A live read would see "not applicable" first and something else on a
+        // later read; the snapshot boundary is what makes that unreachable.
+        return reads === 1
+          ? {
+            status: 'spousalElectionNotApplicable',
+            relationship: 'notSurvivingSpouse',
+            evidenceId: 'spousal-election-not-applicable',
+          }
+          : {
+            status: 'spousalOwnerTreatmentBegun',
+            trigger: 'contributionMade',
+            effectiveTaxYear: 2030,
+            evidenceId: 'spousal-owner-treatment-begun',
+          }
+      },
+    })
+
+    expect(evaluateBeneficiaryTraditionalIraDeathPenalty(hostile).status)
+      .toBe('unsupported')
+  })
+
   // Treas. Reg. 1.408-8(c)(3) makes an electing surviving spouse the IRA owner
   // "for all purposes under the Internal Revenue Code (including section
   // 72(t))". The zero rate here rests on IRC 72(t)(2)(A)(ii), which reaches a

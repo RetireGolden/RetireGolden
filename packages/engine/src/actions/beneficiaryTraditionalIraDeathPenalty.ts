@@ -290,7 +290,13 @@ export function evaluateBeneficiaryTraditionalIraDeathPenalty(
         'spousalElection',
       ])
     ) return unsupported()
-    const electionStatus = input.spousalElection.status
+    const snapshot = rawSnapshot as unknown as
+      EvaluateBeneficiaryTraditionalIraDeathPenaltyInput
+    // Read from the snapshot, never from `input`. A caller can hand over a
+    // proxy or accessor for spousalElection, and reading the live object would
+    // both invoke that code and let two reads disagree -- the exact boundary
+    // plainDataSnapshot exists to hold.
+    const electionStatus = snapshot.spousalElection.status
     if (electionStatus === 'spousalOwnerTreatmentBegun') {
       return spousalOwnerTreatmentBegun()
     }
@@ -298,8 +304,6 @@ export function evaluateBeneficiaryTraditionalIraDeathPenalty(
       electionStatus !== 'spousalElectionNotApplicable' &&
       electionStatus !== 'spousalOwnerTreatmentNotBegun'
     ) return unsupported()
-    const snapshot = rawSnapshot as unknown as
-      EvaluateBeneficiaryTraditionalIraDeathPenaltyInput
     const characterization = classifyBeneficiaryTraditionalIraWithdrawal(
       snapshot.characterizationInput,
     )
