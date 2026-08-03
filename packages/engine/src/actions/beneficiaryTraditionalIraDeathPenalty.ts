@@ -1,3 +1,6 @@
+import type {
+  EvaluateBeneficiarySpousalElectionResult,
+} from './beneficiarySpousalElectionStatus.js'
 import { formatCivilDate, parseCivilIsoDate } from './civilDate.js'
 import {
   classifyBeneficiaryTraditionalIraWithdrawal,
@@ -36,6 +39,14 @@ export interface EvaluateBeneficiaryTraditionalIraDeathPenaltyInput {
     Readonly<ClassifyBeneficiaryTraditionalIraWithdrawalInput>
   deathBeneficiaryEvidence:
     Readonly<BeneficiaryTraditionalIraDeathBeneficiaryEvidence> | null
+  /**
+   * Treas. Reg. 1.408-8(c) status. The zero rate below rests on IRC
+   * 72(t)(2)(A)(ii), which reaches a distribution "made to a beneficiary". Once
+   * a surviving spouse becomes the owner under 1.408-8(c)(3) they are the owner
+   * "for all purposes under the Internal Revenue Code (including section
+   * 72(t))", so the zero rate no longer applies and this module must not answer.
+   */
+  spousalElection: Readonly<EvaluateBeneficiarySpousalElectionResult>
 }
 
 export interface BeneficiaryTraditionalIraPenaltyCharacterBinding {
@@ -110,6 +121,19 @@ const DEATH_EVIDENCE_KEYS = [
   'inheritanceEvidenceId',
 ] as const
 
+function spousalOwnerTreatmentBegun(): Readonly<
+  UnsupportedBeneficiaryTraditionalIraDeathPenaltyResult
+> {
+  return deepFreeze({
+    status: 'unsupported',
+    reasons: [
+      createActionReason('withdrawal-spousal-owner-treatment-begun'),
+    ] as [ActionReason],
+    characterization: null,
+    penaltyEvidence: null,
+  })
+}
+
 function unsupported(): Readonly<
   UnsupportedBeneficiaryTraditionalIraDeathPenaltyResult
 > {
@@ -157,6 +181,22 @@ function plainDataSnapshot(
     ) return INVALID_SNAPSHOT
     const keys = Reflect.ownKeys(value)
     if (keys.some((key) => typeof key !== 'string')) return INVALID_SNAPSHOT
+    if (isArray) {
+      // This branch was absent: the loop below skips the `length` key without
+      // anything having checked it, so an array could carry arbitrary extra
+      // keys, a getter-backed length, or a length disagreeing with its indices.
+      // Same guard as the other plainDataSnapshot implementations here.
+      const length = Object.getOwnPropertyDescriptor(value, 'length')
+      const size = length?.value
+      if (
+        length === undefined || length.enumerable ||
+        !Object.hasOwn(length, 'value') || typeof size !== 'number' ||
+        !Number.isSafeInteger(size) || size < 0 || keys.length !== size + 1 ||
+        !keys.includes('length') ||
+        Array.from({ length: size }, (_, index) => String(index))
+          .some((key) => !keys.includes(key))
+      ) return INVALID_SNAPSHOT
+    }
     const output: unknown[] | Record<string, unknown> = isArray
       ? []
       : Object.create(null) as Record<string, unknown>
@@ -263,10 +303,23 @@ export function evaluateBeneficiaryTraditionalIraDeathPenalty(
       !exactKeys(rawSnapshot, [
         'characterizationInput',
         'deathBeneficiaryEvidence',
+        'spousalElection',
       ])
     ) return unsupported()
     const snapshot = rawSnapshot as unknown as
       EvaluateBeneficiaryTraditionalIraDeathPenaltyInput
+    // Read from the snapshot, never from `input`. A caller can hand over a
+    // proxy or accessor for spousalElection, and reading the live object would
+    // both invoke that code and let two reads disagree -- the exact boundary
+    // plainDataSnapshot exists to hold.
+    const electionStatus = snapshot.spousalElection.status
+    if (electionStatus === 'spousalOwnerTreatmentBegun') {
+      return spousalOwnerTreatmentBegun()
+    }
+    if (
+      electionStatus !== 'spousalElectionNotApplicable' &&
+      electionStatus !== 'spousalOwnerTreatmentNotBegun'
+    ) return unsupported()
     const characterization = classifyBeneficiaryTraditionalIraWithdrawal(
       snapshot.characterizationInput,
     )

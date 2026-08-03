@@ -53,7 +53,19 @@ export interface CompleteBeneficiaryTraditionalIraBasisPoolEvidence {
   openingInheritedBasisAmount: UsdCents
   yearEndApplicablePoolBalanceAmount: UsdCents
   form8606Line7DistributionAmount: UsdCents
-  form8606Line8NetConversionAmount: 0
+  /**
+   * IRC 408(d)(3)(C)(ii) excludes the surviving spouse from inherited-IRA
+   * treatment, and Treas. Reg. 1.408-8(c)(2) makes the election an act of
+   * redesignation -- so a surviving spouse can hold as beneficiary and still
+   * convert, and this line can be non-zero for them. It stays structurally zero
+   * for every other beneficiary, whom 408(d)(3)(C)(i) bars from converting.
+   *
+   * Typed as cents rather than the literal 0 so that case is expressible and
+   * gets an explicit refusal below. Pinning it at the type level meant a caller
+   * holding a real conversion had to drop it to compile, which understates the
+   * pro-rata denominator and the ordinary income that falls out of it.
+   */
+  form8606Line8NetConversionAmount: UsdCents
   evidenceId: string
 }
 
@@ -103,7 +115,7 @@ export interface BeneficiaryTraditionalIraAnnualBasisEvidence {
   basisNumeratorAmount: UsdCents
   yearEndApplicablePoolBalanceAmount: UsdCents
   form8606Line7DistributionAmount: UsdCents
-  form8606Line8NetConversionAmount: 0
+  form8606Line8NetConversionAmount: UsdCents
   annualBasisDenominatorAmount: UsdCents
   annualBasisRatio: Readonly<AnnualIraBasisRatio>
   annualDistributionBasisAllocation:
@@ -182,7 +194,9 @@ export interface AcceptedBeneficiaryTraditionalIraWithdrawalClassification {
 
 export interface UnsupportedBeneficiaryTraditionalIraWithdrawalClassification {
   status: 'unsupported'
-  reasons: readonly [ActionReason<'withdrawal-inherited-facts-missing'>]
+  reasons: readonly [ActionReason<
+    'withdrawal-inherited-facts-missing' | 'withdrawal-spousal-conversion-unsupported'
+  >]
   acceptedSourceEligibility: null
   taxCharacter: readonly []
 }
@@ -262,6 +276,21 @@ function validatedAccountSet(
   if (parsed.filter((id) => id === sourceAccountId).length !== 1) return null
   parsed.sort(compareUtf16CodeUnits)
   return parsed as [AccountId, ...AccountId[]]
+}
+
+function spousalConversionUnsupported(
+  input: BoundIdentity,
+): Readonly<UnsupportedBeneficiaryTraditionalIraWithdrawalClassification> {
+  return deepFreeze({
+    status: 'unsupported',
+    reasons: [createActionReason('withdrawal-spousal-conversion-unsupported', {
+      personId: input.beneficiaryPersonId,
+      accountId: input.sourceAccountId,
+      allocationId: input.allocationId,
+    })],
+    acceptedSourceEligibility: null,
+    taxCharacter: [],
+  })
 }
 
 function unsupported(
@@ -356,6 +385,7 @@ export function classifyBeneficiaryTraditionalIraWithdrawal(
   const openingBasis = safeMoney(basis.openingInheritedBasisAmount)
   const yearEndBalance = safeMoney(basis.yearEndApplicablePoolBalanceAmount)
   const line7Amount = safeMoney(basis.form8606Line7DistributionAmount)
+  const line8Amount = safeMoney(basis.form8606Line8NetConversionAmount)
   if (
     basis.predicate !==
       'completeBeneficiaryTraditionalIraBasisPoolForBeneficiaryDecedentAndTaxYear' ||
@@ -365,11 +395,17 @@ export function classifyBeneficiaryTraditionalIraWithdrawal(
     openingBasis === null ||
     yearEndBalance === null ||
     line7Amount === null ||
-    !Object.is(basis.form8606Line8NetConversionAmount, 0) ||
+    line8Amount === null ||
     !nonblank(basis.evidenceId)
   ) {
     return unsupported(identity)
   }
+  // Refused rather than characterized, and refused under its own code: a
+  // non-zero line 8 belongs to a pre-election surviving spouse, whose
+  // denominator and own-pool folding this module does not model. The facts are
+  // not missing -- the conversion is present and unhandled -- so reporting
+  // "facts missing" would send a caller looking for evidence they already gave.
+  if (!Object.is(line8Amount, 0)) return spousalConversionUnsupported(identity)
 
   const rmd = input.rmdPoolEvidence
   if (
@@ -551,7 +587,7 @@ export function classifyBeneficiaryTraditionalIraWithdrawal(
     basisNumeratorAmount: openingBasis,
     yearEndApplicablePoolBalanceAmount: yearEndBalance,
     form8606Line7DistributionAmount: line7Amount,
-    form8606Line8NetConversionAmount: 0,
+    form8606Line8NetConversionAmount: line8Amount,
     annualBasisDenominatorAmount: denominator,
     annualBasisRatio,
     annualDistributionBasisAllocation,

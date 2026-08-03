@@ -552,6 +552,121 @@ export {
   type UnsupportedBeneficiaryTraditionalIraDeathPenaltyResult,
 } from './beneficiaryTraditionalIraDeathPenalty.js'
 export {
+  stageBeneficiaryTraditionalIraMovementCandidate,
+  type BeneficiaryTraditionalIraMovementCandidateEvidence,
+  type BeneficiaryTraditionalIraPhysicalSourceSnapshotEvidence,
+  type BeneficiaryTraditionalIraSourceDebitEvidence,
+  type StageBeneficiaryTraditionalIraMovementCandidateInput,
+  type StageBeneficiaryTraditionalIraMovementCandidateResult,
+  type StagedBeneficiaryTraditionalIraMovementCandidateResult,
+  type UnsupportedBeneficiaryTraditionalIraMovementCandidateResult,
+} from './beneficiaryTraditionalIraMovementCandidate.js'
+export {
+  finalizeBeneficiaryTraditionalIraAnnualEvidence,
+  type BeneficiaryTraditionalIraAnnualBatchMemberManifest,
+  type CompleteBeneficiaryTraditionalIraAnnualBatchManifest,
+  type CompleteBeneficiaryTraditionalIraAnnualEvidence,
+  type FinalBeneficiaryTraditionalIraAnnualMemberEvidence,
+  type FinalizeBeneficiaryTraditionalIraAnnualEvidenceInput,
+  type FinalizeBeneficiaryTraditionalIraAnnualEvidenceResult,
+  type FinalizedBeneficiaryTraditionalIraAnnualEvidenceResult,
+  type UnsupportedBeneficiaryTraditionalIraAnnualEvidenceResult,
+} from './beneficiaryTraditionalIraAnnualFinalization.js'
+export {
+  coordinateBeneficiaryTraditionalIraAnnualRuntime,
+  type BeneficiaryTraditionalIraAnnualRuntimeCoordinatedResult,
+  type BeneficiaryTraditionalIraAnnualRuntimeInventoryBinding,
+  type BeneficiaryTraditionalIraAnnualRuntimeMemberRecord,
+  type BeneficiaryTraditionalIraAnnualRuntimeSourceBalanceRecord,
+  type CompleteBeneficiaryTraditionalIraAnnualRuntimeInventoryAttestation,
+  type CoordinateBeneficiaryTraditionalIraAnnualRuntimeInput,
+  type CoordinateBeneficiaryTraditionalIraAnnualRuntimeResult,
+  type UnsupportedBeneficiaryTraditionalIraAnnualRuntimeResult,
+} from './beneficiaryTraditionalIraAnnualRuntimeCoordinator.js'
+export {
+  prepareBeneficiaryTraditionalIraAnnualPhysicalTransaction,
+  type BeneficiaryTraditionalIraAnnualPhysicalTransactionPreparedResult,
+  type BeneficiaryTraditionalIraDetachedPhysicalApplication,
+  type BeneficiaryTraditionalIraDetachedRmdTransition,
+  type BeneficiaryTraditionalIraDetachedSourceBalanceTransition,
+  type PrepareBeneficiaryTraditionalIraAnnualPhysicalTransactionInput,
+  type PrepareBeneficiaryTraditionalIraAnnualPhysicalTransactionResult,
+  type UnsupportedBeneficiaryTraditionalIraAnnualPhysicalTransactionResult,
+} from './beneficiaryTraditionalIraAnnualPhysicalTransaction.js'
+export {
+  preparePlanBeneficiaryTraditionalIraAnnualApplication,
+  type BeneficiaryTraditionalIraAnnualOpeningBalanceEvidence,
+  type BeneficiaryTraditionalIraPlanInheritanceBinding,
+  type PlanBeneficiaryTraditionalIraAnnualApplicationPreparedResult,
+  type PlanBeneficiaryTraditionalIraSourceBinding,
+  type PlanBeneficiaryTraditionalIraSourcesBoundEvidence,
+  type PreparePlanBeneficiaryTraditionalIraAnnualApplicationInput,
+  type PreparePlanBeneficiaryTraditionalIraAnnualApplicationResult,
+  type UnsupportedPlanBeneficiaryTraditionalIraAnnualApplicationResult,
+} from './beneficiaryTraditionalIraAnnualPlanApplication.js'
+export {
+  prepareBeneficiaryTraditionalIraAnnualSimulatorDelta,
+  type BeneficiaryTraditionalIraAnnualSimulatorDeltaPreparedResult,
+  type BeneficiaryTraditionalIraSimulatorAccountOpeningBalance,
+  type BeneficiaryTraditionalIraSimulatorActionApplicationDelta,
+  type BeneficiaryTraditionalIraSimulatorLedgerIdentity,
+  type BeneficiaryTraditionalIraSimulatorRmdLedgerDelta,
+  type BeneficiaryTraditionalIraSimulatorSourceDebitDelta,
+  type BeneficiaryTraditionalIraSimulatorUnchangedAccountEvidence,
+  type DetachedSimulatorAnnualAccountBalanceSnapshot,
+  type PrepareBeneficiaryTraditionalIraAnnualSimulatorDeltaInput,
+  type PrepareBeneficiaryTraditionalIraAnnualSimulatorDeltaResult,
+  type UnsupportedBeneficiaryTraditionalIraAnnualSimulatorDeltaResult,
+} from './beneficiaryTraditionalIraAnnualSimulatorDelta.js'
+export {
+  prepareBeneficiaryTraditionalIraResidualRmdAllocation,
+  type BeneficiaryTraditionalIraResidualRmdAllocationPreparedResult,
+  type BeneficiaryTraditionalIraResidualRmdSourceAllocation,
+  type PrepareBeneficiaryTraditionalIraResidualRmdAllocationInput,
+  type PrepareBeneficiaryTraditionalIraResidualRmdAllocationResult,
+  type UnsupportedBeneficiaryTraditionalIraResidualRmdAllocationResult,
+} from './beneficiaryTraditionalIraResidualRmdAllocation.js'
+export {
+  stageBeneficiaryTraditionalIraResidualRmdMovement,
+  type BeneficiaryTraditionalIraNoResidualRmdMovementResult,
+  type BeneficiaryTraditionalIraResidualRmdMovementCandidate,
+  type BeneficiaryTraditionalIraResidualRmdMovementStagedResult,
+  type BeneficiaryTraditionalIraResidualRmdScheduleEvidence,
+  type StageBeneficiaryTraditionalIraResidualRmdMovementInput,
+  type StageBeneficiaryTraditionalIraResidualRmdMovementResult,
+  type UnsupportedBeneficiaryTraditionalIraResidualRmdMovementResult,
+} from './beneficiaryTraditionalIraResidualRmdMovementCandidate.js'
+export {
+  prepareBeneficiaryTraditionalIraResidualRmdPhysicalTransaction,
+  type BeneficiaryTraditionalIraNoResidualRmdPhysicalTransactionResult,
+  type BeneficiaryTraditionalIraPostResidualRmdSourceBalanceTransition,
+  type BeneficiaryTraditionalIraPostResidualRmdTransition,
+  type BeneficiaryTraditionalIraResidualRmdDetachedApplication,
+  type BeneficiaryTraditionalIraResidualRmdPhysicalTransactionPreparedResult,
+  type PrepareBeneficiaryTraditionalIraResidualRmdPhysicalTransactionInput,
+  type PrepareBeneficiaryTraditionalIraResidualRmdPhysicalTransactionResult,
+  type UnsupportedBeneficiaryTraditionalIraResidualRmdPhysicalTransactionResult,
+} from './beneficiaryTraditionalIraResidualRmdPhysicalTransaction.js'
+export {
+  prepareBeneficiaryTraditionalIraResidualRmdActionIdentity,
+  type BeneficiaryTraditionalIraNoResidualRmdActionIdentityResult,
+  type BeneficiaryTraditionalIraResidualRmdActionIdentityPreparedResult,
+  type BeneficiaryTraditionalIraResidualRmdApplicationIdentityBinding,
+  type PrepareBeneficiaryTraditionalIraResidualRmdActionIdentityInput,
+  type PrepareBeneficiaryTraditionalIraResidualRmdActionIdentityResult,
+  type UnsupportedBeneficiaryTraditionalIraResidualRmdActionIdentityResult,
+} from './beneficiaryTraditionalIraResidualRmdActionIdentity.js'
+export {
+  prepareBeneficiaryTraditionalIraResidualRmdAnnualRefinalization,
+  type BeneficiaryTraditionalIraNoResidualRmdAnnualRefinalizationResult,
+  type BeneficiaryTraditionalIraResidualInheritanceBinding,
+  type BeneficiaryTraditionalIraResidualRmdAnnualEvidenceRefinalizedResult,
+  type BeneficiaryTraditionalIraResidualRmdRefinalizedLineage,
+  type PrepareBeneficiaryTraditionalIraResidualRmdAnnualRefinalizationInput,
+  type PrepareBeneficiaryTraditionalIraResidualRmdAnnualRefinalizationResult,
+  type UnsupportedBeneficiaryTraditionalIraResidualRmdAnnualRefinalizationResult,
+} from './beneficiaryTraditionalIraResidualRmdAnnualRefinalization.js'
+export {
   evaluateOwnedNonRothIraPenaltyPrerequisites,
   type Age59HalfReachedPenaltyEvaluation,
   type DisabilityQualifiedPenaltyEvaluation,

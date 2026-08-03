@@ -75,7 +75,7 @@ function validInput(
       openingInheritedBasisAmount: asUsdCents(openingBasis),
       yearEndApplicablePoolBalanceAmount: asUsdCents(yearEndBalance),
       form8606Line7DistributionAmount: asUsdCents(line7Amount),
-      form8606Line8NetConversionAmount: 0,
+      form8606Line8NetConversionAmount: asUsdCents(0),
       evidenceId: 'basis-pool-record',
     },
     line7Distributions: [line7Entry(executedAmount)],
@@ -148,7 +148,7 @@ describe('beneficiary traditional IRA withdrawal character', () => {
           basisNumeratorAmount: 40,
           yearEndApplicablePoolBalanceAmount: 40,
           form8606Line7DistributionAmount: 60,
-          form8606Line8NetConversionAmount: 0,
+          form8606Line8NetConversionAmount: asUsdCents(0),
           annualBasisDenominatorAmount: 100,
           annualBasisRatio: {
             representation: 'exactMinorUnitRational',
@@ -531,10 +531,18 @@ describe('beneficiary traditional IRA withdrawal character', () => {
     negativeZero.basisPoolEvidence = {
       ...negativeZero.basisPoolEvidence!,
       form8606Line8NetConversionAmount: -0,
-    }
-    for (const value of [line8, negativeZero, arithmetic, samePool]) {
+    } as unknown as typeof negativeZero.basisPoolEvidence
+    // Negative zero is rejected as unparseable money before line 8 is read, so
+    // it stays "facts missing" -- it is malformed evidence, not a conversion.
+    for (const value of [negativeZero, arithmetic, samePool]) {
       expectInheritedFactsMissing(value)
     }
+    // A present-but-unmodelled line 8 conversion is different: the evidence is
+    // there and is refused on its own terms. Reporting "facts missing" would
+    // send a caller hunting for evidence they already supplied.
+    const conversion = classifyBeneficiaryTraditionalIraWithdrawal(line8)
+    expect(conversion.status).toBe('unsupported')
+    expect(conversion.reasons[0]?.code).toBe('withdrawal-spousal-conversion-unsupported')
   })
 
   it('requires nonblank distinct stable evidence IDs', () => {

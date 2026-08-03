@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { describeRule } from '../rules/describeRule.js'
+
 import type { AnnualIraBasisAllocationEntryInput } from './annualIraBasisAllocation.js'
 import {
   evaluateBeneficiaryTraditionalIraDeathPenalty,
@@ -77,7 +79,7 @@ function characterizationInput(
       openingInheritedBasisAmount: asUsdCents(openingBasis),
       yearEndApplicablePoolBalanceAmount: asUsdCents(yearEndBalance),
       form8606Line7DistributionAmount: asUsdCents(line7Amount),
-      form8606Line8NetConversionAmount: 0,
+      form8606Line8NetConversionAmount: asUsdCents(0),
       evidenceId: 'basis-pool-record',
     },
     line7Distributions: [line7Entry(line7Amount)],
@@ -119,6 +121,11 @@ function validInput(): EvaluateBeneficiaryTraditionalIraDeathPenaltyInput {
   return {
     characterizationInput: characterizationInput(),
     deathBeneficiaryEvidence: deathEvidence(),
+    spousalElection: {
+      status: 'spousalElectionNotApplicable',
+      relationship: 'notSurvivingSpouse',
+      evidenceId: 'spousal-election-not-applicable',
+    },
   }
 }
 
@@ -142,6 +149,111 @@ function expectUnsupported(input: EvaluateBeneficiaryTraditionalIraDeathPenaltyI
 }
 
 describe('beneficiary traditional IRA death penalty evidence', () => {
+  it('refuses an array carrying keys its length does not account for', () => {
+    // The snapshot loop skips the `length` key, so without an array branch an
+    // array could smuggle extra own keys past validation entirely.
+    const smuggled = validInput()
+    const distributions = [...(smuggled.characterizationInput.line7Distributions ?? [])]
+    Object.defineProperty(distributions, 'extra', {
+      configurable: true, enumerable: true, writable: true, value: 'smuggled',
+    })
+    smuggled.characterizationInput = {
+      ...smuggled.characterizationInput,
+      line7Distributions: distributions,
+    }
+
+    expect(evaluateBeneficiaryTraditionalIraDeathPenalty(smuggled).status)
+      .toBe('unsupported')
+  })
+
+  it('refuses a proxy array presenting an enumerable length descriptor', () => {
+    // An array's own `length` cannot be redefined as an accessor, so the
+    // realistic hostile shape is a Proxy answering the descriptor trap. The
+    // guard reads length through that trap and rejects an enumerable one.
+    const hostile = validInput()
+    const target = [...(hostile.characterizationInput.line7Distributions ?? [])]
+    const proxied = new Proxy(target, {
+      getOwnPropertyDescriptor(base, key) {
+        if (key === 'length') {
+          return { configurable: false, enumerable: true, value: base.length, writable: true }
+        }
+        return Object.getOwnPropertyDescriptor(base, key)
+      },
+    })
+    hostile.characterizationInput = {
+      ...hostile.characterizationInput,
+      line7Distributions: proxied,
+    }
+
+    expect(evaluateBeneficiaryTraditionalIraDeathPenalty(hostile).status)
+      .toBe('unsupported')
+  })
+
+  it('never reads the election status through a caller-supplied accessor', () => {
+    let reads = 0
+    const hostile = validInput()
+    Object.defineProperty(hostile, 'spousalElection', {
+      configurable: true,
+      enumerable: true,
+      get() {
+        reads += 1
+        // A live read would see "not applicable" first and something else on a
+        // later read; the snapshot boundary is what makes that unreachable.
+        return reads === 1
+          ? {
+            status: 'spousalElectionNotApplicable',
+            relationship: 'notSurvivingSpouse',
+            evidenceId: 'spousal-election-not-applicable',
+          }
+          : {
+            status: 'spousalOwnerTreatmentBegun',
+            trigger: 'contributionMade',
+            effectiveTaxYear: 2030,
+            evidenceId: 'spousal-owner-treatment-begun',
+          }
+      },
+    })
+
+    expect(evaluateBeneficiaryTraditionalIraDeathPenalty(hostile).status)
+      .toBe('unsupported')
+  })
+
+  // Treas. Reg. 1.408-8(c)(3) makes an electing surviving spouse the IRA owner
+  // "for all purposes under the Internal Revenue Code (including section
+  // 72(t))". The zero rate here rests on IRC 72(t)(2)(A)(ii), which reaches a
+  // distribution "made to a beneficiary" -- so once owner treatment begins this
+  // module must stop answering. The contrary reading, that the election changes
+  // only the distribution schedule, would keep emitting a zero penalty.
+  describeRule('treas-reg-1-408-8-c-3-spouse-treated-as-owner', {
+    readings: {
+      ownerTreatmentEndsTheDeathException: 'unsupported',
+      deathExceptionSurvivesTheElection: 'accepted',
+    },
+    accepted: 'ownerTreatmentEndsTheDeathException',
+  }, ({ accepted, readings }) => {
+    it('stops answering once the spouse has become the owner', () => {
+      const result = evaluateBeneficiaryTraditionalIraDeathPenalty({
+        ...validInput(),
+        spousalElection: {
+          status: 'spousalOwnerTreatmentBegun',
+          trigger: 'undistributedRequiredAmount',
+          effectiveTaxYear: 2030,
+          evidenceId: 'spousal-owner-treatment-begun',
+        },
+      })
+
+      expect(result.status).toBe(accepted)
+      expect(result.status).not.toBe(readings.deathExceptionSurvivesTheElection)
+      expect(result.reasons[0]?.code).toBe('withdrawal-spousal-owner-treatment-begun')
+      expect(result.penaltyEvidence).toBeNull()
+    })
+
+    it('still applies the death exception before any election', () => {
+      const result = evaluateBeneficiaryTraditionalIraDeathPenalty(validInput())
+      expect(result.status).toBe(readings.deathExceptionSurvivesTheElection)
+    })
+  })
+
   it('rebuilds character and emits exact death-beneficiary zero-penalty evidence', () => {
     const input = validInput()
     const before = structuredClone(input)

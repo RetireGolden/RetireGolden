@@ -26,6 +26,8 @@ const LOCKED_UNSUPPORTED_CODES = [
   'withdrawal-rule-of-55-evidence-missing',
   'withdrawal-sepp-evidence-missing',
   'withdrawal-inherited-facts-missing',
+  'withdrawal-spousal-owner-treatment-begun',
+  'withdrawal-spousal-conversion-unsupported',
   'withdrawal-hsa-qualification-unknown',
   'withdrawal-source-type-unsupported',
   'withdrawal-aggregate-unallocated',
@@ -55,13 +57,13 @@ const LOCKED_UNSUPPORTED_CODES = [
 ] as const satisfies readonly UnsupportedActionReasonCode[]
 
 describe('action reason registry', () => {
-  it('exhaustively owns 76 codes across 38 predicates and four disjoint outcomes', () => {
-    expect(actionReasonCodes).toHaveLength(76)
-    expect(new Set(actionReasonCodes).size).toBe(76)
+  it('exhaustively owns 78 codes across 38 predicates and four disjoint outcomes', () => {
+    expect(actionReasonCodes).toHaveLength(78)
+    expect(new Set(actionReasonCodes).size).toBe(78)
     expect(actionPredicateNames).toHaveLength(38)
     expect(partialActionReasonCodes).toHaveLength(3)
     expect(taxTreatmentAdjustmentReasonCodes).toHaveLength(3)
-    expect(unsupportedActionReasonCodes).toHaveLength(36)
+    expect(unsupportedActionReasonCodes).toHaveLength(38)
     expect(refusedActionReasonCodes).toHaveLength(34)
   })
 

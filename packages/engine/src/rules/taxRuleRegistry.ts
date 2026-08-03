@@ -698,7 +698,7 @@ const registry = {
   'irc-408-d-8-beneficiary-ira-source': {
     title: 'Inherited IRA as a QCD source',
     statement:
-      'A beneficiary who has personally attained age 70.5 may make a QCD from an inherited IRA; the controlling fact is the beneficiary own age, not the decedent. Not modelled in v1: separate beneficiary basis history is required and is never borrowed from the donor owned pool, so an inherited source is classification-only and non-actionable.',
+      'A beneficiary who has personally attained age 70.5 may make a QCD from an inherited IRA; the controlling fact is the beneficiary’s own age, not the decedent’s. Not modelled in v1: separate beneficiary basis history is required and is never borrowed from the donor’s own pool, so an inherited source is classification-only and non-actionable.',
     classification: 'outOfScope',
     contraryReading: null,
     conventionRationale: null,
@@ -768,6 +768,101 @@ const registry = {
     effectiveThrough: 2026,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/actions/annualQcdExecutionPrerequisite.ts'],
+  },
+
+  'irc-408-d-3-C-ii-surviving-spouse-not-inherited': {
+    title: 'A surviving spouse does not hold an inherited IRA',
+    statement:
+      'An IRA acquired by reason of death is treated as inherited only where the acquiring individual was not the surviving spouse of the decedent. A surviving spouse is therefore outside the inherited-IRA rules: the rollover and conversion bar of 408(d)(3)(C)(i) does not reach them, so Form 8606 line 8 can be non-zero for a spousal pool.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408(d)(3)(C)(ii)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/408',
+      quotedText:
+        'An individual retirement account or individual retirement annuity shall be treated as inherited if - (I) the individual for whose benefit the account or annuity is maintained acquired such account by reason of the death of another individual, and (II) such individual was not the surviving spouse of such other individual.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/actions/beneficiarySpousalElectionStatus.ts'],
+  },
+
+  'treas-reg-1-408-8-c-2-spousal-deemed-election': {
+    title: 'Spousal deemed election on an undistributed post-death-year amount',
+    statement:
+      'A surviving spouse is deemed to have elected to treat the IRA as their own if an amount required to be distributed to them as beneficiary for a calendar year following the year of death is not distributed within the required time, or if a non-rollover contribution is made to the IRA. The election is not an act the spouse takes; it happens to them.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The regulation measures the trigger per calendar year, so an unobserved year is refused rather than assumed satisfied: an unobserved year is exactly the year in which the deemed election would have occurred.',
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8(c)(2)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.408-8',
+      quotedText:
+        'Any amount in the IRA that would be required to be distributed to the surviving spouse as beneficiary under section 401(a)(9)(B) for a calendar year following the calendar year of the IRA owner’s death is not distributed within the time period required.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/actions/beneficiarySpousalElectionStatus.ts'],
+  },
+
+  'treas-reg-1-408-8-c-3-spouse-treated-as-owner': {
+    title: 'After the election the spouse is the owner for all Code purposes',
+    statement:
+      'Following an election under 1.408-8(c)(1) or a deemed election under (c)(2), the surviving spouse is the IRA owner for all purposes under the Code, section 72(t) expressly included. The zero additional-tax rate that IRC 72(t)(2)(A)(ii) gives a death beneficiary no longer applies, and the balance folds into the spouse’s own 408(d)(2) aggregation pool.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8(c)(3)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.408-8',
+      quotedText:
+        'Following an election described in paragraph (c)(1) of this section, the surviving spouse is considered the IRA owner for whose benefit the trust is maintained for all purposes under the Internal Revenue Code (including section 72(t)).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 72(t)(2)(A)(ii)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/72',
+      quotedText:
+        'made to a beneficiary (or to the estate of the employee) on or after the death of the employee',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/actions/beneficiarySpousalElectionStatus.ts',
+      'packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts',
+    ],
+  },
+
+  'treas-reg-1-408-8-e-4-i-year-of-death-proportionate-shortfall': {
+    title: 'Year-of-death RMD shortfall is shared proportionately',
+    statement:
+      'Where the owner died before taking the calendar year total and the aggregated IRAs did not all carry identical beneficiary designations, each IRA must distribute a proportionate share of the shortfall based on its account balance. Draining one account before touching the next satisfies only the free-choice branch of (e)(1).',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The engine never models other beneficiaries designations, so it cannot observe whether (e)(4)(i) binds in a given year. It allocates proportionately unconditionally instead: where designations are identical, (e)(1) free choice permits any split including the proportionate one, so the proportionate split is correct under both branches while an account-order drain is correct under only one.',
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8(e)(4)(i)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.408-8',
+      quotedText:
+        'each of the owner’s IRAs is subject to a requirement to distribute a proportionate share of the shortfall for the calendar year to a beneficiary of that IRA, with the proportions based on the account balances determined under paragraph (b)(2) of this section.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/actions/beneficiaryTraditionalIraResidualRmdAllocation.ts'],
   },
 } as const satisfies Record<string, TaxRuleRecord>
 
