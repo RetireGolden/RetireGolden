@@ -1310,6 +1310,34 @@ const registry = {
     implementedBy: ['packages/engine/src/socialSecurity/benefitFactor.ts'],
   },
 
+  'usc-42-416-l-retirement-age-schedule': {
+    title: 'Retirement age keys on attaining age 62, not on birth year',
+    statement:
+      'Retirement age is 66 for an individual attaining early retirement age after 2004 and before 2017, 66 plus an age increase factor for one attaining it after 2016 and before 2022, and 67 for one attaining it after 2021. Early retirement age is 62 for an old-age benefit and 60 for a widow benefit, which is why survivors run a separate and earlier schedule.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'Because the statute turns on attaining age 62 rather than on a birth year, the boundary moves for anyone born on 1 January: the Social Security Administration treats a person as attaining an age on the day before their birthday, so a 1 January 1960 birth attains 62 in 2021 and falls under the 66-plus-factor branch rather than the flat 67. The engine expresses this as an effective birth year of the prior calendar year.',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 416(l)(1)',
+      url: 'https://www.law.cornell.edu/uscode/text/42/416',
+      quotedText:
+        '(C) with respect to an individual who attains early retirement age after December 31, 2004, and before January 1, 2017, 66 years of age, (D) with respect to an individual who attains early retirement age after December 31, 2016, and before January 1, 2022, 66 years of age plus the number of months in the age increase factor, (E) with respect to an individual who attains early retirement age after December 31, 2021, 67 years of age.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 416(l)(2)',
+      url: 'https://www.law.cornell.edu/uscode/text/42/416',
+      quotedText:
+        'The term early retirement age means age 62 in the case of an old-age, wife\u2019s, or husband\u2019s insurance benefit, and age 60 in the case of a widow\u2019s or widower\u2019s insurance benefit.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/socialSecurity/nra.ts'],
+  },
+
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)
