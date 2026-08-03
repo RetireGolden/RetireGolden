@@ -1537,6 +1537,158 @@ const registry = {
     ],
   },
 
+  'irc-414-v-2-E-super-catch-up-window': {
+    title: 'The higher catch-up covers ages 60 to 63 and stops at 64',
+    statement:
+      'A participant who would attain age 60 but would not attain age 64 before the close of the taxable year takes the adjusted dollar amount in place of the ordinary catch-up. The window closes at 64: a participant that age reverts to the ordinary age-50 catch-up rather than keeping the higher one. The adjusted dollar amount is the greater of 10,000 dollars and 150 percent of the catch-up in effect for 2024 — not 150 percent of the current year figure.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The two legs of 414(v)(2)(E)(i) are a 10,000 dollar floor and 150 percent of the 2024 amount, and the greater of them is the adjusted dollar amount. That is why the 2026 figure is 11,250 rather than 150 percent of the current 8,000 catch-up, as IRS Notice 2025-67 confirms. Section 414(v)(2)(C) then adjusts the adjusted dollar amount itself annually for years after 2025, so the engine is right to carry the inflation factor onto the whole figure in projected years. The age-55 HSA addition is registered separately because section 223(g) omits it from indexing entirely — the same shape of rule with the opposite answer.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 414(v)(2)(B)(i)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/414',
+      quotedText:
+        'In the case of an applicable employer plan other than a plan described in section 401(k)(11) or 408(p), the applicable dollar amount is $5,000 (the adjusted dollar amount, in the case of an eligible participant who would attain age 60 but would not attain age 64 before the close of the taxable year).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 414(v)(2)(E)(i)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/414',
+      quotedText:
+        'For purposes of subparagraph (B), the adjusted dollar amount is - (i) in the case of clause (i) of subparagraph (B), the greater of - (I) $10,000, or (II) an amount equal to 150 percent of the dollar amount which would be in effect under such clause for 2024 for eligible participants not described in the parenthetical in such clause.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 414(v)(2)(C)(i)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/414',
+      quotedText:
+        'In the case of a year beginning after December 31, 2025, the Secretary shall adjust annually the adjusted dollar amounts applicable under clauses (i) and (ii) of subparagraph (E) for increases in the cost-of-living at the same time and in the same manner as adjustments under the preceding sentence; except that the base period taken into account shall be the calendar quarter beginning July 1, 2024.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
+  'irc-415-c-1-annual-additions-lesser-of': {
+    title: 'Annual additions are capped by pay as well as by the dollar limit',
+    statement:
+      'Contributions and other additions to a participant account may not exceed the lesser of the indexed dollar amount or 100 percent of the participant compensation. A participant paid less than the dollar limit is bound by their pay, so a generous match cannot push total additions above what they earned.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'Section 415(c)(3) compensation is broader than wages, and the engine uses wages as the stand-in, so the pay prong binds slightly earlier here than under the statute. Annual additions under 415(c)(2) are employer contributions, employee contributions and forfeitures; the engine models the first two and has no concept of forfeitures.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 415(c)(1)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/415',
+      quotedText:
+        'Contributions and other additions with respect to a participant exceed the limitation of this subsection if, when expressed as an annual addition to the participant\u2019s account, such annual addition is greater than the lesser of - (A) 40,000 dollars, or (B) 100 percent of the participant\u2019s compensation.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 415(c)(2)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/415',
+      quotedText:
+        'the term annual addition means the sum for any year of - (A) employer contributions, (B) the employee contributions, and (C) forfeitures.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
+  'irc-121-d-6-exclusion-cannot-reach-recapture': {
+    title: 'The residence exclusion cannot reach depreciation recapture',
+    statement:
+      'Gain on a principal residence owned and used as such for two of the preceding five years is excluded up to 250,000 dollars, or 500,000 on a joint return. The exclusion does not apply to gain up to the depreciation adjustments attributable to periods after 6 May 1997, so recapture is carved out first and the cap then applies only to what remains.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The engine takes recapture as an input rather than deriving it from a depreciation schedule, and prices it at ordinary rates rather than the section 1250 25 percent maximum. Both are planning-grade stand-ins; the ordering that this rule fixes is not.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 121(a)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/121',
+      quotedText:
+        'Gross income shall not include gain from the sale or exchange of property if, during the 5-year period ending on the date of the sale or exchange, such property has been owned and used by the taxpayer as the taxpayer\u2019s principal residence for periods aggregating 2 years or more.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 121(d)(6)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/121',
+      quotedText:
+        'Subsection (a) shall not apply to so much of the gain from the sale of any property as does not exceed the portion of the depreciation adjustments (as defined in section 1250(b)(3)) attributable to periods after May 6, 1997, in respect of such property.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/tax/propertySale.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
+  'usc-31-3124-a-federal-obligations-state-exempt': {
+    title: 'Interest on federal obligations is outside every state income tax base',
+    statement:
+      'Stocks and obligations of the United States Government are exempt from taxation by a State or its subdivisions, and the exemption reaches any form of taxation that would require the interest to be counted in computing a tax. Only a nondiscriminatory corporate franchise tax and an estate or inheritance tax are excepted, neither of which is a state income tax on an individual.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'This is why the exemption is applied uniformly rather than per state pack: it is federal law binding every state, so no state entry can opt into taxing it. The engine subtracts the interest from the state base because it arrives inside ordinary income.',
+    authority: [{
+      kind: 'statute',
+      citation: '31 U.S.C. 3124(a)',
+      url: 'https://www.law.cornell.edu/uscode/text/31/3124',
+      quotedText:
+        'Stocks and obligations of the United States Government are exempt from taxation by a State or political subdivision of a State. The exemption applies to each form of taxation that would require the obligation, the interest on the obligation, or both, to be considered in computing a tax, except - (1) a nondiscriminatory franchise tax or another nonproperty tax instead of a franchise tax, imposed on a corporation; and (2) an estate or inheritance tax.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/tax/stateTax.ts'],
+  },
+
+  'irc-402-g-1-elective-deferral-aggregate': {
+    title: 'The elective deferral limit is per individual, not per plan',
+    statement:
+      'Elective deferrals of any individual for a taxable year are included in gross income to the extent they exceed the applicable dollar amount. The limit attaches to the individual and aggregates every arrangement they participate in, so holding two employer plans does not double the room.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'Section 402(g)(3) counts 401(k), 403(b), SARSEP and SIMPLE deferrals in the same total. The engine groups by owner rather than by plan for exactly this reason, and does not model the separate 457(b) limit, which genuinely does sit alongside rather than inside this one.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 402(g)(1)(A)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/402',
+      quotedText:
+        'Notwithstanding subsections (e)(3) and (h)(1)(B), the elective deferrals of any individual for any taxable year shall be included in such individual’s gross income to the extent the amount of such deferrals for the taxable year exceeds the applicable dollar amount.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 402(g)(3)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/402',
+      quotedText:
+        'the term elective deferrals means, with respect to any taxable year, the sum of - (A) any employer contribution under a qualified cash or deferred arrangement (as defined in section 401(k)) to the extent not includible in gross income for the taxable year under subsection (e)(3).',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { describeRule } from '../rules/describeRule.js'
+
 import { stateParamsFor } from '../params/state/index.js'
 import type { TaxYearInput } from '../projection/types.js'
 import { computeStateTax, computeStateTaxDetail, createStateTaxCalculator } from './stateTax.js'
@@ -88,6 +90,34 @@ describe('computeStateTax — code paths', () => {
       (taxable - 13_900) * 0.054
     const tax = computeStateTax(ny, input({ ordinaryIncome: 90_000, retirementIncome: 30_000, ssBenefits: 40_000, agesAlive: [66] }))
     expect(tax).toBeCloseTo(expected, 2)
+  })
+
+  // 31 U.S.C. 3124(a) is federal law binding every state, and it reaches "each
+  // form of taxation that would require the obligation, the interest on the
+  // obligation, or both, to be considered in computing a tax". The only
+  // exceptions are a corporate franchise tax and an estate or inheritance tax,
+  // so no state income tax on an individual can reach it -- which is why the
+  // exemption is uniform rather than a per-state flag.
+  //
+  // Pennsylvania flat rate on 100,000 of ordinary income including 20,000 of
+  // Treasury interest:
+  //   exempt:        taxed as though the base were 80,000
+  //   taxed anyway:  taxed on the full 100,000
+  describeRule('usc-31-3124-a-federal-obligations-state-exempt', {
+    readings: { outsideEveryStateBase: 80_000, insideTheStateBase: 100_000 },
+    accepted: 'outsideEveryStateBase',
+  }, ({ accepted, readings }) => {
+    it('keeps federal obligation interest out of the state base', () => {
+      const pa = pack('PA')
+      const withTreasury = computeStateTax(pa, input({
+        ordinaryIncome: 100_000, usGovernmentInterest: 20_000, agesAlive: [55],
+      }))
+
+      expect(withTreasury)
+        .toBeCloseTo(computeStateTax(pa, input({ ordinaryIncome: accepted, agesAlive: [55] })), 6)
+      expect(withTreasury)
+        .not.toBeCloseTo(computeStateTax(pa, input({ ordinaryIncome: readings.insideTheStateBase, agesAlive: [55] })), 6)
+    })
   })
 
   it('exempts U.S. government interest (TIPS/Treasury) from the state base', () => {
