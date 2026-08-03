@@ -1450,6 +1450,93 @@ const registry = {
     implementedBy: ['packages/engine/src/socialSecurity/survivorBenefit.ts'],
   },
 
+  'usc-42-1395r-i-irmaa-applicable-percentage': {
+    title: 'IRMAA raises the beneficiary share of cost from 25 percent',
+    statement:
+      'The standard Part B premium covers 25 percent of program cost. A high-income beneficiary pays 35, 50, 65, 80 or 85 percent of that cost instead, so the premium is the standard one scaled by the applicable percentage over 25 rather than the standard one plus that percentage. Income is taken from the second calendar year preceding the premium year.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The statute expresses the result as an adjustment amount, the applicable percentage minus 25 percentage points; the engine computes the whole premium as the standard one times the applicable percentage over 25. Those are the same quantity written from different ends, which is why no explicit 25-point subtraction appears in the code.',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 1395r(i)(3)',
+      url: 'https://www.law.cornell.edu/uscode/text/42/1395r',
+      quotedText:
+        'the monthly adjustment amount specified in this paragraph for an individual for a month in a year is equal to the product of the following: (i) the applicable percentage minus 25 percentage points.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 1395r(i)(4)',
+      url: 'https://www.law.cornell.edu/uscode/text/42/1395r',
+      quotedText:
+        'the individual\u2019s modified adjusted gross income shall be such income determined for the individual\u2019s last taxable year beginning in the second calendar year preceding the year involved.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/tax/medicare.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
+  'irc-36B-c-1-A-applicable-taxpayer-range': {
+    title: 'The premium credit band includes both 100 and 400 percent',
+    statement:
+      'An applicable taxpayer is one whose household income equals or exceeds 100 percent of the federal poverty line and does not exceed 400 percent of it. Both ends are inclusive, so a household sitting exactly on 400 percent is still eligible and the cliff falls on the first dollar past it.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The enhanced credits that suspended the 400 percent ceiling expired at the end of 2025, so the cliff is live again for 2026. The engine also treats the below-100-percent exception pathways as out of scope rather than modelling them, which is why the floor is a hard cutoff here.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 36B(c)(1)(A)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/36B',
+      quotedText:
+        'The term applicable taxpayer means, with respect to any taxable year, a taxpayer whose household income for the taxable year equals or exceeds 100 percent but does not exceed 400 percent of an amount equal to the poverty line for a family of the size involved.',
+    }],
+    volatility: 'sunsetting',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/tax/aca.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
+  'irc-223-b-3-hsa-catch-up-not-indexed': {
+    title: 'The age-55 HSA catch-up is a flat 1,000 dollars and is not indexed',
+    statement:
+      'An eligible individual who has attained age 55 before the close of the taxable year may contribute an additional amount, which has been 1,000 dollars for 2009 and every year since. Section 223(g) indexes the subsection (b)(2) contribution limits and does not reach this amount, so it stays flat while the base limits grow.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The qualifying age is 55, which differs from the 50 used for elective deferrals and individual retirement accounts and from the 65 that ends the HSA additional tax. Nothing in the engine derives one from another, and the record exists partly so nobody later aligns them.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 223(b)(3)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/223',
+      quotedText:
+        'In the case of an individual who has attained age 55 before the close of the taxable year, the applicable limitation under subparagraphs (A) and (B) of paragraph (2) shall be increased by 1,000 dollars for taxable years beginning in 2009 and thereafter.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 223(g)(1)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/223',
+      quotedText:
+        'Each dollar amount in subsections (b)(2), (c)(2)(A), and in the case of taxable years beginning after 2026, (c)(1)(E)(ii)(II) shall be increased by an amount equal to such dollar amount multiplied by the cost-of-living adjustment determined under section 1(f)(3).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)

@@ -57,6 +57,24 @@ describe('acaNetAnnualPremium', () => {
     expect(r.netAnnualPremium).toBeCloseTo(4_980, 6)
   })
 
+  // IRC 36B(c)(1)(A) says household income must "not exceed" 400 percent, so
+  // 400 percent itself is inside the band. Reading the ceiling as strict moves
+  // the cliff a whole percentage point down and denies the credit to a
+  // household sitting exactly on it -- the one place the boundary is decided.
+  describeRule('irc-36B-c-1-A-applicable-taxpayer-range', {
+    readings: { doesNotExceedFourHundred: false, strictlyBelowFourHundred: true },
+    accepted: 'doesNotExceedFourHundred',
+  }, ({ accepted, readings }) => {
+    it('keeps a household at exactly 400 percent inside the band', () => {
+      const fpl = 15_650
+      const exactlyAtCeiling = acaNetAnnualPremium(pack, 1, fpl * 4, 12_000)
+
+      expect(exactlyAtCeiling.overCliff).toBe(accepted)
+      expect(exactlyAtCeiling.overCliff).not.toBe(readings.strictlyBelowFourHundred)
+      expect(exactlyAtCeiling.credit).toBeGreaterThan(0)
+    })
+  })
+
   it('forfeits the entire credit $1 over the 400% cliff', () => {
     const fpl = 15_650
     const justUnder = acaNetAnnualPremium(pack, 1, fpl * 4, 12_000)

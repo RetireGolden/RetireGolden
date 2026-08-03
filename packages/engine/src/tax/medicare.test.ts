@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { describeRule } from '../rules/describeRule.js'
+
 import { packForYear } from '../params/index.js'
 import { medicareAnnualPremiumPerPerson } from './medicare.js'
 
@@ -11,6 +13,34 @@ const packWithUnverifiedTier2PartD = {
     irmaaTiers: pack.medicare.irmaaTiers.map((tier, i) => (i === 1 ? { ...tier, partDSurchargeMonthly: null } : tier)),
   },
 }
+
+describe('IRMAA applicable percentage', () => {
+  // 42 U.S.C. 1395r(i) makes the applicable percentage the beneficiary's SHARE
+  // OF PROGRAM COST, where the standard premium is 25 percent of that cost. So
+  // the first tier at 35 percent means paying 35/25 of the standard premium --
+  // a multiplier of 1.4 -- not the standard premium plus 35 percent.
+  //
+  // Reading the percentage as a surcharge is the natural error and understates
+  // every tier: 1.35 rather than 1.4 at the first, and it gets worse higher up.
+  describeRule('usc-42-1395r-i-irmaa-applicable-percentage', {
+    readings: { shareOfProgramCost: 1.4, percentageAsSurcharge: 1.35 },
+    accepted: 'shareOfProgramCost',
+  }, ({ accepted, readings }) => {
+    it('scales the standard premium by the applicable percentage over 25', () => {
+      const standard = medicareAnnualPremiumPerPerson(pack, 0, 'single')
+      const firstTier = medicareAnnualPremiumPerPerson(
+        pack,
+        pack.medicare.irmaaTiers[0]!.magiOver.single + 1,
+        'single',
+      )
+
+      const ratio = firstTier.partBAnnual / standard.partBAnnual
+      expect(ratio).toBeCloseTo(accepted, 6)
+      expect(ratio).not.toBeCloseTo(readings.percentageAsSurcharge, 6)
+      expect(firstTier.irmaaTier).toBe(1)
+    })
+  })
+})
 
 describe('medicareAnnualPremiumPerPerson', () => {
   it('charges the standard premium at or below the first threshold', () => {

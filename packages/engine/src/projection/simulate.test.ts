@@ -1093,6 +1093,44 @@ describe('contributions', () => {
     expect(y1.contributions).toBeCloseTo(24_500, 6)
     expect(y1.employerMatch).toBeCloseTo(72_000 - 24_500, 6)
   })
+
+  // IRC 223(g)(1) indexes the subsection (b)(2) contribution limits and does
+  // NOT list the (b)(3) catch-up, which has been a flat 1,000 dollars since
+  // 2009. Carrying the inflation factor across both is the natural mistake and
+  // it compounds: every projected year hands a 55-plus contributor more room
+  // than the statute allows, growing with the horizon.
+  //
+  // 2027 is past the latest pack year, so limits scale by one year of
+  // inflation. At 10 percent:
+  //   base indexed, catch-up flat:  4,400 x 1.10 + 1,000 = 5,840
+  //   both indexed:                (4,400 + 1,000) x 1.10 = 5,940
+  describeRule('irc-223-b-3-hsa-catch-up-not-indexed', {
+    readings: { onlyTheBaseIsIndexed: 5_840, bothIndexed: 5_940 },
+    accepted: 'onlyTheBaseIsIndexed',
+  }, ({ accepted, readings }) => {
+    it('keeps the catch-up flat while the base limit grows', () => {
+      const plan = basePlan()
+      plan.assumptions.inflationPct = 10
+      plan.household.people[0]! = {
+        ...plan.household.people[0]!,
+        dob: '1966-06-15', // 60 in 2026, so the catch-up applies throughout
+      }
+      plan.incomes = [wages(500_000)]
+      plan.accounts = [
+        { ...cash(1_000_000) },
+        {
+          id: testIds(), name: 'HSA', type: 'hsa', ownerPersonId: 'p1',
+          balance: 0, annualReturnPct: 0, annualContribution: 50_000,
+        } as never,
+      ]
+
+      const result = simulatePlan(validate(plan), { startYear: 2026, horizonEndYear: 2027, taxCalculator: noTax })
+      const projected = result.years.find((y) => y.year === 2027)!
+
+      expect(projected.contributions).toBeCloseTo(accepted, 6)
+      expect(projected.contributions).not.toBeCloseTo(readings.bothIndexed, 6)
+    })
+  })
 })
 
 describe('growth, pensions, property, debt', () => {
