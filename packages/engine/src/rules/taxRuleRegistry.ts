@@ -56,11 +56,14 @@ export interface TaxRuleAuthority {
  *   value, because a regulation or publication example would settle it.
  * - `sunsetting` — has a known expiry that must be surfaced before it bites.
  */
-export type TaxRuleVolatility =
-  | 'staticStatute'
-  | 'annuallyIndexed'
-  | 'awaitingGuidance'
-  | 'sunsetting'
+export const TAX_RULE_VOLATILITIES = Object.freeze([
+  'staticStatute',
+  'annuallyIndexed',
+  'awaitingGuidance',
+  'sunsetting',
+] as const)
+
+export type TaxRuleVolatility = (typeof TAX_RULE_VOLATILITIES)[number]
 
 /**
  * - `settled` — authority controls. Implement it and cover it.
@@ -552,8 +555,23 @@ export function taxRulesDueForVerification(
   asOfIsoDate: string,
   maximumAgeDaysByVolatility: Readonly<Record<TaxRuleVolatility, number>> = DEFAULT_REVERIFICATION_INTERVAL_DAYS,
 ): readonly TaxRuleId[] {
+  // Validate the shape before parsing. Date.parse accepts implementation-defined
+  // formats, so checking only for NaN would let a runtime-specific string
+  // through and make the result depend on the host rather than the input.
+  if (!/^\d{4}-\d{2}-\d{2}$/u.test(asOfIsoDate)) {
+    throw new RangeError('As-of date must be an ISO calendar date')
+  }
   const asOf = Date.parse(`${asOfIsoDate}T00:00:00Z`)
   if (Number.isNaN(asOf)) throw new RangeError('As-of date must be an ISO calendar date')
+  // A missing or non-finite interval would make every comparison false and
+  // silently report the rule as never due, which is the one failure mode this
+  // function must not have.
+  for (const volatility of TAX_RULE_VOLATILITIES) {
+    const interval = maximumAgeDaysByVolatility[volatility]
+    if (!Number.isFinite(interval) || interval < 0) {
+      throw new RangeError(`Re-verification interval for ${volatility} must be a non-negative number of days`)
+    }
+  }
   return taxRuleIds.filter((ruleId) => {
     const rule: TaxRuleRecord | undefined = TAX_RULE_REGISTRY[ruleId]
     const verified = Date.parse(`${rule.verifiedOn}T00:00:00Z`)

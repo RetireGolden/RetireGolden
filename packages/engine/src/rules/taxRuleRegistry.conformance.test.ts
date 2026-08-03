@@ -6,6 +6,7 @@ import {
   taxRuleIds,
   taxRulesDueForVerification,
   type TaxRuleId,
+  type TaxRuleVolatility,
 } from './taxRuleRegistry.js'
 
 /**
@@ -115,8 +116,26 @@ describe('periodic re-verification', () => {
     expect(DEFAULT_REVERIFICATION_INTERVAL_DAYS.annuallyIndexed).toBeLessThanOrEqual(365)
   })
 
-  it('reports nothing due on the day every rule was verified', () => {
-    expect(taxRulesDueForVerification('2026-08-02')).toEqual([])
+  it('reports nothing due on the most recent verification date', () => {
+    // Derived rather than hard-coded: rules are verified on different days, and
+    // a fixed date would drift into meaninglessness as records are added.
+    const latest = taxRuleIds
+      .map((ruleId) => TAX_RULE_REGISTRY[ruleId].verifiedOn)
+      .reduce((newest, date) => (date > newest ? date : newest))
+    expect(taxRulesDueForVerification(latest)).toEqual([])
+  })
+
+  it('refuses an interval table missing a volatility rather than never reporting due', () => {
+    // A missing key would make the comparison false and silently report the
+    // rule as never due, so it must fail closed instead.
+    expect(() => taxRulesDueForVerification('2027-09-01', {
+      staticStatute: 365, annuallyIndexed: 120, awaitingGuidance: 90,
+    } as unknown as Readonly<Record<TaxRuleVolatility, number>>)).toThrow(RangeError)
+  })
+
+  it('refuses a date that is parseable but not an ISO calendar date', () => {
+    expect(() => taxRulesDueForVerification('August 3, 2026')).toThrow(RangeError)
+    expect(() => taxRulesDueForVerification('2026-8-3')).toThrow(RangeError)
   })
 
   it('brings unsettled rules due before settled statutory mechanics', () => {
