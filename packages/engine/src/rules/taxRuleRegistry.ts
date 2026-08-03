@@ -1773,7 +1773,7 @@ const registry = {
   'irc-219-c-1-spousal-ira-combined-compensation': {
     title: 'A jointly filing couple funds both IRAs from combined compensation',
     statement:
-      'Section 219(c) lets a married individual filing jointly whose own compensation is the lesser of the two measure the limit against the sum of both spouses compensation, reduced by the other spouse own contributions. The household ceiling is therefore combined compensation, while each spouse remains separately held to the dollar limit.',
+      'Section 219(c) lets a married individual who files jointly, and whose own compensation is the lesser of the two, measure the limit against the combined compensation of both spouses, reduced by the contributions already made by the other spouse. The household ceiling is therefore combined compensation, while each spouse remains separately held to the dollar limit.',
     classification: 'settled',
     contraryReading: null,
     conventionRationale:
