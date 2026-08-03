@@ -292,6 +292,33 @@ describe('capital gains stacking', () => {
   })
 })
 
+describe('SALT cap schedule', () => {
+  // IRC 164(b)(7) is a written schedule, not an indexed figure, and 2030 is a
+  // REVERSION: 40,400 in 2026, stepping 101 percent a year, then 10,000 flat.
+  // Holding the 2026 cap -- or projecting it at general inflation like an
+  // indexed limit -- overstates the deduction roughly fourfold for every year
+  // from 2030 on, which for a retiree in a high-tax state is most of a horizon.
+  //
+  // 2030, single, 50,000 of state tax and 30,000 of mortgage interest:
+  //   cap reverts to 10,000:  10,000 + 30,000 = 40,000 itemized
+  //   2026 cap held:          40,400 + 30,000 = 70,400 itemized
+  describeRule('irc-164-b-7-salt-cap-schedule', {
+    readings: { revertsToTenThousand: 40_000, holdsTheTwentyTwentySixCap: 70_400 },
+    accepted: 'revertsToTenThousand',
+  }, ({ accepted, readings }) => {
+    it('drops the cap to ten thousand for years after 2029', () => {
+      const d = computeFederalTax(input({
+        year: 2030,
+        ordinaryIncome: 300_000,
+        itemizedDeductions: { stateAndLocalTaxes: 50_000, mortgageInterest: 30_000, charitable: 0 },
+      }))
+
+      expect(d.deduction).toBeCloseTo(accepted, 6)
+      expect(d.deduction).not.toBeCloseTo(readings.holdsTheTwentyTwentySixCap, 6)
+    })
+  })
+})
+
 describe('age-based deductions', () => {
   // IRC 63(f)(1) grants the additional amount separately for the taxpayer under
   // (A) and for a qualifying spouse under (B). On a joint return with two
