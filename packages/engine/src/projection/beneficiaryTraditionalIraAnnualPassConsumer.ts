@@ -227,14 +227,51 @@ interface CurrentBalances {
   readonly records: ReadonlyMap<AccountId, SimulatorAnnualPassBalanceRecord>
 }
 
+/**
+ * Materializes the live balance rows through property descriptors.
+ *
+ * The evidence provider is handed `state`, so it can replace `state.balances`
+ * with a Proxy. Reading `.length` or indexing it directly would run the provider's
+ * traps inside the boundary `plainDataSnapshot` exists to hold -- and the record
+ * objects cannot simply be taken from the snapshot, because they are mutated
+ * later and must be the live ones.
+ */
+function liveBalanceRecords(
+  state: SimulatorAnnualPassStateBindings,
+): SimulatorAnnualPassBalanceRecord[] | null {
+  const balances = Object.getOwnPropertyDescriptor(state, 'balances')
+  if (balances === undefined || !Object.hasOwn(balances, 'value')) return null
+  const value: unknown = balances.value
+  if (!Array.isArray(value) || Object.getPrototypeOf(value) !== Array.prototype) {
+    return null
+  }
+  const length = Object.getOwnPropertyDescriptor(value, 'length')
+  const size = length?.value
+  if (
+    length === undefined || length.enumerable || !Object.hasOwn(length, 'value') ||
+    typeof size !== 'number' || !Number.isSafeInteger(size) || size < 0
+  ) return null
+  const records: SimulatorAnnualPassBalanceRecord[] = []
+  for (let index = 0; index < size; index += 1) {
+    const entry = Object.getOwnPropertyDescriptor(value, String(index))
+    if (entry === undefined || !entry.enumerable || !Object.hasOwn(entry, 'value')) {
+      return null
+    }
+    records.push(entry.value as SimulatorAnnualPassBalanceRecord)
+  }
+  return records
+}
+
 function currentBalances(state: SimulatorAnnualPassStateBindings): CurrentBalances | null {
+  const live = liveBalanceRecords(state)
+  if (live === null) return null
   const snapshot = plainDataSnapshot(state.balances)
-  if (!Array.isArray(snapshot) || snapshot.length !== state.balances.length) return null
+  if (!Array.isArray(snapshot) || snapshot.length !== live.length) return null
   const rows: BeneficiaryTraditionalIraAnnualPassAccountRow[] = []
   const records = new Map<AccountId, SimulatorAnnualPassBalanceRecord>()
   for (let index = 0; index < snapshot.length; index += 1) {
     const detached = snapshot[index]
-    const record = state.balances[index]
+    const record = live[index]
     if (
       detached === null || typeof detached !== 'object' ||
       Array.isArray(detached) || record === undefined
