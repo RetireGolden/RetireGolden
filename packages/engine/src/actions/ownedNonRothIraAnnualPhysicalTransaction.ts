@@ -408,6 +408,24 @@ function identifierValues(
   return result
 }
 
+/**
+ * Order-invariant charity comparison. Both sides are spread from the same
+ * parsed Plan action today, so their key order matches, but a structural
+ * equality check must not silently depend on that: a caller-constructed
+ * charity with the same fields in a different order is the same designation
+ * and must not read as a mismatch.
+ */
+function canonicalCharity(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonicalCharity).join(',')}]`
+  if (value !== null && typeof value === 'object') {
+    return `{${Object.entries(value as Record<string, unknown>)
+      .sort(([left], [right]) => compareUtf16CodeUnits(left, right))
+      .map(([key, child]) => `${JSON.stringify(key)}:${canonicalCharity(child)}`)
+      .join(',')}}`
+  }
+  return JSON.stringify(value) ?? 'undefined'
+}
+
 function evidenceIdentifierValues(
   value: unknown,
   key = '',
@@ -787,7 +805,7 @@ function prepare(
       event.eventDate !== request.executionDate ||
       event.eventSequence !== request.executionSequence ||
       event.grossAmount !== request.requestedAmount ||
-      JSON.stringify(event.charity) !== JSON.stringify(request.charity)
+      canonicalCharity(event.charity) !== canonicalCharity(request.charity)
     ) {
       issues.push(issue(
         'qcdApplicationMismatch',

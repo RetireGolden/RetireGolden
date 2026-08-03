@@ -228,7 +228,8 @@ function buildPool(
       BigInt(line8AllocationEvidence.annualNontaxableBasisAmount) >
     BigInt(transition.adjustedResidualBasisNumeratorAmount)
   ) {
-    throw new RangeError(
+    fail(
+      'residualAllocationInvalid',
       'Independent Form 8606 line rounding cannot recover more than annual IRA basis',
     )
   }
