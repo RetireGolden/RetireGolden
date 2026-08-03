@@ -942,6 +942,62 @@ const registry = {
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
   },
 
+  'irc-1411-a-net-investment-income-tax': {
+    title: 'Net investment income tax is the lesser of two amounts',
+    statement:
+      'The 3.8 percent tax applies to the lesser of net investment income for the year or the excess of modified adjusted gross income over the threshold amount. A taxpayer with large investment income but modified adjusted gross income barely over the threshold is taxed on the small excess, not on the investment income.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The thresholds are not indexed, so the record is static rather than annually indexed. The engine takes modified adjusted gross income to equal adjusted gross income here, which departs from 1411(d) where a taxpayer has excluded foreign earned income; that case is not modelled.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 1411(a)(1)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/1411',
+      quotedText:
+        'In the case of an individual, there is hereby imposed (in addition to any other tax imposed by this subtitle) for each taxable year a tax equal to 3.8 percent of the lesser of - (A) net investment income for such taxable year, or (B) the excess (if any) of - (i) the modified adjusted gross income for such taxable year, over (ii) the threshold amount.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 1411(b)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/1411',
+      quotedText:
+        'The term threshold amount means - (1) in the case of a taxpayer making a joint return under section 6013 or a surviving spouse (as defined in section 2(a)), 250,000 dollars, (2) in the case of a married taxpayer (as defined in section 7703) filing a separate return, 1/2 of the dollar amount determined under paragraph (1), and (3) in any other case, 200,000 dollars.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/tax/federalTax.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
+  'irc-1211-b-capital-loss-ordinary-offset': {
+    title: 'A net capital loss offsets ordinary income only up to 3,000 dollars',
+    statement:
+      'Losses from sales of capital assets are allowed against gains, plus the lower of 3,000 dollars or the excess of losses over gains. The rest is not lost; it carries forward under section 1212(b), so a large loss is deducted a little at a time rather than all at once.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The statute sets 1,500 dollars for a married individual filing separately. The projection collapses every filing status to single or married-filing-jointly, so that case is out of scope rather than handled at half the cap. The 3,000 dollar figure has never been indexed since 1978.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 1211(b)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/1211',
+      quotedText:
+        'In the case of a taxpayer other than a corporation, losses from sales or exchanges of capital assets shall be allowed only to the extent of the gains from such sales or exchanges, plus (if such losses exceed such gains) the lower of - (1) 3,000 dollars (1,500 dollars in the case of a married individual filing a separate return), or (2) the excess of such losses over such gains.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/tax/federalTax.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)

@@ -118,6 +118,54 @@ describe('Social Security taxation (provisional income)', () => {
   })
 })
 
+describe('section 1411 net investment income tax', () => {
+  // IRC 1411(a)(1) taxes the LESSER of net investment income or the excess of
+  // MAGI over the threshold. The natural misreading taxes the investment income
+  // itself once the threshold is crossed, which overstates the tax whenever
+  // income is mostly non-investment.
+  //
+  // Single filer, threshold 200,000. Ordinary 160,000 plus 50,000 of long-term
+  // gains -> MAGI 210,000, so the excess is 10,000 while NII is 50,000.
+  //   lesser-of:  0.038 x 10,000 = 380
+  //   full NII:   0.038 x 50,000 = 1,900
+  describeRule('irc-1411-a-net-investment-income-tax', {
+    readings: { lesserOfNiiAndMagiExcess: 380, fullNetInvestmentIncome: 1_900 },
+    accepted: 'lesserOfNiiAndMagiExcess',
+  }, ({ accepted, readings }) => {
+    it('taxes the smaller of investment income and the threshold excess', () => {
+      const result = computeFederalTax(input({
+        ordinaryIncome: 160_000,
+        capitalGains: 50_000,
+      }))
+
+      expect(result.niit).toBeCloseTo(accepted, 6)
+      expect(result.niit).not.toBeCloseTo(readings.fullNetInvestmentIncome, 6)
+    })
+  })
+})
+
+describe('section 1211 capital loss limitation', () => {
+  // IRC 1211(b) allows a net capital loss against ordinary income only up to
+  // the lower of 3,000 dollars or the excess of losses over gains. The rest is
+  // not forfeited -- 1212(b) carries it forward -- so the discriminating point
+  // is how much lands in THIS year, not whether the loss is usable at all.
+  //
+  // A 10,000 loss with no gains: 3,000 is deducted now and 7,000 carries.
+  describeRule('irc-1211-b-capital-loss-ordinary-offset', {
+    readings: { cappedAtThreeThousand: 3_000, wholeLossAgainstOrdinary: 10_000 },
+    accepted: 'cappedAtThreeThousand',
+  }, ({ accepted, readings }) => {
+    it('deducts only the annual cap and carries the rest forward', () => {
+      const result = applyCapitalLossCarryforward(0, 80_000, -10_000, 3_000)
+
+      expect(result.usedAgainstOrdinary).toBe(accepted)
+      expect(result.usedAgainstOrdinary).not.toBe(readings.wholeLossAgainstOrdinary)
+      // 1212(b): the balance is carried, not forfeited.
+      expect(result.remaining).toBe(7_000)
+    })
+  })
+})
+
 describe('capital gains stacking', () => {
   it('keeps gains in the 0% bracket when ordinary income is low (MFJ)', () => {
     const d = computeFederalTax(
