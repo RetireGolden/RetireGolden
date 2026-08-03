@@ -1540,17 +1540,29 @@ const registry = {
   'irc-414-v-2-E-super-catch-up-window': {
     title: 'The higher catch-up covers ages 60 to 63 and stops at 64',
     statement:
-      'A participant who would attain age 60 but would not attain age 64 before the close of the taxable year gets a catch-up limit of 150 percent of the amount that would otherwise apply. The window closes at 64: a participant that age reverts to the ordinary age-50 catch-up rather than keeping the higher one.',
+      'A participant who would attain age 60 but would not attain age 64 before the close of the taxable year takes the adjusted dollar amount in place of the ordinary catch-up. The window closes at 64: a participant that age reverts to the ordinary age-50 catch-up rather than keeping the higher one. The adjusted dollar amount is the greater of 10,000 dollars and 150 percent of the catch-up in effect for 2024 — not 150 percent of the current year figure.',
     classification: 'settled',
     contraryReading: null,
     conventionRationale:
-      'This catch-up is indexed, unlike the age-55 HSA addition, so the engine applies the inflation factor to it alongside the base deferral limit. The two look alike and behave differently, which is why both are registered.',
+      'Only the 10,000 dollar leg is indexed; the 150 percent leg is pinned to 2024 and does not move, so the operative amount stays at 11,250 until the indexed leg overtakes it. IRS Notice 2025-67 holds it at 11,250 for 2026 while the ordinary catch-up rises to 8,000, which is why the pack figure is not simply 150 percent of 8,000. The engine carries the base deferral limit’s inflation factor onto this amount as well, so projected years past the pack year overstate it until the indexed leg catches up; the age-55 HSA addition, which is not indexed at all, is registered separately for the opposite reason.',
     authority: [{
       kind: 'statute',
-      citation: 'IRC 414(v)(2)(E)',
-      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section414',
+      citation: 'IRC 414(v)(2)(B)(i)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/414',
       quotedText:
-        'In the case of an eligible participant who would attain age 60 but would not attain age 64 before the close of the taxable year, the applicable dollar amount is the greater of the stated amount or an amount equal to 150 percent of the dollar amount which would otherwise be in effect for such taxable year.',
+        'In the case of an applicable employer plan other than a plan described in section 401(k)(11) or 408(p), the applicable dollar amount is $5,000 (the adjusted dollar amount, in the case of an eligible participant who would attain age 60 but would not attain age 64 before the close of the taxable year).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 414(v)(2)(E)(i)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/414',
+      quotedText:
+        'For purposes of subparagraph (B), the adjusted dollar amount is - (i) in the case of clause (i) of subparagraph (B), the greater of - (I) $10,000, or (II) an amount equal to 150 percent of the dollar amount which would be in effect under such clause for 2024 for eligible participants not described in the parenthetical in such clause.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 414(v)(2)(C)(i)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/414',
+      quotedText:
+        'In the case of a year beginning after December 31, 2025, the Secretary shall adjust annually the adjusted dollar amounts applicable under clauses (i) and (ii) of subparagraph (E) for increases in the cost-of-living at the same time and in the same manner as adjustments under the preceding sentence; except that the base period taken into account shall be the calendar quarter beginning July 1, 2024.',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
