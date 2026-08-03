@@ -79,10 +79,13 @@ describe('QCD in the pre-RMD window', () => {
   })
 
   it('caps the gift at the indexed annual limit', () => {
+    // Asserted exactly, not just "less than requested": a regression that
+    // capped at some other smaller figure would satisfy an inequality. 111_000
+    // is the 2026 pack's IRC 408(d)(8)(A) indexed limit, and TAX_YEAR is pinned
+    // to 2026, so there is no inflation factor between them here.
     const years = run(planFor('1956-03-01', 10_000_000))
 
-    expect(years[0]!.qcd).toBeGreaterThan(0)
-    expect(years[0]!.qcd).toBeLessThan(10_000_000)
+    expect(years[0]!.qcd).toBe(111_000)
   })
 
   it('caps the gift at the available IRA balance', () => {

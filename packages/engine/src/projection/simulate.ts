@@ -3307,9 +3307,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
 
     // --- Roth conversions (after RMDs — RMDs must be satisfied first) -------
     const peopleAged65Plus = peopleStates.filter((s) => s.alive && s.ageAttained >= 65).length
-    // Forced IRA distributions count only their taxable (post-pro-rata) part
-    // as ordinary income; QCD stays a full subtraction (planning-grade — the
-    // IRS actually sources QCDs from pre-tax dollars first).
+    // Forced IRA distributions count only their taxable (post-pro-rata) part as
+    // ordinary income. The QCD subtraction is qcdIncomeOffset, not the whole
+    // gift: 408(d)(8)(D) treats a distribution as a QCD only to the extent it
+    // would otherwise be includible, so the offset is capped at the taxable
+    // share of the routed RMD, and the pre-RMD part never entered income at all.
     const incomeBeforeConversion =
       ordinaryIncome -
       preTaxContributions +
