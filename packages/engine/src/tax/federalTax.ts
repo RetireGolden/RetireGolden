@@ -87,7 +87,11 @@ export function saltCapForYear(pack: ParameterPack, year: number): number {
 
 /**
  * Itemized-deduction total (SALT capped) from its components, or 0 when none.
- * The OBBBA high-income SALT phase-out is not modeled (see pack `saltCap`).
+ *
+ * The cap comes from `saltCapForYear` rather than straight off the pack: for
+ * most years the statutory schedule decides it outright, and the pack figure is
+ * only the base the 2026-2029 steps compound from. The OBBBA high-income SALT
+ * phase-out is not modeled.
  */
 function itemizedTotal(
   pack: ParameterPack,
