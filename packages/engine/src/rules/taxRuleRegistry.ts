@@ -1481,6 +1481,31 @@ const registry = {
     ],
   },
 
+  'irc-36B-c-1-A-applicable-taxpayer-range': {
+    title: 'The premium credit band includes both 100 and 400 percent',
+    statement:
+      'An applicable taxpayer is one whose household income equals or exceeds 100 percent of the federal poverty line and does not exceed 400 percent of it. Both ends are inclusive, so a household sitting exactly on 400 percent is still eligible and the cliff falls on the first dollar past it.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The enhanced credits that suspended the 400 percent ceiling expired at the end of 2025, so the cliff is live again for 2026. The engine also treats the below-100-percent exception pathways as out of scope rather than modelling them, which is why the floor is a hard cutoff here.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 36B(c)(1)(A)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/36B',
+      quotedText:
+        'The term applicable taxpayer means, with respect to any taxable year, a taxpayer whose household income for the taxable year equals or exceeds 100 percent but does not exceed 400 percent of an amount equal to the poverty line for a family of the size involved.',
+    }],
+    volatility: 'sunsetting',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/tax/aca.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)
