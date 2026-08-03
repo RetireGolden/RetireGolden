@@ -181,6 +181,22 @@ function plainDataSnapshot(
     ) return INVALID_SNAPSHOT
     const keys = Reflect.ownKeys(value)
     if (keys.some((key) => typeof key !== 'string')) return INVALID_SNAPSHOT
+    if (isArray) {
+      // This branch was absent: the loop below skips the `length` key without
+      // anything having checked it, so an array could carry arbitrary extra
+      // keys, a getter-backed length, or a length disagreeing with its indices.
+      // Same guard as the other plainDataSnapshot implementations here.
+      const length = Object.getOwnPropertyDescriptor(value, 'length')
+      const size = length?.value
+      if (
+        length === undefined || length.enumerable ||
+        !Object.hasOwn(length, 'value') || typeof size !== 'number' ||
+        !Number.isSafeInteger(size) || size < 0 || keys.length !== size + 1 ||
+        !keys.includes('length') ||
+        Array.from({ length: size }, (_, index) => String(index))
+          .some((key) => !keys.includes(key))
+      ) return INVALID_SNAPSHOT
+    }
     const output: unknown[] | Record<string, unknown> = isArray
       ? []
       : Object.create(null) as Record<string, unknown>

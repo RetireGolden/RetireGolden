@@ -149,6 +149,46 @@ function expectUnsupported(input: EvaluateBeneficiaryTraditionalIraDeathPenaltyI
 }
 
 describe('beneficiary traditional IRA death penalty evidence', () => {
+  it('refuses an array carrying keys its length does not account for', () => {
+    // The snapshot loop skips the `length` key, so without an array branch an
+    // array could smuggle extra own keys past validation entirely.
+    const smuggled = validInput()
+    const distributions = [...(smuggled.characterizationInput.line7Distributions ?? [])]
+    Object.defineProperty(distributions, 'extra', {
+      configurable: true, enumerable: true, writable: true, value: 'smuggled',
+    })
+    smuggled.characterizationInput = {
+      ...smuggled.characterizationInput,
+      line7Distributions: distributions,
+    }
+
+    expect(evaluateBeneficiaryTraditionalIraDeathPenalty(smuggled).status)
+      .toBe('unsupported')
+  })
+
+  it('refuses a proxy array presenting an enumerable length descriptor', () => {
+    // An array's own `length` cannot be redefined as an accessor, so the
+    // realistic hostile shape is a Proxy answering the descriptor trap. The
+    // guard reads length through that trap and rejects an enumerable one.
+    const hostile = validInput()
+    const target = [...(hostile.characterizationInput.line7Distributions ?? [])]
+    const proxied = new Proxy(target, {
+      getOwnPropertyDescriptor(base, key) {
+        if (key === 'length') {
+          return { configurable: false, enumerable: true, value: base.length, writable: true }
+        }
+        return Object.getOwnPropertyDescriptor(base, key)
+      },
+    })
+    hostile.characterizationInput = {
+      ...hostile.characterizationInput,
+      line7Distributions: proxied,
+    }
+
+    expect(evaluateBeneficiaryTraditionalIraDeathPenalty(hostile).status)
+      .toBe('unsupported')
+  })
+
   it('never reads the election status through a caller-supplied accessor', () => {
     let reads = 0
     const hostile = validInput()
