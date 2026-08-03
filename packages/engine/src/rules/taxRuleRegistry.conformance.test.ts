@@ -105,6 +105,41 @@ describe('tax rule registry conformance', () => {
     expect(thin).toEqual([])
   })
 
+  it('sources every authority from a primary publisher', () => {
+    // The parameter pack's own comments cite Tax Foundation and Kiplinger for
+    // figures this registry will eventually have to carry. Those are fine for
+    // orientation and are not authority: a secondary source can be right and
+    // still cannot be quoted as the operative language. Locking the host list
+    // now keeps that distinction from eroding one convenient citation at a time.
+    const PRIMARY_HOSTS = [
+      'www.law.cornell.edu', // U.S. Code and CFR
+      'uscode.house.gov', // Office of the Law Revision Counsel
+      'www.govinfo.gov', // GPO official compilations
+      'www.irs.gov', // Revenue procedures, notices, publications
+      'www.ecfr.gov', // Electronic CFR
+      'www.ssa.gov', // POMS and the Social Security Act
+      'www.jct.gov', // Joint Committee on Taxation
+    ]
+    const offSource: string[] = []
+    for (const ruleId of taxRuleIds) {
+      for (const authority of TAX_RULE_REGISTRY[ruleId].authority) {
+        const host = authority.url.replace('https://', '').split('/')[0] ?? ''
+        if (!PRIMARY_HOSTS.includes(host)) {
+          offSource.push(`${ruleId}:${authority.citation}:${host}`)
+        }
+      }
+    }
+    expect(offSource).toEqual([])
+  })
+
+  // A guard requiring every citation to name a subdivision was tried here and
+  // removed: 20 CFR 404.313 is a complete section, IRS Publication 590-B
+  // carries a letter, and (JCS-1-26) carries hyphens, so a subdivision pattern
+  // flags legitimate forms alongside the two that are genuinely vague. Two
+  // records do cite a whole publication without a locator -- 'IRS Publication
+  // 969' and 'IRS SIMPLE IRA plan FAQs' -- and tightening those is worth doing
+  // by hand rather than by a pattern that cries wolf on five others.
+
   it('names an implementing engine source that exists for every rule', () => {
     const missing: string[] = []
     for (const ruleId of taxRuleIds) {
