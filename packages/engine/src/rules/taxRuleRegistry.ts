@@ -1023,6 +1023,124 @@ const registry = {
     ],
   },
 
+  'irc-55-a-amt-is-the-excess-over-regular-tax': {
+    title: 'AMT is the excess of tentative minimum tax over regular tax',
+    statement:
+      'The tentative minimum tax is a two-layer schedule on the taxable excess, 26 percent to the breakpoint and 28 percent above it. What is actually owed is only the amount by which that exceeds the regular tax, so a taxpayer whose regular tax already exceeds the tentative amount owes no additional minimum tax at all.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'Section 55(b)(1) states the breakpoint as 175,000 dollars and it is inflation-adjusted; the 2026 pack carries 244,500. The record is annually indexed for that reason, and the statutory figure should not be read as the current one.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 55(a)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/55',
+      quotedText:
+        'There is hereby imposed (in addition to any other tax imposed by this subtitle) a tax equal to the excess (if any) of - (1) the tentative minimum tax for the taxable year, over (2) the regular tax for the taxable year.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 55(b)(1)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/55',
+      quotedText:
+        'the tentative minimum tax for the taxable year is the sum of - (I) 26 percent of so much of the taxable excess as does not exceed 175,000 dollars, plus (II) 28 percent of so much of the taxable excess as exceeds 175,000 dollars.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/tax/federalTax.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
+  'irc-55-d-exemption-phase-out-rate': {
+    title: 'The AMT exemption phases out at 50 percent from 2026',
+    statement:
+      'The exemption is reduced, but not below zero, by 50 percent of the amount by which alternative minimum taxable income exceeds the phase-out threshold. The threshold is 500,000 dollars for an unmarried taxpayer and 1,000,000 dollars on a joint return, both indexed.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The 25 percent rate in the base text of section 55(d) is pre-2026 law. Pub. L. 119-21 substitutes 50 percent for taxable years beginning after 2025, which is why the pack carries a rate that disagrees with the unamended statute. Recording that substitution is the point of this rule: a reader checking the base text alone will conclude the pack is wrong.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 55(d)(4), as amended by Pub. L. 119-21',
+      url: 'https://www.law.cornell.edu/uscode/text/26/55',
+      quotedText:
+        'In the case of any taxable year beginning after December 31, 2025, subparagraph (A) shall be applied by substituting 50 percent for 25 percent, and the threshold amount shall be 500,000 dollars (1,000,000 dollars in the case of a joint return), adjusted for inflation.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/tax/federalTax.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
+  'irc-223-f-4-B-hsa-disability-exception': {
+    title: 'HSA disability waives the additional tax, not the inclusion',
+    statement:
+      'A distribution made after the account beneficiary becomes disabled within the meaning of section 72(m)(7) is not subject to the 20 percent additional tax. The distribution stays includible in gross income: subparagraph (A) increases the tax by 20 percent of the amount which is so includible, and the exception switches off that increase without touching the inclusion itself.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The section 223(f)(1) qualified-medical exclusion sits in the same subsection and does remove inclusion, which makes the two easy to conflate. Section 72(m)(7) also requires the individual to furnish proof in such form and manner as the Secretary may require, which is why the engine models this as dated attestation evidence rather than inferring disability from plan data.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 223(f)(4)(A)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/223',
+      quotedText:
+        'The tax imposed by this chapter on the account beneficiary for any taxable year in which there is a payment or distribution from a health savings account of such beneficiary which is includible in gross income under paragraph (2) shall be increased by 20 percent of the amount which is so includible.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 223(f)(4)(B)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/223',
+      quotedText:
+        'Subparagraph (A) shall not apply if the payment or distribution is made after the account beneficiary becomes disabled within the meaning of section 72(m)(7) or dies.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 72(m)(7)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/72',
+      quotedText:
+        'an individual shall be considered to be disabled if he is unable to engage in any substantial gainful activity by reason of any medically determinable physical or mental impairment which can be expected to result in death or to be of long-continued and indefinite duration.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/actions/annualHsaPenaltyEvaluation.ts'],
+  },
+
+  'irc-72-t-2-A-iii-disability-exception': {
+    title: 'Disability waives the 10 percent additional tax, not the income',
+    statement:
+      'A distribution attributable to the individual being disabled is not subject to the 10 percent additional tax. Disabled means unable to engage in any substantial gainful activity by reason of a medically determinable impairment expected to result in death or to be of long-continued and indefinite duration. The distribution remains ordinary income; only the additional tax is waived.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The statutory test is any substantial gainful activity, which is materially stricter than an occupation-specific disability determination of the kind a private policy uses. Section 72(m)(7) also requires the individual to furnish proof in such form and manner as the Secretary may require, which is why the engine takes a dated attestation with an evidence id rather than inferring disability from plan data.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 72(t)(2)(A)(iii)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/72',
+      quotedText:
+        'Paragraph (1) shall not apply to any of the following distributions: ... attributable to the employee\u2019s being disabled within the meaning of subsection (m)(7).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 72(m)(7)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/72',
+      quotedText:
+        'an individual shall be considered to be disabled if he is unable to engage in any substantial gainful activity by reason of any medically determinable physical or mental impairment which can be expected to result in death or to be of long-continued and indefinite duration. An individual shall not be considered to be disabled unless he furnishes proof of the existence thereof in such form and manner as the Secretary may require.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts'],
+  },
+
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)

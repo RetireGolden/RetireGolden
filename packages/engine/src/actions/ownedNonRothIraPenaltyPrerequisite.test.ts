@@ -491,6 +491,30 @@ describe('evaluateOwnedNonRothIraPenaltyPrerequisites', () => {
     ).toThrow(/exactly match the dated annual line-7 allocation/)
   })
 
+  // IRC 72(t)(2)(A)(iii) removes the ADDITIONAL tax and nothing else. The
+  // distribution stays ordinary income -- 72(t)(1) is a tax "in addition to"
+  // the income tax, so switching it off cannot reach the inclusion. Reading the
+  // exception as making the distribution tax-free would zero the income too.
+  describeRule('irc-72-t-2-A-iii-disability-exception', {
+    readings: { additionalTaxWaivedIncomeKept: 100, bothWaived: 0 },
+    accepted: 'additionalTaxWaivedIncomeKept',
+  }, ({ accepted, readings }) => {
+    it('keeps the distribution in income while waiving the additional tax', () => {
+      const evaluation = first(evaluateOwnedNonRothIraPenaltyPrerequisites(input({
+        disabilityQualificationDate: '2030-05-31',
+      })))
+
+      expect(evaluation).toMatchObject({
+        outcome: 'disabilityQualified',
+        evaluatedOrdinaryIncomeExposureAmount: accepted,
+        finalPenaltyAmount: 0,
+      })
+      expect(evaluation).not.toMatchObject({
+        evaluatedOrdinaryIncomeExposureAmount: readings.bothWaived,
+      })
+    })
+  })
+
   it('qualifies disability effective before or exactly on the distribution date', () => {
     const before = first(evaluateOwnedNonRothIraPenaltyPrerequisites(input({
       disabilityQualificationDate: '2030-05-31',

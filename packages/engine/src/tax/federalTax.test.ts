@@ -166,6 +166,49 @@ describe('section 1211 capital loss limitation', () => {
   })
 })
 
+describe('section 55 alternative minimum tax', () => {
+  // IRC 55(a) imposes the AMT as the EXCESS of the tentative minimum tax over
+  // the regular tax. Treating the tentative amount as the tax owed is the
+  // natural misreading and would add a phantom liability to every year where
+  // regular tax already exceeds it -- which is most of them.
+  //
+  // Single filer, 200,000 ordinary. Taxable is 183,900 after the 16,100
+  // standard deduction, and that deduction is added back as a preference, so
+  // AMTI is 200,000. Below the 500,000 phase-out start the exemption is the
+  // full 90,100, leaving a 109,900 taxable excess taxed at 26 percent = 28,574.
+  // Regular tax on 183,900 is larger, so nothing is owed.
+  describeRule('irc-55-a-amt-is-the-excess-over-regular-tax', {
+    readings: { excessOverRegularTax: 0, tentativeMinimumTaxItself: 28_574 },
+    accepted: 'excessOverRegularTax',
+  }, ({ accepted, readings }) => {
+    it('owes nothing when the regular tax already exceeds the tentative amount', () => {
+      const result = computeFederalTax(input({ ordinaryIncome: 200_000 }))
+
+      expect(result.tentativeMinimumTax).toBeCloseTo(readings.tentativeMinimumTaxItself, 6)
+      expect(result.alternativeMinimumTax).toBe(accepted)
+    })
+  })
+
+  // Pub. L. 119-21 substitutes 50 percent for 25 percent from 2026. A reader
+  // checking the unamended text of 55(d) will conclude the pack is wrong, so
+  // this fixture exists to answer that objection with a number.
+  //
+  // Single filer, AMTI 600,000 -- 100,000 over the 500,000 threshold:
+  //   at 50 percent: 90,100 - 50,000 = 40,100
+  //   at 25 percent: 90,100 - 25,000 = 65,100
+  describeRule('irc-55-d-exemption-phase-out-rate', {
+    readings: { fiftyPercentPerDollar: 40_100, twentyFivePercentPerDollar: 65_100 },
+    accepted: 'fiftyPercentPerDollar',
+  }, ({ accepted, readings }) => {
+    it('reduces the exemption by fifty cents per dollar above the threshold', () => {
+      const result = computeFederalTax(input({ ordinaryIncome: 600_000 }))
+
+      expect(result.amtExemption).toBe(accepted)
+      expect(result.amtExemption).not.toBe(readings.twentyFivePercentPerDollar)
+    })
+  })
+})
+
 describe('capital gains stacking', () => {
   // IRC 1(h)(1) measures the preferential bands from where ordinary taxable
   // income ends, not from zero. Taxing the gain independently is the natural
