@@ -94,9 +94,19 @@ function snapshot(value: unknown, ancestors = new Set<object>()): unknown | type
       (!array && prototype !== Object.prototype && prototype !== null)) return INVALID
     const keys = Reflect.ownKeys(value)
     if (keys.some((key) => typeof key !== 'string')) return INVALID
-    if (array && (keys.length !== value.length + 1 || !keys.includes('length') ||
-      Array.from({ length: value.length }, (_, index) => String(index))
-        .some((key) => !keys.includes(key)))) return INVALID
+    if (array) {
+      // Read the array length off its property descriptor, never off `.length`.
+      // A Proxy array answers `.length` through its get trap, which is caller
+      // code running inside the boundary that exists to keep caller code out.
+      const lengthDescriptor = Object.getOwnPropertyDescriptor(value, 'length')
+      if (lengthDescriptor === undefined ||
+        !Object.hasOwn(lengthDescriptor, 'value') ||
+        typeof lengthDescriptor.value !== 'number') return INVALID
+      const length = lengthDescriptor.value
+      if (keys.length !== length + 1 || !keys.includes('length') ||
+        Array.from({ length }, (_, index) => String(index))
+          .some((key) => !keys.includes(key))) return INVALID
+    }
     const copy: unknown[] | Record<string, unknown> = array ? [] : Object.create(null)
     ancestors.add(value)
     for (const key of keys) {

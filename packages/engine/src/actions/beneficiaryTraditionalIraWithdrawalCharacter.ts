@@ -194,7 +194,9 @@ export interface AcceptedBeneficiaryTraditionalIraWithdrawalClassification {
 
 export interface UnsupportedBeneficiaryTraditionalIraWithdrawalClassification {
   status: 'unsupported'
-  reasons: readonly [ActionReason<'withdrawal-inherited-facts-missing'>]
+  reasons: readonly [ActionReason<
+    'withdrawal-inherited-facts-missing' | 'withdrawal-spousal-conversion-unsupported'
+  >]
   acceptedSourceEligibility: null
   taxCharacter: readonly []
 }
@@ -274,6 +276,21 @@ function validatedAccountSet(
   if (parsed.filter((id) => id === sourceAccountId).length !== 1) return null
   parsed.sort(compareUtf16CodeUnits)
   return parsed as [AccountId, ...AccountId[]]
+}
+
+function spousalConversionUnsupported(
+  input: BoundIdentity,
+): Readonly<UnsupportedBeneficiaryTraditionalIraWithdrawalClassification> {
+  return deepFreeze({
+    status: 'unsupported',
+    reasons: [createActionReason('withdrawal-spousal-conversion-unsupported', {
+      personId: input.beneficiaryPersonId,
+      accountId: input.sourceAccountId,
+      allocationId: input.allocationId,
+    })],
+    acceptedSourceEligibility: null,
+    taxCharacter: [],
+  })
 }
 
 function unsupported(
@@ -379,15 +396,16 @@ export function classifyBeneficiaryTraditionalIraWithdrawal(
     yearEndBalance === null ||
     line7Amount === null ||
     line8Amount === null ||
-    // Refused rather than characterized: a non-zero line 8 belongs to a
-    // pre-election surviving spouse, whose denominator and own-pool folding
-    // this module does not yet model. Answering with the conversion dropped
-    // would understate ordinary income.
-    !Object.is(line8Amount, 0) ||
     !nonblank(basis.evidenceId)
   ) {
     return unsupported(identity)
   }
+  // Refused rather than characterized, and refused under its own code: a
+  // non-zero line 8 belongs to a pre-election surviving spouse, whose
+  // denominator and own-pool folding this module does not model. The facts are
+  // not missing -- the conversion is present and unhandled -- so reporting
+  // "facts missing" would send a caller looking for evidence they already gave.
+  if (!Object.is(line8Amount, 0)) return spousalConversionUnsupported(identity)
 
   const rmd = input.rmdPoolEvidence
   if (

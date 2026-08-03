@@ -532,9 +532,17 @@ describe('beneficiary traditional IRA withdrawal character', () => {
       ...negativeZero.basisPoolEvidence!,
       form8606Line8NetConversionAmount: -0,
     } as unknown as typeof negativeZero.basisPoolEvidence
-    for (const value of [line8, negativeZero, arithmetic, samePool]) {
+    // Negative zero is rejected as unparseable money before line 8 is read, so
+    // it stays "facts missing" -- it is malformed evidence, not a conversion.
+    for (const value of [negativeZero, arithmetic, samePool]) {
       expectInheritedFactsMissing(value)
     }
+    // A present-but-unmodelled line 8 conversion is different: the evidence is
+    // there and is refused on its own terms. Reporting "facts missing" would
+    // send a caller hunting for evidence they already supplied.
+    const conversion = classifyBeneficiaryTraditionalIraWithdrawal(line8)
+    expect(conversion.status).toBe('unsupported')
+    expect(conversion.reasons[0]?.code).toBe('withdrawal-spousal-conversion-unsupported')
   })
 
   it('requires nonblank distinct stable evidence IDs', () => {
