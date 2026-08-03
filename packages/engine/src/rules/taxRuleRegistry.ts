@@ -1413,17 +1413,29 @@ const registry = {
   'usc-42-402-e-2-widow-full-pia': {
     title: 'A widow benefit is the whole PIA, not half of it',
     statement:
-      'The widow or widower insurance benefit is equal to the primary insurance amount of the deceased individual, subject to the reductions the subsection supplies. It is not the one-half fraction that applies to a spouse of a living worker, so the amount payable roughly doubles at the moment the relationship changes from spousal to survivor.',
+      'The widow or widower insurance benefit is equal to the primary insurance amount of the deceased individual, that amount being the one determined after the subsection\u2019s own subparagraphs (B) and (C) have been applied. It is not the one-half fraction that applies to a spouse of a living worker, so the amount payable roughly doubles at the moment the relationship changes from spousal to survivor. The whole primary insurance amount is a floor on the survivor base rather than a ceiling on it: subparagraph (C) deems that amount to equal the delayed-retirement-increased old-age benefit the deceased was receiving where that benefit is larger, so a deceased who claimed late raises the survivor above the bare figure.',
     classification: 'settled',
     contraryReading: null,
     conventionRationale:
-      'The engine takes the base as the greater of what the deceased actually received and 82.5 percent of their PIA, which is the widow limit of section 402(k)(3) and POMS RS 00615.300 rather than 402(e) itself. That floor only binds where the deceased claimed early, so it never lowers the 402(e)(2)(A) result -- it raises it.',
+      'The engine computes the survivor base as the greater of what the deceased actually received and 82.5 percent of their primary insurance amount, then applies the survivor\u2019s own early-claim reduction to that base. Both halves of that maximum are statutory rather than invented: the first is the subparagraph (C) deeming, which carries the deceased\u2019s delayed retirement credits through, and the second is the widow limit of subparagraph (D), which binds only where the deceased had claimed early and been reduced under subsection (q). The ordering is the convention. Subparagraph (D) is drafted as a ceiling tested after the survivor\u2019s own subsection (q) reduction has been applied, whereas the engine takes the maximum first and reduces afterwards. The two agree wherever the survivor is unreduced; where the deceased and the survivor both claimed early the engine is the more conservative of the two.',
     authority: [{
       kind: 'statute',
       citation: '42 U.S.C. 402(e)(2)(A)',
       url: 'https://www.law.cornell.edu/uscode/text/42/402',
       quotedText:
         'such widow\u2019s insurance benefit for each month shall be equal to the primary insurance amount (as determined for purposes of this subsection after application of subparagraphs (B) and (C)) of such deceased individual.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(e)(2)(C)',
+      url: 'https://www.law.cornell.edu/uscode/text/42/402',
+      quotedText:
+        'If such deceased individual was (or upon application would have been) entitled to an old-age insurance benefit which was increased (or subject to being increased) on account of delayed retirement under the provisions of subsection (w), then, for purposes of this subsection, such individual\u2019s primary insurance amount, if less than the old-age insurance benefit (increased, where applicable, under paragraph (5) or (6) of section 415(f) of this title and under section 415(i) of this title as if such individual were still alive in the case of an individual who has died) which he was receiving (or would upon application have received) for the month prior to the month in which he died, shall be deemed to be equal to such old-age insurance benefit.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(e)(2)(D)',
+      url: 'https://www.law.cornell.edu/uscode/text/42/402',
+      quotedText:
+        'If the deceased individual ... was, at any time, entitled to an old-age insurance benefit which was reduced by reason of the application of subsection (q), the widow\u2019s insurance benefit of such widow or surviving divorced wife for any month shall, if the amount of the widow\u2019s insurance benefit of such widow or surviving divorced wife (as determined under subparagraph (A) and after application of subsection (q)) is greater than\u2014(i) the amount of the old-age insurance benefit to which such deceased individual would have been entitled (after application of subsection (q)) for such month if such individual were still living ..., and (ii) 82\u00bd percent of the primary insurance amount (as determined without regard to subparagraph (C)) of such deceased individual; be reduced to the amount referred to in clause (i), or (if greater) the amount referred to in clause (ii).',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
