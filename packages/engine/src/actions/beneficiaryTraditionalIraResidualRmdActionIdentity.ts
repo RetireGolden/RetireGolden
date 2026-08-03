@@ -98,14 +98,19 @@ function snapshot(value: unknown, ancestors = new Set<object>()): unknown | type
       // Read the array length off its property descriptor, never off `.length`.
       // A Proxy array answers `.length` through its get trap, which is caller
       // code running inside the boundary that exists to keep caller code out.
-      const lengthDescriptor = Object.getOwnPropertyDescriptor(value, 'length')
-      if (lengthDescriptor === undefined ||
-        !Object.hasOwn(lengthDescriptor, 'value') ||
-        typeof lengthDescriptor.value !== 'number') return INVALID
-      const length = lengthDescriptor.value
-      if (keys.length !== length + 1 || !keys.includes('length') ||
-        Array.from({ length }, (_, index) => String(index))
-          .some((key) => !keys.includes(key))) return INVALID
+      // Matches plainDataSnapshot in beneficiaryTraditionalIraMovementCandidate:
+      // an enumerable or non-safe-integer length is rejected too, so a hostile
+      // array cannot present an inconsistent descriptor set to deeper traversal.
+      const length = Object.getOwnPropertyDescriptor(value, 'length')
+      const size = length?.value
+      if (
+        length === undefined || length.enumerable ||
+        !Object.hasOwn(length, 'value') || typeof size !== 'number' ||
+        !Number.isSafeInteger(size) || size < 0 || keys.length !== size + 1 ||
+        !keys.includes('length') ||
+        Array.from({ length: size }, (_, index) => String(index))
+          .some((key) => !keys.includes(key))
+      ) return INVALID
     }
     const copy: unknown[] | Record<string, unknown> = array ? [] : Object.create(null)
     ancestors.add(value)

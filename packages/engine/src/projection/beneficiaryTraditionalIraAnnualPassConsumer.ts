@@ -375,8 +375,16 @@ function apply(
       application.rollback()
       return unsupported()
     }
+    // Indexed once rather than scanned per delta: the previous find() made this
+    // O(rows x deltas). The row check is kept rather than folded into the
+    // record check -- record.balance and row.openingBalancePlanDollars compare
+    // against the same number, but the row lookup also asserts the account is
+    // present in the balance rows at all, which the records map does not.
+    const rowsByAccountId = new Map(
+      current.rows.map((entry) => [entry.accountId, entry]),
+    )
     for (const sourceDelta of delta.sourceDeltas) {
-      const row = current.rows.find((entry) => entry.accountId === sourceDelta.accountId)
+      const row = rowsByAccountId.get(sourceDelta.accountId)
       const record = current.records.get(sourceDelta.accountId)
       if (
         row === undefined || record === undefined ||
