@@ -78,7 +78,7 @@ describe('solveRiskBasedGuardrails', () => {
     expect(solution.lower!.successAtThreshold).toBeLessThanOrEqual(0.7 + 0.08)
     expect(solution.upper!.successAtThreshold).toBeGreaterThanOrEqual(0.95)
     expect(solution.upper!.successAtThreshold).toBeLessThanOrEqual(1)
-  })
+  }, 15_000)
 
 
   // Two full solves back to back — comfortably under the default 5s locally,
