@@ -23,8 +23,17 @@ describe('widow benefit base', () => {
   // survivor case halves the benefit at exactly the point a household can
   // least afford it.
   //
-  // Deceased PIA 2,000 who claimed at their own full retirement age, survivor
-  // claiming at their unreduced survivor FRA:
+  // Deceased PIA 2,000 who claimed at their own full retirement age, so no
+  // delayed credits are deemed in under 402(e)(2)(C) and the 82.5 percent
+  // widow limit of 402(e)(2)(D) sits below the PIA without binding. The
+  // survivor claims at 67y0m against a survivor FRA of 66y8m -- four months
+  // PAST it, not at it, so the widow(er) reduction factor is 1 and the base
+  // reaches the assertion untouched. Deliberately past rather than exactly on
+  // the boundary: this fixture is about what the base IS, and parking it on
+  // the at-or-after comparison would let an unrelated off-by-one in the
+  // reduction schedule break it for a reason that has nothing to do with
+  // 402(e)(2)(A). The boundary itself is covered by survivorReductionFactor
+  // below.
   //   402(e)(2)(A):        2,000
   //   spousal half:        1,000
   describeRule('usc-42-402-e-2-widow-full-pia', {
