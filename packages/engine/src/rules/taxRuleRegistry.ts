@@ -1506,6 +1506,37 @@ const registry = {
     ],
   },
 
+  'irc-223-b-3-hsa-catch-up-not-indexed': {
+    title: 'The age-55 HSA catch-up is a flat 1,000 dollars and is not indexed',
+    statement:
+      'An eligible individual who has attained age 55 before the close of the taxable year may contribute an additional amount, which has been 1,000 dollars for 2009 and every year since. Section 223(g) indexes the subsection (b)(2) contribution limits and does not reach this amount, so it stays flat while the base limits grow.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The qualifying age is 55, which differs from the 50 used for elective deferrals and individual retirement accounts and from the 65 that ends the HSA additional tax. Nothing in the engine derives one from another, and the record exists partly so nobody later aligns them.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 223(b)(3)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/223',
+      quotedText:
+        'In the case of an individual who has attained age 55 before the close of the taxable year, the applicable limitation under subparagraphs (A) and (B) of paragraph (2) shall be increased by 1,000 dollars for taxable years beginning in 2009 and thereafter.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 223(g)(1)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/223',
+      quotedText:
+        'Each dollar amount in subsections (b)(2), (c)(2)(A), and in the case of taxable years beginning after 2026, (c)(1)(E)(ii)(II) shall be increased by an amount equal to such dollar amount multiplied by the cost-of-living adjustment determined under section 1(f)(3).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)

@@ -2251,8 +2251,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       } else if (account.type === 'hsa') {
         groupKey = `${ownerId}:hsa`
         const base = people.length === 2 ? pack.contributionLimits.hsaFamily : pack.contributionLimits.hsaSelfOnly
+        // IRC 223(g)(1) indexes only the subsection (b)(2) limits. The
+        // (b)(3) catch-up has been a flat 1,000 dollars since 2009 and is
+        // absent from the indexing list, so it must not carry limitGrowth.
         const catchUp = age >= 55 ? pack.contributionLimits.hsaCatchUp55 : 0
-        limit = (base + catchUp) * limitGrowth
+        limit = base * limitGrowth + catchUp
       }
       if (groupKey !== null) {
         const used = groupUsed.get(groupKey) ?? 0
