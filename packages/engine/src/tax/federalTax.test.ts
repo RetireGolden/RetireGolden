@@ -167,6 +167,31 @@ describe('section 1211 capital loss limitation', () => {
 })
 
 describe('capital gains stacking', () => {
+  // IRC 1(h)(1) measures the preferential bands from where ordinary taxable
+  // income ends, not from zero. Taxing the gain independently is the natural
+  // misreading and it can zero the liability outright.
+  //
+  // Single filer, 2026. 56,100 ordinary and 20,000 of gains, less the 16,100
+  // standard deduction, gives 40,000 of ordinary taxable income with the gain
+  // sitting from 40,000 to 60,000. The 15 percent band opens above 49,450:
+  //   stacked:      (60,000 - 49,450) x 0.15 = 1,582.50
+  //   from zero:    20,000 sits entirely below 49,450, so nothing is taxed
+  describeRule('irc-1-h-capital-gain-stacked-on-ordinary', {
+    readings: { stackedOnOrdinaryIncome: 1_582.5, taxedIndependentlyFromZero: 0 },
+    accepted: 'stackedOnOrdinaryIncome',
+  }, ({ accepted, readings }) => {
+    it('measures the preferential bands from the top of ordinary income', () => {
+      const result = computeFederalTax(input({
+        ordinaryIncome: 56_100,
+        capitalGains: 20_000,
+      }))
+
+      expect(result.ordinaryTaxable).toBe(40_000)
+      expect(result.capitalGainsTax).toBeCloseTo(accepted, 6)
+      expect(result.capitalGainsTax).not.toBeCloseTo(readings.taxedIndependentlyFromZero, 6)
+    })
+  })
+
   it('keeps gains in the 0% bracket when ordinary income is low (MFJ)', () => {
     const d = computeFederalTax(
       input({ filingStatus: 'marriedFilingJointly', ordinaryIncome: 50_000, capitalGains: 80_000 }),
