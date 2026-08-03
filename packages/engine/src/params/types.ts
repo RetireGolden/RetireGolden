@@ -115,8 +115,23 @@ export interface ParameterPack {
   contributionLimits: {
     employee401k: number
     catchUp50: number
-    /** SECURE 2.0 ages 60–63 "super" catch-up (replaces catchUp50). */
+    /**
+     * SECURE 2.0 ages 60–63 "super" catch-up (replaces catchUp50): the IRC
+     * §414(v)(2)(E)(i) adjusted dollar amount operative in this pack year, i.e.
+     * the greater of `superCatchUp60to63IndexedLeg` and the fixed 150%-of-2024
+     * leg. Never apply limitScale to this figure — project the indexed leg and
+     * take the greater of the two, because only that leg moves.
+     */
     superCatchUp60to63: number
+    /**
+     * The §414(v)(2)(E)(i)(I) $10,000 leg as indexed for this pack year — the
+     * only part of the ages 60–63 amount that moves. §414(v)(2)(C)(i) adjusts
+     * the (E) amounts for years after 2025 off a July 1 2024 base quarter,
+     * rounded down to a multiple of $500. Leg (II) is 150% of the *2024*
+     * catch-up ($7,500), so it is a fixed $11,250 that never grows, and the
+     * operative amount stays pinned there until this leg overtakes it.
+     */
+    superCatchUp60to63IndexedLeg: number
     /** Prior-year FICA wages above this force catch-ups to be Roth. */
     rothCatchUpWageThreshold: number
     ira: number

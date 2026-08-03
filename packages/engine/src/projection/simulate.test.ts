@@ -1169,6 +1169,103 @@ describe('contributions', () => {
     })
   })
 
+  // IRC 414(v)(2)(E)(i) makes the ages 60-63 amount the GREATER of two legs:
+  // (I) 10,000 dollars, and (II) 150 percent of the catch-up in effect for
+  // 2024, which is 150 percent of 7,500 = 11,250. Only leg (I) moves --
+  // 414(v)(2)(C)(i) indexes the (E) amounts for years after 2025 off a July 1
+  // 2024 base quarter -- because leg (II) is computed off a *2024* figure that
+  // will never change. So the operative amount stays pinned at 11,250 until
+  // the indexed leg overtakes it.
+  //
+  // Carrying limitGrowth onto the operative 11,250 is the natural mistake, and
+  // the published figures rule it out: Notice 2025-67 holds the ages 60-63
+  // amount at 11,250 for 2026 while the ordinary catch-up rises 7,500 ->
+  // 8,000. An engine that indexed the operative figure would have moved it.
+  //
+  // The window fixture above sits at the 2026 pack year, where limitGrowth is
+  // 1 and every reading agrees, so it cannot see this. 2029 is three years
+  // past the pack year; at 2 percent the limits scale by 1.02^3 = 1.061208:
+  //   indexed leg   10,000 x 1.061208 = 10,612.08, still short of 11,250
+  //   deferral      24,500 x 1.061208 = 25,999.596
+  //   pinned:       25,999.596 + 11,250            = 37,249.596
+  //   amount indexed: (24,500 + 11,250) x 1.061208 = 37,938.186
+  describeRule('irc-414-v-2-E-super-catch-up-window', {
+    readings: { pinnedToTheFixedLeg: 37_249.596, adjustedAmountIndexed: 37_938.186 },
+    accepted: 'pinnedToTheFixedLeg',
+  }, ({ accepted, readings }) => {
+    it('holds the adjusted amount at the fixed leg while the indexed leg is below it', () => {
+      const plan = basePlan()
+      plan.assumptions.inflationPct = 2
+      plan.household.people[0]! = {
+        ...plan.household.people[0]!,
+        dob: '1967-06-15', // 62 in 2029, inside the window
+        retirementAge: 70,
+      }
+      plan.incomes = [wages(500_000)]
+      plan.accounts = [
+        { ...cash(1_000_000) },
+        {
+          id: testIds(), name: '401k', type: 'traditional', kind: 'employer',
+          ownerPersonId: 'p1', balance: 0, annualReturnPct: 0,
+          annualContribution: 60_000,
+        } as never,
+      ]
+
+      const result = simulatePlan(validate(plan), { startYear: 2026, horizonEndYear: 2029, taxCalculator: noTax })
+      const projected = result.years.find((y) => y.year === 2029)!
+
+      expect(projected.contributions).toBeCloseTo(accepted, 6)
+      expect(projected.contributions).not.toBeCloseTo(readings.adjustedAmountIndexed, 6)
+    })
+  })
+
+  // The companion to the case above, and the reason the fix is a greater-of
+  // rather than a flat freeze. Once the indexed 10,000 leg passes 11,250 it
+  // becomes the operative amount and does grow, so an engine that simply
+  // stopped indexing the ages 60-63 catch-up would then understate it.
+  //
+  // 2028 is two years past the pack year; at 10 percent the limits scale by
+  // 1.1^2 = 1.21, which is enough to carry the indexed leg past the fixed one:
+  //   indexed leg   10,000 x 1.21 = 12,100, now above 11,250
+  //   deferral      24,500 x 1.21 = 29,645
+  //   indexed leg governs: 29,645 + 12,100            = 41,745
+  //   amount indexed:      (24,500 + 11,250) x 1.21   = 43,257.50
+  //   frozen at the fixed leg: 29,645 + 11,250        = 40,895
+  describeRule('irc-414-v-2-E-super-catch-up-window', {
+    readings: {
+      indexedLegTakesOver: 41_745,
+      adjustedAmountIndexed: 43_257.5,
+      frozenAtTheFixedLeg: 40_895,
+    },
+    accepted: 'indexedLegTakesOver',
+  }, ({ accepted, readings }) => {
+    it('lets the indexed leg govern once it passes the fixed leg', () => {
+      const plan = basePlan()
+      plan.assumptions.inflationPct = 10
+      plan.household.people[0]! = {
+        ...plan.household.people[0]!,
+        dob: '1966-06-15', // 62 in 2028, inside the window
+        retirementAge: 70,
+      }
+      plan.incomes = [wages(500_000)]
+      plan.accounts = [
+        { ...cash(1_000_000) },
+        {
+          id: testIds(), name: '401k', type: 'traditional', kind: 'employer',
+          ownerPersonId: 'p1', balance: 0, annualReturnPct: 0,
+          annualContribution: 60_000,
+        } as never,
+      ]
+
+      const result = simulatePlan(validate(plan), { startYear: 2026, horizonEndYear: 2028, taxCalculator: noTax })
+      const projected = result.years.find((y) => y.year === 2028)!
+
+      expect(projected.contributions).toBeCloseTo(accepted, 6)
+      expect(projected.contributions).not.toBeCloseTo(readings.adjustedAmountIndexed, 6)
+      expect(projected.contributions).not.toBeCloseTo(readings.frozenAtTheFixedLeg, 6)
+    })
+  })
+
   // IRC 415(c)(1) caps ANNUAL ADDITIONS -- 415(c)(2) defines those as employer
   // contributions plus employee contributions plus forfeitures -- at the LESSER
   // of the dollar amount and 100 percent of compensation. The cap is on the

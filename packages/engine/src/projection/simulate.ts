@@ -2237,13 +2237,26 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const age = ownerState.ageAttained
       if ((account.type === 'traditional' || account.type === 'roth') && account.kind === 'employer') {
         groupKey = `${ownerId}:employer`
+        // IRC 414(v)(2)(E)(i) makes the ages 60-63 amount the GREATER of a
+        // 10,000 dollar leg and 150 percent of the catch-up in effect for
+        // 2024. Only the first leg moves: 414(v)(2)(C)(i) indexes the (E)
+        // amounts for years after 2025, while the second leg is computed off a
+        // fixed 2024 figure and is 11,250 forever. So the operative amount
+        // stays pinned until the indexed leg overtakes it -- which is why
+        // Notice 2025-67 held it at 11,250 for 2026 while the ordinary
+        // catch-up rose from 7,500 to 8,000. Indexing the operative figure
+        // instead would have moved it.
         const catchUp =
           age >= 60 && age <= 63
-            ? pack.contributionLimits.superCatchUp60to63
+            ? Math.max(
+              pack.contributionLimits.superCatchUp60to63IndexedLeg * limitGrowth,
+              pack.contributionLimits.superCatchUp60to63,
+            )
             : age >= 50
-              ? pack.contributionLimits.catchUp50
+              // The (B)(i)/(C)(i) first-sentence catch-up does index normally.
+              ? pack.contributionLimits.catchUp50 * limitGrowth
               : 0
-        limit = (pack.contributionLimits.employee401k + catchUp) * limitGrowth
+        limit = pack.contributionLimits.employee401k * limitGrowth + catchUp
       } else if ((account.type === 'traditional' || account.type === 'roth') && account.kind === 'ira') {
         groupKey = `${ownerId}:ira`
         const catchUp = age >= 50 ? pack.contributionLimits.iraCatchUp50 : 0
