@@ -1762,7 +1762,7 @@ const registry = {
       citation: 'IRC 219(b)(1)',
       url: 'https://www.law.cornell.edu/uscode/text/26/219',
       quotedText:
-        'shall not exceed the lesser of- (A) the deductible amount, or (B) an amount equal to the compensation includible in the individual gross income for such taxable year.',
+        'shall not exceed the lesser of - (A) the deductible amount, or (B) an amount equal to the compensation includible in the individual’s gross income for such taxable year.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -1777,13 +1777,13 @@ const registry = {
     classification: 'settled',
     contraryReading: null,
     conventionRationale:
-      'Two prongs pull in opposite directions and both must hold. Capping each spouse at their own wages alone would deny a non earning spouse an IRA the statute plainly allows; pooling without a per person dollar limit would let one spouse absorb the whole household ceiling. The engine models the pool only when the projected filing status is married filing jointly and both spouses are alive, since section 219(c)(2) conditions the rule on a joint return.',
+      'Two prongs pull in opposite directions and both must hold. Capping each spouse at their own wages alone would deny a non-earning spouse an IRA the statute plainly allows; pooling without a per-person dollar limit would let one spouse absorb the whole household ceiling. The engine models the pool only when the projected filing status is married filing jointly and both spouses are alive, since section 219(c)(2) conditions the rule on a joint return.',
     authority: [{
       kind: 'statute',
       citation: 'IRC 219(c)(1)',
       url: 'https://www.law.cornell.edu/uscode/text/26/219',
       quotedText:
-        'shall be equal to the lesser of- (A) the dollar amount in effect under subsection (b)(1)(A) for the taxable year, or (B) the sum of- (i) the compensation includible in such individual gross income for the taxable year, plus (ii) the compensation includible in the gross income of such individual spouse for the taxable year.',
+        'shall be equal to the lesser of - (A) the dollar amount in effect under subsection (b)(1)(A) for the taxable year, or (B) the sum of - (i) the compensation includible in such individual’s gross income for the taxable year, plus (ii) the compensation includible in the gross income of such individual’s spouse for the taxable year reduced by ...',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -1849,7 +1849,7 @@ const registry = {
       citation: 'IRC 408A(c)(2)',
       url: 'https://www.law.cornell.edu/uscode/text/26/408A',
       quotedText:
-        'The aggregate amount of contributions for any taxable year to all Roth IRAs maintained for the benefit of an individual shall not exceed the excess of the maximum amount allowable as a deduction under section 219 over the aggregate amount of contributions for such taxable year to all other individual retirement plans.',
+        'The aggregate amount of contributions for any taxable year to all Roth IRAs maintained for the benefit of an individual shall not exceed the excess (if any) of - (A) the maximum amount allowable as a deduction under section 219 with respect to such individual for such taxable year (computed without regard to subsection (g) of such section), over (B) the aggregate amount of contributions for such taxable year to all other individual retirement plans (other than Roth IRAs) maintained for the benefit of the individual.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -1860,17 +1860,17 @@ const registry = {
   'irc-408A-c-3-roth-contribution-agi-phase-out': {
     title: 'The Roth contribution income phase-out is not modeled',
     statement:
-      'Section 408A(c)(3) reduces the Roth contribution limit ratably once modified adjusted gross income exceeds an applicable dollar amount, reaching zero across a 15,000 dollar band. The engine does not apply this reduction, so a projected Roth IRA contribution is allowed at any income level.',
+      'Section 408A(c)(3) reduces the Roth contribution limit ratably once adjusted gross income, determined under 408A(c)(3)(B), exceeds an applicable dollar amount. The band is 15,000 dollars, but 10,000 dollars on a joint return or for a married individual filing separately, so a couple loses the contribution over a shorter run of income than a single filer does. The engine does not apply this reduction, so a projected Roth IRA contribution is allowed at any income level.',
     classification: 'outOfScope',
     contraryReading: null,
     conventionRationale:
-      'Recorded as an explicit gap rather than left silent, because the direction of the error is knowable: a high income household will show Roth contributions it could not actually make, and the overstatement grows with income. It is out of scope rather than settled because the reduction runs off modified adjusted gross income, which the projection computes after the contribution loop has already run.',
+      'Recorded as an explicit gap rather than left silent, because the direction of the error is knowable: a high income household will show Roth contributions it could not actually make, and the overstatement grows with income. It is out of scope rather than settled because the reduction runs off adjusted gross income, which the projection computes after the contribution loop has already run.',
     authority: [{
       kind: 'statute',
       citation: 'IRC 408A(c)(3)(A)',
       url: 'https://www.law.cornell.edu/uscode/text/26/408A',
       quotedText:
-        'The amount determined under paragraph (2) for any taxable year shall be reduced (but not below zero) by the amount which bears the same ratio to such amount as the excess of the taxpayer adjusted gross income over the applicable dollar amount bears to 15,000 dollars.',
+        'shall not exceed an amount equal to the amount determined under paragraph (2)(A) for such taxable year, reduced (but not below zero) by the amount which bears the same ratio to such amount as - (i) the excess of - (I) the taxpayer’s adjusted gross income for such taxable year, over (II) the applicable dollar amount, bears to (ii) 15,000 dollars (10,000 dollars in the case of a joint return or a married individual filing a separate return).',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,

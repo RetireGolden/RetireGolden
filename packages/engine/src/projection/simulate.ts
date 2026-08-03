@@ -185,9 +185,15 @@ const EPSILON = 0.005
 
 /**
  * Bucket that a jointly-filing couple's IRA compensation ceiling lives in.
- * Not a person id, so it cannot collide with one.
+ *
+ * A person id is validated only as a non-empty string, so no literal value can
+ * be made collision-proof by choice alone. Safety comes from the two branches
+ * being mutually exclusive: in a shared year the map is keyed by this constant
+ * and nothing else, and in an unshared year it is keyed by person ids and this
+ * constant is never read. The namespaced spelling is a signpost for that
+ * invariant, not the thing that enforces it.
  */
-const IRA_HOUSEHOLD_COMPENSATION_KEY = 'household'
+const IRA_HOUSEHOLD_COMPENSATION_KEY = 'ira:household-compensation'
 
 type SimulatorRetirementRuntimeApplicationWithoutOrdinal =
   SimulatorRetirementRuntimeApplication extends infer Application
