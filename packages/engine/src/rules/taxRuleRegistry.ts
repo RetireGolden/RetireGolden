@@ -1288,6 +1288,28 @@ const registry = {
     implementedBy: ['packages/engine/src/socialSecurity/benefitFactor.ts'],
   },
 
+  'cfr-20-404-313-delayed-retirement-credit': {
+    title: 'Delayed retirement credits accrue at 2/3 of 1 percent and stop at 70',
+    statement:
+      'A retirement benefit claimed after full retirement age is increased by 2/3 of 1 percent for each month of delay, beginning with the month full retirement age is attained and ending with the month age 70 is attained. Delaying past 70 earns nothing further.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The 2/3 of 1 percent rate applies to individuals born after 1 January 1943; earlier cohorts have lower rates that the engine does not model, because a person reaching full retirement age in a projected year is necessarily in the later group.',
+    authority: [{
+      kind: 'regulation',
+      citation: '20 CFR 404.313',
+      url: 'https://www.law.cornell.edu/cfr/text/20/404.313',
+      quotedText:
+        'You may earn delayed retirement credits beginning with the month you attain full retirement age and ending with the month you attain age 70. For individuals born after January 1, 1943, the credit is 2/3 of 1 percent for each month of delayed retirement.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/socialSecurity/benefitFactor.ts'],
+  },
+
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)

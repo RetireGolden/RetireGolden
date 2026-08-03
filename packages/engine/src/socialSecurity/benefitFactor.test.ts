@@ -41,6 +41,27 @@ describe('earlyRetirementFactor', () => {
 })
 
 describe('delayedRetirementFactor', () => {
+  // 20 CFR 404.313 ends the credit at the month age 70 is attained. The rate
+  // itself is uncontroversial; the cap is what a naive implementation drops,
+  // and dropping it rewards delay that earns nothing in reality.
+  //
+  // Full retirement age 67, so 36 months of credit are available before 70.
+  // Asking for 48 months of delay:
+  //   capped at 70:  36 x 2/3 = 24 percent, factor 1.24
+  //   uncapped:      48 x 2/3 = 32 percent, factor 1.32
+  describeRule('cfr-20-404-313-delayed-retirement-credit', {
+    readings: { creditsStopAtSeventy: 1.24, creditsContinuePastSeventy: 1.32 },
+    accepted: 'creditsStopAtSeventy',
+  }, ({ accepted, readings }) => {
+    it('stops crediting at age seventy however long the delay', () => {
+      expect(delayedRetirementFactor(48, 36)).toBeCloseTo(accepted, 10)
+      expect(delayedRetirementFactor(48, 36)).not.toBeCloseTo(readings.creditsContinuePastSeventy, 6)
+      // Inside the window the two readings agree, so the cap is the only place
+      // this rule can be discriminated at all.
+      expect(delayedRetirementFactor(24, 36)).toBeCloseTo(1.16, 10)
+    })
+  })
+
   it('adds 24% at 36 months for max DRC to 70 from FRA 67', () => {
     const f = delayedRetirementFactor(36, 36)
     expect(f).toBeCloseTo(1.24, 6)
