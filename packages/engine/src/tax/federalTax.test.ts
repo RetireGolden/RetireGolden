@@ -9,6 +9,7 @@ import {
   combineTaxCalculators,
   computeFederalTax,
   createFederalTaxCalculator,
+  saltCapForYear,
   taxableSocialSecurity,
 } from './federalTax.js'
 
@@ -338,6 +339,35 @@ describe('SALT cap schedule', () => {
 
       expect(d.deduction).toBeCloseTo(accepted, 6)
       expect(d.deduction).not.toBeCloseTo(readings.holdsTheTwentyTwentySixCap, 6)
+    })
+
+    // 164(b)(7)(A)(iii) compounds on "the dollar amount in effect ... for the
+    // preceding calendar year", so each step multiplies the year before it and
+    // the run compounds off the 2026 base: 40,400 -> 40,804 -> 41,212.04 ->
+    // 41,624.1604. Stepping off the 2025 figure instead, or applying a single
+    // one percent to the whole run, both land low.
+    it('compounds the one percent steps on the preceding year through 2029', () => {
+      const pack = packForYear(2026).pack
+
+      expect(saltCapForYear(pack, 2026)).toBeCloseTo(40_400, 6)
+      expect(saltCapForYear(pack, 2027)).toBeCloseTo(40_804, 6)
+      expect(saltCapForYear(pack, 2028)).toBeCloseTo(41_212.04, 6)
+      expect(saltCapForYear(pack, 2029)).toBeCloseTo(41_624.1604, 6)
+      expect(saltCapForYear(pack, 2030)).toBe(10_000)
+    })
+
+    // (A)(i) names calendar year 2025 exactly, not "2025 and earlier". The
+    // pre-OBBBA applicable limitation was 10,000, and 164(b)(6) itself reaches
+    // only taxable years beginning after 2017 -- earlier ones were uncapped.
+    // Carrying 40,000 backwards overstates the cap fourfold, the same error in
+    // the same direction as holding 40,400 past 2029.
+    it('does not carry the 2025 figure back before the schedule begins', () => {
+      const pack = packForYear(2026).pack
+
+      expect(saltCapForYear(pack, 2025)).toBe(40_000)
+      expect(saltCapForYear(pack, 2024)).toBe(10_000)
+      expect(saltCapForYear(pack, 2018)).toBe(10_000)
+      expect(saltCapForYear(pack, 2017)).toBe(Number.POSITIVE_INFINITY)
     })
   })
 })

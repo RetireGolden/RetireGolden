@@ -67,9 +67,19 @@ export interface FederalTaxDetail {
  * figure flat, or projecting it at general inflation like an indexed limit,
  * overstates the deduction roughly fourfold for every projected year from 2030
  * on -- which for a retiree in a high-tax state is most of the horizon.
+ *
+ * The near end of the schedule needs the same care. 164(b)(7)(A)(i) names
+ * calendar year 2025 exactly, not "2025 and earlier", so the 40,000 figure must
+ * not be carried backwards: for the pre-OBBBA years the applicable limitation
+ * was 10,000, and 164(b)(6) reaches no further back than taxable years
+ * beginning after 2017 -- before that the deduction was uncapped. Spreading
+ * 40,000 across those years overstates the cap fourfold, the same error in the
+ * same direction as holding 40,400 past 2029.
  */
 export function saltCapForYear(pack: ParameterPack, year: number): number {
-  if (year <= 2025) return 40_000
+  if (year <= 2017) return Number.POSITIVE_INFINITY
+  if (year <= 2024) return 10_000
+  if (year === 2025) return 40_000
   if (year >= 2030) return 10_000
   const stepped = pack.federalTax.saltCap * Math.pow(1.01, Math.max(0, year - pack.year))
   return stepped
