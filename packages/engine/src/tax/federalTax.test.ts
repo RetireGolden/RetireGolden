@@ -49,6 +49,8 @@ describe('ordinary brackets and standard deduction (2026)', () => {
 })
 
 describe('Social Security taxation (provisional income)', () => {
+  const pack = packForYear(2026).pack
+
   // IRC 86(a)(2)(A) is a sum, not a single percentage: 85 percent of the excess
   // over the adjusted base amount PLUS the tier-one amount already includible
   // between the base and adjusted base. Dropping that carry is the natural
@@ -71,7 +73,6 @@ describe('Social Security taxation (provisional income)', () => {
     })
   })
 
-  const pack = packForYear(2026).pack
 
   it('is zero below the first threshold', () => {
     expect(taxableSocialSecurity(pack, 'single', 10_000, 20_000)).toBe(0)

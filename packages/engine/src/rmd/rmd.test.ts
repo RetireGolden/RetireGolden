@@ -12,11 +12,11 @@ describe('requiredMinimumDistribution', () => {
   // sole-beneficiary spouse "more than 10 years younger". Exactly ten is not
   // more than ten, so that case stays on the Uniform Lifetime Table. An owner
   // aged 75 with a 100,000 balance takes 100,000 / 24.6 there; an eleven-year
-  // gap moves to the joint table's larger divisor and a smaller distribution.
+  // gap moves to the joint table's 25.3 divisor and a smaller distribution.
   describeRule('treas-reg-1-401-a-9-5-joint-life-spouse-sole-beneficiary', {
     readings: {
-      uniformAtExactlyTenYears: 4065.040650406504,
-      jointTableAtElevenYears: 3952.569169960474,
+      uniformAtExactlyTenYears: 100_000 / 24.6,
+      jointTableAtElevenYears: 100_000 / 25.3,
     },
     accepted: 'uniformAtExactlyTenYears',
   }, ({ accepted, readings }) => {
