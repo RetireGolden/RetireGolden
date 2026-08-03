@@ -321,6 +321,43 @@ describe('social security', () => {
     })
   })
 
+  // IRC 414(v)(2)(E) covers a participant who "would attain age 60 but would
+  // not attain age 64" before the close of the year. The window CLOSES at 64 --
+  // it is not an enhancement that persists once reached. Treating it as
+  // permanent overstates the deferral limit for every year from 64 onward,
+  // which for most plans is the rest of the working life.
+  //
+  // 2026 is the pack year, so no indexing applies. Aged 64:
+  //   reverts to the age-50 catch-up:  24,500 + 8,000  = 32,500
+  //   keeps the 60-63 catch-up:        24,500 + 11,250 = 35,750
+  describeRule('irc-414-v-2-E-super-catch-up-window', {
+    readings: { revertsAtSixtyFour: 32_500, keepsTheHigherCatchUp: 35_750 },
+    accepted: 'revertsAtSixtyFour',
+  }, ({ accepted, readings }) => {
+    it('drops back to the ordinary catch-up at sixty-four', () => {
+      const plan = basePlan()
+      plan.household.people[0]! = {
+        ...plan.household.people[0]!,
+        dob: '1962-06-15', // 64 in 2026
+        retirementAge: 70,
+      }
+      plan.incomes = [wages(500_000)]
+      plan.accounts = [
+        { ...cash(1_000_000) },
+        {
+          id: testIds(), name: '401k', type: 'traditional', kind: 'employer',
+          ownerPersonId: 'p1', balance: 0, annualReturnPct: 0,
+          annualContribution: 60_000,
+        } as never,
+      ]
+
+      const result = simulatePlan(validate(plan), { startYear: 2026, horizonEndYear: 2026, taxCalculator: noTax })
+
+      expect(result.years[0]!.contributions).toBeCloseTo(accepted, 6)
+      expect(result.years[0]!.contributions).not.toBeCloseTo(readings.keepsTheHigherCatchUp, 6)
+    })
+  })
+
   it('withholds benefits under the earnings test while working before FRA', () => {
     const plan = basePlan()
     plan.household.people[0]! = {

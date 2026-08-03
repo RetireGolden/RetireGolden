@@ -1537,6 +1537,31 @@ const registry = {
     ],
   },
 
+  'irc-414-v-2-E-super-catch-up-window': {
+    title: 'The higher catch-up covers ages 60 to 63 and stops at 64',
+    statement:
+      'A participant who would attain age 60 but would not attain age 64 before the close of the taxable year gets a catch-up limit of 150 percent of the amount that would otherwise apply. The window closes at 64: a participant that age reverts to the ordinary age-50 catch-up rather than keeping the higher one.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'This catch-up is indexed, unlike the age-55 HSA addition, so the engine applies the inflation factor to it alongside the base deferral limit. The two look alike and behave differently, which is why both are registered.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 414(v)(2)(E)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section414',
+      quotedText:
+        'In the case of an eligible participant who would attain age 60 but would not attain age 64 before the close of the taxable year, the applicable dollar amount is the greater of the stated amount or an amount equal to 150 percent of the dollar amount which would otherwise be in effect for such taxable year.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)
