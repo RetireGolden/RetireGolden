@@ -53,6 +53,18 @@ export interface AnnualQcdPostPassApplication {
   readonly otherwiseTaxableAmountAfter: UsdCents
   readonly qualifiedCharitableDistributionAmount: UsdCents
   readonly nonQcdCharitableRemainder: UsdCents
+  /**
+   * Discloses when this action's characterization rests on an unsettled rule:
+   * a QCD that is only partly excludable, drawn from an IRA that also carries
+   * Form 8606 basis. No authority addresses that combination. The engine takes
+   * the IRC 408(d)(8)(D)/(E) reading — the includible portion stays a QCD, was
+   * already deemed pre-tax, and recovers no basis — which is also the
+   * conservative answer. Consumers must not present such a result as
+   * filing-grade without review.
+   */
+  readonly includibleQcdBasisTreatment:
+    | 'notApplicable'
+    | 'statutoryTaxableFirstUnsettledAgainstBasis'
   readonly personalLimitBefore: UsdCents
   readonly personalLimitUsed: UsdCents
   readonly personalLimitAfter: UsdCents
@@ -312,7 +324,37 @@ function stageUnchecked(input: StageAnnualQcdTaxCharacterPostPassInput): AnnualQ
     const offsetApplied = asUsdCents(Math.min(candidate, offsetBefore))
     const excludable = cents(BigInt(candidate) - BigInt(offsetApplied), 'Excludable QCD')
     const taxableQcd = cents(BigInt(taxableUsed) - BigInt(excludable), 'Taxable QCD')
+    // `taxableUsed` implements IRC 408(d)(8)(D): "Notwithstanding section 72 ...
+    // the entire amount of the distribution shall be treated as includible in
+    // gross income ... to the extent that such amount does not exceed the
+    // aggregate amount which would have been so includible if all amounts in all
+    // individual retirement plans of the individual were distributed". The
+    // charitable distribution is deemed to come out of pre-tax dollars first, so
+    // the whole QCD leaves the Form 8606 pro-rata denominator and full basis
+    // survives for the year's other distributions. `nonQcd` is the portion that
+    // exceeds aggregate pre-tax dollars; that part is genuinely not a QCD and
+    // does receive basis (the Pub 590-B "Amy" example).
+    //
+    // `taxableQcd` is the QCD that is not excluded, because it exceeds the
+    // 408(d)(8)(A) annual limit or because the post-70.5 deductible-contribution
+    // offset reduced it. It is characterized as fully includible with no basis
+    // recovery, because 408(d)(8)(D) already deemed it pre-tax and Form 8606
+    // keeps QCDs off line 7 without qualification.
+    //
+    // UNSETTLED, deliberately: no regulation, ruling, or IRS example addresses a
+    // partly-excludable QCD from an IRA that also has basis. 408(d)(8)(E) denies
+    // a 170 deduction only for QCDs "not includible in gross income pursuant to
+    // subparagraph (A)", which implies the excess stays a QCD and supports the
+    // treatment above; the Form 1040 instructions instead speak of "the part
+    // that is not a QCD", which would route it to line 7 with pro-rata basis.
+    // The readings differ in current-year taxable income and in whether basis is
+    // consumed or preserved. This engine takes the statutory reading, which is
+    // also the conservative one (higher current-year income, basis preserved),
+    // and discloses the dependency below rather than presenting it as settled.
     const deductionEligible = cents(BigInt(taxableQcd) + BigInt(nonQcd), 'QCD deduction-eligible amount')
+    const includibleQcdBasisTreatment = taxableQcd > 0 && capacity.basisNumeratorAmount > 0
+      ? 'statutoryTaxableFirstUnsettledAgainstBasis' as const
+      : 'notApplicable' as const
     const personalAfter = cents(BigInt(personalBefore) - BigInt(candidate), 'QCD personal limit')
     const offsetAfter = cents(BigInt(offsetBefore) - BigInt(offsetApplied), 'QCD contribution offset')
     const consumedAfter = cents(BigInt(consumed) + BigInt(offsetApplied), 'QCD consumed offset')
@@ -343,6 +385,7 @@ function stageUnchecked(input: StageAnnualQcdTaxCharacterPostPassInput): AnnualQ
       otherwiseTaxableAmountAfter: poolAfter,
       qualifiedCharitableDistributionAmount: taxableUsed,
       nonQcdCharitableRemainder: nonQcd,
+      includibleQcdBasisTreatment,
       personalLimitBefore: personalBefore, personalLimitUsed: candidate,
       personalLimitAfter: personalAfter,
       deductibleContributionOffsetBefore: offsetBefore,

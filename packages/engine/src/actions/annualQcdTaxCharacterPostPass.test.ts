@@ -250,10 +250,63 @@ describe('stageAnnualQcdTaxCharacterPostPass', () => {
   })
 
   it('applies the exact-year personal limit per donor', () => {
+    // IRC 408(d)(8)(A) as indexed by Notice 2025-67: $111,000 for 2026.
     const result = staged(fixture([{ id: 'large', amount: 12_000_000 }]))
     expect(result.applications[0]).toMatchObject({
       personalLimitBefore: 11_100_000, personalLimitUsed: 11_100_000,
       excludableQcdAmount: 11_100_000, taxableQcdAmount: 900_000,
+      // This pool carries no basis, so the over-limit portion raises no question.
+      includibleQcdBasisTreatment: 'notApplicable',
+    })
+  })
+
+  // IRC 408(d)(8)(D) deems a charitable distribution to come out of pre-tax
+  // dollars first: "Notwithstanding section 72 ... the entire amount of the
+  // distribution shall be treated as includible in gross income ... to the
+  // extent that such amount does not exceed the aggregate amount which would
+  // have been so includible if all amounts in all individual retirement plans of
+  // the individual were distributed". So the QCD leaves the Form 8606 pro-rata
+  // denominator entirely, full basis survives for the year's other
+  // distributions, and only the part exceeding aggregate pre-tax dollars is not
+  // a QCD at all.
+  it('draws the QCD from pre-tax dollars first and leaves basis for the remainder', () => {
+    // Gross 12,000,000c over 11,500,000c of pre-tax dollars, so 500,000c basis.
+    const result = staged(fixture([{ id: 'large', amount: 12_000_000 }],
+      { capacity: { p1: 11_500_000 } }))
+    expect(result.applications[0]).toMatchObject({
+      // The QCD is capped at aggregate pre-tax dollars and never reaches basis.
+      otherwiseTaxableAmountBefore: 11_500_000,
+      qualifiedCharitableDistributionAmount: 11_500_000,
+      otherwiseTaxableAmountAfter: 0,
+      // The 500,000c beyond pre-tax dollars is not a QCD. It is an ordinary
+      // distribution and does belong on Form 8606 line 7 — the Pub 590-B "Amy"
+      // example, where the non-QCD remainder draws basis.
+      nonQcdCharitableRemainder: 500_000,
+      // Of the QCD itself, only the annual limit is excluded.
+      excludableQcdAmount: 11_100_000, taxableQcdAmount: 400_000,
+    })
+  })
+
+  // No regulation, ruling, or IRS example addresses a partly-excludable QCD from
+  // an IRA that also carries basis. IRC 408(d)(8)(E) denies a 170 deduction only
+  // for QCDs "not includible in gross income pursuant to subparagraph (A)",
+  // implying the includible excess stays a QCD — already deemed pre-tax by (D),
+  // so no basis recovery. The Form 1040 instructions instead speak of "the part
+  // that is not a QCD", which would route it to line 7 with pro-rata basis. This
+  // engine takes the statutory reading, which is also the conservative one, and
+  // must say so rather than imply the point is settled.
+  it('discloses when a partly-excludable QCD rests on the unsettled basis reading', () => {
+    const result = staged(fixture([{ id: 'large', amount: 12_000_000 }],
+      { capacity: { p1: 11_500_000 } }))
+    expect(result.applications[0]!.includibleQcdBasisTreatment)
+      .toBe('statutoryTaxableFirstUnsettledAgainstBasis')
+  })
+
+  it('does not disclose an unsettled basis reading when the QCD is fully excluded', () => {
+    // Within the annual limit and drawn wholly from pre-tax dollars: settled.
+    const result = staged(fixture(undefined, { capacity: { p1: 5_000 } }))
+    expect(result.applications[0]).toMatchObject({
+      taxableQcdAmount: 0, includibleQcdBasisTreatment: 'notApplicable',
     })
   })
 
