@@ -624,6 +624,7 @@ const sourceReasonResolutionRequirements = {
   'withdrawal-rule-of-55-evidence-missing': 'resolved',
   'withdrawal-sepp-evidence-missing': 'resolved',
   'withdrawal-inherited-facts-missing': 'resolved',
+  'withdrawal-spousal-owner-treatment-begun': 'resolved',
   'withdrawal-hsa-qualification-unknown': 'resolved',
   'withdrawal-source-type-unsupported': 'resolved',
   'conversion-source-owner-mismatch': 'resolved',

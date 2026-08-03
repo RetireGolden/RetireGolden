@@ -141,6 +141,12 @@ const actionReasonRegistry = {
     outcome: 'unsupported',
     message: 'Beneficiary, decedent, annual basis denominator, or inherited-distribution facts are incomplete.',
   },
+  'withdrawal-spousal-owner-treatment-begun': {
+    predicate: 'inheritedWithdrawalEligibility',
+    outcome: 'unsupported',
+    message:
+      'The surviving spouse became the IRA owner under Treas. Reg. 1.408-8(c), so this is not an inherited-IRA distribution and the owned-IRA path governs the year.',
+  },
   'withdrawal-hsa-qualification-unknown': {
     predicate: 'hsaWithdrawalEvidence',
     outcome: 'unsupported',

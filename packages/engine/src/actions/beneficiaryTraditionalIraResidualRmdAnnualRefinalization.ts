@@ -1,3 +1,6 @@
+import type {
+  EvaluateBeneficiarySpousalElectionResult,
+} from './beneficiarySpousalElectionStatus.js'
 import type { AnnualIraBasisAllocationEntryInput } from './annualIraBasisAllocation.js'
 import {
   finalizeBeneficiaryTraditionalIraAnnualEvidence,
@@ -52,6 +55,13 @@ export interface PrepareBeneficiaryTraditionalIraResidualRmdAnnualRefinalization
   readonly postResidualBasisPoolEvidence: Readonly<CompleteBeneficiaryTraditionalIraBasisPoolEvidence>
   readonly residualInheritanceBindings:
     readonly Readonly<BeneficiaryTraditionalIraResidualInheritanceBinding>[]
+  /**
+   * Carried forward rather than re-derived. The residual distribution belongs to
+   * the same tax year as the pass being refinalized, so it must inherit that
+   * year's Treas. Reg. 1.408-8(c) status; deriving it again here would let a
+   * later year's deemed election reach back and restate a closed year.
+   */
+  readonly spousalElection: Readonly<EvaluateBeneficiarySpousalElectionResult>
 }
 export interface BeneficiaryTraditionalIraResidualRmdRefinalizedLineage {
   readonly predicate: 'beneficiaryTraditionalIraResidualRmdRefinalizedLineage'
@@ -122,7 +132,8 @@ export type PrepareBeneficiaryTraditionalIraResidualRmdAnnualRefinalizationResul
   | BeneficiaryTraditionalIraNoResidualRmdAnnualRefinalizationResult
   | UnsupportedBeneficiaryTraditionalIraResidualRmdAnnualRefinalizationResult
 const INPUT_KEYS = ['identityInput', 'predecessorRuntimeInput',
-  'postResidualBasisPoolEvidence', 'residualInheritanceBindings'] as const
+  'postResidualBasisPoolEvidence', 'residualInheritanceBindings',
+  'spousalElection'] as const
 const BINDING_KEYS = ['sourceAccountId', 'beneficiaryPersonId',
   'decedentPersonId', 'deathDate', 'inheritanceEvidenceId'] as const
 const BASIS_KEYS = [
@@ -518,6 +529,7 @@ function prepare(
     }
     const penaltyInput: EvaluateBeneficiaryTraditionalIraDeathPenaltyInput = {
       characterizationInput, deathBeneficiaryEvidence: seed.deathEvidence,
+      spousalElection: input.spousalElection,
     }
     const accepted = stageInput(
       penaltyInput, physicalWithoutId, reserved, generated,

@@ -106,6 +106,11 @@ function characterizationInput(): ClassifyBeneficiaryTraditionalIraWithdrawalInp
 
 function primitiveMember(): StageBeneficiaryTraditionalIraMovementCandidateInput {
   const penaltyInput = {
+    spousalElection: {
+      status: 'spousalElectionNotApplicable',
+      relationship: 'notSurvivingSpouse',
+      evidenceId: 'spousal-election-not-applicable',
+    } as const,
     characterizationInput: characterizationInput(),
     deathBeneficiaryEvidence: {
       predicate: 'beneficiaryTraditionalIraDeathBeneficiary', actionId: action,

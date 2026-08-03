@@ -158,6 +158,11 @@ function primitiveMember(
 ): StageBeneficiaryTraditionalIraMovementCandidateInput {
   const item = schedules[index]!
   const penaltyInput = {
+    spousalElection: {
+      status: 'spousalElectionNotApplicable',
+      relationship: 'notSurvivingSpouse',
+      evidenceId: 'spousal-election-not-applicable',
+    } as const,
     characterizationInput: characterizationInput(index),
     deathBeneficiaryEvidence: deathEvidence(index),
   }

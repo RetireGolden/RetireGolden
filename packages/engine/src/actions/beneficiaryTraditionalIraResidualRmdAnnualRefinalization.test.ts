@@ -103,7 +103,15 @@ function oldMember(): StageBeneficiaryTraditionalIraMovementCandidateInput {
     evaluationDate: '2030-03-01', deathDate: '2029-12-31',
     inheritanceEvidenceId: 'old-inheritance',
   }
-  const penaltyInput = { characterizationInput, deathBeneficiaryEvidence }
+  const penaltyInput = {
+    characterizationInput,
+    deathBeneficiaryEvidence,
+    spousalElection: {
+      status: 'spousalElectionNotApplicable',
+      relationship: 'notSurvivingSpouse',
+      evidenceId: 'spousal-election-not-applicable',
+    },
+  } as const
   const penalty = evaluateBeneficiaryTraditionalIraDeathPenalty(penaltyInput)
   if (penalty.status !== 'accepted') throw new Error('fixture penalty')
   const accepted = penalty.characterization.acceptedSourceEligibility
@@ -222,6 +230,11 @@ function input(): Mutable<
       decedentPersonId: decedent, deathDate: '2029-12-31',
       inheritanceEvidenceId: `residual-inheritance-${sourceAccountId}`,
     })),
+    spousalElection: {
+      status: 'spousalElectionNotApplicable',
+      relationship: 'notSurvivingSpouse',
+      evidenceId: 'spousal-election-not-applicable',
+    },
   } as unknown as Mutable<
     PrepareBeneficiaryTraditionalIraResidualRmdAnnualRefinalizationInput
   >

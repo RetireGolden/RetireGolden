@@ -120,29 +120,20 @@ describe('evaluateBeneficiarySpousalElection', () => {
     })
   })
 
-  // Treas. Reg. 1.408-8(c)(3) makes the spouse the owner "for all purposes"
-  // from the election onward. Owner treatment therefore does not lapse, so the
-  // earliest trigger fixes the effective year; a reading that let a later
-  // trigger restate it would reopen closed years.
-  describeRule('treas-reg-1-408-8-c-3-spouse-treated-as-owner', {
-    readings: { earliestTriggerGoverns: 2026, latestTriggerGoverns: 2028 },
-    accepted: 'earliestTriggerGoverns',
-  }, ({ accepted, readings }) => {
-    it('fixes the effective year at the earliest trigger', () => {
-      const result = evaluateBeneficiarySpousalElection(input({
-        taxYear: 2028,
-        contributionYears: [2028],
-        requiredDistributionHistory: [
-          { taxYear: 2026, requiredAmount: asUsdCents(40_000_00), distributedAmount: asUsdCents(0) },
-          { taxYear: 2027, requiredAmount: asUsdCents(40_000_00), distributedAmount: asUsdCents(40_000_00) },
-          { taxYear: 2028, requiredAmount: asUsdCents(40_000_00), distributedAmount: asUsdCents(40_000_00) },
-        ],
-      }))
-
-      expect(result).toMatchObject({ status: 'spousalOwnerTreatmentBegun' })
-      expect((result as { effectiveTaxYear: number }).effectiveTaxYear).toBe(accepted)
-      expect((result as { effectiveTaxYear: number }).effectiveTaxYear)
-        .not.toBe(readings.latestTriggerGoverns)
+  it('fixes the effective year at the earliest trigger', () => {
+    const result = evaluateBeneficiarySpousalElection(input({
+      taxYear: 2028,
+      contributionYears: [2028],
+      requiredDistributionHistory: [
+        { taxYear: 2026, requiredAmount: asUsdCents(40_000_00), distributedAmount: asUsdCents(0) },
+        { taxYear: 2027, requiredAmount: asUsdCents(40_000_00), distributedAmount: asUsdCents(40_000_00) },
+        { taxYear: 2028, requiredAmount: asUsdCents(40_000_00), distributedAmount: asUsdCents(40_000_00) },
+      ],
+    }))
+    expect(result).toMatchObject({
+      status: 'spousalOwnerTreatmentBegun',
+      trigger: 'undistributedRequiredAmount',
+      effectiveTaxYear: 2026,
     })
   })
 

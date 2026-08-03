@@ -837,7 +837,10 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/actions/beneficiarySpousalElectionStatus.ts'],
+    implementedBy: [
+      'packages/engine/src/actions/beneficiarySpousalElectionStatus.ts',
+      'packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts',
+    ],
   },
 } as const satisfies Record<string, TaxRuleRecord>
 

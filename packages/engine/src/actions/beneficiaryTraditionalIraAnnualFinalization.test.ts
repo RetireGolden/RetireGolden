@@ -167,6 +167,11 @@ function deathEvidence(
 function primitiveMember(index: number): StageBeneficiaryTraditionalIraMovementCandidateInput {
   const item = schedules[index]!
   const penaltyInput = {
+    spousalElection: {
+      status: 'spousalElectionNotApplicable',
+      relationship: 'notSurvivingSpouse',
+      evidenceId: 'spousal-election-not-applicable',
+    } as const,
     characterizationInput: characterizationInput(index),
     deathBeneficiaryEvidence: deathEvidence(index),
   }
@@ -204,6 +209,11 @@ function penaltyIds(index: number): {
   penaltyEvidenceId: string
 } {
   const result = evaluateBeneficiaryTraditionalIraDeathPenalty({
+    spousalElection: {
+      status: 'spousalElectionNotApplicable',
+      relationship: 'notSurvivingSpouse',
+      evidenceId: 'spousal-election-not-applicable',
+    } as const,
     characterizationInput: characterizationInput(index),
     deathBeneficiaryEvidence: deathEvidence(index),
   })

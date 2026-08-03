@@ -119,6 +119,11 @@ function penaltyInput(): EvaluateBeneficiaryTraditionalIraDeathPenaltyInput {
   return {
     characterizationInput: characterizationInput(),
     deathBeneficiaryEvidence: deathEvidence(),
+    spousalElection: {
+      status: 'spousalElectionNotApplicable',
+      relationship: 'notSurvivingSpouse',
+      evidenceId: 'spousal-election-not-applicable',
+    },
   }
 }
 
