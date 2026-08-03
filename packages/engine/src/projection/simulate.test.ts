@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { describeRule } from '../rules/describeRule.js'
+
 import { createEmptyPlan, parsePlan, type Account, type IncomeStream, type Plan } from '../model/plan.js'
 import { computePiaFromEarnings, isPiaFromEarningsError } from '../socialSecurity/piaFromEarnings.js'
 import { combineTaxCalculators, computeFederalTax, createFederalTaxCalculator } from '../tax/federalTax.js'
@@ -280,6 +282,43 @@ describe('social security', () => {
       (y) => y.year === 2033,
     )!.incomes.socialSecurity
     expect(ownOnly).toBeCloseTo(12_000, 6)
+  })
+
+  // 42 U.S.C. 403(f)(3) changes BOTH the rate and the exempt amount in the year
+  // full retirement age is attained: 50 percent above the lower exempt amount
+  // before that year, 33 1/3 percent above a higher one during it. Applying the
+  // FRA-year treatment early is the natural collapse of the two cases, and here
+  // it would wipe the withholding out entirely.
+  //
+  // Age 62 in 2026, so the 2026 pack applies unindexed. Wages 40,000 against
+  // the 24,480 below-FRA exempt amount:
+  //   below FRA:   (40,000 - 24,480) / 2 = 7,760
+  //   FRA-year:    (40,000 - 65,160) / 3 is negative, so 0
+  // The claimed benefit is 16,800, comfortably above 7,760, so the withholding
+  // is not capped and the raw formula is what the assertion sees.
+  describeRule('usc-42-403-f-3-retirement-earnings-test', {
+    readings: { halfAboveLowerExemptAmount: 7_760, fraYearTreatmentApplied: 0 },
+    accepted: 'halfAboveLowerExemptAmount',
+  }, ({ accepted, readings }) => {
+    it('withholds half the excess for a beneficiary under FRA all year', () => {
+      const plan = basePlan()
+      plan.household.people[0]! = {
+        ...plan.household.people[0]!,
+        dob: '1964-06-15', // 62 in 2026, FRA 67
+        retirementAge: 68,
+      }
+      plan.incomes = [
+        wages(40_000),
+        { type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly: 2_000, earnings: null, claimAge: { years: 62, months: 0 } },
+      ]
+      plan.accounts = [cash(2_000_000)]
+
+      const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+      const age62 = result.years.find((y) => y.year === 2026)!
+
+      expect(age62.ssEarningsTestWithheld).toBeCloseTo(accepted, 6)
+      expect(age62.ssEarningsTestWithheld).not.toBeCloseTo(readings.fraYearTreatmentApplied, 6)
+    })
   })
 
   it('withholds benefits under the earnings test while working before FRA', () => {

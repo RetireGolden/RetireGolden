@@ -1,10 +1,37 @@
 import { describe, expect, it } from 'vitest'
 
+import { describeRule } from '../rules/describeRule.js'
+
 import {
   capAuxiliaryForFamilyMaximum,
   familyMaximumEligibilityYearFromDobParts,
   familyMaximumMonthlyFromPia,
 } from './familyMaximum.js'
+
+describe('family maximum bend point formula', () => {
+  // 42 U.S.C. 403(a)(2) applies each rate only to the part of the PIA inside
+  // its own band. The common shorthand -- that the family maximum is roughly
+  // 150 to 188 percent of the PIA -- invites applying a single percentage to
+  // the whole, which understates every record above the first bend point.
+  //
+  // 2025 family-maximum bend points 1,567 / 2,262 / 2,950, PIA 3,500:
+  //   1.50 x 1,567             = 2,350.50
+  //   2.72 x (2,262 - 1,567)   = 1,890.40
+  //   1.34 x (2,950 - 2,262)   =   921.92
+  //   1.75 x (3,500 - 2,950)   =   962.50
+  //   total 6,125.32, decreased to the next lower dime = 6,125.30
+  // A flat 150 percent on the whole PIA would give 5,250.
+  describeRule('usc-42-403-a-2-family-maximum-formula', {
+    readings: { marginalAcrossBendPoints: 6_125.3, flatOneHundredFiftyPercent: 5_250 },
+    accepted: 'marginalAcrossBendPoints',
+  }, ({ accepted, readings }) => {
+    it('applies each rate only to the PIA inside its own band', () => {
+      expect(familyMaximumMonthlyFromPia(3_500, 2025)).toBeCloseTo(accepted, 6)
+      expect(familyMaximumMonthlyFromPia(3_500, 2025))
+        .not.toBeCloseTo(readings.flatOneHundredFiftyPercent, 6)
+    })
+  })
+})
 
 describe('familyMaximumMonthlyFromPia', () => {
   it('matches the SSA 2026 retirement/survivor family maximum worksheet', () => {

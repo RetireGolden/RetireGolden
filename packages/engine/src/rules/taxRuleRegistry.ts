@@ -1338,6 +1338,118 @@ const registry = {
     implementedBy: ['packages/engine/src/socialSecurity/nra.ts'],
   },
 
+  'usc-42-403-a-2-family-maximum-formula': {
+    title: 'The family maximum is marginal across three bend points',
+    statement:
+      'The maximum family benefit is 150 percent of the primary insurance amount up to the first bend point, plus 272 percent of the part between the first and second, plus 134 percent of the part between the second and third, plus 175 percent of the part above the third, decreased to the next lower multiple of ten cents. Each rate reaches only the amount inside its own band.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The bend points here are not the ones used for the primary insurance amount itself; section 403(a)(2) has its own set, indexed separately, which is why the engine carries a second table rather than reusing the PIA bend points.',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 403(a)(2)',
+      url: 'https://www.law.cornell.edu/uscode/text/42/403',
+      quotedText:
+        '150 percent of such individual\u2019s primary insurance amount to the extent that it does not exceed the amount established with respect to this subparagraph, plus 272 percent of such individual\u2019s primary insurance amount to the extent that it exceeds the amount established with respect to the preceding subparagraph but does not exceed the amount established with respect to this subparagraph, plus 134 percent of such individual\u2019s primary insurance amount to the extent that it exceeds the amount established with respect to the preceding subparagraph but does not exceed the amount established with respect to this subparagraph, plus 175 percent of such individual\u2019s primary insurance amount to the extent that it exceeds the amount established with respect to the preceding subparagraph. Any such amount that is not a multiple of 0.10 dollars shall be decreased to the next lower multiple of 0.10 dollars.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/socialSecurity/familyMaximum.ts',
+      'packages/engine/src/socialSecurity/ssaWageData.ts',
+    ],
+  },
+
+  'usc-42-403-f-3-retirement-earnings-test': {
+    title: 'The earnings test withholds half the excess, a third in the FRA year',
+    statement:
+      'Benefits are reduced by 50 percent of earnings above the exempt amount for a beneficiary who is under full retirement age throughout the year, and by 33 and one-third percent of earnings above a higher exempt amount in the year full retirement age is attained. Both the rate and the exempt amount change in that year, so the two cases cannot be collapsed. The rate fixes the size of the deduction, not the amount paid out: section 403(b) makes the deduction from the payments the beneficiary is entitled to, so it stops at the benefits payable and never runs negative or reaches beyond the year’s benefit.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'Withholding is applied annually against annual wages rather than month by month, and the withheld months are credited back at full retirement age through an adjustment-reduction-factor approximation. The statute operates on monthly benefits payable, so this is an annual-granularity convention rather than a reading of section 403(f). The cap at benefits payable is not part of that convention -- it is section 403(b) -- but it is worth naming here because it means a fixture whose wages are high enough for the cap to bind tests the cap rather than the 403(f)(3) rate.',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 403(f)(3)',
+      url: 'https://www.law.cornell.edu/uscode/text/42/403',
+      quotedText:
+        'the deductions shall be equal to 33 1/3 percent of his earnings for such year in excess of the product in the case of an individual who has attained retirement age during such taxable year, and 50 percent of his earnings for such year in excess of such product in the case of any other individual.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 403(b)(1)',
+      url: 'https://www.law.cornell.edu/uscode/text/42/403',
+      quotedText:
+        'Deductions, in such amounts and at such time or times as the Commissioner of Social Security shall determine, shall be made from any payment or payments under this subchapter to which an individual is entitled, and from any payment or payments to which any other persons are entitled on the basis of such individual’s wages and self-employment income, until the total of such deductions equals such individual’s benefit or benefits under section 402 of this title for any month.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
+  'usc-42-402-b-2-spousal-half-of-pia': {
+    title: 'A spousal benefit is half the PIA and earns no delayed credits',
+    statement:
+      'The wife or husband insurance benefit is one-half of the worker primary insurance amount. Because it is measured against the PIA rather than against what the worker actually receives, a worker who delays past full retirement age raises their own benefit but not the spousal one, and the spouse gains nothing by claiming after their own full retirement age.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'Section 402(b)(2) is expressly subject to subsection (q), which supplies the early-claim reduction. The engine applies a steeper schedule for the spousal case than for a retirement benefit -- 25/36 of 1 percent for the first 36 months rather than 5/9 -- and models the deemed-filing era only, assuming the worker has already filed so the spouse is eligible.',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 402(b)(2)',
+      url: 'https://www.law.cornell.edu/uscode/text/42/402',
+      quotedText:
+        'such wife\u2019s insurance benefit for each month shall be equal to one-half of the primary insurance amount of her husband (or, in the case of a divorced wife, her former husband) for such month.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/socialSecurity/claimFactor.ts'],
+  },
+
+  'usc-42-402-e-2-widow-full-pia': {
+    title: 'A widow benefit is the whole PIA, not half of it',
+    statement:
+      'The widow or widower insurance benefit is equal to the primary insurance amount of the deceased individual, that amount being the one determined after the subsection\u2019s own subparagraphs (B) and (C) have been applied. It is not the one-half fraction that applies to a spouse of a living worker, so the amount payable roughly doubles at the moment the relationship changes from spousal to survivor. The whole primary insurance amount is a floor on the survivor base rather than a ceiling on it: subparagraph (C) deems that amount to equal the delayed-retirement-increased old-age benefit the deceased was receiving where that benefit is larger, so a deceased who claimed late raises the survivor above the bare figure.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The engine computes the survivor base as the greater of what the deceased actually received and 82.5 percent of their primary insurance amount, then applies the survivor\u2019s own early-claim reduction to that base. Both halves of that maximum are statutory rather than invented: the first is the subparagraph (C) deeming, which carries the deceased\u2019s delayed retirement credits through, and the second is the widow limit of subparagraph (D), which binds only where the deceased had claimed early and been reduced under subsection (q). The ordering is the convention. Subparagraph (D) is drafted as a ceiling tested after the survivor\u2019s own subsection (q) reduction has been applied, whereas the engine takes the maximum first and reduces afterwards. The two agree wherever the survivor is unreduced; where the deceased and the survivor both claimed early the engine is the more conservative of the two.',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 402(e)(2)(A)',
+      url: 'https://www.law.cornell.edu/uscode/text/42/402',
+      quotedText:
+        'such widow\u2019s insurance benefit for each month shall be equal to the primary insurance amount (as determined for purposes of this subsection after application of subparagraphs (B) and (C)) of such deceased individual.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(e)(2)(C)',
+      url: 'https://www.law.cornell.edu/uscode/text/42/402',
+      quotedText:
+        'If such deceased individual was (or upon application would have been) entitled to an old-age insurance benefit which was increased (or subject to being increased) on account of delayed retirement under the provisions of subsection (w), then, for purposes of this subsection, such individual\u2019s primary insurance amount, if less than the old-age insurance benefit (increased, where applicable, under paragraph (5) or (6) of section 415(f) of this title and under section 415(i) of this title as if such individual were still alive in the case of an individual who has died) which he was receiving (or would upon application have received) for the month prior to the month in which he died, shall be deemed to be equal to such old-age insurance benefit.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(e)(2)(D)',
+      url: 'https://www.law.cornell.edu/uscode/text/42/402',
+      quotedText:
+        'If the deceased individual ... was, at any time, entitled to an old-age insurance benefit which was reduced by reason of the application of subsection (q), the widow\u2019s insurance benefit of such widow or surviving divorced wife for any month shall, if the amount of the widow\u2019s insurance benefit of such widow or surviving divorced wife (as determined under subparagraph (A) and after application of subsection (q)) is greater than\u2014(i) the amount of the old-age insurance benefit to which such deceased individual would have been entitled (after application of subsection (q)) for such month if such individual were still living ..., and (ii) 82\u00bd percent of the primary insurance amount (as determined without regard to subparagraph (C)) of such deceased individual; be reduced to the amount referred to in clause (i), or (if greater) the amount referred to in clause (ii).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/socialSecurity/survivorBenefit.ts'],
+  },
+
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)
