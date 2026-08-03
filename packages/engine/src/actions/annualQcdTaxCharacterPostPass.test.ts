@@ -238,6 +238,15 @@ describe('stageAnnualQcdTaxCharacterPostPass', () => {
     })
   })
 
+  // The flush sentence of IRC 408(d)(8)(A) subtracts the reductions ALREADY
+  // made in earlier years from the aggregate section 219 deductions. Without
+  // that subtraction the same deduction dollar would offset a QCD again every
+  // year for the rest of the donor's life. Here 500 of deductions with 200
+  // already consumed leaves 300 to offset, not the full 500.
+  describeRule('irc-408-d-8-A-post-70-half-deduction-offset', {
+    readings: { cumulativeNetOfPriorReductions: 300, aggregateDeductionsIgnoringPrior: 500 },
+    accepted: 'cumulativeNetOfPriorReductions',
+  }, ({ accepted, readings }) => {
   it('opens lifetime offset state from prior-year QCD consumption', () => {
     const result = staged(fixture(undefined, {
       contribution: { p1: 500 }, priorOffset: { 'qcd-a': 200 },
@@ -247,6 +256,20 @@ describe('stageAnnualQcdTaxCharacterPostPass', () => {
       deductibleContributionOffsetApplied: 300,
       deductibleContributionOffsetAfter: 0,
       excludableQcdAmount: 700,
+    })
+  })
+
+    it('nets the prior reductions off the aggregate deductions', () => {
+      const result = staged(fixture(undefined, {
+        contribution: { p1: 500 }, priorOffset: { 'qcd-a': 200 },
+      }))
+
+      expect(result.applications[0]).toMatchObject({
+        deductibleContributionOffsetBefore: accepted,
+      })
+      expect(result.applications[0]).not.toMatchObject({
+        deductibleContributionOffsetBefore: readings.aggregateDeductionsIgnoringPrior,
+      })
     })
   })
 

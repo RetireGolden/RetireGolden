@@ -1141,6 +1141,31 @@ const registry = {
     implementedBy: ['packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts'],
   },
 
+  'irc-408-d-8-A-post-70-half-deduction-offset': {
+    title: 'Post-70.5 deductible IRA contributions reduce the excludable QCD',
+    statement:
+      'The excludable amount is reduced by the excess of the taxpayer aggregate section 219 deductions for all years ending on or after the date they attained age 70.5, over the aggregate reductions already made in earlier years. Netting off the prior reductions is what makes a given deduction dollar offset a QCD exactly once across a lifetime rather than in every subsequent year.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The statute measures the offset against deductions allowed to the taxpayer, so it is an individual-level figure even on a joint return, and the engine tracks it per donor for that reason. The registered annual limit is likewise per taxpayer, which can read as though the two use different bases; they do not.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408(d)(8)(A), flush sentence',
+      url: 'https://www.law.cornell.edu/uscode/text/26/408',
+      quotedText:
+        'The amount of distributions not includible in gross income by reason of the preceding sentence for a taxable year (determined without regard to this sentence) shall be reduced (but not below zero) by an amount equal to the excess of - (i) the aggregate amount of deductions allowed to the taxpayer under section 219 for all taxable years ending on or after the date the taxpayer attains age 70 1/2, over (ii) the aggregate amount of reductions under this sentence for all taxable years preceding the current taxable year.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts',
+      'packages/engine/src/actions/annualQcdActionExecutionEvidence.ts',
+    ],
+  },
+
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)
