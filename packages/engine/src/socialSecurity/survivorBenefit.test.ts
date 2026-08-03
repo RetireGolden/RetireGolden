@@ -45,7 +45,7 @@ describe('widow benefit base', () => {
         deceasedPiaMonthly: 2_000,
         deceasedActualMonthly: 2_000,
         survivorClaimAge: { years: 67, months: 0 },
-        survivorFraMonths: 66 * 12 + 8,
+        survivorFraMonths: SURVIVOR_FRA_1962PLUS,
       })
 
       expect(monthly).toBeCloseTo(accepted, 6)

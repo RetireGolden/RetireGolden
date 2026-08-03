@@ -21,13 +21,13 @@ describe('spousal benefit and delayed credits', () => {
     accepted: 'noDelayedCreditsOnSpousal',
   }, ({ accepted, readings }) => {
     it('stops growing at full retirement age', () => {
-      const late = spousalBenefitFactor(1960, 6, 15, { years: 70, months: 0 })
+      const late = spousalBenefitFactor(dob.y, dob.m, dob.d, { years: 70, months: 0 })
 
       expect(late).toBeCloseTo(accepted, 10)
       expect(late).not.toBeCloseTo(readings.retirementCreditsApplied, 6)
       // The worker's own benefit does grow over the same span, which is what
       // makes the difference a rule rather than a rounding artefact.
-      expect(claimFactor(1960, 6, 15, { years: 70, months: 0 }))
+      expect(claimFactor(dob.y, dob.m, dob.d, { years: 70, months: 0 }))
         .toBeCloseTo(readings.retirementCreditsApplied, 6)
     })
   })
