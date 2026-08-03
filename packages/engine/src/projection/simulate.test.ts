@@ -358,6 +358,46 @@ describe('social security', () => {
     })
   })
 
+  // IRC 415(c)(1) caps ANNUAL ADDITIONS -- 415(c)(2) defines those as employer
+  // contributions plus employee contributions plus forfeitures -- at the LESSER
+  // of the dollar amount and 100 percent of compensation. The cap is on the
+  // total, not on the match, which is what makes the pay prong bite so hard:
+  // deferrals consume it first and the match gets only what is left.
+  //
+  // Wages 30,000, a 200 percent match on all pay. Deferrals reach 24,500:
+  //   pay prong binds:     24,500 + 5,500  = 30,000, exactly the pay
+  //   dollar prong alone:  24,500 + 47,500 = 72,000, more than twice the pay
+  describeRule('irc-415-c-1-annual-additions-lesser-of', {
+    readings: { totalCappedByCompensation: 30_000, totalCappedByDollarLimit: 72_000 },
+    accepted: 'totalCappedByCompensation',
+  }, ({ accepted, readings }) => {
+    it('never lets total additions exceed the participant pay', () => {
+      const plan = basePlan()
+      plan.household.people[0]! = {
+        ...plan.household.people[0]!,
+        dob: '1980-06-15',
+        retirementAge: 70,
+      }
+      plan.incomes = [wages(30_000)]
+      plan.accounts = [
+        { ...cash(1_000_000) },
+        {
+          id: testIds(), name: '401k', type: 'traditional', kind: 'employer',
+          ownerPersonId: 'p1', balance: 0, annualReturnPct: 0,
+          annualContribution: 30_000,
+          employerMatch: { matchPct: 200, capPctOfPay: 100 },
+        } as never,
+      ]
+
+      const result = simulatePlan(validate(plan), { startYear: 2026, horizonEndYear: 2026, taxCalculator: noTax })
+      const year = result.years[0]!
+      const annualAdditions = year.contributions + year.employerMatch
+
+      expect(annualAdditions).toBeCloseTo(accepted, 6)
+      expect(annualAdditions).not.toBeCloseTo(readings.totalCappedByDollarLimit, 6)
+    })
+  })
+
   it('withholds benefits under the earnings test while working before FRA', () => {
     const plan = basePlan()
     plan.household.people[0]! = {

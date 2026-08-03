@@ -2331,8 +2331,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           const baseMatch = Math.min(allowed, matchCap)
           let matchVal = baseMatch * (matchInfo.matchPct / 100)
 
-          // Capped by §415(c) total additions limit
-          const limit415c = pack.contributionLimits.section415cLimit * limitGrowth
+          // Capped by §415(c) total additions limit, which is the LESSER of the
+          // indexed dollar amount and 100 percent of compensation — a low-paid
+          // participant with a generous match is bound by pay, not the dollar
+          // figure. Wages stand in for section 415(c)(3) compensation here.
+          const limit415c = Math.min(
+            pack.contributionLimits.section415cLimit * limitGrowth,
+            ownerWages,
+          )
           const usedSoFar = addition415cUsed.get(ownerId) ?? 0
           const remaining415cLimit = Math.max(0, limit415c - usedSoFar)
           matchVal = Math.min(matchVal, remaining415cLimit)

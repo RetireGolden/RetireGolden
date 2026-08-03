@@ -1562,6 +1562,37 @@ const registry = {
     ],
   },
 
+  'irc-415-c-1-annual-additions-lesser-of': {
+    title: 'Annual additions are capped by pay as well as by the dollar limit',
+    statement:
+      'Contributions and other additions to a participant account may not exceed the lesser of the indexed dollar amount or 100 percent of the participant compensation. A participant paid less than the dollar limit is bound by their pay, so a generous match cannot push total additions above what they earned.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'Section 415(c)(3) compensation is broader than wages, and the engine uses wages as the stand-in, so the pay prong binds slightly earlier here than under the statute. Annual additions under 415(c)(2) are employer contributions, employee contributions and forfeitures; the engine models the first two and has no concept of forfeitures.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 415(c)(1)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/415',
+      quotedText:
+        'Contributions and other additions with respect to a participant exceed the limitation of this subsection if, when expressed as an annual addition to the participant\u2019s account, such annual addition is greater than the lesser of - (A) 40,000 dollars, or (B) 100 percent of the participant\u2019s compensation.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 415(c)(2)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/415',
+      quotedText:
+        'the term annual addition means the sum for any year of - (A) employer contributions, (B) the employee contributions, and (C) forfeitures.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)
