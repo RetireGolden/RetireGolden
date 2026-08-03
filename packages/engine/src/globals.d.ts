@@ -18,6 +18,17 @@ declare var performance: { now(): number } | undefined
 declare function structuredClone<T>(value: T): T
 
 /**
+ * WHATWG URL, present in browsers and in Node, used by the tax rule registry's
+ * conformance test to read the host out of a citation URL. Declared with only
+ * `hostname` for the same reason `crypto` is declared with only `randomUUID`:
+ * the narrow shape is what the engine needs, and nothing wider becomes
+ * reachable. This is a pure string parser and opens no IO — the `fetch` entry
+ * in this package's `no-restricted-globals` list remains the thing standing
+ * between the engine and the network.
+ */
+declare const URL: { new (url: string): { readonly hostname: string } }
+
+/**
  * Vite's build-time source glob, provided by the Vitest transform. Used only by
  * the tax rule registry's conformance test, which scans test sources to prove
  * every registered rule is covered by a discriminating fixture. Declared here

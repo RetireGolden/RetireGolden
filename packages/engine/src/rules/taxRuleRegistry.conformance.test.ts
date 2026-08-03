@@ -109,22 +109,40 @@ describe('tax rule registry conformance', () => {
     // The parameter pack's own comments cite Tax Foundation and Kiplinger for
     // figures this registry will eventually have to carry. Those are fine for
     // orientation and are not authority: a secondary source can be right and
-    // still cannot be quoted as the operative language. Locking the host list
-    // now keeps that distinction from eroding one convenient citation at a time.
-    const PRIMARY_HOSTS = [
-      'www.law.cornell.edu', // U.S. Code and CFR
+    // still cannot be quoted as the operative language. Locking the publisher
+    // list now keeps that distinction from eroding one convenient citation at a
+    // time.
+    // Listed as publisher domains rather than as the exact hosts the 92 current
+    // URLs happen to use: www.irs.gov and irs.gov are the same publisher, and a
+    // guard that admits one while rejecting the other is not enforcing
+    // provenance, it is enforcing a spelling. Only the `www.` alias is folded
+    // in; every other subdomain still has to be listed here deliberately.
+    const PRIMARY_PUBLISHERS = [
+      'law.cornell.edu', // U.S. Code and CFR
       'uscode.house.gov', // Office of the Law Revision Counsel
-      'www.govinfo.gov', // GPO official compilations
-      'www.irs.gov', // Revenue procedures, notices, publications
-      'www.ecfr.gov', // Electronic CFR
-      'www.ssa.gov', // POMS and the Social Security Act
-      'www.jct.gov', // Joint Committee on Taxation
+      'govinfo.gov', // GPO official compilations
+      'irs.gov', // Revenue procedures, notices, publications
+      'ecfr.gov', // Electronic CFR
+      'ssa.gov', // POMS and the Social Security Act
+      'jct.gov', // Joint Committee on Taxation
     ]
     const offSource: string[] = []
     for (const ruleId of taxRuleIds) {
       for (const authority of TAX_RULE_REGISTRY[ruleId].authority) {
-        const host = authority.url.replace('https://', '').split('/')[0] ?? ''
-        if (!PRIMARY_HOSTS.includes(host)) {
+        let host: string
+        try {
+          // Parsed rather than sliced: `hostname` lower-cases and drops any
+          // credentials or port, so https://www.irs.gov@example.com/ resolves
+          // to example.com and is caught instead of reading as the IRS.
+          host = new URL(authority.url).hostname
+        } catch {
+          // Reported rather than thrown, so a malformed URL names the record it
+          // came from instead of failing the run with a bare 'Invalid URL'.
+          offSource.push(`${ruleId}:${authority.citation}:unparseable-url`)
+          continue
+        }
+        const publisher = host.startsWith('www.') ? host.slice(4) : host
+        if (!PRIMARY_PUBLISHERS.includes(publisher)) {
           offSource.push(`${ruleId}:${authority.citation}:${host}`)
         }
       }
