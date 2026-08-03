@@ -19,8 +19,14 @@ import {
 const testSources = import.meta.glob('../**/*.test.ts', { query: '?raw', import: 'default', eager: true })
 const engineSources = import.meta.glob('../**/*.ts', { query: '?raw', import: 'default', eager: true })
 
+// This file is excluded from its own scan. Its guard tests call describeRule
+// with a deliberately unregistered ID and with a real rule ID, so counting them
+// would both trip the unknown-rule assertion and let a guard-only reference
+// launder coverage for a rule whose actual fixture had been deleted.
+const CONFORMANCE_SOURCE = 'taxRuleRegistry.conformance.test.ts'
 const claimedRuleIds = new Map<string, string[]>()
 for (const [path, source] of Object.entries(testSources)) {
+  if (path.endsWith(CONFORMANCE_SOURCE)) continue
   for (const match of source.matchAll(/describeRule\(\s*'([^']+)'/gu)) {
     const ruleId = match[1]!
     claimedRuleIds.set(ruleId, [...(claimedRuleIds.get(ruleId) ?? []), path])
@@ -46,6 +52,22 @@ describe('tax rule registry conformance', () => {
     const uncovered = taxRuleIds.filter((ruleId) =>
       TAX_RULE_REGISTRY[ruleId].classification === 'unsettled' && !claimedRuleIds.has(ruleId))
     expect(uncovered).toEqual([])
+  })
+
+  it('never counts its own guard calls as coverage', () => {
+    // The guard tests below call describeRule with a real rule ID and with an
+    // unregistered one. Counting either would be wrong: the first would launder
+    // coverage for a rule whose actual fixture had been deleted, the second
+    // would trip the unknown-rule assertion.
+    //
+    // Vite's glob already excludes the importing module, so this file is not in
+    // `testSources` at all — but that is an implicit property of the bundler,
+    // not something the scan should depend on, hence the explicit skip.
+    expect(Object.keys(testSources).some((path) => path.endsWith(CONFORMANCE_SOURCE)))
+      .toBe(false)
+    for (const [, paths] of claimedRuleIds) {
+      expect(paths.every((path) => !path.endsWith(CONFORMANCE_SOURCE))).toBe(true)
+    }
   })
 
   it('rejects a fixture claiming a rule that is not registered', () => {
