@@ -504,7 +504,86 @@ const registry = {
     implementedBy: ['packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts'],
   },
 
+  'irc-223-f-4-hsa-age-65-boundary': {
+    title: 'Age-65 waiver of the HSA 20 percent additional tax',
+    statement:
+      'The 20 percent additional tax on a nonqualified HSA distribution is waived only for a distribution made after the date the account beneficiary attains age 65, so the exception begins the day after the 65th birthday and a distribution on the birthday itself still bears the tax. The waiver reaches only the additional tax; ordinary income inclusion under 223(f)(2) survives at any age.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 223(f)(4)(C)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim',
+      quotedText:
+        'Subparagraph (A) shall not apply to any payment or distribution after the date on which the account beneficiary attains the age specified in section 1811 of the Social Security Act.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 72(t)(2)(A)(i), drafting contrast',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText: 'made on or after the date on which the employee attains age 59 1/2',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Instructions for Form 8889, line 17b',
+      url: 'https://www.irs.gov/instructions/i8889',
+      quotedText:
+        'The additional 20% tax does not apply to distributions made after the account beneficiary: Dies, Becomes disabled or Turns age 65.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/actions/annualHsaPenaltyEvaluation.ts'],
+  },
+
+  'irc-223-f-1-hsa-qualified-medical-exclusion': {
+    title: 'Qualified medical HSA distributions are excluded from income',
+    statement:
+      'A distribution used exclusively to pay qualified medical expenses of an account beneficiary is not includible in gross income at all, so it is neither taxable nor exposed to the 20 percent additional tax. Only the nonqualified portion is includible.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 223(f)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim',
+      quotedText:
+        'Any amount paid or distributed out of a health savings account which is used exclusively to pay qualified medical expenses of any account beneficiary shall not be includible in gross income.',
+    }, {
+      kind: 'irsPublication',
+      citation: 'IRS Publication 969',
+      url: 'https://www.irs.gov/publications/p969',
+      quotedText:
+        'You will pay an additional 20% tax on distributions from your HSA that are not used for qualified medical expenses.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/actions/annualHsaPenaltyEvaluation.ts'],
+  },
   // --- Deliberately not modelled; the engine must fail closed -------------
+
+  'irc-223-f-4-B-hsa-death-exception': {
+    title: 'Death waives the HSA 20 percent additional tax',
+    statement:
+      'The 20 percent additional tax does not apply to a distribution made after the account beneficiary becomes disabled or dies. Not modelled: the engine carries disability evidence but holds no death fact, and death also ends the account HSA status under 223(f)(8), so treating it as merely waiving the 20 percent would understate the event.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 223(f)(4)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim',
+      quotedText:
+        'Subparagraph (A) shall not apply if the payment or distribution is made after the account beneficiary becomes disabled within the meaning of section 72(m)(7) or dies.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/actions/annualHsaPenaltyEvaluation.ts'],
+  },
 
   'irc-72-t-10-public-safety-early-age': {
     title: 'Age 50 or 25 years of service for qualified public safety employees',

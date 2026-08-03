@@ -160,7 +160,7 @@ export interface HsaAllocationPenaltyCoverage {
   ledgerEvidenceId: string
   penaltyRelevantCharacterAmount: UsdCents
   coveredPenaltyExposureAmount: UsdCents
-  nonPenaltyRelevantCharacterAmount: 0
+  nonPenaltyRelevantCharacterAmount: UsdCents
   coverageDifferenceAmount: 0
   evaluations: readonly Readonly<HsaSegmentPenaltyEvaluation>[]
   aggregatePenaltyAmount: UsdCents
@@ -294,9 +294,15 @@ function ageEvidence(
   const identity = JSON.stringify([owner, evaluationDate])
   const existing = evidence.ages.get(identity)
   if (existing !== undefined) return existing
+  // IRC 223(f)(4)(C) waives the additional tax only for a distribution "after
+  // the date on which" the beneficiary attains 65. Congress wrote the inclusive
+  // form in 72(t)(2)(A)(i) ("on or after") when it meant it, and Pub 969 and the
+  // Form 8889 instructions both say "after", so the exception begins the day
+  // after the 65th birthday. A distribution on the birthday itself still bears
+  // the 20% tax and therefore still requires disability evidence to be excused.
   const age65Date = addCalendarMonths(birth.birthDate, 780)
   if (age65Date === null || birth.birthDate > evaluationDate) throw new RangeError('HSA owner birth evidence cannot establish the age-65 threshold')
-  const core = { predicate: 'hsaOwnerAge65Threshold' as const, ownerPersonId: owner, birthDate: birth.birthDate, evaluationDate, thresholdMonthCount: 780 as const, age65Date, age65Reached: evaluationDate >= age65Date, calculation: 'addCalendarMonths780WithMonthEndClamp' as const, birthDateEvidenceId: birth.birthDateEvidenceId }
+  const core = { predicate: 'hsaOwnerAge65Threshold' as const, ownerPersonId: owner, birthDate: birth.birthDate, evaluationDate, thresholdMonthCount: 780 as const, age65Date, age65Reached: evaluationDate > age65Date, calculation: 'addCalendarMonths780WithMonthEndClamp' as const, birthDateEvidenceId: birth.birthDateEvidenceId }
   const derived = { ...core, ageEvidenceId: reserveDerived(evidence.reserved, 'hsa-penalty-age65-evidence', [core]) }
   evidence.ages.set(identity, derived)
   return derived
@@ -352,7 +358,7 @@ function validateEvidence(
     const birth = births.get(allocation.ownerPersonId)!
     const threshold = addCalendarMonths(birth.birthDate, 780)
     if (threshold === null) throw new RangeError('HSA age-65 threshold is unavailable')
-    if (allocation.evaluationDate < threshold) requiredDisabilityKeys.add(JSON.stringify([allocation.ownerPersonId, allocation.evaluationDate]))
+    if (allocation.evaluationDate <= threshold) requiredDisabilityKeys.add(JSON.stringify([allocation.ownerPersonId, allocation.evaluationDate]))
   }
   if (disabilities.size !== requiredDisabilityKeys.size || [...requiredDisabilityKeys].some((key) => !disabilities.has(key))) throw new RangeError('HSA disability evidence must exactly cover under-65 nonqualified allocations')
   return { births, disabilities, ages: new Map(), rates: new Map(), reserved }
@@ -375,7 +381,12 @@ function evaluateSegment(
   characterIndex: number,
   evidence: ValidatedEvidence,
 ): HsaSegmentPenaltyEvaluation {
-  const base = { actionId: segment.actionId, allocationId: segment.allocationId, sourceAccountId: segment.sourceAccountId, ownerPersonId: segment.ownerPersonId, evaluationDate: segment.evaluationDate, characterIndex, characterSegmentId: segment.segmentId, characterKind: segment.kind, characterAmount: segment.amount, annualLedgerEvidenceId: allocation.annualLedgerEvidenceId, ledgerEvidenceId: allocation.ledgerEvidenceId, characterEvidenceId: allocation.characterEvidenceId, taxableAmountExposed: segment.amount }
+  const base = { actionId: segment.actionId, allocationId: segment.allocationId, sourceAccountId: segment.sourceAccountId, ownerPersonId: segment.ownerPersonId, evaluationDate: segment.evaluationDate, characterIndex, characterSegmentId: segment.segmentId, characterKind: segment.kind, characterAmount: segment.amount, annualLedgerEvidenceId: allocation.annualLedgerEvidenceId, ledgerEvidenceId: allocation.ledgerEvidenceId, characterEvidenceId: allocation.characterEvidenceId,
+    // IRC 223(f)(1): a distribution used exclusively for qualified medical
+    // expenses is not includible in gross income at all, so it carries no
+    // taxable exposure. Reporting the full segment here would let a
+    // downstream income sum add tax-free reimbursements to ordinary income.
+    taxableAmountExposed: segment.kind === 'qualifiedTaxFree' ? asUsdCents(0) : segment.amount }
   if (segment.kind === 'qualifiedTaxFree') {
     if (allocation.consumptionEvidenceIds.length === 0 || segment.amount !== allocation.qualifiedMedicalAmount) throw new RangeError('Qualified HSA character must bind its nonempty reimbursement consumptions')
     const acceptedEvidence = { treatmentAmount: segment.amount, qualifiedMedicalAmount: allocation.qualifiedMedicalAmount, reimbursementScopeId: allocation.reimbursementScopeId, expenseStateBeforeId: allocation.expenseStateBeforeId, expenseStateAfterId: allocation.expenseStateAfterId, consumptionEvidenceIds: allocation.consumptionEvidenceIds as [string, ...string[]] }
@@ -427,8 +438,12 @@ export function evaluateAnnualHsaPenalty(
       const evaluations = allocation.taxCharacter.map((segment, index) => evaluateSegment(allocation, segment, index, evidence))
       const penaltyRelevantCharacterAmount = evaluations.reduce((total, item) => addUsdCents(total, item.taxableAmountExposed), asUsdCents(0))
       const aggregateAllocationPenalty = evaluations.reduce((total, item) => addUsdCents(total, asUsdCents(item.finalPenaltyAmount)), asUsdCents(0))
-      if (evaluations.length !== allocation.taxCharacter.length || penaltyRelevantCharacterAmount !== allocation.executedAmount) throw new RangeError('HSA penalty coverage must bijectively cover every character segment')
-      const core = { predicate: 'completeHsaPenaltyCharacterCoverageForAllocation' as const, reimbursementScopeId: allocation.reimbursementScopeId, actionId: allocation.actionId, allocationId: allocation.allocationId, sourceAccountId: allocation.sourceAccountId, ownerPersonId: allocation.ownerPersonId, evaluationDate: allocation.evaluationDate, executedAmount: allocation.executedAmount, characterEvidenceId: allocation.characterEvidenceId, annualLedgerEvidenceId: allocation.annualLedgerEvidenceId, ledgerEvidenceId: allocation.ledgerEvidenceId, penaltyRelevantCharacterAmount, coveredPenaltyExposureAmount: penaltyRelevantCharacterAmount, nonPenaltyRelevantCharacterAmount: 0 as const, coverageDifferenceAmount: 0 as const, evaluations, aggregatePenaltyAmount: aggregateAllocationPenalty }
+      const nonPenaltyRelevantCharacterAmount = asUsdCents(allocation.executedAmount - penaltyRelevantCharacterAmount)
+      // Coverage is still a bijection over segments; what changed is that the
+      // exposed amount is now a partition of the allocation rather than all
+      // of it. Qualified medical cents are covered and evaluated, at zero.
+      if (evaluations.length !== allocation.taxCharacter.length || nonPenaltyRelevantCharacterAmount < 0 || penaltyRelevantCharacterAmount + nonPenaltyRelevantCharacterAmount !== allocation.executedAmount) throw new RangeError('HSA penalty coverage must bijectively cover every character segment')
+      const core = { predicate: 'completeHsaPenaltyCharacterCoverageForAllocation' as const, reimbursementScopeId: allocation.reimbursementScopeId, actionId: allocation.actionId, allocationId: allocation.allocationId, sourceAccountId: allocation.sourceAccountId, ownerPersonId: allocation.ownerPersonId, evaluationDate: allocation.evaluationDate, executedAmount: allocation.executedAmount, characterEvidenceId: allocation.characterEvidenceId, annualLedgerEvidenceId: allocation.annualLedgerEvidenceId, ledgerEvidenceId: allocation.ledgerEvidenceId, penaltyRelevantCharacterAmount, coveredPenaltyExposureAmount: allocation.executedAmount, nonPenaltyRelevantCharacterAmount, coverageDifferenceAmount: 0 as const, evaluations, aggregatePenaltyAmount: aggregateAllocationPenalty }
       allocations.push({ ...core, coverageEvidenceId: reserveDerived(evidence.reserved, 'hsa-penalty-character-coverage', [core]) })
       aggregatePenaltyAmount = addUsdCents(aggregatePenaltyAmount, aggregateAllocationPenalty)
     }

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { describeRule } from '../rules/describeRule.js'
 import {
   evaluateAnnualHsaPenalty,
   type EvaluateAnnualHsaPenaltyInput,
@@ -169,9 +170,12 @@ describe('evaluateAnnualHsaPenalty', () => {
     })
     expect(coverage).toMatchObject({
       executedAmount: 6_000,
-      penaltyRelevantCharacterAmount: 6_000,
+      // The 4,000c reimbursement is excluded from income under 223(f)(1); only
+      // the 2,000c residual is exposed. Coverage still spans the whole
+      // allocation, because every segment is evaluated even at a zero rate.
+      penaltyRelevantCharacterAmount: 2_000,
+      nonPenaltyRelevantCharacterAmount: 4_000,
       coveredPenaltyExposureAmount: 6_000,
-      nonPenaltyRelevantCharacterAmount: 0,
       coverageDifferenceAmount: 0,
       aggregatePenaltyAmount: 400,
     })
@@ -179,7 +183,7 @@ describe('evaluateAnnualHsaPenalty', () => {
       expect.objectContaining({
         characterKind: 'qualifiedTaxFree',
         characterAmount: 4_000,
-        taxableAmountExposed: 4_000,
+        taxableAmountExposed: 0,
         treatment: 'hsaQualifiedMedical',
         penaltyRatePercent: 0,
         finalPenaltyAmount: 0,
@@ -199,7 +203,7 @@ describe('evaluateAnnualHsaPenalty', () => {
         : []))
     expect(coverage.evaluations.reduce(
       (sum, item) => sum + item.taxableAmountExposed, 0,
-    )).toBe(coverage.executedAmount)
+    )).toBe(coverage.penaltyRelevantCharacterAmount)
     expect(coverage.evaluations.filter((item) => item.penaltyRatePercent === 20))
       .toEqual([expect.objectContaining({
         characterKind: 'ordinaryIncome',
@@ -208,9 +212,54 @@ describe('evaluateAnnualHsaPenalty', () => {
       })])
   })
 
+  // IRC 223(f)(1) excludes a qualified medical distribution from gross income
+  // entirely, so it carries no taxable exposure. Reporting the full segment as
+  // exposed would let a downstream income sum add tax-free reimbursements to
+  // ordinary income; the penalty rate was already correctly zero either way,
+  // so only the reported exposure distinguishes the readings.
+  describeRule('irc-223-f-1-hsa-qualified-medical-exclusion', {
+    readings: { excludedFromGrossIncome: 0, reportedAsFullyExposed: 4_000 },
+    accepted: 'excludedFromGrossIncome',
+  }, ({ accepted, readings }) => {
+    it('reports no taxable exposure for the qualified medical segment', () => {
+      const coverage = evaluated().allocations[0]!
+      const qualified = coverage.evaluations[0]!
+      expect(qualified.characterKind).toBe('qualifiedTaxFree')
+      expect(qualified.characterAmount).toBe(4_000)
+      expect(qualified.taxableAmountExposed).toBe(accepted)
+      expect(qualified.taxableAmountExposed).not.toBe(readings.reportedAsFullyExposed)
+      // The exclusion partitions the allocation rather than shrinking it.
+      expect(coverage.penaltyRelevantCharacterAmount).toBe(2_000)
+      expect(coverage.nonPenaltyRelevantCharacterAmount).toBe(4_000)
+      expect(coverage.coveredPenaltyExposureAmount).toBe(coverage.executedAmount)
+    })
+  })
+
+  // IRC 223(f)(4)(C) waives the additional tax only "after the date on which"
+  // the beneficiary attains 65. Congress used the inclusive form in
+  // 72(t)(2)(A)(i) ("on or after") when it meant it, and Pub 969 and the Form
+  // 8889 instructions both say "after". A 1961-03-01 birth puts the 65th
+  // birthday exactly on the 2026-03-01 evaluation date, so the readings differ.
+  describeRule('irc-223-f-4-hsa-age-65-boundary', {
+    readings: {
+      statuteStrictlyAfterAttainment: 'penaltyApplies',
+      inclusiveOnTheBirthday: 'hsaAge65',
+    },
+    accepted: 'statuteStrictlyAfterAttainment',
+  }, ({ accepted, readings }) => {
+    it('still taxes a distribution taken on the 65th birthday itself', () => {
+      const input = fixture()
+      input.ownerBirthEvidence[0] = { ...input.ownerBirthEvidence[0]!, birthDate: '1961-03-01' }
+
+      const ordinary = evaluated(input).allocations[0]!.evaluations[1]!
+      expect(ordinary).toMatchObject({ treatment: accepted, finalPenaltyAmount: 400 })
+      expect(ordinary.treatment).not.toBe(readings.inclusiveOnTheBirthday)
+    })
+  })
+
   it.each([
     ['1961-03-02', 'penaltyApplies', 400],
-    ['1961-03-01', 'hsaAge65', 0],
+    ['1961-03-01', 'penaltyApplies', 400],
     ['1961-02-28', 'hsaAge65', 0],
   ] as const)('uses the exact age-65 boundary for birth %s', (birthDate, treatment, penalty) => {
     const input = fixture()
@@ -225,7 +274,7 @@ describe('evaluateAnnualHsaPenalty', () => {
     const input = fixture()
     input.characterInput.taxYear = 2025
     input.characterInput.allocations[0] = {
-      ...input.characterInput.allocations[0]!, evaluationDate: '2025-02-28',
+      ...input.characterInput.allocations[0]!, evaluationDate: '2025-03-01',
     }
     input.ownerBirthEvidence[0] = {
       ...input.ownerBirthEvidence[0]!, birthDate: '1960-02-29',
@@ -297,13 +346,18 @@ describe('evaluateAnnualHsaPenalty', () => {
       input.disabilityStatusEvidence = []
       const result = evaluated(input)
       expect(result.aggregatePenaltyAmount).toBe(0)
-      expect(result.allocations[0]!.penaltyRelevantCharacterAmount)
+      // IRC 223(f)(1): a wholly qualified distribution is excluded from gross
+      // income, so nothing is penalty-relevant and the whole amount lands in
+      // the non-penalty partition.
+      expect(result.allocations[0]!.penaltyRelevantCharacterAmount).toBe(0)
+      expect(result.allocations[0]!.nonPenaltyRelevantCharacterAmount)
         .toBe(zero ? 0 : 4_000)
       if (!zero) {
         expect(result.allocations[0]!.evaluations).toEqual([
           expect.objectContaining({
             treatment: 'hsaQualifiedMedical',
-            taxableAmountExposed: 4_000,
+            characterAmount: 4_000,
+            taxableAmountExposed: 0,
             penaltyRatePercent: 0,
             finalPenaltyAmount: 0,
           }),
