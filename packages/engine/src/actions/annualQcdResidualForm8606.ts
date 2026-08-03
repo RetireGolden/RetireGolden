@@ -212,6 +212,26 @@ function buildPool(
     base.ownerWideNonRothIraPoolId, base.taxYear,
     'form8606Line8NetConversions', annualBasisRatio, line8Entries,
   )
+  // Lines 7 and 8 quantize the same ratio independently, so each can round its
+  // own half-cent up and together recover more basis than the pool holds. The
+  // canonical producer on the pre-QCD path carries this guard
+  // (ownedNonRothIraWithdrawalCharacter); the residual rebuild reproduces the
+  // split-rounding structure and must carry it too.
+  //
+  // Not currently reachable: whenever a non-QCD remainder exists the post-pass
+  // pins the residual ratio to exactly 1, and with no remainder the residual
+  // entries are identical to the base ones, which already passed this check
+  // upstream. It is here because the invariant is what makes that reasoning
+  // safe to change.
+  if (
+    BigInt(line7AllocationEvidence.annualNontaxableBasisAmount) +
+      BigInt(line8AllocationEvidence.annualNontaxableBasisAmount) >
+    BigInt(transition.adjustedResidualBasisNumeratorAmount)
+  ) {
+    throw new RangeError(
+      'Independent Form 8606 line rounding cannot recover more than annual IRA basis',
+    )
+  }
   const qcdRemainderBindings = qcdEntries.map((entry) => {
     const allocation = line7AllocationEvidence.allocations.find((candidate) =>
       candidate.actionId === entry.actionId && candidate.allocationId === entry.allocationId)

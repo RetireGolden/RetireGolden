@@ -22,6 +22,23 @@ export interface AnnualQcdItemizedSection170TaxUnitInput {
   readonly taxInputSnapshotId: string
   readonly liabilityRun: Readonly<AnnualQcdSection170RunBinding>
   readonly contributionBaseCents: number
+  /**
+   * Floor already absorbed by contribution categories this ledger cannot see.
+   *
+   * IRC 170(b)(1)(I)(ii) consumes the 0.5% floor in a fixed category order:
+   * (D) 20% capital-gain gifts to private foundations, then (C) 30%
+   * capital-gain gifts to public charities, then (B), then (E) qualified
+   * conservation, then (A) 50% general, and only sixth (G) 60% cash to public
+   * charities. QCD-sourced gifts are category (G), so they absorb the floor
+   * LAST — a donor who also gives appreciated stock has the floor land on that
+   * category first, and this ledger would otherwise charge the whole floor to
+   * the QCD.
+   *
+   * The caller therefore owes the floor already consumed by categories (D)
+   * through (A). Supplying zero asserts that the donor made no contributions
+   * outside category (G) this year. This ledger cannot verify that and does not
+   * try; it models a single category by design.
+   */
   readonly priorItemizerFloorAppliedCents: number
   readonly priorCashPercentageLimitUsedCents: number
   readonly openingPostOtherLimitItemizedDeductionCents: number
