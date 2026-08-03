@@ -175,8 +175,18 @@ function staged(input: StageAnnualQcdItemizedSection170LedgerInput) {
 }
 
 describe('stageAnnualQcdItemizedSection170Ledger', () => {
-  it('applies the exact itemizer floor before the sourced cash percentage capacity', () => {
-    const result = staged(fixture(undefined, { priorPercentage: 100 }))
+  // IRC 170(b)(1)(I)(i) allows a contribution "otherwise allowable (without
+  // regard to this subparagraph)" only above 0.5% of the contribution base. The
+  // parenthetical excepts only the floor itself, so the 170(b)(1)(G) percentage
+  // ceiling applies first and the floor reduces what survives it: min(C, L) - F.
+  //
+  // This fixture is chosen so the two candidate orderings disagree. Base 10,000c
+  // gives a 50c floor and a 6,000c ceiling; 5,500c of prior use leaves 500c of
+  // capacity against a 1,000c contribution.
+  //   min(C, L) - F = min(1,000, 500) - 50 = 450  <- statute
+  //   min(C - F, L) = min(950, 500)        = 500  <- rejected reading
+  it('applies the 0.5% floor to the contribution otherwise allowable after the percentage ceiling', () => {
+    const result = staged(fixture(undefined, { priorPercentage: 5_500 }))
     const ledger = result.taxUnits[0]!
     expect(ledger).toMatchObject({
       filingTreatment: 'itemized', contributionBaseCents: 10_000,
@@ -187,32 +197,87 @@ describe('stageAnnualQcdItemizedSection170Ledger', () => {
     })
     expect(ledger.orderedActionEvidence[0]).toMatchObject({
       treatment: 'evaluated', eligibleContributionCents: 1_000,
+      // The ceiling binds first, so 500c is the amount "otherwise allowable";
+      // the floor then reduces that rather than the gross contribution.
+      percentageAllowableBeforeFloorCents: 500,
       floorAppliedCents: 50, floorCarryforwardCents: 50,
-      floorPermanentlyDisallowedCents: 0, postFloorContributionCents: 950,
-      currentYearClaimedDeductionCents: 950, limitationCarryforwardCents: 50,
+      floorPermanentlyDisallowedCents: 0,
+      currentYearClaimedDeductionCents: 450,
+      // IRC 170(d)(1)(C): the 50c floor amount rides along with the 500c
+      // percentage excess, because an excess exists in this year.
+      percentageLimitCarryforwardCents: 500,
+      limitationCarryforwardCents: 550,
       unclaimedWithoutCarryforwardCents: 0,
-      beforeAction: { cashPercentageLimitCapacityRemainingCents: 5_900,
+      beforeAction: { cashPercentageLimitCapacityRemainingCents: 500,
         postOtherLimitItemizedDeductionBeforeSection68Cents: 500 },
-      afterAction: { cashPercentageLimitCapacityRemainingCents: 4_950,
-        postOtherLimitItemizedDeductionBeforeSection68Cents: 1_450 },
+      // Capacity is consumed by the pre-floor allowable amount, because that is
+      // what the ceiling limited — not by the 450c finally claimed.
+      afterAction: { cashPercentageLimitCapacityRemainingCents: 0,
+        postOtherLimitItemizedDeductionBeforeSection68Cents: 950 },
     })
     expect(result.section68Status).toBe('awaitingSection68Reconciliation')
   })
 
-  it('rounds the half-cent floor once and partitions ineligible floor loss permanently', () => {
-    const result = staged(fixture(undefined, {
-      contributionBase: 100, carry: { 'qcd-a': false },
-    }))
+  it('rounds the half-cent floor once, upward, against the post-ceiling allowable amount', () => {
+    // Base 100c makes the floor exactly half a cent, which must round up to 1c.
+    // The 60c ceiling binds against the 1,000c contribution, so the amount
+    // otherwise allowable is 60c and the claim is 60 - 1 = 59c.
+    const result = staged(fixture(undefined, { contributionBase: 100 }))
     expect(result.taxUnits[0]).toMatchObject({
       itemizerFloorAmountCents: 1, cashPercentageLimitAmountCents: 60,
       orderedActionEvidence: [{
-        floorAppliedCents: 1, floorCarryforwardCents: 0,
-        floorPermanentlyDisallowedCents: 1,
-        currentYearClaimedDeductionCents: 60,
-        percentageLimitCarryforwardCents: 939,
-        limitationCarryforwardCents: 939, unclaimedWithoutCarryforwardCents: 1,
+        percentageAllowableBeforeFloorCents: 60,
+        floorAppliedCents: 1, floorCarryforwardCents: 1,
+        floorPermanentlyDisallowedCents: 0,
+        currentYearClaimedDeductionCents: 59,
+        percentageLimitCarryforwardCents: 940,
+        limitationCarryforwardCents: 941, unclaimedWithoutCarryforwardCents: 0,
       }],
     })
+  })
+
+  // IRC 170(d)(1)(C) carries the floor-disallowed amount forward only "in the
+  // case of any taxable year from which an excess is carried forward
+  // (determined without regard to this subparagraph)". With no percentage-limit
+  // excess there is nothing to increase, so the floor amount is lost outright.
+  it('permanently disallows the floor amount in a year with no percentage-limit excess', () => {
+    // Ceiling 6,000c does not bind against the 1,000c contribution, so there is
+    // no excess and the 50c consumed by the floor cannot be carried.
+    const result = staged(fixture(undefined, { carry: { 'qcd-a': false } }))
+    expect(result.taxUnits[0]).toMatchObject({
+      orderedActionEvidence: [{
+        percentageAllowableBeforeFloorCents: 1_000,
+        floorAppliedCents: 50, floorCarryforwardCents: 0,
+        floorPermanentlyDisallowedCents: 50,
+        currentYearClaimedDeductionCents: 950,
+        percentageLimitCarryforwardCents: 0,
+        limitationCarryforwardCents: 0, unclaimedWithoutCarryforwardCents: 50,
+      }],
+    })
+  })
+
+  it('rejects denying the floor carryforward in a year that does have a percentage-limit excess', () => {
+    // Same denial as above, but the ceiling now binds, so 170(d)(1)(C) requires
+    // the floor amount to ride along with the excess. The caller cannot say no.
+    const result = stageAnnualQcdItemizedSection170Ledger(
+      fixture(undefined, { priorPercentage: 5_500, carry: { 'qcd-a': false } }),
+    )
+    expect(result.status).toBe('annualQcdItemizedSection170Blocked')
+    if (result.status !== 'annualQcdItemizedSection170Blocked') throw new Error('expected refusal')
+    expect(result.issues[0]).toMatchObject({ kind: 'taxUnitInvalid' })
+    expect(result.issues[0]!.detail).toContain('exceed the percentage limitation')
+  })
+
+  it('requires floor carryforward eligibility to agree across a joint tax unit', () => {
+    // The 170(d)(1)(C) gate is a year-level determination, so two actions in one
+    // tax unit cannot answer it differently.
+    const result = stageAnnualQcdItemizedSection170Ledger(fixture([
+      { id: 'qcd-a', donor: 'p1', amount: 500, date: '2026-03-01', sequence: 1 },
+      { id: 'qcd-b', donor: 'p2', amount: 500, date: '2026-09-01', sequence: 2 },
+    ], { joint: true, carry: { 'qcd-a': true, 'qcd-b': false } }))
+    expect(result.status).toBe('annualQcdItemizedSection170Blocked')
+    if (result.status !== 'annualQcdItemizedSection170Blocked') throw new Error('expected refusal')
+    expect(result.issues[0]!.detail).toContain('year-level determination')
   })
 
   it('shares floor and cash-cap state across joint spouses in canonical chronology', () => {

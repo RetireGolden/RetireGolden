@@ -48,7 +48,13 @@ export interface AnnualQcdItemizedSection170ActionEvidence {
   readonly floorAppliedCents: UsdCents
   readonly floorCarryforwardCents: UsdCents
   readonly floorPermanentlyDisallowedCents: UsdCents
-  readonly postFloorContributionCents: UsdCents
+  /**
+   * The contribution "otherwise allowable ... without regard to" the 0.5% floor
+   * (IRC 170(b)(1)(I)(i)) — i.e. the amount surviving the 170(b)(1)(G) cash
+   * percentage ceiling, before the floor reduces it. This is the amount that
+   * consumes percentage capacity; the floor is applied to it afterwards.
+   */
+  readonly percentageAllowableBeforeFloorCents: UsdCents
   readonly cashPercentageLimitUsedByActionCents: UsdCents
   readonly percentageLimitCarryforwardCents: UsdCents
   readonly currentYearClaimedDeductionCents: UsdCents
@@ -239,15 +245,24 @@ function taxUnit(
     const eligible = application.charitableDeductionEligibleAmount
     if (BigInt(eligible) !== BigInt(application.taxableQcdAmount) + BigInt(application.nonQcdCharitableRemainder) ||
         BigInt(eligible) !== BigInt(application.charitableDistributionAmount) - BigInt(application.excludableQcdAmount)) fail('postPassInvalid', 'Post-pass charitable amount did not reconcile.')
-    const floorApplied = asUsdCents(Math.min(eligible, before.floorRemainingCents))
+    // IRC 170(b)(1)(I)(i): the floor reduces "any charitable contribution
+    // otherwise allowable (without regard to this subparagraph) as a deduction
+    // under this section". The parenthetical excepts only the floor itself, so
+    // every other 170 limitation — including the 170(b)(1)(G) percentage
+    // ceiling — is applied first and the floor reduces what survives it.
+    // The order is min(C, L) - F, never min(C - F, L); for a single-category
+    // cash gift the effective ceiling is therefore 59.5% of the contribution
+    // base, not 60%. Percentage capacity is consumed by the pre-floor allowable
+    // amount, because that is what the ceiling actually limited.
+    const allowableBeforeFloor = asUsdCents(Math.min(eligible, before.cashPercentageLimitCapacityRemainingCents))
+    const percentageCarry = subtract(eligible, allowableBeforeFloor, 'Percentage carryforward')
+    const floorApplied = asUsdCents(Math.min(allowableBeforeFloor, before.floorRemainingCents))
+    const claimed = subtract(allowableBeforeFloor, floorApplied, 'Current-year claimed deduction')
     const floorCarry = carry.eligible ? floorApplied : asUsdCents(0)
     const permanent = carry.eligible ? asUsdCents(0) : floorApplied
-    const postFloor = subtract(eligible, floorApplied, 'Post-floor contribution')
-    const claimed = asUsdCents(Math.min(postFloor, before.cashPercentageLimitCapacityRemainingCents))
-    const percentageCarry = subtract(postFloor, claimed, 'Percentage carryforward')
     const after = state(
       subtract(before.floorRemainingCents, floorApplied, 'Remaining floor'),
-      subtract(before.cashPercentageLimitCapacityRemainingCents, claimed, 'Remaining capacity'),
+      subtract(before.cashPercentageLimitCapacityRemainingCents, allowableBeforeFloor, 'Remaining capacity'),
       add(before.postOtherLimitItemizedDeductionBeforeSection68Cents, claimed, 'Pre-Section 68 itemized deduction'),
     )
     const facts = {
@@ -256,7 +271,7 @@ function taxUnit(
       scheduledDate: request.executionDate!, scheduledSequence: request.executionSequence,
       postPassApplicationEvidenceId: application.evidenceId, eligibleContributionCents: eligible,
       floorAppliedCents: floorApplied, floorCarryforwardCents: floorCarry,
-      floorPermanentlyDisallowedCents: permanent, postFloorContributionCents: postFloor,
+      floorPermanentlyDisallowedCents: permanent, percentageAllowableBeforeFloorCents: allowableBeforeFloor,
       cashPercentageLimitUsedByActionCents: claimed,
       percentageLimitCarryforwardCents: percentageCarry,
       currentYearClaimedDeductionCents: claimed,
@@ -272,6 +287,26 @@ function taxUnit(
     before = after
     return evidence
   })
+  // IRC 170(d)(1)(C): the floor-disallowed amount has no independent carryover.
+  // It survives only by increasing an excess that is already being carried
+  // forward "determined without regard to this subparagraph" — so in a year with
+  // no percentage-limit excess it is permanently lost. The gate is year-level,
+  // so every action in the unit must answer it identically.
+  //
+  // This ledger sees only QCD-sourced cash gifts (category (G)). When it can
+  // prove an excess of its own, eligibility is not the caller's to deny. When it
+  // cannot, the caller's assertion carries information this ledger lacks —
+  // whether another contribution category had an excess — and is accepted.
+  const unitPercentageCarry = actionEvidence.reduce(
+    (total, entry) => total + BigInt(entry.percentageLimitCarryforwardCents), 0n,
+  )
+  const eligibilityAnswers = new Set(actionEvidence.map((entry) => entry.floorCarryforwardEligible))
+  if (eligibilityAnswers.size > 1) {
+    fail('taxUnitInvalid', 'Floor carryforward eligibility is a year-level determination and must agree across the tax unit.')
+  }
+  if (unitPercentageCarry > 0n && eligibilityAnswers.has(false)) {
+    fail('taxUnitInvalid', 'Floor carryforward eligibility cannot be denied in a year whose contributions exceed the percentage limitation.')
+  }
   const withoutId = {
     taxUnit, filingTreatment: 'itemized' as const,
     annualTaxLiabilityEvidenceId: liabilityId,
