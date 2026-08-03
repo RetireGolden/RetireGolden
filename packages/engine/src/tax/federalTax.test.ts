@@ -292,6 +292,29 @@ describe('capital gains stacking', () => {
   })
 })
 
+describe('standard deduction structure', () => {
+  // IRC 63(c)(2)(A) defines the joint amount AS 200 percent of the unmarried
+  // one, so the two are not independently indexed figures that happen to sit
+  // near a 2:1 ratio -- the ratio is the rule. Carrying them as unrelated pack
+  // constants invites them drifting apart at a future re-index, and nothing
+  // downstream would notice.
+  describeRule('irc-63-c-2-joint-standard-deduction-doubles', {
+    readings: { exactlyTwiceTheUnmarriedAmount: 2, anyOtherRatio: 1.95 },
+    accepted: 'exactlyTwiceTheUnmarriedAmount',
+  }, ({ accepted, readings }) => {
+    it('keeps the joint amount at exactly twice the unmarried one', () => {
+      const single = computeFederalTax(input({ ordinaryIncome: 100_000 }))
+      const joint = computeFederalTax(input({
+        filingStatus: 'marriedFilingJointly', ordinaryIncome: 100_000,
+      }))
+
+      const ratio = joint.deduction / single.deduction
+      expect(ratio).toBeCloseTo(accepted, 10)
+      expect(ratio).not.toBeCloseTo(readings.anyOtherRatio, 3)
+    })
+  })
+})
+
 describe('SALT cap schedule', () => {
   // IRC 164(b)(7) is a written schedule, not an indexed figure, and 2030 is a
   // REVERSION: 40,400 in 2026, stepping 101 percent a year, then 10,000 flat.
