@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+
+import { describeRule } from '../rules/describeRule.js'
 import {
   computePiaFromEarnings,
   eligibilityYearFromDobParts,
@@ -9,6 +11,29 @@ import {
   resolveEarningsProjection,
   type PiaFromEarningsResult,
 } from './piaFromEarnings.js'
+
+describe('PIA bend point formula', () => {
+  // 42 U.S.C. 415(a)(1)(A) applies each rate only to the earnings inside its
+  // own band. Applying a single rate to the whole of average indexed monthly
+  // earnings is the natural misreading of a bracketed formula and understates
+  // the benefit severely.
+  //
+  // 2025 eligibility, bend points 1,226 and 7,391, AIME 8,000:
+  //   0.90 x 1,226            = 1,103.40
+  //   0.32 x (7,391 - 1,226)  = 1,972.80
+  //   0.15 x (8,000 - 7,391)  =    91.35
+  //   total 3,167.55, floored to the dime = 3,167.50
+  // A flat 15 percent on the whole 8,000 would give 1,200.
+  describeRule('usc-42-415-a-1-pia-bend-point-formula', {
+    readings: { marginalAcrossBands: 3_167.5, singleRateOnWholeAime: 1_200 },
+    accepted: 'marginalAcrossBands',
+  }, ({ accepted, readings }) => {
+    it('applies each rate only to the earnings inside its own band', () => {
+      expect(piaMonthlyFromAime(8_000, 2025)).toBeCloseTo(accepted, 6)
+      expect(piaMonthlyFromAime(8_000, 2025)).not.toBeCloseTo(readings.singleRateOnWholeAime, 6)
+    })
+  })
+})
 
 describe('piaMonthlyFromAime', () => {
   it('matches SSA bend formula for 2015 (published bend points)', () => {
