@@ -25,7 +25,6 @@ describe('acaApplicablePct', () => {
     accepted: 'stepOpensAt133',
   }, ({ accepted, readings }) => {
     it('steps to the 133 band at exactly 133 percent of the poverty line', () => {
-      const pack = packForYear(2026).pack
       expect(acaApplicablePct(pack, 133)).toBeCloseTo(accepted, 6)
       expect(acaApplicablePct(pack, 132.999)).toBeCloseTo(readings.floorRunsThrough133, 6)
     })
