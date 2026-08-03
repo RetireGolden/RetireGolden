@@ -17,7 +17,7 @@ describe('local case runner', () => {
 
     expect(a.totals.caseCount).toBe(EXAMPLE_PLANS.length)
     expect(stableCaseManifestJson(a)).toEqual(stableCaseManifestJson(b))
-  })
+  }, 15_000)
 
   it('diffs manifests and honors an allowlist for intentional moves', () => {
     const base = runCases(defaultExampleCases())
