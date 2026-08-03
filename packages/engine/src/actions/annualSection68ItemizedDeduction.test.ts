@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { describeRule } from '../rules/describeRule.js'
 import {
   buildAnnualSection68ItemizedDeductionEvidence,
   type BuildAnnualSection68ItemizedDeductionEvidenceInput,
@@ -31,6 +32,26 @@ function built(input = base()) {
 }
 
 describe('buildAnnualSection68ItemizedDeductionEvidence', () => {
+  // Publication 505 states the rate as 5.4%, a truncation of 2/37. Over this
+  // fixture's 3,700,000c limitation base the exact rational gives 200,000c and
+  // the truncation gives 199,800c - a $2 gap on one taxpayer, and the provision
+  // only bites at incomes where that scales.
+  describeRule('irc-68-overall-itemized-limitation', {
+    readings: { exactTwoThirtySevenths: 200_000, publication505Truncation: 199_800 },
+    accepted: 'exactTwoThirtySevenths',
+  }, ({ accepted, readings }) => {
+    it('reduces by the exact rational rather than the published 5.4 percent', () => {
+      const evidence = built()
+      expect(evidence.finalState.overallLimitationCents).toBe(accepted)
+      expect(evidence.finalState.overallLimitationCents)
+        .not.toBe(readings.publication505Truncation)
+      expect(evidence).toMatchObject({
+        limitationRateNumerator: 2, limitationRateDenominator: 37,
+        intermediateArithmetic: 'bigintRational',
+      })
+    })
+  })
+
   it('applies the exact 2/37 limitation once over the smaller statutory base', () => {
     const evidence = built()
 

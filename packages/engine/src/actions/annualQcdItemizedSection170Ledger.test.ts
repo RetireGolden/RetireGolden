@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { describeRule } from '../rules/describeRule.js'
 import { parsePlan } from '../model/plan.js'
 import { couplePlan, singlePersonPlan, traditionalAccount } from '../testing/planFixtures.js'
 import type { RetirementActionEligibilityRuntimeEvidence } from '../strategies/accountEligibility.js'
@@ -185,6 +186,81 @@ describe('stageAnnualQcdItemizedSection170Ledger', () => {
   // capacity against a 1,000c contribution.
   //   min(C, L) - F = min(1,000, 500) - 50 = 450  <- statute
   //   min(C - F, L) = min(950, 500)        = 500  <- rejected reading
+  describeRule('irc-170-b-1-I-floor-ordering', {
+    readings: { statute: 450, rejectedFloorBeforeCeiling: 500 },
+    accepted: 'statute',
+    note: 'The rejected reading survived for a whole chain because the prior fixture returned the same number under both orderings.',
+  }, ({ accepted, readings }) => {
+    it('claims the post-ceiling amount reduced by the floor', () => {
+      const claimed = staged(fixture(undefined, { priorPercentage: 5_500 }))
+        .taxUnits[0]!.orderedActionEvidence[0]!.currentYearClaimedDeductionCents
+      expect(claimed).toBe(accepted)
+      expect(claimed).not.toBe(readings.rejectedFloorBeforeCeiling)
+    })
+  })
+
+  // IRC 170(b)(1)(G)(i)(II) subtracts contributions already taken into account
+  // under (A) from the 60% ceiling, so cash gifts fill only the headroom rather
+  // than stacking an independent 60% bucket on top of the 50% limit. Here 5,500c
+  // of the 6,000c ceiling is already consumed, leaving 500c against a 1,000c
+  // contribution: the combined reading claims 450c after the floor, the
+  // independent-bucket reading would claim 950c.
+  describeRule('irc-170-b-1-G-cash-percentage-ceiling', {
+    readings: { combinedCeilingNetOfCategoryA: 450, independentSixtyPercentBucket: 950 },
+    accepted: 'combinedCeilingNetOfCategoryA',
+  }, ({ accepted, readings }) => {
+    it('fills only the headroom left by contributions already counted', () => {
+      const action = staged(fixture(undefined, { priorPercentage: 5_500 }))
+        .taxUnits[0]!.orderedActionEvidence[0]!
+      expect(action.currentYearClaimedDeductionCents).toBe(accepted)
+      expect(action.currentYearClaimedDeductionCents)
+        .not.toBe(readings.independentSixtyPercentBucket)
+      expect(action.percentageAllowableBeforeFloorCents).toBe(500)
+    })
+  })
+
+  describeRule('irc-170-d-1-C-floor-carryforward-gate', {
+    // Same 50c floor consumed either way; the readings differ on whether it can
+    // be carried when the year has no percentage-limit excess.
+    readings: { statute: 0, rejectedIndependentCarryover: 50 },
+    accepted: 'statute',
+  }, ({ accepted, readings }) => {
+    it('permanently loses the floor amount when no excess exists to increase', () => {
+      const action = staged(fixture(undefined, { carry: { 'qcd-a': false } }))
+        .taxUnits[0]!.orderedActionEvidence[0]!
+      expect(action.floorCarryforwardCents).toBe(accepted)
+      expect(action.floorCarryforwardCents).not.toBe(readings.rejectedIndependentCarryover)
+      expect(action.floorPermanentlyDisallowedCents).toBe(50)
+    })
+
+    it('refuses to deny the carryforward in a year that does have an excess', () => {
+      const blocked = stageAnnualQcdItemizedSection170Ledger(
+        fixture(undefined, { priorPercentage: 5_500, carry: { 'qcd-a': false } }),
+      )
+      expect(blocked.status).toBe('annualQcdItemizedSection170Blocked')
+    })
+  })
+
+  describeRule('irc-170-b-1-I-ii-category-waterfall', {
+    // Cash gifts to public charities are category (G) and absorb the floor
+    // sixth. Whether this single-category ledger charges the floor to the QCD
+    // depends entirely on the floor the caller reports already consumed by
+    // categories (D) through (A).
+    readings: { earlierCategoriesAbsorbedIt: 1_000, chargedToCashCategory: 950 },
+    accepted: 'earlierCategoriesAbsorbedIt',
+  }, ({ accepted, readings }) => {
+    it('leaves the cash category unreduced once earlier categories consume the floor', () => {
+      const absorbed = staged(fixture(undefined, { priorFloor: 50 }))
+        .taxUnits[0]!.orderedActionEvidence[0]!
+      expect(absorbed.currentYearClaimedDeductionCents).toBe(accepted)
+      expect(absorbed.floorAppliedCents).toBe(0)
+
+      const unabsorbed = staged(fixture(undefined, { priorFloor: 0 }))
+        .taxUnits[0]!.orderedActionEvidence[0]!
+      expect(unabsorbed.currentYearClaimedDeductionCents).toBe(readings.chargedToCashCategory)
+    })
+  })
+
   it('applies the 0.5% floor to the contribution otherwise allowable after the percentage ceiling', () => {
     const result = staged(fixture(undefined, { priorPercentage: 5_500 }))
     const ledger = result.taxUnits[0]!

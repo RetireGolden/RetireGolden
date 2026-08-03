@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { describeRule } from '../rules/describeRule.js'
 import { parsePlan, type Plan } from '../model/plan.js'
 import { couplePlan, singlePersonPlan, traditionalAccount } from '../testing/planFixtures.js'
 import type { RetirementActionEligibilityRuntimeEvidence } from '../strategies/accountEligibility.js'
@@ -307,6 +308,53 @@ describe('stageAnnualQcdTaxCharacterPostPass', () => {
     const result = staged(fixture(undefined, { capacity: { p1: 5_000 } }))
     expect(result.applications[0]).toMatchObject({
       taxableQcdAmount: 0, includibleQcdBasisTreatment: 'notApplicable',
+    })
+  })
+
+  describeRule('irc-408-d-8-A-annual-qcd-limit', {
+    readings: { indexed2026: 11_100_000, prior2025: 10_800_000 },
+    accepted: 'indexed2026',
+  }, ({ accepted, readings }) => {
+    it('excludes only the indexed annual limit', () => {
+      const excluded = staged(fixture([{ id: 'large', amount: 12_000_000 }]))
+        .applications[0]!.excludableQcdAmount
+      expect(excluded).toBe(accepted)
+      expect(excluded).not.toBe(readings.prior2025)
+    })
+  })
+
+  describeRule('irc-408-d-8-D-qcd-taxable-first', {
+    // Gross 12,000,000c against 11,500,000c of pre-tax dollars and 500,000c of
+    // basis. Taxable-first caps the QCD at pre-tax dollars, leaving a 500,000c
+    // non-QCD remainder that does draw basis. A plain section 72 pro-rata
+    // reading would make the whole distribution a QCD and leave no remainder.
+    readings: { taxableFirst: 500_000, proRataSection72: 0 },
+    accepted: 'taxableFirst',
+  }, ({ accepted, readings }) => {
+    it('caps the QCD at aggregate pre-tax dollars and leaves the rest to basis', () => {
+      const application = staged(fixture([{ id: 'large', amount: 12_000_000 }],
+        { capacity: { p1: 11_500_000 } })).applications[0]!
+      expect(application.nonQcdCharitableRemainder).toBe(accepted)
+      expect(application.nonQcdCharitableRemainder).not.toBe(readings.proRataSection72)
+      expect(application.otherwiseTaxableAmountAfter).toBe(0)
+    })
+  })
+
+  describeRule('irc-408-d-8-includible-qcd-basis', {
+    // The readings disagree on what remains a QCD once the annual limit binds.
+    // Under 408(d)(8)(E) the whole pre-tax draw stays a QCD and the includible
+    // excess recovers no basis; under the Form 1040 instructions "QCD" means the
+    // capped amount and the excess would reach Form 8606 line 7 with basis.
+    readings: { statutoryWholeDrawRemainsQcd: 11_500_000, form1040CappedQcd: 11_100_000 },
+    accepted: 'statutoryWholeDrawRemainsQcd',
+  }, ({ accepted, readings }) => {
+    it('keeps the includible excess inside the QCD and discloses the reading', () => {
+      const application = staged(fixture([{ id: 'large', amount: 12_000_000 }],
+        { capacity: { p1: 11_500_000 } })).applications[0]!
+      expect(application.qualifiedCharitableDistributionAmount).toBe(accepted)
+      expect(application.qualifiedCharitableDistributionAmount).not.toBe(readings.form1040CappedQcd)
+      expect(application.includibleQcdBasisTreatment)
+        .toBe('statutoryTaxableFirstUnsettledAgainstBasis')
     })
   })
 
