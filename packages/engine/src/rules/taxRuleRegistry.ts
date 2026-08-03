@@ -914,6 +914,34 @@ const registry = {
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/actions/beneficiaryTraditionalIraResidualRmdAllocation.ts'],
   },
+  'irc-86-a-taxable-social-security-two-tier': {
+    title: 'Social Security inclusion is two tiers with a capped carry',
+    statement:
+      'Below the base amount no benefit is included. Between the base and adjusted base amounts the inclusion is the lesser of half the benefits or half the excess over the base. Above the adjusted base amount it is the lesser of 85 percent of the benefits or 85 percent of the excess over the adjusted base plus the tier-one amount, and that carried tier-one amount is itself capped.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The statute caps the carried amount at 4,500 dollars single and 6,000 joint. The engine computes half the spread between the base and adjusted base amounts instead, which equals those figures exactly -- 0.5 x (34,000 - 25,000) and 0.5 x (44,000 - 32,000) -- so the cap stays correct if the thresholds are ever re-indexed, rather than drifting from two hard-coded constants.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 86(a)(2)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/86',
+      quotedText:
+        'the amount included in gross income under this section shall be equal to the lesser of - (A) the sum of - (i) 85 percent of such excess, plus (ii) the lesser of the amount determined under paragraph (1) or an amount equal to one-half of the difference between the adjusted base amount and the base amount of the taxpayer, or (B) 85 percent of the social security benefits received during the taxable year.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 86(b)(2)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/86',
+      quotedText:
+        'adjusted gross income - (A) determined without regard to this section and sections 85(c), 135, 137, 221, 911, 931, and 933, and (B) increased by the amount of interest received or accrued by the taxpayer during the taxable year which is exempt from tax.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+  },
+
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)
