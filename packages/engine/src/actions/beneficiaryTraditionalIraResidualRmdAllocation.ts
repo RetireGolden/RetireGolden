@@ -45,7 +45,7 @@ export interface BeneficiaryTraditionalIraResidualRmdAllocationPreparedResult {
   readonly movement: 'notCommitted'
   readonly committed: false
   readonly actionability: 'notEstablished'
-  readonly allocationPolicy: 'stableAccountIdAscending'
+  readonly allocationPolicy: 'balanceProportionateLargestRemainder'
   readonly beneficiaryPersonId: PersonId
   readonly decedentPersonId: PersonId
   readonly taxYear: number
@@ -194,6 +194,56 @@ function deepFreeze<T>(value: T): Readonly<T> {
     Object.freeze(value)
   }
   return value as Readonly<T>
+}
+
+/**
+ * Splits `total` across the sources in proportion to their balances, exactly in
+ * cents. Floors each share, then hands the residual cents to the largest
+ * fractional remainders, ties broken by account id so the split is stable.
+ */
+function proportionateShares(
+  sources: readonly Readonly<{
+    sourceAccountId: AccountId
+    annualFinalBalanceAmount: UsdCents
+  }>[],
+  total: UsdCents,
+): Map<AccountId, number> | null {
+  const shares = new Map<AccountId, number>()
+  if (total === 0) return shares
+  let pool = 0n
+  for (const source of sources) pool += BigInt(source.annualFinalBalanceAmount)
+  // A pool with no balance is a capacity shortfall, not invalid evidence: every
+  // share is zero and the caller reports noSourceCapacity. Only a negative pool
+  // is unrepresentable.
+  if (pool < 0n) return null
+  if (pool === 0n) {
+    for (const source of sources) shares.set(source.sourceAccountId, 0)
+    return shares
+  }
+
+  const totalBig = BigInt(total)
+  let assigned = 0n
+  const remainders: { id: AccountId; remainder: bigint }[] = []
+  for (const source of sources) {
+    const numerator = totalBig * BigInt(source.annualFinalBalanceAmount)
+    const floor = numerator / pool
+    shares.set(source.sourceAccountId, Number(floor))
+    assigned += floor
+    remainders.push({ id: source.sourceAccountId, remainder: numerator % pool })
+  }
+
+  remainders.sort((left, right) =>
+    left.remainder === right.remainder
+      ? compareUtf16CodeUnits(left.id, right.id)
+      : (right.remainder > left.remainder ? 1 : -1))
+  let residual = totalBig - assigned
+  for (const entry of remainders) {
+    if (residual <= 0n) break
+    shares.set(entry.id, (shares.get(entry.id) ?? 0) + 1)
+    residual -= 1n
+  }
+  if (residual !== 0n) return null
+  return shares
 }
 
 function unsupported(): Readonly<
@@ -393,11 +443,24 @@ function prepare(
   let remaining = rmd.finalRmdRemainingAmount
   const sourceAllocations:
     BeneficiaryTraditionalIraResidualRmdSourceAllocation[] = []
-  for (const source of [...sources].sort((left, right) =>
-    compareUtf16CodeUnits(left.sourceAccountId, right.sourceAccountId))) {
+  // Treas. Reg. 1.408-8(e)(4)(i) requires each IRA to distribute "a proportionate
+  // share of the shortfall ... based on the account balances" when the owner
+  // died before taking the year's total and the IRAs did not all carry
+  // identical beneficiary designations. The engine never models other
+  // beneficiaries' designations, so it cannot tell when (e)(4)(i) binds -- but
+  // it does not need to. Where designations are identical, (e)(1) free choice
+  // permits any split including the proportionate one, so allocating
+  // proportionately is correct under both branches. Draining the lowest account
+  // id first is correct only under the free-choice branch.
+  const ordered = [...sources].sort((left, right) =>
+    compareUtf16CodeUnits(left.sourceAccountId, right.sourceAccountId))
+  const shares = proportionateShares(ordered, remaining)
+  if (shares === null) return unsupported()
+  for (const source of ordered) {
     if (remaining === 0) break
     const allocatedAmount = asUsdCents(Math.min(
       source.annualFinalBalanceAmount,
+      shares.get(source.sourceAccountId) ?? 0,
       remaining,
     ))
     if (allocatedAmount === 0) continue
@@ -453,7 +516,7 @@ function prepare(
     movement: 'notCommitted' as const,
     committed: false as const,
     actionability: 'notEstablished' as const,
-    allocationPolicy: 'stableAccountIdAscending' as const,
+    allocationPolicy: 'balanceProportionateLargestRemainder' as const,
     beneficiaryPersonId: rmd.beneficiaryPersonId,
     decedentPersonId: rmd.decedentPersonId,
     taxYear: rmd.taxYear,

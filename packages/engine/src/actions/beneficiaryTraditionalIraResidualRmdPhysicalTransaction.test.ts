@@ -164,17 +164,25 @@ describe('prepareBeneficiaryTraditionalIraResidualRmdPhysicalTransaction', () =>
       {
         sourceAccountId: 'account:a',
         sourceBalanceBefore: 2_000,
-        executedAmount: 2_000,
-        sourceBalanceAfter: 0,
+        executedAmount: 714,
+        sourceBalanceAfter: 1_286,
         residualRmdBefore: 5_000,
-        residualRmdAfter: 3_000,
+        residualRmdAfter: 4_286,
       },
       {
         sourceAccountId: 'account:b',
         sourceBalanceBefore: 5_000,
-        executedAmount: 3_000,
-        sourceBalanceAfter: 2_000,
-        residualRmdBefore: 3_000,
+        executedAmount: 1_786,
+        sourceBalanceAfter: 3_214,
+        residualRmdBefore: 4_286,
+        residualRmdAfter: 2_500,
+      },
+      {
+        sourceAccountId: 'account:c',
+        sourceBalanceBefore: 7_000,
+        executedAmount: 2_500,
+        sourceBalanceAfter: 4_500,
+        residualRmdBefore: 2_500,
         residualRmdAfter: 0,
       },
     ])
@@ -186,21 +194,21 @@ describe('prepareBeneficiaryTraditionalIraResidualRmdPhysicalTransaction', () =>
     }))).toEqual([
       {
         sourceAccountId: 'account:a',
-        residualRmdExecutedAmount: 2_000,
-        postResidualBalanceAmount: 0,
+        residualRmdExecutedAmount: 714,
+        postResidualBalanceAmount: 1_286,
         applicationCount: 1,
       },
       {
         sourceAccountId: 'account:b',
-        residualRmdExecutedAmount: 3_000,
-        postResidualBalanceAmount: 2_000,
+        residualRmdExecutedAmount: 1_786,
+        postResidualBalanceAmount: 3_214,
         applicationCount: 1,
       },
       {
         sourceAccountId: 'account:c',
-        residualRmdExecutedAmount: 0,
-        postResidualBalanceAmount: 7_000,
-        applicationCount: 0,
+        residualRmdExecutedAmount: 2_500,
+        postResidualBalanceAmount: 4_500,
+        applicationCount: 1,
       },
     ])
     expect(result.rmdTransition).toMatchObject({

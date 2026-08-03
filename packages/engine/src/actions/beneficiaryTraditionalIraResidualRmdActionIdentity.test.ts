@@ -136,8 +136,8 @@ describe('prepareBeneficiaryTraditionalIraResidualRmdActionIdentity', () => {
       application: result.physicalTransaction.residualApplications.find((app) =>
         app.applicationEvidenceId === binding.applicationEvidenceId)?.executedAmount,
     }))).toEqual([
-      { source: 'account:a', amount: 2_000, allocation: 2_000, application: 2_000 },
-      { source: 'account:b', amount: 3_000, allocation: 3_000, application: 3_000 },
+      { source: 'account:a', amount: 1_429, allocation: 1_429, application: 1_429 },
+      { source: 'account:b', amount: 3_571, allocation: 3_571, application: 3_571 },
     ])
     expect(result.identityEvidenceId).toMatch(
       /^beneficiary-ira-residual-rmd-action-identity:[0-9a-f]{64}$/,

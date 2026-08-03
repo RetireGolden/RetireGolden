@@ -842,6 +842,28 @@ const registry = {
       'packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts',
     ],
   },
+
+  'treas-reg-1-408-8-e-4-i-year-of-death-proportionate-shortfall': {
+    title: 'Year-of-death RMD shortfall is shared proportionately',
+    statement:
+      'Where the owner died before taking the calendar year total and the aggregated IRAs did not all carry identical beneficiary designations, each IRA must distribute a proportionate share of the shortfall based on its account balance. Draining one account before touching the next satisfies only the free-choice branch of (e)(1).',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The engine never models other beneficiaries designations, so it cannot observe whether (e)(4)(i) binds in a given year. It allocates proportionately unconditionally instead: where designations are identical, (e)(1) free choice permits any split including the proportionate one, so the proportionate split is correct under both branches while an account-order drain is correct under only one.',
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8(e)(4)(i)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.408-8',
+      quotedText:
+        'each of the owner’s IRAs is subject to a requirement to distribute a proportionate share of the shortfall for the calendar year to a beneficiary of that IRA, with the proportions based on the account balances determined under paragraph (b)(2) of this section.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/actions/beneficiaryTraditionalIraResidualRmdAllocation.ts'],
+  },
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)

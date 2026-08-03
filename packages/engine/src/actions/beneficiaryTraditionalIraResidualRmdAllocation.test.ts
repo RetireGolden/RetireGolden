@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+
+import { describeRule } from '../rules/describeRule.js'
 import {
   prepareBeneficiaryTraditionalIraResidualRmdAllocation,
   type PrepareBeneficiaryTraditionalIraResidualRmdAllocationInput,
@@ -116,7 +118,27 @@ function rederiveRawTransition(
 }
 
 describe('prepareBeneficiaryTraditionalIraResidualRmdAllocation', () => {
-  it('counts identity actions first and allocates only the residual by stable account ID', () => {
+  // Treas. Reg. 1.408-8(e)(4)(i): each IRA distributes "a proportionate share of
+  // the shortfall ... based on the account balances". With balances of 2,000c
+  // and 5,000c against a 5,000c residual, the first account's proportionate
+  // share is 5000 * 2000 / 7000 = 1,428.57c, which the largest-remainder split
+  // rounds to 1,429c. Draining the lowest account id first would instead take
+  // that account's whole 2,000c balance.
+  describeRule('treas-reg-1-408-8-e-4-i-year-of-death-proportionate-shortfall', {
+    readings: { proportionateByBalance: 1_429, drainLowestAccountIdFirst: 2_000 },
+    accepted: 'proportionateByBalance',
+  }, ({ accepted, readings }) => {
+    it('splits the residual by balance rather than by account order', () => {
+      const result = prepareBeneficiaryTraditionalIraResidualRmdAllocation(input())
+      expect(result.status).toBe('residualRmdAllocationPrepared')
+      if (result.status !== 'residualRmdAllocationPrepared') return
+      expect(result.sourceAllocations[0]?.allocatedAmount).toBe(accepted)
+      expect(result.sourceAllocations[0]?.allocatedAmount)
+        .not.toBe(readings.drainLowestAccountIdFirst)
+    })
+  })
+
+  it('counts identity actions first and allocates the residual proportionately to account balances', () => {
     const result =
       prepareBeneficiaryTraditionalIraResidualRmdAllocation(input())
 
@@ -125,7 +147,7 @@ describe('prepareBeneficiaryTraditionalIraResidualRmdAllocation', () => {
       movement: 'notCommitted',
       committed: false,
       actionability: 'notEstablished',
-      allocationPolicy: 'stableAccountIdAscending',
+      allocationPolicy: 'balanceProportionateLargestRemainder',
       rmdRequiredAmount: 10_000,
       rmdSatisfiedBeforeResidual: 5_000,
       residualRmdRequiredAmount: 5_000,
@@ -139,17 +161,17 @@ describe('prepareBeneficiaryTraditionalIraResidualRmdAllocation', () => {
       expect.objectContaining({
         sourceAccountId: 'account:a',
         sourceBalanceBefore: 2_000,
-        allocatedAmount: 2_000,
-        sourceBalanceAfter: 0,
+        allocatedAmount: 1_429,
+        sourceBalanceAfter: 571,
         residualRmdBefore: 5_000,
-        residualRmdAfter: 3_000,
+        residualRmdAfter: 3_571,
       }),
       expect.objectContaining({
         sourceAccountId: 'account:b',
         sourceBalanceBefore: 5_000,
-        allocatedAmount: 3_000,
-        sourceBalanceAfter: 2_000,
-        residualRmdBefore: 3_000,
+        allocatedAmount: 3_571,
+        sourceBalanceAfter: 1_429,
+        residualRmdBefore: 3_571,
         residualRmdAfter: 0,
       }),
     ])
