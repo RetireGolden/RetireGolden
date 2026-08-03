@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { describeRule } from '../rules/describeRule.js'
+
 import { packForYear } from '../params/index.js'
 import {
   acaApplicablePct,
@@ -13,6 +15,22 @@ import {
 const pack = packForYear(2026).pack
 
 describe('acaApplicablePct', () => {
+  // Rev. Proc. 2025-25 section 3.01 states the bands as "at least 133% but less
+  // than 150%", so 133 is a real step: strictly below is the 2.10% floor and
+  // 133 itself opens the next band at 3.14%. Reading the floor as running
+  // through 133 inclusive understates the expected contribution at exactly that
+  // income and overstates the credit.
+  describeRule('rev-proc-2025-25-aca-applicable-percentage-2026', {
+    readings: { stepOpensAt133: 3.14, floorRunsThrough133: 2.1 },
+    accepted: 'stepOpensAt133',
+  }, ({ accepted, readings }) => {
+    it('steps to the 133 band at exactly 133 percent of the poverty line', () => {
+      const pack = packForYear(2026).pack
+      expect(acaApplicablePct(pack, 133)).toBeCloseTo(accepted, 6)
+      expect(acaApplicablePct(pack, 132.999)).toBeCloseTo(readings.floorRunsThrough133, 6)
+    })
+  })
+
   it('has the sourced step at exactly 133% FPL', () => {
     expect(acaApplicablePct(pack, 50)).toBe(2.1)
     expect(acaApplicablePct(pack, 132.999)).toBe(2.1)

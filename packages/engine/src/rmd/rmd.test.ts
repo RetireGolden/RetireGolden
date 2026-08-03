@@ -1,11 +1,35 @@
 import { describe, expect, it } from 'vitest'
 
+import { describeRule } from '../rules/describeRule.js'
+
 import { packForYear } from '../params/index.js'
 import { requiredMinimumDistribution } from './rmd.js'
 
 const pack = packForYear(2026).pack
 
 describe('requiredMinimumDistribution', () => {
+  // Treas. Reg. 1.401(a)(9)-5 gives the Joint and Last Survivor Table only to a
+  // sole-beneficiary spouse "more than 10 years younger". Exactly ten is not
+  // more than ten, so that case stays on the Uniform Lifetime Table. An owner
+  // aged 75 with a 100,000 balance takes 100,000 / 24.6 there; an eleven-year
+  // gap moves to the joint table's larger divisor and a smaller distribution.
+  describeRule('treas-reg-1-401-a-9-5-joint-life-spouse-sole-beneficiary', {
+    readings: {
+      uniformAtExactlyTenYears: 4065.040650406504,
+      jointTableAtElevenYears: 3952.569169960474,
+    },
+    accepted: 'uniformAtExactlyTenYears',
+  }, ({ accepted, readings }) => {
+    it('keeps a spouse exactly ten years younger on the Uniform Lifetime Table', () => {
+      const spouse = (ageAttained: number) => ({ ageAttained, sex: 'average' as const })
+
+      expect(requiredMinimumDistribution(pack, 1951, 75, 100_000, { spouse: spouse(65) }))
+        .toBeCloseTo(accepted, 6)
+      expect(requiredMinimumDistribution(pack, 1951, 75, 100_000, { spouse: spouse(64) }))
+        .toBeCloseTo(readings.jointTableAtElevenYears, 6)
+    })
+  })
+
   it('starts at 73 for the 1951–1959 cohort', () => {
     expect(requiredMinimumDistribution(pack, 1953, 72, 265_000)).toBe(0)
     expect(requiredMinimumDistribution(pack, 1953, 73, 265_000)).toBeCloseTo(265_000 / 26.5, 6)
