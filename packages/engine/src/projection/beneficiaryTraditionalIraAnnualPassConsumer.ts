@@ -238,7 +238,7 @@ interface CurrentBalances {
  */
 function liveBalanceRecords(
   state: SimulatorAnnualPassStateBindings,
-): SimulatorAnnualPassBalanceRecord[] | null {
+): { readonly source: unknown; readonly records: SimulatorAnnualPassBalanceRecord[] } | null {
   const balances = Object.getOwnPropertyDescriptor(state, 'balances')
   if (balances === undefined || !Object.hasOwn(balances, 'value')) return null
   const value: unknown = balances.value
@@ -259,19 +259,23 @@ function liveBalanceRecords(
     }
     records.push(entry.value as SimulatorAnnualPassBalanceRecord)
   }
-  return records
+  // The array itself is handed back so the snapshot can be taken from the same
+  // object these records came from. Re-reading `state.balances` would be a
+  // second property access, and a getter or Proxy could answer it with a
+  // different array than the one just materialized.
+  return { source: value, records }
 }
 
 function currentBalances(state: SimulatorAnnualPassStateBindings): CurrentBalances | null {
   const live = liveBalanceRecords(state)
   if (live === null) return null
-  const snapshot = plainDataSnapshot(state.balances)
-  if (!Array.isArray(snapshot) || snapshot.length !== live.length) return null
+  const snapshot = plainDataSnapshot(live.source)
+  if (!Array.isArray(snapshot) || snapshot.length !== live.records.length) return null
   const rows: BeneficiaryTraditionalIraAnnualPassAccountRow[] = []
   const records = new Map<AccountId, SimulatorAnnualPassBalanceRecord>()
   for (let index = 0; index < snapshot.length; index += 1) {
     const detached = snapshot[index]
-    const record = live[index]
+    const record = live.records[index]
     if (
       detached === null || typeof detached !== 'object' ||
       Array.isArray(detached) || record === undefined
