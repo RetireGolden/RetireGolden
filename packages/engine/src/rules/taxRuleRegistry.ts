@@ -998,6 +998,249 @@ const registry = {
     ],
   },
 
+  'irc-1-h-capital-gain-stacked-on-ordinary': {
+    title: 'Net capital gain stacks on top of ordinary taxable income',
+    statement:
+      'The preferential rates apply to bands measured from where ordinary taxable income ends, not from zero. Ordinary income fills the lower brackets first and the net capital gain sits on top of it, so the same gain can be taxed at 0, 15 or 20 percent depending only on how much ordinary income precedes it.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The statute frames the result as a ceiling -- the tax "shall not exceed" the sum of its components -- and enumerates the bands as offsets from the amount of taxable income otherwise taxed below 25 percent. The engine computes the bands directly from the ordinary taxable amount, which reaches the same figure for the rate schedule it models and is the reason the code carries no explicit 25 percent reference.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 1(h)(1)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/1',
+      quotedText:
+        'If a taxpayer has a net capital gain for any taxable year, the tax imposed by this section for such taxable year shall not exceed the sum of - (A) a tax computed at the rates and in the same manner as if this subsection had not been enacted on the greater of - (i) taxable income reduced by the net capital gain; or (ii) the lesser of - (I) the amount of taxable income taxed at a rate below 25 percent; or (II) taxable income reduced by the adjusted net capital gain, (B) 0 percent of so much of the adjusted net capital gain (or, if less, taxable income) as does not exceed the excess (if any) of - (i) the amount of taxable income which would (without regard to this paragraph) be taxed at a rate below 25 percent, over (ii) the taxable income reduced by the adjusted net capital gain.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/tax/federalTax.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
+  'irc-55-a-amt-is-the-excess-over-regular-tax': {
+    title: 'AMT is the excess of tentative minimum tax over regular tax',
+    statement:
+      'The tentative minimum tax is a two-layer schedule on the taxable excess, 26 percent to the breakpoint and 28 percent above it. What is actually owed is only the amount by which that exceeds the regular tax, so a taxpayer whose regular tax already exceeds the tentative amount owes no additional minimum tax at all.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'Section 55(b)(1) states the breakpoint as 175,000 dollars and it is inflation-adjusted; the 2026 pack carries 244,500. The record is annually indexed for that reason, and the statutory figure should not be read as the current one.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 55(a)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/55',
+      quotedText:
+        'There is hereby imposed (in addition to any other tax imposed by this subtitle) a tax equal to the excess (if any) of - (1) the tentative minimum tax for the taxable year, over (2) the regular tax for the taxable year.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 55(b)(1)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/55',
+      quotedText:
+        'the tentative minimum tax for the taxable year is the sum of - (I) 26 percent of so much of the taxable excess as does not exceed 175,000 dollars, plus (II) 28 percent of so much of the taxable excess as exceeds 175,000 dollars.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/tax/federalTax.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
+  'irc-55-d-exemption-phase-out-rate': {
+    title: 'The AMT exemption phases out at 50 percent from 2026',
+    statement:
+      'The exemption is reduced, but not below zero, by 50 percent of the amount by which alternative minimum taxable income exceeds the phase-out threshold. The threshold is 500,000 dollars for an unmarried taxpayer and 1,000,000 dollars on a joint return, both indexed.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The 25 percent rate in the base text of section 55(d) is pre-2026 law. Pub. L. 119-21 substitutes 50 percent for taxable years beginning after 2025, which is why the pack carries a rate that disagrees with the unamended statute. Recording that substitution is the point of this rule: a reader checking the base text alone will conclude the pack is wrong.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 55(d)(4), as amended by Pub. L. 119-21',
+      url: 'https://www.law.cornell.edu/uscode/text/26/55',
+      quotedText:
+        'In the case of any taxable year beginning after December 31, 2025, subparagraph (A) shall be applied by substituting 50 percent for 25 percent, and the threshold amount shall be 500,000 dollars (1,000,000 dollars in the case of a joint return), adjusted for inflation.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/tax/federalTax.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
+  'irc-223-f-4-B-hsa-disability-exception': {
+    title: 'HSA disability waives the additional tax, not the inclusion',
+    statement:
+      'A distribution made after the account beneficiary becomes disabled within the meaning of section 72(m)(7) is not subject to the 20 percent additional tax. The distribution stays includible in gross income: subparagraph (A) increases the tax by 20 percent of the amount which is so includible, and the exception switches off that increase without touching the inclusion itself.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The section 223(f)(1) qualified-medical exclusion sits in the same subsection and does remove inclusion, which makes the two easy to conflate. Section 72(m)(7) also requires the individual to furnish proof in such form and manner as the Secretary may require, which is why the engine models this as dated attestation evidence rather than inferring disability from plan data.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 223(f)(4)(A)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/223',
+      quotedText:
+        'The tax imposed by this chapter on the account beneficiary for any taxable year in which there is a payment or distribution from a health savings account of such beneficiary which is includible in gross income under paragraph (2) shall be increased by 20 percent of the amount which is so includible.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 223(f)(4)(B)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/223',
+      quotedText:
+        'Subparagraph (A) shall not apply if the payment or distribution is made after the account beneficiary becomes disabled within the meaning of section 72(m)(7) or dies.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 72(m)(7)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/72',
+      quotedText:
+        'an individual shall be considered to be disabled if he is unable to engage in any substantial gainful activity by reason of any medically determinable physical or mental impairment which can be expected to result in death or to be of long-continued and indefinite duration.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/actions/annualHsaPenaltyEvaluation.ts'],
+  },
+
+  'irc-72-t-2-A-iii-disability-exception': {
+    title: 'Disability waives the 10 percent additional tax, not the income',
+    statement:
+      'A distribution attributable to the individual being disabled is not subject to the 10 percent additional tax. Disabled means unable to engage in any substantial gainful activity by reason of a medically determinable impairment expected to result in death or to be of long-continued and indefinite duration. The distribution remains ordinary income; only the additional tax is waived.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The statutory test is any substantial gainful activity, which is materially stricter than an occupation-specific disability determination of the kind a private policy uses. Section 72(m)(7) also requires the individual to furnish proof in such form and manner as the Secretary may require, which is why the engine takes a dated attestation with an evidence id rather than inferring disability from plan data.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 72(t)(2)(A)(iii)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/72',
+      quotedText:
+        'Paragraph (1) shall not apply to any of the following distributions: ... attributable to the employee\u2019s being disabled within the meaning of subsection (m)(7).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 72(m)(7)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/72',
+      quotedText:
+        'an individual shall be considered to be disabled if he is unable to engage in any substantial gainful activity by reason of any medically determinable physical or mental impairment which can be expected to result in death or to be of long-continued and indefinite duration. An individual shall not be considered to be disabled unless he furnishes proof of the existence thereof in such form and manner as the Secretary may require.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts'],
+  },
+
+  'irc-408-d-8-A-post-70-half-deduction-offset': {
+    title: 'Post-70.5 deductible IRA contributions reduce the excludable QCD',
+    statement:
+      'The excludable amount is reduced by the excess of the taxpayer aggregate section 219 deductions for all years ending on or after the date they attained age 70.5, over the aggregate reductions already made in earlier years. Netting off the prior reductions is what makes a given deduction dollar offset a QCD exactly once across a lifetime rather than in every subsequent year.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The statute measures the offset against deductions allowed to the taxpayer, so it is an individual-level figure even on a joint return, and the engine tracks it per donor for that reason. The registered annual limit is likewise per taxpayer, which can read as though the two use different bases; they do not.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408(d)(8)(A), flush sentence',
+      url: 'https://www.law.cornell.edu/uscode/text/26/408',
+      quotedText:
+        'The amount of distributions not includible in gross income by reason of the preceding sentence for a taxable year (determined without regard to this sentence) shall be reduced (but not below zero) by an amount equal to the excess of - (i) the aggregate amount of deductions allowed to the taxpayer under section 219 for all taxable years ending on or after the date the taxpayer attains age 70 1/2, over (ii) the aggregate amount of reductions under this sentence for all taxable years preceding the current taxable year.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts',
+      'packages/engine/src/actions/annualQcdActionExecutionEvidence.ts',
+    ],
+  },
+
+  'irc-401-a-9-C-v-applicable-age': {
+    title: 'The RMD applicable age steps 72 to 73 to 75, never 74',
+    statement:
+      'An individual who attains age 72 after 2022 and age 73 before 2033 has an applicable age of 73. An individual who attains age 74 after 2032 has an applicable age of 75. Nobody has an applicable age of 74: the statute is written on attainment windows rather than a rising sequence, and 74 is skipped entirely.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The engine maps birth year to applicable age rather than restating the attainment windows, which is equivalent: a 1959 birth attains 73 in 2032, inside the window, while a 1960 birth attains 73 in 2033 and 74 in 2034, landing in the later rule. Expressing it by birth year is why no 74 appears anywhere in the code, and that absence is correct rather than a missing case.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 401(a)(9)(C)(v)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/401',
+      quotedText:
+        'In the case of an individual who attains age 72 after December 31, 2022, and age 73 before January 1, 2033, the applicable age is 73. In the case of an individual who attains age 74 after December 31, 2032, the applicable age is 75.',
+    }],
+    volatility: 'sunsetting',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/params/index.ts'],
+  },
+
+  'irc-63-f-additional-standard-deduction-aged': {
+    title: 'The age-65 standard deduction addition is per qualifying person',
+    statement:
+      'A taxpayer is entitled to an additional amount for himself if he has attained age 65 before the close of the taxable year, and to a further additional amount for a spouse who has done the same. On a joint return with two qualifying people the addition is taken twice, not once for the household.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The statute states 600 dollars, and 750 dollars for an unmarried individual who is not a surviving spouse; both are inflation-adjusted, and the 2026 pack carries 1,650 and 2,050. The test is attainment before the close of the taxable year, which the engine models as age attained in the calendar year -- equivalent except for a taxpayer born on January 1, whom the IRS treats as attaining age on the preceding December 31.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 63(f)(1)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/63',
+      quotedText:
+        'The taxpayer shall be entitled to an additional amount of 600 dollars - (A) for himself if he has attained age 65 before the close of his taxable year, and (B) for the spouse of the taxpayer if the spouse has attained age 65 before the close of such taxable year and an additional exemption would be allowable to the taxpayer for such spouse.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 63(f)(3)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/63',
+      quotedText:
+        'In the case of an individual who is not married and is not a surviving spouse, paragraphs (1) and (2) shall be applied by substituting 750 dollars for 600 dollars.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/tax/federalTax.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
+  'irc-72-t-1-additional-tax-on-includible-portion': {
+    title: 'The 10 percent additional tax falls on the includible portion',
+    statement:
+      'The tax is increased by 10 percent of the portion of the distribution which is includible in gross income, not 10 percent of the amount distributed. Where nondeductible basis comes back with the distribution, the returned basis carries no additional tax because it is not includible.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The includible portion is whatever the annual section 408(d)(2) pro-rata calculation produces, so this rule sits downstream of the basis-recovery rule rather than restating it. That is also why the additional tax cannot be computed from the distribution alone.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 72(t)(1)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/72',
+      quotedText:
+        'If any taxpayer receives any amount from a qualified retirement plan (as defined in section 4974(c)), the taxpayer\u2019s tax under this chapter for the taxable year in which such amount is received shall be increased by an amount equal to 10 percent of the portion of such amount which is includible in gross income.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts'],
+  },
+
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)

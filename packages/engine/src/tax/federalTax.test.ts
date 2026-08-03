@@ -166,7 +166,75 @@ describe('section 1211 capital loss limitation', () => {
   })
 })
 
+describe('section 55 alternative minimum tax', () => {
+  // IRC 55(a) imposes the AMT as the EXCESS of the tentative minimum tax over
+  // the regular tax. Treating the tentative amount as the tax owed is the
+  // natural misreading and would add a phantom liability to every year where
+  // regular tax already exceeds it -- which is most of them.
+  //
+  // Single filer, 200,000 ordinary. Taxable is 183,900 after the 16,100
+  // standard deduction, and that deduction is added back as a preference, so
+  // AMTI is 200,000. Below the 500,000 phase-out start the exemption is the
+  // full 90,100, leaving a 109,900 taxable excess taxed at 26 percent = 28,574.
+  // Regular tax on 183,900 is larger, so nothing is owed.
+  describeRule('irc-55-a-amt-is-the-excess-over-regular-tax', {
+    readings: { excessOverRegularTax: 0, tentativeMinimumTaxItself: 28_574 },
+    accepted: 'excessOverRegularTax',
+  }, ({ accepted, readings }) => {
+    it('owes nothing when the regular tax already exceeds the tentative amount', () => {
+      const result = computeFederalTax(input({ ordinaryIncome: 200_000 }))
+
+      expect(result.tentativeMinimumTax).toBeCloseTo(readings.tentativeMinimumTaxItself, 6)
+      expect(result.alternativeMinimumTax).toBe(accepted)
+    })
+  })
+
+  // Pub. L. 119-21 substitutes 50 percent for 25 percent from 2026. A reader
+  // checking the unamended text of 55(d) will conclude the pack is wrong, so
+  // this fixture exists to answer that objection with a number.
+  //
+  // Single filer, AMTI 600,000 -- 100,000 over the 500,000 threshold:
+  //   at 50 percent: 90,100 - 50,000 = 40,100
+  //   at 25 percent: 90,100 - 25,000 = 65,100
+  describeRule('irc-55-d-exemption-phase-out-rate', {
+    readings: { fiftyPercentPerDollar: 40_100, twentyFivePercentPerDollar: 65_100 },
+    accepted: 'fiftyPercentPerDollar',
+  }, ({ accepted, readings }) => {
+    it('reduces the exemption by fifty cents per dollar above the threshold', () => {
+      const result = computeFederalTax(input({ ordinaryIncome: 600_000 }))
+
+      expect(result.amtExemption).toBe(accepted)
+      expect(result.amtExemption).not.toBe(readings.twentyFivePercentPerDollar)
+    })
+  })
+})
+
 describe('capital gains stacking', () => {
+  // IRC 1(h)(1) measures the preferential bands from where ordinary taxable
+  // income ends, not from zero. Taxing the gain independently is the natural
+  // misreading and it can zero the liability outright.
+  //
+  // Single filer, 2026. 56,100 ordinary and 20,000 of gains, less the 16,100
+  // standard deduction, gives 40,000 of ordinary taxable income with the gain
+  // sitting from 40,000 to 60,000. The 15 percent band opens above 49,450:
+  //   stacked:      (60,000 - 49,450) x 0.15 = 1,582.50
+  //   from zero:    20,000 sits entirely below 49,450, so nothing is taxed
+  describeRule('irc-1-h-capital-gain-stacked-on-ordinary', {
+    readings: { stackedOnOrdinaryIncome: 1_582.5, taxedIndependentlyFromZero: 0 },
+    accepted: 'stackedOnOrdinaryIncome',
+  }, ({ accepted, readings }) => {
+    it('measures the preferential bands from the top of ordinary income', () => {
+      const result = computeFederalTax(input({
+        ordinaryIncome: 56_100,
+        capitalGains: 20_000,
+      }))
+
+      expect(result.ordinaryTaxable).toBe(40_000)
+      expect(result.capitalGainsTax).toBeCloseTo(accepted, 6)
+      expect(result.capitalGainsTax).not.toBeCloseTo(readings.taxedIndependentlyFromZero, 6)
+    })
+  })
+
   it('keeps gains in the 0% bracket when ordinary income is low (MFJ)', () => {
     const d = computeFederalTax(
       input({ filingStatus: 'marriedFilingJointly', ordinaryIncome: 50_000, capitalGains: 80_000 }),
@@ -225,6 +293,29 @@ describe('capital gains stacking', () => {
 })
 
 describe('age-based deductions', () => {
+  // IRC 63(f)(1) grants the additional amount separately for the taxpayer under
+  // (A) and for a qualifying spouse under (B). On a joint return with two
+  // qualifying people it is taken twice. Treating it as one household amount
+  // is the natural misreading and understates the deduction by a full share.
+  //
+  // MFJ, both 65+: 32,200 base + 2 x 1,650 + 12,000 senior = 47,500.
+  // One household share instead: 32,200 + 1,650 + 12,000 = 45,850.
+  describeRule('irc-63-f-additional-standard-deduction-aged', {
+    readings: { perQualifyingPerson: 47_500, oneAmountPerHousehold: 45_850 },
+    accepted: 'perQualifyingPerson',
+  }, ({ accepted, readings }) => {
+    it('takes the addition once for each person who has attained 65', () => {
+      const result = computeFederalTax(input({
+        filingStatus: 'marriedFilingJointly',
+        ordinaryIncome: 100_000,
+        peopleAged65Plus: 2,
+      }))
+
+      expect(result.deduction).toBe(accepted)
+      expect(result.deduction).not.toBe(readings.oneAmountPerHousehold)
+    })
+  })
+
   it('adds 65+ amounts and the OBBBA senior deduction (MFJ, both 65+)', () => {
     const d = computeFederalTax(
       input({ filingStatus: 'marriedFilingJointly', ordinaryIncome: 100_000, peopleAged65Plus: 2 }),

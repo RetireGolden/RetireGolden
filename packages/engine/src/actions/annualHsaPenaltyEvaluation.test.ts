@@ -307,6 +307,26 @@ describe('evaluateAnnualHsaPenalty', () => {
     })
   })
 
+  // IRC 223(f)(4)(B) switches off the 20 percent additional tax, and nothing
+  // else. Subparagraph (A) increases the tax by 20 percent of the amount "which
+  // is so includible", so the inclusion survives the exception. The trap is the
+  // 223(f)(1) qualified-medical exclusion sitting in the same subsection, which
+  // does remove inclusion -- reading the two alike would zero the income here.
+  describeRule('irc-223-f-4-B-hsa-disability-exception', {
+    readings: { additionalTaxWaivedInclusionKept: 2_000, bothWaived: 0 },
+    accepted: 'additionalTaxWaivedInclusionKept',
+  }, ({ accepted, readings }) => {
+    it('keeps the distribution in income while waiving the additional tax', () => {
+      const input = fixture()
+      input.disabilityStatusEvidence = [disability(true, '2025-12-31')]
+
+      const evaluation = evaluated(input).allocations[0]!.evaluations[1]!
+      expect(evaluation.taxableAmountExposed).toBe(accepted)
+      expect(evaluation.taxableAmountExposed).not.toBe(readings.bothWaived)
+      expect(evaluation.finalPenaltyAmount).toBe(0)
+    })
+  })
+
   it('preserves a known-false future qualification date and applies the fixed rate', () => {
     const input = fixture()
     input.disabilityStatusEvidence = [disability(false, '2026-03-02')]

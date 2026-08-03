@@ -250,6 +250,29 @@ describe('stageAnnualQcdTaxCharacterPostPass', () => {
     })
   })
 
+  // The flush sentence of IRC 408(d)(8)(A) subtracts the reductions ALREADY
+  // made in earlier years from the aggregate section 219 deductions. Without
+  // that subtraction the same deduction dollar would offset a QCD again every
+  // year for the rest of the donor's life. Here 500 of deductions with 200
+  // already consumed leaves 300 to offset, not the full 500.
+  describeRule('irc-408-d-8-A-post-70-half-deduction-offset', {
+    readings: { cumulativeNetOfPriorReductions: 300, aggregateDeductionsIgnoringPrior: 500 },
+    accepted: 'cumulativeNetOfPriorReductions',
+  }, ({ accepted, readings }) => {
+    it('nets the prior reductions off the aggregate deductions', () => {
+      const result = staged(fixture(undefined, {
+        contribution: { p1: 500 }, priorOffset: { 'qcd-a': 200 },
+      }))
+
+      expect(result.applications[0]).toMatchObject({
+        deductibleContributionOffsetBefore: accepted,
+      })
+      expect(result.applications[0]).not.toMatchObject({
+        deductibleContributionOffsetBefore: readings.aggregateDeductionsIgnoringPrior,
+      })
+    })
+  })
+
   it('applies the exact-year personal limit per donor', () => {
     // IRC 408(d)(8)(A) as indexed by Notice 2025-67: $111,000 for 2026.
     const result = staged(fixture([{ id: 'large', amount: 12_000_000 }]))
