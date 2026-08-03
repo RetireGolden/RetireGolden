@@ -1166,6 +1166,28 @@ const registry = {
     ],
   },
 
+  'irc-401-a-9-C-v-applicable-age': {
+    title: 'The RMD applicable age steps 72 to 73 to 75, never 74',
+    statement:
+      'An individual who attains age 72 after 2022 and age 73 before 2033 has an applicable age of 73. An individual who attains age 74 after 2032 has an applicable age of 75. Nobody has an applicable age of 74: the statute is written on attainment windows rather than a rising sequence, and 74 is skipped entirely.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The engine maps birth year to applicable age rather than restating the attainment windows, which is equivalent: a 1959 birth attains 73 in 2032, inside the window, while a 1960 birth attains 73 in 2033 and 74 in 2034, landing in the later rule. Expressing it by birth year is why no 74 appears anywhere in the code, and that absence is correct rather than a missing case.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 401(a)(9)(C)(v)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/401',
+      quotedText:
+        'In the case of an individual who attains age 72 after December 31, 2022, and age 73 before January 1, 2033, the applicable age is 73. In the case of an individual who attains age 74 after December 31, 2032, the applicable age is 75.',
+    }],
+    volatility: 'sunsetting',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/params/index.ts'],
+  },
+
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)

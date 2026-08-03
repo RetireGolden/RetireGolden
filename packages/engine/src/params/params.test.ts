@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { describeRule } from '../rules/describeRule.js'
+
 import {
   annuityExpectedReturnMultiple,
   EARLIEST_PACK_YEAR,
@@ -88,6 +90,24 @@ describe('2026 pack contents', () => {
 })
 
 describe('rmdStartAgeForBirthYear (SECURE 2.0)', () => {
+  // IRC 401(a)(9)(C)(v) is written on attainment windows, not a rising
+  // sequence. A 1960 birth attains 73 in 2033 -- outside the "73 before 2033"
+  // window -- and 74 in 2034, which lands in the "attains 74 after 2032" rule
+  // and gives 75. There is no cohort with an applicable age of 74, so reading
+  // the schedule as a progression through 74 invents a year that does not
+  // exist and would defer a whole cohort's first distribution by a year.
+  describeRule('irc-401-a-9-C-v-applicable-age', {
+    readings: { statuteSkipsSeventyFour: 75, progressionThroughSeventyFour: 74 },
+    accepted: 'statuteSkipsSeventyFour',
+  }, ({ accepted, readings }) => {
+    it('sends the first post-window cohort straight to 75', () => {
+      expect(rmdStartAgeForBirthYear(1960)).toBe(accepted)
+      expect(rmdStartAgeForBirthYear(1960)).not.toBe(readings.progressionThroughSeventyFour)
+      // 1959 attains 73 in 2032, still inside the window.
+      expect(rmdStartAgeForBirthYear(1959)).toBe(73)
+    })
+  })
+
   it('maps cohorts to 72/73/75', () => {
     expect(rmdStartAgeForBirthYear(1950)).toBe(72)
     expect(rmdStartAgeForBirthYear(1951)).toBe(73)
