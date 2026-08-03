@@ -2257,20 +2257,39 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         const catchUp = age >= 55 ? pack.contributionLimits.hsaCatchUp55 : 0
         limit = base * limitGrowth + catchUp
       }
+      const isEmployerAccount = (account.type === 'traditional' || account.type === 'roth') && account.kind === 'employer'
       if (groupKey !== null) {
         const used = groupUsed.get(groupKey) ?? 0
         allowed = Math.max(0, Math.min(desired, limit - used))
+      }
+
+      // §415(c)(1) caps annual additions — and §415(c)(2) counts the employee's
+      // own contributions among them, not just the employer's — at the lesser
+      // of the indexed dollar amount and 100 percent of compensation. Deferrals
+      // are the first addition to land, so the cap has to bind them here.
+      // Capping only the match leaves a participant paid less than the §402(g)
+      // limit deferring more than they earned, and zeroing the match cannot
+      // bring that back under the pay prong.
+      const used415c = addition415cUsed.get(ownerId) ?? 0
+      if (isEmployerAccount) {
+        const limit415c = Math.min(
+          pack.contributionLimits.section415cLimit * limitGrowth,
+          wagesByPerson.get(ownerId) ?? 0,
+        )
+        allowed = Math.max(0, Math.min(allowed, limit415c - used415c))
+      }
+
+      if (groupKey !== null) {
         if (allowed < desired - EPSILON) {
           warnings.add('Some contributions were reduced to stay within IRS annual limits.')
         }
-        groupUsed.set(groupKey, used + allowed)
+        groupUsed.set(groupKey, (groupUsed.get(groupKey) ?? 0) + allowed)
       }
       if (allowed <= 0) continue
 
       // Update employee contribution inside 415(c) tracker
-      const isEmployerAccount = (account.type === 'traditional' || account.type === 'roth') && account.kind === 'employer'
       if (isEmployerAccount) {
-        addition415cUsed.set(ownerId, (addition415cUsed.get(ownerId) ?? 0) + allowed)
+        addition415cUsed.set(ownerId, used415c + allowed)
       }
 
       const contributionBalanceBefore = state.balance

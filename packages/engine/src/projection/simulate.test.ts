@@ -321,114 +321,6 @@ describe('social security', () => {
     })
   })
 
-  // IRC 414(v)(2)(E) covers a participant who "would attain age 60 but would
-  // not attain age 64" before the close of the year. The window CLOSES at 64 --
-  // it is not an enhancement that persists once reached. Treating it as
-  // permanent overstates the deferral limit for every year from 64 onward,
-  // which for most plans is the rest of the working life.
-  //
-  // 2026 is the pack year, so no indexing applies. Aged 64:
-  //   reverts to the age-50 catch-up:  24,500 + 8,000  = 32,500
-  //   keeps the 60-63 catch-up:        24,500 + 11,250 = 35,750
-  describeRule('irc-414-v-2-E-super-catch-up-window', {
-    readings: { revertsAtSixtyFour: 32_500, keepsTheHigherCatchUp: 35_750 },
-    accepted: 'revertsAtSixtyFour',
-  }, ({ accepted, readings }) => {
-    it('drops back to the ordinary catch-up at sixty-four', () => {
-      const plan = basePlan()
-      plan.household.people[0]! = {
-        ...plan.household.people[0]!,
-        dob: '1962-06-15', // 64 in 2026
-        retirementAge: 70,
-      }
-      plan.incomes = [wages(500_000)]
-      plan.accounts = [
-        { ...cash(1_000_000) },
-        {
-          id: testIds(), name: '401k', type: 'traditional', kind: 'employer',
-          ownerPersonId: 'p1', balance: 0, annualReturnPct: 0,
-          annualContribution: 60_000,
-        } as never,
-      ]
-
-      const result = simulatePlan(validate(plan), { startYear: 2026, horizonEndYear: 2026, taxCalculator: noTax })
-
-      expect(result.years[0]!.contributions).toBeCloseTo(accepted, 6)
-      expect(result.years[0]!.contributions).not.toBeCloseTo(readings.keepsTheHigherCatchUp, 6)
-    })
-  })
-
-  // IRC 415(c)(1) caps ANNUAL ADDITIONS -- 415(c)(2) defines those as employer
-  // contributions plus employee contributions plus forfeitures -- at the LESSER
-  // of the dollar amount and 100 percent of compensation. The cap is on the
-  // total, not on the match, which is what makes the pay prong bite so hard:
-  // deferrals consume it first and the match gets only what is left.
-  //
-  // Wages 30,000, a 200 percent match on all pay. Deferrals reach 24,500:
-  //   pay prong binds:     24,500 + 5,500  = 30,000, exactly the pay
-  //   dollar prong alone:  24,500 + 47,500 = 72,000, more than twice the pay
-  describeRule('irc-415-c-1-annual-additions-lesser-of', {
-    readings: { totalCappedByCompensation: 30_000, totalCappedByDollarLimit: 72_000 },
-    accepted: 'totalCappedByCompensation',
-  }, ({ accepted, readings }) => {
-    it('never lets total additions exceed the participant pay', () => {
-      const plan = basePlan()
-      plan.household.people[0]! = {
-        ...plan.household.people[0]!,
-        dob: '1980-06-15',
-        retirementAge: 70,
-      }
-      plan.incomes = [wages(30_000)]
-      plan.accounts = [
-        { ...cash(1_000_000) },
-        {
-          id: testIds(), name: '401k', type: 'traditional', kind: 'employer',
-          ownerPersonId: 'p1', balance: 0, annualReturnPct: 0,
-          annualContribution: 30_000,
-          employerMatch: { matchPct: 200, capPctOfPay: 100 },
-        } as never,
-      ]
-
-      const result = simulatePlan(validate(plan), { startYear: 2026, horizonEndYear: 2026, taxCalculator: noTax })
-      const year = result.years[0]!
-      const annualAdditions = year.contributions + year.employerMatch
-
-      expect(annualAdditions).toBeCloseTo(accepted, 6)
-      expect(annualAdditions).not.toBeCloseTo(readings.totalCappedByDollarLimit, 6)
-    })
-  })
-
-  // IRC 402(g)(1)(A) limits "the elective deferrals of any INDIVIDUAL", and
-  // 402(g)(3) sums every arrangement into that one total. Treating the limit as
-  // per plan doubles the room for anyone holding two employer accounts, which
-  // is common enough after a job change.
-  //
-  // Two employer plans, each asked for 30,000, owner aged 46 so no catch-up:
-  //   aggregate across plans:  24,500
-  //   one limit per plan:      49,000
-  describeRule('irc-402-g-1-elective-deferral-aggregate', {
-    readings: { aggregateAcrossAllPlans: 24_500, oneLimitPerPlan: 49_000 },
-    accepted: 'aggregateAcrossAllPlans',
-  }, ({ accepted, readings }) => {
-    it('shares one deferral limit across every employer plan', () => {
-      const plan = basePlan()
-      plan.household.people[0]! = { ...plan.household.people[0]!, dob: '1980-06-15', retirementAge: 70 }
-      plan.incomes = [wages(500_000)]
-      plan.accounts = [
-        { ...cash(1_000_000) },
-        { id: testIds(), name: '401k A', type: 'traditional', kind: 'employer',
-          ownerPersonId: 'p1', balance: 0, annualReturnPct: 0, annualContribution: 30_000 } as never,
-        { id: testIds(), name: '401k B', type: 'traditional', kind: 'employer',
-          ownerPersonId: 'p1', balance: 0, annualReturnPct: 0, annualContribution: 30_000 } as never,
-      ]
-
-      const result = simulatePlan(validate(plan), { startYear: 2026, horizonEndYear: 2026, taxCalculator: noTax })
-
-      expect(result.years[0]!.contributions).toBeCloseTo(accepted, 6)
-      expect(result.years[0]!.contributions).not.toBeCloseTo(readings.oneLimitPerPlan, 6)
-    })
-  })
-
   it('withholds benefits under the earnings test while working before FRA', () => {
     const plan = basePlan()
     plan.household.people[0]! = {
@@ -1237,6 +1129,153 @@ describe('contributions', () => {
 
       expect(projected.contributions).toBeCloseTo(accepted, 6)
       expect(projected.contributions).not.toBeCloseTo(readings.bothIndexed, 6)
+    })
+  })
+
+  // IRC 414(v)(2)(E) covers a participant who "would attain age 60 but would
+  // not attain age 64" before the close of the year. The window CLOSES at 64 --
+  // it is not an enhancement that persists once reached. Treating it as
+  // permanent overstates the deferral limit for every year from 64 onward,
+  // which for most plans is the rest of the working life.
+  //
+  // 2026 is the pack year, so no indexing applies. Aged 64:
+  //   reverts to the age-50 catch-up:  24,500 + 8,000  = 32,500
+  //   keeps the 60-63 catch-up:        24,500 + 11,250 = 35,750
+  describeRule('irc-414-v-2-E-super-catch-up-window', {
+    readings: { revertsAtSixtyFour: 32_500, keepsTheHigherCatchUp: 35_750 },
+    accepted: 'revertsAtSixtyFour',
+  }, ({ accepted, readings }) => {
+    it('drops back to the ordinary catch-up at sixty-four', () => {
+      const plan = basePlan()
+      plan.household.people[0]! = {
+        ...plan.household.people[0]!,
+        dob: '1962-06-15', // 64 in 2026
+        retirementAge: 70,
+      }
+      plan.incomes = [wages(500_000)]
+      plan.accounts = [
+        { ...cash(1_000_000) },
+        {
+          id: testIds(), name: '401k', type: 'traditional', kind: 'employer',
+          ownerPersonId: 'p1', balance: 0, annualReturnPct: 0,
+          annualContribution: 60_000,
+        } as never,
+      ]
+
+      const result = simulatePlan(validate(plan), { startYear: 2026, horizonEndYear: 2026, taxCalculator: noTax })
+
+      expect(result.years[0]!.contributions).toBeCloseTo(accepted, 6)
+      expect(result.years[0]!.contributions).not.toBeCloseTo(readings.keepsTheHigherCatchUp, 6)
+    })
+  })
+
+  // IRC 415(c)(1) caps ANNUAL ADDITIONS -- 415(c)(2) defines those as employer
+  // contributions plus employee contributions plus forfeitures -- at the LESSER
+  // of the dollar amount and 100 percent of compensation. The cap is on the
+  // total, not on the match, which is what makes the pay prong bite so hard:
+  // deferrals consume it first and the match gets only what is left.
+  //
+  // Wages 30,000, a 200 percent match on all pay. Deferrals reach 24,500:
+  //   pay prong binds:     24,500 + 5,500  = 30,000, exactly the pay
+  //   dollar prong alone:  24,500 + 47,500 = 72,000, more than twice the pay
+  describeRule('irc-415-c-1-annual-additions-lesser-of', {
+    readings: { totalCappedByCompensation: 30_000, totalCappedByDollarLimit: 72_000 },
+    accepted: 'totalCappedByCompensation',
+  }, ({ accepted, readings }) => {
+    it('never lets total additions exceed the participant pay', () => {
+      const plan = basePlan()
+      plan.household.people[0]! = {
+        ...plan.household.people[0]!,
+        dob: '1980-06-15',
+        retirementAge: 70,
+      }
+      plan.incomes = [wages(30_000)]
+      plan.accounts = [
+        { ...cash(1_000_000) },
+        {
+          id: testIds(), name: '401k', type: 'traditional', kind: 'employer',
+          ownerPersonId: 'p1', balance: 0, annualReturnPct: 0,
+          annualContribution: 30_000,
+          employerMatch: { matchPct: 200, capPctOfPay: 100 },
+        } as never,
+      ]
+
+      const result = simulatePlan(validate(plan), { startYear: 2026, horizonEndYear: 2026, taxCalculator: noTax })
+      const year = result.years[0]!
+      const annualAdditions = year.contributions + year.employerMatch
+
+      expect(annualAdditions).toBeCloseTo(accepted, 6)
+      expect(annualAdditions).not.toBeCloseTo(readings.totalCappedByDollarLimit, 6)
+    })
+  })
+
+  // The same cap, reached without a match at all. 415(c)(2)(B) puts "the
+  // employee contributions" inside annual additions, so the pay prong binds the
+  // deferral itself -- there is no match left to zero out. This is the case a
+  // fixture that only watches the match cannot see: a participant paid less
+  // than the 402(g) limit would otherwise defer more than they earned.
+  //
+  // Wages 20,000, no match, 24,500 asked for. Age 46, so no catch-up:
+  //   pay prong binds:           20,000, exactly the pay
+  //   402(g) limit alone binds:  24,500, more than the participant earned
+  describeRule('irc-415-c-1-annual-additions-lesser-of', {
+    readings: { deferralCappedByCompensation: 20_000, deferralCappedByDeferralLimitOnly: 24_500 },
+    accepted: 'deferralCappedByCompensation',
+  }, ({ accepted, readings }) => {
+    it('binds the deferral itself, not only the match', () => {
+      const plan = basePlan()
+      plan.household.people[0]! = {
+        ...plan.household.people[0]!,
+        dob: '1980-06-15',
+        retirementAge: 70,
+      }
+      plan.incomes = [wages(20_000)]
+      plan.accounts = [
+        { ...cash(1_000_000) },
+        {
+          id: testIds(), name: '401k', type: 'traditional', kind: 'employer',
+          ownerPersonId: 'p1', balance: 0, annualReturnPct: 0,
+          annualContribution: 24_500,
+        } as never,
+      ]
+
+      const result = simulatePlan(validate(plan), { startYear: 2026, horizonEndYear: 2026, taxCalculator: noTax })
+      const year = result.years[0]!
+
+      expect(year.employerMatch).toBeCloseTo(0, 6)
+      expect(year.contributions).toBeCloseTo(accepted, 6)
+      expect(year.contributions).not.toBeCloseTo(readings.deferralCappedByDeferralLimitOnly, 6)
+    })
+  })
+
+  // IRC 402(g)(1)(A) limits "the elective deferrals of any INDIVIDUAL", and
+  // 402(g)(3) sums every arrangement into that one total. Treating the limit as
+  // per plan doubles the room for anyone holding two employer accounts, which
+  // is common enough after a job change.
+  //
+  // Two employer plans, each asked for 30,000, owner aged 46 so no catch-up:
+  //   aggregate across plans:  24,500
+  //   one limit per plan:      49,000
+  describeRule('irc-402-g-1-elective-deferral-aggregate', {
+    readings: { aggregateAcrossAllPlans: 24_500, oneLimitPerPlan: 49_000 },
+    accepted: 'aggregateAcrossAllPlans',
+  }, ({ accepted, readings }) => {
+    it('shares one deferral limit across every employer plan', () => {
+      const plan = basePlan()
+      plan.household.people[0]! = { ...plan.household.people[0]!, dob: '1980-06-15', retirementAge: 70 }
+      plan.incomes = [wages(500_000)]
+      plan.accounts = [
+        { ...cash(1_000_000) },
+        { id: testIds(), name: '401k A', type: 'traditional', kind: 'employer',
+          ownerPersonId: 'p1', balance: 0, annualReturnPct: 0, annualContribution: 30_000 } as never,
+        { id: testIds(), name: '401k B', type: 'traditional', kind: 'employer',
+          ownerPersonId: 'p1', balance: 0, annualReturnPct: 0, annualContribution: 30_000 } as never,
+      ]
+
+      const result = simulatePlan(validate(plan), { startYear: 2026, horizonEndYear: 2026, taxCalculator: noTax })
+
+      expect(result.years[0]!.contributions).toBeCloseTo(accepted, 6)
+      expect(result.years[0]!.contributions).not.toBeCloseTo(readings.oneLimitPerPlan, 6)
     })
   })
 })
