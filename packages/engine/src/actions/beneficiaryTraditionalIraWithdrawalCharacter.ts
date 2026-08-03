@@ -53,7 +53,19 @@ export interface CompleteBeneficiaryTraditionalIraBasisPoolEvidence {
   openingInheritedBasisAmount: UsdCents
   yearEndApplicablePoolBalanceAmount: UsdCents
   form8606Line7DistributionAmount: UsdCents
-  form8606Line8NetConversionAmount: 0
+  /**
+   * IRC 408(d)(3)(C)(ii) excludes the surviving spouse from inherited-IRA
+   * treatment, and Treas. Reg. 1.408-8(c)(2) makes the election an act of
+   * redesignation -- so a surviving spouse can hold as beneficiary and still
+   * convert, and this line can be non-zero for them. It stays structurally zero
+   * for every other beneficiary, whom 408(d)(3)(C)(i) bars from converting.
+   *
+   * Typed as cents rather than the literal 0 so that case is expressible and
+   * gets an explicit refusal below. Pinning it at the type level meant a caller
+   * holding a real conversion had to drop it to compile, which understates the
+   * pro-rata denominator and the ordinary income that falls out of it.
+   */
+  form8606Line8NetConversionAmount: UsdCents
   evidenceId: string
 }
 
@@ -103,7 +115,7 @@ export interface BeneficiaryTraditionalIraAnnualBasisEvidence {
   basisNumeratorAmount: UsdCents
   yearEndApplicablePoolBalanceAmount: UsdCents
   form8606Line7DistributionAmount: UsdCents
-  form8606Line8NetConversionAmount: 0
+  form8606Line8NetConversionAmount: UsdCents
   annualBasisDenominatorAmount: UsdCents
   annualBasisRatio: Readonly<AnnualIraBasisRatio>
   annualDistributionBasisAllocation:
@@ -356,6 +368,7 @@ export function classifyBeneficiaryTraditionalIraWithdrawal(
   const openingBasis = safeMoney(basis.openingInheritedBasisAmount)
   const yearEndBalance = safeMoney(basis.yearEndApplicablePoolBalanceAmount)
   const line7Amount = safeMoney(basis.form8606Line7DistributionAmount)
+  const line8Amount = safeMoney(basis.form8606Line8NetConversionAmount)
   if (
     basis.predicate !==
       'completeBeneficiaryTraditionalIraBasisPoolForBeneficiaryDecedentAndTaxYear' ||
@@ -365,7 +378,12 @@ export function classifyBeneficiaryTraditionalIraWithdrawal(
     openingBasis === null ||
     yearEndBalance === null ||
     line7Amount === null ||
-    !Object.is(basis.form8606Line8NetConversionAmount, 0) ||
+    line8Amount === null ||
+    // Refused rather than characterized: a non-zero line 8 belongs to a
+    // pre-election surviving spouse, whose denominator and own-pool folding
+    // this module does not yet model. Answering with the conversion dropped
+    // would understate ordinary income.
+    !Object.is(line8Amount, 0) ||
     !nonblank(basis.evidenceId)
   ) {
     return unsupported(identity)
@@ -551,7 +569,7 @@ export function classifyBeneficiaryTraditionalIraWithdrawal(
     basisNumeratorAmount: openingBasis,
     yearEndApplicablePoolBalanceAmount: yearEndBalance,
     form8606Line7DistributionAmount: line7Amount,
-    form8606Line8NetConversionAmount: 0,
+    form8606Line8NetConversionAmount: line8Amount,
     annualBasisDenominatorAmount: denominator,
     annualBasisRatio,
     annualDistributionBasisAllocation,

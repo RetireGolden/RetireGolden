@@ -112,7 +112,7 @@ function characterizationInput(
       openingInheritedBasisAmount: asUsdCents(70),
       yearEndApplicablePoolBalanceAmount: asUsdCents(89),
       form8606Line7DistributionAmount: asUsdCents(70),
-      form8606Line8NetConversionAmount: 0,
+      form8606Line8NetConversionAmount: asUsdCents(0),
       evidenceId: 'basis-pool-record',
     },
     line7Distributions: line7Entries(),

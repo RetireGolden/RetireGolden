@@ -102,7 +102,7 @@ function characterizationInput(): ClassifyBeneficiaryTraditionalIraWithdrawalInp
       openingInheritedBasisAmount: asUsdCents(20),
       yearEndApplicablePoolBalanceAmount: asUsdCents(130),
       form8606Line7DistributionAmount: asUsdCents(20),
-      form8606Line8NetConversionAmount: 0,
+      form8606Line8NetConversionAmount: asUsdCents(0),
       evidenceId: 'basis-pool-record',
     },
     line7Distributions: line7Entries(),

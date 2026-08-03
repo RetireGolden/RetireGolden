@@ -62,7 +62,7 @@ function basisPool(line6 = 6_000, line7 = 2_000, id = 'old-basis-pool') {
     openingInheritedBasisAmount: asUsdCents(4_000),
     yearEndApplicablePoolBalanceAmount: asUsdCents(line6),
     form8606Line7DistributionAmount: asUsdCents(line7),
-    form8606Line8NetConversionAmount: 0 as const, evidenceId: id,
+    form8606Line8NetConversionAmount: asUsdCents(0), evidenceId: id,
   }
 }
 

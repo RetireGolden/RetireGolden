@@ -75,7 +75,7 @@ function validInput(
       openingInheritedBasisAmount: asUsdCents(openingBasis),
       yearEndApplicablePoolBalanceAmount: asUsdCents(yearEndBalance),
       form8606Line7DistributionAmount: asUsdCents(line7Amount),
-      form8606Line8NetConversionAmount: 0,
+      form8606Line8NetConversionAmount: asUsdCents(0),
       evidenceId: 'basis-pool-record',
     },
     line7Distributions: [line7Entry(executedAmount)],
@@ -148,7 +148,7 @@ describe('beneficiary traditional IRA withdrawal character', () => {
           basisNumeratorAmount: 40,
           yearEndApplicablePoolBalanceAmount: 40,
           form8606Line7DistributionAmount: 60,
-          form8606Line8NetConversionAmount: 0,
+          form8606Line8NetConversionAmount: asUsdCents(0),
           annualBasisDenominatorAmount: 100,
           annualBasisRatio: {
             representation: 'exactMinorUnitRational',
@@ -531,7 +531,7 @@ describe('beneficiary traditional IRA withdrawal character', () => {
     negativeZero.basisPoolEvidence = {
       ...negativeZero.basisPoolEvidence!,
       form8606Line8NetConversionAmount: -0,
-    }
+    } as unknown as typeof negativeZero.basisPoolEvidence
     for (const value of [line8, negativeZero, arithmetic, samePool]) {
       expectInheritedFactsMissing(value)
     }
