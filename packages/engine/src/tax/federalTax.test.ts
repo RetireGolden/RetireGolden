@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { describeRule } from '../rules/describeRule.js'
+
 import { packForYear } from '../params/index.js'
 import type { TaxCalculator, TaxYearInput } from '../projection/types.js'
 import {
@@ -48,6 +50,29 @@ describe('ordinary brackets and standard deduction (2026)', () => {
 
 describe('Social Security taxation (provisional income)', () => {
   const pack = packForYear(2026).pack
+
+  // IRC 86(a)(2)(A) is a sum, not a single percentage: 85 percent of the excess
+  // over the adjusted base amount PLUS the tier-one amount already includible
+  // between the base and adjusted base. Dropping that carry is the natural
+  // misreading, and it understates inclusion by the whole tier-one band.
+  //
+  // Single filer, 20,000 of benefits, 30,000 of other AGI -> provisional 40,000.
+  // Carry = min(10,000, 0.5 x (34,000 - 25,000)) = 4,500, which is the statute's
+  // 4,500 cap arrived at from the threshold spread.
+  // With carry:    0.85 x (40,000 - 34,000) + 4,500 = 9,600
+  // Without carry: 0.85 x (40,000 - 34,000)         = 5,100
+  describeRule('irc-86-a-taxable-social-security-two-tier', {
+    readings: { tierOneCarriesIntoTheEightyFiveBand: 9_600, eightyFivePercentOfExcessAlone: 5_100 },
+    accepted: 'tierOneCarriesIntoTheEightyFiveBand',
+  }, ({ accepted, readings }) => {
+    it('carries the capped tier-one amount into the 85 percent band', () => {
+      const result = taxableSocialSecurity(pack, 'single', 30_000, 20_000)
+
+      expect(result).toBeCloseTo(accepted, 6)
+      expect(result).not.toBeCloseTo(readings.eightyFivePercentOfExcessAlone, 6)
+    })
+  })
+
 
   it('is zero below the first threshold', () => {
     expect(taxableSocialSecurity(pack, 'single', 10_000, 20_000)).toBe(0)

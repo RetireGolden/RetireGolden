@@ -843,6 +843,56 @@ const registry = {
     ],
   },
 
+  'rev-proc-2025-25-aca-applicable-percentage-2026': {
+    title: 'ACA applicable percentage table for 2026',
+    statement:
+      'The premium tax credit applicable percentage runs 2.10 percent below 133 percent of the federal poverty line, then in bands opening at 3.14, 4.19, 6.60, 8.44 and 9.96 percent. The bands are stated as "at least X but less than Y", so 133 percent is a real step rather than a continuation of the 2.10 percent floor, and the schedule ends at "not more than 400 percent", making 400 inclusive.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The engine interpolates linearly between the published breakpoints. The revenue procedure gives an initial and a final percentage per band rather than a formula, and linear interpolation is the construction that reproduces both endpoints of every band.',
+    authority: [{
+      kind: 'irsNotice',
+      citation: 'Rev. Proc. 2025-25, section 3.01',
+      url: 'https://www.irs.gov/pub/irs-drop/rp-25-25.pdf',
+      quotedText:
+        'Applicable Percentage Table for 2026. For taxable years beginning in calendar year 2026, the Applicable Percentage Table for purposes of section 36B(b)(3)(A)(i) and section 1.36B-3(g) is: Less than 133% -- 2.10% initial, 2.10% final; At least 133% but less than 150% -- 3.14% initial, 4.19% final; At least 150% but less than 200% -- 4.19% initial, 6.60% final; At least 200% but less than 250% -- 6.60% initial, 8.44% final; At least 250% but less than 300% -- 8.44% initial, 9.96% final; At least 300% but not more than 400% -- 9.96% initial, 9.96% final.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: 2026,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/tax/aca.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
+  'treas-reg-1-401-a-9-5-joint-life-spouse-sole-beneficiary': {
+    title: 'Joint and Last Survivor Table needs a spouse more than 10 years younger',
+    statement:
+      'An owner lifetime RMD uses the Uniform Lifetime Table unless the sole beneficiary is a spouse more than 10 years younger, in which case the Joint and Last Survivor Table gives the applicable denominator. Exactly ten years younger is not enough: the test is strict, so that case stays on the Uniform table.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The regulation measures the age gap between individuals; the engine compares ages attained in the calendar year, which is the granularity the projection runs at and can differ from the exact gap by under a year around a birthday.',
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-5',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-5',
+      quotedText:
+        'If the employee’s surviving spouse who is more than 10 years younger than the employee is the employee’s sole beneficiary, then the applicable denominator is the joint and last survivor life expectancy for the employee and spouse determined using the Joint and Last Survivor Table in section 1.401(a)(9)-9(d).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/rmd/rmd.ts',
+      'packages/engine/src/rmd/jointLifeTable.ts',
+    ],
+  },
+
   'treas-reg-1-408-8-e-4-i-year-of-death-proportionate-shortfall': {
     title: 'Year-of-death RMD shortfall is shared proportionately',
     statement:
@@ -864,6 +914,34 @@ const registry = {
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/actions/beneficiaryTraditionalIraResidualRmdAllocation.ts'],
   },
+  'irc-86-a-taxable-social-security-two-tier': {
+    title: 'Social Security inclusion is two tiers with a capped carry',
+    statement:
+      'Below the base amount no benefit is included. Between the base and adjusted base amounts the inclusion is the lesser of half the benefits or half the excess over the base. Above the adjusted base amount it is the lesser of 85 percent of the benefits or 85 percent of the excess over the adjusted base plus the tier-one amount, and that carried tier-one amount is itself capped.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The statute caps the carried amount at 4,500 dollars single and 6,000 joint. The engine computes half the spread between the base and adjusted base amounts instead, which equals those figures exactly -- 0.5 x (34,000 - 25,000) and 0.5 x (44,000 - 32,000) -- so the cap stays correct if the thresholds are ever re-indexed, rather than drifting from two hard-coded constants.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 86(a)(2)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/86',
+      quotedText:
+        'the amount included in gross income under this section shall be equal to the lesser of - (A) the sum of - (i) 85 percent of such excess, plus (ii) the lesser of the amount determined under paragraph (1) or an amount equal to one-half of the difference between the adjusted base amount and the base amount of the taxpayer, or (B) 85 percent of the social security benefits received during the taxable year.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 86(b)(2)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/86',
+      quotedText:
+        'adjusted gross income - (A) determined without regard to this section and sections 85(c), 135, 137, 221, 911, 931, and 933, and (B) increased by the amount of interest received or accrued by the taxpayer during the taxable year which is exempt from tax.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+  },
+
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)
