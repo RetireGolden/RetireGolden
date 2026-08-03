@@ -663,7 +663,9 @@ export function taxRulesDueForVerification(
     }
   }
   return taxRuleIds.filter((ruleId) => {
-    const rule: TaxRuleRecord | undefined = TAX_RULE_REGISTRY[ruleId]
+    // ruleId comes from taxRuleIds, which is derived from the registry keys,
+    // so the lookup cannot miss.
+    const rule = TAX_RULE_REGISTRY[ruleId]
     const verified = Date.parse(`${rule.verifiedOn}T00:00:00Z`)
     const ageDays = Math.floor((asOf - verified) / 86_400_000)
     return ageDays >= maximumAgeDaysByVolatility[rule.volatility]
