@@ -1219,6 +1219,28 @@ const registry = {
     ],
   },
 
+  'irc-72-t-1-additional-tax-on-includible-portion': {
+    title: 'The 10 percent additional tax falls on the includible portion',
+    statement:
+      'The tax is increased by 10 percent of the portion of the distribution which is includible in gross income, not 10 percent of the amount distributed. Where nondeductible basis comes back with the distribution, the returned basis carries no additional tax because it is not includible.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The includible portion is whatever the annual section 408(d)(2) pro-rata calculation produces, so this rule sits downstream of the basis-recovery rule rather than restating it. That is also why the additional tax cannot be computed from the distribution alone.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 72(t)(1)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/72',
+      quotedText:
+        'If any taxpayer receives any amount from a qualified retirement plan (as defined in section 4974(c)), the taxpayer\u2019s tax under this chapter for the taxable year in which such amount is received shall be increased by an amount equal to 10 percent of the portion of such amount which is includible in gross income.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts'],
+  },
+
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)

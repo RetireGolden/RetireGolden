@@ -1257,6 +1257,33 @@ describe('evaluateOwnedNonRothIraPenaltyPrerequisites', () => {
     ).toBe('disability-record')
   })
 
+  // IRC 72(t)(1) increases the tax by 10 percent of "the portion of such amount
+  // which is includible in gross income" -- not of the amount distributed.
+  //
+  // The expected value comes from the rule, not from running the code. A 100
+  // distribution against 100 of opening basis has a section 408(d)(2)
+  // denominator of 100 year-end plus 100 line-7 = 200, so the nontaxable
+  // fraction is 100/200 and half the distribution comes back as basis. The
+  // includible half is 50, and 10 percent of that is 5. Charging the gross
+  // instead would be 10 -- double.
+  describeRule('irc-72-t-1-additional-tax-on-includible-portion', {
+    readings: { tenPercentOfIncludible: 5, tenPercentOfGross: 10 },
+    accepted: 'tenPercentOfIncludible',
+  }, ({ accepted, readings }) => {
+    it('charges the additional tax on the taxable half of a basis-bearing distribution', () => {
+      const result = evaluateOwnedNonRothIraPenaltyPrerequisites(
+        completeNegativeEvidence(input({ basisAmount: 100 })),
+      )
+
+      expect(first(result)).toMatchObject({
+        outcome: 'penaltyApplies',
+        evaluatedOrdinaryIncomeExposureAmount: 50,
+        finalPenaltyAmount: accepted,
+      })
+      expect(first(result)).not.toMatchObject({ finalPenaltyAmount: readings.tenPercentOfGross })
+    })
+  })
+
   it('publishes a fixed age/death/SEPP/disability/other rejection tuple before applying the penalty', () => {
     const result = evaluateOwnedNonRothIraPenaltyPrerequisites(
       completeNegativeEvidence(input()),
