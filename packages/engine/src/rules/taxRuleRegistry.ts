@@ -1711,7 +1711,7 @@ const registry = {
         'the applicable limitation amount is 40,000 dollars for taxable years beginning in 2025, 40,400 dollars for taxable years beginning in 2026, 101 percent of the dollar amount in effect under this subparagraph for taxable years beginning in the preceding calendar year for taxable years beginning after 2026 and before 2030, and 10,000 dollars for taxable years beginning after 2029.',
     }],
     volatility: 'sunsetting',
-    effectiveFrom: 2026,
+    effectiveFrom: 2025,
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: [
