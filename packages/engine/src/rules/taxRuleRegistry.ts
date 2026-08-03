@@ -306,7 +306,7 @@ const registry = {
     contraryReading:
       'A two-step computation (70th anniversary, then six months) diverges from the one-step 846-month form for a 29 February birth, because the 70th anniversary of a leap-day birth never falls in a leap year. For a 1956-02-29 birth the defensible answers are 2026-08-28 (clamped anniversary plus six months), 2026-08-29 (one step), and 2026-09-01 (rolled anniversary plus six months): five days apart, with nothing selecting among them.',
     conventionRationale:
-      'The record is empty rather than ambiguous. No IRS guidance, ruling, case, publication example, or practitioner source addresses a month-end or leap-day birth, and Treas. Reg. 1.401(a)(9)-2 A-3, the only text that ever defined attainment, was deleted by T.D. 10001 effective 2025 - leaving no live regulation defining a date IRC 408(d)(8)(B)(ii) still turns on. The "six calendar months" sentence has also been dropped from current IRS publications and survives only in Publication 575 (2019). The month-end clamp is chosen because it matches 29 CFR 4000.43, the one federal regulation resolving this class of problem, and because it is the prevailing practitioner convention. That regulation governs PBGC filings under ERISA Title IV and the IRS has never adopted it here, so this is an engineering convention and not a legal conclusion. It errs permissive: for an August 31 birth the clamp falls up to three days before a roll-forward reading, and a QCD taken in that window would not be a QCD at all. The date is load-bearing twice, because the SECURE 1.0 offset in 408(d)(8)(A) also keys the sweep of section 219 deductions to it.',
+      'The six-calendar-months sentence survives, but only in a provision written for something else: T.D. 10001 removed it from Treas. Reg. 1.401(a)(9)-2 and it now sits in 1.401(a)(9)-6(g)(1)(iv), a defined-benefit actuarial-increase rule. It has also been dropped from current IRS publications and survives there only in Publication 575 (2019). So the convention is sourced, but not from any provision addressed to IRC 408(d)(8)(B)(ii). What no source resolves at any level is a month-end or leap-day birth: no IRS guidance, ruling, case, publication example, or practitioner source addresses what "six calendar months after" means when the target day does not exist. The month-end clamp is chosen because it matches 29 CFR 4000.43, the one federal regulation resolving this class of problem, and because it is the prevailing practitioner convention. That regulation governs PBGC filings under ERISA Title IV and the IRS has never adopted it here, so the clamp is an engineering convention and not a legal conclusion. It errs permissive: for an August 31 birth it falls up to three days before a roll-forward reading, and a QCD taken in that window would not be a QCD at all. The date is load-bearing twice, because the SECURE 1.0 offset in 408(d)(8)(A) also keys the sweep of section 219 deductions to it.',
     authority: [{
       kind: 'statute',
       citation: 'IRC 408(d)(8)(B)(ii)',
@@ -315,10 +315,10 @@ const registry = {
         'which is made on or after the date that the individual for whose benefit the plan is maintained has attained age 70 1/2.',
     }, {
       kind: 'regulation',
-      citation: 'Treas. Reg. 1.401(a)(9)-2, A-3 (pre-2025; withdrawn by T.D. 10001)',
-      url: 'https://www.govinfo.gov/content/pkg/CFR-2012-title26-vol5/pdf/CFR-2012-title26-vol5-sec1-401a9-2.pdf',
+      citation: 'Treas. Reg. 1.401(a)(9)-6(g)(1)(iv) (relocated from 1.401(a)(9)-2 A-3 by T.D. 10001)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-6',
       quotedText:
-        'An employee attains age 70 1/2 as of the date six calendar months after the 70th anniversary of the employee birth.',
+        'An employee attains age 70 1/2 as of the date six calendar months after the 70th anniversary of the employee’s birth.',
     }, {
       kind: 'irsPublication',
       citation: 'IRS Publication 575 (2019)',
@@ -412,6 +412,96 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts'],
+  },
+
+  // --- Registered 2026-08-03 from the second research batch ---------------
+
+  'irc-68-overall-itemized-limitation': {
+    title: 'Overall limitation on itemized deductions',
+    statement:
+      'Itemized deductions otherwise allowable are reduced by exactly 2/37 of the lesser of those deductions or the excess of taxable income, computed without regard to section 68 and increased by those deductions, over the dollar amount at which the 37 percent bracket begins. It applies after every other limitation on an itemized deduction.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'Publication 505 states the rate as 5.4 percent, which is a truncation of 2/37 (0.0540540...), not the rule. The engine computes the exact rational because the difference is roughly $5.41 per $100,000 of limitation base and this provision only bites at incomes where that is real money. Note also that the amended section has no exempt categories and no 80 percent cap, both features of the pre-2018 Pease rule, so logic ported from that era would carry forward carve-outs that no longer exist.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 68(a)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section68&num=0&edition=prelim',
+      quotedText:
+        'the amount of the itemized deductions otherwise allowable for the taxable year (determined without regard to this section) shall be reduced by 2/37 of the lesser of- (1) such amount of itemized deductions, or (2) so much of the taxable income of the taxpayer for the taxable year (determined without regard to this section and increased by such amount of itemized deductions) as exceeds the dollar amount at which the 37 percent rate bracket under section 1 begins with respect to the taxpayer.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 68(b)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section68&num=0&edition=prelim',
+      quotedText:
+        'This section shall be applied after the application of any other limitation on the allowance of any itemized deduction.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Rev. Proc. 2025-32, section 4.01',
+      url: 'https://www.irs.gov/pub/irs-drop/rp-25-32.pdf',
+      quotedText:
+        'For taxable years beginning in 2026 the 37 percent rate bracket begins at taxable income over $768,700 for married individuals filing joint returns and surviving spouses, $640,600 for heads of households and for unmarried individuals, and $384,350 for married individuals filing separate returns.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/actions/annualSection68ItemizedDeduction.ts'],
+  },
+
+  'irc-170-b-1-G-cash-percentage-ceiling': {
+    title: 'Sixty percent ceiling for cash gifts to public charities',
+    statement:
+      'Cash contributions to public charities are allowed up to 60 percent of the contribution base reduced by contributions already taken into account under 170(b)(1)(A), with the excess carried forward five years. It is a combined ceiling, not an independent bucket stacked on the 50 percent limit.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 170(b)(1)(G)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
+      quotedText:
+        'any contribution of cash to an organization described in subparagraph (A) shall be allowed as a deduction under subsection (a) to the extent that the aggregate of such contributions does not exceed the excess of- (I) 60 percent of the taxpayer contribution base for the taxable year, over (II) the aggregate amount of contributions taken into account under subparagraph (A) for such taxable year.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 170(b)(1)(G)(iii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
+      quotedText:
+        'Contributions taken into account under this subparagraph shall not be taken into account under subparagraph (A). ... subparagraph (A) shall be applied by reducing (but not below zero) the contribution limitation allowed for the taxable year under such subparagraph by the aggregate contributions allowed under this subparagraph for such taxable year.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts'],
+  },
+
+  'irc-72-t-2-A-i-age-59-half': {
+    title: 'Age 59.5 exception to the early-distribution tax',
+    statement:
+      'The 10 percent additional tax does not apply to a distribution made on or after the date the individual attains age 59.5. The test is inclusive of that date and reaches both IRAs and employer plans, unlike the Rule of 55.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'No authority at any level defines when age 59.5 is attained: there is no section 1.72(t) regulation series, and the threshold appears throughout the regulations without ever being defined. The engine applies the six-calendar-months convention by analogy to Treas. Reg. 1.401(a)(9)-6(g)(1)(iv), which defines it for age 70.5 inside a defined-benefit provision addressed to something else. That analogy is universal industry practice but the IRS has never stated it for 59.5, and it carries the same unresolved month-end and leap-day edge as the age-70.5 rule - here against a 10 percent penalty rather than QCD eligibility.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 72(t)(2)(A)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText: 'Distributions which are- (i) made on or after the date on which the employee attains age 59 1/2,',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 72(t)(5)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this subsection, the term employee includes any participant, and in the case of an individual retirement plan, the individual for whose benefit such plan was established.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts'],
   },
 
   // --- Deliberately not modelled; the engine must fail closed -------------

@@ -199,6 +199,26 @@ describe('stageAnnualQcdItemizedSection170Ledger', () => {
     })
   })
 
+  // IRC 170(b)(1)(G)(i)(II) subtracts contributions already taken into account
+  // under (A) from the 60% ceiling, so cash gifts fill only the headroom rather
+  // than stacking an independent 60% bucket on top of the 50% limit. Here 5,500c
+  // of the 6,000c ceiling is already consumed, leaving 500c against a 1,000c
+  // contribution: the combined reading claims 450c after the floor, the
+  // independent-bucket reading would claim 950c.
+  describeRule('irc-170-b-1-G-cash-percentage-ceiling', {
+    readings: { combinedCeilingNetOfCategoryA: 450, independentSixtyPercentBucket: 950 },
+    accepted: 'combinedCeilingNetOfCategoryA',
+  }, ({ accepted, readings }) => {
+    it('fills only the headroom left by contributions already counted', () => {
+      const action = staged(fixture(undefined, { priorPercentage: 5_500 }))
+        .taxUnits[0]!.orderedActionEvidence[0]!
+      expect(action.currentYearClaimedDeductionCents).toBe(accepted)
+      expect(action.currentYearClaimedDeductionCents)
+        .not.toBe(readings.independentSixtyPercentBucket)
+      expect(action.percentageAllowableBeforeFloorCents).toBe(500)
+    })
+  })
+
   describeRule('irc-170-d-1-C-floor-carryforward-gate', {
     // Same 50c floor consumed either way; the readings differ on whether it can
     // be carried when the year has no percentage-limit excess.

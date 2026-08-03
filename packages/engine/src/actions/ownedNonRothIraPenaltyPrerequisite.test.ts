@@ -413,6 +413,32 @@ function twoWithdrawalInput(
 }
 
 describe('evaluateOwnedNonRothIraPenaltyPrerequisites', () => {
+  // IRC 72(t)(2)(A)(i) is inclusive: "made on or after the date on which the
+  // employee attains age 59 1/2". A distribution exactly on the threshold
+  // qualifies. Reading it as strictly after - the drafting 223(f)(4)(C) uses -
+  // would leave that same distribution penalised.
+  describeRule('irc-72-t-2-A-i-age-59-half', {
+    readings: {
+      inclusiveOnOrAfter: 'age59HalfReached',
+      exclusiveStrictlyAfter: 'exceptionEvaluationRequired',
+    },
+    accepted: 'inclusiveOnOrAfter',
+  }, ({ accepted, readings }) => {
+    it('accepts a distribution taken exactly on the 59.5 threshold', () => {
+      const equal = first(evaluateOwnedNonRothIraPenaltyPrerequisites(input({
+        taxYear: 2029, birthDate: '1970-01-31', evaluationDate: '2029-07-31',
+      })))
+      expect(equal.outcome).toBe(accepted)
+      expect(equal.outcome).not.toBe(readings.exclusiveStrictlyAfter)
+      // The day before is still under, which is what makes the equality case
+      // load-bearing rather than incidental.
+      const before = first(evaluateOwnedNonRothIraPenaltyPrerequisites(input({
+        taxYear: 2029, birthDate: '1970-01-31', evaluationDate: '2029-07-30',
+      })))
+      expect(before.outcome).toBe(readings.exclusiveStrictlyAfter)
+    })
+  })
+
   it('uses exactly 714 calendar months and accepts equality', () => {
     const before = first(evaluateOwnedNonRothIraPenaltyPrerequisites(input({
       taxYear: 2029,
