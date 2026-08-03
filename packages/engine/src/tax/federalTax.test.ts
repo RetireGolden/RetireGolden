@@ -2,13 +2,14 @@ import { describe, expect, it } from 'vitest'
 
 import { describeRule } from '../rules/describeRule.js'
 
-import { packForYear } from '../params/index.js'
+import { EARLIEST_PACK_YEAR, LATEST_PACK_YEAR, packForYear } from '../params/index.js'
 import type { TaxCalculator, TaxYearInput } from '../projection/types.js'
 import {
   applyCapitalLossCarryforward,
   combineTaxCalculators,
   computeFederalTax,
   createFederalTaxCalculator,
+  saltCapForYear,
   taxableSocialSecurity,
 } from './federalTax.js'
 
@@ -289,6 +290,116 @@ describe('capital gains stacking', () => {
     )
     expect(d.magi).toBe(300_000)
     expect(d.niit).toBeCloseTo(65_000 * 0.038, 6)
+  })
+})
+
+describe('standard deduction structure', () => {
+  // IRC 63(c)(2)(A) defines the joint amount AS 200 percent of the unmarried
+  // one, so the two are not independently indexed figures that happen to sit
+  // near a 2:1 ratio -- the ratio is the rule. Carrying them as unrelated pack
+  // constants invites them drifting apart at a future re-index, and nothing
+  // downstream would notice.
+  describeRule('irc-63-c-2-joint-standard-deduction-doubles', {
+    readings: { exactlyTwiceTheUnmarriedAmount: 2, anyOtherRatio: 1.95 },
+    accepted: 'exactlyTwiceTheUnmarriedAmount',
+  }, ({ accepted, readings }) => {
+    it('keeps the joint amount at exactly twice the unmarried one', () => {
+      // Every published pack, not the helper's default year alone. The drift
+      // this rule guards against arrives *with* a pack refresh, so a fixture
+      // pinned to one year would go on passing through the very refresh that
+      // broke the ratio -- green, and blind to the only event that matters.
+      const publishedYears = Array.from(
+        { length: LATEST_PACK_YEAR - EARLIEST_PACK_YEAR + 1 },
+        (_, offset) => EARLIEST_PACK_YEAR + offset,
+      ).filter((year) => !packForYear(year).isStandIn)
+
+      // An empty sweep would pass vacuously, which is the failure this file
+      // exists to refuse.
+      expect(publishedYears).toContain(LATEST_PACK_YEAR)
+
+      for (const year of publishedYears) {
+        // peopleAged65Plus is pinned rather than left to the helper's
+        // default: the senior deduction rides on top of whichever base is
+        // larger, so a nonzero value would land in BOTH figures and pull the
+        // ratio off two while the pack relationship was still intact. The
+        // assertion still goes through computeFederalTax on purpose -- see
+        // the note below.
+        const single = computeFederalTax(input({
+          year, ordinaryIncome: 100_000, peopleAged65Plus: 0,
+        }))
+        const joint = computeFederalTax(input({
+          year, filingStatus: 'marriedFilingJointly', ordinaryIncome: 100_000,
+          peopleAged65Plus: 0,
+        }))
+
+        // Read off the computed deduction, not pack.federalTax.standardDeduction.
+        // Asserting on the pack constants would prove only that two numbers in
+        // a data file sit at 2:1, and would stay green if federalTax.ts stopped
+        // sourcing the joint amount from the pack at all -- a silent pass for
+        // the failure that would actually reach a user. Going through the
+        // engine costs a loud, labelled red if an unrelated deduction ever
+        // contaminates the ratio, which is the cheaper of the two mistakes.
+        const ratio = joint.deduction / single.deduction
+        expect(ratio, `pack ${year}`).toBeCloseTo(accepted, 10)
+        expect(ratio, `pack ${year}`).not.toBeCloseTo(readings.anyOtherRatio, 3)
+      }
+    })
+  })
+})
+
+describe('SALT cap schedule', () => {
+  // IRC 164(b)(7) is a written schedule, not an indexed figure, and 2030 is a
+  // REVERSION: 40,400 in 2026, stepping 101 percent a year, then 10,000 flat.
+  // Holding the 2026 cap -- or projecting it at general inflation like an
+  // indexed limit -- overstates the deduction roughly fourfold for every year
+  // from 2030 on, which for a retiree in a high-tax state is most of a horizon.
+  //
+  // 2030, single, 50,000 of state tax and 30,000 of mortgage interest:
+  //   cap reverts to 10,000:  10,000 + 30,000 = 40,000 itemized
+  //   2026 cap held:          40,400 + 30,000 = 70,400 itemized
+  describeRule('irc-164-b-7-salt-cap-schedule', {
+    readings: { revertsToTenThousand: 40_000, holdsTheTwentyTwentySixCap: 70_400 },
+    accepted: 'revertsToTenThousand',
+  }, ({ accepted, readings }) => {
+    it('drops the cap to ten thousand for years after 2029', () => {
+      const d = computeFederalTax(input({
+        year: 2030,
+        ordinaryIncome: 300_000,
+        itemizedDeductions: { stateAndLocalTaxes: 50_000, mortgageInterest: 30_000, charitable: 0 },
+      }))
+
+      expect(d.deduction).toBeCloseTo(accepted, 6)
+      expect(d.deduction).not.toBeCloseTo(readings.holdsTheTwentyTwentySixCap, 6)
+    })
+
+    // 164(b)(7)(A)(iii) compounds on "the dollar amount in effect ... for the
+    // preceding calendar year", so each step multiplies the year before it and
+    // the run compounds off the 2026 base: 40,400 -> 40,804 -> 41,212.04 ->
+    // 41,624.1604. Stepping off the 2025 figure instead, or applying a single
+    // one percent to the whole run, both land low.
+    it('compounds the one percent steps on the preceding year through 2029', () => {
+      const pack = packForYear(2026).pack
+
+      expect(saltCapForYear(pack, 2026)).toBeCloseTo(40_400, 6)
+      expect(saltCapForYear(pack, 2027)).toBeCloseTo(40_804, 6)
+      expect(saltCapForYear(pack, 2028)).toBeCloseTo(41_212.04, 6)
+      expect(saltCapForYear(pack, 2029)).toBeCloseTo(41_624.1604, 6)
+      expect(saltCapForYear(pack, 2030)).toBe(10_000)
+    })
+
+    // (A)(i) names calendar year 2025 exactly, not "2025 and earlier". The
+    // pre-OBBBA applicable limitation was 10,000, and 164(b)(6) itself reaches
+    // only taxable years beginning after 2017 -- earlier ones were uncapped.
+    // Carrying 40,000 backwards overstates the cap fourfold, the same error in
+    // the same direction as holding 40,400 past 2029.
+    it('does not carry the 2025 figure back before the schedule begins', () => {
+      const pack = packForYear(2026).pack
+
+      expect(saltCapForYear(pack, 2025)).toBe(40_000)
+      expect(saltCapForYear(pack, 2024)).toBe(10_000)
+      expect(saltCapForYear(pack, 2018)).toBe(10_000)
+      expect(saltCapForYear(pack, 2017)).toBe(Number.POSITIVE_INFINITY)
+    })
   })
 })
 

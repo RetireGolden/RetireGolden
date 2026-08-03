@@ -59,12 +59,47 @@ export interface FederalTaxDetail {
 }
 
 /**
- * Itemized-deduction total (SALT capped) from its components, or 0 when none.
- * The OBBBA high-income SALT phase-out is not modeled (see pack `saltCap`).
+ * IRC 164(b)(7) schedules the SALT cap explicitly rather than indexing it: it
+ * is 40,000 dollars for 2025, 40,400 for 2026, then 101 percent of the prior
+ * year through 2029, and it REVERTS to 10,000 dollars for 2030 and after.
+ *
+ * The reversion is the part that cannot be approximated. Holding the 2026
+ * figure flat, or projecting it at general inflation like an indexed limit,
+ * overstates the deduction roughly fourfold for every projected year from 2030
+ * on -- which for a retiree in a high-tax state is most of the horizon.
+ *
+ * The near end of the schedule needs the same care. 164(b)(7)(A)(i) names
+ * calendar year 2025 exactly, not "2025 and earlier", so the 40,000 figure must
+ * not be carried backwards: for the pre-OBBBA years the applicable limitation
+ * was 10,000, and 164(b)(6) reaches no further back than taxable years
+ * beginning after 2017 -- before that the deduction was uncapped. Spreading
+ * 40,000 across those years overstates the cap fourfold, the same error in the
+ * same direction as holding 40,400 past 2029.
  */
-function itemizedTotal(pack: ParameterPack, items: TaxYearInput['itemizedDeductions']): number {
+export function saltCapForYear(pack: ParameterPack, year: number): number {
+  if (year <= 2017) return Number.POSITIVE_INFINITY
+  if (year <= 2024) return 10_000
+  if (year === 2025) return 40_000
+  if (year >= 2030) return 10_000
+  const stepped = pack.federalTax.saltCap * Math.pow(1.01, Math.max(0, year - pack.year))
+  return stepped
+}
+
+/**
+ * Itemized-deduction total (SALT capped) from its components, or 0 when none.
+ *
+ * The cap comes from `saltCapForYear` rather than straight off the pack: for
+ * most years the statutory schedule decides it outright, and the pack figure is
+ * only the base the 2026-2029 steps compound from. The OBBBA high-income SALT
+ * phase-out is not modeled.
+ */
+function itemizedTotal(
+  pack: ParameterPack,
+  items: TaxYearInput['itemizedDeductions'],
+  year: number,
+): number {
   if (!items) return 0
-  const salt = Math.min(Math.max(0, items.stateAndLocalTaxes), pack.federalTax.saltCap)
+  const salt = Math.min(Math.max(0, items.stateAndLocalTaxes), saltCapForYear(pack, year))
   return salt + Math.max(0, items.mortgageInterest) + Math.max(0, items.charitable)
 }
 
@@ -315,7 +350,7 @@ export function computeFederalTax(input: TaxYearInput): FederalTaxDetail {
   // The OBBBA senior deduction applies whether you take the standard deduction or
   // itemize, so it rides on top of whichever base is larger.
   const standardBase = standardDeduction(pack, taxStatus, input.peopleAged65Plus)
-  const itemized = itemizedTotal(pack, input.itemizedDeductions)
+  const itemized = itemizedTotal(pack, input.itemizedDeductions, year)
   const useItemized = itemized > standardBase
   const deduction = Math.max(standardBase, itemized) + senior
 
@@ -326,7 +361,9 @@ export function computeFederalTax(input: TaxYearInput): FederalTaxDetail {
   const ordinaryTax = bracketTax(pack.federalTax.brackets[taxStatus], ordinaryTaxable)
   const capitalGainsTax = capitalGainsTaxStacked(pack, taxStatus, ordinaryTaxable, preferentialIncome)
 
-  const saltPreference = useItemized ? Math.min(Math.max(0, input.itemizedDeductions?.stateAndLocalTaxes ?? 0), pack.federalTax.saltCap) : 0
+  const saltPreference = useItemized
+    ? Math.min(Math.max(0, input.itemizedDeductions?.stateAndLocalTaxes ?? 0), saltCapForYear(pack, year))
+    : 0
   const standardDeductionAddback = useItemized ? 0 : deduction
   const amtPreferenceItems = Math.max(0, input.amtPreferenceItems ?? 0) + saltPreference + standardDeductionAddback
   const alternativeMinimumTaxableIncome = Math.max(0, taxableIncome + amtPreferenceItems)

@@ -1689,6 +1689,66 @@ const registry = {
     ],
   },
 
+  'irc-164-b-7-salt-cap-schedule': {
+    title: 'The SALT cap is a schedule and reverts to 10,000 in 2030',
+    statement:
+      'The applicable limitation amount is 40,000 dollars for 2025 and 40,400 for 2026, then 101 percent of the preceding year through 2029, and 10,000 dollars for taxable years beginning in 2030 and after. It is a schedule written into the statute, not an inflation-indexed figure, and the 2030 step is a reversion rather than a continuation.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The cap is halved for a married individual filing separately, which the projection cannot express because it collapses every filing status to single or married-filing-jointly. The high-income phase-out that OBBBA also added is not modelled either, so the cap here binds later than it would for a taxpayer above that threshold.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 164(b)(6)(B)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/164',
+      quotedText:
+        'the aggregate amount of taxes taken into account under paragraphs (1), (2), and (3) of subsection (a) and paragraph (5) of this subsection for any taxable year shall not exceed the applicable limitation amount (half the applicable limitation amount in the case of a married individual filing a separate return).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 164(b)(7)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/164',
+      quotedText:
+        'the applicable limitation amount is 40,000 dollars for taxable years beginning in 2025, 40,400 dollars for taxable years beginning in 2026, 101 percent of the dollar amount in effect under this subparagraph for taxable years beginning in the preceding calendar year for taxable years beginning after 2026 and before 2030, and 10,000 dollars for taxable years beginning after 2029.',
+    }],
+    volatility: 'sunsetting',
+    effectiveFrom: 2025,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/tax/federalTax.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+  'irc-63-c-2-joint-standard-deduction-doubles': {
+    title: 'The joint standard deduction is 200 percent of the unmarried one',
+    statement:
+      'The basic standard deduction for a joint return or a surviving spouse is 200 percent of the amount for any other case. The two figures are not independently set: the joint amount is defined in terms of the unmarried one, so they move together and the ratio between them is fixed at two.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'Section 63(c)(2)(B) gives a head of household its own figure -- 23,625 dollars as substituted by (c)(7) -- which is neither the unmarried amount nor twice it. The projection collapses every filing status to single or married-filing-jointly, so that third figure is unreachable and the doubling holds across everything the engine can express.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 63(c)(2)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/63',
+      quotedText:
+        'the basic standard deduction is - (A) 200 percent of the dollar amount in effect under subparagraph (C) for the taxable year in the case of - (i) a joint return, or (ii) a surviving spouse, (B) 4,400 dollars in the case of a head of household, or (C) 3,000 dollars in any other case.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 63(c)(7)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/63',
+      quotedText:
+        'by substituting 23,625 dollars for 4,400 dollars in subparagraph (B), and by substituting 15,750 dollars for 3,000 dollars in subparagraph (C).',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/tax/federalTax.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)
