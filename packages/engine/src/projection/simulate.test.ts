@@ -3487,3 +3487,129 @@ describe('SSA-44 IRMAA redetermination', () => {
     expect(flagged).toEqual([2031, 2032]) // the two years after the 2030 death
   })
 })
+
+describe('IRA contribution ceilings', () => {
+  /** Born 1985, so 41 in 2026 — no age-50 catch-up muddying the arithmetic. */
+  function youngPerson(id: string, name: string) {
+    return {
+      id, name, dob: '1985-06-15', sex: 'average' as const, retirementAge: 67,
+      longevity: { planningAge: 90, source: 'manual' as const },
+    }
+  }
+
+  function ira(ownerPersonId: string, annualContribution: number, type: 'traditional' | 'roth' = 'traditional') {
+    return {
+      id: testIds(), name: `${ownerPersonId} ${type} IRA`, type, kind: 'ira', ownerPersonId,
+      balance: 0, annualReturnPct: 0, annualContribution,
+    } as never
+  }
+
+  /** Scheduled contributions skip the legacy "owner must have wages" gate, which
+   *  is what lets a non-earning spouse reach the 219(c) pool at all. */
+  function scheduledIra(ownerPersonId: string, annualAmount: number) {
+    return {
+      id: testIds(), name: `${ownerPersonId} IRA`, type: 'traditional', kind: 'ira', ownerPersonId,
+      balance: 0, annualReturnPct: 0, annualContribution: 0,
+      contributionSchedule: [{ annualAmount, fromAge: null, toAge: null, escalationPct: 0 }],
+    } as never
+  }
+
+  describeRule('irc-219-b-1-ira-limit-lesser-of-compensation', {
+    readings: { dollarLimitOnly: 7_500, lesserOfCompensation: 3_000 },
+    accepted: 'lesserOfCompensation',
+  }, ({ accepted, readings }) => {
+    it('holds a low earner to compensation rather than to the dollar limit', () => {
+      const plan = basePlan()
+      plan.household.people[0]! = youngPerson('p1', 'Pat')
+      plan.incomes = [wages(3_000)]
+      plan.accounts = [cash(1_000_000), ira('p1', 7_500)]
+
+      const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+      const y = result.years.find((r) => r.year === 2026)!
+
+      expect(y.contributions).toBeCloseTo(accepted, 6)
+      expect(y.contributions).not.toBeCloseTo(readings.dollarLimitOnly, 6)
+    })
+  })
+
+  describeRule('irc-219-c-1-spousal-ira-combined-compensation', {
+    readings: { ownCompensationOnly: 7_500, combinedCompensationPool: 10_000, noCompensationCap: 15_000 },
+    accepted: 'combinedCompensationPool',
+  }, ({ accepted, readings }) => {
+    it('lets a non-earning spouse draw on the earner’s compensation, up to the combined total', () => {
+      const plan = basePlan()
+      plan.household.filingStatus = 'marriedFilingJointly'
+      plan.household.people = [youngPerson('p1', 'Earner'), youngPerson('p2', 'Homemaker')]
+      plan.incomes = [wages(10_000, 'p1')] // p2 has no compensation of their own
+      plan.accounts = [cash(1_000_000), scheduledIra('p1', 7_500), scheduledIra('p2', 7_500)]
+
+      const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+      const y = result.years.find((r) => r.year === 2026)!
+
+      // Each spouse is still separately held to the 7,500 dollar limit, so the
+      // binding constraint here is the 10,000 of combined compensation.
+      expect(y.contributions).toBeCloseTo(accepted, 6)
+      expect(y.contributions).not.toBeCloseTo(readings.ownCompensationOnly, 6)
+      expect(y.contributions).not.toBeCloseTo(readings.noCompensationCap, 6)
+    })
+  })
+
+  describeRule('irc-219-f-1-compensation-excludes-deferred-income', {
+    readings: { pensionIsNotCompensation: 0, anyIncomeCounts: 7_500 },
+    accepted: 'pensionIsNotCompensation',
+  }, ({ accepted, readings }) => {
+    it('gives a retiree living on a pension no contribution room', () => {
+      const plan = basePlan()
+      plan.household.people[0]! = youngPerson('p1', 'Pat')
+      plan.incomes = [{
+        type: 'recurring', id: testIds(), label: 'Pension', annualAmount: 80_000,
+        startYear: null, endYear: null, inflationAdjusted: false, taxTreatment: 'ordinary',
+      } as never]
+      plan.accounts = [cash(1_000_000), scheduledIra('p1', 7_500)]
+
+      const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+      const y = result.years.find((r) => r.year === 2026)!
+
+      expect(y.contributions).toBeCloseTo(accepted, 6)
+      expect(y.contributions).not.toBeCloseTo(readings.anyIncomeCounts, 6)
+    })
+  })
+
+  describeRule('irc-408A-c-2-roth-shares-the-section-219-ceiling', {
+    readings: { sharedAnnualCeiling: 7_500, separateCeilings: 15_000 },
+    accepted: 'sharedAnnualCeiling',
+  }, ({ accepted, readings }) => {
+    it('does not give a second ceiling to someone holding both IRA flavours', () => {
+      const plan = basePlan()
+      plan.household.people[0]! = youngPerson('p1', 'Pat')
+      plan.incomes = [wages(100_000)] // well clear of the compensation prong
+      plan.accounts = [cash(1_000_000), ira('p1', 7_500, 'traditional'), ira('p1', 7_500, 'roth')]
+
+      const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+      const y = result.years.find((r) => r.year === 2026)!
+
+      expect(y.contributions).toBeCloseTo(accepted, 6)
+      expect(y.contributions).not.toBeCloseTo(readings.separateCeilings, 6)
+    })
+  })
+
+  describeRule('irc-219-b-5-C-iii-ira-catch-up-indexed', {
+    readings: { catchUpIndexed: 9_460, catchUpFlatLikeTheHsaOne: 9_350 },
+    accepted: 'catchUpIndexed',
+  }, ({ accepted, readings }) => {
+    it('projects the age-50 catch-up instead of holding it flat', () => {
+      const plan = basePlan() // p1 born 1966, so 61 in 2027
+      plan.assumptions.inflationPct = 10
+      plan.incomes = [wages(500_000)]
+      plan.accounts = [cash(1_000_000), ira('p1', 50_000)]
+
+      const result = simulatePlan(validate(plan), { startYear: 2026, horizonEndYear: 2027, taxCalculator: noTax })
+      const y = result.years.find((r) => r.year === 2027)!
+
+      // (7,500 + 1,100) × 1.1. The HSA catch-up next door is deliberately not
+      // projected this way; see irc-223-b-3-hsa-catch-up-not-indexed.
+      expect(y.contributions).toBeCloseTo(accepted, 6)
+      expect(y.contributions).not.toBeCloseTo(readings.catchUpFlatLikeTheHsaOne, 6)
+    })
+  })
+})
