@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { describeRule } from '../rules/describeRule.js'
 
 import { parsePlan, type Plan } from '../model/plan.js'
 import { couplePlan, singlePersonPlan, traditionalAccount } from '../testing/planFixtures.js'
@@ -279,12 +280,25 @@ describe('stageAnnualQcdPhysicalExecution', () => {
     expect(result.applications[0]).not.toHaveProperty('executionSequence')
   })
 
+  // Treas. Reg. 1.408-8, Q&A-4 makes the first dollars distributed in a year the
+  // RMD, so a QCD offsets only the requirement still outstanding when it
+  // executes. The default pool owes 10_000c for the year and has already had
+  // 2_000c satisfied, so an order-aware reading credits this action with the
+  // 8_000c remaining; an order-blind reading that netted the QCD against the
+  // whole annual requirement would credit 10_000c.
+  describeRule('treas-reg-1-408-8-b-3-rmd-first-dollars-out', {
+    readings: { firstDollarsOutAgainstRemaining: 8_000, offsetFullAnnualRequirement: 10_000 },
+    accepted: 'firstDollarsOutAgainstRemaining',
+  }, ({ accepted, readings }) => {
   it('caps RMD satisfaction at the exact opening RMD remaining', () => {
     const result = stageAnnualQcdPhysicalExecution(input())
     const smallerExecution = stageAnnualQcdPhysicalExecution(input(
       [request()],
       [balance(5_000)],
     ))
+    expect(result.applications[0]?.rmdSatisfiedByAction).toBe(accepted)
+    expect(result.applications[0]?.rmdSatisfiedByAction)
+      .not.toBe(readings.offsetFullAnnualRequirement)
 
     expect(result).toMatchObject({
       status: 'annualQcdPhysicalExecutionStaged',
@@ -303,6 +317,7 @@ describe('stageAnnualQcdPhysicalExecution', () => {
       .toBe(result.rmdPools[0]?.openingEvidenceId)
     expect(smallerExecution.rmdPools[0]?.evidenceId)
       .not.toBe(result.rmdPools[0]?.evidenceId)
+  })
   })
 
   it('still stages the distribution when no RMD remains', () => {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { describeRule } from '../rules/describeRule.js'
 
 import {
   asAccountId,
@@ -241,21 +242,37 @@ describe('traditional employer-plan penalty prerequisite', () => {
     })
   })
 
-  it('accepts Rule of 55 separation before the birthday in the qualifying year', () => {
-    const result = evaluateTraditionalEmployerPlanPenaltyPrerequisite(input())
+  describeRule('irc-72-t-2-A-v-rule-of-55', {
+    // The participant turns 55 on 2030-06-15 and separates on 2030-01-02 —
+    // inside the qualifying calendar year but before the birthday itself. IRC
+    // 72(t)(2)(A)(v) read literally says "after attainment of age 55", which
+    // would refuse this. The IRS calendar-year position (Notice 87-13 Q&A-20,
+    // restated in Pub 575 and the Form 5329 instructions) accepts it, and the
+    // engine follows the IRS position.
+    readings: {
+      irsCalendarYearPosition: 'ruleOf55Qualified',
+      literalStatuteAfterAttainment: 'penaltyApplies',
+    },
+    accepted: 'irsCalendarYearPosition',
+  }, ({ accepted, readings }) => {
+    it('accepts separation before the birthday in the qualifying year', () => {
+      const result = evaluateTraditionalEmployerPlanPenaltyPrerequisite(input())
 
-    expect(result).toMatchObject({
-      status: 'accepted',
-      evidence: {
-        outcome: 'ruleOf55Qualified',
-        finalPenaltyAmount: 0,
-        ruleOf55Assessment: {
-          disposition: 'accepted',
-          separationDate: '2030-01-02',
-          separationYear: 2030,
-          calendarYearParticipantAttains55: 2030,
+      expect(result).toMatchObject({
+        status: 'accepted',
+        evidence: {
+          outcome: accepted,
+          finalPenaltyAmount: 0,
+          ruleOf55Assessment: {
+            disposition: 'accepted',
+            separationDate: '2030-01-02',
+            separationYear: 2030,
+            calendarYearParticipantAttains55: 2030,
+          },
         },
-      },
+      })
+      expect(result.status === 'accepted' ? result.evidence.outcome : null)
+        .not.toBe(readings.literalStatuteAfterAttainment)
     })
   })
 
@@ -558,14 +575,26 @@ describe('traditional employer-plan penalty prerequisite', () => {
       .not.toBe(first.evidence.seppAssessment?.evidenceId)
   })
 
-  it('does not qualify a SEPP election that starts before separation', () => {
-    const value = input({ separationDate: '2029-12-31' })
-    const sepp = currentSepp(value)
-    sepp.election.electionStartDate = '2029-12-01'
-    value.seppEvidence = sepp
+  describeRule('irc-72-t-3-B-sepp-separation', {
+    // IRC 72(t)(3)(B) reaches 401(a) trusts and 72(e)(5)(D)(ii) contracts —
+    // 403(a) annuity plans and 403(b) contracts — and pointedly omits clause
+    // (iii), individual retirement accounts. So an employer-plan SEPP must
+    // begin after separation, while an IRA SEPP may begin during employment.
+    // Applying the IRA rule here would accept an election predating separation.
+    readings: { employerPlanRequiresSeparationFirst: 'refused', iraRuleNoSeparationNeeded: 'accepted' },
+    accepted: 'employerPlanRequiresSeparationFirst',
+  }, () => {
+    it('does not qualify a SEPP election that starts before separation', () => {
+      const value = input({ separationDate: '2029-12-31' })
+      const sepp = currentSepp(value)
+      sepp.election.electionStartDate = '2029-12-01'
+      value.seppEvidence = sepp
 
-    expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(value))
-      .toThrow(/election or current-payment identity/)
+      // Under the IRA rule this identical election would stand, because
+      // 72(t)(3)(B) does not reach individual retirement accounts.
+      expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(value))
+        .toThrow(/election or current-payment identity/)
+    })
   })
 
   it('rejects collisions among immutable SEPP election, distribution, and state IDs', () => {

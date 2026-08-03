@@ -47,11 +47,20 @@ const qcdCandidateAdapterDeepApi = await import(
 const candidateIdentityAllocatorDeepApi = await import(
   '@retiregolden/engine/actions/retirementActionCandidateIdentityAllocator'
 )
+const annualOwnedIraPoolCapacityDeepApi = await import(
+  '@retiregolden/engine/actions/annualOwnedNonRothIraPoolCapacity'
+)
 const annualQcdPrerequisiteDeepApi = await import(
   '@retiregolden/engine/actions/annualQcdExecutionPrerequisite'
 )
 const annualQcdPhysicalDeepApi = await import(
   '@retiregolden/engine/actions/annualQcdPhysicalExecution'
+)
+const annualQcdResidualDeepApi = await import(
+  '@retiregolden/engine/actions/annualQcdResidualForm8606'
+)
+const annualQcdPostPassDeepApi = await import(
+  '@retiregolden/engine/actions/annualQcdTaxCharacterPostPass'
 )
 const ordinaryWithdrawalCandidateAdapterDeepApi = await import(
   '@retiregolden/engine/decisions/ordinaryWithdrawalCandidateAdapter'
@@ -84,6 +93,20 @@ const ownedIraAnnualFilingSourceResolverDeepApi = await import(
 const annualRetirementInventoryDeepApi = await import(
   '@retiregolden/engine/actions/annualRetirementPhysicalEventInventory'
 )
+const annualHsaTreatmentBindingDeepApi = await import(
+  '@retiregolden/engine/actions/annualHsaTreatmentBindingCoordinator'
+)
+const annualHsaOpeningAuthorityDeepApi = await import(
+  '@retiregolden/engine/actions/annualHsaOpeningAuthority'
+)
+assert.equal(
+  typeof annualHsaTreatmentBindingDeepApi.coordinateAnnualHsaTreatmentBinding,
+  'function',
+)
+assert.equal(
+  typeof annualHsaOpeningAuthorityDeepApi.establishAnnualHsaOpeningAuthority,
+  'function',
+)
 const ownedIraPostCandidateEvidenceDeepApi = await import(
   '@retiregolden/engine/actions/ownedNonRothIraAnnualPostCandidateEvidence'
 )
@@ -94,9 +117,18 @@ const ownedIraAnnualPassProbeDeepApi = await import(
   '@retiregolden/engine/actions/ownedNonRothIraAnnualPassProbe'
 )
 const canonicalActionDeepImports = [
+  'annualHsaOpeningAuthority',
+  'annualHsaPenaltyEvaluation',
+  'annualHsaPhysicalMovementCandidate',
+  'annualHsaTreatmentBindingCoordinator',
+  'annualHsaReimbursementLedger',
+  'annualHsaWithdrawalCharacter',
   'annualIraBasisAllocation',
+  'annualOwnedNonRothIraPoolCapacity',
   'annualQcdExecutionPrerequisite',
   'annualQcdPhysicalExecution',
+  'annualQcdResidualForm8606',
+  'annualQcdTaxCharacterPostPass',
   'annualRetirementActionPublication',
   'annualRetirementPhysicalEventInventory',
   'civilDate',
@@ -144,8 +176,11 @@ const {
   asPositiveUsdCents,
   asUsdCents,
   allocateRetirementActionCandidateIdentity,
+  buildAnnualOwnedNonRothIraPoolCapacity,
   evaluateAnnualQcdExecutionPrerequisites,
   stageAnnualQcdPhysicalExecution,
+  stageAnnualQcdResidualForm8606,
+  stageAnnualQcdTaxCharacterPostPass,
   buildOwnedNonRothIraSeppAnnualDistributionInventoryEvidence,
   buildOwnedNonRothIraSeppCompletePriorElectionHistoryEvidence,
   buildOwnedNonRothIraSeppPriorPaymentHistoryEvidence,
@@ -187,6 +222,11 @@ assert.equal(
 )
 assert.equal(typeof allocateRetirementActionCandidateIdentity, 'function')
 assert.equal(
+  annualOwnedIraPoolCapacityDeepApi.buildAnnualOwnedNonRothIraPoolCapacity,
+  buildAnnualOwnedNonRothIraPoolCapacity,
+)
+assert.equal(typeof buildAnnualOwnedNonRothIraPoolCapacity, 'function')
+assert.equal(
   annualQcdPrerequisiteDeepApi.evaluateAnnualQcdExecutionPrerequisites,
   evaluateAnnualQcdExecutionPrerequisites,
 )
@@ -196,6 +236,16 @@ assert.equal(
   stageAnnualQcdPhysicalExecution,
 )
 assert.equal(typeof stageAnnualQcdPhysicalExecution, 'function')
+assert.equal(
+  annualQcdResidualDeepApi.stageAnnualQcdResidualForm8606,
+  stageAnnualQcdResidualForm8606,
+)
+assert.equal(typeof stageAnnualQcdResidualForm8606, 'function')
+assert.equal(
+  annualQcdPostPassDeepApi.stageAnnualQcdTaxCharacterPostPass,
+  stageAnnualQcdTaxCharacterPostPass,
+)
+assert.equal(typeof stageAnnualQcdTaxCharacterPostPass, 'function')
 assert.equal(typeof reviewAndReplaceRetirementActionManually, 'function')
 assert.equal(
   ordinaryWithdrawalCandidateAdapterDeepApi

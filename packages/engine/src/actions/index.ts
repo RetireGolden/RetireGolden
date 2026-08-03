@@ -1,9 +1,87 @@
 export {
+  finalizeAnnualQcdDerivedTaxCharacter,
+  type QcdFinalDerivedTaxCharacter,
+  type AcceptedQcdSourceEligibilityEvidence,
+  type AnnualQcdFinalDerivedTaxCharacterActionEvidence,
+  type AnnualQcdDerivedTaxCharacterIssue,
+  type AnnualQcdDerivedTaxCharacterFinal,
+  type AnnualQcdDerivedTaxCharacterBlocked,
+  type FinalizeAnnualQcdDerivedTaxCharacterResult,
+} from './annualQcdDerivedTaxCharacter.js'
+export {
+  publishAnnualQcdActionExecutionEvidence,
+  type PublishAnnualQcdActionExecutionEvidenceInput,
+  type AnnualQcdActionExecutionDisposition,
+  type AnnualQcdActionExecutionAllocationEvidence,
+  type AnnualQcdExactAgeEligibilityEvidence,
+  type AnnualQcdActionRmdPoolEvidence,
+  type AnnualQcdActionTaxablePoolEvidence,
+  type AnnualQcdActionCharitableDeductionEvidence,
+  type AnnualQcdActionExecutionEvidence,
+  type AnnualQcdActionExecutionEvidencePublished,
+  type AnnualQcdActionExecutionEvidenceIssue,
+  type AnnualQcdActionExecutionEvidenceBlocked,
+  type PublishAnnualQcdActionExecutionEvidenceResult,
+} from './annualQcdActionExecutionEvidence.js'
+export {
+  coordinateAnnualQcdDeductionTreatment,
+  type CoordinateAnnualQcdDeductionTreatmentInput,
+  type QcdCharitableDeductionTreatmentEvidence,
+  type AnnualQcdDeductionTreatmentActionEvidence,
+  type AnnualQcdSelectedDeductionTaxUnitEvidence,
+  type AnnualQcdDeductionTreatmentIssue,
+  type AnnualQcdDeductionTreatmentCoordinated,
+  type AnnualQcdDeductionTreatmentBlocked,
+  type CoordinateAnnualQcdDeductionTreatmentResult,
+} from './annualQcdDeductionTreatmentCoordinator.js'
+export {
+  reconcileAnnualQcdItemizedLiability,
+  type AnnualQcdItemizedLiabilitySourceInput,
+  type ReconcileAnnualQcdItemizedLiabilityInput,
+  type AnnualQcdItemizedLiabilityActionEvidence,
+  type AnnualQcdItemizedLiabilityTaxUnitEvidence,
+  type AnnualQcdItemizedLiabilityIssue,
+  type AnnualQcdItemizedLiabilityReconciled,
+  type AnnualQcdItemizedLiabilityBlocked,
+  type ReconcileAnnualQcdItemizedLiabilityResult,
+} from './annualQcdItemizedLiabilityReconciliation.js'
+export {
+  stageAnnualQcdItemizedSection170Ledger,
+  type AnnualQcdFloorCarryforwardEligibilityInput,
+  type AnnualQcdItemizedSection170ActionEvidence,
+  type AnnualQcdItemizedSection170Blocked,
+  type AnnualQcdItemizedSection170Issue,
+  type AnnualQcdItemizedSection170Staged,
+  type AnnualQcdItemizedSection170StateEvidence,
+  type AnnualQcdItemizedSection170TaxUnitEvidence,
+  type AnnualQcdItemizedSection170TaxUnitInput,
+  type AnnualQcdSection170RunBinding,
+  type StageAnnualQcdItemizedSection170LedgerInput,
+  type StageAnnualQcdItemizedSection170LedgerResult,
+} from './annualQcdItemizedSection170Ledger.js'
+export {
+  stageAnnualQcdStandardSection170pLedger,
+  type AnnualQcdSection170pRunBinding,
+  type AnnualQcdStandardSection170pTaxUnitInput,
+  type StageAnnualQcdStandardSection170pLedgerInput,
+  type AnnualQcdStandardSection170pStateEvidence,
+  type AnnualQcdStandardSection170pActionEvidence,
+  type AnnualQcdStandardSection170pTaxUnitEvidence,
+  type AnnualQcdStandardSection170pIssue,
+  type AnnualQcdStandardSection170pStaged,
+  type AnnualQcdStandardSection170pBlocked,
+  type StageAnnualQcdStandardSection170pLedgerResult,
+} from './annualQcdStandardSection170pLedger.js'
+export {
   addCalendarMonths,
   formatCivilDate,
   parseCivilIsoDate,
   type CivilDate,
 } from './civilDate.js'
+export {
+  buildAnnualOwnedNonRothIraPoolCapacity,
+  type AnnualOwnedNonRothIraPoolCapacityEvidence,
+} from './annualOwnedNonRothIraPoolCapacity.js'
 export {
   evaluateAnnualQcdExecutionPrerequisites,
   type AnnualQcdDonorEligibilitySnapshot,
@@ -34,6 +112,28 @@ export {
   type StageAnnualQcdPhysicalExecutionInput,
   type StageAnnualQcdPhysicalExecutionResult,
 } from './annualQcdPhysicalExecution.js'
+export {
+  stageAnnualQcdResidualForm8606,
+  type AnnualQcdResidualForm8606Blocked,
+  type AnnualQcdResidualForm8606Issue,
+  type AnnualQcdResidualForm8606PoolEvidence,
+  type AnnualQcdResidualForm8606Staged,
+  type AnnualQcdResidualRemainderBinding,
+  type StageAnnualQcdResidualForm8606Input,
+  type StageAnnualQcdResidualForm8606Result,
+} from './annualQcdResidualForm8606.js'
+export {
+  stageAnnualQcdTaxCharacterPostPass,
+  type AnnualQcdPersonalLimitEvidence,
+  type AnnualQcdPostPassApplication,
+  type AnnualQcdPostPassPoolTransition,
+  type AnnualQcdProvisionalCharacterPartition,
+  type AnnualQcdTaxCharacterPostPassBlocked,
+  type AnnualQcdTaxCharacterPostPassIssue,
+  type AnnualQcdTaxCharacterPostPassStaged,
+  type StageAnnualQcdTaxCharacterPostPassInput,
+  type StageAnnualQcdTaxCharacterPostPassResult,
+} from './annualQcdTaxCharacterPostPass.js'
 export {
   annualRetirementResolvedRuntimeEventKinds,
   annualRetirementRuntimeEventKinds,
@@ -331,6 +431,87 @@ export {
   type NotApplicableAnnualIraBasisRatio,
 } from './annualIraBasisAllocation.js'
 export {
+  stageAnnualHsaPhysicalMovementCandidate,
+  type AnnualHsaPhysicalMovementCandidate,
+  type HsaDetachedBatchOpeningBalanceSnapshot,
+  type HsaPhysicalActionDisposition,
+  type HsaPhysicalAllocationApplication,
+  type HsaPhysicalApplicationStatus,
+  type HsaPhysicalCandidateSourceBalance,
+  type HsaStagedPhysicalDistribution,
+  type OwnedHsaPhysicalSourceEvidence,
+  type StageAnnualHsaPhysicalMovementCandidateInput,
+} from './annualHsaPhysicalMovementCandidate.js'
+export {
+  establishAnnualHsaOpeningAuthority,
+  type AnnualHsaOpeningAuthority,
+  type CompleteHsaRuntimeInflowInventory,
+  type EstablishAnnualHsaOpeningAuthorityInput,
+  type ExplicitEmptyHsaRuntimeInflowInventory,
+  type HsaAnnualStartBalanceEvidence,
+  type HsaRuntimeInflowInventory,
+  type HsaSourceOpeningAuthority,
+  type SettledHsaRuntimeCreditEvidence,
+} from './annualHsaOpeningAuthority.js'
+export {
+  evaluateAnnualHsaReimbursementLedger,
+  type AnnualHsaReimbursementLedgerBlocked,
+  type AnnualHsaReimbursementLedgerEvaluated,
+  type AnnualHsaReimbursementLedgerIssue,
+  type CompleteHsaFamilyReimbursementScopeEvidence,
+  type EvaluateAnnualHsaReimbursementLedgerInput,
+  type EvaluateAnnualHsaReimbursementLedgerResult,
+  type HsaExecutedAllocationEvidence,
+  type HsaQualifiedExpenseConsumptionEvidence,
+  type HsaQualifiedMedicalExpenseRecord,
+  type HsaOwnerEstablishmentEvidence,
+  type HsaReimbursementClaim,
+  type HsaReimbursementExpenseStateRecord,
+  type HsaReimbursementLedgerEntry,
+  type HsaReimbursementPriorHistoryEvidence,
+} from './annualHsaReimbursementLedger.js'
+export {
+  classifyAnnualHsaWithdrawalCharacter,
+  type AnnualHsaWithdrawalCharacterAccepted,
+  type AnnualHsaWithdrawalCharacterIdentifierCollision,
+  type AnnualHsaWithdrawalCharacterLedgerBlocked,
+  type ClassifyAnnualHsaWithdrawalCharacterResult,
+  type HsaOrdinaryIncomeWithdrawalCharacter,
+  type HsaQualifiedTaxFreeWithdrawalCharacter,
+  type HsaWithdrawalAllocationCharacterCoverage,
+  type HsaWithdrawalCharacterEvidence,
+  type HsaWithdrawalTaxCharacter,
+} from './annualHsaWithdrawalCharacter.js'
+export {
+  evaluateAnnualHsaPenalty,
+  type AnnualHsaPenaltyBlocked,
+  type AnnualHsaPenaltyEvaluated,
+  type AnnualHsaPenaltyIssue,
+  type EvaluateAnnualHsaPenaltyInput,
+  type EvaluateAnnualHsaPenaltyResult,
+  type HsaAge65PenaltyEvaluation,
+  type HsaAllocationPenaltyCoverage,
+  type HsaDisabilityPenaltyEvaluation,
+  type HsaFixedTwentyPercentPenaltyRateEvidence,
+  type HsaPenaltyAge65Evidence,
+  type HsaPenaltyAppliesEvaluation,
+  type HsaPenaltyDisabilityStatusEvidence,
+  type HsaPenaltyOwnerBirthEvidence,
+  type HsaQualifiedMedicalPenaltyEvaluation,
+  type HsaSegmentPenaltyEvaluation,
+} from './annualHsaPenaltyEvaluation.js'
+export {
+  coordinateAnnualHsaTreatmentBinding,
+  type AnnualHsaTreatmentBindingBlocked,
+  type AnnualHsaTreatmentBindingIssue,
+  type AnnualHsaTreatmentBindingIssueKind,
+  type AnnualHsaTreatmentBindingPrepared,
+  type CoordinateAnnualHsaTreatmentBindingInput,
+  type CoordinateAnnualHsaTreatmentBindingResult,
+  type HsaAllocationReimbursementClaims,
+  type HsaPreparedTreatmentBinding,
+} from './annualHsaTreatmentBindingCoordinator.js'
+export {
   classifyOwnedNonRothIraAnnualWithdrawals,
   type ClassifyOwnedNonRothIraAnnualWithdrawalsInput,
   type ClassifyOwnedNonRothIraAnnualWithdrawalsResult,
@@ -600,3 +781,16 @@ export {
   type StageOwnedNonRothIraOrdinaryWithdrawalMovementsInput,
   type StageOwnedNonRothIraOrdinaryWithdrawalMovementsResult,
 } from './ownedNonRothIraMovementCandidate.js'
+export {
+  buildAnnualSection68ItemizedDeductionEvidence,
+  type AnnualSection68ItemizedActionInput,
+  type AnnualSection68ItemizedDeductionEvidence,
+  type AnnualSection68ItemizedDeductionIssue,
+  type AnnualSection68ItemizedDeductionIssueKind,
+  type AnnualSection68LiabilityRunBinding,
+  type BuildAnnualSection68ItemizedDeductionEvidenceInput,
+  type BuildAnnualSection68ItemizedDeductionEvidenceResult,
+  type Section68ItemizedActionAttributionEvidence,
+  type Section68ItemizedDeductionStateEvidence,
+  type Section68ThresholdBinding,
+} from './annualSection68ItemizedDeduction.js'
