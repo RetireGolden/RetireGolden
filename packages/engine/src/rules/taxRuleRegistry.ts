@@ -698,7 +698,7 @@ const registry = {
   'irc-408-d-8-beneficiary-ira-source': {
     title: 'Inherited IRA as a QCD source',
     statement:
-      'A beneficiary who has personally attained age 70.5 may make a QCD from an inherited IRA; the controlling fact is the beneficiary own age, not the decedent. Not modelled in v1: separate beneficiary basis history is required and is never borrowed from the donor owned pool, so an inherited source is classification-only and non-actionable.',
+      'A beneficiary who has personally attained age 70.5 may make a QCD from an inherited IRA; the controlling fact is the beneficiary’s own age, not the decedent’s. Not modelled in v1: separate beneficiary basis history is required and is never borrowed from the donor’s own pool, so an inherited source is classification-only and non-actionable.',
     classification: 'outOfScope',
     contraryReading: null,
     conventionRationale: null,
@@ -816,7 +816,7 @@ const registry = {
   'treas-reg-1-408-8-c-3-spouse-treated-as-owner': {
     title: 'After the election the spouse is the owner for all Code purposes',
     statement:
-      'Following an election under 1.408-8(c)(1) or a deemed election under (c)(2), the surviving spouse is the IRA owner for all purposes under the Code, section 72(t) expressly included. The zero additional-tax rate that IRC 72(t)(2)(A)(ii) gives a death beneficiary no longer applies, and the balance folds into the spouse own 408(d)(2) aggregation pool.',
+      'Following an election under 1.408-8(c)(1) or a deemed election under (c)(2), the surviving spouse is the IRA owner for all purposes under the Code, section 72(t) expressly included. The zero additional-tax rate that IRC 72(t)(2)(A)(ii) gives a death beneficiary no longer applies, and the balance folds into the spouse’s own 408(d)(2) aggregation pool.',
     classification: 'settled',
     contraryReading: null,
     conventionRationale: null,
