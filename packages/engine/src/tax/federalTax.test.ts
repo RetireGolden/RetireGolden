@@ -293,6 +293,29 @@ describe('capital gains stacking', () => {
 })
 
 describe('age-based deductions', () => {
+  // IRC 63(f)(1) grants the additional amount separately for the taxpayer under
+  // (A) and for a qualifying spouse under (B). On a joint return with two
+  // qualifying people it is taken twice. Treating it as one household amount
+  // is the natural misreading and understates the deduction by a full share.
+  //
+  // MFJ, both 65+: 32,200 base + 2 x 1,650 + 12,000 senior = 47,500.
+  // One household share instead: 32,200 + 1,650 + 12,000 = 45,850.
+  describeRule('irc-63-f-additional-standard-deduction-aged', {
+    readings: { perQualifyingPerson: 47_500, oneAmountPerHousehold: 45_850 },
+    accepted: 'perQualifyingPerson',
+  }, ({ accepted, readings }) => {
+    it('takes the addition once for each person who has attained 65', () => {
+      const result = computeFederalTax(input({
+        filingStatus: 'marriedFilingJointly',
+        ordinaryIncome: 100_000,
+        peopleAged65Plus: 2,
+      }))
+
+      expect(result.deduction).toBe(accepted)
+      expect(result.deduction).not.toBe(readings.oneAmountPerHousehold)
+    })
+  })
+
   it('adds 65+ amounts and the OBBBA senior deduction (MFJ, both 65+)', () => {
     const d = computeFederalTax(
       input({ filingStatus: 'marriedFilingJointly', ordinaryIncome: 100_000, peopleAged65Plus: 2 }),

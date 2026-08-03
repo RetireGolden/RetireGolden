@@ -1188,6 +1188,37 @@ const registry = {
     implementedBy: ['packages/engine/src/params/index.ts'],
   },
 
+  'irc-63-f-additional-standard-deduction-aged': {
+    title: 'The age-65 standard deduction addition is per qualifying person',
+    statement:
+      'A taxpayer is entitled to an additional amount for himself if he has attained age 65 before the close of the taxable year, and to a further additional amount for a spouse who has done the same. On a joint return with two qualifying people the addition is taken twice, not once for the household.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The statute states 600 dollars, and 750 dollars for an unmarried individual who is not a surviving spouse; both are inflation-adjusted, and the 2026 pack carries 1,650 and 2,050. The test is attainment before the close of the taxable year, which the engine models as age attained in the calendar year -- equivalent except for a taxpayer born on January 1, whom the IRS treats as attaining age on the preceding December 31.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 63(f)(1)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/63',
+      quotedText:
+        'The taxpayer shall be entitled to an additional amount of 600 dollars - (A) for himself if he has attained age 65 before the close of his taxable year, and (B) for the spouse of the taxpayer if the spouse has attained age 65 before the close of such taxable year and an additional exemption would be allowable to the taxpayer for such spouse.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 63(f)(3)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/63',
+      quotedText:
+        'In the case of an individual who is not married and is not a surviving spouse, paragraphs (1) and (2) shall be applied by substituting 750 dollars for 600 dollars.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/tax/federalTax.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)
