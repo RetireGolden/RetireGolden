@@ -51,7 +51,26 @@ export interface AnnualQcdStandardSection170pActionEvidence {
   readonly cashPercentageLimitUsedByActionCents: UsdCents
   readonly cashPercentageLimitCapacityAfterActionCents: UsdCents
   readonly currentYearClaimedDeductionCents: UsdCents
-  readonly limitationCarryforwardCents: 0
+  /**
+   * Contributions exceeding the 170(b)(1)(G) percentage ceiling, which carry
+   * forward five years under (G)(ii). The 170(p) dollar cap is NOT a
+   * carryover-generating limitation: 170(d)(1)(C)(ii) lists the carryover rules
+   * and 170(p) is not among them. So in the common case — gifts above
+   * $1,000/$2,000 but below the ceiling — this is zero and the excess is lost.
+   */
+  readonly limitationCarryforwardCents: UsdCents
+  /**
+   * Discloses that a nonzero carryforward from a standard-deduction year rests
+   * on an unsettled reading. 170(d)(1)(A) keys the carryover to the percentage
+   * ceiling and never references the itemizing election, and Treas. Reg.
+   * 1.170A-10(a)(2) preserves it expressly for a standard-deduction year — but
+   * that regulation still cites section 144, repealed in 1976, and no
+   * post-OBBBA authority applies it. Consumers must not present an affected
+   * carryforward as filing-grade without review.
+   */
+  readonly standardDeductionCarryforwardBasis:
+    | 'notApplicable'
+    | 'percentageCeilingExcessUnsettled'
   readonly unclaimedWithoutCarryforwardCents: UsdCents
   readonly deductionAmountAppliedByTaxLedgerCents: UsdCents
   readonly standardPlusClaimedByActionCents: UsdCents
@@ -209,6 +228,22 @@ function buildTaxUnit(input: Readonly<AnnualQcdStandardSection170pTaxUnitInput>,
     const claimed = asUsdCents(Math.min(eligible, remaining, capacity))
     const remainingAfter = subtract(remaining, claimed, 'Remaining statutory limit')
     const capacityAfter = subtract(capacity, claimed, 'Remaining cash capacity')
+    // IRC 170(d)(1)(A) and 170(b)(1)(G)(ii) key the five-year carryover to
+    // contributions exceeding the percentage-of-contribution-base ceiling. The
+    // trigger is mechanical — contributions paid minus the ceiling — and never
+    // references the itemizing election or "the amount deductible". So a
+    // standard-deduction year still generates a carryover above the ceiling,
+    // while the slice between the 170(p) dollar cap and the ceiling is
+    // permanently lost: 170(p) is not a carryover rule under 170(d)(1)(C)(ii).
+    //
+    // Worked check. Base $50,000, cash gifts $70,000: ceiling $30,000, cap
+    // $1,000. Claimed $1,000, carryforward $40,000, permanently lost $29,000.
+    // Base $100,000, cash gifts $8,000: ceiling $60,000, so no excess —
+    // carryforward $0 and $7,000 lost. The second is the common case.
+    const percentageCeilingExcess = asUsdCents(Math.max(0, eligible - capacity))
+    const permanentlyUnclaimed = subtract(
+      subtract(eligible, claimed, 'Unclaimed contribution'),
+      percentageCeilingExcess, 'Noncarryover excess')
     const facts = { treatment: eligible === 0 ? 'notApplicable' as const : 'evaluated' as const,
       actionId: application.actionId, donorPersonId: application.donorPersonId,
       scheduledDate: request.executionDate!, scheduledSequence: request.executionSequence,
@@ -219,8 +254,12 @@ function buildTaxUnit(input: Readonly<AnnualQcdStandardSection170pTaxUnitInput>,
       cashPercentageLimitCapacityBeforeActionCents: capacity,
       cashPercentageLimitUsedByActionCents: claimed,
       cashPercentageLimitCapacityAfterActionCents: capacityAfter,
-      currentYearClaimedDeductionCents: claimed, limitationCarryforwardCents: 0 as const,
-      unclaimedWithoutCarryforwardCents: subtract(eligible, claimed, 'Noncarryover excess'),
+      currentYearClaimedDeductionCents: claimed,
+      limitationCarryforwardCents: percentageCeilingExcess,
+      standardDeductionCarryforwardBasis: percentageCeilingExcess > 0
+        ? 'percentageCeilingExcessUnsettled' as const
+        : 'notApplicable' as const,
+      unclaimedWithoutCarryforwardCents: permanentlyUnclaimed,
       deductionAmountAppliedByTaxLedgerCents: claimed,
       standardPlusClaimedByActionCents: add(standard, claimed, 'Standard plus QCD claim'),
       adjustedGrossIncomeBeforeCharitableDeductionCents: sources.adjustedGrossIncomeBeforeCharitableDeductionCents,

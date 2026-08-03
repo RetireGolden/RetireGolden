@@ -197,13 +197,22 @@ describe('stageAnnualQcdStandardSection170pLedger', () => {
     expect(staged(fixture(undefined, { joint: true })).taxUnits[0]!.taxUnit.taxUnitMemberPersonIds).toEqual(['p1', 'p2'])
   })
 
-  it('lets exhausted 60% capacity block claims without inventing carryover', () => {
+  // IRC 170(b)(1)(G)(ii) carries forward contributions exceeding the percentage
+  // ceiling, and 170(d)(1)(A) states that trigger mechanically — contributions
+  // paid minus the ceiling — without reference to the itemizing election. Treas.
+  // Reg. 1.170A-10(a)(2) says so expressly for a standard-deduction year. So
+  // exhausted capacity is exactly the case that DOES generate a carryover; the
+  // 170(p) dollar cap never does, because 170(d)(1)(C)(ii) does not list it.
+  it('carries forward contributions beyond exhausted 60% capacity', () => {
     const result = staged(fixture(undefined, { base: 1_000, priorCash: 601 }))
     expect(result.taxUnits[0]!.orderedActionEvidence[0]).toMatchObject({
       remainingLimitBeforeActionCents: 100_000,
       cashPercentageLimitCapacityBeforeActionCents: 0,
-      claimedByActionCents: 0, limitationCarryforwardCents: 0,
-      unclaimedWithoutCarryforwardCents: 1_000,
+      claimedByActionCents: 0,
+      // The whole contribution sits beyond the ceiling, so all of it carries.
+      limitationCarryforwardCents: 1_000,
+      unclaimedWithoutCarryforwardCents: 0,
+      standardDeductionCarryforwardBasis: 'percentageCeilingExcessUnsettled',
       deductionAmountAppliedByTaxLedgerCents: 0,
     })
   })
@@ -212,7 +221,24 @@ describe('stageAnnualQcdStandardSection170pLedger', () => {
     const result = staged(fixture(undefined, { base: 0 }))
     expect(result.taxUnits[0]).toMatchObject({ cashPercentageLimitAmountCents: 0,
       annualClaimedDeductionCents: 0, finalTotalDeductionAppliedCents: 1_500_000,
-      orderedActionEvidence: [{ claimedByActionCents: 0, unclaimedWithoutCarryforwardCents: 1_000 }] })
+      // A zero ceiling means the entire gift exceeds it and carries forward.
+      orderedActionEvidence: [{ claimedByActionCents: 0,
+        limitationCarryforwardCents: 1_000, unclaimedWithoutCarryforwardCents: 0 }] })
+  })
+
+  // The common case, and the one the practitioner shorthand "no carryforward"
+  // actually describes: gifts above the 170(p) cap but below the ceiling. There
+  // is no percentage excess, so nothing carries and the remainder is lost.
+  it('permanently loses the excess over the cap when the gift is below the ceiling', () => {
+    // Base 1,000,000c gives a 600,000c ceiling against a 1,000c contribution.
+    const result = staged(fixture(undefined, { base: 1_000_000 }))
+    expect(result.taxUnits[0]!.orderedActionEvidence[0]).toMatchObject({
+      eligibleContributionCents: 1_000,
+      claimedByActionCents: 1_000,
+      limitationCarryforwardCents: 0,
+      unclaimedWithoutCarryforwardCents: 0,
+      standardDeductionCarryforwardBasis: 'notApplicable',
+    })
   })
 
   it.each([
