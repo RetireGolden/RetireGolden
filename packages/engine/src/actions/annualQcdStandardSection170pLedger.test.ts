@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { describeRule } from '../rules/describeRule.js'
 import { parsePlan } from '../model/plan.js'
 import { couplePlan, singlePersonPlan, traditionalAccount } from '../testing/planFixtures.js'
 import type { RetirementActionEligibilityRuntimeEvidence } from '../strategies/accountEligibility.js'
@@ -203,6 +204,31 @@ describe('stageAnnualQcdStandardSection170pLedger', () => {
   // Reg. 1.170A-10(a)(2) says so expressly for a standard-deduction year. So
   // exhausted capacity is exactly the case that DOES generate a carryover; the
   // 170(p) dollar cap never does, because 170(d)(1)(C)(ii) does not list it.
+  describeRule('irc-170-p-standard-deduction-carryover', {
+    // With the ceiling exhausted the whole 1,000c contribution sits beyond it.
+    // The statute carries that excess forward; the practitioner shorthand "no
+    // carryforward of unused amounts", read literally, would carry nothing.
+    readings: { statutePercentageCeilingExcess: 1_000, practitionerNoCarryforward: 0 },
+    accepted: 'statutePercentageCeilingExcess',
+  }, ({ accepted, readings }) => {
+    it('carries the excess over the ceiling from a standard-deduction year', () => {
+      const action = staged(fixture(undefined, { base: 1_000, priorCash: 601 }))
+        .taxUnits[0]!.orderedActionEvidence[0]!
+      expect(action.limitationCarryforwardCents).toBe(accepted)
+      expect(action.limitationCarryforwardCents).not.toBe(readings.practitionerNoCarryforward)
+      expect(action.standardDeductionCarryforwardBasis).toBe('percentageCeilingExcessUnsettled')
+    })
+
+    it('carries nothing below the ceiling, which is what the shorthand describes', () => {
+      // Here the shorthand and the statute agree, and the excess over the
+      // 170(p) cap is genuinely lost because 170(p) is not a carryover rule.
+      const action = staged(fixture(undefined, { base: 1_000_000 }))
+        .taxUnits[0]!.orderedActionEvidence[0]!
+      expect(action.limitationCarryforwardCents).toBe(readings.practitionerNoCarryforward)
+      expect(action.standardDeductionCarryforwardBasis).toBe('notApplicable')
+    })
+  })
+
   it('carries forward contributions beyond exhausted 60% capacity', () => {
     const result = staged(fixture(undefined, { base: 1_000, priorCash: 601 }))
     expect(result.taxUnits[0]!.orderedActionEvidence[0]).toMatchObject({

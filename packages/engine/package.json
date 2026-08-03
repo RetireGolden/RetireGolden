@@ -54,6 +54,10 @@
       "types": "./dist/params/state/index.d.ts",
       "default": "./dist/params/state/index.js"
     },
+    "./rules": {
+      "types": "./dist/rules/index.d.ts",
+      "default": "./dist/rules/index.js"
+    },
     "./schema": {
       "types": "./dist/schema/index.d.ts",
       "default": "./dist/schema/index.js"

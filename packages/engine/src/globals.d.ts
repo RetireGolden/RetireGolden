@@ -16,3 +16,17 @@ declare var performance: { now(): number } | undefined
 
 /** Deep clone (browsers and Node ≥17); used by the co-located tests. */
 declare function structuredClone<T>(value: T): T
+
+/**
+ * Vite's build-time source glob, provided by the Vitest transform. Used only by
+ * the tax rule registry's conformance test, which scans test sources to prove
+ * every registered rule is covered by a discriminating fixture. Declared here
+ * rather than pulling in `vite/client` or `@types/node`, so the package stays
+ * self-contained and no Node or DOM API becomes reachable from engine code.
+ */
+interface ImportMeta {
+  glob(
+    pattern: string,
+    options: { readonly query: '?raw'; readonly import: 'default'; readonly eager: true },
+  ): Record<string, string>
+}
