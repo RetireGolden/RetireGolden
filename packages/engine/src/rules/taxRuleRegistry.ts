@@ -1241,6 +1241,103 @@ const registry = {
     implementedBy: ['packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts'],
   },
 
+  'usc-42-415-a-1-pia-bend-point-formula': {
+    title: 'The PIA formula is marginal across two bend points',
+    statement:
+      'The primary insurance amount is 90 percent of average indexed monthly earnings up to the first bend point, plus 32 percent of the part between the first and second, plus 15 percent of the part above the second, rounded down to the nearest 10 cents. Each rate reaches only the earnings inside its own band.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The bend points are not fixed dollar figures. Section 415(a)(1)(B) sets them at 180 and 1,085 dollars for 1979 eligibility and re-derives them for every later year from the ratio of the national average wage index two years prior to the 1977 index, which is why the engine carries a table by eligibility year rather than a constant.',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 415(a)(1)(A)',
+      url: 'https://www.law.cornell.edu/uscode/text/42/415',
+      quotedText:
+        '90 percent of the individual\u2019s average indexed monthly earnings to the extent that such earnings do not exceed the amount established for purposes of this clause by subparagraph (B), plus 32 percent of the individual\u2019s average indexed monthly earnings to the extent that such earnings exceed the amount established for purposes of the preceding clause and do not exceed the amount established for purposes of this clause by subparagraph (B), plus 15 percent of the individual\u2019s average indexed monthly earnings to the extent that such earnings exceed the amount established for purposes of the preceding clause.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/socialSecurity/piaFromEarnings.ts',
+      'packages/engine/src/socialSecurity/ssaWageData.ts',
+    ],
+  },
+
+  'cfr-20-404-410-early-retirement-reduction': {
+    title: 'The early-claim reduction changes rate after 36 months',
+    statement:
+      'A retirement benefit claimed before full retirement age is reduced by 5/9 of 1 percent for each of the first 36 months of early entitlement and by 5/12 of 1 percent for each month beyond 36. The second rate is smaller, so the reduction slows rather than continuing at the initial pace.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The engine works in whole months before full retirement age and does not model the special rules for a benefit that is later recomputed, so the factor is a pure function of the month count.',
+    authority: [{
+      kind: 'regulation',
+      citation: '20 CFR 404.410(a)',
+      url: 'https://www.law.cornell.edu/cfr/text/20/404.410',
+      quotedText:
+        'The reduction is 5/9 of 1 percent for each of the first 36 months and 5/12 of 1 percent for each month in excess of 36.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/socialSecurity/benefitFactor.ts'],
+  },
+
+  'cfr-20-404-313-delayed-retirement-credit': {
+    title: 'Delayed retirement credits accrue at 2/3 of 1 percent and stop at 70',
+    statement:
+      'A retirement benefit claimed after full retirement age is increased by 2/3 of 1 percent for each month of delay, beginning with the month full retirement age is attained and ending with the month age 70 is attained. Delaying past 70 earns nothing further.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The 2/3 of 1 percent rate applies to individuals born after 1 January 1943; earlier cohorts have lower rates that the engine does not model, because a person reaching full retirement age in a projected year is necessarily in the later group.',
+    authority: [{
+      kind: 'regulation',
+      citation: '20 CFR 404.313',
+      url: 'https://www.law.cornell.edu/cfr/text/20/404.313',
+      quotedText:
+        'You may earn delayed retirement credits beginning with the month you attain full retirement age and ending with the month you attain age 70. For individuals born after January 1, 1943, the credit is 2/3 of 1 percent for each month of delayed retirement.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/socialSecurity/benefitFactor.ts'],
+  },
+
+  'usc-42-416-l-retirement-age-schedule': {
+    title: 'Retirement age keys on attaining age 62, not on birth year',
+    statement:
+      'Retirement age is 66 for an individual attaining early retirement age after 2004 and before 2017, 66 plus an age increase factor for one attaining it after 2016 and before 2022, and 67 for one attaining it after 2021. Early retirement age is 62 for an old-age benefit and 60 for a widow benefit, which is why survivors run a separate and earlier schedule.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'Because the statute turns on attaining age 62 rather than on a birth year, the boundary moves for anyone born on 1 January: the Social Security Administration treats a person as attaining an age on the day before their birthday, so a 1 January 1960 birth attains 62 in 2021 and falls under the 66-plus-factor branch rather than the flat 67. The engine expresses this as an effective birth year of the prior calendar year.',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 416(l)(1)',
+      url: 'https://www.law.cornell.edu/uscode/text/42/416',
+      quotedText:
+        '(C) with respect to an individual who attains early retirement age after December 31, 2004, and before January 1, 2017, 66 years of age, (D) with respect to an individual who attains early retirement age after December 31, 2016, and before January 1, 2022, 66 years of age plus the number of months in the age increase factor, (E) with respect to an individual who attains early retirement age after December 31, 2021, 67 years of age.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 416(l)(2)',
+      url: 'https://www.law.cornell.edu/uscode/text/42/416',
+      quotedText:
+        'The term early retirement age means age 62 in the case of an old-age, wife\u2019s, or husband\u2019s insurance benefit, and age 60 in the case of a widow\u2019s or widower\u2019s insurance benefit.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/socialSecurity/nra.ts'],
+  },
+
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)
