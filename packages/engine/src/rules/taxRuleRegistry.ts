@@ -1388,6 +1388,28 @@ const registry = {
     ],
   },
 
+  'usc-42-402-b-2-spousal-half-of-pia': {
+    title: 'A spousal benefit is half the PIA and earns no delayed credits',
+    statement:
+      'The wife or husband insurance benefit is one-half of the worker primary insurance amount. Because it is measured against the PIA rather than against what the worker actually receives, a worker who delays past full retirement age raises their own benefit but not the spousal one, and the spouse gains nothing by claiming after their own full retirement age.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'Section 402(b)(2) is expressly subject to subsection (q), which supplies the early-claim reduction. The engine applies a steeper schedule for the spousal case than for a retirement benefit -- 25/36 of 1 percent for the first 36 months rather than 5/9 -- and models the deemed-filing era only, assuming the worker has already filed so the spouse is eligible.',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 402(b)(2)',
+      url: 'https://www.law.cornell.edu/uscode/text/42/402',
+      quotedText:
+        'such wife\u2019s insurance benefit for each month shall be equal to one-half of the primary insurance amount of her husband (or, in the case of a divorced wife, her former husband) for such month.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/socialSecurity/claimFactor.ts'],
+  },
+
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)

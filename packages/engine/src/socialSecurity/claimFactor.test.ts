@@ -1,9 +1,37 @@
 import { describe, expect, it } from 'vitest'
 
+import { describeRule } from '../rules/describeRule.js'
+
 import { claimFactor, spousalBenefitFactor } from './claimFactor.js'
 
 // Born June 1960 -> SSA effective birth year 1960 -> FRA 67y0m.
 const dob = { y: 1960, m: 6, d: 15 }
+
+describe('spousal benefit and delayed credits', () => {
+  // 42 U.S.C. 402(b)(2) measures the spousal benefit against the worker's
+  // PRIMARY INSURANCE AMOUNT, not against what the worker actually collects.
+  // The PIA does not grow with delay, so a spouse claiming after their own full
+  // retirement age gains nothing -- the factor tops out at 1.
+  //
+  // Born 1960 (full retirement age 67), claiming at 70 is 36 months late:
+  //   spousal:                        1.00
+  //   retirement-style credits:  1 + 36 x 2/3 percent = 1.24
+  describeRule('usc-42-402-b-2-spousal-half-of-pia', {
+    readings: { noDelayedCreditsOnSpousal: 1, retirementCreditsApplied: 1.24 },
+    accepted: 'noDelayedCreditsOnSpousal',
+  }, ({ accepted, readings }) => {
+    it('stops growing at full retirement age', () => {
+      const late = spousalBenefitFactor(1960, 6, 15, { years: 70, months: 0 })
+
+      expect(late).toBeCloseTo(accepted, 10)
+      expect(late).not.toBeCloseTo(readings.retirementCreditsApplied, 6)
+      // The worker's own benefit does grow over the same span, which is what
+      // makes the difference a rule rather than a rounding artefact.
+      expect(claimFactor(1960, 6, 15, { years: 70, months: 0 }))
+        .toBeCloseTo(readings.retirementCreditsApplied, 6)
+    })
+  })
+})
 
 describe('claimFactor', () => {
   it('is 1 at FRA, reduced before, credited after', () => {
