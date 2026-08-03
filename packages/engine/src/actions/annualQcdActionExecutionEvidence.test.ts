@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { describeRule } from '../rules/describeRule.js'
 import { parsePlan, type Plan } from '../model/plan.js'
 import { couplePlan, traditionalAccount } from '../testing/planFixtures.js'
 import type { RetirementActionEligibilityRuntimeEvidence } from '../strategies/accountEligibility.js'
@@ -183,5 +184,28 @@ describe('publishAnnualQcdActionExecutionEvidence', () => {
       exactAgeOnScheduledDate: 70.5, scheduledAgeEligibilityEvidence: { age70HalfThresholdDate: '2026-04-01' } })
     expect(publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: fixture(10_000, { p1Dob: '1955-10-02' }).inputs }))
       .toMatchObject({ status: 'annualQcdActionExecutionEvidenceBlocked' })
+  })
+
+  // No authority resolves what "six calendar months after" means when the
+  // target day does not exist, and the regulation that once defined attainment
+  // was withdrawn in 2025. A 31 August birth is the widest case: clamping to
+  // the last day of February lands three days before a roll-forward reading,
+  // and a QCD taken inside that window would not be a QCD at all. The clamp is
+  // an engineering convention — see the registry record's conventionRationale —
+  // not a legal conclusion.
+  describeRule('irc-408-d-8-B-ii-age-70-half', {
+    readings: { monthEndClamp: '2026-02-28', rollForwardIntoMarch: '2026-03-03' },
+    accepted: 'monthEndClamp',
+  }, ({ accepted, readings }) => {
+    it('clamps a nonexistent target day to the last day of that month', () => {
+      const result = publishAnnualQcdActionExecutionEvidence({
+        ownerFinalizationInputs: fixture(10_000, { p1Dob: '1955-08-31' }).inputs,
+      })
+      expect(result.status).toBe('annualQcdActionExecutionEvidencePublished')
+      if (result.status !== 'annualQcdActionExecutionEvidencePublished') return
+      const threshold = result.actions[0]!.scheduledAgeEligibilityEvidence.age70HalfThresholdDate
+      expect(threshold).toBe(accepted)
+      expect(threshold).not.toBe(readings.rollForwardIntoMarch)
+    })
   })
 })
