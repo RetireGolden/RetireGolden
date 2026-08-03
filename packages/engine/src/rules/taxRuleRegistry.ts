@@ -1338,6 +1338,56 @@ const registry = {
     implementedBy: ['packages/engine/src/socialSecurity/nra.ts'],
   },
 
+  'usc-42-403-a-2-family-maximum-formula': {
+    title: 'The family maximum is marginal across three bend points',
+    statement:
+      'The maximum family benefit is 150 percent of the primary insurance amount up to the first bend point, plus 272 percent of the part between the first and second, plus 134 percent of the part between the second and third, plus 175 percent of the part above the third, decreased to the next lower multiple of ten cents. Each rate reaches only the amount inside its own band.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The bend points here are not the ones used for the primary insurance amount itself; section 403(a)(2) has its own set, indexed separately, which is why the engine carries a second table rather than reusing the PIA bend points.',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 403(a)(2)',
+      url: 'https://www.law.cornell.edu/uscode/text/42/403',
+      quotedText:
+        '150 percent of such individual\u2019s primary insurance amount to the extent that it does not exceed the amount established with respect to this subparagraph, plus 272 percent of such individual\u2019s primary insurance amount to the extent that it exceeds the amount established with respect to the preceding subparagraph but does not exceed the amount established with respect to this subparagraph, plus 134 percent of such individual\u2019s primary insurance amount to the extent that it exceeds the amount established with respect to the preceding subparagraph but does not exceed the amount established with respect to this subparagraph, plus 175 percent of such individual\u2019s primary insurance amount to the extent that it exceeds the amount established with respect to the preceding subparagraph. Any such amount that is not a multiple of 0.10 dollars shall be decreased to the next lower multiple of 0.10 dollars.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/socialSecurity/familyMaximum.ts',
+      'packages/engine/src/socialSecurity/ssaWageData.ts',
+    ],
+  },
+
+  'usc-42-403-f-3-retirement-earnings-test': {
+    title: 'The earnings test withholds half the excess, a third in the FRA year',
+    statement:
+      'Benefits are reduced by 50 percent of earnings above the exempt amount for a beneficiary who is under full retirement age throughout the year, and by 33 and one-third percent of earnings above a higher exempt amount in the year full retirement age is attained. Both the rate and the exempt amount change in that year, so the two cases cannot be collapsed.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'Withholding is applied annually against annual wages rather than month by month, and the withheld months are credited back at full retirement age through an adjustment-reduction-factor approximation. The statute operates on monthly benefits payable, so this is an annual-granularity convention rather than a reading of section 403(f).',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 403(f)(3)',
+      url: 'https://www.law.cornell.edu/uscode/text/42/403',
+      quotedText:
+        'the deductions shall be equal to 33 1/3 percent of his earnings for such year in excess of the product in the case of an individual who has attained retirement age during such taxable year, and 50 percent of his earnings for such year in excess of such product in the case of any other individual.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)
