@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { describeRule } from '../rules/describeRule.js'
 
 import {
   asAccountId,
@@ -118,6 +119,46 @@ describe('classifyOwnedNonRothIraAnnualWithdrawals', () => {
     expect(result.withdrawals[2]?.taxCharacter.map((item) => item.kind)).toEqual([
       'ordinaryIncome',
     ])
+  })
+
+  // IRC 408(d)(2)(A) treats all of an owner traditional, SEP and SIMPLE IRAs as
+  // one contract and (B) all of a year distributions as one distribution, so
+  // there is a single annual fraction over the pooled denominator. Computing
+  // per account would give the traditional account its own 110c denominator
+  // (its 100c year-end balance plus its 10c distribution) instead of the
+  // pooled 220c.
+  describeRule('irc-408-d-2-annual-pro-rata-basis', {
+    readings: { aggregatedOneContract: 220, perAccountSeparately: 110 },
+    accepted: 'aggregatedOneContract',
+  }, ({ accepted, readings }) => {
+    it('derives one annual denominator across every owned non-Roth IRA', () => {
+      const result = classifyOwnedNonRothIraAnnualWithdrawals(input({
+        poolMembers: [
+          { ...member('traditional', 'traditional'), yearEndApplicableBalanceAmount: asUsdCents(100) },
+          { ...member('sep', 'sep'), yearEndApplicableBalanceAmount: asUsdCents(50) },
+          { ...member('simple', 'simple'), yearEndApplicableBalanceAmount: asUsdCents(50) },
+        ],
+        completePoolEvidence: {
+          ...input().completePoolEvidence,
+          yearEndApplicablePoolBalanceAmount: asUsdCents(200),
+        },
+        annualFacts: {
+          openingBasisAmount: asUsdCents(100),
+          taxYearNondeductibleContributionAmount: asUsdCents(20),
+          postYearNondeductibleContributionExcludedAmount: asUsdCents(5),
+          yearEndApplicablePoolBalanceAmount: asUsdCents(200),
+          outstandingRolloverAmount: asUsdCents(10),
+          rolloverRepaymentAdjustmentAmount: asUsdCents(5),
+          form8606Line7DistributionAmount: asUsdCents(10),
+          form8606Line8NetConversionAmount: asUsdCents(5),
+        },
+        line7Distributions: [activity('traditional', 'ira-traditional', 10)],
+        line8Conversions: [activity('conversion', 'ira-sep', 5, '2030-07-01')],
+      }))
+      expect(result.annualBasisEvidence.annualBasisDenominatorAmount).toBe(accepted)
+      expect(result.annualBasisEvidence.annualBasisDenominatorAmount)
+        .not.toBe(readings.perAccountSeparately)
+    })
   })
 
   it('derives the complete Form 8606 numerator, line 6, and denominator', () => {

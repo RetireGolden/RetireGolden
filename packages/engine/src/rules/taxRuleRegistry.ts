@@ -562,6 +562,74 @@ const registry = {
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/actions/annualHsaPenaltyEvaluation.ts'],
   },
+  'irc-408-d-2-annual-pro-rata-basis': {
+    title: 'Annual pro-rata basis recovery across all owned non-Roth IRAs',
+    statement:
+      'All of an individual owned traditional, SEP, and SIMPLE IRAs are treated as one contract and all distributions in a year as one distribution, so the nontaxable fraction is that year remaining basis over the December 31 value plus outstanding rollovers plus the year distributions plus conversions. It is computed once per year, not per distribution.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The exclusion of inherited IRAs from the owner pool has no authority above publication level. IRC 408(d)(2)(A) says "all individual retirement plans" without qualification, and an inherited IRA is one from which the beneficiary takes distributions; the separation rests on Publication 590-B and the Form 8606 instructions, neither of which binds. Roth separation, by contrast, is statutory under 408A(d)(4)(A). The engine follows the IRS position because it is uniform administrative practice and the literal reading has no practitioner following, but the asymmetry in authority is worth knowing. Note the pooling is per decedent, not merely owned versus inherited.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408(d)(2)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        'For purposes of applying section 72 to any amount described in paragraph (1)- (A) all individual retirement plans shall be treated as 1 contract, (B) all distributions during any taxable year shall be treated as 1 distribution, and (C) the value of the contract, income on the contract, and investment in the contract shall be computed as of the close of the calendar year in which the taxable year begins.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408A(d)(4)(A)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/408A',
+      quotedText:
+        'Section 408(d)(2) shall be applied separately with respect to Roth IRAs and other individual retirement plans.',
+    }, {
+      kind: 'irsPublication',
+      citation: 'IRS Publication 590-B, inherited IRA basis',
+      url: 'https://www.irs.gov/publications/p590b',
+      quotedText:
+        'Unless you are the decedent spouse and choose to treat the IRA as your own, you cannot combine this basis with any basis you have in your own traditional IRA(s).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts'],
+  },
+
+  'treas-reg-1-408-8-b-3-rmd-first-dollars-out': {
+    title: 'Distributions satisfy the RMD in the order they occur',
+    statement:
+      'Any amount distributed from an IRA during a year for which an RMD is required is treated as a required minimum distribution to the extent the year total has not already been satisfied. A QCD counts toward the RMD, but only against what remains unsatisfied when it occurs.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The consequence the engine must honour is derived rather than stated: because the RMD is satisfied in the order distributions actually occur, an ordinary withdrawal taken before a QCD in the same year irrevocably consumes RMD dollars, and the later QCD cannot retroactively displace it or make it nontaxable. No IRS pronouncement states that negative proposition directly; it follows from combining 1.408-8(b)(3) with 1.408-8(g)(1), and is uniform practitioner understanding. Note the annual-aggregation rule of 408(d)(2) does not extend here - that provision governs basis recovery under section 72, not RMD satisfaction, and an engine reasoning from it alone would wrongly conclude the ordering is irrelevant.',
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8(b)(3)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.408-8',
+      quotedText:
+        'any amount distributed during a calendar year from an IRA of that IRA owner is treated as a required minimum distribution under section 401(a)(9) to the extent that the total required minimum distribution for the year under section 401(a)(9) from all of that IRA owner IRAs has not been satisfied.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8(g)(1)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.408-8',
+      quotedText:
+        'all amounts distributed from an IRA are taken into account in determining whether section 401(a)(9) is satisfied, regardless of whether the amount is includible in income. Thus, for example, a qualified charitable distribution made pursuant to section 408(d)(8) is taken into account.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2007-7, Q&A-42',
+      url: 'https://www.irs.gov/pub/irs-drop/n-07-07.pdf',
+      quotedText:
+        'The amount distributed in a qualified charitable distribution is an amount distributed from the IRA for purposes of sections 408(a)(6), 408(b)(3), and 408A(c)(5).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/actions/annualQcdPhysicalExecution.ts'],
+  },
+
   // --- Deliberately not modelled; the engine must fail closed -------------
 
   'irc-223-f-4-B-hsa-death-exception': {
