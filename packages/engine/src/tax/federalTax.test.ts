@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { describeRule } from '../rules/describeRule.js'
 
-import { packForYear } from '../params/index.js'
+import { EARLIEST_PACK_YEAR, LATEST_PACK_YEAR, packForYear } from '../params/index.js'
 import type { TaxCalculator, TaxYearInput } from '../projection/types.js'
 import {
   applyCapitalLossCarryforward,
@@ -304,14 +304,29 @@ describe('standard deduction structure', () => {
     accepted: 'exactlyTwiceTheUnmarriedAmount',
   }, ({ accepted, readings }) => {
     it('keeps the joint amount at exactly twice the unmarried one', () => {
-      const single = computeFederalTax(input({ ordinaryIncome: 100_000 }))
-      const joint = computeFederalTax(input({
-        filingStatus: 'marriedFilingJointly', ordinaryIncome: 100_000,
-      }))
+      // Every published pack, not the helper's default year alone. The drift
+      // this rule guards against arrives *with* a pack refresh, so a fixture
+      // pinned to one year would go on passing through the very refresh that
+      // broke the ratio -- green, and blind to the only event that matters.
+      const publishedYears = Array.from(
+        { length: LATEST_PACK_YEAR - EARLIEST_PACK_YEAR + 1 },
+        (_, offset) => EARLIEST_PACK_YEAR + offset,
+      ).filter((year) => !packForYear(year).isStandIn)
 
-      const ratio = joint.deduction / single.deduction
-      expect(ratio).toBeCloseTo(accepted, 10)
-      expect(ratio).not.toBeCloseTo(readings.anyOtherRatio, 3)
+      // An empty sweep would pass vacuously, which is the failure this file
+      // exists to refuse.
+      expect(publishedYears).toContain(LATEST_PACK_YEAR)
+
+      for (const year of publishedYears) {
+        const single = computeFederalTax(input({ year, ordinaryIncome: 100_000 }))
+        const joint = computeFederalTax(input({
+          year, filingStatus: 'marriedFilingJointly', ordinaryIncome: 100_000,
+        }))
+
+        const ratio = joint.deduction / single.deduction
+        expect(ratio, `pack ${year}`).toBeCloseTo(accepted, 10)
+        expect(ratio, `pack ${year}`).not.toBeCloseTo(readings.anyOtherRatio, 3)
+      }
     })
   })
 })
