@@ -1450,6 +1450,37 @@ const registry = {
     implementedBy: ['packages/engine/src/socialSecurity/survivorBenefit.ts'],
   },
 
+  'usc-42-1395r-i-irmaa-applicable-percentage': {
+    title: 'IRMAA raises the beneficiary share of cost from 25 percent',
+    statement:
+      'The standard Part B premium covers 25 percent of program cost. A high-income beneficiary pays 35, 50, 65, 80 or 85 percent of that cost instead, so the premium is the standard one scaled by the applicable percentage over 25 rather than the standard one plus that percentage. Income is taken from the second calendar year preceding the premium year.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The statute expresses the result as an adjustment amount, the applicable percentage minus 25 percentage points; the engine computes the whole premium as the standard one times the applicable percentage over 25. Those are the same quantity written from different ends, which is why no explicit 25-point subtraction appears in the code.',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 1395r(i)(3)',
+      url: 'https://www.law.cornell.edu/uscode/text/42/1395r',
+      quotedText:
+        'the monthly adjustment amount specified in this paragraph for an individual for a month in a year is equal to the product of the following: (i) the applicable percentage minus 25 percentage points.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 1395r(i)(4)',
+      url: 'https://www.law.cornell.edu/uscode/text/42/1395r',
+      quotedText:
+        'the individual\u2019s modified adjusted gross income shall be such income determined for the individual\u2019s last taxable year beginning in the second calendar year preceding the year involved.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/tax/medicare.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)
