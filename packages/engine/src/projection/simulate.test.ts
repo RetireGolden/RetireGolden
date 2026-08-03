@@ -398,6 +398,37 @@ describe('social security', () => {
     })
   })
 
+  // IRC 402(g)(1)(A) limits "the elective deferrals of any INDIVIDUAL", and
+  // 402(g)(3) sums every arrangement into that one total. Treating the limit as
+  // per plan doubles the room for anyone holding two employer accounts, which
+  // is common enough after a job change.
+  //
+  // Two employer plans, each asked for 30,000, owner aged 46 so no catch-up:
+  //   aggregate across plans:  24,500
+  //   one limit per plan:      49,000
+  describeRule('irc-402-g-1-elective-deferral-aggregate', {
+    readings: { aggregateAcrossAllPlans: 24_500, oneLimitPerPlan: 49_000 },
+    accepted: 'aggregateAcrossAllPlans',
+  }, ({ accepted, readings }) => {
+    it('shares one deferral limit across every employer plan', () => {
+      const plan = basePlan()
+      plan.household.people[0]! = { ...plan.household.people[0]!, dob: '1980-06-15', retirementAge: 70 }
+      plan.incomes = [wages(500_000)]
+      plan.accounts = [
+        { ...cash(1_000_000) },
+        { id: testIds(), name: '401k A', type: 'traditional', kind: 'employer',
+          ownerPersonId: 'p1', balance: 0, annualReturnPct: 0, annualContribution: 30_000 } as never,
+        { id: testIds(), name: '401k B', type: 'traditional', kind: 'employer',
+          ownerPersonId: 'p1', balance: 0, annualReturnPct: 0, annualContribution: 30_000 } as never,
+      ]
+
+      const result = simulatePlan(validate(plan), { startYear: 2026, horizonEndYear: 2026, taxCalculator: noTax })
+
+      expect(result.years[0]!.contributions).toBeCloseTo(accepted, 6)
+      expect(result.years[0]!.contributions).not.toBeCloseTo(readings.oneLimitPerPlan, 6)
+    })
+  })
+
   it('withholds benefits under the earnings test while working before FRA', () => {
     const plan = basePlan()
     plan.household.people[0]! = {

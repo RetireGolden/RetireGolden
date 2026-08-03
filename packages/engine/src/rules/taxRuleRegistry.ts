@@ -1646,6 +1646,37 @@ const registry = {
     implementedBy: ['packages/engine/src/tax/stateTax.ts'],
   },
 
+  'irc-402-g-1-elective-deferral-aggregate': {
+    title: 'The elective deferral limit is per individual, not per plan',
+    statement:
+      'Elective deferrals of any individual for a taxable year are included in gross income to the extent they exceed the applicable dollar amount. The limit attaches to the individual and aggregates every arrangement they participate in, so holding two employer plans does not double the room.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'Section 402(g)(3) counts 401(k), 403(b), SARSEP and SIMPLE deferrals in the same total. The engine groups by owner rather than by plan for exactly this reason, and does not model the separate 457(b) limit, which genuinely does sit alongside rather than inside this one.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 402(g)(1)(A)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/402',
+      quotedText:
+        'Notwithstanding subsections (e)(3) and (h)(1)(B), the elective deferrals of any individual for any taxable year shall be included in such individual’s gross income to the extent the amount of such deferrals for the taxable year exceeds the applicable dollar amount.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 402(g)(3)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/402',
+      quotedText:
+        'the term elective deferrals means, with respect to any taxable year, the sum of - (A) any employer contribution under a qualified cash or deferred arrangement (as defined in section 401(k)) to the extent not includible in gross income for the taxable year under subsection (e)(3).',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)
