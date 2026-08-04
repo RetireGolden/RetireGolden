@@ -1074,10 +1074,13 @@ function validateUnchecked(
       taxYear,
       accountOrder,
     )
+    // The overlay is a summed component only when it exists. Counting it
+    // unconditionally would widen the tolerance across the whole pre-RMD
+    // window, which is exactly the case that has no overlay to count.
     if (!rawTotalsReconcile(
       (overlay?.grossAmountPlanDollars ?? 0) + movingQcd.total,
       yearResult.qcd,
-      movingQcd.count + 1,
+      movingQcd.count + (overlay === null ? 0 : 1),
     )) {
       fail('sourceCoverageInvalid', 'The nonmoving QCD overlay plus every moving QCD occurrence must exact-rejoin the published annual QCD total', { taxYear })
     }
