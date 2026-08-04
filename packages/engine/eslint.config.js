@@ -1,4 +1,5 @@
 import js from '@eslint/js'
+import globals from 'globals'
 import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
@@ -7,6 +8,18 @@ export default defineConfig([
   {
     files: ['**/*.ts'],
     extends: [js.configs.recommended, tseslint.configs.recommended],
+  },
+  {
+    // Maintenance scripts: plain Node ESM, never shipped (package.json `files`
+    // covers dist/ and schema/ only). Without this block they match no config
+    // and are linted with zero rules, so a typo in one goes unseen.
+    files: ['scripts/**/*.mjs'],
+    extends: [js.configs.recommended],
+    languageOptions: {
+      globals: globals.node,
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+    },
   },
   {
     // Engine purity: this package is pure domain math that must run in plain

@@ -47,6 +47,7 @@ npm run dev
 | `npm run build` | Engine package build, then production app build → `app/dist/` |
 | `npm run test` | Vitest unit tests (engine package + app) |
 | `npm run lint` | ESLint (engine package + app) |
+| `npm run verify:quotes` | Checks every tax rule's quoted authority against the source it cites — manual, needs network, [not a CI gate](DOCS/operations/quote-fidelity.md) |
 
 ## CI/CD
 

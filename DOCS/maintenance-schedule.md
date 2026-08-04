@@ -16,7 +16,11 @@ The annual refresh is a **data change, not a code change** (that's the point of 
 2. Update [domain/domain-rules-reference.md](domain/domain-rules-reference.md) with the new numbers and
    refresh the source links; bump the provenance dates (`engine/params/provenance.ts`).
 3. Re-run the engine tests and any offline oracle fixtures (Owl / PolicyEngine / Open Social Security).
-4. Review Learning Center articles flagged `currentYearSensitive` (see the last row) and bump their
+4. Run `npm run verify:quotes` and work the ledger. It re-fetches every source the tax rule registry cites
+   and checks each `quotedText` against it — the one check that catches a citation whose page moved under
+   it, or a quote that drifted into paraphrase. Needs network, so it is manual and never a CI gate:
+   [operations/quote-fidelity.md](operations/quote-fidelity.md).
+5. Review Learning Center articles flagged `currentYearSensitive` (see the last row) and bump their
    `lastReviewed`.
 
 ## Calendar refresh
