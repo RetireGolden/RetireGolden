@@ -290,7 +290,19 @@ const ENTITIES = Object.freeze({
   middot: '·', bull: '•', deg: '°', reg: '®', trade: '™',
 })
 
-/** @param {string} s */
+/** Largest codepoint `String.fromCodePoint` accepts; above it, it throws. */
+const MAX_CODE_POINT = 0x10ffff
+
+/**
+ * A numeric entity naming a codepoint outside Unicode (`&#x110000;`, `&#-1;`)
+ * is left as written rather than decoded. `String.fromCodePoint` throws a
+ * RangeError on those, and a throw here would take down the whole run on one
+ * malformed page — which is the one thing this tool must not do. Its value is
+ * that it finishes and produces a ledger, so a page nobody can parse has to
+ * degrade to a reported failure for that page and nothing more.
+ *
+ * @param {string} s
+ */
 function decodeEntities(s) {
   return s.replace(/&(#x?[0-9a-fA-F]+|[a-zA-Z][a-zA-Z0-9]*);/g, (match, body) => {
     if (body.startsWith('#')) {
@@ -298,7 +310,9 @@ function decodeEntities(s) {
         body[1] === 'x' || body[1] === 'X'
           ? Number.parseInt(body.slice(2), 16)
           : Number.parseInt(body.slice(1), 10)
-      return Number.isFinite(code) ? String.fromCodePoint(code) : match
+      return Number.isInteger(code) && code >= 0 && code <= MAX_CODE_POINT
+        ? String.fromCodePoint(code)
+        : match
     }
     return ENTITIES[body] ?? match
   })
