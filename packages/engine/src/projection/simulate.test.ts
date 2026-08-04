@@ -1276,6 +1276,7 @@ describe('contributions', () => {
   describeRule('irc-414-v-2-E-super-catch-up-window', {
     readings: { revertsAtSixtyFour: 32_500, keepsTheHigherCatchUp: 35_750 },
     accepted: 'revertsAtSixtyFour',
+    note: 'the window closes at 64',
   }, ({ accepted, readings }) => {
     it('drops back to the ordinary catch-up at sixty-four', () => {
       const plan = basePlan()
@@ -1323,6 +1324,7 @@ describe('contributions', () => {
   describeRule('irc-414-v-2-E-super-catch-up-window', {
     readings: { increaseRoundedToAStep: 36_240, amountIndexedDirectly: 36_465 },
     accepted: 'increaseRoundedToAStep',
+    note: 'a sub-step increase does not move the amount',
   }, ({ accepted, readings }) => {
     it('does not move the amount when the increase falls short of a 500 step', () => {
       const plan = basePlan()
@@ -1379,6 +1381,7 @@ describe('contributions', () => {
       indexedWithoutRounding: 37_938.186,
     },
     accepted: 'increaseMeasuredFromTheBasePeriod',
+    note: 'the increase is measured from a fixed origin, not year over year',
   }, ({ accepted, readings }) => {
     it('banks cost-of-living below a step until it carries the amount up', () => {
       const plan = basePlan()
@@ -1422,6 +1425,7 @@ describe('contributions', () => {
       indexedWithoutRounding: 43_257.5,
     },
     accepted: 'operativeAmountIndexed',
+    note: 'which amount the adjustment reaches',
   }, ({ accepted, readings }) => {
     it('indexes the operative amount rather than the inoperative 10,000 leg', () => {
       const plan = basePlan()
@@ -1462,6 +1466,7 @@ describe('contributions', () => {
   describeRule('irc-415-c-1-annual-additions-lesser-of', {
     readings: { totalCappedByCompensation: 30_000, totalCappedByDollarLimit: 72_000 },
     accepted: 'totalCappedByCompensation',
+    note: 'the cap binds total additions, not the match alone',
   }, ({ accepted, readings }) => {
     it('never lets total additions exceed the participant pay', () => {
       const plan = basePlan()
@@ -1502,6 +1507,7 @@ describe('contributions', () => {
   describeRule('irc-415-c-1-annual-additions-lesser-of', {
     readings: { deferralCappedByCompensation: 20_000, deferralCappedByDeferralLimitOnly: 24_500 },
     accepted: 'deferralCappedByCompensation',
+    note: 'the pay prong binds deferrals too',
   }, ({ accepted, readings }) => {
     it('binds the deferral itself, not only the match', () => {
       const plan = basePlan()

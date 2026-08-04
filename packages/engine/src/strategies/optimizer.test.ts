@@ -461,6 +461,7 @@ describe('OBBBA senior deduction in the solve (ground-truth 2026 law sync, Step 
 describeRule('irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out', {
   readings: { reducedPerQualifiedIndividual: 250_000, reducedOnTheCombinedBase: 350_000 },
   accepted: 'reducedPerQualifiedIndividual',
+  note: 'the slope the optimizer prices the clawback at',
 }, ({ accepted, readings }) => {
   const RULE = PACK.federalTax.seniorDeduction!
   const RATE = RULE.phaseOutRatePct / 100
