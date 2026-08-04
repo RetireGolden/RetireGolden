@@ -4,19 +4,25 @@
  * Computation order per year:
  *   1. Taxable Social Security via provisional income (unindexed thresholds)
  *   2. AGI = ordinary + capital gains + taxable SS. Tax-exempt interest and
- *      excluded foreign earned income affect §86 provisional income without
- *      becoming ordinary income or entering AGI directly.
- *   3. Deductions: standard + age-65 additions + OBBBA senior deduction
- *      (2025–2028, 6%-of-MAGI phase-out); itemized not modeled in v1
+ *      income excluded under the §911/§931/§933 foreign and possessions
+ *      exclusions affect §86 provisional income without becoming ordinary
+ *      income or entering AGI directly. MAGI restores those exclusions
+ *      (§1411(d), §151(d)(5)(C)(iii)(II)).
+ *   3. Deductions: the greater of the standard deduction (with age-65
+ *      additions) or itemized SALT (capped) + mortgage interest + charitable,
+ *      plus the OBBBA senior deduction on top of whichever base wins
+ *      (2025–2028, per-person 6%-of-MAGI phase-out)
  *   4. Ordinary brackets on non-preferential taxable income
  *   5. LTCG/qualified-dividend stacking at 0/15/20% on top of ordinary
  *   6. NIIT 3.8% on investment income over the (unindexed) MAGI threshold
- *   7. Planning-grade AMT screen: modeled add-backs/preference items (notably
- *      standard deduction or itemized SALT), AMT exemption/phaseout, and
+ *   7. Planning-grade AMT screen: modeled add-backs/preference items (the §63(c)
+ *      standard deduction or itemized SALT, plus the §151 senior deduction on
+ *      either branch per §56(b)(1)(D)), AMT exemption/phaseout, and
  *      preferential-rate-aware tentative minimum tax.
  *
  * Out of scope here (see DOCS/features/taxes.md): credits, full Form 6251
- * adjustments, early-withdrawal penalties (projection-level), IRMAA
+ * adjustments, the rest of Schedule A and the OBBBA high-income SALT
+ * phase-out, early-withdrawal penalties (projection-level), IRMAA
  * (expense-side), state.
  *
  * @see DOCS/domain/domain-rules-reference.md §§1–3
@@ -194,7 +200,7 @@ export function taxableSocialSecurity(
   return Math.min(0.85 * ssBenefits, 0.85 * (provisional - t85) + tier1)
 }
 
-/** OBBBA senior deduction (per person 65+, 6% MAGI phase-out, expires after lastApplicableYear). */
+/** OBBBA senior deduction (IRC §151(d)(5)(C)), expiring after `lastApplicableYear`. */
 function seniorDeductionAmount(
   pack: ParameterPack,
   year: number,
@@ -204,9 +210,17 @@ function seniorDeductionAmount(
 ): number {
   const rule = pack.federalTax.seniorDeduction
   if (!rule || peopleAged65Plus <= 0 || year > rule.lastApplicableYear) return 0
-  const base = rule.amountPerPerson * peopleAged65Plus
+  // §151(d)(5)(C)(i) allows the $6,000 "for each qualified individual", and
+  // (iii)(I) reduces "the $6,000 amount in clause (i)" by 6% of modified AGI
+  // over the threshold. What the phase-out consumes is therefore the
+  // per-individual amount, so the reduction is taken once for each qualified
+  // individual and not once against the return's combined total. Schedule 1-A
+  // Part V works the same way: line 35 computes the reduced amount once, lines
+  // 36a and 36b each enter that reduced amount, and line 37 adds them. A joint
+  // return with two spouses 65+ consequently runs out at $250,000 of modified
+  // AGI, the same point one qualified individual runs out.
   const phaseOut = Math.max(0, magi - rule.magiPhaseOutStart[filingStatus]) * (rule.phaseOutRatePct / 100)
-  return Math.max(0, base - phaseOut)
+  return Math.max(0, rule.amountPerPerson - phaseOut) * peopleAged65Plus
 }
 
 /** LTCG/QDI stacked on top of ordinary taxable income at 0/15/20%. */
@@ -344,7 +358,15 @@ export function computeFederalTax(input: TaxYearInput): FederalTaxDetail {
   )
   const agiBeforeFloor = agiExcludingSs + taxableSs
   const agi = Math.max(0, agiBeforeFloor) // return-level floor for tax / MAGI / IRMAA
-  const magi = agi
+  // Two limits below run off modified AGI rather than the AGI line, and both
+  // definitions restore income excluded abroad: §1411(d) is AGI "increased by
+  // the excess of (1) the amount excluded from gross income under section
+  // 911(a)(1)" over the deductions §911(d)(6) disallows, and
+  // §151(d)(5)(C)(iii)(II) is AGI "increased by any amount excluded from gross
+  // income under section 911, 931, or 933". The engine carries one
+  // excluded-foreign-income figure and applies the broader definition to both
+  // — the same figure §86(b)(2)(A) already puts into provisional income above.
+  const magi = agi + Math.max(0, input.foreignExclusionAddback ?? 0)
 
   const senior = seniorDeductionAmount(pack, year, taxStatus, input.peopleAged65Plus, magi)
   // The OBBBA senior deduction applies whether you take the standard deduction or
@@ -364,8 +386,15 @@ export function computeFederalTax(input: TaxYearInput): FederalTaxDetail {
   const saltPreference = useItemized
     ? Math.min(Math.max(0, input.itemizedDeductions?.stateAndLocalTaxes ?? 0), saltCapForYear(pack, year))
     : 0
-  const standardDeductionAddback = useItemized ? 0 : deduction
-  const amtPreferenceItems = Math.max(0, input.amtPreferenceItems ?? 0) + saltPreference + standardDeductionAddback
+  // §56(b)(1)(D) disallows "the standard deduction under section 63(c), the
+  // deduction for personal exemptions under section 151, and the deduction
+  // under section 642(b)". Only the first of those turns on the election to
+  // itemize. The senior deduction is allowed by §151(d)(5)(C), so it is
+  // disallowed on either branch — Form 6251 line 1a removes Schedule 1-A line
+  // 37 (the senior deduction alone, not the rest of that schedule) from total
+  // deductions with no itemized-or-standard condition attached.
+  const disallowedDeductionAddback = (useItemized ? 0 : standardBase) + senior
+  const amtPreferenceItems = Math.max(0, input.amtPreferenceItems ?? 0) + saltPreference + disallowedDeductionAddback
   const alternativeMinimumTaxableIncome = Math.max(0, taxableIncome + amtPreferenceItems)
   const amtExemption = amtExemptionAmount(pack, taxStatus, alternativeMinimumTaxableIncome)
   const amtTaxableExcess = Math.max(0, alternativeMinimumTaxableIncome - amtExemption)

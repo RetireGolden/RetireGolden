@@ -76,8 +76,20 @@ export interface TaxYearInput {
    */
   taxExemptInterest?: number
   /**
-   * Foreign earned income excluded from AGI. It is not ordinary taxable
-   * income, but IRC §86 includes it in Social Security provisional income.
+   * Income excluded from AGI under the foreign and possessions exclusions —
+   * §911 foreign earned income and housing, and §931/§933 possessions income
+   * (American Samoa, Guam, the Northern Marianas, Puerto Rico), which is not
+   * "foreign earned" in the §911 sense but is excluded all the same. The engine
+   * carries one figure for all of them.
+   *
+   * It is not ordinary taxable income and never enters the AGI line, but three
+   * separate definitions reach past AGI to pick it back up: IRC §86 puts it
+   * into Social Security provisional income, §1411(d) and
+   * §151(d)(5)(C)(iii)(II) put it into the modified AGI that prices the NIIT
+   * threshold and the senior-deduction phase-out, and ACA household MAGI
+   * carries it too. Omitting it therefore understates tax and overstates the
+   * senior deduction at once — supply it whenever the household claims any of
+   * those exclusions, not only when Social Security is in play.
    */
   foreignExclusionAddback?: number
   /**

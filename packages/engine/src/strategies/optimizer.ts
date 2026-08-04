@@ -437,7 +437,13 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
     // infeasible against the floor constraint, and an exact cap needs a binary).
     const srdRule = input.seniorDeduction ? y.pack.federalTax.seniorDeduction : null
     const srdEligible = srdRule !== null && y.peopleAged65Plus > 0 && y.year <= srdRule.lastApplicableYear
-    const srdRate = srdRule && srdEligible ? srdRule.phaseOutRatePct / 100 : 0
+    // Clawback slope against the household total, not the statutory rate:
+    // §151(d)(5)(C)(iii)(I) reduces the per-individual $6,000, so the total
+    // n·max(0, A − rate·excess) sheds n·rate per dollar of modified AGI. The
+    // full-phase-out test below then lands on start + (n·A)/(n·rate) =
+    // start + A/rate, the same exhaustion point for one qualified individual
+    // or two — `srdBaseRaw` already carries the n and the two cancel.
+    const srdRate = srdRule && srdEligible ? (srdRule.phaseOutRatePct / 100) * y.peopleAged65Plus : 0
     const srdStart = srdRule && srdEligible ? srdRule.magiPhaseOutStart[y.filingStatus] : 0
     const baselineMagi =
       y.ordinaryIncomeBase + (y.capitalGainsBase ?? 0) + (y.baselineRmd ?? 0) + y.inheritedDistribution

@@ -22,6 +22,15 @@ function round2(n: number): number {
 }
 
 const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable: number; lifetimeTax: number; lifetimeRoth: number }> = {
+  // Re-baselined 2026-08-04 for the IRC 151(d)(5)(C) senior-deduction
+  // correction. The phase-out now reduces the per-qualified-individual 6,000
+  // rather than the combined base, so a household above the threshold loses the
+  // deduction sooner. Only bracket-fill-roth moves: it is the one example whose
+  // conversion ladder pushes MAGI into the phase-out band while both spouses are
+  // 65 or over. Lifetime tax rises 453.31 and ending investable falls 2,750.88 --
+  // more than the tax delta, because the extra tax is paid early and stops
+  // compounding. Lifetime conversions rise 5,747.91: the optimizer now sees the
+  // true marginal clawback and re-sizes the ladder around it.
   // Re-baselined 2026-07-29 for current-year ACA reconciliation. Curated
   // credit-enabled examples now carry explicit per-year tax-family, coverage,
   // enrollment-premium, and SLCSP assumptions. Their same-year withdrawals,
@@ -39,7 +48,7 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   // skipped, lowering the ending balance.
   'example-couple': { depletionYear: null, endingInvestable: 2_230_556.28, lifetimeTax: 466_877.85, lifetimeRoth: 1_351_214.42 },
   'under-saved-single': { depletionYear: 2045, endingInvestable: 0, lifetimeTax: 237_089.71, lifetimeRoth: 0 },
-  'bracket-fill-roth': { depletionYear: null, endingInvestable: 601_058.9, lifetimeTax: 222_517.35, lifetimeRoth: 819_102.78 },
+  'bracket-fill-roth': { depletionYear: null, endingInvestable: 598_308.02, lifetimeTax: 222_970.66, lifetimeRoth: 824_850.69 },
   // early-retiree-aca retuned 2026-07-30: the old baseline (55k consulting,
   // fill to the 12% bracket) had its only actionable ACA year above 400% FPL,
   // so the example could not show a credit at all. It now converts to the 10%
