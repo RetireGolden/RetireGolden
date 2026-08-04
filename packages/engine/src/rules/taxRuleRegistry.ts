@@ -1911,6 +1911,35 @@ const registry = {
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
   },
+
+  'irc-223-b-5-hsa-family-limit-divided-between-spouses': {
+    title: 'Spouses share one family HSA limit but keep whole catch-ups',
+    statement:
+      'Where either spouse has family coverage, both spouses are treated as having that family coverage and the resulting family limit is divided equally between them unless they agree on a different division. Paragraph (5)(B) computes the amount to be divided without regard to the age-55 additional contribution amount, so the halving reaches only the base: each spouse adds a whole catch-up on top of half the family limit, not half a catch-up.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'Two facts the statute turns on are absent from the plan model, and each is resolved toward the statutory default. The division by agreement under (5)(B)(ii) cannot be observed, so the engine takes the equal division the statute applies in its absence. Coverage election is likewise unmodelled: a two-person household is treated as having family coverage, which is already what selects the family base, and paragraph (5)(A) then makes that coverage apply to both spouses. Paragraph (5) opens on individuals who are married to each other, so the division is applied only where the two-person household is also a married one with both spouses living. Household size does not carry that fact by itself: the plan schema requires two people for a joint return but does not require a joint return of a two-person household, so an unmarried pair is representable. Each of them is then simply an eligible individual with family coverage under (b)(2)(B) whom paragraph (5) never reaches, and each keeps a whole family limit. A sole survivor keeps the undivided base for the same reason, having nobody left to divide with. The per-person contribution group key is retained rather than replaced by a household one precisely so the (b)(3) catch-up stays attached to the spouse who earned it.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 223(b)(5)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim',
+      quotedText:
+        'In the case of individuals who are married to each other, if either spouse has family coverage- (A) both spouses shall be treated as having only such family coverage (and if such spouses each have family coverage under different plans, as having the family coverage with the lowest annual deductible), and (B) the limitation under paragraph (1) (after the application of subparagraph (A) and without regard to any additional contribution amount under paragraph (3))- (i) shall be reduced by the aggregate amount paid to Archer MSAs of such spouses for the taxable year, and (ii) after such reduction, shall be divided equally between them unless they agree on a different division.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 223(b)(2)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim',
+      quotedText:
+        'The monthly limitation for any month is 1/12 of- ... (B) in the case of an eligible individual who has family coverage under a high deductible health plan as of the first day of such month, $4,500.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+  },
+
   // --- Registered 2026-08-03: account-eligibility rules and their proxies -----
 
   'irc-408-d-3-G-simple-two-year-rollover-bar': {
@@ -1945,6 +1974,40 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/strategies/accountEligibility.ts'],
+  },
+
+  'treas-reg-1-408-8-e-1-i-aggregate-ira-rmd-sum': {
+    title: 'The sum of separately calculated IRA RMDs must leave some IRA',
+    statement:
+      'The required minimum distribution is calculated separately for each IRA, but the sum of those separately calculated amounts may be distributed from any one or more of the IRAs. An IRA whose own balance cannot cover its calculated amount therefore leaves a shortfall that the other IRAs of the same owner must still distribute; it is not extinguished. Only IRAs the individual holds as owner aggregate, so an inherited IRA, a spouse IRA, and an employer plan each stand outside that sum.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'Paragraph (e)(1)(i) leaves a living owner free to choose which IRAs the sum comes from, so the engine has to pick an order that the regulation permits but does not select. It sweeps an unmet amount across the remaining owned IRAs in plan account order, which is one of the permitted choices; no ordering here is more correct than another, and none of them changes the total distributed or its tax character. The proportionate allocation of 1.408-8(e)(4)(i) is deliberately not borrowed, because that paragraph governs the year-of-death shortfall passing to beneficiaries rather than a living owner free choice.',
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8(e)(1)(i)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.408-8',
+      quotedText:
+        'Except as provided in paragraph (e)(1)(ii) of this section, the required minimum distribution must be calculated separately for each IRA and the sum of those separately calculated required minimum distributions may be distributed from any one or more of the IRAs under the rules set forth in this paragraph (e).',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8(e)(2)(i)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.408-8',
+      quotedText:
+        'Generally, only amounts in IRAs that an individual holds as the IRA owner are aggregated for purposes of paragraph (e)(1) of this section. ... Thus, for example, for purposes of satisfying the minimum distribution requirements with respect to one IRA by making distributions from another IRA, IRAs for which the individual is the IRA owner are not aggregated with IRAs for which the individual is a beneficiary.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408A-4, A-6(b)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.408A-4',
+      quotedText:
+        'Thus, in a year for which a minimum distribution is required (including the calendar year in which the individual attains age 70 1/2), an individual may not convert the assets of an IRA (or any portion of those assets) to a Roth IRA to the extent that the required minimum distribution for the traditional IRA for the year has not been distributed.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/projection/simulate.ts'],
   },
 
   'irc-401-a-9-H-designated-beneficiary-ten-year-rule': {
