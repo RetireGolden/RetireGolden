@@ -2666,6 +2666,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // remain unsatisfied when every one of their IRAs is empty — leaving
     // nothing for that pass to convert.
     let rmdTotal = 0
+    /**
+     * The owned-IRA share of `rmdTotal`. A QCD may only come out of an
+     * individual retirement plan (408(d)(8)(B)), so employer-plan RMD dollars
+     * -- which `rmdTotal` also carries -- can never back one, and the QCD
+     * routing below caps against this rather than the whole forced total.
+     */
+    let ownedIraRmdTotal = 0
     /** Dollars this account must distribute, own share plus any swept share. */
     const rmdTakeByAccount = new Map<string, number>()
     const unmetIraRmdByOwner = new Map<string, number>()
@@ -2754,6 +2761,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         })
       }
       rmdTotal += take
+      if (isAggregatedIra(state.account)) ownedIraRmdTotal += take
       // Pro-rata return of basis on IRA RMDs (step 5); committed immediately.
       if (state.account.kind === 'ira') {
         const proRata = iraProRata.get(ownerId)
@@ -2899,13 +2907,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // Within-year timing is not modelled, so a gift dated before the
     // half-birthday counts; that is the annual-granularity convention.
     let qcd = 0
-    // Gross dollars routed out of the RMD. The RMD already counted these as a
-    // cash inflow, so this is what cash must give back.
+    // Gross dollars routed out of the owned-IRA RMD. That RMD already counted
+    // these as a cash inflow, so this is what cash must give back. The cap is
+    // the owned-IRA share of the forced total, not the whole of it:
+    // 408(d)(8)(B) reaches only a distribution from an individual retirement
+    // plan, so an employer-plan RMD cannot carry a gift out of income and a
+    // donor with no IRA RMD at all has nothing here to route.
     let qcdFromRmd = 0
     // Income reduction. Only the RMD entered income, and 408(d)(8)(D) limits a
-    // QCD to what would otherwise be includible, so this is the taxable share
-    // of the routed dollars -- never the gross, and never the pre-RMD part,
-    // which never entered income at all and would be a phantom deduction.
+    // QCD to what would otherwise be includible -- measured over the owner's
+    // individual retirement plans treated as one contract -- so this is the
+    // taxable share of the routed owned-IRA dollars: never the gross, and never
+    // the part taken beyond the RMD, which never entered income at all and
+    // would be a phantom deduction.
     let qcdIncomeOffset = 0
     if (plan.strategies.qcdAnnual > 0) {
       const donorIds = new Set(peopleStates
@@ -2917,13 +2931,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           plan.strategies.qcdAnnual * inflFactor,
           pack.rmd.qcdAnnualLimit * limitGrowth,
         )
-        qcdFromRmd = Math.min(requested, rmdTotal)
-        qcdIncomeOffset = Math.max(0, Math.min(qcdFromRmd, rmdTotal - rmdNontaxable))
+        qcdFromRmd = Math.min(requested, ownedIraRmdTotal)
+        // rmdNontaxable is accumulated only on owned-IRA takes, so this is the
+        // taxable share of exactly the dollars qcdFromRmd is drawn from.
+        qcdIncomeOffset = Math.max(0, Math.min(qcdFromRmd, ownedIraRmdTotal - rmdNontaxable))
         const beyondRmd = requested - qcdFromRmd
         if (beyondRmd > 0) {
           const sources = balances.filter((state) =>
-            state.account.type === 'traditional' && state.account.kind === 'ira' &&
-            followsOwnerRmds(state.account) && state.balance > 0 &&
+            isAggregatedIra(state.account) && state.balance > 0 &&
             donorIds.has(state.account.ownerPersonId ?? primary.id))
           const available = sources.reduce((sum, state) => sum + state.balance, 0)
           let remaining = Math.min(beyondRmd, available)

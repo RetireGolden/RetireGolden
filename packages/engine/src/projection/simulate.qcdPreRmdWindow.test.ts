@@ -18,6 +18,12 @@ function ira(id: string, balance: number): Extract<Account, { type: 'traditional
   return { ...account, annualReturnPct: 0 }
 }
 
+function employerPlan(id: string, balance: number): Extract<Account, { type: 'traditional' }> {
+  const account = traditionalAccount(id, balance, 'p1', 'employer')
+  if (account.type !== 'traditional') throw new Error('expected employer plan')
+  return { ...account, annualReturnPct: 0 }
+}
+
 function run(plan: Plan, endYear = TAX_YEAR): YearResult[] {
   return simulatePlan(validatePlan(plan), {
     startYear: TAX_YEAR,
@@ -95,5 +101,44 @@ describe('QCD in the pre-RMD window', () => {
     const years = run(plan)
 
     expect(years[0]!.qcd).toBe(25_000)
+  })
+
+  // IRC 408(d)(8)(B) reaches only "any distribution from an individual
+  // retirement plan", so an employer-plan RMD can never back a QCD however
+  // large it is. Born 1945 the donor is 81 in 2026 and the 401(k) has a real
+  // RMD; with no IRA anywhere there is nothing eligible to give, and capping
+  // the routed portion against the whole forced total would give 10,000.
+  it('refuses to route a QCD out of an employer-plan RMD', () => {
+    const plan = planFor('1945-03-01', 10_000)
+    plan.accounts = [employerPlan('k401', 500_000)]
+
+    const years = run(plan)
+
+    expect(years[0]!.rmd).toBeGreaterThan(10_000)
+    expect(years[0]!.qcd).toBe(0)
+  })
+
+  // With both kinds present the gift is still made in full, but only the
+  // owned-IRA share of the RMD carries any of it out of income -- the rest
+  // comes off the IRA balance directly and never entered income to be
+  // subtracted from. The expected offset is derived rather than hard-coded:
+  // it is exactly the RMD the same IRA produces standing alone.
+  it('offsets income only by the owned-IRA share of the forced total', () => {
+    const iraAlone = planFor('1945-03-01', 0)
+    iraAlone.accounts = [ira('ira', 100_000)]
+    const ownedIraRmd = run(iraAlone)[0]!.rmd
+
+    const mixed = (qcdAnnual: number): Plan => {
+      const plan = planFor('1945-03-01', qcdAnnual)
+      plan.accounts = [ira('ira', 100_000), employerPlan('k401', 500_000)]
+      return plan
+    }
+    const withGift = run(mixed(10_000))
+    const withoutGift = run(mixed(0))
+
+    expect(ownedIraRmd).toBeGreaterThan(0)
+    expect(ownedIraRmd).toBeLessThan(10_000)
+    expect(withGift[0]!.qcd).toBe(10_000)
+    expect(withoutGift[0]!.magi - withGift[0]!.magi).toBeCloseTo(ownedIraRmd, 6)
   })
 })

@@ -59,6 +59,10 @@ function traditional(balance: number, contribution = 0, owner = 'p1'): Account {
   return { type: 'traditional', id: testIds(), name: '401k', ownerPersonId: owner, annualReturnPct: null, kind: 'employer', balance, annualContribution: contribution }
 }
 
+function traditionalIra(balance: number, contribution = 0, owner = 'p1'): Account {
+  return { type: 'traditional', id: testIds(), name: 'IRA', ownerPersonId: owner, annualReturnPct: null, kind: 'ira', balance, annualContribution: contribution }
+}
+
 function wages(annualGross: number, personId = 'p1'): IncomeStream {
   return { type: 'wages', id: testIds(), personId, annualGross, endAge: null, realGrowthPct: 0 }
 }
@@ -1828,8 +1832,13 @@ describe('RMDs', () => {
     expect(y2026.surplusInvested).toBeCloseTo(9_000 - y2026.expenses.healthcare, 6)
   })
 
-  it('routes QCD dollars out of the RMD, untaxed', () => {
+  // The source has to be an IRA: IRC 408(d)(8)(B) reaches only "any distribution
+  // from an individual retirement plan", so the 401(k) that rmdPlan() otherwise
+  // holds could never carry a gift out of income. Same balance and same divisor,
+  // so the RMD is still 10,000 -- only its eligibility changes.
+  it('routes QCD dollars out of the IRA RMD, untaxed', () => {
     const plan = rmdPlan()
+    plan.accounts = [cash(0), traditionalIra(265_000)]
     plan.strategies.qcdAnnual = 4_000
     const flat10 = createFlatTaxCalculator(10)
     const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: flat10 })
@@ -1839,6 +1848,20 @@ describe('RMDs', () => {
     expect(y2026.qcd).toBeCloseTo(4_000, 6)
     expect(y2026.tax).toBeCloseTo(600, 6) // 10% of the remaining 6,000
     expect(y2026.magi).toBeCloseTo(6_000, 6)
+  })
+
+  // The negative half of the same rule, on the fixture that used to assert the
+  // wrong thing: an employer-plan RMD is ineligible however large it is.
+  it('refuses to route QCD dollars out of an employer-plan RMD', () => {
+    const plan = rmdPlan() // cash + a 401(k), no IRA anywhere
+    plan.strategies.qcdAnnual = 4_000
+    const flat10 = createFlatTaxCalculator(10)
+    const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: flat10 })
+
+    const y2026 = result.years.find((y) => y.year === 2026)!
+    expect(y2026.rmd).toBeCloseTo(10_000, 6)
+    expect(y2026.qcd).toBe(0)
+    expect(y2026.magi).toBeCloseTo(10_000, 6) // the whole RMD stays in income
   })
 })
 
