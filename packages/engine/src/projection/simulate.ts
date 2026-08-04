@@ -2352,11 +2352,40 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         limit = (pack.contributionLimits.ira + catchUp) * limitGrowth
         compensationKey = iraCompensationIsShared ? IRA_HOUSEHOLD_COMPENSATION_KEY : ownerId
       } else if (account.type === 'hsa') {
+        // The group key stays per person, but a couple does NOT get one family
+        // limit each. IRC 223(b)(5) says that where either spouse has family
+        // coverage, "both spouses shall be treated as having only such family
+        // coverage" and the paragraph (1) limitation "shall be divided equally
+        // between them unless they agree on a different division". One family
+        // limit, split. A plan carries no coverage election and no division
+        // agreement, so the two-person household stands in for family coverage
+        // (as it already did in selecting the base) and the equal division the
+        // statute applies by default stands in for the agreement.
         groupKey = `${ownerId}:hsa`
-        const base = people.length === 2 ? pack.contributionLimits.hsaFamily : pack.contributionLimits.hsaSelfOnly
+        const hasFamilyCoverage = people.length === 2
+        // (b)(5) opens on "individuals who are married to each other", so the
+        // division reaches a two-person household only while it is a married
+        // one and both spouses are living. Household size alone will not do:
+        // the schema requires two people for a joint return but does not
+        // require a joint return of a two-person household, so unmarried pairs
+        // are representable — and two unmarried individuals covered by a
+        // family plan are each an eligible individual with family coverage
+        // under (b)(2)(B) with no paragraph (5) to divide anything, so they
+        // keep a whole family limit each. A sole survivor likewise has nobody
+        // left to divide with. Same married-and-both-living test as the 219(c)
+        // shared compensation pool above.
+        const dividesFamilyLimit =
+          hasFamilyCoverage && filingStatusForYear === 'marriedFilingJointly' && aliveCount === 2
+        const base = hasFamilyCoverage
+          ? pack.contributionLimits.hsaFamily / (dividesFamilyLimit ? 2 : 1)
+          : pack.contributionLimits.hsaSelfOnly
         // IRC 223(g)(1) indexes only the subsection (b)(2) limits. The
         // (b)(3) catch-up has been a flat 1,000 dollars since 2009 and is
         // absent from the indexing list, so it must not carry limitGrowth.
+        // It is also outside the division: 223(b)(5)(B) divides the limitation
+        // "without regard to any additional contribution amount under
+        // paragraph (3)", so each spouse adds a whole catch-up of their own on
+        // top of half the base rather than half of one.
         const catchUp = age >= 55 ? pack.contributionLimits.hsaCatchUp55 : 0
         limit = base * limitGrowth + catchUp
       }
@@ -2610,7 +2639,36 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       iraProRata.set(ownerId, openIraProRataYear(basis, aggregateBalance))
     }
     // --- RMDs: forced traditional distributions (SECURE 2.0) ---------------
+    // Treas. Reg. 1.408-8(e)(1)(i) requires that "the required minimum
+    // distribution must be calculated separately for each IRA and the sum of
+    // those separately calculated required minimum distributions may be
+    // distributed from any one or more of the IRAs". Flooring each account at
+    // its own balance and moving on drops the difference rather than moving
+    // it, and the difference is reachable: the rebalance, annuity-purchase and
+    // TIPS-ladder passes all run before this block and can empty an account
+    // whose RMD base was already fixed at the prior Dec 31 balance. So the
+    // amounts are decided in two steps below — each account's own separately
+    // calculated share, then the owner's unmet remainder swept across their
+    // other IRAs — and only executed once settled. Executing as we go would
+    // record two occurrences against one account under the same key.
+    //
+    // The sweep is IRA-only and owner-only. Under (e)(2)(i) "only amounts in
+    // IRAs that an individual holds as the IRA owner are aggregated", which
+    // excludes an inherited IRA and a spouse's IRA alike, and an employer plan
+    // is outside section 408 entirely, so it must still distribute its own
+    // amount and can neither absorb nor supply a shortfall. `isAggregatedIra`
+    // already draws exactly that line for the Form 8606 pro-rata rule.
+    //
+    // Satisfying the sum here is also what keeps the Roth conversion pass that
+    // follows lawful: 1.408A-4 A-6(b) bars converting "to the extent that the
+    // required minimum distribution for the traditional IRA for the year has
+    // not been distributed", and after the sweep an owner's IRA RMD can only
+    // remain unsatisfied when every one of their IRAs is empty — leaving
+    // nothing for that pass to convert.
     let rmdTotal = 0
+    /** Dollars this account must distribute, own share plus any swept share. */
+    const rmdTakeByAccount = new Map<string, number>()
+    const unmetIraRmdByOwner = new Map<string, number>()
     for (const state of balances) {
       if (state.account.type !== 'traditional') continue
       if (!followsOwnerRmds(state.account)) continue // inherited accounts follow the 10-year rule below, not Uniform Lifetime
@@ -2632,8 +2690,41 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         startOfYearBalance.get(state.account.id) ?? 0,
         { ownerSex: owner.sex, spouse },
       )
+      if (rmd <= 0) continue
       const take = Math.min(rmd, state.balance)
+      if (take > 0) rmdTakeByAccount.set(state.account.id, take)
+      // Only an IRA share can be satisfied elsewhere. An employer plan short
+      // of its own amount stays short: it is outside the section 408
+      // aggregation, so no other account may distribute on its behalf.
+      if (rmd - take > EPSILON && isAggregatedIra(state.account)) {
+        unmetIraRmdByOwner.set(ownerId, (unmetIraRmdByOwner.get(ownerId) ?? 0) + (rmd - take))
+      }
+    }
+    // (e)(1)(i) lets a living owner take the sum "from any one or more of the
+    // IRAs", so the order below is a permitted choice rather than a required
+    // one; plan account order is used because it is deterministic and no
+    // ordering changes the total distributed or its character.
+    for (const [ownerId, unmet] of unmetIraRmdByOwner) {
+      let remaining = unmet
+      for (const state of balances) {
+        if (remaining <= EPSILON) break
+        if (!isAggregatedIra(state.account)) continue
+        if ((state.account.ownerPersonId ?? primary.id) !== ownerId) continue
+        const ownShare = rmdTakeByAccount.get(state.account.id) ?? 0
+        const capacity = state.balance - ownShare
+        if (capacity <= EPSILON) continue
+        const swept = Math.min(capacity, remaining)
+        rmdTakeByAccount.set(state.account.id, ownShare + swept)
+        remaining -= swept
+      }
+    }
+    for (const state of balances) {
+      // Only traditional accounts were ever entered above; the guard is here
+      // so the account narrows for `kind` rather than being asserted.
+      if (state.account.type !== 'traditional') continue
+      const take = rmdTakeByAccount.get(state.account.id) ?? 0
       if (take <= 0) continue
+      const ownerId = state.account.ownerPersonId ?? primary.id
       const sourceBalanceBefore = state.balance
       state.balance -= take
       const kind = state.account.kind === 'ira' ? 'ownedIraRmd' as const : 'employerPlanRmd' as const
