@@ -19,7 +19,17 @@ The projection runs federal and state as two calculators over one income input
 
 ## Federal engine
 
-Computed each year inside the projection loop:
+Computed each year inside the projection loop. The ledger is **nominal**, so for a year with no published
+parameter pack the annually-indexed federal figures are carried forward at the plan's inflation rate before
+income meets them (`indexFederalTaxPack`): rate-bracket bounds (IRC 1(j)(3)(B)), the standard deduction and
+age-65 addition (63(c)(7)(B)(ii), 63(c)(4)), the 15%/20% capital-gain breakpoints (1(j)(5)(C)), and the AMT
+exemption, phase-out threshold and 28%-rate threshold (55(d)(4)(B), 55(d)(3)(B)). The statutory rounding
+steps and the C-CPI-U basis are not reproduced — the same two approximations `limitScale` makes for the
+contribution limits. Figures with **no** indexing provision are deliberately left flat and creep by design:
+the §86 provisional-income tiers, the §1411 NIIT thresholds, the §121 exclusion, the §1211(b) $3,000 offset
+and the §151(d)(5)(C) senior deduction; the SALT cap follows its own §164(b)(7) schedule. The optimizer LP
+reads the same projected pack, so it prices conversions on the thresholds the exact ledger will apply.
+State brackets are a separate question and are still held nominal (see `params/state/index.ts`).
 
 - **Ordinary income stack:** wages, interest, non-qualified dividends, traditional withdrawals/conversions,
   pension/annuity taxable parts, and **taxable Social Security** (provisional-income 0/50/85% tiers — the

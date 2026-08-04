@@ -2358,6 +2358,85 @@ const registry = {
       'packages/engine/src/params/data/year2026.ts',
     ],
   },
+  'irc-1-j-3-B-rate-tables-adjusted-each-year': {
+    title: 'The rate tables are re-prescribed every year, so a nominal projection must index them',
+    statement:
+      'For taxable years beginning after December 31, 2018 the Secretary prescribes rate tables that apply in lieu of the ones printed in section 1(j)(2), adjusted in the same manner as under section 1(f). The printed thresholds are therefore the figures for one year only. A projection that carries nominal income forward must carry the thresholds forward with it; holding a published year fixed measures inflated income against unadjusted brackets and creates bracket creep the statute does not.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The same reasoning reaches the other annually adjusted figures the federal engine reads, each under its own provision: the basic standard deduction under 63(c)(7)(B)(ii), the age-65 addition under 63(c)(4) (which indexes the dollar amounts in subsection (f)), the maximum zero-rate and maximum 15-percent capital gain amounts under 1(j)(5)(C), and the AMT exemption, its phase-out threshold and the 28 percent rate threshold under 55(d)(4)(B) and 55(d)(3)(B). Their base years differ -- 2016, 2017, 2024, 2025, 2011 -- and so do their rounding steps, but none of that survives into the projection: the pack figure has already absorbed every adjustment through the pack year, so carrying it forward is one multiplication for all of them. Two approximations remain and are deliberate. The index is the plan assumed general inflation rather than the C-CPI-U of 1(f)(3), and the statutory rounding to a multiple of 50 or 100 dollars is not reproduced -- the same two liberties limitScale already takes with the contribution limits. What must not be swept along are the figures with no indexing provision at all: the section 86 provisional-income thresholds, the section 1411 thresholds, the section 121 exclusion, the section 1211(b) ordinary offset and the section 151(d)(5)(C) senior deduction are unindexed by design, and the SALT cap follows the explicit 164(b)(7) schedule rather than an index. Scaling any of those would be the mirror-image defect.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 1(j)(3)(B)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/1',
+      quotedText:
+        'For taxable years beginning after December 31, 2018, the Secretary shall prescribe tables which shall apply in lieu of the tables contained in paragraph (2) in the same manner as under paragraphs (1) and (2) of subsection (f) (applied without regard to clauses (i) and (ii) of subsection (f)(2)(A)), except that in prescribing such tables - (i) solely for purposes of determining the dollar amounts at which any rate bracket higher than 12 percent ends and at which any rate bracket higher than 22 percent begins, subsection (f)(3) shall be applied by substituting calendar year 2017 for calendar year 2016 in subparagraph (A)(ii) thereof.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 1(j)(5)(C)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/1',
+      quotedText:
+        'In the case of any taxable year beginning after 2018, each of the dollar amounts in clauses (i) and (ii) of subparagraph (B) shall be increased by an amount equal to - (i) such dollar amount, multiplied by (ii) the cost-of-living adjustment determined under subsection (f)(3) for the calendar year in which the taxable year begins, determined by substituting calendar year 2017 for calendar year 2016 in subparagraph (A)(ii) thereof.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 63(c)(7)(B)(ii)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/63',
+      quotedText:
+        'In the case of a taxable year beginning after 2025, the 23,625 dollar and 15,750 dollar amounts in subparagraph (A) shall each be increased by an amount equal to - (I) such dollar amount, multiplied by (II) the cost-of-living adjustment determined under section 1(f)(3) for the calendar year in which the taxable year begins, determined by substituting 2024 for 2016 in subparagraph (A)(ii) thereof.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 55(d)(4)(B)(i)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/55',
+      quotedText:
+        'In the case of any taxable year beginning in a calendar year after 2018 (2026, in the case of the 1,000,000 dollar amount in subparagraph (A)(ii)(I)), the amounts described in clause (ii) shall each be increased by an amount equal to - (I) such dollar amount, multiplied by (II) the cost-of-living adjustment determined under section 1(f)(3) for the calendar year in which the taxable year begins.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/params/index.ts',
+      'packages/engine/src/tax/federalTax.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+  'irc-151-d-5-C-senior-deduction-not-indexed': {
+    title: 'The senior deduction is a flat 6,000 dollars that never grows',
+    statement:
+      'For a taxable year beginning before January 1, 2029 a deduction of 6,000 dollars is allowed for each qualified individual, reduced by 6 percent of modified adjusted gross income over 75,000 dollars (150,000 dollars on a joint return). No provision adjusts either figure for inflation: section 151(d)(4) indexes only the dollar amount in paragraph (1) and is expressly subordinated to paragraph (5), whose subparagraph (C) is where this deduction lives. The amount and the phase-out threshold both stay fixed for every year the deduction applies.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'This record exists because of the change that produced it. The engine now carries the annually indexed federal figures forward past the published pack, and the senior deduction is the figure most likely to be swept into that projection by a later reader: it sits in the same pack object as the standard deduction, is claimed by the same taxpayers in the same years, and is the one deduction in the group that has no cost-of-living clause. Indexing the 6,000 dollars, or the 75,000 dollar threshold, would overstate the deduction in exactly the years a 65-plus household is deciding how much to convert. The fixed threshold also means the phase-out bites harder each year in a nominal projection, which is a real effect of the drafting and must be preserved rather than smoothed away. The expiry is modeled from the same subparagraph: taxable years beginning before January 1, 2029 makes 2028 the last applicable year.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 151(d)(5)(C)(i)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/151',
+      quotedText:
+        'In the case of a taxable year beginning before January 1, 2029, there shall be allowed a deduction in an amount equal to 6,000 dollars for each qualified individual with respect to the taxpayer.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 151(d)(5)(C)(iii)(I)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/151',
+      quotedText:
+        'In the case of any taxpayer for any taxable year, the 6,000 dollar amount in clause (i) shall be reduced (but not below zero) by 6 percent of so much of the taxpayer modified adjusted gross income as exceeds 75,000 dollars (150,000 dollars in the case of a joint return).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 151(d)(4)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/151',
+      quotedText:
+        'Except as provided in paragraph (5), in the case of any taxable year beginning in a calendar year after 1989, the dollar amount contained in paragraph (1) shall be increased by an amount equal to - (A) such dollar amount, multiplied by (B) the cost-of-living adjustment determined under section 1(f)(3) for the calendar year in which the taxable year begins.',
+    }],
+    volatility: 'sunsetting',
+    effectiveFrom: 2025,
+    effectiveThrough: 2028,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/params/index.ts',
+      'packages/engine/src/tax/federalTax.ts',
+    ],
+  },
   'irc-1-h-11-qualified-dividends-as-net-capital-gain': {
     title: 'Qualified dividends are folded into net capital gain',
     statement:

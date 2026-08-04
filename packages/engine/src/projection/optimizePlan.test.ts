@@ -18,6 +18,7 @@ import {
   type ExactDecisionEvaluation,
 } from '../decisions/index.js'
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../model/plan.js'
+import { LATEST_PACK_YEAR, packForYear } from '../params/index.js'
 import { recurringOrdinaryIncome, setAcaYearContract, socialSecurityIncome } from '../testing/planFixtures.js'
 import { buildOptimizerModel, optimizeSchedule, type OptimizedSchedule } from '../strategies/optimizer.js'
 import { createFederalTaxCalculator } from '../tax/federalTax.js'
@@ -481,6 +482,39 @@ describe('buildOptimizerInput', () => {
     const y2032 = input.years.find((y) => y.year === 2032)!
     expect(y2032.rmdDivisor).not.toBeNull()
     expect(y2032.rmdDivisor!).toBeGreaterThan(15) // Uniform Lifetime divisors are ~26 at 73
+  })
+
+  // The LP and the exact ledger have to reach for the same thresholds in the
+  // same year. `limitScale` in simulate.ts holds its factor at 1 for every year
+  // at or below the latest published pack; the LP has to do the same, and a bare
+  // `p.year - publishedPack.year` does not, because `packForYear` hands a year
+  // earlier than every published pack the EARLIEST pack and the difference goes
+  // negative. That would deflate the LP's brackets (and, via `y.inflationScale`,
+  // its IRMAA thresholds) for a year the ledger prices at face value.
+  it('holds the LP inflation factor at 1 for years the ledger does not project', () => {
+    const inflating = tradHeavyPlan() // the fixture assumes 0% inflation; this test needs a path
+    inflating.assumptions.inflationPct = 2.5
+    const plan = validate(inflating)
+    const input = buildOptimizerInput(plan, { startYear: LATEST_PACK_YEAR - 2, taxCalculator: federal })
+    const published = packForYear(LATEST_PACK_YEAR).pack
+
+    const unprojected = input.years.filter((y) => y.year <= LATEST_PACK_YEAR)
+    expect(unprojected.length).toBeGreaterThan(0)
+    for (const y of unprojected) {
+      expect(y.inflationScale).toBe(1)
+      expect(y.pack.federalTax.standardDeduction.single).toBe(published.federalTax.standardDeduction.single)
+      expect(y.pack.federalTax.brackets.single[1]!.lowerBound).toBe(
+        published.federalTax.brackets.single[1]!.lowerBound,
+      )
+    }
+
+    // Past the pack the factor still has to move, or the fix would have traded
+    // one frozen-threshold defect for another.
+    const projected = input.years.find((y) => y.year === LATEST_PACK_YEAR + 5)!
+    expect(projected.inflationScale).toBeGreaterThan(1)
+    expect(projected.pack.federalTax.standardDeduction.single).toBeGreaterThan(
+      published.federalTax.standardDeduction.single,
+    )
   })
 
   it('flags SSA-44 redetermination years so the solve shifts their IRMAA source', () => {

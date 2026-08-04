@@ -143,6 +143,19 @@ export interface TaxYearInput {
    * derives standard-deduction and itemized-SALT add-backs from normal inputs.
    */
   amtPreferenceItems?: number
+  /**
+   * Cumulative general-inflation factor from the parameter pack's year to this
+   * one, used to project the annually-indexed federal figures (rate brackets,
+   * standard deduction, capital-gain breakpoints, AMT amounts) onto a year the
+   * pack only stands in for. 1 -- the default -- means "use the pack as
+   * published", which is right for a year that has its own pack.
+   *
+   * The projection is nominal, so omitting this measures inflated income
+   * against frozen thresholds and invents bracket creep the statute does not
+   * create. Unindexed figures (sections 86, 1411, 121, 1211(b), 151(d)(5)(C),
+   * and the 164(b)(7) SALT schedule) ignore it by construction.
+   */
+  inflationScale?: number
 }
 
 /**

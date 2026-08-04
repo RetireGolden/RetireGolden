@@ -1089,3 +1089,208 @@ describe('registered rules: rate schedules, deductions, AMT, NIIT', () => {
     })
   })
 })
+
+// The projection runs in nominal dollars, so a 2046 wage arrives inflated. The
+// federal figures it is measured against are re-prescribed every year by
+// statute, and a stand-in pack carries only the pack year's values -- so the
+// caller supplies the cumulative inflation factor and the indexed figures are
+// carried forward with it. `inflationScale: 2` stands for a doubling of the
+// price level, which makes every expected value below hand-checkable against
+// the 2026 pack.
+describe('indexed federal figures in a stand-in year', () => {
+  const PROJECTED_YEAR = 2046
+  const DOUBLED = 2
+
+  // 2026 single brackets: 10% to 12,400; 12% to 50,400; 22% to 105,700; 24% to
+  // 201,775. Standard deduction 16,100. At a doubled price level the statute
+  // gives 24,800 / 100,800 / 211,400 and a 32,200 deduction.
+  //
+  // 132,200 of wages, single, nobody 65+:
+  //   indexed        taxable 100,000 -> 10%x24,800 + 12%x75,200        = 11,504
+  //   nothing moves  taxable 116,100 -> 1,240 + 4,560 + 12,166 + 2,496 = 20,462
+  //   brackets only  taxable 116,100 -> 2,480 + 9,120 + 3,366          = 14,966
+  // The third reading is the one worth naming: indexing the tables while
+  // leaving the deduction behind is the half-fix, and it still overstates.
+  describeRule('irc-1-j-3-B-rate-tables-adjusted-each-year', {
+    readings: { statute: 11_504, frozenAtThePackYear: 20_462, tablesOnlyDeductionFrozen: 14_966 },
+    accepted: 'statute',
+  }, ({ accepted, readings }) => {
+    it('prices nominal wages on the rate tables prescribed for that year', () => {
+      const d = computeFederalTax(input({
+        year: PROJECTED_YEAR,
+        ordinaryIncome: 132_200,
+        inflationScale: DOUBLED,
+      }))
+
+      expect(d.usesStandInPack).toBe(true)
+      expect(d.deduction).toBeCloseTo(32_200, 6)
+      expect(d.taxableIncome).toBeCloseTo(100_000, 6)
+      expect(d.ordinaryTax).toBeCloseTo(accepted, 6)
+      expect(d.ordinaryTax).not.toBeCloseTo(readings.frozenAtThePackYear, 6)
+      expect(d.ordinaryTax).not.toBeCloseTo(readings.tablesOnlyDeductionFrozen, 6)
+    })
+
+    it('leaves a published year exactly as published', () => {
+      // The default scale is 1, and 2026 has its own pack: the same 132,200 of
+      // wages must still produce the frozen-reading figure, because for 2026
+      // that reading IS the statute.
+      const d = computeFederalTax(input({ year: 2026, ordinaryIncome: 132_200 }))
+      expect(d.usesStandInPack).toBe(false)
+      expect(d.ordinaryTax).toBeCloseTo(readings.frozenAtThePackYear, 6)
+    })
+  })
+
+  // IRC 1(j)(5)(C) indexes the maximum zero-rate and maximum 15-percent amounts
+  // on the same footing as the rate tables. 32,200 of wages (exactly the
+  // indexed deduction) plus 150,000 of long-term gain, single:
+  //   indexed        0% to 98,900, then 15% on 51,100              = 7,665.00
+  //   breakpoint     0% to 49,450, then 15% on 100,550             = 15,082.50
+  //     frozen (deduction still indexed)
+  //   nothing moves  16,100 deduction -> 1,684 ordinary + 17,497.50 = 19,181.50
+  describeRule('irc-1-h-capital-gain-stacked-on-ordinary', {
+    readings: { statute: 7_665, breakpointFrozen: 15_082.5, nothingIndexed: 19_181.5 },
+    accepted: 'statute',
+  }, ({ accepted, readings }) => {
+    it('starts the 15% layer at the breakpoint prescribed for that year', () => {
+      const d = computeFederalTax(input({
+        year: PROJECTED_YEAR,
+        ordinaryIncome: 32_200,
+        capitalGains: 150_000,
+        inflationScale: DOUBLED,
+      }))
+
+      expect(d.ordinaryTaxable).toBeCloseTo(0, 6)
+      expect(d.totalTax).toBeCloseTo(accepted, 6)
+      expect(d.totalTax).not.toBeCloseTo(readings.breakpointFrozen, 6)
+      expect(d.totalTax).not.toBeCloseTo(readings.nothingIndexed, 6)
+    })
+  })
+
+  // IRC 55(d)(4)(B) indexes the exemption AND the phase-out threshold; the
+  // 1,000,000 dollar threshold starts moving in 2027, which is the first
+  // projected year. 632,200 of wages, single -> AMTI 632,200 under every
+  // reading, so the three answers differ only in which AMT figures moved.
+  it('projects the AMT exemption and its phase-out threshold together', () => {
+    const d = computeFederalTax(input({
+      year: PROJECTED_YEAR,
+      ordinaryIncome: 632_200,
+      inflationScale: DOUBLED,
+    }))
+
+    expect(d.alternativeMinimumTaxableIncome).toBeCloseTo(632_200, 6)
+    expect(d.amtExemption).toBeCloseTo(180_200, 6) // 90,100 x 2, below the 1,000,000 threshold
+    expect(d.amtExemption).not.toBeCloseTo(114_100, 6) // exemption indexed, threshold left at 500,000
+    expect(d.amtExemption).not.toBeCloseTo(24_000, 6) // neither indexed
+  })
+
+  // The mirror-image error. IRC 151(d)(4) indexes only the paragraph (1)
+  // exemption amount and is expressly subordinate to paragraph (5), where the
+  // senior deduction lives, so neither the 6,000 dollars nor the 75,000 dollar
+  // threshold ever moves. 2028 (its last applicable year), single, one person
+  // 65+, 100,000 of MAGI:
+  //   statute        6,000 - 6% x 25,000  = 4,500
+  //   both indexed   12,000, phase-out entirely escaped (threshold 150,000)
+  //   amount only    12,000 - 6% x 25,000 = 10,500
+  describeRule('irc-151-d-5-C-senior-deduction-not-indexed', {
+    readings: { statute: 4_500, bothIndexed: 12_000, amountIndexedOnly: 10_500 },
+    accepted: 'statute',
+  }, ({ accepted, readings }) => {
+    it('holds the amount and the phase-out threshold flat in a projected year', () => {
+      const d = computeFederalTax(input({
+        year: 2028,
+        ordinaryIncome: 100_000,
+        peopleAged65Plus: 1,
+        inflationScale: DOUBLED,
+      }))
+
+      expect(d.seniorDeduction).toBeCloseTo(accepted, 6)
+      expect(d.seniorDeduction).not.toBeCloseTo(readings.bothIndexed, 6)
+      expect(d.seniorDeduction).not.toBeCloseTo(readings.amountIndexedOnly, 6)
+      // The standard deduction beside it DID move: (16,100 + 2,050) doubled.
+      expect(d.deduction).toBeCloseTo(36_300 + 4_500, 6)
+    })
+  })
+
+  it('leaves the section 86 provisional-income thresholds where Congress left them', () => {
+    // 20,000 of benefits and 30,000 of other income -> provisional 40,000,
+    // above the 34,000 tier-two start. Scaling the tiers to 50,000/68,000 would
+    // drop the taxable share to zero, which is the whole reason the engine says
+    // more of a benefit becomes taxable as a plan runs on.
+    const d = computeFederalTax(input({
+      year: PROJECTED_YEAR,
+      ordinaryIncome: 30_000,
+      ssBenefits: 20_000,
+      inflationScale: DOUBLED,
+    }))
+
+    expect(d.taxableSocialSecurity).toBeCloseTo(9_600, 6) // 0.85x6,000 + 4,500 tier-one carry
+    expect(d.taxableSocialSecurity).not.toBeCloseTo(0, 6)
+  })
+
+  it('leaves the section 1411 NIIT thresholds where Congress left them', () => {
+    // 300,000 of gain, single: 100,000 over the unindexed 200,000 threshold.
+    // A doubled threshold would zero the NIIT line entirely.
+    const d = computeFederalTax(input({
+      year: PROJECTED_YEAR,
+      capitalGains: 300_000,
+      inflationScale: DOUBLED,
+    }))
+
+    expect(d.niit).toBeCloseTo(3_800, 6)
+    expect(d.niit).not.toBeCloseTo(0, 6)
+  })
+
+  it('leaves the SALT cap on its statutory schedule rather than an index', () => {
+    // 164(b)(7) reverts the cap to 10,000 for 2030 and after. That is a
+    // schedule, not a cost-of-living adjustment: the inflation factor must not
+    // reach it.
+    const d = computeFederalTax(input({
+      year: PROJECTED_YEAR,
+      ordinaryIncome: 300_000,
+      itemizedDeductions: { stateAndLocalTaxes: 50_000, mortgageInterest: 30_000, charitable: 0 },
+      inflationScale: DOUBLED,
+    }))
+
+    expect(d.itemized).toBe(true)
+    expect(d.deduction).toBeCloseTo(40_000, 6) // 10,000 capped SALT + 30,000 interest
+  })
+
+  // A plan may assume negative inflation, and the projection deflates its
+  // income when it does. IRC 1(f)(3)(A) floors the adjustment at zero only
+  // against the base year, so an indexed amount can fall below the prior year's
+  // -- it just cannot fall below the printed statutory figure. Freezing the
+  // thresholds while the income shrinks would be bracket creep run backwards.
+  const HALVED = 0.5
+
+  it('carries the indexed figures DOWN when the plan assumes deflation', () => {
+    // At half the price level the 2026 single figures give a 8,050 deduction
+    // and bands of 6,200 / 25,200. 33,250 of wages -> taxable 25,200:
+    //   indexed       10%x6,200 + 12%x19,000  = 2,900
+    //   frozen        16,100 deduction, taxable 17,150
+    //                 -> 10%x12,400 + 12%x4,750 = 1,810 (under-taxed)
+    const d = computeFederalTax(input({
+      year: PROJECTED_YEAR,
+      ordinaryIncome: 33_250,
+      inflationScale: HALVED,
+    }))
+
+    expect(d.deduction).toBeCloseTo(8_050, 6)
+    expect(d.taxableIncome).toBeCloseTo(25_200, 6)
+    expect(d.ordinaryTax).toBeCloseTo(2_900, 6)
+    expect(d.ordinaryTax).not.toBeCloseTo(1_810, 6)
+  })
+
+  it('does not drag the unindexed figures down with a deflating scale either', () => {
+    // The section 1411 threshold is 200,000 single under every reading. Halving
+    // it to 100,000 would double the NIIT line; the guard has to hold in both
+    // directions, not just against a scale above 1.
+    const d = computeFederalTax(input({
+      year: PROJECTED_YEAR,
+      capitalGains: 300_000,
+      inflationScale: HALVED,
+    }))
+
+    expect(d.niit).toBeCloseTo(3_800, 6)
+    expect(d.niit).not.toBeCloseTo(7_600, 6)
+  })
+})

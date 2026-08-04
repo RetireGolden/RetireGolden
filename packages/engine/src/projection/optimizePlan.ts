@@ -15,7 +15,7 @@
  * plan.
  */
 
-import { packForYear } from '../params/index.js'
+import { indexFederalTaxPack, packForYear, LATEST_PACK_YEAR } from '../params/index.js'
 import { stateParamsFor } from '../params/state/index.js'
 import type { FilingStatus } from '../params/types.js'
 import type { Account, Plan } from '../model/plan.js'
@@ -262,7 +262,27 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
   const useStateBrackets = stateOverridePct <= 0
 
   const years: OptimizerYear[] = probes.map((p) => {
-    const { pack } = packForYear(p.year)
+    const { pack: publishedPack } = packForYear(p.year)
+    // The ledger's rule, copied exactly: `limitScale` in simulate.ts is
+    // `year <= LATEST_PACK_YEAR ? 1 : inflFactorFrom(pack.year, year)`. Both
+    // halves matter. Below the latest pack the factor must be 1 -- `packForYear`
+    // hands a year earlier than every published pack the EARLIEST pack, so a
+    // bare `p.year - publishedPack.year` goes negative there and would deflate
+    // the LP's thresholds for a year the ledger prices at face value. Above it
+    // the factor must NOT be floored at 1: this is the LP's whole inflation
+    // path and `buildOptimizerModel` scales the IRMAA thresholds by it too, so a
+    // floor would freeze those under a deflation assumption as a side effect of
+    // a change about the rate tables. `indexFederalTaxPack` is the no-op at
+    // exactly 1, which is what a year with its own pack lands on here.
+    const inflationScale = p.year <= LATEST_PACK_YEAR ? 1 : Math.pow(1 + infl, p.year - publishedPack.year)
+    // The LP has to price a conversion the way the exact ledger will, so it gets
+    // the same indexed figures `computeFederalTax` uses for a stand-in year.
+    // Feeding it the raw pack-year brackets and deduction would over-tax late
+    // conversions in-solve and drive systematic under-conversion; scaling
+    // figures the statute does not index (the senior deduction, section 86 and
+    // section 1411 thresholds) would err the other way. `indexFederalTaxPack`
+    // draws that line once, for both engines.
+    const pack = indexFederalTaxPack(publishedPack, inflationScale)
     return {
       year: p.year,
       pack,
@@ -286,7 +306,7 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
           ? p.startInheritedTraditional / p.inheritedDistribution
           : null,
       peopleAged65Plus: p.peopleAged65Plus,
-      inflationScale: Math.pow(1 + infl, p.year - pack.year),
+      inflationScale,
       growth,
       stateRate,
       tradInflow: p.traditionalInflow,

@@ -6,7 +6,7 @@
  * inflate from the latest pack rather than failing on unpublished years.
  */
 
-import type { FilingStatus, ParameterPack } from './types.js'
+import type { FilingStatus, ParameterPack, PerStatus } from './types.js'
 import { year2026 } from './data/year2026.js'
 
 export { PARAMETER_PROVENANCE } from './provenance.js'
@@ -50,6 +50,87 @@ export function packForYear(year: number): PackLookup {
   if (exact) return { pack: exact, isStandIn: false }
   if (year > LATEST_PACK_YEAR) return { pack: packs[packs.length - 1]!, isStandIn: true }
   return { pack: packs[0]!, isStandIn: true }
+}
+
+/**
+ * The federal income-tax figures Congress adjusts for inflation every year,
+ * projected onto a year the published pack only stands in for.
+ *
+ * The projection runs in nominal dollars, so a year's wages, pensions and
+ * withdrawals all arrive inflated. Measuring that income against a frozen
+ * pack-year rate table is bracket creep the statute does not create: IRC
+ * 1(j)(3)(B) directs the Secretary to prescribe adjusted tables for every year
+ * after 2018, so the thresholds rise with the income. The same is true of every
+ * other figure scaled here, each under its own provision:
+ *
+ * - rate-bracket lower bounds -- IRC 1(j)(3)(B)
+ * - basic standard deduction -- IRC 63(c)(7)(B)(ii) (base year 2024)
+ * - age-65 addition -- IRC 63(c)(4), which reaches "subsection (f)" amounts
+ * - 15% and 20% capital-gain breakpoints -- IRC 1(j)(5)(C)
+ * - AMT exemption and its phase-out threshold -- IRC 55(d)(4)(B)
+ * - AMT 28%-rate threshold -- IRC 55(d)(3)(B)(i)
+ *
+ * The base years differ (2016, 2017, 2024, 2025, 2011) and so do the rounding
+ * steps (50 dollars, 100 dollars), but neither matters here: the published pack
+ * figure has already absorbed every adjustment through the pack year, so
+ * projecting forward is one multiplication for all of them. What is NOT
+ * reproduced is the statutory rounding, and the index is the plan's assumed
+ * general inflation rather than the C-CPI-U of 1(f)(3) -- the same two
+ * approximations `limitScale` already makes for contribution limits.
+ *
+ * Figures deliberately left alone, because no provision indexes them:
+ * the section 86 provisional-income thresholds, the section 1411 NIIT
+ * thresholds, the section 121 exclusion, the section 1211(b) ordinary offset,
+ * the section 151(d)(5)(C) senior deduction and its MAGI threshold, and the
+ * SALT cap (which follows the explicit 164(b)(7) schedule, not an index).
+ * Scaling any of those would be a new defect in the opposite direction.
+ *
+ * The scale runs both ways. A plan may assume negative inflation
+ * (`assumptions.inflationPct` is bounded only by `gt(-100)`), in which case the
+ * cumulative factor the caller hands in is below 1 and these figures come down
+ * with the price level. That is the statute's own direction: 1(f)(3)(A) floors
+ * the adjustment at zero only against the BASE year -- "the percentage (if any)
+ * by which the C-CPI-U for the preceding calendar year exceeds the CPI for
+ * calendar year 2016" -- so a year's amount can fall below the previous year's,
+ * it simply cannot fall below the printed statutory amount. Refusing to move
+ * down would freeze the thresholds while the income deflating against them
+ * shrinks, which is bracket creep run backwards and under-taxes the household.
+ * Only a non-finite or non-positive factor is ignored; a factor of exactly 1 --
+ * the default, and what a year with its own published pack gets -- returns the
+ * pack untouched.
+ */
+export function indexFederalTaxPack(pack: ParameterPack, inflationScale: number): ParameterPack {
+  if (!Number.isFinite(inflationScale) || inflationScale <= 0 || inflationScale === 1) return pack
+  const scale = inflationScale
+  const perStatus = (amounts: PerStatus<number>): PerStatus<number> => ({
+    single: amounts.single * scale,
+    marriedFilingJointly: amounts.marriedFilingJointly * scale,
+  })
+  const { federalTax, capitalGains } = pack
+  return {
+    ...pack,
+    federalTax: {
+      ...federalTax,
+      brackets: {
+        single: federalTax.brackets.single.map((b) => ({ ...b, lowerBound: b.lowerBound * scale })),
+        marriedFilingJointly: federalTax.brackets.marriedFilingJointly.map(
+          (b) => ({ ...b, lowerBound: b.lowerBound * scale }),
+        ),
+      },
+      standardDeduction: perStatus(federalTax.standardDeduction),
+      age65Addition: perStatus(federalTax.age65Addition),
+      amt: {
+        ...federalTax.amt,
+        exemption: perStatus(federalTax.amt.exemption),
+        exemptionPhaseOutStart: perStatus(federalTax.amt.exemptionPhaseOutStart),
+        rate28StartsAbove: federalTax.amt.rate28StartsAbove * scale,
+      },
+    },
+    capitalGains: {
+      rate15StartsAbove: perStatus(capitalGains.rate15StartsAbove),
+      rate20StartsAbove: perStatus(capitalGains.rate20StartsAbove),
+    },
+  }
 }
 
 /** RMD start age per SECURE 2.0. Pre-1951 cohorts already started under older rules. */
