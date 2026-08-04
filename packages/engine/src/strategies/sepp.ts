@@ -12,16 +12,28 @@
  *                     each year (varies with the balance).
  *   - 'amortization': payment fixed at the first SEPP year, amortizing that
  *                     year's balance over the life expectancy at the chosen
- *                     interest rate (IRS Notice 2022-6 allows up to 120% of the
- *                     federal mid-term AFR; we use a flat assumed rate).
+ *                     interest rate. IRS Notice 2022-6 section 3.02(c) permits
+ *                     any rate at or below the GREATER of 5% or 120% of the
+ *                     federal mid-term rate, so the flat 5% used here clears
+ *                     the ceiling in every rate environment. (The bare
+ *                     120%-of-mid-term cap with no 5% leg was the rule of Rev.
+ *                     Rul. 2002-62, which Notice 2022-6 modified and
+ *                     superseded; under it a flat 5% would have been
+ *                     impermissible in a low-rate year.)
  *
- * The life-expectancy divisor uses the repo's SSA period table
- * (`baselineRemainingYears`) as a documented proxy for the IRS Single Life
- * Table — close enough for a planning tool and avoids carrying a second table.
+ * The life-expectancy divisor is the Single Life Table of Treas. Reg.
+ * 1.401(a)(9)-9(b), carried in the parameter pack. Notice 2022-6 section
+ * 3.02(a) permits exactly three tables — the Uniform Lifetime Table in its
+ * Appendix A, that Single Life Table, and the Joint and Last Survivor Table of
+ * 1.401(a)(9)-9(d) — and Single Life is both the natural table for a
+ * single-life series and the shortest of the three, so it produces the smallest
+ * permitted payment. All three are unisex, which is why nothing here takes a
+ * sex: an SSA period table indexed by sex is not among them, and the divisor it
+ * produces is not a permitted number.
  */
 
-import type { Sex } from '../longevity/types.js'
-import { baselineRemainingYears } from '../longevity/ssaPeriod2022.js'
+import { singleLifeExpectancyYears } from '../params/index.js'
+import type { ParameterPack } from '../params/types.js'
 
 export type SeppMethod = 'rmd' | 'amortization'
 
@@ -45,14 +57,14 @@ export function seppActive(startAge: number, age: number): boolean {
  *                  be `startAge`; the result is fixed for the whole series.
  */
 export function seppAnnualAmount(
+  pack: ParameterPack,
   method: SeppMethod,
   balance: number,
   age: number,
-  sex: Sex,
   ratePct = SEPP_AMORTIZATION_RATE_PCT,
 ): number {
   if (balance <= 0) return 0
-  const lifeExpectancy = Math.max(1, baselineRemainingYears(age, sex))
+  const lifeExpectancy = singleLifeExpectancyYears(pack, age)
   if (method === 'rmd') return balance / lifeExpectancy
   // Amortization: level payment amortizing `balance` over `lifeExpectancy` years
   // at `ratePct`. With r = 0 this degenerates to balance ÷ years.

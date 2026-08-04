@@ -121,7 +121,27 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   // unpaid tax stays invested for the rest of the horizon.
   'coast-fire': { depletionYear: null, endingInvestable: 8_082_086.14, lifetimeTax: 1_716_725.39, lifetimeRoth: 0 },
   'barista-fire': { depletionYear: null, endingInvestable: 14_569_925.04, lifetimeTax: 2_091_401.98, lifetimeRoth: 0 },
-  'bridge-early-retirement': { depletionYear: null, endingInvestable: 11_857_432.95, lifetimeTax: 1_427_360.2, lifetimeRoth: 0 },
+  // bridge-early-retirement re-baselined 2026-08-04 for the Notice 2022-6
+  // section 3.02(a) correction. It is the one example carrying a 72(t) SEPP
+  // election, and its payment was sized from the engine's SSA period table
+  // rather than from one of the three tables the notice permits. At the
+  // election age of 45 the permitted Single Life divisor is 41.0 years against
+  // the SSA average of 35.285. Amortizing the same $1.2M IRA at 5% over the
+  // longer divisor drops the level payment from 73,062.64 to 69,386.75 a year,
+  // and the series runs 15 years (ages 45 through 59, 2026-2040), so about
+  // 55,138 less is forced out of the IRA during the bridge window. Nothing else
+  // in this example moves: it pays no early-withdrawal penalty in either
+  // baseline, because the SEPP alone covers the spend.
+  //
+  // Both directions follow from that and they are not in tension. Ending
+  // investable RISES 115,437.76: dollars not forced out early stay in a
+  // tax-deferred account and compound there for the rest of a 55-year horizon.
+  // Lifetime tax RISES 24,678.80 for the same reason, one step later: the
+  // income was deferred rather than avoided, so it is taxed on the way out of a
+  // larger balance instead of at ages 45-59. A smaller forced distribution
+  // buying more estate and more nominal lifetime tax is the expected shape for
+  // a household this far from depletion.
+  'bridge-early-retirement': { depletionYear: null, endingInvestable: 11_972_870.71, lifetimeTax: 1_452_039, lifetimeRoth: 0 },
   'lean-fat-fire': { depletionYear: null, endingInvestable: 43_545_918.82, lifetimeTax: 2_692_779.67, lifetimeRoth: 0 },
   'hsa-stealth-retirement': { depletionYear: null, endingInvestable: 4_484_178.89, lifetimeTax: 808_157.31, lifetimeRoth: 0 },
   'salary-growth-escalation': { depletionYear: null, endingInvestable: 46_295_269.76, lifetimeTax: 2_552_250.15, lifetimeRoth: 0 },

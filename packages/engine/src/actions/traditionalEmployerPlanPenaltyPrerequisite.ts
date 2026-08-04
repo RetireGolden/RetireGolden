@@ -373,6 +373,36 @@ function disabilityEvidence(
     QualifiedDisabilityEventEvidence | RejectedDisabilityStatusEvidence
 }
 
+/**
+ * IRC 72(t)(3)(B): a substantially equal periodic payment series drawn from an
+ * employer plan reaches the 72(t)(2)(A)(iv) exception only if it BEGINS AFTER
+ * the participant separates from service. Ordering those two events is the
+ * whole of the rule, so it is written once and both layers that need it call
+ * this.
+ *
+ * The ordinals are whatever the caller can actually prove the two events on,
+ * and both must be of the same kind. This module has civil dates from
+ * evidence. The annual projection has no separation date at all, so it orders
+ * the calendar year the series begins against the calendar year of separation
+ * — see the irc-72-t-3-B-sepp-separation-annual-proxy registry record for what
+ * that coarser ordinal does and does not establish.
+ *
+ * Strictly after, never on: an election dated the day of separation does not
+ * begin after it.
+ */
+export function seppSeriesBeginsAfterSeparation(
+  seriesBegins: string | number,
+  separation: string | number,
+): boolean {
+  if (typeof seriesBegins === 'number' && typeof separation === 'number') {
+    return seriesBegins > separation
+  }
+  if (typeof seriesBegins === 'string' && typeof separation === 'string') {
+    return seriesBegins > separation
+  }
+  throw new TypeError('SEPP separation ordering needs two ordinals of the same kind')
+}
+
 function seppAssessment(
   value: Readonly<TraditionalEmployerPlanSeppEvidence>,
   identity: EmployerPenaltyIdentity,
@@ -414,7 +444,7 @@ function seppAssessment(
     election.participantPersonId !== identity.participantPersonId ||
     election.sourceAccountId !== identity.sourceAccountId ||
     !nonblank(election.electionEvidenceId, 'Employer SEPP election evidence ID') ||
-    electionStartDate <= separationDate ||
+    !seppSeriesBeginsAfterSeparation(electionStartDate, separationDate) ||
     electionStartDate > identity.evaluationDate ||
     !Number.isSafeInteger(payment.scheduledPaymentSequence) ||
     payment.scheduledPaymentSequence < 1 ||

@@ -146,6 +146,14 @@ export interface ParameterPack {
   rmd: {
     /** IRS Uniform Lifetime Table (Pub 590-B, 2022+): age -> divisor. */
     uniformLifetimeTable: Record<number, number>
+    /**
+     * Single Life Table of Treas. Reg. 1.401(a)(9)-9(b): age -> life expectancy
+     * in years, ages 0 through 120. One of the three tables IRS Notice 2022-6
+     * section 3.02(a) permits for sizing a 72(t) substantially equal periodic
+     * payment, and the shortest of the three, so it yields the smallest
+     * permitted payment.
+     */
+    singleLifeTable: Record<number, number>
     /** Annual QCD exclusion limit. */
     qcdAnnualLimit: number
   }
