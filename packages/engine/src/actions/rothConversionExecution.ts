@@ -62,9 +62,10 @@ export interface RothConversionStagedAllocationExecutionEvidence {
  * `nontaxableConvertedAmount` is a literal zero, not a widened number. This
  * executor commits only against a proven-zero aggregated-IRA basis numerator,
  * where IRC 408A(d)(3)(A) and the Form 8606 line-8 computation make the whole
- * converted gross includible. A nonzero numerator needs the year's complete
- * line-8 allocation and is refused rather than approximated, so no committed
- * allocation can carry a nonzero basis return.
+ * converted gross includible. A nonzero numerator needs the year's Form 8606
+ * line-10 ratio, whose denominator this call site cannot see, and is refused
+ * rather than approximated — so no committed allocation can carry a nonzero
+ * basis return.
  */
 export interface RothConversionExecutedAllocationExecutionEvidence {
   allocationId: string
@@ -527,14 +528,28 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
     // shape. IRC 408(d)(2) makes the numerator a single owner-wide figure over
     // every non-Roth IRA the owner holds; when bound evidence proves that
     // figure is zero, 408A(d)(3)(A) leaves the entire converted gross
-    // includible and there is no allocation left to perform. A positive
-    // numerator has to be split across the year's complete line-7 and line-8
-    // gross before any single conversion's character is known, and that
-    // allocation does not exist here — so it keeps the reason and moves
-    // nothing rather than converting at an assumed character. An employer-plan
-    // source keeps it too: its pre-tax balance is outside the 408(d)(2)
-    // aggregation this evidence describes, so the evidence does not answer for
-    // it.
+    // includible and there is no allocation left to perform.
+    //
+    // A positive numerator is refused, and the missing piece is narrower than
+    // it looks. It is NOT the line-8 entry set: the simulator forces the
+    // aggregate conversion strategy off for any year that carries a named
+    // request, so this batch is the year's whole line 8 and nothing else can
+    // join it. What is missing is the line-10 ratio to apply to it. Its
+    // denominator is Form 8606 line 6 — the aggregate December 31 value of
+    // every non-Roth IRA the owner holds — plus the year's complete line-7 and
+    // line-8 gross. This executor runs mid-year, before the growth pass and
+    // before the year's need-based withdrawals are sized, so line 6 does not
+    // exist yet at this call site and no figure that does exist here is a
+    // lawful substitute for it. The engine computes that ratio in exactly one
+    // place, `internal/ownedNonRothIraContiguousReplay.ts`, from sealed
+    // post-growth year-end balances; deriving a second, mid-year ratio here
+    // would answer the same owner-year question differently from the one the
+    // annual settlement publishes. So this keeps the reason and moves nothing
+    // rather than converting at an assumed character.
+    //
+    // An employer-plan source keeps the reason too: its pre-tax balance is
+    // outside the 408(d)(2) aggregation this evidence describes, so the
+    // evidence does not answer for it.
     const ownedIraSources = request.allocations.every((allocation) => {
       const source = accounts.get(allocation.sourceAccountId)
       return source !== undefined && isAggregatedIra(source)
