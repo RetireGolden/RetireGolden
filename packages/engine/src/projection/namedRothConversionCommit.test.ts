@@ -241,6 +241,77 @@ describe('committed named Roth conversion', () => {
     expect(year.rothConversion).toBeCloseTo(0, 6)
   })
 
+  // The two below pin the invariant a nonzero-basis conversion will have to
+  // rest on. Form 8606 line 8 is a whole-year figure: an allocation across it
+  // is only lawful if the entries are every conversion the owner made that
+  // year. In this engine two authorities can convert — the aggregate strategy
+  // and the exact-cent executor — so the entry set is knowable only because a
+  // named request switches the aggregate one off. That suppression is stated
+  // in one comment in `simulate.ts` and asserted nowhere, and the whole
+  // completeness argument collapses without it.
+  it('suppresses the aggregate schedule, leaving the named batch as the whole of line 8', () => {
+    const withAggregateOnly = committedPlan()
+    withAggregateOnly.strategies.retirementActions = []
+    withAggregateOnly.strategies.rothConversion = {
+      mode: 'manual',
+      conversions: [{ year: TAX_YEAR, amount: 25_000 }],
+    }
+    // The control: absent the named request this schedule really does convert.
+    // Without it the assertion below would pass on a plan that was never going
+    // to convert anything anyway.
+    expect(project(withAggregateOnly)[0]!.rothConversion).toBeCloseTo(25_000, 6)
+
+    const plan = committedPlan()
+    plan.strategies.rothConversion = {
+      mode: 'manual',
+      conversions: [{ year: TAX_YEAR, amount: 25_000 }],
+    }
+    const years = project(plan)
+    const year = years[0]!
+
+    // 10,000 and not 35,000: the named request is the year's only conversion
+    // authority, so no aggregate sweep ran on top of the committed one.
+    expect(year.rothConversionActionExecution?.committed).toBe(true)
+    expect(year.rothConversion).toBeCloseTo(10_000, 6)
+    expect(year.balances['ira-a']).toBeCloseTo(90_000, 6)
+
+    // Said again against the replay's own source of truth: every line-8
+    // application for the year, not just the published dollar total. A
+    // `legacyRothConversion` entry here would mean the executor's batch was
+    // not the complete line-8 set.
+    const series = validateOwnedNonRothIraRuntimeSourceSeries(
+      validatePlan(plan), TAX_YEAR, years,
+    )
+    if (series.status !== 'ownedNonRothIraRuntimeSourceSeriesComplete') {
+      throw new Error(`source series blocked: ${JSON.stringify(series.issues)}`)
+    }
+    expect(series.years[0]!.ownerSources[0]!.applications
+      .filter((entry) => entry.form8606Line === 'line8')
+      .map((entry) => entry.occurrenceKind))
+      .toEqual(['namedRothConversion'])
+  })
+
+  it('does not let the aggregate schedule convert behind a refused nonzero-basis request', () => {
+    const plan = committedPlan({ nondeductibleBasis: 20_000 })
+    plan.strategies.rothConversion = {
+      mode: 'manual',
+      conversions: [{ year: TAX_YEAR, amount: 25_000 }],
+    }
+    const year = project(plan)[0]!
+
+    // The refusal has to be the year's answer, not a redirection. If the
+    // aggregate sweep filled in behind it, the household would get a
+    // conversion it never asked for, characterized by the plan-dollar pro-rata
+    // fraction this executor just refused to assume.
+    expect(year.rothConversionActionExecution?.committed).toBe(false)
+    expect(conversionEvidence(year).reasons.map((reason) => reason.code))
+      .toContain('conversion-basis-evidence-missing')
+    expect(year.rothConversion).toBeCloseTo(0, 6)
+    expect(year.balances['ira-a']).toBeCloseTo(100_000, 6)
+    expect(year.balances['roth-first']).toBeCloseTo(0, 6)
+    expect(year.balances['roth-second']).toBeCloseTo(0, 6)
+  })
+
   it('starts the 408A(d)(3)(F) clock with the whole gross exposed', () => {
     const plan = committedPlan()
     // Leave the Roth as the only place next year's spending can come from, so
