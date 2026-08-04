@@ -263,7 +263,12 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
 
   const years: OptimizerYear[] = probes.map((p) => {
     const { pack: publishedPack } = packForYear(p.year)
-    const inflationScale = Math.max(1, Math.pow(1 + infl, p.year - publishedPack.year))
+    // Unclamped on purpose. This one factor is the LP's whole inflation path:
+    // `buildOptimizerModel` also scales the IRMAA thresholds by it, so flooring
+    // it at 1 would freeze those under a deflation assumption as a side effect
+    // of a change about the rate tables. `indexFederalTaxPack` is the no-op at
+    // exactly 1, and a year with its own pack lands on exactly 1 here.
+    const inflationScale = Math.pow(1 + infl, p.year - publishedPack.year)
     // The LP has to price a conversion the way the exact ledger will, so it gets
     // the same indexed figures `computeFederalTax` uses for a stand-in year.
     // Feeding it the raw pack-year brackets and deduction would over-tax late

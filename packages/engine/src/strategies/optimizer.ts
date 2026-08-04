@@ -720,7 +720,9 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
  *
  * Do NOT re-scale in this function: the pack it reads is already projected, and
  * multiplying twice is the same class of error as not multiplying at all.
- * IRMAA thresholds are scaled separately from `inflationScale`. The OBBBA
+ * IRMAA thresholds do not come from the projected pack at all: `buildOptimizerModel`
+ * multiplies them by `y.inflationScale` itself, which is why that factor is still
+ * carried on `OptimizerYear` alongside the already-projected pack. The OBBBA
  * senior deduction is handled in the model builder (it needs the MAGI-dependent
  * phase-out) and is NOT indexed — IRC 151(d)(5)(C) sets a flat 6,000 dollars
  * with no cost-of-living provision.

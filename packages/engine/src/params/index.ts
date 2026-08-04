@@ -84,9 +84,23 @@ export function packForYear(year: number): PackLookup {
  * the section 151(d)(5)(C) senior deduction and its MAGI threshold, and the
  * SALT cap (which follows the explicit 164(b)(7) schedule, not an index).
  * Scaling any of those would be a new defect in the opposite direction.
+ *
+ * The scale runs both ways. A plan may assume negative inflation
+ * (`assumptions.inflationPct` is bounded only by `gt(-100)`), in which case the
+ * cumulative factor the caller hands in is below 1 and these figures come down
+ * with the price level. That is the statute's own direction: 1(f)(3)(A) floors
+ * the adjustment at zero only against the BASE year -- "the percentage (if any)
+ * by which the C-CPI-U for the preceding calendar year exceeds the CPI for
+ * calendar year 2016" -- so a year's amount can fall below the previous year's,
+ * it simply cannot fall below the printed statutory amount. Refusing to move
+ * down would freeze the thresholds while the income deflating against them
+ * shrinks, which is bracket creep run backwards and under-taxes the household.
+ * Only a non-finite or non-positive factor is ignored; a factor of exactly 1 --
+ * the default, and what a year with its own published pack gets -- returns the
+ * pack untouched.
  */
 export function indexFederalTaxPack(pack: ParameterPack, inflationScale: number): ParameterPack {
-  if (!Number.isFinite(inflationScale) || inflationScale <= 1) return pack
+  if (!Number.isFinite(inflationScale) || inflationScale <= 0 || inflationScale === 1) return pack
   const scale = inflationScale
   const perStatus = (amounts: PerStatus<number>): PerStatus<number> => ({
     single: amounts.single * scale,

@@ -1027,4 +1027,43 @@ describe('indexed federal figures in a stand-in year', () => {
     expect(d.itemized).toBe(true)
     expect(d.deduction).toBeCloseTo(40_000, 6) // 10,000 capped SALT + 30,000 interest
   })
+
+  // A plan may assume negative inflation, and the projection deflates its
+  // income when it does. IRC 1(f)(3)(A) floors the adjustment at zero only
+  // against the base year, so an indexed amount can fall below the prior year's
+  // -- it just cannot fall below the printed statutory figure. Freezing the
+  // thresholds while the income shrinks would be bracket creep run backwards.
+  const HALVED = 0.5
+
+  it('carries the indexed figures DOWN when the plan assumes deflation', () => {
+    // At half the price level the 2026 single figures give a 8,050 deduction
+    // and bands of 6,200 / 25,200. 33,250 of wages -> taxable 25,200:
+    //   indexed       10%x6,200 + 12%x19,000  = 2,900
+    //   frozen        16,100 deduction, taxable 17,150
+    //                 -> 10%x12,400 + 12%x4,750 = 1,810 (under-taxed)
+    const d = computeFederalTax(input({
+      year: PROJECTED_YEAR,
+      ordinaryIncome: 33_250,
+      inflationScale: HALVED,
+    }))
+
+    expect(d.deduction).toBeCloseTo(8_050, 6)
+    expect(d.taxableIncome).toBeCloseTo(25_200, 6)
+    expect(d.ordinaryTax).toBeCloseTo(2_900, 6)
+    expect(d.ordinaryTax).not.toBeCloseTo(1_810, 6)
+  })
+
+  it('does not drag the unindexed figures down with a deflating scale either', () => {
+    // The section 1411 threshold is 200,000 single under every reading. Halving
+    // it to 100,000 would double the NIIT line; the guard has to hold in both
+    // directions, not just against a scale above 1.
+    const d = computeFederalTax(input({
+      year: PROJECTED_YEAR,
+      capitalGains: 300_000,
+      inflationScale: HALVED,
+    }))
+
+    expect(d.niit).toBeCloseTo(3_800, 6)
+    expect(d.niit).not.toBeCloseTo(7_600, 6)
+  })
 })
