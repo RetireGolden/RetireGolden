@@ -762,7 +762,10 @@ describe('evaluateCandidate', () => {
     const diagnostics = evaluation.diagnostics.join(' ')
     expect(evaluation.recommendationState).toBe('diagnostic')
     expect(diagnostics).toContain(request.actionId)
-    expect(diagnostics).toContain('conversion-basis-evidence-missing')
+    // Not `conversion-basis-evidence-missing`: this fixture's owner has no
+    // nondeductible basis, so the numerator is proven zero and that reason is
+    // gone. What still blocks is the preflight's unstated IRA subtype.
+    expect(diagnostics).toContain('conversion-ira-subtype-unknown')
     expect(diagnostics).not.toMatch(/exactly one matching/i)
     expect(evaluation.candidateResult.years.flatMap((year): readonly {
       actionId: string

@@ -1268,12 +1268,28 @@ function deepFreeze<T>(value: T): Readonly<T> {
   return value as Readonly<T>
 }
 
+/**
+ * The conversion prerequisites the executor settles for the whole owner-wide
+ * action group, before any single source balance is consulted. None of them
+ * carries an account or allocation identifier, because none of them is about
+ * one allocation.
+ */
+const ownerWideConversionPrerequisiteCodes: ReadonlySet<ActionReason['code']> =
+  new Set<ActionReason['code']>([
+    'conversion-basis-evidence-missing',
+    'conversion-rmd-reserve-unavailable',
+    'conversion-tax-funding-evidence-unsupported',
+    'conversion-principal-withholding-unsupported',
+    'conversion-date-missing',
+    'conversion-date-outside-action-year',
+  ])
+
 function isStagedNonmovingConversionRecord(
   record: Omit<AnnualRetirementActionRecord, 'executorSource'>,
 ): boolean {
   if (
     record.kind !== 'rothConversion' ||
-    record.outcome !== 'unsupported' ||
+    (record.outcome !== 'unsupported' && record.outcome !== 'refused') ||
     record.readiness !== 'nonActionable' ||
     record.executedAmount !== 0 ||
     record.unexecutedAmount !== record.requestedAmount ||
@@ -1283,20 +1299,23 @@ function isStagedNonmovingConversionRecord(
       allocation.executedAmount !== 0 ||
       allocation.unexecutedAmount !== allocation.requestedAmount)
   ) return false
-  const reasonCodes = new Set(record.reasons.map((reason) => reason.code))
-  // Neither `conversion-rmd-reserve-unavailable` nor
-  // `conversion-tax-funding-evidence-unsupported` is required here. Both have
-  // stopped being unconditional: the owner IRA-RMD-satisfaction channel drops
-  // the reserve reason once the owner's aggregated IRA RMD sum was distributed
-  // or was zero, and a conversion that expects no tax funding, or funds it from
-  // attested external cash, carries no funding reason at all — while
-  // withholding from converted principal carries a different code entirely.
-  // Requiring either here would fail exactly the records those channels are
-  // meant to clear. `conversion-basis-evidence-missing` is the one code still
-  // emitted on every well-formed staged conversion, and the `rothConversion`
-  // guard above plus the zero-movement checks keep the bypass from reaching any
-  // other action kind or any record that moved money.
-  return reasonCodes.has('conversion-basis-evidence-missing') &&
+  // No single code can be named here any more. None of the owner-wide
+  // conversion prerequisites is unconditional: the RMD-satisfaction channel
+  // drops its reason once the owner's aggregated sum was distributed or was
+  // zero; a conversion expecting no tax funding, or funding it from attested
+  // external cash, carries no funding reason at all; and the basis pool clears
+  // outright when the owner's numerator is proven zero. A staged conversion can
+  // be held back by any one of them alone, and the last remaining blocker is as
+  // often `refused` as `unsupported`.
+  //
+  // What the bypass still requires is that at least one of them be the reason.
+  // Those are the prerequisites the executor answers before it looks at any
+  // source balance, which is exactly what makes a physical-balance reason
+  // alongside them a report rather than a phase error. A record blocked only by
+  // allocation-bound reasons is not in that regime and gets no bypass.
+  const stagingPrerequisite = record.reasons.some((reason) =>
+    ownerWideConversionPrerequisiteCodes.has(reason.code))
+  return stagingPrerequisite &&
     record.reasons.every((reason) =>
       reason.outcome === 'unsupported' ||
       reason.outcome === 'refused' ||

@@ -65,6 +65,7 @@ import {
   isSpendableInYear,
   traditionalWithdrawalPenaltyRate,
   type NonpersistedActionPersonAliveEvidence,
+  type NonpersistedOwnerAggregatedIraBasisEvidence,
   type NonpersistedOwnerIraRmdSatisfactionEvidence,
 } from '../strategies/accountEligibility.js'
 import { openIraProRataYear, splitIraDistribution, type IraProRataYear } from '../strategies/iraBasis.js'
@@ -3038,6 +3039,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       : currentYearNonConversionActions
     let retirementActionExecution: ExecuteOrdinaryWithdrawalsResult | undefined
     let rothConversionActionExecution: ExecuteRothConversionsResult | undefined
+    /**
+     * Dollars a named request actually converted this year. Held apart from
+     * the aggregate strategy's `rothConversion` because the two are produced by
+     * different authorities and reconciled against different evidence; they are
+     * summed only where the year publishes one conversion figure.
+     */
+    let namedRothConversionExecuted = 0
     let retirementActionCash = 0
     let retirementActionEquityCompensation = 0
     let retirementActionOrdinaryIncome = 0
@@ -3403,13 +3411,167 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             return []
           }
         })
+      // The owner's aggregated-IRA nondeductible basis, published the same way
+      // and for the same reason as the RMD outcome above: being downstream of
+      // the statement that seeded `iraBasisByOwner` is not evidence about the
+      // owner's basis, and the executor must be able to tell an owner whose
+      // numerator is genuinely zero from one whose basis it simply cannot see.
+      // `iraBasisByOwner` holds only owners with a positive figure, so an
+      // absent entry is the zero this is allowed to prove.
+      const ownerAggregatedIraBasisEvidence = currentYearConversionActions
+        .flatMap((request): NonpersistedOwnerAggregatedIraBasisEvidence[] => {
+          try {
+            return [{
+              evidenceId: `projection-owner-aggregated-ira-basis:${JSON.stringify([
+                request.actionId,
+                request.personId,
+                year,
+                request.executionDate ?? null,
+              ])}`,
+              actionId: request.actionId,
+              personId: request.personId,
+              actionYear: year,
+              actionDate: request.executionDate ?? null,
+              basisAmount: planDollarsToLedgerCents(
+                iraBasisByOwner.get(request.personId) ?? 0,
+              ),
+            }]
+          } catch {
+            return []
+          }
+        })
       rothConversionActionExecution = executeRothConversions({
         year,
         plan,
         requests: currentYearConversionActions,
         openingBalances,
-        runtimeEvidence: { personAliveEvidence, ownerIraRmdSatisfactionEvidence },
+        runtimeEvidence: {
+          personAliveEvidence,
+          ownerIraRmdSatisfactionEvidence,
+          ownerAggregatedIraBasisEvidence,
+        },
       })
+
+      if (rothConversionActionExecution.committed) {
+        // Debits for every committed request first, then the destination
+        // credits. The two simulator phases are ordered that way, and within
+        // the debit phase the applications must retain controlling Plan
+        // account order, so the moves are sorted rather than left in whichever
+        // order the requests happened to arrive.
+        const balanceByAccountId = new Map(
+          balances.map((state) => [state.account.id, state] as const),
+        )
+        const accountOrder = new Map(
+          plan.accounts.map((account, index) => [account.id, index] as const),
+        )
+        const committedConversions = rothConversionActionExecution.evidence
+          .flatMap((evidence) => evidence.outcome === 'executed'
+            ? evidence.allocations.map((allocation) => ({
+              actionId: evidence.actionId,
+              allocationId: allocation.allocationId,
+              sourceAccountId: allocation.sourceAccountId,
+              destinationRothAccountId: evidence.destinationRothAccountId,
+              amount: ledgerCentsToPlanDollars(asUsdCents(allocation.executedAmount)),
+            }))
+            : [])
+          .sort((left, right) =>
+            (accountOrder.get(left.sourceAccountId) ?? Number.MAX_SAFE_INTEGER) -
+              (accountOrder.get(right.sourceAccountId) ?? Number.MAX_SAFE_INTEGER) ||
+            compareUtf16CodeUnits(left.allocationId, right.allocationId))
+        const debitKeysByActionId = new Map<string, string[]>()
+        const debitOwnersByActionId = new Map<string, (string | null)[]>()
+        for (const move of committedConversions) {
+          const state = balanceByAccountId.get(move.sourceAccountId)
+          if (state === undefined) {
+            throw new Error('Committed conversion source left the balance ledger')
+          }
+          const kind = 'namedRothConversion' as const
+          // Five members. The action and allocation are what make this key
+          // incapable of colliding with an aggregate conversion that merely
+          // shares a source and a destination.
+          const producerOccurrenceKey = runtimeOccurrenceKey(
+            kind,
+            move.sourceAccountId,
+            move.destinationRothAccountId,
+            move.actionId,
+            move.allocationId,
+          )
+          debitKeysByActionId.set(move.actionId, [
+            ...(debitKeysByActionId.get(move.actionId) ?? []),
+            producerOccurrenceKey,
+          ])
+          debitOwnersByActionId.set(move.actionId, [
+            ...(debitOwnersByActionId.get(move.actionId) ?? []),
+            state.account.ownerPersonId,
+          ])
+          const sourceBalanceBefore = state.balance
+          state.balance = sourceBalanceBefore - move.amount
+          recordAnnualRetirementRuntimeOccurrence({
+            producerOccurrenceKey,
+            kind,
+            grossAmountPlanDollars: move.amount,
+            ownerPersonId: state.account.ownerPersonId,
+            sourceAccountId: state.account.id,
+            executionDate: null,
+            executionSequence: null,
+            movementAuthorityId: null,
+          })
+          if (isAggregatedIra(state.account)) {
+            recordAnnualRetirementRuntimeApplication({
+              applicationKind: 'debit',
+              producerOccurrenceKey,
+              simulatorPhase: 'namedRothConversionDebit',
+              ownerPersonId: state.account.ownerPersonId,
+              sourceAccountId: state.account.id,
+              sourceBalanceBeforePlanDollars: sourceBalanceBefore,
+              appliedAmountPlanDollars: move.amount,
+              sourceBalanceAfterPlanDollars: state.balance,
+            })
+          }
+        }
+        for (const actionId of [...debitKeysByActionId.keys()].sort(compareUtf16CodeUnits)) {
+          const moves = committedConversions.filter((move) => move.actionId === actionId)
+          const destinationId = moves[0]!.destinationRothAccountId
+          const destination = balanceByAccountId.get(destinationId)
+          if (destination === undefined || destination.account.type !== 'roth') {
+            throw new Error('Committed conversion destination is not a Roth account')
+          }
+          const credited = moves.reduce((sum, move) => sum + move.amount, 0)
+          const destinationBalanceBefore = destination.balance
+          destination.balance = destinationBalanceBefore + credited
+          recordAnnualRetirementRuntimeApplication({
+            applicationKind: 'namedRothDestinationCredit',
+            simulatorPhase: 'namedRothConversionDestinationCredit',
+            producerOccurrenceKey: null,
+            ownerPersonId: null,
+            sourceAccountId: null,
+            sourceBalanceBeforePlanDollars: null,
+            sourceBalanceAfterPlanDollars: null,
+            actionId,
+            producerOccurrenceKeys: debitKeysByActionId.get(actionId)!,
+            sourceOwnerPersonIds: debitOwnersByActionId.get(actionId)!,
+            destinationRothAccountId: destination.account.id,
+            destinationOwnerPersonId: destination.account.ownerPersonId,
+            destinationBalanceBeforePlanDollars: destinationBalanceBefore,
+            destinationCreditedAmountPlanDollars: credited,
+            destinationBalanceAfterPlanDollars: destination.balance,
+          })
+          // IRC 408A(d)(3)(F) runs a 5-taxable-year clock from the year of
+          // this conversion, and (F)(ii) limits the recapture to the portion
+          // that was includible. The executor commits only at a proven-zero
+          // basis numerator, so the whole layer is includible and the whole
+          // layer is exposed.
+          const rb = rothBasis.get(rothPoolKey(destination.account))
+          if (rb) {
+            rb.conversionLayers.push({
+              year,
+              amount: credited,
+              taxableAmount: credited,
+            })
+          }
+          namedRothConversionExecuted += credited
+        }
+      }
     }
 
     // --- Roth conversions (after RMDs — RMDs must be satisfied first) -------
@@ -3825,9 +3987,22 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
     }
 
+    // The year converts by at most one authority: `rc.mode` is forced to
+    // 'none' above whenever a named request exists, so the aggregate strategy
+    // never sizes a second conversion on top of a committed one. These sum the
+    // two anyway rather than assuming that, because the published figure has to
+    // be the year's conversions and not whichever route happened to run.
+    const totalRothConversion = rothConversion + namedRothConversionExecuted
+    // A named conversion commits only at a proven-zero basis numerator, so its
+    // whole gross is includible under IRC 408A(d)(3)(A) and none of it is
+    // netted against `conversionNontaxable`, which accumulated the aggregate
+    // pass's pro-rata basis return alone.
+    const totalRothConversionTaxable =
+      (rothConversion - conversionNontaxable) + namedRothConversionExecuted
+
     // --- fixed-point tax / withdrawal iteration ----------------------------
     // Only the taxable (post-pro-rata) part of a conversion is ordinary income.
-    const ordinaryBase = incomeBeforeConversion + rothConversion - conversionNontaxable
+    const ordinaryBase = incomeBeforeConversion + totalRothConversionTaxable
 
     // --- HECM coordinated draws (annuity-pension-and-home-equity, step 4) ---
     // Pfau's coordinated strategy: in the year after the portfolio actually
@@ -4818,20 +4993,20 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           optimizerCapitalGainsBase +
           (rmdTotal - rmdNontaxable) +
           inheritedTotal +
-          (rothConversion - conversionNontaxable) +
+          totalRothConversionTaxable +
           withdrawalPlan.byCategory.traditional -
           iraNontaxableFinal,
         incumbentTaxableWithdrawal: withdrawalPlan.byCategory.taxable,
         acaModeledAllowablePtc: yearAcaResult?.modeledAllowablePtc ?? null,
         acaCliffState: yearAcaResult?.cliffState ?? null,
-        incumbentRothConversion: rothConversion,
+        incumbentRothConversion: totalRothConversion,
         rothConversionTaxableFraction:
-          rothConversion > 0
+          totalRothConversion > 0
             ? Math.min(
               1,
               Math.max(
                 0,
-                (rothConversion - conversionNontaxable) / rothConversion,
+                totalRothConversionTaxable / totalRothConversion,
               ),
             )
             : remainingConvertibleGross > 0
@@ -5285,7 +5460,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       sepp: seppTotal,
       inheritedDistribution: inheritedTotal,
       qcd,
-      rothConversion,
+      rothConversion: totalRothConversion,
       retirementRuntimeSource,
       retirementRuntimeApplicationSource,
       ownedNonRothIraPostGrowthSource,
