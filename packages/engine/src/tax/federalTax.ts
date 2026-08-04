@@ -20,6 +20,15 @@
  *      either branch per §56(b)(1)(D)), AMT exemption/phaseout, and
  *      preferential-rate-aware tentative minimum tax.
  *
+ * Every figure is read from the year's parameter pack. For a year no pack has
+ * been published for, the caller supplies `inflationScale` and the annually
+ * indexed figures -- rate brackets, standard deduction and age-65 addition,
+ * capital-gain breakpoints, AMT exemption/phase-out/28% threshold -- are
+ * carried forward with it (`indexFederalTaxPack`). The unindexed ones are not:
+ * the section 86 provisional-income tiers and the section 1411 NIIT thresholds
+ * stay put by design, which is why more of a benefit becomes taxable and more
+ * income meets NIIT as a plan runs on.
+ *
  * Out of scope here (see DOCS/features/taxes.md): credits, full Form 6251
  * adjustments, the rest of Schedule A and the OBBBA high-income SALT
  * phase-out, early-withdrawal penalties (projection-level), IRMAA
@@ -28,7 +37,7 @@
  * @see DOCS/domain/domain-rules-reference.md §§1–3
  */
 
-import { packForYear, standardDeduction } from '../params/index.js'
+import { indexFederalTaxPack, packForYear, standardDeduction } from '../params/index.js'
 import type { FilingStatus, ParameterPack, TaxBracket } from '../params/types.js'
 import { taxParameterFilingStatus, type TaxCalculator, type TaxYearInput } from '../projection/types.js'
 
@@ -345,7 +354,12 @@ export function computeFederalTax(input: TaxYearInput): FederalTaxDetail {
   const gains = Math.max(0, netCapital)
   const qualifiedDividends = Math.max(0, input.qualifiedDividends ?? 0)
   const ss = Math.max(0, input.ssBenefits)
-  const { pack, isStandIn } = packForYear(year)
+  const { pack: publishedPack, isStandIn } = packForYear(year)
+  // A stand-in pack carries the figures as published for ITS year. The income
+  // arriving here is nominal for `year`, so the annually-indexed thresholds have
+  // to be carried forward with it; `indexFederalTaxPack` is a no-op at scale 1
+  // and leaves the statutorily unindexed figures alone at any scale.
+  const pack = indexFederalTaxPack(publishedPack, input.inflationScale ?? 1)
 
   const agiExcludingSs = ordinary + netCapital + qualifiedDividends // a net capital loss can drive this below zero
   const taxableSs = taxableSocialSecurity(
