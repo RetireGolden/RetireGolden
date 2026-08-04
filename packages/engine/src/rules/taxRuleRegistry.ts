@@ -624,7 +624,7 @@ const registry = {
       citation: 'IRC 170(b)(1)(G)(i)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
       quotedText:
-        'any contribution of cash to an organization described in subparagraph (A) shall be allowed as a deduction under subsection (a) to the extent that the aggregate of such contributions does not exceed the excess of- (I) 60 percent of the taxpayer contribution base for the taxable year, over (II) the aggregate amount of contributions taken into account under subparagraph (A) for such taxable year.',
+        'For taxable years beginning after December 31, 2017, any contribution of cash to an organization described in subparagraph (A) shall be allowed as a deduction under subsection (a) to the extent that the aggregate of such contributions does not exceed the excess of- (I) 60 percent of the taxpayer contribution base for the taxable year, over (II) the aggregate amount of contributions taken into account under subparagraph (A) for such taxable year.',
     }, {
       kind: 'statute',
       citation: 'IRC 170(b)(1)(G)(iii)',
@@ -635,7 +635,7 @@ const registry = {
     volatility: 'staticStatute',
     effectiveFrom: 2018,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts'],
   },
 
