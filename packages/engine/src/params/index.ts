@@ -196,18 +196,51 @@ export function hecmPrincipalLimitFactorPct(pack: ParameterPack, ageAtOpen: numb
 }
 
 /**
- * The MAGI floor for one IRMAA tier in a premium year, where `thresholdScale`
- * carries the pack-year figure forward to that year.
+ * A premium year together with the inflation path used to reach it.
  *
- * 42 USC 1395r(i)(5)(A) indexes every dollar amount in the paragraph (3) table
- * to consumer prices, but (i)(5)(C)(i) takes the $500,000 amounts back out of
- * that adjustment, and (i)(5)(C)(ii) begins indexing them only for calendar
- * years after 2027, against an August 2026 base rather than the August 2006
- * base the other rows use. The joint figure rides along because (i)(3)(C)(ii)
- * sets the last row at 150 percent of the individual amount rather than twice
- * it, which is why the pack carries 500,000 and 750,000 where every lower row
- * is an exact double. So the top row holds still while the rows beneath it
- * move, and it must not take the caller's one scale factor.
+ * The two travel as one value because the IRMAA table does not move as one
+ * table: the top row is indexed from a different base year than the rows
+ * beneath it, so a bare scale factor cannot say what it is a scale *to*, and a
+ * caller that hands over only a factor has already lost the information the
+ * carve-out turns on.
+ */
+export interface IrmaaThresholdYear {
+  /** The premium year the thresholds are being read for. */
+  readonly premiumYear: number
+  /**
+   * Cumulative general inflation from the pack year to `year`. Must return 1
+   * for any year at or before the pack year.
+   */
+  readonly inflationFactorToYear: (year: number) => number
+}
+
+/**
+ * Last premium year for which 42 USC 1395r(i)(5)(C)(i) holds the top row still.
+ * Indexing resumes for calendar years after this one under (i)(5)(C)(ii).
+ */
+export const IRMAA_TOP_TIER_FROZEN_THROUGH_YEAR = 2027
+
+/** The August base period (i)(5)(C)(ii) measures the resumed adjustment from. */
+const IRMAA_TOP_TIER_RESUMED_BASE_YEAR = 2026
+
+/**
+ * The MAGI floor for one IRMAA tier in a premium year.
+ *
+ * 42 USC 1395r(i)(5)(A) indexes every dollar amount in the paragraph (2) or (3)
+ * tables to consumer prices measured against August 2006, but it is expressly
+ * subject to (i)(5)(C), which carves out the $500,000 amounts twice over.
+ * (i)(5)(C)(i) removes them from that adjustment outright, and (i)(5)(C)(ii)
+ * brings them back only for calendar years after 2027, measured against August
+ * 2026 rather than August 2006. Because the August of the preceding calendar
+ * year is what both provisions read, an August 2026 base is exactly one year
+ * behind the general one: the resumed factor is the general factor evaluated a
+ * year earlier. The carve-out reaches only the $500,000 amounts, not paragraph
+ * (3) at large, so the four rows beneath the top one never stop indexing.
+ *
+ * The joint figure follows the individual one because (i)(3)(C)(ii) sets the
+ * last row at 150 percent of the individual amount rather than twice it, which
+ * is why the pack carries 500,000 and 750,000 where every lower row is an exact
+ * double.
  *
  * @see tax rule `usc-42-1395r-i-5-C-top-irmaa-threshold-frozen`
  */
@@ -215,22 +248,42 @@ export function irmaaTierThreshold(
   pack: ParameterPack,
   tierIndex: number,
   filingStatus: FilingStatus,
-  thresholdScale = 1,
+  at?: IrmaaThresholdYear,
 ): number {
   const magiOver = pack.medicare.irmaaTiers[tierIndex]!.magiOver[filingStatus]
+  if (at === undefined) return magiOver
+
   const isTopTier = tierIndex === pack.medicare.irmaaTiers.length - 1
-  return isTopTier ? magiOver : magiOver * thresholdScale
+  // Every row but the last indexes under (i)(5)(A) without interruption.
+  if (!isTopTier || pack.year > IRMAA_TOP_TIER_FROZEN_THROUGH_YEAR) {
+    // Once a published pack is itself post-freeze its top figure already
+    // carries the resumed adjustment through its own year, so from there the
+    // row indexes exactly like the others.
+    return magiOver * at.inflationFactorToYear(at.premiumYear)
+  }
+  if (at.premiumYear <= IRMAA_TOP_TIER_FROZEN_THROUGH_YEAR) return magiOver
+
+  // The resumed adjustment carries the growth from August of the base year to
+  // August of the year before the premium year. The factor is anchored at the
+  // pack year, so it is read at the year that puts the same span on it.
+  const yearsOfGrowth = at.premiumYear - 1 - IRMAA_TOP_TIER_RESUMED_BASE_YEAR
+  const resumed = magiOver * at.inflationFactorToYear(pack.year + yearsOfGrowth)
+  // (i)(5)(B) rounds a dollar amount increased under subparagraph (C) to the
+  // nearest multiple of 1,000. The identical rounding that (i)(5)(B) applies to
+  // the (i)(5)(A) adjustment of the lower rows is not reproduced there, which
+  // is recorded on the rule rather than quietly split across the two branches.
+  return Math.round(resumed / 1_000) * 1_000
 }
 
 export function irmaaTierForMagi(
   pack: ParameterPack,
   magiTwoYearsPrior: number,
   filingStatus: FilingStatus,
-  thresholdScale = 1,
+  at?: IrmaaThresholdYear,
 ): number {
   let tier = 0
   for (let i = 0; i < pack.medicare.irmaaTiers.length; i++) {
-    const threshold = irmaaTierThreshold(pack, i, filingStatus, thresholdScale)
+    const threshold = irmaaTierThreshold(pack, i, filingStatus, at)
     const isTopTier = i === pack.medicare.irmaaTiers.length - 1
     // CMS publishes lower tiers as "greater than" the floor; the final tier is inclusive.
     if (isTopTier ? magiTwoYearsPrior >= threshold : magiTwoYearsPrior > threshold) tier = i + 1

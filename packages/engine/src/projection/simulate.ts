@@ -1759,7 +1759,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           pack,
           irmaaMagi,
           irmaaFilingStatus,
-          inflFactorFrom(pack.year, year),
+          // The premium year goes with the inflation path rather than a single
+          // pre-multiplied factor: the top IRMAA row is frozen through 2027 and
+          // then indexed from an August 2026 base, one year behind the rows
+          // beneath it, so the threshold helper has to pick its own year.
+          {
+            premiumYear: year,
+            inflationFactorToYear: (toYear: number) => inflFactorFrom(pack.year, toYear),
+          },
           healthInflFactorFrom(pack.year, year),
         )
         if (med.partDSurchargeUnverified) {

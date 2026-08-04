@@ -41,13 +41,18 @@ export const irmaaTierEdge: Detector = {
     // Scan years for an IRMAA cliff proximity
     for (const y of ctx.projection.result.years) {
       const premiumYearNumber = y.year + 2
-      const thresholdScale = inflationScaleFromPack(ctx, premiumYearNumber)
-      const tier = irmaaTierForMagi(ctx.params, y.magi, filingStatus, thresholdScale)
+      // The premium year travels with the inflation path rather than as a
+      // pre-multiplied factor, because the top IRMAA row indexes from a
+      // different base year than the rows beneath it. Multiplying magiOver by
+      // one factor here, which is what this detector used to do, moved a
+      // boundary that 42 USC 1395r(i)(5)(C) holds still through 2027.
+      const thresholdYear = {
+        premiumYear: premiumYearNumber,
+        inflationFactorToYear: (year: number): number => inflationScaleFromPack(ctx, year),
+      }
+      const tier = irmaaTierForMagi(ctx.params, y.magi, filingStatus, thresholdYear)
       if (tier > 0 && tier <= ctx.params.medicare.irmaaTiers.length) {
-        // Scaled through the shared helper so the top-tier carve-out in
-        // 42 USC 1395r(i)(5)(C) applies here too; multiplying magiOver by
-        // thresholdScale directly would move a boundary the statute freezes.
-        const threshold = irmaaTierThreshold(ctx.params, tier - 1, filingStatus, thresholdScale)
+        const threshold = irmaaTierThreshold(ctx.params, tier - 1, filingStatus, thresholdYear)
         const diff = y.magi - threshold
         if (diff > 0 && diff <= 5000) {
           const magiStr = '$' + Math.round(y.magi).toLocaleString()
@@ -61,14 +66,14 @@ export const irmaaTierEdge: Detector = {
             ctx.params,
             y.magi,
             filingStatus,
-            thresholdScale,
+            thresholdYear,
             premiumScale,
           )
           const premiumBelow = medicareAnnualPremiumPerPerson(
             ctx.params,
             Math.max(0, threshold - 1),
             filingStatus,
-            thresholdScale,
+            thresholdYear,
             premiumScale,
           )
           const annualPremiumCliff =

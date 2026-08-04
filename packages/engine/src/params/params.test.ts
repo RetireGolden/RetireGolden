@@ -229,36 +229,77 @@ describe('parameter pack provenance', () => {
     })
   })
 
-  // 42 USC 1395r(i)(5)(C)(i) takes the 500,000 amounts out of the (i)(5)(A)
-  // adjustment and (i)(5)(C)(ii) starts indexing them only for years after
-  // 2027. A 2027 premium year at 2 percent therefore moves the first tier
-  // floor from 109,000 to 111,180 and leaves the top one at exactly 500,000,
-  // so a single filer at 505,000 is in the top tier under the statute and one
-  // tier below it under a uniform scale.
+  // 42 USC 1395r(i)(5)(C) does two things to the 500,000 amounts, and a fixture
+  // that catches only the first is how a permanent freeze gets shipped.
+  // (i)(5)(C)(i) takes them out of the (i)(5)(A) adjustment; (i)(5)(C)(ii)
+  // brings them back for calendar years after 2027, measured against August
+  // 2026 rather than August 2006, which is one year behind the general base.
+  //
+  // Premium year 2032 at 2 percent separates all three candidate readings:
+  //   uniform scale   500,000 x 1.02^6 = 563,081.21
+  //   frozen forever  500,000
+  //   frozen, resumed 500,000 x 1.02^5 = 552,040.40, rounded by (i)(5)(B)
+  //                   to the nearest 1,000 = 552,000
+  // The tier consequences separate them as a pair too: at 555,000 of MAGI the
+  // statute and a permanent freeze both give the top tier while a uniform scale
+  // does not, and at 520,000 the statute and a uniform scale agree on the tier
+  // below while a permanent freeze does not.
   describeRule('usc-42-1395r-i-5-C-top-irmaa-threshold-frozen', {
-    readings: { statuteTopTierFrozen: 5, uniformScaleAcrossAllTiers: 4 },
-    accepted: 'statuteTopTierFrozen',
-    note: 'Values are the IRMAA tier for a single filer with 505,000 of MAGI in a 2027 premium year at 2 percent inflation.',
+    readings: {
+      statuteFrozenThenResumed: 552_000,
+      frozenForeverWithNoResumption: 500_000,
+      uniformScaleAcrossAllTiers: 563_081.21,
+    },
+    accepted: 'statuteFrozenThenResumed',
+    note: 'Values are the top-tier MAGI floor for a single filer in a 2032 premium year at 2 percent inflation.',
   }, ({ accepted, readings }) => {
-    const oneYearOfInflation = 1.02
-
-    it('holds the top tier still while the rows beneath it index', () => {
-      expect(irmaaTierForMagi(pack, 505_000, 'single', oneYearOfInflation)).toBe(accepted)
-      expect(irmaaTierForMagi(pack, 505_000, 'single', oneYearOfInflation))
-        .not.toBe(readings.uniformScaleAcrossAllTiers)
-      expect(irmaaTierThreshold(pack, 4, 'single', oneYearOfInflation)).toBe(500_000)
+    const at = (premiumYear: number): { premiumYear: number, inflationFactorToYear: (year: number) => number } => ({
+      premiumYear,
+      inflationFactorToYear: (year: number): number =>
+        year <= pack.year ? 1 : Math.pow(1.02, year - pack.year),
     })
 
-    it('still moves the lower tiers, so this is a carve-out and not a frozen table', () => {
-      expect(irmaaTierThreshold(pack, 0, 'single', oneYearOfInflation)).toBeCloseTo(111_180, 6)
+    it('resumes indexing after 2027 from a base one year behind the general one', () => {
+      expect(irmaaTierThreshold(pack, 4, 'single', at(2032))).toBe(accepted)
+      expect(irmaaTierThreshold(pack, 4, 'single', at(2032)))
+        .not.toBe(readings.frozenForeverWithNoResumption)
+      expect(irmaaTierThreshold(pack, 4, 'single', at(2032)))
+        .not.toBeCloseTo(readings.uniformScaleAcrossAllTiers, 0)
+      // The first resumed year carries exactly one year of growth, which is
+      // what makes the August 2026 base one year behind the August 2006 one.
+      expect(irmaaTierThreshold(pack, 4, 'single', at(2028))).toBe(510_000)
+    })
+
+    it('separates the three readings by the tier a household lands in', () => {
+      // Above the resumed floor and above a permanent freeze, below a uniform scale.
+      expect(irmaaTierForMagi(pack, 555_000, 'single', at(2032))).toBe(5)
+      // Below the resumed floor, but a permanent freeze would put this in the top tier.
+      expect(irmaaTierForMagi(pack, 520_000, 'single', at(2032))).toBe(4)
+    })
+
+    it('holds the top tier still for every premium year through 2027', () => {
+      expect(irmaaTierThreshold(pack, 4, 'single', at(2027))).toBe(500_000)
+      expect(irmaaTierForMagi(pack, 505_000, 'single', at(2027))).toBe(5)
+      // A uniform scale would have put the 2027 floor at 510,000 and dropped
+      // this household a tier.
+      expect(irmaaTierForMagi(pack, 505_000, 'single', at(2027))).not.toBe(4)
+    })
+
+    it('never stops indexing the rows beneath the top one', () => {
+      expect(irmaaTierThreshold(pack, 0, 'single', at(2027))).toBeCloseTo(111_180, 6)
       // 110,000 clears the pack-year floor of 109,000 but not the projected one.
-      expect(irmaaTierForMagi(pack, 110_000, 'single', oneYearOfInflation)).toBe(0)
+      expect(irmaaTierForMagi(pack, 110_000, 'single', at(2027))).toBe(0)
       expect(irmaaTierForMagi(pack, 110_000, 'single')).toBe(1)
+      // The carve-out reaches only the 500,000 amounts, so the fourth row keeps
+      // running off the August 2006 base with no gap in 2028.
+      expect(irmaaTierThreshold(pack, 3, 'single', at(2032)))
+        .toBeCloseTo(205_000 * Math.pow(1.02, 6), 6)
     })
 
-    it('carves out the 150 percent joint figure with it', () => {
-      expect(irmaaTierThreshold(pack, 4, 'marriedFilingJointly', oneYearOfInflation)).toBe(750_000)
-      expect(irmaaTierForMagi(pack, 757_000, 'marriedFilingJointly', oneYearOfInflation)).toBe(5)
+    it('carves out the 150 percent joint figure with the individual one', () => {
+      expect(irmaaTierThreshold(pack, 4, 'marriedFilingJointly', at(2027))).toBe(750_000)
+      expect(irmaaTierThreshold(pack, 4, 'marriedFilingJointly', at(2032))).toBe(828_000)
+      expect(irmaaTierForMagi(pack, 757_000, 'marriedFilingJointly', at(2027))).toBe(5)
       // Every row beneath the last is an exact double; the last is not.
       expect(pack.medicare.irmaaTiers[0]!.magiOver.marriedFilingJointly)
         .toBe(pack.medicare.irmaaTiers[0]!.magiOver.single * 2)

@@ -4,12 +4,14 @@
  * IRMAA brackets are cliffs determined by MAGI from two years prior. Beyond
  * the latest parameter pack, premiums are indexed at the healthcare inflation
  * rate and bracket thresholds at general inflation (both are statutorily
- * indexed; this is the projection's stand-in).
+ * indexed; this is the projection's stand-in). The thresholds take a premium
+ * year rather than a bare scale factor because the top row is indexed from a
+ * different base year than the rows beneath it -- see `irmaaTierThreshold`.
  *
  * @see DOCS/domain/domain-rules-reference.md §7
  */
 
-import { irmaaTierForMagi } from '../params/index.js'
+import { irmaaTierForMagi, type IrmaaThresholdYear } from '../params/index.js'
 import type { FilingStatus, ParameterPack } from '../params/types.js'
 
 export interface MedicarePremiumResult {
@@ -27,10 +29,10 @@ export function medicareAnnualPremiumPerPerson(
   pack: ParameterPack,
   magiTwoYearsPrior: number,
   filingStatus: FilingStatus,
-  thresholdScale = 1,
+  at?: IrmaaThresholdYear,
   premiumScale = 1,
 ): MedicarePremiumResult {
-  const tier = irmaaTierForMagi(pack, magiTwoYearsPrior, filingStatus, thresholdScale)
+  const tier = irmaaTierForMagi(pack, magiTwoYearsPrior, filingStatus, at)
 
   const base = pack.medicare.partBStandardMonthly
   let partDSurchargeMonthly = 0

@@ -3564,13 +3564,13 @@ const registry = {
     ],
   },
   'usc-42-1395r-i-5-C-top-irmaa-threshold-frozen': {
-    title: 'The top IRMAA threshold is carved out of the annual inflation adjustment',
+    title: 'The top IRMAA threshold is frozen through 2027, then indexed off a later base',
     statement:
-      'Every IRMAA dollar threshold is indexed under 42 USC 1395r(i)(5)(A) to consumer prices measured against an August 2006 base and rounded to the nearest 1,000, with one exception. Subparagraph (i)(5)(C)(i) removes the 500,000 amounts from that adjustment outright, and (i)(5)(C)(ii) starts indexing them only for calendar years after 2027, against an August 2026 base rather than the August 2006 one. The joint figure follows from (i)(3)(C)(ii), which sets the last row of the table at 150 percent of the individual amount rather than twice it, which is why the pack carries 500,000 and 750,000 where every lower row is an exact double. CMS says the same in its own words when it promulgates the table: the top threshold levels are to be inflation-adjusted beginning in 2028, which is why that row has stood at 500,000 and 750,000 since it was created for 2019 while every row beneath it rose each year. A projection that scales all five boundaries by one factor moves a boundary the statute holds still, and sweeps into the top tier a household whose income never reached it.',
+      'Every IRMAA dollar threshold is indexed under 42 USC 1395r(i)(5)(A) to consumer prices measured against an August 2006 base and rounded to the nearest 1,000, but that subparagraph is expressly subject to (i)(5)(C), which treats the 500,000 amounts twice. Subparagraph (i)(5)(C)(i) removes them from the (i)(5)(A) adjustment outright. Subparagraph (i)(5)(C)(ii) brings them back for calendar years after 2027, measured against August 2026 rather than August 2006. Because both provisions read the August of the preceding calendar year, an August 2026 base is exactly one year behind the general one, so from 2028 the top row grows at the same rate as the rows beneath it but from a position one year further back. The carve-out reaches only the 500,000 amounts, not paragraph (3) at large, so the four lower rows never pause. The joint figure follows from (i)(3)(C)(ii), which sets the last row at 150 percent of the individual amount rather than twice it, which is why the pack carries 500,000 and 750,000 where every lower row is an exact double. CMS says the same in its own words when it promulgates the table: the top threshold levels are to be inflation-adjusted beginning in 2028, which is why that row has stood at 500,000 and 750,000 since it was created for 2019 while every row beneath it rose each year. Both errors bite on a long horizon. Scaling all five boundaries by one factor sweeps into the top tier a household whose income never reached it; freezing the top boundary forever does the same thing more slowly and never stops, because a nominal projection keeps rising past a threshold the statute does allow to move again.',
     classification: 'settled',
     contraryReading: null,
     conventionRationale:
-      'Two things are recorded here rather than implemented. First, the resumption in (i)(5)(C)(ii) for calendar years after 2027 is not modelled: the engine holds the top row at the pack figure for every projected year, which is exact through 2027 and increasingly low after that, because the helper receives a single scale factor and not the premium year it belongs to. Second, the Federal Register determination that publishes the table is registered under the regulation authority kind. It is neither a statute nor an IRS notice, and the enum has no member for an agency determination published in the Federal Register; introducing one is a schema decision rather than a research finding, so the nearest existing member is used and the choice is named here rather than left silent.',
+      'Three things are decided here rather than dictated. First, the index: the resumed adjustment is measured on the plan assumed general inflation rather than the consumer price index the statute names, which is the same stand-in the lower rows already take, and the pack year of 2026 is what makes the general inflation series readable at the August 2026 base period without an offset. Second, the rounding: (i)(5)(B) rounds a dollar amount increased under subparagraph (C) to the nearest 1,000, and that is reproduced for the top row. The identical rounding (i)(5)(B) applies to the (i)(5)(A) adjustment of the four lower rows is not reproduced, which is pre-existing behaviour and is named here rather than left as a silent asymmetry between two branches of one function. Third, the Federal Register determination that publishes the table is registered under the regulation authority kind. It is neither a statute nor an IRS notice, and the enum has no member for an agency determination published in the Federal Register; introducing one is a schema decision rather than a research finding, so the nearest existing member is used and the choice is named rather than left silent.',
     authority: [{
       kind: 'statute',
       citation: '42 USC 1395r(i)(5)(A), (i)(5)(B), (i)(5)(C)',
@@ -3590,13 +3590,15 @@ const registry = {
       quotedText:
         'For years beginning in 2019, the BBA of 2018 established a new income threshold. If a beneficiary\'s modified adjusted gross income is greater than or equal to $500,000 for a beneficiary filing an individual income tax return and $750,000 for a beneficiary filing a joint tax return, the beneficiary is responsible for 85 percent of the estimated total cost of Part B coverage. The BBA of 2018 specified that these new income threshold levels be inflation-adjusted beginning in 2028.',
     }],
-    volatility: 'staticStatute',
+    volatility: 'annuallyIndexed',
     effectiveFrom: 2019,
-    effectiveThrough: 2027,
+    effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: [
       'packages/engine/src/params/index.ts',
+      'packages/engine/src/tax/medicare.ts',
       'packages/engine/src/insights/detectors/irmaaTierEdge.ts',
+      'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
   },
