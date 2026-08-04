@@ -201,9 +201,12 @@ const STEP_BOUNDARY_TOLERANCE = 1e-9
  * is rounded down to the next lower multiple of 500, not the adjusted amount.
  *
  * This is why the ages 60-63 amount held at 11,250 for 2026 even though it is
- * indexed -- the 1.0288 factor produced a 324 dollar increase, which floors to
- * zero. Reading that non-movement as evidence of a pinned amount is the mistake
- * this replaces.
+ * indexed -- the published 1.0288 factor produced a 324 dollar increase, which
+ * floors to zero. Reading that non-movement as evidence of a pinned amount is
+ * the mistake this replaces. That figure is the statutory adjustment off the
+ * July 2024 base period, quoted to show the arithmetic; the `growth` argument
+ * here is the engine's own pack-year-to-projected-year factor, which is the
+ * same shape of quantity measured from a different origin.
  *
  * `growth` is the CUMULATIVE factor from the pack year to the projected year,
  * and rounding once at the end is the point rather than an approximation. The
@@ -2324,9 +2327,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         // subparagraph (B)(i)") and switched deliberately here. Treasury settles
         // it outright: 26 CFR 1.414(v)-1(c)(2)(iii)(B) indexes "the initial
         // amount ($11,250 ...)", so it is the operative figure that moves and
-        // the 10,000 leg never governs. Those regulations apply to taxable years
-        // beginning after December 31 2026 -- the first year the readings can
-        // diverge -- so they control exactly the years at issue.
+        // the 10,000 leg never governs. That provision governs taxable years
+        // beginning after 2025 by its own terms, which covers 2027 -- the first
+        // year in which the candidate readings produce different amounts.
         const catchUp =
           age >= 60 && age <= 63
             ? indexWithStatutoryRounding(pack.contributionLimits.superCatchUp60to63, limitGrowth)
