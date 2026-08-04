@@ -41,6 +41,10 @@ export interface RuleFixtureSpec<Readings extends Readonly<Record<string, unknow
    * for the exclusion ratio and another for the (b)(2) cap. Without a label the
    * suites are indistinguishable in the reporter, and a failure names the rule
    * rather than the reading that broke.
+   *
+   * Trimmed before it reaches the suite name, and omitted entirely when that
+   * leaves nothing, so a blank label cannot leave a dangling separator or make
+   * two suites differ only by surrounding whitespace.
    */
   readonly note?: string
 }
@@ -84,7 +88,8 @@ export function describeRule<const Readings extends Readonly<Record<string, unkn
     throw new RangeError(`Rule ${ruleId} accepted reading is not among its candidate readings`)
   }
 
-  const label = spec.note === undefined ? '' : ` — ${spec.note}`
+  const note = spec.note?.trim()
+  const label = note === undefined || note === '' ? '' : ` — ${note}`
   describe(`${ruleId} — ${rule.title}${label}`, () => {
     suite({
       accepted: spec.readings[spec.accepted] as Readings[keyof Readings],
