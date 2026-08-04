@@ -4045,7 +4045,14 @@ describe('registered rules: RMD base and RMD-before-conversion ordering', () => 
       const plan = rmdBasePlan()
       plan.accounts = [
         cash(0),
-        { ...(traditional(265_000) as Extract<Account, { type: 'traditional' }>), id: 'trad-rmd-base' },
+        // kind 'ira' is load-bearing, not decoration: 1.408-8 is a section 408
+        // regulation, and the local `traditional` helper builds a 401(k). An
+        // employer account would pin 1.401(a)(9)-5 and leave the cited rule
+        // uncovered if the two paths ever part.
+        {
+          ...(traditional(265_000) as Extract<Account, { type: 'traditional' }>),
+          id: 'trad-rmd-base', name: 'Traditional IRA', kind: 'ira',
+        },
         {
           type: 'annuity',
           id: 'ann-rmd-base',
@@ -4092,7 +4099,13 @@ describe('registered rules: RMD base and RMD-before-conversion ordering', () => 
       const plan = rmdBasePlan()
       plan.accounts = [
         cash(0),
-        { ...(traditional(265_000) as Extract<Account, { type: 'traditional' }>), id: 'trad-order' },
+        // 1.408A-4 governs a conversion out of a traditional IRA, so the source
+        // has to be one. The local `traditional` helper builds a 401(k), whose
+        // route into a Roth is a rollover under a different authority.
+        {
+          ...(traditional(265_000) as Extract<Account, { type: 'traditional' }>),
+          id: 'trad-order', name: 'Traditional IRA', kind: 'ira',
+        },
         {
           type: 'roth',
           id: 'roth-order',

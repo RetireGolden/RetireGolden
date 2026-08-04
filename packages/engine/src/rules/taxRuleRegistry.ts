@@ -2644,33 +2644,6 @@ const registry = {
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
   },
-  'irc-1411-d-modified-agi-foreign-earned-income': {
-    title: 'NIIT modified AGI adds back the foreign earned income exclusion',
-    statement:
-      'Modified adjusted gross income for the net investment income tax is adjusted gross income increased by the net section 911(a)(1) exclusion. Not modelled: the engine sets modified AGI equal to AGI and never applies its own foreign exclusion input on this path, so for a taxpayer claiming the exclusion the modified AGI leg of 1411(a)(1) is understated by the excluded amount and the tax is understated by up to 3.8 percent of it, capped by net investment income. The engine computes an answer rather than failing closed.',
-    classification: 'outOfScope',
-    contraryReading: null,
-    conventionRationale:
-      'The same add-back definition governs the OBBBA senior deduction under 151(d)(5)(C)(iii)(II), where the direction of the error reverses: an understated modified AGI understates the phase-out and so overstates the deduction, understating tax again. The engine already carries the excluded amount as an input and applies it correctly to section 86 provisional income, so the gap is a missing use of an available fact rather than a missing fact.',
-    authority: [{
-      kind: 'statute',
-      citation: 'IRC 1411(d)',
-      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1411&num=0&edition=prelim',
-      quotedText:
-        'For purposes of this chapter, the term "modified adjusted gross income" means adjusted gross income increased by the excess of- (1) the amount excluded from gross income under section 911(a)(1), over (2) the amount of any deductions (taken into account in computing adjusted gross income) or exclusions disallowed under section 911(d)(6) with respect to the amounts described in paragraph (1).',
-    }, {
-      kind: 'statute',
-      citation: 'IRC 1411(c)(1)',
-      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1411&num=0&edition=prelim',
-      quotedText:
-        'The term "net investment income" means the excess (if any) of- (A) the sum of- (i) gross income from interest, dividends, annuities, royalties, and rents, other than such income which is derived in the ordinary course of a trade or business not described in paragraph (2), ... over (B) the deductions allowed by this subtitle which are properly allocable to such gross income or net gain.',
-    }],
-    volatility: 'staticStatute',
-    effectiveFrom: 2026,
-    effectiveThrough: null,
-    verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
-  },
   'irc-213-a-medical-expense-deduction': {
     title: 'Medical expense deduction above 7.5 percent of AGI',
     statement:
@@ -2826,33 +2799,6 @@ const registry = {
       'packages/engine/src/params/index.ts',
       'packages/engine/src/rmd/rmd.ts',
     ],
-  },
-  'treas-reg-1-408-8-e-1-owner-ira-rmd-aggregation': {
-    title: 'An owner may satisfy the total IRA RMD from any of the owned IRAs',
-    statement:
-      'The RMD is calculated separately for each IRA, but the sum may be distributed from any one or more of the IRAs the individual holds as owner. Not modelled: the annual ledger forces each account to distribute only its own computed amount and caps that at the account balance, so when one account has been drained by a rebalance, an annuity purchase, or a ladder purchase earlier in the year, the shortfall is silently dropped instead of being taken from the same owner other IRAs.',
-    classification: 'outOfScope',
-    contraryReading: null,
-    conventionRationale:
-      'Direction of error: the household forced distribution, and therefore ordinary income, is understated in any year an owner traditional account is drained below its own computed amount. The understatement compounds, because the Roth conversion pass runs immediately afterwards over the same account list and will convert from an account whose RMD was left unsatisfied, which Treas. Reg. 1.408A-4 A-6 forbids. Aggregation is per individual and per capacity: owned IRAs never aggregate with a spouse IRAs, nor with inherited IRAs, nor across decedents, so the fix is a per-owner sweep rather than a household one. Employer plans are correctly left unaggregated by the ledger, which matches the rule that a distribution from one qualified plan cannot satisfy another.',
-    authority: [{
-      kind: 'regulation',
-      citation: 'Treas. Reg. 1.408-8(e)(1)(i)',
-      url: 'https://www.ecfr.gov/current/title-26/section-1.408-8',
-      quotedText:
-        'The required minimum distribution from one IRA is permitted to be distributed from another IRA in order to satisfy section 401(a)(9), subject to the limitations of paragraphs (e)(2) and (3) of this section. Except as provided in paragraph (e)(1)(ii) of this section, the required minimum distribution must be calculated separately for each IRA and the sum of those separately calculated required minimum distributions may be distributed from any one or more of the IRAs under the rules set forth in this paragraph (e).',
-    }, {
-      kind: 'regulation',
-      citation: 'Treas. Reg. 1.408-8(e)(2)(i)',
-      url: 'https://www.ecfr.gov/current/title-26/section-1.408-8',
-      quotedText:
-        'Generally, only amounts in IRAs that an individual holds as the IRA owner are aggregated for purposes of paragraph (e)(1) of this section. ... Thus, for example, for purposes of satisfying the minimum distribution requirements with respect to one IRA by making distributions from another IRA, IRAs for which the individual is the IRA owner are not aggregated with IRAs for which the individual is a beneficiary.',
-    }],
-    volatility: 'staticStatute',
-    effectiveFrom: 2026,
-    effectiveThrough: null,
-    verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
   },
   'irc-408-d-8-B-ii-projection-annual-age-proxy': {
     title: 'Annual-ledger stand-in for the age 70.5 QCD date',
