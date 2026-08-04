@@ -1132,6 +1132,95 @@ describe('contributions', () => {
     })
   })
 
+  // IRC 223(b)(5) gives a married couple ONE family limit, not one each.
+  // Subparagraph (A) treats both spouses as having the family coverage, and
+  // (B)(ii) divides the paragraph (1) limitation equally between them unless
+  // they agree otherwise. Keying the limit group per person while sizing the
+  // base on family coverage hands each spouse a whole family limit, so the
+  // household deducts roughly twice the statutory maximum and the excess is
+  // exposed to the section 4973 excise.
+  //
+  // (B) computes the amount to be divided "without regard to any additional
+  // contribution amount under paragraph (3)", so the age-55 catch-up is NOT
+  // halved -- each spouse keeps a whole one. Pat is 60 (catch-up) and Sam is
+  // 50 (none), which is what separates the third reading from the first: on
+  // equal ages the halved-catch-up reading produces the same household total.
+  //
+  // 2026 is the pack year, so no indexing applies. Family limit 8,750:
+  //   divided equally, whole catch-ups: 4,375 + 1,000 and 4,375 + 0
+  //   a full family limit each:         8,750 + 1,000 and 8,750 + 0
+  //   catch-up divided as well:         (8,750 + 1,000) / 2 to each
+  describeRule('irc-223-b-5-hsa-family-limit-divided-between-spouses', {
+    readings: {
+      dividedEquallyWithWholeCatchUps: { pat: 5_375, sam: 4_375 },
+      aFullFamilyLimitEach: { pat: 9_750, sam: 8_750 },
+      catchUpDividedToo: { pat: 4_875, sam: 4_875 },
+    },
+    accepted: 'dividedEquallyWithWholeCatchUps',
+  }, ({ accepted, readings }) => {
+    it('halves the family base between spouses but leaves each catch-up whole', () => {
+      const plan = basePlan()
+      plan.household.filingStatus = 'marriedFilingJointly'
+      plan.household.people[0]! = {
+        ...plan.household.people[0]!,
+        dob: '1966-06-15', // 60 in 2026, so the age-55 catch-up applies
+      }
+      plan.household.people.push({
+        id: 'p2',
+        name: 'Sam',
+        dob: '1976-06-15', // 50 in 2026, below the age-55 catch-up
+        sex: 'average',
+        retirementAge: 67,
+        longevity: { planningAge: 90, source: 'manual' },
+      })
+      plan.incomes = [wages(300_000, 'p1'), wages(300_000, 'p2')]
+      plan.accounts = [
+        cash(1_000_000),
+        {
+          id: 'hsa-pat', name: 'HSA Pat', type: 'hsa', ownerPersonId: 'p1',
+          balance: 0, annualReturnPct: 0, annualContribution: 50_000,
+        } as never,
+        {
+          id: 'hsa-sam', name: 'HSA Sam', type: 'hsa', ownerPersonId: 'p2',
+          balance: 0, annualReturnPct: 0, annualContribution: 50_000,
+        } as never,
+      ]
+
+      const year = simulatePlan(validate(plan), {
+        startYear: 2026, horizonEndYear: 2026, taxCalculator: noTax,
+      }).years[0]!
+
+      expect(year.balances['hsa-pat']).toBeCloseTo(accepted.pat, 6)
+      expect(year.balances['hsa-sam']).toBeCloseTo(accepted.sam, 6)
+      expect(year.contributions).toBeCloseTo(accepted.pat + accepted.sam, 6)
+      // The household total alone cannot separate the first and third
+      // readings, so the failure is pinned per spouse.
+      expect(year.balances['hsa-pat']).not.toBeCloseTo(readings.aFullFamilyLimitEach.pat, 6)
+      expect(year.balances['hsa-pat']).not.toBeCloseTo(readings.catchUpDividedToo.pat, 6)
+    })
+
+    it('leaves a one-person household on the undivided self-only limit', () => {
+      // Paragraph (5) opens on individuals married to each other. A single
+      // filer never reaches it, so the (b)(2)(A) self-only base stands whole.
+      const plan = basePlan()
+      plan.household.people[0]! = { ...plan.household.people[0]!, dob: '1976-06-15' } // 50 in 2026
+      plan.incomes = [wages(300_000)]
+      plan.accounts = [
+        cash(1_000_000),
+        {
+          id: 'hsa-solo', name: 'HSA', type: 'hsa', ownerPersonId: 'p1',
+          balance: 0, annualReturnPct: 0, annualContribution: 50_000,
+        } as never,
+      ]
+
+      const year = simulatePlan(validate(plan), {
+        startYear: 2026, horizonEndYear: 2026, taxCalculator: noTax,
+      }).years[0]!
+
+      expect(year.balances['hsa-solo']).toBeCloseTo(4_400, 6)
+    })
+  })
+
   // IRC 414(v)(2)(E) covers a participant who "would attain age 60 but would
   // not attain age 64" before the close of the year. The window CLOSES at 64 --
   // it is not an enhancement that persists once reached. Treating it as
@@ -1469,6 +1558,123 @@ describe('RMDs', () => {
 
     const y2027 = result.years.find((y) => y.year === 2027)! // age 74, divisor 25.5
     expect(y2027.rmd).toBeCloseTo(255_000 / 25.5, 6) // exactly 10,000 again
+  })
+
+  // Treas. Reg. 1.408-8(e)(1)(i) calculates the RMD separately for each IRA
+  // but requires "the sum of those separately calculated required minimum
+  // distributions" to be distributed from one or more of the owner's IRAs.
+  // Flooring each account at its own balance drops the difference: the annuity
+  // premium, the rebalance and the TIPS-ladder passes all run before the RMD
+  // block and can empty an account whose RMD base was the prior Dec 31
+  // balance, so the shortfall is reachable and understates forced ordinary
+  // income. It compounds through the Roth conversion pass immediately after,
+  // which 1.408A-4 A-6(b) bars from converting while an RMD is unsatisfied.
+  //
+  // Aggregation is IRA-only. Under (e)(2)(i) only IRAs held as owner
+  // aggregate, and (e)(3) keeps IRAs apart from other arrangements, so an
+  // employer plan must still distribute its own amount and can neither absorb
+  // nor supply someone else's shortfall.
+  //
+  // Born 1953 -> age 73 in 2026 -> divisor 26.5. IRA A 265,000 (RMD 10,000) is
+  // emptied by a qualified annuity premium; IRA B 530,000 (RMD 20,000); a
+  // 401(k) of 265,000 (RMD 10,000):
+  //   sum distributed from the owner's IRAs: B pays 30,000, plan pays 10,000
+  //   shortfall dropped at the account floor: B pays 20,000, plan pays 10,000
+  //   shortfall swept into the 401(k) too:    B pays 20,000, plan pays 20,000
+  describeRule('treas-reg-1-408-8-e-1-i-aggregate-ira-rmd-sum', {
+    readings: {
+      sumFromTheOwnersIras: { ira: 500_000, employerPlan: 255_000, rmd: 40_000 },
+      shortfallDroppedAtTheAccountFloor: { ira: 510_000, employerPlan: 255_000, rmd: 30_000 },
+      shortfallSweptIntoTheEmployerPlan: { ira: 510_000, employerPlan: 245_000, rmd: 40_000 },
+    },
+    accepted: 'sumFromTheOwnersIras',
+  }, ({ accepted, readings }) => {
+    it('takes an emptied IRA share from the owner other IRAs, not from the employer plan', () => {
+      const plan = basePlan()
+      plan.household.people[0]!.dob = '1953-06-15'
+      plan.household.people[0]!.retirementAge = null
+      plan.accounts = [
+        cash(0),
+        {
+          type: 'traditional', kind: 'ira', id: 'ira-a', name: 'IRA A',
+          ownerPersonId: 'p1', annualReturnPct: 0, balance: 265_000, annualContribution: 0,
+        },
+        {
+          type: 'traditional', kind: 'ira', id: 'ira-b', name: 'IRA B',
+          ownerPersonId: 'p1', annualReturnPct: 0, balance: 530_000, annualContribution: 0,
+        },
+        {
+          type: 'traditional', kind: 'employer', id: 'plan-e', name: '401k',
+          ownerPersonId: 'p1', annualReturnPct: 0, balance: 265_000, annualContribution: 0,
+        },
+        {
+          type: 'annuity', id: 'ann1', name: 'QLAC-free deferred annuity',
+          ownerPersonId: 'p1', annualReturnPct: null,
+          startAge: 95, monthlyAmount: 1_000, colaPct: 0, taxablePct: 100,
+          // Empties IRA A after its RMD base was fixed at the prior Dec 31
+          // balance, which is exactly the reachable shortfall.
+          purchase: {
+            year: 2026, premium: 265_000,
+            fundingAccountId: 'ira-a', taxQualification: 'qualified',
+          },
+        },
+      ]
+
+      const year = simulatePlan(validate(plan), {
+        startYear: 2026, horizonEndYear: 2026, taxCalculator: noTax,
+      }).years[0]!
+
+      expect(year.balances['ira-a']).toBeCloseTo(0, 6)
+      expect(year.balances['ira-b']).toBeCloseTo(accepted.ira, 6)
+      expect(year.balances['plan-e']).toBeCloseTo(accepted.employerPlan, 6)
+      expect(year.rmd).toBeCloseTo(accepted.rmd, 6)
+      expect(year.balances['ira-b'])
+        .not.toBeCloseTo(readings.shortfallDroppedAtTheAccountFloor.ira, 6)
+      expect(year.balances['plan-e'])
+        .not.toBeCloseTo(readings.shortfallSweptIntoTheEmployerPlan.employerPlan, 6)
+    })
+
+    it('never reaches into the other spouse IRAs to cover a shortfall', () => {
+      // 1.408-8(e)(2)(i) aggregates only the IRAs an individual holds as
+      // owner. There is no household aggregation, so an unmet amount stops at
+      // the owner's own IRAs even when the spouse holds an untouched one.
+      const plan = basePlan()
+      plan.household.filingStatus = 'marriedFilingJointly'
+      plan.household.people[0]!.dob = '1953-06-15'
+      plan.household.people[0]!.retirementAge = null
+      plan.household.people.push({
+        id: 'p2', name: 'Sam', dob: '1953-06-15', sex: 'average',
+        retirementAge: null, longevity: { planningAge: 90, source: 'manual' },
+      })
+      plan.accounts = [
+        cash(0),
+        {
+          type: 'traditional', kind: 'ira', id: 'ira-a', name: 'IRA A',
+          ownerPersonId: 'p1', annualReturnPct: 0, balance: 265_000, annualContribution: 0,
+        },
+        {
+          type: 'traditional', kind: 'ira', id: 'ira-d', name: 'IRA D',
+          ownerPersonId: 'p2', annualReturnPct: 0, balance: 530_000, annualContribution: 0,
+        },
+        {
+          type: 'annuity', id: 'ann1', name: 'Deferred annuity',
+          ownerPersonId: 'p1', annualReturnPct: null,
+          startAge: 95, monthlyAmount: 1_000, colaPct: 0, taxablePct: 100,
+          purchase: {
+            year: 2026, premium: 265_000,
+            fundingAccountId: 'ira-a', taxQualification: 'qualified',
+          },
+        },
+      ]
+
+      const year = simulatePlan(validate(plan), {
+        startYear: 2026, horizonEndYear: 2026, taxCalculator: noTax,
+      }).years[0]!
+
+      // Only Sam's own 20,000 comes out; Pat's unmet 10,000 has nowhere to go.
+      expect(year.balances['ira-d']).toBeCloseTo(510_000, 6)
+      expect(year.rmd).toBeCloseTo(20_000, 6)
+    })
   })
 
   it('does not force distributions before the start age (born 1960 -> 75)', () => {
