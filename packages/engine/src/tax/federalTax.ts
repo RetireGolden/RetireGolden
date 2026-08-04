@@ -4,9 +4,10 @@
  * Computation order per year:
  *   1. Taxable Social Security via provisional income (unindexed thresholds)
  *   2. AGI = ordinary + capital gains + taxable SS. Tax-exempt interest and
- *      excluded foreign earned income affect §86 provisional income without
- *      becoming ordinary income or entering AGI directly. MAGI restores the
- *      foreign exclusion (§1411(d), §151(d)(5)(C)(iii)(II)).
+ *      income excluded under the §911/§931/§933 foreign and possessions
+ *      exclusions affect §86 provisional income without becoming ordinary
+ *      income or entering AGI directly. MAGI restores those exclusions
+ *      (§1411(d), §151(d)(5)(C)(iii)(II)).
  *   3. Deductions: the greater of the standard deduction (with age-65
  *      additions) or itemized SALT (capped) + mortgage interest + charitable,
  *      plus the OBBBA senior deduction on top of whichever base wins
