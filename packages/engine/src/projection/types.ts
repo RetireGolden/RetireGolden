@@ -434,6 +434,12 @@ export interface YearAcaResult {
   }
 }
 
+/**
+ * The share of the published annual QCD total that moved no additional dollars
+ * because an RMD debit already carried it out of the owned IRA. A gift taken
+ * with no RMD behind it is not in here: it physically leaves an account and is
+ * published as a `legacyQcd` runtime occurrence with its own application.
+ */
 export interface SimulatorAnnualRetirementNonmovingLegacyQcdOverlay {
   readonly status: 'nonmovingLegacyQcdCaptured'
   readonly kind: 'legacyQcd'
@@ -464,6 +470,7 @@ export type SimulatorRetirementRuntimeApplicationPhase =
   | 'employeeContribution'
   | 'ownerRmdDistribution'
   | 'automaticSeppDistribution'
+  | 'legacyQcdDistribution'
   | 'legacyRothConversion'
   | 'legacyRothConversionAggregateDestinationCredit'
   | 'legacyNeedBasedWithdrawal'

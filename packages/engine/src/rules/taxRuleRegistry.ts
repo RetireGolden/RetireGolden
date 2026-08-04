@@ -211,7 +211,13 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-02',
-    implementedBy: ['packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts'],
+    implementedBy: [
+      'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts',
+      // The legacy projection reaches the same result structurally rather than
+      // arithmetically: a moving QCD carries no Form 8606 line, so its gross
+      // never enters the annual denominator and no basis is allocated to it.
+      'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts',
+    ],
   },
 
   'irc-408-d-8-includible-qcd-basis': {
