@@ -153,7 +153,7 @@ export function assessConversionLinkedWithdrawalGroups(
 /** The group verdict this conversion must honour, if it is in one. */
 export function conversionLinkedWithdrawalGroupForConversion(
   assessment: Readonly<ConversionLinkedWithdrawalGroupAssessment>,
-  conversionActionId: string,
+  conversionActionId: ActionId,
 ): Readonly<ConversionLinkedWithdrawalGroupVerdict> | null {
   return assessment.groups.find(
     (group) => group.conversionActionId === conversionActionId,
@@ -176,7 +176,7 @@ export function conversionLinkedWithdrawalGroupForConversion(
  */
 export function conversionLinkedWithdrawalGroupForWithdrawal(
   assessment: Readonly<ConversionLinkedWithdrawalGroupAssessment>,
-  withdrawalActionId: string,
+  withdrawalActionId: ActionId,
 ): Readonly<ConversionLinkedWithdrawalGroupVerdict> | null {
   return assessment.groups.find(
     (group) => group.withdrawalActionId === withdrawalActionId,

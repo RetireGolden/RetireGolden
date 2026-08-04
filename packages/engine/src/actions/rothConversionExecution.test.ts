@@ -13,7 +13,7 @@ import {
   type OrdinaryWithdrawalRequest,
   type RothConversionRequest,
 } from './contract.js'
-import { asAccountId, asPersonId } from './identity.js'
+import { asAccountId, asActionId, asPersonId } from './identity.js'
 import { asUsdCents } from './money.js'
 import type {
   NonpersistedOwnerIraRmdSatisfactionEvidence,
@@ -971,7 +971,7 @@ describe('executeRothConversions', () => {
   // conversions differ only in `taxFunding`, so any difference in the published
   // reason set is that field's doing and nothing else's.
   describe('tax-funding disposition split', () => {
-    const linkedWithdrawalActionId = 'tax-funding-withdrawal'
+    const linkedWithdrawalActionId = asActionId('tax-funding-withdrawal')
 
     const funding = {
       noneExpected: { kind: 'noneExpected' },
@@ -1356,11 +1356,11 @@ describe('executeRothConversions', () => {
         expect(Object.isFrozen(groups)).toBe(true)
         // Either member finds the same verdict, which is what lets two
         // executors holding different halves of the pair honour one decision.
-        expect(conversionLinkedWithdrawalGroupForConversion(groups, 'conversion-a'))
+        expect(conversionLinkedWithdrawalGroupForConversion(groups, asActionId('conversion-a')))
           .toBe(conversionLinkedWithdrawalGroupForWithdrawal(
             groups, linkedWithdrawalActionId,
           ))
-        expect(conversionLinkedWithdrawalGroupForWithdrawal(groups, 'unrelated'))
+        expect(conversionLinkedWithdrawalGroupForWithdrawal(groups, asActionId('unrelated')))
           .toBeNull()
       })
 
