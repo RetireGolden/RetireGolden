@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { describeRule } from '../rules/describeRule.js'
+
 import { baselineRemainingYears } from '../longevity/ssaPeriod2022.js'
 import { seppActive, seppAnnualAmount, SEPP_AMORTIZATION_RATE_PCT } from './sepp.js'
 
@@ -49,5 +51,40 @@ describe('seppAnnualAmount', () => {
 
   it('returns 0 for an empty balance', () => {
     expect(seppAnnualAmount('rmd', 0, 55, 'average')).toBe(0)
+  })
+})
+describeRule('notice-2022-6-3-02-c-interest-rate-ceiling', {
+  // The rate the engine applies to the fixed amortization method, in percent.
+  // Notice 2022-6 section 3.02(c) caps it at the GREATER of 5% or 120% of the
+  // federal mid-term rate, so 5% clears the ceiling in every rate environment.
+  // The superseded Rev. Rul. 2002-62 section 2.02(c) had no 5% leg at all: in a
+  // month when the mid-term rate was 0.5%, its ceiling was 0.6% and a flat 5%
+  // was impermissible. The two readings therefore price the same series
+  // differently, and only one of them is still law.
+  readings: {
+    notice2022_6GreaterOf5PctOr120PctMidTerm: 5,
+    revRul2002_62OneHundredTwentyPctMidTermOnly: 0.6,
+  },
+  accepted: 'notice2022_6GreaterOf5PctOr120PctMidTerm',
+}, ({ accepted, readings }) => {
+  it('uses the 5% floor of the ceiling, which no rate environment can breach', () => {
+    expect(SEPP_AMORTIZATION_RATE_PCT).toBe(accepted)
+    expect(SEPP_AMORTIZATION_RATE_PCT)
+      .not.toBe(readings.revRul2002_62OneHundredTwentyPctMidTermOnly)
+  })
+
+  it('prices the series above what the superseded 120% ceiling would allow', () => {
+    const atNoticeCeiling = seppAnnualAmount('amortization', 500_000, 55, 'average')
+    const atSupersededCeiling = seppAnnualAmount(
+      'amortization', 500_000, 55, 'average',
+      readings.revRul2002_62OneHundredTwentyPctMidTermOnly,
+    )
+    // Not a rounding difference: the readings disagree by thousands a year.
+    expect(atNoticeCeiling).toBeGreaterThan(atSupersededCeiling + 1_000)
+  })
+
+  it('defaults to the ceiling floor rather than requiring a rate argument', () => {
+    expect(seppAnnualAmount('amortization', 500_000, 55, 'average'))
+      .toBe(seppAnnualAmount('amortization', 500_000, 55, 'average', accepted))
   })
 })

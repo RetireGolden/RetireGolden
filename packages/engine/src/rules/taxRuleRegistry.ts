@@ -3729,6 +3729,277 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
   },
+  'irc-72-t-2-A-iv-sepp-exception': {
+    title: 'The substantially equal periodic payment exception itself',
+    statement:
+      'The 10 percent additional tax does not reach a distribution that is part of a series of substantially equal periodic payments, made not less frequently than annually, over the life or life expectancy of the participant or the joint lives or joint life expectancies of the participant and a designated beneficiary. Membership in the series is the operative fact, so a tax year whose distributions do not add up to the annual payment the chosen method determined excepts nothing: the annual reconciliation reports the year incomplete, and no payment in it reaches a zero penalty.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 72(t)(2)(A)(iv)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText:
+        'part of a series of substantially equal periodic payments (not less frequently than annually) made for the life (or life expectancy) of the employee or the joint lives (or joint life expectancies) of such employee and his designated beneficiary,',
+    }, {
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, section 2.02',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'Under section 72(t)(2)(A)(iv), one of the exceptions to the 10% additional tax is for distributions that are part of a series of substantially equal periodic payments (not less frequently than annually) made for the life (or life expectancy) of the employee or the joint lives (or joint life expectancies) of the employee and designated beneficiary.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts',
+      'packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts',
+    ],
+  },
+  'irc-72-t-5-sepp-participant-scope': {
+    title: 'A SEPP series belongs to one participant and one source account',
+    statement:
+      'For section 72(t) the term employee includes any participant, and for an individual retirement plan it means the individual for whose benefit the plan was established, so SEPP qualification is settled per participant and per source account and never on a household total. Amounts another household member took, or amounts taken from another account, are outside the series and can neither complete it nor enlarge it: the annual reconciliation binds the participant, the election, and the source account, and treats an inventory member belonging to a different person or account as foreign.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 72(t)(5)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this subsection, the term "employee" includes any participant, and in the case of an individual retirement plan, the individual for whose benefit such plan was established.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, section 3.02(f)',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'In the case of distributions from an IRA, the IRA owner is treated as an employee for purposes of applying this notice.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts',
+      'packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts',
+    ],
+  },
+  'notice-2022-6-3-01-three-permitted-methods': {
+    title: 'The three methods that produce a qualifying series',
+    statement:
+      'Exactly three methods determine substantially equal periodic payments: the required minimum distribution method, the fixed amortization method, and the fixed annuitization method. The fixed annuitization method stands on the same footing as the other two, and an election naming anything else is refused with a typed unsupportedMethod nonconformance rather than reconciled.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The notice names the methods in prose, so the token spelling is an engineering choice, and the engine made it twice. The owned-IRA path spells them requiredMinimumDistribution, fixedAmortization, and fixedAnnuitization; the employer-plan path spells the first two rmd and amortization. Both admit exactly the three the notice names and reject everything else, so the vocabularies differ without the rule differing. A reader comparing the two evidence shapes should not read the shorter spellings as a narrower method set.',
+    authority: [{
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, section 3.01',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'Payments in a series are considered substantially equal periodic payments within the meaning of section 72(t)(2)(A)(iv) if they are determined in accordance with one of the three methods described in section 3.01(a) through (c) of this notice (which are based on the three methods described in Rev. Rul. 2002-62).',
+    }, {
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, section 2.05',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'Q&A-12 of Notice 89-25, 1989-1 CB 662, provides that payments are considered to be substantially equal periodic payments under section 72(t)(2)(A)(iv) if they are made in accordance with one of the following three methods: (1) the required minimum distribution method; (2) the fixed amortization method; or (3) the fixed annuitization method.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2023,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts',
+      'packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts',
+    ],
+  },
+  'notice-2022-6-3-01-annual-payment-completeness': {
+    title: 'The annual payment is a yearly total, and annually is a floor on frequency',
+    statement:
+      'Each of the three methods determines an annual payment for a distribution year, and the statute requires payments not less frequently than annually. Several distributions inside one year are therefore one annual payment measured by their total rather than several competing series, and the year qualifies only when that total equals the annual scheduled amount exactly. The annual reconciliation sums every scheduled payment in the year and reports the year incomplete when the total falls short, exceeded when it runs over.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, section 3.01(a)',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'The annual payment for each distribution year is determined by dividing the account balance for that distribution year by the number of years from the chosen life expectancy table in section 3.02(a) of this notice for that distribution year.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 72(t)(2)(A)(iv)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText:
+        'part of a series of substantially equal periodic payments (not less frequently than annually) made for the life (or life expectancy) of the employee or the joint lives (or joint life expectancies) of such employee and his designated beneficiary,',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2023,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts',
+    ],
+  },
+  'notice-2022-6-3-02-c-interest-rate-ceiling': {
+    title: 'Interest rate ceiling for the fixed amortization and fixed annuitization methods',
+    statement:
+      'Any interest rate at or below the greater of 5 percent or 120 percent of the federal mid-term rate may be used to apply the fixed amortization or the fixed annuitization method. Because 5 percent is the floor of that ceiling, a flat 5 percent is permitted in every rate environment, and the projection uses it. The 5 percent leg exists only under Notice 2022-6: the superseded Rev. Rul. 2002-62 capped the rate at 120 percent of the federal mid-term rate alone, under which a flat 5 percent would have been impermissible in a low-rate year.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The authority fixes a ceiling, not a rate, so the engine had to pick one. It carries no section 1274(d) federal mid-term rate series, and 5 percent is the highest rate permitted without knowing that rate, so a flat 5 percent needs no feed and can never exceed the ceiling. A projection wanting a larger payment would have to source the mid-term rate for one of the two months immediately preceding the month the series begins. Note also that the engine source comment describing the ceiling as 120 percent of the mid-term rate states the superseded Rev. Rul. 2002-62 rule, not the Notice 2022-6 rule.',
+    authority: [{
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, section 3.02(c)',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'The interest rate that may be used to apply the fixed amortization method or the fixed annuitization method is any interest rate that is not more than the greater of (i) 5% or (ii) 120% of the federal mid-term rate (determined in accordance with section 1274(d) for either of the two months immediately preceding the month in which the distribution begins).',
+    }, {
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, section 2.06',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'Section 2.02(c) of Rev. Rul. 2002-62 modifies the application of the fixed amortization method and the fixed annuitization method by providing that the interest rate that may be used to apply the fixed amortization method or the fixed annuitization method is any interest rate that is not greater than 120% of the federal mid-term rate (determined in accordance with section 1274(d) for either of the two months immediately preceding the month in which the distribution begins).',
+    }, {
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, sections 4 and 5',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'The guidance in this notice replaces the guidance in Rev. Rul. 2002-62 and Notice 2004-15 for any series of payments commencing on or after January 1, 2023, and it may be used for a series of payments commencing in 2022. ... Rev. Rul. 2002-62 and Notice 2004-15 are modified and superseded.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2023,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: ['packages/engine/src/strategies/sepp.ts'],
+  },
+  'notice-2022-6-3-02-e-single-account-balance-scope': {
+    title: 'The series runs against one account balance and is proven against every distribution from it',
+    statement:
+      'Payments are first calculated with respect to one account balance as of the first valuation date, and only amounts that are part of the resulting series are excepted. A distribution from that account which is not a scheduled payment is therefore not merely a separately penalized withdrawal; it leaves the year unproven. The reconciliation is closed over the complete inventory of distributions from the source account for the year and reports the year incomplete when an inventory member has no matching scheduled payment, so no payment in that year reaches a zero penalty.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, section 3.02(e)',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'Under all three methods, substantially equal periodic payments are first calculated with respect to an account balance as of the first valuation date selected as described in section 3.02(d) of this notice. A modification to the series of payments will occur if, after such date, there is (1) any addition to the account balance other than by reason of investment experience, (2) any transfer of a portion of the account balance to another retirement plan, or (3) a rollover of the amount received by the employee.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, section 3.02(d)',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'For the fixed amortization and fixed annuitization methods, the account balance must be determined in a reasonable manner based on the facts and circumstances. The account balance will be treated as determined in a reasonable manner if it is the account balance on any date within the period that begins on December 31 of the year prior to the date of the first distribution and ends on the date of the first distribution.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2023,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts',
+      'packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts',
+    ],
+  },
+  'irc-72-t-4-sepp-modification-proof-window': {
+    title: 'Absence of a disqualifying modification must be proven through the payment date',
+    statement:
+      'Section 72(t)(4) withdraws the exception retroactively from every prior payment once the series is modified inside the window, so the exception cannot be established for a payment on facts that stop short of that payment date. The reconciliation requires an explicit no-modification proof whose through date reaches the distribution date and refuses the payment when the proof ends earlier.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'Section 72(t)(4) sets the consequence of a modification but no evidentiary standard for proving one did not happen, so the engine had to choose what suffices. It takes a dated attestation covering the payment and refuses anything earlier, because a proof running only to the start of the year cannot speak to a modification made in March. That is an engineering decision rather than a legal conclusion, and the attestation is not a test of the three events section 3.02(e) of Notice 2022-6 enumerates.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 72(t)(4)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText:
+        'If- (i) paragraph (1) does not apply to a distribution by reason of paragraph (2)(A)(iv), and (ii) the series of payments under such paragraph are subsequently modified (other than by reason of death or disability or a distribution to which paragraph (10) applies)- (I) before the close of the 5-year period beginning with the date of the first payment and after the employee attains age 59 1/2, or (II) before the employee attains age 59 1/2, the taxpayer’s tax for the 1st taxable year in which such modification occurs shall be increased by an amount, determined under regulations, equal to the tax which (but for paragraph (2)(A)(iv)) would have been imposed, plus interest for the deferral period.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts',
+      'packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts',
+    ],
+  },
+  'notice-2022-6-3-02-e-modification-trigger-detection': {
+    title: 'Events that modify a series are not detected by the engine',
+    statement:
+      'After the first valuation date a modification occurs on any addition to the account balance other than by reason of investment experience, any transfer of part of the balance to another retirement plan, or a rollover of the amount received. Not modelled: the engine tests none of the three. The annual reconciliation consumes a caller-supplied attestation that no disqualifying modification occurred and derives nothing from the account history, so an attestation supplied for a series that in fact took a contribution, a partial transfer out, or a rollover produces a zero penalty the statute would not allow. The error runs toward understating tax, and it omits the section 72(t)(4) recapture as well.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, section 3.02(e)',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'A modification to the series of payments will occur if, after such date, there is (1) any addition to the account balance other than by reason of investment experience, (2) any transfer of a portion of the account balance to another retirement plan, or (3) a rollover of the amount received by the employee.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2023,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts',
+      'packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts',
+    ],
+  },
+  'notice-2022-6-3-03-b-one-time-method-change': {
+    title: 'One-time switch to the required minimum distribution method',
+    statement:
+      'A participant who began with the fixed amortization or the fixed annuitization method may switch once, in any later distribution year, to the required minimum distribution method without that switch being a modification; any later change away from the required minimum distribution method is a modification. Not modelled: an election carries one method for the life of the series, the plan model offers no way to record the year of a switch, and the annual reconciliation binds one method to every payment in the year. The error runs toward larger later payments and faster depletion, because the engine keeps paying the level fixed amount in years when a real participant could have dropped to the smaller redetermined required minimum distribution payment.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, section 3.03(b)',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'An individual who begins distributions using either the fixed amortization method or the fixed annuitization method is permitted in any subsequent distribution year to switch to the required minimum distribution method to determine the payment for the distribution year of the switch and all subsequent distribution years, and this change in method will not be treated as a modification within the meaning of section 72(t)(4). Once a change is made under this paragraph, any subsequent change from the required minimum distribution method will be a modification for purposes of section 72(t)(4).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2023,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/strategies/sepp.ts',
+      'packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts',
+    ],
+  },
+  'notice-2022-6-3-03-a-complete-depletion': {
+    title: 'Exhausting the account is not a modification',
+    statement:
+      'When following a qualifying method exhausts the assets in the account, the resulting reduction in the final payment and the cessation of payments that follows are not a modification, and the section 72(t)(4)(A) recapture tax does not apply. Not modelled: the annual reconciliation qualifies a year only when the distributions total the annual scheduled amount exactly, and it receives no fact distinguishing a shortfall caused by an exhausted account from a shortfall caused by underpayment, so it refuses both. The error runs toward refusing a series the notice would preserve, overstating penalty rather than understating it, and a caller can avoid it only by restating the annual scheduled amount as the reduced final payment.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, section 3.03(a)',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'If, as a result of following a method of determining substantially equal periodic payments that qualifies for the exception of section 72(t)(2)(A)(iv), an individual’s assets in an individual account plan or an IRA are exhausted, any resulting reduction in the amount of the final payment (and the subsequent cessation of payments) is not a modification within the meaning of section 72(t)(4). Accordingly, the recapture tax described in section 72(t)(4)(A) will not apply in this case.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2023,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts',
+    ],
+  },
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)

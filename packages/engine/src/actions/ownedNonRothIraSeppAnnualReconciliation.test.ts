@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { describeRule } from '../rules/describeRule.js'
+
 import {
   asAccountId,
   asActionId,
@@ -1337,3 +1339,235 @@ function buildRawInputFromCoverages(
   base.payments = payments
   return base
 }
+/** The per-payment nonconformance kinds a failed reconciliation reported. */
+function paymentIssueKinds(
+  result: ReturnType<typeof reconcileOwnedNonRothIraSeppAnnualSchedule>,
+): readonly (string | undefined)[] {
+  return result.status === 'reconciled' || result.status === 'evidenceMissing'
+    ? []
+    : result.issues.map((issue) => issue.paymentIssue)
+}
+
+/**
+ * Registry fixtures for the 72(t) SEPP cluster.
+ *
+ * Each candidate reading below was written from the authority before the
+ * implementation was consulted, and each pair predicts a different reconciled
+ * dollar figure or payment count, so a fixture cannot pass under both.
+ */
+describe('72(t) SEPP registry conformance', () => {
+  describeRule('irc-72-t-2-A-iv-sepp-exception', {
+    // Two payments of $120.00 against an annual schedule of $360.00. The
+    // statute excepts a distribution only if it is "part of a series of
+    // substantially equal periodic payments", so the question is whether
+    // membership in a complete series gates the exception, or whether each
+    // payment carries its own exception on its own facts.
+    readings: {
+      // Series membership gates it: the year never made up the annual payment
+      // the method determined, so nothing in it is part of a qualifying series.
+      seriesMembershipGatesTheException: 0,
+      // Each payment stands alone: both payments were substantially equal and
+      // on schedule, so both would still be excepted.
+      eachPaymentStandsAlone: 24_000,
+    },
+    accepted: 'seriesMembershipGatesTheException',
+  }, ({ accepted, readings }) => {
+    const result = reconcileOwnedNonRothIraSeppAnnualSchedule(
+      buildInput({ amounts: [12_000, 12_000], annualAmount: 36_000 }),
+    )
+
+    it('excepts nothing in a year that never completed the annual payment', () => {
+      expect(result.evidence?.reconciledActualGrossAmount ?? 0).toBe(accepted)
+      expect(result.evidence?.reconciledActualGrossAmount ?? 0)
+        .not.toBe(readings.eachPaymentStandsAlone)
+    })
+
+    it('reports the year incomplete rather than partly qualified', () => {
+      expect(result.status).toBe('reconciliationIncomplete')
+      expect(issueKinds(result)).toEqual([
+        'terminalScheduledGrossIncomplete',
+        'terminalActualGrossIncomplete',
+      ])
+    })
+  })
+
+  describeRule('irc-72-t-5-sepp-participant-scope', {
+    // The same $120.00 payment, reconciled for a household member who is not
+    // the participant the election and the account belong to. Section 72(t)(5)
+    // makes the IRA owner the employee, so the question is whether the series
+    // is scored per participant or across the household.
+    readings: {
+      // Per participant: another person cannot draw on this series at all.
+      perParticipantAndAccount: 0,
+      // Household aggregate: any member of the household could reconcile it.
+      householdAggregate: 12_000,
+    },
+    accepted: 'perParticipantAndAccount',
+  }, ({ accepted, readings }) => {
+    const base = buildInput({ amounts: [12_000] })
+    const result = reconcileOwnedNonRothIraSeppAnnualSchedule({
+      ...base,
+      ownerPersonId: asPersonId('spouse'),
+    })
+
+    it('scores the series for the participant it belongs to, not the household', () => {
+      expect(result.evidence?.reconciledActualGrossAmount ?? 0).toBe(accepted)
+      expect(result.evidence?.reconciledActualGrossAmount ?? 0)
+        .not.toBe(readings.householdAggregate)
+    })
+
+    it('names the inventory member as foreign to this participant', () => {
+      expect(result.status).toBe('notReconciled')
+      expect(issueKinds(result)).toContain('foreignInventoryMember')
+    })
+  })
+
+  describeRule('notice-2022-6-3-01-three-permitted-methods', {
+    // A fixed annuitization election. Notice 2022-6 section 3.01 lists three
+    // methods; the engine's own projection strategy carries a two-value method
+    // union, which would refuse this election.
+    readings: {
+      threeMethodsUnderNotice2022_6: 'reconciled',
+      twoMethodsAsTheProjectionStrategyModelsThem: 'notReconciled',
+    },
+    accepted: 'threeMethodsUnderNotice2022_6',
+  }, ({ accepted, readings }) => {
+    const base = buildInput({ amounts: [12_000] })
+    const withMethod = (
+      method: typeof base.electionEvidence extends undefined ? never
+        : NonNullable<typeof base.electionEvidence>['method'],
+    ): ReturnType<typeof reconcileOwnedNonRothIraSeppAnnualSchedule> =>
+      reconcileOwnedNonRothIraSeppAnnualSchedule({
+        ...base,
+        electionEvidence: { ...base.electionEvidence!, method },
+      })
+
+    it('accepts the fixed annuitization method on the same footing as the others', () => {
+      expect(withMethod('fixedAnnuitization').status).toBe(accepted)
+      expect(withMethod('fixedAnnuitization').status)
+        .not.toBe(readings.twoMethodsAsTheProjectionStrategyModelsThem)
+    })
+
+    it('accepts the required minimum distribution and fixed amortization methods', () => {
+      expect(withMethod('requiredMinimumDistribution').status).toBe(accepted)
+      expect(withMethod('fixedAmortization').status).toBe(accepted)
+    })
+
+    it('refuses a fourth method by name rather than reconciling it', () => {
+      const result = reconcileOwnedNonRothIraSeppAnnualSchedule({
+        ...base,
+        electionEvidence: {
+          ...base.electionEvidence!,
+          method: 'levelDollar' as NonNullable<
+            typeof base.electionEvidence
+          >['method'],
+        },
+      })
+      expect(result.status).toBe('notReconciled')
+      expect(paymentIssueKinds(result)).toContain('unsupportedMethod')
+    })
+  })
+
+  describeRule('notice-2022-6-3-01-annual-payment-completeness', {
+    // Three $40.00 distributions against a $120.00 annual schedule. The statute
+    // requires payments "not less frequently than annually", which is a floor
+    // on frequency, and the methods determine an annual payment. So the
+    // question is what the year is measured by.
+    readings: {
+      // The annual total is the payment: all three distributions are one
+      // annual payment and the year is complete at $120.00.
+      annualTotalOfEveryDistribution: 12_000,
+      // One payment per year: only the first distribution could count, leaving
+      // the year at $40.00.
+      onlyOneDistributionCountsPerYear: 4_000,
+    },
+    accepted: 'annualTotalOfEveryDistribution',
+  }, ({ accepted, readings }) => {
+    const result = reconcileOwnedNonRothIraSeppAnnualSchedule(
+      buildInput({ amounts: [4_000, 4_000, 4_000] }),
+    )
+
+    it('measures the year by the total of every scheduled distribution', () => {
+      expect(result.status).toBe('reconciled')
+      expect(result.evidence?.reconciledActualGrossAmount).toBe(accepted)
+      expect(result.evidence?.reconciledActualGrossAmount)
+        .not.toBe(readings.onlyOneDistributionCountsPerYear)
+    })
+
+    it('keeps all three distributions in the one reconciled series', () => {
+      expect(result.evidence?.paymentCount).toBe(3)
+    })
+  })
+
+  describeRule('notice-2022-6-3-02-e-single-account-balance-scope', {
+    // A $120.00 scheduled payment plus a $30.00 unscheduled distribution from
+    // the same IRA. The series is calculated against that one account balance,
+    // so the question is what an extra distribution from it does.
+    readings: {
+      // It leaves the year unproven: nothing from the account is excepted.
+      unscheduledDistributionLeavesTheYearUnproven: 0,
+      // It is merely a separately penalized withdrawal and the scheduled
+      // payment still qualifies on its own.
+      scheduledPaymentSurvivesTheExtraWithdrawal: 12_000,
+    },
+    accepted: 'unscheduledDistributionLeavesTheYearUnproven',
+  }, ({ accepted, readings }) => {
+    const base = buildInput({ amounts: [12_000, 3_000], annualAmount: 15_000 })
+    const result = reconcileOwnedNonRothIraSeppAnnualSchedule({
+      ...base,
+      annualScheduleEvidence: {
+        ...base.annualScheduleEvidence!,
+        annualScheduledGrossAmount: asUsdCents(12_000),
+      },
+      payments: [base.payments![0]!],
+    })
+
+    it('excepts nothing when the account made a distribution outside the series', () => {
+      expect(result.evidence?.reconciledActualGrossAmount ?? 0).toBe(accepted)
+      expect(result.evidence?.reconciledActualGrossAmount ?? 0)
+        .not.toBe(readings.scheduledPaymentSurvivesTheExtraWithdrawal)
+    })
+
+    it('names the inventory member that no scheduled payment answers', () => {
+      expect(result.status).toBe('reconciliationIncomplete')
+      expect(issueKinds(result)).toEqual(['inventoryMemberWithoutPayment'])
+    })
+  })
+
+  describeRule('irc-72-t-4-sepp-modification-proof-window', {
+    // The $120.00 payment falls on 2030-01-15, but the no-modification proof
+    // runs only through 2029-12-31. Section 72(t)(4) pulls the exception back
+    // from every prior payment on a later modification, so the question is how
+    // far the proof has to reach.
+    readings: {
+      proofMustReachThePaymentDate: 0,
+      proofOpeningTheYearIsEnough: 12_000,
+    },
+    accepted: 'proofMustReachThePaymentDate',
+  }, ({ accepted, readings }) => {
+    const base = buildInput({ amounts: [12_000] })
+    const result = reconcileOwnedNonRothIraSeppAnnualSchedule({
+      ...base,
+      noModificationEvidence: {
+        ...base.noModificationEvidence!,
+        throughDate: '2029-12-31',
+      },
+    })
+
+    it('refuses a payment its no-modification proof does not reach', () => {
+      expect(result.evidence?.reconciledActualGrossAmount ?? 0).toBe(accepted)
+      expect(result.evidence?.reconciledActualGrossAmount ?? 0)
+        .not.toBe(readings.proofOpeningTheYearIsEnough)
+    })
+
+    it('names the insufficient modification evidence on the payment', () => {
+      expect(result.status).toBe('notReconciled')
+      expect(paymentIssueKinds(result)).toContain('modificationEvidenceInsufficient')
+    })
+
+    it('reconciles once the proof reaches the payment date', () => {
+      expect(reconcileOwnedNonRothIraSeppAnnualSchedule(base).status)
+        .toBe('reconciled')
+    })
+  })
+})
