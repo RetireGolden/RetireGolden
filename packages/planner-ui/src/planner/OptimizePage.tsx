@@ -15,6 +15,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import type { OptimizedSchedule } from '@retiregolden/engine/strategies/optimizer'
 import { objectivePolicies, type ObjectivePolicyId } from '@retiregolden/engine/decisions'
 import {
+  optimizerUnsupportedRetirementActions,
   type ExactLedgerRecommendationState,
   withOptimizedConversions,
 } from '@retiregolden/engine/projection/optimizePlan'
@@ -25,6 +26,11 @@ import { downloadStandaloneReport } from '../report/downloadReport'
 import { useReportBranding } from '../report/brandingContext'
 import { reportEvidenceFromOptimizeResult } from '../report/reportHtml'
 import { acaVetoExplanation } from './acaVetoCopy'
+import {
+  OPTIMIZER_RETIREMENT_ACTION_HEADING,
+  OPTIMIZER_RETIREMENT_ACTION_NEXT_STEP,
+  optimizerRetirementActionExplanation,
+} from './optimizerRetirementActionCopy'
 import { usePlan } from './planContextCore'
 import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
 import { WhyRecommendationPanel } from './explainPanels'
@@ -122,6 +128,17 @@ export function OptimizePage() {
   const [coOptimizeClaim, setCoOptimizeClaim] = useState(false)
   const runToken = useRef(0)
 
+  // Precondition, checked before any dispatch: the optimizer prices conversions
+  // off aggregate opening buckets, which a plan carrying identity-bearing
+  // retirement actions no longer describes. A run would only reach the engine's
+  // last-resort throw, so the page states the condition instead of surfacing a
+  // raw error next to a retry that can never clear it.
+  const unsupportedActionReasons = useMemo(
+    () => optimizerUnsupportedRetirementActions(plan),
+    [plan],
+  )
+  const optimizerUnavailable = unsupportedActionReasons.length > 0
+
   const hasSocialSecurityIncome = plan.incomes.some((s) => s.type === 'socialSecurity')
   const coOptimizeRequested = coOptimizeClaim && hasSocialSecurityIncome
 
@@ -211,6 +228,15 @@ export function OptimizePage() {
 
   const run = useCallback(() => {
     const token = ++runToken.current
+    if (optimizerUnavailable) {
+      // Never dispatch: clear any result computed before the actions were
+      // recorded so the chart and Apply cannot describe a superseded plan.
+      setRunning(false)
+      setError(null)
+      setMcRate(null)
+      setOptimizeResult(null)
+      return
+    }
     setRunning(true)
     setError(null)
     setMcRate(null)
@@ -229,7 +255,7 @@ export function OptimizePage() {
       .finally(() => {
         if (token === runToken.current) setRunning(false)
       })
-  }, [plan, startYear, objectiveId, coOptimizeRequested])
+  }, [plan, startYear, objectiveId, coOptimizeRequested, optimizerUnavailable])
 
   // Auto-run on plan / rate change (debounced).
   useEffect(() => {
@@ -389,21 +415,38 @@ export function OptimizePage() {
           </>
         ) : null}
         {error ? <p style={{ color: 'var(--bad)' }}>Optimizer error: {error}</p> : null}
-        <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          {!schedule && !running ? rerunButton(error ? 'Try again' : 'Run optimizer') : null}
-          {/* Also disabled while re-running: the held result (and any claim
-              patch in it) describes the pre-edit plan, so a report downloaded
-              mid-run would mix live plan fields with stale recommendations. */}
-          <button
-            type="button"
-            className="btn btn-secondary btn-small"
-            disabled={!optimizeResult || running || !recommendationReportIsAvailable}
-            onClick={downloadRecommendationReport}
-          >
-            Download recommendation report
-          </button>
-        </div>
+        {/* No run controls while the precondition holds: every control here
+            either starts a run that cannot happen or downloads a report that
+            does not exist. */}
+        {optimizerUnavailable ? null : (
+          <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            {!schedule && !running ? rerunButton(error ? 'Try again' : 'Run optimizer') : null}
+            {/* Also disabled while re-running: the held result (and any claim
+                patch in it) describes the pre-edit plan, so a report downloaded
+                mid-run would mix live plan fields with stale recommendations. */}
+            <button
+              type="button"
+              className="btn btn-secondary btn-small"
+              disabled={!optimizeResult || running || !recommendationReportIsAvailable}
+              onClick={downloadRecommendationReport}
+            >
+              Download recommendation report
+            </button>
+          </div>
+        )}
       </div>
+
+      {optimizerUnavailable ? (
+        <div className="card">
+          <h2 style={{ margin: '0 0 0.35rem' }}>{OPTIMIZER_RETIREMENT_ACTION_HEADING}</h2>
+          <p className="muted" style={{ margin: 0 }}>
+            {optimizerRetirementActionExplanation(unsupportedActionReasons)}
+          </p>
+          <p className="field-hint" style={{ margin: '0.6rem 0 0' }}>
+            {OPTIMIZER_RETIREMENT_ACTION_NEXT_STEP}
+          </p>
+        </div>
+      ) : null}
 
       {schedule && !running && claimAge?.enabled ? (
         claimChangeRecommended ? (

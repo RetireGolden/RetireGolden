@@ -10,7 +10,11 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { parseRetirementActionRequest } from '../actions/index.js'
+import {
+  ACTION_REASON_REGISTRY,
+  parseActionReason,
+  parseRetirementActionRequest,
+} from '../actions/index.js'
 import {
   maximizeAfterTaxEstate,
   maximizeSpendingDurability,
@@ -31,6 +35,7 @@ import {
   evaluateSimpleConversionCandidates,
   optimizePlan,
   optimizePlanCoOptimizingClaimAge,
+  optimizerUnsupportedRetirementActions,
   postProcessExactLedgerSchedule,
   runExactLedgerTournament,
   selectConvergencePostProcessing,
@@ -844,6 +849,101 @@ describe('postProcessExactLedgerSchedule', () => {
     expect(processed.pruneIterationCount).toBe(0)
     expect(processed.cleanedValidation.recommendationState).toBe('rejected')
     expect(processed.recommendationSchedule).toBe('none')
+  })
+})
+
+describe('optimizerUnsupportedRetirementActions', () => {
+  const REGISTRY_ENTRY = ACTION_REASON_REGISTRY['optimizer-retirement-action-unsupported']
+
+  /** Identity-bearing withdrawal: names the owner, the source account, and a date. */
+  function identityWithdrawal(plan: Plan) {
+    const parsed = parseRetirementActionRequest({
+      actionId: 'optimizer-precondition-withdrawal',
+      kind: 'ordinaryWithdrawal',
+      year: 2027,
+      executionDate: '2027-03-04',
+      executionSequence: 1,
+      requestedAmount: 1_000_00,
+      provenance: { source: 'manual' },
+      personId: 'p1',
+      allocations: [{
+        allocationId: 'optimizer-precondition-allocation',
+        sourceAccountId: plan.accounts[0]!.id,
+        requestedAmount: 1_000_00,
+      }],
+      purpose: { kind: 'spending' },
+    })
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    return parsed.request
+  }
+
+  /** Migrated aggregate: same refusal, but there is no person to name. */
+  function legacyAggregate() {
+    const parsed = parseRetirementActionRequest({
+      actionId: 'optimizer-precondition-legacy',
+      kind: 'legacyAggregateWithdrawal',
+      year: 2028,
+      requestedAmount: 2_000_00,
+      legacyCategory: 'cash',
+      provenance: { source: 'migration' },
+    })
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    return parsed.request
+  }
+
+  it('finds nothing to refuse on an action-free plan', () => {
+    const plan = validate(tradHeavyPlan())
+
+    expect(optimizerUnsupportedRetirementActions(plan)).toEqual([])
+    // Discriminating: the same plan is exactly what the optimizer does support.
+    expect(() => buildOptimizerInput(plan, opts)).not.toThrow()
+  })
+
+  it('returns one registry-shaped reason per recorded action, naming the acting person', () => {
+    const draft = tradHeavyPlan()
+    draft.strategies.retirementActions = [identityWithdrawal(draft), legacyAggregate()]
+    const plan = validate(draft)
+
+    const reasons = optimizerUnsupportedRetirementActions(plan)
+    expect(reasons).toHaveLength(2)
+    for (const reason of reasons) {
+      // Registry convention: code + the registry's own predicate/outcome/message,
+      // and nothing a hand-written literal could drift from.
+      expect(reason.code).toBe('optimizer-retirement-action-unsupported')
+      expect(reason.predicate).toBe(REGISTRY_ENTRY.predicate)
+      expect(reason.outcome).toBe(REGISTRY_ENTRY.outcome)
+      expect(reason.message).toBe(REGISTRY_ENTRY.message)
+      expect(parseActionReason(reason)).toEqual({ ok: true, reason })
+    }
+    // Identity carried where the kind has one; a migrated aggregate names nobody.
+    expect(reasons[0]!.personId).toBe('p1')
+    expect(reasons[1]!.personId).toBeUndefined()
+  })
+
+  it('agrees with the last-resort invariant inside buildOptimizerInput', () => {
+    const actionFree = validate(tradHeavyPlan())
+    const draft = tradHeavyPlan()
+    draft.strategies.retirementActions = [identityWithdrawal(draft)]
+    const actionBearing = validate(draft)
+
+    // The predicate is the gate and the throw is the backstop, so a plan the
+    // predicate clears must never reach the throw, and vice versa. If these two
+    // conditions drift, a surface that checks the predicate would dispatch a run
+    // that dies on a raw engine string again.
+    for (const [plan, refused] of [[actionFree, false], [actionBearing, true]] as const) {
+      expect(optimizerUnsupportedRetirementActions(plan).length > 0).toBe(refused)
+      let threw = false
+      try {
+        buildOptimizerInput(plan, opts)
+      } catch {
+        threw = true
+      }
+      expect(threw).toBe(refused)
+    }
+
+    // The probe-source overload is guarded too: convergence re-linearizes around
+    // an incumbent plan, and that plan must clear the precondition as well.
+    expect(() => buildOptimizerInput(actionFree, opts, actionBearing)).toThrow()
   })
 })
 

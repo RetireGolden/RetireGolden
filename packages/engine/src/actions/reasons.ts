@@ -419,6 +419,11 @@ const actionReasonRegistry = {
     outcome: 'unsupported',
     message: 'This legacy QCD has no donor, source IRA, execution date, or charity evidence.',
   },
+  'optimizer-retirement-action-unsupported': {
+    predicate: 'optimizerUnsupportedRetirementActions',
+    outcome: 'unsupported',
+    message: 'The optimizer prices conversions against aggregate account balances, so it cannot price a recorded retirement action that moves a named source.',
+  },
 } as const satisfies Readonly<Record<string, RegistryEntry>>
 
 for (const entry of Object.values(actionReasonRegistry)) Object.freeze(entry)

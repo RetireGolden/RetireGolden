@@ -19,6 +19,8 @@ import { indexFederalTaxPack, packForYear, LATEST_PACK_YEAR } from '../params/in
 import { stateParamsFor } from '../params/state/index.js'
 import type { FilingStatus } from '../params/types.js'
 import type { Account, Plan } from '../model/plan.js'
+import { createActionReason, type ActionReason } from '../actions/reasons.js'
+import type { PersonId } from '../actions/identity.js'
 import {
   DECISION_MINIMUM_REQUESTED_CONVERSION_DOLLARS,
   DECISION_NEUTRAL_TOLERANCE_DOLLARS,
@@ -197,6 +199,44 @@ function blendedGrowth(plan: Plan, startYear: number): number {
   return total > 0 ? weighted / total : plan.assumptions.defaultReturnPct / 100
 }
 
+type PlanRetirementAction = Plan['strategies']['retirementActions'][number]
+
+/** The person a recorded action names, when its kind carries one. */
+function retirementActionPersonId(action: PlanRetirementAction): PersonId | undefined {
+  if (action.kind === 'ordinaryWithdrawal' || action.kind === 'rothConversion') return action.personId
+  if (action.kind === 'qcd') return action.donorPersonId
+  return undefined
+}
+
+/**
+ * PRECONDITION for the whole optimize pipeline: the recorded retirement actions
+ * this plan carries that the optimizer cannot price — one registry reason per
+ * action, empty when the plan is action-free.
+ *
+ * `buildOptimizerInput` sums each opening bucket off the pre-action `Plan`
+ * snapshot, while the action executor debits the *named* sources inside
+ * `simulate`. Solving against those aggregates would price a portfolio the
+ * exact ledger never holds, so an action-bearing plan gets a wrong answer
+ * rather than a worse one. Callers check this BEFORE dispatching an optimize
+ * request and present a non-actionable result; the throw inside
+ * `buildOptimizerInput` guards the identical condition as an unreachable
+ * last-resort invariant (`optimizePlan.test.ts` pins the two together).
+ *
+ * Reporting per action — rather than one plan-level flag — keeps the count and
+ * the named person available to the surface doing the telling.
+ */
+export function optimizerUnsupportedRetirementActions(
+  plan: Plan,
+): readonly ActionReason<'optimizer-retirement-action-unsupported'>[] {
+  return plan.strategies.retirementActions.map((action) => {
+    const personId = retirementActionPersonId(action)
+    return createActionReason(
+      'optimizer-retirement-action-unsupported',
+      personId === undefined ? {} : { personId },
+    )
+  })
+}
+
 /**
  * Build the optimizer input from a probe projection.
  *
@@ -209,6 +249,10 @@ function blendedGrowth(plan: Plan, startYear: number): number {
  * optimum by iteration (see `optimizePlan`).
  */
 export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probeSourcePlan?: Plan): OptimizerInput {
+  // Last-resort invariant, not the user-facing gate. Surfaces check
+  // `optimizerUnsupportedRetirementActions` before dispatching, so reaching
+  // this throw means a caller skipped the precondition — better a raw failure
+  // than a schedule priced off opening buckets the executor never holds.
   if (
     plan.strategies.retirementActions.length > 0 ||
     (probeSourcePlan?.strategies.retirementActions.length ?? 0) > 0
