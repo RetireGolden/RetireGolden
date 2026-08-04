@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { describeRule } from '../rules/describeRule.js'
+
 import {
   asActionId,
   asAccountId,
@@ -754,5 +756,42 @@ describe('Plan-owned non-Roth IRA annual filing evidence', () => {
       buildPlanOwnedNonRothIraAnnualFilingEvidence(hostileThrownValue),
     ).not.toThrow()
     expect(issueKinds(hostileThrownValue)).toEqual(['inputInvalid'])
+  })
+})
+
+describeRule('irc-219-f-3-prior-year-contribution-window', {
+  // The tax year is 2030 and the ordinary deadline is 2031-04-15. A
+  // contribution designated for 2030 but made 2031-06-01 falls inside the
+  // extended filing window and outside the section 219(f)(3) window, which
+  // excludes extensions, so the record is refused. The reading that extensions
+  // carry the contribution window admits it at its full 250,000 cents.
+  readings: {
+    statute: 'postYearContributionInvalid',
+    rejectedExtensionsCarryTheWindow: 250_000,
+  },
+  accepted: 'statute',
+}, ({ accepted, readings }) => {
+  it('refuses a prior-year contribution made after the unextended deadline', () => {
+    const value = clone()
+    const source = value.sourceRecord as PlanOwnedNonRothIraAnnualFilingSourceRecord
+    source.nondeductibleContributionFacts.contributions[0]!.contributionDate = '2031-06-01'
+
+    // `issueKinds` also asserts the contribution window comes back null, so the
+    // 250,000 the rejected reading would have admitted on this date reaches no
+    // year's basis at all.
+    expect(issueKinds(value)).toContain(accepted)
+  })
+
+  it('counts a contribution made inside the window toward that year basis', () => {
+    const window = built().postYearContributionWindow
+
+    expect(window.deadlineEvidence.deadlineDate).toBe('2031-04-15')
+    // The control for the test above, not an assertion of the rejected reading.
+    // The same 250,000 is admitted here solely because 2031-02-01 falls inside
+    // the unextended window; the contribution date is the entire difference
+    // between the two readings.
+    expect(window.contributions[0]!.contributionDate).toBe('2031-02-01')
+    expect(window.contributions[0]!.nondeductibleContributionAmount)
+      .toBe(readings.rejectedExtensionsCarryTheWindow)
   })
 })

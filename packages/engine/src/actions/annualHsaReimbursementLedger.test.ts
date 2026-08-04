@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { describeRule } from '../rules/describeRule.js'
 import {
   evaluateAnnualHsaReimbursementLedger,
   type EvaluateAnnualHsaReimbursementLedgerInput,
@@ -391,5 +392,135 @@ describe('evaluateAnnualHsaReimbursementLedger', () => {
     const before = structuredClone(input)
     evaluated(input)
     expect(input).toEqual(before)
+  })
+})
+
+// Every reading below was derived from the authority before the implementation
+// was consulted, and each pair predicts a different number under the same facts.
+describeRule('irc-223-d-2-A-qualified-expense-related-persons', {
+  // Allocation B is a distribution from person B's HSA reimbursing person A's
+  // expense. IRC 223(d)(2)(A) reaches the beneficiary, that beneficiary's
+  // spouse, and dependents, so the whole 5,000 claim is qualified. The reading
+  // that an HSA may only reimburse its own beneficiary's care qualifies none of
+  // it and makes the entire distribution includible.
+  readings: { statute: 5_000, rejectedOwnExpensesOnly: 0 },
+  accepted: 'statute',
+}, ({ accepted, readings }) => {
+  it('qualifies a distribution reimbursing the spouse of the account owner', () => {
+    const entry = evaluated().entries[1]!
+
+    expect(entry.distributionOwnerPersonId).toBe(personB)
+    expect(entry.consumptions[0]!.patientPersonId).toBe(personA)
+    expect(entry.consumptions[0]!.patientRelationshipToDistributionOwner).toBe('spouse')
+    expect(entry.qualifiedMedicalAmount).toBe(accepted)
+    expect(entry.qualifiedMedicalAmount).not.toBe(readings.rejectedOwnExpensesOnly)
+    expect(entry.nonqualifiedAmount).toBe(0)
+  })
+
+  it('refuses a relationship claim that contradicts the patient identity', () => {
+    const value = fixture()
+    Object.assign(value.allocations[1]!.reimbursementClaims[0]!, {
+      patientRelationshipToDistributionOwner: 'self',
+    })
+
+    expect(evaluateAnnualHsaReimbursementLedger(value).status).toBe('blocked')
+  })
+})
+
+describeRule('notice-2004-2-a-26-expense-incurred-after-hsa-established', {
+  // The expense is incurred 2020-06-01. Move person A's establishment to
+  // 2021-01-01 and Notice 2004-2 A-26 makes the expense permanently
+  // unreimbursable from that account, so the ledger refuses. The reading that
+  // establishment only has to precede the distribution admits the claim and
+  // reports 4,000 of qualified medical expense.
+  readings: { notice: 'blocked', rejectedEstablishedBeforeDistribution: 4_000 },
+  accepted: 'notice',
+}, ({ accepted, readings }) => {
+  it('refuses to reimburse an expense incurred before the HSA existed', () => {
+    const value = fixture()
+    Object.assign(value.scope.ownerEstablishments[0]!, {
+      ownerHsaEstablishedDate: '2021-01-01',
+    })
+    Object.assign(value.allocations[0]!, { ownerHsaEstablishedDate: '2021-01-01' })
+    const result = evaluateAnnualHsaReimbursementLedger(value)
+
+    expect(result.status).toBe(accepted)
+    expect(result.entries).toEqual([])
+    expect(result.entries.map((entry) => entry.qualifiedMedicalAmount))
+      .not.toContain(readings.rejectedEstablishedBeforeDistribution)
+  })
+
+  it('admits the same claim once establishment precedes the expense', () => {
+    const value = fixture()
+    Object.assign(value.scope.ownerEstablishments[0]!, {
+      ownerHsaEstablishedDate: '2020-05-31',
+    })
+    Object.assign(value.allocations[0]!, { ownerHsaEstablishedDate: '2020-05-31' })
+
+    // Deliberately the rejected reading's own number. Everything else about the
+    // claim is unchanged, so 4,000 is exactly what the ledger would have
+    // reported above had establishment only needed to precede the distribution.
+    // Moving establishment one day either side of the expense is the whole
+    // difference between the two readings.
+    expect(evaluated(value).entries[0]!.qualifiedMedicalAmount)
+      .toBe(readings.rejectedEstablishedBeforeDistribution)
+  })
+})
+
+describeRule('notice-2004-50-a-39-deferred-reimbursement-no-deadline', {
+  // The expense was incurred in 2020 and the distribution is taken in tax year
+  // 2026. Notice 2004-50 A-39 puts no time limit on the reimbursement, so
+  // 4,000 is qualified. The reading that a distribution may only reimburse an
+  // expense incurred in the same tax year qualifies none of it.
+  readings: { notice: 4_000, rejectedSameTaxYearOnly: 0 },
+  accepted: 'notice',
+}, ({ accepted, readings }) => {
+  it('reimburses an expense incurred six tax years earlier', () => {
+    const value = fixture()
+    const result = evaluated(value)
+
+    expect(value.taxYear).toBe(2026)
+    expect(value.scope.expenses[0]!.expenseIncurredDate).toBe('2020-06-01')
+    expect(result.entries[0]!.evaluationDate.slice(0, 4)).toBe('2026')
+    expect(result.entries[0]!.qualifiedMedicalAmount).toBe(accepted)
+    expect(result.entries[0]!.qualifiedMedicalAmount).not.toBe(readings.rejectedSameTaxYearOnly)
+  })
+})
+
+describeRule('irc-223-d-2-A-expense-reimbursable-once', {
+  // The single 10,000 expense is reimbursed 4,000 by the first allocation, so
+  // 6,000 remains when the second one runs. IRC 223(d)(2)(A) qualifies an
+  // amount only to the extent it is not already compensated, so a 7,000 claim
+  // exceeds that remainder and the ledger refuses. The reading that the
+  // reimbursable amount stays at the original eligible figure however much has
+  // already been paid admits it and reports 7,000 of qualified expense.
+  readings: { statute: 'blocked', rejectedRemainderNeverReduced: 7_000 },
+  accepted: 'statute',
+}, ({ accepted, readings }) => {
+  it('measures a claim against the remainder, not the original amount', () => {
+    const value = fixture()
+    Object.assign(value.allocations[1]!, { executedAmount: asUsdCents(7_000) })
+    Object.assign(value.allocations[1]!.reimbursementClaims[0]!, {
+      reimbursedByAllocationAmount: asPositiveUsdCents(7_000),
+    })
+    const result = evaluateAnnualHsaReimbursementLedger(value)
+
+    expect(result.status).toBe(accepted)
+    expect(result.entries).toEqual([])
+    expect(result.entries.map((entry) => entry.qualifiedMedicalAmount))
+      .not.toContain(readings.rejectedRemainderNeverReduced)
+    // The refusal is only meaningful because the claim genuinely exceeds what
+    // is left: under the rejected reading the 10,000 eligible figure would still
+    // be standing here and 7,000 would fit inside it.
+    expect(readings.rejectedRemainderNeverReduced)
+      .toBeGreaterThan(evaluated().entries[0]!.expenseStateAfter[0]!.remainingUnreimbursedAmount)
+  })
+
+  it('chains the remainder across allocations within the year', () => {
+    const result = evaluated()
+
+    expect(result.entries[0]!.expenseStateAfter[0]!.remainingUnreimbursedAmount).toBe(6_000)
+    expect(result.entries[1]!.expenseStateBefore[0]!.remainingUnreimbursedAmount).toBe(6_000)
+    expect(result.entries[1]!.expenseStateAfter[0]!.remainingUnreimbursedAmount).toBe(1_000)
   })
 })
