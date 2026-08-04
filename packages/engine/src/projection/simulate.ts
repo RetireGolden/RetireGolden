@@ -190,6 +190,13 @@ const EPSILON = 0.005
 const COLA_ROUNDING_STEP = 500
 
 /**
+ * Slack in step counts, absorbing the floating-point error in a cumulative
+ * growth factor so an increase of exactly one step is not floored to zero.
+ * Far below the precision any real cost-of-living figure carries.
+ */
+const STEP_BOUNDARY_TOLERANCE = 1e-9
+
+/**
  * Apply a cost-of-living factor the way IRC 414(v)(2)(C)(i) does: the *increase*
  * is rounded down to the next lower multiple of 500, not the adjusted amount.
  *
@@ -206,14 +213,23 @@ const COLA_ROUNDING_STEP = 500
  * quarter beginning July 1 2024 -- so each year is recomputed from that base,
  * never compounded off the previous year's rounded figure. Cost-of-living below
  * a 500 step therefore accumulates and eventually carries the amount up a full
- * step, which is exactly why the ordinary deferral limits sit flat for a year
- * or two and then jump 500 all at once. Rounding per year and compounding would
- * discard the sub-step remainder every year and understate the limit forever.
+ * step. That is the shape of the published 415(d)-indexed tables, where a limit
+ * holds for a year or two and then moves a full 500 at once. Note the engine
+ * does not reproduce that shape for the limits it projects smoothly through
+ * `limitGrowth`; this helper is the only place the statutory step is modelled.
+ * Rounding per year and compounding would discard the sub-step remainder every
+ * year and understate the limit forever.
  */
 function indexWithStatutoryRounding(base: number, growth: number): number {
-  const increase = base * growth - base
+  // `base * (growth - 1)` rather than `base * growth - base`: the latter
+  // subtracts two nearby large numbers and loses precision in the difference,
+  // which is the quantity being stepped.
+  const increase = base * (growth - 1)
   if (increase <= 0) return base
-  return base + Math.floor(increase / COLA_ROUNDING_STEP) * COLA_ROUNDING_STEP
+  // An increase that is exactly one step can land a few ulps low, which would
+  // floor to the step below and hold the limit flat for a whole year.
+  const steps = Math.floor(increase / COLA_ROUNDING_STEP + STEP_BOUNDARY_TOLERANCE)
+  return base + steps * COLA_ROUNDING_STEP
 }
 
 /**
