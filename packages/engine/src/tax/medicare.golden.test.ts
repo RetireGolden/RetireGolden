@@ -72,8 +72,8 @@ describe('Medicare / IRMAA golden worksheets', () => {
   })
 
   it('scales thresholds for future years (indexing stand-in)', () => {
-    // With thresholdScale 1.1 the first single cliff moves to 109,000 * 1.1 = 119,900,
-    // so 109,001 falls back to tier 0.
+    // With a flat 1.1 inflation path the first single cliff moves to
+    // 109,000 * 1.1 = 119,900, so 109,001 falls back to tier 0.
     expect(medicareAnnualPremiumPerPerson(pack, 109_001, 'single', atFlatScale(1.1)).irmaaTier).toBe(0)
     expect(medicareAnnualPremiumPerPerson(pack, 119_901, 'single', atFlatScale(1.1)).irmaaTier).toBe(1)
   })
