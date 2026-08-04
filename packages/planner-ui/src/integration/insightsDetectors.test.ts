@@ -251,6 +251,47 @@ describe('starter detectors', () => {
     expect(qss!.rationale).toContain('as Single from 2033')
   })
 
+  it('S3: widowsPenalty prices the jump off the pack the ledger uses, not the caller\'s context pack', () => {
+    // The survivor's MAGI is nominal for the jump year, so the detector projects
+    // the indexed federal figures onto it. The reference year for that scale has
+    // to be the pack `computeFederalTax` will actually reach for -- i.e.
+    // LATEST_PACK_YEAR, per `limitScale` -- and NOT `ctx.params.year`.
+    //
+    // Those coincide today only because one pack is published. `ctx.params` is
+    // built as `packForYear(projectionView.startYear).pack` in InsightsPage and
+    // InsightCardView, so as soon as a second pack year exists a projection
+    // started in the earlier one would scale from ITS year while the ledger
+    // prices the jump off the latest pack, over-indexing the survivor's
+    // thresholds by the gap and understating the penalty the card is there to
+    // warn about. Spoofing the context pack's year is the only way to reach that
+    // future today; the card must not move.
+    const plan = createSamplePlan()
+    plan.strategies.rothConversion = { mode: 'none' }
+    plan.household.people[0]!.longevity.planningAge = 68
+    plan.household.people[1]!.longevity.planningAge = 95
+    plan.accounts.push({
+      type: 'pension',
+      id: 'pen-widow-packyear',
+      name: 'Pension',
+      ownerPersonId: plan.household.people[0]!.id,
+      annualReturnPct: null,
+      startAge: 65,
+      monthlyAmount: 11_000,
+      colaPct: 0,
+      survivorPct: 100,
+    })
+
+    const fromLatestPack = widowsPenalty.screen(makeContext(plan))
+    const stale = makeContext(plan)
+    // A caller whose context pack predates the latest published one.
+    stale.params = { ...stale.params, year: stale.params.year - 2 }
+    const fromStalePack = widowsPenalty.screen(stale)
+
+    expect(fromLatestPack).not.toBeNull()
+    expect(fromStalePack).not.toBeNull()
+    expect(fromStalePack!.rationale).toBe(fromLatestPack!.rationale)
+  })
+
   it('L1: stateRelocation fires when currently residing in taxable state', () => {
     const plan = createSamplePlan()
     // Starting state is KY (has income tax)

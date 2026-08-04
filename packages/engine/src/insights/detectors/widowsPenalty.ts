@@ -1,5 +1,6 @@
 import type { Detector, InsightCard } from '../types.js'
 import { computeFederalTax } from '../../tax/federalTax.js'
+import { LATEST_PACK_YEAR } from '../../params/index.js'
 
 /**
  * The widow's-penalty lever (extended by survivor-widowhood-and-irmaa-relief,
@@ -69,10 +70,19 @@ export const widowsPenalty: Detector = {
       // The MAGI read off the ledger is nominal for `jumpYear`, so the tables it
       // is priced against have to be the projected ones the ledger itself used.
       // Pricing nominal survivor income on pack-year brackets inflates the jump.
+      //
+      // The reference year is LATEST_PACK_YEAR, not `ctx.params.year`. They are
+      // the same today only because one pack is published: `ctx.params` is
+      // `packForYear(startYear).pack` (see InsightsPage/InsightCardView), so the
+      // moment a second pack year exists a projection started in the earlier one
+      // would measure the scale from ITS year while `computeFederalTax` prices
+      // `jumpYear` off the latest pack -- over-indexing the survivor's thresholds
+      // by the gap and understating the jump. This is `limitScale` from
+      // simulate.ts, which is the rule the ledger actually applies.
       const inflationScale =
-        jumpYear <= ctx.params.year
+        jumpYear <= LATEST_PACK_YEAR
           ? 1
-          : Math.pow(1 + ctx.plan.assumptions.inflationPct / 100, jumpYear - ctx.params.year)
+          : Math.pow(1 + ctx.plan.assumptions.inflationPct / 100, jumpYear - LATEST_PACK_YEAR)
       const jointAges65Plus = ctx.plan.household.people.filter(
         (p) => jumpYear - Number(p.dob.slice(0, 4)) >= 65,
       ).length
