@@ -3478,8 +3478,16 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             (accountOrder.get(left.sourceAccountId) ?? Number.MAX_SAFE_INTEGER) -
               (accountOrder.get(right.sourceAccountId) ?? Number.MAX_SAFE_INTEGER) ||
             compareUtf16CodeUnits(left.allocationId, right.allocationId))
-        const debitKeysByActionId = new Map<string, string[]>()
-        const debitOwnersByActionId = new Map<string, (string | null)[]>()
+        // One accumulator per action, appended to in the sorted debit pass, so
+        // the credit pass reads each action's moves in the same controlling
+        // order the debits were emitted in without re-scanning the batch.
+        interface CommittedConversionAction {
+          readonly destinationRothAccountId: string
+          readonly debitKeys: string[]
+          readonly debitOwners: (string | null)[]
+          creditedAmountPlanDollars: number
+        }
+        const committedByActionId = new Map<string, CommittedConversionAction>()
         for (const move of committedConversions) {
           const state = balanceByAccountId.get(move.sourceAccountId)
           if (state === undefined) {
@@ -3496,14 +3504,22 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             move.actionId,
             move.allocationId,
           )
-          debitKeysByActionId.set(move.actionId, [
-            ...(debitKeysByActionId.get(move.actionId) ?? []),
-            producerOccurrenceKey,
-          ])
-          debitOwnersByActionId.set(move.actionId, [
-            ...(debitOwnersByActionId.get(move.actionId) ?? []),
-            state.account.ownerPersonId,
-          ])
+          let committedAction = committedByActionId.get(move.actionId)
+          if (committedAction === undefined) {
+            committedAction = {
+              destinationRothAccountId: move.destinationRothAccountId,
+              debitKeys: [],
+              debitOwners: [],
+              creditedAmountPlanDollars: 0,
+            }
+            committedByActionId.set(move.actionId, committedAction)
+          }
+          if (committedAction.destinationRothAccountId !== move.destinationRothAccountId) {
+            throw new Error('Committed conversion allocations disagree about their destination')
+          }
+          committedAction.debitKeys.push(producerOccurrenceKey)
+          committedAction.debitOwners.push(state.account.ownerPersonId)
+          committedAction.creditedAmountPlanDollars += move.amount
           const sourceBalanceBefore = state.balance
           state.balance = sourceBalanceBefore - move.amount
           recordAnnualRetirementRuntimeOccurrence({
@@ -3529,14 +3545,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             })
           }
         }
-        for (const actionId of [...debitKeysByActionId.keys()].sort(compareUtf16CodeUnits)) {
-          const moves = committedConversions.filter((move) => move.actionId === actionId)
-          const destinationId = moves[0]!.destinationRothAccountId
+        for (const actionId of [...committedByActionId.keys()].sort(compareUtf16CodeUnits)) {
+          const committedAction = committedByActionId.get(actionId)!
+          const destinationId = committedAction.destinationRothAccountId
           const destination = balanceByAccountId.get(destinationId)
           if (destination === undefined || destination.account.type !== 'roth') {
             throw new Error('Committed conversion destination is not a Roth account')
           }
-          const credited = moves.reduce((sum, move) => sum + move.amount, 0)
+          const credited = committedAction.creditedAmountPlanDollars
           const destinationBalanceBefore = destination.balance
           destination.balance = destinationBalanceBefore + credited
           recordAnnualRetirementRuntimeApplication({
@@ -3548,8 +3564,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             sourceBalanceBeforePlanDollars: null,
             sourceBalanceAfterPlanDollars: null,
             actionId,
-            producerOccurrenceKeys: debitKeysByActionId.get(actionId)!,
-            sourceOwnerPersonIds: debitOwnersByActionId.get(actionId)!,
+            producerOccurrenceKeys: committedAction.debitKeys,
+            sourceOwnerPersonIds: committedAction.debitOwners,
             destinationRothAccountId: destination.account.id,
             destinationOwnerPersonId: destination.account.ownerPersonId,
             destinationBalanceBeforePlanDollars: destinationBalanceBefore,

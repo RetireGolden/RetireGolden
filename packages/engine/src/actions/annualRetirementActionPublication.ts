@@ -978,11 +978,16 @@ function conversionAllocationRecords(
     // and RMD-reserve evidence it rested on. A staged one moved nothing and
     // cites neither. Nothing in between publishes: a half-executed allocation,
     // or a committed one claiming a basis return, is a contradiction.
+    //
+    // Every reference to `requestAllocation` here is optional-chained. A
+    // missing request allocation is already its own explicit failure below, and
+    // this predicate must reach that error rather than pre-empt it with a
+    // property access on undefined.
     const committedAllocation = evidence.outcome === 'executed'
     const allocationConsistent = committedAllocation
       ? allocation.executedAmount === requestAllocation?.requestedAmount &&
         allocation.unexecutedAmount === 0 &&
-        allocation.taxableConvertedAmount === requestAllocation.requestedAmount &&
+        allocation.taxableConvertedAmount === requestAllocation?.requestedAmount &&
         allocation.nontaxableConvertedAmount === 0 &&
         allocation.resolution === 'resolved' &&
         typeof allocation.basisEvidenceId === 'string' &&
