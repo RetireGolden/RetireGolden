@@ -1538,13 +1538,13 @@ const registry = {
   },
 
   'irc-414-v-2-E-super-catch-up-window': {
-    title: 'The higher catch-up covers ages 60 to 63 and stops at 64',
+    title: 'The higher catch-up covers ages 60 to 63, and the operative amount is what gets indexed',
     statement:
-      'A participant who would attain age 60 but would not attain age 64 before the close of the taxable year takes the adjusted dollar amount in place of the ordinary catch-up. The window closes at 64: a participant that age reverts to the ordinary age-50 catch-up rather than keeping the higher one. The adjusted dollar amount is the greater of 10,000 dollars and 150 percent of the catch-up in effect for 2024 — not 150 percent of the current year figure.',
+      'A participant who would attain age 60 but would not attain age 64 before the close of the taxable year takes the adjusted dollar amount in place of the ordinary catch-up. The window closes at 64. The adjusted dollar amount is the greater of 10,000 dollars and 150 percent of the catch-up in effect for 2024, which is 11,250. Section 414(v)(2)(C)(i) then indexes that operative amount itself for years after 2025, rounding the increase down to a multiple of 500. The increase is measured from the July 1 2024 base period rather than year over year, so cost-of-living below a 500 step accumulates rather than being discarded.',
     classification: 'settled',
     contraryReading: null,
     conventionRationale:
-      'The two legs of 414(v)(2)(E)(i) are a 10,000 dollar amount and 150 percent of the 2024 amount, and the greater of them governs. That is why the 2026 figure is 11,250 rather than 150 percent of the current 8,000 catch-up, as IRS Notice 2025-67 confirms. Only the first leg moves: 414(v)(2)(C)(i) adjusts the (E) amounts for years after 2025 off a July 1 2024 base quarter, while the second leg is computed off a 2024 figure that will never change, so it is 11,250 forever. The engine therefore projects the indexed leg and takes the greater of it and the pack-year amount, rather than carrying the inflation factor onto the operative figure — Notice 2025-67 is the discriminating evidence, since it held the ages 60-63 amount flat for 2026 in the same year the ordinary catch-up rose from 7,500 to 8,000. Two simplifications remain. The engine projects the indexed leg on the smooth plan inflation path and does not apply the statutory rounding down to a multiple of 500, so the year the leg overtakes 11,250 can land early by up to a step. And the pack carries that leg at 10,000 for 2026, which is a derivation rather than a published figure: the IRS notices state only the operative amount, and one year of cost-of-living from the July 2024 base quarter falls well short of the 10,500 step. The age-55 HSA addition is registered separately because section 223(g) omits it from indexing entirely — the same shape of rule with a third answer again.',
+      'Treasury settles the mechanism in terms. 26 CFR 1.414(v)-1(c)(2)(iii)(B) makes the ages 60 to 63 limit the initial amount of 11,250 increased for changes in the cost of living, off a base period of the calendar quarter beginning July 1 2024, with any increase that is not a multiple of 500 rounded to the next lower multiple. So it is 11,250 that is indexed, not the 10,000 leg, and the greater-of never has to be evaluated again: preamble note 3 records that 11,250 already exceeds 10,000 and will continue to in future years. The statute reads the same way, because 414(v)(2)(C)(i) sentence two adjusts the adjusted dollar amounts applicable under clauses (i) and (ii) of subparagraph (E), the greater-of output, where the first sentence of the same clause names figures specifically; the same shape appears in 414(v)(2)(C)(ii), which indexes the formula amount described in subparagraph (B)(iii) rather than the figure underneath it. That provision governs taxable years beginning after 2025 by its own terms, so it already covers 2027, the first year in which the candidate readings produce different amounts. The later applicability date carried by other parts of the same final regulations is a separate question and is not what fixes this amount. Two consequences are easy to get backwards. First, because the rounding is measured from the fixed base period and not year over year, cost-of-living below a 500 step is not lost, it accumulates until it carries the amount up a full step; rounding each year in turn and compounding would drop the remainder every year and understate the limit permanently. Second, the engine previously took the contrary reading, that 414(v)(2)(C)(i) reaches only the 10,000 leg inside the greater-of and leaves 11,250 pinned until the indexed leg overtakes it in roughly the 2030s. The support cited for that was Notice 2025-67 holding the amount at 11,250 for 2026, but that evidence does not discriminate: the cycle factor was 1.0288, and because it is the increase that gets rounded, 11,250 multiplied by 1.0288 gives a 324 dollar increase that floors to zero. Every candidate reading produces 11,250 for 2026. The age-55 HSA addition is registered separately because section 223(g) omits it from indexing entirely, which is the same shape of rule with a third answer again.',
     authority: [{
       kind: 'statute',
       citation: 'IRC 414(v)(2)(B)(i)',
@@ -1563,11 +1563,23 @@ const registry = {
       url: 'https://www.law.cornell.edu/uscode/text/26/414',
       quotedText:
         'In the case of a year beginning after December 31, 2025, the Secretary shall adjust annually the adjusted dollar amounts applicable under clauses (i) and (ii) of subparagraph (E) for increases in the cost-of-living at the same time and in the same manner as adjustments under the preceding sentence; except that the base period taken into account shall be the calendar quarter beginning July 1, 2024.',
+    }, {
+      kind: 'regulation',
+      citation: '26 CFR 1.414(v)-1(c)(2)(iii)(B)',
+      url: 'https://www.govinfo.gov/content/pkg/FR-2025-09-16/html/2025-17865.htm',
+      quotedText:
+        'For a taxable year beginning after 2025, the applicable dollar catch-up limit under paragraph (c)(2)(i)(B) or (c)(2)(ii)(B) of this section (whichever applies to the plan) is the initial amount ($11,250 in the case of paragraph (c)(2)(i)(B) of this section and $5,250 in the case of paragraph (c)(2)(ii)(B) of this section), increased for changes in the cost of living. The increase is made at the same time and in the same manner as adjustments under section 415(d), except that the base period is the calendar quarter beginning July 1, 2024, and any increase that is not a multiple of $500 is rounded to the next lower multiple of $500.',
+    }, {
+      kind: 'regulation',
+      citation: 'Catch-Up Contributions, final regulations, 90 FR (2025-09-16), preamble n.3',
+      url: 'https://www.govinfo.gov/content/pkg/FR-2025-09-16/html/2025-17865.htm',
+      quotedText:
+        'the amount equal to 150 percent of the otherwise applicable dollar catch-up limit for 2025 ($11,250) is greater than $10,000, and this amount will continue to be greater than $10,000 in future years.',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/params/data/year2026.ts',

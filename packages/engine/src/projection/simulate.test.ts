@@ -1169,31 +1169,86 @@ describe('contributions', () => {
     })
   })
 
-  // IRC 414(v)(2)(E)(i) makes the ages 60-63 amount the GREATER of two legs:
-  // (I) 10,000 dollars, and (II) 150 percent of the catch-up in effect for
-  // 2024, which is 150 percent of 7,500 = 11,250. Only leg (I) moves --
-  // 414(v)(2)(C)(i) indexes the (E) amounts for years after 2025 off a July 1
-  // 2024 base quarter -- because leg (II) is computed off a *2024* figure that
-  // will never change. So the operative amount stays pinned at 11,250 until
-  // the indexed leg overtakes it.
-  //
-  // Carrying limitGrowth onto the operative 11,250 is the natural mistake, and
-  // the published figures rule it out: Notice 2025-67 holds the ages 60-63
-  // amount at 11,250 for 2026 while the ordinary catch-up rises 7,500 ->
-  // 8,000. An engine that indexed the operative figure would have moved it.
+  // IRC 414(v)(2)(E)(i) makes the ages 60-63 amount the greater of (I) 10,000
+  // dollars and (II) 150 percent of the catch-up in effect for 2024, which is
+  // 11,250. Leg (I) never governs: Treasury's final catch-up regulations fix
+  // the indexed base at 11,250 outright (26 CFR 1.414(v)-1(c)(2)(iii)(B)).
   //
   // The window fixture above sits at the 2026 pack year, where limitGrowth is
-  // 1 and every reading agrees, so it cannot see this. 2029 is three years
-  // past the pack year; at 2 percent the limits scale by 1.02^3 = 1.061208:
-  //   indexed leg   10,000 x 1.061208 = 10,612.08, still short of 11,250
-  //   deferral      24,500 x 1.061208 = 25,999.596
-  //   pinned:       25,999.596 + 11,250            = 37,249.596
-  //   amount indexed: (24,500 + 11,250) x 1.061208 = 37,938.186
+  // 1 and every reading agrees, so it cannot see the mechanism at all.
+  //
+  // 414(v)(2)(C)(i) rounds the INCREASE down to a multiple of 500, not the
+  // adjusted amount. 2027 at 2 percent is the case where that matters and the
+  // mechanism does not: the increase is too small to clear a step, so the
+  // amount does not move even though it is indexed.
+  //   increase   11,250 x 0.02 = 225, floors to 0  -> catch-up stays 11,250
+  //   deferral   24,500 x 1.02 = 24,990
+  //   rounded increase:  24,990 + 11,250          = 36,240
+  //   amount indexed:    24,990 + 11,475          = 36,465
+  //
+  // This is exactly why Notice 2025-67 holding the amount at 11,250 for 2026
+  // proves nothing about whether it is indexed.
   describeRule('irc-414-v-2-E-super-catch-up-window', {
-    readings: { pinnedToTheFixedLeg: 37_249.596, adjustedAmountIndexed: 37_938.186 },
-    accepted: 'pinnedToTheFixedLeg',
+    readings: { increaseRoundedToAStep: 36_240, amountIndexedDirectly: 36_465 },
+    accepted: 'increaseRoundedToAStep',
   }, ({ accepted, readings }) => {
-    it('holds the adjusted amount at the fixed leg while the indexed leg is below it', () => {
+    it('does not move the amount when the increase falls short of a 500 step', () => {
+      const plan = basePlan()
+      plan.assumptions.inflationPct = 2
+      plan.household.people[0]! = {
+        ...plan.household.people[0]!,
+        dob: '1965-06-15', // 62 in 2027, inside the window
+        retirementAge: 70,
+      }
+      plan.incomes = [wages(500_000)]
+      plan.accounts = [
+        { ...cash(1_000_000) },
+        {
+          id: testIds(), name: '401k', type: 'traditional', kind: 'employer',
+          ownerPersonId: 'p1', balance: 0, annualReturnPct: 0,
+          annualContribution: 60_000,
+        } as never,
+      ]
+
+      const result = simulatePlan(validate(plan), { startYear: 2026, horizonEndYear: 2027, taxCalculator: noTax })
+      const projected = result.years.find((y) => y.year === 2027)!
+
+      expect(projected.contributions).toBeCloseTo(accepted, 6)
+      expect(projected.contributions).not.toBeCloseTo(readings.amountIndexedDirectly, 6)
+    })
+  })
+
+  // The companion to the case above, and the one that pins WHERE the increase
+  // is measured from. 26 CFR 1.414(v)-1(c)(2)(iii)(B) indexes the initial
+  // 11,250 off a fixed base period (the quarter beginning July 1 2024). This
+  // fixture does not exercise that base period -- the engine measures from the
+  // pack year instead -- but it does pin the property the two share: the
+  // rounding is applied once to a cumulative increase, so cost-of-living below
+  // a 500 step is banked rather than discarded and eventually carries the
+  // amount up a full step.
+  //
+  // 2029 is three years past the pack year; at 2 percent limits scale by
+  // 1.02^3 = 1.061208. Each single year moves 11,250 by only 225, short of a
+  // step, but the cumulative increase clears one:
+  //   increase   11,250 x 0.061208 = 688.59, floors to 500 -> catch-up 11,750
+  //   deferral   24,500 x 1.061208 = 25,999.596
+  //   measured from the fixed base: 25,999.596 + 11,750 = 37,749.596
+  //   rounded per year, compounded: 25,999.596 + 11,250 = 37,249.596
+  //   indexed with no rounding: (24,500 + 11,250) x 1.061208 = 37,938.186
+  //
+  // The middle reading is the natural-looking mistake: rounding each year in
+  // turn drops the sub-step remainder every year and pins the amount forever,
+  // which understates the limit permanently and reproduces the very behaviour
+  // the fixed-base-period reading was adopted to reject.
+  describeRule('irc-414-v-2-E-super-catch-up-window', {
+    readings: {
+      increaseMeasuredFromTheBasePeriod: 37_749.596,
+      roundedEachYearAndCompounded: 37_249.596,
+      indexedWithoutRounding: 37_938.186,
+    },
+    accepted: 'increaseMeasuredFromTheBasePeriod',
+  }, ({ accepted, readings }) => {
+    it('banks cost-of-living below a step until it carries the amount up', () => {
       const plan = basePlan()
       plan.assumptions.inflationPct = 2
       plan.household.people[0]! = {
@@ -1215,31 +1270,28 @@ describe('contributions', () => {
       const projected = result.years.find((y) => y.year === 2029)!
 
       expect(projected.contributions).toBeCloseTo(accepted, 6)
-      expect(projected.contributions).not.toBeCloseTo(readings.adjustedAmountIndexed, 6)
+      expect(projected.contributions).not.toBeCloseTo(readings.roundedEachYearAndCompounded, 6)
+      expect(projected.contributions).not.toBeCloseTo(readings.indexedWithoutRounding, 6)
     })
   })
 
-  // The companion to the case above, and the reason the fix is a greater-of
-  // rather than a flat freeze. Once the indexed 10,000 leg passes 11,250 it
-  // becomes the operative amount and does grow, so an engine that simply
-  // stopped indexing the ages 60-63 catch-up would then understate it.
-  //
-  // 2028 is two years past the pack year; at 10 percent the limits scale by
-  // 1.1^2 = 1.21, which is enough to carry the indexed leg past the fixed one:
-  //   indexed leg   10,000 x 1.21 = 12,100, now above 11,250
-  //   deferral      24,500 x 1.21 = 29,645
-  //   indexed leg governs: 29,645 + 12,100            = 41,745
-  //   amount indexed:      (24,500 + 11,250) x 1.21   = 43,257.50
-  //   frozen at the fixed leg: 29,645 + 11,250        = 40,895
+  // The case that separates the two readings of 414(v)(2)(C)(i). 2028 at 10
+  // percent scales limits by 1.1^2 = 1.21, enough for the operative amount to
+  // clear four rounding steps:
+  //   increase   11,250 x 0.21 = 2,362.50, floors to 2,000 -> catch-up 13,250
+  //   deferral   24,500 x 1.21 = 29,645
+  //   operative amount indexed:  29,645 + 13,250          = 42,895
+  //   only the 10,000 leg moves: 29,645 + max(12,100, 11,250) = 41,745
+  //   amount indexed unrounded:  (24,500 + 11,250) x 1.21 = 43,257.50
   describeRule('irc-414-v-2-E-super-catch-up-window', {
     readings: {
-      indexedLegTakesOver: 41_745,
-      adjustedAmountIndexed: 43_257.5,
-      frozenAtTheFixedLeg: 40_895,
+      operativeAmountIndexed: 42_895,
+      onlyTheTenThousandLegMoves: 41_745,
+      indexedWithoutRounding: 43_257.5,
     },
-    accepted: 'indexedLegTakesOver',
+    accepted: 'operativeAmountIndexed',
   }, ({ accepted, readings }) => {
-    it('lets the indexed leg govern once it passes the fixed leg', () => {
+    it('indexes the operative amount rather than the inoperative 10,000 leg', () => {
       const plan = basePlan()
       plan.assumptions.inflationPct = 10
       plan.household.people[0]! = {
@@ -1261,8 +1313,8 @@ describe('contributions', () => {
       const projected = result.years.find((y) => y.year === 2028)!
 
       expect(projected.contributions).toBeCloseTo(accepted, 6)
-      expect(projected.contributions).not.toBeCloseTo(readings.adjustedAmountIndexed, 6)
-      expect(projected.contributions).not.toBeCloseTo(readings.frozenAtTheFixedLeg, 6)
+      expect(projected.contributions).not.toBeCloseTo(readings.onlyTheTenThousandLegMoves, 6)
+      expect(projected.contributions).not.toBeCloseTo(readings.indexedWithoutRounding, 6)
     })
   })
 

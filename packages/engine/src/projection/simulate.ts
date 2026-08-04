@@ -184,6 +184,61 @@ function annualPassValueBinding<T>(
 const EPSILON = 0.005
 
 /**
+ * Statutory rounding step for the cost-of-living adjustments under IRC 415(d),
+ * which IRC 414(v)(2)(C)(i) borrows for the catch-up amounts.
+ */
+const COLA_ROUNDING_STEP = 500
+
+/**
+ * Slack in step counts, absorbing the floating-point error in a cumulative
+ * growth factor so an increase of exactly one step is not floored to zero.
+ * Far below the precision any real cost-of-living figure carries.
+ */
+const STEP_BOUNDARY_TOLERANCE = 1e-9
+
+/**
+ * Apply a cost-of-living factor the way IRC 414(v)(2)(C)(i) does: the *increase*
+ * is rounded down to the next lower multiple of 500, not the adjusted amount.
+ *
+ * This is why the ages 60-63 amount held at 11,250 for 2026 even though it is
+ * indexed -- the published 1.0288 factor produced a 324 dollar increase, which
+ * floors to zero. Reading that non-movement as evidence of a pinned amount is
+ * the mistake this replaces. That figure is the statutory adjustment off the
+ * July 2024 base period, quoted to show the arithmetic; the `growth` argument
+ * here is the engine's own pack-year-to-projected-year factor, which is the
+ * same shape of quantity measured from a different origin.
+ *
+ * `growth` is the CUMULATIVE factor from the pack year to the projected year,
+ * and rounding once at the end is the point rather than an approximation. The
+ * adjustment is measured from a fixed origin rather than year over year. 26 CFR
+ * 1.414(v)-1(c)(2)(iii)(B) sets the ages 60-63 limit as "the initial amount
+ * ($11,250) ... increased for changes in the cost of living" off the calendar
+ * quarter beginning July 1 2024. The engine does not model that base period --
+ * `growth` is `limitGrowth`, measured from the pack year -- but it reproduces
+ * the structural property that matters here: one rounding applied to a
+ * cumulative increase, never compounded off a previously rounded figure.
+ * Cost-of-living below
+ * a 500 step therefore accumulates and eventually carries the amount up a full
+ * step. That is the shape of the published 415(d)-indexed tables, where a limit
+ * holds for a year or two and then moves a full 500 at once. Note the engine
+ * does not reproduce that shape for the limits it projects smoothly through
+ * `limitGrowth`; this helper is the only place the statutory step is modelled.
+ * Rounding per year and compounding would discard the sub-step remainder every
+ * year and understate the limit forever.
+ */
+function indexWithStatutoryRounding(base: number, growth: number): number {
+  // `base * (growth - 1)` rather than `base * growth - base`: the latter
+  // subtracts two nearby large numbers and loses precision in the difference,
+  // which is the quantity being stepped.
+  const increase = base * (growth - 1)
+  if (increase <= 0) return base
+  // An increase that is exactly one step can land a few ulps low, which would
+  // floor to the step below and hold the limit flat for a whole year.
+  const steps = Math.floor(increase / COLA_ROUNDING_STEP + STEP_BOUNDARY_TOLERANCE)
+  return base + steps * COLA_ROUNDING_STEP
+}
+
+/**
  * Bucket that a jointly-filing couple's IRA compensation ceiling lives in.
  *
  * A person id is validated only as a non-empty string, so no literal value can
@@ -2268,21 +2323,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const age = ownerState.ageAttained
       if ((account.type === 'traditional' || account.type === 'roth') && account.kind === 'employer') {
         groupKey = `${ownerId}:employer`
-        // IRC 414(v)(2)(E)(i) makes the ages 60-63 amount the GREATER of a
-        // 10,000 dollar leg and 150 percent of the catch-up in effect for
-        // 2024. Only the first leg moves: 414(v)(2)(C)(i) indexes the (E)
-        // amounts for years after 2025, while the second leg is computed off a
-        // fixed 2024 figure and is 11,250 forever. So the operative amount
-        // stays pinned until the indexed leg overtakes it -- which is why
-        // Notice 2025-67 held it at 11,250 for 2026 while the ordinary
-        // catch-up rose from 7,500 to 8,000. Indexing the operative figure
-        // instead would have moved it.
+        // IRC 414(v)(2)(C)(i) sentence two indexes "the adjusted dollar amounts
+        // applicable under clauses (i) and (ii) of subparagraph (E)" -- the
+        // greater-of OUTPUT, not the 10,000 dollar leg inside it. Congress used
+        // figure-specific wording one sentence earlier ("the $5,000 amount in
+        // subparagraph (B)(i)") and switched deliberately here. Treasury settles
+        // it outright: 26 CFR 1.414(v)-1(c)(2)(iii)(B) indexes "the initial
+        // amount ($11,250 ...)", so it is the operative figure that moves and
+        // the 10,000 leg never governs. That provision governs taxable years
+        // beginning after 2025 by its own terms, which covers 2027 -- the first
+        // year in which the candidate readings produce different amounts.
         const catchUp =
           age >= 60 && age <= 63
-            ? Math.max(
-              pack.contributionLimits.superCatchUp60to63IndexedLeg * limitGrowth,
-              pack.contributionLimits.superCatchUp60to63,
-            )
+            ? indexWithStatutoryRounding(pack.contributionLimits.superCatchUp60to63, limitGrowth)
             : age >= 50
               // The (B)(i)/(C)(i) first-sentence catch-up does index normally.
               ? pack.contributionLimits.catchUp50 * limitGrowth
