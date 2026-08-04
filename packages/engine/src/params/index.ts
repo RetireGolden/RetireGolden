@@ -264,10 +264,23 @@ export function irmaaTierThreshold(
   if (at.premiumYear <= IRMAA_TOP_TIER_FROZEN_THROUGH_YEAR) return magiOver
 
   // The resumed adjustment carries the growth from August of the base year to
-  // August of the year before the premium year. The factor is anchored at the
-  // pack year, so it is read at the year that puts the same span on it.
-  const yearsOfGrowth = at.premiumYear - 1 - IRMAA_TOP_TIER_RESUMED_BASE_YEAR
-  const resumed = magiOver * at.inflationFactorToYear(pack.year + yearsOfGrowth)
+  // August of the year before the premium year. `inflationFactorToYear` is
+  // anchored at the pack year and returns 1 for anything at or before it, so it
+  // can express that span only while the pack year IS the resumed base year, in
+  // which case the span is the general factor read one year early.
+  //
+  // (i)(5)(C)(i) freezes the top row with no end date of its own, so a 2027
+  // pack is publishable and would reach this branch. Its factor starts at 2027
+  // and cannot reach back to the August 2026 base, so the adjustment would be
+  // measured over the wrong years without saying so: a 2029 premium year would
+  // price the 2027-to-2029 span where (C)(ii) asks for 2026-to-2028. Refuse
+  // instead, because the fix belongs with the pack that introduces the problem.
+  if (pack.year !== IRMAA_TOP_TIER_RESUMED_BASE_YEAR) {
+    throw new RangeError(
+      `IRMAA top-tier indexing resumes from August ${IRMAA_TOP_TIER_RESUMED_BASE_YEAR} under 42 USC 1395r(i)(5)(C)(ii), a base a ${pack.year} pack cannot measure from; give IrmaaThresholdYear a pre-pack base before publishing one`,
+    )
+  }
+  const resumed = magiOver * at.inflationFactorToYear(at.premiumYear - 1)
   // (i)(5)(B) rounds a dollar amount increased under subparagraph (C) to the
   // nearest multiple of 1,000. The identical rounding that (i)(5)(B) applies to
   // the (i)(5)(A) adjustment of the lower rows is not reproduced there, which

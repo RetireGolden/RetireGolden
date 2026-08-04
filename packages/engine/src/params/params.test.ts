@@ -306,6 +306,22 @@ describe('parameter pack provenance', () => {
       expect(pack.medicare.irmaaTiers[4]!.magiOver.marriedFilingJointly)
         .toBe(pack.medicare.irmaaTiers[4]!.magiOver.single * 1.5)
     })
+
+    it('refuses a pack year that cannot measure from the August 2026 base', () => {
+      // (i)(5)(C)(i) carries no end date of its own, so a 2027 pack is
+      // publishable and would reach the resumed branch. Its inflation factor
+      // starts at its own year and cannot reach back to August 2026, so a 2029
+      // premium year would price the 2027-to-2029 span where (C)(ii) asks for
+      // 2026-to-2028 -- a wrong answer that looks like a right one. The refusal
+      // is what keeps the next pack from shipping that silently.
+      const laterPack = { ...pack, year: 2027 }
+      expect(() => irmaaTierThreshold(laterPack, 4, 'single', at(2029))).toThrow(/August 2026/u)
+      // The carve-out reaches only the top row, so every row beneath it still
+      // indexes off such a pack rather than being taken down with it.
+      expect(() => irmaaTierThreshold(laterPack, 3, 'single', at(2029))).not.toThrow()
+      // And the frozen years never reach the branch at all, from any pack year.
+      expect(irmaaTierThreshold(laterPack, 4, 'single', at(2027))).toBe(500_000)
+    })
   })
 
   // The promulgated premium is 50 percent of the aged monthly actuarial rate
