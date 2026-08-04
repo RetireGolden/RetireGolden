@@ -59,13 +59,18 @@ export interface RothConversionStagedAllocationExecutionEvidence {
 /**
  * One allocation that actually moved.
  *
- * `nontaxableConvertedAmount` is a literal zero, not a widened number. This
- * executor commits only against a proven-zero aggregated-IRA basis numerator,
- * where IRC 408A(d)(3)(A) and the Form 8606 line-8 computation make the whole
- * converted gross includible. A nonzero numerator needs the year's Form 8606
- * line-10 ratio, whose denominator this call site cannot see, and is refused
- * rather than approximated — so no committed allocation can carry a nonzero
- * basis return.
+ * The character pair is nullable, and null is a statement rather than a gap.
+ * When the bound evidence proves the owner's aggregated-IRA basis numerator is
+ * zero, IRC 408A(d)(3)(A) and the Form 8606 line-8 computation make the whole
+ * converted gross includible with no ratio to apply, and this executor states
+ * that character itself. When the numerator is a proven positive figure the
+ * character is the year's Form 8606 line-10 ratio applied to line 8, whose
+ * denominator — line 6, the aggregate December 31 value of the owner's non-Roth
+ * IRAs — does not exist at this mid-year call site. Both fields are then null:
+ * the movement is authorised and its character is settled once, annually, by
+ * `internal/ownedNonRothIraContiguousReplay.ts`. A number here would be an
+ * assumption dressed as evidence, and zero would be the taxpayer-unfavourable
+ * one.
  */
 export interface RothConversionExecutedAllocationExecutionEvidence {
   allocationId: string
@@ -74,8 +79,8 @@ export interface RothConversionExecutedAllocationExecutionEvidence {
   requestedAmount: number
   executedAmount: number
   unexecutedAmount: 0
-  taxableConvertedAmount: number
-  nontaxableConvertedAmount: 0
+  taxableConvertedAmount: number | null
+  nontaxableConvertedAmount: number | null
   /** The owner aggregated-IRA basis evidence this character rests on. */
   basisEvidenceId: string
   /** The owner IRA-RMD satisfaction evidence Treas. Reg. 1.408A-4 A-6 needs. */
@@ -138,8 +143,9 @@ export interface RothConversionExecutedExecutionEvidence
   destinationCreditAmount: number
   executedAmount: number
   unexecutedAmount: 0
-  taxableConvertedAmount: number
-  nontaxableConvertedAmount: 0
+  /** Null exactly when the allocations' character is null; see them. */
+  taxableConvertedAmount: number | null
+  nontaxableConvertedAmount: number | null
   outcome: 'executed'
   readiness: 'actionable'
   allocations: readonly [
@@ -362,9 +368,15 @@ function committedTaxFunding(
 function executedEvidence(
   request: RothConversionRequest,
   executedDate: string,
+  basisStatus: 'zeroBasis' | 'nonzeroBasis',
   basisEvidenceId: string,
   rmdReserveEvidenceId: string,
 ): Readonly<RothConversionExecutedExecutionEvidence> {
+  // A proven-zero aggregated-IRA basis numerator makes the whole gross
+  // includible under IRC 408A(d)(3)(A) and there is nothing to apportion, so
+  // the character is knowable here. A proven positive numerator needs the
+  // year's line-10 ratio and is left null rather than assumed either way.
+  const characterKnown = basisStatus === 'zeroBasis'
   const allocations = [...request.allocations]
     .sort((left, right) => compareUtf16CodeUnits(left.allocationId, right.allocationId))
     .map((allocation) => ({
@@ -372,10 +384,8 @@ function executedEvidence(
       resolution: 'resolved' as const,
       executedAmount: allocation.requestedAmount,
       unexecutedAmount: 0 as const,
-      // A proven-zero aggregated-IRA basis numerator makes the whole gross
-      // includible under IRC 408A(d)(3)(A); nothing is apportioned.
-      taxableConvertedAmount: allocation.requestedAmount,
-      nontaxableConvertedAmount: 0 as const,
+      taxableConvertedAmount: characterKnown ? allocation.requestedAmount : null,
+      nontaxableConvertedAmount: characterKnown ? 0 : null,
       basisEvidenceId,
       rmdReserveEvidenceId,
     }))
@@ -393,8 +403,8 @@ function executedEvidence(
     requestedAmount: request.requestedAmount,
     executedAmount: request.requestedAmount,
     unexecutedAmount: 0,
-    taxableConvertedAmount: request.requestedAmount,
-    nontaxableConvertedAmount: 0,
+    taxableConvertedAmount: characterKnown ? request.requestedAmount : null,
+    nontaxableConvertedAmount: characterKnown ? 0 : null,
     outcome: 'executed',
     readiness: 'actionable',
     allocations: allocations as unknown as Readonly<RothConversionExecutedExecutionEvidence>['allocations'],
@@ -524,28 +534,53 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
     // dispositions the request itself names, so `taxFundingReasons` answers
     // each on its own terms instead of blocking all of them alike.
     //
-    // The Form 8606 basis pool is the third, and it clears in exactly one
-    // shape. IRC 408(d)(2) makes the numerator a single owner-wide figure over
-    // every non-Roth IRA the owner holds; when bound evidence proves that
-    // figure is zero, 408A(d)(3)(A) leaves the entire converted gross
-    // includible and there is no allocation left to perform.
+    // The Form 8606 basis pool is the third, and what it has to establish is
+    // that the numerator is KNOWN — not that it is zero. IRC 408(d)(2) makes
+    // that numerator a single owner-wide figure over every non-Roth IRA the
+    // owner holds, and `resolveOwnerAggregatedIraBasis` returns three distinct
+    // answers about it: `zeroBasis`, `nonzeroBasis`, and `unproven`. Only
+    // `unproven` keeps the reason here.
     //
-    // A positive numerator is refused, and the missing piece is narrower than
-    // it looks. It is NOT the line-8 entry set: the simulator forces the
-    // aggregate conversion strategy off for any year that carries a named
-    // request, so this batch is the year's whole line 8 and nothing else can
-    // join it. What is missing is the line-10 ratio to apply to it. Its
-    // denominator is Form 8606 line 6 — the aggregate December 31 value of
-    // every non-Roth IRA the owner holds — plus the year's complete line-7 and
-    // line-8 gross. This executor runs mid-year, before the growth pass and
-    // before the year's need-based withdrawals are sized, so line 6 does not
-    // exist yet at this call site and no figure that does exist here is a
-    // lawful substitute for it. The engine computes that ratio in exactly one
-    // place, `internal/ownedNonRothIraContiguousReplay.ts`, from sealed
-    // post-growth year-end balances; deriving a second, mid-year ratio here
-    // would answer the same owner-year question differently from the one the
-    // annual settlement publishes. So this keeps the reason and moves nothing
-    // rather than converting at an assumed character.
+    // Nothing in section 408A conditions a conversion's *legality* on the
+    // owner's basis. 408A(d)(3)(A)(i) says a conversion is treated as a
+    // distribution to which section 72 applies, and 408A(d)(3)(A)(iii) then
+    // waives the 72(t) additional tax on it. The basis figure is an input to
+    // section 72(e)(8)/408(d)(2) apportionment — how much of the converted
+    // gross is includible — and nothing else. A positive numerator therefore
+    // changes the CHARACTER of the movement, never whether it may occur.
+    //
+    // The earlier reading refused a positive numerator, and it was right for
+    // as long as this executor was the only place a committed conversion's
+    // character could be stated. What it was protecting against is real: the
+    // line-10 ratio's denominator is Form 8606 line 6 — the aggregate December
+    // 31 value of the owner's non-Roth IRAs — plus the year's complete line-7
+    // and line-8 gross, and this call site runs mid-year, before the growth
+    // pass and before need-based withdrawals are sized, so line 6 does not
+    // exist here and no figure that does exist is a lawful substitute.
+    // Committing while stating a character would have meant inventing that
+    // ratio.
+    //
+    // What supersedes it is that the executor no longer has to state one. The
+    // annual settlement computes the ratio in exactly one place, from sealed
+    // post-growth year-end balances, and the simulator feeds it back through
+    // the assumption vector until observed equals assumed. So a positive
+    // numerator now commits with a null character and defers to that single
+    // computation, which is the opposite of approximating: refusing here would
+    // now suppress a lawful conversion — and a suppressed conversion is not a
+    // conservative answer, it is a different plan than the household stated.
+    //
+    // That single computation is only lawful because line 8 is knowable: the
+    // simulator forces the aggregate conversion strategy off for any year that
+    // carries a named request, so this batch is the year's whole line 8 and
+    // nothing else can join it. An allocation across a partial entry set would
+    // be a different defect from the one this used to refuse, and a worse one.
+    //
+    // Admission stays outside the fixed point deliberately. The dollars moved
+    // are the request's own stated amounts, identical in every attempt, so
+    // line-8 gross and the line-10 denominator do not depend on the answer the
+    // loop is converging to. Reading `zeroBasis` as the admission predicate
+    // made admission settlement-dependent, which is genuinely circular: the
+    // denominator needs the admission to have already happened.
     //
     // An employer-plan source keeps the reason too: its pre-tax balance is
     // outside the 408(d)(2) aggregation this evidence describes, so the
@@ -557,9 +592,9 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
     const basis = resolveOwnerAggregatedIraBasis(request, runtimeEvidence)
     const rmdReserveEvidenceId =
       resolveOwnerIraRmdSatisfactionEvidenceId(request, runtimeEvidence)
-    const basisProvenZero = ownedIraSources && basis.status === 'zeroBasis'
+    const basisNumeratorKnown = ownedIraSources && basis.status !== 'unproven'
     const reasons: ActionReason[] = [
-      ...(basisProvenZero
+      ...(basisNumeratorKnown
         ? []
         : [createActionReason('conversion-basis-evidence-missing', {
             personId: request.personId,
@@ -645,7 +680,7 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
     // list the exact predicate for committing.
     const executedDate = request.executionDate ?? null
     if (reasons.length === 0 && executedDate !== null &&
-        basis.status === 'zeroBasis' && rmdReserveEvidenceId !== null) {
+        basis.status !== 'unproven' && rmdReserveEvidenceId !== null) {
       committedAny = true
       for (const allocation of request.allocations) {
         const source = closingByAccountId.get(allocation.sourceAccountId)!
@@ -660,7 +695,8 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
         asUsdCents(destinationBalance + request.requestedAmount),
       )
       evidence.push(executedEvidence(
-        request, executedDate, basis.evidenceId, rmdReserveEvidenceId,
+        request, executedDate, basis.status, basis.evidenceId,
+        rmdReserveEvidenceId,
       ))
       continue
     }

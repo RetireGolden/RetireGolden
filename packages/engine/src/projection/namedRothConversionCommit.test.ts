@@ -224,22 +224,46 @@ describe('committed named Roth conversion', () => {
       .toBeCloseTo(10_000 * (FLAT_RATE_PCT / 100), 6)
   })
 
-  it('refuses rather than converting when the owner basis numerator is not zero', () => {
+  // This once pinned a refusal, and the refusal was right while it stood.
+  // Nothing in section 408A conditions a conversion's legality on the owner's
+  // basis: 408A(d)(3)(A) treats the conversion as a section 72 distribution
+  // and waives the 72(t) additional tax on it, which makes a positive basis
+  // numerator a question about how much of the gross is includible and not
+  // about whether the movement may occur. What the old reading was protecting
+  // was real -- the line-10 ratio's denominator does not exist at that
+  // mid-year call site, so committing there meant stating a character the
+  // executor could not derive. It is superseded because the executor no longer
+  // states one: it commits with a null character and the annual settlement
+  // supplies the ratio, feeding it back through the assumption vector until
+  // observed equals assumed. Refusing now would suppress a lawful conversion,
+  // which is a different plan than the household stated rather than a
+  // conservative reading of the one they did.
+  it('converts at a nonzero basis numerator instead of refusing', () => {
     const year = project(committedPlan({ nondeductibleBasis: 20_000 }))[0]!
 
-    expect(year.rothConversionActionExecution?.committed).toBe(false)
+    expect(year.rothConversionActionExecution?.committed).toBe(true)
     expect(conversionEvidence(year)).toMatchObject({
-      outcome: 'unsupported',
-      readiness: 'nonActionable',
-      executedAmount: 0,
+      outcome: 'executed',
+      readiness: 'actionable',
+      executedAmount: 10_000_00,
+      unexecutedAmount: 0,
+      // Not zero and not the gross. The executor authorised the movement and
+      // said nothing about its character, which is the one honest answer at a
+      // call site that cannot see Form 8606 line 6.
+      taxableConvertedAmount: null,
+      nontaxableConvertedAmount: null,
+      reasons: [],
     })
     expect(conversionEvidence(year).reasons.map((reason) => reason.code))
-      .toContain('conversion-basis-evidence-missing')
-    // No approximation, no partial conversion at an assumed character.
-    expect(year.balances['ira-a']).toBeCloseTo(100_000, 6)
-    expect(year.balances['roth-second']).toBeCloseTo(0, 6)
-    expect(year.rothConversion).toBeCloseTo(0, 6)
+      .not.toContain('conversion-basis-evidence-missing')
+    expect(year.balances['ira-a']).toBeCloseTo(90_000, 6)
+    expect(year.balances['roth-second']).toBeCloseTo(10_000, 6)
+    expect(year.rothConversion).toBeCloseTo(10_000, 6)
+    // What the numerator changed is the character, and only the character:
+    // a fifth of the pool is basis, so a fifth of the gross is excluded.
+    expect(year.magi).toBeCloseTo(8_000, 6)
   })
+
 
   // The two below pin the invariant a nonzero-basis conversion will have to
   // rest on. Form 8606 line 8 is a whole-year figure: an allocation across it
@@ -291,25 +315,35 @@ describe('committed named Roth conversion', () => {
       .toEqual(['namedRothConversion'])
   })
 
-  it('does not let the aggregate schedule convert behind a refused nonzero-basis request', () => {
+  it('keeps the named batch the whole of line 8 at a nonzero basis numerator too', () => {
     const plan = committedPlan({ nondeductibleBasis: 20_000 })
     plan.strategies.rothConversion = {
       mode: 'manual',
       conversions: [{ year: TAX_YEAR, amount: 25_000 }],
     }
-    const year = project(plan)[0]!
+    const years = project(plan)
+    const year = years[0]!
 
-    // The refusal has to be the year's answer, not a redirection. If the
-    // aggregate sweep filled in behind it, the household would get a
-    // conversion it never asked for, characterized by the plan-dollar pro-rata
-    // fraction this executor just refused to assume.
-    expect(year.rothConversionActionExecution?.committed).toBe(false)
-    expect(conversionEvidence(year).reasons.map((reason) => reason.code))
-      .toContain('conversion-basis-evidence-missing')
-    expect(year.rothConversion).toBeCloseTo(0, 6)
-    expect(year.balances['ira-a']).toBeCloseTo(100_000, 6)
+    // The completeness argument matters more here than in the zero-basis case,
+    // not less. A line-10 ratio is only lawful if line 8 is every conversion
+    // the owner made that year; an aggregate sweep landing alongside the
+    // committed batch would put the denominator and the entry set out of step.
+    expect(year.rothConversionActionExecution?.committed).toBe(true)
+    expect(year.rothConversion).toBeCloseTo(10_000, 6)
+    expect(year.balances['ira-a']).toBeCloseTo(90_000, 6)
     expect(year.balances['roth-first']).toBeCloseTo(0, 6)
-    expect(year.balances['roth-second']).toBeCloseTo(0, 6)
+    expect(year.balances['roth-second']).toBeCloseTo(10_000, 6)
+
+    const series = validateOwnedNonRothIraRuntimeSourceSeries(
+      validatePlan(plan), TAX_YEAR, years,
+    )
+    if (series.status !== 'ownedNonRothIraRuntimeSourceSeriesComplete') {
+      throw new Error(`source series blocked: ${JSON.stringify(series.issues)}`)
+    }
+    expect(series.years[0]!.ownerSources[0]!.applications
+      .filter((entry) => entry.form8606Line === 'line8')
+      .map((entry) => entry.occurrenceKind))
+      .toEqual(['namedRothConversion'])
   })
 
   it('starts the 408A(d)(3)(F) clock with the whole gross exposed', () => {

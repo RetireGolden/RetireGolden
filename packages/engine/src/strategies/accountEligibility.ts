@@ -165,11 +165,12 @@ export interface NonpersistedOwnerIraRmdSatisfactionEvidence {
  * IRC 408(d)(2) treats all of an individual's non-Roth IRAs as one contract
  * and all distributions in the year as one distribution, so the Form 8606
  * pro-rata numerator is a single owner-wide figure and not an account-level
- * one. `basisAmount` is that numerator. A zero numerator is the only case this
- * evidence is used to clear, because it is the only one whose answer needs no
- * allocation: 408A(d)(3) then makes the entire converted gross includible, and
- * there is nothing to apportion between this conversion and the year's other
- * distributions.
+ * one. `basisAmount` is that numerator. A zero figure is the only one whose
+ * consequence needs no allocation — 408A(d)(3) then makes the entire converted
+ * gross includible, with nothing to apportion between this conversion and the
+ * year's other distributions — but a positive figure is just as much an answer
+ * here, and what it establishes is that the numerator is known rather than
+ * that the character can be derived on the spot.
  */
 export interface NonpersistedOwnerAggregatedIraBasisEvidence {
   evidenceId: string
@@ -192,13 +193,18 @@ export interface RetirementActionEligibilityRuntimeEvidence {
 }
 
 /**
- * Whether the owner's aggregated-IRA basis numerator is proven to be zero.
+ * What the bound evidence proves about the owner's aggregated-IRA basis
+ * numerator: that it is zero, that it is a specific positive figure, or
+ * nothing at all.
  *
- * `nonzeroBasis` is a distinct answer from `unproven` and neither clears. A
- * positive numerator is answerable, but only by allocating the year's basis
- * across the complete Form 8606 line-7 and line-8 gross; approximating it here
- * would convert at an assumed character, which is the one thing a conversion
- * executor must never do.
+ * `nonzeroBasis` is a distinct answer from `unproven`, and the distinction is
+ * the point of the three-way shape. Both are answers a conversion executor may
+ * act on differently: a known numerator — zero or positive — settles what the
+ * movement is, while `unproven` leaves the executor unable to say even that.
+ * A positive numerator still cannot be apportioned at a mid-year call site; it
+ * has to be allocated across the complete Form 8606 line-7 and line-8 gross,
+ * which is why a consumer that commits on a positive numerator must publish a
+ * null character rather than approximate one.
  */
 export type OwnerAggregatedIraBasisResolution =
   | Readonly<{ status: 'zeroBasis'; evidenceId: string }>
