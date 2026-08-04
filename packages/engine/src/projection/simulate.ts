@@ -3095,11 +3095,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       ? currentYearActions
       : currentYearNonConversionActions
     // One conversion-linked withdrawal group decision for the whole annual
-    // pass, taken here because this is the only place both request sets are
-    // visible: the withdrawal executor runs first and is handed no conversion
-    // request, and the conversion executor runs later and is handed no
-    // withdrawal request. Both are given this same verdict so the pair cannot
-    // be answered two ways within one year.
+    // pass, taken here because this is the only place every request set is
+    // visible at once. Neither executor sees the same set: the conversion
+    // executor is handed conversions alone, and the withdrawal executor is
+    // handed non-conversion actions -- except when `mixedKindScheduleBlocked`,
+    // where it receives the whole schedule including conversions. So neither
+    // can derive the same groups the other would, and a group spanning a Plan
+    // action and an in-flight one is visible to neither. Both are given this
+    // one verdict so the pair cannot be answered two ways within a year.
     const conversionLinkedWithdrawalGroups = assessConversionLinkedWithdrawalGroups([
       ...plan.strategies.retirementActions,
       ...currentYearOrdinaryExecutionActions,

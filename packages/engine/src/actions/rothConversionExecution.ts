@@ -342,10 +342,11 @@ function taxFundingReasons(
         // names. Nothing at this call site can stand in for that answer, and
         // silence is not permission, so the whole batch fails closed rather
         // than converting on funding nobody assessed.
-        // Named, because `executeUnchecked`'s catch collapses this into one
-        // batch-level `invalidInput` issue that carries no action id of its
-        // own. Without the id here the throw says only that some conversion
-        // in the batch was unassessed.
+        // Named, because the `executeRothConversions` wrapper catches around
+        // its `executeUnchecked` call and collapses this into one batch-level
+        // `invalidInput` issue carrying no action id of its own. Without the
+        // id here the throw says only that some conversion in the batch was
+        // unassessed.
         throw new TypeError(
           `Conversion linked-withdrawal group verdict is missing for action "${request.actionId}"`,
         )
