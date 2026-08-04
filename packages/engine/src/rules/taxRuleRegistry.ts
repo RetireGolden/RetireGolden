@@ -2506,7 +2506,7 @@ const registry = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'Unlike the two age proxies, this one errs in both directions and neither direction is bounded by a fixed number of months. It under-penalizes where the employer plan is one the owner left well before age 55, because the statute reaches only the plan maintained by the employer separated from and the code tests no employer identity at all: a 401(k) left behind at 40 is waived at the modelled retirement age like any other. It over-penalizes where the owner separates during the calendar year of attaining 55 but before the birthday, because the code compares a retirement age to 55 as a number, where the IRS calendar-year gloss recorded under irc-72-t-2-A-v-rule-of-55 asks only whether the separation fell in that year. It is out of scope rather than settled because the plan model carries a single household retirement age and no employment history, so no separation date and no employer for the plan exist to test. The engine does get the one structural limit right: 72(t)(3)(A) denies the exception to individual retirement plans, and the code waives only for an account of employer kind. The exact-date reading lives in actions/traditionalEmployerPlanPenaltyPrerequisite.ts.',
+      'Unlike the two age proxies, this one errs in both directions and neither direction is bounded by a fixed number of months. It under-penalizes where the employer plan is one the owner left well before age 55, because the statute reaches only the plan maintained by the employer separated from and the code tests no employer identity at all: a 401(k) left behind at 40 is waived at the modelled retirement age like any other. It over-penalizes where the owner separates from an employer at or after 55 but keeps working elsewhere, because the waiver is withheld until the attained age reaches the modelled retirement age: an owner who left an employer at 56 and plans to retire at 62 is charged the tax on that abandoned plan for six years. It is approximated rather than settled because the plan model carries a single household retirement age and no employment history, so no separation date and no employer for the plan exist to test. Note that the crossing case the IRS calendar-year gloss addresses cannot arise here at all: retirementAge in this model is a calendar-year age, resolved as dobYear + retirementAge, so a separation during the year of attaining 55 is recorded as a retirement age of 55 and is waived — agreeing with the gloss, and erring permissively rather than restrictively against the strict statutory date. The engine does get the one structural limit right: 72(t)(3)(A) denies the exception to individual retirement plans, and the code waives only for an account of employer kind. The exact-date reading lives in actions/traditionalEmployerPlanPenaltyPrerequisite.ts.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -2523,7 +2523,7 @@ const registry = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/strategies/accountEligibility.ts'],
   },
 
@@ -3125,12 +3125,12 @@ const registry = {
   'irc-408-d-8-B-ii-projection-annual-age-proxy': {
     title: 'Annual-ledger stand-in for the age 70.5 QCD date',
     statement:
-      'QCD eligibility begins on the date the donor attains age 70.5, which the exact-cent path computes as 846 calendar months from birth. Not modelled in the annual ledger: it gates on the age attained in the calendar year being at least 71, so the whole of the year in which the donor actually crosses 70.5 is treated as ineligible.',
+      'QCD eligibility begins on the date the donor attains age 70.5, which the exact-cent path computes as 846 calendar months from birth. Not modelled in the annual ledger: eligibility is a property of the whole calendar year, so a donor who crosses 70.5 in July is treated as eligible from 1 January of that year and a gift dated before the half-birthday is excluded.',
     classification: 'approximated',
     contraryReading: null,
-    errorDirection: 'overstatesTax',
+    errorDirection: 'understatesTax',
     conventionRationale:
-      'Direction of error: uniformly restrictive, never permissive. A donor born in January attains 70.5 in July of the year the calendar age is 70 and is eligible from that July, but the ledger withholds eligibility until the following January, a delay of six months. A donor born in December attains 70.5 in June of the year the calendar age is 71, and the ledger grants eligibility from that January, five months early — but there is no QCD in that window under the ledger anyway, because the ledger also requires an RMD to exist and no RMD is due before the applicable age. Netting those, the ledger never treats an ineligible donor as eligible and delays a genuinely eligible donor by six to seventeen months, understating the QCD and overstating taxable income in the crossing year. The threshold date itself is the subject of the registered rule irc-408-d-8-B-ii-age-70-half, whose leap-day and month-end convention is an engineering decision; this record is only about the annual proxy layered on top of it. Both paths therefore disagree with each other, and only the exact-cent path is defensible to a preparer.',
+      'Direction of error: uniformly permissive, by up to twelve months, and the same sign for every birth month. The ledger reads the birth month rather than rounding to the calendar age — a donor born in months 1 through 6 is admitted in the year the calendar age is 70, and one born in months 7 through 12 in the year it is 71 — so the year the half-birthday falls in is always the year eligibility is granted. What annual granularity cannot express is where in that year it starts: a January-born donor is treated as eligible from 1 January though 70.5 arrives in July, and a December-born donor from the following 1 January though 70.5 arrives that June. There is no offsetting restrictive case, because no birth month puts the half-birthday in a year the ledger refuses. Superseded claim: this record previously said the ledger gates on a calendar age of at least 71 and so denies the whole crossing year, erring restrictively. That gate was replaced when the pre-RMD window was opened, and the argument that the permissive half was harmless — that no QCD could arise before the applicable age anyway, since a positive RMD was required — fell with the condition it rested on. The threshold date itself is the subject of irc-408-d-8-B-ii-age-70-half, whose leap-day and month-end convention is an engineering decision; this record is only about the annual proxy layered on top of it.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -3148,18 +3148,18 @@ const registry = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
   },
-  'irc-408-d-8-A-projection-rmd-conditioned-qcd': {
-    title: 'Annual-ledger conditioning of a QCD on an existing RMD',
+  'irc-408-d-8-A-projection-post-70-half-contribution-offset': {
+    title: 'Reduction of the QCD exclusion by post-70.5 deductible IRA contributions',
     statement:
-      'A QCD is available from age 70.5 up to the annual per-taxpayer limit whether or not any required minimum distribution is due, and may exceed the required amount. Not modelled: the annual ledger makes a QCD conditional on a positive household RMD and then caps it at that RMD, so a donor between 70.5 and the applicable age makes no QCD at all and a donor past the applicable age can never give more than the required amount.',
+      'The second sentence of 408(d)(8)(A) reduces the exclusion, but not below zero, by the excess of deductible section 219 contributions made for all taxable years ending on or after the donor attains age 70.5 over the reductions already taken in prior years. Not modelled: the annual ledger excludes the full gift no matter how much the donor has contributed and deducted since 70.5, and keeps no running total of reductions already applied.',
     classification: 'approximated',
     contraryReading: null,
-    errorDirection: 'overstatesTax',
+    errorDirection: 'understatesTax',
     conventionRationale:
-      'Direction of error: uniformly restrictive. Nothing in 408(d)(8) references section 401(a)(9); the interaction runs the other way, in that a QCD counts toward an RMD when one happens to be due. For a donor aged 70.5 through 72 the ledger reports zero exclusion where up to the full annual limit is available, overstating ordinary income by the whole intended gift. For an older donor with a small balance the cap binds at the required amount, which for a $200,000 IRA at age 75 is about $8,130 against a $111,000 statutory ceiling. The consequence is not confined to the gift year: dollars the ledger refuses to route out of the IRA stay in the pre-tax balance and inflate every later RMD. The offset in the second sentence of 408(d)(8)(A), which sweeps post-70.5 deductible IRA contributions against the exclusion, is likewise not applied in the annual ledger; that omission runs the other way and would reduce the exclusion.',
+      'Direction of error: permissive, dollar for dollar, up to the whole exclusion. The offset exists because the SECURE Act repealed the 219(d)(1) bar on deductible IRA contributions after 70.5, which opened a round trip: deduct a contribution, then exclude the same dollars on the way out as a gift. Omitting the sweep leaves that round trip open, so a still-working donor who contributes the deductible maximum and gives the same amount is shown a deduction and an exclusion where the statute allows one. This is a lifetime running total, not an annual one, and the ledger holds no state across years for it; the clause is cumulative on both sides, which is why the second limb subtracts reductions already taken so the same contribution is never swept twice. Distinct from the conditioning defect this record used to describe: gating a QCD on a positive RMD was removed, and the pre-RMD window from 70.5 to the applicable age is now modelled.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -3167,17 +3167,11 @@ const registry = {
       url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm',
       quotedText:
         'So much of the aggregate amount of qualified charitable distributions with respect to a taxpayer made during any taxable year which does not exceed $100,000 shall not be includible in gross income of such taxpayer for such taxable year. The amount of distributions not includible in gross income by reason of the preceding sentence for a taxable year (determined without regard to this sentence) shall be reduced (but not below zero) by an amount equal to the excess of— (i) the aggregate amount of deductions allowed to the taxpayer under section 219 for all taxable years ending on or after the date the taxpayer attains age 70½, over (ii) the aggregate amount of reductions under this sentence for all taxable years preceding the current taxable year.',
-    }, {
-      kind: 'regulation',
-      citation: 'Treas. Reg. 1.408-8(g)(1)',
-      url: 'https://www.ecfr.gov/current/title-26/section-1.408-8',
-      quotedText:
-        'all amounts distributed from an IRA are taken into account in determining whether section 401(a)(9) is satisfied, regardless of whether the amount is includible in income. Thus, for example, a qualified charitable distribution made pursuant to section 408(d)(8) is taken into account in determining whether section 401(a)(9) is satisfied.',
     }],
-    volatility: 'annuallyIndexed',
+    volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
   },
   'irc-408-d-8-A-projection-household-qcd-aggregation': {
@@ -3244,22 +3238,22 @@ const registry = {
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
   },
-  'irc-223-b-5-A-projection-spousal-family-limit': {
-    title: 'One family HSA limit divided between spouses',
+  'irc-223-b-2-7-projection-coverage-proration-and-medicare': {
+    title: 'HSA coverage tier, monthly proration, and Medicare entitlement',
     statement:
-      'Where either spouse has family coverage, both spouses are treated as having only that family coverage and the single family limit is divided equally between them unless they agree otherwise, with each spouse own age 55 catch-up added outside the division. Not modelled: the annual ledger tracks the contribution limit per account owner and gives every owner in a two-person household the full family limit.',
+      'The HSA limitation is monthly: 1/12 of the annual amount for each month the taxpayer is an eligible individual, at the self-only or family tier according to the coverage actually held on the first day of that month, and zero for the first month of entitlement to Medicare and every month after. Not modelled: the annual ledger reads the coverage tier from household size, giving any two-person household the family base whether or not family coverage exists, and applies a whole annual limit regardless of how many months the taxpayer was eligible or whether they are on Medicare.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'understatesTax',
     conventionRationale:
-      'Direction of error: permissive, by up to a full family limit. Two spouses each holding an HSA are each allowed the whole family maximum, so the household can contribute roughly twice what the statute permits, and the excess is deducted rather than taxed and charged the section 4973 excise. The catch-up handling is correct by accident, since paragraph (b)(5)(B) excludes the additional contribution amount from the division and the ledger already tracks it per owner. Two further approximations sit underneath: household size is read from the number of people on the plan rather than from actual coverage, so a two-person household is always given the family base even when only self-only coverage exists, and the monthly proration of 223(b)(1) and the Medicare-entitlement zeroing of 223(b)(7) are not applied at all.',
+      'Direction of error: permissive on all three counts, and they compound. A two-person household holding self-only coverage is given the family base, a taxpayer eligible for part of the year is given the whole of it, and a taxpayer already on Medicare is given a limit the statute sets at zero. Each excess is deducted rather than taxed and charged the section 4973 excise, so the error reaches both the income and the penalty. The coverage substitution is the one the plan model forces: a plan carries no coverage election, so household size is the only signal available, and the same substitution is what selects the family base for the 223(b)(5) division that is correctly applied. The other two are not forced. Eligibility months and Medicare entitlement are both derivable from the dates the engine already holds, and the annual granularity of the projection is the reason they are not applied rather than a missing fact. Superseded claim: this record previously said the ledger gives every owner in a two-person household a full family limit. It no longer does; 223(b)(5) division is implemented and covered by irc-223-b-5-hsa-family-limit-divided-between-spouses.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
-      citation: 'IRC 223(b)(5)',
-      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partVII-sec223.htm',
+      citation: 'IRC 223(b)(2)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim',
       quotedText:
-        'In the case of individuals who are married to each other, if either spouse has family coverage— (A) both spouses shall be treated as having only such family coverage (and if such spouses each have family coverage under different plans, as having the family coverage with the lowest annual deductible), and (B) the limitation under paragraph (1) (after the application of subparagraph (A) and without regard to any additional contribution amount under paragraph (3))— (i) shall be reduced by the aggregate amount paid to Archer MSAs of such spouses for the taxable year, and (ii) after such reduction, shall be divided equally between them unless they agree on a different division.',
+        'The monthly limitation for any month is 1/12 of- ... (B) in the case of an eligible individual who has family coverage under a high deductible health plan as of the first day of such month, $4,500.',
     }, {
       kind: 'statute',
       citation: 'IRC 223(b)(7)',
@@ -3270,7 +3264,7 @@ const registry = {
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
   },
   'treas-reg-1-401-a-9-9-c-uniform-lifetime-table': {
