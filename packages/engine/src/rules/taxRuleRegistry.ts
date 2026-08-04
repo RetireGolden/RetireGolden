@@ -587,7 +587,7 @@ const registry = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Publication 505 states the rate as 5.4 percent, which is a truncation of 2/37 (0.0540540...), not the rule. The engine computes the exact rational because the difference is roughly $5.41 per $100,000 of limitation base and this provision only bites at incomes where that is real money. Note also that the amended section has no exempt categories and no 80 percent cap, both features of the pre-2018 Pease rule, so logic ported from that era would carry forward carve-outs that no longer exist.',
+      'Publication 505 states the rate as 5.4 percent, which is a truncation of 2/37 (0.0540540...), not the rule. The engine computes the exact rational because the difference is roughly $5.41 per $100,000 of limitation base and this provision only bites at incomes where that is real money. Note also that the amended section has no exempt categories and no 80 percent cap, both features of the pre-2018 Pease rule, so logic ported from that era would carry forward carve-outs that no longer exist. The threshold figure itself is not cited here. A Rev. Proc. 2025-32 authority was removed on 2026-08-04 because its quotedText was a fluent prose sentence stating three bracket figures, and that document presents the brackets as tables -- the sentence appears nowhere in it, so the field whose whole purpose is verbatim operative language held a composed paraphrase. Nothing was lost by removing it: 68(a) above already defines the threshold as the point where the 37 percent bracket begins under section 1, and the indexed dollar amount comes from the parameter pack, which is how every other inflation-adjusted figure in this registry is sourced.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -601,17 +601,11 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section68&num=0&edition=prelim',
       quotedText:
         'This section shall be applied after the application of any other limitation on the allowance of any itemized deduction.',
-    }, {
-      kind: 'irsNotice',
-      citation: 'Rev. Proc. 2025-32, section 4.01',
-      url: 'https://www.irs.gov/pub/irs-drop/rp-25-32.pdf',
-      quotedText:
-        'For taxable years beginning in 2026 the 37 percent rate bracket begins at taxable income over $768,700 for married individuals filing joint returns and surviving spouses, $640,600 for heads of households and for unmarried individuals, and $384,350 for married individuals filing separate returns.',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/actions/annualSection68ItemizedDeduction.ts'],
   },
 
@@ -622,14 +616,15 @@ const registry = {
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
-    conventionRationale: null,
+    conventionRationale:
+      'Effective from 2018 rather than 2026, aligned with irc-170-b-1-G-projection-cash-ceiling-not-applied on 2026-08-04 after the two records disagreed about the same clause. This field means the first tax year the rule governs, and (G)(i) fixes that in its own words: for taxable years beginning after December 31, 2017. Pub. L. 119-21 section 70425(b)(1) rewrote the clause for years beginning after 2025, but what it removed was the pre-OBBBA expiry scheduled for the end of 2025; the 60 percent figure and the 2018 start survived it unchanged. Reading the rewrite as a new start date would imply the ceiling did not govern 2018 through 2025, which is false, and would make a year filter over this registry answer wrongly for those years.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 170(b)(1)(G)(i)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
       quotedText:
-        'any contribution of cash to an organization described in subparagraph (A) shall be allowed as a deduction under subsection (a) to the extent that the aggregate of such contributions does not exceed the excess of- (I) 60 percent of the taxpayer contribution base for the taxable year, over (II) the aggregate amount of contributions taken into account under subparagraph (A) for such taxable year.',
+        'For taxable years beginning after December 31, 2017, any contribution of cash to an organization described in subparagraph (A) shall be allowed as a deduction under subsection (a) to the extent that the aggregate of such contributions does not exceed the excess of- (I) 60 percent of the taxpayer\'s contribution base for the taxable year, over (II) the aggregate amount of contributions taken into account under subparagraph (A) for such taxable year.',
     }, {
       kind: 'statute',
       citation: 'IRC 170(b)(1)(G)(iii)',
@@ -638,9 +633,9 @@ const registry = {
         'Contributions taken into account under this subparagraph shall not be taken into account under subparagraph (A). ... subparagraph (A) shall be applied by reducing (but not below zero) the contribution limitation allowed for the taxable year under such subparagraph by the aggregate contributions allowed under this subparagraph for such taxable year.',
     }],
     volatility: 'staticStatute',
-    effectiveFrom: 2026,
+    effectiveFrom: 2018,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts'],
   },
 
@@ -4973,6 +4968,190 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
+  },
+
+  // --- Registered 2026-08-04: the charitable and section 68 cluster --------
+  //
+  // Four of these say the same structural thing from different angles. The
+  // engine holds an exact, well-tested implementation of the OBBBA charitable
+  // and section 68 rules in packages/engine/src/actions -- the section 170
+  // ledgers, the section 68 attribution chain, and the parameters they read --
+  // and `git grep` finds no reference to any of it from
+  // packages/engine/src/projection or packages/engine/src/tax/federalTax.ts.
+  // The figure a plan actually shows comes from `itemizedTotal`, which sums
+  // capped SALT, mortgage interest and charitable and applies no limitation to
+  // the third. So the correct code is not what runs, and the records below
+  // pin the live behaviour rather than the shelved one.
+
+  'irc-170-p-nonitemizer-deduction-dollar-cap': {
+    title: 'Dollar cap on the charitable deduction of a taxpayer who does not itemize',
+    statement:
+      'An individual who does not elect to itemize is still allowed a charitable deduction, but only for gifts made in cash to a 170(b)(1)(A) organization and only up to $1,000, or $2,000 on a joint return. The allowance is computed without regard to 170(b)(1)(G)(ii), 170(b)(1)(I), and 170(d)(1), so the 0.5 percent floor never reduces it and no carried-forward contribution can feed it; the 60 percent ceiling of (G)(i) is not on that list and does still apply. The cap is a flat statutory figure carrying no inflation adjustment.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The engine hard-codes $1,000 and $2,000 while the codified text quoted below reads "not in excess of 1,000 ($2,000 in the case of a joint return)", with no currency symbol on the first figure. That is a compilation artifact, not a reading: Pub. L. 119-21 section 70424(a) substituted "$1,000 ($2,000" for "$300 ($600" as a single quoted fragment, and the Office of the Law Revision Counsel reports it that way in its own amendment note, which is the second authority below. The engine takes the enacted figure. The other trap here is the predecessor: this subsection carried $300 ($600 joint) for 2021 under the CARES-era rule, and code or test data ported from that era is wrong by a factor of more than three in the taxpayer’s disfavour.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 170(p)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
+      quotedText:
+        'In the case of any taxable year, if the individual does not elect to itemize deductions for such taxable year, the deduction under this section shall be equal to the deduction, not in excess of 1,000 ($2,000 in the case of a joint return), which would be determined under this section if the only charitable contributions taken into account in determining such deduction were contributions made in cash during such taxable year (determined without regard to subsections (b)(1)(G)(ii), (b)(1)(I), and (d)(1)) to an organization described in section 170(b)(1)(A)',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 170(p), Editorial Notes, Amendments, 2025',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
+      quotedText:
+        'in introductory provisions, struck out "beginning in 2021" after "In the case of any taxable year" and substituted "$1,000 ($2,000" for "$300 ($600".',
+    }, {
+      kind: 'statute',
+      citation: 'Pub. L. 119-21, sec. 70424(b) (OBBBA)',
+      url: 'https://www.govinfo.gov/content/pkg/PLAW-119publ21/html/PLAW-119publ21.htm',
+      quotedText:
+        'Effective Date.--The amendments made by this section shall apply to taxable years beginning after December 31, 2025.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/actions/annualQcdStandardSection170pLedger.ts',
+      'packages/engine/src/tax/annualCharitableDeductionParameters.ts',
+    ],
+  },
+
+  'irc-170-b-1-I-projection-floor-not-applied': {
+    title: 'The 0.5 percent floor is not applied to the projected charitable deduction',
+    statement:
+      'A charitable contribution otherwise allowable is allowed only to the extent the aggregate of such contributions exceeds 0.5 percent of the taxpayer’s contribution base, which 170(b)(1)(H) defines as adjusted gross income. Not modelled: the live tax path builds its itemized total as capped SALT plus mortgage interest plus the supplied charitable figure taken at face value, subtracts no floor, and has no contribution-base concept, so the itemized total is larger than the statute allows by the lesser of the gift and 0.5 percent of AGI. The floor is the ceiling on the error, not its measure: a gift at or below the floor is disallowed in full, so the whole gift is the overstatement, and only once the gift exceeds the floor does the overstatement settle at 0.5 percent of AGI. The tax consequence is narrower still than the deduction error: the live path takes the greater of the standard deduction and the itemized total, so a household whose inflated total still falls short of the standard deduction pays exactly the same tax. It reaches a return two ways -- a household that itemizes on the correct figure pays less tax by that overstatement at its marginal rate, and a household near the boundary is pushed into itemizing by the inflation itself and then deducts a total the statute never allowed.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale:
+      'The direction was checked against the one interaction that could reverse it and does not. Floor-disallowed dollars have no carryover of their own: 170(d)(1)(C)(i) lets them survive only by enlarging an excess that some other carryover rule is already carrying forward from the same year, so for a household giving below the percentage ceiling — the ordinary retiree case — the disallowance is permanent and no later year returns it. The engine holds an exact implementation of this floor, including the ordering settled at irc-170-b-1-I-floor-ordering and the carryover gate at irc-170-d-1-C-floor-carryforward-gate, in packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts. Nothing under packages/engine/src/projection or in federalTax.ts calls it, which is why this record describes the live path and not that one.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 170(b)(1)(I), first sentence',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
+      quotedText:
+        'Any charitable contribution otherwise allowable (without regard to this subparagraph) as a deduction under this section shall be allowed only to the extent that the aggregate of such contributions exceeds 0.5 percent of the taxpayer\'s contribution base for the taxable year.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 170(b)(1)(H)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this section, the term "contribution base" means adjusted gross income (computed without regard to any net operating loss carryback to the taxable year under section 172).',
+    }, {
+      kind: 'statute',
+      citation: 'Pub. L. 119-21, sec. 70425(c) (OBBBA)',
+      url: 'https://www.govinfo.gov/content/pkg/PLAW-119publ21/html/PLAW-119publ21.htm',
+      quotedText:
+        'Effective Date.--The amendments made by this section shall apply to taxable years beginning after December 31, 2025.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+  },
+
+  'irc-170-b-1-G-projection-cash-ceiling-not-applied': {
+    title: 'The 60 percent ceiling on cash gifts is not applied to the projected charitable deduction',
+    statement:
+      'Cash contributions to public charities are deductible only up to 60 percent of the contribution base reduced by contributions already taken into account under 170(b)(1)(A), and (G)(ii) carries the excess forward as a contribution of the same class in each of the 5 succeeding years. Not modelled: the live tax path deducts the whole supplied charitable figure in the year it is given and holds no carryforward state of any kind, so a household giving above the ceiling receives in one year a deduction the statute spreads across as many as six, and receives nothing in the five that follow.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'This is the timing case the errorDirection doc comment describes, and the sign really does turn on the year rather than being undetermined. In the gift year the engine’s deduction is too large and tax is understated; in each of the five succeeding years it is too small, because the carryforward the statute grants is not there, and tax is overstated. It does not net to nothing even in principle: a carryforward the taxpayer never has the income to absorb expires unused, which for a household drawing down in retirement is the likely outcome, and in that case the engine’s year-one generosity is a permanent understatement. Nor is an annual projection indifferent to which year a deduction lands in, since the year decides the bracket it offsets, the capital-gain stacking threshold, and the modified AGI that sets the Medicare premium adjustment two years later. The effectiveFrom is 2018 rather than 2026 because the clause quoted below says so in its own words; Pub. L. 119-21 section 70425(b)(1) rewrote (G)(i) effective for taxable years beginning after 2025, but what it removed was the pre-OBBBA expiry, leaving both the 60 percent figure and the 2018 start date intact. The correct implementation lives in packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts and is registered at irc-170-b-1-G-cash-percentage-ceiling; the live path does not reach it.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 170(b)(1)(G)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
+      quotedText:
+        'For taxable years beginning after December 31, 2017, any contribution of cash to an organization described in subparagraph (A) shall be allowed as a deduction under subsection (a) to the extent that the aggregate of such contributions does not exceed the excess of- (I) 60 percent of the taxpayer\'s contribution base for the taxable year, over (II) the aggregate amount of contributions taken into account under subparagraph (A) for such taxable year.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 170(b)(1)(G)(ii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
+      quotedText:
+        'If the aggregate amount of contributions described in clause (i) exceeds the applicable limitation under clause (i) for any taxable year described in such clause, such excess shall be treated (in a manner consistent with the rules of subsection (d)(1)) as a charitable contribution to which clause (i) applies in each of the 5 succeeding years in order of time.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2018,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+  },
+
+  'irc-68-projection-overall-limitation-not-applied': {
+    title: 'The overall limitation on itemized deductions is not applied in the projection',
+    statement:
+      'Itemized deductions otherwise allowable are reduced by 2/37 of the lesser of those deductions or the excess of taxable income, determined without regard to section 68 and increased by those deductions, over the dollar amount at which the 37 percent rate bracket begins, and 68(b) takes that reduction after every other limitation on an itemized deduction. Not modelled: the live tax path deducts the greater of the standard deduction and its itemized total and never reduces either, so a household whose income clears the 37 percent bracket threshold keeps every dollar of itemized deduction section 68 would have taken away.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale:
+      'One direction only, and permanently. Section 68 can only reduce an itemized deduction, never enlarge one; it carries nothing forward, so no later year gives back what it disallows; and 68(b) places it last, after the section 170 limitations, so nothing downstream of it can reverse the sign. For 2026 the threshold is the 37 percent bracket start — $640,600 for a single filer, $768,700 on a joint return — so the gap is confined to high-income households, but for those it compounds with the two section 170 limitations this same path omits: the itemized total section 68 would have reduced is already too large before the reduction is skipped. Volatility is annuallyIndexed rather than staticStatute because 68(a)(2) points at a section 1 bracket boundary the IRS restates every autumn, even though the 2/37 rate itself is fixed. The exact bigint-rational implementation is in packages/engine/src/actions/annualSection68ItemizedDeduction.ts, registered settled at irc-68-overall-itemized-limitation, and is unreachable from the projection.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 68(a)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section68&num=0&edition=prelim',
+      quotedText:
+        'In the case of an individual, the amount of the itemized deductions otherwise allowable for the taxable year (determined without regard to this section) shall be reduced by 2/37 of the lesser of- (1) such amount of itemized deductions, or (2) so much of the taxable income of the taxpayer for the taxable year (determined without regard to this section and increased by such amount of itemized deductions) as exceeds the dollar amount at which the 37 percent rate bracket under section 1 begins with respect to the taxpayer.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 68(b)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section68&num=0&edition=prelim',
+      quotedText:
+        'This section shall be applied after the application of any other limitation on the allowance of any itemized deduction.',
+    }, {
+      kind: 'statute',
+      citation: 'Pub. L. 119-21, sec. 70111(c) (OBBBA)',
+      url: 'https://www.govinfo.gov/content/pkg/PLAW-119publ21/html/PLAW-119publ21.htm',
+      quotedText:
+        'Effective Date.--The amendments made by this section shall apply to taxable years beginning after December 31, 2025.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+  },
+
+  'irc-170-p-projection-nonitemizer-deduction-not-allowed': {
+    title: 'The nonitemizer charitable deduction is not allowed in the projection',
+    statement:
+      'For an individual who does not elect to itemize, 63(b) defines taxable income as adjusted gross income minus a list of deductions that includes both the standard deduction and the deduction provided in section 170(p), so the nonitemizer charitable allowance of up to $1,000, or $2,000 on a joint return, is additive to the standard deduction rather than a competitor to it. Not modelled: the live tax path uses the supplied charitable figure only inside its itemized total and then takes the greater of that total and the standard deduction, so a household that does not itemize deducts nothing whatever for its gifts and pays tax on up to $2,000 more income than the statute reaches, every year it gives.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale:
+      'The smallest of these gaps per year and the one that reaches the most households, because after the OBBBA standard deduction most retirees do not itemize at all, and for them the engine’s charitable input is inert. It is also the only one of the four whose sign favours the fisc, and no interaction runs the other way: the allowance is a floor-free, carryover-free addition to a base the engine already grants, so omitting it can only enlarge taxable income. What it is NOT is a typed refusal — the projection accepts the charitable figure, silently discards it, and returns a number, which is why this is approximated rather than outOfScope. The correct ledger, including the shared joint cap and the (G)(i) capacity interaction, is in packages/engine/src/actions/annualQcdStandardSection170pLedger.ts and is registered at irc-170-p-nonitemizer-deduction-dollar-cap.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 63(b)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim',
+      quotedText:
+        'In the case of an individual who does not elect to itemize his deductions for the taxable year, for purposes of this subtitle, the term "taxable income" means adjusted gross income, minus- (1) the standard deduction, (2) the deduction for personal exemptions provided in section 151, (3) any deduction provided in section 199A, (4) the deduction provided in section 170(p),',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 170(p)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
+      quotedText:
+        'In the case of any taxable year, if the individual does not elect to itemize deductions for such taxable year, the deduction under this section shall be equal to the deduction, not in excess of 1,000 ($2,000 in the case of a joint return), which would be determined under this section if the only charitable contributions taken into account in determining such deduction were contributions made in cash during such taxable year',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
   },
 } as const satisfies Record<string, TaxRuleRecord>
 
