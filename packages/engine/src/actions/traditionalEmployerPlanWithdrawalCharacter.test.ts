@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { describeRule } from '../rules/describeRule.js'
+
 import {
   asAccountId,
   asActionId,
@@ -389,5 +391,39 @@ describe('traditional employer-plan withdrawal character', () => {
 
     expect(() => classifyTraditionalEmployerPlanWithdrawal(value))
       .toThrow(/evaluation date must be canonical/)
+  })
+})
+
+describeRule('irc-72-e-8-B-employer-plan-pro-rata-basis', {
+  // 60 cents distributed from a 100-cent account holding 40 cents of after-tax
+  // basis. IRC 72(e)(8)(B) allocates basis in the ratio of investment to
+  // account balance, so 60 * 40/100 = 24 comes back as basis and 36 is ordinary
+  // income. The reading that basis is recovered first returns all 40 and leaves
+  // only 20 of ordinary income.
+  readings: { statute: 24, rejectedBasisFirst: 40 },
+  accepted: 'statute',
+}, ({ accepted, readings }) => {
+  it('recovers basis in the investment-to-account-balance ratio', () => {
+    const result = classifyTraditionalEmployerPlanWithdrawal(input(60, 100, 40))
+
+    expect(result.status).toBe('accepted')
+    if (result.status !== 'accepted') return
+    expect(result.acceptedSourceEligibility.basisEvidence.basisRecoveredAmount)
+      .toBe(accepted)
+    expect(result.acceptedSourceEligibility.basisEvidence.basisRecoveredAmount)
+      .not.toBe(readings.rejectedBasisFirst)
+    expect(result.acceptedSourceEligibility.basisEvidence.ordinaryIncomeAmount)
+      .toBe(36)
+  })
+
+  it('leaves a distribution smaller than the basis partly taxable', () => {
+    // The sharpest consequence of pro rata over basis-first: a 10-cent
+    // distribution against 40 cents of basis is not tax free.
+    const result = classifyTraditionalEmployerPlanWithdrawal(input(10, 100, 40))
+
+    expect(result.status).toBe('accepted')
+    if (result.status !== 'accepted') return
+    expect(result.acceptedSourceEligibility.basisEvidence.basisRecoveredAmount).toBe(4)
+    expect(result.acceptedSourceEligibility.basisEvidence.ordinaryIncomeAmount).toBe(6)
   })
 })
