@@ -12,6 +12,7 @@ import { describe, expect, it } from 'vitest'
 
 import { packForYear } from '../params/index.js'
 import type { FilingStatus } from '../params/types.js'
+import { describeRule } from '../rules/describeRule.js'
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../model/plan.js'
 import { createFlatTaxCalculator } from '../projection/flatTax.js'
 import { simulatePlan } from '../projection/simulate.js'
@@ -445,6 +446,76 @@ describe('OBBBA senior deduction in the solve (ground-truth 2026 law sync, Step 
     // threshold); the phase-out-aware solve declines the conversion.
     expect(blind.schedule[0]!.conversion).toBeGreaterThan(20_000)
     expect(priced.schedule[0]!.conversion).toBeLessThan(1_000)
+  })
+})
+
+// IRC 151(d)(5)(C)(iii)(I) reduces "the $6,000 amount in clause (i)", and clause
+// (i) allows that amount "for each qualified individual". The household total is
+// n x max(0, 6,000 - 6% x excess), so it sheds 6% x n per dollar of modified AGI
+// and reaches zero at 150,000 + 6,000/0.06 = 250,000 on a joint return however
+// many qualified individuals the return carries. The LP models the claw-back as
+// a floor variable, so its slope is what has to carry the n: at the bare 6% --
+// the combined-base misreading -- the exhaustion point stretches to
+// 150,000 + 2 x 6,000/0.06 = 350,000, and the solve prices a phase-out spike
+// across a 100,000 band where the exact ledger has no deduction left to lose.
+describeRule('irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out', {
+  readings: { reducedPerQualifiedIndividual: 250_000, reducedOnTheCombinedBase: 350_000 },
+  accepted: 'reducedPerQualifiedIndividual',
+}, ({ accepted, readings }) => {
+  const RULE = PACK.federalTax.seniorDeduction!
+  const RATE = RULE.phaseOutRatePct / 100
+  /** Modified AGI at which `n` qualified individuals run out, under each reading. */
+  const perIndividualExhaustion = RULE.magiPhaseOutStart.marriedFilingJointly + RULE.amountPerPerson / RATE
+  const combinedBaseExhaustion = (n: number) =>
+    RULE.magiPhaseOutStart.marriedFilingJointly + (RULE.amountPerPerson * n) / RATE
+
+  const couple = (ordinaryIncomeBase: number) => ({
+    years: [year({
+      year: 2027,
+      filingStatus: 'marriedFilingJointly' as FilingStatus,
+      peopleAged65Plus: 2,
+      ordinaryIncomeBase,
+    })],
+    openingTrad: 400_000,
+    openingInheritedTrad: 0,
+    openingOther: 200_000,
+    liquidationRate: 0.24,
+  })
+
+  it('puts the two readings 100,000 dollars apart for a couple', () => {
+    expect(perIndividualExhaustion).toBe(accepted)
+    expect(combinedBaseExhaustion(2)).toBe(readings.reducedOnTheCombinedBase)
+    // One qualified individual is where the readings agree, which is why a
+    // one-person fixture cannot tell them apart.
+    expect(combinedBaseExhaustion(1)).toBe(accepted)
+  })
+
+  it('skips a couple already past the per-individual exhaustion point', () => {
+    // 300,000 sits between the readings: the exact ledger has nothing left to
+    // claw back, while the combined-base model still believes the couple holds
+    // 12,000 - 6% x 150,000 = 3,000. Skipping is exact, so the LP must be
+    // byte-identical to the flag-off model.
+    const past = couple(300_000)
+    expect(past.years[0]!.ordinaryIncomeBase).toBeGreaterThan(accepted)
+    expect(past.years[0]!.ordinaryIncomeBase).toBeLessThan(readings.reducedOnTheCombinedBase)
+
+    const on = buildOptimizerModel({ ...past, seniorDeduction: true })
+    expect(on.lp).not.toContain('srd')
+    expect(on.lp).toBe(buildOptimizerModel(past).lp)
+  })
+
+  it('claws back 6% for each qualified individual, not 6% for the return', () => {
+    // 200,000 is inside the band under either reading, so the fixture turns on
+    // the slope rather than on whether the variable exists at all.
+    const on = buildOptimizerModel({ ...couple(200_000), seniorDeduction: true })
+    const srd = on.lp.split('\n').find((l) => l.includes(' srd0:'))!
+
+    // Conversions enter modified AGI at their full taxable fraction (1 here),
+    // so the conversion coefficient is the slope itself: 6% x 2 = 12%.
+    expect(srd).toContain(`- ${2 * RATE} conv0`)
+    expect(srd).not.toContain(`- ${RATE} conv0`)
+    // ... and the constant side is that same slope on the baseline excess.
+    expect(srd).toContain(String(2 * RATE * (200_000 - RULE.magiPhaseOutStart.marriedFilingJointly)))
   })
 })
 

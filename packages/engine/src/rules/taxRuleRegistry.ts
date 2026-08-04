@@ -1931,6 +1931,7 @@ const registry = {
     verifiedOn: '2026-08-03',
     implementedBy: [
       'packages/engine/src/tax/federalTax.ts',
+      'packages/engine/src/strategies/optimizer.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
   },

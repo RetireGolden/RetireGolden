@@ -7,8 +7,10 @@
  *      excluded foreign earned income affect §86 provisional income without
  *      becoming ordinary income or entering AGI directly. MAGI restores the
  *      foreign exclusion (§1411(d), §151(d)(5)(C)(iii)(II)).
- *   3. Deductions: standard + age-65 additions + OBBBA senior deduction
- *      (2025–2028, per-person 6%-of-MAGI phase-out); itemized not modeled in v1
+ *   3. Deductions: the greater of the standard deduction (with age-65
+ *      additions) or itemized SALT (capped) + mortgage interest + charitable,
+ *      plus the OBBBA senior deduction on top of whichever base wins
+ *      (2025–2028, per-person 6%-of-MAGI phase-out)
  *   4. Ordinary brackets on non-preferential taxable income
  *   5. LTCG/qualified-dividend stacking at 0/15/20% on top of ordinary
  *   6. NIIT 3.8% on investment income over the (unindexed) MAGI threshold
@@ -18,7 +20,8 @@
  *      preferential-rate-aware tentative minimum tax.
  *
  * Out of scope here (see DOCS/features/taxes.md): credits, full Form 6251
- * adjustments, early-withdrawal penalties (projection-level), IRMAA
+ * adjustments, the rest of Schedule A and the OBBBA high-income SALT
+ * phase-out, early-withdrawal penalties (projection-level), IRMAA
  * (expense-side), state.
  *
  * @see DOCS/domain/domain-rules-reference.md §§1–3
