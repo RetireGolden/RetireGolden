@@ -19,6 +19,14 @@ export type OwnedNonRothIraReplayOccurrenceKind =
    * carries no line and never appears in a basis allocation entry.
    */
   | 'legacyQcd'
+  /**
+   * A conversion the exact-cent executor committed against a named request.
+   * It carries Form 8606 line 8 exactly as the aggregate one does — the same
+   * statute reaches both — but its producer key names the authorising action
+   * and allocation, so the replay identity it derives cannot collide with an
+   * aggregate conversion that merely shares a source and destination.
+   */
+  | 'namedRothConversion'
   | 'ownedIraContribution'
   | 'rolloverInflow'
 

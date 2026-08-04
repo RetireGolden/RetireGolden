@@ -37,6 +37,16 @@ export const annualRetirementRuntimeEventKinds = [
   'legacyNeedBasedWithdrawal',
   'legacyRothConversion',
   'legacyQcd',
+  /**
+   * A conversion the exact-cent retirement-action executor committed against a
+   * named request, as opposed to the aggregate strategy's first-source sweep.
+   * The producer key carries the action and allocation that authorised it, so
+   * the occurrence binds to one request rather than to Plan array order. Its
+   * chronology and movement authority stay with the executor's own published
+   * evidence: the simulator's loop position is still not an execution
+   * sequence, which is why this is not a resolved runtime event kind.
+   */
+  'namedRothConversion',
   'ownedIraContribution',
   'ownedIraEmployerContribution',
   'employerPlanEmployeeContribution',

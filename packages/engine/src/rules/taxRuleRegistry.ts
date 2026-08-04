@@ -2104,7 +2104,14 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      // A named conversion does not inherit the aggregate pass's position in
+      // the annual loop as its proof of A-6(b). It reads the owner's
+      // aggregated-IRA RMD outcome from bound evidence and refuses to move
+      // without it, and it cites that evidence on every committed allocation.
+      'packages/engine/src/actions/rothConversionExecution.ts',
+    ],
   },
 
   'irc-401-a-9-H-designated-beneficiary-ten-year-rule': {
@@ -2320,7 +2327,14 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/strategies/rothBasis.ts'],
+    implementedBy: [
+      'packages/engine/src/strategies/rothBasis.ts',
+      // A committed named conversion starts its own clock like any other. Its
+      // layer carries the whole gross as the taxable portion, which is what
+      // (F)(ii) requires of a conversion made at a zero basis numerator:
+      // nothing was excluded from income, so nothing escapes the recapture.
+      'packages/engine/src/projection/simulate.ts',
+    ],
   },
   'irc-1-j-2-progressive-ordinary-rate-schedule': {
     title: 'Ordinary rate schedule is marginal, and permanent after OBBBA',

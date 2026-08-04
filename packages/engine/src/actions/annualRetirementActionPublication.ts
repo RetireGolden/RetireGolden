@@ -973,16 +973,33 @@ function conversionAllocationRecords(
   return evidence.allocations.map((allocation) => {
     const requestAllocation = evidence.request.allocations.find((candidate) =>
       candidate.allocationId === allocation.allocationId)
+    // A committed allocation moved its full requested amount at a proven-zero
+    // basis numerator, so its whole gross is taxable and it cites the basis
+    // and RMD-reserve evidence it rested on. A staged one moved nothing and
+    // cites neither. Nothing in between publishes: a half-executed allocation,
+    // or a committed one claiming a basis return, is a contradiction.
+    const committedAllocation = evidence.outcome === 'executed'
+    const allocationConsistent = committedAllocation
+      ? allocation.executedAmount === requestAllocation?.requestedAmount &&
+        allocation.unexecutedAmount === 0 &&
+        allocation.taxableConvertedAmount === requestAllocation.requestedAmount &&
+        allocation.nontaxableConvertedAmount === 0 &&
+        allocation.resolution === 'resolved' &&
+        typeof allocation.basisEvidenceId === 'string' &&
+        allocation.basisEvidenceId.trim().length > 0 &&
+        typeof allocation.rmdReserveEvidenceId === 'string' &&
+        allocation.rmdReserveEvidenceId.trim().length > 0
+      : allocation.executedAmount === 0 &&
+        allocation.unexecutedAmount === requestAllocation?.requestedAmount &&
+        allocation.taxableConvertedAmount === 0 &&
+        allocation.nontaxableConvertedAmount === 0 &&
+        allocation.basisEvidenceId === null &&
+        allocation.rmdReserveEvidenceId === null
     if (
       requestAllocation === undefined ||
       requestAllocation.sourceAccountId !== allocation.sourceAccountId ||
       requestAllocation.requestedAmount !== allocation.requestedAmount ||
-      allocation.executedAmount !== 0 ||
-      allocation.unexecutedAmount !== requestAllocation.requestedAmount ||
-      allocation.taxableConvertedAmount !== 0 ||
-      allocation.nontaxableConvertedAmount !== 0 ||
-      allocation.basisEvidenceId !== null ||
-      allocation.rmdReserveEvidenceId !== null
+      !allocationConsistent
     ) {
       throw new Error(
         `Conversion allocation evidence differs for action "${evidence.request.actionId}"`,
@@ -1017,17 +1034,23 @@ export function rothConversionPublicationEligibility(
       }
 }
 
-/** Detach named-conversion staging evidence into the common annual contract. */
+/** Detach named-conversion execution evidence into the common annual contract. */
 export function rothConversionPublicationSource(
   execution: Readonly<ExecuteRothConversionsResult>,
 ): Readonly<AnnualRetirementActionPublicationSource> {
-  if (
-    execution.committed !== false ||
-    execution.balances.some((balance) =>
-      balance.openingBalance !== balance.closingBalance)
-  ) {
+  // The two arms disagree about exactly one thing: whether balances may have
+  // changed. A staged batch that reports a changed balance is publishing
+  // movement it never authorised, and a committed batch that reports none has
+  // lost the movement it did. Both are refusals rather than warnings.
+  const movedBalances = execution.balances.some((balance) =>
+    balance.openingBalance !== balance.closingBalance)
+  const movedEvidence = execution.evidence.some((evidence) =>
+    evidence.outcome === 'executed')
+  if (execution.committed !== movedEvidence ||
+      (!execution.committed && movedBalances) ||
+      (execution.committed && !movedBalances)) {
     throw new Error(
-      'Cannot publish conversion staging evidence with committed movement',
+      'Conversion execution movement and committed balances must agree',
     )
   }
   if (execution.scheduleIssues.length > 0 && execution.evidence.length > 0) {
@@ -1066,6 +1089,36 @@ export function rothConversionPublicationSource(
         diagnosedActionIds.has(request.actionId),
       ))
     : execution.evidence.map((evidence) => {
+        // A committed conversion moved its whole requested amount on its own
+        // stated date, credited its own stated destination, and cites funding
+        // evidence. A staged one did none of that. The two shapes are checked
+        // separately rather than loosened into one, so neither can borrow the
+        // other's slack.
+        const movementConsistent = evidence.outcome === 'executed'
+          ? evidence.readiness === 'actionable' &&
+            evidence.executedAmount === evidence.request.requestedAmount &&
+            evidence.unexecutedAmount === 0 &&
+            evidence.destinationCreditAmount === evidence.request.requestedAmount &&
+            evidence.taxableConvertedAmount === evidence.request.requestedAmount &&
+            evidence.nontaxableConvertedAmount === 0 &&
+            evidence.executedDate === (evidence.request.executionDate ?? null) &&
+            evidence.executedSequence === evidence.request.executionSequence &&
+            evidence.taxFunding.status !== 'unsupported' &&
+            typeof evidence.taxFunding.evidenceId === 'string' &&
+            evidence.taxFunding.evidenceId.trim().length > 0 &&
+            evidence.reasons.length === 0
+          : evidence.readiness === 'nonActionable' &&
+            evidence.destinationCreditAmount === 0 &&
+            evidence.executedAmount === 0 &&
+            evidence.unexecutedAmount === evidence.request.requestedAmount &&
+            evidence.taxableConvertedAmount === 0 &&
+            evidence.nontaxableConvertedAmount === 0 &&
+            evidence.executedDate === null &&
+            evidence.executedSequence === null &&
+            evidence.taxFunding.status === 'unsupported' &&
+            evidence.taxFunding.requiredFundingAmount === null &&
+            evidence.taxFunding.fundedAmount === null &&
+            evidence.taxFunding.evidenceId === null
         if (
           evidence.actionId !== evidence.request.actionId ||
           evidence.kind !== evidence.request.kind ||
@@ -1075,19 +1128,8 @@ export function rothConversionPublicationSource(
           evidence.destinationRothAccountId !==
             evidence.request.destinationRothAccountId ||
           evidence.requestedAmount !== evidence.request.requestedAmount ||
-          evidence.destinationCreditAmount !== 0 ||
-          evidence.executedAmount !== 0 ||
-          evidence.unexecutedAmount !== evidence.request.requestedAmount ||
-          evidence.taxableConvertedAmount !== 0 ||
-          evidence.nontaxableConvertedAmount !== 0 ||
-          evidence.executedDate !== null ||
-          evidence.executedSequence !== null ||
-          evidence.readiness !== 'nonActionable' ||
           evidence.taxFunding.kind !== evidence.request.taxFunding.kind ||
-          evidence.taxFunding.status !== 'unsupported' ||
-          evidence.taxFunding.requiredFundingAmount !== null ||
-          evidence.taxFunding.fundedAmount !== null ||
-          evidence.taxFunding.evidenceId !== null
+          !movementConsistent
         ) {
           throw new Error(
             `Conversion execution evidence differs for action "${evidence.request.actionId}"`,

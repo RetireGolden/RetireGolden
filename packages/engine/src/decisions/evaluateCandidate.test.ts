@@ -764,8 +764,9 @@ describe('evaluateCandidate', () => {
     expect(diagnostics).toContain(request.actionId)
     expect(diagnostics).toContain('conversion-basis-evidence-missing')
     expect(diagnostics).not.toMatch(/exactly one matching/i)
-    expect(evaluation.candidateResult.years.flatMap((year) =>
-      year.rothConversionActionExecution?.evidence ?? []).map((evidence) =>
+    expect(evaluation.candidateResult.years.flatMap((year): readonly {
+      actionId: string
+    }[] => year.rothConversionActionExecution?.evidence ?? []).map((evidence) =>
       evidence.actionId)).toContain(request.actionId)
   })
 

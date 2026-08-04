@@ -10,7 +10,7 @@ import {
   createActionReason,
   type ActionReason,
 } from './reasons.js'
-import { compareUtf16CodeUnits } from './structuralId.js'
+import { compareUtf16CodeUnits, deriveActionStructuralId } from './structuralId.js'
 import {
   evaluateRetirementActionSchedule,
   type OrdinaryWithdrawalExecutionScheduleIssue,
@@ -18,7 +18,9 @@ import {
 import type { Plan } from '../model/plan.js'
 import {
   evaluateRetirementActionEligibilityFromPlan,
-  resolveOwnerIraRmdSatisfaction,
+  isAggregatedIra,
+  resolveOwnerAggregatedIraBasis,
+  resolveOwnerIraRmdSatisfactionEvidenceId,
   type RetirementActionEligibilityRuntimeEvidence,
 } from '../strategies/accountEligibility.js'
 
@@ -41,7 +43,7 @@ export interface RothConversionBalanceExecutionEvidence {
   closingBalance: number
 }
 
-export interface RothConversionAllocationExecutionEvidence {
+export interface RothConversionStagedAllocationExecutionEvidence {
   allocationId: string
   sourceAccountId: string
   resolution: 'resolved' | 'unresolved'
@@ -54,37 +56,100 @@ export interface RothConversionAllocationExecutionEvidence {
   rmdReserveEvidenceId: null
 }
 
-export interface RothConversionTaxFundingExecutionEvidence {
-  kind: RothConversionRequest['taxFunding']['kind']
-  status: 'unsupported'
-  requiredFundingAmount: null
-  fundedAmount: null
-  evidenceId: null
+/**
+ * One allocation that actually moved.
+ *
+ * `nontaxableConvertedAmount` is a literal zero, not a widened number. This
+ * executor commits only against a proven-zero aggregated-IRA basis numerator,
+ * where IRC 408A(d)(3)(A) and the Form 8606 line-8 computation make the whole
+ * converted gross includible. A nonzero numerator needs the year's complete
+ * line-8 allocation and is refused rather than approximated, so no committed
+ * allocation can carry a nonzero basis return.
+ */
+export interface RothConversionExecutedAllocationExecutionEvidence {
+  allocationId: string
+  sourceAccountId: string
+  resolution: 'resolved'
+  requestedAmount: number
+  executedAmount: number
+  unexecutedAmount: 0
+  taxableConvertedAmount: number
+  nontaxableConvertedAmount: 0
+  /** The owner aggregated-IRA basis evidence this character rests on. */
+  basisEvidenceId: string
+  /** The owner IRA-RMD satisfaction evidence Treas. Reg. 1.408A-4 A-6 needs. */
+  rmdReserveEvidenceId: string
 }
 
-export interface RothConversionExecutionEvidence {
+export type RothConversionAllocationExecutionEvidence =
+  | Readonly<RothConversionStagedAllocationExecutionEvidence>
+  | Readonly<RothConversionExecutedAllocationExecutionEvidence>
+
+export interface RothConversionTaxFundingExecutionEvidence {
+  kind: RothConversionRequest['taxFunding']['kind']
+  status: 'unsupported' | 'notExpected' | 'externallyAttested'
+  requiredFundingAmount: number | null
+  fundedAmount: number | null
+  evidenceId: string | null
+}
+
+interface RothConversionExecutionEvidenceBase {
   actionId: string
   kind: 'rothConversion'
   request: Readonly<RothConversionRequest>
   year: number
   scheduledDate: string | null
-  executedDate: null
   scheduledSequence: number
-  executedSequence: null
   destinationRothAccountId: string
-  destinationCreditAmount: 0
   requestedAmount: number
+  taxFunding: Readonly<RothConversionTaxFundingExecutionEvidence>
+  reasons: readonly ActionReason[]
+  provenance: RothConversionRequest['provenance']
+}
+
+export interface RothConversionStagedExecutionEvidence
+  extends RothConversionExecutionEvidenceBase {
+  executedDate: null
+  executedSequence: null
+  destinationCreditAmount: 0
   executedAmount: 0
   unexecutedAmount: number
   taxableConvertedAmount: 0
   nontaxableConvertedAmount: 0
   outcome: 'refused' | 'unsupported'
   readiness: 'nonActionable'
-  allocations: readonly RothConversionAllocationExecutionEvidence[]
-  taxFunding: Readonly<RothConversionTaxFundingExecutionEvidence>
-  reasons: readonly ActionReason[]
-  provenance: RothConversionRequest['provenance']
+  allocations: readonly Readonly<RothConversionStagedAllocationExecutionEvidence>[]
 }
+
+/**
+ * One request that moved its full requested amount.
+ *
+ * There is no partial arm. A conversion whose named source cannot cover its
+ * allocation keeps `conversion-balance-trimmed` or
+ * `conversion-balance-unavailable` and moves nothing: a trimmed conversion is
+ * a different conversion from the one the household stated, and this executor
+ * has no authority to choose a smaller one on its behalf.
+ */
+export interface RothConversionExecutedExecutionEvidence
+  extends RothConversionExecutionEvidenceBase {
+  executedDate: string
+  executedSequence: number
+  destinationCreditAmount: number
+  executedAmount: number
+  unexecutedAmount: 0
+  taxableConvertedAmount: number
+  nontaxableConvertedAmount: 0
+  outcome: 'executed'
+  readiness: 'actionable'
+  allocations: readonly [
+    Readonly<RothConversionExecutedAllocationExecutionEvidence>,
+    ...Readonly<RothConversionExecutedAllocationExecutionEvidence>[],
+  ]
+}
+
+export type RothConversionExecutionEvidence =
+  | Readonly<RothConversionStagedExecutionEvidence>
+  | Readonly<RothConversionExecutedExecutionEvidence>
 
 export type RothConversionExecutionScheduleIssue =
   | OrdinaryWithdrawalExecutionScheduleIssue
@@ -94,13 +159,34 @@ export type RothConversionExecutionScheduleIssue =
       detail: string
     }>
 
-export interface ExecuteRothConversionsResult {
+export interface ExecuteRothConversionsStagedResult {
   committed: false
   requests: readonly Readonly<RothConversionRequest>[]
   scheduleIssues: readonly RothConversionExecutionScheduleIssue[]
   balances: readonly RothConversionBalanceExecutionEvidence[]
-  evidence: readonly RothConversionExecutionEvidence[]
+  evidence: readonly Readonly<RothConversionStagedExecutionEvidence>[]
 }
+
+/**
+ * At least one request in the annual batch moved money. The batch is still
+ * mixed: a request that could not clear every prerequisite stays staged
+ * alongside the ones that did, because refusing an unrelated request is not a
+ * reason to refuse a proven one.
+ */
+export interface ExecuteRothConversionsCommittedResult {
+  committed: true
+  requests: readonly Readonly<RothConversionRequest>[]
+  scheduleIssues: readonly []
+  balances: readonly RothConversionBalanceExecutionEvidence[]
+  evidence: readonly [
+    RothConversionExecutionEvidence,
+    ...RothConversionExecutionEvidence[],
+  ]
+}
+
+export type ExecuteRothConversionsResult =
+  | ExecuteRothConversionsStagedResult
+  | ExecuteRothConversionsCommittedResult
 
 function deepFreeze<T>(value: T): Readonly<T> {
   if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
@@ -141,6 +227,22 @@ function unchangedBalances(
 ): RothConversionBalanceExecutionEvidence[] {
   return [...snapshots]
     .map((snapshot) => ({ ...snapshot, closingBalance: snapshot.openingBalance }))
+    .sort((left, right) =>
+      compareUtf16CodeUnits(left.accountId, right.accountId) ||
+      left.openingBalance - right.openingBalance,
+    )
+}
+
+function settledBalances(
+  snapshots: readonly RothConversionBalanceSnapshot[],
+  closingByAccountId: ReadonlyMap<string, UsdCents>,
+): RothConversionBalanceExecutionEvidence[] {
+  return [...snapshots]
+    .map((snapshot) => ({
+      ...snapshot,
+      closingBalance: closingByAccountId.get(String(snapshot.accountId)) ??
+        snapshot.openingBalance,
+    }))
     .sort((left, right) =>
       compareUtf16CodeUnits(left.accountId, right.accountId) ||
       left.openingBalance - right.openingBalance,
@@ -219,11 +321,93 @@ function taxFundingReasons(request: Readonly<RothConversionRequest>): ActionReas
   }
 }
 
+/**
+ * The funding evidence a committed conversion carries.
+ *
+ * Only the two dispositions that need nothing else to execute can reach here;
+ * `linkedWithdrawal` and `conversionPrincipalWithholding` keep their reasons
+ * and never commit. `noneExpected` states that no funding is required, so both
+ * figures are an exact zero. `externalCash` reports what the household
+ * attested and leaves `requiredFundingAmount` null: the annual liability the
+ * attestation would have to cover is the missing coordinator's to compute, and
+ * this executor will not invent it.
+ */
+function committedTaxFunding(
+  request: Readonly<RothConversionRequest>,
+): RothConversionTaxFundingExecutionEvidence {
+  const funding = request.taxFunding
+  const evidenceId = deriveActionStructuralId(
+    'retirement-action-conversion-tax-funding',
+    [request.actionId, request.year, funding.kind, request.executionDate ?? null],
+  )
+  if (funding.kind === 'externalCash') {
+    return {
+      kind: funding.kind,
+      status: 'externallyAttested',
+      requiredFundingAmount: null,
+      fundedAmount: funding.amount,
+      evidenceId,
+    }
+  }
+  return {
+    kind: funding.kind,
+    status: 'notExpected',
+    requiredFundingAmount: 0,
+    fundedAmount: 0,
+    evidenceId,
+  }
+}
+
+function executedEvidence(
+  request: RothConversionRequest,
+  executedDate: string,
+  basisEvidenceId: string,
+  rmdReserveEvidenceId: string,
+): Readonly<RothConversionExecutedExecutionEvidence> {
+  const allocations = [...request.allocations]
+    .sort((left, right) => compareUtf16CodeUnits(left.allocationId, right.allocationId))
+    .map((allocation) => ({
+      ...allocation,
+      resolution: 'resolved' as const,
+      executedAmount: allocation.requestedAmount,
+      unexecutedAmount: 0 as const,
+      // A proven-zero aggregated-IRA basis numerator makes the whole gross
+      // includible under IRC 408A(d)(3)(A); nothing is apportioned.
+      taxableConvertedAmount: allocation.requestedAmount,
+      nontaxableConvertedAmount: 0 as const,
+      basisEvidenceId,
+      rmdReserveEvidenceId,
+    }))
+  return {
+    actionId: request.actionId,
+    kind: 'rothConversion',
+    request,
+    year: request.year,
+    scheduledDate: request.executionDate ?? null,
+    executedDate,
+    scheduledSequence: request.executionSequence,
+    executedSequence: request.executionSequence,
+    destinationRothAccountId: request.destinationRothAccountId,
+    destinationCreditAmount: request.requestedAmount,
+    requestedAmount: request.requestedAmount,
+    executedAmount: request.requestedAmount,
+    unexecutedAmount: 0,
+    taxableConvertedAmount: request.requestedAmount,
+    nontaxableConvertedAmount: 0,
+    outcome: 'executed',
+    readiness: 'actionable',
+    allocations: allocations as unknown as Readonly<RothConversionExecutedExecutionEvidence>['allocations'],
+    taxFunding: committedTaxFunding(request),
+    reasons: [],
+    provenance: request.provenance,
+  }
+}
+
 function nonActionableEvidence(
   request: RothConversionRequest,
   reasons: readonly ActionReason[],
   resolvedSourceAccountIds: ReadonlySet<string>,
-): RothConversionExecutionEvidence {
+): Readonly<RothConversionStagedExecutionEvidence> {
   const canonical = canonicalReasons(reasons)
   const outcome = canonical.some((reason) => reason.outcome === 'unsupported')
     ? 'unsupported' as const
@@ -318,8 +502,10 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
     snapshots.map((snapshot) => [String(snapshot.accountId), snapshot.openingBalance]),
   )
   const remainingByAccountId = new Map(openingByAccountId)
+  const closingByAccountId = new Map(openingByAccountId)
   const evidence: RothConversionExecutionEvidence[] = []
   const runtimeEvidence = input.runtimeEvidence ?? {}
+  let committedAny = false
   for (const request of requests) {
     // These annual facts must be produced and validated for the complete
     // owner-wide action group before any member can move. Each prerequisite
@@ -336,17 +522,47 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
     // Tax funding is the second. It is not one prerequisite but four
     // dispositions the request itself names, so `taxFundingReasons` answers
     // each on its own terms instead of blocking all of them alike.
+    //
+    // The Form 8606 basis pool is the third, and it clears in exactly one
+    // shape. IRC 408(d)(2) makes the numerator a single owner-wide figure over
+    // every non-Roth IRA the owner holds; when bound evidence proves that
+    // figure is zero, 408A(d)(3)(A) leaves the entire converted gross
+    // includible and there is no allocation left to perform. A positive
+    // numerator has to be split across the year's complete line-7 and line-8
+    // gross before any single conversion's character is known, and that
+    // allocation does not exist here — so it keeps the reason and moves
+    // nothing rather than converting at an assumed character. An employer-plan
+    // source keeps it too: its pre-tax balance is outside the 408(d)(2)
+    // aggregation this evidence describes, so the evidence does not answer for
+    // it.
+    const ownedIraSources = request.allocations.every((allocation) => {
+      const source = accounts.get(allocation.sourceAccountId)
+      return source !== undefined && isAggregatedIra(source)
+    })
+    const basis = resolveOwnerAggregatedIraBasis(request, runtimeEvidence)
+    const rmdReserveEvidenceId =
+      resolveOwnerIraRmdSatisfactionEvidenceId(request, runtimeEvidence)
+    const basisProvenZero = ownedIraSources && basis.status === 'zeroBasis'
     const reasons: ActionReason[] = [
-      createActionReason('conversion-basis-evidence-missing', {
-        personId: request.personId,
-      }),
-      ...(resolveOwnerIraRmdSatisfaction(request, runtimeEvidence) === 'satisfied'
+      ...(basisProvenZero
+        ? []
+        : [createActionReason('conversion-basis-evidence-missing', {
+            personId: request.personId,
+          })]),
+      ...(rmdReserveEvidenceId !== null
         ? []
         : [createActionReason('conversion-rmd-reserve-unavailable', {
             personId: request.personId,
           })]),
       ...taxFundingReasons(request),
     ]
+    // Committed movement has to be dated. `assertRecordBinding` refuses to
+    // publish a positive executed amount whose executed date is not the
+    // request's own effective schedule date, and the annual simulator has no
+    // civil date of its own to supply, so an undated request cannot move.
+    if ((request.executionDate ?? null) === null) {
+      reasons.push(createActionReason('conversion-date-missing'))
+    }
     if (request.year !== input.year) reasons.push(createActionReason('conversion-date-outside-action-year', { personId: request.personId }))
     const preflight = evaluateRetirementActionEligibilityFromPlan(request, input.plan as Plan, runtimeEvidence)
     if (preflight.status !== 'accepted') reasons.push(...preflight.reasons)
@@ -408,15 +624,52 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
         )
       }
     }
+    // Nothing left unanswered, so the movement is authorised. Every reason
+    // above is a blocker — `conversion-balance-trimmed` included, since this
+    // executor commits a request whole or not at all — which makes an empty
+    // list the exact predicate for committing.
+    const executedDate = request.executionDate ?? null
+    if (reasons.length === 0 && executedDate !== null &&
+        basis.status === 'zeroBasis' && rmdReserveEvidenceId !== null) {
+      committedAny = true
+      for (const allocation of request.allocations) {
+        const source = closingByAccountId.get(allocation.sourceAccountId)!
+        closingByAccountId.set(
+          allocation.sourceAccountId,
+          asUsdCents(source - allocation.requestedAmount),
+        )
+      }
+      const destinationBalance = closingByAccountId.get(request.destinationRothAccountId)!
+      closingByAccountId.set(
+        request.destinationRothAccountId,
+        asUsdCents(destinationBalance + request.requestedAmount),
+      )
+      evidence.push(executedEvidence(
+        request, executedDate, basis.evidenceId, rmdReserveEvidenceId,
+      ))
+      continue
+    }
     evidence.push(nonActionableEvidence(request, reasons, resolvedSourceAccountIds))
   }
 
+  if (committedAny) {
+    return immutableResult({
+      committed: true,
+      requests,
+      scheduleIssues: [],
+      balances: settledBalances(snapshots, closingByAccountId),
+      evidence: evidence as [
+        RothConversionExecutionEvidence,
+        ...RothConversionExecutionEvidence[],
+      ],
+    })
+  }
   return immutableResult({
     committed: false,
     requests,
     scheduleIssues: [],
     balances: unchangedBalances(snapshots),
-    evidence,
+    evidence: evidence as Readonly<RothConversionStagedExecutionEvidence>[],
   })
 }
 

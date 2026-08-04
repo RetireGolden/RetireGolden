@@ -66,7 +66,8 @@ function rothIra(
 function expectApplicationArithmetic(
   application: Readonly<SimulatorRetirementRuntimeApplication>,
 ): void {
-  if (application.applicationKind === 'aggregateRothDestinationCredit') {
+  if (application.applicationKind === 'aggregateRothDestinationCredit' ||
+      application.applicationKind === 'namedRothDestinationCredit') {
     expect(application.destinationBalanceAfterPlanDollars).toBeCloseTo(
       application.destinationBalanceBeforePlanDollars +
         application.destinationCreditedAmountPlanDollars,

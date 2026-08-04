@@ -1,6 +1,6 @@
 import { asAccountId, type AccountId, type PersonId } from '../actions/identity.js'
 import type { UsdCents } from '../actions/money.js'
-import { planDollarsToLedgerCents } from '../actions/planBalanceAdapter.js'
+import { ledgerCentsToPlanDollars, planDollarsToLedgerCents } from '../actions/planBalanceAdapter.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from '../actions/structuralId.js'
 import { planSchema, type Account, type Plan } from '../model/plan.js'
 import { isAggregatedIra } from '../strategies/accountEligibility.js'
@@ -8,6 +8,7 @@ import type { SimulatorAnnualRetirementRuntimeOccurrence } from '../projection/a
 import type {
   SimulatorRetirementRuntimeAggregateRothDestinationCredit,
   SimulatorRetirementRuntimeApplication,
+  SimulatorRetirementRuntimeNamedRothDestinationCredit,
   YearResult,
 } from '../projection/types.js'
 
@@ -29,6 +30,7 @@ export type OwnedNonRothIraRuntimeSourceSeriesIssueKind =
   | 'annuityStageRequired'
   | 'exactActionStageRequired'
   | 'aggregateRothCreditInvalid'
+  | 'namedRothConversionInvalid'
   | 'sourceSeriesConstructionInvalid'
 
 export interface OwnedNonRothIraRuntimeSourceSeriesIssue {
@@ -48,6 +50,7 @@ export interface NormalizedOwnedNonRothIraApplication {
     | 'legacyNeedBasedWithdrawal'
     | 'legacyRothConversion'
     | 'legacyQcd'
+    | 'namedRothConversion'
     | 'ownedIraContribution'
     | 'rolloverInflow'
   readonly applicationKind: 'debit' | 'credit'
@@ -57,6 +60,7 @@ export interface NormalizedOwnedNonRothIraApplication {
     | 'ownerRmdDistribution'
     | 'automaticSeppDistribution'
     | 'legacyQcdDistribution'
+    | 'namedRothConversionDebit'
     | 'legacyRothConversion'
     | 'legacyNeedBasedWithdrawal'
   readonly mutationOrdinal: number
@@ -100,11 +104,36 @@ export interface NormalizedAggregateRothDestinationCredit {
   readonly evidenceId: string
 }
 
+/**
+ * One named request's own destination credit, reconciled to that request's
+ * committed movement.
+ *
+ * `destinationAttribution` differs from the aggregate credit's on purpose. The
+ * aggregate one can say only that some household Roth received the year's
+ * conversions; this one names the action that chose the destination, so the
+ * credit is attributed to a request rather than to whichever Roth happens to
+ * come first in `plan.accounts`.
+ */
+export interface NormalizedNamedRothDestinationCredit {
+  readonly status: 'namedDestinationCreditActionReconciled'
+  readonly destinationAttribution: 'namedRequestDestination'
+  readonly actionability: 'notEstablished'
+  readonly actionId: string
+  readonly destinationRothAccountId: AccountId
+  readonly destinationOwnerPersonId: PersonId
+  readonly destinationCreditedAmount: UsdCents
+  readonly producerOccurrenceKeys: readonly string[]
+  readonly sourceOwnerPersonIds: readonly PersonId[]
+  readonly evidenceId: string
+}
+
 export interface NormalizedOwnedNonRothIraRuntimeSourceYear {
   readonly taxYear: number
   readonly ownerSources: readonly Readonly<NormalizedOwnedNonRothIraOwnerYearSource>[]
   readonly aggregateRothDestinationCredit:
     Readonly<NormalizedAggregateRothDestinationCredit> | null
+  readonly namedRothDestinationCredits:
+    readonly Readonly<NormalizedNamedRothDestinationCredit>[]
   readonly evidenceId: string
 }
 
@@ -286,8 +315,13 @@ function requireNoExactActionOwnedIraMovement(
   const declaredOwnedIraSource = plan.strategies.retirementActions
     .filter((request) => request.year === taxYear)
     .flatMap((request) => {
-      if (request.kind === 'ordinaryWithdrawal' ||
-          request.kind === 'rothConversion') return request.allocations
+      // A named conversion is no longer on this list. It is the one exact
+      // action whose owned-IRA movement this replay can now explain: it
+      // publishes a `namedRothConversion` occurrence with its own application,
+      // and `requireNamedRothConversionCoverage` below binds every one of
+      // those to committed executor evidence in exact cents. The other kinds
+      // still move dollars nothing accounts for, so they still block.
+      if (request.kind === 'ordinaryWithdrawal') return request.allocations
       if (request.kind === 'qcd') return [request.allocation]
       return []
     })
@@ -331,6 +365,110 @@ function requireNoExactActionOwnedIraMovement(
         taxYear, sourceAccountId: accountId,
       })
     }
+  }
+}
+
+interface NamedRothConversionCoverage {
+  /** Exact committed cents per action, in ascending action-ID order. */
+  readonly executedCentsByActionId: ReadonlyMap<string, UsdCents>
+  readonly totalExecutedAmount: UsdCents
+}
+
+/**
+ * Bind every `namedRothConversion` occurrence to committed executor evidence,
+ * and every committed owned-IRA conversion allocation back to an occurrence.
+ *
+ * Both directions are load-bearing. Without the first, a forged occurrence
+ * could explain a balance change no request authorised; without the second,
+ * committed dollars could leave an owned IRA with the balance chain re-joining
+ * only because the occurrence that should have accounted for them is absent.
+ * Amounts are compared in exact cents, never in Plan dollars.
+ */
+function requireNamedRothConversionCoverage(
+  yearResult: Readonly<YearResult>,
+  accountById: ReadonlyMap<string, Account>,
+  occurrences: readonly Readonly<SimulatorAnnualRetirementRuntimeOccurrence>[],
+  taxYear: number,
+): NamedRothConversionCoverage {
+  const context = { taxYear }
+  const named = occurrences.filter((entry) => entry.kind === 'namedRothConversion')
+  const execution = yearResult.rothConversionActionExecution
+  if (execution === undefined || !execution.committed) {
+    if (named.length > 0) {
+      fail('namedRothConversionInvalid', 'A named conversion occurrence requires committed conversion-executor evidence', context)
+    }
+    return { executedCentsByActionId: new Map(), totalExecutedAmount: 0 as UsdCents }
+  }
+
+  const expected = new Map<string, UsdCents>()
+  const perAction = new Map<string, bigint>()
+  for (const evidence of execution.evidence) {
+    for (const allocation of evidence.allocations) {
+      const account = accountById.get(String(allocation.sourceAccountId))
+      const executedAmount = allocation.executedAmount
+      if (!account || !isAggregatedIra(account)) {
+        // Slice 3 commits only from owned, non-inherited IRAs. Anything else
+        // that moved is outside what this replay reconstructs.
+        if (executedAmount !== 0) {
+          fail('exactActionStageRequired', 'Committed conversion movement outside the owned-IRA pool requires its own characterization stage', {
+            taxYear, sourceAccountId: String(allocation.sourceAccountId),
+          })
+        }
+        continue
+      }
+      if (executedAmount === 0) continue
+      const key = JSON.stringify([
+        'namedRothConversion',
+        String(allocation.sourceAccountId),
+        String(evidence.destinationRothAccountId),
+        String(evidence.actionId),
+        String(allocation.allocationId),
+      ])
+      if (expected.has(key)) {
+        fail('namedRothConversionInvalid', 'Committed conversion allocations must derive unique named occurrence keys', context)
+      }
+      expected.set(key, executedAmount as UsdCents)
+      perAction.set(
+        String(evidence.actionId),
+        (perAction.get(String(evidence.actionId)) ?? 0n) + BigInt(executedAmount),
+      )
+    }
+  }
+
+  const seen = new Set<string>()
+  for (const occurrence of named) {
+    const expectedAmount = expected.get(occurrence.producerOccurrenceKey)
+    const amount = cents(occurrence.grossAmountPlanDollars, 'Named conversion occurrence amount', {
+      taxYear, producerOccurrenceKey: occurrence.producerOccurrenceKey,
+    })
+    if (expectedAmount === undefined || expectedAmount !== amount ||
+        seen.has(occurrence.producerOccurrenceKey)) {
+      fail('namedRothConversionInvalid', 'Each named conversion occurrence must rejoin one committed allocation in exact cents', {
+        taxYear, producerOccurrenceKey: occurrence.producerOccurrenceKey,
+      })
+    }
+    seen.add(occurrence.producerOccurrenceKey)
+  }
+  if (seen.size !== expected.size) {
+    fail('namedRothConversionInvalid', 'Every committed owned-IRA conversion allocation requires its named occurrence', context)
+  }
+
+  let total = 0n
+  const executedCentsByActionId = new Map<string, UsdCents>()
+  for (const actionId of [...perAction.keys()].sort(compareUtf16CodeUnits)) {
+    const actionTotal = perAction.get(actionId)!
+    if (actionTotal <= 0n || actionTotal > BigInt(Number.MAX_SAFE_INTEGER)) {
+      fail('namedRothConversionInvalid', 'Committed named conversion totals must stay inside the exact-cent ledger', context)
+    }
+    executedCentsByActionId.set(actionId, Number(actionTotal) as UsdCents)
+    total += actionTotal
+  }
+  if (total > BigInt(Number.MAX_SAFE_INTEGER)) {
+    fail('namedRothConversionInvalid', 'Committed named conversion totals must stay inside the exact-cent ledger', context)
+  }
+  return {
+    executedCentsByActionId,
+    totalExecutedAmount: Number(total) as UsdCents,
   }
 }
 
@@ -400,6 +538,13 @@ function applicationShape(
       // proportionally more basis behind for the year's other distributions.
       // Registered as `irc-408-d-8-D-qcd-taxable-first`.
       return { applicationKind: 'debit', simulatorPhase: 'legacyQcdDistribution', form8606Line: null }
+    case 'namedRothConversion':
+      // A conversion is a conversion. IRC 408A(d)(3) and the Form 8606
+      // line-8 instructions do not ask who chose the amount, so a named
+      // request's gross enters the same annual line-8 numerator and the same
+      // denominator as an aggregate one. What differs is identity, not
+      // character, and identity is carried by the producer key.
+      return { applicationKind: 'debit', simulatorPhase: 'namedRothConversionDebit', form8606Line: 'line8' }
     case 'legacyRothConversion':
       return { applicationKind: 'debit', simulatorPhase: 'legacyRothConversion', form8606Line: 'line8' }
     case 'legacyNeedBasedWithdrawal':
@@ -419,9 +564,15 @@ function phaseRank(application: Readonly<SimulatorRetirementRuntimeApplication>)
     // The simulator computes the charitable gift once the forced distributions
     // are known and before any conversion or need-based withdrawal is sized.
     case 'legacyQcdDistribution': return 5
-    case 'legacyRothConversion': return 6
-    case 'legacyRothConversionAggregateDestinationCredit': return 7
-    case 'legacyNeedBasedWithdrawal': return 8
+    // The exact-cent executor runs after the year's forced distributions and
+    // before the aggregate strategy sizes anything, which is what Treas. Reg.
+    // 1.408A-4 A-6(b) requires of the RMD and what leaves the aggregate
+    // sweep looking at balances the named request has already reduced.
+    case 'namedRothConversionDebit': return 6
+    case 'namedRothConversionDestinationCredit': return 7
+    case 'legacyRothConversion': return 8
+    case 'legacyRothConversionAggregateDestinationCredit': return 9
+    case 'legacyNeedBasedWithdrawal': return 10
   }
 }
 
@@ -439,6 +590,12 @@ function sourceCompatible(
     case 'employerPlanEmployerMatch': return account.kind === 'employer' && account.inherited === undefined
     case 'inheritedIraRmd': return account.inherited !== undefined
     case 'legacyRothConversion': return account.inherited === undefined
+    // A named conversion is committed here only from an owned, non-inherited
+    // IRA. IRC 408(d)(3)(C) bars rolling over an inherited IRA at all, and an
+    // employer plan's pre-tax balance is not in the 408(d)(2) aggregation
+    // this replay reconstructs, so its basis question is not the one the
+    // zero-basis evidence answers. Both stay refused rather than converted.
+    case 'namedRothConversion': return isAggregatedIra(account)
     // IRC 408(d)(8)(B) reaches only a distribution from an individual
     // retirement plan, so an employer plan can never be a QCD source however
     // large its forced distribution is. Named rather than left to the default
@@ -511,6 +668,30 @@ function occurrenceOrderAccountId(
     if (key.length !== 3 || key[0] !== occurrence.kind || key[1] !== sourceId ||
         destination?.type !== 'roth') {
       fail('sourceIdentityInvalid', 'Conversion key must bind its source and actual Plan Roth destination', {
+        taxYear, producerOccurrenceKey: occurrence.producerOccurrenceKey,
+      })
+    }
+    return sourceId!
+  }
+  if (occurrence.kind === 'namedRothConversion') {
+    // Five members, not three. The two extra ones are the whole point: the
+    // aggregate key can name only a source and a destination, so two
+    // conversions that share both are indistinguishable to it. A named key
+    // binds the action and allocation that authorised the movement, and the
+    // Plan must actually contain that pairing with this source and this
+    // destination in this year.
+    const destination = plan.accounts.find((account) => account.id === key[2])
+    const request = plan.strategies.retirementActions.find((entry) =>
+      entry.kind === 'rothConversion' && entry.actionId === key[3] &&
+      entry.year === taxYear)
+    const allocation = request?.kind === 'rothConversion'
+      ? request.allocations.find((entry) => entry.allocationId === key[4])
+      : undefined
+    if (key.length !== 5 || key[0] !== occurrence.kind || key[1] !== sourceId ||
+        destination?.type !== 'roth' || request?.kind !== 'rothConversion' ||
+        request.destinationRothAccountId !== destination.id ||
+        allocation === undefined || allocation.sourceAccountId !== sourceId) {
+      fail('sourceIdentityInvalid', 'Named conversion key must bind its Plan action, allocation, source, and stated Roth destination', {
         taxYear, producerOccurrenceKey: occurrence.producerOccurrenceKey,
       })
     }
@@ -608,6 +789,107 @@ function aggregateRothCredit(
       [plan.id, taxYear, withoutId],
     ),
   })
+}
+
+/**
+ * Reconcile one destination credit per named request.
+ *
+ * The aggregate validator above ends by demanding that the credit's
+ * destination be `plan.accounts.find((account) => account.type === 'roth')` —
+ * whichever Roth is first in Plan array order. That demand is correct for the
+ * aggregate strategy, which really does pick its destination that way, and it
+ * is exactly the dependence a named request must not inherit. Here the
+ * destination is only ever checked against the one the request stated, so a
+ * conversion to the second Roth in the array reconciles as readily as one to
+ * the first, and reordering `plan.accounts` moves no dollars.
+ */
+function namedRothDestinationCredits(
+  plan: Plan,
+  taxYear: number,
+  occurrences: readonly Readonly<SimulatorAnnualRetirementRuntimeOccurrence>[],
+  applications: readonly Readonly<SimulatorRetirementRuntimeApplication>[],
+  normalized: readonly NormalizedOwnedNonRothIraApplication[],
+  coverage: NamedRothConversionCoverage,
+  accountOrder: ReadonlyMap<string, number>,
+): Readonly<NormalizedNamedRothDestinationCredit>[] {
+  const context = { taxYear }
+  const credits = applications.filter((entry): entry is Readonly<SimulatorRetirementRuntimeNamedRothDestinationCredit> =>
+    entry.applicationKind === 'namedRothDestinationCredit')
+  const namedOccurrences = occurrences.filter((entry) => entry.kind === 'namedRothConversion')
+  const namedApplications = normalized.filter((entry) => entry.occurrenceKind === 'namedRothConversion')
+  const actionIds = [...coverage.executedCentsByActionId.keys()]
+  if (credits.length !== actionIds.length ||
+      new Set(credits.map((credit) => credit.actionId)).size !== credits.length ||
+      JSON.stringify(credits.map((credit) => credit.actionId)) !== JSON.stringify(actionIds)) {
+    fail('namedRothConversionInvalid', 'Each committed named conversion requires exactly one destination credit in canonical action order', context)
+  }
+
+  const applicationByKey = new Map(namedApplications.map((entry) => [entry.producerOccurrenceKey, entry]))
+  const results: Readonly<NormalizedNamedRothDestinationCredit>[] = []
+  for (const credit of credits) {
+    const actionId = credit.actionId
+    if (credit.simulatorPhase !== 'namedRothConversionDestinationCredit' ||
+        credit.producerOccurrenceKey !== null || credit.ownerPersonId !== null ||
+        credit.sourceAccountId !== null || credit.sourceBalanceBeforePlanDollars !== null ||
+        credit.sourceBalanceAfterPlanDollars !== null) {
+      fail('namedRothConversionInvalid', 'A named destination credit must not impersonate per-source evidence', context)
+    }
+    const mine = namedOccurrences
+      .filter((entry) => parseKey(entry.producerOccurrenceKey, taxYear)[3] === actionId)
+      .sort((left, right) =>
+        (accountOrder.get(left.sourceAccountId ?? '') ?? Number.MAX_SAFE_INTEGER) -
+          (accountOrder.get(right.sourceAccountId ?? '') ?? Number.MAX_SAFE_INTEGER) ||
+        compareUtf16CodeUnits(
+          String(parseKey(left.producerOccurrenceKey, taxYear)[4]),
+          String(parseKey(right.producerOccurrenceKey, taxYear)[4]),
+        ))
+    const keys = mine.map((entry) => entry.producerOccurrenceKey)
+    const owners = mine.map((entry) => entry.ownerPersonId)
+    const ordinals = keys.map((key) => applicationByKey.get(key)?.mutationOrdinal)
+    if (mine.length === 0 || ordinals.some((ordinal) => ordinal === undefined) ||
+        owners.some((owner) => owner === null) ||
+        JSON.stringify(credit.producerOccurrenceKeys) !== JSON.stringify(keys) ||
+        JSON.stringify(credit.sourceOwnerPersonIds) !== JSON.stringify(owners) ||
+        credit.mutationOrdinal <= Math.max(...ordinals as number[])) {
+      fail('namedRothConversionInvalid', 'A named destination credit must follow its own complete ordered debit loop', context)
+    }
+    const destinationId = credit.destinationRothAccountId
+    const destination = plan.accounts.find((account) => account.id === destinationId)
+    if (destinationId === null || destination?.type !== 'roth' ||
+        credit.destinationOwnerPersonId === null ||
+        destination.ownerPersonId !== credit.destinationOwnerPersonId ||
+        mine.some((entry) => parseKey(entry.producerOccurrenceKey, taxYear)[2] !== destinationId)) {
+      fail('namedRothConversionInvalid', 'A named destination credit must bind the Roth account its own request stated', context)
+    }
+    cents(credit.destinationBalanceBeforePlanDollars, 'Named Roth destination opening balance', context)
+    const credited = cents(credit.destinationCreditedAmountPlanDollars, 'Named Roth destination credit', context)
+    cents(credit.destinationBalanceAfterPlanDollars, 'Named Roth destination closing balance', context)
+    if (credit.destinationBalanceBeforePlanDollars +
+        credit.destinationCreditedAmountPlanDollars !==
+          credit.destinationBalanceAfterPlanDollars ||
+        credited !== coverage.executedCentsByActionId.get(actionId)) {
+      fail('namedRothConversionInvalid', 'A named destination credit must reconcile its committed cents and its destination balance', context)
+    }
+    const withoutId = {
+      status: 'namedDestinationCreditActionReconciled' as const,
+      destinationAttribution: 'namedRequestDestination' as const,
+      actionability: 'notEstablished' as const,
+      actionId,
+      destinationRothAccountId: asAccountId(destinationId),
+      destinationOwnerPersonId: credit.destinationOwnerPersonId as PersonId,
+      destinationCreditedAmount: credited,
+      producerOccurrenceKeys: keys,
+      sourceOwnerPersonIds: owners as PersonId[],
+    }
+    results.push(deepFreeze({
+      ...withoutId,
+      evidenceId: deriveActionStructuralId(
+        'projection-owned-ira-runtime-source-named-roth-credit',
+        [plan.id, taxYear, withoutId],
+      ),
+    }))
+  }
+  return results
 }
 
 function blocked(
@@ -774,9 +1056,28 @@ function validateUnchecked(
       taxYear,
       accountOrder,
     )
+    // The published annual conversion total is now reached by two routes that
+    // are not interchangeable. The aggregate strategy's sweep produces
+    // `legacyRothConversion` occurrences; the exact-cent executor's committed
+    // requests produce `namedRothConversion` ones. Reconciling only the legacy
+    // kind against the published figure would fail every year a named request
+    // moved money, and reconciling the union alone would let one kind absorb
+    // the other's dollars, so the named arm is bound to the executor's own
+    // committed cents first and the union to the published total second.
+    const namedConversionCoverage = requireNamedRothConversionCoverage(
+      yearResult, accountById, occurrenceSource.runtimeOccurrences, taxYear,
+    )
     reconcilePublishedTotal(
       occurrenceSource.runtimeOccurrences,
-      ['legacyRothConversion'],
+      ['namedRothConversion'],
+      ledgerCentsToPlanDollars(namedConversionCoverage.totalExecutedAmount),
+      'named Roth conversion',
+      taxYear,
+      accountOrder,
+    )
+    reconcilePublishedTotal(
+      occurrenceSource.runtimeOccurrences,
+      ['legacyRothConversion', 'namedRothConversion'],
       yearResult.rothConversion,
       'Roth conversion',
       taxYear,
@@ -938,7 +1239,8 @@ function validateUnchecked(
       if (application.mutationOrdinal !== index + 1 || currentPhase < priorPhase) {
         fail('applicationOrderInvalid', 'Applications must retain contiguous ordinals and annual phase order', { taxYear })
       }
-      if (application.applicationKind === 'aggregateRothDestinationCredit') {
+      if (application.applicationKind === 'aggregateRothDestinationCredit' ||
+          application.applicationKind === 'namedRothDestinationCredit') {
         priorPhase = currentPhase
         priorPhaseAccountOrder = -1
         continue
@@ -1097,6 +1399,11 @@ function validateUnchecked(
       plan, taxYear, occurrenceSource.runtimeOccurrences,
       applicationSource.applications, normalizedApplications,
     )
+    const namedCredits = namedRothDestinationCredits(
+      plan, taxYear, occurrenceSource.runtimeOccurrences,
+      applicationSource.applications, normalizedApplications,
+      namedConversionCoverage, accountOrder,
+    )
     const ownerSources = expectedOwners.map((owner) => {
       const applications = normalizedApplications.filter((entry) => entry.ownerPersonId === owner)
       const yearEndBalances = ownerBalances.get(owner)!
@@ -1109,7 +1416,12 @@ function validateUnchecked(
         ),
       })
     })
-    const withoutId = { taxYear, ownerSources, aggregateRothDestinationCredit: aggregate }
+    const withoutId = {
+      taxYear,
+      ownerSources,
+      aggregateRothDestinationCredit: aggregate,
+      namedRothDestinationCredits: namedCredits,
+    }
     normalizedYears.push(deepFreeze({
       ...withoutId,
       evidenceId: deriveActionStructuralId('projection-owned-ira-runtime-source-year', [plan.id, withoutId]),
