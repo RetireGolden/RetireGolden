@@ -4927,6 +4927,53 @@ const registry = {
       'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts',
     ],
   },
+  'irc-408-d-3-A-i-conversion-benefits-the-distributee': {
+    title: 'A conversion must land in the Roth IRA of the same individual',
+    statement:
+      'A Roth conversion is a rollover within one individual’s own accounts. Section 408A(e)(1)(B)(i) admits a rollover from an individual retirement plan as a qualified rollover contribution only if it meets the requirements of section 408(d)(3), and 408(d)(3)(A) requires both that the amount be paid out to the individual for whose benefit the account is maintained and that it be paid into an account for the benefit of such individual; 408A(d)(3)(B) imposes the same identity requirement directly on conversions. Dollars distributed from one spouse’s traditional IRA therefore cannot be converted into the other spouse’s Roth IRA, on a joint return or any other. Not modelled: the projection chooses the destination once as the first Roth account in Plan order with no owner predicate, then draws from every convertible traditional account with no owner filter, so a married household whose only Roth belongs to person A and whose only convertible balance belongs to person B converts B’s dollars into A’s Roth, recognises the income, and raises no warning.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'The direction varies with the facts, and it is worth being exact about the conversion year, because the intuition that a joint return makes that year neutral holds only for part of the fact space. Where both spouses have convertible balances, the joint return recognises the same income either way and the year is indeed neutral; the divergence is only in whose Roth ends up holding the layer. Where the balances are split, as in the discriminating case above, the authority permits no conversion at all, so the whole inclusion is spurious and tax in that year is OVERSTATED. Afterwards it runs the other way. Dollars that should have remained in B’s traditional IRA, to be taxed on a later distribution or as an RMD, instead sit in A’s Roth growing untaxed; B keeps nondeductible basis the conversion should have consumed; and the credited amount is in substance a Roth contribution by A, subject to the 408A(c)(2) ceiling and the 408A(c)(3) phase-out, so an excess draws the section 4973 six percent excise this engine never charges. Those understate tax. Against them, the misplaced layer starts a 408A(d)(3)(F) five-year recapture clock on A that A was never entitled to, which overstates. On any later separate return, survivor year, or divorce the two people’s balances are simply the wrong size and the sign follows whichever person is being reported. What keeps this open rather than fixed is that the correct behaviour requires deciding which owner’s dollars convert and where each lands, and that allocation policy has not yet been taken. The evidence shape already reflects the asymmetry: in projection/types.ts the sources are a per-owner ownerReplays array while SimulatorOwnedNonRothIraAnnualReplay.aggregateRothDestinationCredit is at most one credit per year and carries ownerPersonId: null, so crediting per owner makes it plural across internal/ownedNonRothIraRuntimeSourceSeries.ts, internal/ownedNonRothIraContiguousReplay.ts, internal/ownedNonRothIraAnnualAttemptSettlement.ts, and projection/annualPassTransaction.ts. That is the reason the approximation stands, not a defence of it: nothing from this path is filing-grade for a married household whose Roth and traditional balances are not held by the same person.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408A(e)(1)(B)(i)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408A.htm',
+      quotedText:
+        '(B) from an eligible retirement plan, but only if— (i) in the case of an individual retirement plan, such rollover contribution meets the requirements of section 408(d)(3), and',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408(d)(3)(A), flush text and clause (i)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm',
+      quotedText:
+        'Paragraph (1) does not apply to any amount paid or distributed out of an individual retirement account or individual retirement annuity to the individual for whose benefit the account or annuity is maintained if— (i) the entire amount received (including money and any other property) is paid into an individual retirement account or individual retirement annuity (other than an endowment contract) for the benefit of such individual not later than the 60th day after the day on which he receives the payment or distribution; or',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408A(d)(3)(B), first sentence',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408A.htm',
+      quotedText:
+        'This paragraph shall apply to a distribution from an eligible retirement plan (as defined by section 402(c)(8)(B)) maintained for the benefit of an individual which is contributed to a Roth IRA maintained for the benefit of such individual in a qualified rollover contribution.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408A(d)(3)(A)(i)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408A.htm',
+      quotedText:
+        'Notwithstanding sections 402(c), 403(b)(8), 408(d)(3), and 457(e)(16), in the case of any distribution to which this paragraph applies— (i) there shall be included in gross income any amount which would be includible were it not part of a qualified rollover contribution,',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408A-4, A-1(a), second requirement',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.408A-4',
+      quotedText:
+        'Second, the amount contributed to the Roth IRA must satisfy the definition of a qualified rollover contribution in section 408A(e) (i.e., it must satisfy the requirements for a rollover contribution as defined in section 408(d)(3), except that the one-rollover-per-year limitation in section 408(d)(3)(B) does not apply).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+  },
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)
