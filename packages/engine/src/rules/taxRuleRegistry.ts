@@ -2114,7 +2114,7 @@ const registry = {
     classification: 'settled',
     contraryReading: null,
     conventionRationale:
-      'Two limits on how far this record reaches, stated so it is not read as covering more than it does. First, the engine treats every inherited account as held by a beneficiary who is not an eligible designated beneficiary, because the plan model carries no beneficiary category. A surviving spouse, a minor child of the employee, a disabled or chronically ill beneficiary, or a beneficiary not more than ten years younger than the decedent is entitled under 401(a)(9)(H)(ii) to the life-expectancy payout in (B)(iii), and will be shown a faster forced drawdown than the law requires. Second, the annual amount required in years one through nine when the decedent had reached the required beginning date is computed from the SSA period table in longevity/ssaPeriod2022.ts rather than the IRS Single Life Table. That divisor proxy is documented at the head of strategies/inheritedIra.ts and is a separate question from the ten-year deadline registered here.',
+      'Two limits on how far this record reaches, stated so it is not read as covering more than it does. First, the engine treats every inherited account as held by a beneficiary who is not an eligible designated beneficiary, because the plan model carries no beneficiary category. A surviving spouse, a minor child of the employee, a disabled or chronically ill beneficiary, or a beneficiary not more than ten years younger than the decedent is entitled under 401(a)(9)(H)(ii) to the life-expectancy payout in (B)(iii), and will be shown a faster forced drawdown than the law requires. Second, the size of the annual amount required in years one through nine when the decedent had reached the required beginning date is a separate question from the ten-year deadline registered here. The divisor is registered as treas-reg-1-401-a-9-5-d-3-beneficiary-single-life-denominator, and the greater-of test it does not apply as treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy.',
     authority: [{
       kind: 'statute',
       citation: 'IRC 401(a)(9)(H)(i)',
@@ -3116,38 +3116,74 @@ const registry = {
     ],
   },
   'treas-reg-1-401-a-9-5-d-3-beneficiary-single-life-denominator': {
-    title: 'Denominator for a beneficiary annual distribution after death on or after the required beginning date',
+    title: 'Beneficiary remaining life expectancy: which table, and whether it is fixed',
     statement:
-      'The prescribed denominator is the greater of the designated beneficiary remaining life expectancy and the employee remaining life expectancy, each taken from the unisex Single Life Table, with a non-spouse beneficiary expectancy fixed at the age reached in the year following death and reduced by one for each later year. Not modelled as prescribed: the engine substitutes a sex-specific SSA period life expectancy looked up at the beneficiary current age each year, and never applies the greater-of test. The direction is dominated by the table. SSA population expectancies are shorter than Single Life Table entries at every age in range — at 55 the Single Life Table gives 31.6 against SSA figures of 24.94 for a man and 28.34 for a woman — so the denominator is too small and the forced annual distribution too large. Ignoring the greater-of adds a second overstatement whenever the beneficiary is older than the decedent. Recomputing at the current age instead of subtracting one runs the other way and partly offsets in the late years of the window. Because the balance must be gone by the deadline either way, the net effect is to pull taxable income into the earlier years of the window rather than to change the total.',
-    classification: 'outOfScope',
+      'Paragraph (d)(3) answers two independent questions about the beneficiary remaining life expectancy that sizes an annual distribution after a death on or after the required beginning date. Where the number comes from: the unisex Single Life Table of 1.401(a)(9)-9(b), and no other table, since (d)(3)(i) makes that table govern all life expectancies determined under paragraph (d). How it moves: for a designated beneficiary who is not the surviving spouse, (d)(3)(iii) reads it once, at the age the beneficiary reaches in the calendar year following the year of death, and reduces it by one for each later calendar year. Annual redetermination at the current age is the (d)(3)(iv) treatment and belongs only to a surviving spouse who is the sole beneficiary. A table can be right while the method is wrong and the errors run in opposite directions, so the two questions carry a fixture each.',
+    classification: 'settled',
     contraryReading: null,
-    conventionRationale: null,
+    conventionRationale:
+      'Three notes on how far this reaches. First, the subtract-one branch is the only one an inherited account in this engine can take: a surviving spouse does not hold an inherited IRA at all under IRC 408(d)(3)(C)(ii), so the (d)(3)(iv) redetermination has no path here, and the engine holds no beneficiary-category fact that could select it. Second, the table is read at a whole age, as singleLifeExpectancyYears in params/index.ts does, and the fixed entry may fall to zero or below for a beneficiary who inherits past about 110; the module then requires the whole remaining interest, since there is nothing left to divide by. Third, this record covers the beneficiary expectancy only. The greater-of test that compares it against the employee expectancy is a separate paragraph and is registered separately as treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy, where it remains out of scope. Until this record was settled the module divided by a sex-specific SSA period life expectancy looked up at the beneficiary current age, described in its own header as a documented proxy for the Single Life Table; the fixture asserting that behaviour called the same SSA function the module called and could not have failed.',
     authority: [{
       kind: 'regulation',
-      citation: 'Treas. Reg. 1.401(a)(9)-5(d)(1)(ii)',
-      url: 'https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-5',
+      citation: 'Treas. Reg. 1.401(a)(9)-5(d)(3)(i)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5',
       quotedText:
-        'If the employee has a designated beneficiary as of the date determined under § 1.401(a)(9)-4(c), the applicable denominator is the greater of— (A) The designated beneficiary\'s remaining life expectancy; and (B) The employee\'s remaining life expectancy.',
+        'Life expectancy table. For purposes of this paragraph (d), all life expectancies are determined using the Single Life Table in § 1.401(a)(9)-9(b).',
     }, {
       kind: 'regulation',
-      citation: 'Treas. Reg. 1.401(a)(9)-5(d)(3)(i) and (d)(3)(iii)',
-      url: 'https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-5',
+      citation: 'Treas. Reg. 1.401(a)(9)-5(d)(3)(iii)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5',
       quotedText:
-        'For purposes of this paragraph (d), all life expectancies are determined using the Single Life Table in § 1.401(a)(9)-9(b). ... If the designated beneficiary is not the employee\'s surviving spouse, then the designated beneficiary\'s remaining life expectancy is determined initially using the beneficiary\'s age as of the beneficiary\'s birthday in the calendar year following the calendar year of the employee\'s death. ... for subsequent calendar years, the designated beneficiary\'s remaining life expectancy is determined by reducing that initial life expectancy by one for each calendar year that has elapsed after that first calendar year.',
+        'If the designated beneficiary is not the employee\'s surviving spouse, then the designated beneficiary\'s remaining life expectancy is determined initially using the beneficiary\'s age as of the beneficiary\'s birthday in the calendar year following the calendar year of the employee\'s death. Except as otherwise provided in paragraph (d)(3)(iv) of this section, for subsequent calendar years, the designated beneficiary\'s remaining life expectancy is determined by reducing that initial life expectancy by one for each calendar year that has elapsed after that first calendar year.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-5(d)(3)(iv)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5',
+      quotedText:
+        'If the surviving spouse of the employee is the employee\'s sole beneficiary, then the surviving spouse\'s remaining life expectancy is redetermined each distribution calendar year up to and including the calendar year of the spouse\'s death using the surviving spouse\'s age as of the surviving spouse\'s birthday in the distribution calendar year.',
     }, {
       kind: 'regulation',
       citation: 'Treas. Reg. 1.401(a)(9)-9(b)',
-      url: 'https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-9',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-9',
       quotedText:
         'Single Life Table. The following table, referred to as the Single Life Table, sets forth the life expectancy of an individual at each age.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/strategies/inheritedIra.ts',
-      'packages/engine/src/longevity/ssaPeriod2022.ts',
+      'packages/engine/src/params/index.ts',
+    ],
+  },
+  'treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy': {
+    title: 'Greater of the beneficiary and the employee remaining life expectancy',
+    statement:
+      'Where the employee died on or after the required beginning date and has a designated beneficiary, the applicable denominator is not the beneficiary expectancy but the greater of that and the employee own remaining life expectancy. The employee expectancy comes from the same Single Life Table, read at the employee age on their birthday in the calendar year of death and reduced by one for each later calendar year, so it is read a year earlier than the beneficiary expectancy and has one more reduction applied by any given window year. Not modelled: the plan model records the calendar year the owner died and whether they had reached the required beginning date, and nothing else about them — no age, no birth year — so the employee expectancy cannot be computed at all and strategies/inheritedIra.ts divides by the beneficiary expectancy alone. The direction is one-sided. A greater-of can only raise a denominator, never lower it, so omitting it can only make the forced annual distribution too large, and it bites exactly when the beneficiary is older than the decedent was — the case where the beneficiary short expectancy is the one being displaced. It cannot change the total distributed, because the ten-year deadline empties the account either way; it pulls taxable ordinary income forward into the early window years. Closing it needs a decedent age or birth year on the inherited account schema in model/plan.ts, which reaches the published plan JSON schemas and the intake UI, so it is a schema change rather than a divisor change.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-5(d)(1)(ii)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5',
+      quotedText:
+        'Employee with designated beneficiary. If the employee has a designated beneficiary as of the date determined under § 1.401(a)(9)-4(c), the applicable denominator is the greater of— (A) The designated beneficiary\'s remaining life expectancy; and (B) The employee\'s remaining life expectancy.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-5(d)(3)(ii)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5',
+      quotedText:
+        'Employee\'s life expectancy. The employee\'s remaining life expectancy is determined initially using the employee\'s age as of the employee\'s birthday in the calendar year of the employee\'s death. In subsequent calendar years, the remaining life expectancy is determined by reducing that initial life expectancy by one for each calendar year that has elapsed after that first calendar year.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/strategies/inheritedIra.ts',
+      'packages/engine/src/model/plan.ts',
     ],
   },
   'irc-401-a-9-E-ii-eligible-designated-beneficiary': {
