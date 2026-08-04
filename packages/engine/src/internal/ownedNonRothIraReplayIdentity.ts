@@ -12,6 +12,13 @@ export type OwnedNonRothIraReplayOccurrenceKind =
   | 'automaticSeppDistribution'
   | 'legacyNeedBasedWithdrawal'
   | 'legacyRothConversion'
+  /**
+   * A legacy charitable distribution that physically leaves an owned IRA
+   * without an RMD carrying it. It is a distribution like the three above, but
+   * IRC 408(d)(8)(D) excludes it from the Form 8606 pro-rata computation, so it
+   * carries no line and never appears in a basis allocation entry.
+   */
+  | 'legacyQcd'
   | 'ownedIraContribution'
   | 'rolloverInflow'
 

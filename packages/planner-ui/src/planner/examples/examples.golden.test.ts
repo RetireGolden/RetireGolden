@@ -71,6 +71,14 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   // its bridge twin and still pays more lifetime tax, and the seeded-IRA estate
   // gap widens with the horizon. Both prose figures are restated at their
   // comments.
+  // Re-baselined 2026-08-04 for the 408(d)(8) pre-RMD QCD window. bracket-fill-roth
+  // is the only example with a QCD that also has pre-RMD years -- annuity-estate
+  // has one too but holds RMDs throughout its eligible span. Its 10,000 a year
+  // now leaves the IRA in the years between 70 1/2 and the applicable age, where
+  // the old rmdTotal > 0 gate gave zero. Ending investable falls 21,244.52 and
+  // conversions fall 9,645.01 because the dollars are gone to charity rather than
+  // retained or converted; lifetime tax falls 1,638.17 because the gift never
+  // enters income. Lower ending wealth is the correct outcome of giving more away.
   // Re-baselined 2026-07-29 for current-year ACA reconciliation. Curated
   // credit-enabled examples now carry explicit per-year tax-family, coverage,
   // enrollment-premium, and SLCSP assumptions. Their same-year withdrawals,
@@ -88,7 +96,7 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   // skipped, lowering the ending balance.
   'example-couple': { depletionYear: null, endingInvestable: 2_272_928.12, lifetimeTax: 451_207.76, lifetimeRoth: 1_464_472.03 },
   'under-saved-single': { depletionYear: 2046, endingInvestable: 0, lifetimeTax: 183_713.99, lifetimeRoth: 0 },
-  'bracket-fill-roth': { depletionYear: null, endingInvestable: 607_663.76, lifetimeTax: 220_841.91, lifetimeRoth: 815_673.6 },
+  'bracket-fill-roth': { depletionYear: null, endingInvestable: 586_419.24, lifetimeTax: 219_203.74, lifetimeRoth: 806_028.59 },
   // early-retiree-aca retuned 2026-07-30: the old baseline (55k consulting,
   // fill to the 12% bracket) had its only actionable ACA year above 400% FPL,
   // so the example could not show a credit at all. It now converts to the 10%

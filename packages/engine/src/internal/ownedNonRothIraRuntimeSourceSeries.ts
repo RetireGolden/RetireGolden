@@ -47,6 +47,7 @@ export interface NormalizedOwnedNonRothIraApplication {
     | 'automaticSeppDistribution'
     | 'legacyNeedBasedWithdrawal'
     | 'legacyRothConversion'
+    | 'legacyQcd'
     | 'ownedIraContribution'
     | 'rolloverInflow'
   readonly applicationKind: 'debit' | 'credit'
@@ -55,6 +56,7 @@ export interface NormalizedOwnedNonRothIraApplication {
     | 'employeeContribution'
     | 'ownerRmdDistribution'
     | 'automaticSeppDistribution'
+    | 'legacyQcdDistribution'
     | 'legacyRothConversion'
     | 'legacyNeedBasedWithdrawal'
   readonly mutationOrdinal: number
@@ -387,6 +389,17 @@ function applicationShape(
       return { applicationKind: 'debit', simulatorPhase: 'ownerRmdDistribution', form8606Line: 'line7' }
     case 'automaticSeppDistribution':
       return { applicationKind: 'debit', simulatorPhase: 'automaticSeppDistribution', form8606Line: 'line7' }
+    case 'legacyQcd':
+      // IRC 408(d)(8)(D) deems a charitable distribution to consist of
+      // otherwise-includible dollars "notwithstanding section 72", so a QCD is
+      // not apportioned by the Form 8606 pro-rata rule: it is drawn from the
+      // pre-tax portion first and returns no basis, and the Form 8606 line-7
+      // instructions exclude it by name. A null line is therefore the
+      // substantive answer, not a gap -- the gross is absent from both the
+      // line-7 numerator and the annual denominator, which is what leaves
+      // proportionally more basis behind for the year's other distributions.
+      // Registered as `irc-408-d-8-D-qcd-taxable-first`.
+      return { applicationKind: 'debit', simulatorPhase: 'legacyQcdDistribution', form8606Line: null }
     case 'legacyRothConversion':
       return { applicationKind: 'debit', simulatorPhase: 'legacyRothConversion', form8606Line: 'line8' }
     case 'legacyNeedBasedWithdrawal':
@@ -403,9 +416,12 @@ function phaseRank(application: Readonly<SimulatorRetirementRuntimeApplication>)
     case 'employeeContribution': return 2
     case 'ownerRmdDistribution': return 3
     case 'automaticSeppDistribution': return 4
-    case 'legacyRothConversion': return 5
-    case 'legacyRothConversionAggregateDestinationCredit': return 6
-    case 'legacyNeedBasedWithdrawal': return 7
+    // The simulator computes the charitable gift once the forced distributions
+    // are known and before any conversion or need-based withdrawal is sized.
+    case 'legacyQcdDistribution': return 5
+    case 'legacyRothConversion': return 6
+    case 'legacyRothConversionAggregateDestinationCredit': return 7
+    case 'legacyNeedBasedWithdrawal': return 8
   }
 }
 
@@ -423,6 +439,11 @@ function sourceCompatible(
     case 'employerPlanEmployerMatch': return account.kind === 'employer' && account.inherited === undefined
     case 'inheritedIraRmd': return account.inherited !== undefined
     case 'legacyRothConversion': return account.inherited === undefined
+    // IRC 408(d)(8)(B) reaches only a distribution from an individual
+    // retirement plan, so an employer plan can never be a QCD source however
+    // large its forced distribution is. Named rather than left to the default
+    // arm below, which would have accepted one.
+    case 'legacyQcd': return isAggregatedIra(account)
     default: return true
   }
 }
@@ -449,7 +470,7 @@ function occurrenceOrderAccountId(
   const sourceId = occurrence.sourceAccountId
   const simpleKinds = new Set([
     'ownedIraRmd', 'employerPlanRmd', 'inheritedIraRmd',
-    'automaticSeppDistribution', 'legacyNeedBasedWithdrawal',
+    'automaticSeppDistribution', 'legacyNeedBasedWithdrawal', 'legacyQcd',
     'ownedIraContribution', 'ownedIraEmployerContribution',
     'employerPlanEmployeeContribution', 'employerPlanEmployerMatch',
   ])
@@ -496,7 +517,7 @@ function occurrenceOrderAccountId(
     return sourceId!
   }
   fail(
-    occurrence.kind === 'legacyQcd' ? 'qcdStageRequired' : 'sourceCoverageInvalid',
+    'sourceCoverageInvalid',
     'This retirement occurrence requires a later characterization or transfer stage',
     { taxYear, producerOccurrenceKey: occurrence.producerOccurrenceKey },
   )
@@ -1026,17 +1047,51 @@ function validateUnchecked(
       }
     }
 
-    const qcd = cents(yearResult.qcd, 'Annual QCD total', { taxYear })
+    // A charitable gift reaches the published annual total by two routes that
+    // are not interchangeable. Dollars routed out of an RMD move nothing extra
+    // -- the RMD occurrence already explains that debit -- and they keep the
+    // nonmoving overlay. Dollars taken with no RMD behind them physically leave
+    // an owned IRA and must be explained the same way every other owned-IRA
+    // debit is, by a `legacyQcd` occurrence with its own application.
+    if (!Number.isFinite(yearResult.qcd) || yearResult.qcd < 0 ||
+        Object.is(yearResult.qcd, -0)) {
+      fail('sourceAmountInvalid', 'Published annual QCD total must be finite, nonnegative, and not negative zero', { taxYear })
+    }
+    cents(yearResult.qcd, 'Annual QCD total', { taxYear })
     const overlay = occurrenceSource.nonmovingLegacyQcdOverlay
-    if ((overlay === null) !== (qcd === 0) || (overlay && (
+    if (overlay !== null && (
       overlay.status !== 'nonmovingLegacyQcdCaptured' || overlay.kind !== 'legacyQcd' ||
       overlay.taxYear !== taxYear || overlay.ownerPersonId !== null || overlay.sourceAccountId !== null ||
       overlay.physicalMovement !== 'notAdditionalMovement' ||
       overlay.inventoryReplay !== 'requiresSeparateQcdCharacterizationStage' ||
-      cents(overlay.grossAmountPlanDollars, 'QCD overlay amount', { taxYear }) !== qcd))) {
-      fail('sourceContractInvalid', 'QCD overlay must exact-rejoin the annual nonmoving total', { taxYear })
+      cents(overlay.grossAmountPlanDollars, 'QCD overlay amount', { taxYear }) <= 0)) {
+      fail('sourceContractInvalid', 'A nonmoving QCD overlay must retain its exact captured contract and a positive amount', { taxYear })
     }
-    if (qcd > 0) fail('qcdStageRequired', 'Household QCD cannot be source-allocated from RMD debits', { taxYear })
+    const movingQcd = occurrenceTotalInPlanOrder(
+      occurrenceSource.runtimeOccurrences,
+      ['legacyQcd'],
+      'moving legacy QCD',
+      taxYear,
+      accountOrder,
+    )
+    // The overlay is a summed component only when it exists. Counting it
+    // unconditionally would widen the tolerance across the whole pre-RMD
+    // window, which is exactly the case that has no overlay to count.
+    if (!rawTotalsReconcile(
+      (overlay?.grossAmountPlanDollars ?? 0) + movingQcd.total,
+      yearResult.qcd,
+      movingQcd.count + (overlay === null ? 0 : 1),
+    )) {
+      fail('sourceCoverageInvalid', 'The nonmoving QCD overlay plus every moving QCD occurrence must exact-rejoin the published annual QCD total', { taxYear })
+    }
+    // The overlay's own dollars remain unallocated. Which owner's RMD carried
+    // the gift decides whose line-7 gross must shrink under 408(d)(8)(D), and
+    // one household scalar cannot answer that, so a routed gift still requires
+    // the separate characterization stage. A gift that moved on its own does
+    // not: its source account is named by its occurrence.
+    if (overlay !== null) {
+      fail('qcdStageRequired', 'A QCD routed out of an RMD debit cannot be source-allocated from a household scalar', { taxYear })
+    }
 
     const aggregate = aggregateRothCredit(
       plan, taxYear, occurrenceSource.runtimeOccurrences,
