@@ -1220,10 +1220,12 @@ describe('contributions', () => {
 
   // The companion to the case above, and the one that pins WHERE the increase
   // is measured from. 26 CFR 1.414(v)-1(c)(2)(iii)(B) indexes the initial
-  // 11,250 off a fixed base period (the quarter beginning July 1 2024), so
-  // every year is recomputed from that base rather than compounded off the
-  // previous year's rounded figure. Cost-of-living below a 500 step is
-  // therefore banked, not discarded, and eventually carries the amount up.
+  // 11,250 off a fixed base period (the quarter beginning July 1 2024). This
+  // fixture does not exercise that base period -- the engine measures from the
+  // pack year instead -- but it does pin the property the two share: the
+  // rounding is applied once to a cumulative increase, so cost-of-living below
+  // a 500 step is banked rather than discarded and eventually carries the
+  // amount up a full step.
   //
   // 2029 is three years past the pack year; at 2 percent limits scale by
   // 1.02^3 = 1.061208. Each single year moves 11,250 by only 225, short of a

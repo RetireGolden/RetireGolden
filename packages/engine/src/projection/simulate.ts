@@ -210,11 +210,14 @@ const STEP_BOUNDARY_TOLERANCE = 1e-9
  *
  * `growth` is the CUMULATIVE factor from the pack year to the projected year,
  * and rounding once at the end is the point rather than an approximation. The
- * adjustment is measured from a fixed base period -- 26 CFR
+ * adjustment is measured from a fixed origin rather than year over year. 26 CFR
  * 1.414(v)-1(c)(2)(iii)(B) sets the ages 60-63 limit as "the initial amount
  * ($11,250) ... increased for changes in the cost of living" off the calendar
- * quarter beginning July 1 2024 -- so each year is recomputed from that base,
- * never compounded off the previous year's rounded figure. Cost-of-living below
+ * quarter beginning July 1 2024. The engine does not model that base period --
+ * `growth` is `limitGrowth`, measured from the pack year -- but it reproduces
+ * the structural property that matters here: one rounding applied to a
+ * cumulative increase, never compounded off a previously rounded figure.
+ * Cost-of-living below
  * a 500 step therefore accumulates and eventually carries the amount up a full
  * step. That is the shape of the published 415(d)-indexed tables, where a limit
  * holds for a year or two and then moves a full 500 at once. Note the engine
