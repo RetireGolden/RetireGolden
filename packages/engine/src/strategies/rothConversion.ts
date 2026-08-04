@@ -14,15 +14,17 @@
  * is always the federal engine, regardless of which TaxCalculator the
  * projection runs — strategies target federal-law boundaries by definition.
  *
- * Threshold scaling matches the projection's expense model: IRMAA thresholds
- * and the FPL index at general inflation beyond the published pack; bracket
- * bounds stay at the latest pack's nominal values (as the tax engine itself
- * does for stand-in years).
+ * Threshold scaling matches the projection: IRMAA thresholds, the FPL, and the
+ * federal rate-bracket bounds all index at general inflation beyond the
+ * published pack, because each is adjusted annually by statute and the metric
+ * being compared against them is nominal. A `fixedMagi` ceiling is the user's
+ * own nominal number and is left exactly as entered.
  */
 
 import type { Plan } from '../model/plan.js'
 import type { FilingStatus, ParameterPack } from '../params/types.js'
 import type { TaxYearInput } from '../projection/types.js'
+import { indexFederalTaxPack } from '../params/index.js'
 import { acaFederalPovertyLine, type AcaFplRegion } from '../tax/aca.js'
 import { computeFederalTax, type FederalTaxDetail } from '../tax/federalTax.js'
 
@@ -53,7 +55,7 @@ export interface ConversionSizingInput {
     /** Foreign exclusion also participates in §86 provisional income without becoming ordinary income. */
     foreignExclusionAddback: number
   }
-  /** Scale applied to IRMAA thresholds / FPL for years beyond the pack. */
+  /** Scale applied to IRMAA thresholds, the FPL, and the indexed federal tax figures for years beyond the pack. */
   inflationScale: number
   /** Itemized deductions (nominal) so bracket/MAGI targets use the right deduction. */
   itemizedDeductions?: TaxYearInput['itemizedDeductions']
@@ -84,7 +86,9 @@ function ceilingFor(strategy: FillTarget, input: ConversionSizingInput): number 
   const { pack, filingStatus } = input
   switch (strategy.target) {
     case 'topOfBracket': {
-      const brackets = pack.federalTax.brackets[filingStatus]
+      // The ceiling is compared against nominal taxable income, so it has to be
+      // the bracket bound as the tax engine will apply it in `input.year`.
+      const brackets = indexFederalTaxPack(pack, input.inflationScale).federalTax.brackets[filingStatus]
       const i = brackets.findIndex((b) => b.ratePct === strategy.targetValue)
       if (i < 0 || i + 1 >= brackets.length) return null // unknown rate or open-ended top bracket
       return brackets[i + 1]!.lowerBound
@@ -131,6 +135,7 @@ export function sizeRothConversion(strategy: FillTarget, input: ConversionSizing
         ssBenefits: input.ssBenefits,
         peopleAged65Plus: input.peopleAged65Plus,
         itemizedDeductions: input.itemizedDeductions,
+        inflationScale: input.inflationScale,
       }),
       input,
     )

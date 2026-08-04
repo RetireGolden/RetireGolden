@@ -1,8 +1,16 @@
 /**
- * Typed access to per-state tax packs. Mirrors the federal `packForYear`
- * pattern: future years use the latest published pack (nominal brackets, so
- * bracket creep is modeled). States with no entry return undefined — the
- * caller falls back to the flat effective-rate override.
+ * Typed access to per-state tax packs. Future years use the latest published
+ * pack with its brackets left nominal, so state bracket creep is modeled.
+ * States with no entry return undefined — the caller falls back to the flat
+ * effective-rate override.
+ *
+ * This no longer mirrors the federal engine, which now projects its
+ * annually-indexed figures past the pack year (`indexFederalTaxPack`) because
+ * IRC 1(j)(3)(B) and its siblings require it. Nothing equivalent is settled
+ * here: indexing is a per-state question — some states index their brackets,
+ * some fix them by statute, and several are on legislated rate ramps — so
+ * holding them nominal stays the convention until each state's rule is
+ * researched. It is a modeling gap, not a federal-law parallel.
  */
 
 import type { StateTaxPack, StateTaxParams } from './types.js'

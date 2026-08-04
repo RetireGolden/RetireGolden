@@ -66,6 +66,13 @@ export const widowsPenalty: Detector = {
     if (singleFiledYearObj) {
       const jumpYear = singleFiledYearObj.year
       const survivorMagi = singleFiledYearObj.magi
+      // The MAGI read off the ledger is nominal for `jumpYear`, so the tables it
+      // is priced against have to be the projected ones the ledger itself used.
+      // Pricing nominal survivor income on pack-year brackets inflates the jump.
+      const inflationScale =
+        jumpYear <= ctx.params.year
+          ? 1
+          : Math.pow(1 + ctx.plan.assumptions.inflationPct / 100, jumpYear - ctx.params.year)
       const jointAges65Plus = ctx.plan.household.people.filter(
         (p) => jumpYear - Number(p.dob.slice(0, 4)) >= 65,
       ).length
@@ -78,6 +85,7 @@ export const widowsPenalty: Detector = {
           capitalGains: 0,
           ssBenefits: 0,
           peopleAged65Plus: singleFiledYearObj.people.filter((p) => p.alive && p.ageAttained >= 65).length,
+          inflationScale,
         }).totalTax -
           computeFederalTax({
             year: jumpYear,
@@ -86,6 +94,7 @@ export const widowsPenalty: Detector = {
             capitalGains: 0,
             ssBenefits: 0,
             peopleAged65Plus: jointAges65Plus,
+            inflationScale,
           }).totalTax,
       )
       bracketJumpToday = Math.round(ctx.projection.deflate(jumpYear, bracketJump))

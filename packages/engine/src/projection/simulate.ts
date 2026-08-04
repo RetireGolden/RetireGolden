@@ -3462,6 +3462,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           qualifiedDividends: incomes.qualifiedDividends,
           ssBenefits: incomes.socialSecurity,
           peopleAged65Plus,
+          inflationScale: limitGrowth,
           state: residenceState,
           stateResidency,
           privateRetirementIncome: privateRetirementBase,
@@ -3993,6 +3994,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           qualifiedDividends: incomes.qualifiedDividends,
           ssBenefits: incomes.socialSecurity,
           peopleAged65Plus,
+          inflationScale: limitGrowth,
           state: residenceState,
           stateResidency,
           privateRetirementIncome:
@@ -4445,6 +4447,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       qualifiedDividends: incomes.qualifiedDividends,
       ssBenefits: incomes.socialSecurity,
       peopleAged65Plus,
+      inflationScale: limitGrowth,
       itemizedDeductions,
     })
     const ltcgZeroHeadroom = federalDetail.zeroRateLtcgHeadroom

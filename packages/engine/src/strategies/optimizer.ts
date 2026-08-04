@@ -707,15 +707,23 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
 }
 
 /**
- * Standard deduction (+ age-65 addition) for the year — UNSCALED, matching the
- * exact ledger's stand-in convention: `computeFederalTax` applies the latest
- * pack's deduction (and brackets) at face value for future years, so the LP
- * must too. Scaling it by inflation (as v1 did) overstated future deductions by
- * up to ~2× at long horizons, under-taxing late-year conversions in-solve and
- * driving systematic over-conversion the exact ledger then priced as harmful.
- * IRMAA thresholds ARE inflation-scaled in both engines (`inflationScale`).
- * The OBBBA senior deduction is handled separately in the model builder (it
- * needs the MAGI-dependent phase-out, not a constant).
+ * Standard deduction (+ age-65 addition) for the year, read straight off
+ * `y.pack`. The caller hands the LP a pack already carried forward by
+ * `indexFederalTaxPack`, so this figure — and the bracket bands in
+ * `bracketSegments` — arrive indexed exactly as `computeFederalTax` will apply
+ * them for the same year. The two engines must agree: an LP pricing conversions
+ * off different thresholds than the exact ledger produces a schedule the ledger
+ * then re-prices as worse than the solver believed, whichever way the mismatch
+ * runs. (An earlier revision scaled here while the ledger did not, which is how
+ * that failure was first seen; the fix is one shared projected pack, not a
+ * second scaling.)
+ *
+ * Do NOT re-scale in this function: the pack it reads is already projected, and
+ * multiplying twice is the same class of error as not multiplying at all.
+ * IRMAA thresholds are scaled separately from `inflationScale`. The OBBBA
+ * senior deduction is handled in the model builder (it needs the MAGI-dependent
+ * phase-out) and is NOT indexed — IRC 151(d)(5)(C) sets a flat 6,000 dollars
+ * with no cost-of-living provision.
  */
 function pack65Deduction(y: OptimizerYear): number {
   const f = y.filingStatus
