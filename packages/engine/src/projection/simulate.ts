@@ -86,6 +86,7 @@ import {
   publishAnnualRetirementActions,
   rothConversionPublicationEligibility,
   rothConversionPublicationSource,
+  signedLedgerCentTotalToPlanDollars,
   type ExecuteOrdinaryWithdrawalsResult,
   type ExecuteRothConversionsResult,
   type TaxableAccountOpeningSnapshot,
@@ -4641,21 +4642,28 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
       // Committed action movement for the LP's balance recursion. Mirrors the
       // apply loop above exactly — same `committed` gate, same changed-snapshot
-      // filter, same cents→dollars conversion — so the solver's buckets move by
-      // the dollars this ledger actually moved, not by the request. A refused or
-      // partially executed request therefore reports what executed and nothing
-      // more. Named Roth conversions contribute none: `executeRothConversions`
-      // publishes evidence only (`committed: false` by type) and moves no
-      // balance, so there is no second source to fold in here.
+      // filter — so the solver's buckets move by the dollars this ledger
+      // actually moved, not by the request. A refused or partially executed
+      // request therefore reports what executed and nothing more. Named Roth
+      // conversions contribute none: `executeRothConversions` publishes
+      // evidence only (`committed: false` by type) and moves no balance, so
+      // there is no second source to fold in here.
+      //
+      // The delta is taken in CENTS and converted once. `ledgerCentsToPlanDollars`
+      // guarantees each endpoint round-trips, not that their difference does:
+      // subtracting two separately-rounded dollar numbers routinely lands a ULP
+      // off an exact cent (100000.02 − 50000.02 is 50000.00000000001), and that
+      // residue would ride into the LP's coefficients. One conversion of the
+      // exact-cent difference keeps the amount exactly the cents that moved.
       const optimizerCommittedActionAccountMovement =
         retirementActionExecution?.committed
           ? retirementActionExecution.balances
             .filter((snapshot) => snapshot.closingBalance !== snapshot.openingBalance)
             .map((snapshot) => ({
               accountId: String(snapshot.accountId),
-              amount:
-                ledgerCentsToPlanDollars(snapshot.closingBalance) -
-                ledgerCentsToPlanDollars(snapshot.openingBalance),
+              amount: signedLedgerCentTotalToPlanDollars(
+                BigInt(snapshot.closingBalance) - BigInt(snapshot.openingBalance),
+              ),
             }))
             .sort((left, right) => compareUtf16CodeUnits(left.accountId, right.accountId))
           : []

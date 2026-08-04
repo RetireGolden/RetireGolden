@@ -508,10 +508,25 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
       // SSA-44 (opt-in): shift this premium year's IRMAA trigger to (t−1)'s
       // MAGI so the solve prices the redetermination the exact ledger applies.
       ssa44Redetermination: p.ssa44IrmaaRedetermination || undefined,
-      // The dollars the exact-cent executor already moved this year. The probe
-      // is captured from an action-BEARING run (only the conversion strategy is
-      // stripped above), so these are the ledger's own committed amounts — no
-      // second simulation, and no re-deriving them from the request.
+      // The dollars the exact-cent executor already moved this year, read off
+      // the probe's own ledger — no second simulation, and no re-deriving them
+      // from the request.
+      //
+      // UNREACHABLE TODAY, deliberately. The precondition throw at the top of
+      // this function refuses any `plan` or `probeSourcePlan` carrying
+      // retirement actions, and `probeSource` is derived from one of those two.
+      // So the probe run is always action-free: `committedActionAccountMovement`
+      // is empty, `committedActionProceeds` is 0, and this call returns
+      // `undefined` for every year — which is exactly what keeps action-free
+      // plans emitting a byte-identical LP.
+      //
+      // It is wired up anyway because the netting is the correctness foundation
+      // the throw is waiting on: with it in place, lifting the throw is a
+      // decision about identity and the `identityIncomplete` veto (see
+      // `optimizerUnsupportedRetirementActions`), not a fresh solver-arithmetic
+      // problem. `optimizePlan.test.ts` proves the arithmetic now by calling
+      // `committedActionMovementForYear` directly on an ACTED plan's probe,
+      // since `buildOptimizerInput` will not accept one.
       committedActionMovement: committedActionMovementForYear(bucketByAccountId, p),
     }
   })

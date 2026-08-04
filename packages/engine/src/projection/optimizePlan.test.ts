@@ -1085,6 +1085,47 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
     }
   })
 
+  it('reports an exact-cent amount for endpoints that do not subtract exactly', () => {
+    // The discriminator, stated before the plan exists. $100,000.02 and
+    // $50,000.02 each round-trip through `ledgerCentsToPlanDollars` on their
+    // own — that is all that function promises — but neither is exact in
+    // binary, and their dollar difference lands a ULP off the cent:
+    //   50000.02 − 100000.02 === −50000.00000000001
+    // Differencing in CENTS and converting once gives exactly −50,000. This
+    // assertion is here so the fixture cannot quietly stop discriminating.
+    expect(5_000_002 / 100 - 10_000_002 / 100).not.toBe(-50_000)
+
+    const draft = tradHeavyPlan()
+    const taxable = draft.accounts.find((account) => account.type === 'taxable')!
+    if (taxable.type !== 'taxable') throw new Error('fixture lost its taxable account')
+    taxable.ownerPersonId = 'p1'
+    taxable.balance = 100_000.02
+    taxable.costBasis = 100_000.02
+    draft.strategies.retirementActions = [
+      committedWithdrawal('drifting-taxable', taxable.id, 2026, 50_000),
+    ]
+    const plan = validate(draft)
+    const probe = probesFor(plan)[0]!
+
+    // Object.is equality, not a tolerance. A sub-cent residue is not a rounding
+    // nicety here: it rides into the LP's own coefficients, so the solver would
+    // be handed a balance recursion the exact ledger never produced.
+    expect(probe.committedActionAccountMovement).toHaveLength(1)
+    const moved = probe.committedActionAccountMovement[0]!
+    expect(moved.accountId).toBe(taxable.id)
+    expect(moved.amount).toBe(-50_000)
+
+    // And it survives the bridge into the bucket scalar the LP actually reads.
+    const buckets = optimizerOpeningBuckets(plan)
+    expect(committedActionMovementForYear(buckets.bucketByAccountId, probe)).toEqual({
+      trad: 0,
+      inheritedTrad: 0,
+      other: 0,
+      taxable: -50_000,
+      proceeds: 50_000,
+    })
+  })
+
   it('lands the solver’s taxable bucket where the exact ledger lands it', async () => {
     const { plan, taxableId, actionFree } = actedTaxablePlan()
     const solverOpts = { ...opts, solver: { maxConversionPerYear: 0 } }
