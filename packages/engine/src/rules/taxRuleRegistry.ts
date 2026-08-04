@@ -4590,7 +4590,9 @@ const registry = {
       'A contribution made on account of a taxable year is deemed made on the last day of that year only if it is made no later than the time prescribed for filing that year return, not including extensions. An extension of the return does not extend the contribution window, so a contribution designated for the prior year but made after the ordinary April deadline is not a prior-year contribution and does not enter that year Form 8606 basis at all.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 219(f)(3)',
@@ -4620,7 +4622,9 @@ const registry = {
       'Qualified medical expenses are amounts paid by the account beneficiary for section 213(d) medical care of that individual, that individual spouse, and any dependent. The reimbursable set therefore turns on the relationship of the patient to the owner of the account the distribution came out of, not on whose name is on the expense: one spouse HSA may reimburse the other spouse expense in full and tax free, and an expense of a person outside those three relationships is not qualified however genuine the medical care was.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 223(d)(2)(A)',
@@ -4650,7 +4654,9 @@ const registry = {
       'A qualified medical expense must be incurred after the HSA has been established. The establishment date is a hard floor on the reimbursable set rather than a preference: an expense incurred one day before the account was established can never be reimbursed tax free, no matter how long the account is later held or how much it later holds.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'irsNotice',
       citation: 'IRS Notice 2004-2, A-26',
@@ -4680,7 +4686,9 @@ const registry = {
       'A distribution taken in the current year may reimburse a qualified medical expense incurred in any prior year, so long as the expense was incurred after the HSA was established. The reimbursable set is therefore cumulative and carries across tax years: it is not closed by the year the expense was incurred, and a distribution is not disqualified merely because the care it pays for was received years earlier.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'irsNotice',
       citation: 'IRS Notice 2004-50, A-39',
@@ -4710,7 +4718,9 @@ const registry = {
       'An amount is a qualified medical expense only to the extent it is not compensated for by insurance or otherwise, so each dollar of an expense supports a tax-free reimbursement exactly once. The remaining reimbursable amount of an expense is its eligible amount less everything already reimbursed against it, counting reimbursements taken in earlier years and from every account in the household, and a claim exceeding that remainder is refused rather than trimmed to it.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 223(d)(2)(A)',
@@ -4738,10 +4748,12 @@ const registry = {
     title: 'An expense already deducted under section 213 cannot also be reimbursed',
     statement:
       'A distribution is excludable only if the expense it reimburses was not taken as an itemized deduction under section 213 in any prior taxable year; section 223(f)(6) closes the same door from the other side by keeping an HSA-reimbursed expense out of the section 213 computation. Not modelled: the household expense inventory carries an asserted qualified flag and an eligibility evidence identifier but no field recording whether the expense was ever deducted, so the engine cannot detect the double benefit. The error runs one way only, toward understating tax: an expense deducted in an earlier year and reimbursed now is reported as a fully qualified, fully excluded distribution, when the correct treatment includes it in gross income and, outside the age-65 and disability exceptions, adds the 20 percent additional tax on top.',
-    classification: 'outOfScope',
+    classification: 'approximated',
     contraryReading: null,
+    errorDirection: 'understatesTax',
     conventionRationale:
-      'Recorded as out of scope rather than as an engine convention because there is no defensible convention available. Assuming the expense was never deducted is what the engine does today and is the assumption that understates tax; assuming it was deducted would disqualify every reimbursement in a household that itemizes and would be wrong far more often. The missing input is a per-expense prior-deduction flag, which is a data question rather than a modelling one, and the engine should carry the flag before it carries an answer. Flagged as a candidate for re-triage as approximated when that classification lands, because the engine computes a knowably optimistic number here rather than refusing.',
+      'Approximated rather than out of scope because the engine does not refuse here; it returns a figure computed on the assumption that the expense was never deducted, which is precisely the assumption that flatters the taxpayer. There is no better convention available: assuming the expense was deducted would disqualify every reimbursement in a household that itemizes and would be wrong far more often. The missing input is a per-expense prior-deduction flag, which is a data question rather than a modelling one, and the engine should carry the flag before it carries an answer.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'irsNotice',
       citation: 'IRS Notice 2004-50, A-39',
@@ -4768,10 +4780,12 @@ const registry = {
     title: 'The HSA establishment date is per account, and relates back only on a test',
     statement:
       'Each HSA has its own establishment date, and a later HSA is deemed established when the first one was only if the beneficiary held an HSA with a balance greater than zero at some point in the 18-month period ending on the day the later account was established. An account funded by rollover or transfer instead takes the establishment date of the account it came from. Not modelled: the household evidence carries one authoritative establishment date per person and applies it to every covered HSA of that person, so the relate-back test is never evaluated. Where that test would fail, the error runs toward understating tax, because an expense incurred between the two establishment dates is reimbursable only from the older account, and the engine will treat a distribution from the newer one as qualified and fully excluded.',
-    classification: 'outOfScope',
+    classification: 'approximated',
     contraryReading: null,
+    errorDirection: 'understatesTax',
     conventionRationale:
-      'The per-person shape is right for the common case and wrong for a narrow one, which is what makes it worth recording rather than fixing in passing. Most households with two HSAs opened the second while still holding the first, or funded it by transfer, and in both of those cases the single owner-level date is exactly correct. The shape cannot express the failing case at all: the establishment record is keyed by person, the allocation names a source account, and nothing joins the two, so no caller can supply account-level dates even where they have them. Repairing it is a change to the evidence contract rather than to a calculation, which is why it is recorded here instead of patched. Flagged as a candidate for re-triage as approximated, since the engine computes rather than refuses.',
+      'Approximated rather than out of scope because the relate-back test is not refused, it is skipped: the engine computes a qualified amount from the owner-level date and returns it. The per-person shape is right for the common case and wrong for a narrow one, which is what makes it worth recording rather than fixing in passing. Most households with two HSAs opened the second while still holding the first, or funded it by transfer, and in both of those cases the single owner-level date is exactly correct. The shape cannot express the failing case at all: the establishment record is keyed by person, the allocation names a source account, and nothing joins the two, so no caller can supply account-level dates even where they have them. Repairing it is a change to the evidence contract rather than to a calculation, which is why it is recorded here instead of patched.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'irsNotice',
       citation: 'IRS Notice 2008-59, A-41',
@@ -4800,7 +4814,9 @@ const registry = {
       'For an amount received from a qualified plan before the annuity starting date, the portion allocated to the investment in the contract bears the same ratio to the amount received as the investment in the contract bears to the account balance. After-tax employee basis is therefore recovered proportionally across the whole distribution and the remainder is ordinary income; basis is not recovered first, and a distribution smaller than the basis does not come out tax free.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 72(e)(8)(B)',
@@ -4827,10 +4843,12 @@ const registry = {
     title: 'Pre-1987 employee contributions are recovered before the pro-rata rule bites',
     statement:
       'Where a plan on May 5, 1986 permitted withdrawal of employee contributions before separation from service, the pro-rata allocation applies only to amounts received in excess of the investment in the contract as of December 31, 1986. Such a participant recovers the grandfathered basis first and reaches pro-rata treatment only once it is exhausted. Not modelled: the basis snapshot carries a single after-tax figure with no pre-1987 component and no plan-terms flag, so the engine applies the pro-rata rule to the first dollar. The error runs toward overstating tax in the early years, because basis the statute would return in full is instead spread across the whole account and only a fraction of it is recovered. It reverses in later years as the remaining basis comes out, so it is a timing error rather than a permanent one, but the deferral is exactly the years a retiree is drawing on the account.',
-    classification: 'outOfScope',
+    classification: 'approximated',
     contraryReading: null,
+    errorDirection: 'bothDirections',
     conventionRationale:
-      'Worth recording rather than dismissing as historical, because this engine audience is the cohort it reaches: a participant who made after-tax contributions to a plan that allowed in-service withdrawals in 1986 is in their late sixties or older today, and the balance has had forty years to grow, so the grandfathered layer can be large in dollars even where it is small as a fraction of the account. It is not modelled because the two facts it needs, the December 31, 1986 investment in the contract and whether the plan permitted pre-separation withdrawal on May 5, 1986, appear on no statement a household can produce and would have to come from the plan administrator.',
+      'Approximated rather than out of scope because the engine applies the ordinary pro-rata rule and returns a number; it never refuses for want of the grandfathered layer. The direction is recorded as both because this is a timing error: tax is overstated in the early withdrawal years while basis the statute would return in full is instead spread across the account, and understated later as that basis comes out. It nets to zero over a full drawdown, but an annual projection is exactly where the year matters, and the overstated years are the ones a retiree is drawing on the account. Worth recording rather than dismissing as historical, because this engine audience is the cohort it reaches: a participant who made after-tax contributions to a plan that allowed in-service withdrawals in 1986 is in their late sixties or older today, and the balance has had forty years to grow, so the grandfathered layer can be large in dollars even where it is small as a fraction of the account. It is not modelled because the two facts it needs, the December 31, 1986 investment in the contract and whether the plan permitted pre-separation withdrawal on May 5, 1986, appear on no statement a household can produce and would have to come from the plan administrator.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 72(e)(8)(D)',
@@ -4851,10 +4869,12 @@ const registry = {
     title: 'Taxable-account basis and holding period are properties of a lot',
     statement:
       'Where shares bought on different dates or at different prices are sold and the taxpayer does not adequately identify the lot, the sale is charged against the earliest lot acquired, and that lot fixes both the basis and the holding period; the average basis method reaches only the stock the regulation names, chiefly regulated investment company shares and dividend reinvestment plan holdings. Not modelled: the engine holds one cost-basis figure and one fair market value for the whole account and recovers basis in the ratio of the two, which is account-level average cost, and it emits a single realized gain or loss carrying no holding period at all. Two errors follow. The basis recovered on a partial sale is wrong in either direction depending on which lots a first-in-first-out or specific-identification seller would actually have sold. More seriously, nothing separates long-term from short-term, so gain belonging in the preferential rate schedule and gain taxed as ordinary income are reported as one number, which understates tax on a short-term sale and overstates it on a long-term one.',
-    classification: 'outOfScope',
+    classification: 'approximated',
     contraryReading: null,
+    errorDirection: 'bothDirections',
     conventionRationale:
-      'The average-cost approximation is defensible for a long-horizon projection and indefensible for a filing-grade statement of a particular year, and the two uses are not distinguished here. Across a full drawdown the account-level ratio and true lot accounting converge, because every lot is eventually sold and the total basis is the same either way, so the approximation costs little over a lifetime. It costs a great deal in any single year a user might act on. The missing holding-period character is the larger of the two gaps and is not an approximation at all: it is a fact the engine never had, since no lot acquisition dates enter the account model, and no convention over a single blended number can recover it.',
+      'Approximated rather than out of scope because the engine emits a realized gain or loss for every taxable sale; nothing here fails closed. Both of its errors run in both directions, which is why the direction cannot be narrowed: the basis recovered on a partial sale is too high or too low depending on which lots a first-in-first-out or specific-identification seller would have sold, and the missing holding-period character understates tax on a short-term sale and overstates it on a long-term one. The average-cost approximation is defensible for a long-horizon projection and indefensible for a filing-grade statement of a particular year, and the two uses are not distinguished here. Across a full drawdown the account-level ratio and true lot accounting converge, because every lot is eventually sold and the total basis is the same either way, so the approximation costs little over a lifetime. It costs a great deal in any single year a user might act on. The missing holding-period character is the larger of the two gaps and is not an approximation at all: it is a fact the engine never had, since no lot acquisition dates enter the account model, and no convention over a single blended number can recover it.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
       citation: '26 CFR 1.1012-1(c)(1)(i)',
@@ -4883,7 +4903,9 @@ const registry = {
       'The three adjustments to a charitable distribution compose in exactly one order, and the text fixes it rather than leaving it to be chosen. The flush sentence of 408(d)(8)(B) runs first, because it is definitional: a distribution is a qualified charitable distribution only to the extent it would be includible without regard to (A), so there is no QCD to limit until the trim has been taken. The first sentence of (A) then excludes so much of that amount as does not exceed the annual dollar limit. The second sentence of (A) runs last, and says so in its own subject: it reduces "the amount of distributions not includible in gross income by reason of the preceding sentence", determined without regard to itself, but not below zero. The excludable amount is therefore min(min(Q, T), L) - F, never min(min(Q, L) - F, T) and never min(min(Q, T) - F, L). Because the offset is a subtraction and not a cap, it does not commute with either trim, and the three orderings differ in dollars on ordinary inputs.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 408(d)(8)(A), both sentences',
