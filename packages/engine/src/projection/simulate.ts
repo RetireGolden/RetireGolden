@@ -2592,6 +2592,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         | 'automaticSeppDistribution'
         | 'legacyNeedBasedWithdrawal'
         | 'legacyRothConversion'
+        | 'namedRothConversion'
       producerOccurrenceKey: string
       sourceAccountId: string
       mutationOrdinal: number
@@ -3102,6 +3103,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      * summed only where the year publishes one conversion figure.
      */
     let namedRothConversionExecuted = 0
+    /**
+     * The Form 8606 line-8 basis return riding on those dollars. It is the
+     * settlement's figure whenever the assumption vector carries one for the
+     * allocation, and the plan-dollar pro-rata approximation only on the seed
+     * attempt that has no assumption to read — the same two-stage disposition
+     * the aggregate conversion pass already uses for `conversionNontaxable`.
+     */
+    let namedRothConversionNontaxable = 0
     let retirementActionCash = 0
     let retirementActionEquityCompensation = 0
     let retirementActionOrdinaryIncome = 0
@@ -3542,6 +3551,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           readonly debitKeys: string[]
           readonly debitOwners: (string | null)[]
           creditedAmountPlanDollars: number
+          /** This action's own share of `namedRothConversionNontaxable`. */
+          nontaxableAmountPlanDollars: number
         }
         const committedByActionId = new Map<string, CommittedConversionAction>()
         for (const move of committedConversions) {
@@ -3567,6 +3578,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               debitKeys: [],
               debitOwners: [],
               creditedAmountPlanDollars: 0,
+              nontaxableAmountPlanDollars: 0,
             }
             committedByActionId.set(move.actionId, committedAction)
           }
@@ -3589,7 +3601,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             movementAuthorityId: null,
           })
           if (isAggregatedIra(state.account)) {
-            recordAnnualRetirementRuntimeApplication({
+            const ownedIraApplication = recordAnnualRetirementRuntimeApplication({
               applicationKind: 'debit',
               producerOccurrenceKey,
               simulatorPhase: 'namedRothConversionDebit',
@@ -3599,6 +3611,36 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               appliedAmountPlanDollars: move.amount,
               sourceBalanceAfterPlanDollars: state.balance,
             })
+            // The executor authorised the movement without stating its
+            // character; IRC 408(d)(2)/408A(d)(3)(A) apportion it by the
+            // year's Form 8606 line-10 ratio, and the settlement is the only
+            // place that ratio exists. Reading it back through the assumption
+            // vector is what makes this the settlement's own figure rather
+            // than a second, mid-year answer to the same owner-year question.
+            //
+            // `mutationOrdinal` is the load-bearing member: the replay derives
+            // each line-8 allocation identity from the ordinal of this very
+            // application, so it is taken from the recorded application rather
+            // than predicted. A mismatched ordinal does not raise — it makes
+            // `resolveAssumedCharacter` return null and silently fall back,
+            // which is why the tests assert the nontaxable figure and not
+            // merely that the conversion happened.
+            const ownerId = state.account.ownerPersonId ?? primary.id
+            const proRata = iraProRata.get(ownerId)
+            if (proRata !== undefined &&
+                ownedIraApplication.applicationKind === 'debit') {
+              const split = splitWithAssumedCharacter(proRata, move.amount, {
+                ownerPersonId: ownerId,
+                calculationScope: 'form8606Line8NetConversions',
+                occurrenceKind: kind,
+                producerOccurrenceKey,
+                sourceAccountId: state.account.id,
+                mutationOrdinal: ownedIraApplication.mutationOrdinal,
+              })
+              iraProRata.set(ownerId, split.next)
+              committedAction.nontaxableAmountPlanDollars += split.nontaxable
+              namedRothConversionNontaxable += split.nontaxable
+            }
           }
         }
         for (const actionId of [...committedByActionId.keys()].sort(compareUtf16CodeUnits)) {
@@ -3630,15 +3672,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           })
           // IRC 408A(d)(3)(F) runs a 5-taxable-year clock from the year of
           // this conversion, and (F)(ii) limits the recapture to the portion
-          // that was includible. The executor commits only at a proven-zero
-          // basis numerator, so the whole layer is includible and the whole
-          // layer is exposed.
+          // that was includible. At a proven-zero basis numerator that is the
+          // whole layer; at a positive one the basis return rolled into the
+          // Roth was never included in income, so it carries no recapture and
+          // `taxableAmount` is strictly less than `amount`.
           const rb = rothBasis.get(rothPoolKey(destination.account))
           if (rb) {
             rb.conversionLayers.push({
               year,
               amount: credited,
-              taxableAmount: credited,
+              taxableAmount: Math.max(
+                0,
+                credited - committedAction.nontaxableAmountPlanDollars,
+              ),
             })
           }
           namedRothConversionExecuted += credited
@@ -4065,12 +4111,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // two anyway rather than assuming that, because the published figure has to
     // be the year's conversions and not whichever route happened to run.
     const totalRothConversion = rothConversion + namedRothConversionExecuted
-    // A named conversion commits only at a proven-zero basis numerator, so its
-    // whole gross is includible under IRC 408A(d)(3)(A) and none of it is
-    // netted against `conversionNontaxable`, which accumulated the aggregate
-    // pass's pro-rata basis return alone.
+    // Each authority nets its own basis return. The two are kept apart rather
+    // than pooled because they are apportioned against different Form 8606
+    // line-8 entry sets and reconciled against different evidence, even though
+    // only one of them can have run this year.
     const totalRothConversionTaxable =
-      (rothConversion - conversionNontaxable) + namedRothConversionExecuted
+      (rothConversion - conversionNontaxable) +
+      (namedRothConversionExecuted - namedRothConversionNontaxable)
 
     // --- fixed-point tax / withdrawal iteration ----------------------------
     // Only the taxable (post-pro-rata) part of a conversion is ordinary income.

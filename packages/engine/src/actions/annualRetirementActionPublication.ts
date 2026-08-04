@@ -988,11 +988,15 @@ function conversionAllocationRecords(
   return evidence.allocations.map((allocation) => {
     const requestAllocation = evidence.request.allocations.find((candidate) =>
       candidate.allocationId === allocation.allocationId)
-    // A committed allocation moved its full requested amount at a proven-zero
-    // basis numerator, so its whole gross is taxable and it cites the basis
-    // and RMD-reserve evidence it rested on. A staged one moved nothing and
-    // cites neither. Nothing in between publishes: a half-executed allocation,
-    // or a committed one claiming a basis return, is a contradiction.
+    // A committed allocation moved its full requested amount and cites the
+    // basis and RMD-reserve evidence it rested on. Its character has exactly
+    // two publishable shapes: the whole gross taxable with a zero basis
+    // return, which is what a proven-zero numerator makes of it under IRC
+    // 408A(d)(3)(A), or wholly null, which is a committed movement whose
+    // line-10 apportionment the annual settlement — not this executor —
+    // determines. A staged allocation moved nothing and cites neither.
+    // Nothing else publishes: a half-executed allocation, or one that states
+    // half a character, is a contradiction.
     //
     // Every reference to `requestAllocation` here is optional-chained. A
     // missing request allocation is already its own explicit failure below, and
@@ -1002,8 +1006,11 @@ function conversionAllocationRecords(
     const allocationConsistent = committedAllocation
       ? allocation.executedAmount === requestAllocation?.requestedAmount &&
         allocation.unexecutedAmount === 0 &&
-        allocation.taxableConvertedAmount === requestAllocation?.requestedAmount &&
-        allocation.nontaxableConvertedAmount === 0 &&
+        ((allocation.taxableConvertedAmount ===
+            requestAllocation?.requestedAmount &&
+          allocation.nontaxableConvertedAmount === 0) ||
+          (allocation.taxableConvertedAmount === null &&
+            allocation.nontaxableConvertedAmount === null)) &&
         allocation.resolution === 'resolved' &&
         typeof allocation.basisEvidenceId === 'string' &&
         allocation.basisEvidenceId.trim().length > 0 &&
@@ -1119,8 +1126,11 @@ export function rothConversionPublicationSource(
             evidence.executedAmount === evidence.request.requestedAmount &&
             evidence.unexecutedAmount === 0 &&
             evidence.destinationCreditAmount === evidence.request.requestedAmount &&
-            evidence.taxableConvertedAmount === evidence.request.requestedAmount &&
-            evidence.nontaxableConvertedAmount === 0 &&
+            ((evidence.taxableConvertedAmount ===
+                evidence.request.requestedAmount &&
+              evidence.nontaxableConvertedAmount === 0) ||
+              (evidence.taxableConvertedAmount === null &&
+                evidence.nontaxableConvertedAmount === null)) &&
             evidence.executedDate === (evidence.request.executionDate ?? null) &&
             evidence.executedSequence === evidence.request.executionSequence &&
             evidence.taxFunding.status !== 'unsupported' &&

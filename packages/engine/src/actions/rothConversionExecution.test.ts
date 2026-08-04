@@ -957,6 +957,122 @@ describe('executeRothConversions', () => {
     })
   })
 
+  // IRC 408(d)(2) makes the Form 8606 numerator one owner-wide figure, and
+  // this executor admits a request on that figure being KNOWN rather than on
+  // its being zero. Nothing in section 408A conditions a conversion's legality
+  // on basis -- 408A(d)(3)(A) treats it as a section 72 distribution and
+  // waives the 72(t) additional tax -- so a positive numerator decides how
+  // much of the gross is includible and never whether the movement may occur.
+  // These three conversions differ only in the basis evidence bound to them.
+  describe('owner aggregated-IRA basis admission', () => {
+    function withBasis(
+      basisAmount: number | null,
+    ): ExecuteRothConversionsInput {
+      const value = input()
+      return {
+        ...value,
+        runtimeEvidence: {
+          ...value.runtimeEvidence,
+          ownerIraRmdSatisfactionEvidence: value.requests.map((request) => ({
+            evidenceId: `rmd-${request.actionId}`,
+            actionId: request.actionId,
+            personId: request.personId,
+            actionYear: request.year,
+            actionDate: request.executionDate ?? null,
+            requiredAmount: asUsdCents(0),
+            distributedAmount: asUsdCents(0),
+          })),
+          ...(basisAmount === null ? {} : {
+            ownerAggregatedIraBasisEvidence: value.requests.map((request) => ({
+              evidenceId: `basis-${request.actionId}`,
+              actionId: request.actionId,
+              personId: request.personId,
+              actionYear: request.year,
+              actionDate: request.executionDate ?? null,
+              basisAmount: asUsdCents(basisAmount),
+            })),
+          }),
+        },
+      }
+    }
+
+    it('refuses while the numerator is unproven', () => {
+      const result = executeRothConversions(withBasis(null))
+
+      expect(result.committed).toBe(false)
+      expect(result.evidence[0]!.reasons.map((reason) => reason.code))
+        .toEqual(['conversion-basis-evidence-missing'])
+      expect(result.balances.every((balance) =>
+        balance.openingBalance === balance.closingBalance)).toBe(true)
+    })
+
+    it('commits a proven-zero numerator and states the whole gross taxable', () => {
+      const result = executeRothConversions(withBasis(0))
+
+      expect(result.committed).toBe(true)
+      expect(result.evidence[0]).toMatchObject({
+        outcome: 'executed',
+        readiness: 'actionable',
+        executedAmount: 10_000,
+        taxableConvertedAmount: 10_000,
+        nontaxableConvertedAmount: 0,
+        reasons: [],
+      })
+      expect(result.evidence[0]!.allocations.map((allocation) => [
+        allocation.taxableConvertedAmount,
+        allocation.nontaxableConvertedAmount,
+      ])).toEqual([[6_000, 0], [4_000, 0]])
+    })
+
+    it('commits a proven positive numerator without stating a character', () => {
+      const result = executeRothConversions(withBasis(3_000))
+
+      expect(result.committed).toBe(true)
+      expect(result.evidence[0]).toMatchObject({
+        outcome: 'executed',
+        readiness: 'actionable',
+        executedAmount: 10_000,
+        destinationCreditAmount: 10_000,
+        // Null, not zero. The line-10 ratio's denominator is Form 8606 line 6,
+        // which does not exist at this mid-year call site; zero here would be
+        // a taxpayer-unfavourable guess published as evidence.
+        taxableConvertedAmount: null,
+        nontaxableConvertedAmount: null,
+        reasons: [],
+      })
+      expect(result.evidence[0]!.allocations.map((allocation) => [
+        allocation.taxableConvertedAmount,
+        allocation.nontaxableConvertedAmount,
+      ])).toEqual([[null, null], [null, null]])
+      // The dollars are the same dollars either way; only the character of
+      // them differs, which is exactly what admission must not depend on.
+      expect(result.balances).toEqual(
+        executeRothConversions(withBasis(0)).balances,
+      )
+    })
+
+    it.each([
+      [['evidence', 0, 'taxableConvertedAmount'], 0],
+      [['evidence', 0, 'nontaxableConvertedAmount'], 0],
+      [['evidence', 0, 'allocations', 0, 'taxableConvertedAmount'], 6_000],
+      [['evidence', 0, 'allocations', 0, 'nontaxableConvertedAmount'], 0],
+    ] as const)(
+      'rejects a half-stated committed character at %j',
+      (path, replacement) => {
+        // The two publishable shapes are whole-gross-taxable and wholly null.
+        // Filling in one member of the pair claims a character nobody derived.
+        const forged: unknown = structuredClone(
+          executeRothConversions(withBasis(3_000)),
+        )
+        setAtPath(forged, path, replacement)
+
+        expect(() => rothConversionPublicationSource(
+          forged as ReturnType<typeof executeRothConversions>,
+        )).toThrow(/conversion/i)
+      },
+    )
+  })
+
   // The request names how the conversion's tax is funded, and the four named
   // dispositions are not one staging gap. Two of them need nothing this
   // executor cannot see; one needs the annual movement coordinator that does
