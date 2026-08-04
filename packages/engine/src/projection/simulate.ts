@@ -2919,13 +2919,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const beneficiaryState = stateOf(beneficiary.id)
       if (!beneficiaryState.alive) continue
       const take = inheritedForcedAmount({
+        pack,
         year,
         ownerDeathYear: state.account.inherited.ownerDeathYear,
         decedentHadStartedRmds: state.account.inherited.decedentHadStartedRmds,
         balance: state.balance,
         startBalance: startOfYearBalance.get(state.account.id) ?? 0,
         beneficiaryAge: beneficiaryState.ageAttained,
-        beneficiarySex: beneficiary.sex,
       })
       if (take <= 0) continue
       state.balance -= take
