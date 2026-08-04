@@ -81,6 +81,7 @@ import {
   asAccountId,
   asPersonId,
   asUsdCents,
+  assessConversionLinkedWithdrawalGroups,
   assessOrdinaryWithdrawalPlanBoundary,
   evaluateRetirementActionSchedule,
   executeOrdinaryWithdrawals,
@@ -3093,6 +3094,17 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const currentYearOrdinaryExecutionActions = mixedKindScheduleBlocked
       ? currentYearActions
       : currentYearNonConversionActions
+    // One conversion-linked withdrawal group decision for the whole annual
+    // pass, taken here because this is the only place both request sets are
+    // visible: the withdrawal executor runs first and is handed no conversion
+    // request, and the conversion executor runs later and is handed no
+    // withdrawal request. Both are given this same verdict so the pair cannot
+    // be answered two ways within one year.
+    const conversionLinkedWithdrawalGroups = assessConversionLinkedWithdrawalGroups([
+      ...plan.strategies.retirementActions,
+      ...currentYearOrdinaryExecutionActions,
+      ...currentYearConversionActions,
+    ])
     let retirementActionExecution: ExecuteOrdinaryWithdrawalsResult | undefined
     let rothConversionActionExecution: ExecuteRothConversionsResult | undefined
     /**
@@ -3291,7 +3303,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           requests: currentYearOrdinaryExecutionActions,
           openingBalances,
           taxableAccountSnapshots,
-          runtimeEvidence: { personAliveEvidence },
+          runtimeEvidence: {
+            personAliveEvidence,
+            conversionLinkedWithdrawalGroups,
+          },
         })
         const boundary = assessOrdinaryWithdrawalPlanBoundary(
           retirementActionExecution,
@@ -3505,6 +3520,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           personAliveEvidence,
           ownerIraRmdSatisfactionEvidence,
           ownerAggregatedIraBasisEvidence,
+          conversionLinkedWithdrawalGroups,
         },
       })
 

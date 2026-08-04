@@ -10,13 +10,20 @@ import {
   actionExecutionDispositionSchema,
   ordinaryWithdrawalRequestSchema,
   rothConversionRequestSchema,
+  type OrdinaryWithdrawalRequest,
   type RothConversionRequest,
 } from './contract.js'
-import { asPersonId } from './identity.js'
+import { asAccountId, asPersonId } from './identity.js'
 import { asUsdCents } from './money.js'
 import type {
   NonpersistedOwnerIraRmdSatisfactionEvidence,
 } from '../strategies/accountEligibility.js'
+import {
+  assessConversionLinkedWithdrawalGroups,
+  conversionLinkedWithdrawalGroupForConversion,
+  conversionLinkedWithdrawalGroupForWithdrawal,
+  type ConversionLinkedWithdrawalGroupAssessment,
+} from './conversionLinkedWithdrawalGroup.js'
 import { executeOrdinaryWithdrawals } from './execution.js'
 import {
   executeRothConversions,
@@ -1227,6 +1234,284 @@ describe('executeRothConversions', () => {
       expect(dispositionParses(publishedWithdrawal)).toBe(true)
       expect(publishedConversion.executedAmount).toBe(0)
       expect(publishedWithdrawal.executedAmount).toBe(0)
+    })
+
+    // The group verdict is what makes the pair one decision instead of two.
+    // These cases put the conversion where the withdrawal executor cannot see
+    // it — in flight, not in the Plan — which is the shape in which the two
+    // executors used to answer one group question two different ways.
+    describe('caller-computed group verdict', () => {
+      function linkedPair(referenceId?: string): {
+        conversion: RothConversionRequest
+        fundingWithdrawal: OrdinaryWithdrawalRequest
+        inFlightPlan: Plan
+      } {
+        const conversion = withFunding(funding.linkedWithdrawal)
+        const fundingWithdrawal = ordinaryWithdrawalRequestSchema.parse({
+          actionId: linkedWithdrawalActionId,
+          kind: 'ordinaryWithdrawal',
+          personId: 'p1',
+          year,
+          executionDate: '2030-12-15',
+          executionSequence: 2,
+          requestedAmount: 2_500,
+          allocations: [{
+            allocationId: 'funding-allocation',
+            sourceAccountId: 'cash-a',
+            requestedAmount: 2_500,
+          }],
+          purpose: {
+            kind: 'taxPayment',
+            referenceId: referenceId ?? conversion.actionId,
+          },
+          provenance: { source: 'manual' },
+        })
+        const inFlightPlan = plan()
+        inFlightPlan.accounts = [
+          ...inFlightPlan.accounts,
+          { ...cashAccount('cash-a', 100), ownerPersonId: 'p1' },
+        ]
+        // The withdrawal is in the Plan; the conversion that names it is not.
+        // Nothing the withdrawal executor reads mentions the conversion.
+        inFlightPlan.strategies.retirementActions = [fundingWithdrawal]
+        return { conversion, fundingWithdrawal, inFlightPlan }
+      }
+
+      function verdictFor(
+        pair: ReturnType<typeof linkedPair>,
+      ): Readonly<ConversionLinkedWithdrawalGroupAssessment> {
+        return assessConversionLinkedWithdrawalGroups([
+          pair.conversion,
+          pair.fundingWithdrawal,
+        ])
+      }
+
+      function runWithdrawal(
+        pair: ReturnType<typeof linkedPair>,
+        groups?: Readonly<ConversionLinkedWithdrawalGroupAssessment>,
+      ): ReturnType<typeof executeOrdinaryWithdrawals> {
+        return executeOrdinaryWithdrawals({
+          year,
+          plan: pair.inFlightPlan,
+          requests: [pair.fundingWithdrawal],
+          openingBalances: [{
+            accountId: asAccountId('cash-a'),
+            openingBalance: asUsdCents(10_000),
+          }],
+          runtimeEvidence: {
+            personAliveEvidence: [{
+              evidenceId: `alive-${linkedWithdrawalActionId}`,
+              actionId: pair.fundingWithdrawal.actionId,
+              personId: asPersonId('p1'),
+              actionYear: year,
+              actionDate: pair.fundingWithdrawal.executionDate ?? null,
+              alive: true,
+            }],
+            ...(groups === undefined
+              ? {}
+              : { conversionLinkedWithdrawalGroups: groups }),
+          },
+        })
+      }
+
+      function runConversion(
+        pair: ReturnType<typeof linkedPair>,
+        groups?: Readonly<ConversionLinkedWithdrawalGroupAssessment>,
+      ): ReturnType<typeof executeRothConversions> {
+        const base = input([pair.conversion])
+        return executeRothConversions({
+          ...base,
+          plan: pair.inFlightPlan,
+          runtimeEvidence: {
+            ...base.runtimeEvidence,
+            ...(groups === undefined
+              ? {}
+              : { conversionLinkedWithdrawalGroups: groups }),
+          },
+        })
+      }
+
+      it('assesses one group per conversion however often the request arrives', () => {
+        const pair = linkedPair()
+
+        // The same conversion reaches this from the Plan and from the annual
+        // batch. A group named twice is still one group.
+        const groups = assessConversionLinkedWithdrawalGroups([
+          pair.conversion,
+          pair.fundingWithdrawal,
+          pair.conversion,
+        ])
+
+        expect(groups.groups).toEqual([{
+          groupId: expect.stringMatching(
+            /^retirement-action-conversion-linked-withdrawal-group:/,
+          ),
+          personId: 'p1',
+          year,
+          conversionActionId: 'conversion-a',
+          withdrawalActionId: linkedWithdrawalActionId,
+          disposition: 'refusedPendingGroupExecution',
+          reasonCode: 'conversion-tax-funding-evidence-unsupported',
+        }])
+        expect(Object.isFrozen(groups)).toBe(true)
+        // Either member finds the same verdict, which is what lets two
+        // executors holding different halves of the pair honour one decision.
+        expect(conversionLinkedWithdrawalGroupForConversion(groups, 'conversion-a'))
+          .toBe(conversionLinkedWithdrawalGroupForWithdrawal(
+            groups, linkedWithdrawalActionId,
+          ))
+        expect(conversionLinkedWithdrawalGroupForWithdrawal(groups, 'unrelated'))
+          .toBeNull()
+      })
+
+      it('refuses a withdrawal whose conversion only the caller can see', () => {
+        const pair = linkedPair()
+
+        const honoured = runWithdrawal(pair, verdictFor(pair))
+
+        expect(honoured.evidence[0]).toMatchObject({
+          actionId: linkedWithdrawalActionId,
+          disposition: {
+            outcome: 'unsupported',
+            executedAmount: 0,
+            reasons: [{
+              code: 'conversion-tax-funding-evidence-unsupported',
+              personId: 'p1',
+            }],
+          },
+        })
+        expect(honoured.balances.every((balance) =>
+          balance.openingBalance === balance.closingBalance)).toBe(true)
+
+        // Remove the verdict and this executor has nothing left to refuse on:
+        // the conversion is not in the Plan it reads, and it is handed no
+        // conversion requests. The withdrawal moves alone. That is the
+        // disagreement the group verdict exists to prevent, and it is why
+        // threading the verdict is not ceremony.
+        const alone = runWithdrawal(pair)
+
+        expect(alone.evidence[0]).toMatchObject({
+          actionId: linkedWithdrawalActionId,
+          disposition: { outcome: 'executed', executedAmount: 2_500 },
+        })
+        expect(alone.balances[0]?.closingBalance).toBe(7_500)
+      })
+
+      it('takes the conversion side from the verdict, not from the funding kind', () => {
+        const pair = linkedPair()
+
+        expect(runConversion(pair, verdictFor(pair))
+          .evidence[0]?.reasons.map((reason) => reason.code))
+          .toContain('conversion-tax-funding-evidence-unsupported')
+
+        // An assessment that answers for no group at all contradicts a request
+        // that names one. The funding kind has not changed, so a conversion
+        // executor deciding for itself would be unaffected; this one fails the
+        // whole batch closed instead of converting on unassessed funding.
+        const contradicted = runConversion(pair, { groups: [] })
+
+        expect(contradicted).toMatchObject({
+          committed: false,
+          evidence: [],
+          scheduleIssues: [{ kind: 'invalidInput' }],
+        })
+      })
+
+      it('refuses a supplied verdict that contradicts the Plan it can read', () => {
+        const pair = linkedPair()
+        const planLinkedConversion = plan()
+        planLinkedConversion.accounts = pair.inFlightPlan.accounts
+        planLinkedConversion.strategies.retirementActions = [
+          pair.fundingWithdrawal,
+          pair.conversion,
+        ]
+
+        expect(() => runWithdrawal(
+          { ...pair, inFlightPlan: planLinkedConversion },
+          { groups: [] },
+        )).toThrow(/group verdict is missing/)
+      })
+
+      it('publishes the pair only while both sides honour the one verdict', () => {
+        const pair = linkedPair()
+        const groups = verdictFor(pair)
+        const conversionResult = runConversion(pair, groups)
+        const agreeing = runWithdrawal(pair, groups)
+
+        // Publication runs all three linkage assertions over this pair: one
+        // conversion per withdrawal for the same person and year with the
+        // purpose pointing back, both records agreeing on whether they moved,
+        // and the withdrawal's funding reason answered by a conversion in the
+        // batch. A one-sided change throws here rather than failing an
+        // expectation.
+        const publication = publishAnnualRetirementActions({
+          taxYear: year,
+          requests: [...conversionResult.requests, ...agreeing.requests],
+          sources: [
+            rothConversionPublicationSource(conversionResult),
+            ordinaryWithdrawalPublicationSource(agreeing),
+          ],
+        })!
+        const publishedConversion = publication.records.find((record) =>
+          record.actionId === pair.conversion.actionId)!
+        const publishedWithdrawal = publication.records.find((record) =>
+          record.actionId === linkedWithdrawalActionId)!
+
+        expect(publishedConversion.executedAmount).toBe(0)
+        expect(publishedWithdrawal.executedAmount).toBe(0)
+        expect(dispositionParses(publishedConversion)).toBe(true)
+        expect(dispositionParses(publishedWithdrawal)).toBe(true)
+
+        // The same batch with one side left out of the decision is not
+        // publishable at all: the atomicity assertion refuses a pair where one
+        // record moved and the other did not.
+        const disagreeing = runWithdrawal(pair)
+
+        expect(() => publishAnnualRetirementActions({
+          taxYear: year,
+          requests: [...conversionResult.requests, ...disagreeing.requests],
+          sources: [
+            rothConversionPublicationSource(conversionResult),
+            ordinaryWithdrawalPublicationSource(disagreeing),
+          ],
+        })).toThrow(/Linked conversion funding disposition differs/)
+      })
+
+      it('still holds the linkage assertions the paired refusal rests on', () => {
+        const mismatched = linkedPair('some-other-action')
+        const mismatchedGroups = verdictFor(mismatched)
+
+        // Same group verdict, but the withdrawal no longer points back at the
+        // conversion. The pair stops being one linked request set.
+        expect(() => publishAnnualRetirementActions({
+          taxYear: year,
+          requests: [
+            ...runConversion(mismatched, mismatchedGroups).requests,
+            ...runWithdrawal(mismatched, mismatchedGroups).requests,
+          ],
+          sources: [
+            rothConversionPublicationSource(
+              runConversion(mismatched, mismatchedGroups),
+            ),
+            ordinaryWithdrawalPublicationSource(
+              runWithdrawal(mismatched, mismatchedGroups),
+            ),
+          ],
+        })).toThrow(/Linked conversion funding differs/)
+
+        // And a withdrawal carrying the group's staging reason has to be
+        // published beside the conversion that put it there. This is the check
+        // that makes the paired refusal legal rather than an unexplained
+        // withdrawal that refused itself.
+        const pair = linkedPair()
+        const refused = runWithdrawal(pair, verdictFor(pair))
+
+        expect(() => publishAnnualRetirementActions({
+          taxYear: year,
+          requests: refused.requests,
+          sources: [ordinaryWithdrawalPublicationSource(refused)],
+        })).toThrow(/Executor funding linkage differs/)
+      })
     })
 
     it('moves nothing under any funding disposition', () => {
