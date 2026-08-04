@@ -520,6 +520,116 @@ describeRule('irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out', {
   })
 })
 
+describe('committed retirement-action movement in the LP', () => {
+  /** Growth 0 keeps the recursion right-hand sides readable: RHS = inflow + movement. */
+  const acted = (): OptimizerInput => ({
+    years: [year({
+      growth: 0,
+      spendingNeed: 10_000,
+      exogenousCash: 1_000,
+      tradInflow: 1_000,
+      otherInflow: 500,
+      taxableInflow: 200,
+      committedActionMovement: {
+        trad: -3_000,
+        inheritedTrad: -1_000,
+        other: -500,
+        taxable: -2_000,
+        proceeds: 6_500,
+      },
+    })],
+    openingTrad: 100_000,
+    openingInheritedTrad: 50_000,
+    openingOther: 20_000,
+    openingTaxable: 30_000,
+    liquidationRate: 0.25,
+  })
+
+  it('debits every bucket the executor touched and credits the cash it delivered', () => {
+    const lp = buildOptimizerModel(acted()).lp
+
+    // Movement rides the same constant right-hand side as an inflow, so the
+    // solver cannot re-decide dollars the exact ledger has already moved.
+    expect(lp).toContain(' trad0: + 1 trad1 - 1 trad0 + 1 conv0 + 1 wt0 = -2000')
+    expect(lp).toContain(' inh0: + 1 inh1 - 1 inh0 + 1 wi0 = -1000')
+    expect(lp).toContain(' other0: + 1 other1 - 1 other0 - 1 conv0 + 1 wo0 - 1 save0 = -200')
+    expect(lp).toContain(' taxable0: + 1 taxable1 - 1 taxable0 + 1 wtax0 = -1800')
+    // spendingNeed 10,000 less 1,000 exogenous less 6,500 of action proceeds.
+    expect(lp).toMatch(/^ cash0: .* = 2500$/m)
+  })
+
+  it('emits the identical LP when no action committed anything', () => {
+    const withoutMovement = { ...acted().years[0]! }
+    delete withoutMovement.committedActionMovement
+
+    expect(buildOptimizerModel({ ...acted(), years: [withoutMovement] }).lp).toBe(
+      buildOptimizerModel({
+        ...acted(),
+        years: [{ ...withoutMovement, committedActionMovement: undefined }],
+      }).lp,
+    )
+  })
+
+  it('materializes the taxable bucket when only committed movement touches it', () => {
+    const lp = buildOptimizerModel({
+      years: [year({
+        growth: 0,
+        committedActionMovement: { trad: 0, inheritedTrad: 0, other: 0, taxable: -1_000, proceeds: 1_000 },
+      })],
+      openingTrad: 100_000,
+      openingInheritedTrad: 0,
+      openingOther: 0,
+      liquidationRate: 0.25,
+    }).lp
+
+    // Without this the debit would have no bucket to land in and would be
+    // silently dropped — the solver would keep dollars the ledger already
+    // moved. Materialized, the model instead says what is true: a bucket with
+    // nothing in it cannot fund a $1,000 debit, and the LP is infeasible.
+    expect(lp).toContain(' taxable0: + 1 taxable1 - 1 taxable0 + 1 wtax0 = -1000')
+    expect(lp).toContain(' taxable0 = 0')
+  })
+
+  it('carries the committed debit through the solve rather than optimizing it away', async () => {
+    const base: OptimizerInput = {
+      years: [year({ growth: 0, spendingNeed: 0 })],
+      openingTrad: 0,
+      openingInheritedTrad: 0,
+      openingOther: 10_000,
+      openingTaxable: 100_000,
+      // A real gain fraction, so a taxable draw is strictly worse than
+      // leaving the bucket alone and the untouched solve has no tie to break.
+      taxableBasisRatio: 0.5,
+      ltcgRate: 0.15,
+      liquidationRate: 0,
+    }
+    const committed: OptimizerInput = {
+      ...base,
+      years: [{
+        ...base.years[0]!,
+        committedActionMovement: {
+          trad: 0,
+          inheritedTrad: 0,
+          other: 0,
+          taxable: -40_000,
+          proceeds: 40_000,
+        },
+      }],
+    }
+
+    const untouched = await optimizeSchedule(base)
+    const acted = await optimizeSchedule(committed)
+
+    // The objective rewards keeping the taxable bucket whole, so a solver free
+    // to ignore the movement would end the year at 100,000. It is not free.
+    expect(untouched.schedule[0]!.endTaxable).toBeCloseTo(100_000, 2)
+    expect(acted.schedule[0]!.endTaxable).toBeCloseTo(60_000, 2)
+    // The proceeds are not destroyed: they route through `save` into the
+    // tax-free bucket, exactly as the exact ledger's surplus does.
+    expect(acted.schedule[0]!.endOther).toBeCloseTo(50_000, 2)
+  })
+})
+
 describe('IRMAA two-year lookback in the solve (Step 4)', () => {
   it('drives each premium year off year (t−2) MAGI and omits the first two years', () => {
     const y = year({ peopleAged65Plus: 1 })

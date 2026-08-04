@@ -10,7 +10,11 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { parseRetirementActionRequest } from '../actions/index.js'
+import {
+  ACTION_REASON_REGISTRY,
+  parseActionReason,
+  parseRetirementActionRequest,
+} from '../actions/index.js'
 import {
   maximizeAfterTaxEstate,
   maximizeSpendingDurability,
@@ -27,10 +31,13 @@ import type { OptimizerYearProbe, ProjectionResult } from './types.js'
 import {
   buildAcaActionabilityVeto,
   buildOptimizerInput,
+  committedActionMovementForYear,
   evaluateExactLedgerSchedule,
   evaluateSimpleConversionCandidates,
   optimizePlan,
   optimizePlanCoOptimizingClaimAge,
+  optimizerOpeningBuckets,
+  optimizerUnsupportedRetirementActions,
   postProcessExactLedgerSchedule,
   runExactLedgerTournament,
   selectConvergencePostProcessing,
@@ -844,6 +851,517 @@ describe('postProcessExactLedgerSchedule', () => {
     expect(processed.pruneIterationCount).toBe(0)
     expect(processed.cleanedValidation.recommendationState).toBe('rejected')
     expect(processed.recommendationSchedule).toBe('none')
+  })
+})
+
+describe('optimizerUnsupportedRetirementActions', () => {
+  const REGISTRY_ENTRY = ACTION_REASON_REGISTRY['optimizer-retirement-action-unsupported']
+
+  /** Identity-bearing withdrawal: names the owner, the source account, and a date. */
+  function identityWithdrawal(plan: Plan) {
+    const parsed = parseRetirementActionRequest({
+      actionId: 'optimizer-precondition-withdrawal',
+      kind: 'ordinaryWithdrawal',
+      year: 2027,
+      executionDate: '2027-03-04',
+      executionSequence: 1,
+      requestedAmount: 1_000_00,
+      provenance: { source: 'manual' },
+      personId: 'p1',
+      allocations: [{
+        allocationId: 'optimizer-precondition-allocation',
+        sourceAccountId: plan.accounts[0]!.id,
+        requestedAmount: 1_000_00,
+      }],
+      purpose: { kind: 'spending' },
+    })
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    return parsed.request
+  }
+
+  /** Migrated aggregate: same refusal, but there is no person to name. */
+  function legacyAggregate() {
+    const parsed = parseRetirementActionRequest({
+      actionId: 'optimizer-precondition-legacy',
+      kind: 'legacyAggregateWithdrawal',
+      year: 2028,
+      requestedAmount: 2_000_00,
+      legacyCategory: 'cash',
+      provenance: { source: 'migration' },
+    })
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    return parsed.request
+  }
+
+  it('finds nothing to refuse on an action-free plan', () => {
+    const plan = validate(tradHeavyPlan())
+
+    expect(optimizerUnsupportedRetirementActions(plan)).toEqual([])
+    // Discriminating: the same plan is exactly what the optimizer does support.
+    expect(() => buildOptimizerInput(plan, opts)).not.toThrow()
+  })
+
+  it('returns one registry-shaped reason per recorded action, naming the acting person', () => {
+    const draft = tradHeavyPlan()
+    draft.strategies.retirementActions = [identityWithdrawal(draft), legacyAggregate()]
+    const plan = validate(draft)
+
+    const reasons = optimizerUnsupportedRetirementActions(plan)
+    expect(reasons).toHaveLength(2)
+    for (const reason of reasons) {
+      // Registry convention: code + the registry's own predicate/outcome/message,
+      // and nothing a hand-written literal could drift from.
+      expect(reason.code).toBe('optimizer-retirement-action-unsupported')
+      expect(reason.predicate).toBe(REGISTRY_ENTRY.predicate)
+      expect(reason.outcome).toBe(REGISTRY_ENTRY.outcome)
+      expect(reason.message).toBe(REGISTRY_ENTRY.message)
+      expect(parseActionReason(reason)).toEqual({ ok: true, reason })
+    }
+    // Identity carried where the kind has one; a migrated aggregate names nobody.
+    expect(reasons[0]!.personId).toBe('p1')
+    expect(reasons[1]!.personId).toBeUndefined()
+  })
+
+  it('agrees with the last-resort invariant inside buildOptimizerInput', () => {
+    const actionFree = validate(tradHeavyPlan())
+    const draft = tradHeavyPlan()
+    draft.strategies.retirementActions = [identityWithdrawal(draft)]
+    const actionBearing = validate(draft)
+
+    // The predicate is the gate and the throw is the backstop, so a plan the
+    // predicate clears must never reach the throw, and vice versa. If these two
+    // conditions drift, a surface that checks the predicate would dispatch a run
+    // that dies on a raw engine string again.
+    for (const [plan, refused] of [[actionFree, false], [actionBearing, true]] as const) {
+      expect(optimizerUnsupportedRetirementActions(plan).length > 0).toBe(refused)
+      let threw = false
+      try {
+        buildOptimizerInput(plan, opts)
+      } catch {
+        threw = true
+      }
+      expect(threw).toBe(refused)
+    }
+
+    // The probe-source overload is guarded too: convergence re-linearizes around
+    // an incumbent plan, and that plan must clear the precondition as well.
+    expect(() => buildOptimizerInput(actionFree, opts, actionBearing)).toThrow()
+  })
+})
+
+/**
+ * Slice 2 — the committed retirement-action movement the LP's recursion needs.
+ *
+ * These fixtures settle one question: for a plan that has ALREADY executed a
+ * $50,000 ordinary withdrawal from a $150,000 owned taxable account in the
+ * first projection year, what balance does the optimizer carry into year two?
+ *
+ * The two candidate readings predict different numbers, so a fixture that
+ * cannot tell them apart proves nothing — the same discipline `describeRule`
+ * enforces for registry rules, applied by hand here because the question is
+ * about this engine's own linearization rather than about a statute.
+ */
+const TAXABLE_BUCKET_READINGS = {
+  /**
+   * Pre-action: the solver evolves the Plan snapshot's $150,000 as though the
+   * executor's debit never happened. 1.04 × 150,000.
+   */
+  preActionPlanSnapshot: 156_000,
+  /**
+   * Post-action: the exact-cent executor already took $50,000, so $100,000 is
+   * what grows. 1.04 × 100,000 — and the number the exact ledger itself reports
+   * for the account at the end of 2026.
+   */
+  postActionCommittedLedger: 104_000,
+} as const
+/**
+ * The ledger is the authority: it is the thing whose numbers the plan's owner
+ * will actually live, and the LP exists to approximate it. The pre-action
+ * reading is the defect — worse than fully blind, because `capitalGainsBase`
+ * already carries the action's realized gain, so the solve prices the action's
+ * tax and keeps its dollars.
+ */
+const ACCEPTED_TAXABLE_BUCKET: keyof typeof TAXABLE_BUCKET_READINGS =
+  'postActionCommittedLedger'
+
+const TAXABLE_BASIS_RATIO_READINGS = {
+  /**
+   * The opening ratio, before the year's action: (50,000 + 0) basis over
+   * (50,000 + 50,000) balance. This is what `taxableBasisRatio` is DEFINED as,
+   * and the LP's opening precedes every action.
+   */
+  openingAggregate: 0.5,
+  /**
+   * The ratio remaining after a $25,000 draw against the zero-basis account:
+   * 50,000 basis over 75,000 balance. Rejected — not because the action leaves
+   * the ratio untouched (it does not), but because a single opening ratio is
+   * the documented v1 linearization and a committed action erodes it exactly
+   * the way an ordinary discretionary taxable draw does. Re-anchoring on the
+   * action alone would fix one erosion and leave the other, for a bound that
+   * matches neither engine.
+   */
+  postActionRemaining: 2 / 3,
+} as const
+const ACCEPTED_TAXABLE_BASIS_RATIO: keyof typeof TAXABLE_BASIS_RATIO_READINGS =
+  'openingAggregate'
+
+describe('committed retirement-action movement in the optimizer bridge', () => {
+  /** tradHeavyPlan's brokerage, owned by Pat and carrying a real $50k gain. */
+  function actedTaxablePlan(): { plan: Plan; taxableId: string; actionFree: Plan } {
+    const draft = tradHeavyPlan()
+    const taxable = draft.accounts.find((account) => account.type === 'taxable')!
+    if (taxable.type !== 'taxable') throw new Error('fixture lost its taxable account')
+    // An unowned (joint) source is refused by the executor — the acting person
+    // must be a recorded owner — so the fixture names one.
+    taxable.ownerPersonId = 'p1'
+    taxable.costBasis = 100_000
+    const actionFree = validate(structuredClone(draft))
+    draft.strategies.retirementActions = [
+      committedWithdrawal('acted-taxable', taxable.id, 2026, 50_000),
+    ]
+    return { plan: validate(draft), taxableId: taxable.id, actionFree }
+  }
+
+  /** An identity-complete ordinary withdrawal the executor will actually commit. */
+  function committedWithdrawal(
+    actionId: string,
+    sourceAccountId: string,
+    year: number,
+    dollars: number,
+  ) {
+    const cents = dollars * 100
+    const parsed = parseRetirementActionRequest({
+      actionId,
+      kind: 'ordinaryWithdrawal',
+      year,
+      executionDate: `${year}-03-04`,
+      executionSequence: 1,
+      requestedAmount: cents,
+      provenance: { source: 'manual' },
+      personId: 'p1',
+      allocations: [{
+        allocationId: `${actionId}-allocation`,
+        sourceAccountId,
+        requestedAmount: cents,
+      }],
+      purpose: { kind: 'spending' },
+    })
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    return parsed.request
+  }
+
+  function probesFor(plan: Plan): OptimizerYearProbe[] {
+    const probes: OptimizerYearProbe[] = []
+    simulatePlan(plan, { ...opts, captureOptimizerInputs: (captured) => probes.push(captured) })
+    return probes
+  }
+
+  it('reports the dollars the executor committed, not the dollars the request asked for', () => {
+    const { plan, taxableId } = actedTaxablePlan()
+    const probes: OptimizerYearProbe[] = []
+    const ledger = simulatePlan(plan, {
+      ...opts,
+      captureOptimizerInputs: (captured) => probes.push(captured),
+    })
+
+    // The ledger's own answer, which the probe has to be able to reconstruct.
+    expect(ledger.years[0]!.balances[taxableId]).toBeCloseTo(
+      TAXABLE_BUCKET_READINGS[ACCEPTED_TAXABLE_BUCKET],
+      6,
+    )
+    expect(probes[0]!.committedActionAccountMovement).toEqual([
+      { accountId: taxableId, amount: -50_000 },
+    ])
+    // The proceeds are the other half: a withdrawal REALLOCATES, so the debit
+    // without its cash credit would make the solver poorer than the household.
+    expect(probes[0]!.committedActionProceeds).toBeCloseTo(50_000, 6)
+    // Partially blind, which is the dangerous part: the realized gain is
+    // already priced, so only the dollars were missing.
+    expect(probes[0]!.capitalGainsBase).toBeCloseTo(16_666.67, 2)
+    // Every later year committed nothing and must stay byte-identical.
+    for (const probe of probes.slice(1)) {
+      expect(probe.committedActionAccountMovement).toEqual([])
+      expect(probe.committedActionProceeds).toBe(0)
+    }
+  })
+
+  it('reports an exact-cent amount for endpoints that do not subtract exactly', () => {
+    // The discriminator, stated before the plan exists. $100,000.02 and
+    // $50,000.02 each round-trip through `ledgerCentsToPlanDollars` on their
+    // own — that is all that function promises — but neither is exact in
+    // binary, and their dollar difference lands a ULP off the cent:
+    //   50000.02 − 100000.02 === −50000.00000000001
+    // Differencing in CENTS and converting once gives exactly −50,000. This
+    // assertion is here so the fixture cannot quietly stop discriminating.
+    expect(5_000_002 / 100 - 10_000_002 / 100).not.toBe(-50_000)
+
+    const draft = tradHeavyPlan()
+    const taxable = draft.accounts.find((account) => account.type === 'taxable')!
+    if (taxable.type !== 'taxable') throw new Error('fixture lost its taxable account')
+    taxable.ownerPersonId = 'p1'
+    taxable.balance = 100_000.02
+    taxable.costBasis = 100_000.02
+    draft.strategies.retirementActions = [
+      committedWithdrawal('drifting-taxable', taxable.id, 2026, 50_000),
+    ]
+    const plan = validate(draft)
+    const probe = probesFor(plan)[0]!
+
+    // Object.is equality, not a tolerance. A sub-cent residue is not a rounding
+    // nicety here: it rides into the LP's own coefficients, so the solver would
+    // be handed a balance recursion the exact ledger never produced.
+    expect(probe.committedActionAccountMovement).toHaveLength(1)
+    const moved = probe.committedActionAccountMovement[0]!
+    expect(moved.accountId).toBe(taxable.id)
+    expect(moved.amount).toBe(-50_000)
+
+    // And it survives the bridge into the bucket scalar the LP actually reads.
+    const buckets = optimizerOpeningBuckets(plan)
+    expect(committedActionMovementForYear(buckets.bucketByAccountId, probe)).toEqual({
+      trad: 0,
+      inheritedTrad: 0,
+      other: 0,
+      taxable: -50_000,
+      proceeds: 50_000,
+    })
+  })
+
+  it('lands the solver’s taxable bucket where the exact ledger lands it', async () => {
+    const { plan, taxableId, actionFree } = actedTaxablePlan()
+    const solverOpts = { ...opts, solver: { maxConversionPerYear: 0 } }
+    const ledger = simulatePlan(plan, opts)
+    const probes = probesFor(plan)
+
+    // Every field but the movement comes from the real bridge, run on the
+    // action-free twin (the precondition throw still refuses the acted plan —
+    // slice 1's gate is untouched). The movement is the real bridge too:
+    // `committedActionMovementForYear` is the exact function
+    // `buildOptimizerInput` calls, fed the acted run's own probe.
+    const bridged = buildOptimizerInput(actionFree, solverOpts)
+    const buckets = optimizerOpeningBuckets(plan)
+    const movement = committedActionMovementForYear(buckets.bucketByAccountId, probes[0]!)
+    const preAction = { ...bridged, years: [bridged.years[0]!] }
+    const postAction = {
+      ...preAction,
+      years: [{ ...preAction.years[0]!, committedActionMovement: movement }],
+    }
+
+    // The constraint text is the reading in the LP's own words: 1.04 × −50,000
+    // leaves the taxable bucket, and the $50,000 of proceeds land in the cash
+    // row beside `exogenousCash`.
+    const lp = buildOptimizerModel(postAction).lp
+    expect(lp).toContain(' taxable0: + 1 taxable1 - 1.04 taxable0 + 1.04 wtax0 = -52000')
+    // The cash row: spendingNeed less the $50,000 of proceeds, so the surplus
+    // routes to `save` and lands in the tax-free bucket the way it does in the
+    // exact ledger, instead of vanishing along with the debited dollars.
+    expect(lp).toMatch(/^ cash0: .* = -2565\.2$/m)
+    expect(buildOptimizerModel(preAction).lp).toMatch(/^ cash0: .* = 47434\.8$/m)
+    expect(buildOptimizerModel(preAction).lp).toContain(
+      ' taxable0: + 1 taxable1 - 1.04 taxable0 + 1.04 wtax0 = 0',
+    )
+
+    const solvedPost = await optimizeSchedule(postAction)
+    const solvedPre = await optimizeSchedule(preAction)
+    expect(solvedPost.status).toBe('optimal')
+    expect(solvedPre.status).toBe('optimal')
+    // The whole point: the two readings predict different balances, and the
+    // accepted one is the ledger's.
+    expect(solvedPre.schedule[0]!.endTaxable).toBeCloseTo(
+      TAXABLE_BUCKET_READINGS.preActionPlanSnapshot,
+      2,
+    )
+    expect(solvedPost.schedule[0]!.endTaxable).toBeCloseTo(
+      TAXABLE_BUCKET_READINGS[ACCEPTED_TAXABLE_BUCKET],
+      2,
+    )
+    expect(solvedPost.schedule[0]!.endTaxable).toBeCloseTo(
+      ledger.years[0]!.balances[taxableId]!,
+      2,
+    )
+  })
+
+  it('leaves every bucket scalar unchanged when plan.accounts is reordered', () => {
+    const { plan, taxableId } = actedTaxablePlan()
+    const probe = probesFor(plan)[0]!
+    const canonicalBuckets = optimizerOpeningBuckets(plan)
+    const canonicalMovement = committedActionMovementForYear(
+      canonicalBuckets.bucketByAccountId,
+      probe,
+    )
+
+    const permutations = (accounts: Plan['accounts']): Plan['accounts'][] =>
+      accounts.length <= 1
+        ? [accounts]
+        : accounts.flatMap((account, index) =>
+          permutations([...accounts.slice(0, index), ...accounts.slice(index + 1)])
+            .map((rest) => [account, ...rest]),
+        )
+
+    const orders = permutations(plan.accounts)
+    expect(orders).toHaveLength(24)
+    for (const accounts of orders) {
+      const reordered = validate({ ...structuredClone(plan), accounts: structuredClone(accounts) })
+      const buckets = optimizerOpeningBuckets(reordered)
+      // The pre-action bug is invisible to order — both readings sum the same
+      // way — so this fixture exists to catch the OTHER failure: a fix that
+      // reaches the source account by position instead of by id.
+      expect({
+        openingTrad: buckets.openingTrad,
+        openingInheritedTrad: buckets.openingInheritedTrad,
+        openingOther: buckets.openingOther,
+        openingTaxable: buckets.openingTaxable,
+        taxableBasisRatio: buckets.taxableBasisRatio,
+        buckets: [...buckets.bucketByAccountId].sort(),
+      }).toEqual({
+        openingTrad: canonicalBuckets.openingTrad,
+        openingInheritedTrad: canonicalBuckets.openingInheritedTrad,
+        openingOther: canonicalBuckets.openingOther,
+        openingTaxable: canonicalBuckets.openingTaxable,
+        taxableBasisRatio: canonicalBuckets.taxableBasisRatio,
+        buckets: [...canonicalBuckets.bucketByAccountId].sort(),
+      })
+      expect(committedActionMovementForYear(buckets.bucketByAccountId, probe))
+        .toEqual(canonicalMovement)
+      // The ledger side is order-free too: the executor sorts its sources by
+      // account id, so the probe never reports a different debit for the same
+      // recorded action.
+      expect(probesFor(reordered)[0]!.committedActionAccountMovement).toEqual([
+        { accountId: taxableId, amount: -50_000 },
+      ])
+    }
+  })
+
+  it('moves only the acting household member’s account in a two-person plan', () => {
+    const draft = tradHeavyPlan()
+    draft.household.filingStatus = 'marriedFilingJointly'
+    draft.household.people = [
+      draft.household.people[0]!,
+      {
+        id: 'p2',
+        name: 'Sam',
+        dob: '1960-04-02',
+        sex: 'average',
+        retirementAge: 65,
+        longevity: { planningAge: 85, source: 'manual' },
+      },
+    ]
+    draft.accounts = [
+      { type: 'traditional', id: 'pat-ira', name: 'Pat IRA', ownerPersonId: 'p1', annualReturnPct: null, kind: 'ira', balance: 400_000, annualContribution: 0 },
+      { type: 'taxable', id: 'pat-brokerage', name: 'Pat brokerage', ownerPersonId: 'p1', annualReturnPct: null, balance: 150_000, costBasis: 100_000, annualContribution: 0 },
+      { type: 'traditional', id: 'sam-ira', name: 'Sam IRA', ownerPersonId: 'p2', annualReturnPct: null, kind: 'ira', balance: 400_000, annualContribution: 0 },
+      { type: 'taxable', id: 'sam-brokerage', name: 'Sam brokerage', ownerPersonId: 'p2', annualReturnPct: null, balance: 150_000, costBasis: 100_000, annualContribution: 0 },
+      { type: 'cash', id: 'joint-cash', name: 'Cash', ownerPersonId: 'p1', annualReturnPct: null, balance: 60_000, annualContribution: 0 },
+    ]
+    draft.strategies.retirementActions = [
+      committedWithdrawal('pat-draw', 'pat-brokerage', 2026, 50_000),
+    ]
+    const plan = validate(draft)
+    const buckets = optimizerOpeningBuckets(plan)
+    const probe = probesFor(plan)[0]!
+    const movement = committedActionMovementForYear(buckets.bucketByAccountId, probe)
+
+    // Only Pat's brokerage moved. Sam's accounts are absent from the movement
+    // entirely — not netted to zero, not merged into an aggregate.
+    expect(probe.committedActionAccountMovement).toEqual([
+      { accountId: 'pat-brokerage', amount: -50_000 },
+    ])
+    expect(movement).toEqual({
+      trad: 0,
+      inheritedTrad: 0,
+      other: 0,
+      taxable: -50_000,
+      proceeds: 50_000,
+    })
+    // Sam's untouched dollars are still all there in the openings — the LP
+    // aggregates the household, so an over-eager debit would show up here.
+    expect(buckets.openingTrad).toBe(800_000)
+    expect(buckets.openingTaxable).toBe(300_000)
+    expect(buckets.openingOther).toBe(60_000)
+    const ledger = simulatePlan(plan, opts).years[0]!
+    expect(ledger.balances['sam-brokerage']).toBeCloseTo(156_000, 6)
+    expect(ledger.balances['pat-brokerage']).toBeCloseTo(104_000, 6)
+  })
+
+  it('anchors the basis ratio (and the ACA bound it feeds) on the opening, not the remainder', () => {
+    const raw = acaBridgePlan()
+    raw.expenses.baseAnnual = 80_000
+    raw.accounts = [
+      { type: 'taxable', id: 'full-basis', name: 'Full-basis', ownerPersonId: 'p1', annualReturnPct: 0, balance: 50_000, costBasis: 50_000, annualContribution: 0 },
+      { type: 'taxable', id: 'zero-basis', name: 'Zero-basis', ownerPersonId: 'p1', annualReturnPct: 0, balance: 50_000, costBasis: 0, annualContribution: 0 },
+      { type: 'traditional', id: 'aca-ira', name: 'IRA', ownerPersonId: 'p1', annualReturnPct: 0, kind: 'ira', balance: 500_000, annualContribution: 0 },
+      { type: 'roth', id: 'aca-roth', name: 'Roth', ownerPersonId: 'p1', annualReturnPct: 0, kind: 'ira', balance: 0, annualContribution: 0 },
+    ]
+    const actionFree = validate(structuredClone(raw))
+    raw.strategies.retirementActions = [
+      committedWithdrawal('zero-basis-draw', 'zero-basis', 2026, 25_000),
+    ]
+    const plan = validate(raw)
+    const buckets = optimizerOpeningBuckets(plan)
+
+    // Heterogeneous basis is what makes the readings differ: draining the
+    // zero-basis account alone lifts the remaining aggregate ratio.
+    expect(buckets.taxableBasisRatio).toBeCloseTo(
+      TAXABLE_BASIS_RATIO_READINGS[ACCEPTED_TAXABLE_BASIS_RATIO],
+      6,
+    )
+    expect(buckets.taxableBasisRatio).not.toBeCloseTo(
+      TAXABLE_BASIS_RATIO_READINGS.postActionRemaining,
+      3,
+    )
+    const probe = probesFor(plan)[0]!
+    expect(probe.committedActionAccountMovement).toEqual([
+      { accountId: 'zero-basis', amount: -25_000 },
+    ])
+
+    // The ACA bound the ratio feeds. Its gain weight applies to the LP's OWN
+    // re-decided taxable draws (`incumbentTaxableWithdrawal`), which the ledger
+    // keeps disjoint from action movement — so there is no double count with
+    // the action's realized gain already inside the MAGI base.
+    const gainWeight = 1 - buckets.taxableBasisRatio
+    expect(gainWeight).toBeCloseTo(0.5, 6)
+    // The action does not move the anchor: the opening precedes it, so the
+    // acted plan and its action-free twin hand the LP the same ratio.
+    expect(optimizerOpeningBuckets(actionFree).taxableBasisRatio)
+      .toBe(buckets.taxableBasisRatio)
+    // And that is the weight the real bridge puts on the ACA bound. Note what
+    // the weight multiplies: `incumbentTaxableWithdrawal`, the LP's OWN
+    // re-decided draws, which the ledger keeps disjoint from action movement.
+    // The action's realized gain is already exact inside the MAGI base, so it
+    // is not counted a second time here.
+    const freeProbe = probesFor(actionFree)[0]!
+    expect(freeProbe.incumbentTaxableWithdrawal).toBeGreaterThan(0)
+    expect(buildOptimizerInput(actionFree, opts).years[0]!.acaMagiMax).toBeCloseTo(
+      freeProbe.incumbentModeledMagiBeforeTaxableWithdrawalGains +
+        gainWeight * freeProbe.incumbentTaxableWithdrawal +
+        freeProbe.acaConversionMagiHeadroom!,
+      6,
+    )
+  })
+
+  it('refuses to drop movement it cannot place in a bucket', () => {
+    const { plan } = actedTaxablePlan()
+    const probe = probesFor(plan)[0]!
+
+    // Silently dropping the entry is the defect itself, so the bridge fails
+    // loudly instead of handing the solver dollars the ledger already moved.
+    expect(() => committedActionMovementForYear(new Map(), probe)).toThrow(
+      /carries in no balance bucket/,
+    )
+  })
+
+  it('emits a byte-identical LP for an action-free plan', () => {
+    const input = buildOptimizerInput(validate(tradHeavyPlan()), opts)
+
+    expect(input.years.every((year) => year.committedActionMovement === undefined)).toBe(true)
+    const withoutTheField = {
+      ...input,
+      years: input.years.map((modeled) => {
+        const stripped = { ...modeled }
+        delete stripped.committedActionMovement
+        return stripped
+      }),
+    }
+    expect(buildOptimizerModel(input).lp).toBe(buildOptimizerModel(withoutTheField).lp)
   })
 })
 

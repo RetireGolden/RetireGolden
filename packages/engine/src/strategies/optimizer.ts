@@ -182,6 +182,38 @@ export interface OptimizerYear {
    * false → the plain (t−2) lookback, byte-identical LP.
    */
   ssa44Redetermination?: boolean
+  /**
+   * Retirement-action movement the exact ledger already COMMITTED this year:
+   * these dollars are a fait accompli, not something the solver may re-decide.
+   *
+   * Without it the LP evolves its buckets as though the action never happened
+   * while the executor has already debited the named source, so the solve
+   * optimizes a portfolio the ledger never holds. Absent (the action-free case)
+   * emits a byte-identical LP.
+   *
+   * Consequence worth stating plainly: this SHRINKS the feasible region. An
+   * over-committed plan — one whose recorded actions drain a bucket harder than
+   * the horizon can stand — now reports `infeasible` rather than quietly
+   * solving a richer portfolio. That is the honest answer, and it is one reason
+   * the optimize pipeline still refuses action-bearing plans upstream.
+   */
+  committedActionMovement?: {
+    /** Signed movement in the owner-traditional bucket; a debit is negative. Nominal. */
+    trad: number
+    /** Signed movement in the inherited-traditional bucket. Nominal. */
+    inheritedTrad: number
+    /** Signed movement in the tax-free Roth/cash/HSA bucket. Nominal. */
+    other: number
+    /** Signed movement in the taxable brokerage / equity-comp bucket. Nominal. */
+    taxable: number
+    /**
+     * Gross cash those committed actions delivered into this year's cash flow.
+     * Booked as an inflow beside `exogenousCash`, because a withdrawal
+     * REALLOCATES between buckets — debiting the source without crediting the
+     * proceeds would make the solver poorer than the household actually is.
+     */
+    proceeds: number
+  }
 }
 
 export type OptimizerSolveResult = {
@@ -362,7 +394,13 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
   const openingTaxable = input.openingTaxable ?? 0
   const gainFraction = Math.min(1, Math.max(0, 1 - (input.taxableBasisRatio ?? 1)))
   const ltcgRate = Number.isFinite(input.ltcgRate) ? Math.max(0, input.ltcgRate ?? 0) : 0
-  const hasTaxable = openingTaxable > 0 || years.some((y) => (y.taxableInflow ?? 0) > 0)
+  const hasTaxable =
+    openingTaxable > 0 ||
+    years.some((y) => (y.taxableInflow ?? 0) > 0) ||
+    // A committed action can be the only thing that ever touches the taxable
+    // bucket. Materialize it then too, or the movement would be silently
+    // dropped instead of debited.
+    years.some((y) => (y.committedActionMovement?.taxable ?? 0) !== 0)
   // Net cash a taxable withdrawal dollar yields after its LTCG cost, and the
   // MAGI weight of its realized gain (capital gains lift MAGI for IRMAA).
   const taxableNetCash = 1 - ltcgRate * gainFraction
@@ -622,7 +660,14 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
     const cash: Terms = { [wt]: 1, [wi]: 1, [wo]: 1, [save]: -1 }
     if (hasTaxable) cash[wtax] = taxableNetCash
     for (const [v, c] of Object.entries(taxTerms)) cash[v] = (cash[v] ?? 0) - c
-    constraints.push(` cash${t}: ${expr(cash)} = ${fmt(y.spendingNeed - y.exogenousCash)}`)
+    // Committed action proceeds are cash the ledger already delivered this
+    // year, exactly like `exogenousCash`: they fund spending first and the
+    // surplus routes to `save` (the tax-free bucket), which is where the exact
+    // ledger's own surplus lands.
+    const committed = y.committedActionMovement
+    constraints.push(
+      ` cash${t}: ${expr(cash)} = ${fmt(y.spendingNeed - y.exogenousCash - (committed?.proceeds ?? 0))}`,
+    )
 
     // RMD floor: discretionary+forced taxable distribution ≥ balance ÷ divisor.
     if (y.rmdDivisor && y.rmdDivisor > 0) {
@@ -647,19 +692,27 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
     // Scheduled contribution / employer-match inflows land in their bucket the
     // same year and grow like the exact ledger's deposits (which are applied
     // before end-of-year growth); their cash cost is already in spendingNeed.
+    // Committed action movement rides the same right-hand side as an inflow —
+    // a signed constant the solver cannot re-decide — so a debit leaves the
+    // bucket the year the executor took it, and grows (or fails to grow) from
+    // then on exactly as the exact ledger's balance does.
     const trad: Terms = { [`trad${t + 1}`]: 1, [`trad${t}`]: -g, [conv]: g, [wt]: g }
-    constraints.push(` trad${t}: ${expr(trad)} = ${fmt(g * y.tradInflow)}`)
+    constraints.push(` trad${t}: ${expr(trad)} = ${fmt(g * (y.tradInflow + (committed?.trad ?? 0)))}`)
     const inherited: Terms = { [`inh${t + 1}`]: 1, [`inh${t}`]: -g, [wi]: g }
-    constraints.push(` inh${t}: ${expr(inherited)} = 0`)
+    constraints.push(` inh${t}: ${expr(inherited)} = ${fmt(g * (committed?.inheritedTrad ?? 0))}`)
     // Tax-free bucket: `otherInflow` net of the taxable share lands here; the
     // taxable share seeds the taxable bucket below. Surplus `save` and Roth
     // conversions accrue to this tax-free bucket.
     const taxFreeInflow = hasTaxable ? Math.max(0, y.otherInflow - (y.taxableInflow ?? 0)) : y.otherInflow
     const other: Terms = { [`other${t + 1}`]: 1, [`other${t}`]: -g, [conv]: -g, [wo]: g, [save]: -g }
-    constraints.push(` other${t}: ${expr(other)} = ${fmt(g * taxFreeInflow)}`)
+    constraints.push(
+      ` other${t}: ${expr(other)} = ${fmt(g * (taxFreeInflow + (committed?.other ?? 0)))}`,
+    )
     if (hasTaxable) {
       const taxable: Terms = { [`taxable${t + 1}`]: 1, [`taxable${t}`]: -g, [wtax]: g }
-      constraints.push(` taxable${t}: ${expr(taxable)} = ${fmt(g * (y.taxableInflow ?? 0))}`)
+      constraints.push(
+        ` taxable${t}: ${expr(taxable)} = ${fmt(g * ((y.taxableInflow ?? 0) + (committed?.taxable ?? 0)))}`,
+      )
     }
   }
 

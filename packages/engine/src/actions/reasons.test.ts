@@ -54,16 +54,17 @@ const LOCKED_UNSUPPORTED_CODES = [
   'qcd-inherited-basis-unsupported',
   'qcd-rmd-evidence-missing',
   'qcd-aggregate-unallocated',
+  'optimizer-retirement-action-unsupported',
 ] as const satisfies readonly UnsupportedActionReasonCode[]
 
 describe('action reason registry', () => {
-  it('exhaustively owns 78 codes across 38 predicates and four disjoint outcomes', () => {
-    expect(actionReasonCodes).toHaveLength(78)
-    expect(new Set(actionReasonCodes).size).toBe(78)
-    expect(actionPredicateNames).toHaveLength(38)
+  it('exhaustively owns 79 codes across 39 predicates and four disjoint outcomes', () => {
+    expect(actionReasonCodes).toHaveLength(79)
+    expect(new Set(actionReasonCodes).size).toBe(79)
+    expect(actionPredicateNames).toHaveLength(39)
     expect(partialActionReasonCodes).toHaveLength(3)
     expect(taxTreatmentAdjustmentReasonCodes).toHaveLength(3)
-    expect(unsupportedActionReasonCodes).toHaveLength(38)
+    expect(unsupportedActionReasonCodes).toHaveLength(39)
     expect(refusedActionReasonCodes).toHaveLength(34)
   })
 

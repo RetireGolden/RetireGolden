@@ -19,6 +19,8 @@ import { indexFederalTaxPack, packForYear, LATEST_PACK_YEAR } from '../params/in
 import { stateParamsFor } from '../params/state/index.js'
 import type { FilingStatus } from '../params/types.js'
 import type { Account, Plan } from '../model/plan.js'
+import { createActionReason, type ActionReason } from '../actions/reasons.js'
+import type { PersonId } from '../actions/identity.js'
 import {
   DECISION_MINIMUM_REQUESTED_CONVERSION_DOLLARS,
   DECISION_NEUTRAL_TOLERANCE_DOLLARS,
@@ -197,6 +199,183 @@ function blendedGrowth(plan: Plan, startYear: number): number {
   return total > 0 ? weighted / total : plan.assumptions.defaultReturnPct / 100
 }
 
+type PlanRetirementAction = Plan['strategies']['retirementActions'][number]
+
+/** The person a recorded action names, when its kind carries one. */
+function retirementActionPersonId(action: PlanRetirementAction): PersonId | undefined {
+  if (action.kind === 'ordinaryWithdrawal' || action.kind === 'rothConversion') return action.personId
+  if (action.kind === 'qcd') return action.donorPersonId
+  return undefined
+}
+
+/**
+ * PRECONDITION for the whole optimize pipeline: the recorded retirement actions
+ * this plan carries that the optimizer cannot price — one registry reason per
+ * action, empty when the plan is action-free.
+ *
+ * The LP's balance recursion no longer ignores committed movement — the probe
+ * now carries what the exact-cent executor actually moved, per account, and
+ * `committedActionMovementForYear` debits the bucket the ledger debited. What
+ * still blocks a recommendation is upstream of the arithmetic:
+ *
+ *   - Named Roth conversions and QCDs commit NO balance movement in the
+ *     simulator (`executeRothConversions` publishes evidence with
+ *     `committed: false`; a QCD's source account never reaches the executor).
+ *     The exact ledger silently drops the recorded intent, so there is no
+ *     ledger state for the solver to be right about.
+ *   - Every positive-conversion schedule this pipeline produces is vetoed
+ *     `identityIncomplete` regardless, because an aggregate schedule carries no
+ *     owner/source/destination. A correct LP would still publish nothing.
+ *
+ * So an action-bearing plan still gets a refusal rather than an answer. Callers
+ * check this BEFORE dispatching an optimize request and present a
+ * non-actionable result; the throw inside `buildOptimizerInput` guards the
+ * identical condition as an unreachable last-resort invariant
+ * (`optimizePlan.test.ts` pins the two together).
+ *
+ * Reporting per action — rather than one plan-level flag — keeps the count and
+ * the named person available to the surface doing the telling.
+ */
+export function optimizerUnsupportedRetirementActions(
+  plan: Plan,
+): readonly ActionReason<'optimizer-retirement-action-unsupported'>[] {
+  return plan.strategies.retirementActions.map((action) => {
+    const personId = retirementActionPersonId(action)
+    return createActionReason(
+      'optimizer-retirement-action-unsupported',
+      personId === undefined ? {} : { personId },
+    )
+  })
+}
+
+/** Which of the LP's four balance buckets an account's dollars belong to. */
+export type OptimizerBucket =
+  | 'traditional'
+  | 'inheritedTraditional'
+  | 'other'
+  | 'taxable'
+
+export interface OptimizerOpeningBuckets {
+  readonly openingTrad: number
+  readonly openingInheritedTrad: number
+  /** Tax-free bucket: cash + Roth + HSA. */
+  readonly openingOther: number
+  /** Taxable brokerage + equity-comp, whose withdrawals realize LTCG. */
+  readonly openingTaxable: number
+  /**
+   * Aggregate opening basis fraction of `openingTaxable`; `1 −` this is the
+   * gain fraction the LP realizes per taxable withdrawal dollar. 1 when the
+   * plan has no taxable bucket.
+   */
+  readonly taxableBasisRatio: number
+  /**
+   * The bucket each account contributed to. Accounts the LP does not carry
+   * (property, debt) are absent. This is the ONLY place the bucket taxonomy is
+   * decided, so the opening sums and the per-year committed action movement
+   * cannot drift into disagreeing about where an account's dollars live.
+   */
+  readonly bucketByAccountId: ReadonlyMap<string, OptimizerBucket>
+}
+
+/**
+ * Collapse a plan's accounts into the LP's four opening buckets, keeping the
+ * account→bucket mapping that produced them.
+ *
+ * Keyed by account id and summed — never indexed by position — so the LP's
+ * scalars cannot depend on the order `plan.accounts` happens to be persisted
+ * in.
+ */
+export function optimizerOpeningBuckets(plan: Plan): OptimizerOpeningBuckets {
+  let openingTrad = 0
+  let openingInheritedTrad = 0
+  let openingOther = 0 // tax-free bucket: cash + roth + hsa
+  let openingTaxable = 0 // taxable brokerage + equity-comp
+  let openingTaxableBasis = 0
+  const bucketByAccountId = new Map<string, OptimizerBucket>()
+  for (const a of plan.accounts) {
+    if (a.type === 'traditional') {
+      if (!a.inherited) {
+        openingTrad += a.balance
+        bucketByAccountId.set(a.id, 'traditional')
+      } else {
+        openingInheritedTrad += a.balance
+        bucketByAccountId.set(a.id, 'inheritedTraditional')
+      }
+    } else if (a.type === 'taxable' || a.type === 'equityComp') {
+      // Step 2: the taxable bucket is split out so its withdrawals realize LTCG.
+      openingTaxable += a.balance
+      openingTaxableBasis += (a as { costBasis?: number }).costBasis ?? a.balance
+      bucketByAccountId.set(a.id, 'taxable')
+    } else if (OTHER_TYPES.has(a.type)) {
+      openingOther += (a as { balance: number }).balance
+      bucketByAccountId.set(a.id, 'other')
+    }
+  }
+  return {
+    openingTrad,
+    openingInheritedTrad,
+    openingOther,
+    openingTaxable,
+    // Aggregate opening basis fraction; gain fraction = 1 − this. A single
+    // opening ratio is the v1 linearization (the exact ledger prices true
+    // depletion). It stays an OPENING ratio on purpose: committed action
+    // movement happens DURING a year, after this snapshot, so it erodes the
+    // remaining basis fraction no differently than an ordinary taxable draw —
+    // the same approximation, not a new one.
+    taxableBasisRatio:
+      openingTaxable > 0 ? Math.min(1, Math.max(0, openingTaxableBasis / openingTaxable)) : 1,
+    bucketByAccountId,
+  }
+}
+
+/**
+ * Fold one probe year's committed retirement-action movement into the LP's
+ * bucket scalars, plus the cash those actions delivered.
+ *
+ * Returns undefined for a year that committed nothing — every year of an
+ * action-free plan — so those plans keep emitting a byte-identical LP.
+ *
+ * The executor names accounts; the LP carries four scalars. `bucketByAccountId`
+ * is the bridge, so account identity is resolved HERE and the LP never has to
+ * carry an identity it does not have.
+ */
+export function committedActionMovementForYear(
+  bucketByAccountId: ReadonlyMap<string, OptimizerBucket>,
+  probe: OptimizerYearProbe,
+): NonNullable<OptimizerYear['committedActionMovement']> | undefined {
+  const movement = {
+    trad: 0,
+    inheritedTrad: 0,
+    other: 0,
+    taxable: 0,
+    proceeds: probe.committedActionProceeds,
+  }
+  for (const entry of probe.committedActionAccountMovement) {
+    const bucket = bucketByAccountId.get(entry.accountId)
+    if (bucket === undefined) {
+      // Fail closed. Dropping the entry is precisely the defect being fixed —
+      // the solver would keep spending dollars the ledger has already moved —
+      // and every source class the executor accepts (cash, taxable,
+      // equity-comp, IRA) does land in a bucket, so this is unreachable short
+      // of a plan whose accounts and recorded actions disagree.
+      throw new Error(
+        `Committed retirement-action movement names account "${entry.accountId}", which the optimizer carries in no balance bucket`,
+      )
+    }
+    if (bucket === 'traditional') movement.trad += entry.amount
+    else if (bucket === 'inheritedTraditional') movement.inheritedTrad += entry.amount
+    else if (bucket === 'taxable') movement.taxable += entry.amount
+    else movement.other += entry.amount
+  }
+  return movement.trad === 0 &&
+    movement.inheritedTrad === 0 &&
+    movement.other === 0 &&
+    movement.taxable === 0 &&
+    movement.proceeds === 0
+    ? undefined
+    : movement
+}
+
 /**
  * Build the optimizer input from a probe projection.
  *
@@ -209,6 +388,13 @@ function blendedGrowth(plan: Plan, startYear: number): number {
  * optimum by iteration (see `optimizePlan`).
  */
 export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probeSourcePlan?: Plan): OptimizerInput {
+  // Last-resort invariant, not the user-facing gate. Surfaces check
+  // `optimizerUnsupportedRetirementActions` before dispatching, so reaching
+  // this throw means a caller skipped the precondition — better a raw failure
+  // than a recommendation this pipeline would withhold anyway. The bucket
+  // arithmetic below is now action-aware; see that predicate's doc for what is
+  // still missing, and note that lifting this throw is a separate decision
+  // that has to answer the blanket `identityIncomplete` veto too.
   if (
     plan.strategies.retirementActions.length > 0 ||
     (probeSourcePlan?.strategies.retirementActions.length ?? 0) > 0
@@ -227,26 +413,14 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
     captureOptimizerInputs: (p) => probes.push(p),
   })
 
-  let openingTrad = 0
-  let openingInheritedTrad = 0
-  let openingOther = 0 // tax-free bucket: cash + roth + hsa
-  let openingTaxable = 0 // taxable brokerage + equity-comp
-  let openingTaxableBasis = 0
-  for (const a of plan.accounts) {
-    if (a.type === 'traditional') {
-      if (!a.inherited) openingTrad += a.balance
-      else openingInheritedTrad += a.balance
-    } else if (a.type === 'taxable' || a.type === 'equityComp') {
-      // Step 2: the taxable bucket is split out so its withdrawals realize LTCG.
-      openingTaxable += a.balance
-      openingTaxableBasis += (a as { costBasis?: number }).costBasis ?? a.balance
-    } else if (OTHER_TYPES.has(a.type)) {
-      openingOther += (a as { balance: number }).balance
-    }
-  }
-  // Aggregate opening basis fraction; gain fraction = 1 − this. A single opening
-  // ratio is the v1 linearization (the exact ledger prices true depletion).
-  const taxableBasisRatio = openingTaxable > 0 ? Math.min(1, Math.max(0, openingTaxableBasis / openingTaxable)) : 1
+  const {
+    openingTrad,
+    openingInheritedTrad,
+    openingOther,
+    openingTaxable,
+    taxableBasisRatio,
+    bucketByAccountId,
+  } = optimizerOpeningBuckets(plan)
   const taxableGainWeight = Math.min(1, Math.max(0, 1 - taxableBasisRatio))
 
   const growth = blendedGrowth(plan, opts.startYear)
@@ -334,6 +508,26 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
       // SSA-44 (opt-in): shift this premium year's IRMAA trigger to (t−1)'s
       // MAGI so the solve prices the redetermination the exact ledger applies.
       ssa44Redetermination: p.ssa44IrmaaRedetermination || undefined,
+      // The dollars the exact-cent executor already moved this year, read off
+      // the probe's own ledger — no second simulation, and no re-deriving them
+      // from the request.
+      //
+      // UNREACHABLE TODAY, deliberately. The precondition throw at the top of
+      // this function refuses any `plan` or `probeSourcePlan` carrying
+      // retirement actions, and `probeSource` is derived from one of those two.
+      // So the probe run is always action-free: `committedActionAccountMovement`
+      // is empty, `committedActionProceeds` is 0, and this call returns
+      // `undefined` for every year — which is exactly what keeps action-free
+      // plans emitting a byte-identical LP.
+      //
+      // It is wired up anyway because the netting is the correctness foundation
+      // the throw is waiting on: with it in place, lifting the throw is a
+      // decision about identity and the `identityIncomplete` veto (see
+      // `optimizerUnsupportedRetirementActions`), not a fresh solver-arithmetic
+      // problem. `optimizePlan.test.ts` proves the arithmetic now by calling
+      // `committedActionMovementForYear` directly on an ACTED plan's probe,
+      // since `buildOptimizerInput` will not accept one.
+      committedActionMovement: committedActionMovementForYear(bucketByAccountId, p),
     }
   })
 

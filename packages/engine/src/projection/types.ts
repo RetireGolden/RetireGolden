@@ -181,8 +181,49 @@ export interface PersonYearState {
  * The optimizer's MILP carries balances forward itself, so only these exogenous
  * quantities (not per-year balances) are probed. @see strategies/optimizer.ts
  */
+/**
+ * One account's committed retirement-action balance movement in a probe year.
+ *
+ * The exact-cent action executor debits and credits NAMED accounts, while the
+ * optimizer collapses the portfolio into four bucket scalars. Reporting the
+ * movement per account — rather than pre-bucketed — keeps the bucket taxonomy
+ * in the one place that already owns it (`buildOptimizerInput`), so the two
+ * cannot drift into disagreeing about which bucket an account belongs to.
+ */
+export interface OptimizerCommittedActionAccountMovement {
+  accountId: string
+  /**
+   * Signed plan dollars, closing − opening: a withdrawal from this account is
+   * NEGATIVE. Zero-movement accounts are omitted entirely.
+   */
+  amount: number
+}
+
 export interface OptimizerYearProbe {
   year: number
+  /**
+   * Balance movement the exact-cent retirement-action executor COMMITTED this
+   * year, per account, sorted by account id; empty in a year with no committed
+   * action movement (which is every year of an action-free plan).
+   *
+   * Without this the LP's balance recursion carries a portfolio the exact
+   * ledger never holds: the executor debits the named source inside `simulate`
+   * while the solver evolves opening buckets that never saw the debit. Worse
+   * than fully blind — `capitalGainsBase` below already picks up the action's
+   * realized gain, so the solve prices the action's tax and keeps its dollars.
+   */
+  committedActionAccountMovement: readonly OptimizerCommittedActionAccountMovement[]
+  /**
+   * Gross cash those committed actions delivered into this year's cash flow —
+   * the ledger's own `retirementActionProceeds` term, which sits alongside RMDs
+   * and property-sale proceeds in `baseCashInflows` and is NOT part of
+   * `exogenousCash` below.
+   *
+   * The pair matters: an ordinary withdrawal REALLOCATES between buckets rather
+   * than destroying net worth, so a debit booked without its matching cash
+   * credit would make the solver poorer than the household actually is.
+   */
+  committedActionProceeds: number
   /**
    * Ordinary taxable income EXCLUDING any traditional-account distribution or
    * Roth conversion, plus the baseline taxable Social-Security portion (which
