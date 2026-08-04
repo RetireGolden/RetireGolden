@@ -198,6 +198,21 @@ describe('tax rule registry conformance', () => {
     expect(uncovered).toEqual([])
   })
 
+  it('covers every approximated rule, so the record fails when the gap closes', () => {
+    // The classification that rots fastest, and in the most flattering
+    // direction: an approximated record says "we know this figure is wrong",
+    // which keeps reading as diligence long after the figure stopped being
+    // wrong. Two such records survived on main describing behaviour a parallel
+    // branch had already fixed, and one of them contradicted a settled record
+    // about the same statute. Neither the publisher guard nor the
+    // error-direction guard can see that — they check a record's shape, never
+    // its prose against the engine. A fixture naming the produced reading can,
+    // because the day the engine stops producing it the assertion fails.
+    const uncovered = taxRuleIds.filter((ruleId) =>
+      TAX_RULE_REGISTRY[ruleId].classification === 'approximated' && !claimedRuleIds.has(ruleId))
+    expect(uncovered).toEqual([])
+  })
+
   it('never counts its own guard calls as coverage', () => {
     // The guard tests below call describeRule with a real rule ID and with an
     // unregistered one. Counting either would be wrong: the first would launder
@@ -471,5 +486,44 @@ describe('describeRule guards', () => {
     expect(() => describeRule('not-a-registered-rule' as TaxRuleId, {
       readings: { a: 1, b: 2 }, accepted: 'a',
     }, noop)).toThrow(/Unknown tax rule/u)
+  })
+
+  it('refuses an approximated rule that does not name the reading it produces', () => {
+    // Reachable only through a widened rule ID, which is what the cast stands
+    // in for: with a literal ID the omission is a compile error. Both layers
+    // are wanted. The type stops it at authoring time; the throw stops a
+    // fixture that reaches describeRule some other way, and is what this
+    // assertion pins.
+    expect(() => describeRule('irc-213-a-medical-expense-deduction' as TaxRuleId, {
+      readings: { statute: 1200, engineOmitsIt: 0 }, accepted: 'statute',
+    }, noop)).toThrow(/name the reading this engine produces/u)
+  })
+
+  it('refuses an approximated rule whose produced reading is the accepted one', () => {
+    // The way an approximated record would otherwise be laundered into looking
+    // covered: point `produced` at the statute and assert the engine matches
+    // it. That fixture passes, proves the opposite of what the record claims,
+    // and leaves the gap unpinned.
+    expect(() => describeRule('irc-213-a-medical-expense-deduction' as TaxRuleId, {
+      readings: { statute: 1200, engineOmitsIt: 0 },
+      accepted: 'statute',
+      produced: 'statute',
+    } as never, noop)).toThrow(/a rule the engine gets right is not approximated/u)
+  })
+
+  it('refuses a produced reading that is not among the candidates', () => {
+    expect(() => describeRule('irc-213-a-medical-expense-deduction' as TaxRuleId, {
+      readings: { statute: 1200, engineOmitsIt: 0 },
+      accepted: 'statute',
+      produced: 'somethingElse',
+    } as never, noop)).toThrow(/produced reading is not among/u)
+  })
+
+  it('refuses a settled rule that admits the engine produces something else', () => {
+    expect(() => describeRule('irc-170-b-1-I-floor-ordering' as TaxRuleId, {
+      readings: { statute: 450, rejected: 500 },
+      accepted: 'statute',
+      produced: 'rejected',
+    } as never, noop)).toThrow(/reclassify it as approximated/u)
   })
 })

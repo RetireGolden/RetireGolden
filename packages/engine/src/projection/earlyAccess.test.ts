@@ -212,10 +212,14 @@ describe('72(t) SEPP', () => {
  * plan behaves like an IRA — the same participant draws the full
  * 500,000 / 30.6 = 16,339.87 a year penalty-free while still employed.
  *
- * Plain `it`s rather than a describeRule fixture because what the projection
- * implements is a proxy, registered as irc-72-t-3-B-sepp-separation-annual-proxy
- * and therefore out of scope: it orders calendar years, not days, and tests no
- * employer identity. The exact-date reading is covered where it lives, in
+ * Plain `it`s rather than a describeRule fixture because what these assert is
+ * the proxy's own behaviour, not a choice between candidate readings of the
+ * statute: it orders calendar years, not days, and tests no employer identity.
+ * The proxy is registered as irc-72-t-3-B-sepp-separation-annual-proxy and
+ * classified `approximated` — not out of scope, as this note previously said —
+ * and the gap between it and the statute is pinned in
+ * rules/approximations/seppHsaAndCharacter.approximation.test.ts. The
+ * exact-date reading is covered where it lives, in
  * actions/traditionalEmployerPlanPenaltyPrerequisite.test.ts.
  */
 describe('72(t)(3)(B) — employer-plan SEPP must begin after separation', () => {
@@ -298,10 +302,12 @@ describe('72(t)(3)(B) — employer-plan SEPP must begin after separation', () =>
  * because a SEPP election may not start after 59 and the Rule of 55 waiver is
  * unreachable from 60 up. The convention is the same at every age.
  *
- * Plain `it`s, not a describeRule fixture: the annual separation proxy is
- * registered out of scope as irc-72-t-3-B-sepp-separation-annual-proxy, and
- * what is pinned here is that three sites agree on one convention, not a
- * reading of the statute.
+ * Plain `it`s, not a describeRule fixture: what is pinned here is that three
+ * sites agree on one convention, not a reading of the statute. The annual
+ * separation proxy is registered as irc-72-t-3-B-sepp-separation-annual-proxy
+ * and classified `approximated` — not out of scope, as this note previously
+ * said — and its distance from the statute is pinned in
+ * rules/approximations/seppHsaAndCharacter.approximation.test.ts.
  */
 describe('a fractional retirement age separates at the attained age wages stop', () => {
   /** Pat is 56 in 2026, so attained age 57 is 2027 and attained age 58 is 2028. */
