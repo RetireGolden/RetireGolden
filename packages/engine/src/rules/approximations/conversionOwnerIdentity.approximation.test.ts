@@ -20,7 +20,7 @@ let counter = 0
 const testIds = (): string => `conv-${++counter}`
 const fixedNow = (): Date => new Date('2026-06-11T00:00:00.000Z')
 
-const GIFT_YEAR = 2026
+const CONVERSION_YEAR = 2026
 const REQUESTED_CONVERSION = 50_000
 
 function cash(balance: number): Account {
@@ -87,7 +87,7 @@ function marriedHousehold(): Plan {
   plan.assumptions.defaultReturnPct = 0
   plan.strategies.rothConversion = {
     mode: 'manual',
-    conversions: [{ year: GIFT_YEAR, amount: REQUESTED_CONVERSION }],
+    conversions: [{ year: CONVERSION_YEAR, amount: REQUESTED_CONVERSION }],
   }
   return plan
 }
@@ -102,10 +102,10 @@ const noTax = createFlatTaxCalculator(0)
 
 function convertedIn(plan: Plan): { converted: number, magi: number } {
   const result = simulatePlan(validate(plan), {
-    startYear: GIFT_YEAR,
+    startYear: CONVERSION_YEAR,
     taxCalculator: noTax,
   })
-  const year = result.years.find((row) => row.year === GIFT_YEAR)!
+  const year = result.years.find((row) => row.year === CONVERSION_YEAR)!
   return { converted: year.rothConversion, magi: year.magi }
 }
 
@@ -160,7 +160,7 @@ describeRule('irc-408-d-3-A-i-conversion-benefits-the-distributee', {
     ]
 
     const result = simulatePlan(validate(plan), {
-      startYear: GIFT_YEAR,
+      startYear: CONVERSION_YEAR,
       taxCalculator: noTax,
     })
 
@@ -175,7 +175,7 @@ describeRule('irc-408-d-3-A-i-conversion-benefits-the-distributee', {
     plan.accounts = [cash(500_000), traditionalIra('tradB', 'p2', 400_000)]
 
     const result = simulatePlan(validate(plan), {
-      startYear: GIFT_YEAR,
+      startYear: CONVERSION_YEAR,
       taxCalculator: noTax,
     })
 
