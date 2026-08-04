@@ -446,7 +446,8 @@ describeRule('notice-2004-2-a-26-expense-incurred-after-hsa-established', {
 
     expect(result.status).toBe(accepted)
     expect(result.entries).toEqual([])
-    expect(result.entries).not.toHaveLength(readings.rejectedEstablishedBeforeDistribution)
+    expect(result.entries.map((entry) => entry.qualifiedMedicalAmount))
+      .not.toContain(readings.rejectedEstablishedBeforeDistribution)
   })
 
   it('admits the same claim once establishment precedes the expense', () => {
@@ -456,7 +457,13 @@ describeRule('notice-2004-2-a-26-expense-incurred-after-hsa-established', {
     })
     Object.assign(value.allocations[0]!, { ownerHsaEstablishedDate: '2020-05-31' })
 
-    expect(evaluated(value).entries[0]!.qualifiedMedicalAmount).toBe(4_000)
+    // Deliberately the rejected reading's own number. Everything else about the
+    // claim is unchanged, so 4,000 is exactly what the ledger would have
+    // reported above had establishment only needed to precede the distribution.
+    // Moving establishment one day either side of the expense is the whole
+    // difference between the two readings.
+    expect(evaluated(value).entries[0]!.qualifiedMedicalAmount)
+      .toBe(readings.rejectedEstablishedBeforeDistribution)
   })
 })
 
@@ -500,7 +507,13 @@ describeRule('irc-223-d-2-A-expense-reimbursable-once', {
 
     expect(result.status).toBe(accepted)
     expect(result.entries).toEqual([])
-    expect(result.entries).not.toHaveLength(readings.rejectedRemainderNeverReduced)
+    expect(result.entries.map((entry) => entry.qualifiedMedicalAmount))
+      .not.toContain(readings.rejectedRemainderNeverReduced)
+    // The refusal is only meaningful because the claim genuinely exceeds what
+    // is left: under the rejected reading the 10,000 eligible figure would still
+    // be standing here and 7,000 would fit inside it.
+    expect(readings.rejectedRemainderNeverReduced)
+      .toBeGreaterThan(evaluated().entries[0]!.expenseStateAfter[0]!.remainingUnreimbursedAmount)
   })
 
   it('chains the remainder across allocations within the year', () => {

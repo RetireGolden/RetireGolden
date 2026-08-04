@@ -767,7 +767,7 @@ describeRule('irc-219-f-3-prior-year-contribution-window', {
   // carry the contribution window admits it at its full 250,000 cents.
   readings: {
     statute: 'postYearContributionInvalid',
-    rejectedExtendedDueDate: 250_000,
+    rejectedExtensionsCarryTheWindow: 250_000,
   },
   accepted: 'statute',
 }, ({ accepted, readings }) => {
@@ -776,6 +776,9 @@ describeRule('irc-219-f-3-prior-year-contribution-window', {
     const source = value.sourceRecord as PlanOwnedNonRothIraAnnualFilingSourceRecord
     source.nondeductibleContributionFacts.contributions[0]!.contributionDate = '2031-06-01'
 
+    // `issueKinds` also asserts the contribution window comes back null, so the
+    // 250,000 the rejected reading would have admitted on this date reaches no
+    // year's basis at all.
     expect(issueKinds(value)).toContain(accepted)
   })
 
@@ -783,8 +786,12 @@ describeRule('irc-219-f-3-prior-year-contribution-window', {
     const window = built().postYearContributionWindow
 
     expect(window.deadlineEvidence.deadlineDate).toBe('2031-04-15')
+    // The control for the test above, not an assertion of the rejected reading.
+    // The same 250,000 is admitted here solely because 2031-02-01 falls inside
+    // the unextended window; the contribution date is the entire difference
+    // between the two readings.
     expect(window.contributions[0]!.contributionDate).toBe('2031-02-01')
     expect(window.contributions[0]!.nondeductibleContributionAmount)
-      .toBe(readings.rejectedExtendedDueDate)
+      .toBe(readings.rejectedExtensionsCarryTheWindow)
   })
 })
