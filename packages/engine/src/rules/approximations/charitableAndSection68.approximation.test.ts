@@ -319,23 +319,21 @@ describe('charitable and section 68 rules', () => {
     })
   })
 
-  // IRC 170(b)(1)(I) allows a contribution only above 0.5 percent of the
-  // contribution base, which 170(b)(1)(H) defines as AGI. `itemizedTotal`
-  // (federalTax.ts:111-119) subtracts no floor and has no contribution-base
-  // concept at all.
+  // IRC 170(b)(1)(I) allows a charitable contribution only to the extent the
+  // aggregate exceeds 0.5 percent of the contribution base, which 170(b)(1)(H)
+  // defines as adjusted gross income.
   //
   // $200,000 of AGI puts the floor at $1,000, so of a $20,000 gift the statute
   // allows $19,000. With $30,000 of SALT (under the $40,400 2026 cap) the
-  // statutory itemized total is $49,000 and the engine's is $50,000; both beat
-  // the $16,100 standard deduction, so the election is not what separates them.
+  // itemized total is $49,000 rather than $50,000; both figures beat the
+  // $16,100 standard deduction, so the election is not what separates them.
   // The 60 percent ceiling is $120,000 here and never binds, which keeps this
   // fixture on the floor alone.
-  describeRule('irc-170-b-1-I-projection-floor-not-applied', {
-    readings: { statute: 49_000, engineSubtractsNoFloor: 50_000 },
-    accepted: 'statute',
-    produced: 'engineSubtractsNoFloor',
-    note: 'a $20,000 gift against $200,000 of AGI, well inside the percentage ceiling',
-  }, ({ accepted, produced }) => {
+  describeRule('irc-170-b-1-I-floor-ordering', {
+    readings: { statuteAllowsOnlyTheExcess: 49_000, rejectedNoFloor: 50_000 },
+    accepted: 'statuteAllowsOnlyTheExcess',
+    note: 'the live projection path subtracts it',
+  }, ({ accepted, readings }) => {
     const agi = 200_000
     const gift = 20_000
     const salt = 30_000
@@ -343,53 +341,46 @@ describe('charitable and section 68 rules', () => {
     // expected value a float intermediate, and every assertion below is a toBe
     // against an exact integer.
     const floorFor = (base: number): number => (base * 5) / 1_000
-    const allowedAfterFloor = gift - floorFor(agi)
 
-    it('deducts the whole gift with no floor subtracted', () => {
+    it('allows only the excess over the floor', () => {
       const detail = computeFederalTax(taxpayer(agi, {
         stateAndLocalTaxes: salt, mortgageInterest: 0, charitable: gift,
       }))
 
-      expect(allowedAfterFloor).toBe(19_000)
-      expect(detail.agi).toBe(agi)
+      expect(floorFor(agi)).toBe(1_000)
       expect(detail.itemized).toBe(true)
-      expect(detail.deduction).toBe(produced)
-      expect(detail.deduction).not.toBe(accepted)
-      // The overstatement is the lesser of the gift and the floor. This gift is
-      // twenty times the floor, so here the lesser is the floor itself; a gift
-      // at or below $1,000 would be disallowed in full and the overstatement
-      // would be the whole gift instead.
-      expect(detail.deduction - accepted).toBe(floorFor(agi))
+      expect(detail.deduction).toBe(accepted)
+      expect(detail.deduction).not.toBe(readings.rejectedNoFloor)
+      // What the engine used to over-deduct was the lesser of the gift and
+      // the floor. This gift is twenty times the floor, so the lesser is the
+      // floor itself; a gift at or below $1,000 would have been disallowed in
+      // full and the difference would have been the whole gift instead. The
+      // block below pins that case.
+      expect(readings.rejectedNoFloor - detail.deduction).toBe(floorFor(agi))
     })
 
-    it('understates tax against the return that applies the floor', () => {
-      // The statutory reading is the same engine call with the post-floor
-      // amount on the charitable line, so both sides are real engine output.
-      const engine = computeFederalTax(taxpayer(agi, {
-        stateAndLocalTaxes: salt, mortgageInterest: 0, charitable: gift,
-      }))
-      const statutory = computeFederalTax(taxpayer(agi, {
-        stateAndLocalTaxes: salt, mortgageInterest: 0, charitable: allowedAfterFloor,
+    it('allows nothing for a gift that does not clear the floor', () => {
+      // The other side of "only to the extent it exceeds": a gift below the
+      // floor is not reduced, it is disallowed entirely. Without this the
+      // fixture could pass on an engine that subtracted the floor and let the
+      // result go negative.
+      const detail = computeFederalTax(taxpayer(agi, {
+        stateAndLocalTaxes: salt, mortgageInterest: 0, charitable: 400,
       }))
 
-      expect(statutory.deduction).toBe(accepted)
-      expect(engine.taxableIncome).toBe(150_000)
-      expect(statutory.taxableIncome).toBe(151_000)
-      // errorDirection: 'understatesTax'.
-      expect(engine.totalTax).toBeLessThan(statutory.totalTax)
+      expect(400).toBeLessThan(floorFor(agi))
+      expect(detail.deduction).toBe(salt)
     })
 
-    it('scales the error with AGI, because the floor is a fraction of it', () => {
-      // Doubling AGI doubles the disallowance the engine skips, so this is not
-      // a fixed-size gap that could be waved through as immaterial.
-      const richer = computeFederalTax(taxpayer(2 * agi, {
-        stateAndLocalTaxes: salt, mortgageInterest: 0, charitable: gift,
-      }))
-      const richerStatutory = computeFederalTax(taxpayer(2 * agi, {
-        stateAndLocalTaxes: salt, mortgageInterest: 0, charitable: gift - 2 * floorFor(agi),
-      }))
+    it('does not reach a year the floor does not govern', () => {
+      // OBBBA added (I) for taxable years beginning after 2025, so a 2025
+      // return with identical figures keeps the whole gift.
+      const detail = computeFederalTax({
+        ...taxpayer(agi, { stateAndLocalTaxes: salt, mortgageInterest: 0, charitable: gift }),
+        year: 2025,
+      })
 
-      expect(richer.deduction - richerStatutory.deduction).toBe(2_000)
+      expect(detail.deduction).toBe(readings.rejectedNoFloor)
     })
   })
 
@@ -398,13 +389,17 @@ describe('charitable and section 68 rules', () => {
   // The engine deducts the whole gift at once and holds no carryforward state.
   //
   // $100,000 of AGI puts the ceiling at $60,000, so an $80,000 gift leaves
-  // $20,000 to carry. With $10,000 of SALT the ceiling-respecting itemized
-  // total is $70,000 and the engine's is $90,000. The 0.5 percent floor would
-  // take a further $500 from the statutory figure; that gap is pinned
-  // separately at irc-170-b-1-I-projection-floor-not-applied, and the readings
-  // here isolate the ceiling.
+  // $20,000 to carry. The 0.5 percent floor is now applied by the live path and
+  // takes a further $500 from BOTH readings, so it cancels out of the gap and
+  // the readings still isolate the ceiling.
+  //
+  // Statute, in the order 170(b)(1)(I) settles at irc-170-b-1-I-floor-ordering
+  // -- min(C, L) first, floor second, never min(C - F, L): min(80,000, 60,000)
+  // = 60,000, less the 500 floor = 59,500 allowed, plus 10,000 of SALT =
+  // 69,500. The engine applies the floor but no ceiling: 80,000 - 500 = 79,500,
+  // plus 10,000 = 89,500. The $20,000 gap between them is the ceiling alone.
   describeRule('irc-170-b-1-G-projection-cash-ceiling-not-applied', {
-    readings: { ceilingApplied: 70_000, engineAllowsTheWholeGift: 90_000 },
+    readings: { ceilingApplied: 69_500, engineAllowsTheWholeGift: 89_500 },
     accepted: 'ceilingApplied',
     produced: 'engineAllowsTheWholeGift',
     note: 'an $80,000 gift against a $100,000 contribution base',
@@ -415,6 +410,10 @@ describe('charitable and section 68 rules', () => {
     // 60 percent as an exact ratio, for the same reason as the floor above.
     const ceiling = (agi * 6) / 10
     const carriedForward = gift - ceiling
+    // The live path now applies the 0.5 percent floor to whatever reaches the
+    // charitable line, including the figures this fixture uses to synthesise
+    // the statutory readings, so it appears on both sides.
+    const floor = (agi * 5) / 1_000
 
     it('deducts a gift above the ceiling in full in the year it is made', () => {
       const detail = computeFederalTax(taxpayer(agi, {
@@ -437,8 +436,9 @@ describe('charitable and section 68 rules', () => {
       }))
 
       expect(statutory.deduction).toBe(accepted)
-      expect(engine.taxableIncome).toBe(10_000)
-      expect(statutory.taxableIncome).toBe(30_000)
+      // 100,000 AGI less the deduction on each side: 89,500 and 69,500.
+      expect(engine.taxableIncome).toBe(10_500)
+      expect(statutory.taxableIncome).toBe(30_500)
       expect(engine.totalTax).toBeLessThan(statutory.totalTax)
     })
 
@@ -457,7 +457,12 @@ describe('charitable and section 68 rules', () => {
 
       expect(engineNextYear.itemized).toBe(false)
       expect(engineNextYear.deduction).toBe(16_100)
-      expect(statutoryNextYear.deduction).toBe(salt + carriedForward)
+      // The carryforward is synthesised by routing it through the charitable
+      // input, so the floor bites it here as well. Whether 170(d)(1)(C)(i)
+      // would floor a carryover a second time in its own right is a separate
+      // question this fixture does not settle -- what it pins is the sign,
+      // and the sign does not turn on that.
+      expect(statutoryNextYear.deduction).toBe(salt + carriedForward - floor)
       expect(engineNextYear.totalTax).toBeGreaterThan(statutoryNextYear.totalTax)
     })
 

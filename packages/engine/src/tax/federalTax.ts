@@ -119,10 +119,47 @@ function itemizedTotal(
   pack: ParameterPack,
   items: TaxYearInput['itemizedDeductions'],
   year: number,
+  contributionBase: number,
 ): number {
   if (!items) return 0
   const salt = Math.min(Math.max(0, items.stateAndLocalTaxes), saltCapForYear(pack, year))
-  return salt + Math.max(0, items.mortgageInterest) + Math.max(0, items.charitable)
+  const charitable = charitableAfterFloor(Math.max(0, items.charitable), contributionBase, year)
+  return salt + Math.max(0, items.mortgageInterest) + charitable
+}
+
+/**
+ * IRC §170(b)(1)(I) floor: a charitable contribution is allowed only to the
+ * extent the aggregate exceeds 0.5 percent of the contribution base, which
+ * §170(b)(1)(H) defines as adjusted gross income. Added by OBBBA for taxable
+ * years beginning after 2025, hence the year gate.
+ *
+ * Two things this deliberately does not do.
+ *
+ * It does not apply the §170(b)(1)(I)(ii) category waterfall, which consumes
+ * the floor against the (D) through (A) categories before it reaches (G) cash
+ * gifts. `itemizedDeductions.charitable` is one undifferentiated figure, so
+ * there are no categories to walk and the whole floor lands on the only line
+ * there is. Registered separately rather than hidden here.
+ *
+ * It does not carry the disallowed amount forward. §170(d)(1)(C)(i) lets
+ * floor-disallowed dollars survive only by enlarging an excess that some other
+ * carryover rule is already carrying from the same year, so for a household
+ * giving below the percentage ceiling — the ordinary retiree — the disallowance
+ * is permanent and there is nothing to carry. The ceiling itself is not wired,
+ * so no such excess can arise here.
+ *
+ * The 0.5 percent is written as an exact integer ratio. Spelling it `0.005 *
+ * base` introduces a float intermediate into a figure that feeds an equality
+ * comparison against the standard deduction.
+ */
+function charitableAfterFloor(
+  charitable: number,
+  contributionBase: number,
+  year: number,
+): number {
+  if (year < 2026 || charitable <= 0) return charitable
+  const floor = (Math.max(0, contributionBase) * 5) / 1_000
+  return Math.max(0, charitable - floor)
 }
 
 /**
@@ -441,7 +478,9 @@ export function computeFederalTax(input: TaxYearInput): FederalTaxDetail {
   // The OBBBA senior deduction applies whether you take the standard deduction or
   // itemize, so it rides on top of whichever base is larger.
   const standardBase = standardDeduction(pack, taxStatus, input.peopleAged65Plus)
-  const itemizedBeforeSection68 = itemizedTotal(pack, input.itemizedDeductions, year)
+  // §170(b)(1)(H) defines the contribution base as adjusted gross income, and
+  // the charitable deduction is below the line, so `agi` does not depend on it.
+  const itemizedBeforeSection68 = itemizedTotal(pack, input.itemizedDeductions, year, agi)
   // §68(b) applies this "after the application of any other limitation on the
   // allowance of any itemized deduction", so it runs on the assembled total and
   // nothing may be added to that total afterwards. The election below compares

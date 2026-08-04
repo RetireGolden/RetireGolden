@@ -14,7 +14,8 @@ import { computeFederalTax } from './federalTax.js'
  *
  * 2026 single constants used below:
  *   standard deduction 16,100 (+2,050 age 65); brackets 10% <12,400, 12% <50,400,
- *   22% <105,700, 24% <201,775, 32% <256,225; LTCG 15% starts above 49,450;
+ *   22% <105,700, 24% <201,775, 32% <256,225, 35% <640,600 (where the 37%
+ *   bracket 68(a)(2) names begins); LTCG 15% starts above 49,450;
  *   NIIT 3.8% over MAGI 200,000; SS provisional tiers 25,000 / 34,000.
  *   MFJ: standard 32,200; brackets 10% <24,800, 12% <100,800.
  */
@@ -159,17 +160,25 @@ describe('federal tax golden worksheets', () => {
   })
 
   it('itemized beats the standard deduction with SALT capped', () => {
-    // SALT 50,000 capped at 40,400; + 5,000 mortgage + 5,000 charitable = 50,400.
-    // 50,400 > 16,100 standard, so itemized is used.
-    // 100,000 - 50,400 = 49,600 taxable; 10%*12,400 + 12%*37,200 = 1,240 + 4,464 = 5,704.
+    // SALT 50,000 capped at 40,400 (164(b)(7)); mortgage 5,000 in full.
+    // 170(b)(1)(I) allows the gift only above 0.5% of the contribution base,
+    // which 170(b)(1)(H) defines as AGI: 0.5% * 100,000 = 500, so 5,000 - 500
+    // = 4,500 is allowed. Itemized before 68 = 40,400 + 5,000 + 4,500 = 49,900.
+    // 68(a) reduces by 2/37 of the LESSER of that total and AGI less the senior
+    // deduction less the 37% bracket start: 100,000 - 0 - 640,600 is negative,
+    // so the base is 0 and the reduction is 0.
+    // 49,900 > 16,100 standard, so itemized is used.
+    // 100,000 - 49,900 = 50,100 taxable, still inside the 12% band (ends 50,400):
+    // 10%*12,400 + 12%*37,700 = 1,240 + 4,524 = 5,764.
     const r = computeFederalTax(
       input({
         ordinaryIncome: 100_000,
         itemizedDeductions: { stateAndLocalTaxes: 50_000, mortgageInterest: 5_000, charitable: 5_000 },
       }),
     )
-    expectMoney(r.deduction, 50_400)
-    expectMoney(r.taxableIncome, 49_600)
-    expectMoney(r.totalTax, 5_704)
+    expectMoney(r.deduction, 49_900)
+    expectMoney(r.section68Limitation, 0)
+    expectMoney(r.taxableIncome, 50_100)
+    expectMoney(r.totalTax, 5_764)
   })
 })

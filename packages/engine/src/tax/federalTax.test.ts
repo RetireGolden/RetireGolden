@@ -558,9 +558,16 @@ describe('itemized deductions (2026)', () => {
 
   it('uses itemized when it beats the standard deduction', () => {
     const d = computeFederalTax(input({ ordinaryIncome: 100_000, itemizedDeductions: { stateAndLocalTaxes: 8_000, mortgageInterest: 12_000, charitable: 5_000 } }))
+    // AGI 100,000, so 170(b)(1)(I) disallows the first 0.5% = 500 of the gift:
+    // 5,000 - 500 = 4,500 allowed. SALT 8,000 is under the 40,400 cap.
+    //   itemized before 68:  8,000 + 12,000 + 4,500 = 24,500
+    //   68(a)(2) base:       100,000 - 0 senior - 640,600 (37% start) < 0 -> 0
+    //   68 reduction:        2/37 x min(24,500, 0) = 0
+    // 24,500 > 16,100 standard, so the election goes to itemizing.
     expect(d.itemized).toBe(true)
-    expect(d.deduction).toBe(25_000) // 8k + 12k + 5k
-    expect(d.taxableIncome).toBe(75_000)
+    expect(d.section68Limitation).toBe(0)
+    expect(d.deduction).toBe(24_500)
+    expect(d.taxableIncome).toBe(75_500)
   })
 
   it('caps the SALT component at the pack saltCap', () => {
@@ -1010,14 +1017,17 @@ describe('registered rules: rate schedules, deductions, AMT, NIIT', () => {
   // itemized total, are the two misreadings on either side of it.
   //
   // Single, 300,000 ordinary, 60,000 of state and local taxes capped at 40,400,
-  // 10,000 charitable. Itemized total 50,400, taxable income 249,600.
-  //   capped SALT only:      249,600 + 40,400 = 290,000
-  //   no add-back:           249,600
-  //   whole itemized total:  249,600 + 50,400 = 300,000
+  // 10,000 charitable. 170(b)(1)(I) disallows 0.5% of the 300,000 contribution
+  // base, so 10,000 - 1,500 = 8,500 of the gift is allowed; 68 does not reach a
+  // 300,000 AGI at all, since the 37% bracket starts at 640,600. Itemized total
+  // 40,400 + 8,500 = 48,900, taxable income 300,000 - 48,900 = 251,100.
+  //   capped SALT only:      251,100 + 40,400 = 291,500
+  //   no add-back:           251,100
+  //   whole itemized total:  251,100 + 48,900 = 300,000
   describeRule('irc-56-b-1-A-ii-state-and-local-taxes-disallowed-for-amt', {
     readings: {
-      cappedStateAndLocalTaxesOnly: 290_000,
-      noAddBack: 249_600,
+      cappedStateAndLocalTaxesOnly: 291_500,
+      noAddBack: 251_100,
       wholeItemizedTotal: 300_000,
     },
     accepted: 'cappedStateAndLocalTaxesOnly',
@@ -1028,7 +1038,7 @@ describe('registered rules: rate schedules, deductions, AMT, NIIT', () => {
         itemizedDeductions: { stateAndLocalTaxes: 60_000, mortgageInterest: 0, charitable: 10_000 },
       }))
 
-      expect(result.taxableIncome).toBe(249_600)
+      expect(result.taxableIncome).toBe(251_100)
       expect(result.alternativeMinimumTaxableIncome).toBeCloseTo(accepted, 6)
       expect(result.alternativeMinimumTaxableIncome).not.toBeCloseTo(readings.noAddBack, 6)
       expect(result.alternativeMinimumTaxableIncome).not.toBeCloseTo(readings.wholeItemizedTotal, 6)
