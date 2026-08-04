@@ -13,6 +13,7 @@ import {
   type RetirementActionRequest,
 } from '../actions/index.js'
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../model/plan.js'
+import { describeRule } from '../rules/describeRule.js'
 import { createFederalTaxCalculator } from '../tax/federalTax.js'
 import { createFlatTaxCalculator } from './flatTax.js'
 import { simulatePlan } from './simulate.js'
@@ -2149,5 +2150,228 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
     const rightYear = run(right).years[0]!
     expect(leftYear.retirementActionExecution).toEqual(rightYear.retirementActionExecution)
     expect(leftYear.balances).toEqual(rightYear.balances)
+  })
+})
+
+describe('named Roth conversion RMD-reserve evidence in the annual ledger', () => {
+  function rothIra(id: string, ownerPersonId = 'p1'): Account {
+    return {
+      type: 'roth',
+      id,
+      name: id,
+      ownerPersonId,
+      annualReturnPct: 0,
+      kind: 'ira',
+      balance: 0,
+      annualContribution: 0,
+    }
+  }
+
+  function traditionalIra(
+    id: string,
+    balance: number,
+    kind: 'ira' | 'employer' = 'ira',
+    ownerPersonId = 'p1',
+  ): Account {
+    return {
+      type: 'traditional',
+      id,
+      name: id,
+      ownerPersonId,
+      annualReturnPct: 0,
+      kind,
+      balance,
+      annualContribution: 0,
+    }
+  }
+
+  /** A qualified premium that empties `fundingAccountId` before the RMD block. */
+  function emptyingAnnuity(id: string, fundingAccountId: string, premium: number): Account {
+    return {
+      type: 'annuity',
+      id,
+      name: id,
+      ownerPersonId: 'p1',
+      annualReturnPct: null,
+      startAge: 95, // no payment in 2026; only the premium leaves the IRA
+      monthlyAmount: 1_000,
+      colaPct: 0,
+      taxablePct: 100,
+      purchase: { year: 2026, premium, fundingAccountId, taxQualification: 'qualified' },
+    }
+  }
+
+  function conversionFrom(sourceAccountId: string, dollars = 1_000): RetirementActionRequest {
+    return parsedAction({
+      actionId: 'reserve-conversion',
+      kind: 'rothConversion',
+      personId: 'p1',
+      year: 2026,
+      executionDate: '2026-12-31',
+      executionSequence: 1,
+      requestedAmount: dollars * 100,
+      allocations: [{
+        allocationId: 'reserve-conversion-allocation',
+        sourceAccountId,
+        requestedAmount: dollars * 100,
+      }],
+      destinationRothAccountId: 'roth-dest',
+      taxFunding: { kind: 'noneExpected' },
+      provenance: { source: 'manual' },
+    })
+  }
+
+  /** Born 1953 -> age 73 in 2026 -> Uniform Lifetime divisor 26.5. */
+  function rmdAgedPlan(): Plan {
+    const plan = basePlan()
+    plan.household.people[0]!.dob = '1953-06-15'
+    plan.household.people[0]!.retirementAge = null
+    plan.expenses.baseAnnual = 0
+    return plan
+  }
+
+  function reserveDisposition(plan: Plan): 'blocked' | 'cleared' {
+    const year = run(plan).years[0]!
+    const evidence = year.rothConversionActionExecution?.evidence ?? []
+    if (evidence.length !== 1) throw new Error('fixture drift: expected one conversion record')
+    return evidence[0]!.reasons.some(
+      (reason) => reason.code === 'conversion-rmd-reserve-unavailable',
+    ) ? 'blocked' : 'cleared'
+  }
+
+  // Treas. Reg. 1.408A-4 A-6(b) bars a conversion "to the extent that the
+  // required minimum distribution ... has not been distributed", and Treas.
+  // Reg. 1.408-8(e)(1)(i) makes the amount that must come out the SUM of the
+  // owner's separately calculated IRA amounts, distributable from any one or
+  // more of those IRAs. Two owners therefore stand in different places even
+  // though the conversion pass runs after the RMD block in both:
+  //
+  //   sole IRA of 265,000 (RMD 10,000) emptied by a qualified annuity premium
+  //     -> the sum has nowhere left to come from; A-6(b) still bars the
+  //        conversion
+  //   IRA A 265,000 (RMD 10,000) emptied the same way, IRA B 530,000 (RMD
+  //   20,000) intact
+  //     -> the (e)(1)(i) sweep takes all 30,000 out of IRA B; nothing is
+  //        withheld
+  //
+  // Reading position in the year loop as proof clears both, which is the whole
+  // reason the outcome is carried as evidence. The pre-sweep per-account floor
+  // blocks both, because IRA B would have distributed only its own 20,000.
+  describeRule('treas-reg-1-408A-4-a-6-rmd-precedes-conversion', {
+    note: 'named-action RMD-reserve evidence',
+    readings: {
+      aggregatedSumActuallyDistributed: { emptiedSoleIra: 'blocked', sweptAcrossOwnerIras: 'cleared' },
+      positionInTheYearLoop: { emptiedSoleIra: 'cleared', sweptAcrossOwnerIras: 'cleared' },
+      perAccountFloorWithoutTheSweep: { emptiedSoleIra: 'blocked', sweptAcrossOwnerIras: 'blocked' },
+    },
+    accepted: 'aggregatedSumActuallyDistributed',
+  }, ({ accepted, readings }) => {
+    it('bars the conversion when every aggregated IRA was emptied before the sum came out', () => {
+      const plan = rmdAgedPlan()
+      plan.accounts = [
+        cash('cash-a', 0),
+        traditionalIra('ira-a', 265_000),
+        rothIra('roth-dest'),
+        emptyingAnnuity('ann-a', 'ira-a', 265_000),
+      ]
+      plan.strategies.retirementActions = [conversionFrom('ira-a')]
+
+      const year = run(plan).years[0]!
+      expect(year.balances['ira-a']).toBeCloseTo(0, 6)
+      expect(year.rmd).toBeCloseTo(0, 6) // nothing was left to distribute
+      expect(reserveDisposition(plan)).toBe(accepted.emptiedSoleIra)
+      expect(reserveDisposition(plan)).not.toBe(readings.positionInTheYearLoop.emptiedSoleIra)
+    })
+
+    it('clears the conversion when the sweep took the whole sum from another owned IRA', () => {
+      const plan = rmdAgedPlan()
+      plan.accounts = [
+        cash('cash-a', 0),
+        traditionalIra('ira-a', 265_000),
+        traditionalIra('ira-b', 530_000),
+        rothIra('roth-dest'),
+        emptyingAnnuity('ann-a', 'ira-a', 265_000),
+      ]
+      plan.strategies.retirementActions = [conversionFrom('ira-b')]
+
+      const year = run(plan).years[0]!
+      expect(year.balances['ira-a']).toBeCloseTo(0, 6)
+      expect(year.rmd).toBeCloseTo(30_000, 6) // 10,000 swept into IRA B on top of its own 20,000
+      expect(reserveDisposition(plan)).toBe(accepted.sweptAcrossOwnerIras)
+      expect(reserveDisposition(plan))
+        .not.toBe(readings.perAccountFloorWithoutTheSweep.sweptAcrossOwnerIras)
+    })
+  })
+
+  it('clears the reserve for an owner with no aggregated IRA RMD due', () => {
+    // Born 1970 -> age 56 in 2026. A sum of zero has already been distributed.
+    const plan = basePlan()
+    plan.expenses.baseAnnual = 0
+    plan.accounts = [
+      cash('cash-a', 0),
+      traditionalIra('ira-a', 265_000),
+      rothIra('roth-dest'),
+    ]
+    plan.strategies.retirementActions = [conversionFrom('ira-a')]
+
+    const year = run(plan).years[0]!
+    expect(year.rmd).toBeCloseTo(0, 6)
+    expect(reserveDisposition(plan)).toBe('cleared')
+  })
+
+  it('never counts an employer plan or an inherited IRA toward the owner IRA sum', () => {
+    // Treas. Reg. 1.408-8(e)(2)(i) aggregates only the IRAs the individual
+    // holds as owner, and (e)(3) keeps an employer plan out entirely. Both of
+    // the other accounts below force a distribution of their own in 2026, and
+    // together they move more than the unmet IRA amount — none of it may make
+    // the section 408 sum look distributed.
+    const plan = rmdAgedPlan()
+    plan.accounts = [
+      cash('cash-a', 0),
+      traditionalIra('ira-a', 265_000),
+      traditionalIra('plan-e', 530_000, 'employer'),
+      {
+        ...(traditionalIra('ira-inherited', 530_000) as Extract<Account, { type: 'traditional' }>),
+        inherited: { ownerDeathYear: 2025, decedentHadStartedRmds: true },
+      },
+      rothIra('roth-dest'),
+      emptyingAnnuity('ann-a', 'ira-a', 265_000),
+    ]
+    plan.strategies.retirementActions = [conversionFrom('ira-a')]
+
+    const year = run(plan).years[0]!
+    expect(year.balances['plan-e']).toBeLessThan(530_000) // the plan distributed its own amount
+    expect(year.balances['ira-inherited']).toBeLessThan(530_000) // as did the inherited IRA
+    expect(year.balances['ira-a']).toBeCloseTo(0, 6)
+    expect(reserveDisposition(plan)).toBe('blocked')
+  })
+
+  it('publishes a cleared-reserve conversion without moving a dollar', () => {
+    const plan = rmdAgedPlan()
+    plan.accounts = [
+      cash('cash-a', 0),
+      traditionalIra('ira-a', 265_000),
+      traditionalIra('ira-b', 530_000),
+      rothIra('roth-dest'),
+      emptyingAnnuity('ann-a', 'ira-a', 265_000),
+    ]
+    plan.strategies.retirementActions = [conversionFrom('ira-b')]
+
+    const year = run(plan).years[0]!
+    expect(year.rothConversionActionExecution).toMatchObject({ committed: false })
+    expect(year.rothConversionActionExecution?.evidence[0]).toMatchObject({
+      actionId: 'reserve-conversion',
+      outcome: 'unsupported',
+      readiness: 'nonActionable',
+      executedAmount: 0,
+      destinationCreditAmount: 0,
+    })
+    expect(year.retirementActionPublication?.records[0]).toMatchObject({
+      actionId: 'reserve-conversion',
+      executorSource: 'rothConversionExecutor',
+      executedAmount: 0,
+    })
+    expect(year.balances['roth-dest']).toBeCloseTo(0, 6)
+    expect(year.balances['ira-b']).toBeCloseTo(500_000, 6) // 530,000 less the 30,000 sum
   })
 })

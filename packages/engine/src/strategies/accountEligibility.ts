@@ -131,9 +131,88 @@ export interface NonpersistedPriorQcdOffsetEvidence {
   priorOffsetApplied: UsdCents
 }
 
+/**
+ * One action's binding to the owner's aggregated-IRA RMD outcome for the year.
+ *
+ * Treas. Reg. 1.408-8(e)(1)(i) calculates the amount separately for each IRA
+ * but requires only "the sum of those separately calculated required minimum
+ * distributions" to come out, from any one or more of them; (e)(2)(i)
+ * aggregates only the IRAs the individual holds as owner. `requiredAmount` is
+ * that sum and `distributedAmount` is what the owner's aggregated IRAs
+ * actually distributed against it — an employer plan or an inherited IRA is
+ * outside the aggregation and contributes to neither figure.
+ *
+ * Position in a simulator's year loop is not evidence of any of this, which is
+ * why the outcome is carried explicitly and keyed to the action it authorises.
+ */
+export interface NonpersistedOwnerIraRmdSatisfactionEvidence {
+  evidenceId: string
+  actionId: ActionId
+  personId: PersonId
+  actionYear: number
+  /** Exact submitted execution date, or null when the request has no date. */
+  actionDate: string | null
+  /** The owner's separately calculated aggregated-IRA RMD sum for the year. */
+  requiredAmount: UsdCents
+  /** How much of that sum the owner's aggregated IRAs distributed. */
+  distributedAmount: UsdCents
+}
+
 export interface RetirementActionEligibilityRuntimeEvidence {
   personAliveEvidence?: readonly NonpersistedActionPersonAliveEvidence[]
   priorQcdOffsetEvidence?: readonly NonpersistedPriorQcdOffsetEvidence[]
+  ownerIraRmdSatisfactionEvidence?:
+    readonly NonpersistedOwnerIraRmdSatisfactionEvidence[]
+}
+
+/**
+ * Whether the owner's aggregated IRA RMD sum had been distributed when this
+ * conversion would execute — the predicate Treas. Reg. 1.408A-4 A-6(b) turns
+ * on, since it bars a conversion "to the extent that" the required minimum
+ * distribution for the year has not been distributed.
+ *
+ * `unproven` is not a synonym for `unsatisfied`; it is the absence of the
+ * evidence. Both block, and only `satisfied` clears — evidence that is
+ * missing, duplicated, unbound, or malformed can never read as satisfaction.
+ */
+export type OwnerIraRmdSatisfaction = 'satisfied' | 'unsatisfied' | 'unproven'
+
+function isNonnegativeCentAmount(value: unknown): value is UsdCents {
+  return typeof value === 'number' &&
+    Number.isSafeInteger(value) &&
+    value >= 0 &&
+    !Object.is(value, -0)
+}
+
+/**
+ * Bind the owner IRA-RMD-satisfaction channel to one conversion request. A sum
+ * of zero is satisfied by distributing nothing: the regulation requires the
+ * sum to be distributed, and a sum of zero already has been.
+ */
+export function resolveOwnerIraRmdSatisfaction(
+  request: RothConversionRequest,
+  runtimeEvidence: RetirementActionEligibilityRuntimeEvidence = {},
+): OwnerIraRmdSatisfaction {
+  const evidence = uniqueIndex(
+    runtimeEvidence.ownerIraRmdSatisfactionEvidence ?? [],
+    (entry) => entry.actionId,
+  ).get(request.actionId)
+  if (
+    evidence == null ||
+    typeof evidence.evidenceId !== 'string' ||
+    evidence.evidenceId.trim().length === 0 ||
+    evidence.personId !== request.personId ||
+    !Number.isSafeInteger(evidence.actionYear) ||
+    evidence.actionYear !== request.year ||
+    evidence.actionDate !== (request.executionDate ?? null) ||
+    !isNonnegativeCentAmount(evidence.requiredAmount) ||
+    !isNonnegativeCentAmount(evidence.distributedAmount)
+  ) {
+    return 'unproven'
+  }
+  return evidence.distributedAmount >= evidence.requiredAmount
+    ? 'satisfied'
+    : 'unsatisfied'
 }
 
 export interface NonpersistedRetirementActionEligibilityContext {

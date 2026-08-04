@@ -65,6 +65,7 @@ import {
   isSpendableInYear,
   traditionalWithdrawalPenaltyRate,
   type NonpersistedActionPersonAliveEvidence,
+  type NonpersistedOwnerIraRmdSatisfactionEvidence,
 } from '../strategies/accountEligibility.js'
 import { openIraProRataYear, splitIraDistribution, type IraProRataYear } from '../strategies/iraBasis.js'
 import { propertySaleTax } from '../tax/propertySale.js'
@@ -75,6 +76,7 @@ import {
 import {
   asAccountId,
   asPersonId,
+  asUsdCents,
   assessOrdinaryWithdrawalPlanBoundary,
   evaluateRetirementActionSchedule,
   executeOrdinaryWithdrawals,
@@ -2683,6 +2685,16 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     /** Dollars this account must distribute, own share plus any swept share. */
     const rmdTakeByAccount = new Map<string, number>()
     const unmetIraRmdByOwner = new Map<string, number>()
+    /**
+     * The owner's (e)(1)(i) sum: the separately calculated amounts of the IRAs
+     * they hold as owner, and nothing else. An employer plan's amount and an
+     * inherited IRA's forced distribution are outside the section 408
+     * aggregation and never join this figure, so they can never make the sum
+     * look distributed.
+     */
+    const iraRmdRequiredByOwner = new Map<string, number>()
+    /** The part of that sum still undistributed once the sweep has finished. */
+    const iraRmdUnsatisfiedByOwner = new Map<string, number>()
     for (const state of balances) {
       if (state.account.type !== 'traditional') continue
       if (!followsOwnerRmds(state.account)) continue // inherited accounts follow the 10-year rule below, not Uniform Lifetime
@@ -2705,6 +2717,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         { ownerSex: owner.sex, spouse },
       )
       if (rmd <= 0) continue
+      if (isAggregatedIra(state.account)) {
+        iraRmdRequiredByOwner.set(ownerId, (iraRmdRequiredByOwner.get(ownerId) ?? 0) + rmd)
+      }
       const take = Math.min(rmd, state.balance)
       if (take > 0) rmdTakeByAccount.set(state.account.id, take)
       // Only an IRA share can be satisfied elsewhere. An employer plan short
@@ -2731,6 +2746,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         rmdTakeByAccount.set(state.account.id, ownShare + swept)
         remaining -= swept
       }
+      // After the sweep an owner's IRA RMD can only remain unsatisfied when
+      // every one of their aggregated IRAs is empty. EPSILON is half a cent,
+      // so a residue that survives this test is at least one cent short in the
+      // exact-cent ledger the conversion executor reads.
+      if (remaining > EPSILON) iraRmdUnsatisfiedByOwner.set(ownerId, remaining)
     }
     for (const state of balances) {
       // Only traditional accounts were ever entered above; the guard is here
@@ -3346,12 +3366,49 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         actionDate: request.executionDate ?? null,
         alive: peopleStates.find((state) => state.personId === request.personId)?.alive ?? false,
       }))
+      // Treas. Reg. 1.408A-4 A-6(b) bars converting while the year's required
+      // minimum distribution is undistributed, and the two-pass RMD block
+      // above is where that question was actually settled for each owner. It
+      // is published here as request-keyed evidence rather than left implicit
+      // in the order of these statements: being downstream of the RMD block is
+      // not evidence that the RMD came out, and the executor must be able to
+      // tell an owner whose sum was distributed from one whose IRAs were all
+      // emptied before the sum could be taken.
+      //
+      // Both figures cross into exact cents, and an owner whose evidence
+      // cannot be represented there is omitted entirely — the executor then
+      // reads no evidence and keeps the blocking reason.
+      const ownerIraRmdSatisfactionEvidence = currentYearConversionActions
+        .flatMap((request): NonpersistedOwnerIraRmdSatisfactionEvidence[] => {
+          const required = iraRmdRequiredByOwner.get(request.personId) ?? 0
+          const unsatisfied = iraRmdUnsatisfiedByOwner.get(request.personId) ?? 0
+          try {
+            const requiredAmount = planDollarsToLedgerCents(required)
+            const shortfall = planDollarsToLedgerCents(Math.max(0, unsatisfied))
+            return [{
+              evidenceId: `projection-owner-ira-rmd-satisfaction:${JSON.stringify([
+                request.actionId,
+                request.personId,
+                year,
+                request.executionDate ?? null,
+              ])}`,
+              actionId: request.actionId,
+              personId: request.personId,
+              actionYear: year,
+              actionDate: request.executionDate ?? null,
+              requiredAmount,
+              distributedAmount: asUsdCents(Math.max(0, requiredAmount - shortfall)),
+            }]
+          } catch {
+            return []
+          }
+        })
       rothConversionActionExecution = executeRothConversions({
         year,
         plan,
         requests: currentYearConversionActions,
         openingBalances,
-        runtimeEvidence: { personAliveEvidence },
+        runtimeEvidence: { personAliveEvidence, ownerIraRmdSatisfactionEvidence },
       })
     }
 
