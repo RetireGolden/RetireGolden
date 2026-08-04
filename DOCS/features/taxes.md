@@ -8,6 +8,13 @@ all dollar values come from versioned parameter packs, never hardcoded.
 The source-verified [tax-strategy coverage and claim-control inventory](../domain/tax-strategy-coverage-inventory.md)
 states which modeled results can support cockpit-v1 comparisons or actions and which require narrower wording
 or prerequisite engine work.
+Statutory authority is not restated in these pages. It lives in the typed, frozen rule registry
+([engine/rules/taxRuleRegistry.ts](../../packages/engine/src/rules/taxRuleRegistry.ts)) — one record per rule with
+the operative language quoted rather than paraphrased, the reading taken, the jurisdiction, the date last verified,
+the engine sources implementing it, and a classification saying whether the engine returns the authority's figure
+(`settled`), returns a knowably-wrong one and in which direction (`approximated` plus a required `errorDirection`),
+refuses to answer (`outOfScope`), or is working without controlling authority (`unsettled`). Cite the record ID;
+do not paraphrase the statute here.
 
 **Code:** [engine/tax/federalTax.ts](../../packages/engine/src/tax/federalTax.ts),
 [engine/tax/stateTax.ts](../../packages/engine/src/tax/stateTax.ts),
@@ -46,6 +53,18 @@ State brackets are a separate question and are still held nominal (see `params/s
   deduction phase-out (§151(d)(5)(C)(iii)(II)) run off that figure rather than the AGI line.
 - **NIIT** 3.8% over $200k/$250k MAGI (unindexed). **Early-withdrawal penalty** 10% pre-59½, with the
   Rule-of-55 / 72(t) **SEPP** exceptions ([strategies/sepp.ts](../../packages/engine/src/strategies/sepp.ts)).
+  Both SEPP methods — required-minimum-distribution and amortization — divide by the IRS **Single Life Table**
+  from the parameter pack, which is unisex and fixed by regulation, so nothing in the SEPP path takes a sex; a
+  SEPP on an employer plan additionally requires separation from service, proved in the annual ledger from the
+  owner's plan retirement age (domain rules §11).
+- **QCD:** a modeled household QCD is excluded from ordinary income and counts toward an RMD when one is due. It
+  is **not** conditional on an RMD: the pre-RMD window from 70½ (resolved from the birth month at annual
+  granularity — attained 71, or attained 70 with a January–June birth month) to the applicable RMD age is open,
+  and dollars requested beyond the owner's IRA RMD are debited straight from donor-owned aggregated IRAs, shrinking
+  every later RMD base. Only the taxable share of the routed RMD dollars reduces income; the beyond-RMD dollars
+  never entered it, so deducting them would be phantom. The annual ledger still applies eligibility and the annual
+  limit to the household rather than to each donor, and still runs pro-rata basis recovery across the whole
+  distribution before subtracting the gift — both are registered approximations (domain rules §6).
 - **Planning-grade AMT screen:** AMTI starts from taxable income plus modeled AMT add-backs (the §63(c)
   standard deduction for non-itemizers, itemized SALT when itemizing, the §151 senior deduction on either
   branch per §56(b)(1)(D), and any advanced calculator-only
@@ -55,7 +74,9 @@ State brackets are a separate question and are still held nominal (see `params/s
   substitute.
 - **IRMAA:** Medicare Part B/D surcharges from **MAGI two years prior** (a conversion at 63+ hits Medicare
   pricing); the brackets are cliffs, so bracket-edge warnings show "$1 over costs $X/yr"
-  ([medicare.ts](../../packages/engine/src/tax/medicare.ts)).
+  ([medicare.ts](../../packages/engine/src/tax/medicare.ts)). The **top** tier ($500k/$750k) is frozen through
+  premium year 2027 and then resumes indexing off an August 2026 base; the four tiers beneath it index without
+  interruption (domain rules §7).
 - **SSA-44 redetermination (opt-in, `expenses.healthcare.ssa44`):** after a qualifying life-changing event —
   a couple's first death, and optionally each person's retirement year — the two following premium years
   price IRMAA on **min(lookback MAGI, prior-year MAGI)**, the planning-grade stand-in for the current-year
@@ -146,6 +167,38 @@ proceeds enter liquidity once and are not also treated as income or as a second 
 This is still annual, planning-grade valuation: the account's current annual state is used for the action even
 when the request has a civil execution date. Dated market valuation, tax lots, wash sales, joint attribution,
 and filed-return state tax-unit reconstruction are not modeled.
+
+## Named Roth-conversion actions
+
+A `rothConversion` retirement action names an owner, its source accounts, and a destination Roth, and the annual
+projection commits it: sources are debited and the Roth credited inside the year's ledger, outside the legacy
+withdrawal map so no account is debited twice, with a conversion basis layer opened for the 5-year clock. Zero- and
+nonzero-basis owners move identical dollars
+([actions/rothConversionExecution.ts](../../packages/engine/src/actions/rothConversionExecution.ts)).
+
+Admission turns on the Form 8606 basis **numerator being known**, not on its being zero. Reading `zeroBasis` as the
+admission predicate would make admission depend on the settlement that admission governs, which is circular. At a
+proven-zero numerator the executor states the whole gross as taxable. At a positive one it commits the dollars and
+states **no** character — the taxable and nontaxable figures go null together, and half-stating the pair is
+rejected — and the annual settlement supplies the Form 8606 line-10 ratio back through the assumption vector the
+annual pass already iterates, so the year holds one answer to the owner's pro-rata question rather than a second
+mid-year one. The conversion layer's recapture amount is then the credited dollars net of that basis return, per
+§408A(d)(3)(F)(ii): at a positive numerator the basis rolled into the Roth was never included in income, so it
+carries no recapture.
+
+Still refused, with balances unchanged and an exact reason: a conversion whose tax is funded by a linked sibling
+withdrawal (`conversion-tax-funding-evidence-unsupported` — the atomic annual group executor that would move both
+together does not exist, and the sibling withdrawal is refused for the same reason), withholding from conversion
+principal, and a request larger than the source. There is no partial-execution arm: a conversion that would be
+trimmed blocks rather than converting what fits.
+
+The optimizer cannot propose one. A plan that already carries retirement actions is refused up front by the typed
+`optimizerUnsupportedRetirementActions` precondition, because the optimizer prices conversions against aggregate
+account balances that do not reflect what a recorded action moves. And any schedule it would otherwise publish that
+converts a positive amount is vetoed `identityIncomplete` — an aggregate schedule carries no owner, source, or
+destination — so today the optimizer publishes a positive-conversion recommendation to nobody, and the tournament
+falls back to whatever conversions the plan already carries. The LP does now net committed action movement into its
+per-year balance recursion, so the arithmetic is in place ahead of the veto being liftable.
 
 ## Taxable brokerage yield
 
@@ -327,7 +380,7 @@ rules and citations: [domain rules §16](../domain/domain-rules-reference.md#16-
   The standalone-only `buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput` boundary now
   binds the canonical candidate, complete owner-wide December 31 pool, basis, and contribution-window
   evidence into a frozen classifier input without classifying or executing it; see
-  [domain rules §16](../domain/domain-rules-reference.md#16-retirement-action-source-integrity).
+  [domain rules §16](../domain/domain-rules-reference.md#16-account-eligibility-hsa-nondeductible-basis-and-fixed-asset-disposition-opt-in).
   Separately, `validateOwnedNonRothIraSeppCurrentPaymentCandidate` validates one current named SEPP
   payment as a provisional schedule-state transition. Its raw payment record references the canonical
   distribution and prior terminal state rather than restating caller-computed actual gross, character,
@@ -420,9 +473,11 @@ need.
   aggregate basis is not a qualified-plan employer-stock NUA election. Neither DAF nor NUA may be presented as
   a modeled opportunity or action.
 - **Implementation actions:** annual ledger outputs are household planning estimates, not custodian-ready
-  instructions. In particular, Roth-conversion schedules do not identify an owner, source account, or
-  destination account, and the QCD input does not identify the eligible person, IRA, charity, or direct
-  transfer. Withdrawal-order results report account-category totals; sequential and bracket-targeted draws
+  instructions. In particular, **aggregate** Roth-conversion schedules — manual, fill-to-target, and
+  optimizer-produced — do not identify an owner, source account, or destination account; a named `rothConversion`
+  action does, and is the only conversion path that commits to identified accounts. The QCD input does not identify
+  the eligible person, IRA, charity, or direct transfer. Withdrawal-order results report account-category
+  totals; sequential and bracket-targeted draws
   consume same-category accounts in plan-array order, so those totals do not identify an implementation-ready
   owner/account source either. The engine does not select security lots, establish deadlines or legal
   eligibility, populate tax forms, transmit an instruction, or record professional confirmation. See the
