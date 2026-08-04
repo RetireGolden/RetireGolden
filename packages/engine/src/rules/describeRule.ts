@@ -31,7 +31,17 @@ export interface RuleFixtureSpec<Readings extends Readonly<Record<string, unknow
   readonly readings: Readings
   /** The reading the registered authority supports. */
   readonly accepted: keyof Readings & string
-  /** Optional note on why the other readings are wrong, beyond the registry. */
+  /**
+   * Short label naming the question THIS fixture settles, for a rule covered by
+   * more than one of them. Appended to the suite name.
+   *
+   * A rule needs a second fixture whenever it turns on two independent
+   * questions, because one spec cannot hold both — the readings would collide
+   * on a value, which `readings` refuses below. So IRC 72(b) takes one fixture
+   * for the exclusion ratio and another for the (b)(2) cap. Without a label the
+   * suites are indistinguishable in the reporter, and a failure names the rule
+   * rather than the reading that broke.
+   */
   readonly note?: string
 }
 
@@ -74,7 +84,8 @@ export function describeRule<const Readings extends Readonly<Record<string, unkn
     throw new RangeError(`Rule ${ruleId} accepted reading is not among its candidate readings`)
   }
 
-  describe(`${ruleId} — ${rule.title}`, () => {
+  const label = spec.note === undefined ? '' : ` — ${spec.note}`
+  describe(`${ruleId} — ${rule.title}${label}`, () => {
     suite({
       accepted: spec.readings[spec.accepted] as Readings[keyof Readings],
       readings: spec.readings,
