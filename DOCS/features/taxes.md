@@ -11,10 +11,10 @@ or prerequisite engine work.
 Statutory authority is not restated in these pages. It lives in the typed, frozen rule registry
 ([engine/rules/taxRuleRegistry.ts](../../packages/engine/src/rules/taxRuleRegistry.ts)) — one record per rule with
 the operative language quoted rather than paraphrased, the reading taken, the jurisdiction, the date last verified,
-the engine sources implementing it, and a classification saying whether the engine returns the authority's figure
-(`settled`), returns a knowably-wrong one and in which direction (`approximated` plus a required `errorDirection`),
-refuses to answer (`outOfScope`), or is working without controlling authority (`unsettled`). Cite the record ID;
-do not paraphrase the statute here.
+the engine sources implementing it, and a classification: `settled` where the engine returns the authority's
+figure, `approximated` where it returns a knowably-wrong one — with a required `errorDirection` saying which way it
+errs — `outOfScope` where it refuses to answer, and `unsettled` where it is working without controlling
+authority. Cite the record ID; do not paraphrase the statute here.
 
 **Code:** [engine/tax/federalTax.ts](../../packages/engine/src/tax/federalTax.ts),
 [engine/tax/stateTax.ts](../../packages/engine/src/tax/stateTax.ts),
