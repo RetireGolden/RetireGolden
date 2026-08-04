@@ -4639,8 +4639,30 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           remainingConvertibleGross += Math.max(0, state.balance)
         }
       }
+      // Committed action movement for the LP's balance recursion. Mirrors the
+      // apply loop above exactly — same `committed` gate, same changed-snapshot
+      // filter, same cents→dollars conversion — so the solver's buckets move by
+      // the dollars this ledger actually moved, not by the request. A refused or
+      // partially executed request therefore reports what executed and nothing
+      // more. Named Roth conversions contribute none: `executeRothConversions`
+      // publishes evidence only (`committed: false` by type) and moves no
+      // balance, so there is no second source to fold in here.
+      const optimizerCommittedActionAccountMovement =
+        retirementActionExecution?.committed
+          ? retirementActionExecution.balances
+            .filter((snapshot) => snapshot.closingBalance !== snapshot.openingBalance)
+            .map((snapshot) => ({
+              accountId: String(snapshot.accountId),
+              amount:
+                ledgerCentsToPlanDollars(snapshot.closingBalance) -
+                ledgerCentsToPlanDollars(snapshot.openingBalance),
+            }))
+            .sort((left, right) => compareUtf16CodeUnits(left.accountId, right.accountId))
+          : []
       optimizerProbe = {
         year,
+        committedActionAccountMovement: optimizerCommittedActionAccountMovement,
+        committedActionProceeds: retirementActionProceeds,
         ordinaryIncomeBase: optimizerOrdinaryIncomeBase,
         spendingNeed: expenses.total + contributions,
         exogenousCash: incomes.total - taxableYieldReinvested,
