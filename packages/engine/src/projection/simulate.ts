@@ -103,6 +103,7 @@ import { type SimulatorAnnualRetirementRuntimeOccurrence } from './annualRetirem
 import type { SimulatorAnnualPassStateBindings } from './annualPassTransaction.js'
 import {
   captureOwnedNonRothIraAnnualAttemptStateEvidence,
+  ownedNonRothIraAnnualSettlementRollbackOwner,
   runOwnedNonRothIraAnnualSettlementAttempts,
   type OwnedNonRothIraAnnualSettlementEffect,
 } from '../internal/ownedNonRothIraAnnualAttemptSettlement.js'
@@ -843,7 +844,28 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   }
 
   const years: YearResult[] = []
-  let ownedNonRothIraSettlementEnabled = iraBasisByOwner.size > 0
+  // Owned-IRA annual settlement disposition. A rolled-back year commits no
+  // carryforward, so the owner's `iraBasisByOwner` entry keeps an opening
+  // figure the year's distributions already consumed: that owner's numerator
+  // is untrustworthy from then on, and permanently ceasing to claim or publish
+  // a settled figure for them is the right fail-closed disposition.
+  //
+  // The failure is per owner, though, and so is the remedy. `iraBasisByOwner`,
+  // the committed carryforwards, and the replay issues are all owner-keyed, so
+  // a rollback that names an owner disqualifies only that owner. A rollback
+  // that names nobody is not evidence about any one owner and must stay
+  // household-wide fail-closed, exactly as it was before.
+  const ownedNonRothIraSettlementRolledBackOwners = new Set<string>()
+  let ownedNonRothIraSettlementRolledBackHousehold = false
+  const ownedNonRothIraSettlementOwnerEnabled = (ownerId: string): boolean =>
+    !ownedNonRothIraSettlementRolledBackHousehold &&
+    !ownedNonRothIraSettlementRolledBackOwners.has(ownerId)
+  // Settle while at least one owner still has a basis pool this projection is
+  // allowed to settle. With no rollback recorded this is the historical
+  // `iraBasisByOwner.size > 0`.
+  const ownedNonRothIraSettlementEnabled = (): boolean =>
+    !ownedNonRothIraSettlementRolledBackHousehold &&
+    [...iraBasisByOwner.keys()].some(ownedNonRothIraSettlementOwnerEnabled)
   let depletionYear: number | null = null
 
   // Spending policy (planning-depth roadmap §4). Under withdrawal-rate or
@@ -5672,7 +5694,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }
 
     let settledAnnualPass: ReturnType<typeof runPostContributionAnnualPass>
-    if (ownedNonRothIraSettlementEnabled) {
+    if (ownedNonRothIraSettlementEnabled()) {
       let finalAttempt:
         ReturnType<typeof runPostContributionAnnualPass> | null = null
       const settlement = runOwnedNonRothIraAnnualSettlementAttempts({
@@ -5761,6 +5783,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           }
         }
         for (const carryforward of settlement.committedCarryforwards) {
+          // A disqualified owner keeps the legacy figure this year's pass
+          // already committed. Re-seeding them from a replay that opened on
+          // their stale basis would republish the very numerator the earlier
+          // rollback disqualified.
+          if (!ownedNonRothIraSettlementOwnerEnabled(
+            carryforward.ownerPersonId,
+          )) continue
           const openingBasis = ledgerCentsToPlanDollars(
             carryforward.openingBasisAmount,
           )
@@ -5770,12 +5799,20 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             iraBasisByOwner.delete(carryforward.ownerPersonId)
           }
         }
-        ownedNonRothIraSettlementEnabled = iraBasisByOwner.size > 0
-        const publication =
-          committedOwnedNonRothIraAnnualReplayPublication(
+        // The publication is one joined household replay, and the module
+        // refuses to emit a partial one. When a disqualified owner appears in
+        // it the whole publication is withheld: an unaffected owner keeps the
+        // settled economics that drive their conversions, but nothing states a
+        // disqualified owner's basis as settled.
+        const publishableOwners = settlement.pendingSettlement.replay
+          .annualReplays.every((annual) => annual.ownerReplays.every((owner) =>
+            ownedNonRothIraSettlementOwnerEnabled(owner.ownerPersonId)))
+        const publication = publishableOwners
+          ? committedOwnedNonRothIraAnnualReplayPublication(
             settlement,
             settledAnnualPass.yearResult,
           )
+          : null
         if (publication !== null) {
           settledAnnualPass = {
             ...settledAnnualPass,
@@ -5786,7 +5823,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           }
         }
       } else {
-        ownedNonRothIraSettlementEnabled = false
+        const rolledBackOwner = ownedNonRothIraAnnualSettlementRollbackOwner(
+          settlement,
+          new Set(iraBasisByOwner.keys()),
+        )
+        if (rolledBackOwner === null) {
+          ownedNonRothIraSettlementRolledBackHousehold = true
+        } else {
+          ownedNonRothIraSettlementRolledBackOwners.add(rolledBackOwner)
+        }
         settledAnnualPass = runPostContributionAnnualPass([])
       }
     } else {

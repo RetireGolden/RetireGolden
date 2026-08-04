@@ -669,6 +669,31 @@ function rolledBack(
 }
 
 /**
+ * The one owner a rolled-back settlement is evidence about, or null when the
+ * rollback says nothing about which owner failed.
+ *
+ * Only the four replay-derived reasons (`contiguousReplayBlocked`,
+ * `aggregateOwnerBindingIncomplete`, `replayEffectsInvalid`,
+ * `carryforwardYearUnsupported`) can carry an issue at all: every other member
+ * of the reason union is raised before or outside the replay and is reported
+ * with `issue: null`. Even a replay-derived rollback is attributable only when
+ * its issue actually names a known plan owner -- an absent or unrecognized
+ * name is not evidence about any one owner, so it must stay household-wide
+ * fail-closed.
+ */
+export function ownedNonRothIraAnnualSettlementRollbackOwner(
+  result: Readonly<OwnedNonRothIraAnnualSettlementResult>,
+  knownOwnerPersonIds: ReadonlySet<string>,
+): string | null {
+  if (result.status !== 'rolledBack' || result.issue === null) return null
+  const ownerPersonId = result.issue.ownerPersonId
+  return typeof ownerPersonId === 'string' &&
+    knownOwnerPersonIds.has(ownerPersonId)
+    ? ownerPersonId
+    : null
+}
+
+/**
  * Privately settles a complete contiguous replay against bounded simulator
  * attempts. The callback must return the one current-year result whose runtime
  * sources, mutation ordinal, and end balances exactly match the active
