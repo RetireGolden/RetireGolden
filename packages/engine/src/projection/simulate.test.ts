@@ -1219,6 +1219,49 @@ describe('contributions', () => {
 
       expect(year.balances['hsa-solo']).toBeCloseTo(4_400, 6)
     })
+
+    it('leaves an unmarried two-person household a whole family limit each', () => {
+      // The division is a rule about spouses, not about household size, and
+      // the two are not the same fact here: the schema requires two people for
+      // a joint return but does not require a joint return of a two-person
+      // household. Two unmarried individuals with family coverage are each an
+      // eligible individual under (b)(2)(B) whom paragraph (5) never reaches,
+      // so neither the base nor the catch-up is divided. Same ages as the
+      // married fixture above, so only the marital fact differs.
+      const plan = basePlan()
+      plan.household.filingStatus = 'single'
+      plan.household.people[0]! = { ...plan.household.people[0]!, dob: '1966-06-15' } // 60 in 2026
+      plan.household.people.push({
+        id: 'p2',
+        name: 'Sam',
+        dob: '1976-06-15', // 50 in 2026
+        sex: 'average',
+        retirementAge: 67,
+        longevity: { planningAge: 90, source: 'manual' },
+      })
+      plan.incomes = [wages(300_000, 'p1'), wages(300_000, 'p2')]
+      plan.accounts = [
+        cash(1_000_000),
+        {
+          id: 'hsa-pat', name: 'HSA Pat', type: 'hsa', ownerPersonId: 'p1',
+          balance: 0, annualReturnPct: 0, annualContribution: 50_000,
+        } as never,
+        {
+          id: 'hsa-sam', name: 'HSA Sam', type: 'hsa', ownerPersonId: 'p2',
+          balance: 0, annualReturnPct: 0, annualContribution: 50_000,
+        } as never,
+      ]
+
+      const year = simulatePlan(validate(plan), {
+        startYear: 2026, horizonEndYear: 2026, taxCalculator: noTax,
+      }).years[0]!
+
+      expect(year.balances['hsa-pat']).toBeCloseTo(9_750, 6) // 8,750 + 1,000
+      expect(year.balances['hsa-sam']).toBeCloseTo(8_750, 6)
+      // Halving an unmarried pair is the failure this pins.
+      expect(year.balances['hsa-pat']).not.toBeCloseTo(5_375, 6)
+      expect(year.balances['hsa-sam']).not.toBeCloseTo(4_375, 6)
+    })
   })
 
   // IRC 414(v)(2)(E) covers a participant who "would attain age 60 but would

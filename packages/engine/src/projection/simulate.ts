@@ -2310,10 +2310,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         // statute applies by default stands in for the agreement.
         groupKey = `${ownerId}:hsa`
         const hasFamilyCoverage = people.length === 2
-        // Both spouses must still be living for (b)(5) to reach them: it opens
-        // on "individuals who are married to each other", and a sole survivor
-        // has nobody to divide the limit with.
-        const dividesFamilyLimit = hasFamilyCoverage && aliveCount === 2
+        // (b)(5) opens on "individuals who are married to each other", so the
+        // division reaches a two-person household only while it is a married
+        // one and both spouses are living. Household size alone will not do:
+        // the schema requires two people for a joint return but does not
+        // require a joint return of a two-person household, so unmarried pairs
+        // are representable — and two unmarried individuals covered by a
+        // family plan are each an eligible individual with family coverage
+        // under (b)(2)(B) with no paragraph (5) to divide anything, so they
+        // keep a whole family limit each. A sole survivor likewise has nobody
+        // left to divide with. Same married-and-both-living test as the 219(c)
+        // shared compensation pool above.
+        const dividesFamilyLimit =
+          hasFamilyCoverage && filingStatusForYear === 'marriedFilingJointly' && aliveCount === 2
         const base = hasFamilyCoverage
           ? pack.contributionLimits.hsaFamily / (dividesFamilyLimit ? 2 : 1)
           : pack.contributionLimits.hsaSelfOnly
