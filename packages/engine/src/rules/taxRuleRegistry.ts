@@ -445,7 +445,7 @@ const registry = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts'],
   },
 
@@ -2114,7 +2114,7 @@ const registry = {
     classification: 'settled',
     contraryReading: null,
     conventionRationale:
-      'Two limits on how far this record reaches, stated so it is not read as covering more than it does. First, the engine treats every inherited account as held by a beneficiary who is not an eligible designated beneficiary, because the plan model carries no beneficiary category. A surviving spouse, a minor child of the employee, a disabled or chronically ill beneficiary, or a beneficiary not more than ten years younger than the decedent is entitled under 401(a)(9)(H)(ii) to the life-expectancy payout in (B)(iii), and will be shown a faster forced drawdown than the law requires. Second, the annual amount required in years one through nine when the decedent had reached the required beginning date is computed from the SSA period table in longevity/ssaPeriod2022.ts rather than the IRS Single Life Table. That divisor proxy is documented at the head of strategies/inheritedIra.ts and is a separate question from the ten-year deadline registered here.',
+      'Two limits on how far this record reaches, stated so it is not read as covering more than it does. First, the engine treats every inherited account as held by a beneficiary who is not an eligible designated beneficiary, because the plan model carries no beneficiary category. A surviving spouse, a minor child of the employee, a disabled or chronically ill beneficiary, or a beneficiary not more than ten years younger than the decedent is entitled under 401(a)(9)(H)(ii) to the life-expectancy payout in (B)(iii), and will be shown a faster forced drawdown than the law requires. Second, the size of the annual amount required in years one through nine when the decedent had reached the required beginning date is a separate question from the ten-year deadline registered here. The divisor is registered as treas-reg-1-401-a-9-5-d-3-beneficiary-single-life-denominator, and the greater-of test it does not apply as treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy.',
     authority: [{
       kind: 'statute',
       citation: 'IRC 401(a)(9)(H)(i)',
@@ -3116,38 +3116,74 @@ const registry = {
     ],
   },
   'treas-reg-1-401-a-9-5-d-3-beneficiary-single-life-denominator': {
-    title: 'Denominator for a beneficiary annual distribution after death on or after the required beginning date',
+    title: 'Beneficiary remaining life expectancy: which table, and whether it is fixed',
     statement:
-      'The prescribed denominator is the greater of the designated beneficiary remaining life expectancy and the employee remaining life expectancy, each taken from the unisex Single Life Table, with a non-spouse beneficiary expectancy fixed at the age reached in the year following death and reduced by one for each later year. Not modelled as prescribed: the engine substitutes a sex-specific SSA period life expectancy looked up at the beneficiary current age each year, and never applies the greater-of test. The direction is dominated by the table. SSA population expectancies are shorter than Single Life Table entries at every age in range — at 55 the Single Life Table gives 31.6 against SSA figures of 24.94 for a man and 28.34 for a woman — so the denominator is too small and the forced annual distribution too large. Ignoring the greater-of adds a second overstatement whenever the beneficiary is older than the decedent. Recomputing at the current age instead of subtracting one runs the other way and partly offsets in the late years of the window. Because the balance must be gone by the deadline either way, the net effect is to pull taxable income into the earlier years of the window rather than to change the total.',
-    classification: 'outOfScope',
+      'Paragraph (d)(3) answers two independent questions about the beneficiary remaining life expectancy that sizes an annual distribution after a death on or after the required beginning date. Where the number comes from: the unisex Single Life Table of 1.401(a)(9)-9(b), and no other table, since (d)(3)(i) makes that table govern all life expectancies determined under paragraph (d). How it moves: for a designated beneficiary who is not the surviving spouse, (d)(3)(iii) reads it once, at the age the beneficiary reaches in the calendar year following the year of death, and reduces it by one for each later calendar year. Annual redetermination at the current age is the (d)(3)(iv) treatment and belongs only to a surviving spouse who is the sole beneficiary. A table can be right while the method is wrong and the errors run in opposite directions, so the two questions carry a fixture each.',
+    classification: 'settled',
     contraryReading: null,
-    conventionRationale: null,
+    conventionRationale:
+      'Three notes on how far this reaches. First, the subtract-one branch is the only one an inherited account in this engine can take: a surviving spouse does not hold an inherited IRA at all under IRC 408(d)(3)(C)(ii), so the (d)(3)(iv) redetermination has no path here, and the engine holds no beneficiary-category fact that could select it. Second, the table is read at a whole age, as singleLifeExpectancyYears in params/index.ts does, and the fixed entry may fall to zero or below for a beneficiary who inherits past about 110; the module then requires the whole remaining interest, since there is nothing left to divide by. Third, this record covers the beneficiary expectancy only. The greater-of test that compares it against the employee expectancy is a separate paragraph and is registered separately as treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy, where it remains out of scope. Until this record was settled the module divided by a sex-specific SSA period life expectancy looked up at the beneficiary current age, described in its own header as a documented proxy for the Single Life Table; the fixture asserting that behaviour called the same SSA function the module called and could not have failed.',
     authority: [{
       kind: 'regulation',
-      citation: 'Treas. Reg. 1.401(a)(9)-5(d)(1)(ii)',
-      url: 'https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-5',
+      citation: 'Treas. Reg. 1.401(a)(9)-5(d)(3)(i)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5',
       quotedText:
-        'If the employee has a designated beneficiary as of the date determined under § 1.401(a)(9)-4(c), the applicable denominator is the greater of— (A) The designated beneficiary\'s remaining life expectancy; and (B) The employee\'s remaining life expectancy.',
+        'Life expectancy table. For purposes of this paragraph (d), all life expectancies are determined using the Single Life Table in § 1.401(a)(9)-9(b).',
     }, {
       kind: 'regulation',
-      citation: 'Treas. Reg. 1.401(a)(9)-5(d)(3)(i) and (d)(3)(iii)',
-      url: 'https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-5',
+      citation: 'Treas. Reg. 1.401(a)(9)-5(d)(3)(iii)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5',
       quotedText:
-        'For purposes of this paragraph (d), all life expectancies are determined using the Single Life Table in § 1.401(a)(9)-9(b). ... If the designated beneficiary is not the employee\'s surviving spouse, then the designated beneficiary\'s remaining life expectancy is determined initially using the beneficiary\'s age as of the beneficiary\'s birthday in the calendar year following the calendar year of the employee\'s death. ... for subsequent calendar years, the designated beneficiary\'s remaining life expectancy is determined by reducing that initial life expectancy by one for each calendar year that has elapsed after that first calendar year.',
+        'If the designated beneficiary is not the employee\'s surviving spouse, then the designated beneficiary\'s remaining life expectancy is determined initially using the beneficiary\'s age as of the beneficiary\'s birthday in the calendar year following the calendar year of the employee\'s death. Except as otherwise provided in paragraph (d)(3)(iv) of this section, for subsequent calendar years, the designated beneficiary\'s remaining life expectancy is determined by reducing that initial life expectancy by one for each calendar year that has elapsed after that first calendar year.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-5(d)(3)(iv)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5',
+      quotedText:
+        'If the surviving spouse of the employee is the employee\'s sole beneficiary, then the surviving spouse\'s remaining life expectancy is redetermined each distribution calendar year up to and including the calendar year of the spouse\'s death using the surviving spouse\'s age as of the surviving spouse\'s birthday in the distribution calendar year.',
     }, {
       kind: 'regulation',
       citation: 'Treas. Reg. 1.401(a)(9)-9(b)',
-      url: 'https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-9',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-9',
       quotedText:
         'Single Life Table. The following table, referred to as the Single Life Table, sets forth the life expectancy of an individual at each age.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/strategies/inheritedIra.ts',
-      'packages/engine/src/longevity/ssaPeriod2022.ts',
+      'packages/engine/src/params/index.ts',
+    ],
+  },
+  'treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy': {
+    title: 'Greater of the beneficiary and the employee remaining life expectancy',
+    statement:
+      'Where the employee died on or after the required beginning date and has a designated beneficiary, the applicable denominator is not the beneficiary expectancy but the greater of that and the employee own remaining life expectancy. The employee expectancy comes from the same Single Life Table, read at the employee age on their birthday in the calendar year of death and reduced by one for each later calendar year, so it is read a year earlier than the beneficiary expectancy and has one more reduction applied by any given window year. Not modelled: the plan model records the calendar year the owner died and whether they had reached the required beginning date, and nothing else about them — no age, no birth year — so the employee expectancy cannot be computed at all and strategies/inheritedIra.ts divides by the beneficiary expectancy alone. The direction is one-sided. A greater-of can only raise a denominator, never lower it, so omitting it can only make the forced annual distribution too large, and it bites exactly when the beneficiary is older than the decedent was — the case where the beneficiary short expectancy is the one being displaced. It cannot change the total distributed, because the ten-year deadline empties the account either way; it pulls taxable ordinary income forward into the early window years. Closing it needs a decedent age or birth year on the inherited account schema in model/plan.ts, which reaches the published plan JSON schemas and the intake UI, so it is a schema change rather than a divisor change.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-5(d)(1)(ii)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5',
+      quotedText:
+        'Employee with designated beneficiary. If the employee has a designated beneficiary as of the date determined under § 1.401(a)(9)-4(c), the applicable denominator is the greater of— (A) The designated beneficiary\'s remaining life expectancy; and (B) The employee\'s remaining life expectancy.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-5(d)(3)(ii)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5',
+      quotedText:
+        'Employee\'s life expectancy. The employee\'s remaining life expectancy is determined initially using the employee\'s age as of the employee\'s birthday in the calendar year of the employee\'s death. In subsequent calendar years, the remaining life expectancy is determined by reducing that initial life expectancy by one for each calendar year that has elapsed after that first calendar year.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/strategies/inheritedIra.ts',
+      'packages/engine/src/model/plan.ts',
     ],
   },
   'irc-401-a-9-E-ii-eligible-designated-beneficiary': {
@@ -3727,6 +3763,423 @@ const registry = {
       'packages/engine/src/params/state/index.ts',
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+  'irc-72-t-2-A-iv-sepp-exception': {
+    title: 'The substantially equal periodic payment exception itself',
+    statement:
+      'The 10 percent additional tax does not reach a distribution that is part of a series of substantially equal periodic payments, made not less frequently than annually, over the life or life expectancy of the participant or the joint lives or joint life expectancies of the participant and a designated beneficiary. Membership in the series is the operative fact, so a tax year whose distributions do not add up to the annual payment the chosen method determined excepts nothing: the annual reconciliation reports the year incomplete, and no payment in it reaches a zero penalty.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 72(t)(2)(A)(iv)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText:
+        'part of a series of substantially equal periodic payments (not less frequently than annually) made for the life (or life expectancy) of the employee or the joint lives (or joint life expectancies) of such employee and his designated beneficiary,',
+    }, {
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, section 2.02',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'Under section 72(t)(2)(A)(iv), one of the exceptions to the 10% additional tax is for distributions that are part of a series of substantially equal periodic payments (not less frequently than annually) made for the life (or life expectancy) of the employee or the joint lives (or joint life expectancies) of the employee and designated beneficiary.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts',
+      'packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts',
+    ],
+  },
+  'irc-72-t-5-sepp-participant-scope': {
+    title: 'A SEPP series belongs to one participant and one source account',
+    statement:
+      'For section 72(t) the term employee includes any participant, and for an individual retirement plan it means the individual for whose benefit the plan was established, so SEPP qualification is settled per participant and per source account and never on a household total. Amounts another household member took, or amounts taken from another account, are outside the series and can neither complete it nor enlarge it: the annual reconciliation binds the participant, the election, and the source account, and treats an inventory member belonging to a different person or account as foreign.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 72(t)(5)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this subsection, the term "employee" includes any participant, and in the case of an individual retirement plan, the individual for whose benefit such plan was established.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, section 3.02(f)',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'In the case of distributions from an IRA, the IRA owner is treated as an employee for purposes of applying this notice.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts',
+      'packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts',
+    ],
+  },
+  'notice-2022-6-3-01-three-permitted-methods': {
+    title: 'The three methods that produce a qualifying series',
+    statement:
+      'Exactly three methods determine substantially equal periodic payments: the required minimum distribution method, the fixed amortization method, and the fixed annuitization method. The fixed annuitization method stands on the same footing as the other two, and an election naming anything else is refused with a typed unsupportedMethod nonconformance rather than reconciled.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The notice names the methods in prose, so the token spelling is an engineering choice, and the engine made it twice. The owned-IRA path spells them requiredMinimumDistribution, fixedAmortization, and fixedAnnuitization; the employer-plan path spells the first two rmd and amortization. Both admit exactly the three the notice names and reject everything else, so the vocabularies differ without the rule differing. A reader comparing the two evidence shapes should not read the shorter spellings as a narrower method set.',
+    authority: [{
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, section 3.01',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'Payments in a series are considered substantially equal periodic payments within the meaning of section 72(t)(2)(A)(iv) if they are determined in accordance with one of the three methods described in section 3.01(a) through (c) of this notice (which are based on the three methods described in Rev. Rul. 2002-62).',
+    }, {
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, section 2.05',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'Q&A-12 of Notice 89-25, 1989-1 CB 662, provides that payments are considered to be substantially equal periodic payments under section 72(t)(2)(A)(iv) if they are made in accordance with one of the following three methods: (1) the required minimum distribution method; (2) the fixed amortization method; or (3) the fixed annuitization method.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2023,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts',
+      'packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts',
+    ],
+  },
+  'notice-2022-6-3-01-annual-payment-completeness': {
+    title: 'The annual payment is a yearly total, and annually is a floor on frequency',
+    statement:
+      'Each of the three methods determines an annual payment for a distribution year, and the statute requires payments not less frequently than annually. Several distributions inside one year are therefore one annual payment measured by their total rather than several competing series, and the year qualifies only when that total equals the annual scheduled amount exactly. The annual reconciliation sums every scheduled payment in the year and reports the year incomplete when the total falls short, exceeded when it runs over.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, section 3.01(a)',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'The annual payment for each distribution year is determined by dividing the account balance for that distribution year by the number of years from the chosen life expectancy table in section 3.02(a) of this notice for that distribution year.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 72(t)(2)(A)(iv)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText:
+        'part of a series of substantially equal periodic payments (not less frequently than annually) made for the life (or life expectancy) of the employee or the joint lives (or joint life expectancies) of such employee and his designated beneficiary,',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2023,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts',
+    ],
+  },
+  'notice-2022-6-3-02-c-interest-rate-ceiling': {
+    title: 'Interest rate ceiling for the fixed amortization and fixed annuitization methods',
+    statement:
+      'Any interest rate at or below the greater of 5 percent or 120 percent of the federal mid-term rate may be used to apply the fixed amortization or the fixed annuitization method. Because 5 percent is the floor of that ceiling, a flat 5 percent is permitted in every rate environment, and the projection uses it. The 5 percent leg exists only under Notice 2022-6: the superseded Rev. Rul. 2002-62 capped the rate at 120 percent of the federal mid-term rate alone, under which a flat 5 percent would have been impermissible in a low-rate year.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The authority fixes a ceiling, not a rate, so the engine had to pick one. It carries no section 1274(d) federal mid-term rate series, and 5 percent is the highest rate permitted without knowing that rate, so a flat 5 percent needs no feed and can never exceed the ceiling. A projection wanting a larger payment would have to source the mid-term rate for one of the two months immediately preceding the month the series begins. The engine source comment used to describe the ceiling as 120 percent of the mid-term rate, which is the superseded Rev. Rul. 2002-62 rule rather than the Notice 2022-6 rule; it was corrected to state both legs when this record was verified.',
+    authority: [{
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, section 3.02(c)',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'The interest rate that may be used to apply the fixed amortization method or the fixed annuitization method is any interest rate that is not more than the greater of (i) 5% or (ii) 120% of the federal mid-term rate (determined in accordance with section 1274(d) for either of the two months immediately preceding the month in which the distribution begins).',
+    }, {
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, section 2.06',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'Section 2.02(c) of Rev. Rul. 2002-62 modifies the application of the fixed amortization method and the fixed annuitization method by providing that the interest rate that may be used to apply the fixed amortization method or the fixed annuitization method is any interest rate that is not greater than 120% of the federal mid-term rate (determined in accordance with section 1274(d) for either of the two months immediately preceding the month in which the distribution begins).',
+    }, {
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, sections 4 and 5',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'The guidance in this notice replaces the guidance in Rev. Rul. 2002-62 and Notice 2004-15 for any series of payments commencing on or after January 1, 2023, and it may be used for a series of payments commencing in 2022. ... Rev. Rul. 2002-62 and Notice 2004-15 are modified and superseded.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2023,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: ['packages/engine/src/strategies/sepp.ts'],
+  },
+  'notice-2022-6-3-02-e-single-account-balance-scope': {
+    title: 'The series runs against one account balance and is proven against every distribution from it',
+    statement:
+      'Payments are first calculated with respect to one account balance as of the first valuation date, and only amounts that are part of the resulting series are excepted. A distribution from that account which is not a scheduled payment is therefore not merely a separately penalized withdrawal; it leaves the year unproven. The reconciliation is closed over the complete inventory of distributions from the source account for the year and reports the year incomplete when an inventory member has no matching scheduled payment, so no payment in that year reaches a zero penalty.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, section 3.02(e)',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'Under all three methods, substantially equal periodic payments are first calculated with respect to an account balance as of the first valuation date selected as described in section 3.02(d) of this notice. A modification to the series of payments will occur if, after such date, there is (1) any addition to the account balance other than by reason of investment experience, (2) any transfer of a portion of the account balance to another retirement plan, or (3) a rollover of the amount received by the employee.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, section 3.02(d)',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'For the fixed amortization and fixed annuitization methods, the account balance must be determined in a reasonable manner based on the facts and circumstances. The account balance will be treated as determined in a reasonable manner if it is the account balance on any date within the period that begins on December 31 of the year prior to the date of the first distribution and ends on the date of the first distribution.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2023,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts',
+      'packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts',
+    ],
+  },
+  'irc-72-t-4-sepp-modification-proof-window': {
+    title: 'Absence of a disqualifying modification must be proven through the payment date',
+    statement:
+      'Section 72(t)(4) withdraws the exception retroactively from every prior payment once the series is modified inside the window, so the exception cannot be established for a payment on facts that stop short of that payment date. The reconciliation requires an explicit no-modification proof whose through date reaches the distribution date and refuses the payment when the proof ends earlier.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'Section 72(t)(4) sets the consequence of a modification but no evidentiary standard for proving one did not happen, so the engine had to choose what suffices. It takes a dated attestation covering the payment and refuses anything earlier, because a proof running only to the start of the year cannot speak to a modification made in March. That is an engineering decision rather than a legal conclusion, and the attestation is not a test of the three events section 3.02(e) of Notice 2022-6 enumerates.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 72(t)(4)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText:
+        'If- (i) paragraph (1) does not apply to a distribution by reason of paragraph (2)(A)(iv), and (ii) the series of payments under such paragraph are subsequently modified (other than by reason of death or disability or a distribution to which paragraph (10) applies)- (I) before the close of the 5-year period beginning with the date of the first payment and after the employee attains age 59 1/2, or (II) before the employee attains age 59 1/2, the taxpayer’s tax for the 1st taxable year in which such modification occurs shall be increased by an amount, determined under regulations, equal to the tax which (but for paragraph (2)(A)(iv)) would have been imposed, plus interest for the deferral period.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts',
+      'packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts',
+    ],
+  },
+  'notice-2022-6-3-02-e-modification-trigger-detection': {
+    title: 'Events that modify a series are not detected by the engine',
+    statement:
+      'After the first valuation date a modification occurs on any addition to the account balance other than by reason of investment experience, any transfer of part of the balance to another retirement plan, or a rollover of the amount received. Not modelled: the engine tests none of the three. The annual reconciliation consumes a caller-supplied attestation that no disqualifying modification occurred and derives nothing from the account history, so an attestation supplied for a series that in fact took a contribution, a partial transfer out, or a rollover produces a zero penalty the statute would not allow. The error runs toward understating tax, and it omits the section 72(t)(4) recapture as well.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, section 3.02(e)',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'A modification to the series of payments will occur if, after such date, there is (1) any addition to the account balance other than by reason of investment experience, (2) any transfer of a portion of the account balance to another retirement plan, or (3) a rollover of the amount received by the employee.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2023,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts',
+      'packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts',
+    ],
+  },
+  'notice-2022-6-3-03-b-one-time-method-change': {
+    title: 'One-time switch to the required minimum distribution method',
+    statement:
+      'A participant who began with the fixed amortization or the fixed annuitization method may switch once, in any later distribution year, to the required minimum distribution method without that switch being a modification; any later change away from the required minimum distribution method is a modification. Not modelled: an election carries one method for the life of the series, the plan model offers no way to record the year of a switch, and the annual reconciliation binds one method to every payment in the year. The error runs toward larger later payments and faster depletion, because the engine keeps paying the level fixed amount in years when a real participant could have dropped to the smaller redetermined required minimum distribution payment.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, section 3.03(b)',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'An individual who begins distributions using either the fixed amortization method or the fixed annuitization method is permitted in any subsequent distribution year to switch to the required minimum distribution method to determine the payment for the distribution year of the switch and all subsequent distribution years, and this change in method will not be treated as a modification within the meaning of section 72(t)(4). Once a change is made under this paragraph, any subsequent change from the required minimum distribution method will be a modification for purposes of section 72(t)(4).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2023,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/strategies/sepp.ts',
+      'packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts',
+    ],
+  },
+  'notice-2022-6-3-03-a-complete-depletion': {
+    title: 'Exhausting the account is not a modification',
+    statement:
+      'When following a qualifying method exhausts the assets in the account, the resulting reduction in the final payment and the cessation of payments that follows are not a modification, and the section 72(t)(4)(A) recapture tax does not apply. Not modelled: the annual reconciliation qualifies a year only when the distributions total the annual scheduled amount exactly, and it receives no fact distinguishing a shortfall caused by an exhausted account from a shortfall caused by underpayment, so it refuses both. The error runs toward refusing a series the notice would preserve, overstating penalty rather than understating it, and a caller can avoid it only by restating the annual scheduled amount as the reduced final payment.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, section 3.03(a)',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'If, as a result of following a method of determining substantially equal periodic payments that qualifies for the exception of section 72(t)(2)(A)(iv), an individual’s assets in an individual account plan or an IRA are exhausted, any resulting reduction in the amount of the final payment (and the subsequent cessation of payments) is not a modification within the meaning of section 72(t)(4). Accordingly, the recapture tax described in section 72(t)(4)(A) will not apply in this case.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2023,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts',
+    ],
+  },
+
+  // --- Registered 2026-08-04 with the SEPP projection corrections ----------
+  // These three could not be registered with the batch above. Each of them
+  // turns on the size of a payment, and every payment the projection produced
+  // came out of a life expectancy table Notice 2022-6 does not permit, so a
+  // fixture asserting one would have pinned the defect instead of the rule.
+
+  'notice-2022-6-3-02-a-permitted-life-expectancy-tables': {
+    title: 'The three life expectancy tables a SEPP may be sized from',
+    statement:
+      'Exactly three tables may determine the distribution period under the required minimum distribution and fixed amortization methods: the Uniform Lifetime Table in Appendix A of Notice 2022-6, the Single Life Table in Treas. Reg. 1.401(a)(9)-9(b), and the Joint and Last Survivor Table in 1.401(a)(9)-9(d). All three are unisex, and the number used is the entry for the participant age reached on that birthday, taken whole. The projection uses the Single Life Table, which is the table section 3.02(b) leaves in place for a distribution year with no designated beneficiary. It is the shortest of the three, and the payment is the balance over the divisor, so that choice sizes the largest payment any permitted table would allow rather than the smallest.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The notice permits three tables and never says which to use, so the engine had to pick one. Single Life is chosen because the election carries no designated beneficiary: section 3.02(b) lets the Joint and Last Survivor Table be used only against an actual designated beneficiary of the account, and says that where there is none in a distribution year the Single Life Table is the table for that year. The Uniform Lifetime Table in Appendix A stays permitted and would shrink every payment on the same facts, because it is longer at every age (43.6 years at 55 against Single Life 31.6). That is the direction of this convention and it is worth stating plainly: Single Life is the shortest of the three, and the payment is the balance over the divisor, so the engine sizes the largest payment any permitted table would allow. What is not a convention is the exclusion of everything else: this engine previously divided by its SSA 2022 period table (longevity/ssaPeriod2022.ts), averaging the male and female columns, which produced 26.64 years at age 55 against the Single Life entry of 31.6 and so oversized every payment by about 19 percent beyond even the largest figure the notice allows.',
+    authority: [{
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, section 3.02(a)',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'The life expectancy tables that can be used to determine distribution periods under the required minimum distribution and fixed amortization methods are: (1) the Uniform Lifetime Table in Appendix A of this notice; (2) the Single Life Table in § 1.401(a)(9)-9(b); or (3) the Joint and Last Survivor Table in § 1.401(a)(9)-9(d) (which can be used even if the designated beneficiary is not the spouse). The number of years that is used for the required minimum distribution method for a distribution year is the entry from the table for the employee’s age on the employee’s birthday in that distribution year.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-9(b)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-9',
+      quotedText:
+        'Single Life Table. The following table, referred to as the Single Life Table, sets forth the life expectancy of an individual at each age.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2023,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/strategies/sepp.ts',
+      'packages/engine/src/params/data/year2026.ts',
+      'packages/engine/src/params/index.ts',
+    ],
+  },
+
+  'notice-2022-6-3-01-b-level-amortization': {
+    title: 'The fixed amortization method is a level payment, fixed for the series',
+    statement:
+      'The fixed amortization payment is the amount that level-amortizes the account balance over the number of years the chosen permitted table gives for the participant age in the FIRST distribution year, at an interest rate section 3.02(c) permits. Once those three inputs are set, the annual payment is the same amount in every succeeding distribution year. It is not the balance divided by the years, which would drop the interest rate and collapse the method onto the required minimum distribution method, and it is not redetermined annually, which is what distinguishes it from that method.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, section 3.01(b)',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'The annual payment for each distribution year is determined as the amount that will result in the level amortization of the account balance over a specified number of years determined using the chosen life expectancy table under section 3.02(a) of this notice and an interest rate that is permitted pursuant to section 3.02(c) of this notice. Under this method, once the account balance, the number of years from the chosen life expectancy table, and the resulting annual payment are determined for the first distribution year, the annual payment is the same amount in each succeeding distribution year.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, section 3.02(a)',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'The number of years that is used to apply the fixed amortization method is the entry from the table for the employee’s age on the employee’s birthday in the first distribution year (and, if applicable, the designated beneficiary’s age on the designated beneficiary’s birthday in that year).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2023,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/strategies/sepp.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'notice-2022-6-3-02-d-account-balance-valuation-window': {
+    title: 'Which account balance the first payment is calculated from',
+    statement:
+      'For the fixed amortization and fixed annuitization methods the account balance must be determined in a reasonable manner on the facts, and it is treated as reasonable if it is the balance on any date in the window that opens on December 31 of the year before the first distribution and closes on the date of that distribution. The projection amortizes the account balance it captures before any of the first distribution year flows, which is the prior December 31 balance and therefore the opening of that window.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The authority states a safe-harbour window, not a date, so the engine had to choose a point inside it. It takes the earliest, the prior December 31, because that is the only date in the window the annual projection actually holds a balance for: it resolves a year at a time and has no notion of the day the first distribution is paid. Choosing the earliest point also makes the choice the least favourable one available in a growing account, since a later date in the window carries more growth and would size a larger payment.',
+    authority: [{
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, section 3.02(d)',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'For purposes of applying the required minimum distribution method, the account balance for a distribution year is determined under § 1.401(a)(9)-5. For the fixed amortization and fixed annuitization methods, the account balance must be determined in a reasonable manner based on the facts and circumstances. The account balance will be treated as determined in a reasonable manner if it is the account balance on any date within the period that begins on December 31 of the year prior to the date of the first distribution and ends on the date of the first distribution.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2023,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+  },
+
+  'notice-2022-6-3-02-e-1-projection-contribution-during-series': {
+    title: 'The projection contributes to an account with a running SEPP series',
+    statement:
+      'After the first valuation date, any addition to the account balance other than by reason of investment experience modifies the series. The projection applies no such test: its contribution pass admits any account that is not inherited, so a plan that states both an annual contribution and a SEPP election on the same traditional account deposits into it every year the series runs and still reports every SEPP distribution as penalty-free. Not modelled, and the error runs toward understating tax in two ways at once: the current year distribution is shown penalty-free when the statute has ended the exception, and the section 72(t)(4) recapture of every earlier payment in the series, plus interest, is not charged at all.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale:
+      'Left as it stands because the two available repairs are product decisions rather than engineering ones, and each is wrong in a way the engine cannot adjudicate. Refusing the contribution keeps the series intact but silently overrides a stated plan input, and would change every projection that carries both facts without telling the user which of their two instructions was dropped. Treating the series as modified is the statutory consequence, but it needs the 72(t)(4) recapture and the interest for the deferral period, which is machinery this engine does not have and which the modification-trigger record already reports as absent. A third option, computing as now and warning, still publishes a penalty-free series the statute has already busted. The decision belongs with the product: which of two contradictory instructions wins, and what the planner tells the user when it drops one. Note that the actions layer does not share this defect for its own reason rather than a better one, recorded under notice-2022-6-3-02-e-modification-trigger-detection: it consumes a caller attestation instead of deriving anything from account history.',
+    authority: [{
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2022-6, section 3.02(e)(1)',
+      url: 'https://www.irs.gov/irb/2022-05_IRB',
+      quotedText:
+        'Under all three methods, substantially equal periodic payments are first calculated with respect to an account balance as of the first valuation date selected as described in section 3.02(d) of this notice. A modification to the series of payments will occur if, after such date, there is (1) any addition to the account balance other than by reason of investment experience,',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 72(t)(4)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText:
+        'the taxpayer’s tax for the 1st taxable year in which such modification occurs shall be increased by an amount, determined under regulations, equal to the tax which (but for paragraph (2)(A)(iv)) would have been imposed, plus interest for the deferral period.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2023,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/strategies/accountEligibility.ts',
+    ],
+  },
+
+  'irc-72-t-3-B-sepp-separation-annual-proxy': {
+    title: 'Employer-plan SEPP separation modelled from the plan retirement age',
+    statement:
+      'Section 72(t)(3)(B) withholds the substantially equal periodic payment exception from a 401(a) trust or a 72(e)(5)(D)(ii) contract unless the series begins after the employee separates from service, and does not reach IRAs. The annual projection has no separation event and no employer identity, so it orders calendar years instead of days: an employer-plan series is recognised only where the plan states a retirement age and the year the series begins is at or after the first year the wage model stops paying the participant, and an IRA series is recognised whatever the retirement age. That first unpaid year is the attained age the retirement age rounds UP to, because wages are paid while attained age is below the retirement age, so a retirement age of 65.5 is paid for the year the participant attains 65 and separated from the year they attain 66. A plan stating no retirement age states no separation, and no employer-plan series is recognised on it.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale:
+      'Registered as out of scope rather than settled for the same reason as the Rule of 55 proxy alongside it: the plan model carries one retirement age per person and no employment history, so there is no separation date and no employer for the plan to test. It errs in both directions. It under-refuses where the employer plan is one the participant left long ago, because the statute reaches only the plan of the employer separated from and no employer identity is tested. It under-refuses again inside the year of separation, because the projection resolves years rather than days and cannot see a series that began in March from a job left in September; the first year the wage model stops paying the participant is treated as a separated year throughout, which is the same convention that lets the Rule of 55 waive the penalty in that year. Both layers name that year by rounding the retirement age UP to an attained age, which is not a rounding preference but the only reading that agrees with the other two: wages are paid while attained age is below the retirement age and the Rule of 55 waives from the first attained age that is not, so a retirement age of 65.5 is paid for the year the participant attains 65 and separated from the year they attain 66. Rounding down would separate them in a year the plan still pays them wages. It over-refuses where a participant has genuinely separated but the plan states no retirement age, which is how the plan model spells someone with no wages to stop. The exact-date reading lives in actions/traditionalEmployerPlanPenaltyPrerequisite.ts, and both layers order the two events through the same seppSeriesBeginsAfterSeparation predicate. What is not a proxy is the structural limit: 72(t)(3)(B) does not reach individual retirement accounts, and the projection tests separation only for an account of employer kind.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 72(t)(3)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText:
+        'Paragraph (2)(A)(iv) shall not apply to any amount paid from a trust described in section 401(a) which is exempt from tax under section 501(a) or from a contract described in section 72(e)(5)(D)(ii) unless the series of payments begins after the employee separates from service.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/actions/annualRetirementPhysicalEventInventory.ts',
     ],
   },
 } as const satisfies Record<string, TaxRuleRecord>

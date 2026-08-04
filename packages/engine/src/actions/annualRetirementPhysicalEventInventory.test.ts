@@ -992,6 +992,57 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
     }
   })
 
+  it('accepts an employer-plan SEPP only once the series begins after separation', () => {
+    // IRC 72(t)(3)(B): "Paragraph (2)(A)(iv) shall not apply to any amount paid
+    // from a trust described in section 401(a) ... unless the series of payments
+    // begins after the employee separates from service." It does not reach
+    // IRAs, which is why the loop above needs no retirement age at all.
+    //
+    // Two readings on identical facts: a participant aged 58 in the 2030 tax
+    // year who elected a SEPP on their 401(k) at 58 but works to 65 either has
+    // no exception (the statute) or draws penalty-free while still employed
+    // (the reading that ignores 72(t)(3)(B)). The projection orders calendar
+    // years rather than days, so the separation year itself counts as
+    // separated — irc-72-t-3-B-sepp-separation-annual-proxy.
+    //
+    // The fractional rows are the same convention the simulator applies and are
+    // here so the inventory cannot drift off it: the wage model pays while
+    // attained age is BELOW the retirement age, so the first separated year is
+    // the attained age the retirement age rounds UP to. At 57.5 that is 58, and
+    // a series begun at 58 is accepted; at 58.5 and at 58.2 it is 59, and the
+    // same series is not. 58.2 is carried as well as 58.5 because rounding to
+    // nearest agrees with rounding up at .5 and disagrees at .2 — both it and
+    // rounding down would separate this participant in a year the plan still
+    // pays them wages.
+    for (const [retirementAge, expectedStatus] of [
+      [65, 'annualPhysicalEventInventoryIncomplete'],
+      [59, 'annualPhysicalEventInventoryIncomplete'],
+      [58.5, 'annualPhysicalEventInventoryIncomplete'],
+      [58.2, 'annualPhysicalEventInventoryIncomplete'],
+      [58, 'annualPhysicalEventInventoryBuilt'],
+      [57.5, 'annualPhysicalEventInventoryBuilt'],
+      [50, 'annualPhysicalEventInventoryBuilt'],
+      [null, 'annualPhysicalEventInventoryIncomplete'],
+    ] as const) {
+      const electedPlan = basePlan()
+      electedPlan.household.people[0]!.dob = '1972-01-01' // age 58 in 2030
+      electedPlan.household.people[0]!.retirementAge = retirementAge
+      const elected = electedPlan.accounts.find(
+        (account) => account.id === employerId,
+      )
+      if (elected?.type !== 'traditional') throw new Error('fixture drift')
+      elected.sepp = { startAge: 58, method: 'rmd' }
+      expect(buildAnnualRetirementPhysicalEventInventory(input(
+        electedPlan,
+        [resolved({
+          kind: 'automaticSeppDistribution',
+          origin: 'seppEngine',
+          sourceAccountId: employerId,
+        })],
+      )).status, `retirementAge ${String(retirementAge)}`).toBe(expectedStatus)
+    }
+  })
+
   it('accepts inherited RMD records only in a structurally required year', () => {
     const beforeDeath = basePlan()
     const inheritedBeforeDeath = beforeDeath.accounts.find(

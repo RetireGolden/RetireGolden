@@ -8,7 +8,10 @@
  *
  * V1 simplifications (each lifts in a later roadmap phase):
  * - Wages, contributions, base spending, and goals inflate at the general rate;
- *   wages stop in the year the person attains retirement age.
+ *   wages are paid while the person's attained age is BELOW their retirement
+ *   age and stop from the first year it is not. A whole retirement age of 65 is
+ *   therefore last paid at attained 64; a fractional 65.5 is last paid at
+ *   attained 65 and first unpaid at attained 66.
  * - SS COLA compounds from the projection start, and first-year benefits are
  *   prorated by claim months only (no birthday-month precision). PIA comes
  *   from the stream directly or from its earnings history (AIME → bend
@@ -94,6 +97,7 @@ import {
   type TaxableAccountOpeningSnapshot,
 } from '../actions/index.js'
 import { compareUtf16CodeUnits } from '../actions/structuralId.js'
+import { seppSeriesBeginsAfterSeparation } from '../actions/traditionalEmployerPlanPenaltyPrerequisite.js'
 import { type SimulatorAnnualRetirementRuntimeOccurrence } from './annualRetirementRuntimeJournal.js'
 import type { SimulatorAnnualPassStateBindings } from './annualPassTransaction.js'
 import {
@@ -2815,23 +2819,53 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     let seppTotal = 0
     for (const state of balances) {
       if (state.account.type !== 'traditional' || !state.account.sepp || state.account.inherited) continue
-      const ownerState = stateOf(state.account.ownerPersonId ?? primary.id)
+      const ownerId = state.account.ownerPersonId ?? primary.id
+      const ownerState = stateOf(ownerId)
       if (!ownerState.alive) continue
       const election = state.account.sepp
       if (!seppActive(election.startAge, ownerState.ageAttained)) continue
-      const ownerSex = personById.get(state.account.ownerPersonId ?? primary.id)!.sex
+      // IRC 72(t)(3)(B): from an employer plan the series is excepted only if it
+      // BEGINS AFTER the participant separates from service; the requirement
+      // pointedly does not reach IRAs, so an IRA series may begin during
+      // employment. The projection has no separation date and no employer
+      // identity, so it orders calendar years rather than days, using the same
+      // retirement-age proxy for separation that the Rule of 55 test below
+      // uses: the participant is modelled as separated for the whole of the
+      // FIRST YEAR THE WAGE MODEL STOPS PAYING THEM, so the separation ordinal
+      // is that year's first day and the series ordinal is the last day of the
+      // year it begins. That year is the attained age Math.ceil rounds the
+      // retirement age up to, because wages run while attained age is below the
+      // retirement age (Pass 1 above) and the Rule of 55 waives from the first
+      // attained age that is not: for a retirement age of 65.5 the plan pays
+      // them for the year they attain 65 and separates them in the year they
+      // attain 66. Reading the fraction DOWN would separate them in a year they
+      // are still paid. A plan with no retirement age states no separation at
+      // all, so no employer-plan series can begin after one. Residual error
+      // both ways: irc-72-t-3-B-sepp-separation-annual-proxy.
+      if (state.account.kind === 'employer') {
+        const ownerRetirementAge = personById.get(ownerId)!.retirementAge
+        if (ownerRetirementAge === null) continue
+        const birthYear = year - ownerState.ageAttained
+        const separatedFrom = `${birthYear + Math.ceil(ownerRetirementAge)}-01-01`
+        const seriesBegunBy = `${birthYear + election.startAge}-12-31`
+        if (!seppSeriesBeginsAfterSeparation(seriesBegunBy, separatedFrom)) continue
+      }
       const startBalance = startOfYearBalance.get(state.account.id) ?? 0
       let amount: number
       if (election.method === 'amortization') {
         // Fixed for the series: compute once from the first SEPP year's balance.
+        // Notice 2022-6 section 3.02(d) treats the account balance as reasonably
+        // determined if it is the balance on any date from December 31 of the
+        // year before the first distribution through the date of that
+        // distribution, and the start-of-year balance opens exactly that window.
         let fixed = seppAmortAmount.get(state.account.id)
         if (fixed === undefined) {
-          fixed = seppAnnualAmount('amortization', startBalance, ownerState.ageAttained, ownerSex)
+          fixed = seppAnnualAmount(pack, 'amortization', startBalance, ownerState.ageAttained)
           seppAmortAmount.set(state.account.id, fixed)
         }
         amount = fixed
       } else {
-        amount = seppAnnualAmount('rmd', startBalance, ownerState.ageAttained, ownerSex)
+        amount = seppAnnualAmount(pack, 'rmd', startBalance, ownerState.ageAttained)
       }
       const take = Math.min(amount, state.balance)
       if (take <= 0) continue
@@ -2866,7 +2900,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       seppTotal += take
       // Pro-rata return of basis on IRA SEPP distributions (step 5).
       if (state.account.kind === 'ira') {
-        const ownerId = state.account.ownerPersonId ?? primary.id
         const proRata = iraProRata.get(ownerId)
         if (proRata && ownedIraApplication?.applicationKind === 'debit') {
           const split = splitWithAssumedCharacter(proRata, take, {
@@ -2895,13 +2928,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const beneficiaryState = stateOf(beneficiary.id)
       if (!beneficiaryState.alive) continue
       const take = inheritedForcedAmount({
+        pack,
         year,
         ownerDeathYear: state.account.inherited.ownerDeathYear,
         decedentHadStartedRmds: state.account.inherited.decedentHadStartedRmds,
         balance: state.balance,
         startBalance: startOfYearBalance.get(state.account.id) ?? 0,
         beneficiaryAge: beneficiaryState.ageAttained,
-        beneficiarySex: beneficiary.sex,
       })
       if (take <= 0) continue
       state.balance -= take

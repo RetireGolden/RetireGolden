@@ -16,6 +16,7 @@ import {
   type RothConversionRequest,
 } from '../actions/index.js'
 import { createEmptyPlan, type Account, type Person, type Plan } from '../model/plan.js'
+import { packForYear } from '../params/index.js'
 import { describeRule } from '../rules/describeRule.js'
 import {
   addCalendarMonths,
@@ -1399,13 +1400,13 @@ describeRule('irc-401-a-9-H-designated-beneficiary-ten-year-rule', {
 }, ({ accepted, readings }) => {
   const forcedIn = (year: number): number =>
     inheritedForcedAmount({
+      pack: packForYear(2026).pack,
       year,
       ownerDeathYear: 2024,
       decedentHadStartedRmds: false,
       balance: 100_000,
       startBalance: 100_000,
       beneficiaryAge: 45,
-      beneficiarySex: 'average',
     })
 
   it('keeps an inherited account off the owner RMD schedule entirely', () => {

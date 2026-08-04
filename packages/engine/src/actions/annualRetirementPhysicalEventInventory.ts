@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { planSchema, type Plan } from '../model/plan.js'
 import { rmdStartAgeForBirthYear } from '../params/index.js'
 import { seppActive } from '../strategies/sepp.js'
+import { seppSeriesBeginsAfterSeparation } from './traditionalEmployerPlanPenaltyPrerequisite.js'
 import {
   accountIdSchema,
   actionIdSchema,
@@ -793,11 +794,28 @@ function resolvedSourceKindValid(
           account.inherited.decedentHadStartedRmds))
   }
   if (kind === 'automaticSeppDistribution') {
-    return account.inherited === undefined &&
-      account.sepp !== undefined &&
-      ownerAge !== undefined &&
-      ownerModeledAlive &&
-      seppActive(account.sepp.startAge, ownerAge)
+    // IRC 72(t)(3)(B) bars the exception for an employer plan unless the series
+    // begins after the participant separates from service, and does not reach
+    // IRAs. This inventory decides whether the simulator's SEPP distribution is
+    // possible at all, so it applies the same retirement-age separation proxy
+    // the simulator applies, on the same annual grain: the participant counts
+    // as separated for the whole of the first year the wage model stops paying
+    // them, which is the attained age Math.ceil rounds the retirement age up
+    // to. Wages run while attained age is below the retirement age, so a
+    // retirement age of 65.5 is paid for the year they attain 65 and separated
+    // in the year they attain 66; reading the fraction down would separate them
+    // in a year they are still paid.
+    // See the irc-72-t-3-B-sepp-separation-annual-proxy registry record.
+    if (account.inherited !== undefined || account.sepp === undefined) return false
+    if (ownerAge === undefined || birthYear === undefined || !ownerModeledAlive) return false
+    if (!seppActive(account.sepp.startAge, ownerAge)) return false
+    if (account.kind !== 'employer') return true
+    const retirementAge = owner?.retirementAge ?? null
+    if (retirementAge === null) return false
+    return seppSeriesBeginsAfterSeparation(
+      `${birthYear + account.sepp.startAge}-12-31`,
+      `${birthYear + Math.ceil(retirementAge)}-01-01`,
+    )
   }
   if (kind === 'legacyRothConversion') {
     return account.inherited === undefined &&

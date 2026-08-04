@@ -146,6 +146,33 @@ export function uniformLifetimeDivisor(pack: ParameterPack, age: number): number
 }
 
 /**
+ * Life expectancy in years from the Single Life Table of Treas. Reg.
+ * 1.401(a)(9)-9(b), for `age`.
+ *
+ * The published entry is taken as published: IRS Notice 2022-6 section 3.02(a)
+ * says the number of years is "the entry from the table for the employee's age
+ * on the employee's birthday in that distribution year", which is a whole age
+ * and a table lookup. There is nothing to interpolate, so a fractional age
+ * floors to the birthday age it has already reached rather than blending two
+ * rows into a divisor the table does not contain. Ages outside 0..120 clamp to
+ * the table's endpoints; the 120 row is the regulation's "120 and over" row.
+ */
+export function singleLifeExpectancyYears(pack: ParameterPack, age: number): number {
+  const whole = Math.floor(age)
+  const clamped = whole < 0 ? 0 : whole > 120 ? 120 : whole
+  const years = pack.rmd.singleLifeTable[clamped]
+  // Every age 0..120 is present in a well-formed pack, so a miss means the pack
+  // is wrong. Fail here rather than divide by undefined and let a NaN payment
+  // travel to a penalty decision that reads as a real dollar figure.
+  if (years === undefined || !(years > 0)) {
+    throw new RangeError(
+      `Single Life Table has no usable life expectancy for age ${clamped}`,
+    )
+  }
+  return years
+}
+
+/**
  * Expected-return multiple (remaining life expectancy in years) for a
  * single-life ordinary annuity starting at `ageAtStart`, from IRS Pub 939
  * Table V. Linear interpolation between whole-age entries; clamped to the
