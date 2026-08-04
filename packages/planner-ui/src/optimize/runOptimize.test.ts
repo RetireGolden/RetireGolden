@@ -136,7 +136,7 @@ describe('runOptimizeRequest', () => {
     expect(() => structuredClone(result)).not.toThrow()
   })
 
-  it('vetoes tournament candidates on the ACA example while its ACA years are non-actionable', async () => {
+  it('reports the ACA actionability veto end to end while the example has non-actionable ACA years', async () => {
     // The curated early-retiree ACA example keeps marketplace coverage through
     // 2028 (Casey turns 65 in 2029), but only years with a sourced tax
     // parameter pack are ACA-actionable — later ACA years run on a stand-in
@@ -145,8 +145,29 @@ describe('runOptimizeRequest', () => {
     // conversion schedule as executable: the exact ledger cannot price how a
     // candidate's extra pre-65 MAGI would erode the ACA credit in those years,
     // so a candidate's raw estate delta is ACA-blind and is not evidence to
-    // act on. The tournament must hold the incumbent even though a candidate
-    // row beats it on paper by far more than the $1k switch margin.
+    // act on.
+    //
+    // Retargeted 2026-08-03 for the IRC 1(j)(3)(B) indexing correction, and
+    // NOT by relaxing a threshold. This test used to assert that `bracket-10`
+    // beat the incumbent by more than the $1k switch margin, so that holding
+    // the incumbent demonstrably cost the household something the veto was
+    // choosing to forgo. That premise is gone: this example's own strategy IS
+    // fill-to-the-10%-bracket, and once the bracket bound is indexed the
+    // incumbent ladder widens every projected year and captures the benefit
+    // itself. All twelve candidates now come in BELOW the incumbent
+    // (bracket-10 at -2,805 on a ~539k estate, the rest far worse), so there is
+    // no tempting row left on this plan and `vetoedCandidateIds` is correctly
+    // empty. Re-tuning the example to manufacture one back would be the tail
+    // wagging the dog — it was deliberately retuned 2026-07-30 for its ACA
+    // credit story.
+    //
+    // What this test still earns is the end-to-end wiring: the veto object is
+    // built, names the unpriceable years, carries its support code, and
+    // survives the worker's structured-clone boundary. The blocking arithmetic
+    // itself — a non-empty `vetoedCandidateIds` suppressing positive rows — is
+    // unit-tested directly against `buildAcaActionabilityVeto` in
+    // packages/engine/src/projection/optimizePlan.test.ts, and the UI copy for
+    // a non-empty list in acaVetoCopy.test.ts and explainPanels.test.tsx.
     //
     // If the sourced-pack premise below ever fails (packs published through
     // every ACA year of the example), the veto legitimately lifts and the
@@ -165,7 +186,13 @@ describe('runOptimizeRequest', () => {
 
     const bracket10 = result.tournament.candidates.find((c) => c.id === 'bracket-10')
     expect(bracket10).toBeDefined()
-    expect(bracket10!.afterTaxEstateDelta).toBeGreaterThan(1_000)
+    // Post-indexing the incumbent dominates the whole field, so the winner is
+    // the incumbent on merit as well as by veto. Pin that it is not a near-miss
+    // the veto is quietly overriding: every candidate is genuinely below it.
+    expect(result.tournament.candidates.length).toBeGreaterThan(0)
+    for (const c of result.tournament.candidates) {
+      expect(c.afterTaxEstateDelta).toBeLessThan(0)
+    }
     expect(result.tournament.winnerSource).toBe('incumbent')
     expect(result.tournament.winnerLabel).toBe('your current conversion strategy')
 
@@ -177,7 +204,9 @@ describe('runOptimizeRequest', () => {
     expect(veto).not.toBeNull()
     expect(veto!.baselineNonActionableYears.length).toBeGreaterThan(0)
     expect(veto!.supportCodes).toContain('tax-year-parameters-unsupported')
-    expect(veto!.vetoedCandidateIds).toContain('bracket-10')
+    // The invariant that survives regardless of which rows are tempting: the
+    // vetoed set is exactly the positive-delta set. It is empty here, and it
+    // must stay in lockstep if a candidate ever turns positive again.
     expect(veto!.vetoedCandidateIds).toEqual(
       result.tournament.candidates.filter((c) => c.afterTaxEstateDelta > 1).map((c) => c.id),
     )
