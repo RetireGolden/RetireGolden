@@ -19,8 +19,8 @@ describe('ssdiMonthlyBenefit', () => {
 })
 
 describe('ssdiSuspendedBySga', () => {
-  const sgaMonthly = 1_620
-  const annual = sgaMonthly * SGA_ANNUAL_MONTHS // 19,440
+  const sgaMonthly = 1_690 // 2026 non-blind monthly SGA, 90 FR 49047
+  const annual = sgaMonthly * SGA_ANNUAL_MONTHS // 20,280
 
   it('does not suspend when wages are at or below the annual SGA limit', () => {
     expect(ssdiSuspendedBySga(0, annual)).toBe(false)

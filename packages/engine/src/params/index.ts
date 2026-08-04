@@ -195,6 +195,33 @@ export function hecmPrincipalLimitFactorPct(pack: ParameterPack, ageAtOpen: numb
   return table[ages[ages.length - 1]!]!
 }
 
+/**
+ * The MAGI floor for one IRMAA tier in a premium year, where `thresholdScale`
+ * carries the pack-year figure forward to that year.
+ *
+ * 42 USC 1395r(i)(5)(A) indexes every dollar amount in the paragraph (3) table
+ * to consumer prices, but (i)(5)(C)(i) takes the $500,000 amounts back out of
+ * that adjustment, and (i)(5)(C)(ii) begins indexing them only for calendar
+ * years after 2027, against an August 2026 base rather than the August 2006
+ * base the other rows use. The joint figure rides along because (i)(3)(C)(ii)
+ * sets the last row at 150 percent of the individual amount rather than twice
+ * it, which is why the pack carries 500,000 and 750,000 where every lower row
+ * is an exact double. So the top row holds still while the rows beneath it
+ * move, and it must not take the caller's one scale factor.
+ *
+ * @see tax rule `usc-42-1395r-i-5-C-top-irmaa-threshold-frozen`
+ */
+export function irmaaTierThreshold(
+  pack: ParameterPack,
+  tierIndex: number,
+  filingStatus: FilingStatus,
+  thresholdScale = 1,
+): number {
+  const magiOver = pack.medicare.irmaaTiers[tierIndex]!.magiOver[filingStatus]
+  const isTopTier = tierIndex === pack.medicare.irmaaTiers.length - 1
+  return isTopTier ? magiOver : magiOver * thresholdScale
+}
+
 export function irmaaTierForMagi(
   pack: ParameterPack,
   magiTwoYearsPrior: number,
@@ -203,7 +230,7 @@ export function irmaaTierForMagi(
 ): number {
   let tier = 0
   for (let i = 0; i < pack.medicare.irmaaTiers.length; i++) {
-    const threshold = pack.medicare.irmaaTiers[i]!.magiOver[filingStatus] * thresholdScale
+    const threshold = irmaaTierThreshold(pack, i, filingStatus, thresholdScale)
     const isTopTier = i === pack.medicare.irmaaTiers.length - 1
     // CMS publishes lower tiers as "greater than" the floor; the final tier is inclusive.
     if (isTopTier ? magiTwoYearsPrior >= threshold : magiTwoYearsPrior > threshold) tier = i + 1

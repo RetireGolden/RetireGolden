@@ -113,7 +113,7 @@ export const PARAMETER_PROVENANCE: ParameterSource[] = [
     id: 'social-security',
     label: 'Social Security COLA & wage base',
     figures:
-      '2.8% COLA; taxable wage base $184,500; earnings-test exempt amounts $24,480 (pre-FRA) / $65,160 (FRA year); SSDI SGA $1,620/mo (non-blind); OASDI payroll tax 6.2% (employee).',
+      '2.8% COLA; taxable wage base $184,500; earnings-test exempt amounts $24,480 (pre-FRA) / $65,160 (FRA year); SSDI SGA $1,690/mo (non-blind); OASDI payroll tax 6.2% (employee).',
     publisher: 'SSA',
     url: 'https://www.ssa.gov/news/en/cola/factsheets/2026.html',
   },

@@ -1,5 +1,5 @@
 import type { Detector, DetectorContext } from '../types.js'
-import { irmaaTierForMagi } from '../../params/index.js'
+import { irmaaTierForMagi, irmaaTierThreshold } from '../../params/index.js'
 import { medicareAnnualPremiumPerPerson } from '../../tax/medicare.js'
 
 function inflationScaleFromPack(ctx: DetectorContext, toYear: number): number {
@@ -44,7 +44,10 @@ export const irmaaTierEdge: Detector = {
       const thresholdScale = inflationScaleFromPack(ctx, premiumYearNumber)
       const tier = irmaaTierForMagi(ctx.params, y.magi, filingStatus, thresholdScale)
       if (tier > 0 && tier <= ctx.params.medicare.irmaaTiers.length) {
-        const threshold = ctx.params.medicare.irmaaTiers[tier - 1]!.magiOver[filingStatus] * thresholdScale
+        // Scaled through the shared helper so the top-tier carve-out in
+        // 42 USC 1395r(i)(5)(C) applies here too; multiplying magiOver by
+        // thresholdScale directly would move a boundary the statute freezes.
+        const threshold = irmaaTierThreshold(ctx.params, tier - 1, filingStatus, thresholdScale)
         const diff = y.magi - threshold
         if (diff > 0 && diff <= 5000) {
           const magiStr = '$' + Math.round(y.magi).toLocaleString()
