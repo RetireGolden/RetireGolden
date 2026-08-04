@@ -157,24 +157,26 @@ function unchangedBalances(
  * disposition, so an absent, forged, or reshaped one must keep the staging
  * reason rather than be read as satisfied.
  *
- * The amount is also read against the request that carries it. Cash attested
- * to pay the tax on this conversion cannot exceed the amount being converted —
- * no combined marginal rate reaches 100% — so an attestation larger than the
- * conversion is not an attestation about this conversion's tax, and nothing in
- * this executor can adjudicate the difference: the annual liability is exactly
- * what the missing coordinator would compute.
+ * The amount is deliberately not read against the conversion that carries it.
+ * A cost ceiling of "no more than the amount converted" would follow only if
+ * the incremental cost of a conversion were bounded by a marginal rate, and in
+ * this model it is not: `tax/aca.ts` forfeits the whole premium tax credit
+ * above the 400% FPL ceiling (`overCliff`) and the IRMAA tiers in
+ * `params/data` step at a threshold, so a small conversion that crosses either
+ * one can cost far more than it converts. The attestation's size is therefore
+ * not evidence about its own validity, and this executor has no annual
+ * liability of its own to check it against — that is exactly what the missing
+ * coordinator would compute. Shape and attestation are what it can confirm.
  */
 function hasWellFormedExternalCashAttestation(
   funding: Readonly<ConversionTaxFunding>,
-  request: Readonly<RothConversionRequest>,
 ): boolean {
   const parsed = conversionTaxFundingSchema.safeParse(funding)
   if (!parsed.success || parsed.data.kind !== 'externalCash') return false
   const attestation = parsed.data
   return attestation.attested === true &&
     Number.isSafeInteger(attestation.amount) &&
-    attestation.amount > 0 &&
-    attestation.amount <= request.requestedAmount
+    attestation.amount > 0
 }
 
 /**
@@ -203,7 +205,7 @@ function taxFundingReasons(request: Readonly<RothConversionRequest>): ActionReas
     case 'noneExpected':
       return []
     case 'externalCash':
-      return hasWellFormedExternalCashAttestation(funding, request)
+      return hasWellFormedExternalCashAttestation(funding)
         ? []
         : [createActionReason('conversion-tax-funding-evidence-unsupported', {
             personId: request.personId,

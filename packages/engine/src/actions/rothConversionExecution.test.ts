@@ -1068,14 +1068,18 @@ describe('executeRothConversions', () => {
       expect(withholding[0]?.allocationId).toBeUndefined()
     })
 
-    it('keeps the funding reason when an external-cash amount outruns the conversion', () => {
-      // The schema accepts any positive cent amount, so this attestation
-      // reaches the executor intact. Cash claimed to pay the tax on a $100
-      // conversion cannot exceed $100, and the executor cannot adjudicate the
-      // difference, so it fails closed rather than reading it as evidence.
+    it('answers an external-cash amount that outruns the conversion', () => {
+      // A conversion's incremental cost is not bounded by the amount it
+      // converts: `tax/aca.ts` forfeits the entire premium tax credit above the
+      // 400% FPL ceiling, and the IRMAA tiers step at a threshold, so crossing
+      // either one can cost multiples of a small conversion. An attestation
+      // larger than the conversion is therefore well formed, and the size of
+      // the attestation says nothing about whether it is evidence.
       expect(reasonCodes({ kind: 'externalCash', amount: 10_001, attested: true }))
-        .toContain('conversion-tax-funding-evidence-unsupported')
+        .not.toContain('conversion-tax-funding-evidence-unsupported')
       expect(reasonCodes({ kind: 'externalCash', amount: 10_000, attested: true }))
+        .not.toContain('conversion-tax-funding-evidence-unsupported')
+      expect(reasonCodes({ kind: 'externalCash', amount: 5_000_000, attested: true }))
         .not.toContain('conversion-tax-funding-evidence-unsupported')
     })
 
