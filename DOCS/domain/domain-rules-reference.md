@@ -4,6 +4,31 @@ The financial rules the RetireGolden engine encodes, with current (tax year 2026
 
 Legal baseline: the **One Big Beautiful Bill Act (OBBBA, July 2025)** made the TCJA rate structure permanent and added the senior deduction, so 2026 brackets are stable current law rather than a sunset cliff.
 
+**The rule registry is the machine-checked chain; this document is the human map.**
+[`packages/engine/src/rules/taxRuleRegistry.ts`](../../packages/engine/src/rules/taxRuleRegistry.ts) holds one
+typed, frozen record per statutory rule the engine implements: the authority with its operative language quoted
+rather than paraphrased, the reading taken, the jurisdiction, the date last verified, and the engine sources
+implementing it. Every `settled` rule must be covered by a fixture that discriminates between candidate readings,
+and `taxRuleRegistry.conformance.test.ts` enforces that. **Convention: where a rule has a record, cite the record
+ID here rather than restating its authority, and move the record — not only this prose — when a reading changes.**
+Four classifications:
+
+- `settled` — the authority controls; implement it and cover it.
+- `approximated` — the engine returns a figure that is knowably not the one the authority requires. A required
+  typed `errorDirection` (`understatesTax` / `overstatesTax` / `bothDirections`) says which way, anchored on the
+  **taxpayer's exposure to the fisc** rather than on the quantity the rule names.
+- `outOfScope` — the engine produces no figure from the rule at all and fails closed with a typed refusal.
+- `unsettled` — authority is absent or conflicting; the rejected reading is recorded in `contraryReading`.
+
+The split between `approximated` and `outOfScope` is the load-bearing one: "computes a knowably-wrong number" and
+"refuses to answer" are different risks to whoever consumes the result, and one field used to carry both. As of
+**2026-08-04** the registry holds 151 records — 110 settled, 28 approximated, 9 outOfScope, 4 unsettled; the
+registry itself is where those counts are current. Every record also carries a `jurisdiction`, which fixes the
+publisher tier its citations may be drawn from: a federal rule may cite only federal publishers, and a state rule
+may cite its own state's publishers plus the federal law its state code incorporates by reference — a state source
+may never carry a federal rule. Only **North Dakota**'s tier is seeded and no record yet carries a state
+jurisdiction; the guard is deliberately proved before the records that will depend on it are written.
+
 ---
 
 ## 1. Federal income tax (2026)
@@ -21,9 +46,19 @@ Seven rates: 10/12/22/24/32/35/37%. 2026 thresholds (taxable income):
 | 37% | $640,600 | $768,700 |
 
 - **Standard deduction 2026:** $16,100 single / $32,200 MFJ; additional age-65+ amounts $2,050 (single) / $1,650 (each spouse, MFJ).
-- **Senior deduction (OBBBA, tax years 2025–2028):** $6,000 per person 65+, available whether itemizing or not. IRC §151(d)(5)(C)(iii)(I) reduces the **per-person** $6,000 by 6% of MAGI above $75,000 single / $150,000 MFJ, so each qualifying person's share phases out separately: a couple with two people 65+ reaches zero at $250,000 of MAGI, the same point one person does, not $350,000. MAGI here is AGI plus amounts excluded under §§911/931/933. Because the deduction is allowed under §151, §56(b)(1)(D) disallows it for AMT whether or not the return itemizes. A major Roth-conversion interaction for 65+ planners.
+- **Senior deduction (OBBBA, tax years 2025–2028):** $6,000 per person 65+, available whether itemizing or not. IRC §151(d)(5)(C)(iii)(I) reduces the **per-person** $6,000 by 6% of MAGI above $75,000 single / $150,000 MFJ, so each qualifying person's share phases out separately: a couple with two people 65+ reaches zero at $250,000 of MAGI, the same point one person does, not $350,000. MAGI here is AGI plus amounts excluded under §§911/931/933. Because the deduction is allowed under §151, §56(b)(1)(D) disallows it for AMT whether or not the return itemizes (`irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out`, `irc-56-b-1-D-section-151-deduction-disallowed-for-amt`). A major Roth-conversion interaction for 65+ planners.
 - **Filing status after a spouse dies:** married couples can use MFJ treatment for the year of death when the survivor does not remarry. Qualifying-surviving-spouse treatment can preserve MFJ brackets/deduction for the next two years when a dependent qualifies; RetireGolden models this as an opt-in dependent flag because dependents are otherwise out of scope.
 - **Alternative minimum tax (AMT) 2026:** exemption $90,100 single / $140,200 MFJ; exemption phase-out starts at $500,000 single / $1,000,000 MFJ and phases out at 50%; the 28% AMT ordinary-income rate begins above $244,500 of AMT taxable excess. RetireGolden uses these figures as a planning-grade AMT screen with modeled add-backs/preference items and preferential-rate-aware LTCG/QDI treatment, not a full Form 6251 worksheet.
+- **Indexing in projected years:** the ledger is nominal, so for a year with no published parameter pack
+  `indexFederalTaxPack` carries the annually-indexed figures forward at the plan's inflation rate before income
+  meets them — rate-bracket bounds (`irc-1-j-3-B-rate-tables-adjusted-each-year`), the standard deduction and the
+  age-65 addition, the 15%/20% capital-gain breakpoints, and the AMT exemption, phase-out threshold and 28%-rate
+  threshold. The statutory rounding steps and the C-CPI-U basis are not reproduced. Figures with **no** indexing
+  provision are deliberately left flat and creep by design: the §86 provisional-income tiers, the §1411 NIIT
+  thresholds, the §121 exclusion, the §1211(b) $3,000 ordinary offset, and the senior deduction with its MAGI
+  threshold (`irc-151-d-5-C-senior-deduction-not-indexed`). The SALT cap follows its own schedule instead
+  (`irc-164-b-7-salt-cap-schedule`): $40,000 for 2025, the pack figure compounding at 1%/yr through 2029, then
+  reverting to $10,000 from 2030.
 - Sources: [Tax Foundation 2026 brackets](https://taxfoundation.org/data/all/federal/2026-tax-brackets/), [IRS 2026 inflation adjustments](https://www.irs.gov/newsroom/irs-releases-tax-inflation-adjustments-for-tax-year-2026-including-amendments-from-the-one-big-beautiful-bill), [IRS Rev. Proc. 2025-32](https://www.irs.gov/pub/irs-drop/rp-25-32.pdf), [IRS final return / qualifying surviving spouse](https://www.irs.gov/newsroom/filing-a-final-federal-tax-return-for-someone-who-has-died), [Bipartisan Policy Center 2026 explainer](https://bipartisanpolicy.org/explainer/2026-federal-income-tax-brackets-and-interactive-calculator/).
 
 ## 2. Long-term capital gains and NIIT (2026)
@@ -87,6 +122,14 @@ Maximum 85% of benefits taxable; thresholds are **statutorily unindexed** (more 
 | IRA | $7,500; catch-up 50+ $1,100 |
 | HSA (self/family) | parameter data (≈$4,400/$8,750) + $1,000 55+ catch-up |
 
+- **Married HSA holders share one family limit.** Where either spouse has family coverage, IRC 223(b)(5) treats
+  both as having only that coverage and divides the paragraph (1) limitation equally between them absent a
+  different agreement. The $1,000 age-55 catch-up sits outside the division under (5)(B), so each spouse gets half
+  the base plus a whole catch-up. Paragraph (5) opens on individuals married to each other, so the ledger divides
+  only for a married-filing-jointly pair with both spouses living; an unmarried pair and a sole survivor each keep
+  an undivided family base (`irc-223-b-5-hsa-family-limit-divided-between-spouses`). Coverage election, the monthly
+  proration of 223(b)(1), and the Medicare-entitlement zeroing of 223(b)(7) are not modeled.
+
 Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-increases-to-24500-for-2026-ira-limit-increases-to-7500).
 
 ## 6. RMDs (SECURE 2.0)
@@ -96,13 +139,49 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
 - Joint Life Table II is 26 CFR 1.401(a)(9)-9(d), Table 3. It includes spouse-beneficiary ages below 20; do not regenerate it from Pub 590-B displays that only show the age 20+ slice.
 - Applies to traditional IRA/401(k)/403(b); **Roth 401(k) exempt since 2024**; Roth IRA exempt.
 - Penalty: 25% of shortfall (10% if timely corrected).
-- **QCD:** direct IRA-to-charity from age 70½, excluded from income, counts toward RMD; 2026 limit $111,000.
-- Sources: [IRS Pub 590-B](https://www.irs.gov/publications/p590b), [IRS RMD FAQs](https://www.irs.gov/retirement-plans/retirement-plan-and-ira-required-minimum-distributions-faqs), [eCFR 26 CFR 1.401(a)(9)-9 Table 3](https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-9).
+- **Aggregation and the unmet-amount sweep.** An IRA's RMD is calculated separately per account, but the sum may
+  be taken from any one or more of the owner's IRAs — so an IRA too small to cover its own calculated amount
+  leaves a shortfall the owner's other IRAs must still distribute rather than extinguishing it. The ledger sweeps
+  an unmet amount across that owner's remaining aggregated IRAs in plan account order, one of the orderings the
+  regulation permits, chosen for determinism. Only IRAs held **as owner** aggregate: an inherited IRA, a spouse's
+  IRA, and an employer plan each stand outside the sum and must distribute their own amount
+  (`treas-reg-1-408-8-e-1-i-aggregate-ira-rmd-sum`).
+- **QCD:** direct IRA-to-charity from age 70½, excluded from income, counting toward an RMD when one is due; 2026
+  limit $111,000. A QCD is **not** conditional on an RMD — 408(d)(8) turns on the donor's age and nothing in it
+  references section 401(a)(9) — and the ledger now models that. The pre-RMD window from 70½ to the applicable age
+  is open, and dollars requested beyond the owner's IRA RMD are debited straight from donor-owned aggregated IRAs,
+  shrinking every later RMD base. Age 70½ is resolved from the birth month at annual granularity (attained 71, or
+  attained 70 with a birth month of January–June); within-year timing is not modeled, so a gift dated before the
+  half-birthday counts. That is an engineering convention rather than a legal conclusion — the defining regulation
+  was withdrawn — and is recorded `unsettled` in `irc-408-d-8-B-ii-age-70-half`. The income reduction covers only
+  the taxable share of the RMD dollars routed out; the beyond-RMD dollars never entered income, so deducting them
+  would be phantom. Three approximations remain in the annual ledger, each registered: eligibility and the annual
+  limit are applied to the **household** rather than to each donor
+  (`irc-408-d-8-A-projection-household-qcd-aggregation`), pro-rata basis recovery runs across the whole
+  distribution before the gift is subtracted instead of leaving the gift out of the section 72 computation
+  (`irc-408-d-8-D-projection-qcd-after-pro-rata`), and the post-70½ deductible-contribution offset in the second
+  sentence of 408(d)(8)(A) is not applied. No charity, direct transfer, or per-donor IRA source is identified.
+- **Inherited accounts.** A designated beneficiary's annual amount uses the **Single Life Table** divisor fixed at
+  the age attained in the year after the owner's death and reduced by one for each later year (Treas. Reg.
+  1.401(a)(9)-5(d)(3)(iii)) — not a life expectancy recomputed at the beneficiary's current age
+  (`treas-reg-1-401-a-9-5-d-3-beneficiary-single-life-denominator`). Years 1–9 force a distribution only when the
+  decedent had started RMDs; the remaining balance is swept in year 10. Two approximations remain, both recorded
+  as overstating tax: the greater-of-employee-life-expectancy test of 1.401(a)(9)-5(d)(1)(ii) is not applied
+  because the schema carries no decedent age (`treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy`),
+  and eligible designated beneficiaries are not modeled at all, so a whole-of-life stretch is compressed into ten
+  years (`irc-401-a-9-E-ii-eligible-designated-beneficiary`).
+- Sources: [IRS Pub 590-B](https://www.irs.gov/publications/p590b), [IRS RMD FAQs](https://www.irs.gov/retirement-plans/retirement-plan-and-ira-required-minimum-distributions-faqs), [eCFR 26 CFR 1.401(a)(9)-9, Table 1 (Single Life) and Table 3 (Joint Life)](https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-9).
 
 ## 7. Medicare and IRMAA (2026)
 
 - Standard Part B premium: **$202.90/mo**.
 - IRMAA based on **MAGI from 2 years prior** (2026 premiums ← 2024 MAGI). Cliff brackets (single / MFJ MAGI): $109k/$218k, then ~$137k, ~$171k, ~$205k single tiers, top tier $500k/$750k. 2026 Part B totals range $284.10–$689.90/mo; Part D surcharges $14.50–$91.00/mo.
+- **Top-tier freeze.** 42 USC 1395r(i)(5)(C) freezes the **top** threshold ($500,000 individual / $750,000 joint)
+  through premium year **2027**, then resumes indexing it off an August **2026** base; the four tiers beneath it
+  index without interruption under (i)(5)(A). The engine implements exactly that — premium years through 2027
+  return the pack figure unscaled, and later years scale the 2026 base by the general inflation factor read one
+  year early and round to the nearest $1,000 (`usc-42-1395r-i-5-C-top-irmaa-threshold-frozen`). A future pack whose
+  year is not 2026 raises rather than silently mis-basing the resumption.
 - Engine notes: (a) two-year lookback means conversions at 63+ hit Medicare pricing; (b) brackets are cliffs — $1 over costs hundreds; (c) store full bracket tables per year in parameter data; (d) IRMAA's filing categories differ from the income-tax tables — SSA groups **qualifying surviving spouses with single/HOH filers** on the individual threshold table ([POMS HI 01101.020](https://secure.ssa.gov/poms.nsf/lnx/0601101020)), so QSS years price premiums at single thresholds even though their income tax uses the joint tables.
 - **SSA-44 redetermination (opt-in, `expenses.healthcare.ssa44`):** after a qualifying life-changing event —
   death of spouse, and optionally each person's work stoppage (retirement year) — the beneficiary can ask SSA
@@ -143,6 +222,13 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
   standard deduction, Social Security taxation, private/public retirement-income exclusions, and capital-gain
   inclusion. Values are transcribed from the per-state research files in
   [state-tax-research/](state-tax-research/).
+- Nine jurisdictions — AZ, CO, DC, IA, ID, MO, MT, ND, NM — define their standard deduction by reference to the
+  federal one rather than publishing their own. Their packs carry a copy of the federal figure tagged
+  `standardDeductionConformity: 'federal'`, and `indexConformedStateStandardDeduction` moves that copy by exactly
+  the factor `indexFederalTaxPack` applied to the original, so one engine never holds two values for one statutory
+  amount in a projected year (`irc-63-c-7-B-ii-conformed-state-deduction-tracks-federal`). Nothing else in the pack
+  moves: brackets and retirement-exclusion caps are state figures under state law. ME and SC decoupled for 2026
+  and are deliberately untagged.
 - Capital gains default to federal conformity unless a state pack says otherwise. CA, MN, and NJ document
   ordinary state taxation of capital gains. PA uses current-year-only capital-loss conformity: federal
   prior-year carryforward losses do not offset PA-taxable current-year gains in the planning model. The raw
@@ -167,6 +253,18 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
 - **5-year rules** (surface as warnings v1): each conversion has its own 5-year clock for penalty-free withdrawal of converted principal before 59½ (the "conversion ladder" for early retirees); separately, earnings require 59½ + 5-year account age.
 - **Pro-rata rule** for conversions and withdrawals from IRAs with nondeductible basis (Form 8606) — **implemented** (opt-in `nondeductibleBasis` per traditional IRA; see §16). Absent the field, plans behave as before (all pre-tax).
 - Conversion taxes best paid from taxable funds; paying from the conversion before 59½ incurs the 10% penalty on the tax portion.
+- **Named conversion actions.** A `rothConversion` retirement action names its owner, its source accounts, and a
+  destination Roth, and the annual projection **commits** it: sources are debited, the Roth credited, and a
+  conversion basis layer opened, for zero- and nonzero-basis owners alike. Admission turns on the Form 8606 basis
+  **numerator being known**, not on its being zero — reading `zeroBasis` as the admission predicate made admission
+  depend on the settlement admission governs, which is circular. At a proven-zero numerator the executor states the
+  whole gross as taxable; at a positive one it commits the dollars and states **no** character, and the annual
+  settlement supplies the Form 8606 line-10 ratio back through the assumption vector, so the year holds one answer
+  to the owner's pro-rata question instead of a second mid-year one. Under §408A(d)(3)(F)(ii) the layer's
+  recapture amount is then the credited dollars net of that basis return. Still refused with balances unchanged: a
+  conversion whose tax is funded by a linked sibling withdrawal (the atomic annual group executor that would move
+  both together does not exist), withholding from conversion principal, and a request larger than the source —
+  there is no partial-execution arm.
 - Strategy interactions the engine must reflect: bracket fill, IRMAA tiers (+2yr lag), ACA cliff, SS provisional income, NIIT, senior-deduction phase-out, widow's-penalty (survivor files single), reduced future RMDs.
 
 ## 11. Withdrawal sequencing (modeling conventions)
@@ -174,8 +272,26 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
 - Default: cash buffer → taxable (basis-ratio gains) → traditional → Roth; HSA reserved for medical. RMDs always first.
 - HSA withdrawals are qualified (tax- and penalty-free) only up to modeled medical costs when the account opts into the cap treatment (§16); otherwise the legacy simplification (tax-free, 20% penalty pre-65) or the explicit "assume all qualified" mode applies.
 - Pre-59½ access ordering: taxable → Roth contributions/seasoned conversions → 72(t)/Rule of 55 (**implemented**) → penalized deferred as last resort. Account-movement eligibility (withdraw/convert/RMD/penalty) is centralized in `engine/strategies/accountEligibility.ts` (§16).
+- **SEPP (72(t)) divisors and scope.** Both supported methods — required-minimum-distribution and amortization —
+  divide by the **IRS Single Life Table** carried in the parameter pack (Treas. Reg. 1.401(a)(9)-9(b) Table 1,
+  unisex and fixed by regulation rather than indexed), which is why nothing in the SEPP path takes a sex; the
+  sex-dependent SSA period table is now used only by the Monte Carlo longevity model
+  (`notice-2022-6-3-02-a-permitted-life-expectancy-tables`). Fixed annuitization is not a projection method. A SEPP
+  on an **employer plan** requires separation from service under 72(t)(3)(B) — the series must begin strictly
+  after separation. The evidence layer requires an explicit separation date and refuses without one; the annual
+  ledger proves it from the owner's plan retirement age, a year-granularity proxy recorded as `approximated`
+  (`irc-72-t-3-B-sepp-separation-annual-proxy`). IRAs are exempt from the test, as the statute provides.
 - Research consensus: naive "taxable-then-deferred-then-Roth" is beaten by bracket-aware blends (fill low brackets from traditional every year); this motivates the bracket-targeted strategy and the LP optimizer (see [features/optimizer.md](../features/optimizer.md) and the Owl oracle).
 - The optimizer recommendation is **optimal on the exact ledger to tolerance** (2026-07-08): the MILP models the taxable-SS phase-in, IRMAA 2-year lookback, taxable-gain realization, and state brackets in-solve; an exact-ledger convergence loop re-linearizes around the incumbent; and the exact-ledger tournament (windowed bracket fills, top-two + MILP-winner local search) arbitrates and gates everything. The dev-only Owl parity harness (`npm run owl-parity`) measures RetireGolden at-or-above Owl on every fixture.
+- **The optimizer publishes no positive-conversion recommendation today.** An aggregate schedule carries no owner,
+  source account, or destination account, so every schedule the pipeline produces that would convert a positive
+  amount is vetoed `identityIncomplete` before publication and the tournament falls back to the plan's incumbent
+  conversions; only a winning schedule that converts nothing can be published. Separately, a plan that already
+  carries retirement actions is refused up front as a typed precondition — `optimizerUnsupportedRetirementActions`
+  returns an `optimizer-retirement-action-unsupported` reason that surfaces must check before dispatching —
+  because the optimizer prices conversions against aggregate account balances, which do not reflect what a
+  recorded action moves. The LP does now net committed action movement into its per-year balance recursion
+  (`committedActionMovement`), so the arithmetic is in place ahead of the veto being liftable.
 
 ## 12. Monte Carlo methodology notes
 
@@ -723,6 +839,17 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   modification/recapture consequences.
   Source: [IRS early-distribution exception
   matrix](https://www.irs.gov/retirement-plans/plan-participant-employee/retirement-topics-exceptions-to-tax-on-early-distributions).
+- **What the annual projection actually runs, and what is still standalone.** The identity-bearing paths the
+  simulator calls are the exact-cent ordinary-withdrawal executor and, since the named-conversion slice, the Roth
+  conversion executor. Both debit their named sources inside the year's ledger and outside the legacy withdrawal
+  map, so no source can be debited twice, and both record their movement at the mutation site so the owned-IRA
+  evidence chain can re-join every balance change. The legacy QCD path does the same for its beyond-RMD debits,
+  which carry a `legacyQcd` occurrence and a `legacyQcdDistribution` debit application with a null Form 8606 line
+  — 408(d)(8)(D) keeps a QCD out of the pro-rata computation entirely, so it never belongs to a basis allocation.
+  Everything else in the actions package is still standalone and uncalled by `simulate.ts`: the Plan-owned annual
+  coordinator and executor, the post-candidate classification and execution chain, the SEPP payment validator and
+  annual reconciler, and the whole `annualQcd*` character/§170 deduction stack. Each of those reports
+  `movement: notCommitted`, and none of them establishes custodian settlement or filing-grade treatment.
 - **Fixed-asset disposition.** Setting `costBasis` on a property switches its planned sale from the legacy
   tax-free `expectedNetProceeds` estimate to exact treatment: gain = sale price − selling costs
   (`sellingCostPct`) − basis; depreciation (`depreciationRecapture`) is ordinary income and never excludable;
