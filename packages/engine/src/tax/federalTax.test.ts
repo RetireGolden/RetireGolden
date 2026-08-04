@@ -145,6 +145,54 @@ describe('section 1411 net investment income tax', () => {
   })
 })
 
+describe('modified adjusted gross income', () => {
+  // IRC 1411(d) defines modified AGI for the net investment income tax as AGI
+  // increased by the section 911(a)(1) exclusion, and 151(d)(5)(C)(iii)(II)
+  // defines it for the senior deduction phase-out as AGI increased by amounts
+  // excluded under sections 911, 931, or 933. Reading modified AGI as the AGI
+  // line drops income the household really has, and it moves both numbers in
+  // the taxpayer's favour at once -- less tax and more deduction.
+  //
+  // Single, 65+, 100,000 of AGI of which 60,000 is taxable interest, plus
+  // 120,000 of excluded foreign earned income, so modified AGI is 220,000.
+  //   modified AGI: NIIT on min(60,000, 220,000 - 200,000) = 20,000 -> 760;
+  //                 senior 6,000 - 6% x 145,000 -> 0
+  //   AGI alone:    NIIT 0, since 100,000 never reaches the 200,000 threshold;
+  //                 senior 6,000 - 6% x 25,000 = 4,500
+  describeRule('irc-1411-d-modified-agi-foreign-exclusion-addback', {
+    readings: {
+      agiPlusTheExclusion: { niit: 760, seniorDeduction: 0 },
+      agiAlone: { niit: 0, seniorDeduction: 4_500 },
+    },
+    accepted: 'agiPlusTheExclusion',
+  }, ({ accepted, readings }) => {
+    it('counts excluded foreign earned income against both limits', () => {
+      const d = computeFederalTax(input({
+        ordinaryIncome: 100_000,
+        taxableInterestIncome: 60_000,
+        peopleAged65Plus: 1,
+        foreignExclusionAddback: 120_000,
+      }))
+
+      // The exclusion never enters AGI; it is added back only for these limits.
+      expect(d.agi).toBeCloseTo(100_000, 6)
+      expect(d.magi).toBeCloseTo(220_000, 6)
+
+      expect(d.niit).toBeCloseTo(accepted.niit, 6)
+      expect(d.niit).not.toBeCloseTo(readings.agiAlone.niit, 6)
+      expect(d.seniorDeduction).toBeCloseTo(accepted.seniorDeduction, 6)
+      expect(d.seniorDeduction).not.toBeCloseTo(readings.agiAlone.seniorDeduction, 6)
+    })
+
+    it('leaves a return with no excluded foreign income at its AGI', () => {
+      const d = computeFederalTax(input({ ordinaryIncome: 100_000, peopleAged65Plus: 1 }))
+
+      expect(d.magi).toBe(d.agi)
+      expect(d.seniorDeduction).toBeCloseTo(readings.agiAlone.seniorDeduction, 6)
+    })
+  })
+})
+
 describe('section 1211 capital loss limitation', () => {
   // IRC 1211(b) allows a net capital loss against ordinary income only up to
   // the lower of 3,000 dollars or the excess of losses over gains. The rest is
@@ -436,11 +484,46 @@ describe('age-based deductions', () => {
     expect(d.ordinaryTax).toBeCloseTo(5_804, 6)
   })
 
-  it('phases out the senior deduction at 6% of MAGI over the threshold', () => {
-    const d = computeFederalTax(
-      input({ filingStatus: 'marriedFilingJointly', ordinaryIncome: 200_000, peopleAged65Plus: 2 }),
-    )
-    expect(d.seniorDeduction).toBeCloseTo(9_000, 6) // 12,000 − 6%×50,000
+  // IRC 151(d)(5)(C)(iii)(I) reduces "the $6,000 amount in clause (i)", and
+  // clause (i) allows that amount "for each qualified individual". The
+  // reduction therefore runs on the per-individual amount and is taken once per
+  // qualified individual. Applying it to the return's combined base instead is
+  // the natural misreading, and it leaves a joint return with two spouses 65+
+  // still carrying a deduction all the way to 350,000 of modified AGI.
+  //
+  // MFJ, both 65+, 200,000 of modified AGI:
+  //   per qualified individual: (6,000 - 6% x 50,000) x 2 = 3,000 x 2 = 6,000
+  //   combined base:            2 x 6,000 - 6% x 50,000   = 12,000 - 3,000 = 9,000
+  describeRule('irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out', {
+    readings: { reducedPerQualifiedIndividual: 6_000, reducedOnTheCombinedBase: 9_000 },
+    accepted: 'reducedPerQualifiedIndividual',
+  }, ({ accepted, readings }) => {
+    it('reduces each qualified individual amount, not the combined total', () => {
+      const d = computeFederalTax(
+        input({ filingStatus: 'marriedFilingJointly', ordinaryIncome: 200_000, peopleAged65Plus: 2 }),
+      )
+
+      expect(d.magi).toBe(200_000)
+      expect(d.seniorDeduction).toBeCloseTo(accepted, 6)
+      expect(d.seniorDeduction).not.toBeCloseTo(readings.reducedOnTheCombinedBase, 6)
+    })
+
+    it('exhausts two shares at the same modified AGI as one share', () => {
+      // 6% x (250,000 - 150,000) = 6,000 zeroes the clause (i) amount itself,
+      // so neither spouse has anything left to claim. The combined-base reading
+      // would still allow 12,000 - 6,000 = 6,000 to the couple here, and would
+      // not run out until 350,000.
+      const couple = computeFederalTax(
+        input({ filingStatus: 'marriedFilingJointly', ordinaryIncome: 250_000, peopleAged65Plus: 2 }),
+      )
+      const single = computeFederalTax(
+        input({ filingStatus: 'marriedFilingJointly', ordinaryIncome: 250_000, peopleAged65Plus: 1 }),
+      )
+
+      expect(couple.seniorDeduction).toBe(0)
+      expect(single.seniorDeduction).toBe(0)
+      expect(couple.seniorDeduction).not.toBeCloseTo(readings.reducedPerQualifiedIndividual, 6)
+    })
   })
 
   it('drops the senior deduction after its statutory last year', () => {
@@ -494,6 +577,55 @@ describe('itemized deductions (2026)', () => {
 })
 
 describe('AMT screen (2026)', () => {
+  // IRC 56(b)(1)(D) disallows the section 63(c) standard deduction, the
+  // deduction for personal exemptions under section 151, and the section 642(b)
+  // deduction. The senior deduction is allowed by section 151(d)(5)(C), so the
+  // election to itemize -- which governs only the section 63(c) amount -- does
+  // not carry it into AMTI. Adding it back only on the standard-deduction
+  // branch is the natural misreading: that branch is accidentally right because
+  // the total deduction already contains the senior amount.
+  //
+  // MFJ, both 65+, 140,000 ordinary, itemizing 30,000 SALT + 20,000 mortgage.
+  // Modified AGI is under the 150,000 phase-out start, so the senior deduction
+  // is the full 12,000 and this fixture does not also turn on the phase-out.
+  //   taxable income:        140,000 - (50,000 + 12,000) = 78,000
+  //   senior disallowed:     78,000 + 30,000 SALT + 12,000 = 120,000
+  //   senior left in AMTI:   78,000 + 30,000 SALT          = 108,000
+  describeRule('irc-56-b-1-D-section-151-deduction-disallowed-for-amt', {
+    readings: { addedBackOnBothBranches: 120_000, survivesTheItemizedBranch: 108_000 },
+    accepted: 'addedBackOnBothBranches',
+  }, ({ accepted, readings }) => {
+    it('adds the senior deduction back on a return that itemizes', () => {
+      const d = computeFederalTax(input({
+        filingStatus: 'marriedFilingJointly',
+        ordinaryIncome: 140_000,
+        peopleAged65Plus: 2,
+        itemizedDeductions: { stateAndLocalTaxes: 30_000, mortgageInterest: 20_000, charitable: 0 },
+      }))
+
+      expect(d.itemized).toBe(true)
+      expect(d.seniorDeduction).toBe(12_000)
+      expect(d.taxableIncome).toBe(78_000)
+      expect(d.alternativeMinimumTaxableIncome).toBeCloseTo(accepted, 6)
+      expect(d.alternativeMinimumTaxableIncome)
+        .not.toBeCloseTo(readings.survivesTheItemizedBranch, 6)
+    })
+
+    it('adds it back on a return that takes the standard deduction too', () => {
+      // Both 63(c) and 151 are disallowed, so nothing on line 14 of the return
+      // survives into AMTI and the result is AGI itself.
+      const d = computeFederalTax(input({
+        filingStatus: 'marriedFilingJointly',
+        ordinaryIncome: 140_000,
+        peopleAged65Plus: 2,
+      }))
+
+      expect(d.itemized).toBe(false)
+      expect(d.deduction).toBe(35_500 + 12_000)
+      expect(d.alternativeMinimumTaxableIncome).toBeCloseTo(140_000, 6)
+    })
+  })
+
   it('is zero when tentative minimum tax does not exceed regular tax', () => {
     const d = computeFederalTax(input({ ordinaryIncome: 100_000 }))
     expect(d.alternativeMinimumTaxableIncome).toBeCloseTo(100_000, 6)

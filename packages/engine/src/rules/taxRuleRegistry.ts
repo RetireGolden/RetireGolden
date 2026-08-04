@@ -949,7 +949,7 @@ const registry = {
     classification: 'settled',
     contraryReading: null,
     conventionRationale:
-      'The thresholds are not indexed, so the record is static rather than annually indexed. The engine takes modified adjusted gross income to equal adjusted gross income here, which departs from 1411(d) where a taxpayer has excluded foreign earned income; that case is not modelled.',
+      'The thresholds are not indexed, so the record is static rather than annually indexed. Modified adjusted gross income is built under 1411(d) rather than read off the adjusted gross income line; see irc-1411-d-modified-agi-foreign-exclusion-addback.',
     authority: [{
       kind: 'statute',
       citation: 'IRC 1411(a)(1)',
@@ -1898,6 +1898,107 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
+  },
+  'irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out': {
+    title: 'The senior deduction phase-out reduces the per-individual amount',
+    statement:
+      'Clause (i) allows 6,000 dollars for each qualified individual, and clause (iii)(I) reduces the 6,000 dollar amount in clause (i) by 6 percent of modified adjusted gross income over 75,000 dollars, or 150,000 dollars on a joint return. The reduction lands on the per-individual amount, so it is taken once for each qualified individual rather than once against the combined total. A joint return with two spouses aged 65 or over therefore exhausts the deduction at 250,000 dollars of modified adjusted gross income, the same point a one-person joint return exhausts it, and not at 350,000 dollars.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 151(d)(5)(C)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section151&num=0&edition=prelim',
+      quotedText:
+        'In the case of a taxable year beginning before January 1, 2029, there shall be allowed a deduction in an amount equal to 6,000 dollars for each qualified individual with respect to the taxpayer.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 151(d)(5)(C)(iii)(I)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section151&num=0&edition=prelim',
+      quotedText:
+        'In the case of any taxpayer for any taxable year, the 6,000 dollar amount in clause (i) shall be reduced (but not below zero) by 6 percent of so much of the taxpayer’s modified adjusted gross income as exceeds 75,000 dollars (150,000 dollars in the case of a joint return).',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Schedule 1-A (Form 1040) (2025), Part V, lines 35 to 37',
+      url: 'https://www.irs.gov/pub/irs-pdf/f1040s1a.pdf',
+      quotedText:
+        'Subtract line 34 from 6,000. If zero or less, enter -0- [line 35]. If you have a valid social security number and were born before January 2, 1961, enter the amount from line 35 [line 36a]. If you are married filing jointly, your spouse has a valid social security number, and your spouse was born before January 2, 1961, enter the amount from line 35 [line 36b]. Enhanced deduction for seniors. Add lines 36a and 36b [line 37].',
+    }],
+    volatility: 'sunsetting',
+    effectiveFrom: 2026,
+    effectiveThrough: 2028,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/tax/federalTax.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+  'irc-56-b-1-D-section-151-deduction-disallowed-for-amt': {
+    title: 'The senior deduction is a section 151 deduction disallowed for AMT',
+    statement:
+      'Section 56(b)(1)(D) disallows the standard deduction under section 63(c), the deduction for personal exemptions under section 151, and the deduction under section 642(b) in computing alternative minimum taxable income. The senior deduction is allowed by section 151(d)(5)(C), so it is added back whether or not the return elects to itemize. Only the section 63(c) standard deduction turns on that election.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'Section 63(b) was never amended to give the senior deduction a paragraph of its own, so a taxpayer who does not itemize can reach it only through 63(b)(2), the deduction for personal exemptions provided in section 151. A reading under which that phrase does not carry the senior deduction would deny the deduction to every non-itemizer, so the parallel phrase in 56(b)(1)(D) has to carry it as well. Form 6251 line 1a confirms both the result and its unconditional scope: it removes Schedule 1-A line 37, the senior deduction alone and not the rest of that schedule, from total deductions with no itemized-or-standard branch.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 56(b)(1)(D)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section56&num=0&edition=prelim',
+      quotedText:
+        'Standard deduction and deduction for personal exemptions not allowed. The standard deduction under section 63(c), the deduction for personal exemptions under section 151, and the deduction under section 642(b) shall not be allowed.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 63(b)(2)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim',
+      quotedText:
+        'In the case of an individual who does not elect to itemize his deductions for the taxable year, for purposes of this subtitle, the term taxable income means adjusted gross income, minus - (1) the standard deduction, (2) the deduction for personal exemptions provided in section 151,',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Form 6251 (2025), lines 1a and 1b',
+      url: 'https://www.irs.gov/pub/irs-pdf/f6251.pdf',
+      quotedText:
+        'Subtract Schedule 1-A (Form 1040), line 37, from Form 1040, 1040-SR, or 1040-NR, line 14 [line 1a]. Subtract line 1a from Form 1040, 1040-SR, or 1040-NR, line 11b (if less than zero, enter as a negative amount) [line 1b].',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+  },
+  'irc-1411-d-modified-agi-foreign-exclusion-addback': {
+    title: 'Modified adjusted gross income adds back excluded foreign income',
+    statement:
+      'Two limits in this engine run off modified adjusted gross income rather than adjusted gross income, and both define it as adjusted gross income increased by income the taxpayer excluded from gross income abroad. Section 1411(d) adds the section 911(a)(1) foreign earned income exclusion, net of the deductions section 911(d)(6) disallows, for the net investment income tax. Section 151(d)(5)(C)(iii)(II) adds any amount excluded under section 911, 931, or 933 for the senior deduction phase-out. Reading modified adjusted gross income as plain adjusted gross income understates the tax and overstates the deduction at the same time.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The two definitions are not identical: 1411(d) reaches only section 911 and nets out the deductions 911(d)(6) disallows, while 151(d)(5)(C)(iii)(II) reaches sections 911, 931, and 933 with no netting. The engine carries one excluded-foreign-income figure and applies it to both, which is the broader definition in both places. That same figure already feeds section 86 provisional income, where 86(b)(2)(A) likewise reaches 911, 931, and 933, so splitting the two would mean splitting an input the household reports as one number.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 1411(d)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1411&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this chapter, the term modified adjusted gross income means adjusted gross income increased by the excess of - (1) the amount excluded from gross income under section 911(a)(1), over (2) the amount of any deductions (taken into account in computing adjusted gross income) or exclusions disallowed under section 911(d)(6) with respect to the amounts described in paragraph (1).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 151(d)(5)(C)(iii)(II)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section151&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this clause, the term modified adjusted gross income means the adjusted gross income of the taxpayer for the taxable year increased by any amount excluded from gross income under section 911, 931, or 933.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Schedule 1-A (Form 1040) (2025), Part I, lines 1 to 3',
+      url: 'https://www.irs.gov/pub/irs-pdf/f1040s1a.pdf',
+      quotedText:
+        'Modified Adjusted Gross Income (MAGI) Amount. Enter the amount from Form 1040, 1040-SR, or 1040-NR, line 11b [line 1]. Enter any income from Puerto Rico that you excluded [line 2a]. Enter the amount from Form 2555, line 45 [line 2b]. Enter the amount from Form 2555, line 50 [line 2c]. Enter the amount from Form 4563, line 15 [line 2d]. Add lines 2a, 2b, 2c, and 2d [line 2e]. Add lines 1 and 2e [line 3].',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
   },
 } as const satisfies Record<string, TaxRuleRecord>
 

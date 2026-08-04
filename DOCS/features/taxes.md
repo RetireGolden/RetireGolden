@@ -28,12 +28,17 @@ Computed each year inside the projection loop:
 - **LTCG + qualified dividends** stack at 0/15/20% on top of ordinary income; the 0%-bracket headroom is
   surfaced as a gain-harvesting opportunity.
 - **Deductions:** standard deduction + age-65 additions + the **$6,000/person senior deduction
-  (2025–2028, 6% MAGI phase-out)** — a major Roth-conversion interaction for 65+ planners; itemized as a
+  (2025–2028)** — a major Roth-conversion interaction for 65+ planners; itemized as a
   simple user-entered total (SALT cap, mortgage interest, charitable) where it beats the standard.
+  IRC §151(d)(5)(C)(iii)(I) phases out the **per-person** $6,000 at 6% of MAGI over the threshold, so
+  each qualifying person's share runs out separately and two people 65+ reach zero at the same MAGI as one.
+- **MAGI:** AGI plus foreign income excluded under §§911/931/933. Both the NIIT (§1411(d)) and the senior
+  deduction phase-out (§151(d)(5)(C)(iii)(II)) run off that figure rather than the AGI line.
 - **NIIT** 3.8% over $200k/$250k MAGI (unindexed). **Early-withdrawal penalty** 10% pre-59½, with the
   Rule-of-55 / 72(t) **SEPP** exceptions ([strategies/sepp.ts](../../packages/engine/src/strategies/sepp.ts)).
-- **Planning-grade AMT screen:** AMTI starts from taxable income plus modeled AMT add-backs (the regular
-  standard/senior deduction for non-itemizers, itemized SALT when itemizing, and any advanced calculator-only
+- **Planning-grade AMT screen:** AMTI starts from taxable income plus modeled AMT add-backs (the §63(c)
+  standard deduction for non-itemizers, itemized SALT when itemizing, the §151 senior deduction on either
+  branch per §56(b)(1)(D), and any advanced calculator-only
   preference items supplied by tests or future integrations). The engine applies the 2026 AMT exemption,
   exemption phase-out, and tentative minimum tax, preserving LTCG/qualified-dividend preferential rates, then
   adds the excess over regular tax when AMT binds. This is a conversion-risk screen, not a Form 6251
