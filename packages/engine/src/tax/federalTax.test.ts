@@ -862,3 +862,230 @@ describe('applyCapitalLossCarryforward', () => {
     expect(d.totalTax).toBe(0)
   })
 })
+
+/**
+ * Registered rules covering the rate schedules, the deduction stack, the AMT
+ * add-backs, and the NIIT carve-out for plan distributions. Every expected
+ * figure below was derived from the statute and the 2026 revenue procedure
+ * before the engine was consulted; the rejected readings name the misreading
+ * each fixture exists to exclude.
+ */
+describe('registered rules: rate schedules, deductions, AMT, NIIT', () => {
+  // IRC 1(j)(2) is a bracket table, so each rate reaches only the slice of
+  // taxable income inside its own bracket. Applying the top applicable rate to
+  // the whole amount is the natural misreading and overstates tax by two
+  // thirds here.
+  //
+  // Single, 76,100 ordinary less the 16,100 standard deduction = 60,000.
+  //   12,400 x 10% = 1,240; 38,000 x 12% = 4,560; 9,600 x 22% = 2,112 -> 7,912
+  //   which is also the revenue procedure shortcut 5,800 + 22% over 50,400.
+  //   Top rate on the whole amount: 60,000 x 22% = 13,200.
+  describeRule('irc-1-j-2-progressive-ordinary-rate-schedule', {
+    readings: { eachSliceAtItsOwnRate: 7_912, topRateOnTheWholeAmount: 13_200 },
+    accepted: 'eachSliceAtItsOwnRate',
+  }, ({ accepted, readings }) => {
+    it('taxes each bracket slice at its own rate', () => {
+      const result = computeFederalTax(input({ ordinaryIncome: 76_100 }))
+
+      expect(result.taxableIncome).toBe(60_000)
+      expect(result.ordinaryTax).toBeCloseTo(accepted, 6)
+      expect(result.ordinaryTax).not.toBeCloseTo(readings.topRateOnTheWholeAmount, 6)
+    })
+  })
+
+  // IRC 1(h)(11)(A) folds qualified dividend income into net capital gain for
+  // the preferential schedule, even though it is ordinary gross income that
+  // enters AGI in full. Taxing it at ordinary rates is the natural misreading.
+  //
+  // Single, 46,100 ordinary plus 10,000 of qualified dividends: AGI 56,100,
+  // taxable 40,000 after the standard deduction. The dividends stack above
+  // 30,000 of ordinary taxable income and the whole stack sits below the
+  // 49,450 maximum zero rate amount, so:
+  //   preferential: ordinary tax on 30,000 only = 1,240 + 2,112 = 3,352
+  //   as ordinary income: 40,000 through the table = 4,552
+  describeRule('irc-1-h-11-qualified-dividends-as-net-capital-gain', {
+    readings: { foldedIntoNetCapitalGain: 3_352, taxedAtOrdinaryRates: 4_552 },
+    accepted: 'foldedIntoNetCapitalGain',
+  }, ({ accepted, readings }) => {
+    it('runs qualified dividends through the preferential stack', () => {
+      const result = computeFederalTax(input({
+        ordinaryIncome: 46_100,
+        qualifiedDividends: 10_000,
+      }))
+
+      expect(result.agi).toBe(56_100) // in AGI in full, unlike a tax-exempt item
+      expect(result.preferentialIncome).toBe(10_000)
+      expect(result.capitalGainsTax).toBe(0)
+      expect(result.ordinaryTax + result.capitalGainsTax).toBeCloseTo(accepted, 6)
+      expect(result.ordinaryTax + result.capitalGainsTax)
+        .not.toBeCloseTo(readings.taxedAtOrdinaryRates, 6)
+    })
+  })
+
+  // IRC 86(b)(2)(B) increases modified AGI by tax-exempt interest, so a
+  // municipal bond raises the taxable share of benefits without ever entering
+  // AGI. Reading provisional income as AGI plus half the benefits is the
+  // natural misreading and here it zeroes the inclusion outright.
+  //
+  // Single, 24,000 of benefits and 20,000 of tax-exempt interest:
+  //   with the add-back: provisional 20,000 + 12,000 = 32,000, between the
+  //     25,000 base and the 34,000 adjusted base, so 0.5 x 7,000 = 3,500
+  //   without it: provisional 12,000, under the base amount, so nothing
+  describeRule('irc-86-b-2-provisional-income-modified-agi', {
+    readings: { taxExemptInterestAddedBack: 3_500, agiPlusHalfBenefitsOnly: 0 },
+    accepted: 'taxExemptInterestAddedBack',
+  }, ({ accepted, readings }) => {
+    it('counts tax-exempt interest in provisional income', () => {
+      const result = computeFederalTax(input({
+        ssBenefits: 24_000,
+        taxExemptInterest: 20_000,
+      }))
+
+      expect(result.taxableSocialSecurity).toBeCloseTo(accepted, 6)
+      expect(result.taxableSocialSecurity).not.toBeCloseTo(readings.agiPlusHalfBenefitsOnly, 6)
+      expect(result.agi).toBe(3_500) // the interest itself never enters AGI
+    })
+  })
+
+  // IRC 63(e)(1) makes itemizing an election that displaces the standard
+  // deduction, while 63(d)(2) puts the section 151 senior deduction outside
+  // the definition of itemized deductions, so it is additive to whichever base
+  // is used. Two misreadings are excluded: never modelling the election, and
+  // giving the senior deduction only to non-itemizers.
+  //
+  // Single, one person 65 or over, 70,000 ordinary, 20,000 of state and local
+  // taxes. Standard base 16,100 + 2,050 = 18,150; senior 6,000 because MAGI is
+  // under the 75,000 phase-out start.
+  //   elect and add on top: 20,000 + 6,000 = 26,000
+  //   always standard:      18,150 + 6,000 = 24,150
+  //   senior denied to an itemizer: 20,000
+  describeRule('irc-63-b-e-itemize-election-and-section-151-additivity', {
+    readings: {
+      itemizedPlusSeniorDeduction: 26_000,
+      alwaysStandard: 24_150,
+      seniorDeductionForNonItemizersOnly: 20_000,
+    },
+    accepted: 'itemizedPlusSeniorDeduction',
+  }, ({ accepted, readings }) => {
+    it('itemizes when larger and adds the senior deduction on top', () => {
+      const result = computeFederalTax(input({
+        ordinaryIncome: 70_000,
+        peopleAged65Plus: 1,
+        itemizedDeductions: { stateAndLocalTaxes: 20_000, mortgageInterest: 0, charitable: 0 },
+      }))
+
+      expect(result.itemized).toBe(true)
+      expect(result.deduction).toBeCloseTo(accepted, 6)
+      expect(result.deduction).not.toBeCloseTo(readings.alwaysStandard, 6)
+      expect(result.deduction).not.toBeCloseTo(readings.seniorDeductionForNonItemizersOnly, 6)
+    })
+  })
+
+  // IRC 67(h) disallows every miscellaneous itemized deduction permanently, so
+  // the absence of any advisory or tax-preparation input is the right answer
+  // rather than a gap. The pre-2018 67(a) two percent floor is the misreading,
+  // and it would let 5,000 of advisory fees through less a 2,000 floor.
+  //
+  // Single, 100,000 ordinary, 20,000 of state and local taxes.
+  describeRule('irc-67-h-miscellaneous-itemized-permanently-disallowed', {
+    readings: { permanentlyDisallowed: 20_000, twoPercentFloorStillApplies: 23_000 },
+    accepted: 'permanentlyDisallowed',
+  }, ({ accepted, readings }) => {
+    it('offers no channel by which a miscellaneous itemized deduction is allowed', () => {
+      const result = computeFederalTax(input({
+        ordinaryIncome: 100_000,
+        itemizedDeductions: { stateAndLocalTaxes: 20_000, mortgageInterest: 0, charitable: 0 },
+      }))
+
+      expect(result.itemized).toBe(true)
+      expect(result.deduction).toBeCloseTo(accepted, 6)
+      expect(result.deduction).not.toBeCloseTo(readings.twoPercentFloorStillApplies, 6)
+    })
+  })
+
+  // IRC 56(b)(1)(A)(ii) disallows the taxes described in 164(a)(1)-(3) for AMT
+  // purposes and reaches nothing else, so an itemizer adds back the state and
+  // local component alone. Adding back nothing, and adding back the whole
+  // itemized total, are the two misreadings on either side of it.
+  //
+  // Single, 300,000 ordinary, 60,000 of state and local taxes capped at 40,400,
+  // 10,000 charitable. Itemized total 50,400, taxable income 249,600.
+  //   capped SALT only:      249,600 + 40,400 = 290,000
+  //   no add-back:           249,600
+  //   whole itemized total:  249,600 + 50,400 = 300,000
+  describeRule('irc-56-b-1-A-ii-state-and-local-taxes-disallowed-for-amt', {
+    readings: {
+      cappedStateAndLocalTaxesOnly: 290_000,
+      noAddBack: 249_600,
+      wholeItemizedTotal: 300_000,
+    },
+    accepted: 'cappedStateAndLocalTaxesOnly',
+  }, ({ accepted, readings }) => {
+    it('adds back capped state and local taxes but leaves charitable gifts alone', () => {
+      const result = computeFederalTax(input({
+        ordinaryIncome: 300_000,
+        itemizedDeductions: { stateAndLocalTaxes: 60_000, mortgageInterest: 0, charitable: 10_000 },
+      }))
+
+      expect(result.taxableIncome).toBe(249_600)
+      expect(result.alternativeMinimumTaxableIncome).toBeCloseTo(accepted, 6)
+      expect(result.alternativeMinimumTaxableIncome).not.toBeCloseTo(readings.noAddBack, 6)
+      expect(result.alternativeMinimumTaxableIncome).not.toBeCloseTo(readings.wholeItemizedTotal, 6)
+    })
+  })
+
+  // IRC 55(b)(3) caps the tentative minimum tax by carving net capital gain out
+  // of the taxable excess and taxing it at the section 1(h) rates, so long-term
+  // gain is never reached by the 26 and 28 percent layers. Omitting the cap is
+  // the natural misreading and it invents a large minimum tax on a gain year.
+  //
+  // Single, 300,000 ordinary and 400,000 of gain: AGI 700,000, taxable 683,900,
+  // the 16,100 standard deduction added back, so AMTI is 700,000. That is
+  // 200,000 past the 500,000 phase-out start, so the 90,100 exemption is gone
+  // at 50 cents per dollar and the taxable excess is the whole 700,000.
+  //   with the cap: 26%/28% on the 300,000 ordinary remainder = 79,110, plus
+  //     the gain stacked above it: (545,500 - 300,000) x 15% = 36,825 and
+  //     (700,000 - 545,500) x 20% = 30,900 -> 146,835
+  //   without it: 244,500 x 26% + 455,500 x 28% = 191,110
+  describeRule('irc-55-b-3-amt-net-capital-gain-maximum-rate', {
+    readings: { preferentialRatesSurviveIntoTheAmt: 146_835, gainAtAmtOrdinaryRates: 191_110 },
+    accepted: 'preferentialRatesSurviveIntoTheAmt',
+  }, ({ accepted, readings }) => {
+    it('caps the tentative minimum tax on capital gain at the preferential rates', () => {
+      const result = computeFederalTax(input({
+        ordinaryIncome: 300_000,
+        capitalGains: 400_000,
+      }))
+
+      expect(result.alternativeMinimumTaxableIncome).toBeCloseTo(700_000, 6)
+      expect(result.amtExemption).toBe(0) // fully phased out, so the excess is all of AMTI
+      expect(result.tentativeMinimumTax).toBeCloseTo(accepted, 6)
+      expect(result.tentativeMinimumTax).not.toBeCloseTo(readings.gainAtAmtOrdinaryRates, 6)
+    })
+  })
+
+  // IRC 1411(c)(5) keeps a distribution from a 401(a), 403, 408, 408A or
+  // 457(b) plan out of net investment income entirely, while 1411(a)(1)(B)
+  // still counts it in modified AGI. Treating the distribution as investment
+  // income is the natural misreading and it more than triples the tax here.
+  //
+  // Single, 270,000 of ordinary income of which 20,000 is taxable interest and
+  // the rest an IRA distribution, against the 200,000 threshold.
+  //   excluded: net investment income is the 20,000 of interest -> 760
+  //   included: the lesser leg becomes the 70,000 MAGI excess -> 2,660
+  describeRule('irc-1411-c-5-plan-distributions-excluded-from-nii', {
+    readings: { distributionIsNotInvestmentIncome: 760, distributionIsInvestmentIncome: 2_660 },
+    accepted: 'distributionIsNotInvestmentIncome',
+  }, ({ accepted, readings }) => {
+    it('leaves plan distributions out of net investment income but not out of modified AGI', () => {
+      const result = computeFederalTax(input({
+        ordinaryIncome: 270_000,
+        taxableInterestIncome: 20_000,
+      }))
+
+      expect(result.magi).toBe(270_000) // the distribution still lifts the MAGI leg
+      expect(result.niit).toBeCloseTo(accepted, 6)
+      expect(result.niit).not.toBeCloseTo(readings.distributionIsInvestmentIncome, 6)
+    })
+  })
+})

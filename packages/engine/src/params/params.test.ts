@@ -152,3 +152,27 @@ describe('standardDeduction', () => {
     expect(standardDeduction(pack, 'marriedFilingJointly', 2)).toBe(32_200 + 2 * 1_650)
   })
 })
+
+describe('applicable age for the 1959 cohort', () => {
+  // IRC 401(a)(9)(C)(v) catches a 1959 birth twice over: such a person attains
+  // age 73 in 2032, inside clause (I)'s window, and age 74 in 2033, inside
+  // clause (II)'s. The enacted text resolves nothing, the final regulation
+  // reserved Treas. Reg. 1.401(a)(9)-2(b)(2)(v), and only a proposed rule fills
+  // it with age 73. This fixture pins the reading the engine took so a later
+  // reader cannot "correct" it to 75 without noticing the question was
+  // researched. Two distribution calendar years of forced ordinary income for
+  // the whole cohort ride on it.
+  describeRule('treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959', {
+    readings: { proposedRegulationAgeSeventyThree: 73, clauseTwoOnItsOwnTermsAgeSeventyFive: 75 },
+    accepted: 'proposedRegulationAgeSeventyThree',
+  }, ({ accepted, readings }) => {
+    it('takes the proposed regulation reading for a 1959 birth', () => {
+      expect(rmdStartAgeForBirthYear(1959)).toBe(accepted)
+      expect(rmdStartAgeForBirthYear(1959)).not.toBe(readings.clauseTwoOnItsOwnTermsAgeSeventyFive)
+      // The neighbours are unambiguous: 1958 is caught by clause (I) alone and
+      // 1960 by clause (II) alone, so only 1959 is doubly covered.
+      expect(rmdStartAgeForBirthYear(1958)).toBe(73)
+      expect(rmdStartAgeForBirthYear(1960)).toBe(75)
+    })
+  })
+})
