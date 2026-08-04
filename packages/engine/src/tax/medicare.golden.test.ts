@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { expectMoney } from '../testing/money.js'
-import { packForYear } from '../params/index.js'
+import { type IrmaaThresholdYear, packForYear } from '../params/index.js'
 import { medicareAnnualPremiumPerPerson } from './medicare.js'
 
 /**
@@ -20,7 +20,7 @@ const STD_MONTHLY = 202.9
  * inflation path is a flat factor, so these tests exercise the indexing of the
  * lower rows without also depending on the top-row carve-out.
  */
-const atFlatScale = (factor: number): { premiumYear: number, inflationFactorToYear: (year: number) => number } => ({
+const atFlatScale = (factor: number): IrmaaThresholdYear => ({
   premiumYear: 2027,
   inflationFactorToYear: (year: number): number => (year <= pack.year ? 1 : factor),
 })

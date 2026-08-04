@@ -254,12 +254,22 @@ export function irmaaTierThreshold(
   if (at === undefined) return magiOver
 
   const isTopTier = tierIndex === pack.medicare.irmaaTiers.length - 1
-  // Every row but the last indexes under (i)(5)(A) without interruption.
-  if (!isTopTier || pack.year > IRMAA_TOP_TIER_FROZEN_THROUGH_YEAR) {
+  if (!isTopTier) {
+    // Every row but the last indexes under (i)(5)(A) without interruption.
+    // (i)(5)(B) rounds these to the nearest 1,000 too and the engine does not,
+    // which is pre-existing behaviour named on the rule rather than changed
+    // here as a side effect of the carve-out.
+    return magiOver * at.inflationFactorToYear(at.premiumYear)
+  }
+  if (pack.year > IRMAA_TOP_TIER_FROZEN_THROUGH_YEAR) {
     // Once a published pack is itself post-freeze its top figure already
     // carries the resumed adjustment through its own year, so from there the
-    // row indexes exactly like the others.
-    return magiOver * at.inflationFactorToYear(at.premiumYear)
+    // row grows at the general rate. It is still an amount increased under
+    // subparagraph (C) rather than (A) -- (C)(i) removed it from (A) with no
+    // end date -- so the (i)(5)(B) rounding follows it forward, exactly as it
+    // does on the resumed branch below. Splitting that would round the same
+    // statutory row in one year and not the next.
+    return roundToNearestThousand(magiOver * at.inflationFactorToYear(at.premiumYear))
   }
   if (at.premiumYear <= IRMAA_TOP_TIER_FROZEN_THROUGH_YEAR) return magiOver
 
@@ -280,12 +290,18 @@ export function irmaaTierThreshold(
       `IRMAA top-tier indexing resumes from August ${IRMAA_TOP_TIER_RESUMED_BASE_YEAR} under 42 USC 1395r(i)(5)(C)(ii), a base a ${pack.year} pack cannot measure from; give IrmaaThresholdYear a pre-pack base before publishing one`,
     )
   }
-  const resumed = magiOver * at.inflationFactorToYear(at.premiumYear - 1)
-  // (i)(5)(B) rounds a dollar amount increased under subparagraph (C) to the
-  // nearest multiple of 1,000. The identical rounding that (i)(5)(B) applies to
-  // the (i)(5)(A) adjustment of the lower rows is not reproduced there, which
-  // is recorded on the rule rather than quietly split across the two branches.
-  return Math.round(resumed / 1_000) * 1_000
+  return roundToNearestThousand(magiOver * at.inflationFactorToYear(at.premiumYear - 1))
+}
+
+/**
+ * (i)(5)(B): a dollar amount increased under subparagraph (A) or (C) that is
+ * not a multiple of 1,000 is rounded to the nearest one. Applied to the top row
+ * on both of its (C) branches; the lower rows keep their pre-existing unrounded
+ * (A) treatment, which is recorded on the rule rather than left as a silent
+ * asymmetry.
+ */
+function roundToNearestThousand(amount: number): number {
+  return Math.round(amount / 1_000) * 1_000
 }
 
 export function irmaaTierForMagi(

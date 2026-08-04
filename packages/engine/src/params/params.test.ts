@@ -8,6 +8,7 @@ import {
   EARLIEST_PACK_YEAR,
   irmaaTierForMagi,
   irmaaTierThreshold,
+  type IrmaaThresholdYear,
   LATEST_PACK_YEAR,
   packForYear,
   partBMonthlyPremium,
@@ -253,7 +254,7 @@ describe('parameter pack provenance', () => {
     accepted: 'statuteFrozenThenResumed',
     note: 'Values are the top-tier MAGI floor for a single filer in a 2032 premium year at 2 percent inflation.',
   }, ({ accepted, readings }) => {
-    const at = (premiumYear: number): { premiumYear: number, inflationFactorToYear: (year: number) => number } => ({
+    const at = (premiumYear: number): IrmaaThresholdYear => ({
       premiumYear,
       inflationFactorToYear: (year: number): number =>
         year <= pack.year ? 1 : Math.pow(1.02, year - pack.year),
@@ -305,6 +306,30 @@ describe('parameter pack provenance', () => {
         .toBe(pack.medicare.irmaaTiers[0]!.magiOver.single * 2)
       expect(pack.medicare.irmaaTiers[4]!.magiOver.marriedFilingJointly)
         .toBe(pack.medicare.irmaaTiers[4]!.magiOver.single * 1.5)
+    })
+
+    /** An inflation path anchored at an arbitrary pack year, per the contract. */
+    const atFromPack = (packYear: number, premiumYear: number): IrmaaThresholdYear => ({
+      premiumYear,
+      inflationFactorToYear: (year: number): number =>
+        year <= packYear ? 1 : Math.pow(1.02, year - packYear),
+    })
+
+    it('keeps rounding the top row once a post-freeze pack carries it forward', () => {
+      // (C)(i) removes the 500,000 amounts from (A) with no end date, so the
+      // top row of a post-2027 pack is still increased under (C) and (i)(5)(B)
+      // rounds it. Rounding one branch of the same statutory row and not the
+      // other would move a household across the cliff on the pack year alone.
+      // 500,000 x 1.02^3 = 530,604 -> 531,000.
+      const postFreezePack = { ...pack, year: 2028 }
+      expect(irmaaTierThreshold(postFreezePack, 4, 'single', atFromPack(2028, 2031))).toBe(531_000)
+      expect(irmaaTierThreshold(postFreezePack, 4, 'single', atFromPack(2028, 2031)))
+        .not.toBeCloseTo(530_604, 0)
+      // The rows beneath it keep their pre-existing unrounded (A) treatment,
+      // which is what the rule records; 205,000 x 1.02^3 = 217,547.64, not
+      // the 218,000 rounding would give.
+      expect(irmaaTierThreshold(postFreezePack, 3, 'single', atFromPack(2028, 2031)))
+        .toBeCloseTo(205_000 * Math.pow(1.02, 3), 6)
     })
 
     it('refuses a pack year that cannot measure from the August 2026 base', () => {
