@@ -9,6 +9,8 @@
  */
 import { describe, expect, it } from 'vitest'
 
+import { describeRule } from '../rules/describeRule.js'
+
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../model/plan.js'
 import { summarizeProjection } from './compare.js'
 import { createFlatTaxCalculator } from './flatTax.js'
@@ -299,5 +301,86 @@ describe('after-tax estate depth', () => {
     const plan = estatePlan([trad])
     const summary = summarizeProjection(validate(plan), run(plan))
     expect(summary.endingEstateHeirTax).toBeCloseTo(0, 0)
+  })
+})
+
+/**
+ * Registered rule: the section 72(b) exclusion ratio, and the 72(b)(2) ceiling
+ * that stops it once the investment in the contract has been returned.
+ */
+describe('registered rule: non-qualified annuity exclusion ratio', () => {
+  /** 100,000 premium buying 12,000 a year for life from age 66 (Table V = 19.2). */
+  function exclusionRatioPlan(): Plan {
+    const plan = basePlan(95, '1960-01-01') // age 66 in 2026
+    plan.accounts = [
+      cash(100_000),
+      {
+        type: 'annuity',
+        id: 'ann1',
+        name: 'Non-qualified SPIA',
+        ownerPersonId: 'p1',
+        annualReturnPct: null,
+        startAge: 66,
+        monthlyAmount: 1_000,
+        colaPct: 0,
+        taxablePct: 100, // ignored for a purchased non-qualified annuity
+        purchase: {
+          year: 2026,
+          premium: 100_000,
+          fundingAccountId: 'cash1',
+          taxQualification: 'nonQualified',
+        },
+      },
+    ]
+    return plan
+  }
+
+  // IRC 72(b)(1) excludes the share of each payment that the investment in the
+  // contract bears to the expected return, both measured once at the annuity
+  // starting date. Treas. Reg. 1.72-9 sends any contract holding post-June-1986
+  // money to Table V, and the difference from the older Table I is a third of
+  // the expected return: 1.72-5(a)(1) works the same age-66 life through both.
+  //
+  //   Table V, age 66 = 19.2 -> expected return 230,400, ratio 0.43403,
+  //     excluded 5,208.33, taxable 6,791.67
+  //   Table I, male age 66 = 14.4 -> expected return 172,800, taxable 5,055.56
+  //   return of premium first -> nothing taxable at all
+  describeRule('irc-72-b-annuity-exclusion-ratio', {
+    readings: {
+      tableVExclusionRatio: 6_791.67,
+      preJulyNineteenEightySixTableI: 5_055.56,
+      returnOfPremiumFirst: 0,
+    },
+    accepted: 'tableVExclusionRatio',
+  }, ({ accepted, readings }) => {
+    it('taxes each payment net of the ratio fixed at the annuity starting date', () => {
+      const y2026 = run(exclusionRatioPlan()).years.find((y) => y.year === 2026)!
+
+      expect(y2026.magi).toBeCloseTo(accepted, 2)
+      expect(y2026.magi).not.toBeCloseTo(readings.preJulyNineteenEightySixTableI, 2)
+      expect(y2026.magi).not.toBeCloseTo(readings.returnOfPremiumFirst, 2)
+    })
+  })
+
+  // IRC 72(b)(2) caps the cumulative exclusion at the unrecovered investment,
+  // so the shelter stops rather than running for as long as the annuitant does.
+  // An uncapped ratio is the natural misreading and it never stops sheltering.
+  //
+  // 100,000 of investment is returned after 19.2 years at 5,208.33 a year, so
+  // by the 25th payment year nothing is excludable and the whole 12,000 is
+  // taxable.
+  describeRule('irc-72-b-annuity-exclusion-ratio', {
+    readings: { cappedAtUnrecoveredInvestment: 12_000, uncappedRatioForever: 6_791.67 },
+    accepted: 'cappedAtUnrecoveredInvestment',
+  }, ({ accepted, readings }) => {
+    it('taxes the whole payment once the investment in the contract is recovered', () => {
+      const years = run(exclusionRatioPlan()).years
+      const y2050 = years.find((y) => y.year === 2050)! // 25th payment year
+
+      expect(y2050.magi).toBeCloseTo(accepted, 2)
+      expect(y2050.magi).not.toBeCloseTo(readings.uncappedRatioForever, 2)
+      // The crossing year is partial: the last 1,041.67 of investment is used up.
+      expect(years.find((y) => y.year === 2045)!.magi).toBeCloseTo(12_000 - 1_041.67, 2)
+    })
   })
 })

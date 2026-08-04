@@ -2316,6 +2316,48 @@ const registry = {
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/strategies/rothBasis.ts'],
   },
+  'irc-1-j-2-progressive-ordinary-rate-schedule': {
+    title: 'Ordinary rate schedule is marginal, and permanent after OBBBA',
+    statement:
+      'Tax on ordinary taxable income is the sum of each bracket rate applied only to the portion of taxable income falling inside that bracket, using the 1(j)(2) tables as annually adjusted. The schedule no longer expires: OBBBA struck the January 1, 2026 sunset from 1(j)(1), so the 10/12/22/24/32/35/37 structure is current law indefinitely.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'Two things about the 2026 tables are easy to get wrong from memory. First, the 37 percent bracket begins at the same figure for unmarried individuals and for heads of household ($640,600), while the married-filing-separately table diverges from the unmarried table only at the top, at $384,350. Second, OBBBA gave the boundaries of the 10 and 12 percent brackets one extra year of indexing by confining the 2017-base substitution in 1(j)(3)(B)(i) to brackets above 12 percent, so those two thresholds move on a different base than the rest of the table. The engine models only unmarried and married-filing-jointly, mapping every other status onto one of the two.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 1(j)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1&num=0&edition=prelim',
+      quotedText:
+        'In the case of a taxable year beginning after December 31, 2017- (A) subsection (i) shall not apply, and (B) this section (other than subsection (i)) shall be applied as provided in paragraphs (2) through (6).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 1(j)(2)(C)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1&num=0&edition=prelim',
+      quotedText:
+        'The following table shall be applied in lieu of the table contained in subsection (c): ... Not over $9,525 ... 10% of taxable income. Over $9,525 but not over $38,700 ... $952.50, plus 12% of the excess over $9,525. ...',
+    }, {
+      kind: 'legislativeHistory',
+      citation: 'Amendment note to IRC 1, P.L. 119-21 sec. 70101(a)(1), (b)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1&num=0&edition=prelim',
+      quotedText:
+        'Subsec. (j)(1). ... struck out ", and before January 1, 2026" after "December 31, 2017" in introductory provisions. Subsec. (j)(3)(B)(i). ... inserted "solely for purposes of determining the dollar amounts at which any rate bracket higher than 12 percent ends and at which any rate bracket higher than 22 percent begins," before "subsection (f)(3)".',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Rev. Proc. 2025-32, section 4.01, Table 3',
+      url: 'https://www.irs.gov/pub/irs-drop/rp-25-32.pdf',
+      quotedText:
+        'For taxable years beginning in 2026, the tax rate tables under § 1 are as follows: ... Not over $12,400 ... 10% of the taxable income ... Over $12,400 but not over $50,400 ... $1,240 plus 12% of the excess over $12,400 ... Over $50,400 but not over $105,700 ... $5,800 plus 22% of the excess over $50,400 ... Over $640,600 ... $192,979.25 plus 37% of the excess over $640,600',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/tax/federalTax.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
   'irc-1-j-3-B-rate-tables-adjusted-each-year': {
     title: 'The rate tables are re-prescribed every year, so a nominal projection must index them',
     statement:
@@ -2393,6 +2435,957 @@ const registry = {
     implementedBy: [
       'packages/engine/src/params/index.ts',
       'packages/engine/src/tax/federalTax.ts',
+    ],
+  },
+  'irc-1-h-11-qualified-dividends-as-net-capital-gain': {
+    title: 'Qualified dividends are folded into net capital gain',
+    statement:
+      'For purposes of the preferential rate schedule, net capital gain means net capital gain increased by qualified dividend income. Qualified dividends therefore stack with long-term gain and are taxed at 0, 15, or 20 percent, even though they are ordinary gross income that enters AGI in full and is not itself a capital gain.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The engine carries qualified dividends as a separate input rather than as a slice of ordinary income, and adds them to AGI once. That matters because a qualified dividend is simultaneously ordinary income for AGI, provisional income, and NIIT modified AGI, and preferential income for the rate schedule. Note also that 1(h)(11)(B) and (C) impose holding-period and qualified-foreign-corporation tests the engine cannot verify: it takes the qualified character of the supplied figure on trust.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 1(h)(11)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this subsection, the term "net capital gain" means net capital gain (determined without regard to this paragraph) increased by qualified dividend income.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 1(h)(11)(B)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1&num=0&edition=prelim',
+      quotedText:
+        'The term "qualified dividend income" means dividends received during the taxable year from- (I) domestic corporations, and (II) qualified foreign corporations.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Rev. Proc. 2025-32, section 4.03',
+      url: 'https://www.irs.gov/pub/irs-drop/rp-25-32.pdf',
+      quotedText:
+        'Maximum Capital Gains Rate (§ 1(h), § 1(j)(5)). For taxable years beginning in 2026, the maximum zero rate amounts and maximum 15 percent rate amounts under § 1(j)(5)(B), as adjusted for inflation, are as follows: ... All Other Individuals $49,450 ... $545,500',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+  },
+  'irc-86-b-2-provisional-income-modified-agi': {
+    title: 'What enters provisional income for taxing Social Security',
+    statement:
+      'The figure compared against the base amounts is modified adjusted gross income plus one-half of the benefits received, where modified AGI is AGI computed without regard to sections 85(c), 135, 137, 221, 911, 931, and 933 and increased by tax-exempt interest. Tax-exempt interest and excluded foreign earned income therefore raise the taxable share of benefits without ever entering AGI.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The engine adds back only the 911, 931, and 933 exclusions and tax-exempt interest. The other four add-backs in 86(b)(2)(A) are sections 85(c), 135, 137, and 221, which cover unemployment compensation, education savings bond interest, adoption assistance, and student loan interest. None can plausibly appear in a household this engine models alongside Social Security benefits, so omitting them is a scope decision rather than a reading of the statute. Note the base amounts in 86(c) carry no inflation adjustment and have not moved since 1983 and 1993, which is why the engine holds them as unindexed constants.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 86(b)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section86&num=0&edition=prelim',
+      quotedText:
+        'A taxpayer is described in this subsection if- (A) the sum of- (i) the modified adjusted gross income of the taxpayer for the taxable year, plus (ii) one-half of the social security benefits received during the taxable year, exceeds (B) the base amount.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 86(b)(2)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section86&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this subsection, the term "modified adjusted gross income" means adjusted gross income- (A) determined without regard to this section and sections 85(c), 135, 137, 221, 911, 931, and 933, and (B) increased by the amount of interest received or accrued by the taxpayer during the taxable year which is exempt from tax.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+  },
+  'irc-63-b-e-itemize-election-and-section-151-additivity': {
+    title: 'Itemizing is an election; the section 151 deduction is additive',
+    statement:
+      'No itemized deduction is allowed unless the individual elects to itemize, and the election replaces the standard deduction rather than supplementing it. The section 151 senior deduction sits outside that trade: 63(d)(2) excludes from the definition of itemized deductions anything listed in a paragraph of 63(b), and 63(b)(2) lists the section 151 deduction, so it is subtracted on top of whichever base the taxpayer uses.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'Nothing in section 63 requires the election to be the one that minimises tax; the engine assumes the taxpayer elects to itemize exactly when the itemized total exceeds the standard deduction, and compares against the standard deduction alone because the senior deduction is common to both branches. That assumption can be wrong in two directions the engine does not explore. Itemizing state and local taxes creates an AMT add-back that the standard deduction branch also creates but at a different amount, so the larger deduction is not always the lower total tax. And because the senior deduction is not an itemized deduction, it also escapes the section 68 overall limitation, which only bites on the itemized side.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 63(e)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim',
+      quotedText:
+        'Unless an individual makes an election under this subsection for the taxable year, no itemized deduction shall be allowed for the taxable year. For purposes of this subtitle, the determination of whether a deduction is allowable under this chapter shall be made without regard to the preceding sentence.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 63(b)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim',
+      quotedText:
+        'In the case of an individual who does not elect to itemize his deductions for the taxable year, for purposes of this subtitle, the term "taxable income" means adjusted gross income, minus- (1) the standard deduction, (2) the deduction for personal exemptions provided in section 151, (3) any deduction provided in section 199A, (4) the deduction provided in section 170(p), ...',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 63(d)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this subtitle, the term "itemized deductions" means the deductions allowable under this chapter other than- (1) the deductions allowable in arriving at adjusted gross income, and (2) any deduction referred to in any paragraph of subsection (b).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+  },
+  'irc-67-h-miscellaneous-itemized-permanently-disallowed': {
+    title: 'Miscellaneous itemized deductions are permanently disallowed',
+    statement:
+      'No miscellaneous itemized deduction is allowed for any taxable year beginning after December 31, 2017, with no expiry date. Miscellaneous itemized deductions are defined by exclusion in 67(b), so investment advisory fees, tax preparation fees, and safe deposit box rent are all disallowed while interest, taxes, casualty losses, charitable contributions, and medical expenses are not.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The provision moved. OBBBA added a new 67(g) defining educator expenses and redesignated the former 67(g) suspension as 67(h), while striking the January 1, 2026 expiry, so a citation to 67(g) now points at the wrong subsection. The engine builds its itemized total from state and local taxes, mortgage interest, and charitable gifts only, and offers no input channel for advisory or preparation fees. That absence is the correct answer rather than a gap, which is why this rule is registered as settled rather than out of scope.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 67(h)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section67&num=0&edition=prelim',
+      quotedText:
+        'Notwithstanding subsection (a), no miscellaneous itemized deduction shall be allowed for any taxable year beginning after December 31, 2017.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 67(b)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section67&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this section, the term "miscellaneous itemized deductions" means the itemized deductions other than- (1) the deduction under section 163 (relating to interest), (2) the deduction under section 164 (relating to taxes), (3) the deduction under section 165(a) for casualty or theft losses described in paragraph (2) or (3) of section 165(c) or for losses described in section 165(d), (4) the deductions under section 170 ... (5) the deduction under section 213 (relating to medical, dental, etc., expenses), ...',
+    }, {
+      kind: 'legislativeHistory',
+      citation: 'Amendment note to IRC 67, P.L. 119-21 sec. 70110(a), (b)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section67&num=0&edition=prelim',
+      quotedText:
+        'Subsec. (g). ... added subsec. (g). Former subsec. (g) redesignated (h). ... substituted "beginning after 2017" for "2018 through 2025" in heading and struck out ", and before January 1, 2026" after "December 31, 2017" in text.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+  },
+  'irc-56-b-1-A-ii-state-and-local-taxes-disallowed-for-amt': {
+    title: 'Deducted state and local taxes are an AMT add-back',
+    statement:
+      'For AMT purposes no deduction is allowed for any tax described in paragraph (1), (2), or (3) of 164(a), which covers state and local income, real property, and personal property taxes, nor for any miscellaneous itemized deduction. Mortgage interest and charitable contributions are not add-backs, so an itemizing taxpayer adds back the state and local component only.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The add-back is the amount actually deducted, so the 164(b)(6) cap applies first and the AMT add-back is the capped figure rather than the taxes paid. Two refinements are unmodelled. 56(b)(1)(B) substitutes qualified housing interest for qualified residence interest, which can make part of a deducted mortgage interest amount an AMT add-back where the loan was not used to acquire, construct, or substantially improve the residence. And the final sentence of 56(b)(1)(A) preserves taxes allowable in computing adjusted gross income, which never arises in this engine because it deducts no above-the-line taxes.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 56(b)(1)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section56&num=0&edition=prelim',
+      quotedText:
+        'No deduction shall be allowed- (i) for any miscellaneous itemized deduction (as defined in section 67(b)), or (ii) for any taxes described in paragraph (1), (2), or (3) of section 164(a) or clause (ii) of section 164(b)(5)(A). Clause (ii) shall not apply to any amount allowable in computing adjusted gross income.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 56(b)(1)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section56&num=0&edition=prelim',
+      quotedText:
+        'In determining the amount allowable as a deduction for interest, subsections (d) and (h) of section 163 shall apply, except that- (i) in lieu of the exception under section 163(h)(2)(D), the term "personal interest" shall not include any qualified housing interest (as defined in subsection (e)), ...',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+  },
+  'irc-55-b-3-amt-net-capital-gain-maximum-rate': {
+    title: 'Preferential capital gain rates survive into the AMT',
+    statement:
+      'Tentative minimum tax computed under 55(b)(1)(A) may not exceed the amount produced by removing net capital gain from the taxable excess, taxing what remains at 26 and 28 percent, and taxing the adjusted net capital gain at 0, 15, and 20 percent using the same section 1(h) breakpoints as the regular tax. Long-term gain and qualified dividends are therefore never taxed at 26 or 28 percent, though they still enlarge alternative minimum taxable income and so can crowd out the exemption.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The engine stacks the AMT preferential income on top of the AMT ordinary excess and applies the regular-tax breakpoints to that stack, which is the Form 6251 Part III construction. Two layers of 55(b)(3) are not modelled anywhere in this engine: the 25 percent layer for unrecaptured section 1250 gain in subparagraph (E) and, in the regular tax, the 28 percent collectibles rate. Both would raise tax, so their absence understates it for a taxpayer holding depreciated real property or collectibles.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 55(b)(3)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim',
+      quotedText:
+        'The amount determined under the first sentence of paragraph (1)(A) shall not exceed the sum of- (A) the amount determined under such first sentence computed at the rates and in the same manner as if this paragraph had not been enacted on the taxable excess reduced by the lesser of- (i) the net capital gain; or (ii) the sum of- (I) the adjusted net capital gain, plus (II) the unrecaptured section 1250 gain, plus (B) 0 percent of so much of the adjusted net capital gain (or, if less, taxable excess) as does not exceed an amount equal to the excess described in section 1(h)(1)(B), plus (C) 15 percent of the lesser of- (i) so much of the adjusted net capital gain (or, if less, taxable excess) as exceeds the amount on which tax is determined under subparagraph (B), or (ii) the excess described in section 1(h)(1)(C)(ii), plus (D) 20 percent of the adjusted net capital gain (or, if less, taxable excess) in excess of the sum of the amounts on which tax is determined under subparagraphs (B) and (C), plus (E) 25 percent of the amount of taxable excess in excess of the sum of the amounts on which tax is determined under the preceding subparagraphs of this paragraph.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 55(a)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim',
+      quotedText:
+        'There is hereby imposed (in addition to any other tax imposed by this subtitle) a tax equal to the excess (if any) of- (1) the tentative minimum tax for the taxable year, over (2) the regular tax for the taxable year plus, in the case of an applicable corporation, the tax imposed by section 59A.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+  },
+  'irc-1411-c-5-plan-distributions-excluded-from-nii': {
+    title: 'Retirement plan distributions are not net investment income',
+    statement:
+      'Net investment income does not include any distribution from a plan or arrangement described in section 401(a), 403(a), 403(b), 408, 408A, or 457(b). A traditional IRA withdrawal, an RMD, or a Roth conversion therefore bears no net investment income tax itself, but it does raise modified adjusted gross income and can push other interest, dividends, and gains above the threshold.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'This is the mechanism behind the most common NIIT surprise in retirement planning, and it only appears correctly if the two halves of 1411(a)(1) are kept separate: the distribution is absent from the net investment income leg and present in the modified AGI leg. The engine gets this right structurally by carrying plan distributions in ordinary income and building net investment income from a separate set of inputs. Note the exclusion is keyed to the type of plan, not to the character of the earnings inside it, so the investment return accumulated in an IRA never becomes net investment income.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 1411(c)(5)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1411&num=0&edition=prelim',
+      quotedText:
+        'The term "net investment income" shall not include any distribution from a plan or arrangement described in section 401(a), 403(a), 403(b), 408, 408A, or 457(b).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 1411(a)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1411&num=0&edition=prelim',
+      quotedText:
+        'In the case of an individual, there is hereby imposed (in addition to any other tax imposed by this subtitle) for each taxable year a tax equal to 3.8 percent of the lesser of- (A) net investment income for such taxable year, or (B) the excess (if any) of- (i) the modified adjusted gross income for such taxable year, over (ii) the threshold amount.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+  },
+  'irc-213-a-medical-expense-deduction': {
+    title: 'Medical expense deduction above 7.5 percent of AGI',
+    statement:
+      'Unreimbursed expenses for medical care of the taxpayer, a spouse, or a dependent are deductible to the extent they exceed 7.5 percent of adjusted gross income, and they are not a miscellaneous itemized deduction, so 67(h) does not disallow them. Not modelled: the engine builds its itemized total from state and local taxes, mortgage interest, and charitable gifts alone and has no medical input, so a household with large unreimbursed medical costs has its itemized total understated by the full deductible amount and its tax overstated, which for a retiree in long-term care can be tens of thousands of dollars of deduction at a marginal rate of 22 to 32 percent.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale:
+      'This is the highest-value omission in the itemized set for this engine audience, because the deduction is largest exactly when income is drawn down to pay care costs. It also interacts with the itemize election: a year of heavy medical spending can flip a household from the standard deduction to itemizing, which the engine cannot see, so the error is not confined to households that already itemize.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 213(a)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section213&num=0&edition=prelim',
+      quotedText:
+        'There shall be allowed as a deduction the expenses paid during the taxable year, not compensated for by insurance or otherwise, for medical care of the taxpayer, his spouse, or a dependent (as defined in section 152, determined without regard to subsections (b)(1), (b)(2), and (d)(1)(B) thereof), to the extent that such expenses exceed 7.5 percent of adjusted gross income.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 67(b)(5)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section67&num=0&edition=prelim',
+      quotedText: 'the deduction under section 213 (relating to medical, dental, etc., expenses),',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+  },
+  'irc-163-h-3-F-acquisition-indebtedness-limit': {
+    title: 'Mortgage interest is limited to $750,000 of acquisition debt',
+    statement:
+      'Only interest on acquisition indebtedness is qualified residence interest, home equity indebtedness interest is disallowed outright, and the aggregate acquisition indebtedness taken into account may not exceed $750,000 ($375,000 for a separate return) for debt incurred after December 15, 2017. Not modelled: the engine deducts the supplied mortgage interest figure in full with no principal limit and no home-equity test, so a household with acquisition debt above the cap has its deduction overstated in proportion to the excess and its tax understated, up to 37 cents per dollar of disallowed interest.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale:
+      'The error scales with the mortgage rather than with income: at $1.5 million of acquisition debt half the interest is disallowed, and a household paying $90,000 of interest would see $45,000 of deduction that does not exist. The grandfather in 163(h)(3)(F)(i)(IV) preserves the older $1,000,000 limit for debt incurred on or before December 15, 2017, so the engine cannot even apply a flat cap without knowing when the loan was taken out, which is why this is left unmodelled rather than approximated.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 163(h)(3)(F)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section163&num=0&edition=prelim',
+      quotedText:
+        'In the case of taxable years beginning after December 31, 2017- (I) Disallowance of home equity indebtedness interest Subparagraph (A)(ii) shall not apply. (II) Limitation on acquisition indebtedness Subparagraph (B)(ii) shall be applied by substituting "$750,000 ($375,000" for "$1,000,000 ($500,000".',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 163(h)(3)(B)(ii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section163&num=0&edition=prelim',
+      quotedText:
+        'The aggregate amount treated as acquisition indebtedness for any period shall not exceed $1,000,000 ($500,000 in the case of a married individual filing a separate return).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+  },
+  'treas-reg-1-408-8-b-2-prior-december-31-balance': {
+    title: 'RMD numerator is the prior December 31 balance',
+    statement:
+      'The required minimum distribution for a calendar year is computed on the IRA balance as of December 31 of the preceding calendar year, with no adjustment for contributions or distributions occurring after that date. A rebalance, an annuity purchase, or a withdrawal taken during the distribution year therefore does not reduce the amount required.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8(b)(2)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.408-8',
+      quotedText:
+        'For purposes of determining the required minimum distribution from an IRA for any calendar year, the account balance of the IRA as of December 31 of the calendar year preceding the calendar year for which distributions are required to be made is substituted for the account balance of the employee under § 1.401(a)(9)-5(b). Except as provided in paragraph (d) of this section, no adjustments are made for contributions or distributions after that date.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-5(b)(1)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5',
+      quotedText:
+        'In the case of an individual account under a defined contribution plan, the benefit used in determining the required minimum distribution for a distribution calendar year is the account balance as of the last valuation date in the calendar year preceding that distribution calendar year (valuation calendar year) adjusted in accordance with this paragraph (b). For this purpose, all of an employee’s accounts under the plan are aggregated.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-5(a)(1)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5',
+      quotedText:
+        'However, the required minimum distribution amount will never exceed the entire account balance on the date of the distribution.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/rmd/rmd.ts',
+    ],
+  },
+  'treas-reg-1-408A-4-a-6-rmd-precedes-conversion': {
+    title: 'A required minimum distribution cannot be converted to a Roth IRA',
+    statement:
+      'In a year for which an RMD is required, the first dollars distributed from the IRA are the RMD, an RMD is not eligible for rollover, and so no amount may be converted until the whole RMD for that year has been distributed. The order in which the annual ledger runs RMDs before Roth conversions is required by the regulation, not chosen for convenience.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408A-4, A-6(a)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.408A-4',
+      quotedText:
+        'No. In order to be eligible for a conversion, an amount first must be eligible to be rolled over. Section 408(d)(3) prohibits the rollover of a required minimum distribution. If a minimum distribution is required for a year with respect to an IRA, the first dollars distributed during that year are treated as consisting of the required minimum distribution until an amount equal to the required minimum distribution for that year has been distributed.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408A-4, A-6(c)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.408A-4',
+      quotedText:
+        'If a required minimum distribution is contributed to a Roth IRA, it is treated as having been distributed, subject to the normal rules under section 408(d)(1) and (2), and then contributed as a regular contribution to a Roth IRA. The amount of the required minimum distribution is not a conversion contribution.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408A-4, A-7(a)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.408A-4',
+      quotedText:
+        'Any amount that is converted to a Roth IRA is includible in gross income as a distribution according to the rules of section 408(d)(1) and (2) for the taxable year in which the amount is distributed or transferred from the traditional IRA. Thus, any portion of the distribution or transfer that is treated as a return of basis under section 408(d)(1) and (2) is not includible in gross income as a result of the conversion.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+  },
+  'treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959': {
+    title: 'Applicable age for an owner born in 1959',
+    statement:
+      'A person born in 1959 satisfies both prongs of the SECURE 2.0 applicable-age definition at once, so the statute names age 73 and age 75 for the same individual. The engine uses 73, following the proposed regulation that would fill the paragraph the final regulation left reserved.',
+    classification: 'unsettled',
+    contraryReading:
+      'IRC 401(a)(9)(C)(v)(II) applies on its own terms to a 1959 birth, because such a person attains age 74 in 2033, after December 31, 2032. Read alone it makes the applicable age 75 and defers the first distribution calendar year by two years. Nothing in the enacted text resolves the overlap, Treas. Reg. 1.401(a)(9)-2(b)(2)(v) is reserved, and the only source choosing 73 is a notice of proposed rulemaking that has not been finalised. The two readings differ by two distribution calendar years of forced ordinary income for the whole 1959 cohort.',
+    conventionRationale: null,
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 401(a)(9)(C)(v)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec401.htm',
+      quotedText:
+        'Applicable age.— (I) In the case of an individual who attains age 72 after December 31, 2022, and age 73 before January 1, 2033, the applicable age is 73. (II) In the case of an individual who attains age 74 after December 31, 2032, the applicable age is 75.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-2(b)(2)(iv), (v), (vi)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-2',
+      quotedText:
+        '(iv) Employees born in 1951 through 1958. In the case of an employee born on or after January 1, 1951, but before January 1, 1959, the applicable age is age 73; (v) [Reserved] (vi) Employees born after 1959. In the case of an employee born on or after January 1, 1960, the applicable age is age 75.',
+    }, {
+      kind: 'regulation',
+      citation: 'Prop. Treas. Reg. 1.401(a)(9)-2(b)(2)(v), REG-103529-23, 89 FR 58644',
+      url: 'https://www.govinfo.gov/content/pkg/FR-2024-07-19/html/2024-14543.htm',
+      quotedText:
+        '(v) Employees born in 1959. In the case of an employee born in 1959, the applicable age is age 73.',
+    }],
+    volatility: 'awaitingGuidance',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/params/index.ts',
+      'packages/engine/src/rmd/rmd.ts',
+    ],
+  },
+  'irc-408-d-8-B-ii-projection-annual-age-proxy': {
+    title: 'Annual-ledger stand-in for the age 70.5 QCD date',
+    statement:
+      'QCD eligibility begins on the date the donor attains age 70.5, which the exact-cent path computes as 846 calendar months from birth. Not modelled in the annual ledger: it gates on the age attained in the calendar year being at least 71, so the whole of the year in which the donor actually crosses 70.5 is treated as ineligible.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale:
+      'Direction of error: uniformly restrictive, never permissive. A donor born in January attains 70.5 in July of the year the calendar age is 70 and is eligible from that July, but the ledger withholds eligibility until the following January, a delay of six months. A donor born in December attains 70.5 in June of the year the calendar age is 71, and the ledger grants eligibility from that January, five months early — but there is no QCD in that window under the ledger anyway, because the ledger also requires an RMD to exist and no RMD is due before the applicable age. Netting those, the ledger never treats an ineligible donor as eligible and delays a genuinely eligible donor by six to seventeen months, understating the QCD and overstating taxable income in the crossing year. The threshold date itself is the subject of the registered rule irc-408-d-8-B-ii-age-70-half, whose leap-day and month-end convention is an engineering decision; this record is only about the annual proxy layered on top of it. Both paths therefore disagree with each other, and only the exact-cent path is defensible to a preparer.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408(d)(8)(B)(ii)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm',
+      quotedText:
+        'which is made on or after the date that the individual for whose benefit the plan is maintained has attained age 70½.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-6(g)(1)(iv)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-6',
+      quotedText:
+        'An employee attains age 70 1/2 as of the date six calendar months after the 70th anniversary of the employee’s birth.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+  },
+  'irc-408-d-8-A-projection-rmd-conditioned-qcd': {
+    title: 'Annual-ledger conditioning of a QCD on an existing RMD',
+    statement:
+      'A QCD is available from age 70.5 up to the annual per-taxpayer limit whether or not any required minimum distribution is due, and may exceed the required amount. Not modelled: the annual ledger makes a QCD conditional on a positive household RMD and then caps it at that RMD, so a donor between 70.5 and the applicable age makes no QCD at all and a donor past the applicable age can never give more than the required amount.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale:
+      'Direction of error: uniformly restrictive. Nothing in 408(d)(8) references section 401(a)(9); the interaction runs the other way, in that a QCD counts toward an RMD when one happens to be due. For a donor aged 70.5 through 72 the ledger reports zero exclusion where up to the full annual limit is available, overstating ordinary income by the whole intended gift. For an older donor with a small balance the cap binds at the required amount, which for a $200,000 IRA at age 75 is about $8,130 against a $111,000 statutory ceiling. The consequence is not confined to the gift year: dollars the ledger refuses to route out of the IRA stay in the pre-tax balance and inflate every later RMD. The offset in the second sentence of 408(d)(8)(A), which sweeps post-70.5 deductible IRA contributions against the exclusion, is likewise not applied in the annual ledger; that omission runs the other way and would reduce the exclusion.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408(d)(8)(A)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm',
+      quotedText:
+        'So much of the aggregate amount of qualified charitable distributions with respect to a taxpayer made during any taxable year which does not exceed $100,000 shall not be includible in gross income of such taxpayer for such taxable year. The amount of distributions not includible in gross income by reason of the preceding sentence for a taxable year (determined without regard to this sentence) shall be reduced (but not below zero) by an amount equal to the excess of— (i) the aggregate amount of deductions allowed to the taxpayer under section 219 for all taxable years ending on or after the date the taxpayer attains age 70½, over (ii) the aggregate amount of reductions under this sentence for all taxable years preceding the current taxable year.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8(g)(1)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.408-8',
+      quotedText:
+        'all amounts distributed from an IRA are taken into account in determining whether section 401(a)(9) is satisfied, regardless of whether the amount is includible in income. Thus, for example, a qualified charitable distribution made pursuant to section 408(d)(8) is taken into account in determining whether section 401(a)(9) is satisfied.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+  },
+  'irc-408-d-8-A-projection-household-qcd-aggregation': {
+    title: 'Annual-ledger substitution of the household for the individual donor',
+    statement:
+      'The QCD exclusion limit runs per taxpayer, eligibility turns on the age of the individual for whose benefit the plan is maintained, and IRA required distributions are aggregated only within one individual own IRAs. Not modelled: the annual ledger asks only whether any living member of the household is old enough, pools both spouses required distributions into a single figure, and applies one annual dollar limit to that pooled figure.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale:
+      'Direction of error: permissive in three separate ways, each of which lets the ledger exclude dollars a return could not. First, a household with one spouse aged 71 and one aged 66 passes the eligibility gate on the elder, then funds the gift out of a pool that includes the younger spouse distributions, which cannot be a QCD from anyone. Second, one annual limit is applied where a married couple has two, so a couple giving more than the single limit from genuinely separate IRAs is understated. Third, since required distributions never aggregate across spouses, the pooled figure has no counterpart in the regulation at all. The engine holds enough facts to do this per donor: every account carries an owner and every person carries a date of birth. The substitution is not forced by missing data.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408(d)(8)(A)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm',
+      quotedText:
+        'So much of the aggregate amount of qualified charitable distributions with respect to a taxpayer made during any taxable year which does not exceed $100,000 shall not be includible in gross income of such taxpayer for such taxable year.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408(d)(8)(B)(ii)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm',
+      quotedText:
+        'which is made on or after the date that the individual for whose benefit the plan is maintained has attained age 70½.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8(e)(2)(i)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.408-8',
+      quotedText:
+        'Generally, only amounts in IRAs that an individual holds as the IRA owner are aggregated for purposes of paragraph (e)(1) of this section.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+  },
+  'irc-408-d-8-D-projection-qcd-after-pro-rata': {
+    title: 'Annual-ledger ordering of the QCD against pro-rata basis recovery',
+    statement:
+      'A QCD is deemed to consist of otherwise-includible dollars up to the aggregate pre-tax balance, so it leaves the section 72 pro-rata computation entirely and the whole of the year basis remains available to the other distributions. Not modelled: the annual ledger applies pro-rata basis recovery to the entire required distribution first, including the part later routed to charity, and then subtracts the QCD in full from ordinary income.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale:
+      'Direction of error: understates current-year ordinary income and overconsumes basis, and the two are equal and opposite over time. On a $10,000 required distribution from an IRA that is 20 percent basis, with a $5,000 QCD, the statute excludes the $5,000 in full and applies the 20 percent to the remaining $5,000, giving $4,000 of income and $1,000 of basis used. The ledger applies the 20 percent to all $10,000, giving $3,000 of income and $2,000 of basis used. Income in the gift year is understated by $1,000 and the extra $1,000 of basis consumed will show up as $1,000 of additional taxable income in a later year. The comment at the subtraction site already records that the ledger is planning-grade here. The registered rule irc-408-d-8-D-qcd-taxable-first states the correct treatment and is implemented in the exact-cent path, so the two paths return different numbers for the same household.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408(d)(8)(D)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm',
+      quotedText:
+        'Notwithstanding section 72, in determining the extent to which a distribution is a qualified charitable distribution, the entire amount of the distribution shall be treated as includible in gross income without regard to subparagraph (A) to the extent that such amount does not exceed the aggregate amount which would have been so includible if all amounts in all individual retirement plans of the individual were distributed during such taxable year and all such plans were treated as 1 contract for purposes of determining under section 72 the aggregate amount which would have been so includible. Proper adjustments shall be made in applying section 72 to other distributions in such taxable year and subsequent taxable years.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408(d)(8)(B), flush text',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm',
+      quotedText:
+        'A distribution shall be treated as a qualified charitable distribution only to the extent that the distribution would be includible in gross income without regard to subparagraph (A).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+  },
+  'irc-223-b-5-A-projection-spousal-family-limit': {
+    title: 'One family HSA limit divided between spouses',
+    statement:
+      'Where either spouse has family coverage, both spouses are treated as having only that family coverage and the single family limit is divided equally between them unless they agree otherwise, with each spouse own age 55 catch-up added outside the division. Not modelled: the annual ledger tracks the contribution limit per account owner and gives every owner in a two-person household the full family limit.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale:
+      'Direction of error: permissive, by up to a full family limit. Two spouses each holding an HSA are each allowed the whole family maximum, so the household can contribute roughly twice what the statute permits, and the excess is deducted rather than taxed and charged the section 4973 excise. The catch-up handling is correct by accident, since paragraph (b)(5)(B) excludes the additional contribution amount from the division and the ledger already tracks it per owner. Two further approximations sit underneath: household size is read from the number of people on the plan rather than from actual coverage, so a two-person household is always given the family base even when only self-only coverage exists, and the monthly proration of 223(b)(1) and the Medicare-entitlement zeroing of 223(b)(7) are not applied at all.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 223(b)(5)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partVII-sec223.htm',
+      quotedText:
+        'In the case of individuals who are married to each other, if either spouse has family coverage— (A) both spouses shall be treated as having only such family coverage (and if such spouses each have family coverage under different plans, as having the family coverage with the lowest annual deductible), and (B) the limitation under paragraph (1) (after the application of subparagraph (A) and without regard to any additional contribution amount under paragraph (3))— (i) shall be reduced by the aggregate amount paid to Archer MSAs of such spouses for the taxable year, and (ii) after such reduction, shall be divided equally between them unless they agree on a different division.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 223(b)(7)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partVII-sec223.htm',
+      quotedText:
+        'The limitation under this subsection for any month with respect to an individual shall be zero for the first month such individual is entitled to benefits under title XVIII of the Social Security Act and for each month thereafter.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+  },
+  'treas-reg-1-401-a-9-9-c-uniform-lifetime-table': {
+    title: 'Uniform Lifetime Table denominator for a lifetime required minimum distribution',
+    statement:
+      'The lifetime required minimum distribution is the prior year-end account balance divided by the Uniform Lifetime Table denominator for the age the employee attains on the birthday falling in that distribution calendar year, not the age at the start of the year and not the age at the distribution date. The table in force runs from age 72 at 27.4 to age 120 and over at 2.0 and governs distribution calendar years beginning on or after 1 January 2022; the table it replaced is a different set of numbers at every age.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-5(c)(1)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-5',
+      quotedText:
+        'the applicable denominator for required minimum distributions for each distribution calendar year beginning with the employee\'s first distribution calendar year ... is determined using the Uniform Lifetime Table in § 1.401(a)(9)-9(c) for the employee\'s age as of the employee\'s birthday in the relevant distribution calendar year.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-9(c)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-9',
+      quotedText:
+        'Uniform Lifetime Table. The following table, referred to as the Uniform Lifetime Table, sets forth the applicable denominator that applies for lifetime distributions to an employee in situations in which the employee\'s surviving spouse is not the sole designated beneficiary.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-9(f)(1)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-9',
+      quotedText:
+        'The life expectancy tables and Uniform Lifetime Table set forth in this section apply for distribution calendar years beginning on or after January 1, 2022. For life expectancy tables and the Uniform Lifetime Table applicable for earlier distribution calendar years, see § 1.401(a)(9)-9, as set forth in 26 CFR part 1 revised as of April 1, 2020 (formerly applicable § 1.401(a)(9)-9).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/rmd/rmd.ts',
+      'packages/engine/src/params/index.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+  'treas-reg-1-401-a-9-5-a-2-first-distribution-calendar-year': {
+    title: 'First distribution calendar year is the year the applicable age is attained',
+    statement:
+      'Where the required beginning date is April 1 of the year following attainment of the applicable age, the first distribution calendar year is the attainment year itself. A required minimum distribution is therefore due for the attainment year, computed on the prior year-end balance and the denominator for the age attained in that year, even though the payment may lawfully be made as late as the following April 1. The deadline moves; the year the amount belongs to does not.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 401(a)(9)(C)(i)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/401',
+      quotedText:
+        'The term “required beginning date” means April 1 of the calendar year following the later of— (I) the calendar year in which the employee attains the applicable age, or (II) the calendar year in which the employee retires.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-5(a)(2)(ii)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-5',
+      quotedText:
+        'If an employee\'s required beginning date is April 1 of the calendar year following the calendar year in which the employee attains the applicable age, then the employee\'s first distribution calendar year is the year the employee attains the applicable age.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-5(a)(3)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-5',
+      quotedText:
+        'The distribution required for the employee\'s first distribution calendar year (as described in paragraph (a)(2)(ii) of this section) may be made on or before April 1 of the following calendar year. The required minimum distribution for any other distribution calendar year ... must be made on or before the end of that distribution calendar year.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/rmd/rmd.ts',
+      'packages/engine/src/params/index.ts',
+    ],
+  },
+  'irc-401-a-9-C-i-first-year-april-1-deferral': {
+    title: 'Deferral of the first required minimum distribution to April 1',
+    statement:
+      'The distribution for the first distribution calendar year may be paid as late as April 1 of the following year, in which case two required minimum distributions are taxed in that following year. Not modelled: the engine recognises the first-year amount entirely in the attainment year and offers no deferral election. For a taxpayer who defers, the error runs one way — attainment-year ordinary income is overstated by the whole first-year amount and the following year is understated by the same amount, which suppresses a real one-year spike in the bracket, in the capital-gain stacking threshold, and in the income used two years later for the Medicare premium adjustment.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 401(a)(9)(C)(i)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/401',
+      quotedText:
+        'The term “required beginning date” means April 1 of the calendar year following the later of— (I) the calendar year in which the employee attains the applicable age, or (II) the calendar year in which the employee retires.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-5(a)(3)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-5',
+      quotedText:
+        'The distribution required for the employee\'s first distribution calendar year (as described in paragraph (a)(2)(ii) of this section) may be made on or before April 1 of the following calendar year.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/rmd/rmd.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+  'irc-401-a-9-C-i-II-still-working-exception': {
+    title: 'Required beginning date deferred while still employed by the plan sponsor',
+    statement:
+      'For an employer plan, the required beginning date is April 1 following the later of the attainment year or the year the employee retires, so a participant who keeps working past the applicable age has no required minimum distribution from that plan. The deferral is unavailable to a 5-percent owner and never reaches an IRA. Not modelled: the engine forces an employer-plan distribution from the applicable age alone and never consults employment status, so for a non-5-percent owner still employed it overstates forced ordinary income every year until retirement and understates the balance carried forward. It cannot err the other way. The plan schema already carries a retirement age for each person, so the fact the rule turns on is present and unused.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 401(a)(9)(C)(i)(II)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/401',
+      quotedText:
+        'The term “required beginning date” means April 1 of the calendar year following the later of— (I) the calendar year in which the employee attains the applicable age, or (II) the calendar year in which the employee retires.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 401(a)(9)(C)(ii)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/401',
+      quotedText:
+        'Subclause (II) of clause (i) shall not apply— (I) except as provided in section 409(d), in the case of an employee who is a 5-percent owner (as defined in section 416) with respect to the plan year ending in the calendar year in which the employee attains the applicable age, or (II) for purposes of section 408(a)(6) or (b)(3).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/strategies/accountEligibility.ts',
+    ],
+  },
+  'irc-401-a-9-H-ii-annual-distributions-inside-ten-year-window': {
+    title: 'Whether annual distributions are also required inside the 10-year window',
+    statement:
+      'The ten-year deadline is not the only obligation. Where the employee died on or after the required beginning date, the at-least-as-rapidly rule survives, so an annual life-expectancy distribution is required in each year of the window in addition to the year-ten sweep. Where the employee died before the required beginning date, no annual distribution is required at all and the sole obligation is to be empty by the deadline. The two cases differ in the shape of the taxable income the window produces, not merely in its total.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 401(a)(9)(B)(i)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/401',
+      quotedText:
+        'A trust shall not constitute a qualified trust under this section unless the plan provides that if— (I) the distribution of the employee’s interest has begun in accordance with subparagraph (A)(ii), and (II) the employee dies before his entire interest has been distributed to him, the remaining portion of such interest will be distributed at least as rapidly as under the method of distributions being used under subparagraph (A)(ii) as of the date of his death.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-5(d)(1)(i)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-5',
+      quotedText:
+        'If an employee dies after distribution has begun as determined under § 1.401(a)(9)-2(a)(3) (generally, on or after the employee\'s required beginning date), distributions must satisfy section 401(a)(9)(B)(i). ... The requirement to take an annual distribution in accordance with the preceding sentence continues to apply for every distribution calendar year until the employee\'s interest is fully distributed. ... If section 401(a)(9)(H) applies to the employee\'s interest in the plan, then the distributions also must satisfy either section 401(a)(9)(B)(ii) (applied by substituting 10 years for 5 years) or, if the beneficiary is an eligible designated beneficiary, section 401(a)(9)(B)(iii) (taking into account sections 401(a)(9)(E)(iii) and 401(a)(9)(H)(iii)).',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-5(d)(2)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-5',
+      quotedText:
+        'If an employee dies before distributions have begun (as determined under § 1.401(a)(9)-2(a)(3)) and the life expectancy rule described in § 1.401(a)(9)-3(c)(4) applies, then the applicable denominator for distribution calendar years beginning with the first distribution calendar year for the designated beneficiary ... is the designated beneficiary\'s remaining life expectancy (or is determined under the rules of paragraph (g)(3) of this section, if applicable).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/strategies/inheritedIra.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+  'treas-reg-1-401-a-9-5-d-3-beneficiary-single-life-denominator': {
+    title: 'Denominator for a beneficiary annual distribution after death on or after the required beginning date',
+    statement:
+      'The prescribed denominator is the greater of the designated beneficiary remaining life expectancy and the employee remaining life expectancy, each taken from the unisex Single Life Table, with a non-spouse beneficiary expectancy fixed at the age reached in the year following death and reduced by one for each later year. Not modelled as prescribed: the engine substitutes a sex-specific SSA period life expectancy looked up at the beneficiary current age each year, and never applies the greater-of test. The direction is dominated by the table. SSA population expectancies are shorter than Single Life Table entries at every age in range — at 55 the Single Life Table gives 31.6 against SSA figures of 24.94 for a man and 28.34 for a woman — so the denominator is too small and the forced annual distribution too large. Ignoring the greater-of adds a second overstatement whenever the beneficiary is older than the decedent. Recomputing at the current age instead of subtracting one runs the other way and partly offsets in the late years of the window. Because the balance must be gone by the deadline either way, the net effect is to pull taxable income into the earlier years of the window rather than to change the total.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-5(d)(1)(ii)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-5',
+      quotedText:
+        'If the employee has a designated beneficiary as of the date determined under § 1.401(a)(9)-4(c), the applicable denominator is the greater of— (A) The designated beneficiary\'s remaining life expectancy; and (B) The employee\'s remaining life expectancy.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-5(d)(3)(i) and (d)(3)(iii)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-5',
+      quotedText:
+        'For purposes of this paragraph (d), all life expectancies are determined using the Single Life Table in § 1.401(a)(9)-9(b). ... If the designated beneficiary is not the employee\'s surviving spouse, then the designated beneficiary\'s remaining life expectancy is determined initially using the beneficiary\'s age as of the beneficiary\'s birthday in the calendar year following the calendar year of the employee\'s death. ... for subsequent calendar years, the designated beneficiary\'s remaining life expectancy is determined by reducing that initial life expectancy by one for each calendar year that has elapsed after that first calendar year.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-9(b)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-9',
+      quotedText:
+        'Single Life Table. The following table, referred to as the Single Life Table, sets forth the life expectancy of an individual at each age.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/strategies/inheritedIra.ts',
+      'packages/engine/src/longevity/ssaPeriod2022.ts',
+    ],
+  },
+  'irc-401-a-9-E-ii-eligible-designated-beneficiary': {
+    title: 'Eligible designated beneficiary escapes the 10-year rule',
+    statement:
+      'A designated beneficiary who is the surviving spouse, a minor child of the employee, disabled, chronically ill, or not more than ten years younger than the employee is an eligible designated beneficiary, and the life-expectancy exception applies only to such a beneficiary. Status is fixed at the date of death. Not modelled: the engine applies the ten-year rule to every inherited traditional account and holds no beneficiary-status fact, so for an eligible designated beneficiary it compresses a whole-of-life stretch into ten years. The error runs one way — forced ordinary income inside the window is overstated, the balance that should have survived past the window is understated, and the income the window should have produced in later decades disappears.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 401(a)(9)(E)(ii)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/401',
+      quotedText:
+        'The term “eligible designated beneficiary” means, with respect to any employee, any designated beneficiary who is— (I) the surviving spouse of the employee, (II) subject to clause (iii), a child of the employee who has not reached majority (within the meaning of subparagraph (F)), (III) disabled (within the meaning of section 72(m)(7)), (IV) a chronically ill individual ..., or (V) an individual not described in any of the preceding subclauses who is not more than 10 years younger than the employee. The determination of whether a designated beneficiary is an eligible designated beneficiary shall be made as of the date of death of the employee.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 401(a)(9)(H)(ii)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/401',
+      quotedText:
+        'Exception for eligible designated beneficiaries.—Subparagraph (B)(iii) shall apply only in the case of an eligible designated beneficiary.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 401(a)(9)(E)(iii)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/401',
+      quotedText:
+        'Subject to subparagraph (F), an individual described in clause (ii)(II) shall cease to be an eligible designated beneficiary as of the date the individual reaches majority and any remainder of the portion of the individual’s interest to which subparagraph (H)(ii) applies shall be distributed within 10 years after such date.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/strategies/inheritedIra.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+  'irc-4974-rmd-shortfall-excise-tax': {
+    title: 'Excise tax on a required minimum distribution shortfall',
+    statement:
+      'A payee who takes less than the required minimum distribution for a year owes an excise tax of 25 percent of the shortfall, reduced to 10 percent if the shortfall is distributed and a return reflecting the tax is filed inside the correction window, and waivable entirely where the shortfall was reasonable error and reasonable steps are being taken to remedy it. Not modelled: nothing in the engine prices a shortfall. The engine instead forces the distribution, so a plan the user could not or would not execute is reported as costing nothing rather than as costing a quarter of what was missed. The error can only understate: a missed distribution is shown at zero penalty, and the difference between the 25 percent default and the 10 percent corrected rate — which is the whole value of acting quickly — cannot be represented at all.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 4974(a)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/4974',
+      quotedText:
+        'If the amount distributed during the taxable year of the payee under any qualified retirement plan or any eligible deferred compensation plan (as defined in section 457(b)) is less than the minimum required distribution for such taxable year, there is hereby imposed a tax equal to 25 percent of the amount by which such minimum required distribution exceeds the actual amount distributed during the taxable year. The tax imposed by this section shall be paid by the payee.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 4974(e)(1)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/4974',
+      quotedText:
+        'In the case of a taxpayer who— (A) receives a distribution, during the correction window, of the amount which resulted in imposition of a tax under subsection (a) from the same plan to which such tax relates, and (B) submits a return, during the correction window, reflecting such tax (as modified by this subsection), the first sentence of subsection (a) shall be applied by substituting “10 percent” for “25 percent”.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 4974(d)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/4974',
+      quotedText:
+        'If the taxpayer establishes to the satisfaction of the Secretary that— (1) the shortfall described in subsection (a) in the amount distributed during any taxable year was due to reasonable error, and (2) reasonable steps are being taken to remedy the shortfall, the Secretary may waive the tax imposed by subsection (a) for the taxable year.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/rmd/rmd.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+  'irc-72-b-annuity-exclusion-ratio': {
+    title: 'Exclusion ratio for a non-qualified annuity, and the cap at unrecovered investment',
+    statement:
+      'The part of each annuity payment excluded from gross income is the payment multiplied by the ratio of investment in the contract to expected return, both measured once at the annuity starting date and never revised. For a single life the expected return is the total annual payment multiplied by the Table V expectancy multiple for the age at that date. The cumulative exclusion may never exceed the unrecovered investment, so once the whole investment has been returned every later payment is fully taxable, and the same fixed share carries to a survivor or beneficiary until that point is reached.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'Table V rather than Table I is the correct table because Tables V through VIII govern any contract whose investment includes post-June-1986 money, which is every contract a plan under this engine could be buying. The distinction is load-bearing and not cosmetic: at age 66 the Table I male multiple is 14.4 and the Table V multiple is 19.2, a difference of about a third in the expected return and therefore in the ratio.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 72(b)(1)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/72',
+      quotedText:
+        'Gross income does not include that part of any amount received as an annuity under an annuity, endowment, or life insurance contract which bears the same ratio to such amount as the investment in the contract (as of the annuity starting date) bears to the expected return under the contract (as of such date).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 72(b)(2)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/72',
+      quotedText:
+        'The portion of any amount received as an annuity which is excluded from gross income under paragraph (1) shall not exceed the unrecovered investment in the contract immediately before the receipt of such amount.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.72-5(a)(1)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.72-5',
+      quotedText:
+        'If a contract to which section 72 applies provides that one annuitant is to receive a fixed monthly income for life, the expected return is determined by multiplying the total of the annuity payments to be received annually by the multiple shown in Table I or V (whichever is applicable) of § 1.72-9 under the age (as of the annuity starting date) and, if applicable, sex of the measuring life ... If, however, the taxpayer had purchased the contract after June 30, 1986, the expected return would be $23,040, determined by multiplying 19.2 (multiple shown in Table V, age 66) by $1,200.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.72-9',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.72-9',
+      quotedText:
+        'Tables I, II, IIA, III, and IV are to be used if the investment in the contract does not include a post-June 1986 investment in the contract (as defined in § 1.72-6(d)(3)). Tables V, VI, VIA, VII, and VIII are to be used if the investment in the contract includes a post-June 1986 investment in the contract (as defined in § 1.72-6(d)(3)).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/annuityForms.ts',
+      'packages/engine/src/params/index.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+  'treas-reg-1-72-7-refund-feature-investment-adjustment': {
+    title: 'Adjustment for a period-certain guarantee on a life annuity',
+    statement:
+      'A life annuity with a minimum period of payments certain is a refund feature. The prescribed treatment reduces the numerator: take the Table VII percentage for the annuitant age and the whole number of guaranteed years, multiply it by the smaller of the investment or the total guaranteed, subtract that from the investment, and compute an ordinary single-life exclusion ratio on the reduced investment. Not modelled as prescribed: the engine leaves the investment untouched and instead raises the denominator, using the greater of the single-life multiple and the certain period. Where the guarantee is shorter than the life multiple — the ordinary case for a ten- or twenty-year certain bought at 65 — the engine makes no adjustment at all while the regulation prescribes a positive one, so the exclusion ratio is too high and taxable income too low in the early payment years. Where the guarantee is longer the engine at least moves the ratio downward, but by a quantity no authority prescribes. The cap at unrecovered investment bounds the total excluded, so the error is a timing shift unless the annuitant dies before recovery, where it becomes permanent.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 72(c)(2)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/72',
+      quotedText:
+        'then the value (computed without discount for interest) of such payments on the annuity starting date shall be subtracted from the amount determined under paragraph (1). Such value shall be computed in accordance with actuarial tables prescribed by the Secretary. For purposes of this paragraph and of subsection (e)(2)(A), the term “refund of the consideration paid” includes amounts payable after the death of an annuitant by reason of a provision in the contract for a life annuity with minimum period of payments certain, ...',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.72-7(b)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.72-7',
+      quotedText:
+        '(1) Determine the number of years necessary for the guaranteed amount to be fully paid by dividing the maximum amount guaranteed as of the annuity starting date by the amount to be received annually under the contract ... (2) Consult Table III or VII (whichever is applicable) of § 1.72-9 for the appropriate percentage under the whole number of years found in subparagraph (1) of this paragraph and the age (as of the annuity starting date) ... (3) Multiply the percentage found in subparagraph (2) of this paragraph by whichever of the following is the smaller: (i) The investment in the contract found in accordance with § 1.72-6 or (ii) the total amount guaranteed as of the annuity starting date. (4) Subtract the amount found in subparagraph (3) of this paragraph from the investment in the contract found in accordance with § 1.72-6.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/projection/annuityForms.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+  'treas-reg-1-72-5-b-2-joint-and-survivor-expected-return': {
+    title: 'Expected return for a joint and survivor annuity paying a reduced survivor amount',
+    statement:
+      'Where the survivor receives a different amount from the first annuitant, the expected return is the first annuitant annual payment times the Table V single-life multiple, plus the survivor annual payment times the excess of the Table VI joint and last survivor multiple over that single-life multiple. The engine reproduces that decomposition exactly, which is worth recording because it is easy to mistake for an ad hoc blend. What it does not do is take the joint multiple from Table VI: it derives a joint last-survivor expectancy from the SSA-based mortality model instead, and does so per sex where Table VI is unisex. Not modelled as prescribed for that reason. SSA population mortality is heavier than the annuitant mortality standing behind Table VI, so the survivor tail comes out shorter than prescribed, expected return is understated, the exclusion ratio overstated, and taxable income understated in the early payment years. The cap at unrecovered investment turns most of that into a timing shift; it is permanent only where the annuitant dies before the investment is recovered.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.72-5(b)(2)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.72-5',
+      quotedText:
+        'The applicable multiple in Table II or VI (whichever is applicable) is first found ... The multiple applicable to the first annuitant is then found in Table I or V (whichever is applicable) as though the contract were for a single life annuity. The multiple from Table I or V is then subtracted from the multiple obtained from Table II or VI and the resulting multiple is applied to the total payments to be received annually under the contract by the second annuitant. ... The expected returns with respect to each of the annuitants separately are then aggregated to obtain the expected return under the entire contract.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.72-5(b)(2), Example 2',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.72-5',
+      quotedText:
+        'Multiple from Table VI (ages 70, 67) 22.0 Multiple from Table V (age 70) 16.0 Difference (multiple applicable to second annuitant) 6.0 Portion of expected return, second annuitant ($600 × 6.0) $3,600 Plus: Portion of expected return, first annuitant ($1,200 × 16.0) $19,200 Expected return under the contract $22,800',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/projection/annuityForms.ts',
+      'packages/engine/src/montecarlo/mortality.ts',
+    ],
+  },
+  'irc-1-h-1-E-unrecaptured-section-1250-gain': {
+    title: 'Depreciation on real property is capital gain capped at 25 percent, not ordinary income',
+    statement:
+      'Depreciation taken on real property is generally not section 1250 recapture, because additional depreciation means only the excess over the straight-line method and real property placed in service after 1986 is depreciated straight line. It is unrecaptured section 1250 gain: long-term capital gain to which the maximum rate is 25 percent. Not modelled: the engine adds the whole recapture figure to ordinary income. The direction is fixed by the fact that 25 percent is a ceiling rather than a rate. For a taxpayer whose marginal ordinary rate exceeds 25 percent the engine overstates tax on that slice by the difference between the two rates; for a taxpayer already below 25 percent the answer is the same either way. It cannot understate.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 1(h)(1)(E)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/1',
+      quotedText:
+        'If a taxpayer has a net capital gain for any taxable year, the tax imposed by this section for such taxable year shall not exceed the sum of— ... (E) 25 percent of the excess (if any) of— (i) the unrecaptured section 1250 gain (or, if less, the net capital gain (determined without regard to paragraph (11))), over (ii) the excess (if any) of ...',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 1(h)(6)(A)(i)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/1',
+      quotedText:
+        'The term “unrecaptured section 1250 gain” means the excess (if any) of— (i) the amount of long-term capital gain (not otherwise treated as ordinary income) which would be treated as ordinary income if section 1250(b)(1) included all depreciation and the applicable percentage under section 1250(a) were 100 percent, over ...',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 1250(b)(1)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/1250',
+      quotedText:
+        'The term “additional depreciation” means, in the case of any property, the depreciation adjustments in respect of such property; except that, in the case of property held more than one year, it means such adjustments only to the extent that they exceed the amount of the depreciation adjustments which would have resulted if such adjustments had been determined for each taxable year under the straight line method of adjustment.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/tax/propertySale.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+  'irc-121-a-b-principal-residence-eligibility-tests': {
+    title: 'Eligibility tests that gate the principal-residence exclusion',
+    statement:
+      'The exclusion is available only where the property was owned and used as the principal residence for periods aggregating two years within the five years ending on the sale, is denied outright where another sale qualifying under the section occurred in the two years before, reaches the larger joint figure only where either spouse meets the ownership test and both meet the use test, and does not reach the share of gain allocated to periods of nonqualified use after 2008. Not modelled: the engine applies the whole filing-status cap whenever a boolean primary-residence flag is set. Every test it omits can only reduce an exclusion, never enlarge one, so the engine can only over-exclude and understate tax; the extreme case is a full joint exclusion where the correct answer is nothing at all.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 121(a)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/121',
+      quotedText:
+        'Gross income shall not include gain from the sale or exchange of property if, during the 5-year period ending on the date of the sale or exchange, such property has been owned and used by the taxpayer as the taxpayer’s principal residence for periods aggregating 2 years or more.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 121(b)(2)(A)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/121',
+      quotedText:
+        'Paragraph (1) shall be applied by substituting “$500,000” for “$250,000” if— (i) either spouse meets the ownership requirements of subsection (a) with respect to such property; (ii) both spouses meet the use requirements of subsection (a) with respect to such property; and (iii) neither spouse is ineligible for the benefits of subsection (a) with respect to such property by reason of paragraph (3).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 121(b)(3)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/121',
+      quotedText:
+        'Subsection (a) shall not apply to any sale or exchange by the taxpayer if, during the 2-year period ending on the date of such sale or exchange, there was any other sale or exchange by the taxpayer to which subsection (a) applied.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 121(b)(5)(A) and (B)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/121',
+      quotedText:
+        'Subsection (a) shall not apply to so much of the gain from the sale or exchange of property as is allocated to periods of nonqualified use. ... gain shall be allocated to periods of nonqualified use based on the ratio which— (i) the aggregate periods of nonqualified use during the period such property was owned by the taxpayer, bears to (ii) the period such property was owned by the taxpayer.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/tax/propertySale.ts',
+      'packages/engine/src/projection/simulate.ts',
     ],
   },
 } as const satisfies Record<string, TaxRuleRecord>

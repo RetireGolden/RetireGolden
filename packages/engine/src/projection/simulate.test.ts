@@ -4011,3 +4011,120 @@ describe('IRA contribution ceilings', () => {
     })
   })
 })
+
+/**
+ * Registered rules covering the two things the annual ledger fixes about a
+ * required distribution: the balance it is computed on, and its position
+ * relative to a Roth conversion.
+ */
+describe('registered rules: RMD base and RMD-before-conversion ordering', () => {
+  /** Born 1953 -> applicable age 73 -> first distribution calendar year 2026. */
+  function rmdBasePlan(): Plan {
+    const plan = basePlan()
+    plan.household.people[0]!.dob = '1953-06-15'
+    plan.household.people[0]!.retirementAge = null
+    return plan
+  }
+
+  // Treas. Reg. 1.408-8(b)(2) fixes the numerator at the prior 31 December
+  // balance and forbids any adjustment for contributions or distributions
+  // after that date, so money that leaves the account in January does not
+  // shrink the amount required for that same year. Recomputing on the balance
+  // standing when the distribution is taken is the natural misreading, and it
+  // is what an engine that reaches for the live balance would do.
+  //
+  // Prior year-end balance 265,000, denominator 26.5 at age 73. A qualified
+  // annuity premium of 132,500 leaves the same IRA earlier in 2026:
+  //   prior 31 December balance:  265,000 / 26.5 = 10,000
+  //   balance at the distribution: 132,500 / 26.5 =  5,000
+  describeRule('treas-reg-1-408-8-b-2-prior-december-31-balance', {
+    readings: { priorDecemberThirtyFirstBalance: 10_000, balanceWhenTheDistributionIsTaken: 5_000 },
+    accepted: 'priorDecemberThirtyFirstBalance',
+  }, ({ accepted, readings }) => {
+    it('computes the RMD on the untouched prior year-end balance', () => {
+      const plan = rmdBasePlan()
+      plan.accounts = [
+        cash(0),
+        // kind 'ira' is load-bearing, not decoration: 1.408-8 is a section 408
+        // regulation, and the local `traditional` helper builds a 401(k). An
+        // employer account would pin 1.401(a)(9)-5 and leave the cited rule
+        // uncovered if the two paths ever part.
+        {
+          ...(traditional(265_000) as Extract<Account, { type: 'traditional' }>),
+          id: 'trad-rmd-base', name: 'Traditional IRA', kind: 'ira',
+        },
+        {
+          type: 'annuity',
+          id: 'ann-rmd-base',
+          name: 'Qualified SPIA',
+          ownerPersonId: 'p1',
+          annualReturnPct: null,
+          startAge: 80, // no payments in 2026; only the premium leaves the IRA
+          monthlyAmount: 1_000,
+          colaPct: 0,
+          taxablePct: 0,
+          purchase: {
+            year: 2026,
+            premium: 132_500,
+            fundingAccountId: 'trad-rmd-base',
+            taxQualification: 'qualified',
+          },
+        },
+      ]
+      const y2026 = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+        .years.find((y) => y.year === 2026)!
+
+      expect(y2026.rmd).toBeCloseTo(accepted, 6)
+      expect(y2026.rmd).not.toBeCloseTo(readings.balanceWhenTheDistributionIsTaken, 6)
+      // Premium out, then the full RMD out of what is left.
+      expect(y2026.balances['trad-rmd-base']).toBeCloseTo(265_000 - 132_500 - 10_000, 6)
+    })
+  })
+
+  // Treas. Reg. 1.408A-4, A-6 makes the first dollars distributed in a year for
+  // which an RMD is required the RMD itself, and section 408(d)(3) bars rolling
+  // an RMD over, so nothing may be converted until the whole required amount
+  // has come out. Treating the two flows as independent is the natural
+  // misreading and it produces an excess Roth contribution the size of the RMD.
+  //
+  // Prior year-end balance 265,000, RMD 10,000, and a manual conversion request
+  // for the entire 265,000:
+  //   RMD first:            265,000 - 10,000 = 255,000 convertible
+  //   flows independent:    the whole 265,000 converts
+  describeRule('treas-reg-1-408A-4-a-6-rmd-precedes-conversion', {
+    readings: { rmdIsTheFirstDollarsOut: 255_000, everyDollarConvertible: 265_000 },
+    accepted: 'rmdIsTheFirstDollarsOut',
+  }, ({ accepted, readings }) => {
+    it('satisfies the whole RMD before any dollar becomes a conversion', () => {
+      const plan = rmdBasePlan()
+      plan.accounts = [
+        cash(0),
+        // 1.408A-4 governs a conversion out of a traditional IRA, so the source
+        // has to be one. The local `traditional` helper builds a 401(k), whose
+        // route into a Roth is a rollover under a different authority.
+        {
+          ...(traditional(265_000) as Extract<Account, { type: 'traditional' }>),
+          id: 'trad-order', name: 'Traditional IRA', kind: 'ira',
+        },
+        {
+          type: 'roth',
+          id: 'roth-order',
+          name: 'Roth',
+          ownerPersonId: 'p1',
+          annualReturnPct: null,
+          kind: 'ira',
+          balance: 0,
+          annualContribution: 0,
+        },
+      ]
+      plan.strategies.rothConversion = { mode: 'manual', conversions: [{ year: 2026, amount: 265_000 }] }
+      const y2026 = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+        .years.find((y) => y.year === 2026)!
+
+      expect(y2026.rmd).toBeCloseTo(10_000, 6)
+      expect(y2026.rothConversion).toBeCloseTo(accepted, 6)
+      expect(y2026.rothConversion).not.toBeCloseTo(readings.everyDollarConvertible, 6)
+      expect(y2026.balances['trad-order']).toBeCloseTo(0, 6)
+    })
+  })
+})
