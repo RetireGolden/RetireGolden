@@ -482,20 +482,24 @@ describe('charitable and section 68 rules', () => {
   // IRC 68(a) reduces itemized deductions by 2/37 of the lesser of those
   // deductions or the excess of taxable income (computed without regard to
   // section 68 and increased by those deductions) over the 37 percent bracket
-  // start, and 68(b) applies it after every other limitation. `computeFederalTax`
-  // takes `Math.max(standardBase, itemized)` and never reduces it.
+  // start, and 68(b) applies it after every other limitation.
   //
   // A single filer with $800,000 of AGI and $37,000 of SALT is chosen so the
   // arithmetic is exact rather than repeating: taxable income increased by the
   // itemized deductions is the AGI itself, $800,000, which exceeds the 2026
   // single threshold of $640,600 by $159,400. The lesser of that and the
   // $37,000 of deductions is $37,000, and 2/37 of $37,000 is exactly $2,000.
-  describeRule('irc-68-projection-overall-limitation-not-applied', {
-    readings: { statute: 35_000, engineAppliesNoOverallLimitation: 37_000 },
-    accepted: 'statute',
-    produced: 'engineAppliesNoOverallLimitation',
-    note: 'a single filer $159,400 past the 37 percent bracket start',
-  }, ({ accepted, produced }) => {
+  //
+  // This fixture pins the LIVE projection path. The sibling fixture in
+  // annualSection68ItemizedDeduction.test.ts pins a different question on the
+  // exact-cent ledger -- whether the reduction uses the exact rational or
+  // Publication 505's truncated 5.4 percent -- which is why both exist and why
+  // this one carries a note.
+  describeRule('irc-68-overall-itemized-limitation', {
+    readings: { statuteReducesTheItemizedTotal: 35_000, rejectedNoOverallLimitation: 37_000 },
+    accepted: 'statuteReducesTheItemizedTotal',
+    note: 'the live projection path applies it',
+  }, ({ accepted, readings }) => {
     const agi = 800_000
     const salt = 37_000
     const bracketStart = 640_600
@@ -504,44 +508,42 @@ describe('charitable and section 68 rules', () => {
     // leaves an intermediate that only happens to land on an integer.
     const reduction = (2 * Math.min(salt, agi - bracketStart)) / 37
 
-    it('keeps every dollar of itemized deduction section 68 would take away', () => {
+    it('reduces the itemized total on the live path', () => {
       const detail = computeFederalTax(taxpayer(agi, {
         stateAndLocalTaxes: salt, mortgageInterest: 0, charitable: 0,
       }))
 
       expect(reduction).toBe(2_000)
       expect(detail.itemized).toBe(true)
-      expect(detail.deduction).toBe(produced)
-      expect(detail.deduction).not.toBe(accepted)
-      expect(detail.deduction - accepted).toBe(reduction)
-    })
-
-    it('understates tax against the return that applies the limitation', () => {
-      const engine = computeFederalTax(taxpayer(agi, {
-        stateAndLocalTaxes: salt, mortgageInterest: 0, charitable: 0,
-      }))
-      const statutory = computeFederalTax(taxpayer(agi, {
-        stateAndLocalTaxes: salt - reduction, mortgageInterest: 0, charitable: 0,
-      }))
-
-      expect(statutory.deduction).toBe(accepted)
-      expect(engine.taxableIncome).toBe(763_000)
-      expect(statutory.taxableIncome).toBe(765_000)
-      // errorDirection: 'understatesTax'. Nothing carries forward under section
-      // 68, so no later year returns the disallowed deduction.
-      expect(engine.totalTax).toBeLessThan(statutory.totalTax)
+      expect(detail.deduction).toBe(accepted)
+      expect(detail.deduction).not.toBe(readings.rejectedNoOverallLimitation)
+      expect(detail.section68Limitation).toBe(reduction)
+      expect(detail.taxableIncome).toBe(765_000)
     })
 
     it('leaves a household below the bracket threshold untouched', () => {
-      // The record claims the gap is confined to high income, and this is what
-      // confines it: at $200,000 of AGI the (a)(2) excess is zero, so the
-      // statutory and engine readings coincide and there is nothing to pin.
+      // What confines the limitation to high income: at $200,000 of AGI the
+      // (a)(2) excess is zero, so the full itemized total survives. Without
+      // this the fixture could pass on an engine that reduced everyone.
       const detail = computeFederalTax(taxpayer(200_000, {
         stateAndLocalTaxes: salt, mortgageInterest: 0, charitable: 0,
       }))
 
       expect(200_000).toBeLessThan(bracketStart)
-      expect(detail.deduction).toBe(produced)
+      expect(detail.section68Limitation).toBe(0)
+      expect(detail.deduction).toBe(readings.rejectedNoOverallLimitation)
+    })
+
+    it('does not reach a year the limitation does not govern', () => {
+      // TCJA suspended section 68 for 2018 through 2025 and OBBBA replaced it
+      // for 2026 onward, so the year gate is statutory rather than a modelling
+      // convenience. A 2025 return with the same figures keeps every dollar.
+      const detail = computeFederalTax({
+        ...taxpayer(agi, { stateAndLocalTaxes: salt, mortgageInterest: 0, charitable: 0 }),
+        year: 2025,
+      })
+
+      expect(detail.section68Limitation).toBe(0)
     })
   })
 

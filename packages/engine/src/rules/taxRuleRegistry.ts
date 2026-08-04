@@ -606,7 +606,10 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
-    implementedBy: ['packages/engine/src/actions/annualSection68ItemizedDeduction.ts'],
+    implementedBy: [
+      'packages/engine/src/actions/annualSection68ItemizedDeduction.ts',
+      'packages/engine/src/tax/federalTax.ts',
+    ],
   },
 
   'irc-170-b-1-G-cash-percentage-ceiling': {
@@ -5088,41 +5091,6 @@ const registry = {
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
   },
 
-  'irc-68-projection-overall-limitation-not-applied': {
-    title: 'The overall limitation on itemized deductions is not applied in the projection',
-    statement:
-      'Itemized deductions otherwise allowable are reduced by 2/37 of the lesser of those deductions or the excess of taxable income, determined without regard to section 68 and increased by those deductions, over the dollar amount at which the 37 percent rate bracket begins, and 68(b) takes that reduction after every other limitation on an itemized deduction. Not modelled: the live tax path deducts the greater of the standard deduction and its itemized total and never reduces either, so a household whose income clears the 37 percent bracket threshold keeps every dollar of itemized deduction section 68 would have taken away.',
-    classification: 'approximated',
-    contraryReading: null,
-    errorDirection: 'understatesTax',
-    conventionRationale:
-      'One direction only, and permanently. Section 68 can only reduce an itemized deduction, never enlarge one; it carries nothing forward, so no later year gives back what it disallows; and 68(b) places it last, after the section 170 limitations, so nothing downstream of it can reverse the sign. For 2026 the threshold is the 37 percent bracket start — $640,600 for a single filer, $768,700 on a joint return — so the gap is confined to high-income households, but for those it compounds with the two section 170 limitations this same path omits: the itemized total section 68 would have reduced is already too large before the reduction is skipped. Volatility is annuallyIndexed rather than staticStatute because 68(a)(2) points at a section 1 bracket boundary the IRS restates every autumn, even though the 2/37 rate itself is fixed. The exact bigint-rational implementation is in packages/engine/src/actions/annualSection68ItemizedDeduction.ts, registered settled at irc-68-overall-itemized-limitation, and is unreachable from the projection.',
-    jurisdiction: 'federal',
-    authority: [{
-      kind: 'statute',
-      citation: 'IRC 68(a)',
-      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section68&num=0&edition=prelim',
-      quotedText:
-        'In the case of an individual, the amount of the itemized deductions otherwise allowable for the taxable year (determined without regard to this section) shall be reduced by 2/37 of the lesser of- (1) such amount of itemized deductions, or (2) so much of the taxable income of the taxpayer for the taxable year (determined without regard to this section and increased by such amount of itemized deductions) as exceeds the dollar amount at which the 37 percent rate bracket under section 1 begins with respect to the taxpayer.',
-    }, {
-      kind: 'statute',
-      citation: 'IRC 68(b)',
-      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section68&num=0&edition=prelim',
-      quotedText:
-        'This section shall be applied after the application of any other limitation on the allowance of any itemized deduction.',
-    }, {
-      kind: 'statute',
-      citation: 'Pub. L. 119-21, sec. 70111(c) (OBBBA)',
-      url: 'https://www.govinfo.gov/content/pkg/PLAW-119publ21/html/PLAW-119publ21.htm',
-      quotedText:
-        'Effective Date.--The amendments made by this section shall apply to taxable years beginning after December 31, 2025.',
-    }],
-    volatility: 'annuallyIndexed',
-    effectiveFrom: 2026,
-    effectiveThrough: null,
-    verifiedOn: '2026-08-04',
-    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
-  },
 
   'irc-170-p-projection-nonitemizer-deduction-not-allowed': {
     title: 'The nonitemizer charitable deduction is not allowed in the projection',
