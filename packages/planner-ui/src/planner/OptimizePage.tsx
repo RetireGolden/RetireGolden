@@ -129,8 +129,9 @@ export function OptimizePage() {
   const runToken = useRef(0)
 
   // Precondition, checked before any dispatch: the optimizer prices conversions
-  // off aggregate opening buckets, which a plan carrying identity-bearing
-  // retirement actions no longer describes. A run would only reach the engine's
+  // off aggregate opening buckets, which a plan carrying any recorded
+  // retirement action — identity-bearing or migrated aggregate — no longer
+  // describes. A run would only reach the engine's
   // last-resort throw, so the page states the condition instead of surfacing a
   // raw error next to a retry that can never clear it.
   const unsupportedActionReasons = useMemo(
@@ -138,6 +139,15 @@ export function OptimizePage() {
     [plan],
   )
   const optimizerUnavailable = unsupportedActionReasons.length > 0
+
+  // The precondition gates what renders, not only what dispatches. `run` clears
+  // the held result, but it is debounced 300ms, so a plan edit that records an
+  // action leaves the previous result in state across at least one paint —
+  // during which the claim-change Apply card below reads `schedule` and would
+  // offer to install a recommendation computed for the pre-action plan. Reading
+  // every result-derived value through this closes that window in the same
+  // render that flips the precondition, with no intermediate frame to catch.
+  const heldResult = optimizerUnavailable ? null : optimizeResult
 
   const hasSocialSecurityIncome = plan.incomes.some((s) => s.type === 'socialSecurity')
   const coOptimizeRequested = coOptimizeClaim && hasSocialSecurityIncome
@@ -152,9 +162,9 @@ export function OptimizePage() {
     if (!hasSocialSecurityIncome) setCoOptimizeClaim(false)
   }
 
-  const schedule = optimizeResult?.schedule ?? null
-  const postProcessed = optimizeResult?.postProcessed ?? null
-  const tournament = optimizeResult?.tournament ?? null
+  const schedule = heldResult?.schedule ?? null
+  const postProcessed = heldResult?.postProcessed ?? null
+  const tournament = heldResult?.tournament ?? null
   // The exact-ledger tournament arbitrates the recommendation: when a simple
   // candidate strategy beats the post-processed MILP schedule on the exact
   // after-tax estate, its schedule is what the page shows and applies.
@@ -189,7 +199,7 @@ export function OptimizePage() {
   // Step 5 claim-age co-optimization: when a claim change won, the schedule and
   // every validation delta on this page were computed against the claim-patched
   // plan, so Monte Carlo, the report, and Apply must all start from it.
-  const claimAge = optimizeResult?.claimAge ?? null
+  const claimAge = heldResult?.claimAge ?? null
   const claimChangeRecommended = claimAge?.winningClaimPatch != null
   const planForRecommendation = useMemo(() => planWithWinningClaim(plan, claimAge), [plan, claimAge])
   const optimizedPlan = useMemo(() => {
@@ -349,7 +359,7 @@ export function OptimizePage() {
   )
 
   const downloadRecommendationReport = () => {
-    if (!optimizeResult || !recommendationReportIsAvailable) return
+    if (!heldResult || !recommendationReportIsAvailable) return
     // Report the plan the evidence section describes: when the optimizer recommends
     // a schedule, project that recommended plan so the headline results and ledger
     // appendix match the recommendation. When nothing beats the incumbent (no
@@ -361,7 +371,7 @@ export function OptimizePage() {
       result: view.result,
       summary: view.summary,
       startYear,
-      recommendationEvidence: reportEvidenceFromOptimizeResult(optimizeResult),
+      recommendationEvidence: reportEvidenceFromOptimizeResult(heldResult),
       branding: reportBranding,
     })
   }
@@ -403,7 +413,11 @@ export function OptimizePage() {
             />
           ) : null}
         </div>
-        {running ? (
+        {/* Same window as `heldResult`: a run already in flight when the edit
+            lands would otherwise keep claiming to optimize for one debounce
+            interval, and an error from the superseded plan would sit next to a
+            precondition that supersedes it. */}
+        {running && !optimizerUnavailable ? (
           <>
             <div className="skeleton" style={{ height: '2rem', marginTop: '0.75rem' }} aria-label="Optimizing" />
             {coOptimizeRequested ? (
@@ -414,7 +428,9 @@ export function OptimizePage() {
             ) : null}
           </>
         ) : null}
-        {error ? <p style={{ color: 'var(--bad)' }}>Optimizer error: {error}</p> : null}
+        {error && !optimizerUnavailable ? (
+          <p style={{ color: 'var(--bad)' }}>Optimizer error: {error}</p>
+        ) : null}
         {/* No run controls while the precondition holds: every control here
             either starts a run that cannot happen or downloads a report that
             does not exist. */}
@@ -427,7 +443,7 @@ export function OptimizePage() {
             <button
               type="button"
               className="btn btn-secondary btn-small"
-              disabled={!optimizeResult || running || !recommendationReportIsAvailable}
+              disabled={!heldResult || running || !recommendationReportIsAvailable}
               onClick={downloadRecommendationReport}
             >
               Download recommendation report

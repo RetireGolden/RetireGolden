@@ -20,6 +20,14 @@ export const OPTIMIZER_RETIREMENT_ACTION_HEADING =
 /**
  * What is unsupported, in the user's terms. Retrying cannot clear this
  * condition, so the copy says so in place of a retry affordance.
+ *
+ * Deliberately says nothing about a person, a source account, or a date. The
+ * precondition fires on any recorded action, and a plan migrated from an older
+ * schema can carry `legacyAggregate*` kinds that hold only an amount and a
+ * year (`actions/contract.ts` `legacyAggregateActionRequestBaseShape`). Copy
+ * naming details those actions do not have would describe the user's plan
+ * wrongly. The amount and the year are what every kind has in common, and they
+ * are also the whole of what the optimizer cannot reconcile.
  */
 export function optimizerRetirementActionExplanation(
   reasons: readonly ActionReason[],
@@ -30,9 +38,9 @@ export function optimizerRetirementActionExplanation(
       ? 'This plan records 1 retirement action — a withdrawal, Roth conversion, or QCD'
       : `This plan records ${count} retirement actions — withdrawals, Roth conversions, or QCDs`
   return (
-    `${subject} tied to a named person, source account, and date. The optimizer searches conversion ` +
-    'schedules against aggregate account balances, so it cannot price what those actions move out of the ' +
-    'named sources. Re-running reports the same thing.'
+    `${subject} set for a specific amount and year. The optimizer searches conversion schedules against ` +
+    'aggregate account balances, which do not account for the money those actions move, so it cannot ' +
+    'price a schedule that runs alongside them. Re-running reports the same thing.'
   )
 }
 

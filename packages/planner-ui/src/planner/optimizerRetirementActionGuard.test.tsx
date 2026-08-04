@@ -1,7 +1,8 @@
 /** @vitest-environment jsdom */
 /**
- * Optimize page precondition: a plan carrying identity-bearing retirement
- * actions must never reach the optimizer worker.
+ * Optimize page precondition: a plan carrying any recorded retirement action
+ * must never reach the optimizer worker. The gate matches the throw's own
+ * condition, so a migrated `legacyAggregate*` action holds it too.
  *
  * Before this guard the page dispatched, the engine threw from
  * `buildOptimizerInput`, and the user got the raw engine string
@@ -10,7 +11,7 @@
  * identically forever. These tests pin both halves of the fix: no dispatch, and
  * a non-actionable state with no retry affordance.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { MemoryRouter } from 'react-router'
@@ -43,6 +44,14 @@ beforeEach(() => {
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
+})
+
+// Unmount and detach: `beforeEach` appends a fresh container every test, so
+// without this they accumulate in `document.body` and later tests query a
+// document holding every earlier render.
+afterEach(async () => {
+  await act(async () => root.unmount())
+  container.remove()
 })
 
 function contextFor(plan: Plan): PlanContextValue {
@@ -103,8 +112,6 @@ describe('Optimize page retirement-action precondition', () => {
     expect(container.textContent).not.toContain('Optimizer error')
     expect(container.textContent).not.toContain('identity-bearing')
     expect(container.querySelector('[aria-label="Optimizing"]')).toBeNull()
-
-    await act(async () => root.unmount())
   })
 
   it('renders the non-actionable state with no retry affordance', async () => {
@@ -125,8 +132,6 @@ describe('Optimize page retirement-action precondition', () => {
     expect(buttonTexts()).not.toContain('Run optimizer')
     expect(buttonTexts()).not.toContain('Re-run optimizer')
     expect(buttonTexts()).not.toContain('Download recommendation report')
-
-    await act(async () => root.unmount())
   })
 
   it('still dispatches, and shows no such card, for the same plan without actions', async () => {
@@ -136,7 +141,5 @@ describe('Optimize page retirement-action precondition', () => {
 
     expect(mockedRunOptimize).toHaveBeenCalledTimes(1)
     expect(container.textContent).not.toContain(OPTIMIZER_RETIREMENT_ACTION_HEADING)
-
-    await act(async () => root.unmount())
   })
 })
