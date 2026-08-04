@@ -497,6 +497,7 @@ describe('age-based deductions', () => {
   describeRule('irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out', {
     readings: { reducedPerQualifiedIndividual: 6_000, reducedOnTheCombinedBase: 9_000 },
     accepted: 'reducedPerQualifiedIndividual',
+    note: 'the exact ledger amount',
   }, ({ accepted, readings }) => {
     it('reduces each qualified individual amount, not the combined total', () => {
       const d = computeFederalTax(
