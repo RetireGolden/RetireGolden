@@ -4876,6 +4876,41 @@ const registry = {
       'packages/engine/src/actions/taxableWithdrawalCharacter.ts',
     ],
   },
+
+  'irc-408-d-8-A-qcd-exclusion-composition-order': {
+    title: 'Order of the QCD taxable trim, the annual limit, and the deduction offset',
+    statement:
+      'The three adjustments to a charitable distribution compose in exactly one order, and the text fixes it rather than leaving it to be chosen. The flush sentence of 408(d)(8)(B) runs first, because it is definitional: a distribution is a qualified charitable distribution only to the extent it would be includible without regard to (A), so there is no QCD to limit until the trim has been taken. The first sentence of (A) then excludes so much of that amount as does not exceed the annual dollar limit. The second sentence of (A) runs last, and says so in its own subject: it reduces "the amount of distributions not includible in gross income by reason of the preceding sentence", determined without regard to itself, but not below zero. The excludable amount is therefore min(min(Q, T), L) - F, never min(min(Q, L) - F, T) and never min(min(Q, T) - F, L). Because the offset is a subtraction and not a cap, it does not commute with either trim, and the three orderings differ in dollars on ordinary inputs.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale: null,
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408(d)(8)(A), both sentences',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        'So much of the aggregate amount of qualified charitable distributions with respect to a taxpayer made during any taxable year which does not exceed $100,000 shall not be includible in gross income of such taxpayer for such taxable year. The amount of distributions not includible in gross income by reason of the preceding sentence for a taxable year (determined without regard to this sentence) shall be reduced (but not below zero) by an amount equal to the excess of - (i) the aggregate amount of deductions allowed to the taxpayer under section 219 for all taxable years ending on or after the date the taxpayer attains age 70 1/2, over (ii) the aggregate amount of reductions under this sentence for all taxable years preceding the current taxable year.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408(d)(8)(B), flush sentence',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        'A distribution shall be treated as a qualified charitable distribution only to the extent that the distribution would be includible in gross income without regard to subparagraph (A).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408(d)(8)(D)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        'Notwithstanding section 72, in determining the extent to which a distribution is a qualified charitable distribution, the entire amount of the distribution shall be treated as includible in gross income without regard to subparagraph (A) to the extent that such amount does not exceed the aggregate amount which would have been so includible if all amounts in all individual retirement plans of the individual were distributed during such taxable year and all such plans were treated as 1 contract for purposes of determining under section 72 the aggregate amount which would have been so includible.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts',
+    ],
+  },
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)

@@ -552,6 +552,19 @@ const validatedActionExecutionDispositionSchema = z
   ])
   .superRefine((disposition, ctx) => {
     const validateAdjustedReasonOrder = (reasons: typeof disposition.reasons, startIndex: number) => {
+      // "Canonical" here means the order these reasons must be REPORTED in, so
+      // that two runs producing the same adjustments serialize identically. It
+      // is a display convention, not the order the adjustments are applied in.
+      //
+      // The arithmetic runs taxable trim, then the annual limit, then the
+      // post-70.5 deduction offset, which IRC 408(d)(8) fixes by its own text.
+      // That order is pinned by `irc-408-d-8-A-qcd-exclusion-composition-order`
+      // in the tax rule registry and implemented in
+      // `annualQcdTaxCharacterPostPass.ts`. Do not "align" this list with the
+      // computation or the computation with this list: reading it as the
+      // arithmetic order is one of the two orderings that registered rule exists
+      // to reject, and it differs from the statute by real dollars. Mirrored in
+      // `adjustedReasonOrder` in `annualRetirementActionPublication.ts`.
       const canonicalOrder = [
         'qcd-person-limit-trimmed',
         'qcd-contribution-offset-applied',

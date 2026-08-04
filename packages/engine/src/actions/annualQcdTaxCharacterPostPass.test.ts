@@ -381,6 +381,93 @@ describe('stageAnnualQcdTaxCharacterPostPass', () => {
     })
   })
 
+  // The three QCD adjustments are each pinned above, but nothing pinned the
+  // order they compose in — the same gap that let the IRC 170(b)(1)(I) floor
+  // ordering defect survive. It is the same shape, too: the offset F is a
+  // subtraction rather than a cap, so it does not commute with either trim, and
+  // the candidate orderings separate by real dollars.
+  //
+  // The statute fixes the order in its own text. The flush sentence of
+  // 408(d)(8)(B) is definitional — a distribution is a QCD "only to the extent"
+  // it would be includible without regard to (A) — so the taxable trim T runs
+  // before (A) has a "qualified charitable distribution" to speak of, and (D)
+  // supplies the measure of T. The first sentence of (A) then excludes so much
+  // as does not exceed the annual limit L. The second sentence of (A) runs last
+  // and names its own input: it reduces "the amount of distributions not
+  // includible in gross income by reason of the preceding sentence
+  // (determined without regard to this sentence) ... but not below zero".
+  //
+  //   excludable = max(0, min(min(Q, T), L) - F)
+  //
+  // Two fixtures are needed because no single one can separate all three
+  // orderings: the limit-first reading only differs where T is the binding
+  // minimum, and the offset-first reading only differs where L is. Those are
+  // mutually exclusive, so each ordering gets the inputs that expose it.
+
+  // Q = 12,000,000c against T = 10,000,000c of pre-tax dollars, L = 11,100,000c,
+  // F = 800,000c. T binds.
+  //   min(min(Q, T), L) - F = min(10,000,000, 11,100,000) - 800,000 = 9,200,000
+  //   min(min(Q, L) - F, T) = min(11,100,000 - 800,000, 10,000,000) = 10,000,000
+  describeRule('irc-408-d-8-A-qcd-exclusion-composition-order', {
+    readings: {
+      statuteTrimThenLimitThenOffset: 9_200_000,
+      rejectedLimitOnGrossDistribution: 10_000_000,
+    },
+    accepted: 'statuteTrimThenLimitThenOffset',
+    note: 'The 408(d)(8)(B) taxable trim runs before the annual limit, not after it.',
+  }, ({ accepted, readings }) => {
+    it('limits what survives the taxable trim, not the gross distribution', () => {
+      const application = staged(fixture([{ id: 'large', amount: 12_000_000 }],
+        { capacity: { p1: 10_000_000 }, contribution: { p1: 800_000 } })).applications[0]!
+
+      expect(application.excludableQcdAmount).toBe(accepted)
+      expect(application.excludableQcdAmount)
+        .not.toBe(readings.rejectedLimitOnGrossDistribution)
+      // The limit is charged against the trimmed 10,000,000, not the gross
+      // 12,000,000, so it never binds and the offset is what reduces the result.
+      expect(application.otherwiseTaxableAmountUsed).toBe(10_000_000)
+      expect(application.personalLimitUsed).toBe(10_000_000)
+    })
+  })
+
+  // Q = 12,000,000c against T = 11,800,000c of pre-tax dollars, L = 11,100,000c,
+  // F = 800,000c. L binds.
+  //   min(min(Q, T), L) - F = min(11,800,000, 11,100,000) - 800,000 = 10,300,000
+  //   min(min(Q, T) - F, L) = min(11,800,000 - 800,000, 11,100,000) = 11,000,000
+  describeRule('irc-408-d-8-A-qcd-exclusion-composition-order', {
+    readings: {
+      statuteLimitThenOffset: 10_300_000,
+      rejectedOffsetBeforeLimit: 11_000_000,
+    },
+    accepted: 'statuteLimitThenOffset',
+    note: 'The post-70.5 offset reduces the already-limited amount, not the amount going into the limit.',
+  }, ({ accepted, readings }) => {
+    it('subtracts the deduction offset after the annual limit has bound', () => {
+      const application = staged(fixture([{ id: 'large', amount: 12_000_000 }],
+        { capacity: { p1: 11_800_000 }, contribution: { p1: 800_000 } })).applications[0]!
+
+      expect(application.excludableQcdAmount).toBe(accepted)
+      expect(application.excludableQcdAmount).not.toBe(readings.rejectedOffsetBeforeLimit)
+      // The limit binds first at 11,100,000 of the 11,800,000 trimmed amount,
+      // and the offset then comes off that, not off the 11,800,000.
+      expect(application.otherwiseTaxableAmountUsed).toBe(11_800_000)
+      expect(application.personalLimitUsed).toBe(11_100_000)
+      expect(application.deductibleContributionOffsetApplied).toBe(800_000)
+    })
+
+    it('floors the reduction at zero rather than going negative', () => {
+      // "reduced (but not below zero)". A 1,000c QCD against 300,000c of
+      // post-70.5 deductions excludes nothing and stays fully includible; it
+      // does not carry a negative exclusion into the partition.
+      const application = staged(fixture(undefined,
+        { contribution: { p1: 300_000 } })).applications[0]!
+
+      expect(application.deductibleContributionOffsetApplied).toBe(1_000)
+      expect(application.excludableQcdAmount).toBe(0)
+      expect(application.taxableQcdAmount).toBe(1_000)
+    })
+  })
+
   it('produces the exact three-way partition', () => {
     const result = staged(fixture(undefined, {
       capacity: { p1: 800 }, contribution: { p1: 300 },

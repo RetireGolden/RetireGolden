@@ -258,6 +258,21 @@ function allocationOrder(
     compareUtf16CodeUnits(left.sourceAccountId, right.sourceAccountId)
 }
 
+/**
+ * The order these adjustment reasons are DISPLAYED in. It is a presentation
+ * convention and nothing more.
+ *
+ * It is deliberately not the order the adjustments are computed in, and the two
+ * must not be reconciled. The arithmetic runs taxable trim, then the annual
+ * limit, then the post-70.5 deduction offset — fixed by the text of IRC
+ * 408(d)(8) and pinned by `irc-408-d-8-A-qcd-exclusion-composition-order` in the
+ * tax rule registry, with the implementation in
+ * `annualQcdTaxCharacterPostPass.ts`. Reading this list as the arithmetic order
+ * puts the limit first and the trim last, which is one of the two orderings that
+ * registered rule exists to reject; it differs from the statute by real dollars.
+ *
+ * Changing this array changes what a reader sees, never what they owe.
+ */
 const adjustedReasonOrder = [
   'qcd-person-limit-trimmed',
   'qcd-contribution-offset-applied',
