@@ -37,13 +37,31 @@ export type ConversionLinkedWithdrawalGroupDisposition =
  * `reasonCode` is the staging gap both sides carry, not a refusal on the
  * merits. The pair is well formed and lawful; the executor that would move it
  * as one transaction is what is missing.
+ *
+ * Membership is matched on `withdrawalActionId` alone. There is no person
+ * predicate and no year predicate, so a conversion in one year naming a
+ * withdrawal in another is still one group, and `personId`/`year` below are
+ * carried as identity rather than read as constraints. That is deliberate and
+ * preserved from the scan this replaced: narrowing membership to a shared
+ * person-year would stop refusing the cross-year withdrawal and thereby
+ * release it to move, which is a money decision and not this slice's. The
+ * consequence — a cross-year pair that refuses here and then throws in
+ * publication, because one year's published requests cannot contain the other
+ * year's conversion — is a pre-existing latent crash, flagged in the pull
+ * request description as its own slice.
  */
 export interface ConversionLinkedWithdrawalGroupVerdict {
   /** Structural identity of the assessed group, derived from its members. */
   readonly groupId: string
-  /** The owner whose conversion and funding withdrawal this group is. */
+  /**
+   * The conversion's owner, carried as identity. Membership does not test it,
+   * so the named withdrawal is not guaranteed to share it.
+   */
   readonly personId: PersonId
-  /** The action year both members must share to be one group. */
+  /**
+   * The conversion's action year, carried as identity. Membership does not
+   * test it, so the named withdrawal is not guaranteed to share it.
+   */
   readonly year: number
   readonly conversionActionId: ActionId
   readonly withdrawalActionId: ActionId
@@ -142,7 +160,20 @@ export function conversionLinkedWithdrawalGroupForConversion(
   ) ?? null
 }
 
-/** The group verdict this withdrawal must honour, if it is in one. */
+/**
+ * The group verdict this withdrawal must honour, if it is in one.
+ *
+ * A withdrawal can be named by more than one conversion, so this can have more
+ * than one candidate and returns the first in the assessment's sorted order.
+ * That is unambiguous only because `disposition` has a single member: every
+ * candidate refuses, for the same `reasonCode`, so which one is returned
+ * cannot change what the withdrawal does. The slice that adds an executable
+ * arm has to decide which conversion wins before that stays true — and that is
+ * a decision about which pair may move, not a lookup detail. Callers checking
+ * whether an assessment is complete must key on the (conversion, withdrawal)
+ * pair instead of asking this, which cannot distinguish "answered" from
+ * "answered for one of several".
+ */
 export function conversionLinkedWithdrawalGroupForWithdrawal(
   assessment: Readonly<ConversionLinkedWithdrawalGroupAssessment>,
   withdrawalActionId: string,

@@ -1532,13 +1532,26 @@ function executeOrdinaryWithdrawalsInScope(
   // sitting in the Plan is not a decision to release that withdrawal, it is an
   // assessment taken over the wrong requests, and moving money on it would be
   // the disagreement this verdict exists to prevent.
+  //
+  // Completeness is asked per group, keyed on the (conversion, withdrawal)
+  // pair that `assessConversionLinkedWithdrawalGroups` itself dedupes on —
+  // not per withdrawal. Two conversions can name one withdrawal:
+  // `assertLinkedWithdrawalRequests` refuses that shape, but it refuses it at
+  // publication and this executor runs before then. Asking only whether some
+  // verdict mentions the withdrawal would let an assessment answering for one
+  // of those conversions stand in for the one it omits, which is the silent
+  // release this check exists to stop.
   if (suppliedGroups !== undefined) {
+    const suppliedGroupKeys = new Set(
+      suppliedGroups.groups.map((group) =>
+        JSON.stringify([group.conversionActionId, group.withdrawalActionId]),
+      ),
+    )
     for (const group of observableGroups.groups) {
       if (
-        conversionLinkedWithdrawalGroupForWithdrawal(
-          suppliedGroups,
-          group.withdrawalActionId,
-        ) === null
+        !suppliedGroupKeys.has(
+          JSON.stringify([group.conversionActionId, group.withdrawalActionId]),
+        )
       ) {
         throw new Error(
           `Conversion linked-withdrawal group verdict is missing for action "${group.withdrawalActionId}"`,

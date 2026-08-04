@@ -1432,6 +1432,55 @@ describe('executeRothConversions', () => {
         )).toThrow(/group verdict is missing/)
       })
 
+      it('refuses a verdict answering for one of two conversions naming a withdrawal', () => {
+        const pair = linkedPair()
+        const secondConversion = withFunding(
+          funding.linkedWithdrawal,
+          'conversion-b',
+        )
+        const planBothConversions = plan()
+        planBothConversions.accounts = pair.inFlightPlan.accounts
+        planBothConversions.strategies.retirementActions = [
+          pair.fundingWithdrawal,
+          pair.conversion,
+          secondConversion,
+        ]
+
+        // Two conversions, one named withdrawal, and an assessment that
+        // answers for only the first. Completeness is per group, so the
+        // answered one cannot stand in for the omitted one: asking merely
+        // whether some verdict mentions this withdrawal would find the first
+        // and release a withdrawal that a second, unassessed conversion is
+        // still waiting on. Publication refuses this shape too, but it runs
+        // after the money would already have moved.
+        const answeringOnlyTheFirst = assessConversionLinkedWithdrawalGroups([
+          pair.conversion,
+          pair.fundingWithdrawal,
+        ])
+
+        expect(answeringOnlyTheFirst.groups).toHaveLength(1)
+        expect(() => runWithdrawal(
+          { ...pair, inFlightPlan: planBothConversions },
+          answeringOnlyTheFirst,
+        )).toThrow(/group verdict is missing/)
+
+        // Answering for both is what lets it through to the same refusal.
+        const answeringBoth = assessConversionLinkedWithdrawalGroups([
+          pair.conversion,
+          secondConversion,
+          pair.fundingWithdrawal,
+        ])
+
+        expect(answeringBoth.groups).toHaveLength(2)
+        expect(runWithdrawal(
+          { ...pair, inFlightPlan: planBothConversions },
+          answeringBoth,
+        ).evidence[0]).toMatchObject({
+          actionId: linkedWithdrawalActionId,
+          disposition: { outcome: 'unsupported', executedAmount: 0 },
+        })
+      })
+
       it('publishes the pair only while both sides honour the one verdict', () => {
         const pair = linkedPair()
         const groups = verdictFor(pair)
