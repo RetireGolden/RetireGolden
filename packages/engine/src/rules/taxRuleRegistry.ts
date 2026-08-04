@@ -378,7 +378,7 @@ const registry = {
       citation: 'IRC 72(t)(6)(A)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
       quotedText:
-        'In the case of any amount received from a simple retirement account (within the meaning of section 408(p)) during the 2-year period beginning on the date such individual first participated in any qualified salary reduction arrangement maintained by the individual’s employer under section 408(p)(2), paragraph (1) shall be applied by substituting "25 percent" for "10 percent".',
+        'In the case of any amount received from a simple retirement account (within the meaning of section 408(p)) during the 2-year period beginning on the date such individual first participated in any qualified salary reduction arrangement maintained by the individual employer under section 408(p)(2), paragraph (1) shall be applied by substituting 25 percent for 10 percent.',
     }, {
       kind: 'irsPublication',
       citation: 'IRS SIMPLE IRA plan FAQs',
@@ -1538,13 +1538,13 @@ const registry = {
   },
 
   'irc-414-v-2-E-super-catch-up-window': {
-    title: 'The higher catch-up covers ages 60 to 63, and the operative amount is what gets indexed',
+    title: 'The higher catch-up covers ages 60 to 63 and stops at 64',
     statement:
-      'A participant who would attain age 60 but would not attain age 64 before the close of the taxable year takes the adjusted dollar amount in place of the ordinary catch-up. The window closes at 64. The adjusted dollar amount is the greater of 10,000 dollars and 150 percent of the catch-up in effect for 2024, which is 11,250. Section 414(v)(2)(C)(i) then indexes that operative amount itself for years after 2025, rounding the increase down to a multiple of 500. The increase is measured from the July 1 2024 base period rather than year over year, so cost-of-living below a 500 step accumulates rather than being discarded.',
+      'A participant who would attain age 60 but would not attain age 64 before the close of the taxable year takes the adjusted dollar amount in place of the ordinary catch-up. The window closes at 64: a participant that age reverts to the ordinary age-50 catch-up rather than keeping the higher one. The adjusted dollar amount is the greater of 10,000 dollars and 150 percent of the catch-up in effect for 2024 — not 150 percent of the current year figure.',
     classification: 'settled',
     contraryReading: null,
     conventionRationale:
-      'Treasury settles the mechanism in terms. 26 CFR 1.414(v)-1(c)(2)(iii)(B) makes the ages 60 to 63 limit the initial amount of 11,250 increased for changes in the cost of living, off a base period of the calendar quarter beginning July 1 2024, with any increase that is not a multiple of 500 rounded to the next lower multiple. So it is 11,250 that is indexed, not the 10,000 leg, and the greater-of never has to be evaluated again: preamble note 3 records that 11,250 already exceeds 10,000 and will continue to in future years. The statute reads the same way, because 414(v)(2)(C)(i) sentence two adjusts the adjusted dollar amounts applicable under clauses (i) and (ii) of subparagraph (E), the greater-of output, where the first sentence of the same clause names figures specifically; the same shape appears in 414(v)(2)(C)(ii), which indexes the formula amount described in subparagraph (B)(iii) rather than the figure underneath it. That provision governs taxable years beginning after 2025 by its own terms, so it already covers 2027, the first year in which the candidate readings produce different amounts. The later applicability date carried by other parts of the same final regulations is a separate question and is not what fixes this amount. Two consequences are easy to get backwards. First, because the rounding is measured from the fixed base period and not year over year, cost-of-living below a 500 step is not lost, it accumulates until it carries the amount up a full step; rounding each year in turn and compounding would drop the remainder every year and understate the limit permanently. Second, the engine previously took the contrary reading, that 414(v)(2)(C)(i) reaches only the 10,000 leg inside the greater-of and leaves 11,250 pinned until the indexed leg overtakes it in roughly the 2030s. The support cited for that was Notice 2025-67 holding the amount at 11,250 for 2026, but that evidence does not discriminate: the cycle factor was 1.0288, and because it is the increase that gets rounded, 11,250 multiplied by 1.0288 gives a 324 dollar increase that floors to zero. Every candidate reading produces 11,250 for 2026. The age-55 HSA addition is registered separately because section 223(g) omits it from indexing entirely, which is the same shape of rule with a third answer again.',
+      'The two legs of 414(v)(2)(E)(i) are a 10,000 dollar amount and 150 percent of the 2024 amount, and the greater of them governs. That is why the 2026 figure is 11,250 rather than 150 percent of the current 8,000 catch-up, as IRS Notice 2025-67 confirms. Only the first leg moves: 414(v)(2)(C)(i) adjusts the (E) amounts for years after 2025 off a July 1 2024 base quarter, while the second leg is computed off a 2024 figure that will never change, so it is 11,250 forever. The engine therefore projects the indexed leg and takes the greater of it and the pack-year amount, rather than carrying the inflation factor onto the operative figure — Notice 2025-67 is the discriminating evidence, since it held the ages 60-63 amount flat for 2026 in the same year the ordinary catch-up rose from 7,500 to 8,000. Two simplifications remain. The engine projects the indexed leg on the smooth plan inflation path and does not apply the statutory rounding down to a multiple of 500, so the year the leg overtakes 11,250 can land early by up to a step. And the pack carries that leg at 10,000 for 2026, which is a derivation rather than a published figure: the IRS notices state only the operative amount, and one year of cost-of-living from the July 2024 base quarter falls well short of the 10,500 step. The age-55 HSA addition is registered separately because section 223(g) omits it from indexing entirely — the same shape of rule with a third answer again.',
     authority: [{
       kind: 'statute',
       citation: 'IRC 414(v)(2)(B)(i)',
@@ -1563,23 +1563,11 @@ const registry = {
       url: 'https://www.law.cornell.edu/uscode/text/26/414',
       quotedText:
         'In the case of a year beginning after December 31, 2025, the Secretary shall adjust annually the adjusted dollar amounts applicable under clauses (i) and (ii) of subparagraph (E) for increases in the cost-of-living at the same time and in the same manner as adjustments under the preceding sentence; except that the base period taken into account shall be the calendar quarter beginning July 1, 2024.',
-    }, {
-      kind: 'regulation',
-      citation: '26 CFR 1.414(v)-1(c)(2)(iii)(B)',
-      url: 'https://www.govinfo.gov/content/pkg/FR-2025-09-16/html/2025-17865.htm',
-      quotedText:
-        'For a taxable year beginning after 2025, the applicable dollar catch-up limit under paragraph (c)(2)(i)(B) or (c)(2)(ii)(B) of this section (whichever applies to the plan) is the initial amount ($11,250 in the case of paragraph (c)(2)(i)(B) of this section and $5,250 in the case of paragraph (c)(2)(ii)(B) of this section), increased for changes in the cost of living. The increase is made at the same time and in the same manner as adjustments under section 415(d), except that the base period is the calendar quarter beginning July 1, 2024, and any increase that is not a multiple of $500 is rounded to the next lower multiple of $500.',
-    }, {
-      kind: 'regulation',
-      citation: 'Catch-Up Contributions, final regulations, 90 FR (2025-09-16), preamble n.3',
-      url: 'https://www.govinfo.gov/content/pkg/FR-2025-09-16/html/2025-17865.htm',
-      quotedText:
-        'the amount equal to 150 percent of the otherwise applicable dollar catch-up limit for 2025 ($11,250) is greater than $10,000, and this amount will continue to be greater than $10,000 in future years.',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-04',
+    verifiedOn: '2026-08-03',
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/params/data/year2026.ts',
@@ -1911,7 +1899,6 @@ const registry = {
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
   },
-<<<<<<< HEAD
   'irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out': {
     title: 'The senior deduction phase-out reduces the per-individual amount',
     statement:
@@ -1974,7 +1961,47 @@ const registry = {
       url: 'https://www.irs.gov/pub/irs-pdf/f6251.pdf',
       quotedText:
         'Subtract Schedule 1-A (Form 1040), line 37, from Form 1040, 1040-SR, or 1040-NR, line 14 [line 1a]. Subtract line 1a from Form 1040, 1040-SR, or 1040-NR, line 11b (if less than zero, enter as a negative amount) [line 1b].',
-=======
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+  },
+  'irc-1411-d-modified-agi-foreign-exclusion-addback': {
+    title: 'Modified adjusted gross income adds back excluded foreign income',
+    statement:
+      'Two limits in this engine run off modified adjusted gross income rather than adjusted gross income, and both define it as adjusted gross income increased by income the taxpayer excluded from gross income abroad. Section 1411(d) adds the section 911(a)(1) foreign earned income exclusion, net of the deductions section 911(d)(6) disallows, for the net investment income tax. Section 151(d)(5)(C)(iii)(II) adds any amount excluded under section 911, 931, or 933 for the senior deduction phase-out. Reading modified adjusted gross income as plain adjusted gross income understates the tax and overstates the deduction at the same time.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The two definitions are not identical: 1411(d) reaches only section 911 and nets out the deductions 911(d)(6) disallows, while 151(d)(5)(C)(iii)(II) reaches sections 911, 931, and 933 with no netting. The engine carries one excluded-foreign-income figure and applies it to both, which is the broader definition in both places. That same figure already feeds section 86 provisional income, where 86(b)(2)(A) likewise reaches 911, 931, and 933, so splitting the two would mean splitting an input the household reports as one number.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 1411(d)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1411&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this chapter, the term modified adjusted gross income means adjusted gross income increased by the excess of - (1) the amount excluded from gross income under section 911(a)(1), over (2) the amount of any deductions (taken into account in computing adjusted gross income) or exclusions disallowed under section 911(d)(6) with respect to the amounts described in paragraph (1).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 151(d)(5)(C)(iii)(II)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section151&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this clause, the term modified adjusted gross income means the adjusted gross income of the taxpayer for the taxable year increased by any amount excluded from gross income under section 911, 931, or 933.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Schedule 1-A (Form 1040) (2025), Part I, lines 1 to 3',
+      url: 'https://www.irs.gov/pub/irs-pdf/f1040s1a.pdf',
+      quotedText:
+        'Modified Adjusted Gross Income (MAGI) Amount. Enter the amount from Form 1040, 1040-SR, or 1040-NR, line 11b [line 1]. Enter any income from Puerto Rico that you excluded [line 2a]. Enter the amount from Form 2555, line 45 [line 2b]. Enter the amount from Form 2555, line 50 [line 2c]. Enter the amount from Form 4563, line 15 [line 2d]. Add lines 2a, 2b, 2c, and 2d [line 2e]. Add lines 1 and 2e [line 3].',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+  },
+
   // --- Registered 2026-08-03: account-eligibility rules and their proxies -----
 
   'irc-408-d-3-G-simple-two-year-rollover-bar': {
@@ -2069,42 +2096,11 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
       quotedText:
         'For purposes of this subsection, the term "employee" includes any participant, and in the case of an individual retirement plan, the individual for whose benefit such plan was established.',
->>>>>>> origin/main
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
-<<<<<<< HEAD
-    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
-  },
-  'irc-1411-d-modified-agi-foreign-exclusion-addback': {
-    title: 'Modified adjusted gross income adds back excluded foreign income',
-    statement:
-      'Two limits in this engine run off modified adjusted gross income rather than adjusted gross income, and both define it as adjusted gross income increased by income the taxpayer excluded from gross income abroad. Section 1411(d) adds the section 911(a)(1) foreign earned income exclusion, net of the deductions section 911(d)(6) disallows, for the net investment income tax. Section 151(d)(5)(C)(iii)(II) adds any amount excluded under section 911, 931, or 933 for the senior deduction phase-out. Reading modified adjusted gross income as plain adjusted gross income understates the tax and overstates the deduction at the same time.',
-    classification: 'settled',
-    contraryReading: null,
-    conventionRationale:
-      'The two definitions are not identical: 1411(d) reaches only section 911 and nets out the deductions 911(d)(6) disallows, while 151(d)(5)(C)(iii)(II) reaches sections 911, 931, and 933 with no netting. The engine carries one excluded-foreign-income figure and applies it to both, which is the broader definition in both places. That same figure already feeds section 86 provisional income, where 86(b)(2)(A) likewise reaches 911, 931, and 933, so splitting the two would mean splitting an input the household reports as one number.',
-    authority: [{
-      kind: 'statute',
-      citation: 'IRC 1411(d)',
-      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1411&num=0&edition=prelim',
-      quotedText:
-        'For purposes of this chapter, the term modified adjusted gross income means adjusted gross income increased by the excess of - (1) the amount excluded from gross income under section 911(a)(1), over (2) the amount of any deductions (taken into account in computing adjusted gross income) or exclusions disallowed under section 911(d)(6) with respect to the amounts described in paragraph (1).',
-    }, {
-      kind: 'statute',
-      citation: 'IRC 151(d)(5)(C)(iii)(II)',
-      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section151&num=0&edition=prelim',
-      quotedText:
-        'For purposes of this clause, the term modified adjusted gross income means the adjusted gross income of the taxpayer for the taxable year increased by any amount excluded from gross income under section 911, 931, or 933.',
-    }, {
-      kind: 'formInstruction',
-      citation: 'Schedule 1-A (Form 1040) (2025), Part I, lines 1 to 3',
-      url: 'https://www.irs.gov/pub/irs-pdf/f1040s1a.pdf',
-      quotedText:
-        'Modified Adjusted Gross Income (MAGI) Amount. Enter the amount from Form 1040, 1040-SR, or 1040-NR, line 11b [line 1]. Enter any income from Puerto Rico that you excluded [line 2a]. Enter the amount from Form 2555, line 45 [line 2b]. Enter the amount from Form 2555, line 50 [line 2c]. Enter the amount from Form 4563, line 15 [line 2d]. Add lines 2a, 2b, 2c, and 2d [line 2e]. Add lines 1 and 2e [line 3].',
-=======
     implementedBy: ['packages/engine/src/strategies/accountEligibility.ts'],
   },
 
@@ -2128,15 +2124,11 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
       quotedText:
         'If any taxpayer receives any amount from a qualified retirement plan (as defined in section 4974(c)), the taxpayer’s tax under this chapter for the taxable year in which such amount is received shall be increased by an amount equal to 10 percent of the portion of such amount which is includible in gross income.',
->>>>>>> origin/main
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
-<<<<<<< HEAD
-    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
-=======
     implementedBy: ['packages/engine/src/strategies/accountEligibility.ts'],
   },
 
@@ -2260,7 +2252,6 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/strategies/rothBasis.ts'],
->>>>>>> origin/main
   },
 } as const satisfies Record<string, TaxRuleRecord>
 
