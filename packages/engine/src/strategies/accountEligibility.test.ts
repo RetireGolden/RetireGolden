@@ -16,6 +16,7 @@ import {
   type RothConversionRequest,
 } from '../actions/index.js'
 import { createEmptyPlan, type Account, type Person, type Plan } from '../model/plan.js'
+import { describeRule } from '../rules/describeRule.js'
 import {
   addCalendarMonths,
   acceptsContributions,
@@ -36,6 +37,7 @@ import {
   type RetirementActionEligibilityRuntimeEvidence,
   type TraditionalAccount,
 } from './accountEligibility.js'
+import { inheritedForcedAmount, inheritedTenYearDeadline } from './inheritedIra.js'
 
 function ownedIra(over: Partial<TraditionalAccount> = {}): TraditionalAccount {
   return {
@@ -1332,5 +1334,128 @@ describe('retirement-action physical eligibility preflight', () => {
         reasons: [expect.objectContaining({ code: 'qcd-aggregate-unallocated' })],
       },
     ])
+  })
+})
+
+describeRule('irc-408-d-3-G-simple-two-year-rollover-bar', {
+  // A Roth conversion out of a SIMPLE IRA one day short of the two-year period.
+  // 408(d)(3)(G) denies rollover treatment, and 408A(e)(1)(B)(i) makes rollover
+  // treatment a condition of a qualified rollover contribution, so the movement
+  // is unavailable and the engine must refuse it. Mistaking this rule for the
+  // 25 percent rate substitution in 72(t)(6)(A) predicts the opposite outcome:
+  // an accepted conversion that is merely repriced.
+  readings: { statuteRolloverBarred: 'refused', rejectedRateSubstitutionOnly: 'accepted' },
+  accepted: 'statuteRolloverBarred',
+}, ({ accepted, readings }) => {
+  // Participation opened 2024-06-15, so the two-year period runs through
+  // 2026-06-14 and the bar lifts on 2026-06-15.
+  const evaluateOn = (executionDate: string) => {
+    const request = { ...conversionRequest(), executionDate } as RothConversionRequest
+    return evaluateRetirementActionEligibility(
+      request,
+      { people: [person('p1')], accounts: [ownedIra(), rothIra()] },
+      {
+        ...withAlive(request),
+        iraFacts: [{
+          sourceAccountId: asAccountId('ira'),
+          subtype: 'simple',
+          simpleParticipationStartDate: '2024-06-15',
+        }],
+      },
+    )
+  }
+
+  it('refuses the conversion outright inside the two-year period', () => {
+    const decision = evaluateOn('2026-06-14')
+    expect(decision.status).toBe(accepted)
+    expect(decision.status).not.toBe(readings.rejectedRateSubstitutionOnly)
+    expect(decision.reasons[0]?.code).toBe('conversion-simple-two-year-period-open')
+  })
+
+  it('lifts the bar on the 24-month anniversary itself', () => {
+    // A 2-year period beginning on the participation date runs through the day
+    // before the anniversary, so the anniversary is outside it.
+    expect(evaluateOn('2026-06-15').status).toBe(readings.rejectedRateSubstitutionOnly)
+  })
+
+  it('does not reach an ordinary traditional IRA of the same owner', () => {
+    const request = conversionRequest()
+    expect(
+      evaluateRetirementActionEligibility(
+        request,
+        { people: [person('p1')], accounts: [ownedIra(), rothIra()] },
+        withAlive(request, traditionalContext()),
+      ).status,
+    ).toBe(readings.rejectedRateSubstitutionOnly)
+  })
+})
+
+describeRule('irc-401-a-9-H-designated-beneficiary-ten-year-rule', {
+  // Calendar year by which an account inherited from a 2024 death must be empty.
+  // 401(a)(9)(H)(i)(I) applies (B)(ii) by substituting 10 years for 5, so the
+  // pre-SECURE reading of the same subparagraph predicts 2029.
+  readings: { secureTenYearRule: 2034, rejectedPreSecureFiveYearRule: 2029 },
+  accepted: 'secureTenYearRule',
+}, ({ accepted, readings }) => {
+  const forcedIn = (year: number): number =>
+    inheritedForcedAmount({
+      year,
+      ownerDeathYear: 2024,
+      decedentHadStartedRmds: false,
+      balance: 100_000,
+      startBalance: 100_000,
+      beneficiaryAge: 45,
+      beneficiarySex: 'average',
+    })
+
+  it('keeps an inherited account off the owner RMD schedule entirely', () => {
+    expect(followsOwnerRmds(inheritedIra())).toBe(false)
+    expect(followsOwnerRmds(ownedIra())).toBe(true)
+  })
+
+  it('sweeps the balance in the tenth year after the death and not the fifth', () => {
+    expect(inheritedTenYearDeadline(2024)).toBe(accepted)
+    expect(forcedIn(readings.rejectedPreSecureFiveYearRule)).toBe(0)
+    expect(forcedIn(accepted)).toBe(100_000)
+  })
+
+  it('forces nothing in the interim years when the decedent had not begun distributions', () => {
+    // (H)(i)(II) makes the deadline apply whether or not distributions had
+    // begun; it does not itself impose an annual amount before the deadline.
+    expect(forcedIn(2030)).toBe(0)
+  })
+})
+
+describeRule('irc-72-t-2-A-ii-death-beneficiary-exception', {
+  // Penalty rate on a need-based withdrawal from an inherited account. The
+  // exception turns on the death, so it holds at ages the age-based reading
+  // would penalize in full.
+  readings: { statuteDeathException: 0, rejectedAgeTestOnly: 0.1 },
+  accepted: 'statuteDeathException',
+}, ({ accepted, readings }) => {
+  it('exempts an inherited account at every age the age test would penalize', () => {
+    for (const ownerAgeAttained of [25, 40, 59]) {
+      expect(
+        traditionalWithdrawalPenaltyRate(inheritedIra(), { ownerAgeAttained, ownerRetirementAge: null }),
+      ).toBe(accepted)
+      // Same owner, same age, an account that was not inherited: the death is
+      // the only fact that moves the rate.
+      expect(
+        traditionalWithdrawalPenaltyRate(ownedIra(), { ownerAgeAttained, ownerRetirementAge: null }),
+      ).toBe(readings.rejectedAgeTestOnly)
+    }
+  })
+
+  it('does not borrow the Rule of 55, which an inherited employer account would fail', () => {
+    const inheritedEmployerPlan = ownedIra({
+      kind: 'employer',
+      inherited: { ownerDeathYear: 2020, decedentHadStartedRmds: true },
+    })
+    expect(
+      traditionalWithdrawalPenaltyRate(inheritedEmployerPlan, {
+        ownerAgeAttained: 30,
+        ownerRetirementAge: 40,
+      }),
+    ).toBe(accepted)
   })
 })

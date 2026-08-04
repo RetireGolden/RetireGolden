@@ -378,7 +378,7 @@ const registry = {
       citation: 'IRC 72(t)(6)(A)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
       quotedText:
-        'In the case of any amount received from a simple retirement account (within the meaning of section 408(p)) during the 2-year period beginning on the date such individual first participated in any qualified salary reduction arrangement maintained by the individual employer under section 408(p)(2), paragraph (1) shall be applied by substituting 25 percent for 10 percent.',
+        'In the case of any amount received from a simple retirement account (within the meaning of section 408(p)) during the 2-year period beginning on the date such individual first participated in any qualified salary reduction arrangement maintained by the individual’s employer under section 408(p)(2), paragraph (1) shall be applied by substituting "25 percent" for "10 percent".',
     }, {
       kind: 'irsPublication',
       citation: 'IRS SIMPLE IRA plan FAQs',
@@ -1910,6 +1910,257 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
+  },
+  // --- Registered 2026-08-03: account-eligibility rules and their proxies -----
+
+  'irc-408-d-3-G-simple-two-year-rollover-bar': {
+    title: 'SIMPLE IRA two-year bar on rollover and Roth conversion',
+    statement:
+      'A payment out of a SIMPLE IRA during the two-year period to which section 72(t)(6)(A) applies is denied rollover treatment unless it is paid into another SIMPLE IRA. A qualified rollover contribution to a Roth IRA must meet the requirements of section 408(d)(3), so inside that period a Roth conversion out of a SIMPLE IRA is barred outright rather than merely repriced, and the engine refuses the action instead of computing one.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'This is not the rule already registered as irc-72-t-6-simple-two-year-rate, and neither record covers the other. That one is the rate substitution in 72(t)(6)(A): it prices a distribution the taxpayer is nonetheless permitted to take, and every 72(t)(2) exception still zeroes it. This one is the eligibility bar in 408(d)(3)(G): it makes the movement unavailable at all. They share a period and nothing else, so a distribution can sit inside the period, carry no additional tax because an exception applies, and still be ineligible for rollover or conversion. Reading either record as coverage of the other would leave a conversion the statute forbids being merely repriced at 25 percent. The period itself is measured as 24 calendar months from the participation start date using the month-end clamp in actions/civilDate.ts, and the comparison is strict, so a conversion dated on the 24-month anniversary is permitted and one dated the day before is refused. That follows from a 2-year period beginning on the participation date, which runs through the day before the anniversary.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408(d)(3)(G)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        'In the case of any payment or distribution out of a simple retirement account (as defined in subsection (p)) to which section 72(t)(6)(A) applies, this paragraph shall not apply unless such payment or distribution is paid into another simple retirement account.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408A(e)(1)(B)(i)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/408A',
+      quotedText:
+        'The term “qualified rollover contribution” means a rollover contribution- (A) to a Roth IRA from another such account, (B) from an eligible retirement plan, but only if- (i) in the case of an individual retirement plan, such rollover contribution meets the requirements of section 408(d)(3), ...',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 72(t)(6)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText:
+        'In the case of any amount received from a simple retirement account (within the meaning of section 408(p)) during the 2-year period beginning on the date such individual first participated in any qualified salary reduction arrangement maintained by the individual’s employer under section 408(p)(2), paragraph (1) shall be applied by substituting "25 percent" for "10 percent".',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/strategies/accountEligibility.ts'],
+  },
+
+  'irc-401-a-9-H-designated-beneficiary-ten-year-rule': {
+    title: 'SECURE Act ten-year rule for a designated beneficiary',
+    statement:
+      'Where an employee dies before the entire interest in a defined contribution plan has been distributed, a designated beneficiary who is not an eligible designated beneficiary must have the whole interest distributed within ten years of the death, and that deadline applies whether or not distributions had already begun. An inherited account therefore leaves the owner Uniform Lifetime schedule entirely rather than continuing it under a different divisor: it runs a separate forced-distribution clock from the death year, so the engine excludes it from the owner RMD pass and drives it from the ten-year deadline instead.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'Two limits on how far this record reaches, stated so it is not read as covering more than it does. First, the engine treats every inherited account as held by a beneficiary who is not an eligible designated beneficiary, because the plan model carries no beneficiary category. A surviving spouse, a minor child of the employee, a disabled or chronically ill beneficiary, or a beneficiary not more than ten years younger than the decedent is entitled under 401(a)(9)(H)(ii) to the life-expectancy payout in (B)(iii), and will be shown a faster forced drawdown than the law requires. Second, the annual amount required in years one through nine when the decedent had reached the required beginning date is computed from the SSA period table in longevity/ssaPeriod2022.ts rather than the IRS Single Life Table. That divisor proxy is documented at the head of strategies/inheritedIra.ts and is a separate question from the ten-year deadline registered here.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 401(a)(9)(H)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim',
+      quotedText:
+        'In the case of a defined contribution plan, if an employee dies before the distribution of the employee’s entire interest- (i) In general.-Except in the case of a beneficiary who is not a designated beneficiary, subparagraph (B)(ii)- (I) shall be applied by substituting "10 years" for "5 years", and (II) shall apply whether or not distributions of the employee’s interests have begun in accordance with subparagraph (A).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 401(a)(9)(B)(ii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim',
+      quotedText:
+        'A trust shall not constitute a qualified trust under this section unless the plan provides that, if an employee dies before the distribution of the employee’s interest has begun in accordance with subparagraph (A)(ii), the entire interest of the employee will be distributed within 5 years after the death of such employee.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408(a)(6)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        'Under regulations prescribed by the Secretary, rules similar to the rules of section 401(a)(9) and the incidental death benefit requirements of section 401(a) shall apply to the distribution of the entire interest of an individual for whose benefit the trust is maintained.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/strategies/accountEligibility.ts',
+      'packages/engine/src/strategies/inheritedIra.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'irc-72-t-2-A-ii-death-beneficiary-exception': {
+    title: 'Death exception to the early-distribution tax',
+    statement:
+      'The 10 percent additional tax does not apply to a distribution made to a beneficiary, or to the estate of the employee, on or after the death of the employee. The exception turns on the death and on nothing else, so neither the age of the decedent nor the age of the beneficiary enters it, and a distribution from an inherited account is penalty-free at any age.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The engine reads this exception off the inherited marker on the account rather than off the identity of the person receiving the distribution. Those are the same test only for so long as an account a surviving spouse has elected to treat as their own stops being marked inherited. That election is registered separately as irc-408-d-3-C-ii-surviving-spouse-not-inherited and treas-reg-1-408-8-c-3-spouse-treated-as-owner; once it is made the spouse takes distributions in their own right and 72(t) applies to them normally, so a plan that left the marker in place would waive a tax that is actually due.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 72(t)(2)(A)(ii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText:
+        'Except as provided in paragraphs (3) and (4), paragraph (1) shall not apply to any of the following distributions: (A) In general Distributions which are- ... (ii) made to a beneficiary (or to the estate of the employee) on or after the death of the employee,',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 72(t)(5)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this subsection, the term "employee" includes any participant, and in the case of an individual retirement plan, the individual for whose benefit such plan was established.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/strategies/accountEligibility.ts'],
+  },
+
+  'irc-72-t-2-A-i-age-59-half-annual-proxy': {
+    title: 'Age 59.5 modelled as an annual attained-age-60 threshold',
+    statement:
+      'Section 72(t)(2)(A)(i) waives the 10 percent additional tax for a distribution made on or after the date the individual attains age 59.5, which is a date inside a calendar year. The need-based withdrawal path in strategies/accountEligibility.ts waives it instead from the first calendar year in which the owner attains age 60, so it is not modelling the statutory boundary and must not be presented as doing so.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale:
+      'The direction of the error is knowable but it is not one-sided, and a reader who assumes it is will mis-state the exposure. Attained age here is the calendar-year age, the projection year minus the birth year, so the proxy waives from January 1 of the year the owner turns 60 while the statute waives from the date six calendar months after the 59th birthday. For a birthday in the first half of the year that statutory date falls in the preceding calendar year, so the proxy waives late and over-penalizes, by up to about six months at a January 1 birth. For a birthday in the second half it falls inside the same calendar year the proxy is already waiving, so the proxy waives early and under-penalizes, again by up to about six months at a December 31 birth. Only a July 1 birthday makes the two agree exactly. It is out of scope rather than settled because the annual projection carries an attained age and no distribution date, so there is no boundary to compare anything against. Two reachable paths therefore disagree about the same taxpayer: the exact-cent path in actions/ownedNonRothIraPenaltyPrerequisite.ts and actions/traditionalEmployerPlanPenaltyPrerequisite.ts computes the boundary as addCalendarMonths(dob, 714) with the month-end clamp and accepts equality, which is the reading registered as irc-72-t-2-A-i-age-59-half. Only that path is filing-relevant; a penalty figure produced from the annual proxy must not be reported as one.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 72(t)(2)(A)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText:
+        'Except as provided in paragraphs (3) and (4), paragraph (1) shall not apply to any of the following distributions: (A) In general Distributions which are- (i) made on or after the date on which the employee attains age 59½,',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 72(t)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText:
+        'If any taxpayer receives any amount from a qualified retirement plan (as defined in section 4974(c)), the taxpayer’s tax under this chapter for the taxable year in which such amount is received shall be increased by an amount equal to 10 percent of the portion of such amount which is includible in gross income.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/strategies/accountEligibility.ts'],
+  },
+
+  'irc-223-f-4-C-hsa-age-65-annual-proxy': {
+    title: 'HSA age-65 waiver modelled as a whole attained-age year',
+    statement:
+      'Section 223(f)(4)(C) removes the 20 percent additional tax only for a payment or distribution after the date the account beneficiary attains age 65. The annual HSA path in strategies/accountEligibility.ts removes it for every distribution in the calendar year of attainment, including distributions taken months before the 65th birthday.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale:
+      'This proxy errs in one direction only, which is the reason it is worth setting beside the age-59.5 proxy rather than dismissing the two together as a single rounding habit. Attained age here is the calendar-year age, the projection year minus the birth year, so the waiver switches on at January 1 of the year the account beneficiary turns 65 while the statute switches it on the day after the 65th birthday. The proxy is therefore never late and always early, so it under-penalizes: by one day at a January 1 birth, and by nearly a full year at a December 31 birth, where a non-qualified distribution taken in January bears nothing under the proxy and 20 percent of the includible amount under the statute. The age-59.5 proxy registered as irc-72-t-2-A-i-age-59-half-annual-proxy does not behave this way. The half-year offset there puts the statutory boundary on either side of the calendar boundary depending on the birth month, so that one errs both ways and is bounded by about six months each way, and assuming the two proxies share a sign gets the HSA exposure wrong. The exact-date reading is registered as irc-223-f-4-hsa-age-65-boundary and implemented in actions/annualHsaPenaltyEvaluation.ts, so here too two reachable paths disagree about the same account beneficiary and only the exact-date path is filing-relevant.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 223(f)(4)(C)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim',
+      quotedText:
+        'Subparagraph (A) shall not apply to any payment or distribution after the date on which the account beneficiary attains the age specified in section 1811 of the Social Security Act.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 223(f)(4)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim',
+      quotedText:
+        'The tax imposed by this chapter on the account beneficiary for any taxable year in which there is a payment or distribution from a health savings account of such beneficiary which is includible in gross income under paragraph (2) shall be increased by 20 percent of the amount which is so includible.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/strategies/accountEligibility.ts'],
+  },
+
+  'irc-72-t-2-A-v-rule-of-55-separation-proxy': {
+    title: 'Rule of 55 modelled from the plan retirement age',
+    statement:
+      'Section 72(t)(2)(A)(v) waives the 10 percent tax on an employer-plan distribution made to an employee after separation from service after attainment of age 55, and reaches only the plan of the employer separated from. The annual path in strategies/accountEligibility.ts has no separation event and no employer identity: it waives the tax whenever the account is an employer plan, the plan retirement age is at least 55, and the owner attained age has reached that retirement age.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale:
+      'Unlike the two age proxies, this one errs in both directions and neither direction is bounded by a fixed number of months. It under-penalizes where the employer plan is one the owner left well before age 55, because the statute reaches only the plan maintained by the employer separated from and the code tests no employer identity at all: a 401(k) left behind at 40 is waived at the modelled retirement age like any other. It over-penalizes where the owner separates during the calendar year of attaining 55 but before the birthday, because the code compares a retirement age to 55 as a number, where the IRS calendar-year gloss recorded under irc-72-t-2-A-v-rule-of-55 asks only whether the separation fell in that year. It is out of scope rather than settled because the plan model carries a single household retirement age and no employment history, so no separation date and no employer for the plan exist to test. The engine does get the one structural limit right: 72(t)(3)(A) denies the exception to individual retirement plans, and the code waives only for an account of employer kind. The exact-date reading lives in actions/traditionalEmployerPlanPenaltyPrerequisite.ts.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 72(t)(2)(A)(v)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText: 'made to an employee after separation from service after attainment of age 55,',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 72(t)(3)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText:
+        'Subparagraphs (A)(v) and (C) of paragraph (2) shall not apply to distributions from an individual retirement plan.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/strategies/accountEligibility.ts'],
+  },
+
+  'irc-408A-d-2-roth-qualified-distribution': {
+    title: 'Roth qualified distribution and the five-taxable-year period',
+    statement:
+      'A Roth distribution escapes gross income only if it is qualified, and that takes two things at once: one of the events in 408A(d)(2)(A), which are attaining age 59.5, death, disability, and a qualified special purpose distribution, and a distribution made after the 5-taxable year period beginning with the first taxable year for which the individual made any Roth IRA contribution. The engine tests one thing, whether attained age has reached 60, so it models neither the event date nor the five-year period.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale:
+      'Two independent errors sit under the single age test, and this record states both because neither covers the other. The five-taxable-year period is not modelled at all, and its absence under-taxes: a 62-year-old whose first Roth IRA was opened two years ago is shown tax-free earnings that the statute makes ordinary income and exposes to the 72(t) tax, which is exactly the case a conversion ladder started late in life produces. The attained-age-60 test is a second and separate error: it is the same annual proxy registered for the traditional path as irc-72-t-2-A-i-age-59-half-annual-proxy, appearing here as ROTH_QUALIFIED_AGE, and because attained age is the calendar-year age it runs both ways by up to about six months depending on the birth month rather than in a single direction. The five-year period cannot be recovered from account state the projection already holds, because 408A(d)(2)(B) runs it per individual from the first contribution to any Roth IRA rather than per account; closing this needs a household-level first-Roth-year fact, not a change to the withdrawal split. Until then nothing from this path is filing-grade on the taxability of Roth earnings.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408A(d)(2)(A)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/408A',
+      quotedText:
+        'The term “qualified distribution” means any payment or distribution- (i) made on or after the date on which the individual attains age 59½, (ii) made to a beneficiary (or to the estate of the individual) on or after the death of the individual, (iii) attributable to the individual’s being disabled (within the meaning of section 72(m)(7)), or (iv) which is a qualified special purpose distribution.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408A(d)(2)(B)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/408A',
+      quotedText:
+        'A payment or distribution from a Roth IRA shall not be treated as a qualified distribution under subparagraph (A) if such payment or distribution is made within the 5-taxable year period beginning with the first taxable year for which the individual made a contribution to a Roth IRA (or such individual’s spouse, or employer in the case of a simple retirement account (as defined in section 408(p)) or simplified employee pension (as defined in section 408(k)), made a contribution to a Roth IRA) established for such individual.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408A(d)(1)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/408A',
+      quotedText: 'Any qualified distribution from a Roth IRA shall not be includible in gross income.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/strategies/rothBasis.ts'],
+  },
+
+  'irc-408A-d-3-F-roth-conversion-recapture': {
+    title: 'Five-year recapture on a conversion layer tapped early',
+    statement:
+      'Where a portion of a Roth distribution is properly allocable to a conversion and the distribution falls within the 5-taxable year period beginning with the taxable year of that conversion, section 72(t) applies as if that portion were includible in gross income, even though the conversion itself was not a taxable distribution and the portion is not taxed again. The recapture reaches only so much of the conversion as was includible in income at the time, so converted nondeductible basis recaptures nothing.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'Each conversion runs its own clock, because 408A(d)(3)(F)(i)(II) begins the period with the taxable year of that contribution and not with the year the Roth was opened. That is why the layers are held separately and drawn oldest first, and it is why this record is distinct from the account-level five-year period in irc-408A-d-2-roth-qualified-distribution: one decides whether earnings are taxable, this one decides whether already-taxed conversion principal carries the additional tax. Two things about the surrounding code so this is not read as broader than it is. The period is counted in calendar years, which is exact for the calendar-year taxpayers the engine models and would not be for a fiscal-year taxpayer it does not. And the recapture lifts through the 72(t) exceptions themselves, so the 59.5 boundary applies to it; the engine uses its attained-age-60 proxy for that boundary, recorded under irc-408A-d-2-roth-qualified-distribution.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408A(d)(3)(F)(i)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/408A',
+      quotedText:
+        'If- (I) any portion of a distribution from a Roth IRA is properly allocable to a qualified rollover contribution described in this paragraph; and (II) such distribution is made within the 5-taxable year period beginning with the taxable year in which such contribution was made, then section 72(t) shall be applied as if such portion were includible in gross income.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408A(d)(3)(F)(ii)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/408A',
+      quotedText:
+        'Clause (i) shall apply only to the extent of the amount of the qualified rollover contribution includible in gross income under subparagraph (A)(i).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408A(d)(3)(C)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/408A',
+      quotedText:
+        'The conversion of an individual retirement plan (other than a Roth IRA) to a Roth IRA shall be treated for purposes of this paragraph as a distribution to which this paragraph applies.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/strategies/rothBasis.ts'],
   },
 } as const satisfies Record<string, TaxRuleRecord>
 
