@@ -377,7 +377,7 @@ const registry = {
       citation: 'IRC 170(d)(1)(A)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
       quotedText:
-        'In the case of an individual, if the amount of charitable contributions described in subsection (b)(1)(A) payment of which is made within a taxable year ... exceeds 50 percent of the taxpayer’s contribution base for such year, such excess shall be treated as a charitable contribution described in subsection (b)(1)(A) paid in each of the 5 succeeding taxable years in order of time.',
+        'In the case of an individual, if the amount of charitable contributions described in subsection (b)(1)(A) payment of which is made within a taxable year ... exceeds 50 percent of the taxpayer\'s contribution base for such year, such excess shall be treated as a charitable contribution described in subsection (b)(1)(A) paid in each of the 5 succeeding taxable years in order of time ...',
     }, {
       kind: 'regulation',
       citation: 'Treas. Reg. 1.170A-10(a)(2)',
@@ -394,7 +394,7 @@ const registry = {
     volatility: 'awaitingGuidance',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-02',
+    verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/actions/annualQcdStandardSection170pLedger.ts'],
   },
 
@@ -722,12 +722,12 @@ const registry = {
       citation: 'IRS Publication 969',
       url: 'https://www.irs.gov/publications/p969',
       quotedText:
-        'You will pay an additional 20% tax on distributions from your HSA that are not used for qualified medical expenses.',
+        'There is an additional 20% tax on the part of your distributions not used for qualified medical expenses. Figure the tax on Form 8889 and file it with your Form 1040, 1040-SR, or 1040-NR.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/actions/annualHsaPenaltyEvaluation.ts'],
   },
   'irc-408-d-2-annual-pro-rata-basis': {
@@ -791,7 +791,7 @@ const registry = {
       citation: 'Treas. Reg. 1.408-8(g)(1)',
       url: 'https://www.law.cornell.edu/cfr/text/26/1.408-8',
       quotedText:
-        'all amounts distributed from an IRA are taken into account in determining whether section 401(a)(9) is satisfied, regardless of whether the amount is includible in income. Thus, for example, a qualified charitable distribution made pursuant to section 408(d)(8) is taken into account.',
+        'all amounts distributed from an IRA are taken into account in determining whether section 401(a)(9) is satisfied, regardless of whether the amount is includible in income. Thus, for example, a qualified charitable distribution made pursuant to section 408(d)(8) is taken into account in determining whether section 401(a)(9) is satisfied.',
     }, {
       kind: 'irsNotice',
       citation: 'IRS Notice 2007-7, Q&A-42',
@@ -802,7 +802,7 @@ const registry = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/actions/annualQcdPhysicalExecution.ts'],
   },
 
@@ -996,12 +996,12 @@ const registry = {
       citation: 'Treas. Reg. 1.408-8(c)(2)',
       url: 'https://www.law.cornell.edu/cfr/text/26/1.408-8',
       quotedText:
-        'Any amount in the IRA that would be required to be distributed to the surviving spouse as beneficiary under section 401(a)(9)(B) for a calendar year following the calendar year of the IRA owner’s death is not distributed within the time period required.',
+        'Alternatively, a surviving spouse eligible to make the election is deemed to have made the election if, at any time, either of the following occurs\u2014 (i) Any amount in the IRA that would be required to be distributed to the surviving spouse as beneficiary under section 401(a)(9)(B) for a calendar year following the calendar year of the IRA owner\'s death is not distributed within the time period required under section 401(a)(9)(B); or (ii) A contribution (other than a rollover of a distribution from an eligible retirement plan of the decedent) is made to the IRA.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/actions/beneficiarySpousalElectionStatus.ts'],
   },
 
@@ -1045,19 +1045,19 @@ const registry = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The engine interpolates linearly between the published breakpoints. The revenue procedure gives an initial and a final percentage per band rather than a formula, and linear interpolation is the construction that reproduces both endpoints of every band.',
+      'The engine interpolates linearly between the published breakpoints. The revenue procedure gives an initial and a final percentage per band rather than a formula, and linear interpolation is the construction that reproduces both endpoints of every band. Section 3.01 presents those percentages as a table, so the quotation carries only the sentence introducing it; the bands and rates are stated above in this record rather than rewritten into prose and attributed to the revenue procedure.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'irsNotice',
       citation: 'Rev. Proc. 2025-25, section 3.01',
       url: 'https://www.irs.gov/pub/irs-drop/rp-25-25.pdf',
       quotedText:
-        'Applicable Percentage Table for 2026. For taxable years beginning in calendar year 2026, the Applicable Percentage Table for purposes of section 36B(b)(3)(A)(i) and section 1.36B-3(g) is: Less than 133% -- 2.10% initial, 2.10% final; At least 133% but less than 150% -- 3.14% initial, 4.19% final; At least 150% but less than 200% -- 4.19% initial, 6.60% final; At least 200% but less than 250% -- 6.60% initial, 8.44% final; At least 250% but less than 300% -- 8.44% initial, 9.96% final; At least 300% but not more than 400% -- 9.96% initial, 9.96% final.',
+        'Applicable Percentage Table for 2026. For taxable years beginning in calendar year 2026, the Applicable Percentage Table for purposes of \u00a7 36B(b)(3)(A)(i) and \u00a7 1.36B-3(g) is:',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: 2026,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/tax/aca.ts',
       'packages/engine/src/params/data/year2026.ts',
@@ -1079,12 +1079,12 @@ const registry = {
       citation: 'Treas. Reg. 1.401(a)(9)-5',
       url: 'https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-5',
       quotedText:
-        'If the employee’s surviving spouse who is more than 10 years younger than the employee is the employee’s sole beneficiary, then the applicable denominator is the joint and last survivor life expectancy for the employee and spouse determined using the Joint and Last Survivor Table in section 1.401(a)(9)-9(d).',
+        'If the employee\'s surviving spouse who is more than 10 years younger than the employee is the employee\'s sole beneficiary, then the applicable denominator is the joint and last survivor life expectancy for the employee and spouse determined using the Joint and Last Survivor Table in \u00a7 1.401(a)(9)-9(d) for the employee\'s and spouse\'s ages as of their birthdays in the relevant distribution calendar year (rather than the applicable denominator determined under paragraph (c)(1) of this section).',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/rmd/rmd.ts',
       'packages/engine/src/rmd/jointLifeTable.ts',
@@ -1246,7 +1246,7 @@ const registry = {
       citation: 'IRC 55(a)',
       url: 'https://www.law.cornell.edu/uscode/text/26/55',
       quotedText:
-        'There is hereby imposed (in addition to any other tax imposed by this subtitle) a tax equal to the excess (if any) of - (1) the tentative minimum tax for the taxable year, over (2) the regular tax for the taxable year.',
+        'There is hereby imposed (in addition to any other tax imposed by this subtitle) a tax equal to the excess (if any) of\u2014 (1) the tentative minimum tax for the taxable year, over (2) the regular tax for the taxable year plus, in the case of an applicable corporation, the tax imposed by section 59A.',
     }, {
       kind: 'statute',
       citation: 'IRC 55(b)(1)',
@@ -1257,7 +1257,7 @@ const registry = {
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/params/data/year2026.ts',
@@ -1342,7 +1342,7 @@ const registry = {
       citation: 'IRC 72(t)(2)(A)(iii)',
       url: 'https://www.law.cornell.edu/uscode/text/26/72',
       quotedText:
-        'Paragraph (1) shall not apply to any of the following distributions: ... attributable to the employee\u2019s being disabled within the meaning of subsection (m)(7).',
+        'Except as provided in paragraphs (3) and (4), paragraph (1) shall not apply to any of the following distributions: ... (iii) attributable to the employee\u2019s being disabled within the meaning of subsection (m)(7)',
     }, {
       kind: 'statute',
       citation: 'IRC 72(m)(7)',
@@ -1353,7 +1353,7 @@ const registry = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts'],
   },
 
@@ -1423,7 +1423,7 @@ const registry = {
       citation: 'IRC 63(f)(1)',
       url: 'https://www.law.cornell.edu/uscode/text/26/63',
       quotedText:
-        'The taxpayer shall be entitled to an additional amount of 600 dollars - (A) for himself if he has attained age 65 before the close of his taxable year, and (B) for the spouse of the taxpayer if the spouse has attained age 65 before the close of such taxable year and an additional exemption would be allowable to the taxpayer for such spouse.',
+        'The taxpayer shall be entitled to an additional amount of $600\u2014 (A) for himself if he has attained age 65 before the close of his taxable year, and (B) for the spouse of the taxpayer if the spouse has attained age 65 before the close of the taxable year and an additional exemption is allowable to the taxpayer for such spouse under section 151(b).',
     }, {
       kind: 'statute',
       citation: 'IRC 63(f)(3)',
@@ -1434,7 +1434,7 @@ const registry = {
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/params/data/year2026.ts',
@@ -1477,15 +1477,15 @@ const registry = {
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
-      citation: '42 U.S.C. 415(a)(1)(A)',
+      citation: '42 U.S.C. 415(a)(1)(A), (a)(1)(A)(i)-(iii)',
       url: 'https://www.law.cornell.edu/uscode/text/42/415',
       quotedText:
-        '90 percent of the individual\u2019s average indexed monthly earnings to the extent that such earnings do not exceed the amount established for purposes of this clause by subparagraph (B), plus 32 percent of the individual\u2019s average indexed monthly earnings to the extent that such earnings exceed the amount established for purposes of the preceding clause and do not exceed the amount established for purposes of this clause by subparagraph (B), plus 15 percent of the individual\u2019s average indexed monthly earnings to the extent that such earnings exceed the amount established for purposes of the preceding clause.',
+        'The primary insurance amount of an individual shall (except as otherwise provided in this section) be equal to the sum of\u2014 (i) 90 percent of the individual\u2019s average indexed monthly earnings (determined under subsection (b)) to the extent that such earnings do not exceed the amount established for purposes of this clause by subparagraph (B), (ii) 32 percent of the individual\u2019s average indexed monthly earnings to the extent that such earnings exceed the amount established for purposes of clause (i) but do not exceed the amount established for purposes of this clause by subparagraph (B), and (iii) 15 percent of the individual\u2019s average indexed monthly earnings to the extent that such earnings exceed the amount established for purposes of clause (ii), rounded, if not a multiple of $0.10, to the next lower multiple of $0.10, and thereafter increased as provided in subsection (i).',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/socialSecurity/piaFromEarnings.ts',
       'packages/engine/src/socialSecurity/ssaWageData.ts',
@@ -1528,15 +1528,15 @@ const registry = {
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
-      citation: '20 CFR 404.313',
+      citation: '20 CFR 404.313(b)(1), (b)(2)',
       url: 'https://www.law.cornell.edu/cfr/text/20/404.313',
       quotedText:
-        'You may earn delayed retirement credits beginning with the month you attain full retirement age and ending with the month you attain age 70. For individuals born after January 1, 1943, the credit is 2/3 of 1 percent for each month of delayed retirement.',
+        'You may earn a credit for each month during the period beginning with the month you attain full retirement age (as defined in \u00a7 404.409) and ending with the month you attain age 70 (72 before 1984). ... Credit percentages. The applicable credit amount for each month of delayed retirement can be found in the table below. If your date of birth is: The credit for each month you delay retirement is: ... After 1/1/1943 2/3 of 1%',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/socialSecurity/benefitFactor.ts'],
   },
 
@@ -1582,15 +1582,15 @@ const registry = {
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
-      citation: '42 U.S.C. 403(a)(2)',
+      citation: '42 U.S.C. 403(a)(1)',
       url: 'https://www.law.cornell.edu/uscode/text/42/403',
       quotedText:
-        '150 percent of such individual\u2019s primary insurance amount to the extent that it does not exceed the amount established with respect to this subparagraph, plus 272 percent of such individual\u2019s primary insurance amount to the extent that it exceeds the amount established with respect to the preceding subparagraph but does not exceed the amount established with respect to this subparagraph, plus 134 percent of such individual\u2019s primary insurance amount to the extent that it exceeds the amount established with respect to the preceding subparagraph but does not exceed the amount established with respect to this subparagraph, plus 175 percent of such individual\u2019s primary insurance amount to the extent that it exceeds the amount established with respect to the preceding subparagraph. Any such amount that is not a multiple of 0.10 dollars shall be decreased to the next lower multiple of 0.10 dollars.',
+        'the total monthly benefits to which beneficiaries may be entitled under section 402 or 423 of this title for a month on the basis of the wages and self-employment income of such individual shall, except as provided by paragraphs (3) and (6) (but prior to any increases resulting from the application of paragraph (2)(A)(ii)(III) of section 415(i) of this title), be reduced as necessary so as not to exceed\u2014 (A) 150 percent of such individual\u2019s primary insurance amount to the extent that it does not exceed the amount established with respect to this subparagraph by paragraph (2), (B) 272 percent of such individual\u2019s primary insurance amount to the extent that it exceeds the amount established with respect to subparagraph (A) but does not exceed the amount established with respect to this subparagraph by paragraph (2), (C) 134 percent of such individual\u2019s primary insurance amount to the extent that it exceeds the amount established with respect to subparagraph (B) but does not exceed the amount established with respect to this subparagraph by paragraph (2), and (D) 175 percent of such individual\u2019s primary insurance amount to the extent that it exceeds the amount established with respect to subparagraph (C). Any such amount that is not a multiple of $0.10 shall be decreased to the next lower multiple of $0.10.',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/socialSecurity/familyMaximum.ts',
       'packages/engine/src/socialSecurity/ssaWageData.ts',
@@ -1612,18 +1612,18 @@ const registry = {
       citation: '42 U.S.C. 403(f)(3)',
       url: 'https://www.law.cornell.edu/uscode/text/42/403',
       quotedText:
-        'the deductions shall be equal to 33 1/3 percent of his earnings for such year in excess of the product in the case of an individual who has attained retirement age during such taxable year, and 50 percent of his earnings for such year in excess of such product in the case of any other individual.',
+        'For purposes of paragraph (1) and subsection (h), an individual\u2019s excess earnings for a taxable year shall be 33\u2153 percent of his earnings for such year in excess of the product of the applicable exempt amount as determined under paragraph (8) in the case of an individual who has attained (or, but for the individual\u2019s death, would have attained) retirement age (as defined in section 416(l) of this title) before the close of such taxable year, or 50 percent of his earnings for such year in excess of such product in the case of any other individual, multiplied by the number of months in such year ...',
     }, {
       kind: 'statute',
       citation: '42 U.S.C. 403(b)(1)',
       url: 'https://www.law.cornell.edu/uscode/text/42/403',
       quotedText:
-        'Deductions, in such amounts and at such time or times as the Commissioner of Social Security shall determine, shall be made from any payment or payments under this subchapter to which an individual is entitled, and from any payment or payments to which any other persons are entitled on the basis of such individual’s wages and self-employment income, until the total of such deductions equals such individual’s benefit or benefits under section 402 of this title for any month.',
+        'Deductions, in such amounts and at such time or times as the Commissioner of Social Security shall determine, shall be made from any payment or payments under this subchapter to which an individual is entitled, and from any payment or payments to which any other persons are entitled on the basis of such individual\u2019s wages and self-employment income, until the total of such deductions equals\u2014 (A) such individual\u2019s benefit or benefits under section 402 of this title for any month, and (B) if such individual was entitled to old-age insurance benefits under section 402(a) of this title for such month, the benefit or benefits of all other persons for such month under section 402 of this title based on such individual\u2019s wages and self-employment income, if for such month he is charged with excess earnings, under the provisions of subsection (f) of this section, equal to the total of benefits referred to in clauses (A) and (B).',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/params/data/year2026.ts',
@@ -1675,7 +1675,7 @@ const registry = {
       citation: '42 U.S.C. 402(e)(2)(C)',
       url: 'https://www.law.cornell.edu/uscode/text/42/402',
       quotedText:
-        'If such deceased individual was (or upon application would have been) entitled to an old-age insurance benefit which was increased (or subject to being increased) on account of delayed retirement under the provisions of subsection (w), then, for purposes of this subsection, such individual\u2019s primary insurance amount, if less than the old-age insurance benefit (increased, where applicable, under paragraph (5) or (6) of section 415(f) of this title and under section 415(i) of this title as if such individual were still alive in the case of an individual who has died) which he was receiving (or would upon application have received) for the month prior to the month in which he died, shall be deemed to be equal to such old-age insurance benefit.',
+        'If such deceased individual was (or upon application would have been) entitled to an old-age insurance benefit which was increased (or subject to being increased) on account of delayed retirement under the provisions of subsection (w), then, for purposes of this subsection, such individual\u2019s primary insurance amount, if less than the old-age insurance benefit (increased, where applicable, under paragraph (5) or (6) of section 415(f) of this title and under section 415(i) of this title as if such individual were still alive in the case of an individual who has died) which he was receiving (or would upon application have received) for the month prior to the month in which he died, shall be deemed to be equal to such old-age insurance benefit, and (notwithstanding the provisions of paragraph (3) of such subsection (w)) the number of increment months shall include any month in the months of the calendar year in which he died, prior to the month in which he died, which satisfy the conditions in paragraph (2) of such subsection (w).',
     }, {
       kind: 'statute',
       citation: '42 U.S.C. 402(e)(2)(D)',
@@ -1686,7 +1686,7 @@ const registry = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/socialSecurity/survivorBenefit.ts'],
   },
 
@@ -1702,10 +1702,10 @@ const registry = {
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
-      citation: '42 U.S.C. 1395r(i)(3)',
+      citation: '42 U.S.C. 1395r(i)(3)(A)',
       url: 'https://www.law.cornell.edu/uscode/text/42/1395r',
       quotedText:
-        'the monthly adjustment amount specified in this paragraph for an individual for a month in a year is equal to the product of the following: (i) the applicable percentage minus 25 percentage points.',
+        'the monthly adjustment amount specified in this paragraph for an individual for a month in a year is equal to the product of the following: (i) Sliding scale percentage Subject to paragraph (6), the applicable percentage specified in the applicable table in subparagraph (C) for the individual minus 25 percentage points.',
     }, {
       kind: 'statute',
       citation: '42 U.S.C. 1395r(i)(4)',
@@ -1716,7 +1716,7 @@ const registry = {
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/tax/medicare.ts',
       'packages/engine/src/params/data/year2026.ts',
@@ -1762,21 +1762,21 @@ const registry = {
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
-      citation: 'IRC 223(b)(3)',
+      citation: 'IRC 223(b)(3)(A), (b)(3)(B)',
       url: 'https://www.law.cornell.edu/uscode/text/26/223',
       quotedText:
-        'In the case of an individual who has attained age 55 before the close of the taxable year, the applicable limitation under subparagraphs (A) and (B) of paragraph (2) shall be increased by 1,000 dollars for taxable years beginning in 2009 and thereafter.',
+        'In the case of an individual who has attained age 55 before the close of the taxable year, the applicable limitation under subparagraphs (A) and (B) of paragraph (2) shall be increased by the additional contribution amount. ... the additional contribution amount is the amount determined in accordance with the following table: ... 2009 and thereafter $1,000.',
     }, {
       kind: 'statute',
       citation: 'IRC 223(g)(1)',
       url: 'https://www.law.cornell.edu/uscode/text/26/223',
       quotedText:
-        'Each dollar amount in subsections (b)(2), (c)(2)(A), and in the case of taxable years beginning after 2026, (c)(1)(E)(ii)(II) shall be increased by an amount equal to such dollar amount multiplied by the cost-of-living adjustment determined under section 1(f)(3).',
+        'Each dollar amount in subsections (b)(2), (c)(2)(A), and in the case of taxable years beginning after 2026, (c)(1)(E)(ii)(II) shall be increased by an amount equal to\u2014 (A) such dollar amount, multiplied by (B) the cost-of-living adjustment determined under section 1(f)(3) for the calendar year in which such taxable year begins ...',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/params/data/year2026.ts',
@@ -1804,7 +1804,7 @@ const registry = {
       citation: 'IRC 414(v)(2)(E)(i)',
       url: 'https://www.law.cornell.edu/uscode/text/26/414',
       quotedText:
-        'For purposes of subparagraph (B), the adjusted dollar amount is - (i) in the case of clause (i) of subparagraph (B), the greater of - (I) $10,000, or (II) an amount equal to 150 percent of the dollar amount which would be in effect under such clause for 2024 for eligible participants not described in the parenthetical in such clause.',
+        'For purposes of subparagraph (B), the adjusted dollar amount is\u2014 (i) in the case of clause (i) of subparagraph (B), the greater of\u2014 (I) $10,000, or (II) an amount equal to 150 percent of the dollar amount which would be in effect under such clause for 2024 for eligible participants not described in the parenthetical in such clause ...',
     }, {
       kind: 'statute',
       citation: 'IRC 414(v)(2)(C)(i)',
@@ -1815,7 +1815,7 @@ const registry = {
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/params/data/year2026.ts',
@@ -1837,18 +1837,18 @@ const registry = {
       citation: 'IRC 415(c)(1)',
       url: 'https://www.law.cornell.edu/uscode/text/26/415',
       quotedText:
-        'Contributions and other additions with respect to a participant exceed the limitation of this subsection if, when expressed as an annual addition to the participant\u2019s account, such annual addition is greater than the lesser of - (A) 40,000 dollars, or (B) 100 percent of the participant\u2019s compensation.',
+        'Contributions and other additions with respect to a participant exceed the limitation of this subsection if, when expressed as an annual addition (within the meaning of paragraph (2)) to the participant\u2019s account, such annual addition is greater than the lesser of\u2014 (A) $40,000, or (B) 100 percent of the participant\u2019s compensation.',
     }, {
       kind: 'statute',
       citation: 'IRC 415(c)(2)',
       url: 'https://www.law.cornell.edu/uscode/text/26/415',
       quotedText:
-        'the term annual addition means the sum for any year of - (A) employer contributions, (B) the employee contributions, and (C) forfeitures.',
+        'For purposes of paragraph (1), the term \u201cannual addition\u201d means the sum of any year of\u2014 (A) employer contributions, (B) the employee contributions, and (C) forfeitures.',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/params/data/year2026.ts',
@@ -1963,15 +1963,15 @@ const registry = {
         'the aggregate amount of taxes taken into account under paragraphs (1), (2), and (3) of subsection (a) and paragraph (5) of this subsection for any taxable year shall not exceed the applicable limitation amount (half the applicable limitation amount in the case of a married individual filing a separate return).',
     }, {
       kind: 'statute',
-      citation: 'IRC 164(b)(7)',
+      citation: 'IRC 164(b)(7)(A)',
       url: 'https://www.law.cornell.edu/uscode/text/26/164',
       quotedText:
-        'the applicable limitation amount is 40,000 dollars for taxable years beginning in 2025, 40,400 dollars for taxable years beginning in 2026, 101 percent of the dollar amount in effect under this subparagraph for taxable years beginning in the preceding calendar year for taxable years beginning after 2026 and before 2030, and 10,000 dollars for taxable years beginning after 2029.',
+        'For purposes of paragraph (6), the term \u201capplicable limitation amount\u201d means\u2014 (i) in the case of any taxable year beginning in calendar year 2025, $40,000, (ii) in the case of any taxable year beginning in calendar year 2026, $40,400, (iii) in the case of any taxable year beginning after calendar year 2026 and before 2030, 101 percent of the dollar amount in effect under this subparagraph for taxable years beginning in the preceding calendar year, and (iv) in the case of any taxable year beginning after calendar year 2029, $10,000.',
     }],
     volatility: 'sunsetting',
     effectiveFrom: 2025,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/params/data/year2026.ts',
@@ -2165,12 +2165,12 @@ const registry = {
       citation: 'IRC 401(c)(2)(A)',
       url: 'https://www.law.cornell.edu/uscode/text/26/401',
       quotedText:
-        'The term earned income means the net earnings from self-employment (as defined in section 1402(a)), but such net earnings shall be determined only with respect to a trade or business in which personal services of the taxpayer are a material income-producing factor.',
+        'The term \u201cearned income\u201d means the net earnings from self-employment (as defined in section 1402(a)), but such net earnings shall be determined\u2014 (i) only with respect to a trade or business in which personal services of the taxpayer are a material income-producing factor ...',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
   },
   'irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out': {
@@ -2715,12 +2715,12 @@ const registry = {
       citation: 'IRC 151(d)(4)',
       url: 'https://www.law.cornell.edu/uscode/text/26/151',
       quotedText:
-        'Except as provided in paragraph (5), in the case of any taxable year beginning in a calendar year after 1989, the dollar amount contained in paragraph (1) shall be increased by an amount equal to - (A) such dollar amount, multiplied by (B) the cost-of-living adjustment determined under section 1(f)(3) for the calendar year in which the taxable year begins.',
+        'Except as provided in paragraph (5), in the case of any taxable year beginning in a calendar year after 1989, the dollar amount contained in paragraph (1) shall be increased by an amount equal to\u2014 (A) such dollar amount, multiplied by (B) the cost-of-living adjustment determined under section 1(f)(3) for the calendar year in which the taxable year begins, by substituting \u201ccalendar year 1988\u201d for \u201ccalendar year 2016\u201d in subparagraph (A)(ii) thereof.',
     }],
     volatility: 'sunsetting',
     effectiveFrom: 2025,
     effectiveThrough: 2028,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/params/index.ts',
       'packages/engine/src/tax/federalTax.ts',
