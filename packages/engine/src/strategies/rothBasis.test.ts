@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { describeRule } from '../rules/describeRule.js'
 import { emptyRothBasis, splitRothWithdrawal, type RothBasisState } from './rothBasis.js'
 
 describe('splitRothWithdrawal — ordering', () => {
@@ -98,5 +99,40 @@ describe('splitRothWithdrawal — earnings', () => {
     expect(r.earnings).toBe(4_000)
     expect(r.taxableOrdinary).toBe(0)
     expect(r.penalty).toBe(0)
+  })
+})
+
+describeRule('irc-408A-d-3-F-roth-conversion-recapture', {
+  // A $10,000 conversion of which only $4,000 was includible in gross income,
+  // tapped in full two years later at age 50. 408A(d)(3)(F)(i) applies 72(t) to
+  // the portion allocable to the conversion; (F)(ii) caps that at the includible
+  // amount. Reading (F)(i) alone recaptures the whole principal.
+  readings: { statuteIncludiblePortionOnly: 400, rejectedWholeConversionPrincipal: 1_000 },
+  accepted: 'statuteIncludiblePortionOnly',
+}, ({ accepted, readings }) => {
+  const partlyBasisConversion = (): RothBasisState => ({
+    contributionBasis: 0,
+    conversionLayers: [{ year: 2024, amount: 10_000, taxableAmount: 4_000 }],
+  })
+
+  it('recaptures only so much of the conversion as was includible at the time', () => {
+    const split = splitRothWithdrawal(partlyBasisConversion(), 10_000, 2026, 50)
+    expect(split.penalty).toBeCloseTo(accepted, 6)
+    expect(split.penalty).not.toBeCloseTo(readings.rejectedWholeConversionPrincipal, 6)
+  })
+
+  it('applies 72(t) without taxing the conversion principal a second time', () => {
+    const split = splitRothWithdrawal(partlyBasisConversion(), 10_000, 2026, 50)
+    expect(split.conversions).toBe(10_000)
+    expect(split.earnings).toBe(0)
+    expect(split.taxableOrdinary).toBe(0)
+  })
+
+  it('runs the five-taxable-year period from the year of that conversion', () => {
+    // The period beginning with 2024 covers 2024 through 2028, so a 2028 tap
+    // still recaptures and a 2029 tap does not.
+    expect(splitRothWithdrawal(partlyBasisConversion(), 10_000, 2028, 50).penalty)
+      .toBeCloseTo(accepted, 6)
+    expect(splitRothWithdrawal(partlyBasisConversion(), 10_000, 2029, 50).penalty).toBe(0)
   })
 })
