@@ -33,6 +33,7 @@ import {
   buildOwnedNonRothIraSeppPriorPaymentHistoryEvidence,
   validateOwnedNonRothIraSeppCurrentPaymentCandidate,
   type OwnedNonRothIraSeppCurrentPaymentEvidence,
+  type OwnedNonRothIraSeppNonconformanceKind,
   type OwnedNonRothIraSeppPriorPaymentHistoryEvidence,
 } from './ownedNonRothIraSeppCurrentPaymentCandidate.js'
 import {
@@ -1339,13 +1340,21 @@ function buildRawInputFromCoverages(
   base.payments = payments
   return base
 }
-/** The per-payment nonconformance kinds a failed reconciliation reported. */
+/**
+ * The per-payment nonconformance kinds a failed reconciliation reported.
+ *
+ * `paymentIssue` is only ever set on a `paymentNotLocallyConforming` issue, and
+ * that kind is not one of the kinds that keep a result `reconciliationIncomplete`,
+ * so only a `notReconciled` result can carry one. Issues without a payment scope
+ * are dropped rather than returned as `undefined` holes, so a `toContain`
+ * assertion cannot pass on a gap in the list.
+ */
 function paymentIssueKinds(
   result: ReturnType<typeof reconcileOwnedNonRothIraSeppAnnualSchedule>,
-): readonly (string | undefined)[] {
-  return result.status === 'reconciled' || result.status === 'evidenceMissing'
-    ? []
-    : result.issues.map((issue) => issue.paymentIssue)
+): readonly OwnedNonRothIraSeppNonconformanceKind[] {
+  return result.status === 'notReconciled'
+    ? result.issues.flatMap((issue) => issue.paymentIssue ?? [])
+    : []
 }
 
 /**

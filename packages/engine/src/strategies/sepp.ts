@@ -25,11 +25,24 @@
  * 1.401(a)(9)-9(b), carried in the parameter pack. Notice 2022-6 section
  * 3.02(a) permits exactly three tables — the Uniform Lifetime Table in its
  * Appendix A, that Single Life Table, and the Joint and Last Survivor Table of
- * 1.401(a)(9)-9(d) — and Single Life is both the natural table for a
- * single-life series and the shortest of the three, so it produces the smallest
- * permitted payment. All three are unisex, which is why nothing here takes a
- * sex: an SSA period table indexed by sex is not among them, and the divisor it
- * produces is not a permitted number.
+ * 1.401(a)(9)-9(d) — and Single Life is the one the notice itself falls back
+ * to when no beneficiary is named. Section 3.02(b) lets the Joint and Last
+ * Survivor Table be used only against "the actual designated beneficiary of the
+ * employee with respect to the account", and closes by saying that where there
+ * is no designated beneficiary in a year, the Single Life Table is used for that
+ * distribution year. The election modelled here carries no beneficiary, so
+ * Single Life is the table.
+ *
+ * Note which way that cuts. The payment is the balance over the divisor, and
+ * Single Life is the SHORTEST of the three at every age (17.2 years at 72,
+ * against 27.4 in the notice's Uniform Lifetime Table), so this choice sizes the
+ * LARGEST payment any permitted table would allow, not the smallest. Sizing
+ * from the Uniform Lifetime Table instead would be equally permitted and would
+ * shrink every payment.
+ *
+ * All three are unisex, which is why nothing here takes a sex: an SSA period
+ * table indexed by sex is not among them, and the divisor it produces is not a
+ * permitted number at all.
  */
 
 import { singleLifeExpectancyYears } from '../params/index.js'

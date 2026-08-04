@@ -160,7 +160,16 @@ export function uniformLifetimeDivisor(pack: ParameterPack, age: number): number
 export function singleLifeExpectancyYears(pack: ParameterPack, age: number): number {
   const whole = Math.floor(age)
   const clamped = whole < 0 ? 0 : whole > 120 ? 120 : whole
-  return pack.rmd.singleLifeTable[clamped]!
+  const years = pack.rmd.singleLifeTable[clamped]
+  // Every age 0..120 is present in a well-formed pack, so a miss means the pack
+  // is wrong. Fail here rather than divide by undefined and let a NaN payment
+  // travel to a penalty decision that reads as a real dollar figure.
+  if (years === undefined || !(years > 0)) {
+    throw new RangeError(
+      `Single Life Table has no usable life expectancy for age ${clamped}`,
+    )
+  }
+  return years
 }
 
 /**

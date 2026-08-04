@@ -150,8 +150,10 @@ export interface ParameterPack {
      * Single Life Table of Treas. Reg. 1.401(a)(9)-9(b): age -> life expectancy
      * in years, ages 0 through 120. One of the three tables IRS Notice 2022-6
      * section 3.02(a) permits for sizing a 72(t) substantially equal periodic
-     * payment, and the shortest of the three, so it yields the smallest
-     * permitted payment.
+     * payment, and the one section 3.02(b) leaves in place for a distribution
+     * year with no designated beneficiary. It is the shortest of the three, so
+     * — the payment being the balance over the divisor — it yields the largest
+     * payment any permitted table would allow, not the smallest.
      */
     singleLifeTable: Record<number, number>
     /** Annual QCD exclusion limit. */
