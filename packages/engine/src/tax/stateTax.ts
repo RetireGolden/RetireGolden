@@ -14,7 +14,13 @@
  * @see DOCS/features/taxes.md
  */
 
-import { stateParamsFor, type StateRetirementExclusion, type StateTaxBracket, type StateTaxParams } from '../params/state/index.js'
+import {
+  indexConformedStateStandardDeduction,
+  stateParamsFor,
+  type StateRetirementExclusion,
+  type StateTaxBracket,
+  type StateTaxParams,
+} from '../params/state/index.js'
 import { taxableSocialSecurity } from './federalTax.js'
 import { packForYear } from '../params/index.js'
 import { taxParameterFilingStatus, type TaxCalculator, type TaxYearInput } from '../projection/types.js'
@@ -208,8 +214,16 @@ export function computeStateTaxYearTotal(input: TaxYearInput, opts: StateTaxYear
   const localRatePct = Math.max(0, opts.localPct ?? 0)
   const localRate = localRatePct / 100
   const resolveParams = (code: string): StateTaxParams | undefined => {
-    const params = stateParamsFor(code, input.year)
-    return params && opts.mapParams ? opts.mapParams(params) : params
+    const published = stateParamsFor(code, input.year)
+    if (!published) return undefined
+    // The nine conforming packs carry the FEDERAL standard deduction rather
+    // than a state figure, and `computeFederalTax` projects that federal
+    // figure past the pack year under IRC 63(c)(7)(B)(ii). The copy has to
+    // travel with it, or one engine holds two values for one amount in the
+    // same year and taxes the gap at the state rate. Everything else in the
+    // pack — brackets included — stays nominal.
+    const params = indexConformedStateStandardDeduction(published, input.inflationScale ?? 1)
+    return opts.mapParams ? opts.mapParams(params) : params
   }
   if (overrideRate > 0) {
     // The flat effective rate approximates a state return, so it still

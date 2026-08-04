@@ -55,6 +55,25 @@ export interface StateTaxParams {
   capitalGainsNotes?: string
   capitalGainsSources?: string[]
   standardDeduction: PerStatus<number>
+  /**
+   * Set to `'federal'` when the amount above is not an independent state figure
+   * but the FEDERAL standard deduction for the pack year, carried here because
+   * the state defines its own by reference to it (or, for CO and ND, because
+   * the state's brackets are defined on federal taxable income and this field
+   * is what converts the engine's gross base into that base).
+   *
+   * Marking it matters because IRC 63(c)(7)(B)(ii) increases the federal amount
+   * for every taxable year beginning after 2025. A copy of that amount left
+   * frozen at the pack year would take a different value from the original in
+   * the very same projected year, and the whole widening gap would be taxed at
+   * the state rate. `indexConformedStateStandardDeduction` reads this flag and
+   * moves the copy with the original.
+   *
+   * Absent (the default) means the state publishes its own deduction, which no
+   * federal provision reaches. ME and SC are the type case: both decoupled from
+   * the federal figure for 2026 and must NOT move with it.
+   */
+  standardDeductionConformity?: 'federal'
   brackets: PerStatus<StateTaxBracket[]>
   /** Private pensions, annuities, traditional IRA/401(k), RMD, SEPP, and inherited distributions. */
   retirementPrivate: StateRetirementExclusion
