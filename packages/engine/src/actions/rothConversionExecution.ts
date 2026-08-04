@@ -1,5 +1,7 @@
 import {
+  conversionTaxFundingSchema,
   rothConversionRequestSchema,
+  type ConversionTaxFunding,
   type RothConversionRequest,
 } from './contract.js'
 import { accountIdSchema } from './identity.js'
@@ -145,6 +147,76 @@ function unchangedBalances(
     )
 }
 
+/**
+ * Is the request's own external-cash attestation present and well formed?
+ *
+ * The request schema already requires `attested: true` and a positive cent
+ * amount, so a request that reaches here should carry both. This re-reads the
+ * attestation against that same schema anyway and fails closed on anything it
+ * cannot confirm: the attestation is the entire evidence for this funding
+ * disposition, so an absent, forged, or reshaped one must keep the staging
+ * reason rather than be read as satisfied.
+ *
+ * The amount is also read against the request that carries it. Cash attested
+ * to pay the tax on this conversion cannot exceed the amount being converted —
+ * no combined marginal rate reaches 100% — so an attestation larger than the
+ * conversion is not an attestation about this conversion's tax, and nothing in
+ * this executor can adjudicate the difference: the annual liability is exactly
+ * what the missing coordinator would compute.
+ */
+function hasWellFormedExternalCashAttestation(
+  funding: Readonly<ConversionTaxFunding>,
+  request: Readonly<RothConversionRequest>,
+): boolean {
+  const parsed = conversionTaxFundingSchema.safeParse(funding)
+  if (!parsed.success || parsed.data.kind !== 'externalCash') return false
+  const attestation = parsed.data
+  return attestation.attested === true &&
+    Number.isSafeInteger(attestation.amount) &&
+    attestation.amount > 0 &&
+    attestation.amount <= request.requestedAmount
+}
+
+/**
+ * Which tax-funding reasons does this request still have to carry?
+ *
+ * The four named funding dispositions are not one staging gap.
+ *
+ * - `noneExpected` names no funding at all, so there is no funding evidence to
+ *   be missing.
+ * - `externalCash` is funded from outside the plan; the attestation the request
+ *   schema requires is the evidence, and nothing else has to execute for it.
+ *   An attestation that cannot be confirmed still blocks.
+ * - `linkedWithdrawal` names a sibling withdrawal that must move inside the
+ *   conversion's atomic annual group. That group executor does not exist —
+ *   `actions/execution.ts` refuses the linked withdrawal for the same reason —
+ *   so this one stays unsupported.
+ * - `conversionPrincipalWithholding` is not staged at all: withholding from
+ *   converted principal reduces the destination and may itself be an early
+ *   distribution, so it is refused on the merits. `accountEligibility.ts`
+ *   already names that refusal without identifiers, and this emits it the same
+ *   way so the two sites canonicalize to one reason rather than two.
+ */
+function taxFundingReasons(request: Readonly<RothConversionRequest>): ActionReason[] {
+  const funding = request.taxFunding
+  switch (funding.kind) {
+    case 'noneExpected':
+      return []
+    case 'externalCash':
+      return hasWellFormedExternalCashAttestation(funding, request)
+        ? []
+        : [createActionReason('conversion-tax-funding-evidence-unsupported', {
+            personId: request.personId,
+          })]
+    case 'conversionPrincipalWithholding':
+      return [createActionReason('conversion-principal-withholding-unsupported')]
+    case 'linkedWithdrawal':
+      return [createActionReason('conversion-tax-funding-evidence-unsupported', {
+        personId: request.personId,
+      })]
+  }
+}
+
 function nonActionableEvidence(
   request: RothConversionRequest,
   reasons: readonly ActionReason[],
@@ -258,6 +330,10 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
     // `resolveOwnerIraRmdSatisfaction` reads the owner's aggregated-IRA
     // outcome from bound runtime evidence. Anything short of proven
     // satisfaction — including no evidence at all — keeps the reason.
+    //
+    // Tax funding is the second. It is not one prerequisite but four
+    // dispositions the request itself names, so `taxFundingReasons` answers
+    // each on its own terms instead of blocking all of them alike.
     const reasons: ActionReason[] = [
       createActionReason('conversion-basis-evidence-missing', {
         personId: request.personId,
@@ -267,9 +343,7 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
         : [createActionReason('conversion-rmd-reserve-unavailable', {
             personId: request.personId,
           })]),
-      createActionReason('conversion-tax-funding-evidence-unsupported', {
-        personId: request.personId,
-      }),
+      ...taxFundingReasons(request),
     ]
     if (request.year !== input.year) reasons.push(createActionReason('conversion-date-outside-action-year', { personId: request.personId }))
     const preflight = evaluateRetirementActionEligibilityFromPlan(request, input.plan as Plan, runtimeEvidence)

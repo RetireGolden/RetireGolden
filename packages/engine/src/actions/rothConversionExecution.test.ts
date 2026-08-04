@@ -1,9 +1,14 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, expectTypeOf, it } from 'vitest'
 
 import type { Plan } from '../model/plan.js'
-import { singlePersonPlan, traditionalAccount } from '../testing/planFixtures.js'
+import {
+  cashAccount,
+  singlePersonPlan,
+  traditionalAccount,
+} from '../testing/planFixtures.js'
 import {
   actionExecutionDispositionSchema,
+  ordinaryWithdrawalRequestSchema,
   rothConversionRequestSchema,
   type RothConversionRequest,
 } from './contract.js'
@@ -12,11 +17,14 @@ import { asUsdCents } from './money.js'
 import type {
   NonpersistedOwnerIraRmdSatisfactionEvidence,
 } from '../strategies/accountEligibility.js'
+import { executeOrdinaryWithdrawals } from './execution.js'
 import {
   executeRothConversions,
   type ExecuteRothConversionsInput,
+  type ExecuteRothConversionsResult,
 } from './rothConversionExecution.js'
 import {
+  ordinaryWithdrawalPublicationSource,
   publishAnnualRetirementActions,
   rothConversionPublicationSource,
 } from './annualRetirementActionPublication.js'
@@ -142,13 +150,12 @@ describe('executeRothConversions', () => {
         taxFunding: { status: 'unsupported', evidenceId: null },
       }],
     })
-    expect(result.evidence[0]?.reasons.map((reason) => reason.code)).toEqual(
-      expect.arrayContaining([
-        'conversion-basis-evidence-missing',
-        'conversion-rmd-reserve-unavailable',
-        'conversion-tax-funding-evidence-unsupported',
-      ]),
-    )
+    // This fixture expects no conversion-tax funding at all, so no funding
+    // reason belongs on it; the funding split is exercised below.
+    expect(result.evidence[0]?.reasons.map((reason) => reason.code)).toEqual([
+      'conversion-basis-evidence-missing',
+      'conversion-rmd-reserve-unavailable',
+    ])
     expect(Object.isFrozen(result)).toBe(true)
     expect(Object.isFrozen(result.evidence[0])).toBe(true)
     const publication = publishAnnualRetirementActions({
@@ -799,7 +806,6 @@ describe('executeRothConversions', () => {
 
       expect(codes).toEqual(expect.arrayContaining([
         'conversion-basis-evidence-missing',
-        'conversion-tax-funding-evidence-unsupported',
       ]))
       expect(executeRothConversions(withSatisfaction(40_000, 40_000)))
         .toMatchObject({
@@ -948,6 +954,301 @@ describe('executeRothConversions', () => {
           allocation.executedAmount === 0 &&
           allocation.rmdReserveEvidenceId === null),
       )).toBe(true)
+    })
+  })
+
+  // The request names how the conversion's tax is funded, and the four named
+  // dispositions are not one staging gap. Two of them need nothing this
+  // executor cannot see; one needs the annual movement coordinator that does
+  // not exist; and one is refused on the merits rather than staged. These
+  // conversions differ only in `taxFunding`, so any difference in the published
+  // reason set is that field's doing and nothing else's.
+  describe('tax-funding disposition split', () => {
+    const linkedWithdrawalActionId = 'tax-funding-withdrawal'
+
+    const funding = {
+      noneExpected: { kind: 'noneExpected' },
+      externalCash: { kind: 'externalCash', amount: 2_500, attested: true },
+      linkedWithdrawal: {
+        kind: 'linkedWithdrawal',
+        withdrawalActionId: linkedWithdrawalActionId,
+      },
+      conversionPrincipalWithholding: {
+        kind: 'conversionPrincipalWithholding',
+        amount: 2_500,
+      },
+    } as const
+
+    function withFunding(
+      taxFunding: unknown,
+      actionId = 'conversion-a',
+    ): RothConversionRequest {
+      return rothConversionRequestSchema.parse({ ...request(actionId), taxFunding })
+    }
+
+    function reasonCodes(taxFunding: unknown): string[] {
+      return executeRothConversions(input([withFunding(taxFunding)]))
+        .evidence[0]!.reasons.map((reason) => reason.code)
+    }
+
+    function dispositionParses(record: {
+      outcome: string
+      readiness: string
+      requestedAmount: number
+      executedAmount: number
+      unexecutedAmount: number
+      reasons: readonly unknown[]
+    }): boolean {
+      return actionExecutionDispositionSchema.safeParse({
+        outcome: record.outcome,
+        readiness: record.readiness,
+        requestedAmount: record.requestedAmount,
+        executedAmount: record.executedAmount,
+        unexecutedAmount: record.unexecutedAmount,
+        reasons: record.reasons,
+      }).success
+    }
+
+    const dispositions: [string, unknown, string[]][] = [
+      // No funding is expected, so there is no funding evidence to be missing.
+      ['noneExpected', funding.noneExpected, [
+        'conversion-basis-evidence-missing',
+        'conversion-rmd-reserve-unavailable',
+      ]],
+      // The attestation the request schema requires is the whole evidence for
+      // cash that never has to come out of the plan.
+      ['attested externalCash', funding.externalCash, [
+        'conversion-basis-evidence-missing',
+        'conversion-rmd-reserve-unavailable',
+      ]],
+      // The funding withdrawal has to move inside the conversion's atomic
+      // annual group, and that group executor was never written.
+      ['linkedWithdrawal', funding.linkedWithdrawal, [
+        'conversion-basis-evidence-missing',
+        'conversion-tax-funding-evidence-unsupported',
+        'conversion-rmd-reserve-unavailable',
+      ]],
+      // Withholding from converted principal is refused, not staged, and it
+      // carries the refusal `strategies/accountEligibility.ts` already names.
+      ['conversionPrincipalWithholding', funding.conversionPrincipalWithholding, [
+        'conversion-basis-evidence-missing',
+        'conversion-principal-withholding-unsupported',
+        'conversion-rmd-reserve-unavailable',
+      ]],
+    ]
+
+    it.each(dispositions)('answers %s on its own terms', (_label, taxFunding, expected) => {
+      expect(reasonCodes(taxFunding)).toEqual(expected)
+    })
+
+    it('publishes one reason set per funding disposition and no two alike', () => {
+      const published = dispositions.map(([, taxFunding]) =>
+        reasonCodes(taxFunding).join('|'))
+
+      expect(new Set(published).size).toBe(3)
+      expect(published[0]).toBe(published[1])
+      expect(published[2]).not.toBe(published[3])
+    })
+
+    it('emits the withholding refusal exactly once and without identifiers', () => {
+      // Account eligibility emits this reason with no person, account, or
+      // allocation. Emitting it here with any identifier would canonicalize to
+      // a second, near-duplicate reason on the same record.
+      const withholding = executeRothConversions(
+        input([withFunding(funding.conversionPrincipalWithholding)]),
+      ).evidence[0]!.reasons.filter((reason) =>
+        reason.code === 'conversion-principal-withholding-unsupported')
+
+      expect(withholding).toEqual([expect.objectContaining({
+        code: 'conversion-principal-withholding-unsupported',
+        outcome: 'unsupported',
+      })])
+      expect(withholding[0]?.personId).toBeUndefined()
+      expect(withholding[0]?.accountId).toBeUndefined()
+      expect(withholding[0]?.allocationId).toBeUndefined()
+    })
+
+    it('keeps the funding reason when an external-cash amount outruns the conversion', () => {
+      // The schema accepts any positive cent amount, so this attestation
+      // reaches the executor intact. Cash claimed to pay the tax on a $100
+      // conversion cannot exceed $100, and the executor cannot adjudicate the
+      // difference, so it fails closed rather than reading it as evidence.
+      expect(reasonCodes({ kind: 'externalCash', amount: 10_001, attested: true }))
+        .toContain('conversion-tax-funding-evidence-unsupported')
+      expect(reasonCodes({ kind: 'externalCash', amount: 10_000, attested: true }))
+        .not.toContain('conversion-tax-funding-evidence-unsupported')
+    })
+
+    it.each([
+      ['a dropped attestation', { kind: 'externalCash', amount: 2_500 }],
+      ['an unattested claim', { kind: 'externalCash', amount: 2_500, attested: false }],
+      ['a zero amount', { kind: 'externalCash', amount: 0, attested: true }],
+      ['a fractional amount', { kind: 'externalCash', amount: 2_500.5, attested: true }],
+      ['a dropped amount', { kind: 'externalCash', attested: true }],
+    ] as [string, unknown][])(
+      'refuses the whole batch under %s rather than publishing it as funded',
+      (_label, taxFunding) => {
+        const result = executeRothConversions(input([
+          { ...request(), taxFunding } as unknown as RothConversionRequest,
+        ]))
+
+        expect(result).toMatchObject({
+          committed: false,
+          evidence: [],
+          scheduleIssues: [{ kind: 'invalidInput' }],
+        })
+      },
+    )
+
+    it.each(dispositions.filter(([label]) => label !== 'linkedWithdrawal'))(
+      'publishes the %s record under the disposition schema it now falls onto',
+      (_label, taxFunding) => {
+        const result = executeRothConversions(input([withFunding(taxFunding)]))
+        const publication = publishAnnualRetirementActions({
+          taxYear: year,
+          requests: result.requests,
+          sources: [rothConversionPublicationSource(result)],
+        })!
+        const record = publication.records[0]!
+
+        expect(record.actionId).toBe('conversion-a')
+        expect(record.executedAmount).toBe(0)
+        expect(dispositionParses(record)).toBe(true)
+      },
+    )
+
+    it.each(dispositions.filter(([label]) => label !== 'linkedWithdrawal'))(
+      'still publishes the %s record through the staged bypass when it also trims',
+      (_label, taxFunding) => {
+        // A partial-outcome trim reason inside an unsupported disposition is
+        // exactly what the staged-conversion bypass exists for. Dropping the
+        // funding reason moved these records off the code the bypass used to
+        // require, so each one has to be published, not reasoned about.
+        const value = input([withFunding(taxFunding)])
+        value.openingBalances = value.openingBalances.map((snapshot) =>
+          snapshot.accountId === 'traditional-a'
+            ? { ...snapshot, openingBalance: asUsdCents(5_000) }
+            : snapshot)
+        const result = executeRothConversions(value)
+        const record = result.evidence[0]!
+
+        expect(record.reasons.map((reason) => reason.code))
+          .toContain('conversion-balance-trimmed')
+        expect(dispositionParses(record)).toBe(false)
+        expect(() => publishAnnualRetirementActions({
+          taxYear: year,
+          requests: result.requests,
+          sources: [rothConversionPublicationSource(result)],
+        })).not.toThrow()
+      },
+    )
+
+    it('keeps both sides of a linked withdrawal blocked on the missing group executor', () => {
+      const conversion = withFunding(funding.linkedWithdrawal)
+      const fundingWithdrawal = ordinaryWithdrawalRequestSchema.parse({
+        actionId: linkedWithdrawalActionId,
+        kind: 'ordinaryWithdrawal',
+        personId: 'p1',
+        year,
+        executionDate: '2030-12-15',
+        executionSequence: 2,
+        requestedAmount: 2_500,
+        allocations: [{
+          allocationId: 'funding-allocation',
+          sourceAccountId: 'cash-a',
+          requestedAmount: 2_500,
+        }],
+        purpose: { kind: 'taxPayment', referenceId: conversion.actionId },
+        provenance: { source: 'manual' },
+      })
+      const linkedPlan = plan()
+      linkedPlan.accounts = [
+        ...linkedPlan.accounts,
+        { ...cashAccount('cash-a', 100), ownerPersonId: 'p1' },
+      ]
+      linkedPlan.strategies.retirementActions = [conversion]
+
+      const conversionResult = executeRothConversions({
+        ...input([conversion]),
+        plan: linkedPlan,
+      })
+      const withdrawalResult = executeOrdinaryWithdrawals({
+        year,
+        plan: linkedPlan,
+        requests: [fundingWithdrawal],
+        openingBalances: [{
+          accountId: fundingWithdrawal.allocations[0]!.sourceAccountId,
+          openingBalance: asUsdCents(10_000),
+        }],
+        runtimeEvidence: {
+          personAliveEvidence: [{
+            evidenceId: `alive-${fundingWithdrawal.actionId}`,
+            actionId: fundingWithdrawal.actionId,
+            personId: fundingWithdrawal.personId,
+            actionYear: fundingWithdrawal.year,
+            actionDate: fundingWithdrawal.executionDate ?? null,
+            alive: true,
+          }],
+        },
+      })
+
+      expect(conversionResult.evidence[0]?.reasons.map((reason) => reason.code))
+        .toContain('conversion-tax-funding-evidence-unsupported')
+      // The sibling withdrawal must not move independently of the group.
+      expect(withdrawalResult.evidence[0]).toMatchObject({
+        actionId: linkedWithdrawalActionId,
+        disposition: {
+          outcome: 'unsupported',
+          executedAmount: 0,
+          reasons: [{ code: 'conversion-tax-funding-evidence-unsupported' }],
+        },
+      })
+      expect(withdrawalResult.balances.every((balance) =>
+        balance.openingBalance === balance.closingBalance)).toBe(true)
+
+      const publication = publishAnnualRetirementActions({
+        taxYear: year,
+        requests: [...conversionResult.requests, ...withdrawalResult.requests],
+        sources: [
+          rothConversionPublicationSource(conversionResult),
+          ordinaryWithdrawalPublicationSource(withdrawalResult),
+        ],
+      })!
+      const publishedConversion = publication.records.find((record) =>
+        record.actionId === conversion.actionId)!
+      const publishedWithdrawal = publication.records.find((record) =>
+        record.actionId === linkedWithdrawalActionId)!
+
+      expect(dispositionParses(publishedConversion)).toBe(true)
+      expect(dispositionParses(publishedWithdrawal)).toBe(true)
+      expect(publishedConversion.executedAmount).toBe(0)
+      expect(publishedWithdrawal.executedAmount).toBe(0)
+    })
+
+    it('moves nothing under any funding disposition', () => {
+      expectTypeOf<ExecuteRothConversionsResult['committed']>().toEqualTypeOf<false>()
+      for (const [, taxFunding] of dispositions) {
+        const result = executeRothConversions(input([withFunding(taxFunding)]))
+
+        expect(result.committed).toBe(false)
+        expect(result.balances.every((balance) =>
+          balance.openingBalance === balance.closingBalance)).toBe(true)
+        expect(result.evidence.every((entry) =>
+          entry.executedAmount === 0 &&
+          entry.destinationCreditAmount === 0 &&
+          entry.taxableConvertedAmount === 0 &&
+          entry.nontaxableConvertedAmount === 0 &&
+          entry.unexecutedAmount === entry.requestedAmount &&
+          entry.readiness === 'nonActionable' &&
+          entry.taxFunding.status === 'unsupported' &&
+          entry.taxFunding.requiredFundingAmount === null &&
+          entry.taxFunding.fundedAmount === null &&
+          entry.allocations.every((allocation) =>
+            allocation.executedAmount === 0 &&
+            allocation.taxableConvertedAmount === 0 &&
+            allocation.nontaxableConvertedAmount === 0),
+        )).toBe(true)
+      }
     })
   })
 
