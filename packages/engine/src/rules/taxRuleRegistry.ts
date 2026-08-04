@@ -1749,6 +1749,156 @@ const registry = {
       'packages/engine/src/params/data/year2026.ts',
     ],
   },
+  'irc-219-b-1-ira-limit-lesser-of-compensation': {
+    title: 'An IRA contribution is capped by compensation, not only by the dollar limit',
+    statement:
+      'Section 219(b)(1) caps the amount for a taxable year at the lesser of the deductible amount or the compensation includible in the individual gross income for that year. A participant whose compensation is below the dollar limit is held to compensation, so the dollar limit alone is not the ceiling.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'This is the same shape as the section 415(c) annual additions cap: a two prong lesser of where applying only the dollar prong silently overstates. The engine previously applied only the dollar prong here. Wages are the engine only compensation source, so the compensation prong reads from projected wages for the year.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 219(b)(1)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/219',
+      quotedText:
+        'shall not exceed the lesser of - (A) the deductible amount, or (B) an amount equal to the compensation includible in the individual’s gross income for such taxable year.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+  },
+  'irc-219-c-1-spousal-ira-combined-compensation': {
+    title: 'A jointly filing couple funds both IRAs from combined compensation',
+    statement:
+      'Section 219(c) lets a married individual who files jointly, and whose own compensation is the lesser of the two, measure the limit against the combined compensation of both spouses, reduced by the contributions already made by the other spouse. The household ceiling is therefore combined compensation, while each spouse remains separately held to the dollar limit.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'Two prongs pull in opposite directions and both must hold. Capping each spouse at their own wages alone would deny a non-earning spouse an IRA the statute plainly allows; pooling without a per-person dollar limit would let one spouse absorb the whole household ceiling. The engine models the pool only when the projected filing status is married filing jointly and both spouses are alive, since section 219(c)(2) conditions the rule on a joint return.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 219(c)(1)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/219',
+      quotedText:
+        'shall be equal to the lesser of - (A) the dollar amount in effect under subsection (b)(1)(A) for the taxable year, or (B) the sum of - (i) the compensation includible in such individual’s gross income for the taxable year, plus (ii) the compensation includible in the gross income of such individual’s spouse for the taxable year reduced by ...',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+  },
+  'irc-219-b-5-C-iii-ira-catch-up-indexed': {
+    title: 'The age-50 IRA catch-up is indexed, unlike the HSA catch-up',
+    statement:
+      'Section 219(b)(5)(B) increases the deductible amount by 1,000 dollars for an individual who has attained age 50 before the close of the taxable year, and section 219(b)(5)(C)(iii) subjects that 1,000 dollars to a cost of living adjustment for taxable years beginning after 2023, with calendar year 2022 as the base.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'Worth a record precisely because the neighbouring HSA catch-up under section 223(b)(3) is not indexed and must stay flat. The two look alike and behave differently, so the engine projects this one and holds the other. The indexing here was added by SECURE 2.0 section 108; before 2024 this amount was flat as well, which is why older secondary sources describe it that way.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 219(b)(5)(C)(iii)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/219',
+      quotedText:
+        'In the case of any taxable year beginning in a calendar year after 2023, the 1,000 dollar amount under subparagraph (B)(ii) shall be increased by an amount equal to such dollar amount multiplied by the cost-of-living adjustment, determined by substituting calendar year 2022.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+  'irc-219-f-1-compensation-excludes-deferred-income': {
+    title: 'Pension, annuity and deferred income are not compensation for IRA purposes',
+    statement:
+      'Section 219(f)(1) defines compensation to include earned income and to exclude any amount received as a pension or annuity or as deferred compensation. Retirement income therefore does not create IRA contribution room, so a person whose only income is a pension or Social Security has a compensation ceiling of zero.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'This is what makes the compensation prong bite in a retirement projection. Most years in a plan have no wages at all, and a reading that counted any income as compensation would leave the section 219(b)(1) cap inert for exactly the span the projection is about.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 219(f)(1)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/219',
+      quotedText:
+        'For purposes of this section, the term compensation includes earned income (as defined in section 401(c)(2)). The term compensation does not include any amount received as a pension or annuity and does not include any amount received as deferred compensation.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+  },
+  'irc-408A-c-2-roth-shares-the-section-219-ceiling': {
+    title: 'Roth and traditional IRA contributions share one annual ceiling',
+    statement:
+      'Section 408A(c)(2) limits aggregate contributions to all Roth IRAs to the maximum amount allowable as a deduction under section 219 reduced by contributions made for the same year to all other individual retirement plans. Holding both a traditional and a Roth IRA does not create a second ceiling.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The engine expresses this by putting traditional and Roth IRAs owned by the same person into a single annual limit group rather than by ordering one before the other. Ordering would matter if the two ceilings differed, and under this section they do not.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408A(c)(2)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/408A',
+      quotedText:
+        'The aggregate amount of contributions for any taxable year to all Roth IRAs maintained for the benefit of an individual shall not exceed the excess (if any) of - (A) the maximum amount allowable as a deduction under section 219 with respect to such individual for such taxable year (computed without regard to subsection (g) of such section), over (B) the aggregate amount of contributions for such taxable year to all other individual retirement plans (other than Roth IRAs) maintained for the benefit of the individual.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+  },
+  'irc-408A-c-3-roth-contribution-agi-phase-out': {
+    title: 'The Roth contribution income phase-out is not modeled',
+    statement:
+      'Section 408A(c)(3) reduces the Roth contribution limit ratably once adjusted gross income, determined under 408A(c)(3)(B), exceeds an applicable dollar amount. The band is 15,000 dollars, but 10,000 dollars on a joint return or for a married individual filing separately, so a couple loses the contribution over a shorter run of income than a single filer does. The engine does not apply this reduction, so a projected Roth IRA contribution is allowed at any income level.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale:
+      'Recorded as an explicit gap rather than left silent, because the direction of the error is knowable: a high income household will show Roth contributions it could not actually make, and the overstatement grows with income. It is out of scope rather than settled because the reduction runs off adjusted gross income, which the projection computes after the contribution loop has already run.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408A(c)(3)(A)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/408A',
+      quotedText:
+        'shall not exceed an amount equal to the amount determined under paragraph (2)(A) for such taxable year, reduced (but not below zero) by the amount which bears the same ratio to such amount as - (i) the excess of - (I) the taxpayer’s adjusted gross income for such taxable year, over (II) the applicable dollar amount, bears to (ii) 15,000 dollars (10,000 dollars in the case of a joint return or a married individual filing a separate return).',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+  },
+  'irc-401-c-2-earned-income-not-modeled': {
+    title: 'Self-employment earned income is not a modeled compensation source',
+    statement:
+      'Compensation under section 219(f)(1) includes earned income as defined in section 401(c)(2), which is net earnings from self-employment in a trade or business in which personal services are a material income producing factor. The engine models wages only, so a self-employed plan has no compensation and therefore no IRA contribution room.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    conventionRationale:
+      'The direction of this gap is the opposite of the Roth phase-out gap: it understates rather than overstates, denying contribution room to a self-employed household that is entitled to it. It is recorded here so the section 219(b)(1) compensation prong is not read as complete. The engine income model has no self-employment stream to read from, so closing this needs a model change and not a calculation change.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 401(c)(2)(A)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/401',
+      quotedText:
+        'The term earned income means the net earnings from self-employment (as defined in section 1402(a)), but such net earnings shall be determined only with respect to a trade or business in which personal services of the taxpayer are a material income-producing factor.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+  },
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)

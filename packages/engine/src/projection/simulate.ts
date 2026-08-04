@@ -183,6 +183,18 @@ function annualPassValueBinding<T>(
 
 const EPSILON = 0.005
 
+/**
+ * Bucket that a jointly-filing couple's IRA compensation ceiling lives in.
+ *
+ * A person id is validated only as a non-empty string, so no literal value can
+ * be made collision-proof by choice alone. Safety comes from the two branches
+ * being mutually exclusive: in a shared year the map is keyed by this constant
+ * and nothing else, and in an unshared year it is keyed by person ids and this
+ * constant is never read. The namespaced spelling is a signpost for that
+ * invariant, not the thing that enforces it.
+ */
+const IRA_HOUSEHOLD_COMPENSATION_KEY = 'ira:household-compensation'
+
 type SimulatorRetirementRuntimeApplicationWithoutOrdinal =
   SimulatorRetirementRuntimeApplication extends infer Application
     ? Application extends SimulatorRetirementRuntimeApplication
@@ -2188,6 +2200,24 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     let taxableInflow = 0
     const groupUsed = new Map<string, number>()
     const addition415cUsed = new Map<string, number>()
+    // IRC 219(b)(1) caps an IRA contribution at the lesser of the deductible
+    // amount and compensation includible in gross income, and 219(c) lets a
+    // couple filing jointly reach the other spouse's compensation. So the
+    // ceiling is a single household pool on a joint return with both spouses
+    // living, and each person's own wages otherwise. Wages are the engine's
+    // only compensation source; see the 219(f)(1) registry record.
+    const iraCompensationIsShared =
+      filingStatusForYear === 'marriedFilingJointly' && aliveCount === 2
+    const iraCompensationRemaining = new Map<string, number>()
+    if (iraCompensationIsShared) {
+      let combined = 0
+      for (const wages of wagesByPerson.values()) combined += wages
+      iraCompensationRemaining.set(IRA_HOUSEHOLD_COMPENSATION_KEY, combined)
+    } else {
+      for (const [personId, wages] of wagesByPerson) {
+        iraCompensationRemaining.set(personId, wages)
+      }
+    }
 
     for (const state of balances) {
       const account = state.account
@@ -2233,6 +2263,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
 
       let allowed = desired
       let groupKey: string | null = null
+      let compensationKey: string | null = null
       let limit = Infinity
       const age = ownerState.ageAttained
       if ((account.type === 'traditional' || account.type === 'roth') && account.kind === 'employer') {
@@ -2258,9 +2289,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               : 0
         limit = pack.contributionLimits.employee401k * limitGrowth + catchUp
       } else if ((account.type === 'traditional' || account.type === 'roth') && account.kind === 'ira') {
+        // One group for traditional and Roth together: IRC 408A(c)(2) makes the
+        // Roth limit the 219(b)(1) amount reduced by traditional contributions,
+        // so the pair share a single annual ceiling.
         groupKey = `${ownerId}:ira`
+        // IRC 219(b)(5)(C)(iii) indexes the (b)(5)(B) catch-up as well as the
+        // deductible amount, so unlike the HSA catch-up this one is projected.
         const catchUp = age >= 50 ? pack.contributionLimits.iraCatchUp50 : 0
         limit = (pack.contributionLimits.ira + catchUp) * limitGrowth
+        compensationKey = iraCompensationIsShared ? IRA_HOUSEHOLD_COMPENSATION_KEY : ownerId
       } else if (account.type === 'hsa') {
         groupKey = `${ownerId}:hsa`
         const base = people.length === 2 ? pack.contributionLimits.hsaFamily : pack.contributionLimits.hsaSelfOnly
@@ -2293,6 +2330,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
 
       if (groupKey !== null) {
+        // §219(b)(1)(B) for IRAs, the counterpart of the §415(c) pay prong
+        // above. It lands here rather than with the dollar limit because the
+        // §219(c) household pool spans both spouses' limit groups, so it has
+        // to draw down once the amount is otherwise final.
+        if (compensationKey !== null) {
+          const compensation = iraCompensationRemaining.get(compensationKey) ?? 0
+          allowed = Math.max(0, Math.min(allowed, compensation))
+          iraCompensationRemaining.set(compensationKey, compensation - allowed)
+        }
         if (allowed < desired - EPSILON) {
           warnings.add('Some contributions were reduced to stay within IRS annual limits.')
         }
