@@ -339,7 +339,11 @@ describe('charitable and section 68 rules', () => {
     const agi = 200_000
     const gift = 20_000
     const salt = 30_000
-    const allowedAfterFloor = gift - 0.005 * agi
+    // 0.5 percent as an exact integer ratio. Writing it as 0.005 * agi makes the
+    // expected value a float intermediate, and every assertion below is a toBe
+    // against an exact integer.
+    const floorFor = (base: number): number => (base * 5) / 1_000
+    const allowedAfterFloor = gift - floorFor(agi)
 
     it('deducts the whole gift with no floor subtracted', () => {
       const detail = computeFederalTax(taxpayer(agi, {
@@ -352,7 +356,7 @@ describe('charitable and section 68 rules', () => {
       expect(detail.deduction).toBe(produced)
       expect(detail.deduction).not.toBe(accepted)
       // The whole overstatement is the floor the statute would have applied.
-      expect(detail.deduction - accepted).toBe(0.005 * agi)
+      expect(detail.deduction - accepted).toBe(floorFor(agi))
     })
 
     it('understates tax against the return that applies the floor', () => {
@@ -379,7 +383,7 @@ describe('charitable and section 68 rules', () => {
         stateAndLocalTaxes: salt, mortgageInterest: 0, charitable: gift,
       }))
       const richerStatutory = computeFederalTax(taxpayer(2 * agi, {
-        stateAndLocalTaxes: salt, mortgageInterest: 0, charitable: gift - 0.005 * 2 * agi,
+        stateAndLocalTaxes: salt, mortgageInterest: 0, charitable: gift - 2 * floorFor(agi),
       }))
 
       expect(richer.deduction - richerStatutory.deduction).toBe(2_000)
@@ -405,7 +409,8 @@ describe('charitable and section 68 rules', () => {
     const agi = 100_000
     const gift = 80_000
     const salt = 10_000
-    const ceiling = 0.6 * agi
+    // 60 percent as an exact ratio, for the same reason as the floor above.
+    const ceiling = (agi * 6) / 10
     const carriedForward = gift - ceiling
 
     it('deducts a gift above the ceiling in full in the year it is made', () => {
@@ -491,7 +496,10 @@ describe('charitable and section 68 rules', () => {
     const agi = 800_000
     const salt = 37_000
     const bracketStart = 640_600
-    const reduction = (2 / 37) * Math.min(salt, agi - bracketStart)
+    // 68(a) reduces by 2/37 of the lesser figure. Multiply first, divide last:
+    // 2/37 is not representable, so computing it before the multiplication
+    // leaves an intermediate that only happens to land on an integer.
+    const reduction = (2 * Math.min(salt, agi - bracketStart)) / 37
 
     it('keeps every dollar of itemized deduction section 68 would take away', () => {
       const detail = computeFederalTax(taxpayer(agi, {
