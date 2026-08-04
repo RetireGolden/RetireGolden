@@ -390,3 +390,84 @@ describe('moving legacy QCD in the contiguous basis replay', () => {
     expect(owner.nextYearOpeningBasisAmount).toBe(2_000_000)
   })
 })
+
+describe('moving legacy QCD through the live annual pass', () => {
+  // The fixtures above hand-build the annual facts so each rule can be probed
+  // in isolation. This one takes no such liberty: it runs the real simulator on
+  // a real pre-RMD gift and asserts the evidence chain closes end to end.
+  // Delete either recording call at the QCD debit site and this fails --
+  // the receiving side alone cannot keep it green.
+  it('publishes a gift the source series and basis replay both accept', () => {
+    const plan = preRmdPlan('live-pre-rmd-qcd', [
+      traditional('ira', 100_000, 'ira', 20_000),
+    ])
+    plan.strategies.qcdAnnual = 10_000
+
+    const years = project(plan)
+    const validated = validatePlan(plan)
+
+    expect(years[0]!.rmd).toBe(0)
+    expect(years[0]!.qcd).toBe(10_000)
+    // Nothing was routed out of an RMD, so the nonmoving overlay is empty and
+    // the whole gift is carried by its own occurrence.
+    expect(years[0]!.retirementRuntimeSource!.nonmovingLegacyQcdOverlay)
+      .toBeNull()
+    expect(years[0]!.retirementRuntimeSource!.runtimeOccurrences)
+      .toContainEqual(expect.objectContaining({
+        kind: 'legacyQcd',
+        grossAmountPlanDollars: 10_000,
+        ownerPersonId: 'p1',
+        sourceAccountId: 'ira',
+        executionDate: null,
+        executionSequence: null,
+        movementAuthorityId: null,
+      }))
+    expect(years[0]!.retirementRuntimeApplicationSource!.applications)
+      .toContainEqual(expect.objectContaining({
+        applicationKind: 'debit',
+        simulatorPhase: 'legacyQcdDistribution',
+        sourceAccountId: 'ira',
+        sourceBalanceBeforePlanDollars: 100_000,
+        appliedAmountPlanDollars: 10_000,
+        sourceBalanceAfterPlanDollars: 90_000,
+      }))
+
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(validated, TAX_YEAR, years))
+      .toMatchObject({ status: 'ownedNonRothIraRuntimeSourceSeriesComplete' })
+    const replay = replayOwnedNonRothIraContiguousYears(validated, TAX_YEAR, years)
+    expect(replay.status).toBe('ownedNonRothIraContiguousReplayComplete')
+    if (replay.status !== 'ownedNonRothIraContiguousReplayComplete') return
+    // 408(d)(8)(D): the gift took pre-tax dollars, so all 20,000 of basis is
+    // still there for later years.
+    expect(replay.annualReplays[0]!.ownerReplays[0]!.nextYearOpeningBasisAmount)
+      .toBe(2_000_000)
+    // The settlement only commits when the replay closes, so a published annual
+    // replay is the end-to-end proof that the gift was explained.
+    expect(years[0]!.ownedNonRothIraAnnualReplay).toBeDefined()
+  })
+
+  // A gift larger than the RMD backing it splits across both routes in the same
+  // year. Neither total is the published figure on its own, and the year stays
+  // blocked because the routed share still needs its characterization stage.
+  it('splits a gift that outruns its RMD across the overlay and its occurrences', () => {
+    const plan = singlePersonPlan({ dob: '1945-01-01', planningAge: 90 })
+    plan.id = 'split-qcd-overlay-and-occurrences'
+    plan.accounts = [cash(), traditional('ira', 200_000)]
+    plan.strategies.qcdAnnual = 30_000
+
+    const years = project(plan)
+    const overlay = years[0]!.retirementRuntimeSource!.nonmovingLegacyQcdOverlay
+    const moving = years[0]!.retirementRuntimeSource!.runtimeOccurrences
+      .filter((entry) => entry.kind === 'legacyQcd')
+      .reduce((total, entry) => total + entry.grossAmountPlanDollars, 0)
+
+    expect(overlay?.grossAmountPlanDollars).toBe(years[0]!.rmd)
+    expect(moving).toBeGreaterThan(0)
+    expect(overlay!.grossAmountPlanDollars + moving).toBeCloseTo(years[0]!.qcd, 6)
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(validatePlan(plan), TAX_YEAR, years))
+      .toMatchObject({
+        status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+        issues: [{ kind: 'qcdStageRequired' }],
+      })
+  })
+})

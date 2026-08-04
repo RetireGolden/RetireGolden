@@ -2945,9 +2945,37 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           for (const state of sources) {
             if (remaining <= 0) break
             const take = Math.min(state.balance, remaining)
+            const sourceBalanceBefore = state.balance
             state.balance -= take
             remaining -= take
             qcd += take
+            // These dollars leave the owned IRA on their own account, with no
+            // RMD debit to explain them. Owned-IRA balance re-join validation
+            // requires every such change to be captured here, at the mutation
+            // site, exactly as the RMD and SEPP distributions above are.
+            const kind = 'legacyQcd' as const
+            const producerOccurrenceKey =
+              runtimeOccurrenceKey(kind, state.account.id)
+            recordAnnualRetirementRuntimeOccurrence({
+              producerOccurrenceKey,
+              kind,
+              grossAmountPlanDollars: take,
+              ownerPersonId: state.account.ownerPersonId,
+              sourceAccountId: state.account.id,
+              executionDate: null,
+              executionSequence: null,
+              movementAuthorityId: null,
+            })
+            recordAnnualRetirementRuntimeApplication({
+              applicationKind: 'debit',
+              producerOccurrenceKey,
+              simulatorPhase: 'legacyQcdDistribution',
+              ownerPersonId: state.account.ownerPersonId,
+              sourceAccountId: state.account.id,
+              sourceBalanceBeforePlanDollars: sourceBalanceBefore,
+              appliedAmountPlanDollars: take,
+              sourceBalanceAfterPlanDollars: state.balance,
+            })
           }
         }
         qcd += qcdFromRmd
@@ -5103,12 +5131,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           .sort(canonicalRuntimeOccurrenceOrder)
           .map((occurrence) => Object.freeze({ ...occurrence })),
       ),
-      nonmovingLegacyQcdOverlay: qcd > 0
+      // Only the routed share belongs in the nonmoving overlay. The rest of the
+      // annual total left an owned IRA under its own occurrences above, and
+      // publishing it here as well would double-count the gift.
+      nonmovingLegacyQcdOverlay: qcdFromRmd > 0
         ? Object.freeze({
           status: 'nonmovingLegacyQcdCaptured' as const,
           kind: 'legacyQcd' as const,
           taxYear: year,
-          grossAmountPlanDollars: qcd,
+          grossAmountPlanDollars: qcdFromRmd,
           ownerPersonId: null,
           sourceAccountId: null,
           physicalMovement: 'notAdditionalMovement' as const,
