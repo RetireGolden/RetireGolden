@@ -3388,6 +3388,306 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
     ],
   },
+  'irc-86-c-provisional-income-thresholds': {
+    title: 'The Social Security base amounts are fixed dollars, and the joint figure is not double',
+    statement:
+      'The two provisional-income thresholds that gate benefit taxation are the base amount, 25,000 for an unmarried filer and 32,000 on a joint return, and the adjusted base amount, 34,000 and 44,000. Section 86 contains no cost-of-living provision of any kind, so all four figures have stood in the same nominal dollars since 1993 and move only by legislation. Two errors follow from forgetting that. Scaling them with an inflation factor understates taxable Social Security in every projected year, because the whole design of the section is that a rising nominal benefit crosses a still threshold. And the joint amounts are not twice the unmarried ones -- 32,000 against 25,000 and 44,000 against 34,000 -- so the doubling that holds for the standard deduction must not be carried across to these.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The base amount is zero rather than 25,000 for a married taxpayer who files separately and did not live apart from the spouse for the whole year, which makes the whole benefit taxable at the 85 percent rate. The engine has no married-filing-separately status, so that case cannot arise; the record notes it because a later filing status added without reading 86(c)(1)(C) would inherit the unmarried figure and understate the tax by the largest margin the section allows.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 86(c)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section86&num=0&edition=prelim',
+      quotedText:
+        'Base amount and adjusted base amount For purposes of this section- (1) Base amount The term "base amount" means- (A) except as otherwise provided in this paragraph, $25,000, (B) $32,000 in the case of a joint return, and (C) zero in the case of a taxpayer who- (i) is married as of the close of the taxable year (within the meaning of section 7703) but does not file a joint return for such year, and (ii) does not live apart from his spouse at all times during the taxable year. (2) Adjusted base amount The term "adjusted base amount" means- (A) except as otherwise provided in this paragraph, $34,000, (B) $44,000 in the case of a joint return, and (C) zero in the case of a taxpayer described in paragraph (1)(C).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 1994,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/params/data/year2026.ts',
+      'packages/engine/src/tax/federalTax.ts',
+    ],
+  },
+  'irc-414-v-7-E-roth-catch-up-wage-threshold': {
+    title: 'The Roth catch-up wage threshold moves in five-thousand-dollar steps',
+    statement:
+      'A participant whose wages from the sponsoring employer for the preceding calendar year exceed the threshold in IRC 414(v)(7)(A) may make catch-up contributions only as designated Roth contributions. The base figure is 145,000, and 414(v)(7)(E) adjusts it annually in the same time and manner as the section 415(d) limits, from a base period of the calendar quarter beginning July 1, 2023, with any increase that is not a multiple of 5,000 rounded to the next lower multiple. Notice 2025-67 sets the threshold at 150,000 for 2026. The round-down is what makes the figure hard to guess: it stands still for a year or more at a time and then jumps a whole step, so it is never the base amount scaled by a year of inflation.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The parameter pack carries the threshold but no engine calculator reads it, so nothing in the projection currently forces a high-wage catch-up into Roth. Registering the rule against the pack fields that hold the figure means a later implementation inherits the authority and the rounding rule rather than re-deriving them, and the fixture pins the published figure against the un-adjusted statutory base in the meantime.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 414(v)(7)(A), (v)(7)(E)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section414&num=0&edition=prelim',
+      quotedText:
+        'Except as provided in subparagraph (C), in the case of an eligible participant whose wages (as defined in section 3121(a)) for the preceding calendar year from the employer sponsoring the plan exceed $145,000, paragraph (1) shall apply only if any additional elective deferrals are designated Roth contributions (as defined in section 402A(c)(1)) made pursuant to an employee election. ... In the case of a year beginning after December 31, 2024, the Secretary shall adjust annually the $145,000 amount in subparagraph (A) for increases in the cost-of-living at the same time and in the same manner as adjustments under 415(d); except that the base period taken into account shall be the calendar quarter beginning July 1, 2023, and any increase under this subparagraph which is not a multiple of $5,000 shall be rounded to the next lower multiple of $5,000.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Notice 2025-67, section on the Roth catch-up wage threshold',
+      url: 'https://www.irs.gov/pub/irs-drop/n-25-67.pdf',
+      quotedText:
+        'The Roth catch-up wage threshold for 2025, which under section 414(v)(7)(A) is used to determine whether an individual’s catch-up contributions to an applicable employer plan (other than a plan described in section 408(k) or (p)) for 2026 must be designated as Roth contributions, is increased from $145,000 to $150,000.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/params/data/year2026.ts',
+      'packages/engine/src/params/types.ts',
+    ],
+  },
+  'irc-415-d-cost-of-living-adjustment-anchor': {
+    title: 'Section 415(d) is the adjustment mechanism the other retirement limits borrow',
+    statement:
+      'IRC 415(d) directs the Secretary to adjust the defined benefit limit and the 40,000 defined contribution limit in 415(c)(1)(A) for cost of living, measured on the calendar quarter ending September 30 of the preceding year against a base period of the calendar quarter beginning July 1, 2001, by procedures similar to those used for Social Security benefit adjustments, with any increase in the 415(c)(1)(A) amount rounded down to a multiple of 1,000. For 2026 that limit is 72,000, up from 70,000. The reason to record the mechanism rather than only the figure is that the 402(g) elective deferral limit, the 414(v) catch-up amounts, the Roth catch-up wage threshold and the QLAC premium cap all adjust by reference back to this same subsection, each with its own base period and its own rounding step. They move together, and none of them is ever a smooth multiple of the prior year.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The statutory adjustment lands on rounded steps while the projection multiplies the pack figure by a continuous inflation factor, so a projected year can sit between two published steps. Holding the step exactly would require index values for years that have not happened, which do not exist at planning time, so the continuous factor is a deliberate approximation. It is bounded by one rounding step, unbiased over a long horizon, and never reverses the direction of a limit. What it must not be extended to is a figure with no adjustment provision at all, where the same multiplication produces a number the statute never allows.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 415(d)(1), (d)(2), (d)(3)(D), (d)(4)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section415&num=0&edition=prelim',
+      quotedText:
+        'The Secretary shall adjust annually- (A) the $160,000 amount in subsection (b)(1)(A), (B) in the case of a participant who is separated from service, the amount taken into account under subsection (b)(1)(B), and (C) the $40,000 amount in subsection (c)(1)(A), for increases in the cost-of-living in accordance with regulations prescribed by the Secretary. (2) Method The regulations prescribed under paragraph (1) shall provide for- (A) an adjustment with respect to any calendar year based on the increase in the applicable index for the calendar quarter ending September 30 of the preceding calendar year over such index for the base period, and (B) adjustment procedures which are similar to the procedures used to adjust benefit amounts under section 215(i)(2)(A) of the Social Security Act. ... The base period taken into account for purposes of paragraph (1)(C) is the calendar quarter beginning July 1, 2001. ... Any increase under subparagraph (C) of paragraph (1) which is not a multiple of $1,000 shall be rounded to the next lowest multiple of $1,000.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Notice 2025-67, section on the section 415 limitations',
+      url: 'https://www.irs.gov/pub/irs-drop/n-25-67.pdf',
+      quotedText:
+        'The limitation for defined contribution plans under section 415(c)(1)(A) is increased in 2026 from $70,000 to $72,000. The Code provides that various other amounts are to be adjusted at the same time and in the same manner as the limitation of section 415(b)(1)(A).',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/params/data/year2026.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+  'treas-reg-1-401-a-9-6-q-2-qlac-premium-dollar-limit': {
+    title: 'The QLAC premium cap is a household-wide running total that moves in ten-thousand-dollar steps',
+    statement:
+      'Premiums paid for a qualifying longevity annuity contract satisfy the limitation only if they do not exceed 200,000 as adjusted, reduced by every premium already paid for that contract and for any other contract intended to be a QLAC purchased under the plan or under any other plan, annuity, or account described in section 401(a), 403(a), 403(b), or 408, or under an eligible governmental plan. The cap is therefore one running total across all of the retirement accounts of an individual, not a per-contract or per-account allowance. The 200,000 amount is adjusted at the same time and in the same manner as the section 415(d) limits, from a base period of the calendar quarter beginning July 1, 2022, with any increment that is not a multiple of 10,000 rounded down, so the cap sits on a whole ten-thousand-dollar step. Notice 2025-67 confirms it remains 210,000 for 2026.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The regulation moves the cap as a step function while the projection multiplies it by a continuous inflation factor, so a projected year can sit between two published steps and a premium within one step of the cap can read as eligible when the regulation would refuse it, or the reverse. The error is bounded by a single ten-thousand-dollar step. Holding the step would require index values for years that have not happened, so the continuous factor is the same deliberate approximation taken for every other limit that borrows the section 415(d) mechanism.',
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-6(q)(2)(ii), (q)(4)(ii)(A)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-6',
+      quotedText:
+        'Dollar limitation. The dollar limitation as of a premium payment date is an amount by which $200,000 (as adjusted under paragraph (q)(4)(ii)(A) of this section), exceeds the sum of- (A) The premiums paid before that date with respect to the contract, and (B) The premiums paid on or before that date with respect to any other contract that is intended to be a QLAC and that is purchased for the employee under the plan, or any other plan, annuity, or account described in section 401(a), 403(a), 403(b), or 408 or eligible governmental plan under section 457(b). ... Dollar limitation. The $200,000 amount under paragraph (q)(2)(ii) of this section will be adjusted at the same time and in the same manner as the limits are adjusted under section 415(d), except that- (1) The base period is the calendar quarter beginning July 1, 2022; and (2) The amount of any increment to the limit that is not a multiple of $10,000 will be rounded to the next lowest multiple of $10,000.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Notice 2025-67, section on the qualifying longevity annuity contract limitation',
+      url: 'https://www.irs.gov/pub/irs-drop/n-25-67.pdf',
+      quotedText:
+        'The limitation on premiums paid for a qualifying longevity annuity contract under § 1.401(a)(9)-6(q)(2)(ii) remains $210,000.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/params/data/year2026.ts',
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/decisions/generators.ts',
+    ],
+  },
+  'usc-42-430-b-contribution-and-benefit-base': {
+    title: 'The OASDI contribution and benefit base is wage-indexed, not price-indexed',
+    statement:
+      'The Social Security taxable wage base for 2026 is 184,500. It is not a price-indexed figure. Section 230(b) of the Act sets it to the larger of the base already in effect and the 1994 base of 60,600 multiplied by the ratio of the national average wage index for the second preceding year to that for 1992, rounded to the nearest multiple of 300. For 2026 that product is 184,548.71 and it rounds to 184,500. Average wages have grown faster than consumer prices over almost every long window, so a projection that carries the base forward on a consumer-price factor understates it, and because the two rates compound the gap widens every year rather than staying a fixed percentage.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The parameter pack carries the base but no engine calculator reads it yet, and the engine has no national-average-wage path to carry it forward on: the plan supplies a general inflation assumption and nothing else. When a calculator does read it, scaling by general inflation will be a stand-in for wage indexing rather than a reading of section 230, and this record is where that has to be said. The same caution applies to the retirement earnings test exempt amounts, which are wage-indexed by the same ratio.',
+    authority: [{
+      kind: 'statute',
+      citation: '42 USC 430(b)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section430&num=0&edition=prelim',
+      quotedText:
+        'The amount of such contribution and benefit base shall (subject to subsection (c)) be the amount of the contribution and benefit base in effect in the year in which the determination is made or, if larger, the product of- (1) $60,600, and (2) the ratio of (A) the national average wage index (as defined in section 409(k)(1) of this title) for the calendar year before the calendar year in which the determination under subsection (a) is made to (B) the national average wage index (as so defined) for 1992, with such product, if not a multiple of $300, being rounded to the next higher multiple of $300 where such product is a multiple of $150 but not of $300 and to the nearest multiple of $300 in any other case.',
+    }, {
+      kind: 'regulation',
+      citation: 'SSA, Cost-of-Living Increase and Other Determinations for 2026, 90 FR 49047 (Nov. 3, 2025)',
+      url: 'https://www.govinfo.gov/content/pkg/FR-2025-11-03/html/2025-19763.htm',
+      quotedText:
+        'Multiplying the 1994 OASDI contribution and benefit base ($60,600) by the ratio of the national average wage index for 2024 ($69,846.57 as determined above) to that for 1992 ($22,935.42) produces $184,548.71. We round this amount to $184,500. Because $184,500 exceeds the current base amount of $176,100, the OASDI contribution and benefit base is $184,500 for 2026.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/params/data/year2026.ts',
+      'packages/engine/src/params/types.ts',
+    ],
+  },
+  'usc-42-403-f-8-earnings-test-exempt-amounts': {
+    title: 'The earnings test exempt amounts are wage-indexed, and the higher one is not a multiple of the lower',
+    statement:
+      'Section 203(f)(8)(B) of the Act sets each monthly exempt amount to the larger of the amount already in effect and a base monthly amount scaled by the ratio of the national average wage index for the second preceding year to that for a fixed reference year, rounded to the nearest multiple of 10. The two amounts run off different bases and different reference years: 670 against 1992 for a beneficiary below normal retirement age throughout the year, and 2,500 against 2000 for the year normal retirement age is attained. The annual amounts are exactly twelve times the monthly ones, giving 24,480 and 65,160 for 2026. Because the index is wages rather than prices, and because the two amounts are separately derived, neither one can be obtained by scaling the other or by applying the benefit cost-of-living increase to last year figure.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The projection carries both exempt amounts forward on the general inflation assumption because the engine has no national-average-wage path, and the plan supplies no wage growth input from which one could be built. That is a stand-in rather than a reading of section 203(f)(8)(B), and it biases the projected exempt amount low in the direction that withholds more benefit than the Act would, since wages have historically outrun prices. It is recorded here rather than left in the code because the fix is a new assumption rather than a change of formula.',
+    authority: [{
+      kind: 'statute',
+      citation: '42 USC 403(f)(8)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim',
+      quotedText:
+        'Except as otherwise provided in subparagraph (D), the exempt amount which is applicable to individuals described in such subparagraph and the exempt amount which is applicable to other individuals, for each month of a particular taxable year, shall each be whichever of the following is the larger- (i) the corresponding exempt amount which is in effect with respect to months in the taxable year in which the determination under subparagraph (A) is made, or (ii) the product of the corresponding exempt amount which is in effect with respect to months in the taxable year ending after 2001 and before 2003 (with respect to individuals described in subparagraph (D)) or the taxable year ending after 1993 and before 1995 (with respect to other individuals), and the ratio of- (I) the national average wage index (as defined in section 409(k)(1) of this title) for the calendar year before the calendar year in which the determination under subparagraph (A) is made, to (II) the national average wage index (as so defined) for 2000 (with respect to individuals described in subparagraph (D)) or 1992 (with respect to other individuals), with such product, if not a multiple of $10, being rounded to the next higher multiple of $10 where such product is a multiple of $5 but not of $10 and to the nearest multiple of $10 in any other case.',
+    }, {
+      kind: 'regulation',
+      citation: 'SSA, Cost-of-Living Increase and Other Determinations for 2026, 90 FR 49047 (Nov. 3, 2025)',
+      url: 'https://www.govinfo.gov/content/pkg/FR-2025-11-03/html/2025-19763.htm',
+      quotedText:
+        'Multiplying the 1994 retirement earnings test monthly exempt amount of $670 by the ratio of the national average wage index for 2024 ($69,846.57) to that for 1992 ($22,935.42) produces $2,040.39. We round this to $2,040. Because $2,040 exceeds the current exempt amount of $1,950, the lower retirement earnings test monthly exempt amount is $2,040 for 2026. The lower annual exempt amount is $24,480 under the retirement earnings test. ... Multiplying the 2002 retirement earnings test monthly exempt amount of $2,500 by the ratio of the national average wage index for 2024 ($69,846.57) to that for 2000 ($32,154.82) produces $5,430.49. We round this to $5,430. Because $5,430 exceeds the current exempt amount of $5,180, the higher retirement earnings test monthly exempt amount is $5,430 for 2026. The higher annual exempt amount is $65,160 under the retirement earnings test.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/params/data/year2026.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+  'usc-42-1395r-i-5-C-top-irmaa-threshold-frozen': {
+    title: 'The top IRMAA threshold is frozen through 2027, then indexed off a later base',
+    statement:
+      'Every IRMAA dollar threshold is indexed under 42 USC 1395r(i)(5)(A) to consumer prices measured against an August 2006 base and rounded to the nearest 1,000, but that subparagraph is expressly subject to (i)(5)(C), which treats the 500,000 amounts twice. Subparagraph (i)(5)(C)(i) removes them from the (i)(5)(A) adjustment outright. Subparagraph (i)(5)(C)(ii) brings them back for calendar years after 2027, measured against August 2026 rather than August 2006. Because both provisions read the August of the preceding calendar year, an August 2026 base is exactly one year behind the general one, so from 2028 the top row grows at the same rate as the rows beneath it but from a position one year further back. The carve-out reaches only the 500,000 amounts, not paragraph (3) at large, so the four lower rows never pause. The joint figure follows from (i)(3)(C)(ii), which sets the last row at 150 percent of the individual amount rather than twice it, which is why the pack carries 500,000 and 750,000 where every lower row is an exact double. CMS says the same in its own words when it promulgates the table: the top threshold levels are to be inflation-adjusted beginning in 2028, which is why that row has stood at 500,000 and 750,000 since it was created for 2019 while every row beneath it rose each year. Both errors bite on a long horizon. Scaling all five boundaries by one factor sweeps into the top tier a household whose income never reached it; freezing the top boundary forever does the same thing more slowly and never stops, because a nominal projection keeps rising past a threshold the statute does allow to move again.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'Three things are decided here rather than dictated. First, the index: the resumed adjustment is measured on the plan assumed general inflation rather than the consumer price index the statute names, which is the same stand-in the lower rows already take, and the pack year of 2026 is what makes the general inflation series readable at the August 2026 base period without an offset. Second, the rounding: (i)(5)(B) rounds a dollar amount increased under subparagraph (C) to the nearest 1,000, and that is reproduced for the top row. The identical rounding (i)(5)(B) applies to the (i)(5)(A) adjustment of the four lower rows is not reproduced, which is pre-existing behaviour and is named here rather than left as a silent asymmetry between two branches of one function. Third, the Federal Register determination that publishes the table is registered under the regulation authority kind. It is neither a statute nor an IRS notice, and the enum has no member for an agency determination published in the Federal Register; introducing one is a schema decision rather than a research finding, so the nearest existing member is used and the choice is named rather than left silent.',
+    authority: [{
+      kind: 'statute',
+      citation: '42 USC 1395r(i)(5)(A), (i)(5)(B), (i)(5)(C)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section1395r&num=0&edition=prelim',
+      quotedText:
+        'Subject to subparagraph (C), in the case of any calendar year beginning after 2007 (other than 2018 and 2019), each dollar amount in paragraph (2) or (3) shall be increased by an amount equal to- (i) such dollar amount, multiplied by (ii) the percentage (if any) by which the average of the Consumer Price Index for all urban consumers (United States city average) for the 12-month period ending with August of the preceding calendar year exceeds such average for the 12-month period ending with August 2006 (or, in the case of a calendar year beginning with 2020, August 2018). (B) Rounding If any dollar amount after being increased under subparagraph (A) or (C) is not a multiple of $1,000, such dollar amount shall be rounded to the nearest multiple of $1,000. (C) Treatment of adjustments for certain higher income individuals (i) In general Subparagraph (A) shall not apply with respect to each dollar amount in paragraph (3) of $500,000. (ii) Adjustment beginning 2028 In the case of any calendar year beginning after 2027, each dollar amount in paragraph (3) of $500,000 shall be increased by an amount equal to- (I) such dollar amount, multiplied by (II) the percentage (if any) by which the average of the Consumer Price Index for all urban consumers (United States city average) for the 12-month period ending with August of the preceding calendar year exceeds such average for the 12-month period ending with August 2026.',
+    }, {
+      kind: 'statute',
+      citation: '42 USC 1395r(i)(3)(C)(ii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section1395r&num=0&edition=prelim',
+      quotedText:
+        'In the case of a joint return, clause (i) shall be applied by substituting dollar amounts which are twice the dollar amounts otherwise applicable under clause (i) for the calendar year except, with respect to the dollar amounts applied in the last row of the table under subclause (III) of such clause (and the second dollar amount specified in the second to last row of such table), clause (i) shall be applied by substituting dollar amounts which are 150 percent of such dollar amounts for the calendar year.',
+    }, {
+      kind: 'regulation',
+      citation: 'CMS, Medicare Part B Monthly Actuarial Rates, Premium Rates, and Annual Deductible Beginning January 1, 2026, 90 FR 52063 (Nov. 19, 2025)',
+      url: 'https://www.govinfo.gov/content/pkg/FR-2025-11-19/html/2025-20251.htm',
+      quotedText:
+        'For years beginning in 2019, the BBA of 2018 established a new income threshold. If a beneficiary\'s modified adjusted gross income is greater than or equal to $500,000 for a beneficiary filing an individual income tax return and $750,000 for a beneficiary filing a joint tax return, the beneficiary is responsible for 85 percent of the estimated total cost of Part B coverage. The BBA of 2018 specified that these new income threshold levels be inflation-adjusted beginning in 2028.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2019,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/params/index.ts',
+      'packages/engine/src/tax/medicare.ts',
+      'packages/engine/src/insights/detectors/irmaaTierEdge.ts',
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+  'usc-42-1395r-a-3-part-b-standard-premium': {
+    title: 'The standard Part B premium is half the aged actuarial rate plus a repayment amount',
+    statement:
+      'The Secretary determines the monthly actuarial rate for enrollees age 65 and over each September as the amount needed for those enrollees to fund one half of the benefits and administrative costs attributable to them, and then promulgates a standard monthly premium equal to 50 percent of that rate, which is why the standard premium is described as roughly 25 percent of program cost. For 2026 the aged actuarial rate is 405.40 and the promulgated standard premium is 202.90, which is 50 percent of the rate plus a 0.20 repayment amount required under current law. The premium is re-determined every year against projected program cost and tracks no published price index, so a projected year needs a medical cost path rather than general inflation, and the promulgated figure must be read rather than re-derived: halving the actuarial rate alone loses the repayment amount.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The repayment amount rides on the standard premium but is not part of the income-related scaling, so deriving a tier premium as the standard premium times the applicable percentage over 25 reproduces the promulgated table only to within a few cents. That residual is accepted as planning-grade rather than carrying a separate per-tier premium table. The Federal Register determination is registered under the regulation authority kind because the enum has no member for an agency determination published in the Federal Register, and adding one is a schema decision rather than a research finding; the choice is named here rather than left silent.',
+    authority: [{
+      kind: 'statute',
+      citation: '42 USC 1395r(a)(1), (a)(3)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section1395r&num=0&edition=prelim',
+      quotedText:
+        'The Secretary shall, during September of 1983 and of each year thereafter, determine the monthly actuarial rate for enrollees age 65 and over which shall be applicable for the succeeding calendar year. Subject to paragraphs (5), (6), and (7), such actuarial rate shall be the amount the Secretary estimates to be necessary so that the aggregate amount for such calendar year with respect to those enrollees age 65 and older will equal one-half of the total of the benefits and administrative costs which he estimates will be payable from the Federal Supplementary Medical Insurance Trust Fund for services performed and related administrative costs incurred in such calendar year with respect to such enrollees ... The Secretary, during September of each year, shall determine and promulgate a monthly premium rate for the succeeding calendar year that (except as provided in subsection (g)) is equal to 50 percent of the monthly actuarial rate for enrollees age 65 and over, determined according to paragraph (1), for that succeeding calendar year.',
+    }, {
+      kind: 'regulation',
+      citation: 'CMS, Medicare Part B Monthly Actuarial Rates, Premium Rates, and Annual Deductible Beginning January 1, 2026, 90 FR 52063 (Nov. 19, 2025)',
+      url: 'https://www.govinfo.gov/content/pkg/FR-2025-11-19/html/2025-20251.htm',
+      quotedText:
+        'The monthly actuarial rates for 2026 are $405.40 for aged enrollees and $548.60 for disabled enrollees. The standard monthly Part B premium rate for all enrollees for 2026 is $202.90, which is equal to 50 percent of the monthly actuarial rate for aged enrollees (or approximately 25 percent of the expected average total cost of Part B coverage for aged enrollees) plus the $0.20 repayment amount required under current law.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/params/data/year2026.ts',
+      'packages/engine/src/params/index.ts',
+      'packages/engine/src/tax/medicare.ts',
+    ],
+  },
+  'cfr-20-404-1574-b-2-sga-non-blind-monthly-amount': {
+    title: 'The non-blind substantial gainful activity amount is set by regulation and wage-indexed',
+    statement:
+      'The monthly earnings level that ordinarily shows substantial gainful activity for a non-blind beneficiary is fixed by regulation rather than by the Act, which supplies a formula only for the statutorily blind amount. Under 20 CFR 404.1574(b)(2)(ii) it is redetermined each year as the larger of the amount for the previous year and 700 multiplied by the ratio of the national average wage index for the second preceding year to that for 1998, rounded to the nearest multiple of 10. For 2026 that product is 1,694.05 and the amount is 1,690 a month, which the determination states supersedes 1,620. Two consequences follow. The figure moves with wages rather than prices, so carrying it forward on a consumer-price factor drifts low. And because it gates the whole SSDI benefit for the year rather than reducing it, an amount one year stale flips the benefit off for a beneficiary earning between the old and new levels.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The projection compares annual wages against twelve times the monthly amount, which is an annual-granularity stand-in: the regulation applies the level to average monthly earnings, so a beneficiary whose earnings are concentrated in part of the year is treated differently by the two. The regulation is also carried forward on the general inflation assumption rather than on the national average wage index, for want of a wage path in the engine. The Federal Register determination that fixes the year figure is registered under the regulation authority kind, which is also where the underlying 20 CFR provision sits; the enum has no member for an agency determination published in the Federal Register, and adding one is a schema decision rather than a research finding.',
+    authority: [{
+      kind: 'regulation',
+      citation: '20 CFR 404.1574(b)(2)(ii)',
+      url: 'https://www.ecfr.gov/current/title-20/section-404.1574',
+      quotedText:
+        'Beginning January 1, 2001, and each year thereafter, they average more than the larger of: (A) The amount for the previous year, or (B) An amount adjusted for national wage growth, calculated by multiplying $700 by the ratio of the national average wage index for the year 2 calendar years before the year for which the amount is being calculated to the national average wage index for the year 1998. We will then round the resulting amount to the next higher multiple of $10 where such amount is a multiple of $5 but not of $10 and to the nearest multiple of $10 in any other case.',
+    }, {
+      kind: 'regulation',
+      citation: 'SSA, Cost-of-Living Increase and Other Determinations for 2026, 90 FR 49047 (Nov. 3, 2025)',
+      url: 'https://www.govinfo.gov/content/pkg/FR-2025-11-03/html/2025-19763.htm',
+      quotedText:
+        'Section 223(d)(4)(A) of the Act specifies the formula for determining the SGA amount for statutorily blind individuals under title II while our regulations (20 CFR 404.1574 and 416.974) specify the formula for determining the SGA amount for non-blind individuals with a determined disability. ... Multiplying the 2000 monthly SGA amount for non-blind individuals with a determined disability ($700) by the ratio of the national average wage index for 2024 ($69,846.57) to that for 1998 ($28,861.44) produces $1,694.05. We then round this amount to $1,690. Because $1,690 exceeds the current amount of $1,620, the monthly SGA amount for non-blind individuals with a determined disability is $1,690 for 2026.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/params/data/year2026.ts',
+      'packages/engine/src/socialSecurity/disability.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+  'irc-3101-a-oasdi-employee-tax-rate': {
+    title: 'The employee-side OASDI rate is a flat statutory percentage',
+    statement:
+      'IRC 3101(a) imposes the old-age, survivors, and disability insurance tax on the employee at 6.2 percent of wages. The subsection states a single percentage, with no table of future rates and no cost-of-living provision, so the rate has been 6.2 percent since 1990 and moves only by legislation. The employer pays the same again under 3111(a) and a self-employed individual pays the combined 12.4 percent under 1401(a), which is why a lifetime-contributions readout has to say which side of the payroll tax it is describing: quoting 12.4 for an employee doubles what the person actually paid, and quoting 6.2 for a self-employed person halves it.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'The rate is carried in the parameter pack and consumed outside the engine, by the Social Security analysis page in the planner package, which the registry cannot name because implementedBy is checked against engine sources. The pack and its type are listed instead, which are the files a later reader would change.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 3101(a)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section3101&num=0&edition=prelim',
+      quotedText:
+        'In addition to other taxes, there is hereby imposed on the income of every individual a tax equal to 6.2 percent of the wages (as defined in section 3121(a)) received by the individual with respect to employment (as defined in section 3121(b)).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 1990,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-03',
+    implementedBy: [
+      'packages/engine/src/params/data/year2026.ts',
+      'packages/engine/src/params/types.ts',
+    ],
+  },
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)

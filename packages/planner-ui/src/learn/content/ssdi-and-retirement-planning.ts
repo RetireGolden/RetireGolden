@@ -55,7 +55,7 @@ export const ssdiAndRetirementPlanningArticle: LearningArticle = {
     { type: 'heading', text: 'The SGA gate (before FRA)' },
     {
       type: 'prose',
-      md: 'While receiving SSDI before FRA, earning above the Substantial Gainful Activity limit generally stops the benefit. In 2026, SGA is $1,620 per month for non-blind work ($2,700 if statutorily blind). SSA also offers a trial work period and extended Medicare, which RetireGolden does not model. The planner applies a simple annual check: if your wages exceed SGA × 12, SSDI is suspended for that year.',
+      md: 'While receiving SSDI before FRA, earning above the Substantial Gainful Activity limit generally stops the benefit. In 2026, SGA is $1,690 per month for non-blind work ($2,830 if statutorily blind). SSA also offers a trial work period and extended Medicare, which RetireGolden does not model. The planner applies a simple annual check: if your wages exceed SGA × 12, SSDI is suspended for that year.',
     },
     {
       type: 'table',

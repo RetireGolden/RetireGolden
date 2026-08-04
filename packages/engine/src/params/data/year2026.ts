@@ -112,10 +112,10 @@ export const year2026: ParameterPack = {
   },
 
   annuities: {
-    // SECURE 2.0 QLAC dollar cap: $200,000 (2024), indexed to $210,000 (2025).
-    // The 2026 figure is not yet published; the last-confirmed 2025 cap stands
-    // in (projected forward by inflation past the pack year like other indexed
-    // limits). Source: IRS Notice / SECURE 2.0 Act §202.
+    // QLAC premium cap under Treas. Reg. 1.401(a)(9)-6(q)(2)(ii): a base
+    // $200,000, adjusted like the section 415(d) limits but rounded down to a
+    // multiple of $10,000, so it moves in whole ten-thousand-dollar steps.
+    // Notice 2025-67 publishes the 2026 figure and it remains $210,000.
     qlacPremiumCap: 210_000,
     // IRS Pub 939 Table V — Ordinary Life Annuities, One Life — expected-return
     // multiples (remaining life expectancy in years) by age at the annuity
@@ -188,8 +188,12 @@ export const year2026: ParameterPack = {
     taxableWageBase: 184_500,
     earningsTestBelowFraAnnual: 24_480,
     earningsTestFraYearAnnual: 65_160,
-    // SSDI Substantial Gainful Activity (non-blind), 2026. Source: SSA SGA.
-    sgaMonthlyNonBlind: 1_620,
+    // SSDI Substantial Gainful Activity (non-blind), 2026. The determination
+    // multiplies the 2000 amount of $700 by the ratio of the national average
+    // wage index for 2024 to that for 1998, giving $1,694.05, rounded to
+    // $1,690; it names $1,620 as the 2025 amount this supersedes. Source: SSA,
+    // Cost-of-Living Increase and Other Determinations for 2026, 90 FR 49047.
+    sgaMonthlyNonBlind: 1_690,
     // Employee-side OASDI payroll tax rate (statutory since 1990). Source: SSA.
     oasdiEmployeeRatePct: 6.2,
   },

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { expectMoney } from '../testing/money.js'
-import { packForYear } from '../params/index.js'
+import { type IrmaaThresholdYear, packForYear } from '../params/index.js'
 import { medicareAnnualPremiumPerPerson } from './medicare.js'
 
 /**
@@ -14,6 +14,16 @@ import { medicareAnnualPremiumPerPerson } from './medicare.js'
  */
 const pack = packForYear(2026).pack
 const STD_MONTHLY = 202.9
+
+/**
+ * A premium year inside the 42 USC 1395r(i)(5)(C)(i) freeze window whose
+ * inflation path is a flat factor, so these tests exercise the indexing of the
+ * lower rows without also depending on the top-row carve-out.
+ */
+const atFlatScale = (factor: number): IrmaaThresholdYear => ({
+  premiumYear: 2027,
+  inflationFactorToYear: (year: number): number => (year <= pack.year ? 1 : factor),
+})
 
 describe('Medicare / IRMAA golden worksheets', () => {
   it('charges the standard premium at or below the first single threshold', () => {
@@ -62,15 +72,15 @@ describe('Medicare / IRMAA golden worksheets', () => {
   })
 
   it('scales thresholds for future years (indexing stand-in)', () => {
-    // With thresholdScale 1.1 the first single cliff moves to 109,000 * 1.1 = 119,900,
-    // so 109,001 falls back to tier 0.
-    expect(medicareAnnualPremiumPerPerson(pack, 109_001, 'single', 1.1).irmaaTier).toBe(0)
-    expect(medicareAnnualPremiumPerPerson(pack, 119_901, 'single', 1.1).irmaaTier).toBe(1)
+    // With a flat 1.1 inflation path the first single cliff moves to
+    // 109,000 * 1.1 = 119,900, so 109,001 falls back to tier 0.
+    expect(medicareAnnualPremiumPerPerson(pack, 109_001, 'single', atFlatScale(1.1)).irmaaTier).toBe(0)
+    expect(medicareAnnualPremiumPerPerson(pack, 119_901, 'single', atFlatScale(1.1)).irmaaTier).toBe(1)
   })
 
   it('scales premiums for future years (healthcare inflation stand-in)', () => {
     // premiumScale 1.2 multiplies the standard Part B premium.
-    const r = medicareAnnualPremiumPerPerson(pack, 50_000, 'single', 1, 1.2)
+    const r = medicareAnnualPremiumPerPerson(pack, 50_000, 'single', atFlatScale(1), 1.2)
     expect(r.irmaaTier).toBe(0)
     expectMoney(r.partBAnnual, STD_MONTHLY * 1.2 * 12)
   })

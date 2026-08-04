@@ -84,8 +84,12 @@ describe('medicareAnnualPremiumPerPerson', () => {
   })
 
   it('scales thresholds and premiums independently for future years', () => {
-    // Thresholds doubled: 200k single is back under the first tier.
-    const r = medicareAnnualPremiumPerPerson(pack, 200_000, 'single', 2, 1.5)
+    // Thresholds doubled: 200k single is back under the first tier. The premium
+    // year sits inside the freeze window so this exercises the lower rows only.
+    const r = medicareAnnualPremiumPerPerson(pack, 200_000, 'single', {
+      premiumYear: 2027,
+      inflationFactorToYear: (year: number): number => (year <= pack.year ? 1 : 2),
+    }, 1.5)
     expect(r.irmaaTier).toBe(0)
     expect(r.partBAnnual).toBeCloseTo(202.9 * 12 * 1.5, 6)
   })
