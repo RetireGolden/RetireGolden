@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import { describeRule } from '../rules/describeRule.js'
 
-import { stateParamsFor } from '../params/state/index.js'
+import { indexConformedStateStandardDeduction, stateParamsFor } from '../params/state/index.js'
 import type { TaxYearInput } from '../projection/types.js'
+import { computeFederalTax } from './federalTax.js'
 import { computeStateTax, computeStateTaxDetail, createStateTaxCalculator } from './stateTax.js'
 
 function input(over: Partial<TaxYearInput> = {}): TaxYearInput {
@@ -291,5 +292,123 @@ describe('createStateTaxCalculator', () => {
 
   it('no override and no state → zero', () => {
     expect(createStateTaxCalculator().compute(input({ ordinaryIncome: 100_000 }))).toBe(0)
+  })
+})
+
+// The projection runs in nominal dollars, so a 2046 withdrawal arrives inflated.
+// Nine state packs -- AZ, CO, DC, IA, ID, MO, MT, ND, NM -- do not carry a state
+// standard deduction at all: they carry a copy of the FEDERAL one, because their
+// law defines the state amount by reference to it (CO and ND go further, running
+// their brackets on federal taxable income, so the field IS the federal
+// deduction under another name). IRC 63(c)(7)(B)(ii) increases the federal
+// amount for every taxable year beginning after 2025 and the federal engine
+// projects that increase forward, so the copy has to travel with it.
+//
+// `inflationScale: 2` stands for a doubling of the price level. It is chosen so
+// the statutory rounding is a no-op and cannot be quietly wrong: the increase is
+// 16,100 dollars, already a multiple of 50, so rounding it to the next lowest
+// multiple of 50 leaves 32,200 either way.
+describe('a conformed state standard deduction in a stand-in year', () => {
+  const PROJECTED_YEAR = 2046
+  const DOUBLED = 2
+  const calc = createStateTaxCalculator()
+
+  // North Dakota, single: 16,100 conformed deduction, then 0% to 48,475, 1.95%
+  // to 244,825. 180,675 of ordinary income:
+  //   tracks federal   taxable 148,475 -> 1.95% x 100,000            = 1,950.0000
+  //   frozen at pack   taxable 164,575 -> 1.95% x 116,100            = 2,263.9500
+  //   deduction and    taxable 148,475, 0% band doubled to 96,950
+  //     brackets both  -> 1.95% x 51,525                             = 1,004.7375
+  // The third reading is the one worth naming. Indexing the brackets alongside
+  // the deduction is the plausible over-correction, and it is wrong for a reason
+  // the deduction case does not share: a state bracket is a state dollar figure
+  // under state law, and the per-state research to move any of them does not
+  // exist yet (see params/state/index.ts).
+  describeRule('irc-63-c-7-B-ii-conformed-state-deduction-tracks-federal', {
+    readings: { statute: 1_950, frozenAtThePackYear: 2_263.95, bracketsIndexedToo: 1_004.7375 },
+    accepted: 'statute',
+  }, ({ accepted, readings }) => {
+    it('measures nominal income against the federal deduction prescribed for that year', () => {
+      const tax = calc.compute(input({
+        state: 'ND',
+        year: PROJECTED_YEAR,
+        ordinaryIncome: 180_675,
+        inflationScale: DOUBLED,
+      }))
+
+      expect(tax).toBeCloseTo(accepted, 6)
+      expect(tax).not.toBeCloseTo(readings.frozenAtThePackYear, 6)
+      expect(tax).not.toBeCloseTo(readings.bracketsIndexedToo, 6)
+    })
+
+    it('leaves a published year exactly as published', () => {
+      // The default scale is 1 and 2026 has its own pack, so the same income
+      // must still produce the frozen-reading figure -- for 2026 that reading
+      // IS the statute.
+      const tax = calc.compute(input({ state: 'ND', year: 2026, ordinaryIncome: 180_675 }))
+      expect(tax).toBeCloseTo(readings.frozenAtThePackYear, 6)
+    })
+  })
+
+  it('agrees with the federal engine on the deduction, which is the whole point', () => {
+    // The defect this guards against is not a wrong number in isolation: it is
+    // ONE engine holding TWO values for one statutory amount in one year, with
+    // the gap taxed at the state rate. Assert the identity directly.
+    const federal = computeFederalTax({
+      year: PROJECTED_YEAR,
+      filingStatus: 'single',
+      ordinaryIncome: 180_675,
+      capitalGains: 0,
+      ssBenefits: 0,
+      peopleAged65Plus: 0,
+      inflationScale: DOUBLED,
+    })
+    const nd = computeStateTaxDetail(
+      indexConformedStateStandardDeduction(pack('ND'), DOUBLED),
+      input({ state: 'ND', year: PROJECTED_YEAR, ordinaryIncome: 180_675, inflationScale: DOUBLED }),
+    )
+
+    expect(federal.deduction).toBeCloseTo(32_200, 6)
+    expect(180_675 - nd.taxableIncome).toBeCloseTo(federal.deduction, 6)
+  })
+
+  it('carries the conformed deduction DOWN when the plan assumes deflation', () => {
+    // 1(f)(3)(A) floors the adjustment against the BASE year only, so an indexed
+    // amount can fall below the prior year's. The federal figure comes down; a
+    // copy of it that refused to would under-tax the household at the state
+    // rate. At half the price level Colorado's conformed deduction is 8,050:
+    // 60,000 of income -> 51,950 taxable -> 4.4% = 2,285.80.
+    const tax = calc.compute(input({
+      state: 'CO', year: PROJECTED_YEAR, ordinaryIncome: 60_000, inflationScale: 0.5,
+    }))
+    expect(tax).toBeCloseTo((60_000 - 8_050) * 0.044, 6)
+    expect(tax).not.toBeCloseTo((60_000 - 16_100) * 0.044, 6)
+  })
+
+  it('leaves a state that publishes its own deduction where its legislature left it', () => {
+    // North Carolina's 12,750 is a North Carolina figure on a legislated ramp;
+    // no federal provision reaches it, and ME and SC decoupled from the federal
+    // amount for 2026 precisely so theirs would not move with it either.
+    const tax = calc.compute(input({
+      state: 'NC', year: PROJECTED_YEAR, ordinaryIncome: 100_000, inflationScale: DOUBLED,
+    }))
+    expect(tax).toBeCloseTo((100_000 - 12_750) * 0.0399, 6)
+    expect(tax).not.toBeCloseTo((100_000 - 25_500) * 0.0399, 6)
+  })
+
+  it('does not sweep the state retirement-exclusion cap along with the deduction', () => {
+    // Colorado's 24,000 pension subtraction is a Colorado dollar amount that
+    // Colorado does not index. Only the borrowed federal deduction moves:
+    // 100,000 - 24,000 - 32,200 = 43,800 at 4.4%.
+    const tax = calc.compute(input({
+      state: 'CO',
+      year: PROJECTED_YEAR,
+      ordinaryIncome: 100_000,
+      retirementIncome: 100_000,
+      agesAlive: [70],
+      inflationScale: DOUBLED,
+    }))
+    expect(tax).toBeCloseTo((100_000 - 24_000 - 32_200) * 0.044, 6)
+    expect(tax).not.toBeCloseTo((100_000 - 48_000 - 32_200) * 0.044, 6)
   })
 })

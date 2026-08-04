@@ -48,16 +48,11 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   // tax 222,821.59 to 220,841.91, conversions 809,898.99 to 815,673.60. The tax
   // now falls rather than rising, because a wider indexed 22 percent bracket
   // more than offsets the deduction the senior correction takes away.
-  // Only bracket-fill-roth's lifetime tax rises (+304.24), and it rises for the
-  // right reason: it is the one example with a fill-to-bracket ladder, so a
-  // wider bracket is an instruction to convert MORE. It converts +5,823 in 2027,
-  // +12,092 in 2028 and +19,881 in 2029 -- the indexed 22% ceiling compounding
-  // away from the frozen one -- which drains both IRAs a year sooner and leaves
-  // only 9,330 for the 2030 mop-up year instead of 56,329. Lifetime conversions
-  // therefore FALL 9,203.79: the ladder finishes earlier, so less traditional
-  // balance ever compounds into being converted. The extra nominal tax buys a
-  // larger Roth position at a lower effective rate (17.51% of MAGI in 2029
-  // against 17.58% before), which is why ending investable still rises 2,827.78.
+  // A paragraph that stood here claimed the opposite signs for bracket-fill-roth
+  // -- tax rising, conversions falling. It was left behind by a rebase, described
+  // a baseline that no longer exists, and contradicted both the paragraph above
+  // and the values pinned below. Deleted rather than restated: nothing pins its
+  // superseded per-year figures, so there is nothing to re-derive them from.
   //
   // Two examples do not move, and neither can. ltc-shock has zero MAGI in every
   // projected year -- there is no taxable income for a threshold to bind on.
@@ -112,7 +107,19 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   // coast-fire reviewed 2026-07-16: CO standard deduction moved to the 2026
   // federal-equivalent ($15,750 -> $16,100) in the state-pack staleness sweep,
   // lowering lifetime CO tax slightly and raising ending assets to match.
-  'coast-fire': { depletionYear: null, endingInvestable: 7_891_262.4, lifetimeTax: 1_782_760.83, lifetimeRoth: 0 },
+  // Re-baselined 2026-08-04 for IRC 63(c)(7)(B)(ii) conformity. Colorado does
+  // not publish a standard deduction: it taxes federal taxable income, so the
+  // pack's $16,100 IS the federal figure, carried here to convert the engine's
+  // gross base. The federal original has been projected past the pack year
+  // since the 1(j)(3)(B) indexing fix while this copy stayed frozen, so the
+  // engine held two values for one amount and taxed the whole growing gap at
+  // 4.4%. coast-fire is the only example resident in any of the nine conforming
+  // states, and it is the only one that moves. Lifetime tax FALLS $66,035.44
+  // (1,782,760.83 -> 1,716,725.39) and ending investable RISES $190,823.74
+  // (7,891,262.40 -> 8,082,086.14), which are the two directions a larger
+  // deduction can produce. The rise exceeds the tax fall because each year's
+  // unpaid tax stays invested for the rest of the horizon.
+  'coast-fire': { depletionYear: null, endingInvestable: 8_082_086.14, lifetimeTax: 1_716_725.39, lifetimeRoth: 0 },
   'barista-fire': { depletionYear: null, endingInvestable: 14_569_925.04, lifetimeTax: 2_091_401.98, lifetimeRoth: 0 },
   'bridge-early-retirement': { depletionYear: null, endingInvestable: 11_857_432.95, lifetimeTax: 1_427_360.2, lifetimeRoth: 0 },
   'lean-fat-fire': { depletionYear: null, endingInvestable: 43_545_918.82, lifetimeTax: 2_692_779.67, lifetimeRoth: 0 },

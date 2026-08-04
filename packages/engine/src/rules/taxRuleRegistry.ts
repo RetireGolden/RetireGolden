@@ -3694,6 +3694,37 @@ const registry = {
       'packages/engine/src/params/types.ts',
     ],
   },
+  'irc-63-c-7-B-ii-conformed-state-deduction-tracks-federal': {
+    title: 'A state deduction defined by reference to the federal one moves when the federal one moves',
+    statement:
+      'The basic standard deduction is increased for every taxable year beginning after 2025, so its value is a function of the year rather than a constant. Nine state packs (AZ, CO, DC, IA, ID, MO, MT, ND, NM) do not carry a state figure at all -- they carry a copy of the federal one, because their law defines the state deduction by reference to it or, for CO and ND, because their brackets run on federal taxable income and this field is what converts the engine gross base into that base. The copy is the same statutory amount as the original, so it takes the original value in every projected year. Holding it at the pack year while the federal figure is projected forward puts two different values on one amount inside a single year and taxes the whole widening difference at the state rate.',
+    classification: 'settled',
+    contraryReading: null,
+    conventionRationale:
+      'This record is anchored federally because the proposition is federal: nothing here decides how a state adjusts a figure of its own, it keeps a borrowed federal figure equal to the federal figure. Two boundaries follow from that and are deliberate. State BRACKETS are not touched -- those are state dollar amounts under state law, some indexed, some fixed by statute, several on legislated rate ramps, and the per-state research to move any of them does not exist yet -- and neither are the state retirement-exclusion caps, which are likewise state figures (the Colorado 24,000 dollar pension subtraction is not indexed by Colorado law). A state that decouples from the federal amount simply loses the conformity tag and stops moving; Maine and South Carolina did exactly that for 2026 and are untagged. The scaling factor is the plan assumed general inflation rather than the C-CPI-U of section 1(f)(3), and the statutory rounding of the increase to the next lowest multiple of 50 dollars is not reproduced -- the same two approximations indexFederalTaxPack already makes, and they must be the same ones, because a conformed copy indexed on any other basis would diverge from the federal figure it is a copy of.',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 63(c)(7)(B)(ii)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/63',
+      quotedText:
+        'In the case of a taxable year beginning after 2025, the 23,625 dollar and 15,750 dollar amounts in subparagraph (A) shall each be increased by an amount equal to - (I) such dollar amount, multiplied by (II) the cost-of-living adjustment determined under section 1(f)(3) for the calendar year in which the taxable year begins, determined by substituting 2024 for 2016 in subparagraph (A)(ii) thereof. If any increase under this clause is not a multiple of 50 dollars, such increase shall be rounded to the next lowest multiple of 50 dollars.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 63(c)(7)(A)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/63',
+      quotedText:
+        'Increase in standard deduction. Paragraph (2) shall be applied - (i) by substituting 23,625 dollars for 4,400 dollars in subparagraph (B), and (ii) by substituting 15,750 dollars for 3,000 dollars in subparagraph (C).',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/params/state/index.ts',
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)

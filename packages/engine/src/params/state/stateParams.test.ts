@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest'
 import type { FilingStatus } from '../types.js'
 import { computeStateTax } from '../../tax/stateTax.js'
 import type { TaxYearInput } from '../../projection/types.js'
-import { modeledStateCodes, stateParamsFor } from './index.js'
+import { packForYear, LATEST_PACK_YEAR } from '../index.js'
+import { indexConformedStateStandardDeduction, LATEST_STATE_PACK_YEAR, modeledStateCodes, stateParamsFor } from './index.js'
 import { stateYear2026 } from './data/year2026.js'
 
 const FILINGS: FilingStatus[] = ['single', 'marriedFilingJointly']
@@ -94,5 +95,69 @@ describe('spot oracle checks (flat states, single filer, non-retirement income)'
 
   it('GA: flat 4.99% over the $15,000 deduction (2026 DOR vintage)', () => {
     expect(wages('GA', 70_000)).toBeCloseTo((70_000 - 15_000) * 0.0499, 2)
+  })
+})
+
+describe('federal standard-deduction conformity tags', () => {
+  // The tag is what `indexConformedStateStandardDeduction` reads, so the list
+  // has to be exact in both directions. A state added to it wrongly would have
+  // its own legislature's figure grow with federal inflation; a state dropped
+  // from it would hold a copy of the federal deduction frozen while the federal
+  // engine projects the original forward, which is the defect this guards.
+  const CONFORMED = ['AZ', 'CO', 'DC', 'IA', 'ID', 'MO', 'MT', 'ND', 'NM']
+
+  it('tags exactly the states that carry the federal figure', () => {
+    const tagged = modeledStateCodes().filter(
+      (code) => stateParamsFor(code, 2026)!.standardDeductionConformity === 'federal',
+    )
+    expect(tagged).toEqual(CONFORMED)
+  })
+
+  it('gives every tagged state the federal 2026 amount it claims to be carrying', () => {
+    const federal = packForYear(2026).pack.federalTax.standardDeduction
+    for (const code of CONFORMED) {
+      const p = stateParamsFor(code, 2026)!
+      expect(p.standardDeduction.single).toBe(federal.single)
+      expect(p.standardDeduction.marriedFilingJointly).toBe(federal.marriedFilingJointly)
+    }
+  })
+
+  it('leaves ME and SC untagged, since both decoupled for 2026', () => {
+    for (const code of ['ME', 'SC']) {
+      expect(stateParamsFor(code, 2026)!.standardDeductionConformity).toBeUndefined()
+    }
+  })
+
+  it('publishes the state pack for the same year as the federal pack', () => {
+    // The conformed copy is scaled by `TaxYearInput.inflationScale`, which is
+    // measured from the FEDERAL pack year. That is only the right factor while
+    // the two packs are published for the same year; if they ever diverge, the
+    // scale has to be rebased before this test can be relaxed.
+    expect(LATEST_STATE_PACK_YEAR).toBe(LATEST_PACK_YEAR)
+  })
+})
+
+describe('indexConformedStateStandardDeduction', () => {
+  it('is a no-op on an untagged state at any scale', () => {
+    const nc = stateParamsFor('NC', 2026)!
+    expect(indexConformedStateStandardDeduction(nc, 2)).toBe(nc)
+    expect(indexConformedStateStandardDeduction(nc, 0.5)).toBe(nc)
+  })
+
+  it('is a no-op at a scale of exactly 1, or a scale that is not a usable factor', () => {
+    const co = stateParamsFor('CO', 2026)!
+    for (const scale of [1, 0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(indexConformedStateStandardDeduction(co, scale)).toBe(co)
+    }
+  })
+
+  it('moves the deduction and nothing else', () => {
+    const co = stateParamsFor('CO', 2026)!
+    const indexed = indexConformedStateStandardDeduction(co, 2)
+    expect(indexed.standardDeduction).toEqual({ single: 32_200, marriedFilingJointly: 64_400 })
+    expect(indexed.brackets).toEqual(co.brackets)
+    expect(indexed.retirementPrivate).toEqual(co.retirementPrivate)
+    expect(indexed.retirementPublic).toEqual(co.retirementPublic)
+    expect({ ...indexed, standardDeduction: co.standardDeduction }).toEqual(co)
   })
 })

@@ -183,6 +183,16 @@ Each state pack (`StateTaxParams`) carries `hasIncomeTax`, `taxesSocialSecurity`
 ordinary + qualified dividends + taxable capital gains where the state includes them + (taxable SS if the
 state taxes it) - private/public retirement exclusions - standard deduction, floored at 0, then bracketed.
 
+Nine jurisdictions - AZ, CO, DC, IA, ID, MO, MT, ND, NM - do not publish a standard deduction of their own.
+Their packs carry a copy of the **federal** figure, tagged `standardDeductionConformity: 'federal'` (for CO
+and ND the brackets run on federal taxable income, so the field is what converts the engine's gross base into
+that base). Because `indexFederalTaxPack` projects the federal original past the pack year under IRC
+63(c)(7)(B)(ii), `indexConformedStateStandardDeduction` moves the copy by exactly the same factor - otherwise
+one engine would hold two values for one statutory amount in a single projected year and tax the whole
+widening gap at the state rate. This is not state indexing: nothing else in the pack moves, including the
+brackets and the retirement-exclusion caps, which are state figures under state law. ME and SC decoupled from
+the federal deduction for 2026 and are deliberately untagged.
+
 Capital-loss carryforward conformity is state-aware where it changes decisions. The default conforms to the
 federal net capital-gain line. Pennsylvania uses current-year-only conformity, so a federal prior-year loss
 carryforward does not erase PA-taxable current-year gains. CA/MN/NJ source metadata documents their ordinary

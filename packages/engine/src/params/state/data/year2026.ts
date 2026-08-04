@@ -13,16 +13,25 @@
  *
  * States whose standard deduction conforms to (or proxies) the FEDERAL
  * standard deduction — AZ, CO, DC, IA, ID, MO, MT, ND, NM — carry the federal
- * pack's figure for the same year ($16,100/$32,200 for 2026). ME and SC
- * decoupled from the federal deduction for 2026 (ME §5124-C 1-B; SC H.4216)
- * and carry their own published amounts.
+ * pack's figure for the same year ($16,100/$32,200 for 2026) and are tagged
+ * `standardDeductionConformity: 'federal'`. That tag is load-bearing, not
+ * documentation: IRC 63(c)(7)(B)(ii) raises the federal amount every year
+ * after 2025 and the engine projects it forward, so a copy left frozen at the
+ * pack year would disagree with the original inside one projected year. ME and
+ * SC decoupled from the federal deduction for 2026 (ME §5124-C 1-B; SC H.4216)
+ * and carry their own published amounts, so they are deliberately untagged.
+ * Only the deduction is tagged — state BRACKETS stay nominal for every state
+ * (see ../index.ts).
  *
  * State taxable income in the engine starts from gross ordinary income (plus
  * gains, plus the federally taxable SS amount where the state taxes SS), minus
  * the retirement exclusion and the standard deduction below. For states that
- * tax *federal taxable income* and have no separate deduction (e.g. CO), the
+ * tax *federal taxable income* and have no separate deduction (CO and ND), the
  * standard deduction is set to the federal-equivalent so the gross→taxable
- * conversion matches; noted inline.
+ * conversion matches; noted inline. Those two are the strongest case for the
+ * tag, not an exception to it: the field there IS the federal deduction under
+ * another name, so freezing it would leave federal taxable income computed two
+ * different ways in the same year.
  */
 
 import type { StateRetirementExclusion, StateTaxPack, StateTaxParams } from '../types.js'
@@ -80,7 +89,7 @@ const rawStateYear2026 = {
     },
     AZ: {
       code: 'AZ', name: 'Arizona', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
+      standardDeduction: { single: 16100, marriedFilingJointly: 32200 }, standardDeductionConformity: 'federal',
       brackets: { single: [{ lowerBound: 0, ratePct: 2.5 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 2.5 }] },
       retirement: { kind: 'none' },
     },
@@ -119,7 +128,7 @@ const rawStateYear2026 = {
       // Flat 4.4% on federal taxable income; no separate state deduction, so the
       // standard deduction is the federal-equivalent to convert gross→taxable.
       code: 'CO', name: 'Colorado', hasIncomeTax: true, taxesSocialSecurity: true, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
+      standardDeduction: { single: 16100, marriedFilingJointly: 32200 }, standardDeductionConformity: 'federal',
       brackets: { single: [{ lowerBound: 0, ratePct: 4.4 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 4.4 }] },
       retirement: { kind: 'capped', capPerPerson: 24000, minAge: 65 },
     },
@@ -159,7 +168,7 @@ const rawStateYear2026 = {
     },
     DC: {
       code: 'DC', name: 'District of Columbia', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
+      standardDeduction: { single: 16100, marriedFilingJointly: 32200 }, standardDeductionConformity: 'federal',
       brackets: {
         single: [
           { lowerBound: 0, ratePct: 4 }, { lowerBound: 10000, ratePct: 6 }, { lowerBound: 40000, ratePct: 6.5 },
@@ -209,7 +218,7 @@ const rawStateYear2026 = {
     },
     ID: {
       code: 'ID', name: 'Idaho', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
+      standardDeduction: { single: 16100, marriedFilingJointly: 32200 }, standardDeductionConformity: 'federal',
       brackets: {
         single: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 4811, ratePct: 5.3 }],
         marriedFilingJointly: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 9622, ratePct: 5.3 }],
@@ -231,7 +240,7 @@ const rawStateYear2026 = {
     },
     IA: {
       code: 'IA', name: 'Iowa', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
+      standardDeduction: { single: 16100, marriedFilingJointly: 32200 }, standardDeductionConformity: 'federal',
       brackets: { single: [{ lowerBound: 0, ratePct: 3.8 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 3.8 }] },
       retirement: { kind: 'full', minAge: 55 },
     },
@@ -342,7 +351,7 @@ const rawStateYear2026 = {
         'DOCS/domain/state-tax-research/MO.md',
         'https://dor.mo.gov/news/newsitem/uuid/15044650-59dd-48f4-975a-01988d485255',
       ],
-      standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
+      standardDeduction: { single: 16100, marriedFilingJointly: 32200 }, standardDeductionConformity: 'federal',
       brackets: {
         single: [
           { lowerBound: 0, ratePct: 0 }, { lowerBound: 1348, ratePct: 2 }, { lowerBound: 2696, ratePct: 2.5 },
@@ -361,7 +370,7 @@ const rawStateYear2026 = {
       // HB 337 (2025): 2026 = 4.7%/5.65% at 47,500/95,000; 2027 steps again to
       // 4.7%/5.4% at 65,000/130,000 (MT DOR, accessed 2026-07-16). Re-verify annually.
       code: 'MT', name: 'Montana', hasIncomeTax: true, taxesSocialSecurity: true, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
+      standardDeduction: { single: 16100, marriedFilingJointly: 32200 }, standardDeductionConformity: 'federal',
       brackets: {
         single: [{ lowerBound: 0, ratePct: 4.7 }, { lowerBound: 47500, ratePct: 5.65 }],
         marriedFilingJointly: [{ lowerBound: 0, ratePct: 4.7 }, { lowerBound: 95000, ratePct: 5.65 }],
@@ -415,7 +424,7 @@ const rawStateYear2026 = {
     },
     NM: {
       code: 'NM', name: 'New Mexico', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
+      standardDeduction: { single: 16100, marriedFilingJointly: 32200 }, standardDeductionConformity: 'federal',
       brackets: {
         single: [
           { lowerBound: 0, ratePct: 1.5 }, { lowerBound: 5500, ratePct: 3.2 }, { lowerBound: 16500, ratePct: 4.3 },
@@ -460,7 +469,7 @@ const rawStateYear2026 = {
     ND: {
       // Brackets defined on federal taxable income; std deduction ≈ federal base.
       code: 'ND', name: 'North Dakota', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 16100, marriedFilingJointly: 32200 },
+      standardDeduction: { single: 16100, marriedFilingJointly: 32200 }, standardDeductionConformity: 'federal',
       brackets: {
         single: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 48475, ratePct: 1.95 }, { lowerBound: 244825, ratePct: 2.5 }],
         marriedFilingJointly: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 80975, ratePct: 1.95 }, { lowerBound: 298075, ratePct: 2.5 }],
