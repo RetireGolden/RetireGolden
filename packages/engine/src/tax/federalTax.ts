@@ -55,10 +55,15 @@ export interface FederalTaxDetail {
   /** True when the itemized total beat the standard deduction this year. */
   itemized: boolean
   /**
-   * IRC §68 reduction applied to the itemized total this year; 0 when it does
-   * not bite or the year predates it. Surfaced because `itemized` alone cannot
-   * explain a deduction that shrank — without this the ledger shows a smaller
-   * number and no reason for it.
+   * IRC §68 reduction applied to the itemized *candidate* this year; 0 when it
+   * does not bite or the year predates it. Surfaced because `itemized` alone
+   * cannot explain a deduction that shrank — without this the ledger shows a
+   * smaller number and no reason for it.
+   *
+   * It is computed before the election, so it is not necessarily a reduction in
+   * the deduction actually taken: a nonzero value alongside `itemized: false`
+   * means §68 bit the itemized candidate and the standard deduction still won.
+   * Only when `itemized` is true did this figure come out of `deduction`.
    */
   section68Limitation: number
   taxableIncome: number

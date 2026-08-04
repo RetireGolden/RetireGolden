@@ -329,10 +329,9 @@ describe('charitable and section 68 rules', () => {
   // $16,100 standard deduction, so the election is not what separates them.
   // The 60 percent ceiling is $120,000 here and never binds, which keeps this
   // fixture on the floor alone.
-  describeRule('irc-170-b-1-I-floor-ordering', {
+  describeRule('irc-170-b-1-I-half-percent-floor', {
     readings: { statuteAllowsOnlyTheExcess: 49_000, rejectedNoFloor: 50_000 },
     accepted: 'statuteAllowsOnlyTheExcess',
-    note: 'the live projection path subtracts it',
   }, ({ accepted, readings }) => {
     const agi = 200_000
     const gift = 20_000

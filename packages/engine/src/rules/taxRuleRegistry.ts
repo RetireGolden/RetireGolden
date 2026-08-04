@@ -211,6 +211,38 @@ export interface TaxRuleRecord {
 }
 
 const registry = {
+  'irc-170-b-1-I-half-percent-floor': {
+    title: 'The 0.5% floor on an itemizer’s charitable contributions',
+    statement:
+      'An itemizer may deduct a charitable contribution only to the extent the aggregate of such contributions exceeds 0.5 percent of the contribution base, which 170(b)(1)(H) defines as adjusted gross income before any net operating loss carryback. Because the allowance is only of the excess, a gift at or below the floor is disallowed in full rather than merely reduced.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 170(b)(1)(I)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
+      quotedText:
+        'Any charitable contribution otherwise allowable (without regard to this subparagraph) as a deduction under this section shall be allowed only to the extent that the aggregate of such contributions exceeds 0.5 percent of the taxpayer\'s contribution base for the taxable year.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 170(b)(1)(H)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this section, the term "contribution base" means adjusted gross income (computed without regard to any net operating loss carryback to the taxable year under section 172).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/tax/federalTax.ts',
+      'packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts',
+    ],
+  },
+
   'irc-170-b-1-I-floor-ordering': {
     title: 'Order of the 0.5% floor and the percentage ceiling',
     statement:
@@ -237,10 +269,7 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-02',
-    implementedBy: [
-      'packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts',
-      'packages/engine/src/tax/federalTax.ts',
-    ],
+    implementedBy: ['packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts'],
   },
 
   'irc-170-d-1-C-floor-carryforward-gate': {
