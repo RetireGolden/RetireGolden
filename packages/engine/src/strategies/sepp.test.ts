@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { describeRule } from '../rules/describeRule.js'
 
 import { baselineRemainingYears } from '../longevity/ssaPeriod2022.js'
-import { packForYear } from '../params/index.js'
+import { packForYear, uniformLifetimeDivisor } from '../params/index.js'
 import { seppActive, seppAnnualAmount, SEPP_AMORTIZATION_RATE_PCT } from './sepp.js'
 
 const { pack } = packForYear(2026)
@@ -67,6 +67,7 @@ describe('seppAnnualAmount', () => {
 })
 
 describeRule('notice-2022-6-3-02-a-permitted-life-expectancy-tables', {
+  note: 'the table must be one of the three the notice permits',
   // The annual payment a $500,000 balance produces under the required minimum
   // distribution method for a 55-year-old, in dollars and cents.
   //
@@ -119,6 +120,75 @@ describeRule('notice-2022-6-3-02-a-permitted-life-expectancy-tables', {
     const payment = seppAnnualAmount(pack, 'rmd', 500_000, 55)
     for (const sex of ['male', 'female', 'average'] as const) {
       expect(payment).not.toBeCloseTo(500_000 / baselineRemainingYears(55, sex), 2)
+    }
+  })
+})
+
+describeRule('notice-2022-6-3-02-a-permitted-life-expectancy-tables', {
+  note: 'direction: which permitted table sizes the larger payment',
+  // The annual payment a $500,000 balance produces under the required minimum
+  // distribution method for a 72-year-old, in dollars and cents.
+  //
+  // This fixture settles a different question from the one above it. That one
+  // asks whether the divisor comes from a table section 3.02(a) permits at all.
+  // This one asks which way the choice among the permitted three cuts, because
+  // four texts in this engine once claimed Single Life was chosen for producing
+  // the SMALLEST permitted payment and that is backwards. The payment is the
+  // balance over the divisor, so the SHORTEST table sizes the LARGEST payment.
+  //
+  // Both readings below are permitted numbers — that is the whole point. At 72
+  // the Single Life Table of Treas. Reg. 1.401(a)(9)-9(b) gives 17.2 years, so
+  // 500,000 / 17.2 = 29,069.77. The Uniform Lifetime Table in Appendix A of
+  // Notice 2022-6 gives 27.4 years at the same age, so 500,000 / 27.4 =
+  // 18,248.18. Section 3.02(a) would allow either; the engine takes the first,
+  // and the participant draws 10,821.59 a year more penalty-free income than
+  // the other permitted table would have given them.
+  //
+  // Single Life is the accepted reading because section 3.02(b) confines the
+  // Joint and Last Survivor Table to an actual designated beneficiary of the
+  // account and leaves Single Life as the table for a distribution year with
+  // none, and the election modelled here carries no beneficiary. It is NOT
+  // accepted as a safety choice: nothing about it is conservative, and a
+  // fixture that let the reversed rationale stand would be pinning a sentence
+  // the arithmetic contradicts.
+  readings: {
+    singleLifeShortestTableSizesTheLargestPermittedPayment: 29_069.77,
+    uniformLifetimeLongestTableWouldSizeTheSmallestPermittedPayment: 18_248.18,
+  },
+  accepted: 'singleLifeShortestTableSizesTheLargestPermittedPayment',
+}, ({ accepted, readings }) => {
+  const UNIFORM = 'uniformLifetimeLongestTableWouldSizeTheSmallestPermittedPayment' as const
+
+  it('pays the Single Life figure, which EXCEEDS the Uniform Lifetime figure', () => {
+    const paid = round2(seppAnnualAmount(pack, 'rmd', 500_000, 72))
+    expect(paid).toBe(accepted)
+    // The rejected reading is not wrong law, it is the other permitted table,
+    // and the direction between them is the thing under test.
+    expect(paid).toBeGreaterThan(readings[UNIFORM])
+    expect(paid).not.toBe(readings[UNIFORM])
+  })
+
+  it('reads the other permitted table off the same pack, so neither figure is a guess', () => {
+    const uniform = uniformLifetimeDivisor(pack, 72)
+    expect(uniform).toBe(27.4)
+    expect(round2(500_000 / uniform!)).toBe(readings[UNIFORM])
+    expect(pack.rmd.singleLifeTable[72]).toBe(17.2)
+  })
+
+  it('holds the same direction at every age both tables publish a row for', () => {
+    // The Uniform Lifetime Table starts at 72 and runs to 120. Wherever the two
+    // overlap, Single Life is the shorter divisor and therefore the larger
+    // payment — so "shortest table" and "smallest payment" cannot both be said
+    // of it at any age at all.
+    for (let age = 72; age <= 120; age += 1) {
+      const uniform = uniformLifetimeDivisor(pack, age)
+      if (uniform === undefined) continue
+      const singleLife = pack.rmd.singleLifeTable[age]!
+      expect(singleLife, `Single Life divisor at ${age}`).toBeLessThan(uniform)
+      expect(
+        seppAnnualAmount(pack, 'rmd', 500_000, age),
+        `Single Life payment at ${age}`,
+      ).toBeGreaterThan(500_000 / uniform)
     }
   })
 })

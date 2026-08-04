@@ -280,6 +280,99 @@ describe('72(t)(3)(B) — employer-plan SEPP must begin after separation', () =>
   })
 })
 
+/**
+ * Which attained age a FRACTIONAL retirement age names as the first separated
+ * one, asserted across the three places that answer it independently.
+ *
+ * The projection carries no separation date, so it converts a retirement age
+ * into a separation year with `Math.ceil`. Read on its own that looks like a
+ * choice between rounding directions, and a reviewer proposed `Math.floor`
+ * instead. It is not a choice. The wage model pays while attained age is BELOW
+ * the retirement age, so a 57.5 retiree is last paid in the year they attain 57
+ * and first unpaid in the year they attain 58; the Rule of 55 waiver uses the
+ * same `attained >= retirementAge` comparison; and `Math.ceil` is exactly the
+ * integer at which that comparison first turns true. `Math.floor` would name 57
+ * — a year the plan still pays them wages — as the year they separated.
+ *
+ * A fractional age below 59 rather than the 65.5 this question was raised on,
+ * because a SEPP election may not start after 59 and the Rule of 55 waiver is
+ * unreachable from 60 up. The convention is the same at every age.
+ *
+ * Plain `it`s, not a describeRule fixture: the annual separation proxy is
+ * registered out of scope as irc-72-t-3-B-sepp-separation-annual-proxy, and
+ * what is pinned here is that three sites agree on one convention, not a
+ * reading of the statute.
+ */
+describe('a fractional retirement age separates at the attained age wages stop', () => {
+  /** Pat is 56 in 2026, so attained age 57 is 2027 and attained age 58 is 2028. */
+  function fractionalRetirementPlan(
+    over: { seppStartAge: number; retirementAge?: number },
+  ): Plan {
+    const plan = createEmptyPlan({ newId: ids, now: () => new Date('2026-06-11T00:00:00.000Z') })
+    plan.household.people[0] = {
+      id: 'p1',
+      name: 'Pat',
+      dob: '1970-03-15',
+      sex: 'average',
+      retirementAge: over.retirementAge ?? 57.5,
+      longevity: { planningAge: 75, source: 'manual' },
+    }
+    plan.assumptions.inflationPct = 0
+    plan.assumptions.defaultReturnPct = 0
+    plan.expenses.baseAnnual = 5_000 // funded from cash, so nothing forces a draw
+    plan.expenses.healthcare = { pre65MonthlyPremiumPerPerson: 0, applyAcaCredit: false, medicareExtrasMonthlyPerPerson: 0 }
+    // endAge null, so the stream stops on the person's retirement age and this
+    // is the wage model's own answer rather than a second number to keep in step.
+    plan.incomes = [{
+      type: 'wages', id: 'w1', personId: 'p1', annualGross: 100_000,
+      endAge: null, realGrowthPct: 0,
+    }]
+    plan.accounts = [
+      { type: 'traditional', id: 'plan1', name: 'Plan', ownerPersonId: 'p1', annualReturnPct: null, kind: 'employer', balance: 500_000, annualContribution: 0, sepp: { startAge: over.seppStartAge, method: 'rmd' } } as Account,
+      { type: 'cash', id: ids(), name: 'Cash', ownerPersonId: null, annualReturnPct: null, balance: 200_000, annualContribution: 0 } as Account,
+    ]
+    return plan
+  }
+
+  it('pays wages through the year attained 57 and stops in the year attained 58', () => {
+    const years = run(fractionalRetirementPlan({ seppStartAge: 58 })).years
+    expect(years.find((y) => y.year === 2027)!.incomes.wages).toBeCloseTo(100_000, 6)
+    expect(years.find((y) => y.year === 2028)!.incomes.wages).toBe(0)
+  })
+
+  it('refuses an employer-plan series begun in the last year wages are paid', () => {
+    // Attained 57 in 2027, and the plan still pays them for it, so they have
+    // not separated. Under Math.floor(57.5) = 57 this year would count as
+    // separated and the series would be excepted while they were still working.
+    // 57.2 carries the same facts past rounding-to-nearest, which agrees with
+    // rounding up at .5 and would separate them a year early here.
+    for (const retirementAge of [57.5, 57.2]) {
+      const years = run(fractionalRetirementPlan({ seppStartAge: 57, retirementAge })).years
+      const y2027 = years.find((y) => y.year === 2027)!
+      expect(y2027.incomes.wages, `wages at retirementAge ${retirementAge}`)
+        .toBeCloseTo(100_000, 6)
+      expect(y2027.sepp, `sepp at retirementAge ${retirementAge}`).toBe(0)
+    }
+  })
+
+  it('accepts an employer-plan series begun in the first year wages stop', () => {
+    const years = run(fractionalRetirementPlan({ seppStartAge: 58 })).years
+    const y2028 = years.find((y) => y.year === 2028)!
+    expect(y2028.incomes.wages).toBe(0)
+    // Single Life Table entry at 58 is 28.9 years.
+    expect(y2028.sepp).toBeCloseTo(500_000 / 28.9, 6)
+  })
+
+  it('waives the Rule of 55 from the same attained age the comparison first passes', () => {
+    // The third site, on the same 57.5: attained 57 is still penalized, attained
+    // 58 is not, and Math.ceil(57.5) is 58. The waiver reads the fractional age
+    // directly, which is what the separation year has to agree with.
+    const years = run(pre60Plan({ kind: 'employer', retirementAge: 57.5 })).years
+    expect(years.find((y) => y.year === 2027)!.penalties).toBeGreaterThan(0)
+    expect(years.find((y) => y.year === 2028)!.penalties).toBe(0)
+  })
+})
+
 describe('inherited IRA — SECURE Act 10-year rule', () => {
   /** Young beneficiary (age 50 in 2026) who inherited an IRA; owner died 2022. */
   function inheritedPlan(opts: { decedentHadStartedRmds: boolean; baseAnnual: number; withCash: boolean }): Plan {

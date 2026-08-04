@@ -1004,10 +1004,23 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
     // (the reading that ignores 72(t)(3)(B)). The projection orders calendar
     // years rather than days, so the separation year itself counts as
     // separated — irc-72-t-3-B-sepp-separation-annual-proxy.
+    //
+    // The fractional rows are the same convention the simulator applies and are
+    // here so the inventory cannot drift off it: the wage model pays while
+    // attained age is BELOW the retirement age, so the first separated year is
+    // the attained age the retirement age rounds UP to. At 57.5 that is 58, and
+    // a series begun at 58 is accepted; at 58.5 and at 58.2 it is 59, and the
+    // same series is not. 58.2 is carried as well as 58.5 because rounding to
+    // nearest agrees with rounding up at .5 and disagrees at .2 — both it and
+    // rounding down would separate this participant in a year the plan still
+    // pays them wages.
     for (const [retirementAge, expectedStatus] of [
       [65, 'annualPhysicalEventInventoryIncomplete'],
       [59, 'annualPhysicalEventInventoryIncomplete'],
+      [58.5, 'annualPhysicalEventInventoryIncomplete'],
+      [58.2, 'annualPhysicalEventInventoryIncomplete'],
       [58, 'annualPhysicalEventInventoryBuilt'],
+      [57.5, 'annualPhysicalEventInventoryBuilt'],
       [50, 'annualPhysicalEventInventoryBuilt'],
       [null, 'annualPhysicalEventInventoryIncomplete'],
     ] as const) {

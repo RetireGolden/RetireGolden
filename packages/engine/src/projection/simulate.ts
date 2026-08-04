@@ -8,7 +8,10 @@
  *
  * V1 simplifications (each lifts in a later roadmap phase):
  * - Wages, contributions, base spending, and goals inflate at the general rate;
- *   wages stop in the year the person attains retirement age.
+ *   wages are paid while the person's attained age is BELOW their retirement
+ *   age and stop from the first year it is not. A whole retirement age of 65 is
+ *   therefore last paid at attained 64; a fractional 65.5 is last paid at
+ *   attained 65 and first unpaid at attained 66.
  * - SS COLA compounds from the projection start, and first-year benefits are
  *   prorated by claim months only (no birthday-month precision). PIA comes
  *   from the stream directly or from its earnings history (AIME → bend
@@ -2828,9 +2831,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // identity, so it orders calendar years rather than days, using the same
       // retirement-age proxy for separation that the Rule of 55 test below
       // uses: the participant is modelled as separated for the whole of the
-      // year they attain their retirement age, so the separation ordinal is
-      // that year's first day and the series ordinal is the last day of the
-      // year it begins. A plan with no retirement age states no separation at
+      // FIRST YEAR THE WAGE MODEL STOPS PAYING THEM, so the separation ordinal
+      // is that year's first day and the series ordinal is the last day of the
+      // year it begins. That year is the attained age Math.ceil rounds the
+      // retirement age up to, because wages run while attained age is below the
+      // retirement age (Pass 1 above) and the Rule of 55 waives from the first
+      // attained age that is not: for a retirement age of 65.5 the plan pays
+      // them for the year they attain 65 and separates them in the year they
+      // attain 66. Reading the fraction DOWN would separate them in a year they
+      // are still paid. A plan with no retirement age states no separation at
       // all, so no employer-plan series can begin after one. Residual error
       // both ways: irc-72-t-3-B-sepp-separation-annual-proxy.
       if (state.account.kind === 'employer') {
