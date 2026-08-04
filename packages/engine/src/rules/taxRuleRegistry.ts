@@ -1538,13 +1538,14 @@ const registry = {
   },
 
   'irc-414-v-2-E-super-catch-up-window': {
-    title: 'The higher catch-up covers ages 60 to 63 and stops at 64',
+    title: 'The higher catch-up covers ages 60 to 63, and the operative amount is what gets indexed',
     statement:
-      'A participant who would attain age 60 but would not attain age 64 before the close of the taxable year takes the adjusted dollar amount in place of the ordinary catch-up. The window closes at 64: a participant that age reverts to the ordinary age-50 catch-up rather than keeping the higher one. The adjusted dollar amount is the greater of 10,000 dollars and 150 percent of the catch-up in effect for 2024 — not 150 percent of the current year figure.',
-    classification: 'settled',
-    contraryReading: null,
+      'A participant who would attain age 60 but would not attain age 64 before the close of the taxable year takes the adjusted dollar amount in place of the ordinary catch-up. The window closes at 64. The adjusted dollar amount is the greater of 10,000 dollars and 150 percent of the catch-up in effect for 2024, which is 11,250. Section 414(v)(2)(C)(i) then indexes that operative amount itself for years after 2025, rounding the increase down to a multiple of 500.',
+    classification: 'unsettled',
+    contraryReading:
+      'That 414(v)(2)(C)(i) reaches only the 10,000 dollar leg inside the greater-of, leaving 11,250 pinned until the indexed leg overtakes it in roughly the 2030s. This reading was implemented in the engine and is what this record replaces. Its cited support was Notice 2025-67 holding the amount at 11,250 for 2026, but that evidence does not discriminate: the cycle factor was 1.0288, and because the statute rounds the increase rather than the amount, 11,250 multiplied by 1.0288 yields a 324 dollar increase that floors to zero. Every candidate reading produces 11,250 for 2026.',
     conventionRationale:
-      'The two legs of 414(v)(2)(E)(i) are a 10,000 dollar amount and 150 percent of the 2024 amount, and the greater of them governs. That is why the 2026 figure is 11,250 rather than 150 percent of the current 8,000 catch-up, as IRS Notice 2025-67 confirms. Only the first leg moves: 414(v)(2)(C)(i) adjusts the (E) amounts for years after 2025 off a July 1 2024 base quarter, while the second leg is computed off a 2024 figure that will never change, so it is 11,250 forever. The engine therefore projects the indexed leg and takes the greater of it and the pack-year amount, rather than carrying the inflation factor onto the operative figure — Notice 2025-67 is the discriminating evidence, since it held the ages 60-63 amount flat for 2026 in the same year the ordinary catch-up rose from 7,500 to 8,000. Two simplifications remain. The engine projects the indexed leg on the smooth plan inflation path and does not apply the statutory rounding down to a multiple of 500, so the year the leg overtakes 11,250 can land early by up to a step. And the pack carries that leg at 10,000 for 2026, which is a derivation rather than a published figure: the IRS notices state only the operative amount, and one year of cost-of-living from the July 2024 base quarter falls well short of the 10,500 step. The age-55 HSA addition is registered separately because section 223(g) omits it from indexing entirely — the same shape of rule with a third answer again.',
+      'Three things favour indexing the operative amount. The text of 414(v)(2)(C)(i) sentence two adjusts the adjusted dollar amounts applicable under clauses (i) and (ii) of subparagraph (E) — the greater-of output — where the first sentence of the same clause names figures specifically, so the switch to composite phrasing is deliberate. Treasury reads it that way: the final catch-up regulations state the 150 percent leg will continue to be greater than 10,000 dollars in future years, which holds only if 10,000 is fixed and 11,250 grows. And the same structure appears in 414(v)(2)(C)(ii), which indexes the formula amount described in subparagraph (B)(iii) rather than the figure underneath it. Classified unsettled rather than settled because no published year has yet distinguished the readings — they first diverge in 2027, and the cost-of-living notice due around November 2026 decides it. An announced 11,250 for 2027 would restore the contrary reading; 11,750, which is what indexing the composite produces and what forecasters project, confirms this one.',
     authority: [{
       kind: 'statute',
       citation: 'IRC 414(v)(2)(B)(i)',
@@ -1563,11 +1564,17 @@ const registry = {
       url: 'https://www.law.cornell.edu/uscode/text/26/414',
       quotedText:
         'In the case of a year beginning after December 31, 2025, the Secretary shall adjust annually the adjusted dollar amounts applicable under clauses (i) and (ii) of subparagraph (E) for increases in the cost-of-living at the same time and in the same manner as adjustments under the preceding sentence; except that the base period taken into account shall be the calendar quarter beginning July 1, 2024.',
+    }, {
+      kind: 'regulation',
+      citation: 'Catch-Up Contributions, final regulations, 90 FR (2025-09-16), preamble n.3',
+      url: 'https://www.govinfo.gov/content/pkg/FR-2025-09-16/html/2025-17865.htm',
+      quotedText:
+        'the amount equal to 150 percent of the otherwise applicable dollar catch-up limit for 2025 ($11,250) is greater than $10,000, and this amount will continue to be greater than $10,000 in future years.',
     }],
-    volatility: 'annuallyIndexed',
+    volatility: 'awaitingGuidance',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/params/data/year2026.ts',

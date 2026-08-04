@@ -184,6 +184,27 @@ function annualPassValueBinding<T>(
 const EPSILON = 0.005
 
 /**
+ * Statutory rounding step for the cost-of-living adjustments under IRC 415(d),
+ * which IRC 414(v)(2)(C)(i) borrows for the catch-up amounts.
+ */
+const COLA_ROUNDING_STEP = 500
+
+/**
+ * Apply a cost-of-living factor the way IRC 414(v)(2)(C)(i) does: the *increase*
+ * is rounded down to the next lower multiple of 500, not the adjusted amount.
+ *
+ * This is why the ages 60-63 amount held at 11,250 for 2026 even though it is
+ * indexed -- the 1.0288 factor produced a 324 dollar increase, which floors to
+ * zero. Reading that non-movement as evidence of a pinned amount is the mistake
+ * this replaces.
+ */
+function indexWithStatutoryRounding(base: number, growth: number): number {
+  const increase = base * growth - base
+  if (increase <= 0) return base
+  return base + Math.floor(increase / COLA_ROUNDING_STEP) * COLA_ROUNDING_STEP
+}
+
+/**
  * Bucket that a jointly-filing couple's IRA compensation ceiling lives in.
  *
  * A person id is validated only as a non-empty string, so no literal value can
@@ -2268,21 +2289,17 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const age = ownerState.ageAttained
       if ((account.type === 'traditional' || account.type === 'roth') && account.kind === 'employer') {
         groupKey = `${ownerId}:employer`
-        // IRC 414(v)(2)(E)(i) makes the ages 60-63 amount the GREATER of a
-        // 10,000 dollar leg and 150 percent of the catch-up in effect for
-        // 2024. Only the first leg moves: 414(v)(2)(C)(i) indexes the (E)
-        // amounts for years after 2025, while the second leg is computed off a
-        // fixed 2024 figure and is 11,250 forever. So the operative amount
-        // stays pinned until the indexed leg overtakes it -- which is why
-        // Notice 2025-67 held it at 11,250 for 2026 while the ordinary
-        // catch-up rose from 7,500 to 8,000. Indexing the operative figure
-        // instead would have moved it.
+        // IRC 414(v)(2)(C)(i) sentence two indexes "the adjusted dollar amounts
+        // applicable under clauses (i) and (ii) of subparagraph (E)" -- the
+        // greater-of OUTPUT, not the 10,000 dollar leg inside it. Congress used
+        // figure-specific wording one sentence earlier ("the $5,000 amount in
+        // subparagraph (B)(i)") and switched deliberately here. Treasury reads
+        // it the same way: the final catch-up regulations say the 11,250 "will
+        // continue to be greater than $10,000 in future years", which holds only
+        // if 10,000 is fixed and 11,250 is the amount that grows.
         const catchUp =
           age >= 60 && age <= 63
-            ? Math.max(
-              pack.contributionLimits.superCatchUp60to63IndexedLeg * limitGrowth,
-              pack.contributionLimits.superCatchUp60to63,
-            )
+            ? indexWithStatutoryRounding(pack.contributionLimits.superCatchUp60to63, limitGrowth)
             : age >= 50
               // The (B)(i)/(C)(i) first-sentence catch-up does index normally.
               ? pack.contributionLimits.catchUp50 * limitGrowth

@@ -86,7 +86,6 @@ export const year2026: ParameterPack = {
     // leg's 2026 COLA off the July 2024 base quarter is well short of the
     // 10,500 step it would have to clear, so it rounds back down to 10,000.
     superCatchUp60to63: 11_250,
-    superCatchUp60to63IndexedLeg: 10_000,
     rothCatchUpWageThreshold: 150_000,
     ira: 7_500,
     iraCatchUp50: 1_100,
