@@ -1553,8 +1553,12 @@ function executeOrdinaryWithdrawalsInScope(
           JSON.stringify([group.conversionActionId, group.withdrawalActionId]),
         )
       ) {
+        // Both ids, because the completeness check above is keyed on the pair:
+        // two conversions may name one withdrawal, so the withdrawal id alone
+        // does not say which group was omitted.
         throw new Error(
-          `Conversion linked-withdrawal group verdict is missing for action "${group.withdrawalActionId}"`,
+          'Conversion linked-withdrawal group verdict is missing for conversion '
+          + `"${group.conversionActionId}" funded by withdrawal "${group.withdrawalActionId}"`,
         )
       }
     }

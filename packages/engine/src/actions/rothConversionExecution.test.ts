@@ -1459,10 +1459,13 @@ describe('executeRothConversions', () => {
         ])
 
         expect(answeringOnlyTheFirst.groups).toHaveLength(1)
+        // Naming both ids, not just the withdrawal: this is the one shape where
+        // the withdrawal id alone cannot say which group was omitted, so the
+        // message has to carry the conversion that is still waiting.
         expect(() => runWithdrawal(
           { ...pair, inFlightPlan: planBothConversions },
           answeringOnlyTheFirst,
-        )).toThrow(/group verdict is missing/)
+        )).toThrow(/conversion "conversion-b" funded by withdrawal/)
 
         // Answering for both is what lets it through to the same refusal.
         const answeringBoth = assessConversionLinkedWithdrawalGroups([
