@@ -21,8 +21,13 @@ import {
   isAggregatedIra,
   resolveOwnerAggregatedIraBasis,
   resolveOwnerIraRmdSatisfactionEvidenceId,
-  type RetirementActionEligibilityRuntimeEvidence,
 } from '../strategies/accountEligibility.js'
+import {
+  assessConversionLinkedWithdrawalGroups,
+  conversionLinkedWithdrawalGroupForConversion,
+  type ConversionLinkedWithdrawalGroupAssessment,
+  type RetirementActionGroupRuntimeEvidence,
+} from './conversionLinkedWithdrawalGroup.js'
 
 export interface RothConversionBalanceSnapshot {
   accountId: string
@@ -34,7 +39,13 @@ export interface ExecuteRothConversionsInput {
   plan: Readonly<Plan>
   requests: readonly Readonly<RothConversionRequest>[]
   openingBalances: readonly Readonly<RothConversionBalanceSnapshot>[]
-  runtimeEvidence?: RetirementActionEligibilityRuntimeEvidence
+  /**
+   * Eligibility evidence, widened by the linked-withdrawal group verdict. This
+   * executor can see that a conversion names a funding withdrawal but not
+   * whether the withdrawal side was ever scheduled, so the group decision is
+   * supplied by the caller that saw both request sets.
+   */
+  runtimeEvidence?: RetirementActionGroupRuntimeEvidence
 }
 
 export interface RothConversionBalanceExecutionEvidence {
@@ -299,16 +310,22 @@ function hasWellFormedExternalCashAttestation(
  *   schema requires is the evidence, and nothing else has to execute for it.
  *   An attestation that cannot be confirmed still blocks.
  * - `linkedWithdrawal` names a sibling withdrawal that must move inside the
- *   conversion's atomic annual group. That group executor does not exist —
- *   `actions/execution.ts` refuses the linked withdrawal for the same reason —
- *   so this one stays unsupported.
+ *   conversion's atomic annual group, and this executor does not decide that
+ *   on its own any more. The group verdict decides for both sides at once —
+ *   `actions/execution.ts` refuses the sibling withdrawal from the same
+ *   verdict — so the two can no longer answer one group question differently.
+ *   Every verdict is a refusal today, because the group executor that would
+ *   move the pair does not exist.
  * - `conversionPrincipalWithholding` is not staged at all: withholding from
  *   converted principal reduces the destination and may itself be an early
  *   distribution, so it is refused on the merits. `accountEligibility.ts`
  *   already names that refusal without identifiers, and this emits it the same
  *   way so the two sites canonicalize to one reason rather than two.
  */
-function taxFundingReasons(request: Readonly<RothConversionRequest>): ActionReason[] {
+function taxFundingReasons(
+  request: Readonly<RothConversionRequest>,
+  groups: Readonly<ConversionLinkedWithdrawalGroupAssessment>,
+): ActionReason[] {
   const funding = request.taxFunding
   switch (funding.kind) {
     case 'noneExpected':
@@ -321,10 +338,31 @@ function taxFundingReasons(request: Readonly<RothConversionRequest>): ActionReas
           })]
     case 'conversionPrincipalWithholding':
       return [createActionReason('conversion-principal-withholding-unsupported')]
-    case 'linkedWithdrawal':
-      return [createActionReason('conversion-tax-funding-evidence-unsupported', {
-        personId: request.personId,
-      })]
+    case 'linkedWithdrawal': {
+      const verdict = conversionLinkedWithdrawalGroupForConversion(
+        groups,
+        request.actionId,
+      )
+      if (verdict === null) {
+        // The supplied assessment does not answer for a group this request
+        // names. Nothing at this call site can stand in for that answer, and
+        // silence is not permission, so the whole batch fails closed rather
+        // than converting on funding nobody assessed.
+        // Named, because the `executeRothConversions` wrapper catches around
+        // its `executeUnchecked` call and collapses this into one batch-level
+        // `invalidInput` issue carrying no action id of its own. Without the
+        // id here the throw says only that some conversion in the batch was
+        // unassessed.
+        throw new TypeError(
+          `Conversion linked-withdrawal group verdict is missing for action "${request.actionId}"`,
+        )
+      }
+      return verdict.disposition === 'refusedPendingGroupExecution'
+        ? [createActionReason(verdict.reasonCode, {
+            personId: request.personId,
+          })]
+        : []
+    }
   }
 }
 
@@ -516,6 +554,12 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
   const closingByAccountId = new Map(openingByAccountId)
   const evidence: RothConversionExecutionEvidence[] = []
   const runtimeEvidence = input.runtimeEvidence ?? {}
+  // Honoured, not rederived. When no caller supplied a verdict this falls back
+  // to the conversions in this batch, which is everything this executor can
+  // see by itself and less than the caller can.
+  const conversionLinkedWithdrawalGroups =
+    runtimeEvidence.conversionLinkedWithdrawalGroups ??
+    assessConversionLinkedWithdrawalGroups(requests)
   let committedAny = false
   for (const request of requests) {
     // These annual facts must be produced and validated for the complete
@@ -604,7 +648,7 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
         : [createActionReason('conversion-rmd-reserve-unavailable', {
             personId: request.personId,
           })]),
-      ...taxFundingReasons(request),
+      ...taxFundingReasons(request, conversionLinkedWithdrawalGroups),
     ]
     // Committed movement has to be dated. `assertRecordBinding` refuses to
     // publish a positive executed amount whose executed date is not the

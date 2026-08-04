@@ -81,6 +81,7 @@ import {
   asAccountId,
   asPersonId,
   asUsdCents,
+  assessConversionLinkedWithdrawalGroups,
   assessOrdinaryWithdrawalPlanBoundary,
   evaluateRetirementActionSchedule,
   executeOrdinaryWithdrawals,
@@ -3094,6 +3095,20 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const currentYearOrdinaryExecutionActions = mixedKindScheduleBlocked
       ? currentYearActions
       : currentYearNonConversionActions
+    // One conversion-linked withdrawal group decision for the whole annual
+    // pass, taken here because this is the only place every request set is
+    // visible at once. Neither executor sees the same set: the conversion
+    // executor is handed conversions alone, and the withdrawal executor is
+    // handed non-conversion actions -- except when `mixedKindScheduleBlocked`,
+    // where it receives the whole schedule including conversions. So neither
+    // can derive the same groups the other would, and a group spanning a Plan
+    // action and an in-flight one is visible to neither. Both are given this
+    // one verdict so the pair cannot be answered two ways within a year.
+    const conversionLinkedWithdrawalGroups = assessConversionLinkedWithdrawalGroups([
+      ...plan.strategies.retirementActions,
+      ...currentYearOrdinaryExecutionActions,
+      ...currentYearConversionActions,
+    ])
     let retirementActionExecution: ExecuteOrdinaryWithdrawalsResult | undefined
     let rothConversionActionExecution: ExecuteRothConversionsResult | undefined
     /**
@@ -3300,7 +3315,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           requests: currentYearOrdinaryExecutionActions,
           openingBalances,
           taxableAccountSnapshots,
-          runtimeEvidence: { personAliveEvidence },
+          runtimeEvidence: {
+            personAliveEvidence,
+            conversionLinkedWithdrawalGroups,
+          },
         })
         const boundary = assessOrdinaryWithdrawalPlanBoundary(
           retirementActionExecution,
@@ -3514,6 +3532,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           personAliveEvidence,
           ownerIraRmdSatisfactionEvidence,
           ownerAggregatedIraBasisEvidence,
+          conversionLinkedWithdrawalGroups,
         },
       })
 

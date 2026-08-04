@@ -1,8 +1,10 @@
 import type { Plan } from '../model/plan.js'
+import { evaluateRetirementActionEligibilityFromPlan } from '../strategies/accountEligibility.js'
 import {
-  evaluateRetirementActionEligibilityFromPlan,
-  type RetirementActionEligibilityRuntimeEvidence,
-} from '../strategies/accountEligibility.js'
+  assessConversionLinkedWithdrawalGroups,
+  conversionLinkedWithdrawalGroupForWithdrawal,
+  type RetirementActionGroupRuntimeEvidence,
+} from './conversionLinkedWithdrawalGroup.js'
 import {
   actionExecutionDispositionSchema,
   retirementActionRequestSchema,
@@ -346,7 +348,14 @@ export interface ExecuteOrdinaryWithdrawalsInput {
    * annual simulator until it can construct the immutable evidence losslessly.
    */
   taxableAccountSnapshots?: readonly TaxableAccountOpeningSnapshot[]
-  runtimeEvidence?: RetirementActionEligibilityRuntimeEvidence
+  /**
+   * Eligibility evidence, widened by the conversion-side facts the linked
+   * withdrawal group decision needs. This executor never sees the conversion
+   * requests themselves — they are executed in a later simulator phase from a
+   * different request set — so the group verdict is supplied rather than
+   * rederived here.
+   */
+  runtimeEvidence?: RetirementActionGroupRuntimeEvidence
 }
 
 export interface ExecuteOrdinaryWithdrawalsResult {
@@ -608,7 +617,7 @@ export interface ExecuteCashOrdinaryWithdrawalsInput {
   plan: Plan
   requests: readonly RetirementActionRequest[]
   openingBalances: readonly AccountOpeningBalanceSnapshot[]
-  runtimeEvidence?: RetirementActionEligibilityRuntimeEvidence
+  runtimeEvidence?: RetirementActionGroupRuntimeEvidence
 }
 
 export type CashExecutionScheduleIssue =
@@ -1508,14 +1517,53 @@ function executeOrdinaryWithdrawalsInScope(
   const requests = input.requests.map((request) =>
     retirementActionRequestSchema.parse(request),
   )
-  const conversionLinkedWithdrawalIds = new Set(
-    [...input.plan.strategies.retirementActions, ...requests].flatMap((request) =>
-      request.kind === 'rothConversion' &&
-      request.taxFunding.kind === 'linkedWithdrawal'
-        ? [request.taxFunding.withdrawalActionId]
-        : [],
-    ),
-  )
+  // One group decision, honoured rather than rederived. A caller that can see
+  // both executors' request sets supplies it; absent that, this executor falls
+  // back to the only conversions it can see for itself — the Plan's own
+  // strategy list plus whatever arrived in this batch — which is strictly less
+  // than the caller can see and is why the verdict exists at all.
+  const suppliedGroups = input.runtimeEvidence?.conversionLinkedWithdrawalGroups
+  const observableGroups = assessConversionLinkedWithdrawalGroups([
+    ...input.plan.strategies.retirementActions,
+    ...requests,
+  ])
+  // A supplied verdict may answer for groups this executor cannot see. It may
+  // not contradict one it can: an assessment that leaves out a linked group
+  // sitting in the Plan is not a decision to release that withdrawal, it is an
+  // assessment taken over the wrong requests, and moving money on it would be
+  // the disagreement this verdict exists to prevent.
+  //
+  // Completeness is asked per group, keyed on the (conversion, withdrawal)
+  // pair that `assessConversionLinkedWithdrawalGroups` itself dedupes on —
+  // not per withdrawal. Two conversions can name one withdrawal:
+  // `assertLinkedWithdrawalRequests` refuses that shape, but it refuses it at
+  // publication and this executor runs before then. Asking only whether some
+  // verdict mentions the withdrawal would let an assessment answering for one
+  // of those conversions stand in for the one it omits, which is the silent
+  // release this check exists to stop.
+  if (suppliedGroups !== undefined) {
+    const suppliedGroupKeys = new Set(
+      suppliedGroups.groups.map((group) =>
+        JSON.stringify([group.conversionActionId, group.withdrawalActionId]),
+      ),
+    )
+    for (const group of observableGroups.groups) {
+      if (
+        !suppliedGroupKeys.has(
+          JSON.stringify([group.conversionActionId, group.withdrawalActionId]),
+        )
+      ) {
+        // Both ids, because the completeness check above is keyed on the pair:
+        // two conversions may name one withdrawal, so the withdrawal id alone
+        // does not say which group was omitted.
+        throw new Error(
+          'Conversion linked-withdrawal group verdict is missing for conversion '
+          + `"${group.conversionActionId}" funded by withdrawal "${group.withdrawalActionId}"`,
+        )
+      }
+    }
+  }
+  const conversionLinkedWithdrawalGroups = suppliedGroups ?? observableGroups
   const openingBalances = input.openingBalances.map((snapshot) => ({
     accountId: accountIdSchema.parse(snapshot.accountId),
     openingBalance: usdCentsSchema.parse(snapshot.openingBalance),
@@ -1606,14 +1654,23 @@ function executeOrdinaryWithdrawalsInScope(
     const blockingReasons: ActionReason[] =
       preflight.status === 'accepted' ? [] : [...preflight.reasons]
 
+    const groupVerdict = conversionLinkedWithdrawalGroupForWithdrawal(
+      conversionLinkedWithdrawalGroups,
+      request.actionId,
+    )
     if (item.scheduleInvalid) blockingReasons.push(unsupportedScopeReason(request))
     if (request.kind !== 'ordinaryWithdrawal') {
       blockingReasons.push(unsupportedScopeReason(request))
-    } else if (conversionLinkedWithdrawalIds.has(request.actionId)) {
-      // Linked tax funding belongs to the conversion's atomic annual group.
-      // Until that group executor exists, it must not move independently.
+    } else if (
+      groupVerdict !== null &&
+      groupVerdict.disposition === 'refusedPendingGroupExecution'
+    ) {
+      // Linked tax funding belongs to the conversion's atomic annual group,
+      // and the group verdict — not this executor — is what decides for it.
+      // The reason is bound to this request's own person so the withdrawal
+      // record names the person who would have taken it.
       blockingReasons.push(
-        createActionReason('conversion-tax-funding-evidence-unsupported', {
+        createActionReason(groupVerdict.reasonCode, {
           personId: request.personId,
         }),
       )

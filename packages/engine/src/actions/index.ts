@@ -308,6 +308,15 @@ export {
   type WithdrawalPurpose,
 } from './contract.js'
 export {
+  assessConversionLinkedWithdrawalGroups,
+  conversionLinkedWithdrawalGroupForConversion,
+  conversionLinkedWithdrawalGroupForWithdrawal,
+  type ConversionLinkedWithdrawalGroupAssessment,
+  type ConversionLinkedWithdrawalGroupDisposition,
+  type ConversionLinkedWithdrawalGroupVerdict,
+  type RetirementActionGroupRuntimeEvidence,
+} from './conversionLinkedWithdrawalGroup.js'
+export {
   assessOrdinaryWithdrawalPlanBoundary,
   evaluateRetirementActionSchedule,
   executeCashOrdinaryWithdrawals,
