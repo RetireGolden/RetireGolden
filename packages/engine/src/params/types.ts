@@ -119,12 +119,17 @@ export interface ParameterPack {
      * SECURE 2.0 ages 60–63 "super" catch-up (replaces catchUp50): the IRC
      * §414(v)(2)(E)(i) adjusted dollar amount operative in this pack year.
      *
-     * §414(v)(2)(C)(i) indexes this amount itself for years after 2025, off a
-     * July 1 2024 base quarter, with the *increase* rounded down to a multiple
-     * of $500. The §414(v)(2)(E)(i)(I) $10,000 leg is not stored because it is
-     * permanently inoperative: Treasury's final catch-up regulations state the
-     * 150%-of-2024 leg "will continue to be greater than $10,000 in future
-     * years", so the greater-of is settled and only this figure moves.
+     * This amount is itself indexed for years after 2025: §414(v)(2)(C)(i)
+     * adjusts the (E) amounts off a July 1 2024 base quarter, and Treasury's
+     * final catch-up regulations name $11,250 as the initial amount that gets
+     * increased, with the *increase* rounded down to a multiple of $500
+     * (26 CFR §1.414(v)-1(c)(2)(iii)(B)). That rounding is measured from the
+     * fixed base period rather than year over year, so cost-of-living below a
+     * step is not lost — it accumulates until it carries the amount up $500.
+     *
+     * The §414(v)(2)(E)(i)(I) $10,000 leg is not stored because it never
+     * governs. See the `irc-414-v-2-E-super-catch-up-window` record in the tax
+     * rule registry for the authority and for the reading this displaced.
      */
     superCatchUp60to63: number
     /** Prior-year FICA wages above this force catch-ups to be Roth. */

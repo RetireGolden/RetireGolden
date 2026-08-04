@@ -81,10 +81,13 @@ export const year2026: ParameterPack = {
     employee401k: 24_500,
     catchUp50: 8_000,
     // IRS Notice 2025-67 holds the ages 60–63 amount at 11,250 for 2026 while
-    // the ordinary catch-up rises 7,500 -> 8,000, because the operative figure
-    // is the fixed 150%-of-2024 leg and only the 10,000 leg is indexed. That
-    // leg's 2026 COLA off the July 2024 base quarter is well short of the
-    // 10,500 step it would have to clear, so it rounds back down to 10,000.
+    // the ordinary catch-up rises 7,500 -> 8,000. That gap is the statutory
+    // rounding, not a pinned amount: 414(v)(2)(C)(i) indexes this figure off
+    // the July 1 2024 base quarter and rounds the *increase* down to a
+    // multiple of 500, and the 2026 cycle factor of 1.0288 produces a 324
+    // dollar increase that floors to zero. Treasury prescribes exactly this
+    // in 26 CFR 1.414(v)-1(c)(2)(iii)(B), which names 11,250 as the initial
+    // amount that gets indexed.
     superCatchUp60to63: 11_250,
     rothCatchUpWageThreshold: 150_000,
     ira: 7_500,

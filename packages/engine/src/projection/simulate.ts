@@ -197,6 +197,18 @@ const COLA_ROUNDING_STEP = 500
  * indexed -- the 1.0288 factor produced a 324 dollar increase, which floors to
  * zero. Reading that non-movement as evidence of a pinned amount is the mistake
  * this replaces.
+ *
+ * `growth` is the CUMULATIVE factor from the pack year to the projected year,
+ * and rounding once at the end is the point rather than an approximation. The
+ * adjustment is measured from a fixed base period -- 26 CFR
+ * 1.414(v)-1(c)(2)(iii)(B) sets the ages 60-63 limit as "the initial amount
+ * ($11,250) ... increased for changes in the cost of living" off the calendar
+ * quarter beginning July 1 2024 -- so each year is recomputed from that base,
+ * never compounded off the previous year's rounded figure. Cost-of-living below
+ * a 500 step therefore accumulates and eventually carries the amount up a full
+ * step, which is exactly why the ordinary deferral limits sit flat for a year
+ * or two and then jump 500 all at once. Rounding per year and compounding would
+ * discard the sub-step remainder every year and understate the limit forever.
  */
 function indexWithStatutoryRounding(base: number, growth: number): number {
   const increase = base * growth - base
@@ -2293,10 +2305,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         // applicable under clauses (i) and (ii) of subparagraph (E)" -- the
         // greater-of OUTPUT, not the 10,000 dollar leg inside it. Congress used
         // figure-specific wording one sentence earlier ("the $5,000 amount in
-        // subparagraph (B)(i)") and switched deliberately here. Treasury reads
-        // it the same way: the final catch-up regulations say the 11,250 "will
-        // continue to be greater than $10,000 in future years", which holds only
-        // if 10,000 is fixed and 11,250 is the amount that grows.
+        // subparagraph (B)(i)") and switched deliberately here. Treasury settles
+        // it outright: 26 CFR 1.414(v)-1(c)(2)(iii)(B) indexes "the initial
+        // amount ($11,250 ...)", so it is the operative figure that moves and
+        // the 10,000 leg never governs. Those regulations apply to taxable years
+        // beginning after December 31 2026 -- the first year the readings can
+        // diverge -- so they control exactly the years at issue.
         const catchUp =
           age >= 60 && age <= 63
             ? indexWithStatutoryRounding(pack.contributionLimits.superCatchUp60to63, limitGrowth)
