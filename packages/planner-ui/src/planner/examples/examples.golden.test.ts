@@ -40,6 +40,14 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   // pack, where the cumulative index is ~2.3x and the frozen-threshold error is
   // correspondingly largest.
   //
+  // Restated 2026-08-04 after rebasing onto the merged 151(d)(5)(C)
+  // senior-deduction correction (#169). That fix re-baselined bracket-fill-roth
+  // on its own; the figures below are the combined effect of both changes, not
+  // of this one alone. Against the post-#169 baseline this branch moves only
+  // that example further: ending investable 603,886.68 to 607,663.76, lifetime
+  // tax 222,821.59 to 220,841.91, conversions 809,898.99 to 815,673.60. The tax
+  // now falls rather than rising, because a wider indexed 22 percent bracket
+  // more than offsets the deduction the senior correction takes away.
   // Only bracket-fill-roth's lifetime tax rises (+304.24), and it rises for the
   // right reason: it is the one example with a fill-to-bracket ladder, so a
   // wider bracket is an instruction to convert MORE. It converts +5,823 in 2027,
@@ -80,7 +88,7 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   // skipped, lowering the ending balance.
   'example-couple': { depletionYear: null, endingInvestable: 2_272_928.12, lifetimeTax: 451_207.76, lifetimeRoth: 1_464_472.03 },
   'under-saved-single': { depletionYear: 2046, endingInvestable: 0, lifetimeTax: 183_713.99, lifetimeRoth: 0 },
-  'bracket-fill-roth': { depletionYear: null, endingInvestable: 603_886.68, lifetimeTax: 222_821.59, lifetimeRoth: 809_898.99 },
+  'bracket-fill-roth': { depletionYear: null, endingInvestable: 607_663.76, lifetimeTax: 220_841.91, lifetimeRoth: 815_673.6 },
   // early-retiree-aca retuned 2026-07-30: the old baseline (55k consulting,
   // fill to the 12% bracket) had its only actionable ACA year above 400% FPL,
   // so the example could not show a credit at all. It now converts to the 10%
