@@ -2,8 +2,16 @@ import { describe, expect, it } from 'vitest'
 
 import type { Plan } from '../model/plan.js'
 import { singlePersonPlan, traditionalAccount } from '../testing/planFixtures.js'
-import { rothConversionRequestSchema, type RothConversionRequest } from './contract.js'
+import {
+  actionExecutionDispositionSchema,
+  rothConversionRequestSchema,
+  type RothConversionRequest,
+} from './contract.js'
+import { asPersonId } from './identity.js'
 import { asUsdCents } from './money.js'
+import type {
+  NonpersistedOwnerIraRmdSatisfactionEvidence,
+} from '../strategies/accountEligibility.js'
 import {
   executeRothConversions,
   type ExecuteRothConversionsInput,
@@ -722,6 +730,224 @@ describe('executeRothConversions', () => {
       accountId: 'roth-a',
       openingBalance: Number.MAX_SAFE_INTEGER,
       closingBalance: Number.MAX_SAFE_INTEGER,
+    })
+  })
+
+  // Treas. Reg. 1.408A-4 A-6(b) bars a conversion "to the extent that the
+  // required minimum distribution for the traditional IRA for the year has not
+  // been distributed", and Treas. Reg. 1.408-8(e)(1)(i) makes the amount that
+  // has to come out the SUM of the owner's separately calculated IRA amounts,
+  // distributable "from any one or more of the IRAs". So the question the
+  // executor must answer is owner-wide and aggregated, and the only thing that
+  // may answer it is bound evidence of the outcome.
+  describe('owner IRA-RMD-satisfaction evidence', () => {
+    function satisfaction(
+      requests: readonly RothConversionRequest[],
+      requiredAmount: number,
+      distributedAmount: number,
+    ): NonpersistedOwnerIraRmdSatisfactionEvidence[] {
+      return requests.map((value) => ({
+        evidenceId: `rmd-satisfaction-${value.actionId}`,
+        actionId: value.actionId,
+        personId: value.personId,
+        actionYear: value.year,
+        actionDate: value.executionDate ?? null,
+        requiredAmount: asUsdCents(requiredAmount),
+        distributedAmount: asUsdCents(distributedAmount),
+      }))
+    }
+
+    function withSatisfaction(
+      requiredAmount: number,
+      distributedAmount: number,
+      mutate: (
+        evidence: readonly NonpersistedOwnerIraRmdSatisfactionEvidence[],
+      ) => readonly NonpersistedOwnerIraRmdSatisfactionEvidence[] = (value) => value,
+    ): ExecuteRothConversionsInput {
+      const value = input()
+      return {
+        ...value,
+        runtimeEvidence: {
+          ...value.runtimeEvidence,
+          ownerIraRmdSatisfactionEvidence: mutate(
+            satisfaction(value.requests, requiredAmount, distributedAmount),
+          ),
+        },
+      }
+    }
+
+    function reasonCodes(value: ExecuteRothConversionsInput): string[] {
+      return executeRothConversions(value).evidence[0]!.reasons.map(
+        (reason) => reason.code,
+      )
+    }
+
+    it('drops the reserve reason once the owner aggregated IRA RMD sum was distributed', () => {
+      expect(reasonCodes(withSatisfaction(40_000, 40_000)))
+        .not.toContain('conversion-rmd-reserve-unavailable')
+    })
+
+    it('drops the reserve reason when no aggregated IRA RMD was due', () => {
+      // A sum of zero has already been distributed; there is nothing A-6(b)
+      // withholds. The owner still cannot convert, but not for this reason.
+      expect(reasonCodes(withSatisfaction(0, 0)))
+        .not.toContain('conversion-rmd-reserve-unavailable')
+    })
+
+    it('keeps every other owner-wide conversion prerequisite while the reserve clears', () => {
+      const codes = reasonCodes(withSatisfaction(40_000, 40_000))
+
+      expect(codes).toEqual(expect.arrayContaining([
+        'conversion-basis-evidence-missing',
+        'conversion-tax-funding-evidence-unsupported',
+      ]))
+      expect(executeRothConversions(withSatisfaction(40_000, 40_000)))
+        .toMatchObject({
+          committed: false,
+          evidence: [{
+            outcome: 'unsupported',
+            readiness: 'nonActionable',
+            executedAmount: 0,
+            unexecutedAmount: 10_000,
+          }],
+        })
+    })
+
+    it('keeps the reserve reason when part of the sum is still undistributed', () => {
+      // The sweep across the owner's other aggregated IRAs could not close the
+      // shortfall, which after Treas. Reg. 1.408-8(e)(1)(i) settlement means
+      // every one of those IRAs is empty.
+      expect(reasonCodes(withSatisfaction(40_000, 39_999)))
+        .toContain('conversion-rmd-reserve-unavailable')
+    })
+
+    it('keeps the reserve reason when the channel carries no evidence at all', () => {
+      // Absence of evidence is not evidence of satisfaction.
+      expect(reasonCodes(input()))
+        .toContain('conversion-rmd-reserve-unavailable')
+      expect(reasonCodes(withSatisfaction(40_000, 40_000, () => [])))
+        .toContain('conversion-rmd-reserve-unavailable')
+    })
+
+    it.each([
+      ['a blank evidence id', (entry: NonpersistedOwnerIraRmdSatisfactionEvidence) =>
+        [{ ...entry, evidenceId: '   ' }]],
+      ['another owner', (entry: NonpersistedOwnerIraRmdSatisfactionEvidence) =>
+        [{ ...entry, personId: asPersonId('p2') }]],
+      ['another action year', (entry: NonpersistedOwnerIraRmdSatisfactionEvidence) =>
+        [{ ...entry, actionYear: entry.actionYear + 1 }]],
+      ['another execution date', (entry: NonpersistedOwnerIraRmdSatisfactionEvidence) =>
+        [{ ...entry, actionDate: '2030-12-16' }]],
+      ['a dropped execution date', (entry: NonpersistedOwnerIraRmdSatisfactionEvidence) =>
+        [{ ...entry, actionDate: null }]],
+      ['an unbound action', (entry: NonpersistedOwnerIraRmdSatisfactionEvidence) =>
+        [{ ...entry, actionId: request('conversion-other').actionId }]],
+      ['two entries for one action', (entry: NonpersistedOwnerIraRmdSatisfactionEvidence) =>
+        [entry, { ...entry, evidenceId: `${entry.evidenceId}-duplicate` }]],
+      ['a fractional required amount', (entry: NonpersistedOwnerIraRmdSatisfactionEvidence) =>
+        [{ ...entry, requiredAmount: 40_000.5 as typeof entry.requiredAmount }]],
+      ['a negative distributed amount', (entry: NonpersistedOwnerIraRmdSatisfactionEvidence) =>
+        [{ ...entry, distributedAmount: -1 as typeof entry.distributedAmount }]],
+    ] as const)('keeps the reserve reason under %s', (_label, mutate) => {
+      expect(reasonCodes(withSatisfaction(40_000, 40_000, (evidence) =>
+        mutate(evidence[0]!)))).toContain('conversion-rmd-reserve-unavailable')
+    })
+
+    it('binds satisfaction per action rather than per owner-year batch', () => {
+      const first = request('conversion-a', 1)
+      const second = request('conversion-b', 2, [{
+        allocationId: 'allocation-c',
+        sourceAccountId: 'traditional-a',
+        requestedAmount: 1_000,
+      }])
+      const value = input([first, second])
+      const result = executeRothConversions({
+        ...value,
+        runtimeEvidence: {
+          ...value.runtimeEvidence,
+          ownerIraRmdSatisfactionEvidence: satisfaction([first], 40_000, 40_000),
+        },
+      })
+      const codesByAction = Object.fromEntries(result.evidence.map((entry) => [
+        entry.actionId,
+        entry.reasons.map((reason) => reason.code),
+      ]))
+
+      expect(codesByAction['conversion-a'])
+        .not.toContain('conversion-rmd-reserve-unavailable')
+      expect(codesByAction['conversion-b'])
+        .toContain('conversion-rmd-reserve-unavailable')
+    })
+
+    // The publication contract required all three staging codes to recognise a
+    // staged non-moving conversion. Dropping one must not silently reroute the
+    // record: it still has to publish, both through the plain disposition
+    // schema and through the bypass a physical trim reason still needs.
+    it('publishes a staged conversion whose reserve reason has cleared', () => {
+      const result = executeRothConversions(withSatisfaction(40_000, 40_000))
+      const record = result.evidence[0]!
+
+      expect(actionExecutionDispositionSchema.safeParse({
+        outcome: record.outcome,
+        readiness: record.readiness,
+        requestedAmount: record.requestedAmount,
+        executedAmount: record.executedAmount,
+        unexecutedAmount: record.unexecutedAmount,
+        reasons: record.reasons,
+      }).success).toBe(true)
+      expect(publishAnnualRetirementActions({
+        taxYear: year,
+        requests: result.requests,
+        sources: [rothConversionPublicationSource(result)],
+      })?.records[0]?.reasons.map((reason) => reason.code))
+        .not.toContain('conversion-rmd-reserve-unavailable')
+    })
+
+    it('publishes a cleared-reserve conversion that also carries a physical trim', () => {
+      const value = withSatisfaction(40_000, 40_000)
+      value.openingBalances = value.openingBalances.map((snapshot) =>
+        snapshot.accountId === 'traditional-a'
+          ? { ...snapshot, openingBalance: asUsdCents(5_000) }
+          : snapshot,
+      )
+      const result = executeRothConversions(value)
+      const codes = result.evidence[0]!.reasons.map((reason) => reason.code)
+
+      expect(codes).toContain('conversion-balance-trimmed')
+      expect(codes).not.toContain('conversion-rmd-reserve-unavailable')
+      // A partial-outcome reason inside an unsupported disposition is exactly
+      // what the staged-conversion bypass exists for, so this record proves the
+      // bypass still recognises the record after the reserve reason cleared.
+      expect(actionExecutionDispositionSchema.safeParse({
+        outcome: result.evidence[0]!.outcome,
+        readiness: result.evidence[0]!.readiness,
+        requestedAmount: result.evidence[0]!.requestedAmount,
+        executedAmount: result.evidence[0]!.executedAmount,
+        unexecutedAmount: result.evidence[0]!.unexecutedAmount,
+        reasons: result.evidence[0]!.reasons,
+      }).success).toBe(false)
+      expect(() => publishAnnualRetirementActions({
+        taxYear: year,
+        requests: result.requests,
+        sources: [rothConversionPublicationSource(result)],
+      })).not.toThrow()
+    })
+
+    it('still moves no money and commits nothing once the reserve clears', () => {
+      const result = executeRothConversions(withSatisfaction(40_000, 40_000))
+
+      expect(result.committed).toBe(false)
+      expect(result.balances.every(
+        (balance) => balance.openingBalance === balance.closingBalance,
+      )).toBe(true)
+      expect(result.evidence.every((entry) =>
+        entry.executedAmount === 0 &&
+        entry.destinationCreditAmount === 0 &&
+        entry.readiness === 'nonActionable' &&
+        entry.allocations.every((allocation) =>
+          allocation.executedAmount === 0 &&
+          allocation.rmdReserveEvidenceId === null),
+      )).toBe(true)
     })
   })
 

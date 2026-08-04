@@ -1242,8 +1242,14 @@ function isStagedNonmovingConversionRecord(
       allocation.unexecutedAmount !== allocation.requestedAmount)
   ) return false
   const reasonCodes = new Set(record.reasons.map((reason) => reason.code))
+  // `conversion-rmd-reserve-unavailable` is deliberately absent from this list.
+  // It is no longer unconditional: the owner IRA-RMD-satisfaction evidence
+  // channel drops it once the owner's aggregated IRA RMD sum has been
+  // distributed, or was zero, so requiring it here would fail exactly the
+  // records the channel is meant to clear. The two codes that remain are still
+  // emitted on every well-formed staged conversion, and the `rothConversion`
+  // guard above keeps the bypass from reaching any other action kind.
   return reasonCodes.has('conversion-basis-evidence-missing') &&
-    reasonCodes.has('conversion-rmd-reserve-unavailable') &&
     reasonCodes.has('conversion-tax-funding-evidence-unsupported') &&
     record.reasons.every((reason) =>
       reason.outcome === 'unsupported' ||

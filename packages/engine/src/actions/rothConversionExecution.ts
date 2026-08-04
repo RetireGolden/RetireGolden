@@ -16,6 +16,7 @@ import {
 import type { Plan } from '../model/plan.js'
 import {
   evaluateRetirementActionEligibilityFromPlan,
+  resolveOwnerIraRmdSatisfaction,
   type RetirementActionEligibilityRuntimeEvidence,
 } from '../strategies/accountEligibility.js'
 
@@ -244,24 +245,34 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
   )
   const remainingByAccountId = new Map(openingByAccountId)
   const evidence: RothConversionExecutionEvidence[] = []
+  const runtimeEvidence = input.runtimeEvidence ?? {}
   for (const request of requests) {
-    // These three annual facts must be produced and validated for the complete
-    // owner-wide action group before any member can move. This prerequisite
-    // intentionally accepts no shallow substitute and therefore cannot mark a
-    // request actionable yet.
+    // These annual facts must be produced and validated for the complete
+    // owner-wide action group before any member can move. Each prerequisite
+    // accepts no shallow substitute, so a request stays non-actionable until
+    // every one of them is answered by evidence.
+    //
+    // The RMD reserve is the first of them to have an evidence channel.
+    // Treas. Reg. 1.408A-4 A-6(b) bars a conversion "to the extent that" the
+    // year's required minimum distribution has not been distributed, and
+    // `resolveOwnerIraRmdSatisfaction` reads the owner's aggregated-IRA
+    // outcome from bound runtime evidence. Anything short of proven
+    // satisfaction — including no evidence at all — keeps the reason.
     const reasons: ActionReason[] = [
       createActionReason('conversion-basis-evidence-missing', {
         personId: request.personId,
       }),
-      createActionReason('conversion-rmd-reserve-unavailable', {
-        personId: request.personId,
-      }),
+      ...(resolveOwnerIraRmdSatisfaction(request, runtimeEvidence) === 'satisfied'
+        ? []
+        : [createActionReason('conversion-rmd-reserve-unavailable', {
+            personId: request.personId,
+          })]),
       createActionReason('conversion-tax-funding-evidence-unsupported', {
         personId: request.personId,
       }),
     ]
     if (request.year !== input.year) reasons.push(createActionReason('conversion-date-outside-action-year', { personId: request.personId }))
-    const preflight = evaluateRetirementActionEligibilityFromPlan(request, input.plan as Plan, input.runtimeEvidence ?? {})
+    const preflight = evaluateRetirementActionEligibilityFromPlan(request, input.plan as Plan, runtimeEvidence)
     if (preflight.status !== 'accepted') reasons.push(...preflight.reasons)
     const destination = accounts.get(request.destinationRothAccountId)
     if (destination === undefined) {

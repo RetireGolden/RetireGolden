@@ -2762,7 +2762,11 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/strategies/accountEligibility.ts',
+      'packages/engine/src/actions/rothConversionExecution.ts',
+    ],
   },
   'treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959': {
     title: 'Applicable age for an owner born in 1959',
