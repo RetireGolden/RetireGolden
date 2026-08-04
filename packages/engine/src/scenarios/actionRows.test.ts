@@ -328,10 +328,15 @@ describe('normalizeScenarioActionRows', () => {
         outcome: 'executed' as const,
       })),
     }
+    // An `executed` outcome inside a batch that reports no committed movement
+    // is refused by the movement/committed agreement check before the
+    // disposition schema ever reaches the readiness contradiction it also has.
     expect(() => normalizeScenarioActionRows([{
       year: 2030,
       rothConversionActionExecution: forgedOutcomeExecution,
-    } as unknown as YearResult])).toThrow(/readiness/)
+    } as unknown as YearResult])).toThrow(
+      'Conversion execution movement and committed balances must agree',
+    )
   })
 
   it('normalizes ordinary execution cents and identities independent of evidence order', () => {

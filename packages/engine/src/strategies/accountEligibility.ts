@@ -158,12 +158,52 @@ export interface NonpersistedOwnerIraRmdSatisfactionEvidence {
   distributedAmount: UsdCents
 }
 
+/**
+ * One action's binding to the owner's aggregated-IRA nondeductible basis at
+ * the moment the conversion would execute.
+ *
+ * IRC 408(d)(2) treats all of an individual's non-Roth IRAs as one contract
+ * and all distributions in the year as one distribution, so the Form 8606
+ * pro-rata numerator is a single owner-wide figure and not an account-level
+ * one. `basisAmount` is that numerator. A zero numerator is the only case this
+ * evidence is used to clear, because it is the only one whose answer needs no
+ * allocation: 408A(d)(3) then makes the entire converted gross includible, and
+ * there is nothing to apportion between this conversion and the year's other
+ * distributions.
+ */
+export interface NonpersistedOwnerAggregatedIraBasisEvidence {
+  evidenceId: string
+  actionId: ActionId
+  personId: PersonId
+  actionYear: number
+  /** Exact submitted execution date, or null when the request has no date. */
+  actionDate: string | null
+  /** The owner's aggregated non-Roth IRA nondeductible basis, in cents. */
+  basisAmount: UsdCents
+}
+
 export interface RetirementActionEligibilityRuntimeEvidence {
   personAliveEvidence?: readonly NonpersistedActionPersonAliveEvidence[]
   priorQcdOffsetEvidence?: readonly NonpersistedPriorQcdOffsetEvidence[]
   ownerIraRmdSatisfactionEvidence?:
     readonly NonpersistedOwnerIraRmdSatisfactionEvidence[]
+  ownerAggregatedIraBasisEvidence?:
+    readonly NonpersistedOwnerAggregatedIraBasisEvidence[]
 }
+
+/**
+ * Whether the owner's aggregated-IRA basis numerator is proven to be zero.
+ *
+ * `nonzeroBasis` is a distinct answer from `unproven` and neither clears. A
+ * positive numerator is answerable, but only by allocating the year's basis
+ * across the complete Form 8606 line-7 and line-8 gross; approximating it here
+ * would convert at an assumed character, which is the one thing a conversion
+ * executor must never do.
+ */
+export type OwnerAggregatedIraBasisResolution =
+  | Readonly<{ status: 'zeroBasis'; evidenceId: string }>
+  | Readonly<{ status: 'nonzeroBasis'; evidenceId: string }>
+  | Readonly<{ status: 'unproven' }>
 
 /**
  * Whether the owner's aggregated IRA RMD sum had been distributed when this
@@ -213,6 +253,57 @@ export function resolveOwnerIraRmdSatisfaction(
   return evidence.distributedAmount >= evidence.requiredAmount
     ? 'satisfied'
     : 'unsatisfied'
+}
+
+/**
+ * The identifier of the RMD-satisfaction evidence a conversion actually
+ * relied on, so a committed allocation can cite it rather than assert it.
+ */
+export function resolveOwnerIraRmdSatisfactionEvidenceId(
+  request: RothConversionRequest,
+  runtimeEvidence: RetirementActionEligibilityRuntimeEvidence = {},
+): string | null {
+  if (resolveOwnerIraRmdSatisfaction(request, runtimeEvidence) !== 'satisfied') {
+    return null
+  }
+  const evidence = uniqueIndex(
+    runtimeEvidence.ownerIraRmdSatisfactionEvidence ?? [],
+    (entry) => entry.actionId,
+  ).get(request.actionId)
+  return evidence?.evidenceId ?? null
+}
+
+/**
+ * Bind the owner aggregated-IRA basis channel to one conversion request.
+ *
+ * Fails closed on everything it cannot confirm, for the same reason the RMD
+ * channel does: absent, duplicated, unbound, or malformed evidence is not a
+ * zero numerator, and reading it as one would silently convert a basis-bearing
+ * IRA as if it were wholly pre-tax.
+ */
+export function resolveOwnerAggregatedIraBasis(
+  request: RothConversionRequest,
+  runtimeEvidence: RetirementActionEligibilityRuntimeEvidence = {},
+): OwnerAggregatedIraBasisResolution {
+  const evidence = uniqueIndex(
+    runtimeEvidence.ownerAggregatedIraBasisEvidence ?? [],
+    (entry) => entry.actionId,
+  ).get(request.actionId)
+  if (
+    evidence == null ||
+    typeof evidence.evidenceId !== 'string' ||
+    evidence.evidenceId.trim().length === 0 ||
+    evidence.personId !== request.personId ||
+    !Number.isSafeInteger(evidence.actionYear) ||
+    evidence.actionYear !== request.year ||
+    evidence.actionDate !== (request.executionDate ?? null) ||
+    !isNonnegativeCentAmount(evidence.basisAmount)
+  ) {
+    return { status: 'unproven' }
+  }
+  return evidence.basisAmount === 0
+    ? { status: 'zeroBasis', evidenceId: evidence.evidenceId }
+    : { status: 'nonzeroBasis', evidenceId: evidence.evidenceId }
 }
 
 export interface NonpersistedRetirementActionEligibilityContext {

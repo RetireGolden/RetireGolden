@@ -151,7 +151,7 @@ describe('private owned-IRA runtime source-series validation', () => {
         mutable.destinationBalanceBeforePlanDollars = 0
         mutable.destinationBalanceAfterPlanDollars =
           mutable.destinationCreditedAmountPlanDollars
-      } else {
+      } else if (application.applicationKind !== 'namedRothDestinationCredit') {
         ;(application as { producerOccurrenceKey: string }).producerOccurrenceKey =
           replacementKeys.get(application.producerOccurrenceKey) ??
           application.producerOccurrenceKey

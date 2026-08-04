@@ -21,7 +21,7 @@ import { executeOrdinaryWithdrawals } from './execution.js'
 import {
   executeRothConversions,
   type ExecuteRothConversionsInput,
-  type ExecuteRothConversionsResult,
+  type ExecuteRothConversionsStagedResult,
 } from './rothConversionExecution.js'
 import {
   ordinaryWithdrawalPublicationSource,
@@ -1230,7 +1230,8 @@ describe('executeRothConversions', () => {
     })
 
     it('moves nothing under any funding disposition', () => {
-      expectTypeOf<ExecuteRothConversionsResult['committed']>().toEqualTypeOf<false>()
+      expectTypeOf<ExecuteRothConversionsStagedResult['committed']>()
+        .toEqualTypeOf<false>()
       for (const [, taxFunding] of dispositions) {
         const result = executeRothConversions(input([withFunding(taxFunding)]))
 

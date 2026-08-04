@@ -512,6 +512,8 @@ export type SimulatorRetirementRuntimeApplicationPhase =
   | 'ownerRmdDistribution'
   | 'automaticSeppDistribution'
   | 'legacyQcdDistribution'
+  | 'namedRothConversionDebit'
+  | 'namedRothConversionDestinationCredit'
   | 'legacyRothConversion'
   | 'legacyRothConversionAggregateDestinationCredit'
   | 'legacyNeedBasedWithdrawal'
@@ -561,9 +563,42 @@ export interface SimulatorRetirementRuntimeAggregateRothDestinationCredit {
   readonly destinationBalanceAfterPlanDollars: number
 }
 
+/**
+ * One named conversion's own destination credit.
+ *
+ * This is deliberately not the aggregate shape above. That one exists because
+ * the legacy strategy has a single household destination and picks it by Plan
+ * array position; a named request states its destination, so this credit
+ * carries the `actionId` that chose it and is validated against that request's
+ * `destinationRothAccountId` alone. Two requests in the same year therefore
+ * produce two credits to two different Roth accounts, which the aggregate
+ * shape cannot express.
+ */
+export interface SimulatorRetirementRuntimeNamedRothDestinationCredit {
+  readonly applicationKind: 'namedRothDestinationCredit'
+  readonly simulatorPhase: 'namedRothConversionDestinationCredit'
+  readonly mutationOrdinal: number
+  readonly producerOccurrenceKey: null
+  readonly ownerPersonId: null
+  readonly sourceAccountId: null
+  readonly sourceBalanceBeforePlanDollars: null
+  readonly sourceBalanceAfterPlanDollars: null
+  /** The named request whose committed movement produced this credit. */
+  readonly actionId: string
+  /** Exact runtime occurrence keys whose debits produced this one credit. */
+  readonly producerOccurrenceKeys: readonly string[]
+  readonly sourceOwnerPersonIds: readonly (string | null)[]
+  readonly destinationRothAccountId: string | null
+  readonly destinationOwnerPersonId: string | null
+  readonly destinationBalanceBeforePlanDollars: number
+  readonly destinationCreditedAmountPlanDollars: number
+  readonly destinationBalanceAfterPlanDollars: number
+}
+
 export type SimulatorRetirementRuntimeApplication =
   | Readonly<SimulatorRetirementRuntimeDebitApplication>
   | Readonly<SimulatorRetirementRuntimeCreditApplication>
+  | Readonly<SimulatorRetirementRuntimeNamedRothDestinationCredit>
   | Readonly<SimulatorRetirementRuntimeAggregateRothDestinationCredit>
 
 /**

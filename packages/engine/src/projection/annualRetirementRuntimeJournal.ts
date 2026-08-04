@@ -125,6 +125,11 @@ function originFor(
       kind === 'legacyRothConversion' || kind === 'legacyQcd') {
     return 'legacyProjection'
   }
+  // A named conversion moves between two of the household's own accounts, so
+  // it belongs with the other transfers. Named rather than left to the final
+  // fallthrough, and deliberately not `legacyProjection`: the aggregate
+  // strategy chose neither its amount nor its destination.
+  if (kind === 'namedRothConversion') return 'transferLedger'
   if (kind === 'ownedIraContribution' ||
       kind === 'ownedIraEmployerContribution' ||
       kind === 'employerPlanEmployeeContribution' ||
