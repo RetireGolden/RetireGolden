@@ -355,7 +355,10 @@ describe('charitable and section 68 rules', () => {
       expect(detail.itemized).toBe(true)
       expect(detail.deduction).toBe(produced)
       expect(detail.deduction).not.toBe(accepted)
-      // The whole overstatement is the floor the statute would have applied.
+      // The overstatement is the lesser of the gift and the floor. This gift is
+      // twenty times the floor, so here the lesser is the floor itself; a gift
+      // at or below $1,000 would be disallowed in full and the overstatement
+      // would be the whole gift instead.
       expect(detail.deduction - accepted).toBe(floorFor(agi))
     })
 
