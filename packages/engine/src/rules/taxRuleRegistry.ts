@@ -70,10 +70,91 @@ export type TaxRuleVolatility = (typeof TAX_RULE_VOLATILITIES)[number]
  * - `unsettled` — authority is absent or conflicting. Implement the best
  *   reading, record the contrary one, and publish a disclosure field so a
  *   consumer cannot present the result as filing-grade.
- * - `outOfScope` — deliberately not modelled. The engine must fail closed with
- *   a typed refusal naming the missing rule rather than compute an answer.
+ * - `approximated` — the engine computes and returns a figure that is knowably
+ *   not the one the authority requires. It must state which way that figure
+ *   errs in `errorDirection`, because a wrong number a consumer can act on is
+ *   more dangerous than no number: it has a sign, and the sign decides whether
+ *   the taxpayer is merely over-charged or is being told they owe less than
+ *   they do.
+ * - `outOfScope` — the engine produces no figure from this rule at all. Two
+ *   shapes qualify, and only these two. Either it fails closed — a typed
+ *   refusal, an `unsupported` outcome, or a `notEstablished` reconciliation
+ *   naming the missing rule — or the fact the rule turns on cannot be expressed
+ *   in the input model at all, so no accepted input reaches the rule. What does
+ *   NOT qualify is computing an answer anyway; that is `approximated`.
+ *
+ * The line between the last two is the whole point of splitting them. Before
+ * the split, `outOfScope` was carrying both refusals and approximations, and a
+ * reader who trusted the doc comment would have believed 24 records refused
+ * when in fact they returned a number.
  */
-export type TaxRuleClassification = 'settled' | 'unsettled' | 'outOfScope'
+export type TaxRuleClassification = 'settled' | 'unsettled' | 'approximated' | 'outOfScope'
+
+/**
+ * Which way an `approximated` rule's computed figure departs from the figure
+ * the authority requires.
+ *
+ * The referent is the taxpayer's exposure to the fisc across the years the rule
+ * touches — income tax, the additional tax under 72(t) and 223(f), and the
+ * excise tax under 4973 and 4974 alike. It is deliberately NOT the intermediate
+ * quantity the rule names. A rule that governs a deduction, an exclusion, a
+ * contribution limit, or a required distribution is stated by what its error
+ * does to tax, not by whether the intermediate figure came out numerically
+ * larger. Anchoring on the intermediate quantity would make the field
+ * incomparable across records: "overstates" would mean opposite things for a
+ * deduction record and a taxable-income record, and the field would answer a
+ * different question each time it was read.
+ *
+ * - `understatesTax` — the engine's figure flatters the taxpayer. This is the
+ *   dangerous direction: a consumer acting on it under-withholds, over-gives,
+ *   or over-converts, and finds out from the return.
+ * - `overstatesTax` — the engine charges more than the authority does. Wrong,
+ *   but it fails toward caution.
+ * - `bothDirections` — the sign depends on the facts or on the projection year.
+ *   This covers a timing shift that nets to zero over a lifetime, because in an
+ *   annual projection the year is not a detail: a spike lands in a bracket, in
+ *   the capital-gain stacking threshold, and in the income the Medicare premium
+ *   adjustment reads two years later. `bothDirections` means the direction was
+ *   determined and found to vary, never that it was not determined.
+ */
+export type TaxRuleErrorDirection = 'understatesTax' | 'overstatesTax' | 'bothDirections'
+
+/**
+ * The sovereign whose law creates the rule, which decides what may be cited for
+ * it.
+ *
+ * Federal tax law and state income tax law do not share publishers: the first
+ * comes from the Code, the CFR, and the IRS, the second from a state code and a
+ * state revenue department. A single publisher list cannot serve both without
+ * admitting every state host as authority for every federal rule, so the record
+ * declares which sovereign it belongs to and the conformance guard picks the
+ * tier from that.
+ *
+ * Declared as a field rather than derived from the rule id or from an
+ * authority's `kind`, because both of those let a record widen what it may cite
+ * as a side effect of something else. An id prefix is a free-form string a typo
+ * can silently move into the more permissive tier; an authority `kind` is a
+ * property of the citation being checked, so a record could authorize its own
+ * source by labelling it. A required field with a closed union can only be
+ * changed on purpose, and the compiler names every record when it changes.
+ */
+export type TaxRuleJurisdiction = 'federal' | `state:${UsStateCode}`
+
+/**
+ * Postal codes for the fifty states and the District of Columbia, closing the
+ * `state:` half of `TaxRuleJurisdiction` so a mistyped code is a compile error
+ * rather than a record whose state tier silently resolves to nothing.
+ */
+export const US_STATE_CODES = Object.freeze([
+  'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC', 'FL',
+  'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME',
+  'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH',
+  'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI',
+  'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI',
+  'WY',
+] as const)
+
+export type UsStateCode = (typeof US_STATE_CODES)[number]
 
 export interface TaxRuleRecord {
   readonly title: string
@@ -82,6 +163,21 @@ export interface TaxRuleRecord {
   readonly classification: TaxRuleClassification
   /** Required when `classification` is `unsettled`: the reading we rejected. */
   readonly contraryReading: string | null
+  /**
+   * Required when `classification` is `approximated`, and null otherwise: which
+   * way the computed figure errs against the authority. See
+   * `TaxRuleErrorDirection` for the referent, which is the taxpayer's tax
+   * exposure rather than the quantity the rule names.
+   *
+   * Typed rather than left to prose in `conventionRationale` for two reasons.
+   * A convention cannot be enforced, so it decays to whichever records happened
+   * to be written while someone was watching; and `conventionRationale` is null
+   * on most of the records that need a direction, because it answers a
+   * different question — why an engineering convention was picked where no
+   * authority selects one. An approximation is not a convention. Overloading
+   * one field with both would erase a distinction the registry already draws.
+   */
+  readonly errorDirection: TaxRuleErrorDirection | null
   /**
    * Why an engineering convention was chosen where no authority selects one.
    *
@@ -94,6 +190,14 @@ export interface TaxRuleRecord {
    * legal conclusion. Anything published from such a rule must say so.
    */
   readonly conventionRationale: string | null
+  /**
+   * The sovereign whose law creates the rule. Sits next to `authority` because
+   * it decides which publisher tier the citations below may be drawn from: a
+   * federal rule may cite only federal publishers, a state rule may cite its
+   * own state's publishers and the federal ones its state code incorporates by
+   * reference. Enforced by `taxRuleRegistry.conformance.test.ts`.
+   */
+  readonly jurisdiction: TaxRuleJurisdiction
   readonly authority: readonly [TaxRuleAuthority, ...TaxRuleAuthority[]]
   readonly volatility: TaxRuleVolatility
   /** First tax year the rule governs. */
@@ -113,7 +217,9 @@ const registry = {
       'The 0.5% itemizer floor reduces the contribution otherwise allowable after the percentage ceiling has been applied: min(C, L) - F, never min(C - F, L).',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 170(b)(1)(I)(i)',
@@ -140,7 +246,9 @@ const registry = {
       'The amount disallowed by the 0.5% floor has no independent carryover. It survives only by increasing an excess already carried forward under another carryover rule, so in a year with no percentage-limit excess it is permanently lost.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 170(d)(1)(C)(i)',
@@ -167,7 +275,9 @@ const registry = {
       'The floor is consumed against contribution categories in the fixed order (D), (C), (B), (E), (A), (G), so 60% cash gifts to public charities absorb it last. A single-category ledger must be told the floor already consumed by earlier categories.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 170(b)(1)(I)(ii)',
@@ -188,7 +298,9 @@ const registry = {
       'Notwithstanding section 72, a charitable distribution is deemed to consist of otherwise-includible dollars up to the aggregate pre-tax balance across all of the owner’s IRAs. The QCD therefore leaves the Form 8606 pro-rata denominator entirely and full basis survives for the year’s other distributions; only the portion exceeding aggregate pre-tax dollars is not a QCD and does receive basis.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 408(d)(8)(D)',
@@ -227,7 +339,9 @@ const registry = {
     classification: 'unsettled',
     contraryReading:
       'The Form 1040 instructions direct the filer to enter "the part that is not a QCD" on line 4b and treat "QCD" as the capped amount, which would route the over-limit excess to Form 8606 line 7 and give it pro-rata basis. No regulation, ruling, or IRS example addresses a partly-excludable QCD from an IRA that also carries basis. The readings differ in current-year taxable income and in whether basis is consumed or preserved; the engine takes the statutory reading, which is also the conservative one.',
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 408(d)(8)(E)',
@@ -255,7 +369,9 @@ const registry = {
     classification: 'unsettled',
     contraryReading:
       'Practitioner literature states without qualification that unused 170(p) amounts do not carry forward, which read literally would deny a carryover even above the ceiling. That shorthand describes the 170(p) allowance itself rather than 170(d)(1), and no published source addresses the question either way. The supporting regulation still cites section 144, repealed in 1976, and no post-OBBBA authority applies it.',
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 170(d)(1)(A)',
@@ -288,7 +404,9 @@ const registry = {
       'The aggregate amount of qualified charitable distributions excludable from gross income is $111,000 per taxpayer for 2026, indexed annually.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'irsNotice',
       citation: 'IRS Notice 2025-67',
@@ -308,8 +426,10 @@ const registry = {
       'Where either spouse has family coverage, both spouses are treated as having that family coverage and the resulting family limit is divided equally between them unless they agree on a different division. Paragraph (5)(B) computes the amount to be divided without regard to the age-55 additional contribution amount, so the halving reaches only the base: each spouse adds a whole catch-up on top of half the family limit, not half a catch-up.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'Two facts the statute turns on are absent from the plan model, and each is resolved toward the statutory default. The division by agreement under (5)(B)(ii) cannot be observed, so the engine takes the equal division the statute applies in its absence. Coverage election is likewise unmodelled: a two-person household is treated as having family coverage, which is already what selects the family base, and paragraph (5)(A) then makes that coverage apply to both spouses. Paragraph (5) opens on individuals who are married to each other, so the division is applied only where the two-person household is also a married one with both spouses living. Household size does not carry that fact by itself: the plan schema requires two people for a joint return but does not require a joint return of a two-person household, so an unmarried pair is representable. Each of them is then simply an eligible individual with family coverage under (b)(2)(B) whom paragraph (5) never reaches, and each keeps a whole family limit. A sole survivor keeps the undivided base for the same reason, having nobody left to divide with. The per-person contribution group key is retained rather than replaced by a household one precisely so the (b)(3) catch-up stays attached to the spouse who earned it.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 223(b)(5)',
@@ -340,8 +460,10 @@ const registry = {
     classification: 'unsettled',
     contraryReading:
       'A two-step computation (70th anniversary, then six months) diverges from the one-step 846-month form for a 29 February birth, because the 70th anniversary of a leap-day birth never falls in a leap year. For a 1956-02-29 birth the defensible answers are 2026-08-28 (clamped anniversary plus six months), 2026-08-29 (one step), and 2026-09-01 (rolled anniversary plus six months): five days apart, with nothing selecting among them.',
+    errorDirection: null,
     conventionRationale:
       'The six-calendar-months sentence survives, but only in a provision written for something else: T.D. 10001 removed it from Treas. Reg. 1.401(a)(9)-2 and it now sits in 1.401(a)(9)-6(g)(1)(iv), a defined-benefit actuarial-increase rule. It has also been dropped from current IRS publications and survives there only in Publication 575 (2019). So the convention is sourced, but not from any provision addressed to IRC 408(d)(8)(B)(ii). What no source resolves at any level is a month-end or leap-day birth: no IRS guidance, ruling, case, publication example, or practitioner source addresses what "six calendar months after" means when the target day does not exist. The month-end clamp is chosen because it matches 29 CFR 4000.43, the one federal regulation resolving this class of problem, and because it is the prevailing practitioner convention. That regulation governs PBGC filings under ERISA Title IV and the IRS has never adopted it here, so the clamp is an engineering convention and not a legal conclusion. It errs permissive: for an August 31 birth it falls up to three days before a roll-forward reading, and a QCD taken in that window would not be a QCD at all. The date is load-bearing twice, because the SECURE 1.0 offset in 408(d)(8)(A) also keys the sweep of section 219 deductions to it.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 408(d)(8)(B)(ii)',
@@ -374,8 +496,10 @@ const registry = {
       'The early-distribution penalty does not apply to an employer-plan distribution after separation from service, where the separation occurs in or after the calendar year the participant attains age 55, from the employer maintaining that plan, and the distribution follows the separation. It never applies to an IRA.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The calendar-year form of the test is IRS administrative position rather than statutory text: 72(t)(2)(A)(v) says only "after attainment of age 55", which read literally would require the participant to have turned 55 before separating. The calendar-year gloss comes from Notice 87-13 Q&A-20 and is restated in Publication 575, the Form 5329 instructions, and the IRS exceptions chart. The engine follows the IRS position.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 72(t)(2)(A)(v)',
@@ -407,7 +531,9 @@ const registry = {
       'A distribution from a SIMPLE IRA during the two-year period beginning when the individual first participated substitutes a 25 percent rate for the 10 percent rate in IRC 72(t)(1). It is a rate substitution and not an independent penalty gate, so every 72(t)(2) exception still applies first and zeroes the tax entirely.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 72(t)(6)(A)',
@@ -434,7 +560,9 @@ const registry = {
       'A substantially equal periodic payment series from a 401(a) trust, 403(a) annuity plan, or 403(b) contract qualifies for the 72(t)(2)(A)(iv) exception only if it begins after the employee separates from service. The requirement does not reach IRAs, so an IRA SEPP may begin while the owner is still employed.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 72(t)(3)(B)',
@@ -457,8 +585,10 @@ const registry = {
       'Itemized deductions otherwise allowable are reduced by exactly 2/37 of the lesser of those deductions or the excess of taxable income, computed without regard to section 68 and increased by those deductions, over the dollar amount at which the 37 percent bracket begins. It applies after every other limitation on an itemized deduction.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'Publication 505 states the rate as 5.4 percent, which is a truncation of 2/37 (0.0540540...), not the rule. The engine computes the exact rational because the difference is roughly $5.41 per $100,000 of limitation base and this provision only bites at incomes where that is real money. Note also that the amended section has no exempt categories and no 80 percent cap, both features of the pre-2018 Pease rule, so logic ported from that era would carry forward carve-outs that no longer exist.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 68(a)',
@@ -491,7 +621,9 @@ const registry = {
       'Cash contributions to public charities are allowed up to 60 percent of the contribution base reduced by contributions already taken into account under 170(b)(1)(A), with the excess carried forward five years. It is a combined ceiling, not an independent bucket stacked on the 50 percent limit.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 170(b)(1)(G)(i)',
@@ -518,8 +650,10 @@ const registry = {
       'The 10 percent additional tax does not apply to a distribution made on or after the date the individual attains age 59.5. The test is inclusive of that date and reaches both IRAs and employer plans, unlike the Rule of 55.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'No authority at any level defines when age 59.5 is attained: there is no section 1.72(t) regulation series, and the threshold appears throughout the regulations without ever being defined. The engine applies the six-calendar-months convention by analogy to Treas. Reg. 1.401(a)(9)-6(g)(1)(iv), which defines it for age 70.5 inside a defined-benefit provision addressed to something else. That analogy is universal industry practice but the IRS has never stated it for 59.5, and it carries the same unresolved month-end and leap-day edge as the age-70.5 rule - here against a 10 percent penalty rather than QCD eligibility.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 72(t)(2)(A)(i)',
@@ -545,7 +679,9 @@ const registry = {
       'The 20 percent additional tax on a nonqualified HSA distribution is waived only for a distribution made after the date the account beneficiary attains age 65, so the exception begins the day after the 65th birthday and a distribution on the birthday itself still bears the tax. The waiver reaches only the additional tax; ordinary income inclusion under 223(f)(2) survives at any age.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 223(f)(4)(C)',
@@ -577,7 +713,9 @@ const registry = {
       'A distribution used exclusively to pay qualified medical expenses of an account beneficiary is not includible in gross income at all, so it is neither taxable nor exposed to the 20 percent additional tax. Only the nonqualified portion is includible.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 223(f)(1)',
@@ -603,8 +741,10 @@ const registry = {
       'All of an individual owned traditional, SEP, and SIMPLE IRAs are treated as one contract and all distributions in a year as one distribution, so the nontaxable fraction is that year remaining basis over the December 31 value plus outstanding rollovers plus the year distributions plus conversions. It is computed once per year, not per distribution.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The exclusion of inherited IRAs from the owner pool has no authority above publication level. IRC 408(d)(2)(A) says "all individual retirement plans" without qualification, and an inherited IRA is one from which the beneficiary takes distributions; the separation rests on Publication 590-B and the Form 8606 instructions, neither of which binds. Roth separation, by contrast, is statutory under 408A(d)(4)(A). The engine follows the IRS position because it is uniform administrative practice and the literal reading has no practitioner following, but the asymmetry in authority is worth knowing. Note the pooling is per decedent, not merely owned versus inherited.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 408(d)(2)',
@@ -637,8 +777,10 @@ const registry = {
       'Any amount distributed from an IRA during a year for which an RMD is required is treated as a required minimum distribution to the extent the year total has not already been satisfied. A QCD counts toward the RMD, but only against what remains unsatisfied when it occurs.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The consequence the engine must honour is derived rather than stated: because the RMD is satisfied in the order distributions actually occur, an ordinary withdrawal taken before a QCD in the same year irrevocably consumes RMD dollars, and the later QCD cannot retroactively displace it or make it nontaxable. No IRS pronouncement states that negative proposition directly; it follows from combining 1.408-8(b)(3) with 1.408-8(g)(1), and is uniform practitioner understanding. Note the annual-aggregation rule of 408(d)(2) does not extend here - that provision governs basis recovery under section 72, not RMD satisfaction, and an engine reasoning from it alone would wrongly conclude the ordering is irrelevant.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
       citation: 'Treas. Reg. 1.408-8(b)(3)',
@@ -673,7 +815,9 @@ const registry = {
       'The 20 percent additional tax does not apply to a distribution made after the account beneficiary becomes disabled or dies. Not modelled: the engine carries disability evidence but holds no death fact, and death also ends the account HSA status under 223(f)(8), so treating it as merely waiving the 20 percent would understate the event.',
     classification: 'outOfScope',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 223(f)(4)(B)',
@@ -694,7 +838,9 @@ const registry = {
       'For a qualified public safety employee taking a governmental-plan distribution, and for an employee providing firefighting services from a 401(a) trust, 403(a) annuity plan, or 403(b) contract, the Rule of 55 substitutes age 50 or 25 years of service under the plan, whichever is earlier. Not modelled: the engine holds no public-safety or years-of-service fact, so such a distribution must fail closed through the other-exception attestation rather than be assessed against the age-55 threshold.',
     classification: 'outOfScope',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 72(t)(10)(A)',
@@ -715,7 +861,9 @@ const registry = {
       'Modifying a SEPP series before the later of five years from the first payment or age 59.5 increases tax in the modification year by the tax that would have applied to every prior payment, plus interest for the deferral period. Not modelled: the engine reports a final penalty of zero for qualified SEPP payments and has no path to revise them, so a modification is outside the supported model rather than costless.',
     classification: 'outOfScope',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 72(t)(4)(A)',
@@ -736,7 +884,9 @@ const registry = {
       'A beneficiary who has personally attained age 70.5 may make a QCD from an inherited IRA; the controlling fact is the beneficiary’s own age, not the decedent’s. Not modelled in v1: separate beneficiary basis history is required and is never borrowed from the donor’s own pool, so an inherited source is classification-only and non-actionable.',
     classification: 'outOfScope',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'irsNotice',
       citation: 'IRS Notice 2007-7, Q&A-37',
@@ -763,7 +913,9 @@ const registry = {
       'A QCD may legally be made from a Roth IRA, but only to the extent the distribution would otherwise be includible in gross income. Not modelled in v1: the engine cannot prove the Roth tax character that would make any part otherwise includible, so a Roth source is unsupported rather than refused.',
     classification: 'outOfScope',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'irsNotice',
       citation: 'IRS Notice 2007-7, Q&A-36',
@@ -784,7 +936,9 @@ const registry = {
       'A one-time election permits QCDs to a split-interest entity up to $55,000 for 2026, counted within the $111,000 overall annual limit. Not modelled: the engine requires an affirmative attestation that the destination is not a split-interest entity and treats a known split-interest destination as unsupported.',
     classification: 'outOfScope',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'irsNotice',
       citation: 'IRS Notice 2025-67',
@@ -811,7 +965,9 @@ const registry = {
       'An IRA acquired by reason of death is treated as inherited only where the acquiring individual was not the surviving spouse of the decedent. A surviving spouse is therefore outside the inherited-IRA rules: the rollover and conversion bar of 408(d)(3)(C)(i) does not reach them, so Form 8606 line 8 can be non-zero for a spousal pool.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 408(d)(3)(C)(ii)',
@@ -832,8 +988,10 @@ const registry = {
       'A surviving spouse is deemed to have elected to treat the IRA as their own if an amount required to be distributed to them as beneficiary for a calendar year following the year of death is not distributed within the required time, or if a non-rollover contribution is made to the IRA. The election is not an act the spouse takes; it happens to them.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The regulation measures the trigger per calendar year, so an unobserved year is refused rather than assumed satisfied: an unobserved year is exactly the year in which the deemed election would have occurred.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
       citation: 'Treas. Reg. 1.408-8(c)(2)',
@@ -854,7 +1012,9 @@ const registry = {
       'Following an election under 1.408-8(c)(1) or a deemed election under (c)(2), the surviving spouse is the IRA owner for all purposes under the Code, section 72(t) expressly included. The zero additional-tax rate that IRC 72(t)(2)(A)(ii) gives a death beneficiary no longer applies, and the balance folds into the spouse’s own 408(d)(2) aggregation pool.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
       citation: 'Treas. Reg. 1.408-8(c)(3)',
@@ -884,8 +1044,10 @@ const registry = {
       'The premium tax credit applicable percentage runs 2.10 percent below 133 percent of the federal poverty line, then in bands opening at 3.14, 4.19, 6.60, 8.44 and 9.96 percent. The bands are stated as "at least X but less than Y", so 133 percent is a real step rather than a continuation of the 2.10 percent floor, and the schedule ends at "not more than 400 percent", making 400 inclusive.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The engine interpolates linearly between the published breakpoints. The revenue procedure gives an initial and a final percentage per band rather than a formula, and linear interpolation is the construction that reproduces both endpoints of every band.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'irsNotice',
       citation: 'Rev. Proc. 2025-25, section 3.01',
@@ -909,8 +1071,10 @@ const registry = {
       'An owner lifetime RMD uses the Uniform Lifetime Table unless the sole beneficiary is a spouse more than 10 years younger, in which case the Joint and Last Survivor Table gives the applicable denominator. Exactly ten years younger is not enough: the test is strict, so that case stays on the Uniform table.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The regulation measures the age gap between individuals; the engine compares ages attained in the calendar year, which is the granularity the projection runs at and can differ from the exact gap by under a year around a birthday.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
       citation: 'Treas. Reg. 1.401(a)(9)-5',
@@ -934,8 +1098,10 @@ const registry = {
       'Where the owner died before taking the calendar year total and the aggregated IRAs did not all carry identical beneficiary designations, each IRA must distribute a proportionate share of the shortfall based on its account balance. Draining one account before touching the next satisfies only the free-choice branch of (e)(1).',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The engine never models other beneficiaries designations, so it cannot observe whether (e)(4)(i) binds in a given year. It allocates proportionately unconditionally instead: where designations are identical, (e)(1) free choice permits any split including the proportionate one, so the proportionate split is correct under both branches while an account-order drain is correct under only one.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
       citation: 'Treas. Reg. 1.408-8(e)(4)(i)',
@@ -955,8 +1121,10 @@ const registry = {
       'Below the base amount no benefit is included. Between the base and adjusted base amounts the inclusion is the lesser of half the benefits or half the excess over the base. Above the adjusted base amount it is the lesser of 85 percent of the benefits or 85 percent of the excess over the adjusted base plus the tier-one amount, and that carried tier-one amount is itself capped.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The statute caps the carried amount at 4,500 dollars single and 6,000 joint. The engine computes half the spread between the base and adjusted base amounts instead, which equals those figures exactly -- 0.5 x (34,000 - 25,000) and 0.5 x (44,000 - 32,000) -- so the cap stays correct if the thresholds are ever re-indexed, rather than drifting from two hard-coded constants.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 86(a)(2)',
@@ -983,8 +1151,10 @@ const registry = {
       'The 3.8 percent tax applies to the lesser of net investment income for the year or the excess of modified adjusted gross income over the threshold amount. A taxpayer with large investment income but modified adjusted gross income barely over the threshold is taxed on the small excess, not on the investment income.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The thresholds are not indexed, so the record is static rather than annually indexed. Modified adjusted gross income is built under 1411(d) rather than read off the adjusted gross income line; see irc-1411-d-modified-agi-foreign-exclusion-addback.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 1411(a)(1)',
@@ -1014,8 +1184,10 @@ const registry = {
       'Losses from sales of capital assets are allowed against gains, plus the lower of 3,000 dollars or the excess of losses over gains. The rest is not lost; it carries forward under section 1212(b), so a large loss is deducted a little at a time rather than all at once.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The statute sets 1,500 dollars for a married individual filing separately. The projection collapses every filing status to single or married-filing-jointly, so that case is out of scope rather than handled at half the cap. The 3,000 dollar figure has never been indexed since 1978.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 1211(b)',
@@ -1039,8 +1211,10 @@ const registry = {
       'The preferential rates apply to bands measured from where ordinary taxable income ends, not from zero. Ordinary income fills the lower brackets first and the net capital gain sits on top of it, so the same gain can be taxed at 0, 15 or 20 percent depending only on how much ordinary income precedes it.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The statute frames the result as a ceiling -- the tax "shall not exceed" the sum of its components -- and enumerates the bands as offsets from the amount of taxable income otherwise taxed below 25 percent. The engine computes the bands directly from the ordinary taxable amount, which reaches the same figure for the rate schedule it models and is the reason the code carries no explicit 25 percent reference.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 1(h)(1)',
@@ -1064,8 +1238,10 @@ const registry = {
       'The tentative minimum tax is a two-layer schedule on the taxable excess, 26 percent to the breakpoint and 28 percent above it. What is actually owed is only the amount by which that exceeds the regular tax, so a taxpayer whose regular tax already exceeds the tentative amount owes no additional minimum tax at all.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'Section 55(b)(1) states the breakpoint as 175,000 dollars and it is inflation-adjusted; the 2026 pack carries 244,500. The record is annually indexed for that reason, and the statutory figure should not be read as the current one.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 55(a)',
@@ -1095,8 +1271,10 @@ const registry = {
       'The exemption is reduced, but not below zero, by 50 percent of the amount by which alternative minimum taxable income exceeds the phase-out threshold. The threshold is 500,000 dollars for an unmarried taxpayer and 1,000,000 dollars on a joint return, both indexed.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The 25 percent rate in the base text of section 55(d) is pre-2026 law. Pub. L. 119-21 substitutes 50 percent for taxable years beginning after 2025, which is why the pack carries a rate that disagrees with the unamended statute. Recording that substitution is the point of this rule: a reader checking the base text alone will conclude the pack is wrong.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 55(d)(4), as amended by Pub. L. 119-21',
@@ -1120,8 +1298,10 @@ const registry = {
       'A distribution made after the account beneficiary becomes disabled within the meaning of section 72(m)(7) is not subject to the 20 percent additional tax. The distribution stays includible in gross income: subparagraph (A) increases the tax by 20 percent of the amount which is so includible, and the exception switches off that increase without touching the inclusion itself.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The section 223(f)(1) qualified-medical exclusion sits in the same subsection and does remove inclusion, which makes the two easy to conflate. Section 72(m)(7) also requires the individual to furnish proof in such form and manner as the Secretary may require, which is why the engine models this as dated attestation evidence rather than inferring disability from plan data.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 223(f)(4)(A)',
@@ -1154,8 +1334,10 @@ const registry = {
       'A distribution attributable to the individual being disabled is not subject to the 10 percent additional tax. Disabled means unable to engage in any substantial gainful activity by reason of a medically determinable impairment expected to result in death or to be of long-continued and indefinite duration. The distribution remains ordinary income; only the additional tax is waived.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The statutory test is any substantial gainful activity, which is materially stricter than an occupation-specific disability determination of the kind a private policy uses. Section 72(m)(7) also requires the individual to furnish proof in such form and manner as the Secretary may require, which is why the engine takes a dated attestation with an evidence id rather than inferring disability from plan data.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 72(t)(2)(A)(iii)',
@@ -1182,8 +1364,10 @@ const registry = {
       'The excludable amount is reduced by the excess of the taxpayer aggregate section 219 deductions for all years ending on or after the date they attained age 70.5, over the aggregate reductions already made in earlier years. Netting off the prior reductions is what makes a given deduction dollar offset a QCD exactly once across a lifetime rather than in every subsequent year.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The statute measures the offset against deductions allowed to the taxpayer, so it is an individual-level figure even on a joint return, and the engine tracks it per donor for that reason. The registered annual limit is likewise per taxpayer, which can read as though the two use different bases; they do not.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 408(d)(8)(A), flush sentence',
@@ -1207,8 +1391,10 @@ const registry = {
       'An individual who attains age 72 after 2022 and age 73 before 2033 has an applicable age of 73. An individual who attains age 74 after 2032 has an applicable age of 75. Nobody has an applicable age of 74: the statute is written on attainment windows rather than a rising sequence, and 74 is skipped entirely.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The engine maps birth year to applicable age rather than restating the attainment windows, which is equivalent: a 1959 birth attains 73 in 2032, inside the window, while a 1960 birth attains 73 in 2033 and 74 in 2034, landing in the later rule. Expressing it by birth year is why no 74 appears anywhere in the code, and that absence is correct rather than a missing case.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 401(a)(9)(C)(v)',
@@ -1229,8 +1415,10 @@ const registry = {
       'A taxpayer is entitled to an additional amount for himself if he has attained age 65 before the close of the taxable year, and to a further additional amount for a spouse who has done the same. On a joint return with two qualifying people the addition is taken twice, not once for the household.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The statute states 600 dollars, and 750 dollars for an unmarried individual who is not a surviving spouse; both are inflation-adjusted, and the 2026 pack carries 1,650 and 2,050. The test is attainment before the close of the taxable year, which the engine models as age attained in the calendar year -- equivalent except for a taxpayer born on January 1, whom the IRS treats as attaining age on the preceding December 31.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 63(f)(1)',
@@ -1260,8 +1448,10 @@ const registry = {
       'The tax is increased by 10 percent of the portion of the distribution which is includible in gross income, not 10 percent of the amount distributed. Where nondeductible basis comes back with the distribution, the returned basis carries no additional tax because it is not includible.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The includible portion is whatever the annual section 408(d)(2) pro-rata calculation produces, so this rule sits downstream of the basis-recovery rule rather than restating it. That is also why the additional tax cannot be computed from the distribution alone.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 72(t)(1)',
@@ -1282,8 +1472,10 @@ const registry = {
       'The primary insurance amount is 90 percent of average indexed monthly earnings up to the first bend point, plus 32 percent of the part between the first and second, plus 15 percent of the part above the second, rounded down to the nearest 10 cents. Each rate reaches only the earnings inside its own band.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The bend points are not fixed dollar figures. Section 415(a)(1)(B) sets them at 180 and 1,085 dollars for 1979 eligibility and re-derives them for every later year from the ratio of the national average wage index two years prior to the 1977 index, which is why the engine carries a table by eligibility year rather than a constant.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: '42 U.S.C. 415(a)(1)(A)',
@@ -1307,8 +1499,10 @@ const registry = {
       'A retirement benefit claimed before full retirement age is reduced by 5/9 of 1 percent for each of the first 36 months of early entitlement and by 5/12 of 1 percent for each month beyond 36. The second rate is smaller, so the reduction slows rather than continuing at the initial pace.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The engine works in whole months before full retirement age and does not model the special rules for a benefit that is later recomputed, so the factor is a pure function of the month count.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
       citation: '20 CFR 404.410(a)',
@@ -1329,8 +1523,10 @@ const registry = {
       'A retirement benefit claimed after full retirement age is increased by 2/3 of 1 percent for each month of delay, beginning with the month full retirement age is attained and ending with the month age 70 is attained. Delaying past 70 earns nothing further.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The 2/3 of 1 percent rate applies to individuals born after 1 January 1943; earlier cohorts have lower rates that the engine does not model, because a person reaching full retirement age in a projected year is necessarily in the later group.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
       citation: '20 CFR 404.313',
@@ -1351,8 +1547,10 @@ const registry = {
       'Retirement age is 66 for an individual attaining early retirement age after 2004 and before 2017, 66 plus an age increase factor for one attaining it after 2016 and before 2022, and 67 for one attaining it after 2021. Early retirement age is 62 for an old-age benefit and 60 for a widow benefit, which is why survivors run a separate and earlier schedule.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'Because the statute turns on attaining age 62 rather than on a birth year, the boundary moves for anyone born on 1 January: the Social Security Administration treats a person as attaining an age on the day before their birthday, so a 1 January 1960 birth attains 62 in 2021 and falls under the 66-plus-factor branch rather than the flat 67. The engine expresses this as an effective birth year of the prior calendar year.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: '42 U.S.C. 416(l)(1)',
@@ -1379,8 +1577,10 @@ const registry = {
       'The maximum family benefit is 150 percent of the primary insurance amount up to the first bend point, plus 272 percent of the part between the first and second, plus 134 percent of the part between the second and third, plus 175 percent of the part above the third, decreased to the next lower multiple of ten cents. Each rate reaches only the amount inside its own band.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The bend points here are not the ones used for the primary insurance amount itself; section 403(a)(2) has its own set, indexed separately, which is why the engine carries a second table rather than reusing the PIA bend points.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: '42 U.S.C. 403(a)(2)',
@@ -1404,8 +1604,10 @@ const registry = {
       'Benefits are reduced by 50 percent of earnings above the exempt amount for a beneficiary who is under full retirement age throughout the year, and by 33 and one-third percent of earnings above a higher exempt amount in the year full retirement age is attained. Both the rate and the exempt amount change in that year, so the two cases cannot be collapsed. The rate fixes the size of the deduction, not the amount paid out: section 403(b) makes the deduction from the payments the beneficiary is entitled to, so it stops at the benefits payable and never runs negative or reaches beyond the year’s benefit.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'Withholding is applied annually against annual wages rather than month by month, and the withheld months are credited back at full retirement age through an adjustment-reduction-factor approximation. The statute operates on monthly benefits payable, so this is an annual-granularity convention rather than a reading of section 403(f). The cap at benefits payable is not part of that convention -- it is section 403(b) -- but it is worth naming here because it means a fixture whose wages are high enough for the cap to bind tests the cap rather than the 403(f)(3) rate.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: '42 U.S.C. 403(f)(3)',
@@ -1435,8 +1637,10 @@ const registry = {
       'The wife or husband insurance benefit is one-half of the worker primary insurance amount. Because it is measured against the PIA rather than against what the worker actually receives, a worker who delays past full retirement age raises their own benefit but not the spousal one, and the spouse gains nothing by claiming after their own full retirement age.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'Section 402(b)(2) is expressly subject to subsection (q), which supplies the early-claim reduction. The engine applies a steeper schedule for the spousal case than for a retirement benefit -- 25/36 of 1 percent for the first 36 months rather than 5/9 -- and models the deemed-filing era only, assuming the worker has already filed so the spouse is eligible.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: '42 U.S.C. 402(b)(2)',
@@ -1457,8 +1661,10 @@ const registry = {
       'The widow or widower insurance benefit is equal to the primary insurance amount of the deceased individual, that amount being the one determined after the subsection\u2019s own subparagraphs (B) and (C) have been applied. It is not the one-half fraction that applies to a spouse of a living worker, so the amount payable roughly doubles at the moment the relationship changes from spousal to survivor. The whole primary insurance amount is a floor on the survivor base rather than a ceiling on it: subparagraph (C) deems that amount to equal the delayed-retirement-increased old-age benefit the deceased was receiving where that benefit is larger, so a deceased who claimed late raises the survivor above the bare figure.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The engine computes the survivor base as the greater of what the deceased actually received and 82.5 percent of their primary insurance amount, then applies the survivor\u2019s own early-claim reduction to that base. Both halves of that maximum are statutory rather than invented: the first is the subparagraph (C) deeming, which carries the deceased\u2019s delayed retirement credits through, and the second is the widow limit of subparagraph (D), which binds only where the deceased had claimed early and been reduced under subsection (q). The ordering is the convention. Subparagraph (D) is drafted as a ceiling tested after the survivor\u2019s own subsection (q) reduction has been applied, whereas the engine takes the maximum first and reduces afterwards. The two agree wherever the survivor is unreduced; where the deceased and the survivor both claimed early the engine is the more conservative of the two.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: '42 U.S.C. 402(e)(2)(A)',
@@ -1491,8 +1697,10 @@ const registry = {
       'The standard Part B premium covers 25 percent of program cost. A high-income beneficiary pays 35, 50, 65, 80 or 85 percent of that cost instead, so the premium is the standard one scaled by the applicable percentage over 25 rather than the standard one plus that percentage. Income is taken from the second calendar year preceding the premium year.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The statute expresses the result as an adjustment amount, the applicable percentage minus 25 percentage points; the engine computes the whole premium as the standard one times the applicable percentage over 25. Those are the same quantity written from different ends, which is why no explicit 25-point subtraction appears in the code.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: '42 U.S.C. 1395r(i)(3)',
@@ -1522,8 +1730,10 @@ const registry = {
       'An applicable taxpayer is one whose household income equals or exceeds 100 percent of the federal poverty line and does not exceed 400 percent of it. Both ends are inclusive, so a household sitting exactly on 400 percent is still eligible and the cliff falls on the first dollar past it.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The enhanced credits that suspended the 400 percent ceiling expired at the end of 2025, so the cliff is live again for 2026. The engine also treats the below-100-percent exception pathways as out of scope rather than modelling them, which is why the floor is a hard cutoff here.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 36B(c)(1)(A)',
@@ -1547,8 +1757,10 @@ const registry = {
       'An eligible individual who has attained age 55 before the close of the taxable year may contribute an additional amount, which has been 1,000 dollars for 2009 and every year since. Section 223(g) indexes the subsection (b)(2) contribution limits and does not reach this amount, so it stays flat while the base limits grow.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The qualifying age is 55, which differs from the 50 used for elective deferrals and individual retirement accounts and from the 65 that ends the HSA additional tax. Nothing in the engine derives one from another, and the record exists partly so nobody later aligns them.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 223(b)(3)',
@@ -1578,8 +1790,10 @@ const registry = {
       'A participant who would attain age 60 but would not attain age 64 before the close of the taxable year takes the adjusted dollar amount in place of the ordinary catch-up. The window closes at 64: a participant that age reverts to the ordinary age-50 catch-up rather than keeping the higher one. The adjusted dollar amount is the greater of 10,000 dollars and 150 percent of the catch-up in effect for 2024 — not 150 percent of the current year figure.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The two legs of 414(v)(2)(E)(i) are a 10,000 dollar amount and 150 percent of the 2024 amount, and the greater of them governs. That is why the 2026 figure is 11,250 rather than 150 percent of the current 8,000 catch-up, as IRS Notice 2025-67 confirms. Only the first leg moves: 414(v)(2)(C)(i) adjusts the (E) amounts for years after 2025 off a July 1 2024 base quarter, while the second leg is computed off a 2024 figure that will never change, so it is 11,250 forever. The engine therefore projects the indexed leg and takes the greater of it and the pack-year amount, rather than carrying the inflation factor onto the operative figure — Notice 2025-67 is the discriminating evidence, since it held the ages 60-63 amount flat for 2026 in the same year the ordinary catch-up rose from 7,500 to 8,000. Two simplifications remain. The engine projects the indexed leg on the smooth plan inflation path and does not apply the statutory rounding down to a multiple of 500, so the year the leg overtakes 11,250 can land early by up to a step. And the pack carries that leg at 10,000 for 2026, which is a derivation rather than a published figure: the IRS notices state only the operative amount, and one year of cost-of-living from the July 2024 base quarter falls well short of the 10,500 step. The age-55 HSA addition is registered separately because section 223(g) omits it from indexing entirely — the same shape of rule with a third answer again.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 414(v)(2)(B)(i)',
@@ -1615,8 +1829,10 @@ const registry = {
       'Contributions and other additions to a participant account may not exceed the lesser of the indexed dollar amount or 100 percent of the participant compensation. A participant paid less than the dollar limit is bound by their pay, so a generous match cannot push total additions above what they earned.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'Section 415(c)(3) compensation is broader than wages, and the engine uses wages as the stand-in, so the pay prong binds slightly earlier here than under the statute. Annual additions under 415(c)(2) are employer contributions, employee contributions and forfeitures; the engine models the first two and has no concept of forfeitures.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 415(c)(1)',
@@ -1646,8 +1862,10 @@ const registry = {
       'Gain on a principal residence owned and used as such for two of the preceding five years is excluded up to 250,000 dollars, or 500,000 on a joint return. The exclusion does not apply to gain up to the depreciation adjustments attributable to periods after 6 May 1997, so recapture is carved out first and the cap then applies only to what remains.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The engine takes recapture as an input rather than deriving it from a depreciation schedule, and prices it at ordinary rates rather than the section 1250 25 percent maximum. Both are planning-grade stand-ins; the ordering that this rule fixes is not.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 121(a)',
@@ -1677,8 +1895,10 @@ const registry = {
       'Stocks and obligations of the United States Government are exempt from taxation by a State or its subdivisions, and the exemption reaches any form of taxation that would require the interest to be counted in computing a tax. Only a nondiscriminatory corporate franchise tax and an estate or inheritance tax are excepted, neither of which is a state income tax on an individual.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'This is why the exemption is applied uniformly rather than per state pack: it is federal law binding every state, so no state entry can opt into taxing it. The engine subtracts the interest from the state base because it arrives inside ordinary income.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: '31 U.S.C. 3124(a)',
@@ -1699,8 +1919,10 @@ const registry = {
       'Elective deferrals of any individual for a taxable year are included in gross income to the extent they exceed the applicable dollar amount. The limit attaches to the individual and aggregates every arrangement they participate in, so holding two employer plans does not double the room.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'Section 402(g)(3) counts 401(k), 403(b), SARSEP and SIMPLE deferrals in the same total. The engine groups by owner rather than by plan for exactly this reason, and does not model the separate 457(b) limit, which genuinely does sit alongside rather than inside this one.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 402(g)(1)(A)',
@@ -1730,8 +1952,10 @@ const registry = {
       'The applicable limitation amount is 40,000 dollars for 2025 and 40,400 for 2026, then 101 percent of the preceding year through 2029, and 10,000 dollars for taxable years beginning in 2030 and after. It is a schedule written into the statute, not an inflation-indexed figure, and the 2030 step is a reversion rather than a continuation.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The cap is halved for a married individual filing separately, which the projection cannot express because it collapses every filing status to single or married-filing-jointly. The high-income phase-out that OBBBA also added is not modelled either, so the cap here binds later than it would for a taxpayer above that threshold.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 164(b)(6)(B)',
@@ -1760,8 +1984,10 @@ const registry = {
       'The basic standard deduction for a joint return or a surviving spouse is 200 percent of the amount for any other case. The two figures are not independently set: the joint amount is defined in terms of the unmarried one, so they move together and the ratio between them is fixed at two.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'Section 63(c)(2)(B) gives a head of household its own figure -- 23,625 dollars as substituted by (c)(7) -- which is neither the unmarried amount nor twice it. The projection collapses every filing status to single or married-filing-jointly, so that third figure is unreachable and the doubling holds across everything the engine can express.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 63(c)(2)',
@@ -1790,8 +2016,10 @@ const registry = {
       'Section 219(b)(1) caps the amount for a taxable year at the lesser of the deductible amount or the compensation includible in the individual gross income for that year. A participant whose compensation is below the dollar limit is held to compensation, so the dollar limit alone is not the ceiling.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'This is the same shape as the section 415(c) annual additions cap: a two prong lesser of where applying only the dollar prong silently overstates. The engine previously applied only the dollar prong here. Wages are the engine only compensation source, so the compensation prong reads from projected wages for the year.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 219(b)(1)',
@@ -1811,8 +2039,10 @@ const registry = {
       'Section 219(c) lets a married individual who files jointly, and whose own compensation is the lesser of the two, measure the limit against the combined compensation of both spouses, reduced by the contributions already made by the other spouse. The household ceiling is therefore combined compensation, while each spouse remains separately held to the dollar limit.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'Two prongs pull in opposite directions and both must hold. Capping each spouse at their own wages alone would deny a non-earning spouse an IRA the statute plainly allows; pooling without a per-person dollar limit would let one spouse absorb the whole household ceiling. The engine models the pool only when the projected filing status is married filing jointly and both spouses are alive, since section 219(c)(2) conditions the rule on a joint return.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 219(c)(1)',
@@ -1832,8 +2062,10 @@ const registry = {
       'Section 219(b)(5)(B) increases the deductible amount by 1,000 dollars for an individual who has attained age 50 before the close of the taxable year, and section 219(b)(5)(C)(iii) subjects that 1,000 dollars to a cost of living adjustment for taxable years beginning after 2023, with calendar year 2022 as the base.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'Worth a record precisely because the neighbouring HSA catch-up under section 223(b)(3) is not indexed and must stay flat. The two look alike and behave differently, so the engine projects this one and holds the other. The indexing here was added by SECURE 2.0 section 108; before 2024 this amount was flat as well, which is why older secondary sources describe it that way.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 219(b)(5)(C)(iii)',
@@ -1856,8 +2088,10 @@ const registry = {
       'Section 219(f)(1) defines compensation to include earned income and to exclude any amount received as a pension or annuity or as deferred compensation. Retirement income therefore does not create IRA contribution room, so a person whose only income is a pension or Social Security has a compensation ceiling of zero.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'This is what makes the compensation prong bite in a retirement projection. Most years in a plan have no wages at all, and a reading that counted any income as compensation would leave the section 219(b)(1) cap inert for exactly the span the projection is about.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 219(f)(1)',
@@ -1877,8 +2111,10 @@ const registry = {
       'Section 408A(c)(2) limits aggregate contributions to all Roth IRAs to the maximum amount allowable as a deduction under section 219 reduced by contributions made for the same year to all other individual retirement plans. Holding both a traditional and a Roth IRA does not create a second ceiling.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The engine expresses this by putting traditional and Roth IRAs owned by the same person into a single annual limit group rather than by ordering one before the other. Ordering would matter if the two ceilings differed, and under this section they do not.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 408A(c)(2)',
@@ -1896,10 +2132,12 @@ const registry = {
     title: 'The Roth contribution income phase-out is not modeled',
     statement:
       'Section 408A(c)(3) reduces the Roth contribution limit ratably once adjusted gross income, determined under 408A(c)(3)(B), exceeds an applicable dollar amount. The band is 15,000 dollars, but 10,000 dollars on a joint return or for a married individual filing separately, so a couple loses the contribution over a shorter run of income than a single filer does. The engine does not apply this reduction, so a projected Roth IRA contribution is allowed at any income level.',
-    classification: 'outOfScope',
+    classification: 'approximated',
     contraryReading: null,
+    errorDirection: 'understatesTax',
     conventionRationale:
       'Recorded as an explicit gap rather than left silent, because the direction of the error is knowable: a high income household will show Roth contributions it could not actually make, and the overstatement grows with income. It is out of scope rather than settled because the reduction runs off adjusted gross income, which the projection computes after the contribution loop has already run.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 408A(c)(3)(A)',
@@ -1917,10 +2155,12 @@ const registry = {
     title: 'Self-employment earned income is not a modeled compensation source',
     statement:
       'Compensation under section 219(f)(1) includes earned income as defined in section 401(c)(2), which is net earnings from self-employment in a trade or business in which personal services are a material income producing factor. The engine models wages only, so a self-employed plan has no compensation and therefore no IRA contribution room.',
-    classification: 'outOfScope',
+    classification: 'approximated',
     contraryReading: null,
+    errorDirection: 'overstatesTax',
     conventionRationale:
       'The direction of this gap is the opposite of the Roth phase-out gap: it understates rather than overstates, denying contribution room to a self-employed household that is entitled to it. It is recorded here so the section 219(b)(1) compensation prong is not read as complete. The engine income model has no self-employment stream to read from, so closing this needs a model change and not a calculation change.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 401(c)(2)(A)',
@@ -1940,7 +2180,9 @@ const registry = {
       'Clause (i) allows 6,000 dollars for each qualified individual, and clause (iii)(I) reduces the 6,000 dollar amount in clause (i) by 6 percent of modified adjusted gross income over 75,000 dollars, or 150,000 dollars on a joint return. The reduction lands on the per-individual amount, so it is taken once for each qualified individual rather than once against the combined total. A joint return with two spouses aged 65 or over therefore exhausts the deduction at 250,000 dollars of modified adjusted gross income, the same point a one-person joint return exhausts it, and not at 350,000 dollars.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 151(d)(5)(C)(i)',
@@ -1976,8 +2218,10 @@ const registry = {
       'Section 56(b)(1)(D) disallows the standard deduction under section 63(c), the deduction for personal exemptions under section 151, and the deduction under section 642(b) in computing alternative minimum taxable income. The senior deduction is allowed by section 151(d)(5)(C), so it is added back whether or not the return elects to itemize. Only the section 63(c) standard deduction turns on that election.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'Section 63(b) was never amended to give the senior deduction a paragraph of its own, so a taxpayer who does not itemize can reach it only through 63(b)(2), the deduction for personal exemptions provided in section 151. A reading under which that phrase does not carry the senior deduction would deny the deduction to every non-itemizer, so the parallel phrase in 56(b)(1)(D) has to carry it as well. Form 6251 line 1a confirms both the result and its unconditional scope: it removes Schedule 1-A line 37, the senior deduction alone and not the rest of that schedule, from total deductions with no itemized-or-standard branch.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 56(b)(1)(D)',
@@ -2009,8 +2253,10 @@ const registry = {
       'Two limits in this engine run off modified adjusted gross income rather than adjusted gross income, and both define it as adjusted gross income increased by income the taxpayer excluded from gross income abroad. Section 1411(d) adds the section 911(a)(1) foreign earned income exclusion, net of the deductions section 911(d)(6) disallows, for the net investment income tax. Section 151(d)(5)(C)(iii)(II) adds any amount excluded under section 911, 931, or 933 for the senior deduction phase-out. Reading modified adjusted gross income as plain adjusted gross income understates the tax and overstates the deduction at the same time.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The two definitions are not identical: 1411(d) reaches only section 911 and nets out the deductions 911(d)(6) disallows, while 151(d)(5)(C)(iii)(II) reaches sections 911, 931, and 933 with no netting. The engine carries one excluded-foreign-income figure and applies it to both, which is the broader definition in both places. That same figure already feeds section 86 provisional income, where 86(b)(2)(A) likewise reaches 911, 931, and 933, so splitting the two would mean splitting an input the household reports as one number.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 1411(d)',
@@ -2045,8 +2291,10 @@ const registry = {
       'A payment out of a SIMPLE IRA during the two-year period to which section 72(t)(6)(A) applies is denied rollover treatment unless it is paid into another SIMPLE IRA. A qualified rollover contribution to a Roth IRA must meet the requirements of section 408(d)(3), so inside that period a Roth conversion out of a SIMPLE IRA is barred outright rather than merely repriced, and the engine refuses the action instead of computing one.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'This is not the rule already registered as irc-72-t-6-simple-two-year-rate, and neither record covers the other. That one is the rate substitution in 72(t)(6)(A): it prices a distribution the taxpayer is nonetheless permitted to take, and every 72(t)(2) exception still zeroes it. This one is the eligibility bar in 408(d)(3)(G): it makes the movement unavailable at all. They share a period and nothing else, so a distribution can sit inside the period, carry no additional tax because an exception applies, and still be ineligible for rollover or conversion. Reading either record as coverage of the other would leave a conversion the statute forbids being merely repriced at 25 percent. The period itself is measured as 24 calendar months from the participation start date using the month-end clamp in actions/civilDate.ts, and the comparison is strict, so a conversion dated on the 24-month anniversary is permitted and one dated the day before is refused. That follows from a 2-year period beginning on the participation date, which runs through the day before the anniversary.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 408(d)(3)(G)',
@@ -2079,8 +2327,10 @@ const registry = {
       'The required minimum distribution is calculated separately for each IRA, but the sum of those separately calculated amounts may be distributed from any one or more of the IRAs. An IRA whose own balance cannot cover its calculated amount therefore leaves a shortfall that the other IRAs of the same owner must still distribute; it is not extinguished. Only IRAs the individual holds as owner aggregate, so an inherited IRA, a spouse IRA, and an employer plan each stand outside that sum.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'Paragraph (e)(1)(i) leaves a living owner free to choose which IRAs the sum comes from, so the engine has to pick an order that the regulation permits but does not select. It sweeps an unmet amount across the remaining owned IRAs in plan account order, which is one of the permitted choices; no ordering here is more correct than another, and none of them changes the total distributed or its tax character. The proportionate allocation of 1.408-8(e)(4)(i) is deliberately not borrowed, because that paragraph governs the year-of-death shortfall passing to beneficiaries rather than a living owner free choice.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
       citation: 'Treas. Reg. 1.408-8(e)(1)(i)',
@@ -2120,8 +2370,10 @@ const registry = {
       'Where an employee dies before the entire interest in a defined contribution plan has been distributed, a designated beneficiary who is not an eligible designated beneficiary must have the whole interest distributed within ten years of the death, and that deadline applies whether or not distributions had already begun. An inherited account therefore leaves the owner Uniform Lifetime schedule entirely rather than continuing it under a different divisor: it runs a separate forced-distribution clock from the death year, so the engine excludes it from the owner RMD pass and drives it from the ten-year deadline instead.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'Two limits on how far this record reaches, stated so it is not read as covering more than it does. First, the engine treats every inherited account as held by a beneficiary who is not an eligible designated beneficiary, because the plan model carries no beneficiary category. A surviving spouse, a minor child of the employee, a disabled or chronically ill beneficiary, or a beneficiary not more than ten years younger than the decedent is entitled under 401(a)(9)(H)(ii) to the life-expectancy payout in (B)(iii), and will be shown a faster forced drawdown than the law requires. Second, the size of the annual amount required in years one through nine when the decedent had reached the required beginning date is a separate question from the ten-year deadline registered here. The divisor is registered as treas-reg-1-401-a-9-5-d-3-beneficiary-single-life-denominator, and the greater-of test it does not apply as treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 401(a)(9)(H)(i)',
@@ -2158,8 +2410,10 @@ const registry = {
       'The 10 percent additional tax does not apply to a distribution made to a beneficiary, or to the estate of the employee, on or after the death of the employee. The exception turns on the death and on nothing else, so neither the age of the decedent nor the age of the beneficiary enters it, and a distribution from an inherited account is penalty-free at any age.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The engine reads this exception off the inherited marker on the account rather than off the identity of the person receiving the distribution. Those are the same test only for so long as an account a surviving spouse has elected to treat as their own stops being marked inherited. That election is registered separately as irc-408-d-3-C-ii-surviving-spouse-not-inherited and treas-reg-1-408-8-c-3-spouse-treated-as-owner; once it is made the spouse takes distributions in their own right and 72(t) applies to them normally, so a plan that left the marker in place would waive a tax that is actually due.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 72(t)(2)(A)(ii)',
@@ -2184,10 +2438,12 @@ const registry = {
     title: 'Age 59.5 modelled as an annual attained-age-60 threshold',
     statement:
       'Section 72(t)(2)(A)(i) waives the 10 percent additional tax for a distribution made on or after the date the individual attains age 59.5, which is a date inside a calendar year. The need-based withdrawal path in strategies/accountEligibility.ts waives it instead from the first calendar year in which the owner attains age 60, so it is not modelling the statutory boundary and must not be presented as doing so.',
-    classification: 'outOfScope',
+    classification: 'approximated',
     contraryReading: null,
+    errorDirection: 'bothDirections',
     conventionRationale:
       'The direction of the error is knowable but it is not one-sided, and a reader who assumes it is will mis-state the exposure. Attained age here is the calendar-year age, the projection year minus the birth year, so the proxy waives from January 1 of the year the owner turns 60 while the statute waives from the date six calendar months after the 59th birthday. For a birthday in the first half of the year that statutory date falls in the preceding calendar year, so the proxy waives late and over-penalizes, by up to about six months at a January 1 birth. For a birthday in the second half it falls inside the same calendar year the proxy is already waiving, so the proxy waives early and under-penalizes, again by up to about six months at a December 31 birth. Only a July 1 birthday makes the two agree exactly. It is out of scope rather than settled because the annual projection carries an attained age and no distribution date, so there is no boundary to compare anything against. Two reachable paths therefore disagree about the same taxpayer: the exact-cent path in actions/ownedNonRothIraPenaltyPrerequisite.ts and actions/traditionalEmployerPlanPenaltyPrerequisite.ts computes the boundary as addCalendarMonths(dob, 714) with the month-end clamp and accepts equality, which is the reading registered as irc-72-t-2-A-i-age-59-half. Only that path is filing-relevant; a penalty figure produced from the annual proxy must not be reported as one.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 72(t)(2)(A)(i)',
@@ -2212,10 +2468,12 @@ const registry = {
     title: 'HSA age-65 waiver modelled as a whole attained-age year',
     statement:
       'Section 223(f)(4)(C) removes the 20 percent additional tax only for a payment or distribution after the date the account beneficiary attains age 65. The annual HSA path in strategies/accountEligibility.ts removes it for every distribution in the calendar year of attainment, including distributions taken months before the 65th birthday.',
-    classification: 'outOfScope',
+    classification: 'approximated',
     contraryReading: null,
+    errorDirection: 'understatesTax',
     conventionRationale:
       'This proxy errs in one direction only, which is the reason it is worth setting beside the age-59.5 proxy rather than dismissing the two together as a single rounding habit. Attained age here is the calendar-year age, the projection year minus the birth year, so the waiver switches on at January 1 of the year the account beneficiary turns 65 while the statute switches it on the day after the 65th birthday. The proxy is therefore never late and always early, so it under-penalizes: by one day at a January 1 birth, and by nearly a full year at a December 31 birth, where a non-qualified distribution taken in January bears nothing under the proxy and 20 percent of the includible amount under the statute. The age-59.5 proxy registered as irc-72-t-2-A-i-age-59-half-annual-proxy does not behave this way. The half-year offset there puts the statutory boundary on either side of the calendar boundary depending on the birth month, so that one errs both ways and is bounded by about six months each way, and assuming the two proxies share a sign gets the HSA exposure wrong. The exact-date reading is registered as irc-223-f-4-hsa-age-65-boundary and implemented in actions/annualHsaPenaltyEvaluation.ts, so here too two reachable paths disagree about the same account beneficiary and only the exact-date path is filing-relevant.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 223(f)(4)(C)',
@@ -2240,10 +2498,12 @@ const registry = {
     title: 'Rule of 55 modelled from the plan retirement age',
     statement:
       'Section 72(t)(2)(A)(v) waives the 10 percent tax on an employer-plan distribution made to an employee after separation from service after attainment of age 55, and reaches only the plan of the employer separated from. The annual path in strategies/accountEligibility.ts has no separation event and no employer identity: it waives the tax whenever the account is an employer plan, the plan retirement age is at least 55, and the owner attained age has reached that retirement age.',
-    classification: 'outOfScope',
+    classification: 'approximated',
     contraryReading: null,
+    errorDirection: 'bothDirections',
     conventionRationale:
       'Unlike the two age proxies, this one errs in both directions and neither direction is bounded by a fixed number of months. It under-penalizes where the employer plan is one the owner left well before age 55, because the statute reaches only the plan maintained by the employer separated from and the code tests no employer identity at all: a 401(k) left behind at 40 is waived at the modelled retirement age like any other. It over-penalizes where the owner separates during the calendar year of attaining 55 but before the birthday, because the code compares a retirement age to 55 as a number, where the IRS calendar-year gloss recorded under irc-72-t-2-A-v-rule-of-55 asks only whether the separation fell in that year. It is out of scope rather than settled because the plan model carries a single household retirement age and no employment history, so no separation date and no employer for the plan exist to test. The engine does get the one structural limit right: 72(t)(3)(A) denies the exception to individual retirement plans, and the code waives only for an account of employer kind. The exact-date reading lives in actions/traditionalEmployerPlanPenaltyPrerequisite.ts.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 72(t)(2)(A)(v)',
@@ -2267,10 +2527,12 @@ const registry = {
     title: 'Roth qualified distribution and the five-taxable-year period',
     statement:
       'A Roth distribution escapes gross income only if it is qualified, and that takes two things at once: one of the events in 408A(d)(2)(A), which are attaining age 59.5, death, disability, and a qualified special purpose distribution, and a distribution made after the 5-taxable year period beginning with the first taxable year for which the individual made any Roth IRA contribution. The engine tests one thing, whether attained age has reached 60, so it models neither the event date nor the five-year period.',
-    classification: 'outOfScope',
+    classification: 'approximated',
     contraryReading: null,
+    errorDirection: 'bothDirections',
     conventionRationale:
       'Two independent errors sit under the single age test, and this record states both because neither covers the other. The five-taxable-year period is not modelled at all, and its absence under-taxes: a 62-year-old whose first Roth IRA was opened two years ago is shown tax-free earnings that the statute makes ordinary income and exposes to the 72(t) tax, which is exactly the case a conversion ladder started late in life produces. The attained-age-60 test is a second and separate error: it is the same annual proxy registered for the traditional path as irc-72-t-2-A-i-age-59-half-annual-proxy, appearing here as ROTH_QUALIFIED_AGE, and because attained age is the calendar-year age it runs both ways by up to about six months depending on the birth month rather than in a single direction. The five-year period cannot be recovered from account state the projection already holds, because 408A(d)(2)(B) runs it per individual from the first contribution to any Roth IRA rather than per account; closing this needs a household-level first-Roth-year fact, not a change to the withdrawal split. Until then nothing from this path is filing-grade on the taxability of Roth earnings.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 408A(d)(2)(A)',
@@ -2302,8 +2564,10 @@ const registry = {
       'Where a portion of a Roth distribution is properly allocable to a conversion and the distribution falls within the 5-taxable year period beginning with the taxable year of that conversion, section 72(t) applies as if that portion were includible in gross income, even though the conversion itself was not a taxable distribution and the portion is not taxed again. The recapture reaches only so much of the conversion as was includible in income at the time, so converted nondeductible basis recaptures nothing.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'Each conversion runs its own clock, because 408A(d)(3)(F)(i)(II) begins the period with the taxable year of that contribution and not with the year the Roth was opened. That is why the layers are held separately and drawn oldest first, and it is why this record is distinct from the account-level five-year period in irc-408A-d-2-roth-qualified-distribution: one decides whether earnings are taxable, this one decides whether already-taxed conversion principal carries the additional tax. Two things about the surrounding code so this is not read as broader than it is. The period is counted in calendar years, which is exact for the calendar-year taxpayers the engine models and would not be for a fiscal-year taxpayer it does not. And the recapture lifts through the 72(t) exceptions themselves, so the 59.5 boundary applies to it; the engine uses its attained-age-60 proxy for that boundary, recorded under irc-408A-d-2-roth-qualified-distribution.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 408A(d)(3)(F)(i)',
@@ -2342,8 +2606,10 @@ const registry = {
       'Tax on ordinary taxable income is the sum of each bracket rate applied only to the portion of taxable income falling inside that bracket, using the 1(j)(2) tables as annually adjusted. The schedule no longer expires: OBBBA struck the January 1, 2026 sunset from 1(j)(1), so the 10/12/22/24/32/35/37 structure is current law indefinitely.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'Two things about the 2026 tables are easy to get wrong from memory. First, the 37 percent bracket begins at the same figure for unmarried individuals and for heads of household ($640,600), while the married-filing-separately table diverges from the unmarried table only at the top, at $384,350. Second, OBBBA gave the boundaries of the 10 and 12 percent brackets one extra year of indexing by confining the 2017-base substitution in 1(j)(3)(B)(i) to brackets above 12 percent, so those two thresholds move on a different base than the rest of the table. The engine models only unmarried and married-filing-jointly, mapping every other status onto one of the two.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 1(j)(1)',
@@ -2384,8 +2650,10 @@ const registry = {
       'For taxable years beginning after December 31, 2018 the Secretary prescribes rate tables that apply in lieu of the ones printed in section 1(j)(2), adjusted in the same manner as under section 1(f). The printed thresholds are therefore the figures for one year only. A projection that carries nominal income forward must carry the thresholds forward with it; holding a published year fixed measures inflated income against unadjusted brackets and creates bracket creep the statute does not.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The same reasoning reaches the other annually adjusted figures the federal engine reads, each under its own provision: the basic standard deduction under 63(c)(7)(B)(ii), the age-65 addition under 63(c)(4) (which indexes the dollar amounts in subsection (f)), the maximum zero-rate and maximum 15-percent capital gain amounts under 1(j)(5)(C), and the AMT exemption, its phase-out threshold and the 28 percent rate threshold under 55(d)(4)(B) and 55(d)(3)(B). Their base years differ -- 2016, 2017, 2024, 2025, 2011 -- and so do their rounding steps, but none of that survives into the projection: the pack figure has already absorbed every adjustment through the pack year, so carrying it forward is one multiplication for all of them. Two approximations remain and are deliberate. The index is the plan assumed general inflation rather than the C-CPI-U of 1(f)(3), and the statutory rounding to a multiple of 50 or 100 dollars is not reproduced -- the same two liberties limitScale already takes with the contribution limits. What must not be swept along are the figures with no indexing provision at all: the section 86 provisional-income thresholds, the section 1411 thresholds, the section 121 exclusion, the section 1211(b) ordinary offset and the section 151(d)(5)(C) senior deduction are unindexed by design, and the SALT cap follows the explicit 164(b)(7) schedule rather than an index. Scaling any of those would be the mirror-image defect.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 1(j)(3)(B)',
@@ -2427,8 +2695,10 @@ const registry = {
       'For a taxable year beginning before January 1, 2029 a deduction of 6,000 dollars is allowed for each qualified individual, reduced by 6 percent of modified adjusted gross income over 75,000 dollars (150,000 dollars on a joint return). No provision adjusts either figure for inflation: section 151(d)(4) indexes only the dollar amount in paragraph (1) and is expressly subordinated to paragraph (5), whose subparagraph (C) is where this deduction lives. The amount and the phase-out threshold both stay fixed for every year the deduction applies.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'This record exists because of the change that produced it. The engine now carries the annually indexed federal figures forward past the published pack, and the senior deduction is the figure most likely to be swept into that projection by a later reader: it sits in the same pack object as the standard deduction, is claimed by the same taxpayers in the same years, and is the one deduction in the group that has no cost-of-living clause. Indexing the 6,000 dollars, or the 75,000 dollar threshold, would overstate the deduction in exactly the years a 65-plus household is deciding how much to convert. The fixed threshold also means the phase-out bites harder each year in a nominal projection, which is a real effect of the drafting and must be preserved rather than smoothed away. The expiry is modeled from the same subparagraph: taxable years beginning before January 1, 2029 makes 2028 the last applicable year.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 151(d)(5)(C)(i)',
@@ -2463,8 +2733,10 @@ const registry = {
       'For purposes of the preferential rate schedule, net capital gain means net capital gain increased by qualified dividend income. Qualified dividends therefore stack with long-term gain and are taxed at 0, 15, or 20 percent, even though they are ordinary gross income that enters AGI in full and is not itself a capital gain.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The engine carries qualified dividends as a separate input rather than as a slice of ordinary income, and adds them to AGI once. That matters because a qualified dividend is simultaneously ordinary income for AGI, provisional income, and NIIT modified AGI, and preferential income for the rate schedule. Note also that 1(h)(11)(B) and (C) impose holding-period and qualified-foreign-corporation tests the engine cannot verify: it takes the qualified character of the supplied figure on trust.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 1(h)(11)(A)',
@@ -2496,8 +2768,10 @@ const registry = {
       'The figure compared against the base amounts is modified adjusted gross income plus one-half of the benefits received, where modified AGI is AGI computed without regard to sections 85(c), 135, 137, 221, 911, 931, and 933 and increased by tax-exempt interest. Tax-exempt interest and excluded foreign earned income therefore raise the taxable share of benefits without ever entering AGI.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The engine adds back only the 911, 931, and 933 exclusions and tax-exempt interest. The other four add-backs in 86(b)(2)(A) are sections 85(c), 135, 137, and 221, which cover unemployment compensation, education savings bond interest, adoption assistance, and student loan interest. None can plausibly appear in a household this engine models alongside Social Security benefits, so omitting them is a scope decision rather than a reading of the statute. Note the base amounts in 86(c) carry no inflation adjustment and have not moved since 1983 and 1993, which is why the engine holds them as unindexed constants.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 86(b)(1)',
@@ -2523,8 +2797,10 @@ const registry = {
       'No itemized deduction is allowed unless the individual elects to itemize, and the election replaces the standard deduction rather than supplementing it. The section 151 senior deduction sits outside that trade: 63(d)(2) excludes from the definition of itemized deductions anything listed in a paragraph of 63(b), and 63(b)(2) lists the section 151 deduction, so it is subtracted on top of whichever base the taxpayer uses.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'Nothing in section 63 requires the election to be the one that minimises tax; the engine assumes the taxpayer elects to itemize exactly when the itemized total exceeds the standard deduction, and compares against the standard deduction alone because the senior deduction is common to both branches. That assumption can be wrong in two directions the engine does not explore. Itemizing state and local taxes creates an AMT add-back that the standard deduction branch also creates but at a different amount, so the larger deduction is not always the lower total tax. And because the senior deduction is not an itemized deduction, it also escapes the section 68 overall limitation, which only bites on the itemized side.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 63(e)(1)',
@@ -2556,8 +2832,10 @@ const registry = {
       'No miscellaneous itemized deduction is allowed for any taxable year beginning after December 31, 2017, with no expiry date. Miscellaneous itemized deductions are defined by exclusion in 67(b), so investment advisory fees, tax preparation fees, and safe deposit box rent are all disallowed while interest, taxes, casualty losses, charitable contributions, and medical expenses are not.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The provision moved. OBBBA added a new 67(g) defining educator expenses and redesignated the former 67(g) suspension as 67(h), while striking the January 1, 2026 expiry, so a citation to 67(g) now points at the wrong subsection. The engine builds its itemized total from state and local taxes, mortgage interest, and charitable gifts only, and offers no input channel for advisory or preparation fees. That absence is the correct answer rather than a gap, which is why this rule is registered as settled rather than out of scope.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 67(h)',
@@ -2589,8 +2867,10 @@ const registry = {
       'For AMT purposes no deduction is allowed for any tax described in paragraph (1), (2), or (3) of 164(a), which covers state and local income, real property, and personal property taxes, nor for any miscellaneous itemized deduction. Mortgage interest and charitable contributions are not add-backs, so an itemizing taxpayer adds back the state and local component only.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The add-back is the amount actually deducted, so the 164(b)(6) cap applies first and the AMT add-back is the capped figure rather than the taxes paid. Two refinements are unmodelled. 56(b)(1)(B) substitutes qualified housing interest for qualified residence interest, which can make part of a deducted mortgage interest amount an AMT add-back where the loan was not used to acquire, construct, or substantially improve the residence. And the final sentence of 56(b)(1)(A) preserves taxes allowable in computing adjusted gross income, which never arises in this engine because it deducts no above-the-line taxes.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 56(b)(1)(A)',
@@ -2616,8 +2896,10 @@ const registry = {
       'Tentative minimum tax computed under 55(b)(1)(A) may not exceed the amount produced by removing net capital gain from the taxable excess, taxing what remains at 26 and 28 percent, and taxing the adjusted net capital gain at 0, 15, and 20 percent using the same section 1(h) breakpoints as the regular tax. Long-term gain and qualified dividends are therefore never taxed at 26 or 28 percent, though they still enlarge alternative minimum taxable income and so can crowd out the exemption.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The engine stacks the AMT preferential income on top of the AMT ordinary excess and applies the regular-tax breakpoints to that stack, which is the Form 6251 Part III construction. Two layers of 55(b)(3) are not modelled anywhere in this engine: the 25 percent layer for unrecaptured section 1250 gain in subparagraph (E) and, in the regular tax, the 28 percent collectibles rate. Both would raise tax, so their absence understates it for a taxpayer holding depreciated real property or collectibles.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 55(b)(3)',
@@ -2643,8 +2925,10 @@ const registry = {
       'Net investment income does not include any distribution from a plan or arrangement described in section 401(a), 403(a), 403(b), 408, 408A, or 457(b). A traditional IRA withdrawal, an RMD, or a Roth conversion therefore bears no net investment income tax itself, but it does raise modified adjusted gross income and can push other interest, dividends, and gains above the threshold.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'This is the mechanism behind the most common NIIT surprise in retirement planning, and it only appears correctly if the two halves of 1411(a)(1) are kept separate: the distribution is absent from the net investment income leg and present in the modified AGI leg. The engine gets this right structurally by carrying plan distributions in ordinary income and building net investment income from a separate set of inputs. Note the exclusion is keyed to the type of plan, not to the character of the earnings inside it, so the investment return accumulated in an IRA never becomes net investment income.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 1411(c)(5)',
@@ -2668,10 +2952,12 @@ const registry = {
     title: 'Medical expense deduction above 7.5 percent of AGI',
     statement:
       'Unreimbursed expenses for medical care of the taxpayer, a spouse, or a dependent are deductible to the extent they exceed 7.5 percent of adjusted gross income, and they are not a miscellaneous itemized deduction, so 67(h) does not disallow them. Not modelled: the engine builds its itemized total from state and local taxes, mortgage interest, and charitable gifts alone and has no medical input, so a household with large unreimbursed medical costs has its itemized total understated by the full deductible amount and its tax overstated, which for a retiree in long-term care can be tens of thousands of dollars of deduction at a marginal rate of 22 to 32 percent.',
-    classification: 'outOfScope',
+    classification: 'approximated',
     contraryReading: null,
+    errorDirection: 'overstatesTax',
     conventionRationale:
       'This is the highest-value omission in the itemized set for this engine audience, because the deduction is largest exactly when income is drawn down to pay care costs. It also interacts with the itemize election: a year of heavy medical spending can flip a household from the standard deduction to itemizing, which the engine cannot see, so the error is not confined to households that already itemize.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 213(a)',
@@ -2694,10 +2980,12 @@ const registry = {
     title: 'Mortgage interest is limited to $750,000 of acquisition debt',
     statement:
       'Only interest on acquisition indebtedness is qualified residence interest, home equity indebtedness interest is disallowed outright, and the aggregate acquisition indebtedness taken into account may not exceed $750,000 ($375,000 for a separate return) for debt incurred after December 15, 2017. Not modelled: the engine deducts the supplied mortgage interest figure in full with no principal limit and no home-equity test, so a household with acquisition debt above the cap has its deduction overstated in proportion to the excess and its tax understated, up to 37 cents per dollar of disallowed interest.',
-    classification: 'outOfScope',
+    classification: 'approximated',
     contraryReading: null,
+    errorDirection: 'understatesTax',
     conventionRationale:
       'The error scales with the mortgage rather than with income: at $1.5 million of acquisition debt half the interest is disallowed, and a household paying $90,000 of interest would see $45,000 of deduction that does not exist. The grandfather in 163(h)(3)(F)(i)(IV) preserves the older $1,000,000 limit for debt incurred on or before December 15, 2017, so the engine cannot even apply a flat cap without knowing when the loan was taken out, which is why this is left unmodelled rather than approximated.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 163(h)(3)(F)(i)',
@@ -2723,7 +3011,9 @@ const registry = {
       'The required minimum distribution for a calendar year is computed on the IRA balance as of December 31 of the preceding calendar year, with no adjustment for contributions or distributions occurring after that date. A rebalance, an annuity purchase, or a withdrawal taken during the distribution year therefore does not reduce the amount required.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
       citation: 'Treas. Reg. 1.408-8(b)(2)',
@@ -2758,7 +3048,9 @@ const registry = {
       'In a year for which an RMD is required, the first dollars distributed from the IRA are the RMD, an RMD is not eligible for rollover, and so no amount may be converted until the whole RMD for that year has been distributed. The order in which the annual ledger runs RMDs before Roth conversions is required by the regulation, not chosen for convenience.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
       citation: 'Treas. Reg. 1.408A-4, A-6(a)',
@@ -2795,7 +3087,9 @@ const registry = {
     classification: 'unsettled',
     contraryReading:
       'IRC 401(a)(9)(C)(v)(II) applies on its own terms to a 1959 birth, because such a person attains age 74 in 2033, after December 31, 2032. Read alone it makes the applicable age 75 and defers the first distribution calendar year by two years. Nothing in the enacted text resolves the overlap, Treas. Reg. 1.401(a)(9)-2(b)(2)(v) is reserved, and the only source choosing 73 is a notice of proposed rulemaking that has not been finalised. The two readings differ by two distribution calendar years of forced ordinary income for the whole 1959 cohort.',
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 401(a)(9)(C)(v)',
@@ -2828,10 +3122,12 @@ const registry = {
     title: 'Annual-ledger stand-in for the age 70.5 QCD date',
     statement:
       'QCD eligibility begins on the date the donor attains age 70.5, which the exact-cent path computes as 846 calendar months from birth. Not modelled in the annual ledger: it gates on the age attained in the calendar year being at least 71, so the whole of the year in which the donor actually crosses 70.5 is treated as ineligible.',
-    classification: 'outOfScope',
+    classification: 'approximated',
     contraryReading: null,
+    errorDirection: 'overstatesTax',
     conventionRationale:
       'Direction of error: uniformly restrictive, never permissive. A donor born in January attains 70.5 in July of the year the calendar age is 70 and is eligible from that July, but the ledger withholds eligibility until the following January, a delay of six months. A donor born in December attains 70.5 in June of the year the calendar age is 71, and the ledger grants eligibility from that January, five months early — but there is no QCD in that window under the ledger anyway, because the ledger also requires an RMD to exist and no RMD is due before the applicable age. Netting those, the ledger never treats an ineligible donor as eligible and delays a genuinely eligible donor by six to seventeen months, understating the QCD and overstating taxable income in the crossing year. The threshold date itself is the subject of the registered rule irc-408-d-8-B-ii-age-70-half, whose leap-day and month-end convention is an engineering decision; this record is only about the annual proxy layered on top of it. Both paths therefore disagree with each other, and only the exact-cent path is defensible to a preparer.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 408(d)(8)(B)(ii)',
@@ -2855,10 +3151,12 @@ const registry = {
     title: 'Annual-ledger conditioning of a QCD on an existing RMD',
     statement:
       'A QCD is available from age 70.5 up to the annual per-taxpayer limit whether or not any required minimum distribution is due, and may exceed the required amount. Not modelled: the annual ledger makes a QCD conditional on a positive household RMD and then caps it at that RMD, so a donor between 70.5 and the applicable age makes no QCD at all and a donor past the applicable age can never give more than the required amount.',
-    classification: 'outOfScope',
+    classification: 'approximated',
     contraryReading: null,
+    errorDirection: 'overstatesTax',
     conventionRationale:
       'Direction of error: uniformly restrictive. Nothing in 408(d)(8) references section 401(a)(9); the interaction runs the other way, in that a QCD counts toward an RMD when one happens to be due. For a donor aged 70.5 through 72 the ledger reports zero exclusion where up to the full annual limit is available, overstating ordinary income by the whole intended gift. For an older donor with a small balance the cap binds at the required amount, which for a $200,000 IRA at age 75 is about $8,130 against a $111,000 statutory ceiling. The consequence is not confined to the gift year: dollars the ledger refuses to route out of the IRA stay in the pre-tax balance and inflate every later RMD. The offset in the second sentence of 408(d)(8)(A), which sweeps post-70.5 deductible IRA contributions against the exclusion, is likewise not applied in the annual ledger; that omission runs the other way and would reduce the exclusion.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 408(d)(8)(A)',
@@ -2882,10 +3180,12 @@ const registry = {
     title: 'Annual-ledger substitution of the household for the individual donor',
     statement:
       'The QCD exclusion limit runs per taxpayer, eligibility turns on the age of the individual for whose benefit the plan is maintained, and IRA required distributions are aggregated only within one individual own IRAs. Not modelled: the annual ledger asks only whether any living member of the household is old enough, pools both spouses required distributions into a single figure, and applies one annual dollar limit to that pooled figure.',
-    classification: 'outOfScope',
+    classification: 'approximated',
     contraryReading: null,
+    errorDirection: 'bothDirections',
     conventionRationale:
       'Direction of error: permissive in three separate ways, each of which lets the ledger exclude dollars a return could not. First, a household with one spouse aged 71 and one aged 66 passes the eligibility gate on the elder, then funds the gift out of a pool that includes the younger spouse distributions, which cannot be a QCD from anyone. Second, one annual limit is applied where a married couple has two, so a couple giving more than the single limit from genuinely separate IRAs is understated. Third, since required distributions never aggregate across spouses, the pooled figure has no counterpart in the regulation at all. The engine holds enough facts to do this per donor: every account carries an owner and every person carries a date of birth. The substitution is not forced by missing data.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 408(d)(8)(A)',
@@ -2915,10 +3215,12 @@ const registry = {
     title: 'Annual-ledger ordering of the QCD against pro-rata basis recovery',
     statement:
       'A QCD is deemed to consist of otherwise-includible dollars up to the aggregate pre-tax balance, so it leaves the section 72 pro-rata computation entirely and the whole of the year basis remains available to the other distributions. Not modelled: the annual ledger applies pro-rata basis recovery to the entire required distribution first, including the part later routed to charity, and then subtracts the QCD in full from ordinary income.',
-    classification: 'outOfScope',
+    classification: 'approximated',
     contraryReading: null,
+    errorDirection: 'bothDirections',
     conventionRationale:
       'Direction of error: understates current-year ordinary income and overconsumes basis, and the two are equal and opposite over time. On a $10,000 required distribution from an IRA that is 20 percent basis, with a $5,000 QCD, the statute excludes the $5,000 in full and applies the 20 percent to the remaining $5,000, giving $4,000 of income and $1,000 of basis used. The ledger applies the 20 percent to all $10,000, giving $3,000 of income and $2,000 of basis used. Income in the gift year is understated by $1,000 and the extra $1,000 of basis consumed will show up as $1,000 of additional taxable income in a later year. The comment at the subtraction site already records that the ledger is planning-grade here. The registered rule irc-408-d-8-D-qcd-taxable-first states the correct treatment and is implemented in the exact-cent path, so the two paths return different numbers for the same household.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 408(d)(8)(D)',
@@ -2942,10 +3244,12 @@ const registry = {
     title: 'One family HSA limit divided between spouses',
     statement:
       'Where either spouse has family coverage, both spouses are treated as having only that family coverage and the single family limit is divided equally between them unless they agree otherwise, with each spouse own age 55 catch-up added outside the division. Not modelled: the annual ledger tracks the contribution limit per account owner and gives every owner in a two-person household the full family limit.',
-    classification: 'outOfScope',
+    classification: 'approximated',
     contraryReading: null,
+    errorDirection: 'understatesTax',
     conventionRationale:
       'Direction of error: permissive, by up to a full family limit. Two spouses each holding an HSA are each allowed the whole family maximum, so the household can contribute roughly twice what the statute permits, and the excess is deducted rather than taxed and charged the section 4973 excise. The catch-up handling is correct by accident, since paragraph (b)(5)(B) excludes the additional contribution amount from the division and the ledger already tracks it per owner. Two further approximations sit underneath: household size is read from the number of people on the plan rather than from actual coverage, so a two-person household is always given the family base even when only self-only coverage exists, and the monthly proration of 223(b)(1) and the Medicare-entitlement zeroing of 223(b)(7) are not applied at all.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 223(b)(5)',
@@ -2971,7 +3275,9 @@ const registry = {
       'The lifetime required minimum distribution is the prior year-end account balance divided by the Uniform Lifetime Table denominator for the age the employee attains on the birthday falling in that distribution calendar year, not the age at the start of the year and not the age at the distribution date. The table in force runs from age 72 at 27.4 to age 120 and over at 2.0 and governs distribution calendar years beginning on or after 1 January 2022; the table it replaced is a different set of numbers at every age.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
       citation: 'Treas. Reg. 1.401(a)(9)-5(c)(1)',
@@ -3007,7 +3313,9 @@ const registry = {
       'Where the required beginning date is April 1 of the year following attainment of the applicable age, the first distribution calendar year is the attainment year itself. A required minimum distribution is therefore due for the attainment year, computed on the prior year-end balance and the denominator for the age attained in that year, even though the payment may lawfully be made as late as the following April 1. The deadline moves; the year the amount belongs to does not.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 401(a)(9)(C)(i)',
@@ -3040,9 +3348,11 @@ const registry = {
     title: 'Deferral of the first required minimum distribution to April 1',
     statement:
       'The distribution for the first distribution calendar year may be paid as late as April 1 of the following year, in which case two required minimum distributions are taxed in that following year. Not modelled: the engine recognises the first-year amount entirely in the attainment year and offers no deferral election. For a taxpayer who defers, the error runs one way — attainment-year ordinary income is overstated by the whole first-year amount and the following year is understated by the same amount, which suppresses a real one-year spike in the bracket, in the capital-gain stacking threshold, and in the income used two years later for the Medicare premium adjustment.',
-    classification: 'outOfScope',
+    classification: 'approximated',
     contraryReading: null,
+    errorDirection: 'bothDirections',
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 401(a)(9)(C)(i)',
@@ -3069,9 +3379,11 @@ const registry = {
     title: 'Required beginning date deferred while still employed by the plan sponsor',
     statement:
       'For an employer plan, the required beginning date is April 1 following the later of the attainment year or the year the employee retires, so a participant who keeps working past the applicable age has no required minimum distribution from that plan. The deferral is unavailable to a 5-percent owner and never reaches an IRA. Not modelled: the engine forces an employer-plan distribution from the applicable age alone and never consults employment status, so for a non-5-percent owner still employed it overstates forced ordinary income every year until retirement and understates the balance carried forward. It cannot err the other way. The plan schema already carries a retirement age for each person, so the fact the rule turns on is present and unused.',
-    classification: 'outOfScope',
+    classification: 'approximated',
     contraryReading: null,
+    errorDirection: 'overstatesTax',
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 401(a)(9)(C)(i)(II)',
@@ -3100,7 +3412,9 @@ const registry = {
       'The ten-year deadline is not the only obligation. Where the employee died on or after the required beginning date, the at-least-as-rapidly rule survives, so an annual life-expectancy distribution is required in each year of the window in addition to the year-ten sweep. Where the employee died before the required beginning date, no annual distribution is required at all and the sole obligation is to be empty by the deadline. The two cases differ in the shape of the taxable income the window produces, not merely in its total.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 401(a)(9)(B)(i)',
@@ -3135,8 +3449,10 @@ const registry = {
       'Paragraph (d)(3) answers two independent questions about the beneficiary remaining life expectancy that sizes an annual distribution after a death on or after the required beginning date. Where the number comes from: the unisex Single Life Table of 1.401(a)(9)-9(b), and no other table, since (d)(3)(i) makes that table govern all life expectancies determined under paragraph (d). How it moves: for a designated beneficiary who is not the surviving spouse, (d)(3)(iii) reads it once, at the age the beneficiary reaches in the calendar year following the year of death, and reduces it by one for each later calendar year. Annual redetermination at the current age is the (d)(3)(iv) treatment and belongs only to a surviving spouse who is the sole beneficiary. A table can be right while the method is wrong and the errors run in opposite directions, so the two questions carry a fixture each.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'Three notes on how far this reaches. First, the subtract-one branch is the only one an inherited account in this engine can take: a surviving spouse does not hold an inherited IRA at all under IRC 408(d)(3)(C)(ii), so the (d)(3)(iv) redetermination has no path here, and the engine holds no beneficiary-category fact that could select it. Second, the table is read at a whole age, as singleLifeExpectancyYears in params/index.ts does, and the fixed entry may fall to zero or below for a beneficiary who inherits past about 110; the module then requires the whole remaining interest, since there is nothing left to divide by. Third, this record covers the beneficiary expectancy only. The greater-of test that compares it against the employee expectancy is a separate paragraph and is registered separately as treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy, where it remains out of scope. Until this record was settled the module divided by a sex-specific SSA period life expectancy looked up at the beneficiary current age, described in its own header as a documented proxy for the Single Life Table; the fixture asserting that behaviour called the same SSA function the module called and could not have failed.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
       citation: 'Treas. Reg. 1.401(a)(9)-5(d)(3)(i)',
@@ -3175,9 +3491,11 @@ const registry = {
     title: 'Greater of the beneficiary and the employee remaining life expectancy',
     statement:
       'Where the employee died on or after the required beginning date and has a designated beneficiary, the applicable denominator is not the beneficiary expectancy but the greater of that and the employee own remaining life expectancy. The employee expectancy comes from the same Single Life Table, read at the employee age on their birthday in the calendar year of death and reduced by one for each later calendar year, so it is read a year earlier than the beneficiary expectancy and has one more reduction applied by any given window year. Not modelled: the plan model records the calendar year the owner died and whether they had reached the required beginning date, and nothing else about them — no age, no birth year — so the employee expectancy cannot be computed at all and strategies/inheritedIra.ts divides by the beneficiary expectancy alone. The direction is one-sided. A greater-of can only raise a denominator, never lower it, so omitting it can only make the forced annual distribution too large, and it bites exactly when the beneficiary is older than the decedent was — the case where the beneficiary short expectancy is the one being displaced. It cannot change the total distributed, because the ten-year deadline empties the account either way; it pulls taxable ordinary income forward into the early window years. Closing it needs a decedent age or birth year on the inherited account schema in model/plan.ts, which reaches the published plan JSON schemas and the intake UI, so it is a schema change rather than a divisor change.',
-    classification: 'outOfScope',
+    classification: 'approximated',
     contraryReading: null,
+    errorDirection: 'overstatesTax',
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
       citation: 'Treas. Reg. 1.401(a)(9)-5(d)(1)(ii)',
@@ -3204,9 +3522,11 @@ const registry = {
     title: 'Eligible designated beneficiary escapes the 10-year rule',
     statement:
       'A designated beneficiary who is the surviving spouse, a minor child of the employee, disabled, chronically ill, or not more than ten years younger than the employee is an eligible designated beneficiary, and the life-expectancy exception applies only to such a beneficiary. Status is fixed at the date of death. Not modelled: the engine applies the ten-year rule to every inherited traditional account and holds no beneficiary-status fact, so for an eligible designated beneficiary it compresses a whole-of-life stretch into ten years. The error runs one way — forced ordinary income inside the window is overstated, the balance that should have survived past the window is understated, and the income the window should have produced in later decades disappears.',
-    classification: 'outOfScope',
+    classification: 'approximated',
     contraryReading: null,
+    errorDirection: 'overstatesTax',
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 401(a)(9)(E)(ii)',
@@ -3239,9 +3559,11 @@ const registry = {
     title: 'Excise tax on a required minimum distribution shortfall',
     statement:
       'A payee who takes less than the required minimum distribution for a year owes an excise tax of 25 percent of the shortfall, reduced to 10 percent if the shortfall is distributed and a return reflecting the tax is filed inside the correction window, and waivable entirely where the shortfall was reasonable error and reasonable steps are being taken to remedy it. Not modelled: nothing in the engine prices a shortfall. The engine instead forces the distribution, so a plan the user could not or would not execute is reported as costing nothing rather than as costing a quarter of what was missed. The error can only understate: a missed distribution is shown at zero penalty, and the difference between the 25 percent default and the 10 percent corrected rate — which is the whole value of acting quickly — cannot be represented at all.',
-    classification: 'outOfScope',
+    classification: 'approximated',
     contraryReading: null,
+    errorDirection: 'understatesTax',
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 4974(a)',
@@ -3276,8 +3598,10 @@ const registry = {
       'The part of each annuity payment excluded from gross income is the payment multiplied by the ratio of investment in the contract to expected return, both measured once at the annuity starting date and never revised. For a single life the expected return is the total annual payment multiplied by the Table V expectancy multiple for the age at that date. The cumulative exclusion may never exceed the unrecovered investment, so once the whole investment has been returned every later payment is fully taxable, and the same fixed share carries to a survivor or beneficiary until that point is reached.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'Table V rather than Table I is the correct table because Tables V through VIII govern any contract whose investment includes post-June-1986 money, which is every contract a plan under this engine could be buying. The distinction is load-bearing and not cosmetic: at age 66 the Table I male multiple is 14.4 and the Table V multiple is 19.2, a difference of about a third in the expected return and therefore in the ratio.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 72(b)(1)',
@@ -3318,9 +3642,11 @@ const registry = {
     title: 'Adjustment for a period-certain guarantee on a life annuity',
     statement:
       'A life annuity with a minimum period of payments certain is a refund feature. The prescribed treatment reduces the numerator: take the Table VII percentage for the annuitant age and the whole number of guaranteed years, multiply it by the smaller of the investment or the total guaranteed, subtract that from the investment, and compute an ordinary single-life exclusion ratio on the reduced investment. Not modelled as prescribed: the engine leaves the investment untouched and instead raises the denominator, using the greater of the single-life multiple and the certain period. Where the guarantee is shorter than the life multiple — the ordinary case for a ten- or twenty-year certain bought at 65 — the engine makes no adjustment at all while the regulation prescribes a positive one, so the exclusion ratio is too high and taxable income too low in the early payment years. Where the guarantee is longer the engine at least moves the ratio downward, but by a quantity no authority prescribes. The cap at unrecovered investment bounds the total excluded, so the error is a timing shift unless the annuitant dies before recovery, where it becomes permanent.',
-    classification: 'outOfScope',
+    classification: 'approximated',
     contraryReading: null,
+    errorDirection: 'bothDirections',
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 72(c)(2)',
@@ -3347,9 +3673,11 @@ const registry = {
     title: 'Expected return for a joint and survivor annuity paying a reduced survivor amount',
     statement:
       'Where the survivor receives a different amount from the first annuitant, the expected return is the first annuitant annual payment times the Table V single-life multiple, plus the survivor annual payment times the excess of the Table VI joint and last survivor multiple over that single-life multiple. The engine reproduces that decomposition exactly, which is worth recording because it is easy to mistake for an ad hoc blend. What it does not do is take the joint multiple from Table VI: it derives a joint last-survivor expectancy from the SSA-based mortality model instead, and does so per sex where Table VI is unisex. Not modelled as prescribed for that reason. SSA population mortality is heavier than the annuitant mortality standing behind Table VI, so the survivor tail comes out shorter than prescribed, expected return is understated, the exclusion ratio overstated, and taxable income understated in the early payment years. The cap at unrecovered investment turns most of that into a timing shift; it is permanent only where the annuitant dies before the investment is recovered.',
-    classification: 'outOfScope',
+    classification: 'approximated',
     contraryReading: null,
+    errorDirection: 'understatesTax',
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
       citation: 'Treas. Reg. 1.72-5(b)(2)',
@@ -3376,9 +3704,11 @@ const registry = {
     title: 'Depreciation on real property is capital gain capped at 25 percent, not ordinary income',
     statement:
       'Depreciation taken on real property is generally not section 1250 recapture, because additional depreciation means only the excess over the straight-line method and real property placed in service after 1986 is depreciated straight line. It is unrecaptured section 1250 gain: long-term capital gain to which the maximum rate is 25 percent. Not modelled: the engine adds the whole recapture figure to ordinary income. The direction is fixed by the fact that 25 percent is a ceiling rather than a rate. For a taxpayer whose marginal ordinary rate exceeds 25 percent the engine overstates tax on that slice by the difference between the two rates; for a taxpayer already below 25 percent the answer is the same either way. It cannot understate.',
-    classification: 'outOfScope',
+    classification: 'approximated',
     contraryReading: null,
+    errorDirection: 'overstatesTax',
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 1(h)(1)(E)',
@@ -3411,9 +3741,11 @@ const registry = {
     title: 'Eligibility tests that gate the principal-residence exclusion',
     statement:
       'The exclusion is available only where the property was owned and used as the principal residence for periods aggregating two years within the five years ending on the sale, is denied outright where another sale qualifying under the section occurred in the two years before, reaches the larger joint figure only where either spouse meets the ownership test and both meet the use test, and does not reach the share of gain allocated to periods of nonqualified use after 2008. Not modelled: the engine applies the whole filing-status cap whenever a boolean primary-residence flag is set. Every test it omits can only reduce an exclusion, never enlarge one, so the engine can only over-exclude and understate tax; the extreme case is a full joint exclusion where the correct answer is nothing at all.',
-    classification: 'outOfScope',
+    classification: 'approximated',
     contraryReading: null,
+    errorDirection: 'understatesTax',
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 121(a)',
@@ -3454,8 +3786,10 @@ const registry = {
       'The two provisional-income thresholds that gate benefit taxation are the base amount, 25,000 for an unmarried filer and 32,000 on a joint return, and the adjusted base amount, 34,000 and 44,000. Section 86 contains no cost-of-living provision of any kind, so all four figures have stood in the same nominal dollars since 1993 and move only by legislation. Two errors follow from forgetting that. Scaling them with an inflation factor understates taxable Social Security in every projected year, because the whole design of the section is that a rising nominal benefit crosses a still threshold. And the joint amounts are not twice the unmarried ones -- 32,000 against 25,000 and 44,000 against 34,000 -- so the doubling that holds for the standard deduction must not be carried across to these.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The base amount is zero rather than 25,000 for a married taxpayer who files separately and did not live apart from the spouse for the whole year, which makes the whole benefit taxable at the 85 percent rate. The engine has no married-filing-separately status, so that case cannot arise; the record notes it because a later filing status added without reading 86(c)(1)(C) would inherit the unmarried figure and understate the tax by the largest margin the section allows.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 86(c)',
@@ -3478,8 +3812,10 @@ const registry = {
       'A participant whose wages from the sponsoring employer for the preceding calendar year exceed the threshold in IRC 414(v)(7)(A) may make catch-up contributions only as designated Roth contributions. The base figure is 145,000, and 414(v)(7)(E) adjusts it annually in the same time and manner as the section 415(d) limits, from a base period of the calendar quarter beginning July 1, 2023, with any increase that is not a multiple of 5,000 rounded to the next lower multiple. Notice 2025-67 sets the threshold at 150,000 for 2026. The round-down is what makes the figure hard to guess: it stands still for a year or more at a time and then jumps a whole step, so it is never the base amount scaled by a year of inflation.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The parameter pack carries the threshold but no engine calculator reads it, so nothing in the projection currently forces a high-wage catch-up into Roth. Registering the rule against the pack fields that hold the figure means a later implementation inherits the authority and the rounding rule rather than re-deriving them, and the fixture pins the published figure against the un-adjusted statutory base in the meantime.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 414(v)(7)(A), (v)(7)(E)',
@@ -3508,8 +3844,10 @@ const registry = {
       'IRC 415(d) directs the Secretary to adjust the defined benefit limit and the 40,000 defined contribution limit in 415(c)(1)(A) for cost of living, measured on the calendar quarter ending September 30 of the preceding year against a base period of the calendar quarter beginning July 1, 2001, by procedures similar to those used for Social Security benefit adjustments, with any increase in the 415(c)(1)(A) amount rounded down to a multiple of 1,000. For 2026 that limit is 72,000, up from 70,000. The reason to record the mechanism rather than only the figure is that the 402(g) elective deferral limit, the 414(v) catch-up amounts, the Roth catch-up wage threshold and the QLAC premium cap all adjust by reference back to this same subsection, each with its own base period and its own rounding step. They move together, and none of them is ever a smooth multiple of the prior year.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The statutory adjustment lands on rounded steps while the projection multiplies the pack figure by a continuous inflation factor, so a projected year can sit between two published steps. Holding the step exactly would require index values for years that have not happened, which do not exist at planning time, so the continuous factor is a deliberate approximation. It is bounded by one rounding step, unbiased over a long horizon, and never reverses the direction of a limit. What it must not be extended to is a figure with no adjustment provision at all, where the same multiplication produces a number the statute never allows.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 415(d)(1), (d)(2), (d)(3)(D), (d)(4)(B)',
@@ -3538,8 +3876,10 @@ const registry = {
       'Premiums paid for a qualifying longevity annuity contract satisfy the limitation only if they do not exceed 200,000 as adjusted, reduced by every premium already paid for that contract and for any other contract intended to be a QLAC purchased under the plan or under any other plan, annuity, or account described in section 401(a), 403(a), 403(b), or 408, or under an eligible governmental plan. The cap is therefore one running total across all of the retirement accounts of an individual, not a per-contract or per-account allowance. The 200,000 amount is adjusted at the same time and in the same manner as the section 415(d) limits, from a base period of the calendar quarter beginning July 1, 2022, with any increment that is not a multiple of 10,000 rounded down, so the cap sits on a whole ten-thousand-dollar step. Notice 2025-67 confirms it remains 210,000 for 2026.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The regulation moves the cap as a step function while the projection multiplies it by a continuous inflation factor, so a projected year can sit between two published steps and a premium within one step of the cap can read as eligible when the regulation would refuse it, or the reverse. The error is bounded by a single ten-thousand-dollar step. Holding the step would require index values for years that have not happened, so the continuous factor is the same deliberate approximation taken for every other limit that borrows the section 415(d) mechanism.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
       citation: 'Treas. Reg. 1.401(a)(9)-6(q)(2)(ii), (q)(4)(ii)(A)',
@@ -3569,8 +3909,10 @@ const registry = {
       'The Social Security taxable wage base for 2026 is 184,500. It is not a price-indexed figure. Section 230(b) of the Act sets it to the larger of the base already in effect and the 1994 base of 60,600 multiplied by the ratio of the national average wage index for the second preceding year to that for 1992, rounded to the nearest multiple of 300. For 2026 that product is 184,548.71 and it rounds to 184,500. Average wages have grown faster than consumer prices over almost every long window, so a projection that carries the base forward on a consumer-price factor understates it, and because the two rates compound the gap widens every year rather than staying a fixed percentage.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The parameter pack carries the base but no engine calculator reads it yet, and the engine has no national-average-wage path to carry it forward on: the plan supplies a general inflation assumption and nothing else. When a calculator does read it, scaling by general inflation will be a stand-in for wage indexing rather than a reading of section 230, and this record is where that has to be said. The same caution applies to the retirement earnings test exempt amounts, which are wage-indexed by the same ratio.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: '42 USC 430(b)',
@@ -3599,8 +3941,10 @@ const registry = {
       'Section 203(f)(8)(B) of the Act sets each monthly exempt amount to the larger of the amount already in effect and a base monthly amount scaled by the ratio of the national average wage index for the second preceding year to that for a fixed reference year, rounded to the nearest multiple of 10. The two amounts run off different bases and different reference years: 670 against 1992 for a beneficiary below normal retirement age throughout the year, and 2,500 against 2000 for the year normal retirement age is attained. The annual amounts are exactly twelve times the monthly ones, giving 24,480 and 65,160 for 2026. Because the index is wages rather than prices, and because the two amounts are separately derived, neither one can be obtained by scaling the other or by applying the benefit cost-of-living increase to last year figure.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The projection carries both exempt amounts forward on the general inflation assumption because the engine has no national-average-wage path, and the plan supplies no wage growth input from which one could be built. That is a stand-in rather than a reading of section 203(f)(8)(B), and it biases the projected exempt amount low in the direction that withholds more benefit than the Act would, since wages have historically outrun prices. It is recorded here rather than left in the code because the fix is a new assumption rather than a change of formula.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: '42 USC 403(f)(8)(B)',
@@ -3629,8 +3973,10 @@ const registry = {
       'Every IRMAA dollar threshold is indexed under 42 USC 1395r(i)(5)(A) to consumer prices measured against an August 2006 base and rounded to the nearest 1,000, but that subparagraph is expressly subject to (i)(5)(C), which treats the 500,000 amounts twice. Subparagraph (i)(5)(C)(i) removes them from the (i)(5)(A) adjustment outright. Subparagraph (i)(5)(C)(ii) brings them back for calendar years after 2027, measured against August 2026 rather than August 2006. Because both provisions read the August of the preceding calendar year, an August 2026 base is exactly one year behind the general one, so from 2028 the top row grows at the same rate as the rows beneath it but from a position one year further back. The carve-out reaches only the 500,000 amounts, not paragraph (3) at large, so the four lower rows never pause. The joint figure follows from (i)(3)(C)(ii), which sets the last row at 150 percent of the individual amount rather than twice it, which is why the pack carries 500,000 and 750,000 where every lower row is an exact double. CMS says the same in its own words when it promulgates the table: the top threshold levels are to be inflation-adjusted beginning in 2028, which is why that row has stood at 500,000 and 750,000 since it was created for 2019 while every row beneath it rose each year. Both errors bite on a long horizon. Scaling all five boundaries by one factor sweeps into the top tier a household whose income never reached it; freezing the top boundary forever does the same thing more slowly and never stops, because a nominal projection keeps rising past a threshold the statute does allow to move again.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'Three things are decided here rather than dictated. First, the index: the resumed adjustment is measured on the plan assumed general inflation rather than the consumer price index the statute names, which is the same stand-in the lower rows already take, and the pack year of 2026 is what makes the general inflation series readable at the August 2026 base period without an offset. Second, the rounding: (i)(5)(B) rounds a dollar amount increased under subparagraph (C) to the nearest 1,000, and that is reproduced for the top row. The identical rounding (i)(5)(B) applies to the (i)(5)(A) adjustment of the four lower rows is not reproduced, which is pre-existing behaviour and is named here rather than left as a silent asymmetry between two branches of one function. Third, the Federal Register determination that publishes the table is registered under the regulation authority kind. It is neither a statute nor an IRS notice, and the enum has no member for an agency determination published in the Federal Register; introducing one is a schema decision rather than a research finding, so the nearest existing member is used and the choice is named rather than left silent.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: '42 USC 1395r(i)(5)(A), (i)(5)(B), (i)(5)(C)',
@@ -3668,8 +4014,10 @@ const registry = {
       'The Secretary determines the monthly actuarial rate for enrollees age 65 and over each September as the amount needed for those enrollees to fund one half of the benefits and administrative costs attributable to them, and then promulgates a standard monthly premium equal to 50 percent of that rate, which is why the standard premium is described as roughly 25 percent of program cost. For 2026 the aged actuarial rate is 405.40 and the promulgated standard premium is 202.90, which is 50 percent of the rate plus a 0.20 repayment amount required under current law. The premium is re-determined every year against projected program cost and tracks no published price index, so a projected year needs a medical cost path rather than general inflation, and the promulgated figure must be read rather than re-derived: halving the actuarial rate alone loses the repayment amount.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The repayment amount rides on the standard premium but is not part of the income-related scaling, so deriving a tier premium as the standard premium times the applicable percentage over 25 reproduces the promulgated table only to within a few cents. That residual is accepted as planning-grade rather than carrying a separate per-tier premium table. The Federal Register determination is registered under the regulation authority kind because the enum has no member for an agency determination published in the Federal Register, and adding one is a schema decision rather than a research finding; the choice is named here rather than left silent.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: '42 USC 1395r(a)(1), (a)(3)',
@@ -3699,8 +4047,10 @@ const registry = {
       'The monthly earnings level that ordinarily shows substantial gainful activity for a non-blind beneficiary is fixed by regulation rather than by the Act, which supplies a formula only for the statutorily blind amount. Under 20 CFR 404.1574(b)(2)(ii) it is redetermined each year as the larger of the amount for the previous year and 700 multiplied by the ratio of the national average wage index for the second preceding year to that for 1998, rounded to the nearest multiple of 10. For 2026 that product is 1,694.05 and the amount is 1,690 a month, which the determination states supersedes 1,620. Two consequences follow. The figure moves with wages rather than prices, so carrying it forward on a consumer-price factor drifts low. And because it gates the whole SSDI benefit for the year rather than reducing it, an amount one year stale flips the benefit off for a beneficiary earning between the old and new levels.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The projection compares annual wages against twelve times the monthly amount, which is an annual-granularity stand-in: the regulation applies the level to average monthly earnings, so a beneficiary whose earnings are concentrated in part of the year is treated differently by the two. The regulation is also carried forward on the general inflation assumption rather than on the national average wage index, for want of a wage path in the engine. The Federal Register determination that fixes the year figure is registered under the regulation authority kind, which is also where the underlying 20 CFR provision sits; the enum has no member for an agency determination published in the Federal Register, and adding one is a schema decision rather than a research finding.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
       citation: '20 CFR 404.1574(b)(2)(ii)',
@@ -3730,8 +4080,10 @@ const registry = {
       'IRC 3101(a) imposes the old-age, survivors, and disability insurance tax on the employee at 6.2 percent of wages. The subsection states a single percentage, with no table of future rates and no cost-of-living provision, so the rate has been 6.2 percent since 1990 and moves only by legislation. The employer pays the same again under 3111(a) and a self-employed individual pays the combined 12.4 percent under 1401(a), which is why a lifetime-contributions readout has to say which side of the payroll tax it is describing: quoting 12.4 for an employee doubles what the person actually paid, and quoting 6.2 for a self-employed person halves it.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The rate is carried in the parameter pack and consumed outside the engine, by the Social Security analysis page in the planner package, which the registry cannot name because implementedBy is checked against engine sources. The pack and its type are listed instead, which are the files a later reader would change.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 3101(a)',
@@ -3754,8 +4106,10 @@ const registry = {
       'The basic standard deduction is increased for every taxable year beginning after 2025, so its value is a function of the year rather than a constant. Nine state packs (AZ, CO, DC, IA, ID, MO, MT, ND, NM) do not carry a state figure at all -- they carry a copy of the federal one, because their law defines the state deduction by reference to it or, for CO and ND, because their brackets run on federal taxable income and this field is what converts the engine gross base into that base. The copy is the same statutory amount as the original, so it takes the original value in every projected year. Holding it at the pack year while the federal figure is projected forward puts two different values on one amount inside a single year and taxes the whole widening difference at the state rate.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'This record is anchored federally because the proposition is federal: nothing here decides how a state adjusts a figure of its own, it keeps a borrowed federal figure equal to the federal figure. Two boundaries follow from that and are deliberate. State BRACKETS are not touched -- those are state dollar amounts under state law, some indexed, some fixed by statute, several on legislated rate ramps, and the per-state research to move any of them does not exist yet -- and neither are the state retirement-exclusion caps, which are likewise state figures (the Colorado 24,000 dollar pension subtraction is not indexed by Colorado law). A state that decouples from the federal amount simply loses the conformity tag and stops moving; Maine and South Carolina did exactly that for 2026 and are untagged. The scaling factor is the plan assumed general inflation rather than the C-CPI-U of section 1(f)(3), and the statutory rounding of the increase to the next lowest multiple of 50 dollars is not reproduced -- the same two approximations indexFederalTaxPack already makes, and they must be the same ones, because a conformed copy indexed on any other basis would diverge from the federal figure it is a copy of.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 63(c)(7)(B)(ii)',
@@ -3785,7 +4139,9 @@ const registry = {
       'The 10 percent additional tax does not reach a distribution that is part of a series of substantially equal periodic payments, made not less frequently than annually, over the life or life expectancy of the participant or the joint lives or joint life expectancies of the participant and a designated beneficiary. Membership in the series is the operative fact, so a tax year whose distributions do not add up to the annual payment the chosen method determined excepts nothing: the annual reconciliation reports the year incomplete, and no payment in it reaches a zero penalty.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 72(t)(2)(A)(iv)',
@@ -3814,7 +4170,9 @@ const registry = {
       'For section 72(t) the term employee includes any participant, and for an individual retirement plan it means the individual for whose benefit the plan was established, so SEPP qualification is settled per participant and per source account and never on a household total. Amounts another household member took, or amounts taken from another account, are outside the series and can neither complete it nor enlarge it: the annual reconciliation binds the participant, the election, and the source account, and treats an inventory member belonging to a different person or account as foreign.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 72(t)(5)',
@@ -3843,8 +4201,10 @@ const registry = {
       'Exactly three methods determine substantially equal periodic payments: the required minimum distribution method, the fixed amortization method, and the fixed annuitization method. The fixed annuitization method stands on the same footing as the other two, and an election naming anything else is refused with a typed unsupportedMethod nonconformance rather than reconciled.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The notice names the methods in prose, so the token spelling is an engineering choice, and the engine made it twice. The owned-IRA path spells them requiredMinimumDistribution, fixedAmortization, and fixedAnnuitization; the employer-plan path spells the first two rmd and amortization. Both admit exactly the three the notice names and reject everything else, so the vocabularies differ without the rule differing. A reader comparing the two evidence shapes should not read the shorter spellings as a narrower method set.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'irsNotice',
       citation: 'IRS Notice 2022-6, section 3.01',
@@ -3873,7 +4233,9 @@ const registry = {
       'Each of the three methods determines an annual payment for a distribution year, and the statute requires payments not less frequently than annually. Several distributions inside one year are therefore one annual payment measured by their total rather than several competing series, and the year qualifies only when that total equals the annual scheduled amount exactly. The annual reconciliation sums every scheduled payment in the year and reports the year incomplete when the total falls short, exceeded when it runs over.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'irsNotice',
       citation: 'IRS Notice 2022-6, section 3.01(a)',
@@ -3901,8 +4263,10 @@ const registry = {
       'Any interest rate at or below the greater of 5 percent or 120 percent of the federal mid-term rate may be used to apply the fixed amortization or the fixed annuitization method. Because 5 percent is the floor of that ceiling, a flat 5 percent is permitted in every rate environment, and the projection uses it. The 5 percent leg exists only under Notice 2022-6: the superseded Rev. Rul. 2002-62 capped the rate at 120 percent of the federal mid-term rate alone, under which a flat 5 percent would have been impermissible in a low-rate year.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The authority fixes a ceiling, not a rate, so the engine had to pick one. It carries no section 1274(d) federal mid-term rate series, and 5 percent is the highest rate permitted without knowing that rate, so a flat 5 percent needs no feed and can never exceed the ceiling. A projection wanting a larger payment would have to source the mid-term rate for one of the two months immediately preceding the month the series begins. The engine source comment used to describe the ceiling as 120 percent of the mid-term rate, which is the superseded Rev. Rul. 2002-62 rule rather than the Notice 2022-6 rule; it was corrected to state both legs when this record was verified.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'irsNotice',
       citation: 'IRS Notice 2022-6, section 3.02(c)',
@@ -3934,7 +4298,9 @@ const registry = {
       'Payments are first calculated with respect to one account balance as of the first valuation date, and only amounts that are part of the resulting series are excepted. A distribution from that account which is not a scheduled payment is therefore not merely a separately penalized withdrawal; it leaves the year unproven. The reconciliation is closed over the complete inventory of distributions from the source account for the year and reports the year incomplete when an inventory member has no matching scheduled payment, so no payment in that year reaches a zero penalty.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'irsNotice',
       citation: 'IRS Notice 2022-6, section 3.02(e)',
@@ -3963,8 +4329,10 @@ const registry = {
       'Section 72(t)(4) withdraws the exception retroactively from every prior payment once the series is modified inside the window, so the exception cannot be established for a payment on facts that stop short of that payment date. The reconciliation requires an explicit no-modification proof whose through date reaches the distribution date and refuses the payment when the proof ends earlier.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'Section 72(t)(4) sets the consequence of a modification but no evidentiary standard for proving one did not happen, so the engine had to choose what suffices. It takes a dated attestation covering the payment and refuses anything earlier, because a proof running only to the start of the year cannot speak to a modification made in March. That is an engineering decision rather than a legal conclusion, and the attestation is not a test of the three events section 3.02(e) of Notice 2022-6 enumerates.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 72(t)(4)(A)',
@@ -3987,7 +4355,9 @@ const registry = {
       'After the first valuation date a modification occurs on any addition to the account balance other than by reason of investment experience, any transfer of part of the balance to another retirement plan, or a rollover of the amount received. Not modelled: the engine tests none of the three. The annual reconciliation consumes a caller-supplied attestation that no disqualifying modification occurred and derives nothing from the account history, so an attestation supplied for a series that in fact took a contribution, a partial transfer out, or a rollover produces a zero penalty the statute would not allow. The error runs toward understating tax, and it omits the section 72(t)(4) recapture as well.',
     classification: 'outOfScope',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'irsNotice',
       citation: 'IRS Notice 2022-6, section 3.02(e)',
@@ -4010,7 +4380,9 @@ const registry = {
       'A participant who began with the fixed amortization or the fixed annuitization method may switch once, in any later distribution year, to the required minimum distribution method without that switch being a modification; any later change away from the required minimum distribution method is a modification. Not modelled: an election carries one method for the life of the series, the plan model offers no way to record the year of a switch, and the annual reconciliation binds one method to every payment in the year. The error runs toward larger later payments and faster depletion, because the engine keeps paying the level fixed amount in years when a real participant could have dropped to the smaller redetermined required minimum distribution payment.',
     classification: 'outOfScope',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'irsNotice',
       citation: 'IRS Notice 2022-6, section 3.03(b)',
@@ -4034,7 +4406,9 @@ const registry = {
       'When following a qualifying method exhausts the assets in the account, the resulting reduction in the final payment and the cessation of payments that follows are not a modification, and the section 72(t)(4)(A) recapture tax does not apply. Not modelled: the annual reconciliation qualifies a year only when the distributions total the annual scheduled amount exactly, and it receives no fact distinguishing a shortfall caused by an exhausted account from a shortfall caused by underpayment, so it refuses both. The error runs toward refusing a series the notice would preserve, overstating penalty rather than understating it, and a caller can avoid it only by restating the annual scheduled amount as the reduced final payment.',
     classification: 'outOfScope',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'irsNotice',
       citation: 'IRS Notice 2022-6, section 3.03(a)',
@@ -4063,8 +4437,10 @@ const registry = {
       'Exactly three tables may determine the distribution period under the required minimum distribution and fixed amortization methods: the Uniform Lifetime Table in Appendix A of Notice 2022-6, the Single Life Table in Treas. Reg. 1.401(a)(9)-9(b), and the Joint and Last Survivor Table in 1.401(a)(9)-9(d). All three are unisex, and the number used is the entry for the participant age reached on that birthday, taken whole. The projection uses the Single Life Table, which is the table section 3.02(b) leaves in place for a distribution year with no designated beneficiary. It is the shortest of the three, and the payment is the balance over the divisor, so that choice sizes the largest payment any permitted table would allow rather than the smallest.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The notice permits three tables and never says which to use, so the engine had to pick one. Single Life is chosen because the election carries no designated beneficiary: section 3.02(b) lets the Joint and Last Survivor Table be used only against an actual designated beneficiary of the account, and says that where there is none in a distribution year the Single Life Table is the table for that year. The Uniform Lifetime Table in Appendix A stays permitted and would shrink every payment on the same facts, because it is longer at every age (43.6 years at 55 against Single Life 31.6). That is the direction of this convention and it is worth stating plainly: Single Life is the shortest of the three, and the payment is the balance over the divisor, so the engine sizes the largest payment any permitted table would allow. What is not a convention is the exclusion of everything else: this engine previously divided by its SSA 2022 period table (longevity/ssaPeriod2022.ts), averaging the male and female columns, which produced 26.64 years at age 55 against the Single Life entry of 31.6 and so oversized every payment by about 19 percent beyond even the largest figure the notice allows.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'irsNotice',
       citation: 'IRS Notice 2022-6, section 3.02(a)',
@@ -4095,7 +4471,9 @@ const registry = {
       'The fixed amortization payment is the amount that level-amortizes the account balance over the number of years the chosen permitted table gives for the participant age in the FIRST distribution year, at an interest rate section 3.02(c) permits. Once those three inputs are set, the annual payment is the same amount in every succeeding distribution year. It is not the balance divided by the years, which would drop the interest rate and collapse the method onto the required minimum distribution method, and it is not redetermined annually, which is what distinguishes it from that method.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale: null,
+    jurisdiction: 'federal',
     authority: [{
       kind: 'irsNotice',
       citation: 'IRS Notice 2022-6, section 3.01(b)',
@@ -4125,8 +4503,10 @@ const registry = {
       'For the fixed amortization and fixed annuitization methods the account balance must be determined in a reasonable manner on the facts, and it is treated as reasonable if it is the balance on any date in the window that opens on December 31 of the year before the first distribution and closes on the date of that distribution. The projection amortizes the account balance it captures before any of the first distribution year flows, which is the prior December 31 balance and therefore the opening of that window.',
     classification: 'settled',
     contraryReading: null,
+    errorDirection: null,
     conventionRationale:
       'The authority states a safe-harbour window, not a date, so the engine had to choose a point inside it. It takes the earliest, the prior December 31, because that is the only date in the window the annual projection actually holds a balance for: it resolves a year at a time and has no notion of the day the first distribution is paid. Choosing the earliest point also makes the choice the least favourable one available in a growing account, since a later date in the window carries more growth and would size a larger payment.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'irsNotice',
       citation: 'IRS Notice 2022-6, section 3.02(d)',
@@ -4145,10 +4525,12 @@ const registry = {
     title: 'The projection contributes to an account with a running SEPP series',
     statement:
       'After the first valuation date, any addition to the account balance other than by reason of investment experience modifies the series. The projection applies no such test: its contribution pass admits any account that is not inherited, so a plan that states both an annual contribution and a SEPP election on the same traditional account deposits into it every year the series runs and still reports every SEPP distribution as penalty-free. Not modelled, and the error runs toward understating tax in two ways at once: the current year distribution is shown penalty-free when the statute has ended the exception, and the section 72(t)(4) recapture of every earlier payment in the series, plus interest, is not charged at all.',
-    classification: 'outOfScope',
+    classification: 'approximated',
     contraryReading: null,
+    errorDirection: 'understatesTax',
     conventionRationale:
       'Left as it stands because the two available repairs are product decisions rather than engineering ones, and each is wrong in a way the engine cannot adjudicate. Refusing the contribution keeps the series intact but silently overrides a stated plan input, and would change every projection that carries both facts without telling the user which of their two instructions was dropped. Treating the series as modified is the statutory consequence, but it needs the 72(t)(4) recapture and the interest for the deferral period, which is machinery this engine does not have and which the modification-trigger record already reports as absent. A third option, computing as now and warning, still publishes a penalty-free series the statute has already busted. The decision belongs with the product: which of two contradictory instructions wins, and what the planner tells the user when it drops one. Note that the actions layer does not share this defect for its own reason rather than a better one, recorded under notice-2022-6-3-02-e-modification-trigger-detection: it consumes a caller attestation instead of deriving anything from account history.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'irsNotice',
       citation: 'IRS Notice 2022-6, section 3.02(e)(1)',
@@ -4176,10 +4558,12 @@ const registry = {
     title: 'Employer-plan SEPP separation modelled from the plan retirement age',
     statement:
       'Section 72(t)(3)(B) withholds the substantially equal periodic payment exception from a 401(a) trust or a 72(e)(5)(D)(ii) contract unless the series begins after the employee separates from service, and does not reach IRAs. The annual projection has no separation event and no employer identity, so it orders calendar years instead of days: an employer-plan series is recognised only where the plan states a retirement age and the year the series begins is at or after the first year the wage model stops paying the participant, and an IRA series is recognised whatever the retirement age. That first unpaid year is the attained age the retirement age rounds UP to, because wages are paid while attained age is below the retirement age, so a retirement age of 65.5 is paid for the year the participant attains 65 and separated from the year they attain 66. A plan stating no retirement age states no separation, and no employer-plan series is recognised on it.',
-    classification: 'outOfScope',
+    classification: 'approximated',
     contraryReading: null,
+    errorDirection: 'bothDirections',
     conventionRationale:
       'Registered as out of scope rather than settled for the same reason as the Rule of 55 proxy alongside it: the plan model carries one retirement age per person and no employment history, so there is no separation date and no employer for the plan to test. It errs in both directions. It under-refuses where the employer plan is one the participant left long ago, because the statute reaches only the plan of the employer separated from and no employer identity is tested. It under-refuses again inside the year of separation, because the projection resolves years rather than days and cannot see a series that began in March from a job left in September; the first year the wage model stops paying the participant is treated as a separated year throughout, which is the same convention that lets the Rule of 55 waive the penalty in that year. Both layers name that year by rounding the retirement age UP to an attained age, which is not a rounding preference but the only reading that agrees with the other two: wages are paid while attained age is below the retirement age and the Rule of 55 waives from the first attained age that is not, so a retirement age of 65.5 is paid for the year the participant attains 65 and separated from the year they attain 66. Rounding down would separate them in a year the plan still pays them wages. It over-refuses where a participant has genuinely separated but the plan states no retirement age, which is how the plan model spells someone with no wages to stop. The exact-date reading lives in actions/traditionalEmployerPlanPenaltyPrerequisite.ts, and both layers order the two events through the same seppSeriesBeginsAfterSeparation predicate. What is not a proxy is the structural limit: 72(t)(3)(B) does not reach individual retirement accounts, and the projection tests separation only for an account of employer kind.',
+    jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 72(t)(3)(B)',
