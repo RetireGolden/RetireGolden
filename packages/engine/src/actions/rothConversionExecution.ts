@@ -376,6 +376,17 @@ function taxFundingReasons(
  * attested and leaves `requiredFundingAmount` null: the annual liability the
  * attestation would have to cover is the missing coordinator's to compute, and
  * this executor will not invent it.
+ *
+ * The two unreachable arms are answered explicitly anyway, and the switch is
+ * exhaustive over the union rather than falling through to a default. Before
+ * this, anything that was not `externalCash` returned `notExpected` with both
+ * figures zero — so the first `linkedWithdrawal` to reach commit would have
+ * published "no funding was expected, none was required, none was paid" as the
+ * funding evidence for a conversion that was in fact funded by a withdrawal.
+ * Unreachable today, and the wrong thing to leave waiting behind a gate that
+ * slice 3 of the linked-withdrawal pathway exists to open. `unsupported` with
+ * null figures is the honest answer: this executor cannot state what was
+ * required or paid, and says so rather than asserting zeros it did not compute.
  */
 function committedTaxFunding(
   request: Readonly<RothConversionRequest>,
@@ -385,21 +396,41 @@ function committedTaxFunding(
     'retirement-action-conversion-tax-funding',
     [request.actionId, request.year, funding.kind, request.executionDate ?? null],
   )
-  if (funding.kind === 'externalCash') {
-    return {
-      kind: funding.kind,
-      status: 'externallyAttested',
-      requiredFundingAmount: null,
-      fundedAmount: funding.amount,
-      evidenceId,
+  switch (funding.kind) {
+    case 'externalCash':
+      return {
+        kind: funding.kind,
+        status: 'externallyAttested',
+        requiredFundingAmount: null,
+        fundedAmount: funding.amount,
+        evidenceId,
+      }
+    case 'noneExpected':
+      return {
+        kind: funding.kind,
+        status: 'notExpected',
+        requiredFundingAmount: 0,
+        fundedAmount: 0,
+        evidenceId,
+      }
+    case 'linkedWithdrawal':
+    case 'conversionPrincipalWithholding':
+      return {
+        kind: funding.kind,
+        status: 'unsupported',
+        requiredFundingAmount: null,
+        fundedAmount: null,
+        evidenceId,
+      }
+    default: {
+      // A fifth funding arm must decide what it publishes here rather than
+      // inheriting whichever answer happened to be last. This is the line that
+      // makes adding one a compile error.
+      const unreachable: never = funding
+      throw new Error(
+        `Unhandled conversion tax funding kind: ${JSON.stringify(unreachable)}`,
+      )
     }
-  }
-  return {
-    kind: funding.kind,
-    status: 'notExpected',
-    requiredFundingAmount: 0,
-    fundedAmount: 0,
-    evidenceId,
   }
 }
 
