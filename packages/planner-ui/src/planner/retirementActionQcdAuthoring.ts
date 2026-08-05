@@ -244,6 +244,12 @@ export function qcdSourceSupportIssue(
       resolvableInFacts: false,
     }
   }
+  if (account.type !== 'traditional' && account.type !== 'roth') {
+    return {
+      message: 'RetireGolden models a charitable gift only from a traditional IRA.',
+      resolvableInFacts: false,
+    }
+  }
   // The employer-plan test runs before the Roth one so a Roth employer
   // account draws the exclusion that is true of it -- it is not an IRA.
   if (account.kind !== 'ira') {
@@ -255,12 +261,6 @@ export function qcdSourceSupportIssue(
   if (account.type === 'roth') {
     return {
       message: 'RetireGolden does not model a charitable gift from a Roth IRA.',
-      resolvableInFacts: false,
-    }
-  }
-  if (account.type !== 'traditional') {
-    return {
-      message: 'RetireGolden models a charitable gift only from a traditional IRA.',
       resolvableInFacts: false,
     }
   }
