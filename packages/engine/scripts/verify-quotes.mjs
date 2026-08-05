@@ -304,7 +304,11 @@ const MAX_CODE_POINT = 0x10ffff
  * @param {string} s
  */
 function decodeEntities(s) {
-  return s.replace(/&(#x?[0-9a-fA-F]+|[a-zA-Z][a-zA-Z0-9]*);/g, (match, body) => {
+  // `#[xX]?` and not `#x?`: the branch below already handles an uppercase X,
+  // but the pattern never matched one, so `&#X2019;` passed through undecoded
+  // and could turn a correct quote into a false ABSENT. A checker that invents
+  // findings is worse than no checker.
+  return s.replace(/&(#[xX]?[0-9a-fA-F]+|[a-zA-Z][a-zA-Z0-9]*);/g, (match, body) => {
     if (body.startsWith('#')) {
       const code =
         body[1] === 'x' || body[1] === 'X'
@@ -424,9 +428,19 @@ const cacheKey = (url) => createHash('sha256').update(url).digest('hex').slice(0
 /**
  * @typedef {object} Source
  * @property {string} url
- * @property {boolean} ok            False means assertion 3 fired: nothing on this page can be checked.
+ * @property {boolean} ok            False means nothing on this page can be checked. Three routes
+ *                                   reach it: the fetch failed, the response was a block page, or
+ *                                   it came back a stub (assertion 3). A PDF that fetched but
+ *                                   would not extract is also `ok: false` — see `pdfUnreadable`,
+ *                                   which is what separates the two verdicts.
  * @property {string} [problem]      Why it is unusable, when !ok.
  * @property {boolean} isPdf
+ * @property {boolean} [pdfUnreadable] Set alongside `ok: false` when a PDF fetched but no text
+ *                                     could be extracted. The distinction is whose fault it is:
+ *                                     the document arrived and the local reader failed, so its
+ *                                     quotes report PDF-NOT-VERIFIABLE, not UNFETCHABLE. Blaming
+ *                                     the publisher for a missing poppler would be a finding
+ *                                     about this machine.
  * @property {string[]} variants     Normalised full-text renderings; a quote need match only one.
  * @property {boolean} fromCache
  */
