@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseRetirementActionRequest } from '../actions/index.js'
+import {
+  parseRetirementActionRequest,
+  planDollarsToFlooredLedgerCents,
+  planDollarsToLedgerCents,
+} from '../actions/index.js'
 import { validateOwnedNonRothIraRuntimeSourceSeries } from '../internal/ownedNonRothIraRuntimeSourceSeries.js'
 import type { Account, Plan } from '../model/plan.js'
 import {
@@ -377,5 +381,138 @@ describe('committed named Roth conversion', () => {
     // is why the 1,500 net need grosses up to 1,500/0.9. A layer recorded with
     // a zero taxable amount would recapture nothing here.
     expect(years[1]!.penalties).toBeCloseTo(150 / 0.9, 2)
+  })
+})
+
+/**
+ * A conversion sized against everything its source holds.
+ *
+ * A Plan balance is a float, and a float dollar balance almost never lands on
+ * a whole cent. The snapshot handed to the executor used to round that balance
+ * half-up, so it could report up to half a cent more than the account held --
+ * and the commit subtracts the executor's exact cents from the live float, so
+ * a request sized against the reported figure drove the balance below zero.
+ * Permanently: nothing downstream rebuilds a balance, so the negative cent
+ * survived every remaining year and refused the owned-IRA source series with
+ * it, silently rolling back the annual exact-basis settlement.
+ *
+ * The snapshot is truncated now. A source can only ever be asked for cents it
+ * actually holds, and the commit site asserts that rather than assuming it.
+ */
+describe('a named conversion that drains its source', () => {
+  /**
+   * 1,234,567.8901234 cents. Half-up reports 1,234,568 -- one more cent than
+   * the account can fund -- and truncation reports 1,234,567, which is exactly
+   * what it can.
+   */
+  const IRA_DOLLARS = 12_345.678901234
+  const FUNDABLE_CENTS = 1_234_567
+  const OVERSTATED_CENTS = 1_234_568
+
+  function drainingPlan(requestedAmount: number): Plan {
+    const plan = committedPlan()
+    plan.id = 'named-conversion-drain'
+    plan.accounts = [
+      cash('cash-a', 1_000_000),
+      traditionalIra('ira-a', IRA_DOLLARS),
+      rothIra('roth-first'),
+      rothIra('roth-second'),
+    ]
+    const parsed = parseRetirementActionRequest({
+      actionId: 'named-conversion',
+      kind: 'rothConversion',
+      personId: 'p1',
+      year: TAX_YEAR,
+      executionDate: '2026-06-15',
+      executionSequence: 1,
+      requestedAmount,
+      allocations: [{
+        allocationId: 'named-conversion-allocation',
+        sourceAccountId: 'ira-a',
+        requestedAmount,
+      }],
+      destinationRothAccountId: 'roth-second',
+      taxFunding: { kind: 'noneExpected' },
+      provenance: { source: 'manual' },
+    })
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    plan.strategies.retirementActions = [parsed.request]
+    return plan
+  }
+
+  function projectTwoYears(plan: Plan): YearResult[] {
+    return simulatePlan(validatePlan(plan), {
+      startYear: TAX_YEAR,
+      horizonEndYear: TAX_YEAR + 1,
+      taxCalculator: createFlatTaxCalculator(0),
+    }).years
+  }
+
+  it('converts every whole cent the source can fund and never one it cannot', () => {
+    const plan = drainingPlan(FUNDABLE_CENTS)
+    const years = projectTwoYears(plan)
+
+    expect(years[0]!.rothConversionActionExecution?.committed).toBe(true)
+    expect(conversionEvidence(years[0]!)).toMatchObject({
+      outcome: 'executed',
+      executedAmount: FUNDABLE_CENTS,
+      unexecutedAmount: 0,
+    })
+    expect(years[0]!.balances['roth-second']).toBeCloseTo(12_345.67, 6)
+
+    // The bound is one-sided and tight. What is left is the sub-cent residue
+    // the exact-cent ledger has no way to express, which was in the account
+    // before the conversion and stays in it after.
+    for (const year of years) {
+      expect(year.balances['ira-a']).toBeGreaterThanOrEqual(0)
+      expect(year.balances['ira-a']).toBeLessThan(0.01)
+    }
+    expect(years[1]!.balances['ira-a']).toBe(years[0]!.balances['ira-a'])
+  })
+
+  it('closes the source series over both the drain and the residue it leaves', () => {
+    // Two years, because the overdraw was permanent and the residue is not.
+    // The first year is the movement; the second is the year the residue has
+    // to be inert in, which it is only because a forced distribution too small
+    // to move is discharged rather than journalled.
+    const plan = drainingPlan(FUNDABLE_CENTS)
+    const series = validateOwnedNonRothIraRuntimeSourceSeries(
+      validatePlan(plan), TAX_YEAR, projectTwoYears(plan),
+    )
+
+    if (series.status !== 'ownedNonRothIraRuntimeSourceSeriesComplete') {
+      throw new Error(`source series blocked: ${JSON.stringify(series.issues)}`)
+    }
+    expect(series.years.map((year) => year.taxYear)).toEqual([TAX_YEAR, TAX_YEAR + 1])
+    expect(series.years[0]!.ownerSources[0]!.applications.map((entry) => entry.amount))
+      .toEqual([FUNDABLE_CENTS])
+    expect(series.years[1]!.ownerSources[0]!.applications).toEqual([])
+  })
+
+  it('hands the executor the cents the source can fund, not the cent it cannot', () => {
+    // The snapshot itself, which is where the overdraw was decided. Half-up
+    // reported OVERSTATED_CENTS here, and the executor admits an allocation
+    // whenever the reported opening covers it -- so the extra cent was
+    // authorised, moved, and only then found to be absent. The published
+    // opening is the fundable figure, and the destination's is unchanged,
+    // because nothing is ever drawn against a destination.
+    const year = projectTwoYears(drainingPlan(FUNDABLE_CENTS))[0]!
+
+    // The fixture's own premise, checked rather than asserted in a comment:
+    // this balance is one the two roundings disagree about.
+    expect(planDollarsToFlooredLedgerCents(IRA_DOLLARS)).toBe(FUNDABLE_CENTS)
+    expect(planDollarsToLedgerCents(IRA_DOLLARS)).toBe(OVERSTATED_CENTS)
+    expect(year.rothConversionActionExecution?.balances).toEqual([
+      expect.objectContaining({
+        accountId: 'ira-a',
+        openingBalance: FUNDABLE_CENTS,
+        closingBalance: 0,
+      }),
+      expect.objectContaining({
+        accountId: 'roth-second',
+        openingBalance: 0,
+        closingBalance: FUNDABLE_CENTS,
+      }),
+    ])
   })
 })

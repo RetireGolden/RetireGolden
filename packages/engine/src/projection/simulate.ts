@@ -3998,6 +3998,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           ...request.allocations.map((allocation) => allocation.sourceAccountId),
         ]),
       )
+      const conversionSourceAccountIds = new Set<string>(
+        currentYearConversionActions.flatMap((request) =>
+          request.allocations.map((allocation) => allocation.sourceAccountId)),
+      )
       const openingBalances = [...balances]
         .filter((state) => conversionAccountIds.has(state.account.id))
         .sort((left, right) => compareUtf16CodeUnits(left.account.id, right.account.id))
@@ -4005,7 +4009,21 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           try {
             return [{
               accountId: asAccountId(state.account.id),
-              openingBalance: planDollarsToLedgerCents(state.balance),
+              // A source snapshot is a spending capacity and is truncated; a
+              // destination snapshot is a measurement and is not. The executor
+              // admits an allocation only where the source's reported opening
+              // covers the requested cents, and the commit below subtracts
+              // those exact cents from the live float, so half-up rounding on a
+              // source could report up to half a cent more than the account
+              // holds and authorise a request the balance cannot fund -- which
+              // drove the balance negative, permanently, and only after the
+              // dollars had moved. Truncating makes that unreachable rather
+              // than detectable afterwards. Nothing is ever drawn against the
+              // destination figure, so rounding it down would understate a
+              // published balance to buy protection it does not need.
+              openingBalance: conversionSourceAccountIds.has(state.account.id)
+                ? planDollarsToFlooredLedgerCents(state.balance)
+                : planDollarsToLedgerCents(state.balance),
             }]
           } catch {
             return []
@@ -4175,6 +4193,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           committedAction.debitOwners.push(state.account.ownerPersonId)
           committedAction.creditedAmountPlanDollars += move.amount
           const sourceBalanceBefore = state.balance
+          if (move.amount > sourceBalanceBefore) {
+            // Unreachable while the opening snapshot above is truncated, and
+            // asserted rather than assumed because the consequence of it being
+            // wrong is a negative balance that survives every later year and
+            // silently rolls back the year's exact-basis settlement.
+            throw new Error('Committed conversion exceeds its live source balance')
+          }
           state.balance = sourceBalanceBefore - move.amount
           recordAnnualRetirementRuntimeOccurrence({
             producerOccurrenceKey,
