@@ -256,11 +256,19 @@ describe('executeRothConversions', () => {
     if (destination?.type !== 'roth') throw new Error('fixture drift')
     destination.kind = 'employer'
 
-    const evidence = executeRothConversions(value).evidence[0]!
+    const result = executeRothConversions(value)
+    const evidence = result.evidence[0]!
     const reasonCodes = evidence.reasons.map((reason) => reason.code)
 
     expect(reasonCodes).toContain('conversion-employer-destination-unsupported')
     expect(reasonCodes).not.toContain('conversion-destination-incompatible')
+    // The reason is a blocker, not a note. This executor commits only on an
+    // empty reason list, so an employer designated Roth account named as the
+    // destination moves nothing -- which is what makes the named path agree
+    // with the aggregate one on irc-408A-d-3-B-conversion-destination-must-be-
+    // a-roth-ira rather than merely annotating a movement it allowed.
+    expect(result.committed).toBe(false)
+    expect(evidence.executedAmount).toBe(0)
   })
 
   it('publishes only the canonical inherited-source classification', () => {

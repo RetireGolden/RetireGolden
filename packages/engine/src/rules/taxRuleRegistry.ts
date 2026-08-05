@@ -5050,14 +5050,14 @@ const registry = {
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
   },
   'irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira': {
-    title: 'A conversion out of an IRA must land in a Roth IRA, not a designated Roth account',
+    title: 'A conversion must land in a Roth IRA, never a designated Roth account',
     statement:
-      'The paragraph that makes a conversion taxable is 408A(d)(3), and (B) applies it only to a distribution which is contributed to a Roth IRA maintained for the benefit of such individual; (C) then treats the conversion of an individual retirement plan other than a Roth IRA to a Roth IRA as a distribution to which the paragraph applies, and (A)(i) is what includes the amount in gross income. A Roth IRA is an individual retirement plan designated as a Roth IRA at the time the plan is established. A designated Roth account is a different thing: it is a separate account the employer’s applicable retirement plan establishes for that employee’s designated Roth contributions and the earnings on them. Treas. Reg. 1.408A-4 A-1(b) names the three methods by which an amount can be converted, and each of the three ends in a Roth IRA. The only route by which a designated Roth account takes a taxable rollover is 402A(c)(4), and (B) confines that route to a distribution from the same plan which maintains the account, so a distribution out of an IRA cannot reach one. Not modelled: the projection’s destination search takes every account of type roth, keeps the first one each person owns in Plan order, and tests nothing about the kind of account it is -- so an individual whose only Roth is a designated Roth account inside an employer plan has their traditional IRA converted into it, the household recognises the income, and no warning is raised.',
-    classification: 'approximated',
+      'The paragraph that makes a conversion taxable is 408A(d)(3), and (B) applies it only to a distribution which is contributed to a Roth IRA maintained for the benefit of such individual; (C) then treats the conversion of an individual retirement plan other than a Roth IRA to a Roth IRA as a distribution to which the paragraph applies, and (A)(i) is what includes the amount in gross income. A Roth IRA is an individual retirement plan designated as a Roth IRA at the time the plan is established. A designated Roth account is a different thing: it is a separate account the employer’s applicable retirement plan establishes for that employee’s designated Roth contributions and the earnings on them. Treas. Reg. 1.408A-4 A-1(b) names the three methods by which an amount can be converted, and each of the three ends in a Roth IRA. The only route by which a designated Roth account takes a taxable rollover is 402A(c)(4), and (B) confines that route to a distribution from the same plan which maintains the account, so a distribution out of an IRA cannot reach one; 408A(c)(5)(A) closes the same question from the receiving side, admitting nothing into a Roth IRA that is not a qualified rollover contribution. The aggregate drain also takes employer traditional balances, for which the 402A(c)(4) in-plan route does exist in law -- but only into the designated Roth account maintained under the same plan, an identity the Plan schema cannot establish, so the destination policy is one rule for every source. The projection reads the vehicle and not only the type: the aggregate destination search keeps each owner’s first account of kind ira in Plan order, so an employer designated Roth account is never credited, and an owner who holds no Roth IRA -- including one whose only Roth is a designated Roth account -- has their slice trimmed and is named in a warning saying the conversion can land only in that person’s own Roth IRA and that opening one would let the share convert. The caller-supplied destination on the named-action path is refused separately, by the conversion-employer-destination-unsupported eligibility reason.',
+    classification: 'settled',
     contraryReading: null,
-    errorDirection: 'bothDirections',
+    errorDirection: null,
     conventionRationale:
-      'The direction is still both, but for a plainer reason than the cross-owner defect this record was split out of, and the limbs that made that one intricate are gone with it: there is no longer a spurious Roth contribution credited to the wrong person, so no 408A(c)(2) ceiling, no 408A(c)(3) phase-out, no section 4973 excise this engine never charges, and no 408A(d)(3)(F) recapture clock started on someone who never converted. What is left runs in two stages over one person. In the conversion year, where that person’s only Roth is a designated Roth account, the authority permits no conversion at all, so the whole inclusion is spurious and tax is OVERSTATED. Afterwards it reverses: dollars that should have stayed in the traditional IRA, to be taxed on a later distribution or as an RMD, instead sit in a Roth account this engine neither taxes on withdrawal nor subjects to an RMD, which UNDERSTATES tax in every later year. One sub-case is neutral and is worth naming so the record is not read as wider than it is: where the person also owns a Roth IRA but the designated Roth account happens to come first in Plan order, the same dollars would have converted lawfully into the Roth IRA, the year’s income is identical, and only the account holding the layer is wrong. What keeps this open rather than fixed is that refusing the destination is not the whole answer. The engine would have to decide whether to fall back to a later Roth IRA the person owns, or to trim the slice and warn as the owner boundary does, and the second changes the amount converted for a household that has a lawful destination available -- a policy that has not been taken. Until it is, nothing from this path is filing-grade for a person whose Roth balances are held inside an employer plan.',
+      'Two choices sit under this record and only one of them is the engine’s. WHICH of an owner’s several Roth IRAs receives the dollars remains a convention -- the first in Plan order, arbitrary between two accounts of the same kind, exactly as the sibling record irc-408-d-3-A-i-conversion-benefits-the-distributee already states. WHETHER an employer designated Roth account may receive them is not a convention at all, because 402A(c)(4)(B) settles it. Where the engine did have to choose is what to do for an owner who holds both kinds with the designated Roth account earlier in Plan order, and it passes over that account rather than refusing the slice. Plan order is insertion order and nothing else in this codebase reads it as a preference, so refusing would let array position decide a five-figure answer: a household holding a Roth 401(k) at index 1 and a Roth IRA at index 3 would convert nothing, while the same household with the two swapped converted in full. Trimming is kept for the owner who genuinely has no lawful destination, and that owner is named. A second reason keeps designated Roth accounts out of the candidate set entirely: a pre-tax employer balance CAN reach a designated Roth account under 402A(c)(4), but only the one maintained under the same plan, and the Plan schema carries no plan-identity link between an employer traditional account and an employer Roth account -- kind ira against kind employer is the whole discriminant -- so the engine cannot establish "such plan" from its data even where the route exists. A Roth IRA is the only destination whose lawfulness this engine can verify. Reading the vehicle also files the conversion layer in the right basis pool: rothPoolKey aggregates an owner’s Roth IRAs under one key and gives each employer Roth account its own, so a layer credited to the wrong account would carry its 408A(d)(3)(F) five-year clock into a pool that later Roth withdrawals never read. What this record does NOT reach is whether the source balance was distributable in the first place; that is registered separately as irc-401-k-2-B-i-employer-plan-conversion-source-not-gated-by-distributability and is still approximated.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -5101,12 +5101,80 @@ const registry = {
       url: 'https://www.ecfr.gov/current/title-26/section-1.408A-4',
       quotedText:
         'An amount can be converted by any of three methods— (1) An amount distributed from a traditional IRA is contributed (rolled over) to a Roth IRA within the 60-day period described in section 408(d)(3)(A)(i); (2) An amount in a traditional IRA is transferred in a trustee-to-trustee transfer from the trustee of the traditional IRA to the trustee of the Roth IRA; or (3) An amount in a traditional IRA is transferred to a Roth IRA maintained by the same trustee. For purposes of sections 408 and 408A, redesignating a traditional IRA as a Roth IRA is treated as a transfer of the entire account balance from a traditional IRA to a Roth IRA.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408A(c)(5)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408A&num=0&edition=prelim',
+      quotedText:
+        'No rollover contribution may be made to a Roth IRA unless it is a qualified rollover contribution.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 402A(c)(3)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim',
+      quotedText:
+        'A rollover contribution of any payment or distribution from a designated Roth account which is otherwise allowable under this chapter may be made only if the contribution is to- (i) another designated Roth account of the individual from whose account the payment or distribution was made, or (ii) a Roth IRA of such individual.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Notice 2010-84, A-1',
+      url: 'https://www.irs.gov/irb/2010-51_IRB',
+      quotedText:
+        'An “in-plan Roth rollover” is a distribution from an individual’s plan account, other than a designated Roth account, that is rolled over to the individual’s designated Roth account in the same plan, pursuant to new § 402A(c)(4) of the Code.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-04',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/strategies/accountEligibility.ts',
+    ],
+  },
+
+  // --- Registered 2026-08-05 ------------------------------------------------
+  //
+  // Found while settling the conversion DESTINATION question above, and kept
+  // apart from it on purpose. That record now says the engine picks a lawful
+  // account to convert INTO; this one says it does not ask whether the dollars
+  // could have come OUT. Folding the second into the first would have let a
+  // settled record carry a claim it does not support.
+
+  'irc-401-k-2-B-i-employer-plan-conversion-source-not-gated-by-distributability': {
+    title: 'A pre-tax employer plan balance is treated as convertible without asking whether it may be distributed',
+    statement:
+      'A qualified cash or deferred arrangement must provide that amounts attributable to the employee’s elective contributions are not distributable earlier than one of a closed list of events: severance from employment, death or disability, a 401(k)(10) event, the attainment of age 59½ in a profit-sharing or stock bonus plan, hardship, and three narrower cases. A conversion out of an employer plan is a qualified rollover contribution only under 408A(e)(1)(B)(ii), which admits it only if the rollover meets the requirements of section 402(c), 403(b)(8) or 457(e)(16) -- every one of which operates on a distribution. A balance the plan may not distribute therefore cannot be converted at all. Not modelled: isConvertibleToRoth admits every owned traditional account, employer plans included, and applies no distributability gate of any kind. The aggregate conversion path both weights an owner’s slice by that balance and drains it, so a participant who has neither separated from service nor reached 59½ is modelled converting a 401(k) balance they cannot move.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'Stated as capacity first, because that is the part a planner acts on: the engine OVERSTATES how much an owner can convert, and it will size and execute conversions a participant is not permitted to make. Against the taxpayer’s tax exposure, which is what this field measures, the sign runs the same two-stage course as any spurious conversion. In the year of the modelled conversion the inclusion is not one the participant could have incurred, so tax is OVERSTATED. Afterwards it reverses: dollars that had to stay in the plan, to be taxed on a later distribution or as an RMD, instead sit in a Roth this engine neither taxes on withdrawal nor subjects to an RMD, which UNDERSTATES tax in every later year. Two limits on how far the record reaches. The restriction quoted below governs elective deferrals in a cash or deferred arrangement; 403(b) and governmental 457(b) plans carry their own distribution restrictions and the Plan schema cannot tell any of the three apart, since kind employer is the only discriminant a traditional account carries. And the gate is not absolute even inside 401(k): a plan may permit in-service distribution at 59½, and many do, so the engine and the statute agree for every separated or post-59½ participant. What the engine cannot do is tell them apart -- it holds no separation-from-service fact and no plan-terms fact, and a projection year’s retirement age is a plan assumption rather than an established event. Gating on the assumed retirement age was considered and not taken here: it would refuse conversions for a participant whose plan allows them and would still admit conversions for one whose plan does not, trading a knowable overstatement for an unknowable mixture.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 401(k)(2)(B)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim',
+      quotedText:
+        'under which amounts held by the trust which are attributable to employer contributions made pursuant to the employee\'s election- (i) may not be distributable to participants or other beneficiaries earlier than- (I) severance from employment, death, or disability, (II) an event described in paragraph (10), (III) in the case of a profit-sharing or stock bonus plan, the attainment of age 59½, (IV) subject to the provisions of paragraph (14), upon hardship of the employee, (V) in the case of a qualified reservist distribution (as defined in section 72(t)(2)(G)(iii)), the date on which a period referred to in subclause (III) of such section begins, (VI) except as may be otherwise provided by regulations, with respect to amounts invested in a lifetime income investment (as defined in subsection (a)(38)(B)(ii)), the date that is 90 days prior to the date that such lifetime income investment may no longer be held as an investment option under the arrangement, or (VII) as provided in section 401(a)(39),',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408A(e)(1)(B)(ii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408A&num=0&edition=prelim',
+      quotedText:
+        'The term "qualified rollover contribution" means a rollover contribution- ... (B) from an eligible retirement plan, but only if- ... (ii) in the case of any eligible retirement plan (as defined in section 402(c)(8)(B) other than clauses (i) and (ii) thereof), such rollover contribution meets the requirements of section 402(c), 403(b)(8), or 457(e)(16), as applicable',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Notice 2010-84, A-2',
+      url: 'https://www.irs.gov/irb/2010-51_IRB',
+      quotedText:
+        'However, an amount is not eligible for an in-plan Roth rollover unless it satisfies the rules for distribution under the Code and is an eligible rollover distribution as defined in § 402(c)(4).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/strategies/accountEligibility.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
   },
 
   // --- Registered 2026-08-04: the charitable and section 68 cluster --------
