@@ -154,9 +154,10 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
     // Verified 2026-08-05. The mirror image of the North Dakota host handling:
     // azleg serves both `azleg.gov` and `www.azleg.gov` directly with no
     // redirect either way, and `www.azdor.gov` answers 301 to the BARE
-    // `azdor.gov`, which is the host every AZDOR document URL carries. Both are
-    // recorded in the spelling the citations use; the www-stripping in
-    // `hostAndPublisherOf` covers the azleg pair either way.
+    // `azdor.gov`, which is the host every AZDOR document URL carries. The
+    // entries below are the bare canonical publishers only; a `www.` citation
+    // still matches because `hostAndPublisherOf` strips the prefix, so no
+    // `www.` variant is (or should be) listed here.
     //
     // The trap on azleg is not the host but the path. A.R.S. 43-1011 exists in
     // two published versions, and /ars/43/01011.htm — the URL any reasonable
