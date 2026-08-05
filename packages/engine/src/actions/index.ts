@@ -245,6 +245,7 @@ export {
 export {
   ledgerCentTotalToPlanDollars,
   ledgerCentsToPlanDollars,
+  planDollarsToFlooredLedgerCents,
   planDollarsToLedgerCents,
   signedLedgerCentTotalToPlanDollars,
 } from './planBalanceAdapter.js'

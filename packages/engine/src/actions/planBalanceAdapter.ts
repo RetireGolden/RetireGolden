@@ -54,6 +54,35 @@ export function planDollarsToLedgerCents(dollars: number): UsdCents {
 }
 
 /**
+ * Adapts a Plan balance to the whole cents that balance can actually fund.
+ *
+ * The difference from `planDollarsToLedgerCents` is the rounding direction, and
+ * it matters exactly where a snapshot is used as a spending capacity rather
+ * than as a measurement. Half-up rounding can report up to half a cent more
+ * than the account holds, and an executor that sizes a movement against that
+ * figure will authorise a cent the balance cannot cover; the ledger then either
+ * overdraws or has to break the exact before/amount/after chain to avoid it.
+ * Truncating cannot: the result is always at or below the live figure, so a
+ * movement sized against it is always fundable.
+ *
+ * The residue this leaves is a fraction of a cent that the exact-cent ledger
+ * has no way to express, and it stays in the account rather than being
+ * distributed or silently dropped. A drained source therefore closes at that
+ * residue rather than at a hard zero.
+ */
+export function planDollarsToFlooredLedgerCents(dollars: number): UsdCents {
+  const rounded = planDollarsToRoundedCentsBigInt(dollars)
+  // `planDollarsToRoundedCentsBigInt` rounds half-up over the exact decimal
+  // spelling, so it overshoots by exactly one cent whenever the truncated
+  // value differs, and never by more.
+  const cents = Number(rounded) / 100 > dollars ? rounded - 1n : rounded
+  if (cents > MAX_SAFE_CENTS) {
+    throw new RangeError('Plan dollar balance exceeds the exact-cent safe-integer range')
+  }
+  return asUsdCents(Number(cents))
+}
+
+/**
  * Converts validated ledger cents back to Plan dollars without silently
  * crossing a binary-number precision boundary.
  */

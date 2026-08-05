@@ -3,6 +3,7 @@ import { asUsdCents } from './money.js'
 import {
   ledgerCentTotalToPlanDollars,
   ledgerCentsToPlanDollars,
+  planDollarsToFlooredLedgerCents,
   planDollarsToLedgerCents,
   signedLedgerCentTotalToPlanDollars,
 } from './planBalanceAdapter.js'
@@ -62,5 +63,41 @@ describe('Plan dollar / exact-cent adapter', () => {
     expect(() =>
       signedLedgerCentTotalToPlanDollars(-18_014_398_509_481_979n),
     ).toThrow(RangeError)
+  })
+
+  it('truncates a spending capacity where the measurement rounds half-up', () => {
+    // The pair that matters. A balance whose third decimal is at or above five
+    // rounds UP as a measurement, which is half a cent the account does not
+    // hold; as a capacity it has to truncate, or a movement sized against it
+    // cannot be funded.
+    expect(planDollarsToLedgerCents(23_945.147679)).toBe(2_394_515)
+    expect(planDollarsToFlooredLedgerCents(23_945.147679)).toBe(2_394_514)
+    expect(ledgerCentsToPlanDollars(planDollarsToFlooredLedgerCents(23_945.147679)))
+      .toBeLessThanOrEqual(23_945.147679)
+  })
+
+  it('leaves an exact whole-cent balance alone', () => {
+    // The boundary the truncation must not move: an account already on the
+    // cent grid can fund every cent of itself, so both directions agree and a
+    // gift can drain it to a hard zero.
+    expect(planDollarsToFlooredLedgerCents(23_945.14)).toBe(2_394_514)
+    expect(planDollarsToFlooredLedgerCents(0)).toBe(0)
+    expect(ledgerCentsToPlanDollars(planDollarsToFlooredLedgerCents(23_945.14)))
+      .toBe(23_945.14)
+  })
+
+  it('never reports more than the balance holds, at any scale', () => {
+    for (const dollars of [
+      0.004, 0.005, 0.009, 1.005, 99.999, 1_234.567, 1_000_000.005,
+    ]) {
+      const capacity = ledgerCentsToPlanDollars(planDollarsToFlooredLedgerCents(dollars))
+      expect(capacity).toBeLessThanOrEqual(dollars)
+      expect(dollars - capacity).toBeLessThan(0.01)
+    }
+  })
+
+  it('rejects the same inputs the rounding conversion rejects', () => {
+    expect(() => planDollarsToFlooredLedgerCents(-1)).toThrow(RangeError)
+    expect(() => planDollarsToFlooredLedgerCents(Number.NaN)).toThrow(RangeError)
   })
 })

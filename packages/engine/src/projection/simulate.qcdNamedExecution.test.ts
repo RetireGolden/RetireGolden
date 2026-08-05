@@ -309,34 +309,105 @@ describe('a named QCD moves the first charitable dollars', () => {
 })
 
 describe('a named QCD the source cannot cover', () => {
+  /**
+   * A $40,000 gift against a $25,000 IRA. The year's forced distribution comes
+   * out first and leaves $23,945.147679…, which is the point: the balance the
+   * gift drains is not a whole number of cents.
+   */
+  const DRAINED_PLAN = {
+    id: 'qcd-named-execution-trimmed',
+    accounts: [ira('ira', 25_000), cashAccount('cash', 200_000)],
+    requests: [namedQcd({
+      requestedAmount: asPositiveUsdCents(40_000 * 100),
+      allocation: {
+        allocationId: asAllocationId('qcd-allocation'),
+        sourceAccountId: asAccountId('ira'),
+        requestedAmount: asPositiveUsdCents(40_000 * 100),
+      },
+    })],
+  } as const
+
   it('executes to the available balance and says the request was trimmed', () => {
-    const gift = 40_000
-    const year = run(donorPlan({
-      id: 'qcd-named-execution-trimmed',
-      accounts: [ira('ira', 25_000), cashAccount('cash', 200_000)],
-      requests: [namedQcd({
-        requestedAmount: asPositiveUsdCents(gift * 100),
-        allocation: {
-          allocationId: asAllocationId('qcd-allocation'),
-          sourceAccountId: asAccountId('ira'),
-          requestedAmount: asPositiveUsdCents(gift * 100),
-        },
-      })],
-    }))
+    const year = run(donorPlan(DRAINED_PLAN))
     const record = year.retirementActionPublication?.records[0]
 
-    // The RMD comes out first, so the balance the gift can reach is what is
-    // left of the $25,000 IRA once the year's forced distribution has gone.
-    expect(year.balances.ira).toBeCloseTo(0, 1)
-    expect(year.qcd).toBeGreaterThan(0)
-    expect(year.qcd).toBeLessThan(gift)
+    // Exact, because the figure is exact: the gift takes every whole cent the
+    // account can fund and not one it cannot.
+    expect(year.qcd).toBe(23_945.14)
     expect(record).toMatchObject({
       outcome: 'partial',
       readiness: 'actionable',
       executedDate: `${TAX_YEAR}-08-01`,
+      executedAmount: 2_394_514,
     })
     expect(record?.reasons.map((reason) => reason.code)).toEqual(['qcd-balance-trimmed'])
-    expect(record?.executedAmount).toBe(Math.round(year.qcd * 100))
+
+    // The defect this replaces: the source snapshot used to round half-up, so
+    // a draining gift could be authorised a cent the balance did not hold and
+    // the account closed BELOW zero -- permanently, and only after the dollars
+    // had moved. The bound is one-sided and tight. What is left is the
+    // sub-cent residue the exact-cent ledger cannot express, which was in the
+    // account before the gift and stays in it after.
+    expect(year.balances.ira).toBeGreaterThanOrEqual(0)
+    expect(year.balances.ira).toBeLessThan(0.01)
+    expect(year.balances.ira).toBeCloseTo(0.007679, 6)
+
+    // And the year's evidence closes over it. Before the fix this refused
+    // `sourceAmountInvalid` after the movement had already happened, which
+    // silently rolled the exact-basis settlement back for the whole
+    // projection.
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(
+      validatePlan(donorPlan(DRAINED_PLAN)), TAX_YEAR, project(donorPlan(DRAINED_PLAN)),
+    ).status).toBe('ownedNonRothIraRuntimeSourceSeriesComplete')
+  })
+
+  it('never carries a negative balance into a later year', () => {
+    // The overdraw was permanent: nothing downstream rebuilds a balance, so a
+    // negative cent survived every remaining year of the projection. Three
+    // years, one assertion each way.
+    const years = project(donorPlan(DRAINED_PLAN), TAX_YEAR + 2)
+
+    expect(years.map((year) => year.year)).toEqual([TAX_YEAR, TAX_YEAR + 1, TAX_YEAR + 2])
+    for (const year of years) {
+      expect(year.balances.ira).toBeGreaterThanOrEqual(0)
+      expect(year.balances.ira).toBeLessThan(0.01)
+    }
+    expect(years[0]?.qcd).toBe(23_945.14)
+    expect(years[1]?.qcd).toBe(0)
+    expect(years[2]?.qcd).toBe(0)
+  })
+
+  it('leaves the later years blocked only by the sub-cent balance itself', () => {
+    // Honest bookkeeping about what the fix does and does not reach. 2027 and
+    // 2028 still refuse, because a sub-cent IRA takes a sub-cent required
+    // distribution and the journal will not accept an occurrence that rounds
+    // to zero cents. That is a property of any owned IRA left below a cent by
+    // any means, not of the gift: the control below reproduces it on a
+    // household with no QCD at all, starting from the same residual balance.
+    const gifted = project(donorPlan(DRAINED_PLAN), TAX_YEAR + 1)
+    const residual = gifted[0]?.balances.ira ?? 0
+    const control = donorPlan({
+      id: 'qcd-named-execution-subcent-control',
+      accounts: [ira('ira', residual), cashAccount('cash', 200_000)],
+      requests: [],
+    })
+    const controlYear = project(control)[0]!
+
+    const issueKinds = (plan: Plan, years: YearResult[], taxYear: number) => {
+      const result = validateOwnedNonRothIraRuntimeSourceSeries(
+        validatePlan(plan), taxYear, years.filter((year) => year.year === taxYear),
+      )
+      return result.status === 'ownedNonRothIraRuntimeSourceSeriesBlocked'
+        ? result.issues.map((issue) => issue.kind)
+        : []
+    }
+
+    expect(controlYear.qcd).toBe(0)
+    expect(issueKinds(control, [controlYear], TAX_YEAR)).toEqual(['sourceContractInvalid'])
+    expect(issueKinds(donorPlan(DRAINED_PLAN), gifted, TAX_YEAR + 1))
+      .toEqual(['sourceContractInvalid'])
+    // The gift year itself is clean, which is the whole difference.
+    expect(issueKinds(donorPlan(DRAINED_PLAN), gifted, TAX_YEAR)).toEqual([])
   })
 })
 

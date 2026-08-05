@@ -92,6 +92,7 @@ import {
   ledgerCentsToPlanDollars,
   ordinaryWithdrawalPublicationEligibility,
   ordinaryWithdrawalPublicationSource,
+  planDollarsToFlooredLedgerCents,
   planDollarsToLedgerCents,
   publishAnnualRetirementActions,
   rothConversionPublicationEligibility,
@@ -3345,15 +3346,25 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      * The share of that gift that satisfied a still-unmet owned-IRA RMD, and
      * the income reduction riding on it.
      *
-     * Both are normally zero and are wired anyway, because the case they cover
-     * is real: this ledger distributes the whole RMD in cash before the gift is
-     * sized, so a gift only meets an RMD the owner's IRAs could not. Where that
-     * happens the RMD had already counted the dollars as a cash inflow and as
-     * income, so cash gives them back and income drops by their taxable share --
-     * the same split, and the same two seams, the aggregate arm uses. Dollars
-     * taken beyond the RMD never entered either, so offsetting them would be a
-     * phantom deduction; the exclusion shows up instead as a distribution that
-     * produced no income at all.
+     * Both are structurally zero today, not merely usually zero, and the proof
+     * is worth writing down because it is also the warning. `rmdSatisfiedByAction`
+     * is `min(executed, rmdRemainingBefore)`, and `rmdRemainingBefore` is this
+     * owner's unmet IRA requirement after the sweep above -- which can only be
+     * positive when every one of the owner's aggregated IRAs is empty. An empty
+     * IRA is also an empty gift source, so `executed` is zero whenever
+     * `rmdRemainingBefore` is not, and the product is zero either way. Dollars
+     * taken beyond the RMD never entered income or cash, so offsetting them
+     * would be a phantom deduction; the exclusion shows up instead as a
+     * distribution that produced no income at all.
+     *
+     * The seams are wired anyway because the RMD-reserve slice named in
+     * `treas-reg-1-408-8-g-projection-named-qcd-beyond-rmd` makes them
+     * reachable. When it lands, DO NOT trust the two lines below: a reserve
+     * holds gift dollars out of the forced distribution, so those dollars never
+     * become cash and never enter income in the first place, and giving them
+     * back here would subtract them a second time. The give-back arithmetic has
+     * to be re-derived against whatever the reserve actually leaves in
+     * `rmdTotal` and `rmdNontaxable`, not carried forward from this shape.
      */
     let namedQcdRmdSatisfied = 0
     let namedQcdIncomeOffset = 0
@@ -3363,11 +3374,20 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         String(request.donorPersonId)))].sort(compareUtf16CodeUnits)
       const qcdSourceIds = new Set(qcdRequests.map((request) =>
         String(request.allocation.sourceAccountId)))
+      // Truncated, not rounded. This snapshot is a spending capacity: the
+      // executor sizes the gift as `min(requested, openingBalance)`, and the
+      // commit below subtracts the result from the live balance, which the
+      // runtime journal then validates as an exact before/amount/after chain.
+      // Half-up rounding can report up to half a cent more than the account
+      // holds, so a gift that drains its source would authorise a cent that is
+      // not there and drive the balance negative -- permanently, since nothing
+      // downstream rebuilds it. Truncating makes the overdraw unreachable
+      // instead of detecting it afterwards.
       const openingBalances = balances
         .filter((state) => qcdSourceIds.has(state.account.id))
         .map((state) => ({
           accountId: asAccountId(state.account.id),
-          openingBalance: planDollarsToLedgerCents(state.balance),
+          openingBalance: planDollarsToFlooredLedgerCents(state.balance),
         }))
       // The owner's Treas. Reg. 1.408-8(e)(1)(i) sum and how much of it the
       // owner's own IRAs have already distributed by the time the gift is
@@ -3528,6 +3548,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             throw new Error('Committed QCD source left the balance ledger')
           }
           const amount = ledgerCentsToPlanDollars(entry.executedAmount)
+          if (amount > state.balance) {
+            // Unreachable while the opening snapshot above is truncated, and
+            // asserted rather than assumed because the consequence of it being
+            // wrong is a negative balance that survives every later year and
+            // silently rolls back the year's exact-basis settlement.
+            throw new Error('Committed QCD exceeds its live source balance')
+          }
           const kind = 'namedQcd' as const
           // Four members. A gift names no destination -- it leaves the
           // household -- so the action and the allocation are the only two
