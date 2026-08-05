@@ -5,6 +5,7 @@ import {
   TAX_RULE_REGISTRY,
   taxRuleIds,
   taxRulesDueForVerification,
+  type TaxRuleAuthorityKind,
   type TaxRuleId,
   type TaxRuleJurisdiction,
   type TaxRuleVolatility,
@@ -104,11 +105,33 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
   // rest on 61 Pa. Code § 101.6 and § 103.13, which carry the operative language
   // the Guide restates, are the Department's own regulations rather than its
   // summary of them, and have a `kind` this registry can label honestly —
-  // `regulation`. `TaxRuleAuthorityKind` has no member for a state revenue
-  // department's guidance, and inventing one by writing `irsPublication` over a
-  // pa.gov URL would be a worse defect than the one the publisher tier prevents.
+  // `regulation`.
+  //
+  // `TaxRuleAuthorityKind` has since gained `stateAgencyPublication`, and that
+  // does NOT reopen the Pennsylvania question. The kind names what a citation
+  // IS; this table names which publisher it may come FROM, and the two guards
+  // are independent. Pennsylvania still has a regulation carrying the operative
+  // language, so it still has no need to cite a department summary, and the
+  // reason `pa.gov` stays out is unchanged: it is the whole executive branch.
+  // What the new kind changed is the states where no such regulation exists —
+  // see the SD, TN and WY entries below, each of which had to admit a publisher
+  // deliberately because the negative it registers has no code section to quote.
+  // Added 2026-08-05 with the remaining no-individual-income-tax states. Each
+  // host below was fetched and confirmed to serve the text the record quotes,
+  // which for these states is not a formality: the claim being registered is an
+  // absence, so the publisher IS the authority rather than a convenient copy of
+  // a statute that exists elsewhere.
+  AK: [
+    // Alaska Legislature, Alaska Statutes. Chapter 43.20 text is served only by
+    // the print-fetch endpoint; the practitioner URL returns a shell.
+    'akleg.gov',
+  ],
   FL: [
     'flsenate.gov', // Florida Senate: the Constitution and the Florida Statutes
+    // Office of Economic and Demographic Research — the Legislature's own
+    // research office, and the publisher of the Florida Tax Handbook. Its own
+    // host rather than a state portal: `edr.state.fl.us` names one office.
+    'edr.state.fl.us',
   ],
   IA: [
     'legis.iowa.gov', // Iowa Legislature, Iowa Code
@@ -155,11 +178,67 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
   SC: [
     'scstatehouse.gov', // South Carolina Legislature, Code of Laws
   ],
+  SD: [
+    // South Dakota is the state where this table had to be built from what
+    // exists rather than from what one would want. No .gov host serves South
+    // Dakota Codified Laws to a non-browser client at all — every
+    // sdlegislature.gov /Statutes/ path returns a Vue shell — so there is no
+    // code publisher to admit, and the SD record rests on the two below.
+    'dor.sd.gov', // Department of Revenue
+    'sdsos.gov', // Secretary of State: the South Dakota Constitution
+  ],
+  TN: [
+    // Secretary of State's publications server. A .com name for a state
+    // publisher is unusual enough to say out loud: this is where Tennessee
+    // publishes its constitution and its public acts, and sos.tn.gov links out
+    // to it. It is admitted as the Secretary of State, not as a commercial
+    // host, and as the `publications.` subdomain specifically: this table
+    // strips only a leading `www.`, so the bare name would admit nothing and
+    // the apex would admit more than was checked.
+    'publications.tnsosfiles.com',
+    // The Department of Revenue, and the one entry in this table that admits
+    // more than its record needs. Tennessee's Hall-tax repeal has no other
+    // citable publisher: Tennessee Code Unannotated is published through
+    // LexisNexis, which is not a state host at all, and the two enrolled acts
+    // that produced the repeal are scans whose OCR cannot be quoted. So the
+    // department's own statement is the only usable authority, and it lives at
+    // www.tn.gov/revenue/... — which means admitting `tn.gov`, the whole
+    // executive branch, exactly as the Pennsylvania note above refused to do
+    // for `pa.gov`.
+    //
+    // The difference is that Pennsylvania had an alternative and Tennessee does
+    // not. 61 Pa. Code carries the operative language the PA Guide restates;
+    // there is no Tennessee equivalent, because the thing being registered is a
+    // repeal and a repealed chapter has no text. Admitting `tn.gov` is a real
+    // cost recorded here rather than a line quietly crossed: it means a future
+    // Tennessee record could be sourced to any Tennessee agency without this
+    // table objecting, and reviewers of such a record should say so.
+    'tn.gov',
+  ],
   TX: [
-    'statutes.capitol.texas.gov', // Texas Legislative Council, Constitution and Statutes
+    // Texas Legislative Council, which publishes the constitution as a dated
+    // PDF. This replaced `statutes.capitol.texas.gov` on 2026-08-05: that host
+    // is now a JavaScript application serving a 1,354-character shell to
+    // anything that is not a browser, so a citation to it could never be
+    // verified. It is REMOVED rather than left alongside, because a host in
+    // this table reads as "checked and admissible" and that one is checked and
+    // unusable.
+    'tlc.texas.gov',
+    // Texas Legislature Online, which serves enrolled bill and resolution text
+    // as plain HTML. Cited where the compilation's page furniture falls inside
+    // a provision — see sec. 24-b(b).
+    'capitol.texas.gov',
   ],
   WV: [
     'code.wvlegislature.gov', // West Virginia Legislature, West Virginia Code
+  ],
+  WY: [
+    'wyoleg.gov', // Wyoming Legislature, Wyoming Statutes (title 39)
+    // Secretary of State, publisher of the Wyoming Constitution. The Department
+    // of Revenue cannot serve here: revenue.wyo.gov is a Google Sites page
+    // whose reports are Google Drive links, so Wyoming's tax agency publishes
+    // nothing at a citable wyo.gov URL.
+    'sos.wyo.gov',
   ],
 }
 
@@ -183,6 +262,49 @@ const SECONDARY_AGGREGATORS: readonly string[] = [
 interface CitableRule {
   readonly jurisdiction: TaxRuleJurisdiction
   readonly authority: readonly { readonly citation: string, readonly url: string }[]
+}
+
+/**
+ * The part of a record the authority-kind guard reads. Separate from
+ * `CitableRule` for the same reason that one is narrower than `TaxRuleRecord`:
+ * the guard has to be exercisable against a synthetic record, and a synthetic
+ * one written for the publisher tier has no business also carrying a `kind`.
+ */
+interface KindedRule {
+  readonly jurisdiction: TaxRuleJurisdiction
+  readonly authority: readonly { readonly citation: string, readonly kind: TaxRuleAuthorityKind }[]
+}
+
+/**
+ * Authority kinds a rule of the given jurisdiction may NOT use.
+ *
+ * One entry today, and the mechanism is deliberately the same shape as the
+ * publisher tier rather than a bare `if`. `stateAgencyPublication` names a state
+ * revenue department's or state legislature's own statement of its state's law.
+ * That is authority for the state that published it and for nothing else, so a
+ * federal record carrying it would be an assertion about the Internal Revenue
+ * Code resting on a body with no power over it — the same erosion the publisher
+ * tier prevents one layer down, and one the URL check cannot catch on its own.
+ * A federal record could cite an admissible federal URL and still label it a
+ * state agency statement, or a state record could be flipped to `federal` while
+ * its citations were left alone.
+ */
+const JURISDICTION_INADMISSIBLE_KINDS: readonly TaxRuleAuthorityKind[] = ['stateAgencyPublication']
+
+/** Authorities whose kind their rule's jurisdiction cannot use. */
+function offJurisdictionAuthorityKinds(
+  entries: readonly (readonly [string, KindedRule])[],
+): readonly string[] {
+  const offKind: string[] = []
+  for (const [ruleId, rule] of entries) {
+    if (rule.jurisdiction !== 'federal') continue
+    for (const authority of rule.authority) {
+      if (JURISDICTION_INADMISSIBLE_KINDS.includes(authority.kind)) {
+        offKind.push(`${ruleId}:${authority.citation}:${authority.kind}`)
+      }
+    }
+  }
+  return offKind
 }
 
 function admissiblePublishers(jurisdiction: TaxRuleJurisdiction): readonly string[] {
@@ -299,6 +421,9 @@ function stateRulesMissingPackImplementation(
 }
 
 const registryEntries: readonly (readonly [string, CitableRule])[] =
+  taxRuleIds.map((ruleId) => [ruleId, TAX_RULE_REGISTRY[ruleId]] as const)
+
+const kindedEntries: readonly (readonly [string, KindedRule])[] =
   taxRuleIds.map((ruleId) => [ruleId, TAX_RULE_REGISTRY[ruleId]] as const)
 
 const implementationEntries: readonly (readonly [string, ImplementedRule])[] =
@@ -472,6 +597,44 @@ describe('tax rule registry conformance', () => {
       jurisdiction: 'state:CA',
       authority: [{ citation: 'Cal. Rev. & Tax. Code 17041', url: 'https://www.ftb.ca.gov/' }],
     }]])).toEqual(['ca-fictional:Cal. Rev. & Tax. Code 17041:www.ftb.ca.gov'])
+  })
+
+  it('refuses a state agency statement as authority for a federal rule', () => {
+    // The kind half of the same asymmetry the publisher tier enforces on hosts.
+    // A state revenue department may state what its own state levies; it cannot
+    // state what the Internal Revenue Code requires, and a record that labelled
+    // a citation `stateAgencyPublication` under `jurisdiction: 'federal'` would
+    // be claiming exactly that. Asserted over the registry AND against a
+    // synthetic pair, so the guard is provably live rather than vacuously
+    // passing because no record happens to be shaped that way yet.
+    expect(offJurisdictionAuthorityKinds(kindedEntries)).toEqual([])
+    expect(offJurisdictionAuthorityKinds([['irc-fictional-federal', {
+      jurisdiction: 'federal',
+      authority: [{ citation: 'S.D. Dept. of Revenue, Taxes', kind: 'stateAgencyPublication' }],
+    }]])).toEqual(['irc-fictional-federal:S.D. Dept. of Revenue, Taxes:stateAgencyPublication'])
+  })
+
+  it('admits a state agency statement for a rule of that state', () => {
+    // The positive direction. The kind exists because a state that levies
+    // nothing has no operative language to quote, so the department's own
+    // sentence is the only affirmative text the negative can rest on.
+    expect(offJurisdictionAuthorityKinds([['sd-fictional', {
+      jurisdiction: 'state:SD',
+      authority: [{ citation: 'S.D. Dept. of Revenue, Taxes', kind: 'stateAgencyPublication' }],
+    }]])).toEqual([])
+    // ...and every other kind stays admissible on a federal rule, so the guard
+    // is a refusal of one member rather than a filter on the federal tier.
+    expect(offJurisdictionAuthorityKinds([['irc-fictional-federal', {
+      jurisdiction: 'federal',
+      authority: [
+        { citation: 'IRC 1', kind: 'statute' },
+        { citation: '26 CFR 1.401-1', kind: 'regulation' },
+        { citation: 'IRS Publication 590-B', kind: 'irsPublication' },
+        { citation: '2025 Form 1040 instructions', kind: 'formInstruction' },
+        { citation: 'IRS Notice 2025-1', kind: 'irsNotice' },
+        { citation: 'H.R. 1, 119th Cong.', kind: 'legislativeHistory' },
+      ],
+    }]])).toEqual([])
   })
 
   it('lets a state rule rest on the federal law its state code incorporates', () => {

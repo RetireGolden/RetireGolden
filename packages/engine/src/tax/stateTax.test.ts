@@ -297,6 +297,57 @@ describe('createStateTaxCalculator', () => {
   })
 })
 
+describe('a caller-supplied local rate cannot reach a state that levies no income tax', () => {
+  // One input, two states, and the only thing that differs is whether the state
+  // has an income tax at all. That is what makes this discriminating rather
+  // than a restatement of "no-tax states are zero": a gate that had simply been
+  // deleted would fail the Kentucky half, and a gate that keyed on something
+  // other than `hasIncomeTax` would fail the Wyoming half.
+  //
+  // `localRatePct` is the caller's, never the pack's — it arrives from a plan
+  // assumption or a relocation candidate's `localRatePct`. So this is the one
+  // route by which a state whose law forbids a local income tax could be shown
+  // charging one, and the two states below are the two whose law says so most
+  // plainly: Wyo. Stat. 39-12-101 preempts the field from every county, city
+  // and town, and Tenn. Const. art. II § 28 bars a local tax on earned income
+  // in the same breath as a state one.
+  const SCENARIO = { ordinaryIncome: 120_000, agesAlive: [70] }
+  const LOCAL_PCT = 3
+
+  it('charges nothing local in Wyoming or Tennessee', () => {
+    for (const code of ['WY', 'TN']) {
+      const detail = computeStateTaxDetail(pack(code), input(SCENARIO), { localRatePct: LOCAL_PCT })
+      expect(detail.localTax, code).toBe(0)
+      expect(detail.totalTax, code).toBe(0)
+    }
+  })
+
+  it('charges the same rate in a state that does levy an income tax', () => {
+    // Kentucky's flat 3.5% over a $3,360 deduction, so the local base is a real
+    // number rather than zero and the assertion has something to bite on.
+    const ky = computeStateTaxDetail(pack('KY'), input(SCENARIO), { localRatePct: LOCAL_PCT })
+    expect(ky.taxableIncome).toBeGreaterThan(0)
+    expect(ky.localTax).toBeCloseTo(ky.taxableIncome * (LOCAL_PCT / 100), 6)
+    expect(ky.totalTax).toBeCloseTo(ky.stateTax + ky.localTax, 6)
+  })
+
+  // What these two do NOT prove, said here rather than left for someone to
+  // discover: they do not prove the gate on the local line is what produces the
+  // Wyoming zero. `computeStateTaxableIncome` already returns 0 for a state with
+  // `hasIncomeTax: false` before it reads any other field, so the local
+  // multiplication was zero either way and both assertions pass with the gate
+  // removed. Nothing in this file can distinguish them, because there is no way
+  // through the public surface to hand the calculator a non-zero base for a
+  // state that has no income tax — which is the point, and is why the gate is
+  // defensive rather than a fix.
+  //
+  // They are still worth having. What they pin is the claim a user is shown:
+  // that a Wyoming plan carrying a local rate is charged nothing, and that the
+  // same rate on the same income is charged in a state that levies one. That
+  // claim is the registered one, and it would break long before anybody noticed
+  // which line had stopped enforcing it.
+})
+
 // The projection runs in nominal dollars, so a 2046 withdrawal arrives inflated.
 // A state pack tagged `standardDeductionConformity: 'federal'` carries no state
 // standard deduction at all: it carries a copy of the FEDERAL one. IRC

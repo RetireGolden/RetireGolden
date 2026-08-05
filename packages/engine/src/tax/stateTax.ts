@@ -56,7 +56,12 @@ export interface ComputeStateTaxOptions {
    * slice against annual thresholds would understate it.
    */
   taxableSocialSecurityOverride?: number
-  /** Optional flat local rate (percent) applied to computed state taxable income. */
+  /**
+   * Optional flat local rate (percent) applied to computed state taxable
+   * income — and only in a state that levies an income tax. A no-income-tax
+   * state cannot acquire one through a caller parameter; see the gate in
+   * `computeStateTaxDetail`.
+   */
   localRatePct?: number
 }
 
@@ -145,7 +150,28 @@ export function computeStateTaxDetail(
   const taxableIncome = computeStateTaxableIncome(params, input, opts)
   const taxStatus = taxParameterFilingStatus(input.filingStatus)
   const stateTax = params.hasIncomeTax ? bracketTax(params.brackets[taxStatus], taxableIncome) : 0
-  const localTax = taxableIncome * (Math.max(0, opts.localRatePct ?? 0) / 100)
+  // The local rate is gated on the same flag as the state rate, and stated
+  // rather than inferred. `localRatePct` is supplied by the caller — a
+  // relocation candidate, a plan assumption — not by the pack, so it is the one
+  // route by which a state that levies no income tax could be charged one.
+  //
+  // What this does NOT do is change a number today, and saying otherwise would
+  // be the kind of claim this engine's records exist to prevent.
+  // `computeStateTaxableIncome` returns 0 for a state with `hasIncomeTax: false`
+  // before it reads any other field, so the product below was already zero for
+  // every reachable input; no shipped case moves. What the gate adds is that
+  // the zero is now structural instead of incidental. A later change to the
+  // base — a state with no income tax but a nonzero base for some other reason,
+  // which is exactly the shape Washington's capital-gains tax would take if it
+  // were ever modelled — would otherwise have leaked a local income tax into a
+  // state whose law forbids one, with nothing in the file to notice.
+  //
+  // That forbidding is registered, not assumed: Wyo. Stat. 39-12-101 preempts
+  // the field from every county, city and town, and Tenn. Const. art. II § 28
+  // bars a LOCAL tax on earned income as flatly as a state one. See
+  // wy-stat-39-12-101-no-state-or-local-income-tax and
+  // tn-const-2-28-earned-income-tax-prohibited.
+  const localTax = params.hasIncomeTax ? taxableIncome * (Math.max(0, opts.localRatePct ?? 0) / 100) : 0
   return { taxableIncome, stateTax, localTax, totalTax: stateTax + localTax }
 }
 

@@ -34,7 +34,7 @@ right law, having quoted the wrong part of it — or the right part, and not eno
 | `mrs-36-5124-c-1-b-decoupled-standard-deduction` | The record is *named for* Maine's decoupling from the federal standard deduction. The IRC 63(c)(3) link is in subsection (1-B)(B) and the decoupling itself is in (1-A); **neither was quoted.** The worst gap in the set — the provision the record exists to report was absent from its own authority array. |
 | `tx-const-8-24-a-…` and `tx-const-8-24-b-…` | Both asserted a constitutional adoption date that appeared in no quoted span. |
 | `tx-const-8-24-b-capital-gains-tax-prohibited` | Also asserted that "Texas enacted no such tax" through tax year 2025 — an unquoted legislative negative with no source behind it. |
-| `fl-const-7-5-a-income-tax-prohibited` | Claimed that no Florida individual income tax exists. The quotes supported only that *chapter 220* stops at the corporate boundary. |
+| `fl-const-7-5-a-income-tax-prohibited` | Claimed that no Florida individual income tax exists. The quotes supported only that *chapter 220* stops at the corporate boundary. (The record has since gained the Legislature's own Office of Economic and Demographic Research stating the negative outright, which is a source that could carry that claim — see section 2a. Its statement is still the narrowed one, because the narrowed one is true and sufficient.) |
 | `wv-code-11-21-12-…` (the one review caught), plus the Iowa, North Dakota and Pennsylvania records | A limb of the statement sat past the end of the quote, or rested on a subdivision that was cited nowhere in the array. |
 
 And the counter-example, which is the model: `il-ita-203-a-2-F-retirement-income-subtraction` quotes the
@@ -95,6 +95,42 @@ outright, and the record now claims nothing about them.
 If the corpus-wide negative is genuinely the thing the engine relies on, it is not a `settled` record resting
 on quotations. It is either a narrower `settled` record about the provisions you can quote, or a record whose
 classification says what it actually is.
+
+### 2a. The one speaker who can carry a corpus-wide negative
+
+There is an exception, and it is narrow enough to state precisely: **a quotation from the body entitled to
+speak for the corpus is evidence about the corpus.**
+
+The reason a statutory quotation cannot establish "nothing anywhere does this" is that it is evidence about
+the text it comes from. That reasoning does not reach a state revenue department writing "South Dakota is one
+of seven states that does not impose a state income tax", because the department is not offering evidence
+about a provision — it is stating what the state levies, which is the thing it administers and publishes. The
+same is true of a legislature's own research office: the Florida Tax Handbook's "SUMMARY: Florida currently
+does not levy a personal income tax" is the Legislature describing its own work.
+
+`TaxRuleAuthorityKind` has a member for exactly this, `stateAgencyPublication`, and the conformance suite
+admits it on `state:` records only. A state agency has that competence over its own state's tax and none at
+all over the Internal Revenue Code, so the same sentence from the same publisher would be worthless on a
+federal record.
+
+Three limits, because the exception is easy to over-read:
+
+- **It is not a licence to skip the statute.** Where operative language exists, quote it. This applies to the
+  claim no provision can support — the absence of an imposition — and to nothing else on the record.
+- **It does not make the negative durable.** A department's statement is true of today. Nevada and Texas
+  cannot levy; South Dakota and Wyoming simply have not, and one session changes that. A record resting here
+  should say which of the two it is, and quote the provision that runs the other way where one exists —
+  S.D. Const. art. XI § 2 empowers its legislature to tax incomes, and Wyo. Const. art. 15 § 18 conditions an
+  income tax rather than barring one. Both are quoted on their records for that reason, and they are the
+  reason a reader cannot mistake either state for Nevada.
+- **It is still a quotation, so rule 1 and rule 3 apply unchanged.** Quote the department's sentence whole,
+  and if the record's `effectiveFrom` turns on a date, the date has to be in a span too. Tennessee's Hall
+  record is the type case: "Repeal beginning January 1, 2021" is inside the quote, not read off the page
+  around it.
+
+The alternative to this exception is worse than it looks. Without it, nine states whose pack entry is
+`hasIncomeTax: false` can carry no `settled` record at all, and the engine returns a zero for each of them
+with nothing behind it — which is the position the registry existed to end.
 
 ## 3. Dates and adoption facts belong inside a quoted span
 
