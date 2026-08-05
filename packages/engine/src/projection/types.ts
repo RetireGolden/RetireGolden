@@ -814,7 +814,11 @@ export interface YearResult {
    * donor's exact age 70½ threshold date, the resolved source and copied
    * charity designation, and the annual stages that remain unestablished. It
    * establishes what is proven before any gift moves, never that one moved or
-   * became actionable; absence means no named QCD request was evaluated.
+   * became actionable. Absence does not prove no request existed: the field is
+   * also absent when the prerequisite batch failed closed on malformed input,
+   * and when a QCD sharing an execution slot with a non-QCD action stayed with
+   * the ordinary-withdrawal executor. `retirementActionPublication` remains the
+   * authority on which requests were published and by which executor.
    */
   qcdActionPrerequisites?:
     readonly Readonly<AnnualQcdExecutionPrerequisiteEvidence>[]
