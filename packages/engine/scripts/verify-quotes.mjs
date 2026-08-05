@@ -27,7 +27,7 @@
  *      Silence here is how an unverifiable citation stays unverified forever.
  *
  * It asserts nothing else. In particular it does NOT fold away the registry's
- * own rewrites of the source ("$6,000" written as "6,000 dollar", a possessive
+ * own rewrites of the source ("$6,000" written as "6,000 dollar amount", a possessive
  * `'s` dropped, a contraction expanded). Those are alterations of the text, not
  * differences in rendering, and the field's contract forbids them — so they are
  * reported, with a diagnosis showing exactly where the quote leaves the source.
@@ -313,11 +313,15 @@ const MAX_CODE_POINT = 0x10ffff
  * @param {string} s
  */
 function decodeEntities(s) {
-  // `#[xX]?` and not `#x?`: the branch below already handles an uppercase X,
-  // but the pattern never matched one, so `&#X2019;` passed through undecoded
-  // and could turn a correct quote into a false ABSENT. A checker that invents
-  // findings is worse than no checker.
-  return s.replace(/&(#[xX]?[0-9a-fA-F]+|[a-zA-Z][a-zA-Z0-9]*);/g, (match, body) => {
+  // Hex and decimal are separate alternatives on purpose. A single
+  // `#[xX]?[0-9a-fA-F]+` also matches `&#12AF;`, which the decimal branch then
+  // reads with `parseInt(…, 10)` — that stops at the `A` and returns 12, so a
+  // malformed entity is silently replaced by a form feed rather than left
+  // alone. Requiring an explicit x/X for hex and digits-only for decimal means
+  // anything malformed matches nothing and falls through untouched, which is
+  // the behaviour every other guard in this file aims for: degrade to leaving
+  // the text as it was, never to quietly altering it.
+  return s.replace(/&(#[xX][0-9a-fA-F]+|#[0-9]+|[a-zA-Z][a-zA-Z0-9]*);/g, (match, body) => {
     if (body.startsWith('#')) {
       const code =
         body[1] === 'x' || body[1] === 'X'

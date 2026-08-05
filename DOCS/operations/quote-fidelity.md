@@ -62,7 +62,7 @@ Free, because the fetch already happened:
 ### What it deliberately does *not* do
 
 It does not fold away the registry's own rewrites of the source text — `$6,000` written as
-"6,000 dollar", a possessive `'s` deleted, `doesn't` expanded to "does not", a table flattened into prose.
+"6,000 dollar amount", a possessive `'s` deleted, `doesn't` expanded to "does not", a table flattened into prose.
 Those are alterations of the words, not differences in rendering, and the field's contract forbids them.
 They are reported as `ABSENT`, with a diagnosis showing the point at which the quote leaves the source, so
 you can tell a de-symbolised quote from a composed one at a glance.
