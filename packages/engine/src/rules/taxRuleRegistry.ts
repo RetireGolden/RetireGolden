@@ -1307,9 +1307,15 @@ const registry = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Cited to the enrolled bill rather than to a code mirror, and quoted as the amending instruction rather than as a rule, because there is no running sentence to quote. Section 70107(c) operates by striking and inserting, so the 50 percent figure exists only as new subclause (IV) of 55(d)(4)(A)(ii). Neither uscode.house.gov nor law.cornell.edu carries the amended text as of 2026-08-04 -- both still print the pre-2026 (d)(4) -- so a mirror would have shown 25 percent and contradicted this record. An earlier version of this record papered over that by composing a readable sentence that appears in no source at all; the substance was right and the quote was invented. The threshold figures in the statement come from 55(d)(4)(A)(ii)(I) as amended and from 70107(b), which reindexes the 1,000,000 amount from calendar year 2025.',
+      'Two authorities because the statement makes two claims. The codified 55(d)(4)(A)(ii) carries both: subclause (I) substitutes the 1,000,000 dollar threshold and subclause (IV) substitutes 50 percent for 25 percent. Paragraph (2)(A) is the joint-return figure and (B) is 50 percent of it, which is where the 500,000 dollar amount for an unmarried taxpayer comes from. The enrolled bill is kept beside it as the amending authority, because (IV) exists only because section 70107(c) added it and a reader tracing the 50 percent figure should be able to see the instruction that created it. Corrected 2026-08-04: an earlier version of this record said neither uscode.house.gov nor law.cornell.edu carried the amended text and cited the enrolled bill alone for that reason. That was true when the quote sweep ran and is no longer true -- uscode has since published the OBBBA text. A rationale that explains why a citation looks unusual has to be re-checked when the reason expires, or it becomes the next stale claim.',
     jurisdiction: 'federal',
     authority: [{
+      kind: 'statute',
+      citation: 'IRC 55(d)(4)(A)(ii), as amended by Pub. L. 119-21',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim',
+      quotedText:
+        '(ii) paragraph (2) shall be applied- (I) by substituting "$1,000,000" for "$150,000" in subparagraph (A), (II) by substituting "50 percent of the dollar amount applicable under subparagraph (A)" for "$112,500" in subparagraph (B), (III) in the case of a taxpayer described in paragraph (1)(D), without regard to the substitution under subclause (I), and (IV) by substituting "50 percent" for "25 percent", and',
+    }, {
       kind: 'statute',
       citation: 'Pub. L. 119-21, sec. 70107(c) (OBBBA)',
       url: 'https://www.govinfo.gov/content/pkg/PLAW-119publ21/html/PLAW-119publ21.htm',
