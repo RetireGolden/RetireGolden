@@ -435,7 +435,29 @@ describe('periodic re-verification', () => {
   })
 
   it('brings unsettled rules due before settled statutory mechanics', () => {
-    const atNinetyDays = taxRulesDueForVerification('2026-11-01')
+    // The as-of date is DERIVED, not written down. What this test proves is a
+    // tiering property -- an awaitingGuidance rule falls due while a
+    // staticStatute one does not -- and a hardcoded date couples that property
+    // to whenever the named records were last verified. It has already broken
+    // once that way, on a re-verification that moved a record two days past a
+    // literal, turning a statement about tiering into a failure about
+    // arithmetic.
+    //
+    // Only the INPUT is derived. The three expectations below stay written out,
+    // so the test still says which rules must appear and which must not.
+    const awaitingGuidanceDue = [
+      'irc-408-d-8-includible-qcd-basis',
+      'irc-170-p-standard-deduction-carryover',
+    ] as const satisfies readonly TaxRuleId[]
+    const latestVerifiedOn = awaitingGuidanceDue
+      .map((ruleId) => TAX_RULE_REGISTRY[ruleId].verifiedOn)
+      .reduce((left, right) => (left > right ? left : right))
+    // Built from the record's own date, never from the clock. `new Date()` here
+    // would make the suite pass or fail according to when it runs, which is the
+    // same coupling this comment exists to remove, only worse.
+    const ninetyDaysOn = new Date(latestVerifiedOn + 'T00:00:00.000Z')
+    ninetyDaysOn.setUTCDate(ninetyDaysOn.getUTCDate() + 90)
+    const atNinetyDays = taxRulesDueForVerification(ninetyDaysOn.toISOString().slice(0, 10))
     expect(atNinetyDays).toContain('irc-408-d-8-includible-qcd-basis' satisfies TaxRuleId)
     expect(atNinetyDays).toContain('irc-170-p-standard-deduction-carryover' satisfies TaxRuleId)
     expect(atNinetyDays).not.toContain('irc-170-b-1-I-floor-ordering' satisfies TaxRuleId)
