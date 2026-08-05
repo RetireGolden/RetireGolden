@@ -20,6 +20,7 @@ import { describe, expect, it } from 'vitest'
 import { describeRule } from '../rules/describeRule.js'
 import { packForYear } from '../params/index.js'
 import { conformStateStandardDeduction, stateParamsFor } from '../params/state/index.js'
+import type { StateTaxParams } from '../params/state/types.js'
 import type { TaxYearInput } from '../projection/types.js'
 import { computeStateTax, computeStateTaxableIncome } from './stateTax.js'
 
@@ -37,7 +38,18 @@ function input(over: Partial<TaxYearInput> = {}): TaxYearInput {
   }
 }
 
-const pack = (code: string) => stateParamsFor(code, TAX_YEAR)!
+/**
+ * Guarded rather than asserted with `!`. A missing pack entry is the one
+ * failure this file must not swallow: every fixture below prices a state
+ * against its own law, so a mistyped code would hand the calculator undefined
+ * params and fail somewhere downstream with no mention of the state that was
+ * actually wanted.
+ */
+function pack(code: string): StateTaxParams {
+  const params = stateParamsFor(code, TAX_YEAR)
+  if (params === undefined) throw new Error(`no ${TAX_YEAR} state pack for ${code}`)
+  return params
+}
 
 /** A projected year 10% further into the horizon than the published pack. */
 const INFLATION_SCALE = 1.1

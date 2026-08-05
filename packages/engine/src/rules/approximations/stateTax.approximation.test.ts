@@ -28,6 +28,7 @@ import { expect, it } from 'vitest'
 
 import { describeRule } from '../describeRule.js'
 import { stateParamsFor } from '../../params/state/index.js'
+import type { StateTaxParams } from '../../params/state/types.js'
 import type { TaxYearInput } from '../../projection/types.js'
 import { computeStateTax } from '../../tax/stateTax.js'
 
@@ -45,7 +46,16 @@ function input(over: Partial<TaxYearInput> = {}): TaxYearInput {
   }
 }
 
-const pack = (code: string) => stateParamsFor(code, TAX_YEAR)!
+/**
+ * Guarded rather than asserted with `!`. These fixtures price a state against
+ * its own law, so a mistyped code would hand the calculator undefined params
+ * and fail downstream without naming the state that was actually wanted.
+ */
+function pack(code: string): StateTaxParams {
+  const params = stateParamsFor(code, TAX_YEAR)
+  if (params === undefined) throw new Error(`no ${TAX_YEAR} state pack for ${code}`)
+  return params
+}
 
 function bandedTax(bands: readonly (readonly [number, number, number])[], taxable: number): number {
   return bands.reduce(
