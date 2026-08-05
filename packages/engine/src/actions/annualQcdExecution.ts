@@ -39,6 +39,45 @@ export interface AnnualQcdExecutionIssue {
   readonly detail: string
 }
 
+/**
+ * The QCD rule matrix's `qcdRmdCoordination` row, answered on the record rather
+ * than left to be inferred from a zero.
+ *
+ * Treas. Reg. 1.408-8(g)(1) takes every IRA distribution into account against
+ * section 401(a)(9) whether or not it is includible, and names a qualified
+ * charitable distribution as its example; 1.408-8(b)(3) satisfies the year's
+ * requirement in the order distributions actually occur. So how much of the
+ * requirement a gift meets depends entirely on how much of it was still
+ * unsatisfied when the gift happened -- which is why this states the pool's
+ * before-state as well as the amount.
+ *
+ * `coordination` is a typed disclosure in the shape the age-70.5 threshold
+ * already uses (`calculation: 'addCalendarMonths846WithMonthEndClamp'`): a
+ * consumer must not be able to read `rmdSatisfiedAmount: 0` off a record
+ * without also reading why it is zero. In this projection the answer is nearly
+ * always `requirementAlreadyDistributedBeforeTheGift`, because the annual pass
+ * distributes the whole required amount in cash before any gift is sized. That
+ * models every named gift as beyond the RMD and is a registered approximation
+ * -- see `treas-reg-1-408-8-g-projection-named-qcd-beyond-rmd`, which states
+ * the direction of the error and names the RMD-reserve work that retires it.
+ */
+export interface AnnualQcdRmdCoordinationEvidence {
+  readonly predicate: 'qcdRmdCoordination'
+  readonly poolId: string
+  readonly donorPersonId: PersonId
+  readonly scope: 'ownedIra'
+  readonly inheritedFromPersonId: null
+  readonly rmdRequiredAmount: UsdCents
+  readonly rmdRemainingBefore: UsdCents
+  readonly rmdSatisfiedAmount: UsdCents
+  readonly rmdRemainingAfter: UsdCents
+  readonly coordination:
+    | 'noRequiredDistributionForTheYear'
+    | 'requirementAlreadyDistributedBeforeTheGift'
+    | 'satisfiedFromTheRemainingRequirement'
+  readonly upstreamEvidenceId: string
+}
+
 interface AnnualQcdExecutionEvidenceBase {
   readonly actionId: ActionId
   readonly kind: 'qcd'
@@ -92,6 +131,7 @@ export interface AnnualQcdSettledExecutionEvidence
   readonly sourceBalanceBefore: UsdCents
   readonly sourceBalanceAfter: UsdCents
   readonly derivedFacts: Readonly<AnnualQcdPostPassApplication>
+  readonly rmdCoordination: Readonly<AnnualQcdRmdCoordinationEvidence>
 }
 
 export type AnnualQcdExecutionEvidence =
@@ -347,6 +387,7 @@ function executeUnchecked(input: ExecuteAnnualQcdsInput): ExecuteAnnualQcdsResul
   const physicalByAction = new Map(
     physical.applications.map((entry) => [entry.request.actionId, entry] as const),
   )
+  const rmdPoolById = new Map(physical.rmdPools.map((pool) => [pool.poolId, pool] as const))
   const evidence: AnnualQcdSettledExecutionEvidence[] = []
   let totalExecuted = 0n
   let totalExcludable = 0n
@@ -367,6 +408,14 @@ function executeUnchecked(input: ExecuteAnnualQcdsInput): ExecuteAnnualQcdsResul
       fail(
         'executionDateMissing',
         `QCD action "${application.actionId}" cannot move dollars without its stated execution date.`,
+        application.actionId,
+      )
+    }
+    const rmdPool = rmdPoolById.get(application.rmdPoolId)
+    if (rmdPool === undefined) {
+      fail(
+        'derivedFactsInconsistent',
+        `QCD action "${application.actionId}" lost its RMD pool.`,
         application.actionId,
       )
     }
@@ -412,6 +461,23 @@ function executeUnchecked(input: ExecuteAnnualQcdsInput): ExecuteAnnualQcdsResul
       sourceBalanceBefore: physicalApplication.sourceBalanceBefore,
       sourceBalanceAfter: physicalApplication.sourceBalanceAfter,
       derivedFacts: application,
+      rmdCoordination: {
+        predicate: 'qcdRmdCoordination',
+        poolId: rmdPool.poolId,
+        donorPersonId: application.donorPersonId,
+        scope: 'ownedIra',
+        inheritedFromPersonId: null,
+        rmdRequiredAmount: rmdPool.rmdRequiredAmount,
+        rmdRemainingBefore: application.rmdRemainingBefore,
+        rmdSatisfiedAmount: application.rmdSatisfiedByAction,
+        rmdRemainingAfter: application.rmdRemainingAfter,
+        coordination: application.rmdSatisfiedByAction > 0
+          ? 'satisfiedFromTheRemainingRequirement'
+          : rmdPool.rmdRequiredAmount === 0
+            ? 'noRequiredDistributionForTheYear'
+            : 'requirementAlreadyDistributedBeforeTheGift',
+        upstreamEvidenceId: rmdPool.upstreamEvidenceId,
+      },
     })
     totalExecuted += BigInt(executedAmount)
     totalExcludable += BigInt(application.excludableQcdAmount)

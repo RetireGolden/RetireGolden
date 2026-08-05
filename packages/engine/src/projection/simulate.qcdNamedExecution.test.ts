@@ -235,6 +235,33 @@ describe('a named QCD moves the first charitable dollars', () => {
     expect(facts.otherwiseTaxableAmountBefore).toBe(IRA_DOLLARS * 100)
   })
 
+  it('answers the RMD-coordination row rather than leaving a bare zero', () => {
+    // The WS1 matrix asks every QCD to state the portion satisfying the
+    // donor's applicable RMD. This household has a real required distribution,
+    // and the gift satisfies none of it -- because the annual pass had already
+    // distributed the whole requirement in cash before the gift was sized. The
+    // typed disclosure says exactly that, so a consumer cannot read the zero
+    // as "this donor had no requirement". The gap it discloses is registered:
+    // treas-reg-1-408-8-g-projection-named-qcd-beyond-rmd.
+    const execution = gifted.qcdActionExecution
+
+    expect(execution?.committed).toBe(true)
+    if (execution?.committed !== true) return
+    expect(gifted.rmd).toBeGreaterThan(0)
+    expect(execution.evidence[0].rmdCoordination).toMatchObject({
+      predicate: 'qcdRmdCoordination',
+      donorPersonId: 'p1',
+      scope: 'ownedIra',
+      inheritedFromPersonId: null,
+      rmdRemainingBefore: 0,
+      rmdSatisfiedAmount: 0,
+      rmdRemainingAfter: 0,
+      coordination: 'requirementAlreadyDistributedBeforeTheGift',
+    })
+    expect(execution.evidence[0].rmdCoordination.rmdRequiredAmount)
+      .toBe(Math.round(gifted.rmd * 100))
+  })
+
   it('closes the owned-IRA runtime source series on the occurrence that explains it', () => {
     const plan = validatePlan(donorPlan({ id: 'qcd-named-execution-series' }))
     const years = project(donorPlan({ id: 'qcd-named-execution-series' }))

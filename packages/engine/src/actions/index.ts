@@ -106,6 +106,7 @@ export {
   executeAnnualQcds,
   type AnnualQcdExecutionEvidence,
   type AnnualQcdExecutionIssue,
+  type AnnualQcdRmdCoordinationEvidence,
   type AnnualQcdSettledExecutionEvidence,
   type AnnualQcdStagedExecutionEvidence,
   type ExecuteAnnualQcdsCommittedResult,

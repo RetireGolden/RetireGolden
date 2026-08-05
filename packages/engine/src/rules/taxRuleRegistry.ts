@@ -1056,6 +1056,50 @@ const registry = {
     ],
   },
 
+  'treas-reg-1-408-8-g-projection-named-qcd-beyond-rmd': {
+    title: 'Named QCD modelled as beyond the required distribution',
+    statement:
+      'A qualified charitable distribution counts toward the year required minimum distribution, so a donor with a required amount can satisfy part of it with a gift and take only the balance as taxable cash. Not modelled in the named QCD arm: the annual pass distributes the whole required amount in cash before any gift is sized, so a named gift only ever meets a requirement the donor own IRAs could not, and every scheduled gift is modelled as an additional distribution beyond the required one. The aggregate qcdAnnual arm does model the coordination, through its nonmoving qcdFromRmd overlay, so the two arms answer the same household differently.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale:
+      'Direction of error: restrictive, by the amount of the required distribution the gift could have satisfied, and the balance sheet is drawn down by that same amount again. A donor with a $21,097 required distribution who schedules a $20,000 gift intends to give $20,000 out of the requirement and take $1,097 in cash: $1,097 of ordinary income and $21,097 out of the IRA. The projection distributes all $21,097 in cash first and then debits the gift separately: $21,097 of ordinary income and $41,097 out of the IRA. Ordinary income is overstated by the satisfiable amount and the IRA is understated by it, so the error compounds through every figure that reads either. The cause is ordering, not missing facts. The gift settles at phase rank 6 and the forced distributions at rank 3, and the ranks are themselves statutory: Treas. Reg. 1.408A-4 A-6(b) forbids a conversion from absorbing an unsatisfied requirement, which puts the gift ahead of the conversions, and 1.408-8(b)(3) satisfies the requirement in the order distributions actually occur, which is what makes an earlier cash distribution irrevocable. The retirement path is an RMD reserve: hold a scheduled same-year gift amount out of the forced cash distribution before rank 3 runs, which is the shape the plan already contemplates for conversion-linked withdrawals. Until it lands the executed record states the coordination truthfully rather than omitting it - `rmdSatisfiedAmount` is zero and the typed `coordination` field says the requirement had already been distributed before the gift.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8(g)(1)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.408-8',
+      quotedText:
+        'all amounts distributed from an IRA are taken into account in determining whether section 401(a)(9) is satisfied, regardless of whether the amount is includible in income. Thus, for example, a qualified charitable distribution made pursuant to section 408(d)(8) is taken into account in determining whether section 401(a)(9) is satisfied.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8(b)(3)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.408-8',
+      quotedText:
+        'any amount distributed during a calendar year from an IRA of that IRA owner is treated as a required minimum distribution under section 401(a)(9) to the extent that the total required minimum distribution for the year under section 401(a)(9) from all of that IRA owner\'s IRAs has not been satisfied (either by a distribution from the IRA or, as permitted under paragraph (e) of this section, from another IRA).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408(d)(8)(A)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm',
+      quotedText:
+        'So much of the aggregate amount of qualified charitable distributions with respect to a taxpayer made during any taxable year which does not exceed $100,000 shall not be includible in gross income of such taxpayer for such taxable year.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      // Where the ordering is decided: the forced distributions run well above
+      // the gift, and the RMD pool the gift is offered is what is left of the
+      // requirement by then.
+      'packages/engine/src/projection/simulate.ts',
+      // Where the consequence is published: `rmdSatisfiedAmount` with the typed
+      // disclosure that says why it is zero.
+      'packages/engine/src/actions/annualQcdExecution.ts',
+    ],
+  },
+
   'irc-408-d-3-C-ii-surviving-spouse-not-inherited': {
     title: 'A surviving spouse does not hold an inherited IRA',
     statement:
