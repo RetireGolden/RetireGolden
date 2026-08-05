@@ -9,6 +9,12 @@ import { LearnLink } from '../../learn/LearnLink'
 import { LEARN } from '../learnLinks'
 import { fmtMoney } from '../format'
 import { provenanceSource } from '../provenanceLinks'
+import {
+  namedQcdYears,
+  QCD_NAMED_STANDS_DOWN_SCALAR,
+  QCD_SCALAR_HISTORY_NOTE,
+  QCD_SECTION_HEADING,
+} from '../retirementActionQcdSchedule'
 import { Issues } from './shared'
 
 const RetirementActionsEditor = lazy(async () => {
@@ -34,6 +40,7 @@ export function StrategySection() {
   const rc = plan.strategies.rothConversion
   const orderDetailId = useId()
   const thisYear = new Date().getFullYear()
+  const scheduledGiftYears = namedQcdYears(plan)
   return (
     <section>
       <div className="card">
@@ -286,6 +293,24 @@ export function StrategySection() {
             onCommit={(v) => update((d) => void (d.strategies.qcdAnnual = v ?? 0))}
           />
         </div>
+        {/* The two charitable controls are mutually exclusive by projection
+            behaviour and were silently so until now: a scheduled gift stands
+            this recurring amount down for its year. Both surfaces say it. */}
+        <p className="card-hint">
+          This recurring amount gives every year from age 70½, with no charity, date, or source
+          IRA behind it. To schedule one specific gift, use{' '}
+          <strong>{QCD_SECTION_HEADING}</strong> in the <strong>Retirement actions</strong> card
+          above. {QCD_NAMED_STANDS_DOWN_SCALAR}
+        </p>
+        {plan.strategies.qcdAnnual > 0 && scheduledGiftYears.length > 0 ? (
+          <div className="callout callout--warn" role="status">
+            <strong>
+              This recurring amount gives nothing in{' '}
+              {scheduledGiftYears.join(', ')}, where a charitable gift is scheduled.
+            </strong>{' '}
+            {QCD_SCALAR_HISTORY_NOTE}
+          </div>
+        ) : null}
         <Issues />
       </div>
 

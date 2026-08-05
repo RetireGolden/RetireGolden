@@ -10,7 +10,9 @@ import {
   classifiableIraAccounts,
   contributionDonors,
 } from '../retirementActionEligibilityFacts'
+import { namedQcdActions } from '../retirementActionQcdSchedule'
 import { RetirementActionEligibilityFactsEditor } from './RetirementActionEligibilityFactsEditor'
+import { RetirementActionQcdAuthoringSection } from './RetirementActionQcdAuthoringSection'
 import {
   CheckboxField,
   DateField,
@@ -433,28 +435,32 @@ function QcdManualReviewRow({
 }
 
 /**
- * Public Strategy-screen control for the facts an action needs on record, and
- * for resolving migrated aggregate actions.
+ * Public Strategy-screen control for the facts an action needs on record, for
+ * scheduling a charitable gift from an IRA, and for resolving migrated
+ * aggregate actions.
  *
- * The card mounts whenever either half has something to show. A plan with no
- * migrated rows still needs somewhere to record an IRA's type, which is what a
- * conversion review refuses without.
+ * The card mounts whenever any of the three has something to show. A plan with
+ * no migrated rows still needs somewhere to record an IRA's type, which is what
+ * a conversion review refuses without, and somewhere to schedule a gift.
  */
 export function RetirementActionsEditor() {
   const { plan } = usePlan()
   const actions = migratedRetirementActionsNeedingReview(plan)
   const hasFacts = classifiableIraAccounts(plan).length > 0 ||
     contributionDonors(plan, currentStartYear()).length > 0
-  if (actions.length === 0 && !hasFacts) return null
+  const hasGifts = namedQcdActions(plan).length > 0
+  if (actions.length === 0 && !hasFacts && !hasGifts) return null
 
   return (
     <div className="card">
       <h2>Retirement actions</h2>
       <p className="card-hint">
-        What your IRAs need on record before RetireGolden can model an action against them, and
-        any actions carried in from an older plan format.
+        What your IRAs need on record before RetireGolden can model an action against them, the
+        charitable gifts you have scheduled from them, and any actions carried in from an older
+        plan format.
       </p>
       <RetirementActionEligibilityFactsEditor />
+      {hasFacts || hasGifts ? <RetirementActionQcdAuthoringSection /> : null}
       {actions.length > 0 ? (
         <>
           <h3>Actions carried in from an older plan</h3>

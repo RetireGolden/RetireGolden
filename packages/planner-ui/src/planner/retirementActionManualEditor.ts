@@ -103,17 +103,17 @@ export function migratedRetirementActionsNeedingReview(
   )
 }
 
-function exactExecutionSequence(value: string): number | null {
+export function exactExecutionSequence(value: string): number | null {
   if (!/^[1-9]\d*$/.test(value)) return null
   const sequence = Number(value)
   return Number.isSafeInteger(sequence) ? sequence : null
 }
 
-function exactDateForYear(value: string, year: number): boolean {
+export function exactDateForYear(value: string, year: number): boolean {
   return parseCivilIsoDate(value)?.year === year
 }
 
-function executionSlotAlreadyUsed(
+export function executionSlotAlreadyUsed(
   targetActionId: string,
   preservedActions: readonly RetirementActionRequest[],
   executionDate: string,
@@ -504,7 +504,9 @@ export function retirementActionManualSourceSupportIssue(
     : null
 }
 
-function positiveDollarsToCents(value: number | null): ReturnType<typeof asPositiveUsdCents> | null {
+export function positiveDollarsToCents(
+  value: number | null,
+): ReturnType<typeof asPositiveUsdCents> | null {
   if (value === null || !Number.isFinite(value) || value <= 0) return null
   try {
     const cents = planDollarsToLedgerCents(value)
