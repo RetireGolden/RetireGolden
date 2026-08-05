@@ -245,7 +245,13 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
   apportioned by months.
 - Optional local income tax is a user-entered flat percentage applied to computed state taxable income. This
   is planning support for common local layers, not a locality rule pack.
-- Sources: [Tax Foundation state income-tax rates](https://taxfoundation.org/data/all/state/state-income-tax-rates/), per-state research in [state-tax-research/](state-tax-research/), and state revenue sources cited in each file.
+- Sources: the per-state research in [state-tax-research/](state-tax-research/) and the own-state revenue,
+  statute and forms sources cited in each file. Those are the authority.
+  [Tax Foundation's state income-tax rates](https://taxfoundation.org/data/all/state/state-income-tax-rates/)
+  is a cross-check and a change-detector only — `taxfoundation.org` is one of the hosts
+  `taxRuleRegistry.conformance.test.ts` holds permanently inadmissible as authority, so a state figure whose
+  only source is that page cannot be registered as a rule. See
+  [state-tax-research/TEMPLATE.md](state-tax-research/TEMPLATE.md) § Sourcing rules.
 
 ## 10. Roth conversion rules
 

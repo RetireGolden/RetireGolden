@@ -226,8 +226,10 @@ price growth to avoid counting the same return twice.
 Per-state income tax for **all 50 states + DC**, modeling the "big levers" (~90% of real-world impact):
 graduated/flat brackets, standard deduction, whether the state taxes Social Security (~9 do; the rest
 exempt), and the major **age-based retirement-income exclusions** (private retirement and public pension buckets).
-Source data is PolicyEngine-cited with a Tax Foundation cross-check; the per-state research is captured in
-[domain/state-tax-research/](../domain/state-tax-research/) and transcribed into dated packs under
+Source data comes from each state's own revenue department, statutes and forms, with PolicyEngine-US and the
+Tax Foundation used only as cross-checks and change-detectors — never as the cited source
+([TEMPLATE.md § Sourcing rules](../domain/state-tax-research/TEMPLATE.md)). The per-state research is captured
+in [domain/state-tax-research/](../domain/state-tax-research/) and transcribed into dated packs under
 `engine/params/state/`.
 
 Each state pack (`StateTaxParams`) carries `hasIncomeTax`, `taxesSocialSecurity`, `standardDeduction`,
