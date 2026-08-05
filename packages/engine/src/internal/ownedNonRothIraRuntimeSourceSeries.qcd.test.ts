@@ -7,7 +7,7 @@ import {
   asAllocationId,
   asPersonId,
 } from '../actions/identity.js'
-import { asPositiveUsdCents } from '../actions/money.js'
+import { asPositiveUsdCents, asUsdCents } from '../actions/money.js'
 import type { Account, Plan } from '../model/plan.js'
 import {
   singlePersonPlan,
@@ -259,6 +259,41 @@ function namedGiftPlan(
   const plan = preRmdPlan(id, accounts)
   plan.strategies.retirementActions = [request]
   return plan
+}
+
+/**
+ * The same gift, attested well enough to actually settle: the source IRA is
+ * classified and the post-70½ deductible-contribution history is complete. The
+ * donor's exact threshold is 2026-07-01, so the history is the action year
+ * alone.
+ */
+function committedGiftPlan(id: string): Plan {
+  const plan = namedGiftPlan(id, [traditional('ira', 100_000)])
+  plan.retirementActionEligibilityFacts = {
+    iraClassifications: [{
+      sourceAccountId: 'ira',
+      subtype: 'traditional',
+      evidenceId: 'classification-ira',
+      provenance: { source: 'manual' },
+    }],
+    sepSimpleActivities: [],
+    deductibleIraContributions: [{
+      donorPersonId: 'p1',
+      taxYear: TAX_YEAR,
+      amountCents: asUsdCents(0),
+      evidenceId: `contribution-${TAX_YEAR}`,
+      provenance: { source: 'manual', sourceId: `ledger-${TAX_YEAR}` },
+    }],
+  }
+  return plan
+}
+
+/** Strip the gift's occurrence while leaving every dollar where it went. */
+function withoutNamedQcdOccurrence(years: YearResult[]): YearResult[] {
+  const source = years[0]!.retirementRuntimeSource!
+  ;(source as { runtimeOccurrences: unknown }).runtimeOccurrences =
+    source.runtimeOccurrences.filter((entry) => entry.kind !== 'namedQcd')
+  return years
 }
 
 /** The producer key a named gift's occurrence has to carry: four members. */
@@ -585,14 +620,16 @@ describe('moving legacy QCD through the live annual pass', () => {
   })
 })
 
-describe('a named QCD occurrence has nothing it could be bound to', () => {
-  // `requireNamedQcdCoverage` is an unconditional rejection, and these two
-  // cases are what "unconditional" means: the first year is arithmetically
-  // perfect and the second is a complete, self-consistent moving fixture, and
-  // both are refused for the same reason. No stage of the named QCD chain has
-  // a `committed: true` arm, so no evidence exists that an occurrence could
-  // rejoin -- which makes the occurrence a claim the engine cannot have made.
-  it('refuses a gift occurrence in a year where not one dollar moved', () => {
+describe('a named QCD occurrence binds to committed executor evidence', () => {
+  // The binding runs both ways, and each direction has its own failure. An
+  // occurrence with no committed gift behind it is a forgery that would explain
+  // an owned-IRA debit nothing authorised; a committed gift with no occurrence
+  // is dollars leaving with the balance chain closing only because the record
+  // that should have accounted for them is absent. The first two cases below
+  // are the first direction, on the two fixtures that make the claim hardest to
+  // dismiss: one year is arithmetically untouched and the other is a complete,
+  // self-consistent moving fixture.
+  it('refuses a gift occurrence in a year that committed nothing', () => {
     const plan = namedGiftPlan('named-qcd-occurrence-only', [
       traditional('ira', 100_000),
     ])
@@ -608,14 +645,16 @@ describe('a named QCD occurrence has nothing it could be bound to', () => {
         kind: 'namedQcdInvalid',
         taxYear: TAX_YEAR,
         producerOccurrenceKey: namedGiftKey(),
+        detail: 'A named QCD occurrence requires committed charitable-distribution evidence',
       }],
     })
   })
 
   // The same fixture shape that makes the aggregate arm's gift acceptable:
   // occurrence, application, balance chain, published total, all consistent.
-  // The named kind is refused anyway, so the rejection cannot be mistaken for
-  // the balance chain catching an unexplained debit.
+  // It is still refused, so the rejection cannot be mistaken for the balance
+  // chain catching an unexplained debit -- the year committed no gift, and
+  // arithmetic agreement is not authority.
   it('refuses a gift occurrence backed by a complete moving fixture', () => {
     const plan = namedGiftPlan('named-qcd-moving-fixture', [
       traditional('ira', 100_000),
@@ -631,6 +670,57 @@ describe('a named QCD occurrence has nothing it could be bound to', () => {
     expect(result).toMatchObject({
       status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
       issues: [{ kind: 'namedQcdInvalid', taxYear: TAX_YEAR }],
+    })
+  })
+
+  // The positive case, and the one every rejection below is a mutation of: a
+  // gift the executor actually committed, whose occurrence rejoins it in exact
+  // cents in both directions.
+  it('accepts a committed gift whose occurrence rejoins it in exact cents', () => {
+    const plan = committedGiftPlan('named-qcd-committed')
+    const years = project(plan)
+
+    expect(years[0]!.qcd).toBeCloseTo(GIFT_DOLLARS, 6)
+    expect(years[0]!.qcdActionExecution?.committed).toBe(true)
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(
+      validatePlan(plan), TAX_YEAR, years,
+    ).status).toBe('ownedNonRothIraRuntimeSourceSeriesComplete')
+  })
+
+  // The second direction. The dollars still left the IRA and the published
+  // total still names them; only the record that says which request moved them
+  // is gone, and that is exactly the case a one-way check would let through.
+  it('refuses a committed gift whose occurrence was removed', () => {
+    const plan = committedGiftPlan('named-qcd-orphan-commitment')
+    const years = withoutNamedQcdOccurrence(project(plan))
+
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(
+      validatePlan(plan), TAX_YEAR, years,
+    )).toMatchObject({
+      status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+      issues: [{
+        kind: 'namedQcdInvalid',
+        detail: 'Every committed owned-IRA gift requires its named occurrence',
+      }],
+    })
+  })
+
+  // Cents, not Plan dollars. An occurrence that names a real committed gift but
+  // a different amount is the quiet version of a forgery, and comparing in the
+  // ledger's own units is what catches it.
+  it('refuses an occurrence whose amount is not the committed amount', () => {
+    const plan = committedGiftPlan('named-qcd-amount-drift')
+    const years = project(plan)
+    const occurrence = years[0]!.retirementRuntimeSource!.runtimeOccurrences
+      .find((entry) => entry.kind === 'namedQcd')!
+    ;(occurrence as { grossAmountPlanDollars: number }).grossAmountPlanDollars =
+      GIFT_DOLLARS - 1
+
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(
+      validatePlan(plan), TAX_YEAR, years,
+    )).toMatchObject({
+      status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+      issues: [{ kind: 'namedQcdInvalid' }],
     })
   })
 
@@ -741,9 +831,15 @@ describe('a declared named QCD stops blocking the replay it never moved in', () 
   // The behavioural gain. Declaring a QCD from an owned IRA used to fail the
   // whole year closed with `exactActionStageRequired`, because the guard could
   // not tell a declared gift from a moving one. The occurrence kind is what
-  // tells them apart: a gift that moved would publish one and be refused by
-  // the coverage gate, and a gift that did not publishes nothing and leaves
-  // the year's evidence exactly as a year without the request.
+  // tells them apart: a gift that settled publishes one and is bound to the
+  // executor's committed cents, and a gift that did not publishes nothing and
+  // leaves the year's evidence exactly as a year without the request.
+  //
+  // These fixtures are the second case, and they are that case for a reason
+  // the reader can check: the Plan carries no IRA classification and no
+  // post-70½ deductible-contribution history, so the eligibility predicate
+  // refuses the request before any stage could settle it. The attested
+  // fixtures above are what move dollars.
   it('closes the source series and the basis replay for the year that declares it', () => {
     const plan = namedGiftPlan('named-qcd-declared-only', [
       traditional('ira', 100_000, 'ira', 20_000),
@@ -760,13 +856,11 @@ describe('a declared named QCD stops blocking the replay it never moved in', () 
     expect(years[0]!.ownedNonRothIraAnnualReplay).toBeDefined()
   })
 
-  // Slice 1 pinned that a named QCD publishes its prerequisite and moves
-  // nothing. This pins the same fact one layer down, where movement would show
-  // up first: no occurrence of the new kind, no application in its phase, and
-  // an IRA balance identical to the same household without the request. The
-  // comparison rather than a literal is deliberate -- when a gift does move,
-  // this test is rewritten, not deleted.
-  it('publishes no gift occurrence and moves no dollars', () => {
+  // The same fact one layer down, where movement would show up first: no
+  // occurrence of the gift kind, no application in its phase, and an IRA
+  // balance identical to the same household without the request. It is a
+  // statement about an unattested request, not about named QCDs.
+  it('publishes no gift occurrence and moves no dollars when unattested', () => {
     const withRequest = project(namedGiftPlan('named-qcd-with-request', [
       traditional('ira', 100_000, 'ira', 20_000),
     ]))[0]!

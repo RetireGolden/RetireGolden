@@ -6,6 +6,7 @@ import type {
   AnnualIraBasisRatio,
   AnnualQcdExecutionPrerequisiteEvidence,
   AnnualRetirementActionPublication,
+  ExecuteAnnualQcdsResult,
   ExecuteOrdinaryWithdrawalsResult,
   ExecuteRothConversionsResult,
   PersonId,
@@ -829,6 +830,18 @@ export interface YearResult {
    */
   qcdActionPrerequisites?:
     readonly Readonly<AnnualQcdExecutionPrerequisiteEvidence>[]
+  /**
+   * Request-keyed named charitable-distribution movement evidence, and the sole
+   * authority on whether a gift moved. A committed result carries each gift's
+   * executed cents, its execution date and sequence, and the complete post-pass
+   * derived facts behind them; a staged result carries the issue that stopped
+   * the year and no derived facts at all. Absence means no named QCD reached
+   * its own executor this year.
+   *
+   * It never replaces `qcdActionPrerequisites`, which keeps publishing what was
+   * proven before any gift moved. The two are always present together.
+   */
+  qcdActionExecution?: ExecuteAnnualQcdsResult
   /** Early-withdrawal penalties (10% traditional pre-59½, 20% HSA non-medical pre-65); not in `tax`. */
   penalties: number
   /** MAGI realized this year (drives IRMAA two years later and the ACA credit). */
