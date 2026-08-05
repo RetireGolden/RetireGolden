@@ -119,7 +119,31 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   // (7,891,262.40 -> 8,082,086.14), which are the two directions a larger
   // deduction can produce. The rise exceeds the tax fall because each year's
   // unpaid tax stays invested for the rest of the horizon.
-  'coast-fire': { depletionYear: null, endingInvestable: 8_082_086.14, lifetimeTax: 1_716_725.39, lifetimeRoth: 0 },
+  //
+  // Re-baselined again 2026-08-04 for the SECOND half of that same conformity:
+  // the federal standard deduction of IRC 63(c)(1) is the basic amount PLUS the
+  // additional amount for age 65 or older, and the copy carried only the basic
+  // one. Same example, same reason it is the only one that moves.
+  //
+  // The state-tax effect is exact and hand-checkable, because Colorado is flat:
+  // in every year the household is 65 or over, Colorado tax falls by
+  //   2,050 (the 2026 single age-65 addition) x inflationScale x 4.4%.
+  // Morgan turns 65 in 2061 (born 1996) and the plan runs to 2086, so it is 26
+  // years, from $214.06 in 2061 (scale 2.3732051860662366) to $396.86 in 2086
+  // (scale 4.399789748815026), summing to about $7,709 of nominal Colorado tax.
+  // 2059 and 2060 are unchanged to the penny: at 63 and 64 there is no addition.
+  //
+  // Lifetime tax FALLS $9,221.03 (1,716,725.39 -> 1,707,504.36) -- the ~$7,709
+  // of Colorado tax plus ~$1,512 of federal, because a household that owes less
+  // state tax withdraws less from the traditional IRA to pay it, and the
+  // withdrawal it no longer takes is not federally taxed either. That induced
+  // share is a constant 19.6% of the state saving in all 26 years, which is what
+  // a fixed marginal rate on the funding withdrawal looks like.
+  //
+  // Ending investable RISES $25,629.07 (8,082,086.14 -> 8,107,715.21): $9,221 of
+  // tax not paid, left in accounts returning 6-7.5% for the balance of a horizon
+  // that runs 25 more years past the first of those savings.
+  'coast-fire': { depletionYear: null, endingInvestable: 8_107_715.21, lifetimeTax: 1_707_504.36, lifetimeRoth: 0 },
   'barista-fire': { depletionYear: null, endingInvestable: 14_569_925.04, lifetimeTax: 2_091_401.98, lifetimeRoth: 0 },
   // bridge-early-retirement re-baselined 2026-08-04 for the Notice 2022-6
   // section 3.02(a) correction. It is the one example carrying a 72(t) SEPP

@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import { describeRule } from '../rules/describeRule.js'
 
-import { indexConformedStateStandardDeduction, stateParamsFor } from '../params/state/index.js'
+import { conformStateStandardDeduction, stateParamsFor } from '../params/state/index.js'
+import { packForYear } from '../params/index.js'
 import type { TaxYearInput } from '../projection/types.js'
 import { computeFederalTax } from './federalTax.js'
 import { computeStateTax, computeStateTaxDetail, createStateTaxCalculator } from './stateTax.js'
@@ -20,6 +21,7 @@ function input(over: Partial<TaxYearInput> = {}): TaxYearInput {
 }
 
 const pack = (code: string) => stateParamsFor(code, 2026)!
+const FEDERAL_AGE65_ADDITION = packForYear(2026).pack.federalTax.age65Addition
 
 describe('computeStateTax — code paths', () => {
   it('no-income-tax state is always zero', () => {
@@ -364,7 +366,7 @@ describe('a conformed state standard deduction in a stand-in year', () => {
       inflationScale: DOUBLED,
     })
     const nd = computeStateTaxDetail(
-      indexConformedStateStandardDeduction(pack('ND'), DOUBLED),
+      conformStateStandardDeduction(pack('ND'), FEDERAL_AGE65_ADDITION, DOUBLED),
       input({ state: 'ND', year: PROJECTED_YEAR, ordinaryIncome: 180_675, inflationScale: DOUBLED }),
     )
 
@@ -410,5 +412,116 @@ describe('a conformed state standard deduction in a stand-in year', () => {
     }))
     expect(tax).toBeCloseTo((100_000 - 24_000 - 32_200) * 0.044, 6)
     expect(tax).not.toBeCloseTo((100_000 - 48_000 - 32_200) * 0.044, 6)
+  })
+})
+
+// IRC 63(c)(1): "the standard deduction" is the BASIC standard deduction plus
+// the ADDITIONAL standard deduction, and 63(c)(3)/63(f)(1) is where the
+// additional amount for a taxpayer who has attained age 65 comes from. A state
+// that defines its deduction by reference to the federal one has therefore
+// referenced both halves — five of the nine (CO, IA, ID, MT, ND) start from
+// federal taxable income, which is already net of the whole thing; MO adopts
+// the allowable federal standard deduction by name; NM excludes an amount equal
+// to the deduction allowed by Section 63.
+//
+// 2026 federal figures: basic 16,100 single / 32,200 joint; additional 2,050
+// single / 1,650 per person joint. Colorado is the cleanest arithmetic — a flat
+// 4.4% on a base that is federal taxable income — so the whole effect of the
+// addition is visible as `addition x 4.4%`.
+describe('the age-65 additional standard deduction in a conformed state', () => {
+  const calc = createStateTaxCalculator()
+  const CO_RATE = 0.044
+
+  it('taxes a 65-year-old single filer less than the same filer at 64', () => {
+    const at64 = calc.compute(input({ state: 'CO', ordinaryIncome: 60_000, peopleAged65Plus: 0 }))
+    const at65 = calc.compute(input({ state: 'CO', ordinaryIncome: 60_000, peopleAged65Plus: 1 }))
+
+    expect(at64).toBeCloseTo((60_000 - 16_100) * CO_RATE, 6)
+    expect(at65).toBeCloseTo((60_000 - 16_100 - 2_050) * CO_RATE, 6)
+    expect(at65).toBeLessThan(at64)
+    expect(at64 - at65).toBeCloseTo(2_050 * CO_RATE, 6)
+  })
+
+  it('gives the joint addition once per person who has reached 65, not once per return', () => {
+    const neither = calc.compute(input({ state: 'CO', filingStatus: 'marriedFilingJointly', ordinaryIncome: 100_000, peopleAged65Plus: 0 }))
+    const one = calc.compute(input({ state: 'CO', filingStatus: 'marriedFilingJointly', ordinaryIncome: 100_000, peopleAged65Plus: 1 }))
+    const both = calc.compute(input({ state: 'CO', filingStatus: 'marriedFilingJointly', ordinaryIncome: 100_000, peopleAged65Plus: 2 }))
+
+    expect(neither).toBeCloseTo((100_000 - 32_200) * CO_RATE, 6)
+    expect(one).toBeCloseTo((100_000 - 32_200 - 1_650) * CO_RATE, 6)
+    expect(both).toBeCloseTo((100_000 - 32_200 - 3_300) * CO_RATE, 6)
+    // The second spouse is worth exactly as much as the first.
+    expect(neither - one).toBeCloseTo(one - both, 6)
+  })
+
+  it('travels with the conformed deduction into a stand-in year', () => {
+    // At a doubled price level the addition is 4,100, not 2,050: it is one of
+    // the federal figures `indexFederalTaxPack` moves, so a copy that moved the
+    // basic amount alone would drift apart from the original all over again.
+    const tax = calc.compute(input({
+      state: 'CO', year: 2046, ordinaryIncome: 100_000, peopleAged65Plus: 1, inflationScale: 2,
+    }))
+    expect(tax).toBeCloseTo((100_000 - 32_200 - 4_100) * CO_RATE, 6)
+    expect(tax).not.toBeCloseTo((100_000 - 32_200 - 2_050) * CO_RATE, 6)
+  })
+
+  it('gives a part-year resident a prorated addition, not a full one', () => {
+    // Five months in Colorado, seven in no-tax Florida. Residency scales the
+    // income, the basic deduction AND the addition by 5/12, so the Colorado
+    // slice is exactly five twelfths of the full-year Colorado bill:
+    //   income     60,000 x 5/12 = 25,000.0000
+    //   basic      16,100 x 5/12 =  6,708.3333
+    //   addition    2,050 x 5/12 =    854.1667
+    //   taxable                   = 17,437.5000 -> 4.4% = 767.25
+    const tax = calc.compute(input({
+      ordinaryIncome: 60_000,
+      peopleAged65Plus: 1,
+      stateResidency: [{ state: 'CO', months: 5 }, { state: 'FL', months: 7 }],
+    }))
+
+    const fullYearCo = (60_000 - 16_100 - 2_050) * CO_RATE
+    expect(tax).toBeCloseTo(767.25, 6)
+    expect(tax).toBeCloseTo(fullYearCo * (5 / 12), 6)
+    // The failure mode this pins: a full-year addition against a five-month
+    // income slice, which would under-tax the Colorado months.
+    expect(tax).not.toBeCloseTo((25_000 - 16_100 * (5 / 12) - 2_050) * CO_RATE, 6)
+    // ...and the defect itself: no addition at all.
+    expect(tax).not.toBeCloseTo((25_000 - 16_100 * (5 / 12)) * CO_RATE, 6)
+  })
+
+  it('gives nothing to a state that publishes its own deduction', () => {
+    // North Carolina's 12,750 is a North Carolina figure. No federal provision
+    // reaches it, and the age-65 addition must not generalise to it: whatever
+    // age relief NC gives is already inside its own deduction and brackets.
+    const at64 = calc.compute(input({ state: 'NC', ordinaryIncome: 60_000, peopleAged65Plus: 0 }))
+    const at65 = calc.compute(input({ state: 'NC', ordinaryIncome: 60_000, peopleAged65Plus: 2 }))
+    expect(at65).toBeCloseTo(at64, 6)
+    expect(at65).toBeCloseTo((60_000 - 12_750) * 0.0399, 6)
+  })
+
+  it('agrees with the federal engine on the whole IRC 63(c)(1) deduction', () => {
+    // Same identity the basic-amount test asserts, now for a 65+ household:
+    // one engine, one statutory amount. North Dakota's base IS federal taxable
+    // income, so gross less the state base must equal the federal standard
+    // deduction — the federal `deduction` field less the OBBBA senior
+    // deduction, which is IRC 151(d)(5)(C) and not part of section 63 at all.
+    const federal = computeFederalTax({
+      year: 2026,
+      filingStatus: 'marriedFilingJointly',
+      ordinaryIncome: 300_000,
+      capitalGains: 0,
+      ssBenefits: 0,
+      peopleAged65Plus: 2,
+    })
+    const nd = computeStateTaxDetail(
+      conformStateStandardDeduction(pack('ND'), FEDERAL_AGE65_ADDITION, 1),
+      input({ state: 'ND', filingStatus: 'marriedFilingJointly', ordinaryIncome: 300_000, peopleAged65Plus: 2 }),
+    )
+
+    // 300,000 of MAGI is far above the senior-deduction phase-out, so it is 0
+    // here and `deduction` is the section 63 amount alone: 32,200 + 2 x 1,650.
+    expect(federal.seniorDeduction).toBe(0)
+    expect(federal.deduction).toBeCloseTo(35_500, 6)
+    expect(300_000 - nd.taxableIncome).toBeCloseTo(federal.deduction, 6)
   })
 })

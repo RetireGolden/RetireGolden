@@ -15,14 +15,14 @@
  */
 
 import {
-  indexConformedStateStandardDeduction,
+  conformStateStandardDeduction,
   stateParamsFor,
   type StateRetirementExclusion,
   type StateTaxBracket,
   type StateTaxParams,
 } from '../params/state/index.js'
 import { taxableSocialSecurity } from './federalTax.js'
-import { packForYear } from '../params/index.js'
+import { age65StandardDeductionAddition, packForYear } from '../params/index.js'
 import { taxParameterFilingStatus, type TaxCalculator, type TaxYearInput } from '../projection/types.js'
 
 function bracketTax(brackets: StateTaxBracket[], taxable: number): number {
@@ -118,6 +118,20 @@ export function computeStateTaxableIncome(
     taxable -= retirementExclusion(params.retirementPublic, publicPension, agesAlive)
   }
   taxable -= params.standardDeduction[taxStatus]
+  // Only a state whose deduction IS the federal one carries this, and only
+  // after `conformStateStandardDeduction` has attached it. It is the federal
+  // additional standard deduction for age 65 or older, per person, already
+  // indexed and already prorated for part-year residency if either applied —
+  // all that is left is the head count, which is the household's, not the
+  // state's. States that publish their own deduction never reach this line;
+  // whatever age relief they give lives in their brackets and exclusions.
+  if (params.standardDeductionAge65Addition) {
+    taxable -= age65StandardDeductionAddition(
+      params.standardDeductionAge65Addition,
+      taxStatus,
+      Math.max(0, input.peopleAged65Plus),
+    )
+  }
 
   return Math.max(0, taxable)
 }
@@ -147,12 +161,24 @@ function scaleExclusion(rule: StateRetirementExclusion, scale: number): StateRet
 }
 
 function prorateParams(params: StateTaxParams, scale: number): StateTaxParams {
+  const age65 = params.standardDeductionAge65Addition
   return {
     ...params,
     standardDeduction: {
       single: params.standardDeduction.single * scale,
       marriedFilingJointly: params.standardDeduction.marriedFilingJointly * scale,
     },
+    // The per-person age-65 addition is part of the same deduction and prorates
+    // with it: a 65+ filer resident for five months takes five twelfths of it
+    // against five twelfths of the year's income, not the whole year's.
+    ...(age65 === undefined
+      ? {}
+      : {
+          standardDeductionAge65Addition: {
+            single: age65.single * scale,
+            marriedFilingJointly: age65.marriedFilingJointly * scale,
+          },
+        }),
     brackets: {
       single: params.brackets.single.map((b) => ({ ...b, lowerBound: b.lowerBound * scale })),
       marriedFilingJointly: params.brackets.marriedFilingJointly.map((b) => ({ ...b, lowerBound: b.lowerBound * scale })),
@@ -220,9 +246,20 @@ export function computeStateTaxYearTotal(input: TaxYearInput, opts: StateTaxYear
     // than a state figure, and `computeFederalTax` projects that federal
     // figure past the pack year under IRC 63(c)(7)(B)(ii). The copy has to
     // travel with it, or one engine holds two values for one amount in the
-    // same year and taxes the gap at the state rate. Everything else in the
-    // pack — brackets included — stays nominal.
-    const params = indexConformedStateStandardDeduction(published, input.inflationScale ?? 1)
+    // same year and taxes the gap at the state rate — and it has to be the
+    // whole federal deduction, additional age-65 amount included, which is
+    // what IRC 63(c)(1) means by "the standard deduction" those states adopt.
+    // Everything else in the pack — brackets included — stays nominal.
+    //
+    // This is the only place the two resolve, and it is deliberately upstream
+    // of `prorateParams`: both figures arrive at the split-year path already
+    // conformed, so residency scales them together.
+    const { pack } = packForYear(input.year)
+    const params = conformStateStandardDeduction(
+      published,
+      pack.federalTax.age65Addition,
+      input.inflationScale ?? 1,
+    )
     return opts.mapParams ? opts.mapParams(params) : params
   }
   if (overrideRate > 0) {
