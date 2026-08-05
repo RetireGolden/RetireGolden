@@ -81,7 +81,7 @@ The ledger is split into three buckets so the serious findings are not buried un
 | `ABSENT` | No arrangement of rendering differences makes the quote a substring of the cited page. The diagnosis prints how many words matched before divergence and what the source actually says at that point. | Read the diagnosis. Three common shapes: a **composed** sentence assembled from a table or an enumerated list (the dangerous one — it reads like a quotation and is not); a **rewritten** sentence in the registry's own words; a **de-symbolised** quote where only `$`, `%`, `§` or a possessive was changed. Re-quote from the source. |
 | `TRUNCATED` | The quote matches once the terminal punctuation it ends with is removed — i.e. the quote closes a sentence the source keeps writing. The mark is stripped from the quote only, never from the source, so this one *is* directional; the ledger names which mark it was (period, semicolon, colon or comma). | Check what was cut. This has hidden operative limbs before (`…is taken into account.` where the regulation reads `…is taken into account **in determining whether section 401(a)(9) is satisfied**`). Either restore the full sentence or mark the cut with `...`. |
 | `ELISION-BROKEN` | A quote uses `...` markers, but at least one segment between them is not in the source. | The elision is not the problem; the segment is. Treat as `ABSENT` for that segment. |
-| `UNFETCHABLE` | The page could not be retrieved, or returned a challenge/stub instead of the document. | Not a registry defect on its own, but the citation is unverified until it resolves. `www.jct.gov` sits behind a Cloudflare challenge and is expected here; the script does not attempt to defeat it. Consider citing a mirror that serves the same text. |
+| `UNFETCHABLE` | The page could not be retrieved, or returned a challenge/stub instead of the document. Only the network request can produce this — a cache or temp-directory failure warns and carries on, because it is a fact about your machine and this verdict is an accusation against a publisher. | Not a registry defect on its own, but the citation is unverified until it resolves. `www.jct.gov` sits behind a Cloudflare challenge and is expected here; the script does not attempt to defeat it. Consider citing a mirror that serves the same text. |
 
 ### ADVISORY — faithful, but not literally character-exact
 
@@ -170,5 +170,9 @@ guess. It is also encoded in `HOST_CONVENTIONS` in the script, so the two cannot
 - **A failure is not automatically a registry defect.** Confirm against the enrolled text before changing a
   quote — especially for recent legislation, where the mirrors lag.
 - **The cache does not expire.** Pass `--refresh` when re-verifying against sources that may have moved.
+- **The cache is a convenience, never evidence.** A cache that cannot be written, cannot be read, or holds a
+  corrupt entry degrades to a refetch and prints one warning on stderr. It never produces a verdict: a
+  read-only or full disk is a fact about your machine, and `UNFETCHABLE` is a claim about a publisher. The
+  same rule covers the temp directory used to stage PDFs for extraction.
 - **Requests are serialised** with a delay (default 1200 ms) because these are public government servers.
   A full run is roughly one hundred requests.

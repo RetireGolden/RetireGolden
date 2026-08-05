@@ -408,6 +408,37 @@ function htmlVariants(html) {
   )
 }
 
+// ─── Local I/O is never evidence ─────────────────────────────────────────────
+/**
+ * THE RULE: a local I/O failure must never produce a verdict about a source.
+ *
+ * The cache and the PDF scratch directory are conveniences. Whether this
+ * machine can write to them is a fact about this machine, and every verdict
+ * this script emits is a claim about a published document or about the
+ * registry. Letting a read-only directory reach a verdict is the same error as
+ * blaming a publisher for a missing poppler — an accusation aimed at whoever is
+ * standing nearest rather than at whatever actually broke. Worse, the accusation
+ * is loud: UNFETCHABLE is SERIOUS and exits non-zero, so one unwritable cache
+ * would report every cited source as unreachable while all of them were, in
+ * fact, fetched.
+ *
+ * So local failures degrade and warn. They never return, never throw past the
+ * call that caused them, and never change what the ledger says.
+ *
+ * Warned once per kind per run: a read-only cache directory fails identically
+ * on every URL, and ninety copies of one warning would bury the ledger the run
+ * exists to print.
+ */
+const warnedLocalIo = new Set()
+
+/** @param {string} what @param {unknown} err */
+function warnLocalIo(what, err) {
+  if (warnedLocalIo.has(what)) return
+  warnedLocalIo.add(what)
+  console.error(`warning: ${what}: ${String(err)}`)
+  console.error('         continuing — this affects speed, not verdicts.')
+}
+
 let pdfExtractorChecked = false
 let pdfExtractorAvailable = false
 
@@ -446,9 +477,16 @@ function hasPdfExtractor() {
  */
 function pdfVariants(body) {
   if (!hasPdfExtractor()) return []
-  const dir = mkdtempSync(join(tmpdir(), 'rg-verify-quotes-'))
-  const file = join(dir, 'source.pdf')
+  /** @type {string | null} */
+  let dir = null
   try {
+    // Inside the try: staging the PDF is local I/O, and an unwritable temp
+    // directory used to throw straight past `loadSource` and abort the run
+    // before it printed a ledger. Returning no variants instead routes the
+    // source to PDF-NOT-VERIFIABLE — "the document arrived and the local
+    // reader failed" — which is the verdict that names the right culprit.
+    dir = mkdtempSync(join(tmpdir(), 'rg-verify-quotes-'))
+    const file = join(dir, 'source.pdf')
     writeFileSync(file, body)
     const raw = []
     for (const flags of [[], ['-layout']]) {
@@ -473,8 +511,18 @@ function pdfVariants(body) {
         readings.map((glyph) => collapse(variant.replace(/\ufffd/g, glyph).replace(INVISIBLE, ''))),
       ),
     )
+  } catch (err) {
+    warnLocalIo('could not stage a PDF for extraction in the temp directory', err)
+    return []
   } finally {
-    rmSync(dir, { recursive: true, force: true })
+    if (dir !== null) {
+      try {
+        rmSync(dir, { recursive: true, force: true })
+      } catch (err) {
+        // A scratch directory that will not delete is litter, not a finding.
+        warnLocalIo('could not remove a temp directory', err)
+      }
+    }
   }
 }
 
@@ -543,8 +591,24 @@ async function fetchWithCache(url, opts) {
       // evidence, and trusting it unchecked would reintroduce exactly the
       // real-looking wrong verdict the check exists to prevent. The file is left
       // on disk; the refetch overwrites it.
-      const cached = readFileSync(bodyPath)
-      if (typeof meta.bytes === 'number' && Number.isFinite(meta.bytes) && cached.length === meta.bytes) {
+      //
+      // The read itself is guarded for the same reason the meta read is: a body
+      // file that exists but cannot be read — permissions, a directory where a
+      // file should be, a half-written entry on a full disk — is a local fault,
+      // and it used to throw straight past `loadSource` and end the run. It is a
+      // cache miss like any other.
+      let cached = null
+      try {
+        cached = readFileSync(bodyPath)
+      } catch (err) {
+        warnLocalIo(`could not read the cached body in ${opts.cacheDir}`, err)
+      }
+      if (
+        cached !== null &&
+        typeof meta.bytes === 'number' &&
+        Number.isFinite(meta.bytes) &&
+        cached.length === meta.bytes
+      ) {
         return {
           body: cached,
           contentType: meta.contentType ?? '',
@@ -596,12 +660,22 @@ async function fetchWithCache(url, opts) {
       chunks.push(buf)
     }
     const body = Buffer.concat(chunks)
-    mkdirSync(opts.cacheDir, { recursive: true })
-    writeFileSync(bodyPath, body)
-    writeFileSync(
-      metaPath,
-      `${JSON.stringify({ url, status: response.status, contentType, fetchedAt: new Date().toISOString(), bytes: body.length }, null, 1)}\n`,
-    )
+    // Persisting is best-effort, and it has its own catch on purpose. Under the
+    // outer one, a read-only or full cache directory returned an empty body and
+    // an error — so a source that arrived intact became UNFETCHABLE, and a run
+    // on such a machine would report every cited document unreachable while
+    // every one of them had been fetched. The fetch above is the only thing in
+    // this function allowed to produce that verdict.
+    try {
+      mkdirSync(opts.cacheDir, { recursive: true })
+      writeFileSync(bodyPath, body)
+      writeFileSync(
+        metaPath,
+        `${JSON.stringify({ url, status: response.status, contentType, fetchedAt: new Date().toISOString(), bytes: body.length }, null, 1)}\n`,
+      )
+    } catch (err) {
+      warnLocalIo(`could not write the source cache in ${opts.cacheDir}`, err)
+    }
     return { body, contentType, status: response.status, fromCache: false }
   } catch (err) {
     return { body: Buffer.alloc(0), contentType: '', status: 0, fromCache: false, error: String(err) }
@@ -632,7 +706,11 @@ async function loadSource(url, opts) {
         ok: false,
         pdfUnreadable: true,
         problem: hasPdfExtractor()
-          ? 'pdftotext produced no text (scanned or protected PDF)'
+          ? // Two causes reach here and this cannot tell them apart: a document
+            // with no extractable text, and a local staging failure. Naming only
+            // the first would blame the publisher for this machine — so it names
+            // both, and the local one prints a warning of its own.
+            'no text could be extracted — a scanned or protected PDF, or a local extraction failure'
           : 'no PDF text extractor on PATH — install poppler-utils to check PDF-sourced quotes',
       }
     }
