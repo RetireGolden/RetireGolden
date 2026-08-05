@@ -89,9 +89,45 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   // spouses have mid-year birthdays, so their transition years now carry
   // marketplace months (at $950/mo) that the old full-year Medicare switch
   // skipped, lowering the ending balance.
-  'example-couple': { depletionYear: null, endingInvestable: 2_272_928.12, lifetimeTax: 451_207.76, lifetimeRoth: 1_464_472.03 },
+  // Re-baselined 2026-08-04 for the IRC 408(d)(3)(A)(i) owner boundary. The
+  // aggregate conversion strategy used to pick one destination -- the first
+  // Roth in Plan order, no owner predicate -- and drain every convertible
+  // traditional account into it. It now slices the sized amount by each owner's
+  // gross convertible balance, snapshotted after the RMD block, and converts
+  // each slice into that owner's own Roth; an owner with no Roth of their own
+  // converts nothing, and the run says so by name. Exactly two examples have
+  // that shape and exactly two move.
+  //
+  // example-couple: Alex holds an 820k 401(k) and the household's only Roth,
+  // Sam a 310k IRA and no Roth. Only Alex's slice converts, so lifetime
+  // conversions fall 450,105.66 to 1,014,366.37 -- Alex's share of the
+  // convertible pool, drifting above the opening 72.6% as the 401(k) grows.
+  // Lifetime tax falls 19,858.85, and that net figure hides the shape that
+  // matters: conversion tax drops 166,185 across 2028-2033 and only 146,326
+  // comes back, as tax on the balances that were never converted, spread over
+  // 2034-2041. The early saving compounds for another two decades to 2059,
+  // which is why ending investable rises 451,989.99 -- the year-by-year tax
+  // delta compounded at the portfolio's realized rate, near 6.7% rather than
+  // the 5.5% default because these accounts follow a glidepath.
+  'example-couple': { depletionYear: null, endingInvestable: 2_724_918.11, lifetimeTax: 431_348.91, lifetimeRoth: 1_014_366.37 },
   'under-saved-single': { depletionYear: 2046, endingInvestable: 0, lifetimeTax: 183_713.99, lifetimeRoth: 0 },
-  'bracket-fill-roth': { depletionYear: null, endingInvestable: 586_419.24, lifetimeTax: 219_203.74, lifetimeRoth: 806_028.59 },
+  // bracket-fill-roth: Morgan holds a 700k IRA and the only Roth, Riley a 400k
+  // IRA and none. 2026 is the arithmetic in the open: the same 183,448.24
+  // target, Morgan's post-RMD balance 673,584.91 against Riley's untouched
+  // 400,000, gives Morgan 62.742% of it -- 115,098.46, which is what the engine
+  // converts. Lifetime conversions fall 333,495.17 to 472,533.42 and lifetime
+  // tax falls 55,350.41.
+  //
+  // Ending investable rises only 37,334.55, far less than that tax saving
+  // compounds to, and the difference is charity rather than a puzzle. This is
+  // the one example with an annual QCD. The old run converted Morgan's IRA away
+  // entirely by 2030 and had no IRA left to give from; Riley's now survives the
+  // horizon, so the 10,000 a year keeps going out. Total QCDs rise 112,626.24,
+  // from 52,563.29 to 165,189.53. Compounded tax saving less compounded extra
+  // giving is the small positive left over -- lower ending wealth from giving
+  // more away is the correct outcome, the same reading the 408(d)(8) pre-RMD
+  // window note above records.
+  'bracket-fill-roth': { depletionYear: null, endingInvestable: 623_753.79, lifetimeTax: 163_853.34, lifetimeRoth: 472_533.42 },
   // early-retiree-aca retuned 2026-07-30: the old baseline (55k consulting,
   // fill to the 12% bracket) had its only actionable ACA year above 400% FPL,
   // so the example could not show a credit at all. It now converts to the 10%

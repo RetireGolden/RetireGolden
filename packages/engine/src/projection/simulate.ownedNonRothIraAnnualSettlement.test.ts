@@ -248,6 +248,7 @@ describe('simulator owned non-Roth IRA exact annual settlement', () => {
       ira('ira-p1', 100, 50),
       ira('ira-p2', 100, 0, 'p2'),
       roth(),
+      { ...roth(), id: 'roth-p2', ownerPersonId: 'p2' },
     ]
     plan.strategies.rothConversion = {
       mode: 'manual',
@@ -258,9 +259,15 @@ describe('simulator owned non-Roth IRA exact annual settlement', () => {
     run(plan, TAX_YEAR, capture)
 
     expect(capture).toHaveBeenCalledTimes(1)
+    // Equal convertible balances, so the 50 splits 25/25 and each owner
+    // converts into their own Roth. p1's 25 is half basis and p2's is entirely
+    // pre-tax, so 12.5 of the 50 is nontaxable and the household fraction is
+    // 0.75 — a figure no single owner's ratio produces. Before the owner slice
+    // this fixture gave p2 no Roth, the whole 50 came out of p1's IRA, and the
+    // fraction read 0.5: one owner's ratio wearing the household's name.
     expect(capture.mock.calls[0]![0].incumbentRothConversion).toBe(50)
     expect(capture.mock.calls[0]![0].rothConversionTaxableFraction)
-      .toBeCloseTo(0.5, 12)
+      .toBeCloseTo(0.75, 12)
   })
 
   it('preserves exact incumbent distribution character across mixed owners', () => {

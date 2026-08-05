@@ -195,7 +195,10 @@ describe('private contiguous owned-IRA basis replay', () => {
     expect(annual.ownerReplays[0]!.line8AllocationEvidence).toMatchObject({
       annualGrossAmount: 100_000,
     })
-    expect(annual.aggregateRothDestinationCredit).toMatchObject({
+    // One owner, so one credit: the owner slice has nobody to divide the
+    // household between.
+    expect(annual.aggregateRothDestinationCredits).toHaveLength(1)
+    expect(annual.aggregateRothDestinationCredits[0]).toMatchObject({
       destinationCreditedAmount: 200_000,
       sourceOwnerPersonIds: ['p1', 'p1'],
     })

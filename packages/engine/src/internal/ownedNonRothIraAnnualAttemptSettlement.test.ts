@@ -383,6 +383,7 @@ describe('private owned-IRA annual attempt settlement', () => {
         ira('ira-p1', 1_000, 'p1', 100),
         ira('ira-p2', 1_000, 'p2', 100),
         roth('p1'),
+        roth('p2'),
       ]
       plan.strategies.rothConversion = {
         mode: 'manual',
@@ -390,11 +391,71 @@ describe('private owned-IRA annual attempt settlement', () => {
       }
     }
     const blockedYears = cloneYears(project(plan))
+    if (kind === 'mixedOwnerAggregate') {
+      // The simulator no longer produces this shape, so the fixture builds it:
+      // p2's conversion re-pointed at p1's Roth and folded into p1's credit,
+      // which is precisely what the aggregate path published for every
+      // household holding its Roth and traditional balances in different names.
+      // IRC 408(d)(3)(A)(i) does not admit it, and the source-series stage now
+      // refuses it before the settlement sees a replay at all.
+      const occurrences = blockedYears[0]!.retirementRuntimeSource!.runtimeOccurrences
+      const applications = blockedYears[0]!
+        .retirementRuntimeApplicationSource!.applications
+      const replacementKeys = new Map<string, string>()
+      for (const occurrence of occurrences) {
+        if (occurrence.kind !== 'legacyRothConversion' ||
+            occurrence.sourceAccountId !== 'ira-p2') continue
+        const tuple = JSON.parse(occurrence.producerOccurrenceKey) as unknown[]
+        const replacement = JSON.stringify([tuple[0], tuple[1], 'roth-p1'])
+        replacementKeys.set(occurrence.producerOccurrenceKey, replacement)
+        ;(occurrence as { producerOccurrenceKey: string })
+          .producerOccurrenceKey = replacement
+      }
+      const credits = applications.filter((application) =>
+        application.applicationKind === 'aggregateRothDestinationCredit')
+      if (credits.length !== 2) throw new Error('expected one credit per owner')
+      const [first, second] = credits as [
+        Extract<typeof credits[number], { applicationKind: 'aggregateRothDestinationCredit' }>,
+        Extract<typeof credits[number], { applicationKind: 'aggregateRothDestinationCredit' }>,
+      ]
+      const merged = first as unknown as {
+        producerOccurrenceKeys: string[]
+        sourceOwnerPersonIds: (string | null)[]
+        destinationCreditedAmountPlanDollars: number
+        destinationBalanceAfterPlanDollars: number
+      }
+      merged.producerOccurrenceKeys = [
+        ...first.producerOccurrenceKeys,
+        ...second.producerOccurrenceKeys.map((key) => replacementKeys.get(key) ?? key),
+      ]
+      merged.sourceOwnerPersonIds = [
+        ...first.sourceOwnerPersonIds,
+        ...second.sourceOwnerPersonIds,
+      ]
+      merged.destinationCreditedAmountPlanDollars +=
+        second.destinationCreditedAmountPlanDollars
+      merged.destinationBalanceAfterPlanDollars +=
+        second.destinationCreditedAmountPlanDollars
+      ;(applications as unknown as unknown[]).splice(
+        applications.indexOf(second), 1,
+      )
+      for (const application of applications) {
+        if (application.applicationKind === 'aggregateRothDestinationCredit' ||
+            application.applicationKind === 'namedRothDestinationCredit') continue
+        ;(application as { producerOccurrenceKey: string }).producerOccurrenceKey =
+          replacementKeys.get(application.producerOccurrenceKey) ??
+          application.producerOccurrenceKey
+      }
+    }
     if (kind === 'incompleteAggregate') {
       const applications = blockedYears[0]!
         .retirementRuntimeApplicationSource!.applications
+      // The LAST credit, so the surviving mutation ordinals stay contiguous and
+      // the attempt fails on the missing credit rather than on a hole in the
+      // ordinal chain. With one credit per converting owner there is now more
+      // than one to choose from.
       ;(applications as unknown as unknown[]).splice(
-        applications.findIndex((application) =>
+        applications.findLastIndex((application) =>
           application.applicationKind === 'aggregateRothDestinationCredit'),
         1,
       )
@@ -415,9 +476,7 @@ describe('private owned-IRA annual attempt settlement', () => {
 
     expect(result).toMatchObject({
       status: 'rolledBack',
-      reason: kind === 'mixedOwnerAggregate'
-        ? 'aggregateOwnerBindingIncomplete'
-        : 'contiguousReplayBlocked',
+      reason: 'contiguousReplayBlocked',
       attemptCount: 1,
       pendingSettlement: null,
       committedCarryforwards: null,
