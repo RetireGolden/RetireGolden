@@ -571,7 +571,7 @@ const registry = {
       citation: 'IRC 72(t)(6)(A)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
       quotedText:
-        'In the case of any amount received from a simple retirement account (within the meaning of section 408(p)) during the 2-year period beginning on the date such individual first participated in any qualified salary reduction arrangement maintained by the individual employer under section 408(p)(2), paragraph (1) shall be applied by substituting 25 percent for 10 percent.',
+        'In the case of any amount received from a simple retirement account (within the meaning of section 408(p)) during the 2-year period beginning on the date such individual first participated in any qualified salary reduction arrangement maintained by the individual\'s employer under section 408(p)(2), paragraph (1) shall be applied by substituting "25 percent" for "10 percent".',
     }, {
       kind: 'irsPublication',
       citation: 'IRS SIMPLE IRA plan FAQs',
@@ -582,7 +582,7 @@ const registry = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts'],
   },
 
@@ -792,7 +792,7 @@ const registry = {
       citation: 'IRS Publication 590-B, inherited IRA basis',
       url: 'https://www.irs.gov/publications/p590b',
       quotedText:
-        'Unless you are the decedent spouse and choose to treat the IRA as your own, you cannot combine this basis with any basis you have in your own traditional IRA(s).',
+        'Unless you are the decedent\'s spouse and choose to treat the IRA as your own, you can\'t combine this basis with any basis you have in your own traditional IRA(s) or any basis in traditional IRA(s) you inherited from other decedents.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -820,7 +820,7 @@ const registry = {
       citation: 'Treas. Reg. 1.408-8(b)(3)',
       url: 'https://www.law.cornell.edu/cfr/text/26/1.408-8',
       quotedText:
-        'any amount distributed during a calendar year from an IRA of that IRA owner is treated as a required minimum distribution under section 401(a)(9) to the extent that the total required minimum distribution for the year under section 401(a)(9) from all of that IRA owner IRAs has not been satisfied.',
+        'any amount distributed during a calendar year from an IRA of that IRA owner is treated as a required minimum distribution under section 401(a)(9) to the extent that the total required minimum distribution for the year under section 401(a)(9) from all of that IRA owner\'s IRAs has not been satisfied (either by a distribution from the IRA or, as permitted under paragraph (e) of this section, from another IRA).',
     }, {
       kind: 'regulation',
       citation: 'Treas. Reg. 1.408-8(g)(1)',
@@ -903,12 +903,12 @@ const registry = {
       citation: 'IRC 72(t)(4)(A)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
       quotedText:
-        'the taxpayer tax for the 1st taxable year in which such modification occurs shall be increased by an amount, determined under regulations, equal to the tax which (but for paragraph (2)(A)(iv)) would have been imposed, plus interest for the deferral period.',
+        'the taxpayer\'s tax for the 1st taxable year in which such modification occurs shall be increased by an amount, determined under regulations, equal to the tax which (but for paragraph (2)(A)(iv)) would have been imposed, plus interest for the deferral period.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts'],
   },
 
@@ -2744,7 +2744,7 @@ const registry = {
       citation: 'IRC 151(d)(5)(C)(iii)(I)',
       url: 'https://www.law.cornell.edu/uscode/text/26/151',
       quotedText:
-        'In the case of any taxpayer for any taxable year, the 6,000 dollar amount in clause (i) shall be reduced (but not below zero) by 6 percent of so much of the taxpayer modified adjusted gross income as exceeds 75,000 dollars (150,000 dollars in the case of a joint return).',
+        'In the case of any taxpayer for any taxable year, the $6,000 amount in clause (i) shall be reduced (but not below zero) by 6 percent of so much of the taxpayer’s modified adjusted gross income as exceeds $75,000 ($150,000 in the case of a joint return).',
     }, {
       kind: 'statute',
       citation: 'IRC 151(d)(4)',
