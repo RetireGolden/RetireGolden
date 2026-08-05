@@ -421,13 +421,21 @@ function manualReviewRequired(
   originalPlanIndex: number,
 ): RetirementActionManualReviewRequiredResult {
   const parsedPlanId = planIdSchema.safeParse(plan.id)
+  // The allocator's QCD arm exists and a named gift executes end to end, so the
+  // reason a row stays here is a property of the *aggregate* kind, not a
+  // missing arm: a migrated aggregate QCD carries none of the identity the
+  // allocator requires, and there is no aggregate arm to give it any. A named
+  // request is authored and removed directly and should never reach this
+  // function; if one does, it is told where its edits actually live.
   const issues: [
     RetirementActionManualReviewIssue,
     ...RetirementActionManualReviewIssue[],
   ] = [issue(
     'targetKindUnsupported',
     'targetActionId',
-    'QCD review remains explicit and non-mutating until the canonical identity allocator exposes a QCD arm.',
+    target.kind === 'legacyAggregateQcd'
+      ? 'A migrated aggregate QCD carries no donor, source IRA, execution date, or charity evidence, and the identity allocator has no aggregate arm, so this row stays under review and moves nothing.'
+      : 'A named QCD is scheduled and removed directly; it does not go through migrated-row replacement.',
   )]
   if (!parsedPlanId.success) {
     issues.unshift(issue(
