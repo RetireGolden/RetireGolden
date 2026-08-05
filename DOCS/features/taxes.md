@@ -250,6 +250,22 @@ the federal deduction for 2026 and are deliberately untagged, and AZ left the li
 §43-1041(A) sets Arizona's own amounts and (H) borrows only the federal indexation *method*, so the pack now
 carries Arizona's published figure untagged (`ars-43-1041-standard-deduction-published-amount`).
 
+That field never holds a state **personal exemption**, in any pack entry. IN publishes no standard deduction
+at all and subtracts flat per-person exemptions instead - $1,000 per filer, $1,000 per person aged 65+, $1,000
+per person blind, $500 more below $40,000 of AGI - and MS stacks $6,000/$12,000 plus $1,500 per person aged
+65+ on top of a standard deduction the pack does carry. Neither is modelled
+(`ic-6-3-1-3-5-exemptions-not-a-standard-deduction`, `ms-27-7-21-personal-and-age-65-exemptions`), and folding
+either in would do two things: make one state an unmarked exception to a fifty-one-state convention, and turn
+a conservative over-charge into a flattering under-charge for any household below the age the other half of
+the amount is conditioned on.
+
+`localRatePct` is a **caller** input - `assumptions.localIncomeTaxPct`, or a relocation candidate's own field,
+both defaulting to zero - and no `StateTaxParams` field carries a per-state default. Indiana is where that
+bites hardest: all 92 counties levy on the identical base the state rate runs on, about $1,400 a year at a
+mid-range 2% on $70,000 against $2,065 of state tax, so an Indiana projection under-charges unless a rate is
+supplied (`ic-6-3-6-2-2-county-income-tax-shares-the-state-base`). No default was invented, because the
+published county rates span sixfold and Indiana publishes no statewide figure to stand for them.
+
 Capital-loss carryforward conformity is state-aware where it changes decisions. The default conforms to the
 federal net capital-gain line. Pennsylvania uses current-year-only conformity, so a federal prior-year loss
 carryforward does not erase PA-taxable current-year gains. CA/MN/NJ source metadata documents their ordinary
@@ -258,7 +274,11 @@ carry the included share explicitly: ND 60% (40% excluded), AR 50%, and AZ 75% (
 only assets acquired after 2011). MO subtracts the whole gain, which `capitalGainsAsOrdinary: false` already
 says. The share is applied to the modeled gain at ordinary state rates - none of these is a preferential
 *rate*. The no-income-tax states also carry `capitalGainsAsOrdinary: false`, where the field is inert but
-still surfaced by the relocation drill-down; WA is the deliberate exception.
+still surfaced by the relocation drill-down; WA is the deliberate exception. IN and MS are the two states
+where the plain `capitalGainsAsOrdinary: true` with no share is simply **correct** and must survive a sweep
+for the ND/AR/AZ pattern: Indiana's base is federal AGI with no gain modification in its closed list, and
+Mississippi's department states outright that it has no different rate for capital gains
+(`ms-capital-gains-taxed-as-ordinary`).
 
 Private retirement income includes private pensions, annuities, traditional IRA/401(k) withdrawals, RMDs, SEPP,
 and inherited-traditional distributions. Pension accounts can be marked as private or public / military; public
