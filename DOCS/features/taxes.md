@@ -238,7 +238,7 @@ Each state pack (`StateTaxParams`) carries `hasIncomeTax`, `taxesSocialSecurity`
 ordinary + qualified dividends + taxable capital gains where the state includes them + (taxable SS if the
 state taxes it) - private/public retirement exclusions - standard deduction, floored at 0, then bracketed.
 
-Nine jurisdictions - AZ, CO, DC, IA, ID, MO, MT, ND, NM - do not publish a standard deduction of their own.
+Eight jurisdictions - CO, DC, IA, ID, MO, MT, ND, NM - do not publish a standard deduction of their own.
 Their packs carry a copy of the **federal** figure, tagged `standardDeductionConformity: 'federal'` (for CO
 and ND the brackets run on federal taxable income, so the field is what converts the engine's gross base into
 that base). Because `indexFederalTaxPack` projects the federal original past the pack year under IRC
@@ -246,12 +246,17 @@ that base). Because `indexFederalTaxPack` projects the federal original past the
 one engine would hold two values for one statutory amount in a single projected year and tax the whole
 widening gap at the state rate. This is not state indexing: nothing else in the pack moves, including the
 brackets and the retirement-exclusion caps, which are state figures under state law. ME and SC decoupled from
-the federal deduction for 2026 and are deliberately untagged.
+the federal deduction for 2026 and are deliberately untagged, and AZ left the list on 2026-08-05: A.R.S.
+§43-1041(A) sets Arizona's own amounts and (H) borrows only the federal indexation *method*, so the pack now
+carries Arizona's published figure untagged (`ars-43-1041-standard-deduction-published-amount`).
 
 Capital-loss carryforward conformity is state-aware where it changes decisions. The default conforms to the
 federal net capital-gain line. Pennsylvania uses current-year-only conformity, so a federal prior-year loss
 carryforward does not erase PA-taxable current-year gains. CA/MN/NJ source metadata documents their ordinary
-capital-gain treatment in the 2026 pack.
+capital-gain treatment in the 2026 pack. Four states exclude part of a gain by statute and carry the included
+share instead: ND 60% (40% excluded), AR 50%, AZ 75% (a 25% subtraction that reaches only assets acquired
+after 2011), and MO 0% (the whole gain subtracted). The share is applied to the modeled gain at ordinary state
+rates - none of these is a preferential *rate*.
 
 Private retirement income includes private pensions, annuities, traditional IRA/401(k) withdrawals, RMDs, SEPP,
 and inherited-traditional distributions. Pension accounts can be marked as private or public / military; public
