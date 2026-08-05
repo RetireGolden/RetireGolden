@@ -87,8 +87,22 @@ export interface RetirementActionManualReviewReplacementEvidence {
   allocatorEvidence: Readonly<RetirementActionCandidateIdentityEvidence>
 }
 
+/**
+ * Why this target was not replaced, as published evidence.
+ *
+ * The two members are not interchangeable and the difference is the whole
+ * point of naming them. A migrated aggregate QCD is not replaced because the
+ * canonical allocator has no aggregate arm to hand it to. A named QCD is not
+ * replaced because it does not belong on this path at all: the allocator's QCD
+ * arm authors it, and a consumer reading the aggregate policy off a named
+ * target would read a missing arm that exists.
+ */
+export type RetirementActionManualReviewRequiredPolicy =
+  | 'explicitManualReviewRequiredNoCanonicalAllocatorArm'
+  | 'explicitNoReplacementNamedQcdUsesCanonicalAllocatorArm'
+
 export interface RetirementActionManualReviewRequiredEvidence {
-  policy: 'explicitManualReviewRequiredNoCanonicalAllocatorArm'
+  policy: RetirementActionManualReviewRequiredPolicy
   planId: PlanId | null
   target: Readonly<RetirementActionManualReviewTargetEvidence>
   targetOmittedBeforeAllocation: false
@@ -421,13 +435,26 @@ function manualReviewRequired(
   originalPlanIndex: number,
 ): RetirementActionManualReviewRequiredResult {
   const parsedPlanId = planIdSchema.safeParse(plan.id)
+  // The allocator's QCD arm exists and a named gift executes end to end, so the
+  // reason a row stays here is a property of the *aggregate* kind, not a
+  // missing arm: a migrated aggregate QCD carries none of the identity the
+  // allocator requires, and there is no aggregate arm to give it any. A named
+  // request is authored and removed directly and should never reach this
+  // function; if one does, it is told where its edits actually live.
+  //
+  // The message and the published policy split on the same line, and both must:
+  // the policy is serialized evidence a consumer reads without the message
+  // beside it, so a named target carrying the aggregate policy would assert a
+  // missing allocator arm that is not missing.
   const issues: [
     RetirementActionManualReviewIssue,
     ...RetirementActionManualReviewIssue[],
   ] = [issue(
     'targetKindUnsupported',
     'targetActionId',
-    'QCD review remains explicit and non-mutating until the canonical identity allocator exposes a QCD arm.',
+    target.kind === 'legacyAggregateQcd'
+      ? 'A migrated aggregate QCD carries no donor, source IRA, execution date, or charity evidence, and the identity allocator has no aggregate arm, so this row stays under review and moves nothing.'
+      : 'A named QCD is scheduled and removed directly; it does not go through migrated-row replacement.',
   )]
   if (!parsedPlanId.success) {
     issues.unshift(issue(
@@ -443,7 +470,9 @@ function manualReviewRequired(
     replacement: null,
     plan: null,
     evidence: {
-      policy: 'explicitManualReviewRequiredNoCanonicalAllocatorArm',
+      policy: target.kind === 'legacyAggregateQcd'
+        ? 'explicitManualReviewRequiredNoCanonicalAllocatorArm'
+        : 'explicitNoReplacementNamedQcdUsesCanonicalAllocatorArm',
       planId: parsedPlanId.success ? parsedPlanId.data : null,
       target: targetEvidence(target, originalPlanIndex),
       targetOmittedBeforeAllocation: false,

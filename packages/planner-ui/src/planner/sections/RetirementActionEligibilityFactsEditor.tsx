@@ -41,9 +41,14 @@ import {
   sepSimpleActivityYears,
   type IraSubtype,
 } from '../retirementActionEligibilityFacts'
+import { namedQcdYearsForSource } from '../retirementActionQcdSchedule'
 
 const ON_RECORD = 'On record'
 const NOT_ON_RECORD = 'Not on record'
+
+/** Anchor the gift form links to when a missing IRA fact is what blocks it. */
+export const RETIREMENT_ACTION_IRA_FACTS_ANCHOR = 'retirement-action-ira-facts'
+export const RETIREMENT_ACTION_IRA_FACTS_HEADING = 'IRA facts on record'
 
 function accountLabel(account: Account): string {
   return `${account.name} (ID ${account.id})`
@@ -190,8 +195,16 @@ function SepSimpleActivityBlock({
 }) {
   const statedYears = sepSimpleActivityYears(plan, account.id)
   const [addedYears, setAddedYears] = useState<readonly number[]>([])
+  // A gift scheduled against this IRA brings its own year with it. The engine
+  // asks for the activity of the gift's exact tax year, so the household should
+  // not have to guess how many times to press "+ Year" to reach it.
   const years = [
-    ...new Set([...statedYears, ...addedYears, currentStartYear()]),
+    ...new Set([
+      ...statedYears,
+      ...addedYears,
+      ...namedQcdYearsForSource(plan, account.id),
+      currentStartYear(),
+    ]),
   ].sort((left, right) => left - right)
   const nextYear = Math.max(...years) + 1
   return (
@@ -475,7 +488,7 @@ export function RetirementActionEligibilityFactsEditor() {
   if (accounts.length === 0 && donors.length === 0) return null
   return (
     <>
-      <h3>IRA facts on record</h3>
+      <h3 id={RETIREMENT_ACTION_IRA_FACTS_ANCHOR}>{RETIREMENT_ACTION_IRA_FACTS_HEADING}</h3>
       <p className="card-hint">
         These are your own statements about your accounts, kept with the plan. Nothing here is
         recorded until you confirm it, and a blank answer stays blank. If you later change an

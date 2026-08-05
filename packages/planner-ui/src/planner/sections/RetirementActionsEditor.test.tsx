@@ -959,7 +959,15 @@ describe('RetirementActionsEditor', () => {
     expect(mounted.container.textContent).toContain(
       'Manual review required — QCD source editing is not supported yet.',
     )
+    // The row renders the engine's sentence, and the engine's sentence is now
+    // about the aggregate kind rather than about a missing allocator arm: the
+    // arm exists, and a named gift authored beside this row executes.
     expect(mounted.container.textContent).toContain(
+      'A migrated aggregate QCD carries no donor, source IRA, execution date, or charity ' +
+        'evidence, and the identity allocator has no aggregate arm, so this row stays under ' +
+        'review and moves nothing.',
+    )
+    expect(mounted.container.textContent).not.toContain(
       'until the canonical identity allocator exposes a QCD arm',
     )
     expect(row(

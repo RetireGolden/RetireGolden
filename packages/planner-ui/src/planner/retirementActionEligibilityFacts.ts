@@ -409,6 +409,26 @@ export interface ContributionDonor {
 }
 
 /**
+ * The last tax year a donor's contribution history has to reach.
+ *
+ * The engine walks the donor's threshold year through the *action* year and
+ * refuses a history with a gap anywhere in that range, so a gift scheduled
+ * beyond the projection's first year needs the years between asked about. A
+ * range that stopped at the current year would leave the household staring at
+ * `qcd-contribution-history-unknown` with no row to answer.
+ */
+function contributionThroughYearFor(
+  plan: Readonly<Plan>,
+  donorPersonId: string,
+  throughYear: number,
+): number {
+  const giftYears = plan.strategies.retirementActions
+    .filter((action) => action.kind === 'qcd' && action.donorPersonId === donorPersonId)
+    .map((action) => action.year)
+  return Math.max(throughYear, ...giftYears)
+}
+
+/**
  * The household members whose contribution history the editor asks about: a
  * donor with a classifiable IRA or a record already on file, and at least one
  * tax year at or past their age-70½ threshold.
@@ -427,7 +447,13 @@ export function contributionDonors(
       .map((record) => record.donorPersonId),
   )
   return plan.household.people
-    .map((person) => ({ person, years: deductibleContributionYears(person.dob, throughYear) }))
+    .map((person) => ({
+      person,
+      years: deductibleContributionYears(
+        person.dob,
+        contributionThroughYearFor(plan, person.id, throughYear),
+      ),
+    }))
     .filter((entry) =>
       entry.years.length > 0 &&
       (owners.has(entry.person.id) || recorded.has(entry.person.id)))

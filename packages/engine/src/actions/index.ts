@@ -238,6 +238,7 @@ export {
   type RetirementActionManualReviewIssueKind,
   type RetirementActionManualReviewReplacementEvidence,
   type RetirementActionManualReviewRequiredEvidence,
+  type RetirementActionManualReviewRequiredPolicy,
   type RetirementActionManualReviewRequiredResult,
   type RetirementActionManualReviewResult,
   type RetirementActionManualReviewTargetEvidence,
