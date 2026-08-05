@@ -62,8 +62,8 @@ export interface OwnedNonRothIraAnnualOwnerReplay {
 export interface OwnedNonRothIraAnnualReplay {
   readonly taxYear: number
   readonly ownerReplays: readonly Readonly<OwnedNonRothIraAnnualOwnerReplay>[]
-  readonly aggregateRothDestinationCredit:
-    Readonly<NormalizedAggregateRothDestinationCredit> | null
+  readonly aggregateRothDestinationCredits:
+    readonly Readonly<NormalizedAggregateRothDestinationCredit>[]
   readonly evidenceId: string
 }
 
@@ -345,7 +345,8 @@ function replayUnchecked(
     const withoutId = {
       taxYear: sourceYear.taxYear,
       ownerReplays,
-      aggregateRothDestinationCredit: sourceYear.aggregateRothDestinationCredit,
+      aggregateRothDestinationCredits:
+        sourceYear.aggregateRothDestinationCredits,
     }
     annualReplays.push(deepFreeze({
       ...withoutId,

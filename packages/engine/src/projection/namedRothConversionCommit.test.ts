@@ -171,7 +171,7 @@ describe('committed named Roth conversion', () => {
     if (series.status !== 'ownedNonRothIraRuntimeSourceSeriesComplete') {
       throw new Error(`source series blocked: ${JSON.stringify(series.issues)}`)
     }
-    expect(series.years[0]!.aggregateRothDestinationCredit).toBeNull()
+    expect(series.years[0]!.aggregateRothDestinationCredits).toEqual([])
     expect(series.years[0]!.namedRothDestinationCredits).toEqual([
       expect.objectContaining({
         status: 'namedDestinationCreditActionReconciled',

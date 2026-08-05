@@ -198,7 +198,13 @@ function cloneRuntimeOccurrence(
 function cloneRuntimeApplication(
   value: Readonly<SimulatorRetirementRuntimeApplication>,
 ): SimulatorRetirementRuntimeApplication {
-  return value.applicationKind === 'aggregateRothDestinationCredit'
+  // Both destination-credit kinds are plural now: a year holds one aggregate
+  // credit per converting owner and one named credit per committed request, and
+  // each carries its own source arrays. A shallow spread would leave the
+  // snapshot sharing those arrays with the live journal, so a rollback would
+  // restore an array the aborted attempt had already appended to.
+  return value.applicationKind === 'aggregateRothDestinationCredit' ||
+      value.applicationKind === 'namedRothDestinationCredit'
     ? {
         ...value,
         producerOccurrenceKeys: [...value.producerOccurrenceKeys],

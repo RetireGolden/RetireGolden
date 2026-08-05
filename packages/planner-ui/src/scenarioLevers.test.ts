@@ -554,15 +554,21 @@ describe('scenario lever contract', () => {
       context,
     )
 
+    // The schedule funds BOTH traditional accounts. It used to fund only the
+    // IRA, which in this example belongs to Sam -- the spouse with no Roth of
+    // their own. A conversion out of it was reaching Alex's Roth, which IRC
+    // 408(d)(3)(A)(i) does not permit; with the owner boundary enforced those
+    // dollars stay put and the lever would correctly report that no year
+    // converts. Funding the owner who holds the destination is what the fixture
+    // was always meant to be testing: a source with no opening balance but
+    // modeled contributions inside the window.
     const scheduled = buildExampleCouple()
     for (const account of scheduled.accounts) {
       if (account.type !== 'traditional') continue
       account.balance = 0
       account.annualContribution = 0
       account.contributionSchedule =
-        account.kind === 'ira'
-          ? [{ annualAmount: 8_000, fromAge: 60, toAge: 65, escalationPct: 0 }]
-          : undefined
+        [{ annualAmount: 8_000, fromAge: 60, toAge: 65, escalationPct: 0 }]
     }
     const scheduleResult = buildScenarioLever(
       scheduled,

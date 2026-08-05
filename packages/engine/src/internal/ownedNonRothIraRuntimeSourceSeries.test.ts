@@ -47,13 +47,21 @@ function copy(years: readonly YearResult[]): YearResult[] {
 }
 
 describe('private owned-IRA runtime source-series validation', () => {
-  it('normalizes exact owner applications while retaining one mixed-source aggregate Roth credit', () => {
+  it('normalizes exact owner applications and credits each owner’s own Roth', () => {
+    // Mixed sources across two owners: p1 converts an employer plan, p2 an
+    // owned IRA. The employer source is outside the Form 8606 pool, so only p2
+    // has an owner source chain, but both owners' dollars still have to reach
+    // a Roth of their own. Before the owner slice this fixture had a single
+    // credit reading `sourceOwnerPersonIds: ['p1', 'p2']` against p1's Roth —
+    // p2's dollars landing in p1's account, which IRC 408(d)(3)(A)(i) does not
+    // permit.
     const plan = couplePlan({ p1PlanningAge: 60, p2PlanningAge: 60 })
     plan.id = 'normalized-source-series'
     plan.accounts = [
       traditional('p1-plan', 1_000, 'p1', 'employer'),
       traditional('p2-ira', 1_000, 'p2'),
       roth('p1-roth'),
+      roth('p2-roth', 'p2'),
     ]
     plan.strategies.rothConversion = {
       mode: 'manual', conversions: [{ year: TAX_YEAR, amount: 2_000 }],
@@ -75,12 +83,20 @@ describe('private owned-IRA runtime source-series validation', () => {
         amount: 100_000,
       }],
     })
-    expect(result.years[0]!.aggregateRothDestinationCredit).toMatchObject({
+    expect(result.years[0]!.aggregateRothDestinationCredits).toHaveLength(2)
+    expect(result.years[0]!.aggregateRothDestinationCredits[0]).toMatchObject({
       status: 'aggregateDestinationCreditSourceReconciled',
       destinationAttribution: 'aggregateOnlyNotSourceAllocated',
       destinationRothAccountId: 'p1-roth',
-      destinationCreditedAmount: 200_000,
-      sourceOwnerPersonIds: ['p1', 'p2'],
+      destinationCreditedAmount: 100_000,
+      sourceOwnerPersonIds: ['p1'],
+    })
+    expect(result.years[0]!.aggregateRothDestinationCredits[1]).toMatchObject({
+      status: 'aggregateDestinationCreditSourceReconciled',
+      destinationAttribution: 'aggregateOnlyNotSourceAllocated',
+      destinationRothAccountId: 'p2-roth',
+      destinationCreditedAmount: 100_000,
+      sourceOwnerPersonIds: ['p2'],
     })
     expect(Object.isFrozen(result)).toBe(true)
 
@@ -108,10 +124,62 @@ describe('private owned-IRA runtime source-series validation', () => {
     const shiftedResult = validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, shiftedDestination)
     expect(shiftedResult.status).toBe('ownedNonRothIraRuntimeSourceSeriesComplete')
     if (shiftedResult.status !== 'ownedNonRothIraRuntimeSourceSeriesComplete') throw new Error('expected complete source series')
-    expect(shiftedResult.years[0]!.aggregateRothDestinationCredit)
+    expect(shiftedResult.years[0]!.aggregateRothDestinationCredits[0])
       .not.toHaveProperty('destinationBalanceBeforeAmount')
-    expect(shiftedResult.years[0]!.aggregateRothDestinationCredit)
+    expect(shiftedResult.years[0]!.aggregateRothDestinationCredits[0])
       .not.toHaveProperty('destinationBalanceAfterAmount')
+  })
+
+  it('rejects a conversion credited to the other spouse’s Roth', () => {
+    // The owner boundary at the replay layer. The producer no longer emits a
+    // credit like this, so the fixture forges one: p2's converted dollars
+    // re-pointed at p1's Roth, exactly the shape the aggregate path used to
+    // publish for every household whose Roth and traditional balances sat with
+    // different people.
+    const plan = couplePlan({ p1PlanningAge: 60, p2PlanningAge: 60 })
+    plan.id = 'cross-owner-forged-destination'
+    plan.accounts = [
+      traditional('p2-ira', 1_000, 'p2'),
+      roth('p1-roth'),
+      roth('p2-roth', 'p2'),
+    ]
+    plan.strategies.rothConversion = {
+      mode: 'manual', conversions: [{ year: TAX_YEAR, amount: 1_000 }],
+    }
+    const years = copy(project(plan))
+    const occurrences = years[0]!.retirementRuntimeSource!.runtimeOccurrences
+    const applications = years[0]!.retirementRuntimeApplicationSource!.applications
+    const replacementKeys = new Map<string, string>()
+    for (const occurrence of occurrences) {
+      if (occurrence.kind !== 'legacyRothConversion') continue
+      const tuple = JSON.parse(occurrence.producerOccurrenceKey) as unknown[]
+      const replacement = JSON.stringify([tuple[0], tuple[1], 'p1-roth'])
+      replacementKeys.set(occurrence.producerOccurrenceKey, replacement)
+      ;(occurrence as { producerOccurrenceKey: string }).producerOccurrenceKey = replacement
+    }
+    for (const application of applications) {
+      if (application.applicationKind === 'aggregateRothDestinationCredit') {
+        const mutable = application as unknown as {
+          producerOccurrenceKeys: string[]
+          destinationRothAccountId: string
+          destinationOwnerPersonId: string
+        }
+        mutable.producerOccurrenceKeys = mutable.producerOccurrenceKeys
+          .map((key) => replacementKeys.get(key) ?? key)
+        mutable.destinationRothAccountId = 'p1-roth'
+        mutable.destinationOwnerPersonId = 'p1'
+      } else if (application.applicationKind !== 'namedRothDestinationCredit') {
+        ;(application as { producerOccurrenceKey: string }).producerOccurrenceKey =
+          replacementKeys.get(application.producerOccurrenceKey) ??
+          application.producerOccurrenceKey
+      }
+    }
+
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, years))
+      .toMatchObject({
+        status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+        issues: [{ kind: 'aggregateRothCreditInvalid', ownerPersonId: 'p2' }],
+      })
   })
 
   it('rejects a conversion credit forged onto a non-selected Plan Roth account', () => {
@@ -190,9 +258,15 @@ describe('private owned-IRA runtime source-series validation', () => {
     if (aggregate?.applicationKind !== 'aggregateRothDestinationCredit') {
       throw new Error('expected aggregate conversion credit')
     }
+    // The credit used to be the residual of a running `desired - remaining`
+    // subtraction, which at this magnitude landed a tenth of a cent below the
+    // summed occurrences (…784.3749 against …784.375) and reconciled only
+    // through the raw tolerance. The owner slice accumulates each take
+    // instead, so the credit is now the same figure the occurrences add up to.
+    // The tolerance still exists; this fixture no longer needs it.
     expect(conversionTotal).toBe(1_009_151_799_784.375)
     expect(aggregate.destinationCreditedAmountPlanDollars)
-      .toBe(1_009_151_799_784.3749)
+      .toBe(1_009_151_799_784.375)
     expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, years))
       .toMatchObject({ status: 'ownedNonRothIraRuntimeSourceSeriesComplete' })
   })

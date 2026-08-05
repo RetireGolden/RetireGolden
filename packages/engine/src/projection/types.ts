@@ -682,8 +682,15 @@ export interface SimulatorOwnedNonRothIraAnnualReplay {
   readonly taxYear: number
   readonly ownerReplays:
     readonly Readonly<SimulatorOwnedNonRothIraAnnualOwnerReplay>[]
-  readonly aggregateRothDestinationCredit:
-    Readonly<SimulatorOwnedNonRothIraAggregateRothDestinationReplay> | null
+  /**
+   * One credit per converting owner, not one per year. IRC 408(d)(3)(A)(i)
+   * admits a conversion only between accounts held by the same individual, so
+   * the aggregate strategy's household target is sliced by owner and each
+   * slice lands in that owner's own Roth. The array is empty in a year with no
+   * owned-IRA conversion.
+   */
+  readonly aggregateRothDestinationCredits:
+    readonly Readonly<SimulatorOwnedNonRothIraAggregateRothDestinationReplay>[]
   readonly evidenceId: string
 }
 

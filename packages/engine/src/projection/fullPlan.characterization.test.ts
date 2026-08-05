@@ -168,27 +168,39 @@ describe('full-plan characterization fixtures', () => {
       y2033: picked(year(result, 2033)),
     }
 
+    // Owner-sliced conversions (IRC 408(d)(3)(A)(i)). Only p1 holds a Roth, so
+    // only p1's slice of each requested 30,000 converts. Post-RMD the
+    // convertible balances are p1 673,584.91 and p2 400,000, so p1's 2026 share
+    // is 30,000 x 673,584.91 / 1,073,584.91 = 18,822.50 and the two conversion
+    // years total 37,161.66 rather than 60,000. The rest of the year follows
+    // from that one figure: MAGI falls by the 11,177.50 not converted plus the
+    // 9,500.87 of Social Security that stops being taxable with it, the smaller
+    // bill takes 2,184.89 less out of the portfolio, and every later balance
+    // carries that forward. Lifetime tax falls by 5,960.46 and ending
+    // investable rises by exactly the same 5,960.46 — the horizon ends before
+    // the deferred tax on the larger traditional balances comes due, which is
+    // also why lifetime RMDs rise by 2,255.63.
     expect(summary).toEqual({
       depletionYear: null,
-      endingInvestable: 696_614.67,
+      endingInvestable: 702_575.13,
       totals: {
-        tax: 56_679.74,
-        rmd: 189_187.22,
+        tax: 50_719.28,
+        rmd: 191_442.85,
         qcd: 80_000,
-        rothConversion: 60_000,
+        rothConversion: 37_161.66,
       },
       y2026: {
         year: 2026,
         income: 55_728,
         socialSecurity: 55_728,
         healthcare: 4_869.6,
-        withdrawals: 52_323.88,
+        withdrawals: 50_138.99,
         rmd: 26_415.09,
         qcd: 10_000,
-        rothConversion: 30_000,
-        tax: 3_182.28,
-        magi: 78_152.32,
-        investable: 1_177_676.12,
+        rothConversion: 18_822.5,
+        tax: 997.39,
+        magi: 57_473.95,
+        investable: 1_179_861.01,
         shortfall: 0,
       },
       y2030: {
@@ -196,13 +208,13 @@ describe('full-plan characterization fixtures', () => {
         income: 32_400,
         socialSecurity: 32_400,
         healthcare: 2_434.8,
-        withdrawals: 81_178.78,
+        withdrawals: 79_371.24,
         rmd: 15_032.98,
         qcd: 10_000,
         rothConversion: 0,
-        tax: 11_143.98,
-        magi: 92_840.83,
-        investable: 945_124.66,
+        tax: 9_336.44,
+        magi: 84_624.74,
+        investable: 951_085.12,
         shortfall: 0,
       },
       y2033: {
@@ -216,7 +228,7 @@ describe('full-plan characterization fixtures', () => {
         rothConversion: 0,
         tax: 12_801.87,
         magi: 100_376.66,
-        investable: 696_614.67,
+        investable: 702_575.13,
         shortfall: 0,
       },
     })

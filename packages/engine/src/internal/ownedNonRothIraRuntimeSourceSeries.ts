@@ -92,6 +92,18 @@ export interface NormalizedOwnedNonRothIraOwnerYearSource {
   readonly sourceChainEvidenceId: string
 }
 
+/**
+ * One owner's share of the aggregate strategy's conversion, reconciled to that
+ * owner's own Roth destination.
+ *
+ * There is one of these per converting owner, not one per year. IRC
+ * 408(d)(3)(A)(i) admits a rollover only where the distributee and the
+ * recipient account belong to the same individual, so a household whose
+ * traditional and Roth balances sit with different people has as many
+ * destinations as it has converting owners. `destinationAttribution` records
+ * that the aggregate strategy still does not allocate a *particular* source
+ * dollar to the destination — only the owner slice as a whole is bound.
+ */
 export interface NormalizedAggregateRothDestinationCredit {
   readonly status: 'aggregateDestinationCreditSourceReconciled'
   readonly destinationAttribution: 'aggregateOnlyNotSourceAllocated'
@@ -130,8 +142,8 @@ export interface NormalizedNamedRothDestinationCredit {
 export interface NormalizedOwnedNonRothIraRuntimeSourceYear {
   readonly taxYear: number
   readonly ownerSources: readonly Readonly<NormalizedOwnedNonRothIraOwnerYearSource>[]
-  readonly aggregateRothDestinationCredit:
-    Readonly<NormalizedAggregateRothDestinationCredit> | null
+  readonly aggregateRothDestinationCredits:
+    readonly Readonly<NormalizedAggregateRothDestinationCredit>[]
   readonly namedRothDestinationCredits:
     readonly Readonly<NormalizedNamedRothDestinationCredit>[]
   readonly evidenceId: string
@@ -704,13 +716,31 @@ function occurrenceOrderAccountId(
   )
 }
 
-function aggregateRothCredit(
+/**
+ * Reconcile one aggregate destination credit per converting owner.
+ *
+ * The predecessor of this function demanded a single credit whose destination
+ * was `plan.accounts.find((account) => account.type === 'roth')` — whichever
+ * Roth came first in Plan array order, with no owner predicate — because that
+ * is how the simulator picked it. That made the validator a faithful witness to
+ * a conversion IRC 408(d)(3)(A)(i) does not permit: dollars distributed from
+ * one spouse's traditional balance credited to the other spouse's Roth.
+ *
+ * The demand is now per owner. Each converting owner's occurrences form one
+ * Plan-ordered slice, that slice's credit must name the first Plan Roth
+ * belonging to *that* owner, and the slices together must consume every
+ * conversion occurrence exactly once. An owner who converted with no Roth of
+ * their own has no destination to name and is refused here rather than
+ * silently credited to somebody else's account.
+ */
+function aggregateRothCredits(
   plan: Plan,
   taxYear: number,
   occurrences: readonly Readonly<SimulatorAnnualRetirementRuntimeOccurrence>[],
   applications: readonly Readonly<SimulatorRetirementRuntimeApplication>[],
   normalized: readonly NormalizedOwnedNonRothIraApplication[],
-): Readonly<NormalizedAggregateRothDestinationCredit> | null {
+  accountOrder: ReadonlyMap<string, number>,
+): Readonly<NormalizedAggregateRothDestinationCredit>[] {
   const conversions = occurrences.filter((entry) => entry.kind === 'legacyRothConversion')
   const ownedConversions = normalized.filter((entry) => entry.occurrenceKind === 'legacyRothConversion')
   const credits = applications.filter((entry): entry is Readonly<SimulatorRetirementRuntimeAggregateRothDestinationCredit> =>
@@ -718,15 +748,10 @@ function aggregateRothCredit(
   const context = { taxYear }
   if (ownedConversions.length === 0) {
     if (credits.length !== 0) fail('aggregateRothCreditInvalid', 'Aggregate Roth credit requires an owned-IRA conversion debit', context)
-    return null
+    return []
   }
-  if (credits.length !== 1) fail('aggregateRothCreditInvalid', 'Owned-IRA conversions require exactly one aggregate Roth credit', context)
-  const credit = credits[0]!
-  if (credit.simulatorPhase !== 'legacyRothConversionAggregateDestinationCredit' ||
-      credit.producerOccurrenceKey !== null || credit.ownerPersonId !== null ||
-      credit.sourceAccountId !== null || credit.sourceBalanceBeforePlanDollars !== null ||
-      credit.sourceBalanceAfterPlanDollars !== null) {
-    fail('aggregateRothCreditInvalid', 'Aggregate Roth credit must not impersonate per-source evidence', context)
+  if (credits.length === 0) {
+    fail('aggregateRothCreditInvalid', 'Owned-IRA conversions require an aggregate Roth credit', context)
   }
   const bySource = new Map(conversions.map((entry) => [entry.sourceAccountId, entry]))
   const ordered = plan.accounts.flatMap((account) => {
@@ -736,59 +761,125 @@ function aggregateRothCredit(
   if (ordered.length !== conversions.length || bySource.size !== conversions.length) {
     fail('aggregateRothCreditInvalid', 'Conversion occurrences must map uniquely to Plan account order', context)
   }
-  const keys = ordered.map((entry) => entry.producerOccurrenceKey)
-  const owners = ordered.map((entry) => entry.ownerPersonId)
-  if (JSON.stringify(credit.producerOccurrenceKeys) !== JSON.stringify(keys) ||
-      JSON.stringify(credit.sourceOwnerPersonIds) !== JSON.stringify(owners) ||
-      new Set(keys).size !== keys.length ||
-      credit.mutationOrdinal <= Math.max(...ownedConversions.map((entry) => entry.mutationOrdinal))) {
-    fail('aggregateRothCreditInvalid', 'Aggregate Roth credit must preserve the complete ordered legacy source loop after its debits', context)
+  if (ordered.some((entry) => entry.ownerPersonId === null)) {
+    fail('aggregateRothCreditInvalid', 'Conversion sources require explicit owners', context)
   }
-  const destinationId = credit.destinationRothAccountId
-  const destination = plan.accounts.find((account) => account.id === destinationId)
-  const simulatorDestination = plan.accounts.find((account) => account.type === 'roth')
-  if (destinationId === null || destination?.type !== 'roth' ||
-      simulatorDestination?.id !== destinationId ||
-      credit.destinationOwnerPersonId === null || destination.ownerPersonId !== credit.destinationOwnerPersonId ||
-      ordered.some((entry) => parseKey(entry.producerOccurrenceKey, taxYear)[2] !== destinationId)) {
-    fail('aggregateRothCreditInvalid', 'Aggregate Roth credit must bind the simulator-selected first Plan Roth destination', context)
+  // The simulator attributes an ownerless account to the first person, the same
+  // fallback it uses for the Roth basis pools, so the expected destination is
+  // resolved through that fallback rather than by raw owner equality.
+  const primaryPersonId = plan.household.people[0]?.id ?? null
+  const ownerOf = (ownerPersonId: string | null): string | null =>
+    ownerPersonId ?? primaryPersonId
+  const destinationByOwner = new Map<string, Account>()
+  for (const account of plan.accounts) {
+    if (account.type !== 'roth') continue
+    const owner = ownerOf(account.ownerPersonId)
+    if (owner === null || destinationByOwner.has(owner)) continue
+    destinationByOwner.set(owner, account)
   }
-  const rawTotal = summedPlanDollars(
-    ordered.map((entry) => entry.grossAmountPlanDollars),
-    'Aggregate conversion occurrence amount',
-    context,
+  const sliceByOwner = new Map<string, Readonly<SimulatorAnnualRetirementRuntimeOccurrence>[]>()
+  for (const occurrence of ordered) {
+    const owner = ownerOf(occurrence.ownerPersonId)!
+    sliceByOwner.set(owner, [...(sliceByOwner.get(owner) ?? []), occurrence])
+  }
+  // Checked before the sort, and for every owner rather than for the pairs a
+  // comparator happens to visit: a one-owner household never enters a
+  // comparator at all, and this is the statutory requirement itself, not a
+  // tie-break detail.
+  for (const owner of sliceByOwner.keys()) {
+    if (destinationByOwner.has(owner)) continue
+    fail('aggregateRothCreditInvalid', 'An owner who converted requires a Roth destination of their own', {
+      taxYear, ownerPersonId: owner,
+    })
+  }
+  const expectedOwners = [...sliceByOwner.keys()].sort((left, right) =>
+    (accountOrder.get(destinationByOwner.get(left)!.id) ?? Number.MAX_SAFE_INTEGER) -
+    (accountOrder.get(destinationByOwner.get(right)!.id) ?? Number.MAX_SAFE_INTEGER))
+  if (credits.length !== expectedOwners.length) {
+    fail('aggregateRothCreditInvalid', 'Owned-IRA conversions require exactly one aggregate Roth credit per converting owner', context)
+  }
+  const maximumDebitOrdinal = Math.max(
+    ...ownedConversions.map((entry) => entry.mutationOrdinal),
   )
-  if (credit.destinationBalanceBeforePlanDollars +
-      credit.destinationCreditedAmountPlanDollars !==
-        credit.destinationBalanceAfterPlanDollars ||
-      !rawTotalsReconcile(
-        rawTotal,
-        credit.destinationCreditedAmountPlanDollars,
-        ordered.length,
-      )) {
-    fail('aggregateRothCreditInvalid', 'Aggregate Roth credit must reconcile all conversion occurrences and its destination balance', context)
+  const seenKeys = new Set<string>()
+  const results: Readonly<NormalizedAggregateRothDestinationCredit>[] = []
+  for (let index = 0; index < expectedOwners.length; index += 1) {
+    const owner = expectedOwners[index]!
+    const credit = credits[index]!
+    const slice = sliceByOwner.get(owner)!
+    if (credit.simulatorPhase !== 'legacyRothConversionAggregateDestinationCredit' ||
+        credit.producerOccurrenceKey !== null || credit.ownerPersonId !== null ||
+        credit.sourceAccountId !== null || credit.sourceBalanceBeforePlanDollars !== null ||
+        credit.sourceBalanceAfterPlanDollars !== null) {
+      fail('aggregateRothCreditInvalid', 'Aggregate Roth credit must not impersonate per-source evidence', context)
+    }
+    const keys = slice.map((entry) => entry.producerOccurrenceKey)
+    const owners = slice.map((entry) => entry.ownerPersonId)
+    if (JSON.stringify(credit.producerOccurrenceKeys) !== JSON.stringify(keys) ||
+        JSON.stringify(credit.sourceOwnerPersonIds) !== JSON.stringify(owners) ||
+        keys.some((key) => seenKeys.has(key)) ||
+        new Set(keys).size !== keys.length ||
+        credit.mutationOrdinal <= maximumDebitOrdinal) {
+      fail('aggregateRothCreditInvalid', 'Aggregate Roth credit must preserve its complete ordered legacy source loop after every debit', {
+        taxYear, ownerPersonId: owner,
+      })
+    }
+    for (const key of keys) seenKeys.add(key)
+    const destinationId = credit.destinationRothAccountId
+    const destination = plan.accounts.find((account) => account.id === destinationId)
+    const expectedDestination = destinationByOwner.get(owner)!
+    if (destinationId === null || destination?.type !== 'roth' ||
+        expectedDestination.id !== destinationId ||
+        credit.destinationOwnerPersonId === null ||
+        destination.ownerPersonId !== credit.destinationOwnerPersonId ||
+        ownerOf(destination.ownerPersonId) !== owner ||
+        slice.some((entry) => parseKey(entry.producerOccurrenceKey, taxYear)[2] !== destinationId)) {
+      fail('aggregateRothCreditInvalid', 'Aggregate Roth credit must bind the first Plan Roth account of its own source owner', {
+        taxYear, ownerPersonId: owner,
+      })
+    }
+    const rawTotal = summedPlanDollars(
+      slice.map((entry) => entry.grossAmountPlanDollars),
+      'Aggregate conversion occurrence amount',
+      context,
+    )
+    if (credit.destinationBalanceBeforePlanDollars +
+        credit.destinationCreditedAmountPlanDollars !==
+          credit.destinationBalanceAfterPlanDollars ||
+        !rawTotalsReconcile(
+          rawTotal,
+          credit.destinationCreditedAmountPlanDollars,
+          slice.length,
+        )) {
+      fail('aggregateRothCreditInvalid', 'Aggregate Roth credit must reconcile its own conversion occurrences and its destination balance', {
+        taxYear, ownerPersonId: owner,
+      })
+    }
+    cents(credit.destinationBalanceBeforePlanDollars, 'Roth destination opening balance', context)
+    const credited = cents(credit.destinationCreditedAmountPlanDollars, 'Roth destination credit', context)
+    cents(credit.destinationBalanceAfterPlanDollars, 'Roth destination closing balance', context)
+    const withoutId = {
+      status: 'aggregateDestinationCreditSourceReconciled' as const,
+      destinationAttribution: 'aggregateOnlyNotSourceAllocated' as const,
+      actionability: 'notEstablished' as const,
+      destinationRothAccountId: asAccountId(destinationId),
+      destinationOwnerPersonId: credit.destinationOwnerPersonId as PersonId,
+      destinationCreditedAmount: credited,
+      producerOccurrenceKeys: keys,
+      sourceOwnerPersonIds: owners as PersonId[],
+    }
+    results.push(deepFreeze({
+      ...withoutId,
+      evidenceId: deriveActionStructuralId(
+        'projection-owned-ira-runtime-source-aggregate-roth-credit',
+        [plan.id, taxYear, withoutId],
+      ),
+    }))
   }
-  cents(credit.destinationBalanceBeforePlanDollars, 'Roth destination opening balance', context)
-  const credited = cents(credit.destinationCreditedAmountPlanDollars, 'Roth destination credit', context)
-  cents(credit.destinationBalanceAfterPlanDollars, 'Roth destination closing balance', context)
-  if (owners.some((owner) => owner === null)) fail('aggregateRothCreditInvalid', 'Conversion sources require explicit owners', context)
-  const withoutId = {
-    status: 'aggregateDestinationCreditSourceReconciled' as const,
-    destinationAttribution: 'aggregateOnlyNotSourceAllocated' as const,
-    actionability: 'notEstablished' as const,
-    destinationRothAccountId: asAccountId(destinationId),
-    destinationOwnerPersonId: credit.destinationOwnerPersonId as PersonId,
-    destinationCreditedAmount: credited,
-    producerOccurrenceKeys: keys,
-    sourceOwnerPersonIds: owners as PersonId[],
+  if (seenKeys.size !== ordered.length) {
+    fail('aggregateRothCreditInvalid', 'Every conversion occurrence requires exactly one owner-slice credit', context)
   }
-  return deepFreeze({
-    ...withoutId,
-    evidenceId: deriveActionStructuralId(
-      'projection-owned-ira-runtime-source-aggregate-roth-credit',
-      [plan.id, taxYear, withoutId],
-    ),
-  })
+  return results
 }
 
 /**
@@ -1395,9 +1486,9 @@ function validateUnchecked(
       fail('qcdStageRequired', 'A QCD routed out of an RMD debit cannot be source-allocated from a household scalar', { taxYear })
     }
 
-    const aggregate = aggregateRothCredit(
+    const aggregate = aggregateRothCredits(
       plan, taxYear, occurrenceSource.runtimeOccurrences,
-      applicationSource.applications, normalizedApplications,
+      applicationSource.applications, normalizedApplications, accountOrder,
     )
     const namedCredits = namedRothDestinationCredits(
       plan, taxYear, occurrenceSource.runtimeOccurrences,
@@ -1419,7 +1510,7 @@ function validateUnchecked(
     const withoutId = {
       taxYear,
       ownerSources,
-      aggregateRothDestinationCredit: aggregate,
+      aggregateRothDestinationCredits: aggregate,
       namedRothDestinationCredits: namedCredits,
     }
     normalizedYears.push(deepFreeze({

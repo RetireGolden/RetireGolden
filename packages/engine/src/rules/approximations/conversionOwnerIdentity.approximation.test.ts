@@ -6,14 +6,27 @@ import { simulatePlan } from '../../projection/simulate.js'
 import { describeRule } from '../describeRule.js'
 
 /**
- * The aggregate conversion path moves dollars between two different taxpayers.
+ * What is left of the destination defect after the owner slice.
  *
- * `simulate.ts` picks the destination once, as the first Roth account in Plan
- * array order with no owner predicate, then draws from every convertible
- * traditional account with no owner filter. Nothing reconciles the two. The
- * runtime journal already records `ownerPersonId` per source while crediting a
- * single destination, so the evidence structure knows the sources can span
- * owners even though the ledger does not act on it.
+ * The aggregate conversion path used to pick its destination once, as the first
+ * Roth account in Plan array order with no owner predicate, and then draw from
+ * every convertible traditional account with no owner filter. It now slices the
+ * household target by owner, drains each owner's slice, and credits it to that
+ * owner's own first Plan Roth; an owner with no Roth of their own converts
+ * nothing and the user is told so. The distributee half of the rule is
+ * therefore satisfied.
+ *
+ * The vehicle half is not. This record is titled for the Roth *IRA* of the same
+ * individual, and the destination search still accepts any account of type
+ * `roth` — including a designated Roth account inside an employer plan. A
+ * traditional IRA cannot be rolled into a designated Roth account: IRC
+ * 408A(e)(1)(B)(i) admits a rollover from an individual retirement plan only on
+ * the 408(d)(3) terms, and 408(d)(3)(A)(i) requires the receiving account to be
+ * an individual retirement account or annuity, while the in-plan route of
+ * 402A(c)(4) reaches only amounts already distributable from that same plan. So
+ * an individual whose only Roth is a 401(k) designated Roth account still
+ * receives converted IRA dollars there, and the statute permits no conversion
+ * for that person at all.
  */
 
 let counter = 0
@@ -43,6 +56,19 @@ function rothIra(id: string, owner: string): Account {
     ownerPersonId: owner,
     annualReturnPct: null,
     kind: 'ira',
+    balance: 0,
+    annualContribution: 0,
+  }
+}
+
+function designatedRothAccount(id: string, owner: string): Account {
+  return {
+    type: 'roth',
+    id,
+    name: `Roth 401(k) ${owner}`,
+    ownerPersonId: owner,
+    annualReturnPct: null,
+    kind: 'employer',
     balance: 0,
     annualContribution: 0,
   }
@@ -111,23 +137,22 @@ function convertedIn(plan: Plan): { converted: number, magi: number } {
 
 describeRule('irc-408-d-3-A-i-conversion-benefits-the-distributee', {
   readings: {
-    // The only Roth belongs to A and the only convertible balance to B, so
-    // there is no pair of accounts a conversion could legally run between.
-    // 408A(d)(3)(B) requires the receiving Roth to be maintained for the
-    // benefit of the same individual the distribution came out of, and no
-    // such Roth exists here. The statutory answer is not "convert less" but
-    // "convert nothing", which is why the readings differ by the whole amount.
-    statutePermitsNoConversionAtAll: 0,
-    engineConvertsAcrossTheOwnerBoundary: REQUESTED_CONVERSION,
+    // B's only Roth is a designated Roth account inside an employer plan, and
+    // 408(d)(3)(A)(i) requires the receiving account to be an individual
+    // retirement account or annuity. There is no account a rollover out of B's
+    // traditional IRA could legally land in, so the statutory answer is again
+    // "convert nothing" rather than "convert less".
+    statuteRequiresARothIraOfTheSameIndividual: 0,
+    engineAcceptsAnyRothOfTheSameIndividual: REQUESTED_CONVERSION,
   },
-  accepted: 'statutePermitsNoConversionAtAll',
-  produced: 'engineConvertsAcrossTheOwnerBoundary',
+  accepted: 'statuteRequiresARothIraOfTheSameIndividual',
+  produced: 'engineAcceptsAnyRothOfTheSameIndividual',
 }, ({ accepted, produced }) => {
-  it('converts one spouse’s IRA into the other spouse’s Roth', () => {
+  it('converts a traditional IRA into the same individual’s designated Roth account', () => {
     const plan = marriedHousehold()
     plan.accounts = [
       cash(500_000),
-      rothIra('rothA', 'p1'),
+      designatedRothAccount('rothB401k', 'p2'),
       traditionalIra('tradB', 'p2', 400_000),
     ]
 
@@ -140,11 +165,28 @@ describeRule('irc-408-d-3-A-i-conversion-benefits-the-distributee', {
     expect(magi).toBeCloseTo(REQUESTED_CONVERSION, 6)
   })
 
-  it('is silent about it', () => {
-    // No warning is the part that makes this survivable. The same code path
-    // announces its other refusals -- a plan with no Roth at all warns, and a
-    // conversion larger than the available traditional balance warns -- so a
-    // reader has every reason to read silence as assent.
+  it('no longer converts one spouse’s IRA into the other spouse’s Roth', () => {
+    // The half of this record that is closed. The only Roth belongs to A and
+    // the only convertible balance to B, so there is no pair of accounts a
+    // conversion could run between and the engine now converts nothing.
+    const plan = marriedHousehold()
+    plan.accounts = [
+      cash(500_000),
+      rothIra('rothA', 'p1'),
+      traditionalIra('tradB', 'p2', 400_000),
+    ]
+
+    const { converted, magi } = convertedIn(plan)
+
+    expect(converted).toBe(0)
+    expect(magi).toBe(0)
+  })
+
+  it('says whose share was skipped and what would let it convert', () => {
+    // Silence was the part that made the old behaviour survivable: the same
+    // code path announced its other refusals, so a reader had every reason to
+    // read silence as assent. The refusal now names the person and the one
+    // thing that would change the answer.
     //
     // Asserted against the run-level `warnings`, which is the only warning
     // channel there is. An earlier draft of this test read `year.warnings`,
@@ -164,13 +206,16 @@ describeRule('irc-408-d-3-A-i-conversion-benefits-the-distributee', {
       taxCalculator: noTax,
     })
 
-    expect(result.warnings).toEqual([])
+    expect(result.warnings).toContain(
+      'B has no Roth account, so B’s share of the Roth conversion was skipped — ' +
+        'a conversion has to land in the same person’s own Roth. ' +
+        'Opening a Roth IRA for B would let that share convert.',
+    )
   })
 
-  it('does warn when the destination is missing entirely, so silence is a choice', () => {
-    // The discriminating half of the previous test. Remove the Roth and the
-    // same block warns, which establishes that the empty warning list above is
-    // this path declining to speak rather than a path that never speaks.
+  it('does warn when the destination is missing entirely, so the household case is distinct', () => {
+    // A plan with no Roth at all is a household-wide refusal, not an owner's,
+    // and keeps its own wording.
     const plan = marriedHousehold()
     plan.accounts = [cash(500_000), traditionalIra('tradB', 'p2', 400_000)]
 
@@ -188,8 +233,8 @@ describeRule('irc-408-d-3-A-i-conversion-benefits-the-distributee', {
     // The control. Same request, same balances, same household -- only the
     // owner of the convertible account changes. A conversion from A's IRA to
     // A's Roth is exactly what the statute permits, and the engine produces
-    // the identical number for it. So the first assertion is pinning the
-    // owner mismatch and not merely "a conversion happened".
+    // the identical number for it. So the assertions above are pinning the
+    // owner and vehicle questions and not merely "a conversion happened".
     const plan = marriedHousehold()
     plan.accounts = [
       cash(500_000),

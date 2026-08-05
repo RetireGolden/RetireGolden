@@ -144,10 +144,30 @@ export type OwnedNonRothIraAnnualSettlementProbeResult =
   | OwnedNonRothIraAnnualSettlementProbeReprobe
   | OwnedNonRothIraAnnualSettlementProbeCommit
 
+/**
+ * `aggregateOwnerBindingIncomplete` was retired here, not weakened.
+ *
+ * It named the settlement's own re-check that an aggregate conversion credit
+ * drew only on its destination owner's dollars — the IRC 408(d)(3)(A)(i)
+ * identity requirement. While the simulator credited every owner's conversion
+ * to the first Roth in Plan order, that condition was true of any married
+ * household holding its Roth and traditional balances in different names, so
+ * the reason fired constantly and rolled the household back rather than
+ * correcting anything.
+ *
+ * The simulator now slices the conversion by owner, and
+ * `aggregateRothCredits` in the source-series stage refuses, per owner and
+ * before this module ever sees a replay, any credit whose sources are not
+ * exactly its destination owner's. Since the settlement builds its replay
+ * through that stage and nowhere else, no input can now reach the old check in
+ * a failing state: it would have been an unreachable branch with no fixture
+ * able to produce it, which is the shape of guard this codebase treats as
+ * rotted rather than defensive. Owner attribution survives — the source-series
+ * issue carries `ownerPersonId`, and `contiguousReplayBlocked` forwards it.
+ */
 export type OwnedNonRothIraAnnualSettlementRollbackReason =
   | AnnualPassAttemptRollbackReason
   | 'contiguousReplayBlocked'
-  | 'aggregateOwnerBindingIncomplete'
   | 'replayEffectsInvalid'
   | 'carryforwardYearUnsupported'
 
@@ -248,7 +268,13 @@ function same(left: unknown, right: unknown): boolean {
 function cloneRuntimeApplication(
   value: Readonly<SimulatorRetirementRuntimeApplication>,
 ): SimulatorRetirementRuntimeApplication {
-  return value.applicationKind === 'aggregateRothDestinationCredit'
+  // Both destination-credit kinds are plural now: a year holds one aggregate
+  // credit per converting owner and one named credit per committed request, and
+  // each carries its own source arrays. A shallow spread would leave every
+  // clone sharing those arrays with the live journal, so a checkpoint taken
+  // before an attempt would mutate along with it.
+  return value.applicationKind === 'aggregateRothDestinationCredit' ||
+      value.applicationKind === 'namedRothDestinationCredit'
     ? {
         ...value,
         producerOccurrenceKeys: [...value.producerOccurrenceKeys],
@@ -601,26 +627,6 @@ function replayEffects(
   return canonicalEffects(effects)
 }
 
-function aggregateIssue(
-  replay: Readonly<OwnedNonRothIraContiguousReplayComplete>,
-): OwnedNonRothIraContiguousReplayIssue | null {
-  for (const annual of replay.annualReplays) {
-    const aggregate = annual.aggregateRothDestinationCredit
-    if (aggregate === null) continue
-    const owners = new Set(aggregate.sourceOwnerPersonIds)
-    if (owners.size !== 1 ||
-        !owners.has(aggregate.destinationOwnerPersonId)) {
-      return {
-        kind: 'basisReplayInvalid',
-        detail: 'Aggregate Roth conversion settlement requires one common source and destination owner',
-        taxYear: annual.taxYear,
-        ownerPersonId: aggregate.destinationOwnerPersonId,
-      }
-    }
-  }
-  return null
-}
-
 function carryforwards(
   replay: Readonly<OwnedNonRothIraContiguousReplayComplete>,
 ): OwnedNonRothIraCommittedPlanningCarryforward[] {
@@ -672,9 +678,9 @@ function rolledBack(
  * The one owner a rolled-back settlement is evidence about, or null when the
  * rollback says nothing about which owner failed.
  *
- * Only the four replay-derived reasons (`contiguousReplayBlocked`,
- * `aggregateOwnerBindingIncomplete`, `replayEffectsInvalid`,
- * `carryforwardYearUnsupported`) can carry an issue at all: every other member
+ * Only the three replay-derived reasons (`contiguousReplayBlocked`,
+ * `replayEffectsInvalid`, `carryforwardYearUnsupported`) can carry an issue at
+ * all: every other member
  * of the reason union is raised before or outside the replay and is reported
  * with `issue: null`. Even a replay-derived rollback is attributable only when
  * its issue actually names a known plan owner -- an absent or unrecognized
@@ -824,20 +830,16 @@ export function runOwnedNonRothIraAnnualSettlementAttempts(
         }
         issueReason = 'carryforwardYearUnsupported'
       } else if (replay.status === 'ownedNonRothIraContiguousReplayComplete') {
-        issue = aggregateIssue(replay)
-        if (issue !== null) {
-          issueReason = 'aggregateOwnerBindingIncomplete'
-        } else {
-          const derived = replayEffects(replay)
-          if (derived === null) {
-            issue = {
-              kind: 'basisReplayInvalid',
-              detail: 'Contiguous replay effects could not be canonicalized',
-            }
-            issueReason = 'replayEffectsInvalid'
-          } else {
-            observedEffects = derived
+        issue = null
+        const derived = replayEffects(replay)
+        if (derived === null) {
+          issue = {
+            kind: 'basisReplayInvalid',
+            detail: 'Contiguous replay effects could not be canonicalized',
           }
+          issueReason = 'replayEffectsInvalid'
+        } else {
+          observedEffects = derived
         }
       } else {
         issue = replay.issues[0]
