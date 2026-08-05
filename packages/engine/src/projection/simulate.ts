@@ -4114,8 +4114,21 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             }
             remainingByOwner.set(ownerId, sliceDollars[index]!)
           }
-          const convertibleTarget = [...remainingByOwner.values()]
-            .reduce((total, slice) => total + slice, 0)
+          // What the household's convertible balances were asked to produce.
+          // Trimmed slices are excluded: an owner who cannot convert for want
+          // of a Roth is not a shortfall against anyone's balance, and saying
+          // so would answer the wrong question with the wrong fix.
+          //
+          // With no convertible owner at all there is nothing to sum and no
+          // owner to name, so the whole request is what the balances failed to
+          // meet. Summing an empty slice set to zero instead would make the
+          // reduction test `0 < -0.01` and leave a requested conversion that
+          // moved nothing entirely silent -- which is what the aggregate path
+          // did before this owner slice, warning against `desired` directly.
+          const convertibleTarget = sliceOwners.length === 0
+            ? desired
+            : [...remainingByOwner.values()]
+              .reduce((total, slice) => total + slice, 0)
           interface OwnerConversionCredit {
             readonly producerOccurrenceKeys: string[]
             readonly sourceOwnerPersonIds: Array<string | null>
@@ -4255,6 +4268,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               }
             }
           }
+          // One cent, unchanged and still the right tolerance. Both sides are
+          // now cent-quantized rather than raw floats -- each slice crosses the
+          // exact-cent ledger and the takes are drawn from it -- so the only
+          // sub-cent gaps left are float noise and a source balance that ran
+          // out within a cent of its slice, neither of which is worth telling
+          // anyone about. Above it, the enclosing `desired > 0.01` guarantees
+          // the no-balance case clears the threshold and speaks.
           if (rothConversion < convertibleTarget - 0.01) {
             warnings.add('A requested Roth conversion exceeded the available traditional balance and was reduced.')
           }

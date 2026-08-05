@@ -70,6 +70,16 @@ const SKIPPED_WARNING =
   'a conversion has to land in the same person’s own Roth. ' +
   'Opening a Roth IRA for Robin would let that share convert.'
 
+/**
+ * The two other things a requested conversion can say when it moves less than
+ * asked. They are separate causes with separate fixes, so every case below
+ * asserts the ones it must NOT raise as well as the one it must.
+ */
+const REDUCED_WARNING =
+  'A requested Roth conversion exceeded the available traditional balance and was reduced.'
+const NO_ROTH_WARNING =
+  'Roth conversions were requested but the plan has no Roth account; conversions skipped.'
+
 describe('aggregate Roth conversion owner boundary', () => {
   it('leaves the spouse without a Roth entirely unconverted, and says so', () => {
     // Pat holds the household's only Roth. Robin's IRA is first in Plan order,
@@ -96,6 +106,11 @@ describe('aggregate Roth conversion owner boundary', () => {
     expect(year.balances['pat-roth']).toBe(20_000)
     expect(year.magi).toBe(20_000)
     expect(warnings).toContain(SKIPPED_WARNING)
+    // Pat's slice converted in full. The household moved less than it asked
+    // for, but not because a balance ran out, and telling the user to fund a
+    // traditional account would send them after the wrong fix.
+    expect(warnings).not.toContain(REDUCED_WARNING)
+    expect(warnings).not.toContain(NO_ROTH_WARNING)
   })
 
   it('converts nothing at all when only the spouse without a Roth holds a balance', () => {
@@ -117,6 +132,108 @@ describe('aggregate Roth conversion owner boundary', () => {
     expect(year.balances['pat-roth']).toBe(0)
     expect(year.magi).toBe(0)
     expect(warnings).toContain(SKIPPED_WARNING)
+    // Every owner with a balance was trimmed, so nothing moved -- but the
+    // reason is Robin's missing Roth, not a missing balance. Robin has 100,000
+    // sitting there.
+    expect(warnings).not.toContain(REDUCED_WARNING)
+    expect(warnings).not.toContain(NO_ROTH_WARNING)
+  })
+
+  it('says the balance ran short when the household holds no convertible account', () => {
+    // Regression guard. The reduction test compares against what the
+    // convertible balances were asked to produce rather than the raw request,
+    // which is right for a trimmed slice. With no convertible owner at all
+    // there is no slice and no owner to name, and summing an empty set to zero
+    // made the test `0 < -0.01`: a requested conversion moved nothing and the
+    // run said nothing at all.
+    const plan = household()
+    plan.accounts = [roth('pat-roth', 'p1')]
+    plan.strategies.rothConversion = {
+      mode: 'manual', conversions: [{ year: TAX_YEAR, amount: 40_000 }],
+    }
+
+    const { warnings, year } = run(plan)
+
+    expect(year.rothConversion).toBe(0)
+    expect(year.balances['pat-roth']).toBe(0)
+    expect(warnings).toContain(REDUCED_WARNING)
+    // There IS a Roth, and nobody's share was skipped for want of one.
+    expect(warnings).not.toContain(NO_ROTH_WARNING)
+    expect(warnings).not.toContain(SKIPPED_WARNING)
+  })
+
+  it('says the same when the convertible accounts exist but hold nothing', () => {
+    // The discriminating half of the case above: an account that could be
+    // converted but has no balance is the same refusal as no account at all,
+    // and must not fall through a weight map that only admits positive
+    // balances.
+    const plan = household()
+    plan.accounts = [
+      ira('pat-ira', 0, 'p1'),
+      ira('robin-ira', 0, 'p2'),
+      roth('pat-roth', 'p1'),
+    ]
+    plan.strategies.rothConversion = {
+      mode: 'manual', conversions: [{ year: TAX_YEAR, amount: 40_000 }],
+    }
+
+    const { warnings, year } = run(plan)
+
+    expect(year.rothConversion).toBe(0)
+    expect(year.balances['pat-ira']).toBe(0)
+    expect(year.balances['pat-roth']).toBe(0)
+    expect(warnings).toContain(REDUCED_WARNING)
+    expect(warnings).not.toContain(NO_ROTH_WARNING)
+    expect(warnings).not.toContain(SKIPPED_WARNING)
+  })
+
+  it('raises only the household refusal when the plan holds no Roth at all', () => {
+    // A household with nowhere to convert TO is one refusal, not one per
+    // owner, and it is not a balance shortfall either: both IRAs are funded.
+    const plan = household()
+    plan.accounts = [
+      ira('pat-ira', 100_000, 'p1'),
+      ira('robin-ira', 100_000, 'p2'),
+    ]
+    plan.strategies.rothConversion = {
+      mode: 'manual', conversions: [{ year: TAX_YEAR, amount: 40_000 }],
+    }
+
+    const { warnings, year } = run(plan)
+
+    expect(year.rothConversion).toBe(0)
+    expect(year.balances['pat-ira']).toBe(100_000)
+    expect(year.balances['robin-ira']).toBe(100_000)
+    expect(warnings).toContain(NO_ROTH_WARNING)
+    expect(warnings).not.toContain(REDUCED_WARNING)
+    expect(warnings).not.toContain(SKIPPED_WARNING)
+  })
+
+  it('raises both causes when one owner is trimmed and the other runs short', () => {
+    // Pat has a Roth and 1,000 to convert; Robin has 9,000 and no Roth. The
+    // 20,000 request exceeds the household's whole 10,000, so Pat's 2,000
+    // slice outruns Pat's own balance while Robin's 18,000 is trimmed away.
+    // Two independent causes, two messages: funding Pat's IRA and opening a
+    // Roth for Robin are different actions and the user needs both.
+    const plan = household()
+    plan.accounts = [
+      ira('pat-ira', 1_000, 'p1'),
+      ira('robin-ira', 9_000, 'p2'),
+      roth('pat-roth', 'p1'),
+    ]
+    plan.strategies.rothConversion = {
+      mode: 'manual', conversions: [{ year: TAX_YEAR, amount: 20_000 }],
+    }
+
+    const { warnings, year } = run(plan)
+
+    expect(year.rothConversion).toBe(1_000)
+    expect(year.balances['pat-ira']).toBe(0)
+    expect(year.balances['pat-roth']).toBe(1_000)
+    expect(year.balances['robin-ira']).toBe(9_000)
+    expect(warnings).toContain(REDUCED_WARNING)
+    expect(warnings).toContain(SKIPPED_WARNING)
+    expect(warnings).not.toContain(NO_ROTH_WARNING)
   })
 
   it('splits the household target by gross convertible balance when both own a Roth', () => {
@@ -142,7 +259,10 @@ describe('aggregate Roth conversion owner boundary', () => {
     expect(year.balances['robin-roth']).toBe(10_000)
     expect(year.balances['pat-ira']).toBe(60_000)
     expect(year.balances['pat-roth']).toBe(30_000)
+    // The full request moved, so none of the three refusals applies.
     expect(warnings).not.toContain(SKIPPED_WARNING)
+    expect(warnings).not.toContain(REDUCED_WARNING)
+    expect(warnings).not.toContain(NO_ROTH_WARNING)
   })
 
   it('weights each owner by the balance left after their own RMD', () => {
