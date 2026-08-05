@@ -816,9 +816,11 @@ export interface YearResult {
    * establishes what is proven before any gift moves, never that one moved or
    * became actionable. Absence does not prove no request existed: the field is
    * also absent when the prerequisite batch failed closed on malformed input,
-   * and when a QCD sharing an execution slot with a non-QCD action stayed with
-   * the ordinary-withdrawal executor. `retirementActionPublication` remains the
-   * authority on which requests were published and by which executor.
+   * when a QCD sharing an execution slot with a non-QCD action stayed with
+   * the ordinary-withdrawal executor, and when a legacy diagnostics-only year
+   * published no executor sources at all. `retirementActionPublication`
+   * remains the authority on which requests were published and by which
+   * executor, and this field is never present without it.
    */
   qcdActionPrerequisites?:
     readonly Readonly<AnnualQcdExecutionPrerequisiteEvidence>[]

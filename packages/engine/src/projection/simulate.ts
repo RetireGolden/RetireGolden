@@ -5814,8 +5814,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       ordinaryPublicationEligibility?.kind !== 'legacyScheduleDiagnosticsOnly' &&
       conversionPublicationEligibility?.kind !== 'legacyScheduleDiagnosticsOnly'
     // A blocked prerequisite batch has no publication source and no canonical
-    // requests, so the year publishes neither rather than half of either.
+    // requests, so the year publishes neither rather than half of either. The
+    // evidence also follows the publication boundary: in a legacy
+    // diagnostics-only year no executor source publishes, and prerequisite
+    // evidence with no publication record behind it would orphan the JSDoc's
+    // claim that the publication says which executor published what.
     const qcdActionPrerequisites =
+      retirementActionPublicationEligible &&
       qcdActionPrerequisiteResult?.status === 'evaluated'
         ? qcdActionPrerequisiteResult
         : undefined
