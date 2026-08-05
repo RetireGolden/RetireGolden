@@ -92,6 +92,7 @@ import {
   ledgerCentsToPlanDollars,
   ordinaryWithdrawalPublicationEligibility,
   ordinaryWithdrawalPublicationSource,
+  planDollarsMoveNoLedgerCent,
   planDollarsToFlooredLedgerCents,
   planDollarsToLedgerCents,
   publishAnnualRetirementActions,
@@ -2845,7 +2846,26 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // so the account narrows for `kind` rather than being asserted.
       if (state.account.type !== 'traditional') continue
       const take = rmdTakeByAccount.get(state.account.id) ?? 0
-      if (take <= 0) continue
+      // A draw the exact-cent ledger records as zero is not a small
+      // distribution, it is no distribution: a fraction of a cent is not
+      // transferable in currency, and the runtime journal -- which must be able
+      // to explain every movement -- admits no occurrence for a gross that
+      // rounds to nothing. So the draw is skipped whole: no balance change, no
+      // occurrence, no income, and nothing added to `rmdTotal`, which is what
+      // the year publishes as its required distribution.
+      //
+      // The remainder is DISCHARGED here, not left unsatisfied, and that is the
+      // half with teeth. `iraRmdUnsatisfiedByOwner` is settled above from
+      // `rmd - take` and the sweep, so a quantum skipped here never reaches it
+      // -- and it must not, because Treas. Reg. 1.408-8(e)(1)(i) shortfall is
+      // read downstream (the conversion executor's 1.408A-4 A-6(b) reserve, and
+      // the named gift's RMD coordination) as proof that every one of the
+      // owner's IRAs was exhausted. A residue too small to move is not that
+      // proof, and reporting it as a shortfall would block lawful conversions
+      // and gifts for as long as the residue survived, which is forever. What
+      // is genuinely undistributed is a knowable sub-cent-per-account-per-year
+      // deviation from the computed requirement and nothing more.
+      if (take <= 0 || planDollarsMoveNoLedgerCent(take)) continue
       const ownerId = state.account.ownerPersonId ?? primary.id
       const sourceBalanceBefore = state.balance
       state.balance -= take
@@ -2951,7 +2971,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         amount = seppAnnualAmount(pack, 'rmd', startBalance, ownerState.ageAttained)
       }
       const take = Math.min(amount, state.balance)
-      if (take <= 0) continue
+      // The same discharge the required-distribution block above applies, for
+      // the same reason: a series payment the exact-cent ledger records as zero
+      // moves nothing, so it publishes no occurrence and adds nothing to
+      // `seppTotal`. A 72(t) series against a sub-cent balance is reachable by
+      // exactly the route the RMD one is -- any earlier movement that drained
+      // the account to a residue the ledger cannot express.
+      if (take <= 0 || planDollarsMoveNoLedgerCent(take)) continue
       const sourceBalanceBefore = state.balance
       state.balance -= take
       const kind = 'automaticSeppDistribution' as const
@@ -3019,7 +3045,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         startBalance: startOfYearBalance.get(state.account.id) ?? 0,
         beneficiaryAge: beneficiaryState.ageAttained,
       })
-      if (take <= 0) continue
+      // Discharged on the same terms as the owner's own forced distribution.
+      // The beneficiary's occurrence carries no owned-IRA application, but it
+      // still joins the year's occurrence list, and the runtime source series
+      // reads that whole list -- so a zero-cent inherited distribution refuses
+      // the year for an account it does not even reconstruct.
+      if (take <= 0 || planDollarsMoveNoLedgerCent(take)) continue
       state.balance -= take
       {
         const kind = 'inheritedIraRmd' as const
@@ -3110,7 +3141,28 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           let remaining = Math.min(beyondRmd, available)
           for (const state of sources) {
             if (remaining <= 0) break
-            const take = Math.min(state.balance, remaining)
+            // A gift that drains its source takes every whole cent the account
+            // can fund and not the fraction it cannot. That is the same
+            // truncation the named arm applies to its opening snapshot, reached
+            // here through the drain instead of through a snapshot: the whole
+            // float balance includes a fraction of a cent that no custodian can
+            // transfer, and publishing an occurrence for it asks the exact-cent
+            // journal to hold a gross it has no way to express.
+            //
+            // The exact-cent conversion is unconditional inside this branch
+            // rather than guarded, because the branch is reached only where the
+            // ungiven remainder meets or exceeds the balance, and that
+            // remainder is capped above at the year's sourced annual QCD limit
+            // -- so the balance crossing the boundary here is bounded by that
+            // limit and cannot leave the safe-integer cent range.
+            const take = remaining >= state.balance
+              ? ledgerCentsToPlanDollars(planDollarsToFlooredLedgerCents(state.balance))
+              : remaining
+            // And a draw the ledger records as zero gives nothing: the residue
+            // left by a drain, or an ungiven remainder that has fallen below a
+            // cent, is skipped whole rather than moved and journalled as a
+            // gift of nothing.
+            if (planDollarsMoveNoLedgerCent(take)) continue
             const sourceBalanceBefore = state.balance
             state.balance -= take
             remaining -= take

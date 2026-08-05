@@ -245,6 +245,7 @@ export {
 export {
   ledgerCentTotalToPlanDollars,
   ledgerCentsToPlanDollars,
+  planDollarsMoveNoLedgerCent,
   planDollarsToFlooredLedgerCents,
   planDollarsToLedgerCents,
   signedLedgerCentTotalToPlanDollars,

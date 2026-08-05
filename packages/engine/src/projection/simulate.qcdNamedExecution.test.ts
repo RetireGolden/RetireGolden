@@ -377,13 +377,21 @@ describe('a named QCD the source cannot cover', () => {
     expect(years[2]?.qcd).toBe(0)
   })
 
-  it('leaves the later years blocked only by the sub-cent balance itself', () => {
-    // Honest bookkeeping about what the fix does and does not reach. 2027 and
-    // 2028 still refuse, because a sub-cent IRA takes a sub-cent required
-    // distribution and the journal will not accept an occurrence that rounds
-    // to zero cents. That is a property of any owned IRA left below a cent by
-    // any means, not of the gift: the control below reproduces it on a
-    // household with no QCD at all, starting from the same residual balance.
+  it('leaves the later years as clean as the gift year', () => {
+    // The isolating control, and what it now controls for.
+    //
+    // The residue this gift leaves used to refuse every later year: a sub-cent
+    // IRA takes a sub-cent required distribution, and the journal accepts no
+    // occurrence for a gross that rounds to zero cents. That was never a
+    // property of the gift -- it was a property of any owned IRA left below a
+    // cent by any means -- and this control proves it the same way it always
+    // did, on a household with no QCD at all starting from the same residual
+    // balance. What has changed is the answer: a forced distribution that
+    // rounds to zero cents now moves nothing, publishes nothing, and discharges
+    // its remainder, so both the control and the gifted projection close.
+    //
+    // The control keeps its purpose either way. A gift-specific fix would show
+    // up here as a control that still refuses while the gifted years pass.
     const gifted = project(donorPlan(DRAINED_PLAN), TAX_YEAR + 1)
     const residual = gifted[0]?.balances.ira ?? 0
     const control = donorPlan({
@@ -391,23 +399,22 @@ describe('a named QCD the source cannot cover', () => {
       accounts: [ira('ira', residual), cashAccount('cash', 200_000)],
       requests: [],
     })
-    const controlYear = project(control)[0]!
+    const controlYears = project(control, TAX_YEAR + 1)
 
-    const issueKinds = (plan: Plan, years: YearResult[], taxYear: number) => {
+    const issueKinds = (plan: Plan, years: YearResult[]) => {
       const result = validateOwnedNonRothIraRuntimeSourceSeries(
-        validatePlan(plan), taxYear, years.filter((year) => year.year === taxYear),
+        validatePlan(plan), TAX_YEAR, years,
       )
       return result.status === 'ownedNonRothIraRuntimeSourceSeriesBlocked'
         ? result.issues.map((issue) => issue.kind)
         : []
     }
 
-    expect(controlYear.qcd).toBe(0)
-    expect(issueKinds(control, [controlYear], TAX_YEAR)).toEqual(['sourceContractInvalid'])
-    expect(issueKinds(donorPlan(DRAINED_PLAN), gifted, TAX_YEAR + 1))
-      .toEqual(['sourceContractInvalid'])
-    // The gift year itself is clean, which is the whole difference.
-    expect(issueKinds(donorPlan(DRAINED_PLAN), gifted, TAX_YEAR)).toEqual([])
+    expect(controlYears.map((year) => year.qcd)).toEqual([0, 0])
+    expect(controlYears.map((year) => year.rmd)).toEqual([0, 0])
+    expect(controlYears.map((year) => year.balances.ira)).toEqual([residual, residual])
+    expect(issueKinds(control, controlYears)).toEqual([])
+    expect(issueKinds(donorPlan(DRAINED_PLAN), gifted)).toEqual([])
   })
 })
 

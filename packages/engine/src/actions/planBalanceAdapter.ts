@@ -83,6 +83,26 @@ export function planDollarsToFlooredLedgerCents(dollars: number): UsdCents {
 }
 
 /**
+ * Would moving this Plan-dollar amount move no whole cent at all?
+ *
+ * The predicate is the exact-cent ledger's own: `planDollarsToLedgerCents` is
+ * what every journal consumer measures a movement with, so an amount this
+ * reports true for is one the ledger records as zero however it is written
+ * down. Below a half cent there is nothing a custodian could transfer and
+ * nothing a published record could say moved, so a draw sized at such an amount
+ * is a non-event rather than a small event.
+ *
+ * The rounding direction is deliberately the measuring one rather than the
+ * funding one. `planDollarsToFlooredLedgerCents` would also report zero for
+ * amounts between half a cent and a cent, and those the ledger really does
+ * record -- as one cent -- so treating them as non-events would suppress
+ * movements the journal is perfectly able to explain.
+ */
+export function planDollarsMoveNoLedgerCent(dollars: number): boolean {
+  return planDollarsToLedgerCents(dollars) === 0
+}
+
+/**
  * Converts validated ledger cents back to Plan dollars without silently
  * crossing a binary-number precision boundary.
  */
