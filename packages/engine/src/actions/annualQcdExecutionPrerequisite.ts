@@ -124,35 +124,66 @@ export interface AnnualQcdMissingStages {
 export type AnnualQcdPublicationAllocationRecord =
   AnnualRetirementActionAllocationRecord
 
-/**
- * Structurally matches the qcdExecutor record accepted by the canonical annual
- * publication coordinator. It deliberately contains no derived QCD amounts.
- */
-export type AnnualQcdPublicationRecord = Readonly<
-  Omit<
-    AnnualRetirementActionRecord,
-    | 'executorSource'
-    | 'request'
-    | 'kind'
-    | 'personId'
-    | 'scheduledSequence'
-    | 'executedDate'
-    | 'executedSequence'
-    | 'readiness'
-    | 'outcome'
-    | 'allocations'
-  > & {
+type AnnualQcdPublicationRecordBase = Omit<
+  AnnualRetirementActionRecord,
+  | 'executorSource'
+  | 'request'
+  | 'kind'
+  | 'personId'
+  | 'scheduledSequence'
+  | 'executedDate'
+  | 'executedSequence'
+  | 'readiness'
+  | 'outcome'
+  | 'allocations'
+> & {
   readonly request: Readonly<QualifiedCharitableDistributionRequest>
   readonly kind: 'qcd'
   readonly personId: PersonId
   readonly scheduledSequence: number
+  readonly allocations: readonly [Readonly<AnnualQcdPublicationAllocationRecord>]
+}
+
+/**
+ * Structurally matches the qcdExecutor record accepted by the canonical annual
+ * publication coordinator, for a gift that moved nothing. It deliberately
+ * contains no derived QCD amounts.
+ *
+ * This is the prerequisite's only shape, and it stays the whole shape for a
+ * year whose gifts do not settle -- which is every year the annual chain
+ * refuses, including a stand-in parameter year and a gift with a positive
+ * section 170 eligible amount.
+ */
+export type AnnualQcdNonmovingPublicationRecord = Readonly<
+  AnnualQcdPublicationRecordBase & {
   readonly executedDate: null
   readonly executedSequence: null
   readonly readiness: 'nonActionable'
   readonly outcome: Extract<ActionOutcome, 'refused' | 'unsupported'>
-  readonly allocations: readonly [Readonly<AnnualQcdPublicationAllocationRecord>]
   }
 >
+
+/**
+ * A gift the annual QCD executor settled with positive movement.
+ *
+ * The dates are the request's own, because the executor is the authority on
+ * when the movement it authorised happened -- exactly as the named-conversion
+ * arm publishes them. The publication coordinator re-derives the same binding
+ * (`assertRecordBinding`), so a record whose executed date drifted from its
+ * scheduled one aborts the year's publication rather than being reported.
+ */
+export type AnnualQcdExecutedPublicationRecord = Readonly<
+  AnnualQcdPublicationRecordBase & {
+  readonly executedDate: string
+  readonly executedSequence: number
+  readonly readiness: 'actionable'
+  readonly outcome: Extract<ActionOutcome, 'executed' | 'partial'>
+  }
+>
+
+export type AnnualQcdPublicationRecord =
+  | AnnualQcdNonmovingPublicationRecord
+  | AnnualQcdExecutedPublicationRecord
 
 export type AnnualQcdPublicationScheduleDiagnostic = Readonly<
   Omit<
@@ -176,7 +207,7 @@ export interface AnnualQcdExecutionPrerequisiteEvidence {
   readonly request: Readonly<QualifiedCharitableDistributionRequest>
   readonly eligibility: Readonly<AnnualQcdEligibilitySnapshot>
   readonly missingAnnualStages: Readonly<AnnualQcdMissingStages>
-  readonly publicationRecord: Readonly<AnnualQcdPublicationRecord>
+  readonly publicationRecord: Readonly<AnnualQcdNonmovingPublicationRecord>
 }
 
 export interface EvaluateAnnualQcdExecutionPrerequisitesInput {
@@ -551,7 +582,7 @@ function publicationRecord(
   eligibilityDecision: Readonly<RetirementActionEligibilityDecision>,
   conflict: QcdScheduleConflict | null,
   batchConflictAborted: boolean,
-): AnnualQcdPublicationRecord {
+): AnnualQcdNonmovingPublicationRecord {
   const zero = asUsdCents(0)
   const reasons = batchConflictAborted
     ? [createActionReason('action-batch-schedule-conflict')]
