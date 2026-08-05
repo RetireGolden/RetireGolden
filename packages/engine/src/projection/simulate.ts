@@ -4037,11 +4037,22 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         }
       }
       if (desired > 0.01) {
-        const rothDestinations = balances.filter((b): b is BalanceState & {
+        const rothAccounts = balances.filter((b): b is BalanceState & {
           account: Extract<Account, { type: 'roth' }>
         } => b.account.type === 'roth')
+        // Only a Roth IRA can receive these dollars. 408A(d)(3)(B) applies the
+        // conversion paragraph to an amount contributed to a Roth IRA, and the
+        // one route into a designated Roth account -- 402A(c)(4)(B) -- reaches
+        // only a distribution from the plan that maintains the account, which
+        // an IRA never is. The wider list survives the filter because the two
+        // reasons a person can lack a destination read differently to them: no
+        // Roth at all, against a Roth that sits where a conversion cannot go.
+        const rothDestinations = rothAccounts.filter((b) => b.account.kind === 'ira')
         if (rothDestinations.length === 0) {
-          warnings.add('Roth conversions were requested but the plan has no Roth account; conversions skipped.')
+          warnings.add(rothAccounts.length === 0
+            ? 'Roth conversions were requested but the plan has no Roth account; conversions skipped.'
+            : 'Roth conversions were requested but every Roth account in the plan sits inside an employer plan, ' +
+              'and an employer Roth account cannot receive a conversion from an IRA; conversions skipped.')
         } else {
           // A conversion is a rollover inside one individual's own accounts:
           // IRC 408(d)(3)(A)(i) admits it only where the amount is paid out of
@@ -4049,8 +4060,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           // for the benefit of that same individual, and 408A(d)(3)(B) imposes
           // the same identity requirement on conversions directly. The
           // household target is therefore sliced by owner and each slice is
-          // drained, credited, and layered against that owner's own Roth. An
-          // owner with no Roth of their own converts nothing.
+          // drained, credited, and layered against that owner's own Roth IRA.
+          // An owner with no Roth IRA of their own converts nothing.
           const ownerOf = (account: Account): string =>
             account.ownerPersonId ?? primary.id
           // Weight snapshot: gross convertible balance per owner, read here
@@ -4081,6 +4092,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             const ownerId = ownerOf(state.account)
             if (!destinationByOwner.has(ownerId)) destinationByOwner.set(ownerId, state)
           }
+          // Which of the two trim reasons applies to an owner the search found
+          // no destination for.
+          const rothHolders = new Set(rothAccounts.map((state) => ownerOf(state.account)))
           // Insertion order is the Plan position of each owner's first
           // convertible account, which is the order the drain loop visits them
           // in and the order the exact-cent slices are allocated in.
@@ -4105,11 +4119,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             const ownerId = sliceOwners[index]!
             if (!destinationByOwner.has(ownerId)) {
               const ownerName = personById.get(ownerId)?.name ?? ownerId
-              warnings.add(
-                `${ownerName} has no Roth account, so ${ownerName}’s share of the Roth conversion was skipped — ` +
+              warnings.add(rothHolders.has(ownerId)
+                ? `${ownerName}’s only Roth account is inside an employer plan, and an employer Roth ` +
+                  `account cannot receive a conversion from an IRA, so ${ownerName}’s share of the ` +
+                  'Roth conversion was skipped. ' +
+                  `Opening a Roth IRA for ${ownerName} would let that share convert.`
+                : `${ownerName} has no Roth account, so ${ownerName}’s share of the Roth conversion was skipped — ` +
                   'a conversion has to land in the same person’s own Roth. ' +
-                  `Opening a Roth IRA for ${ownerName} would let that share convert.`,
-              )
+                  `Opening a Roth IRA for ${ownerName} would let that share convert.`)
               continue
             }
             remainingByOwner.set(ownerId, sliceDollars[index]!)
@@ -4217,9 +4234,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           rothConversion = [...creditByOwner.values()]
             .reduce((total, credit) => total + credit.convertedPlanDollars, 0)
           // Destination credits follow every debit, in Plan account order of
-          // the destinations. Only an owner's own first Plan Roth is credited,
-          // so a second Roth belonging to the same owner is skipped here
-          // rather than credited twice.
+          // the destinations. Only an owner's own first Plan Roth IRA is
+          // credited, so a second Roth IRA belonging to the same owner is
+          // skipped here rather than credited twice.
           for (const destination of rothDestinations) {
             const ownerId = ownerOf(destination.account)
             if (destinationByOwner.get(ownerId) !== destination) continue
