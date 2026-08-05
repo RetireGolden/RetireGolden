@@ -23,8 +23,10 @@ import { describeRule } from '../describeRule.js'
 import { packForYear } from '../../params/index.js'
 import { createFlatTaxCalculator } from '../../projection/flatTax.js'
 import { inheritedForcedAmount } from '../../strategies/inheritedIra.js'
+import { requiredMinimumDistribution } from '../../rmd/rmd.js'
 import type { Account, Plan } from '../../model/plan.js'
 import {
+  cashAccount,
   runPlan,
   singlePersonPlan,
   traditionalAccount,
@@ -289,5 +291,80 @@ describeRule('irc-4974-rmd-shortfall-excise-tax', {
     // And it costs the plan nothing.
     expect(first.penalties).toBe(produced)
     expect(first.penalties).not.toBeCloseTo(accepted, 6)
+  })
+})
+
+// --- 6. Sub-cent required distribution ---------------------------------------
+
+/**
+ * The requirement is computed correctly and then not distributed, so only a
+ * projection row can show the gap: `requiredMinimumDistribution` returns the
+ * regulation's amount whatever the engine later does with it, and the whole
+ * question here is what the engine does with it.
+ *
+ * The balance is the residue an exact-cent movement leaves in a Plan float
+ * account after the last whole cent has come out, which is the only way an
+ * owned IRA reaches this state.
+ * `packages/engine/src/projection/simulate.subCentForcedDistribution.test.ts`
+ * carries the end-to-end consequences; this fixture carries the disclosure.
+ */
+const SUB_CENT_RESIDUE = 0.007679324895434547
+const SUB_CENT_OWNER_DOB = '1950-03-01'
+/** The residue's own required amount for 2026, at an attained age of 76. */
+const SUB_CENT_REQUIRED_AMOUNT = requiredMinimumDistribution(
+  pack, 1950, 76, SUB_CENT_RESIDUE, { ownerSex: 'average' },
+)
+
+describeRule('treas-reg-1-408-8-projection-sub-cent-distribution-discharge', {
+  readings: {
+    // 1.408-8(e)(1)(i): the separately calculated amount is what must come out,
+    // and the regulation sets no floor below which it need not.
+    regulationRequiresTheSeparatelyCalculatedAmount: SUB_CENT_REQUIRED_AMOUNT,
+    engineDistributesNothingAndDischargesTheRemainder: 0,
+  },
+  accepted: 'regulationRequiresTheSeparatelyCalculatedAmount',
+  produced: 'engineDistributesNothingAndDischargesTheRemainder',
+}, ({ accepted, produced }) => {
+  function subCentPlan(): Plan {
+    const plan = singlePersonPlan({ dob: SUB_CENT_OWNER_DOB, planningAge: 77 })
+    // Cash covers the household's own spending, so nothing but the forced
+    // distribution has any reason to reach the IRA.
+    plan.accounts = [{
+      ...traditionalAccount('ira', SUB_CENT_RESIDUE),
+      annualReturnPct: 0,
+    } as Account, cashAccount('cash', 200_000)]
+    return plan
+  }
+
+  it('distributes nothing where the required amount rounds to zero cents', () => {
+    // The premise, checked rather than assumed: the regulation really does
+    // require a positive amount from this account, and it really is one no
+    // exact-cent ledger can express. The figure is written out because it is
+    // the whole disclosure -- three ten-thousandths of a dollar is what the
+    // record means by "bounded by one cent per owned account per year", and a
+    // reader should be able to see the size of it without running anything.
+    expect(accepted).toBe(0.0003240221474866898)
+    expect(accepted).toBeGreaterThan(0)
+    expect(accepted).toBeLessThan(0.005)
+
+    const first = runPlan(subCentPlan(), noTax).years[0]!
+    expect(first.year).toBe(2026)
+    expect(first.rmd).toBe(produced)
+    expect(first.rmd).not.toBe(accepted)
+    // Nothing moved, so the residue is exactly where it started.
+    expect(first.balances.ira).toBe(SUB_CENT_RESIDUE)
+  })
+
+  it('leaves the residue inert rather than working it down year by year', () => {
+    // The bound in the record is "per owned account per year", and it holds
+    // only because the residue never shrinks: an engine that distributed some
+    // fraction each year would accumulate a different deviation than the one
+    // registered.
+    const years = runPlan(subCentPlan(), noTax).years
+    expect(years.length).toBeGreaterThan(1)
+    for (const year of years) {
+      expect(year.rmd).toBe(produced)
+      expect(year.balances.ira).toBe(SUB_CENT_RESIDUE)
+    }
   })
 })

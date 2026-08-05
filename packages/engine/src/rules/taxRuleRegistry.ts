@@ -7300,6 +7300,54 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
   },
+
+  // ---------------------------------------------------------------------------
+  // Sub-cent forced distributions — 2026-08-05.
+  //
+  // One record, registered because the engine now declines to distribute an
+  // amount the regulation's arithmetic produces. That is a deviation from a
+  // computed requirement rather than a rounding of a presented figure, and it
+  // is knowable and bounded, so it belongs here rather than in a comment.
+  //
+  // The reason it arises at all is worth stating once. This engine carries Plan
+  // balances as floats and publishes movements through an exact-cent ledger, so
+  // any movement that drains an account leaves behind whatever the float held
+  // after the last whole cent came out. That residue is real, it never grows,
+  // and every year the owner is past the applicable age it produces a required
+  // amount of a few ten-thousandths of a dollar.
+  // ---------------------------------------------------------------------------
+
+  'treas-reg-1-408-8-projection-sub-cent-distribution-discharge': {
+    title: 'Required distribution below one cent is discharged rather than distributed',
+    statement:
+      'Treas. Reg. 1.408-8(e)(1)(i) requires the required minimum distribution to be calculated separately for each IRA and the sum of those separately calculated amounts to be distributed. Not modelled: an amount that rounds to zero whole cents is not distributed at all. The projection skips the movement entirely — no balance change, no runtime occurrence, and nothing added to the year published required-distribution figure — and treats the undistributed quantum as settled rather than as an outstanding shortfall. The deviation is bounded by one cent per owned account per year and arises only where a balance has already fallen below a cent, which happens when an earlier exact-cent movement drained the account and left the fraction the ledger cannot express. The same discharge applies to a 72(t) series payment, an inherited-account forced distribution, an aggregate charitable distribution, an aggregate Roth conversion, and a need-based withdrawal, each on the same ground.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale:
+      'Direction of error: permissive, and bounded at under one cent per owned account per year. The undistributed fraction stays in the account rather than entering income, so ordinary income is understated by it and the year-end balance overstated by the same amount, and both persist for as long as the residue does. Nothing compounds: the residue never grows, and the fraction is below the smallest unit any published figure carries. What the convention buys is that the movement is representable at all. A fraction of a cent is not transferable in currency, no custodian can move it, and the exact-cent runtime journal has no way to hold a gross that rounds to nothing — so the alternatives were to record an occurrence for a movement that did not happen, or to move dollars with no occurrence explaining them, and the journal contract that every movement is explained forbids the second while the first is a false record. The half that is a decision rather than a consequence is the DISCHARGE. Two seams downstream read an undistributed remainder as proof that every one of the owner aggregated IRAs was exhausted: the conversion executor Treas. Reg. 1.408A-4 A-6(b) reserve, which refuses a conversion while a required amount is outstanding, and a named charitable gift RMD coordination, which reports how much of the requirement the gift satisfied. A residue too small to move is not that proof, so routing it to those seams would refuse lawful conversions and misreport lawful gifts for as long as the residue survived, which is permanently. It is therefore treated as settled and never reaches them. What is NOT modelled here and must not be read into it: the section 4974 excise on a shortfall is not priced anywhere in this engine at all, so no penalty is understated by this record in particular — that gap is registered on its own terms as irc-4974-rmd-shortfall-excise-tax. The retirement path is an exact-cent balance ledger, which would remove the residue rather than manage it; until then the fixture pins the required amount the engine computes against the zero it distributes.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8(e)(1)(i)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.408-8',
+      quotedText:
+        'Except as provided in paragraph (e)(1)(ii) of this section, the required minimum distribution must be calculated separately for each IRA and the sum of those separately calculated required minimum distributions may be distributed from any one or more of the IRAs under the rules set forth in this paragraph (e).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      // Where the draws are sized and the discharge decided: the forced
+      // distribution block, the 72(t) and inherited loops, the aggregate gift
+      // and conversion sweeps, and the need-based withdrawal planner.
+      'packages/engine/src/projection/simulate.ts',
+      // Where "rounds to zero whole cents" is defined, against the same
+      // conversion every journal consumer measures a movement with.
+      'packages/engine/src/actions/planBalanceAdapter.ts',
+    ],
+  },
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)
