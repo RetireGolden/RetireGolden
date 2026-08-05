@@ -144,9 +144,9 @@ break in the HTML. So `EXACT` means *"a literal substring once whitespace is nor
 | `case` | lowercase | A quote beginning mid-sentence is commonly lowercased to fit its lead-in. |
 | `whitespace` | all whitespace | Tag stripping and PDF reflow insert or drop spaces that were never in the text. Applied last, when spacing is the only remaining noise. |
 
-One check runs *after* the ladder and after the truncation probe: **stray punctuation** — a comma or period
-inserted inside the quote. It runs last on purpose, because deleting terminal punctuation earlier would hide
-an unmarked truncation, and a truncation is a finding, not noise.
+One check runs *after* the ladder and after the truncation probe: **stray punctuation** — a comma, period,
+semicolon or colon inserted inside the quote. It runs last on purpose, because deleting terminal punctuation
+earlier would hide an unmarked truncation, and a truncation is a finding, not noise.
 
 ## Per-host rendering conventions
 

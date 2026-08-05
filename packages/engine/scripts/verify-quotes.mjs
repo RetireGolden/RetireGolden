@@ -828,7 +828,8 @@ function verdictFor(entry, source) {
   if (missing.every((s) => matchesStray(source.variants, s))) {
     return {
       verdict: elided ? 'ELISION-PUNCTUATION' : 'PUNCTUATION',
-      detail: 'matches only after ignoring a comma or period the source does not have',
+      detail:
+        'matches only after ignoring a comma, period, semicolon or colon the source does not have',
     }
   }
 
