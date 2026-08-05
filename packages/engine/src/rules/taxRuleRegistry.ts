@@ -938,7 +938,14 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/actions/annualQcdExecutionPrerequisite.ts'],
+    implementedBy: [
+      'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts',
+      // The replay enforces the same confinement structurally rather than by
+      // reading the request: a named gift's occurrence is source-compatible
+      // only with an owned, non-inherited IRA, so an inherited source cannot
+      // reach the owned pool's basis history however the request was authored.
+      'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts',
+    ],
   },
 
   'irc-408-d-8-roth-ira-source': {
@@ -961,7 +968,13 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/actions/annualQcdExecutionPrerequisite.ts'],
+    implementedBy: [
+      'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts',
+      // The same structural confinement: the replay's source-compatibility
+      // switch admits a named gift only from a traditional owned IRA, so a
+      // Roth source is refused before any question of tax character arises.
+      'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts',
+    ],
   },
 
   'irc-408-d-8-F-split-interest-sublimit': {

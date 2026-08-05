@@ -20,6 +20,14 @@ export type OwnedNonRothIraReplayOccurrenceKind =
    */
   | 'legacyQcd'
   /**
+   * A charitable distribution committed against a named request. It carries no
+   * Form 8606 line for the same 408(d)(8)(D) reason the aggregate gift above
+   * does not, so it too never appears in a basis allocation entry; what differs
+   * is that its producer key names the authorising action and allocation, which
+   * is what lets one donor's two gifts from the same account be told apart.
+   */
+  | 'namedQcd'
+  /**
    * A conversion the exact-cent executor committed against a named request.
    * It carries Form 8606 line 8 exactly as the aggregate one does — the same
    * statute reaches both — but its producer key names the authorising action
