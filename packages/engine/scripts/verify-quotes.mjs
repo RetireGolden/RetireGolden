@@ -293,15 +293,24 @@ const DIAGNOSIS_RUNG = LADDER.findIndex((rung) => rung.name === 'case')
  * not distinguishable from `-` at a glance. Visible glyphs whose key already
  * names them — the curly quotes, the section sign, the fractions — stay
  * literal, because there the character is the clearest thing to read.
+ *
+ * Null-prototype, because the key comes from a fetched page. A plain object
+ * literal inherits from `Object.prototype`, so `&constructor;` decoded to the
+ * source text of `Object` and `&toString;` to a function body: a page could
+ * inject arbitrary text into its own normalised form and so be matched against
+ * a quote it does not contain, or away from one it does. The guard belongs on
+ * the table and not at the call site. An `Object.hasOwn` check is one forgotten
+ * caller away from coming back, whereas an empty prototype closes the whole
+ * class for every present and future reader of this table.
  */
-const ENTITIES = Object.freeze({
+const ENTITIES = Object.freeze(Object.assign(Object.create(null), {
   amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: '\u00a0',
   mdash: '\u2014', ndash: '\u2013', minus: '\u2212', hellip: '…',
   lsquo: '‘', rsquo: '’', ldquo: '“', rdquo: '”',
   sect: '§', frac12: '½', frac14: '¼', frac34: '¾',
   ensp: '\u2002', emsp: '\u2003', thinsp: '\u2009', shy: '', times: '×',
   middot: '·', bull: '•', deg: '°', reg: '®', trade: '™',
-})
+}))
 
 /** Largest codepoint `String.fromCodePoint` accepts; above it, it throws. */
 const MAX_CODE_POINT = 0x10ffff
@@ -1095,7 +1104,12 @@ async function main() {
       ? resolve(values['cache-dir'])
       : join(pkgDir, 'node_modules', '.cache', 'verify-quotes'),
     refresh: values.refresh === true,
-    delayMs: values.delay ? Number.parseInt(values.delay, 10) : DEFAULT_DELAY_MS,
+    // `Number`, not `Number.parseInt`: parseInt stops at the first character it
+    // cannot read, so `--delay 1200ms` was accepted as 1200 and `--delay 3s` as
+    // 3. Silently honouring a value the user did not ask for is worse than
+    // refusing it, and the `Number.isFinite` check below only has teeth if the
+    // parse produces NaN for input that is not wholly a number.
+    delayMs: values.delay ? Number(values.delay) : DEFAULT_DELAY_MS,
   }
   if (!Number.isFinite(opts.delayMs) || opts.delayMs < 0) {
     throw new RangeError('--delay must be a non-negative number of milliseconds')

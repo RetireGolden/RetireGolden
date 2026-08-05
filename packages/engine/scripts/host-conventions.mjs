@@ -31,8 +31,18 @@
  * @property {string} sectionSign       How a section reference is written.
  * @property {string} notes             Anything else a fix has to know about this host.
  */
-/** @type {Readonly<Record<string, HostConvention>>} */
-export const HOST_CONVENTIONS = Object.freeze({
+/**
+ * Null-prototype for the same reason as `ENTITIES` in verify-quotes.mjs: this
+ * is indexed by `new URL(authority.url).host`, so the key is whatever a registry
+ * entry says it is. On a plain object literal a citation pointing at
+ * `https://constructor/...` would find `Object.prototype.constructor`, survive
+ * the truthiness guard in `apostropheMismatch`, and report an apostrophe finding
+ * against a host nobody has ever measured. An empty prototype means a host that
+ * was not measured cannot be found under any spelling.
+ *
+ * @type {Readonly<Record<string, HostConvention>>}
+ */
+export const HOST_CONVENTIONS = Object.freeze(Object.assign(Object.create(null), {
   'uscode.house.gov': {
     apostrophe: "'",
     structuralDash: '-',
@@ -72,4 +82,4 @@ export const HOST_CONVENTIONS = Object.freeze({
       'Contractions ("doesn’t", "can’t") are the publication\'s own voice and must be quoted as written. ' +
       'PDFs on this host lose every one of these characters in extraction — see PDF handling.',
   },
-})
+}))
