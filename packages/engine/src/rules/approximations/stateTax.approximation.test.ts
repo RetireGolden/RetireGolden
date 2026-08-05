@@ -7,6 +7,11 @@
  * optional per-person cap, and its capital-gain treatment as a single included
  * percentage. These states do not fit through that shape:
  *
+ *   - North Dakota subtracts military and 20-year peace-officer retirement and
+ *     no other public pension; the public bucket is one flag, so setting it
+ *     exempts civil-service pensions North Dakota taxes.
+ *   - North Dakota also excludes 40% of qualified dividends; the included-share
+ *     field governs capital gains only, so dividends enter at 100%.
  *   - Pennsylvania conditions on the PLAN's age or service requirement; the
  *     pack substitutes a flat age 60.
  *   - New York conditions on attaining 59½; `minAge` is compared against an
@@ -22,8 +27,12 @@
  * exists. North Dakota's 40% long-term-gain exclusion was on this list until
  * 2026-08-05 and left it that way: the pack gained `capitalGainsTaxablePct: 60`,
  * the assertion here failed, and the record and its fixture moved to
- * `tax/stateTax.rules.test.ts` as `settled`. That is the transition `produced`
- * exists to force, and it is what these pins are for.
+ * `tax/stateTax.rules.test.ts` as `settled`.
+ *
+ * The North Dakota public-pension entry is the one whose direction differs. The
+ * other four over-charge; that one under-charges, because closing a real gap
+ * with a flag coarser than the statute opened a smaller one facing the other
+ * way. It is registered rather than left implicit for exactly that reason.
  */
 
 import { expect, it } from 'vitest'
@@ -66,6 +75,107 @@ function bandedTax(bands: readonly (readonly [number, number, number])[], taxabl
     0,
   )
 }
+
+// ND single, 2026 published schedule: 0% to 49,575, 1.95% to 250,400, 2.5%
+// above. Deduction 16,100 (the conformed federal figure).
+const northDakotaTax = (taxable: number) => bandedTax(
+  [[0, 49_575, 0], [49_575, 250_400, 1.95], [250_400, Infinity, 2.5]],
+  taxable,
+)
+const ND_DEDUCTION = 16_100
+const ND_CIVIL_SERVICE_OTHER_INCOME = 160_000
+const ND_CIVIL_SERVICE_PENSION = 55_000
+
+describeRule('ndcc-57-38-30-3-2-closed-subtraction-list', {
+  readings: {
+    // 57-38-30.3(2) subtracts military retirement and 20-year peace-officer
+    // retirement. A state PERS or federal civil-service annuity is on neither
+    // list, and (2)(a) reaches only income a federal statute exempts.
+    civilServiceAnnuityTaxedInFull:
+      northDakotaTax(ND_CIVIL_SERVICE_OTHER_INCOME - ND_DEDUCTION),
+    everyPublicPensionExempt:
+      northDakotaTax(ND_CIVIL_SERVICE_OTHER_INCOME - ND_CIVIL_SERVICE_PENSION - ND_DEDUCTION),
+  },
+  accepted: 'civilServiceAnnuityTaxedInFull',
+  produced: 'everyPublicPensionExempt',
+}, ({ accepted, produced }) => {
+  // A retired North Dakota schoolteacher. Nothing about this household is
+  // uniformed, so no subdivision of 57-38-30.3(2) reaches the pension — and the
+  // engine exempts it anyway, because `publicPensionIncome` is one bucket.
+  const scenario = input({
+    state: 'ND',
+    ordinaryIncome: ND_CIVIL_SERVICE_OTHER_INCOME,
+    publicPensionIncome: ND_CIVIL_SERVICE_PENSION,
+    agesAlive: [70],
+  })
+
+  it('exempts a civil-service pension North Dakota taxes in full', () => {
+    expect(computeStateTax(pack('ND'), scenario)).toBeCloseTo(produced, 6)
+    expect(computeStateTax(pack('ND'), scenario)).toBeLessThan(accepted)
+  })
+
+  it('reaches the statute’s figure once the public bucket stops exempting', () => {
+    // What would close it is not a flag but a fact the input model does not
+    // carry: whether the pension is military, peace-officer with twenty years'
+    // service, or neither. Priced here as the bucket the pack held before the
+    // military exclusion landed, which is the right answer for this household
+    // and the wrong one for a military retiree.
+    const taxed = { ...pack('ND'), retirementPublic: { kind: 'none' as const } }
+    expect(computeStateTax(taxed, scenario)).toBeCloseTo(accepted, 6)
+  })
+
+  it('still taxes private retirement income, which is the half the pack gets right', () => {
+    const privateOnly = input({
+      state: 'ND',
+      ordinaryIncome: ND_CIVIL_SERVICE_OTHER_INCOME,
+      privateRetirementIncome: ND_CIVIL_SERVICE_PENSION,
+      agesAlive: [70],
+    })
+    expect(computeStateTax(pack('ND'), privateOnly)).toBeCloseTo(accepted, 6)
+  })
+})
+
+const ND_DIVIDEND_ORDINARY = 80_000
+const ND_QUALIFIED_DIVIDENDS = 40_000
+
+describeRule('ndcc-57-38-30-3-2-d-2-qualified-dividend-exclusion', {
+  readings: {
+    sixtyPercentOfTheDividendInTheBase:
+      northDakotaTax(ND_DIVIDEND_ORDINARY + ND_QUALIFIED_DIVIDENDS * 0.6 - ND_DEDUCTION),
+    theWholeDividendInTheBase:
+      northDakotaTax(ND_DIVIDEND_ORDINARY + ND_QUALIFIED_DIVIDENDS - ND_DEDUCTION),
+  },
+  accepted: 'sixtyPercentOfTheDividendInTheBase',
+  produced: 'theWholeDividendInTheBase',
+}, ({ accepted, produced }) => {
+  const scenario = input({
+    state: 'ND',
+    ordinaryIncome: ND_DIVIDEND_ORDINARY,
+    qualifiedDividends: ND_QUALIFIED_DIVIDENDS,
+    agesAlive: [70],
+  })
+
+  it('taxes the whole qualified dividend rather than the statute’s 60%', () => {
+    expect(computeStateTax(pack('ND'), scenario)).toBeCloseTo(produced, 6)
+    expect(computeStateTax(pack('ND'), scenario)).not.toBeCloseTo(accepted, 6)
+  })
+
+  it('reaches the statute’s figure only by shrinking the input, which is not a fix', () => {
+    // Unlike the long-term-gain gap, this one has no field to set:
+    // `capitalGainsTaxablePct` governs `capitalGains` and nothing else. The
+    // accepted figure is therefore priced by handing the calculator sixty
+    // percent of the dividend, which is what the missing field would compute
+    // internally — and which a caller must never do, because the same input
+    // feeds the federal calculator, where the whole dividend belongs.
+    const preExcluded = input({
+      state: 'ND',
+      ordinaryIncome: ND_DIVIDEND_ORDINARY,
+      qualifiedDividends: ND_QUALIFIED_DIVIDENDS * 0.6,
+      agesAlive: [70],
+    })
+    expect(computeStateTax(pack('ND'), preExcluded)).toBeCloseTo(accepted, 6)
+  })
+})
 
 const PA_RATE = 0.0307
 const PA_PENSION = 60_000

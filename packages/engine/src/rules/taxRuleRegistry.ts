@@ -5844,6 +5844,288 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
   },
+
+  // ---------------------------------------------------------------------------
+  // North Dakota, second pass — 2026-08-05.
+  //
+  // The first slice above registered two North Dakota rules and left the state's
+  // pack entry describing a taxpayer North Dakota law does not have: 2025
+  // brackets in a 2026 pack, the whole long-term gain in the base, and no
+  // retirement subtraction of any kind. A primary-source pass over N.D.C.C.
+  // ch. 57-38 and the department's published forms found four more operative
+  // provisions and one over-reach the correction itself introduces. All of them
+  // are recorded here, in one block, because they were researched together and
+  // rest on the same two publishers.
+  //
+  // Two things about the citations are worth stating once rather than repeating
+  // on each record. First, the lettering moved: H.B. 1031 of the 69th Assembly
+  // (2025) relettered subsection 2, so the military-retirement subtraction is
+  // now (2)(r), Social Security is now (2)(s), and retired law enforcement is
+  // now (2)(t). The enrolled bills below amended those provisions under their
+  // FORMER letters, which is why an enacting bill and the current Century Code
+  // cite different subdivisions for the same rule. The citations name the
+  // provision as the source being quoted letters it.
+  //
+  // Second, ndlegis.gov cannot establish a 2026 bracket threshold and never
+  // will. The Century Code prints the 2023 dollar amounts H.B. 1158 enacted;
+  // 57-38-30.3(1)(g) then requires the tax commissioner to publish a
+  // cost-of-living-adjusted schedule that applies in lieu of them, and the
+  // department is the only publisher of that schedule. So the rate-schedule
+  // record below is the first in this registry whose operative numbers can only
+  // come from a revenue department, which is what makes the ND entry in the
+  // conformance suite's state publisher tier load-bearing rather than
+  // decorative.
+  // ---------------------------------------------------------------------------
+
+  'ndcc-57-38-30-3-1-g-commissioner-indexed-rate-schedule': {
+    title: 'North Dakota’s operative brackets are the commissioner’s indexed schedule',
+    statement:
+      'North Dakota taxes North Dakota taxable income at 0 percent, 1.95 percent and 2.50 percent, but the dollar thresholds those rates turn on are not the ones printed in the Century Code. The printed schedules are the amounts H.B. 1158 enacted for taxable years beginning after 2022 (single 0 / 44,725 / 225,975; joint 0 / 74,750 / 275,100), and 57-38-30.3(1)(g) directs the tax commissioner to prescribe cost-of-living-adjusted schedules that apply IN LIEU OF them, holding each rate fixed. The operative schedule for any year is therefore whatever the department published for that year. For 2026 that is single 0 / 49,575 / 250,400 and married-filing-jointly 0 / 82,800 / 304,850, which is what the pack carries; the 2025 schedule was single 0 / 48,475 / 244,825 and joint 0 / 80,975 / 298,075, and a 2026 pack holding those would tax about 1,100 dollars of a single filer’s income at 1.95 percent that North Dakota puts in the zero bracket. What is quoted from the schedule is the department’s own printed run of taxed bands for each filing status, leader dots and all, rather than a tidied table: a rate schedule is a two-dimensional layout, and a single-string rendering that reads as prose would be a reflow of the layout rather than a quotation of the text.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:ND',
+    authority: [{
+      kind: 'statute',
+      citation: 'N.D.C.C. 57-38-30.3(1)(g)',
+      url: 'https://ndlegis.gov/cencode/t57c38.pdf',
+      quotedText:
+        'The tax commissioner shall prescribe new rate schedules that apply in lieu of the schedules set forth in subdivisions a through e. The new schedules must be determined by increasing the minimum and maximum dollar amounts for each income bracket for which a tax is imposed by the cost-of-living adjustment for the taxable year as determined by the secretary of the United States treasury for purposes of section 1(f) of the United States Internal Revenue Code of 1954, as amended. For this purpose, the rate applicable to each income bracket may not be changed, and the manner of applying the cost-of-living adjustment must be the same as that used for adjusting the income brackets for federal income tax purposes.',
+    }, {
+      kind: 'legislativeHistory',
+      citation: '2023 N.D. H.B. 1158 (enrolled), § 8',
+      url: 'https://ndlegis.gov/assembly/68-2023/regular/documents/23-0351-06000.pdf',
+      quotedText:
+        'SECTION 8. EFFECTIVE DATE. Sections 1 and 4 of this Act are effective for taxable years beginning after December 31, 2022.',
+    }, {
+      // The two taxed bands of the Single schedule, as one contiguous run of
+      // the form's own text. The leader dots are reproduced because they are
+      // what the document prints between a threshold and its rate; deleting
+      // them to make the quote read as a sentence would be retyping the source.
+      // The zero band is not quoted separately — its upper bound is the 49,575
+      // that opens this run, so it is stated rather than duplicated.
+      kind: 'formInstruction',
+      citation: '2026 Forms ND-1 and ND-EZ Tax Rate Schedules (Form ND-1ES), Single',
+      url: 'https://www.tax.nd.gov/sites/www/files/documents/forms/individual/2025-iit/28709-form-nd-1es-2026.pdf',
+      quotedText:
+        '49,575 250,400.......... 0.00 + 1.95% of amount over $ 49,575 250,400.....................3,916.09 + 2.50% of amount over 250,400',
+    }, {
+      kind: 'formInstruction',
+      citation: '2026 Forms ND-1 and ND-EZ Tax Rate Schedules (Form ND-1ES), Married filing jointly and Qualifying surviving spouse',
+      url: 'https://www.tax.nd.gov/sites/www/files/documents/forms/individual/2025-iit/28709-form-nd-1es-2026.pdf',
+      quotedText:
+        '82,800 304,850........... 0.00 + 1.95% of amount over $ 82,800 304,850........................ 4,329.98 + 2.50% of amount over 304,850',
+    }],
+    // `annuallyIndexed` and not `staticStatute`: the rates are fixed by statute
+    // but the thresholds are republished every year by the department, so this
+    // record goes stale on the autumn schedule with the federal COLA figures
+    // rather than on the annual statutory pass.
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2023,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ndcc-57-38-30-3-2-s-social-security-subtraction': {
+    title: 'North Dakota subtracts every federally taxable Social Security dollar',
+    statement:
+      'North Dakota taxable income is reduced by the amount of Social Security benefits included in the taxpayer’s federal adjusted gross income under IRC 86. There is no income test, no age condition and no cap on that subtraction. The qualifier matters because there used to be one: H.B. 1174 of 2019 created the subtraction only for taxpayers with federal adjusted gross income of 50,000 dollars or less, or 100,000 dollars if married filing jointly, and S.B. 2351 of the November 2021 special session struck those thresholds for taxable years beginning after December 31, 2020. A reader working from a pre-2021 summary would build an income phase-out the statute no longer has, which is why the enrolled amendment is quoted here alongside the current text. The pack expresses the current rule as `taxesSocialSecurity: false`, so no Social Security dollar reaches a North Dakota rate at any income level.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:ND',
+    authority: [{
+      kind: 'statute',
+      citation: 'N.D.C.C. 57-38-30.3(2)(s)',
+      url: 'https://ndlegis.gov/cencode/t57c38.pdf',
+      quotedText:
+        'Reduced by the amount of social security benefits included in a taxpayer\'s federal adjusted gross income under section 86 of the Internal Revenue Code.',
+    }, {
+      // Quoted exactly as the enrolled PDF's text layer renders it. The bill
+      // sets the amendment in strike-through and underline, and extraction
+      // interleaves the struck and inserted words into 'reducedReduced by anthe
+      // amount equal toof'. Reconstructing which words were struck would be a
+      // paraphrase of the markup; the run-together rendering is what the
+      // document actually contains, and it is legible enough to show that the
+      // adjusted-gross-income clause ahead of it was removed rather than moved.
+      kind: 'legislativeHistory',
+      citation: '2021 N.D. S.B. 2351 (special session, enrolled), § 2, amending former subdivision t',
+      url: 'https://ndlegis.gov/assembly/67-2021/special/documents/21-1097-02000.pdf',
+      quotedText:
+        't. For taxpayers with federal adjusted gross income of fifty thousand dollars or less, or one hundred thousand dollars or less if married filing jointly, reducedReduced by anthe amount equal toof social security benefits included in a taxpayer\'s federal adjusted gross income under section 86 of the Internal Revenue Code.',
+    }, {
+      kind: 'legislativeHistory',
+      citation: '2021 N.D. S.B. 2351 (special session, enrolled), § 3',
+      url: 'https://ndlegis.gov/assembly/67-2021/special/documents/21-1097-02000.pdf',
+      quotedText:
+        'SECTION 3. EFFECTIVE DATE. This Act is effective for taxable years beginning after December 31, 2020.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2021,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ndcc-57-38-30-3-2-r-military-retirement-exclusion': {
+    title: 'North Dakota excludes retired military personnel benefits in full',
+    statement:
+      'North Dakota taxable income is reduced by the whole amount a taxpayer receives as retired military personnel benefits, including benefits paid to the surviving spouse of a deceased retired member of the armed forces, a reserve component, or the national guard, to the extent the amount was included in federal taxable income. The exclusion carries no cap, no age condition and no income phase-out, so a North Dakota military retiree pays nothing to the state on the pension itself. The pack expresses it by listing ND in `PUBLIC_PENSION_OVERRIDES` as `{ kind: \'full\' }`, which also stops `retirementRuleShared` from copying the public rule onto private retirement income — private pensions and traditional IRA and 401(k) distributions stay fully taxable, which is the other half of North Dakota law and is registered as `ndcc-57-38-30-3-2-closed-subtraction-list`.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:ND',
+    authority: [{
+      kind: 'statute',
+      citation: 'N.D.C.C. 57-38-30.3(2)(r)',
+      url: 'https://ndlegis.gov/cencode/t57c38.pdf',
+      quotedText:
+        'Reduced by the amount received by a taxpayer as retired military personnel benefits, including retired military personnel benefits paid to the surviving spouse of a deceased retired member of the armed forces of the United States, a reserve component of the armed forces of the United States, or the national guard, but only to the extent the amount was included in federal taxable income.',
+    }, {
+      kind: 'legislativeHistory',
+      citation: '2019 N.D. H.B. 1053 (enrolled), § 2',
+      url: 'https://ndlegis.gov/assembly/66-2019/regular/documents/19-0357-02000.pdf',
+      quotedText:
+        'SECTION 2. EFFECTIVE DATE. This Act is effective for taxable years beginning after December 31, 2018.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2019,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ndcc-57-38-30-3-2-t-retired-peace-officer-exclusion': {
+    title: 'North Dakota excludes retired law enforcement personnel benefits in full',
+    statement:
+      'North Dakota taxable income is reduced by the whole amount of retired law enforcement personnel benefits received by a taxpayer who has served a combined total of at least twenty years as a peace officer, or who medically retired from those duties under a medical certificate for a permanent disability, to the extent included in federal taxable income. What qualifies is retirement income attributable to the taxpayer’s employment as a peace officer, from a plan maintained by or through the employer they retired from. It is the second uncapped, un-age-tested public-retirement exclusion North Dakota grants, and it is the other reason the pack sets the public bucket to `{ kind: \'full\' }` rather than modelling the military exclusion alone. The engine holds no years-of-service fact, so the twenty-year condition is not tested — that over-reach is registered as `ndcc-57-38-30-3-2-closed-subtraction-list`, not here.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:ND',
+    authority: [{
+      kind: 'statute',
+      citation: 'N.D.C.C. 57-38-30.3(2)(t)',
+      url: 'https://ndlegis.gov/cencode/t57c38.pdf',
+      quotedText:
+        'Reduced by the amount of retired law enforcement personnel benefits received by a taxpayer who has served a combined total of at least twenty years as a peace officer or has medically retired from the taxpayer\'s duties as a peace officer with a medical certificate due to a permanent mental or physical disability that rendered the taxpayer unable to discharge the taxpayer\'s duties as a peace officer, but only to the extent the amount was included in federal taxable income.',
+    }, {
+      kind: 'statute',
+      citation: 'N.D.C.C. 57-38-30.3(2)(t)(2)',
+      url: 'https://ndlegis.gov/cencode/t57c38.pdf',
+      quotedText:
+        '"Retired law enforcement personnel benefits" means retirement income received by a taxpayer eligible to receive retirement income attributable to the taxpayer\'s employment as a peace officer from a retirement plan maintained by or through the employer from which the taxpayer retired as a peace officer.',
+    }, {
+      kind: 'legislativeHistory',
+      citation: '2023 N.D. S.B. 2147 (enrolled), § 2',
+      url: 'https://ndlegis.gov/assembly/68-2023/regular/documents/23-0019-03000.pdf',
+      quotedText:
+        'SECTION 2. EFFECTIVE DATE. This Act is effective for taxable years beginning after December 31, 2022.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2023,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ndcc-57-38-30-3-2-closed-subtraction-list': {
+    title: 'North Dakota subtracts no retirement income beyond the two it names',
+    statement:
+      'The adjustments that turn federal taxable income into North Dakota taxable income are the closed enumeration of 57-38-30.3(2), subdivisions a through t. Two of them reach retirement income — retired military personnel benefits under (2)(r) and retired law enforcement personnel benefits under (2)(t) — and nothing in the list reaches a private pension, an annuity, a traditional IRA or 401(k) distribution, a federal civil-service annuity, or a state or local government pension. Subdivision (a), the nearest thing to a general exclusion, reaches only income exempt from state taxation under a federal statute or a constitutional provision, which a civil-service annuity is not. The engine gets the private half right and the public half wrong: `retirementPrivate` is `{ kind: \'none\' }`, but `retirementPublic` is one flag covering every public pension the input model can carry, so setting it to `{ kind: \'full\' }` for the sake of (2)(r) and (2)(t) also exempts a North Dakota retiree’s CSRS, FERS, PERS or teachers’ pension, which North Dakota taxes in full. The same single flag is why the twenty-year service condition in (2)(t) is not tested. The error runs toward the taxpayer: a North Dakota household whose public pension is civil rather than uniformed is shown a state tax lower than it owes, and the gap is the whole pension at the marginal rate the household would otherwise reach.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:ND',
+    authority: [{
+      kind: 'statute',
+      citation: 'N.D.C.C. 57-38-30.3(2)',
+      url: 'https://ndlegis.gov/cencode/t57c38.pdf',
+      quotedText:
+        'For purposes of this section, "North Dakota taxable income" means the federal taxable income of an individual, estate, or trust as computed under the Internal Revenue Code of 1986, as amended, adjusted as follows:',
+    }, {
+      kind: 'statute',
+      citation: 'N.D.C.C. 57-38-30.3(2)(a)',
+      url: 'https://ndlegis.gov/cencode/t57c38.pdf',
+      quotedText:
+        'Reduced by interest income from obligations of the United States and income exempt from state income tax under federal statute or United States or North Dakota constitutional provisions.',
+    }, {
+      // What the department itself enumerates on the return: a line for
+      // Railroad Retirement Board benefits, which are exempt under a federal
+      // statute and so ride on (2)(a), and a line each for the peace-officer
+      // and military exclusions. There is no line for a civil-service annuity,
+      // which is the shape of the negative this record rests on.
+      kind: 'formInstruction',
+      citation: '2025 Form ND-1 instructions, Line 8 — U.S. Railroad Retirement Board benefits',
+      url: 'https://www.tax.nd.gov/sites/www/files/documents/forms/individual/2025-iit/2025-individual-income-tax-booklet.pdf',
+      quotedText:
+        'Enter on this line the portion of any unemployment, sick pay, or retirement benefits received from the U.S. Railroad Retirement Board that are taxable on your federal income tax return.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2023,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/types.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ndcc-57-38-30-3-2-d-2-qualified-dividend-exclusion': {
+    title: 'North Dakota excludes 40% of qualified dividends',
+    statement:
+      'The same subdivision that excludes forty percent of net long-term capital gain excludes forty percent of qualified dividends as defined by IRC 1(h)(11), provided they were taxed federally at a rate below the ordinary rates; if they were not, the reduction is thirty percent of all dividends included in federal taxable income. The department states the arithmetic directly in the Form ND-1 line 13 instruction. Not modelled: `StateTaxParams` has a single included-share field and it governs capital gains, so `qualifiedDividends` enters the North Dakota base at one hundred percent with no field able to say otherwise. The engine therefore charges a North Dakota retiree living on a dividend portfolio more than the statute does, every year, on every qualified dividend. Adding a field is a pack-shape change rather than a data correction, which is why the gap is registered rather than closed here.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:ND',
+    authority: [{
+      // The Century Code PDF renders the citation inside this quote with a gap
+      // — 'section 1(h) (11)' — under both layout and raw pdftotext extraction.
+      // It is reproduced that way rather than closed up to the conventional
+      // '1(h)(11)', because tidying a citation is still retyping it.
+      kind: 'statute',
+      citation: 'N.D.C.C. 57-38-30.3(2)(d)(2)',
+      url: 'https://ndlegis.gov/cencode/t57c38.pdf',
+      quotedText:
+        'Qualified dividends as defined under Internal Revenue Code section 1(h) (11), added by section 302(a) of the Jobs and Growth Tax Relief Reconciliation Act of 2003 [Pub. L. 108-27; 117 Stat. 752; 2 U.S.C. 963 et seq.], but only if taxed at a federal income tax rate that is lower than the regular federal income tax rates applicable to ordinary income. If, for any taxable year, qualified dividends are taxed at the regular federal income tax rates applicable to ordinary income, the reduction allowed under this subdivision is equal to thirty percent of all dividends included in federal taxable income.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Form ND-1 instructions, Line 13 — Qualified dividend exclusion',
+      url: 'https://www.tax.nd.gov/sites/www/files/documents/forms/individual/2025-iit/2025-individual-income-tax-booklet.pdf',
+      quotedText:
+        'If you were a full-year resident of North Dakota during the tax year, multiply the qualified dividends from Form 1040 or 1040-SR, line 3a, by 40 percent and enter the result.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/types.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)
