@@ -20,8 +20,10 @@ import { usePlan } from '../planContextCore'
 import { currentStartYear } from '../useProjection'
 import { DateField, MoneyField, SelectField } from '../fields'
 import {
+  bulkContributionConflictMessage,
   centsToPlanDollars,
   classifiableIraAccounts,
+  conflictingContributionYears,
   contributionDonors,
   deductibleContributionFor,
   eligibilityEvidenceIdConflict,
@@ -328,6 +330,7 @@ function DeductibleContributionBlock({
   years: readonly number[]
 }) {
   const { update } = usePlan()
+  const [issue, setIssue] = useState<string | null>(null)
   const recordedCount = years.filter(
     (year) => deductibleContributionFor(plan, person.id, year) !== null,
   ).length
@@ -352,13 +355,24 @@ function DeductibleContributionBlock({
           </strong>{' '}
           Recording this writes one answer per year, and you can change any single year
           afterwards.
+          <RowIssue issue={issue} />
           <div className="add-row">
             <button
               type="button"
               className="btn btn-secondary btn-small"
-              onClick={() => update((next) => {
-                recordDeductibleContributionZeros(next, person.id, years)
-              })}
+              onClick={() => {
+                // Every year the statement covers is checked before any of it
+                // is written, so one claimed ID never leaves a partial history.
+                const conflicts = conflictingContributionYears(plan, person.id, years)
+                if (conflicts.length > 0) {
+                  setIssue(bulkContributionConflictMessage(conflicts))
+                  return
+                }
+                setIssue(null)
+                update((next) => {
+                  recordDeductibleContributionZeros(next, person.id, years)
+                })
+              }}
             >
               Record $0.00 for all {years.length} of these years
             </button>

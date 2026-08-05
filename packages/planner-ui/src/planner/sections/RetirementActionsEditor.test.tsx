@@ -1167,6 +1167,39 @@ describe('RetirementActionsEditor eligibility facts', () => {
     expect(parsePlan(mounted.current()).ok).toBe(true)
   })
 
+  it('refuses the whole bulk statement when one year has a colliding ID', async () => {
+    const { plan, years } = donorPlanWithContributionYears()
+    const donor = plan.household.people[0]!
+    const collidingYear = years[2]!
+    plan.accounts.push({
+      type: 'cash',
+      id: mintEligibilityEvidenceId({
+        role: 'deductibleContribution',
+        donorPersonId: donor.id,
+        taxYear: collidingYear,
+      }),
+      name: 'Collision',
+      ownerPersonId: donor.id,
+      annualReturnPct: null,
+      balance: 1,
+      annualContribution: 0,
+    })
+    const mounted = await mount(plan)
+    const host = () => row(mounted.container, `[data-eligibility-contributions="${donor.id}"]`)
+
+    await act(async () => buttonByText(
+      host(),
+      `Record $0.00 for all ${years.length} of these years`,
+    ).click())
+
+    expect(host().textContent).toContain(
+      `No year was recorded: another item in this plan already uses the ID RetireGolden files ${collidingYear} under.`,
+    )
+    expect(mounted.current().retirementActionEligibilityFacts?.deductibleIraContributions)
+      .toEqual([])
+    expect(host().textContent).toContain(`0 of ${years.length} years on record`)
+  })
+
   it('keeps a removed contribution year blank rather than zero', async () => {
     const { plan, years } = donorPlanWithContributionYears()
     const mounted = await mount(plan)

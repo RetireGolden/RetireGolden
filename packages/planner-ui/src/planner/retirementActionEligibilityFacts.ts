@@ -131,6 +131,35 @@ export function eligibilityEvidenceIdConflict(
     : null
 }
 
+/**
+ * The years a bulk contribution statement could not record. A statement that
+ * covers many years is checked in full before any of it is written, so a single
+ * claimed ID refuses the whole statement instead of leaving a partial history
+ * the household never made.
+ */
+export function conflictingContributionYears(
+  plan: Readonly<Plan>,
+  donorPersonId: string,
+  taxYears: readonly number[],
+): readonly number[] {
+  return taxYears.filter((taxYear) =>
+    eligibilityEvidenceIdConflict(plan, {
+      role: 'deductibleContribution',
+      donorPersonId,
+      taxYear,
+    }) !== null)
+}
+
+function formatYearList(years: readonly number[]): string {
+  if (years.length === 1) return String(years[0])
+  if (years.length === 2) return `${years[0]} and ${years[1]}`
+  return `${years.slice(0, -1).join(', ')}, and ${years[years.length - 1]}`
+}
+
+export function bulkContributionConflictMessage(taxYears: readonly number[]): string {
+  return `No year was recorded: another item in this plan already uses the ID RetireGolden files ${formatYearList(taxYears)} under. Change the conflicting account, person, or action ID, then record these years again.`
+}
+
 function compareStrings(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0
 }

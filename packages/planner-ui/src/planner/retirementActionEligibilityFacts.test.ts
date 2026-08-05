@@ -12,7 +12,9 @@ import { parsePlan, type Plan } from '@retiregolden/engine/model/plan'
 
 import { createSamplePlan } from '../testSupport/samplePlan'
 import {
+  bulkContributionConflictMessage,
   classifiableIraAccounts,
+  conflictingContributionYears,
   contributionDonors,
   deductibleContributionYears,
   ELIGIBILITY_EVIDENCE_ID_CONFLICT,
@@ -176,6 +178,38 @@ describe('eligibility evidence ID minting', () => {
       role: 'iraClassification',
       sourceAccountId: 'second-ira',
     })).toBeNull()
+  })
+
+  it('names every bulk contribution year whose minted ID is already claimed', () => {
+    const plan = factsPlan()
+    const donor = plan.household.people[0]!
+    const years = deductibleContributionYears(DONOR_DOB, ACTION_YEAR)
+    expect(conflictingContributionYears(plan, donor.id, years)).toEqual([])
+
+    plan.accounts.push(
+      {
+        type: 'cash',
+        id: mintEligibilityEvidenceId({
+          role: 'deductibleContribution', donorPersonId: donor.id, taxYear: 2022,
+        }),
+        name: 'Collision one', ownerPersonId: donor.id, annualReturnPct: null,
+        balance: 1, annualContribution: 0,
+      },
+      {
+        type: 'cash',
+        id: mintEligibilityEvidenceId({
+          role: 'deductibleContribution', donorPersonId: donor.id, taxYear: 2025,
+        }),
+        name: 'Collision two', ownerPersonId: donor.id, annualReturnPct: null,
+        balance: 1, annualContribution: 0,
+      },
+    )
+
+    expect(conflictingContributionYears(plan, donor.id, years)).toEqual([2022, 2025])
+    expect(bulkContributionConflictMessage([2022, 2025])).toContain('2022 and 2025')
+    expect(bulkContributionConflictMessage([2022])).toContain('files 2022 under')
+    expect(bulkContributionConflictMessage([2022, 2024, 2025]))
+      .toContain('2022, 2024, and 2025')
   })
 
   it('does not treat a fact re-record as a conflict with itself', () => {
