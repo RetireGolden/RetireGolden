@@ -1728,91 +1728,143 @@ describe('annual retirement-action publication', () => {
     })).toThrow(/reason identifiers differ/i)
   })
 
-  it.each([
-    ['ordinaryWithdrawal', 'source-balance-trimmed'],
-    ['rothConversion', 'conversion-balance-trimmed'],
-  ] as const)(
-    'binds %s trim evidence to the exact partial allocation',
-    (kind, reasonCode) => {
-      const action = request(
-        kind,
-        `allocation-amount-${kind}`,
-        '2030-06-15',
-        1,
-      )
-      if (action.kind !== kind) throw new Error('fixture drift')
-      action.allocations = [
-        {
-          allocationId: asAllocationId('allocation-full'),
-          sourceAccountId: asAccountId('source-full'),
-          requestedAmount: asPositiveUsdCents(4_000),
-        },
-        {
-          allocationId: asAllocationId('allocation-partial'),
-          sourceAccountId: asAccountId('source-partial'),
-          requestedAmount: asPositiveUsdCents(3_000),
-        },
-        {
-          allocationId: asAllocationId('allocation-zero'),
-          sourceAccountId: asAccountId('source-zero'),
-          requestedAmount: asPositiveUsdCents(3_000),
-        },
-      ]
-      const baseRecord = record(action)
-      const evidenceById = new Map(baseRecord.allocations.map((allocation) => [
-        allocation.allocationId,
-        allocation,
-      ]))
-      const allocations = [
-        {
-          ...evidenceById.get(asAllocationId('allocation-full'))!,
-          resolution: 'resolved' as const,
-          executedAmount: asUsdCents(4_000),
-          unexecutedAmount: asUsdCents(0),
-        },
-        {
-          ...evidenceById.get(asAllocationId('allocation-partial'))!,
-          resolution: 'resolved' as const,
-          executedAmount: asUsdCents(1_500),
-          unexecutedAmount: asUsdCents(1_500),
-        },
-        {
-          ...evidenceById.get(asAllocationId('allocation-zero'))!,
-          resolution: 'resolved' as const,
-          executedAmount: asUsdCents(0),
-          unexecutedAmount: asUsdCents(3_000),
-        },
-      ]
-      const executorSource = kind === 'rothConversion'
-        ? 'rothConversionExecutor'
-        : 'ordinaryWithdrawalExecutor'
-      const publish = (allocationId: 'allocation-full' | 'allocation-partial' | 'allocation-zero') => {
-        const allocation = evidenceById.get(asAllocationId(allocationId))!
-        return publishAnnualRetirementActions({
-          taxYear: 2030,
-          requests: [action],
-          sources: [source(executorSource, [{
-            ...baseRecord,
-            readiness: 'actionable',
-            outcome: 'partial',
-            executedDate: baseRecord.scheduledDate,
-            executedSequence: baseRecord.scheduledSequence,
-            executedAmount: asUsdCents(5_500),
-            unexecutedAmount: asUsdCents(4_500),
-            allocations,
-            reasons: [createActionReason(reasonCode, {
-              accountId: allocation.sourceAccountId,
-              allocationId: allocation.allocationId,
-            })],
-          }])],
-        })
-      }
+  // The conversion trim used to be a second case here. A conversion commits
+  // whole or not at all, so `conversion-balance-trimmed` never rides on a
+  // record that moved money and there is no partial allocation for it to be
+  // bound to; the test below pins what a short conversion source produces
+  // instead.
+  it('binds ordinaryWithdrawal trim evidence to the exact partial allocation', () => {
+    const action = request(
+      'ordinaryWithdrawal',
+      'allocation-amount-ordinaryWithdrawal',
+      '2030-06-15',
+      1,
+    )
+    if (action.kind !== 'ordinaryWithdrawal') throw new Error('fixture drift')
+    action.allocations = [
+      {
+        allocationId: asAllocationId('allocation-full'),
+        sourceAccountId: asAccountId('source-full'),
+        requestedAmount: asPositiveUsdCents(4_000),
+      },
+      {
+        allocationId: asAllocationId('allocation-partial'),
+        sourceAccountId: asAccountId('source-partial'),
+        requestedAmount: asPositiveUsdCents(3_000),
+      },
+      {
+        allocationId: asAllocationId('allocation-zero'),
+        sourceAccountId: asAccountId('source-zero'),
+        requestedAmount: asPositiveUsdCents(3_000),
+      },
+    ]
+    const baseRecord = record(action)
+    const evidenceById = new Map(baseRecord.allocations.map((allocation) => [
+      allocation.allocationId,
+      allocation,
+    ]))
+    const allocations = [
+      {
+        ...evidenceById.get(asAllocationId('allocation-full'))!,
+        resolution: 'resolved' as const,
+        executedAmount: asUsdCents(4_000),
+        unexecutedAmount: asUsdCents(0),
+      },
+      {
+        ...evidenceById.get(asAllocationId('allocation-partial'))!,
+        resolution: 'resolved' as const,
+        executedAmount: asUsdCents(1_500),
+        unexecutedAmount: asUsdCents(1_500),
+      },
+      {
+        ...evidenceById.get(asAllocationId('allocation-zero'))!,
+        resolution: 'resolved' as const,
+        executedAmount: asUsdCents(0),
+        unexecutedAmount: asUsdCents(3_000),
+      },
+    ]
+    const publish = (allocationId: 'allocation-full' | 'allocation-partial' | 'allocation-zero') => {
+      const allocation = evidenceById.get(asAllocationId(allocationId))!
+      return publishAnnualRetirementActions({
+        taxYear: 2030,
+        requests: [action],
+        sources: [source('ordinaryWithdrawalExecutor', [{
+          ...baseRecord,
+          readiness: 'actionable',
+          outcome: 'partial',
+          executedDate: baseRecord.scheduledDate,
+          executedSequence: baseRecord.scheduledSequence,
+          executedAmount: asUsdCents(5_500),
+          unexecutedAmount: asUsdCents(4_500),
+          allocations,
+          reasons: [createActionReason('source-balance-trimmed', {
+            accountId: allocation.sourceAccountId,
+            allocationId: allocation.allocationId,
+          })],
+        }])],
+      })
+    }
 
-      expect(publish('allocation-partial')?.records).toHaveLength(1)
-      expect(() => publish('allocation-full')).toThrow(/reason amounts differ/i)
-      expect(() => publish('allocation-zero')).toThrow(/reason amounts differ/i)
-    },
-  )
+    expect(publish('allocation-partial')?.records).toHaveLength(1)
+    expect(() => publish('allocation-full')).toThrow(/reason amounts differ/i)
+    expect(() => publish('allocation-zero')).toThrow(/reason amounts differ/i)
+  })
+
+  it('binds a conversion trim to a refusal that moved nothing, not to a partial one', () => {
+    const action = request(
+      'rothConversion',
+      'conversion-trim-nonmoving',
+      '2030-06-15',
+      1,
+    )
+    if (action.kind !== 'rothConversion') throw new Error('fixture drift')
+    const baseRecord = record(action)
+    const allocation = baseRecord.allocations[0]!
+    const trimReason = createActionReason('conversion-balance-trimmed', {
+      accountId: allocation.sourceAccountId,
+      allocationId: allocation.allocationId,
+    })
+    const publish = (
+      overrides: Partial<Omit<AnnualRetirementActionRecord, 'executorSource'>>,
+    ) => publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [action],
+      sources: [source('rothConversionExecutor', [{
+        ...baseRecord,
+        outcome: 'refused',
+        allocations: [{ ...allocation, resolution: 'resolved' as const }],
+        reasons: [trimReason],
+        ...overrides,
+      }])],
+    })
+
+    // No owner-wide prerequisite is outstanding, so the staged-conversion
+    // bypass does not apply and this record is checked by the disposition
+    // contract itself.
+    expect(publish({})?.records[0]).toMatchObject({
+      outcome: 'refused',
+      readiness: 'nonActionable',
+      executedAmount: 0,
+      unexecutedAmount: action.requestedAmount,
+      reasons: [trimReason],
+    })
+    // The partial shape the withdrawal executor can produce is unreachable
+    // here, and the contract now says so rather than accepting it.
+    expect(() => publish({
+      readiness: 'actionable',
+      outcome: 'partial',
+      executedDate: baseRecord.scheduledDate,
+      executedSequence: baseRecord.scheduledSequence,
+      executedAmount: asUsdCents(Number(action.requestedAmount) / 2),
+      unexecutedAmount: asUsdCents(Number(action.requestedAmount) / 2),
+      allocations: [{
+        ...allocation,
+        resolution: 'resolved' as const,
+        executedAmount: asUsdCents(Number(allocation.requestedAmount) / 2),
+        unexecutedAmount: asUsdCents(Number(allocation.requestedAmount) / 2),
+      }],
+    })).toThrow(/physical trim/i)
+  })
 
   it('publishes an identifier-free aggregate trim across full and empty sources', () => {
     const action = request(
@@ -2165,15 +2217,18 @@ describe('annual retirement-action publication', () => {
     ])
   })
 
+  // The atomicity rule is about whether each side moved money, so the
+  // conversion side is exercised as `executed` where the withdrawal side is
+  // exercised as `partial`. A conversion record is never partial: its executor
+  // commits whole or not at all, and the only trim reason it can carry now
+  // classifies as a refusal, so a partial conversion record no longer parses.
   it.each([
     ['executed', 'executed', true],
-    ['executed', 'partial', true],
     ['partial', 'executed', true],
-    ['partial', 'partial', true],
     ['executed', 'refused', false],
     ['refused', 'executed', false],
     ['partial', 'unsupported', false],
-    ['unsupported', 'partial', false],
+    ['unsupported', 'executed', false],
     ['refused', 'unsupported', true],
     ['unsupported', 'refused', true],
     ['unsupported', 'unsupported', true],

@@ -62,10 +62,28 @@ describe('action reason registry', () => {
     expect(actionReasonCodes).toHaveLength(79)
     expect(new Set(actionReasonCodes).size).toBe(79)
     expect(actionPredicateNames).toHaveLength(39)
-    expect(partialActionReasonCodes).toHaveLength(3)
+    // Two, not three. `conversion-balance-trimmed` names the same physical fact
+    // as the withdrawal and QCD trims, but the executor it belongs to commits a
+    // conversion whole or not at all, so the reason can only ever accompany a
+    // refusal that moved nothing.
+    expect(partialActionReasonCodes).toHaveLength(2)
     expect(taxTreatmentAdjustmentReasonCodes).toHaveLength(3)
     expect(unsupportedActionReasonCodes).toHaveLength(39)
-    expect(refusedActionReasonCodes).toHaveLength(34)
+    expect(refusedActionReasonCodes).toHaveLength(35)
+  })
+
+  it('keeps a physical trim partial only where its executor can move part of it', () => {
+    expect([...partialActionReasonCodes]).toEqual([
+      'source-balance-trimmed',
+      'qcd-balance-trimmed',
+    ])
+    expect(ACTION_REASON_REGISTRY['conversion-balance-trimmed'].outcome)
+      .toBe('refused')
+    // The registered fact is unchanged, and it is not the fact
+    // `conversion-balance-unavailable` reports: the source held something, just
+    // less than the request named.
+    expect(ACTION_REASON_REGISTRY['conversion-balance-trimmed'].message)
+      .toBe('The named conversion source had less available; no principal disappeared.')
   })
 
   it('preserves the locked unsupported set exactly', () => {

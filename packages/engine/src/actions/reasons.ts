@@ -280,9 +280,20 @@ const actionReasonRegistry = {
     message:
       'Withholding from converted principal is not supported; it reduces the destination and may be an early distribution.',
   },
+  // A physical-balance trim is partial-compatible only where its executor can
+  // move the dollars it did find. `source-balance-trimmed` and
+  // `qcd-balance-trimmed` sit beside executors that do exactly that, so a
+  // trimmed withdrawal or QCD reports a positive executed amount and a positive
+  // remainder. The conversion executor commits a request whole or not at all —
+  // `executeConversionAllocations` treats this very reason as a blocker — so a
+  // trimmed conversion moves nothing, and the only disposition it can ever
+  // accompany is a refusal. The code and its message stand: the source really
+  // did have less available than the request named, and that is a different
+  // fact from `conversion-balance-unavailable`, which says the source had no
+  // principal at all.
   'conversion-balance-trimmed': {
     predicate: 'executeConversionAllocations',
-    outcome: 'partial',
+    outcome: 'refused',
     message: 'The named conversion source had less available; no principal disappeared.',
   },
   'conversion-balance-unavailable': {
