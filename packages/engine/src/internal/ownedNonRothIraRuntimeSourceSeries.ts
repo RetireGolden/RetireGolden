@@ -630,8 +630,9 @@ function phaseRank(application: Readonly<SimulatorRetirementRuntimeApplication>)
     // are known and before any conversion or need-based withdrawal is sized.
     case 'legacyQcdDistribution': return 5
     // A named gift sits beside the aggregate one and ahead of every
-    // conversion. IRC 408(d)(8)(B) lets a charitable distribution be one of
-    // the distributions that satisfies the year's required minimum, so it
+    // conversion. Treas. Reg. 1.408-8(g)(1) takes every IRA distribution into
+    // account against section 401(a)(9) whether or not includible -- naming a
+    // qualified charitable distribution as its own example -- so the gift
     // belongs after the forced distributions it may count against and before
     // the conversions, which Treas. Reg. 1.408A-4 A-6(b) forbids from
     // absorbing an RMD at all.
