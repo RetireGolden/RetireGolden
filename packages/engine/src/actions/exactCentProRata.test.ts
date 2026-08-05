@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   exactCentLargestRemainderSlices,
+  exactCentNearestHalfUp,
   exactCentProRataNearestHalfUp,
 } from './exactCentProRata.js'
 
@@ -14,6 +15,26 @@ describe('exactCentProRataNearestHalfUp', () => {
   it('rounds below an exact half down', () => {
     expect(exactCentProRataNearestHalfUp(1n, 1n, 3n)).toBe(0n)
     expect(exactCentProRataNearestHalfUp(2n, 1n, 3n)).toBe(1n)
+  })
+})
+
+describe('exactCentNearestHalfUp', () => {
+  it('rounds an exact half cent up, in both directions of the neighbouring cent', () => {
+    expect(exactCentNearestHalfUp(1n, 2n)).toBe(1n)
+    expect(exactCentNearestHalfUp(3n, 2n)).toBe(2n)
+    expect(exactCentNearestHalfUp(2_468_913n, 2n)).toBe(1_234_457n)
+  })
+
+  it('rounds a non-tie fractional cent to the nearer whole cent', () => {
+    expect(exactCentNearestHalfUp(1n, 3n)).toBe(0n)
+    expect(exactCentNearestHalfUp(2n, 3n)).toBe(1n)
+    expect(exactCentNearestHalfUp(999_999_999n, 1_000n)).toBe(1_000_000n)
+  })
+
+  it('leaves a whole number of minor units alone', () => {
+    expect(exactCentNearestHalfUp(0n, 1n)).toBe(0n)
+    expect(exactCentNearestHalfUp(7n, 1n)).toBe(7n)
+    expect(exactCentNearestHalfUp(400n, 4n)).toBe(100n)
   })
 })
 
