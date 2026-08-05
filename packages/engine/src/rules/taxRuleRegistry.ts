@@ -6487,9 +6487,9 @@ const registry = {
   // Three things about these citations have to be said once rather than on each
   // record.
   //
-  // First, Arkansas does not publish its own code. The Arkansas Code and
-  // Constitution of 1874 is published by LexisNexis under contract and the
-  // legislature links out to advance.lexis.com for it, which is a commercial
+  // First, Arkansas does not publish its own code. The codified statutes and
+  // the Constitution of 1874 are both published by LexisNexis under contract,
+  // and the legislature links out to advance.lexis.com for both — a commercial
   // host serving no statutory text to a verifier. The operative statutory
   // language below is therefore quoted from the ENROLLED ACT that produced it,
   // which prints the amended section in full, and every dollar amount that the
