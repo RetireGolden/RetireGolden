@@ -52,6 +52,11 @@ import { deriveActionStructuralId } from '../actions/structuralId.js'
  * claims which taxable dollar, so it is not a shortcut that can be taken
  * quietly. The tests below construct the resolved records the annual pass does
  * not yet produce.
+ *
+ * That is not a gap in the executed-gift path: a committed QCD publishes from
+ * the executor's own evidence, exactly as a named Roth conversion does, so this
+ * translator's consumer is the future unified annual ledger rather than the
+ * publication slice.
  */
 
 export type OwnedIraAnnualPhysicalTransactionInputsIssueKind =
