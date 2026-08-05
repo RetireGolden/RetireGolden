@@ -23,7 +23,27 @@
  * confidence to a guess.
  */
 
-/** Where a rule's authority comes from, strongest first. */
+/**
+ * Where a rule's authority comes from, strongest first.
+ *
+ * `stateAgencyPublication` is the one member that is not admissible everywhere.
+ * It names a state revenue department's or state legislature's own authoritative
+ * statement of what its state does or does not levy — the South Dakota
+ * Department of Revenue's "South Dakota is one of seven states that does not
+ * impose a state income tax", the Tennessee Department of Revenue's statement
+ * that the Hall tax is repealed. That is a real primary source for a state's
+ * own law and it is the ONLY affirmative text a negative claim can rest on:
+ * an absent chapter has no operative language to quote, so a state that levies
+ * nothing can be cited only to whoever is entitled to say so.
+ *
+ * It has no authority whatever over a federal rule, which is why the conformance
+ * suite refuses it on a `federal` record the same way the publisher tier refuses
+ * a state host there. Before this member existed the alternatives were to write
+ * `irsPublication` over a `dor.sd.gov` URL — wrong on its face — or to stretch
+ * `formInstruction` to cover a department topic page, which is not a form and
+ * carries no instruction. Both would have laundered a state agency's statement
+ * into a kind that says "the IRS published this".
+ */
 export type TaxRuleAuthorityKind =
   | 'statute'
   | 'regulation'
@@ -31,6 +51,7 @@ export type TaxRuleAuthorityKind =
   | 'formInstruction'
   | 'irsNotice'
   | 'legislativeHistory'
+  | 'stateAgencyPublication'
 
 export interface TaxRuleAuthority {
   readonly kind: TaxRuleAuthorityKind
