@@ -40,7 +40,6 @@ function namedQcd(amount: number): QualifiedCharitableDistributionRequest {
     executionSequence: 1,
     requestedAmount: asPositiveUsdCents(amount * 100),
     provenance: { source: 'manual' },
-    personId: asPersonId('p1'),
     donorPersonId: asPersonId('p1'),
     allocation: {
       allocationId: asAllocationId('qcd-allocation'),
