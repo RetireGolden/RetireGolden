@@ -94,6 +94,268 @@ describeRule('ndcc-57-38-30-3-federal-taxable-income-base', {
   })
 })
 
+// The remaining North Dakota fixtures all price a bracketed figure, so they
+// share one arithmetic helper rather than restating the bands five times.
+//
+// The 2026 schedule the tax commissioner published (Form ND-1ES): single 0% to
+// 49,575, 1.95% to 250,400, 2.50% above; joint 0% to 82,800, 1.95% to 304,850,
+// 2.50% above. Deduction 16,100 single / 32,200 joint, which is the conformed
+// FEDERAL figure — see the record above for why North Dakota carries it.
+//
+// Written out here rather than read from the pack on purpose. A fixture that
+// took its expected bands from the same table the calculator reads would agree
+// with the pack whatever the pack said, which is precisely the failure mode the
+// header of this file describes.
+function northDakotaBandedTax(
+  bands: readonly (readonly [number, number, number])[],
+  taxable: number,
+): number {
+  return bands.reduce(
+    (tax, [lower, upper, ratePct]) =>
+      tax + Math.max(0, Math.min(taxable, upper) - lower) * (ratePct / 100),
+    0,
+  )
+}
+const ND_2026_SINGLE = [[0, 49_575, 0], [49_575, 250_400, 1.95], [250_400, Infinity, 2.5]] as const
+const ND_2026_JOINT = [[0, 82_800, 0], [82_800, 304_850, 1.95], [304_850, Infinity, 2.5]] as const
+const ND_2025_SINGLE = [[0, 48_475, 0], [48_475, 244_825, 1.95], [244_825, Infinity, 2.5]] as const
+const ND_2025_JOINT = [[0, 80_975, 0], [80_975, 298_075, 1.95], [298_075, Infinity, 2.5]] as const
+const ND_DEDUCTION_SINGLE = 16_100
+const ND_DEDUCTION_JOINT = 32_200
+const ndSingleTax = (taxable: number) => northDakotaBandedTax(ND_2026_SINGLE, taxable)
+
+// A single filer with 100,000 of ordinary income lands inside the 1.95% band
+// under both schedules, so the whole difference between them is the 1,100
+// dollars by which the zero bracket moved. That is the point: the readings
+// differ by the indexation and by nothing else.
+const ND_SCHEDULE_INCOME = 100_000
+const ND_SCHEDULE_TAXABLE = ND_SCHEDULE_INCOME - ND_DEDUCTION_SINGLE
+
+describeRule('ndcc-57-38-30-3-1-g-commissioner-indexed-rate-schedule', {
+  readings: {
+    publishedTwentyTwentySixSchedule: northDakotaBandedTax(ND_2026_SINGLE, ND_SCHEDULE_TAXABLE),
+    priorYearScheduleHeldForward: northDakotaBandedTax(ND_2025_SINGLE, ND_SCHEDULE_TAXABLE),
+  },
+  accepted: 'publishedTwentyTwentySixSchedule',
+}, ({ accepted, readings }) => {
+  const scenario = input({ state: 'ND', ordinaryIncome: ND_SCHEDULE_INCOME, agesAlive: [70] })
+
+  it('measures a 2026 North Dakotan against the 2026 schedule the commissioner published', () => {
+    expect(computeStateTax(pack('ND'), scenario)).toBeCloseTo(accepted, 6)
+    expect(computeStateTax(pack('ND'), scenario)).not.toBeCloseTo(readings.priorYearScheduleHeldForward, 6)
+  })
+
+  it('would over-tax the same household on the schedule the pack used to carry', () => {
+    // The defect this replaces, priced: 2025 thresholds inside a 2026 pack.
+    // 57-38-30.3(1)(g) is not optional — a new schedule applies IN LIEU OF the
+    // statutory one every year — so holding a year forward is not conservatism,
+    // it is taxing income North Dakota has moved into the zero bracket.
+    const heldForward = {
+      ...pack('ND'),
+      brackets: {
+        single: ND_2025_SINGLE.map(([lowerBound, , ratePct]) => ({ lowerBound, ratePct })),
+        marriedFilingJointly: ND_2025_JOINT.map(([lowerBound, , ratePct]) => ({ lowerBound, ratePct })),
+      },
+    }
+    const stale = computeStateTax(heldForward, scenario)
+    expect(stale).toBeCloseTo(readings.priorYearScheduleHeldForward, 6)
+    expect(stale).toBeGreaterThan(accepted)
+  })
+
+  it('carries the joint schedule too, which indexes by a different amount', () => {
+    // 82,800 against 80,975: the joint zero bracket moved 1,825 dollars, not the
+    // 1,100 the single one did. A pack that indexed one schedule and copied the
+    // other would pass the assertions above and fail here.
+    const joint = input({
+      state: 'ND',
+      filingStatus: 'marriedFilingJointly',
+      ordinaryIncome: 150_000,
+      agesAlive: [70, 70],
+    })
+    const taxable = 150_000 - ND_DEDUCTION_JOINT
+    expect(computeStateTax(pack('ND'), joint))
+      .toBeCloseTo(northDakotaBandedTax(ND_2026_JOINT, taxable), 6)
+    expect(computeStateTax(pack('ND'), joint))
+      .not.toBeCloseTo(northDakotaBandedTax(ND_2025_JOINT, taxable), 6)
+  })
+})
+
+// 90,000 of other income puts the household far above every section 86
+// threshold, so the federally taxable share of the benefit is the 85% ceiling:
+// 34,000 of the 40,000. That is the amount the repealed rule would have left in
+// the North Dakota base for a household over the old 50,000 dollar cap.
+const ND_SS_OTHER_INCOME = 90_000
+const ND_SS_BENEFITS = 40_000
+const ND_SS_FEDERALLY_TAXABLE = ND_SS_BENEFITS * 0.85
+
+describeRule('ndcc-57-38-30-3-2-s-social-security-subtraction', {
+  readings: {
+    everyBenefitDollarSubtracted: ndSingleTax(ND_SS_OTHER_INCOME - ND_DEDUCTION_SINGLE),
+    repealedAdjustedGrossIncomeCap:
+      ndSingleTax(ND_SS_OTHER_INCOME + ND_SS_FEDERALLY_TAXABLE - ND_DEDUCTION_SINGLE),
+  },
+  accepted: 'everyBenefitDollarSubtracted',
+}, ({ accepted, readings }) => {
+  // Chosen so the household is over the repealed threshold: 90,000 of other
+  // income is well past the 50,000 dollar single cap H.B. 1174 imposed in 2019.
+  // A fixture run under the cap would return the same figure either way and
+  // prove nothing about which rule the engine holds.
+  const scenario = input({
+    state: 'ND',
+    ordinaryIncome: ND_SS_OTHER_INCOME,
+    ssBenefits: ND_SS_BENEFITS,
+    agesAlive: [70],
+  })
+
+  it('leaves a high-income North Dakotan’s Social Security out of the state base', () => {
+    expect(computeStateTax(pack('ND'), scenario)).toBeCloseTo(accepted, 6)
+    expect(computeStateTaxableIncome(pack('ND'), scenario))
+      .toBeCloseTo(ND_SS_OTHER_INCOME - ND_DEDUCTION_SINGLE, 6)
+  })
+
+  it('would pull 34,000 of benefit into the base under the pre-2021 threshold rule', () => {
+    // S.B. 2351 of the November 2021 special session struck the thresholds for
+    // taxable years beginning after 2020. Priced as the flag that would restore
+    // them: the base grows by the federally taxable share and nothing else.
+    const capped = { ...pack('ND'), taxesSocialSecurity: true }
+    expect(computeStateTax(capped, scenario)).toBeCloseTo(readings.repealedAdjustedGrossIncomeCap, 6)
+    expect(computeStateTaxableIncome(capped, scenario) - computeStateTaxableIncome(pack('ND'), scenario))
+      .toBeCloseTo(ND_SS_FEDERALLY_TAXABLE, 6)
+  })
+})
+
+// Both uniformed-retirement records drive the same field — the public bucket —
+// so they use different households and different dollar figures, and each
+// prices the taxed reading through `retirementPublic: { kind: 'none' }`, which
+// is what the pack held before this pass.
+const ND_MILITARY_OTHER_INCOME = 95_000
+const ND_MILITARY_PENSION = 45_000
+const ND_PUBLIC_BUCKET_TAXED = { kind: 'none' } as const
+
+describeRule('ndcc-57-38-30-3-2-r-military-retirement-exclusion', {
+  readings: {
+    retiredMilitaryPayFullySubtracted:
+      ndSingleTax(ND_MILITARY_OTHER_INCOME - ND_DEDUCTION_SINGLE),
+    taxedLikeAnyOtherRetirementIncome:
+      ndSingleTax(ND_MILITARY_OTHER_INCOME + ND_MILITARY_PENSION - ND_DEDUCTION_SINGLE),
+  },
+  accepted: 'retiredMilitaryPayFullySubtracted',
+}, ({ accepted, readings }) => {
+  const scenario = input({
+    state: 'ND',
+    ordinaryIncome: ND_MILITARY_OTHER_INCOME + ND_MILITARY_PENSION,
+    publicPensionIncome: ND_MILITARY_PENSION,
+    agesAlive: [70],
+  })
+
+  it('takes the whole military pension out of a North Dakota base', () => {
+    expect(computeStateTax(pack('ND'), scenario)).toBeCloseTo(accepted, 6)
+    expect(computeStateTax(pack('ND'), scenario)).toBeLessThan(readings.taxedLikeAnyOtherRetirementIncome)
+  })
+
+  it('would tax all 45,000 of it if the public bucket carried no exclusion', () => {
+    const taxed = { ...pack('ND'), retirementPublic: ND_PUBLIC_BUCKET_TAXED }
+    expect(computeStateTax(taxed, scenario)).toBeCloseTo(readings.taxedLikeAnyOtherRetirementIncome, 6)
+  })
+
+  it('does not spill the exclusion onto private retirement income', () => {
+    // `retirementRuleShared` is false for North Dakota precisely because the
+    // public rule is a rule of its own. An IRA distribution of the same size is
+    // taxed in full, which is what makes the public exclusion a fact about the
+    // pension rather than about retirement income generally.
+    const privatePension = input({
+      state: 'ND',
+      ordinaryIncome: ND_MILITARY_OTHER_INCOME + ND_MILITARY_PENSION,
+      privateRetirementIncome: ND_MILITARY_PENSION,
+      agesAlive: [70],
+    })
+    expect(computeStateTax(pack('ND'), privatePension))
+      .toBeCloseTo(readings.taxedLikeAnyOtherRetirementIncome, 6)
+  })
+})
+
+const ND_OFFICER_OTHER_INCOME = 120_000
+const ND_OFFICER_PENSION = 38_000
+
+describeRule('ndcc-57-38-30-3-2-t-retired-peace-officer-exclusion', {
+  readings: {
+    twentyYearOfficerBenefitFullySubtracted:
+      ndSingleTax(ND_OFFICER_OTHER_INCOME - ND_DEDUCTION_SINGLE),
+    taxedLikeAnyOtherRetirementIncome:
+      ndSingleTax(ND_OFFICER_OTHER_INCOME + ND_OFFICER_PENSION - ND_DEDUCTION_SINGLE),
+  },
+  accepted: 'twentyYearOfficerBenefitFullySubtracted',
+}, ({ accepted, readings }) => {
+  const scenario = input({
+    state: 'ND',
+    ordinaryIncome: ND_OFFICER_OTHER_INCOME + ND_OFFICER_PENSION,
+    publicPensionIncome: ND_OFFICER_PENSION,
+    agesAlive: [70],
+  })
+
+  it('takes a retired officer’s benefit out of a North Dakota base in full', () => {
+    expect(computeStateTax(pack('ND'), scenario)).toBeCloseTo(accepted, 6)
+  })
+
+  it('would tax it as ordinary retirement income without the subdivision', () => {
+    const taxed = { ...pack('ND'), retirementPublic: ND_PUBLIC_BUCKET_TAXED }
+    expect(computeStateTax(taxed, scenario)).toBeCloseTo(readings.taxedLikeAnyOtherRetirementIncome, 6)
+    expect(computeStateTax(taxed, scenario)).toBeGreaterThan(accepted)
+  })
+})
+
+const ND_GAIN_ORDINARY = 120_000
+const ND_LONG_TERM_GAIN = 100_000
+
+describeRule('ndcc-57-38-30-3-2-d-long-term-gain-exclusion', {
+  readings: {
+    sixtyPercentOfTheGainInTheBase:
+      ndSingleTax(ND_GAIN_ORDINARY + ND_LONG_TERM_GAIN * 0.6 - ND_DEDUCTION_SINGLE),
+    theWholeGainInTheBase:
+      ndSingleTax(ND_GAIN_ORDINARY + ND_LONG_TERM_GAIN - ND_DEDUCTION_SINGLE),
+  },
+  accepted: 'sixtyPercentOfTheGainInTheBase',
+}, ({ accepted, readings }) => {
+  // This fixture used to live in rules/approximations/ and asserted the
+  // opposite: that the engine produced `theWholeGainInTheBase`. The pack now
+  // carries `capitalGainsTaxablePct: 60`, so the record is settled and the
+  // assertion is inverted rather than deleted — which is exactly the transition
+  // `produced` exists to force.
+  const scenario = input({
+    state: 'ND',
+    ordinaryIncome: ND_GAIN_ORDINARY,
+    capitalGains: ND_LONG_TERM_GAIN,
+    agesAlive: [70],
+  })
+
+  it('leaves forty percent of a long-term gain out of the North Dakota base', () => {
+    expect(computeStateTax(pack('ND'), scenario)).toBeCloseTo(accepted, 6)
+    expect(computeStateTax(pack('ND'), scenario)).not.toBeCloseTo(readings.theWholeGainInTheBase, 6)
+    expect(computeStateTaxableIncome(pack('ND'), scenario))
+      .toBeCloseTo(ND_GAIN_ORDINARY + ND_LONG_TERM_GAIN * 0.6 - ND_DEDUCTION_SINGLE, 6)
+  })
+
+  it('would tax the whole gain with the included share left at its default', () => {
+    // Without the field the calculator falls back to 100% for any state whose
+    // gains are ordinary, which is the reading the subdivision rejects.
+    const wholeGain = { ...pack('ND'), capitalGainsTaxablePct: undefined }
+    expect(computeStateTax(wholeGain, scenario)).toBeCloseTo(readings.theWholeGainInTheBase, 6)
+  })
+
+  it('still taxes the included sixty percent at ordinary North Dakota rates', () => {
+    // `capitalGainsAsOrdinary` stays true, and it is not redundant with the
+    // included share: North Dakota has no preferential RATE, only a partial
+    // exclusion, so the sixty percent that arrives is stacked with ordinary
+    // income rather than priced on a schedule of its own.
+    const equivalentOrdinary = input({
+      state: 'ND',
+      ordinaryIncome: ND_GAIN_ORDINARY + ND_LONG_TERM_GAIN * 0.6,
+      agesAlive: [70],
+    })
+    expect(computeStateTax(pack('ND'), equivalentOrdinary)).toBeCloseTo(accepted, 6)
+  })
+})
+
 // PA is flat 3.07% with no standard deduction, so a Pennsylvania figure is the
 // taxable base times one rate and nothing else moves underneath it.
 const PA_RATE = 0.0307

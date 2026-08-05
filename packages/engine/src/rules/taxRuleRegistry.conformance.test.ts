@@ -123,6 +123,23 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
     'revisor.mo.gov', // Missouri Revisor of Statutes
   ],
   ND: [
+    // Re-checked 2026-08-05, when the second slice of North Dakota records was
+    // written, because North Dakota is the state whose entry has to carry real
+    // weight: the Century Code prints only the 2023 statutory bracket amounts,
+    // N.D.C.C. 57-38-30.3(1)(g) makes the commissioner's cost-of-living-adjusted
+    // schedule apply in lieu of them, and the department is the sole publisher
+    // of that schedule. Without this host the pack could not cite its own
+    // bracket data at all.
+    //
+    // Recorded bare rather than as `www.tax.nd.gov`, which is the host every
+    // usable document URL actually carries: `https://tax.nd.gov/...` answers
+    // 301 to the `www.` form, and every form and instruction lives under
+    // `www.tax.nd.gov/sites/www/files/...`. `hostAndPublisherOf` strips a
+    // leading `www.` before comparing, so the bare entry admits both spellings
+    // and adding the `www.` variant would be a second name for one publisher.
+    // Pinned by a test below rather than left to be re-derived from the
+    // stripping rule, since the failure mode is a conformance suite rejecting
+    // the correct primary source.
     'tax.nd.gov', // Office of State Tax Commissioner
     'ndlegis.gov', // Century Code, Title 57 Taxation (ch. 57-38, Income Tax)
   ],
@@ -421,6 +438,30 @@ describe('tax rule registry conformance', () => {
       jurisdiction: 'state:ND',
       authority: [{ citation: 'NDCC 57-38-01', url: 'https://www.ftb.ca.gov/' }],
     }]])).toEqual(['nd-fictional:NDCC 57-38-01:www.ftb.ca.gov'])
+  })
+
+  it('admits the www. spelling a state department actually serves', () => {
+    // The North Dakota tier is recorded as the bare `tax.nd.gov`, but no
+    // citation can carry that host: it answers 301 to `www.tax.nd.gov`, and
+    // every form and instruction is published under the `www.` form. The
+    // entry is only useful if the publisher comparison sees through that, so
+    // assert it rather than infer it from `hostAndPublisherOf`.
+    expect(offSourceAuthorities([['nd-fictional', {
+      jurisdiction: 'state:ND',
+      authority: [{
+        citation: '2026 Forms ND-1 and ND-EZ Tax Rate Schedules',
+        url: 'https://www.tax.nd.gov/sites/www/files/documents/forms/individual/2025-iit/28709-form-nd-1es-2026.pdf',
+      }],
+    }]])).toEqual([])
+    // ...and it is still that state's own source, so it satisfies the
+    // own-sovereign requirement on its own.
+    expect(stateRulesMissingStateAuthority([['nd-fictional', {
+      jurisdiction: 'state:ND',
+      authority: [{
+        citation: '2026 Forms ND-1 and ND-EZ Tax Rate Schedules',
+        url: 'https://www.tax.nd.gov/sites/www/files/documents/forms/individual/2025-iit/28709-form-nd-1es-2026.pdf',
+      }],
+    }]])).toEqual([])
   })
 
   it('admits nothing for a state with no researched publisher tier', () => {
