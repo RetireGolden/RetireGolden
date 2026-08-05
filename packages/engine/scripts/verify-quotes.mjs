@@ -722,6 +722,19 @@ function segmentsOf(quote) {
  * is what tells a reader whether a failure is a composed sentence, a dropped
  * clause, or a `$` spelled out as the word "dollars".
  *
+ * Pass the same form of the quote the verdict was decided on. TRUNCATED decides
+ * on the segment with its terminal mark removed, so it must probe with that:
+ * probing the raw segment walks back into the mark the verdict just ruled out,
+ * stops the prefix one word early, and opens the snippet by repeating the
+ * quote's own last word — describing the punctuation the detail line has
+ * already named instead of the continuation nobody can see yet.
+ *
+ * Known limitation: `continuation` is sliced out of the *normalised* source, so
+ * the snippet is lowercased and carries whatever else `norm` folded. It is a
+ * pointer to the place in the document, not a quotation from it. Slicing the
+ * raw text instead would mean mapping an offset back through the ladder, which
+ * changes lengths at nearly every rung.
+ *
  * @param {readonly string[]} variants
  * @param {string} needle
  * @param {(s: string) => string} [norm] Word-preserving normaliser; PDFs pass wordsOnly.
@@ -802,7 +815,14 @@ function verdictFor(entry, source) {
       return {
         verdict: 'TRUNCATED',
         detail: `the quote ends with a terminal ${terminalCut(missing)} the source does not have there`,
-        diagnosis: divergence(source.variants, missing[0], wordsOnly),
+        // `trimmed[0]` for the same reason as the HTML branch below, though
+        // here it changes nothing today: `wordsOnly` deletes every non-alphanumeric
+        // character, so it strips the terminal mark whether or not the segment
+        // arrived trimmed. Aligned anyway, because the next person to read these
+        // two branches should not have to work out why they differ, and because
+        // the equivalence is a property of the normaliser rather than of this
+        // verdict — it would stop holding the moment either changes.
+        diagnosis: divergence(source.variants, trimmed[0], wordsOnly),
       }
     }
     if (missing.every((s) => matchesWords(source.variants, s))) {
@@ -848,7 +868,15 @@ function verdictFor(entry, source) {
     return {
       verdict: 'TRUNCATED',
       detail: `the quote ends with a terminal ${terminalCut(missing)} the source does not have there`,
-      diagnosis: divergence(source.variants, missing[0]),
+      // Probed with `trimmed[0]` — the exact value the verdict was decided on,
+      // not a fresh trim that could drift from it. Probing `missing[0]` walked
+      // into the terminal mark this verdict has just finished ruling out: the
+      // prefix walk stopped one word early and the snippet opened by repeating
+      // the quote's own last word, so it showed where the punctuation differs.
+      // The reader already knows that — the detail line says it. What TRUNCATED
+      // is for is showing where the source keeps writing, and that only appears
+      // once the mark is out of the way.
+      diagnosis: divergence(source.variants, trimmed[0]),
     }
   }
 
