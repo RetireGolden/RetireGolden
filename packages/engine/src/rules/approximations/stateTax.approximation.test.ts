@@ -12,6 +12,20 @@
  *     exempts civil-service pensions North Dakota taxes.
  *   - North Dakota also excludes 40% of qualified dividends; the included-share
  *     field governs capital gains only, so dividends enter at 100%.
+ *   - Arkansas exempts uniformed-services retirement in full and caps every
+ *     other pension at $6,000; the same one flag, pointed the other way.
+ *   - Arkansas gates its $6,000 at 59½ for an IRA and not at all for an
+ *     employer plan; `minAge` gates the whole bucket and cannot see which.
+ *   - Arkansas exempts capital gain above $10,000,000 outright; the
+ *     included-share field has no ceiling above which the share falls to zero.
+ *   - Arizona exempts uniformed-services retired pay in full and caps a
+ *     civil-service pension at $2,500 — the North Dakota shape exactly, with a
+ *     cap in place of nothing.
+ *   - Arizona's 25% gain subtraction reaches only an asset acquired after 2011;
+ *     the engine carries no acquisition date.
+ *   - Arizona's age-65 relief is a $2,100 per-person exemption above the
+ *     deduction line; the pack's only age-65 field is the FEDERAL addition, and
+ *     it attaches to conforming states alone.
  *   - Pennsylvania conditions on the PLAN's age or service requirement; the
  *     pack substitutes a flat age 60.
  *   - New York conditions on attaining 59½; `minAge` is compared against an
@@ -29,10 +43,14 @@
  * the assertion here failed, and the record and its fixture moved to
  * `tax/stateTax.rules.test.ts` as `settled`.
  *
- * The North Dakota public-pension entry is the one whose direction differs. The
- * other four over-charge; that one under-charges, because closing a real gap
- * with a flag coarser than the statute opened a smaller one facing the other
- * way. It is registered rather than left implicit for exactly that reason.
+ * Directions are mixed, and which way each runs is the thing to read first.
+ * North Dakota's and Arizona's public-pension entries, Arkansas's age gate and
+ * Arizona's gain subtraction all under-charge — three of them because closing a
+ * real gap with a flag coarser than the statute opened a smaller one facing the
+ * other way. The rest over-charge. An under-charge is the dangerous direction
+ * and is registered for exactly that reason: a correction that quietly
+ * introduces one is worse than the overstatement it replaced if nobody can see
+ * it.
  */
 
 import { expect, it } from 'vitest'
@@ -311,5 +329,252 @@ describeRule('sc-code-12-6-1170-retirement-income-deduction', {
       retirementPrivate: { kind: 'capped' as const, capPerPerson: SC_LOWER_TIER },
     }
     expect(computeStateTax(lowerTier, scenario)).toBeCloseTo(accepted, 6)
+  })
+})
+
+// Arkansas, DFA's published 2026 schedule: 0% to 5,600, 2% to 11,200, 3% to
+// 16,000, 3.4% to 26,400, 3.9% above. Deduction 2,470 per taxpayer.
+const arkansasTax = (taxable: number) => bandedTax(
+  [[0, 5_600, 0], [5_600, 11_200, 2], [11_200, 16_000, 3], [16_000, 26_400, 3.4], [26_400, Infinity, 3.9]],
+  taxable,
+)
+const AR_DEDUCTION = 2_470
+const AR_MILITARY_OTHER_INCOME = 50_000
+const AR_MILITARY_PENSION = 45_000
+const AR_MILITARY_GROSS = AR_MILITARY_OTHER_INCOME + AR_MILITARY_PENSION
+
+describeRule('aca-26-51-307-e-uniformed-services-full-exemption', {
+  readings: {
+    militaryRetirementFullyExempt: arkansasTax(AR_MILITARY_OTHER_INCOME - AR_DEDUCTION),
+    cappedAtTheSixThousandEveryOtherPensionGets: arkansasTax(AR_MILITARY_GROSS - 6_000 - AR_DEDUCTION),
+  },
+  accepted: 'militaryRetirementFullyExempt',
+  produced: 'cappedAtTheSixThousandEveryOtherPensionGets',
+}, ({ accepted, produced }) => {
+  // An Arkansas military retiree. 26-51-307(e) exempts the pension outright;
+  // the pack's public bucket carries the $6,000 rule Arkansas applies to every
+  // OTHER public pension, so this household is over-charged.
+  const scenario = input({
+    state: 'AR',
+    ordinaryIncome: AR_MILITARY_GROSS,
+    publicPensionIncome: AR_MILITARY_PENSION,
+    agesAlive: [70],
+  })
+
+  it('charges Arkansas tax on a military pension above $6,000', () => {
+    expect(computeStateTax(pack('AR'), scenario)).toBeCloseTo(produced, 6)
+    expect(computeStateTax(pack('AR'), scenario)).toBeGreaterThan(accepted)
+  })
+
+  it('reaches the statute’s figure only by exempting every public pension in the state', () => {
+    // Which is what closing it with the one flag available would mean, and what
+    // the pack did until 2026-08-05. The direction was chosen deliberately: an
+    // ATRS, APERS, county, police or fire pension is inside 26-51-307(a)(1)
+    // with a $6,000 ceiling, and there are far more of those households than
+    // military ones. What would actually close the gap is a fact the input
+    // model does not carry — whether the pension is uniformed or civil.
+    const uniformedBucket = {
+      ...pack('AR'),
+      retirementRuleShared: false,
+      retirementPublic: { kind: 'full' as const },
+    }
+    expect(computeStateTax(uniformedBucket, scenario)).toBeCloseTo(accepted, 6)
+  })
+})
+
+const AR_EARLY_IRA_OTHER_INCOME = 15_000
+const AR_EARLY_IRA_WITHDRAWAL = 25_000
+const AR_EARLY_IRA_GROSS = AR_EARLY_IRA_OTHER_INCOME + AR_EARLY_IRA_WITHDRAWAL
+
+describeRule('aca-26-51-307-a-2-ira-age-fifty-nine-and-a-half-gate', {
+  readings: {
+    prematureIraDistributionGetsNothing: arkansasTax(AR_EARLY_IRA_GROSS - AR_DEDUCTION),
+    sixThousandGrantedAtAnyAge: arkansasTax(AR_EARLY_IRA_GROSS - 6_000 - AR_DEDUCTION),
+  },
+  accepted: 'prematureIraDistributionGetsNothing',
+  produced: 'sixThousandGrantedAtAnyAge',
+}, ({ accepted, produced }) => {
+  // Fifty-five, drawing on a traditional IRA. 26-51-307(a)(2)(C) denies the
+  // exemption to every premature distribution that is not death or disability.
+  const scenario = input({
+    state: 'AR',
+    ordinaryIncome: AR_EARLY_IRA_GROSS,
+    privateRetirementIncome: AR_EARLY_IRA_WITHDRAWAL,
+    agesAlive: [55],
+  })
+
+  it('exempts $6,000 of an early IRA withdrawal Arkansas taxes in full', () => {
+    expect(computeStateTax(pack('AR'), scenario)).toBeCloseTo(produced, 6)
+    expect(computeStateTax(pack('AR'), scenario)).toBeLessThan(accepted)
+  })
+
+  it('reaches the statute’s figure only by gating an employer pension the same way', () => {
+    // `minAge` gates the whole bucket, and the pack cannot see whether the
+    // income came from an IRA or an employer plan. So the setting that prices
+    // this household correctly also denies the exemption to a 55-year-old
+    // drawing an employer pension, which Arkansas allows — the department says
+    // expressly that the recipient need not even be retired.
+    const gated = {
+      ...pack('AR'),
+      retirementPrivate: { kind: 'capped' as const, capPerPerson: 6_000, minAge: 59.5 },
+    }
+    expect(computeStateTax(gated, scenario)).toBeCloseTo(accepted, 6)
+    expect(computeStateTax(gated, scenario)).toBeGreaterThan(computeStateTax(pack('AR'), scenario))
+  })
+})
+
+const AR_LARGE_GAIN = 12_000_000
+const AR_EXEMPT_CEILING = 10_000_000
+
+describeRule('aca-26-51-815-b-3-ten-million-dollar-gain-exemption', {
+  readings: {
+    halfOfTheFirstTenMillionOnly: arkansasTax(AR_EXEMPT_CEILING * 0.5 - AR_DEDUCTION),
+    halfOfTheWholeRealization: arkansasTax(AR_LARGE_GAIN * 0.5 - AR_DEDUCTION),
+  },
+  accepted: 'halfOfTheFirstTenMillionOnly',
+  produced: 'halfOfTheWholeRealization',
+}, ({ accepted, produced }) => {
+  const scenario = input({ state: 'AR', capitalGains: AR_LARGE_GAIN, agesAlive: [70] })
+
+  it('taxes half of the excess above $10,000,000 that Arkansas exempts outright', () => {
+    expect(computeStateTax(pack('AR'), scenario)).toBeCloseTo(produced, 6)
+    expect(computeStateTax(pack('AR'), scenario)).toBeGreaterThan(accepted)
+  })
+
+  it('reaches the statute’s figure only by shrinking the input, which is not a fix', () => {
+    // `capitalGainsTaxablePct` is one share with no ceiling above which it
+    // falls to zero, so the accepted figure has to be priced by handing the
+    // calculator the capped gain Form AR1000D line 7b computes — which a
+    // caller must never do, because the same input feeds the federal
+    // calculator, where the whole realization belongs.
+    const capped = input({ state: 'AR', capitalGains: AR_EXEMPT_CEILING, agesAlive: [70] })
+    expect(computeStateTax(pack('AR'), capped)).toBeCloseTo(accepted, 6)
+  })
+})
+
+// Arizona is 2.5% of the base and nothing else moves underneath it. Deduction
+// 15,750, which is Arizona's own published figure.
+const AZ_RATE = 0.025
+const AZ_DEDUCTION = 15_750
+const azTax = (taxable: number) => Math.max(0, taxable) * AZ_RATE
+const AZ_CIVIL_SERVICE_OTHER_INCOME = 50_000
+const AZ_CIVIL_SERVICE_PENSION = 45_000
+const AZ_CIVIL_SERVICE_GROSS = AZ_CIVIL_SERVICE_OTHER_INCOME + AZ_CIVIL_SERVICE_PENSION
+const AZ_GOVERNMENT_PENSION_CAP = 2_500
+
+describeRule('ars-43-1022-2-government-pension-exclusion', {
+  readings: {
+    twentyFiveHundredSubtracted:
+      azTax(AZ_CIVIL_SERVICE_GROSS - AZ_GOVERNMENT_PENSION_CAP - AZ_DEDUCTION),
+    everyPublicPensionExempt: azTax(AZ_CIVIL_SERVICE_OTHER_INCOME - AZ_DEDUCTION),
+  },
+  accepted: 'twentyFiveHundredSubtracted',
+  produced: 'everyPublicPensionExempt',
+}, ({ accepted, produced }) => {
+  // A retired Arizona state employee. 43-1022(2) subtracts $2,500 of an ASRS
+  // pension and no more; the pack's public bucket is `full` for the sake of
+  // 43-1022(26)'s military exclusion, so the whole pension leaves the base.
+  const scenario = input({
+    state: 'AZ',
+    ordinaryIncome: AZ_CIVIL_SERVICE_GROSS,
+    publicPensionIncome: AZ_CIVIL_SERVICE_PENSION,
+    agesAlive: [70],
+  })
+
+  it('exempts an ASRS pension Arizona taxes above $2,500', () => {
+    expect(computeStateTax(pack('AZ'), scenario)).toBeCloseTo(produced, 6)
+    expect(computeStateTax(pack('AZ'), scenario)).toBeLessThan(accepted)
+  })
+
+  it('reaches the statute’s figure only by capping the military exclusion too', () => {
+    // The bucket is one flag. Capping it at $2,500 prices this household right
+    // and puts a military retiree's whole pension back in the Arizona base,
+    // which 43-1022(26)(c) removes. What would close it is a fact the input
+    // model does not carry: whether the pension is uniformed or civil.
+    const capped = {
+      ...pack('AZ'),
+      retirementPublic: { kind: 'capped' as const, capPerPerson: AZ_GOVERNMENT_PENSION_CAP },
+    }
+    expect(computeStateTax(capped, scenario)).toBeCloseTo(accepted, 6)
+  })
+})
+
+const AZ_GAIN_ORDINARY = 80_000
+const AZ_PRE_2012_GAIN = 100_000
+
+describeRule('ars-43-1022-22-long-term-capital-gain-subtraction', {
+  readings: {
+    preTwentyTwelveAssetTaxedInFull: azTax(AZ_GAIN_ORDINARY + AZ_PRE_2012_GAIN - AZ_DEDUCTION),
+    twentyFivePercentSubtractedFromEveryGain:
+      azTax(AZ_GAIN_ORDINARY + AZ_PRE_2012_GAIN * 0.75 - AZ_DEDUCTION),
+  },
+  accepted: 'preTwentyTwelveAssetTaxedInFull',
+  produced: 'twentyFivePercentSubtractedFromEveryGain',
+}, ({ accepted, produced }) => {
+  // A position bought before 2012 — or one whose acquisition date cannot be
+  // verified, which 43-1022(22)(c) treats the same way. Arizona allows no
+  // subtraction on either, and the engine cannot tell them from a post-2011
+  // holding because it carries no acquisition date at all.
+  const scenario = input({
+    state: 'AZ',
+    ordinaryIncome: AZ_GAIN_ORDINARY,
+    capitalGains: AZ_PRE_2012_GAIN,
+    agesAlive: [70],
+  })
+
+  it('subtracts a quarter of a pre-2012 gain that Arizona taxes in full', () => {
+    expect(computeStateTax(pack('AZ'), scenario)).toBeCloseTo(produced, 6)
+    expect(computeStateTax(pack('AZ'), scenario)).toBeLessThan(accepted)
+  })
+
+  it('reaches the statute’s figure only for a household holding nothing bought since 2011', () => {
+    // The included share is one number for the whole state. Setting it to 100
+    // prices this household correctly and over-charges every Arizonan whose
+    // gain came from an asset acquired after 2011, which is the majority and
+    // grows every year.
+    const noSubtraction = { ...pack('AZ'), capitalGainsTaxablePct: 100 }
+    expect(computeStateTax(noSubtraction, scenario)).toBeCloseTo(accepted, 6)
+  })
+})
+
+const AZ_AGE65_INCOME = 120_000
+const AZ_AGE65_EXEMPTION = 2_100
+
+describeRule('ars-43-1023-e-age-65-exemption', {
+  readings: {
+    twentyOneHundredPerPersonSubtracted:
+      azTax(AZ_AGE65_INCOME - AZ_AGE65_EXEMPTION - AZ_DEDUCTION),
+    noAgeRelatedSubtractionAtAll: azTax(AZ_AGE65_INCOME - AZ_DEDUCTION),
+  },
+  accepted: 'twentyOneHundredPerPersonSubtracted',
+  produced: 'noAgeRelatedSubtractionAtAll',
+}, ({ accepted, produced }) => {
+  const scenario = input({
+    state: 'AZ',
+    ordinaryIncome: AZ_AGE65_INCOME,
+    peopleAged65Plus: 1,
+    agesAlive: [70],
+  })
+
+  it('gives a 65-year-old Arizonan no exemption at all', () => {
+    expect(computeStateTax(pack('AZ'), scenario)).toBeCloseTo(produced, 6)
+    expect(computeStateTax(pack('AZ'), scenario)).toBeGreaterThan(accepted)
+  })
+
+  it('reaches the statute’s figure only by shrinking the input, which is not a fix', () => {
+    // There is no field. `standardDeductionAge65Addition` is attached by the
+    // conformity indexer only to a state whose deduction IS the federal one,
+    // and it carries the FEDERAL amount under IRC 63(c)(3) — a different figure
+    // under a different statute, indexed every year while 43-1023(E)'s $2,100
+    // is frozen. So the accepted figure is priced by handing the calculator the
+    // income net of the exemption, which a caller must never do: the same input
+    // feeds the federal calculator, where no such exemption exists.
+    const preExempted = input({
+      state: 'AZ',
+      ordinaryIncome: AZ_AGE65_INCOME - AZ_AGE65_EXEMPTION,
+      peopleAged65Plus: 1,
+      agesAlive: [70],
+    })
+    expect(computeStateTax(pack('AZ'), preExempted)).toBeCloseTo(accepted, 6)
   })
 })

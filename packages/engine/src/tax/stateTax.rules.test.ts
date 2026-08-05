@@ -870,13 +870,444 @@ describeRule('wy-stat-39-12-101-no-state-or-local-income-tax', {
   })
 })
 
+// Arkansas, the schedule DFA published for 2026 (Form AR1000ES): 0% to 5,600,
+// 2% to 11,200, 3% to 16,000, 3.4% to 26,400, 3.9% above. Deduction 2,470 per
+// taxpayer, which is Arkansas's own figure and not the federal one.
+//
+// Written out rather than read from the pack, for the reason the North Dakota
+// helper above gives: a fixture that took its bands from the table the
+// calculator reads would agree with a wrong table as readily as a right one.
+function arkansasBandedTax(
+  bands: readonly (readonly [number, number, number])[],
+  taxable: number,
+): number {
+  return bands.reduce(
+    (tax, [lower, upper, ratePct]) =>
+      tax + Math.max(0, Math.min(taxable, upper) - lower) * (ratePct / 100),
+    0,
+  )
+}
+const AR_2026_PUBLISHED = [
+  [0, 5_600, 0], [5_600, 11_200, 2], [11_200, 16_000, 3], [16_000, 26_400, 3.4], [26_400, Infinity, 3.9],
+] as const
+// 26-51-201(a)(3)(B)'s un-indexed schedule, which the pack carried until
+// 2026-08-05 and which Arkansas applies only to a filer above roughly $94,700.
+const AR_HIGH_INCOME_UNINDEXED = [[0, 4_500, 2], [4_500, Infinity, 3.9]] as const
+const AR_DEDUCTION_SINGLE = 2_470
+const AR_DEDUCTION_2024 = 2_410
+const arSingleTax = (taxable: number) => arkansasBandedTax(AR_2026_PUBLISHED, taxable)
+
+// 50,000 lands in the top band under both schedules, so the whole difference
+// between the readings is the four bands below it that the published schedule
+// has and the high-income one does not.
+const AR_SCHEDULE_INCOME = 50_000
+const AR_SCHEDULE_TAXABLE = AR_SCHEDULE_INCOME - AR_DEDUCTION_SINGLE
+
+describeRule('aca-26-51-201-published-indexed-rate-schedule', {
+  readings: {
+    publishedTwentyTwentySixSchedule: arSingleTax(AR_SCHEDULE_TAXABLE),
+    unindexedHighIncomeSchedule: arkansasBandedTax(AR_HIGH_INCOME_UNINDEXED, AR_SCHEDULE_TAXABLE),
+  },
+  accepted: 'publishedTwentyTwentySixSchedule',
+}, ({ accepted, readings }) => {
+  const scenario = input({ state: 'AR', ordinaryIncome: AR_SCHEDULE_INCOME, agesAlive: [70] })
+
+  it('measures a 2026 Arkansan against the schedule the department published', () => {
+    expect(computeStateTax(pack('AR'), scenario)).toBeCloseTo(accepted, 6)
+    expect(computeStateTax(pack('AR'), scenario)).not.toBeCloseTo(readings.unindexedHighIncomeSchedule, 6)
+  })
+
+  it('would over-tax the same household on the schedule the pack used to carry', () => {
+    // The defect this replaces, priced. Under 26-51-201(a)(3)(B) the first
+    // 5,600 dollars are taxed at 2% instead of nothing and the three middle
+    // bands disappear, so an ordinary retiree pays about 335 dollars a year
+    // Arkansas does not charge.
+    const highIncomeSchedule = {
+      ...pack('AR'),
+      brackets: {
+        single: AR_HIGH_INCOME_UNINDEXED.map(([lowerBound, , ratePct]) => ({ lowerBound, ratePct })),
+        marriedFilingJointly: AR_HIGH_INCOME_UNINDEXED.map(([lowerBound, , ratePct]) => ({ lowerBound, ratePct })),
+      },
+    }
+    const stale = computeStateTax(highIncomeSchedule, scenario)
+    expect(stale).toBeCloseTo(readings.unindexedHighIncomeSchedule, 6)
+    expect(stale).toBeGreaterThan(accepted)
+  })
+
+  it('opens with a zero bracket, which the schedule it replaced does not', () => {
+    // The cleanest single consequence: an Arkansan whose net taxable income is
+    // inside the zero band owes nothing at all.
+    const small = input({ state: 'AR', ordinaryIncome: 7_000, agesAlive: [70] })
+    expect(computeStateTaxableIncome(pack('AR'), small)).toBeCloseTo(4_530, 6)
+    expect(computeStateTax(pack('AR'), small)).toBe(0)
+  })
+})
+
+describeRule('aca-26-51-430-c-published-indexed-standard-deduction', {
+  readings: {
+    publishedTwentyTwentySixDeduction: arSingleTax(AR_SCHEDULE_INCOME - AR_DEDUCTION_SINGLE),
+    twentyTwentyFourDeduction: arSingleTax(AR_SCHEDULE_INCOME - AR_DEDUCTION_2024),
+  },
+  accepted: 'publishedTwentyTwentySixDeduction',
+}, ({ accepted, readings }) => {
+  const scenario = input({ state: 'AR', ordinaryIncome: AR_SCHEDULE_INCOME, agesAlive: [70] })
+
+  it('deducts the amount the department published for 2026', () => {
+    expect(computeStateTaxableIncome(pack('AR'), scenario)).toBeCloseTo(AR_SCHEDULE_TAXABLE, 6)
+    expect(computeStateTax(pack('AR'), scenario)).toBeCloseTo(accepted, 6)
+    expect(pack('AR').standardDeduction.marriedFilingJointly).toBe(4_940)
+  })
+
+  it('would carry a two-year-stale figure on the amount the pack used to hold', () => {
+    const stale = { ...pack('AR'), standardDeduction: { single: AR_DEDUCTION_2024, marriedFilingJointly: 4_820 } }
+    expect(computeStateTax(stale, scenario)).toBeCloseTo(readings.twentyTwentyFourDeduction, 6)
+    expect(computeStateTax(stale, scenario)).toBeGreaterThan(accepted)
+  })
+
+  it('is Arkansas’s own figure, so the federal conformity indexer must not touch it', () => {
+    // 26-51-430(c) indexes it on Arkansas's own schedule with a 3% ceiling.
+    // Tagging it would move it with IRC 63(c) instead and hand the Arkansas
+    // base a federal age-65 addition Arkansas does not grant.
+    expect(pack('AR').standardDeductionConformity).toBeUndefined()
+    const projected = conformStateStandardDeduction(pack('AR'), FEDERAL_AGE65_ADDITION, INFLATION_SCALE)
+    expect(projected.standardDeduction.single).toBe(AR_DEDUCTION_SINGLE)
+    expect(projected.standardDeductionAge65Addition).toBeUndefined()
+  })
+})
+
+// One household, two pensions, and the question is how many $6,000 exemptions
+// it gets. 26-51-307(b)(1)(B) says one.
+const AR_OTHER_INCOME = 30_000
+const AR_PRIVATE_PENSION = 20_000
+const AR_PUBLIC_PENSION = 10_000
+const AR_TWO_PENSION_GROSS = AR_OTHER_INCOME + AR_PRIVATE_PENSION + AR_PUBLIC_PENSION
+
+describeRule('aca-26-51-307-six-thousand-retirement-exemption', {
+  readings: {
+    oneSixThousandPerTaxpayer:
+      arSingleTax(AR_TWO_PENSION_GROSS - 6_000 - AR_DEDUCTION_SINGLE),
+    sixThousandInEachBucket:
+      arSingleTax(AR_TWO_PENSION_GROSS - 12_000 - AR_DEDUCTION_SINGLE),
+  },
+  accepted: 'oneSixThousandPerTaxpayer',
+}, ({ accepted, readings }) => {
+  const scenario = input({
+    state: 'AR',
+    ordinaryIncome: AR_TWO_PENSION_GROSS,
+    privateRetirementIncome: AR_PRIVATE_PENSION,
+    publicPensionIncome: AR_PUBLIC_PENSION,
+    agesAlive: [70],
+  })
+
+  it('exempts $6,000 across both pensions rather than $6,000 of each', () => {
+    expect(computeStateTax(pack('AR'), scenario)).toBeCloseTo(accepted, 6)
+    expect(computeStateTaxableIncome(pack('AR'), scenario))
+      .toBeCloseTo(AR_TWO_PENSION_GROSS - 6_000 - AR_DEDUCTION_SINGLE, 6)
+  })
+
+  it('would grant two exemptions if the public bucket carried a rule of its own', () => {
+    // Which is what an entry in PUBLIC_PENSION_OVERRIDES does: it clears
+    // `retirementRuleShared`, and the calculator then runs each bucket's rule
+    // against its own income.
+    const separateBuckets = { ...pack('AR'), retirementRuleShared: false }
+    expect(computeStateTax(separateBuckets, scenario)).toBeCloseTo(readings.sixThousandInEachBucket, 6)
+    expect(computeStateTax(separateBuckets, scenario)).toBeLessThan(accepted)
+  })
+})
+
+const AR_CIVIL_SERVICE_GROSS = 55_000
+const AR_CIVIL_SERVICE_PENSION = 40_000
+
+describeRule('aca-26-51-307-a-1-public-pension-inside-the-six-thousand', {
+  readings: {
+    sixThousandLikeAnyOtherPension:
+      arSingleTax(AR_CIVIL_SERVICE_GROSS - 6_000 - AR_DEDUCTION_SINGLE),
+    everyPublicPensionExempt:
+      arSingleTax(AR_CIVIL_SERVICE_GROSS - AR_CIVIL_SERVICE_PENSION - AR_DEDUCTION_SINGLE),
+  },
+  accepted: 'sixThousandLikeAnyOtherPension',
+}, ({ accepted, readings }) => {
+  // A retired Arkansas schoolteacher. ATRS is a "public ... employment-related
+  // retirement system" and nothing about it is uniformed, so 26-51-307(a)(1) is
+  // the whole of her exemption.
+  const scenario = input({
+    state: 'AR',
+    ordinaryIncome: AR_CIVIL_SERVICE_GROSS,
+    publicPensionIncome: AR_CIVIL_SERVICE_PENSION,
+    agesAlive: [70],
+  })
+
+  it('taxes an ATRS pension above $6,000', () => {
+    expect(computeStateTax(pack('AR'), scenario)).toBeCloseTo(accepted, 6)
+  })
+
+  it('would exempt the whole pension under the override the pack used to carry', () => {
+    // AR: { kind: 'full' } in PUBLIC_PENSION_OVERRIDES, priced. It also cleared
+    // `retirementRuleShared`, so both halves of the old entry are restored here.
+    const fullyExempt = {
+      ...pack('AR'),
+      retirementRuleShared: false,
+      retirementPublic: { kind: 'full' as const },
+    }
+    expect(computeStateTax(fullyExempt, scenario)).toBeCloseTo(readings.everyPublicPensionExempt, 6)
+    expect(computeStateTax(fullyExempt, scenario)).toBeLessThan(accepted)
+  })
+})
+
+// Well past every section 86 threshold, so the federally taxable share of the
+// benefit is the 85% ceiling — 34,000 of 40,000 — and that is what a state
+// taxing Social Security would pull into its base.
+const AR_SS_OTHER_INCOME = 70_000
+const AR_SS_BENEFITS = 40_000
+const AR_SS_FEDERALLY_TAXABLE = AR_SS_BENEFITS * 0.85
+
+describeRule('aca-26-51-404-b-6-social-security-exclusion', {
+  readings: {
+    outsideArkansasGrossIncome: arSingleTax(AR_SS_OTHER_INCOME - AR_DEDUCTION_SINGLE),
+    federallyTaxableShareInTheBase:
+      arSingleTax(AR_SS_OTHER_INCOME + AR_SS_FEDERALLY_TAXABLE - AR_DEDUCTION_SINGLE),
+  },
+  accepted: 'outsideArkansasGrossIncome',
+}, ({ accepted, readings }) => {
+  const scenario = input({
+    state: 'AR',
+    ordinaryIncome: AR_SS_OTHER_INCOME,
+    ssBenefits: AR_SS_BENEFITS,
+    agesAlive: [70],
+  })
+
+  it('leaves a high-income Arkansan’s Social Security out of the state base', () => {
+    expect(computeStateTax(pack('AR'), scenario)).toBeCloseTo(accepted, 6)
+    expect(computeStateTaxableIncome(pack('AR'), scenario))
+      .toBeCloseTo(AR_SS_OTHER_INCOME - AR_DEDUCTION_SINGLE, 6)
+  })
+
+  it('would pull 34,000 of benefit into the base if Arkansas taxed it', () => {
+    const taxing = { ...pack('AR'), taxesSocialSecurity: true }
+    expect(computeStateTax(taxing, scenario)).toBeCloseTo(readings.federallyTaxableShareInTheBase, 6)
+    expect(computeStateTaxableIncome(taxing, scenario) - computeStateTaxableIncome(pack('AR'), scenario))
+      .toBeCloseTo(AR_SS_FEDERALLY_TAXABLE, 6)
+  })
+})
+
+const AR_GAIN_ORDINARY = 40_000
+const AR_CAPITAL_GAIN = 60_000
+
+describeRule('aca-26-51-815-b-2-fifty-percent-capital-gain-exclusion', {
+  readings: {
+    halfTheGainInTheBase:
+      arSingleTax(AR_GAIN_ORDINARY + AR_CAPITAL_GAIN * 0.5 - AR_DEDUCTION_SINGLE),
+    theWholeGainInTheBase:
+      arSingleTax(AR_GAIN_ORDINARY + AR_CAPITAL_GAIN - AR_DEDUCTION_SINGLE),
+  },
+  accepted: 'halfTheGainInTheBase',
+}, ({ accepted, readings }) => {
+  const scenario = input({
+    state: 'AR',
+    ordinaryIncome: AR_GAIN_ORDINARY,
+    capitalGains: AR_CAPITAL_GAIN,
+    agesAlive: [70],
+  })
+
+  it('leaves half of a capital gain out of the Arkansas base', () => {
+    expect(computeStateTax(pack('AR'), scenario)).toBeCloseTo(accepted, 6)
+    expect(computeStateTaxableIncome(pack('AR'), scenario))
+      .toBeCloseTo(AR_GAIN_ORDINARY + AR_CAPITAL_GAIN * 0.5 - AR_DEDUCTION_SINGLE, 6)
+  })
+
+  it('would tax the whole gain with the included share left at its default', () => {
+    const wholeGain = { ...pack('AR'), capitalGainsTaxablePct: undefined }
+    expect(computeStateTax(wholeGain, scenario)).toBeCloseTo(readings.theWholeGainInTheBase, 6)
+  })
+
+  it('still taxes the included half at ordinary Arkansas rates', () => {
+    // `capitalGainsAsOrdinary` stays true: Arkansas has no preferential RATE,
+    // only a partial exclusion, so the half that arrives is stacked with
+    // ordinary income rather than priced on a schedule of its own.
+    const equivalentOrdinary = input({
+      state: 'AR',
+      ordinaryIncome: AR_GAIN_ORDINARY + AR_CAPITAL_GAIN * 0.5,
+      agesAlive: [70],
+    })
+    expect(computeStateTax(pack('AR'), equivalentOrdinary)).toBeCloseTo(accepted, 6)
+  })
+})
+
+// Arizona is one rate on one base, so every fixture below is 2.5% of what the
+// pack leaves in that base and nothing else moves underneath it.
+const AZ_RATE = 0.025
+const AZ_DEDUCTION_SINGLE = 15_750
+const azTax = (taxable: number) => Math.max(0, taxable) * AZ_RATE
+const AZ_INCOME = 120_000
+
+describeRule('ars-43-1011-a-9-flat-rate', {
+  readings: {
+    // 43-1011(A)(9), the paragraph 43-243(D) makes operative.
+    flatTwoAndAHalfPercent: azTax(AZ_INCOME - AZ_DEDUCTION_SINGLE),
+    // 43-1011(A)(8), the graduated schedule that would still govern had only
+    // the lesser revenue notice of 43-243(B)(1) been given: 2.53% to 27,272,
+    // then 690 dollars plus 2.75%.
+    paragraphEightGraduatedSchedule:
+      690 + (AZ_INCOME - AZ_DEDUCTION_SINGLE - 27_272) * 0.0275,
+  },
+  accepted: 'flatTwoAndAHalfPercent',
+}, ({ accepted, readings }) => {
+  const scenario = input({ state: 'AZ', ordinaryIncome: AZ_INCOME, agesAlive: [70] })
+
+  it('charges one rate on the whole Arizona base', () => {
+    expect(computeStateTax(pack('AZ'), scenario)).toBeCloseTo(accepted, 6)
+    expect(computeStateTax(pack('AZ'), scenario)).not.toBeCloseTo(readings.paragraphEightGraduatedSchedule, 6)
+  })
+
+  it('applies the same rate to a joint return, since the paragraph is status-blind', () => {
+    const joint = input({
+      state: 'AZ',
+      filingStatus: 'marriedFilingJointly',
+      ordinaryIncome: 200_000,
+      agesAlive: [70, 70],
+    })
+    expect(computeStateTax(pack('AZ'), joint)).toBeCloseTo(azTax(200_000 - 31_500), 6)
+  })
+})
+
+describeRule('ars-43-1041-standard-deduction-published-amount', {
+  readings: {
+    arizonasOwnPublishedAmount: azTax(AZ_INCOME - AZ_DEDUCTION_SINGLE),
+    federalFigureWithItsAgeSixtyFiveAddition:
+      azTax(AZ_INCOME - 16_100 - FEDERAL_AGE65_ADDITION.single),
+  },
+  accepted: 'arizonasOwnPublishedAmount',
+}, ({ accepted, readings }) => {
+  // 65 and over, which is where the two readings come apart: the tag would
+  // attach the federal age-65 addition to the Arizona base, and Arizona grants
+  // no addition to its deduction at all.
+  const scenario = input({
+    state: 'AZ',
+    ordinaryIncome: AZ_INCOME,
+    peopleAged65Plus: 1,
+    agesAlive: [70],
+  })
+
+  it('deducts Arizona’s published amount and adds no federal age-65 amount', () => {
+    expect(pack('AZ').standardDeductionConformity).toBeUndefined()
+    const conformed = conformStateStandardDeduction(pack('AZ'), FEDERAL_AGE65_ADDITION, 1)
+    expect(conformed.standardDeduction.single).toBe(AZ_DEDUCTION_SINGLE)
+    expect(conformed.standardDeductionAge65Addition).toBeUndefined()
+    expect(computeStateTax(conformed, scenario)).toBeCloseTo(accepted, 6)
+  })
+
+  it('would take the federal figure and the federal age-65 addition if it were tagged', () => {
+    // What the pack carried until 2026-08-05. Both halves are wrong for
+    // Arizona: 43-1041(A) sets Arizona's own amounts, and the age-65 relief
+    // Arizona does grant is 43-1023(E)'s $2,100 exemption, a different figure
+    // under a different statute that no provision indexes.
+    const tagged = {
+      ...pack('AZ'),
+      standardDeduction: { single: 16_100, marriedFilingJointly: 32_200 },
+      standardDeductionConformity: 'federal' as const,
+    }
+    const conformed = conformStateStandardDeduction(tagged, FEDERAL_AGE65_ADDITION, 1)
+    expect(computeStateTax(conformed, scenario))
+      .toBeCloseTo(readings.federalFigureWithItsAgeSixtyFiveAddition, 6)
+  })
+})
+
+const AZ_SS_OTHER_INCOME = 90_000
+const AZ_SS_BENEFITS = 40_000
+const AZ_SS_FEDERALLY_TAXABLE = AZ_SS_BENEFITS * 0.85
+
+describeRule('ars-43-1022-10-social-security-railroad-exclusion', {
+  readings: {
+    everyBenefitDollarSubtracted: azTax(AZ_SS_OTHER_INCOME - AZ_DEDUCTION_SINGLE),
+    federallyTaxableShareInTheBase:
+      azTax(AZ_SS_OTHER_INCOME + AZ_SS_FEDERALLY_TAXABLE - AZ_DEDUCTION_SINGLE),
+  },
+  accepted: 'everyBenefitDollarSubtracted',
+}, ({ accepted, readings }) => {
+  const scenario = input({
+    state: 'AZ',
+    ordinaryIncome: AZ_SS_OTHER_INCOME,
+    ssBenefits: AZ_SS_BENEFITS,
+    agesAlive: [70],
+  })
+
+  it('leaves a high-income Arizonan’s Social Security out of the state base', () => {
+    expect(computeStateTax(pack('AZ'), scenario)).toBeCloseTo(accepted, 6)
+  })
+
+  it('would pull the federally taxable share in if Arizona taxed it', () => {
+    const taxing = { ...pack('AZ'), taxesSocialSecurity: true }
+    expect(computeStateTax(taxing, scenario)).toBeCloseTo(readings.federallyTaxableShareInTheBase, 6)
+  })
+})
+
+const AZ_MILITARY_OTHER_INCOME = 50_000
+const AZ_MILITARY_PENSION = 45_000
+const AZ_MILITARY_GROSS = AZ_MILITARY_OTHER_INCOME + AZ_MILITARY_PENSION
+
+describeRule('ars-43-1022-26-uniformed-services-exclusion', {
+  readings: {
+    retiredMilitaryPayFullySubtracted: azTax(AZ_MILITARY_OTHER_INCOME - AZ_DEDUCTION_SINGLE),
+    taxedLikeAnyOtherRetirementIncome: azTax(AZ_MILITARY_GROSS - AZ_DEDUCTION_SINGLE),
+  },
+  accepted: 'retiredMilitaryPayFullySubtracted',
+}, ({ accepted, readings }) => {
+  const scenario = input({
+    state: 'AZ',
+    ordinaryIncome: AZ_MILITARY_GROSS,
+    publicPensionIncome: AZ_MILITARY_PENSION,
+    agesAlive: [70],
+  })
+
+  it('takes the whole military pension out of an Arizona base', () => {
+    expect(computeStateTax(pack('AZ'), scenario)).toBeCloseTo(accepted, 6)
+    expect(computeStateTax(pack('AZ'), scenario)).toBeLessThan(readings.taxedLikeAnyOtherRetirementIncome)
+  })
+
+  it('would tax all 45,000 of it if the public bucket carried no exclusion', () => {
+    const taxed = { ...pack('AZ'), retirementPublic: { kind: 'none' as const } }
+    expect(computeStateTax(taxed, scenario)).toBeCloseTo(readings.taxedLikeAnyOtherRetirementIncome, 6)
+  })
+})
+
+describeRule('ars-43-1022-no-private-retirement-exclusion', {
+  readings: {
+    privatePensionTaxedInFull: azTax(AZ_MILITARY_GROSS - AZ_DEDUCTION_SINGLE),
+    publicExclusionCopiedOntoIt: azTax(AZ_MILITARY_OTHER_INCOME - AZ_DEDUCTION_SINGLE),
+  },
+  accepted: 'privatePensionTaxedInFull',
+}, ({ accepted, readings }) => {
+  // The same dollars as the military fixture above, drawn from a private plan.
+  // No paragraph of 43-1022 reaches them.
+  const scenario = input({
+    state: 'AZ',
+    ordinaryIncome: AZ_MILITARY_GROSS,
+    privateRetirementIncome: AZ_MILITARY_PENSION,
+    agesAlive: [70],
+  })
+
+  it('taxes an Arizona IRA or private pension distribution in full', () => {
+    expect(pack('AZ').retirementPrivate).toEqual({ kind: 'none' })
+    expect(computeStateTax(pack('AZ'), scenario)).toBeCloseTo(accepted, 6)
+  })
+
+  it('does not let the public bucket’s exclusion spill onto it', () => {
+    // `retirementRuleShared` is false for Arizona precisely because 43-1022's
+    // paragraphs are independent. Were it true, the public rule would be
+    // applied to the household's combined retirement income.
+    expect(pack('AZ').retirementRuleShared).toBe(false)
+    const shared = { ...pack('AZ'), retirementRuleShared: true, retirementPrivate: { kind: 'full' as const } }
+    expect(computeStateTax(shared, scenario)).toBeCloseTo(readings.publicExclusionCopiedOntoIt, 6)
+  })
+})
+
 describe('state jurisdiction records', () => {
   it('models every state these records describe', () => {
     // A record naming a state the pack does not carry would be a claim about
     // code that is not there.
     for (const code of [
       'ND', 'PA', 'NV', 'TX', 'FL', 'WV', 'NY', 'IL', 'MO', 'IA', 'ME', 'SC',
-      'AK', 'SD', 'TN', 'WY',
+      'AK', 'SD', 'TN', 'WY', 'AR', 'AZ',
     ]) {
       expect(stateParamsFor(code, TAX_YEAR), code).toBeDefined()
     }

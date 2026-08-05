@@ -126,6 +126,47 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
     // the print-fetch endpoint; the practitioner URL returns a shell.
     'akleg.gov',
   ],
+  AR: [
+    // Verified 2026-08-05. Arkansas is the state where "primary source" cannot
+    // mean the codified statute: the Arkansas Code and Constitution of 1874 is
+    // published by LexisNexis under contract, arkleg links out to
+    // advance.lexis.com for it, and that host is commercial, JavaScript-only,
+    // and unreadable to any verifier. So the operative statutory text comes
+    // from ENROLLED ACTS on the legislature's own host, which print the amended
+    // section in full, and the operative dollar amounts come from DFA, which is
+    // the only publisher of the indexed schedules 26-51-201(d)(1) and
+    // 26-51-430(c) require. Neither host is decorative.
+    //
+    // Two document-URL traps, recorded because both fail with HTTP 200 rather
+    // than a 404: an act URL of the form /Acts/FTPDocument?...&file=ACT<N>.pdf
+    // returns a zero-byte body, and sessions before about 2016 are reachable
+    // only through /Acts/FTPDocument?...&file=<N>.pdf while later ones want
+    // /Home/FTPDocument?path=...ACT<N>.pdf.
+    'arkleg.state.ar.us', // Arkansas General Assembly: enrolled acts, session laws
+    // Recorded bare, like ND's tax.nd.gov and for the same reason: every usable
+    // document URL carries `www.dfa.arkansas.gov` (the bare host answers 301 to
+    // it) and `hostAndPublisherOf` strips a leading `www.` before comparing, so
+    // the bare entry admits both spellings. That normalisation is pinned by the
+    // North Dakota test below, which exercises the identical shape.
+    'dfa.arkansas.gov', // Department of Finance and Administration, Revenue Division
+  ],
+  AZ: [
+    // Verified 2026-08-05. The mirror image of the North Dakota host handling:
+    // azleg serves both `azleg.gov` and `www.azleg.gov` directly with no
+    // redirect either way, and `www.azdor.gov` answers 301 to the BARE
+    // `azdor.gov`, which is the host every AZDOR document URL carries. Both are
+    // recorded in the spelling the citations use; the www-stripping in
+    // `hostAndPublisherOf` covers the azleg pair either way.
+    //
+    // The trap on azleg is not the host but the path. A.R.S. 43-1011 exists in
+    // two published versions, and /ars/43/01011.htm — the URL any reasonable
+    // citation would use — stops at the 2019-2021 graduated schedule and does
+    // NOT contain the 2.5% flat rate. Only /ars/43/01011.01.htm does. A guard
+    // that checks host and status would accept the wrong page for the single
+    // most important Arizona claim in the pack.
+    'azleg.gov', // Arizona Legislature, Arizona Revised Statutes
+    'azdor.gov', // Arizona Department of Revenue: forms and instructions
+  ],
   FL: [
     'flsenate.gov', // Florida Senate: the Constitution and the Florida Statutes
     // Office of Economic and Demographic Research — the Legislature's own
