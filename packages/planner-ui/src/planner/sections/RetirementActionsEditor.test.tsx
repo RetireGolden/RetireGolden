@@ -9,11 +9,15 @@ import { parseRetirementActionRequest } from '@retiregolden/engine/actions/contr
 import { asPositiveUsdCents, asUsdCents } from '@retiregolden/engine/actions/money'
 import { ledgerCentsToPlanDollars } from '@retiregolden/engine/actions/planBalanceAdapter'
 import { parsePlan, type Plan } from '@retiregolden/engine/model/plan'
+import { applyScenarioPatch } from '@retiregolden/engine/scenarios/scenarios'
 
 import { PlanCtx } from '../planContextCore'
+import { mintEligibilityEvidenceId } from '../retirementActionEligibilityFacts'
 import { createSamplePlan } from '../../testSupport/samplePlan'
 import { RetirementActionsEditor } from './RetirementActionsEditor'
 import { StrategySection } from './StrategySection'
+
+const THIS_YEAR = new Date().getFullYear()
 
 ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean })
   .IS_REACT_ACT_ENVIRONMENT = true
@@ -196,6 +200,29 @@ async function change(control: HTMLInputElement | HTMLSelectElement, value: stri
       { bubbles: true },
     ))
   })
+}
+
+function buttonByText(host: HTMLElement, text: string): HTMLButtonElement {
+  const button = Array.from(host.querySelectorAll('button')).find(
+    (entry) => entry.textContent?.trim() === text,
+  )
+  if (button === undefined) throw new Error(`Missing button ${text}`)
+  return button
+}
+
+function row(host: HTMLElement, selector: string): HTMLElement {
+  const found = host.querySelector<HTMLElement>(selector)
+  if (found === null) throw new Error(`Missing row ${selector}`)
+  return found
+}
+
+/** A donor whose age-70½ threshold year is seven tax years back from today. */
+function donorPlanWithContributionYears(): { plan: Plan; years: readonly number[] } {
+  const plan = editorPlan()
+  plan.household.people[0]!.dob = `${THIS_YEAR - 76}-03-01`
+  const years: number[] = []
+  for (let year = THIS_YEAR - 6; year <= THIS_YEAR; year++) years.push(year)
+  return { plan, years }
 }
 
 async function completeConversionIdentityReview(host: HTMLElement, personId: string) {
@@ -705,7 +732,7 @@ describe('RetirementActionsEditor', () => {
     expect(mounted.current().strategies.retirementActions).toEqual([target])
   })
 
-  it('keeps an unclassified IRA conversion visibly under review', async () => {
+  it('resolves an unclassified IRA conversion through the facts editor', async () => {
     const plan = editorPlan()
     const target = migratedAction('legacyAggregateRothConversion')
     plan.retirementActionEligibilityFacts!.iraClassifications = []
@@ -720,11 +747,30 @@ describe('RetirementActionsEditor', () => {
     expect(mounted.container.textContent).toContain(
       'This IRA needs exactly one explicit subtype classification before it can be reviewed as a conversion source.',
     )
-    const save = Array.from(mounted.container.querySelectorAll('button')).find(
-      (button) => button.textContent?.trim() === 'Save reviewed action',
-    )
-    await act(async () => save!.click())
+    await act(async () => buttonByText(
+      mounted.container,
+      'Save reviewed action',
+    ).click())
     expect(mounted.current().strategies.retirementActions).toEqual([target])
+
+    await act(async () => buttonByText(
+      row(mounted.container, '[data-eligibility-ira="source-ira"]'),
+      'Record: Traditional IRA is a traditional IRA',
+    ).click())
+
+    expect(mounted.current().retirementActionEligibilityFacts?.iraClassifications).toEqual([{
+      evidenceId: 'planner-eligibility-ira-classification:["source-ira"]',
+      provenance: { source: 'manual' },
+      sourceAccountId: 'source-ira',
+      subtype: 'traditional',
+    }])
+    expect(mounted.container.textContent).not.toContain(
+      'This IRA needs exactly one explicit subtype classification before it can be reviewed as a conversion source.',
+    )
+    expect(Array.from(
+      controlByLabel<HTMLSelectElement>(mounted.container, 'Source account').options,
+    ).map((option) => option.value)).toContain('source-ira')
+    expect(parsePlan(mounted.current()).ok).toBe(true)
   })
 
   it('disambiguates same-name account choices with type, kind, and stable ID', async () => {
@@ -916,7 +962,458 @@ describe('RetirementActionsEditor', () => {
     expect(mounted.container.textContent).toContain(
       'until the canonical identity allocator exposes a QCD arm',
     )
-    expect(mounted.container.querySelector('button')).toBeNull()
+    expect(row(
+      mounted.container,
+      '[data-retirement-action-id="migrated-legacyAggregateQcd"]',
+    ).querySelector('button')).toBeNull()
     expect(mounted.current().strategies.retirementActions[0]?.kind).toBe('legacyAggregateQcd')
+  })
+})
+
+describe('RetirementActionsEditor eligibility facts', () => {
+  it('offers the facts editor on a plan with no migrated actions', async () => {
+    const plan = editorPlan()
+    plan.retirementActionEligibilityFacts = undefined
+    const mounted = await mount(
+      plan,
+      <MemoryRouter initialEntries={['/plan/example/strategy']}>
+        <StrategySection />
+      </MemoryRouter>,
+    )
+
+    await waitForText(mounted.container, 'IRA facts on record')
+    expect(mounted.container.textContent).toContain('Retirement actions')
+    expect(mounted.container.textContent).not.toContain('Needs source review')
+    expect(controlByLabel<HTMLSelectElement>(
+      row(mounted.container, '[data-eligibility-ira="source-ira"]'),
+      'IRA type',
+    ).value).toBe('traditional')
+  })
+
+  it('writes nothing until the shown classification is confirmed', async () => {
+    const plan = editorPlan()
+    plan.retirementActionEligibilityFacts = undefined
+    const mounted = await mount(plan)
+    const host = row(mounted.container, '[data-eligibility-ira="source-ira"]')
+
+    expect(host.textContent).toContain('Not on record')
+    expect(mounted.current().retirementActionEligibilityFacts).toBeUndefined()
+
+    await change(controlByLabel(host, 'IRA type'), 'sep')
+    expect(mounted.current().retirementActionEligibilityFacts).toBeUndefined()
+    await change(controlByLabel(host, 'IRA type'), 'traditional')
+    expect(mounted.current().retirementActionEligibilityFacts).toBeUndefined()
+
+    await act(async () => buttonByText(
+      host,
+      'Record: Traditional IRA is a traditional IRA',
+    ).click())
+
+    expect(mounted.current().retirementActionEligibilityFacts).toEqual({
+      iraClassifications: [{
+        evidenceId: 'planner-eligibility-ira-classification:["source-ira"]',
+        provenance: { source: 'manual' },
+        sourceAccountId: 'source-ira',
+        subtype: 'traditional',
+      }],
+      sepSimpleActivities: [],
+      deductibleIraContributions: [],
+    })
+    expect(row(mounted.container, '[data-eligibility-ira="source-ira"]').textContent)
+      .toContain('On record')
+    expect(parsePlan(mounted.current()).ok).toBe(true)
+  })
+
+  it('keeps a not-stated SEP year distinct from a stated no-contribution year', async () => {
+    const plan = editorPlan()
+    plan.retirementActionEligibilityFacts = undefined
+    const mounted = await mount(plan)
+    const host = () => row(mounted.container, '[data-eligibility-ira="source-ira"]')
+
+    await change(controlByLabel(host(), 'IRA type'), 'sep')
+    await act(async () => buttonByText(host(), 'Record: Traditional IRA is a SEP IRA').click())
+
+    const year = () => row(
+      mounted.container,
+      `[data-eligibility-activity="source-ira:${THIS_YEAR}"]`,
+    )
+    expect(year().textContent).toContain('Not on record')
+    expect(controlByLabel<HTMLSelectElement>(
+      year(),
+      `Employer contribution for ${THIS_YEAR}`,
+    ).value).toBe('')
+    expect(mounted.current().retirementActionEligibilityFacts?.sepSimpleActivities).toEqual([])
+
+    await change(controlByLabel(year(), `Plan year end date for ${THIS_YEAR}`), `${THIS_YEAR}-12-31`)
+    await change(controlByLabel(year(), `Employer contribution for ${THIS_YEAR}`), 'none')
+    await act(async () => buttonByText(
+      year(),
+      `Record: this IRA received no employer SEP or SIMPLE contribution for the plan year ending ${THIS_YEAR}-12-31`,
+    ).click())
+
+    expect(mounted.current().retirementActionEligibilityFacts?.sepSimpleActivities).toEqual([{
+      evidenceId: `planner-eligibility-sep-simple-activity:["source-ira",${THIS_YEAR}]`,
+      provenance: { source: 'manual' },
+      sourceAccountId: 'source-ira',
+      actionTaxYear: THIS_YEAR,
+      planYearEndDate: `${THIS_YEAR}-12-31`,
+      employerContributionMadeForPlanYear: false,
+    }])
+    expect(year().textContent).toContain('On record')
+    expect(parsePlan(mounted.current()).ok).toBe(true)
+
+    await act(async () => buttonByText(year(), 'Remove').click())
+    expect(mounted.current().retirementActionEligibilityFacts?.sepSimpleActivities).toEqual([])
+    expect(controlByLabel<HTMLSelectElement>(
+      year(),
+      `Employer contribution for ${THIS_YEAR}`,
+    ).options[0]?.textContent).toBe('Not on record')
+  })
+
+  it('refuses to record a SEP year that has no answer or no plan year end date', async () => {
+    const plan = editorPlan()
+    plan.retirementActionEligibilityFacts = undefined
+    const mounted = await mount(plan)
+    const host = () => row(mounted.container, '[data-eligibility-ira="source-ira"]')
+
+    await change(controlByLabel(host(), 'IRA type'), 'sep')
+    await act(async () => buttonByText(host(), 'Record: Traditional IRA is a SEP IRA').click())
+
+    const year = () => row(
+      mounted.container,
+      `[data-eligibility-activity="source-ira:${THIS_YEAR}"]`,
+    )
+    await act(async () => buttonByText(year(), `Record ${THIS_YEAR}`).click())
+    expect(year().textContent).toContain(
+      `Choose an answer for ${THIS_YEAR}, or leave the year off the record.`,
+    )
+    expect(mounted.current().retirementActionEligibilityFacts?.sepSimpleActivities).toEqual([])
+
+    await change(controlByLabel(year(), `Employer contribution for ${THIS_YEAR}`), 'made')
+    await change(
+      controlByLabel(year(), `Plan year end date for ${THIS_YEAR}`),
+      `${THIS_YEAR + 1}-01-31`,
+    )
+    await act(async () => buttonByText(
+      year(),
+      `Record: this IRA received an employer SEP or SIMPLE contribution for the plan year ending ${THIS_YEAR + 1}-01-31`,
+    ).click())
+    expect(year().textContent).toContain(
+      `Enter the plan year end date; it must fall in ${THIS_YEAR}.`,
+    )
+    expect(mounted.current().retirementActionEligibilityFacts?.sepSimpleActivities).toEqual([])
+  })
+
+  it('says what changing a SEP classification to traditional removes', async () => {
+    const plan = editorPlan()
+    plan.retirementActionEligibilityFacts = {
+      iraClassifications: [{
+        evidenceId: 'planner-eligibility-ira-classification:["source-ira"]',
+        provenance: { source: 'manual' },
+        sourceAccountId: 'source-ira',
+        subtype: 'sep',
+      }],
+      sepSimpleActivities: [{
+        evidenceId: `planner-eligibility-sep-simple-activity:["source-ira",${THIS_YEAR}]`,
+        provenance: { source: 'manual' },
+        sourceAccountId: 'source-ira',
+        actionTaxYear: THIS_YEAR,
+        planYearEndDate: `${THIS_YEAR}-12-31`,
+        employerContributionMadeForPlanYear: false,
+      }],
+      deductibleIraContributions: [],
+    }
+    const mounted = await mount(plan)
+    const host = () => row(mounted.container, '[data-eligibility-ira="source-ira"]')
+
+    expect(host().textContent).toContain(
+      'Removing this also removes the 1 employer-contribution year on record for this account.',
+    )
+    await change(controlByLabel(host(), 'IRA type'), 'traditional')
+    expect(host().textContent).toContain(
+      'Recording this also removes the 1 employer-contribution year on record for this account.',
+    )
+
+    await act(async () => buttonByText(
+      host(),
+      'Record: Traditional IRA is a traditional IRA',
+    ).click())
+
+    expect(mounted.current().retirementActionEligibilityFacts?.sepSimpleActivities).toEqual([])
+    expect(parsePlan(mounted.current()).ok).toBe(true)
+  })
+
+  it('records one zero per named year from the bulk statement', async () => {
+    const { plan, years } = donorPlanWithContributionYears()
+    const mounted = await mount(plan)
+    const donor = plan.household.people[0]!
+    const host = () => row(mounted.container, `[data-eligibility-contributions="${donor.id}"]`)
+
+    expect(host().textContent).toContain(
+      `No deductible IRA contributions in any of these years: ${years.join(', ')}.`,
+    )
+    expect(host().textContent).toContain(`0 of ${years.length} years on record`)
+
+    await act(async () => buttonByText(
+      host(),
+      `Record $0.00 for all ${years.length} of these years`,
+    ).click())
+
+    const written = mounted.current().retirementActionEligibilityFacts!.deductibleIraContributions
+    expect(written.map((record) => record.taxYear)).toEqual([...years])
+    expect(written.every((record) => record.amountCents === 0)).toBe(true)
+    expect(new Set(written.map((record) => record.evidenceId)).size).toBe(years.length)
+    expect(host().textContent).toContain(`${years.length} of ${years.length} years on record`)
+    expect(parsePlan(mounted.current()).ok).toBe(true)
+  })
+
+  it('refuses the whole bulk statement when one year has a colliding ID', async () => {
+    const { plan, years } = donorPlanWithContributionYears()
+    const donor = plan.household.people[0]!
+    const collidingYear = years[2]!
+    plan.accounts.push({
+      type: 'cash',
+      id: mintEligibilityEvidenceId({
+        role: 'deductibleContribution',
+        donorPersonId: donor.id,
+        taxYear: collidingYear,
+      }),
+      name: 'Collision',
+      ownerPersonId: donor.id,
+      annualReturnPct: null,
+      balance: 1,
+      annualContribution: 0,
+    })
+    const mounted = await mount(plan)
+    const host = () => row(mounted.container, `[data-eligibility-contributions="${donor.id}"]`)
+
+    await act(async () => buttonByText(
+      host(),
+      `Record $0.00 for all ${years.length} of these years`,
+    ).click())
+
+    expect(host().textContent).toContain(
+      `No year was recorded: another item in this plan already uses the ID RetireGolden files ${collidingYear} under.`,
+    )
+    expect(mounted.current().retirementActionEligibilityFacts?.deductibleIraContributions)
+      .toEqual([])
+    expect(host().textContent).toContain(`0 of ${years.length} years on record`)
+  })
+
+  it('keeps a removed contribution year blank rather than zero', async () => {
+    const { plan, years } = donorPlanWithContributionYears()
+    const mounted = await mount(plan)
+    const donor = plan.household.people[0]!
+    const block = () => row(mounted.container, `[data-eligibility-contributions="${donor.id}"]`)
+    const target = years[3]!
+
+    await act(async () => buttonByText(
+      block(),
+      `Record $0.00 for all ${years.length} of these years`,
+    ).click())
+    const yearRow = () => row(
+      mounted.container,
+      `[data-eligibility-contribution="${donor.id}:${target}"]`,
+    )
+    expect(yearRow().textContent).toContain('On record')
+
+    await act(async () => buttonByText(yearRow(), 'Remove').click())
+
+    const written = mounted.current().retirementActionEligibilityFacts!.deductibleIraContributions
+    expect(written).toHaveLength(years.length - 1)
+    expect(written.some((record) => record.taxYear === target)).toBe(false)
+    expect(yearRow().textContent).toContain('Not on record')
+    expect(parsePlan(mounted.current()).ok).toBe(true)
+  })
+
+  it('records an exact stated amount for a single contribution year', async () => {
+    const { plan, years } = donorPlanWithContributionYears()
+    const mounted = await mount(plan)
+    const donor = plan.household.people[0]!
+    const target = years[2]!
+    const yearRow = () => row(
+      mounted.container,
+      `[data-eligibility-contribution="${donor.id}:${target}"]`,
+    )
+
+    await change(
+      controlByLabel(yearRow(), `Deductible IRA contributions for ${target}`),
+      '6500.25',
+    )
+    await act(async () => buttonByText(
+      yearRow(),
+      `Record: ${donor.name} contributed $6,500.25 to a deductible IRA for ${target}`,
+    ).click())
+
+    expect(mounted.current().retirementActionEligibilityFacts!.deductibleIraContributions)
+      .toEqual([{
+        evidenceId: `planner-eligibility-deductible-contribution:["${donor.id}",${target}]`,
+        provenance: { source: 'manual' },
+        donorPersonId: donor.id,
+        taxYear: target,
+        amountCents: 650_025,
+      }])
+    expect(parsePlan(mounted.current()).ok).toBe(true)
+  })
+
+  it('refuses a fact whose evidence ID another plan identifier already claims', async () => {
+    const plan = editorPlan()
+    plan.retirementActionEligibilityFacts = undefined
+    plan.accounts.push({
+      type: 'cash',
+      id: mintEligibilityEvidenceId({
+        role: 'iraClassification',
+        sourceAccountId: 'source-ira',
+      }),
+      name: 'Collision',
+      ownerPersonId: plan.household.people[0]!.id,
+      annualReturnPct: null,
+      balance: 1,
+      annualContribution: 0,
+    })
+    const mounted = await mount(plan)
+    const host = () => row(mounted.container, '[data-eligibility-ira="source-ira"]')
+
+    await act(async () => buttonByText(
+      host(),
+      'Record: Traditional IRA is a traditional IRA',
+    ).click())
+
+    expect(host().textContent).toContain(
+      'another item in this plan already uses the ID RetireGolden files it under',
+    )
+    expect(mounted.current().retirementActionEligibilityFacts).toBeUndefined()
+  })
+
+  it('records a traditional classification after an abandoned SIMPLE date entry', async () => {
+    const plan = editorPlan()
+    plan.retirementActionEligibilityFacts = undefined
+    const mounted = await mount(plan)
+    const host = () => row(mounted.container, '[data-eligibility-ira="source-ira"]')
+
+    await change(controlByLabel(host(), 'IRA type'), 'simple')
+    // A five-digit year survives the date control but is not a civil date.
+    await change(controlByLabel(host(), 'SIMPLE participation start date'), '12345-06-07')
+    await act(async () => buttonByText(
+      host(),
+      'Record: Traditional IRA is a SIMPLE IRA I first took part in on 12345-06-07',
+    ).click())
+    expect(host().textContent).toContain(
+      'Enter a real participation start date, or leave it blank.',
+    )
+    expect(mounted.current().retirementActionEligibilityFacts).toBeUndefined()
+
+    await change(controlByLabel(host(), 'IRA type'), 'traditional')
+    expect(host().textContent).not.toContain(
+      'Enter a real participation start date, or leave it blank.',
+    )
+
+    await act(async () => buttonByText(
+      host(),
+      'Record: Traditional IRA is a traditional IRA',
+    ).click())
+
+    expect(mounted.current().retirementActionEligibilityFacts?.iraClassifications).toEqual([{
+      evidenceId: 'planner-eligibility-ira-classification:["source-ira"]',
+      provenance: { source: 'manual' },
+      sourceAccountId: 'source-ira',
+      subtype: 'traditional',
+    }])
+    expect(host().textContent).not.toContain(
+      'Enter a real participation start date, or leave it blank.',
+    )
+    expect(parsePlan(mounted.current()).ok).toBe(true)
+  })
+
+  it('blanks a removed contribution year in the form as well as the plan', async () => {
+    const { plan, years } = donorPlanWithContributionYears()
+    const mounted = await mount(plan)
+    const donor = plan.household.people[0]!
+    const target = years[1]!
+    const yearRow = () => row(
+      mounted.container,
+      `[data-eligibility-contribution="${donor.id}:${target}"]`,
+    )
+    const amount = () => controlByLabel<HTMLInputElement>(
+      yearRow(),
+      `Deductible IRA contributions for ${target}`,
+    )
+
+    await change(amount(), '500')
+    await act(async () => buttonByText(
+      yearRow(),
+      `Record: ${donor.name} contributed $500.00 to a deductible IRA for ${target}`,
+    ).click())
+    expect(yearRow().textContent).toContain('On record')
+    expect(amount().value).toBe('500.00')
+
+    await act(async () => buttonByText(yearRow(), 'Remove').click())
+
+    expect(mounted.current().retirementActionEligibilityFacts?.deductibleIraContributions)
+      .toEqual([])
+    expect(yearRow().textContent).toContain('Not on record')
+    expect(amount().value).toBe('')
+  })
+
+  it('blanks a removed SEP year answer in the form as well as the plan', async () => {
+    const plan = editorPlan()
+    plan.retirementActionEligibilityFacts = undefined
+    const mounted = await mount(plan)
+    const host = () => row(mounted.container, '[data-eligibility-ira="source-ira"]')
+
+    await change(controlByLabel(host(), 'IRA type'), 'sep')
+    await act(async () => buttonByText(host(), 'Record: Traditional IRA is a SEP IRA').click())
+
+    const year = () => row(
+      mounted.container,
+      `[data-eligibility-activity="source-ira:${THIS_YEAR}"]`,
+    )
+    const endDate = () => controlByLabel<HTMLInputElement>(
+      year(),
+      `Plan year end date for ${THIS_YEAR}`,
+    )
+    const answer = () => controlByLabel<HTMLSelectElement>(
+      year(),
+      `Employer contribution for ${THIS_YEAR}`,
+    )
+
+    await change(endDate(), `${THIS_YEAR}-12-31`)
+    await change(answer(), 'made')
+    await act(async () => buttonByText(
+      year(),
+      `Record: this IRA received an employer SEP or SIMPLE contribution for the plan year ending ${THIS_YEAR}-12-31`,
+    ).click())
+    expect(year().textContent).toContain('On record')
+
+    await act(async () => buttonByText(year(), 'Remove').click())
+
+    expect(mounted.current().retirementActionEligibilityFacts?.sepSimpleActivities).toEqual([])
+    expect(year().textContent).toContain('Not on record')
+    expect(answer().value).toBe('')
+    expect(endDate().value).toBe('')
+  })
+
+  it('keeps facts the editor wrote out of reach of a scenario patch', async () => {
+    const plan = editorPlan()
+    plan.retirementActionEligibilityFacts = undefined
+    const mounted = await mount(plan)
+
+    await act(async () => buttonByText(
+      row(mounted.container, '[data-eligibility-ira="source-ira"]'),
+      'Record: Traditional IRA is a traditional IRA',
+    ).click())
+    const authored = mounted.current().retirementActionEligibilityFacts
+
+    const patched = applyScenarioPatch(mounted.current(), {
+      retirementActionEligibilityFacts: {
+        iraClassifications: [],
+        sepSimpleActivities: [],
+        deductibleIraContributions: [],
+      },
+    })
+
+    expect(patched.ok).toBe(true)
+    if (!patched.ok) throw new Error(patched.issues.join('; '))
+    expect(patched.plan.retirementActionEligibilityFacts).toEqual(authored)
   })
 })
