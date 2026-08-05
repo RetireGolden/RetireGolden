@@ -13,6 +13,12 @@ alike, because it reads exactly like a quotation.
 
 `npm run verify:quotes` is that guard.
 
+It answers one of the two questions a cited record has to survive. Fidelity is *does the quote match the
+source*; **sufficiency** is *does the quote support the statement written above it* — a separate failure
+mode, with no checker, covered in [authority-sufficiency.md](authority-sufficiency.md). A quote can pass
+everything on this page and still be evidence for a claim the record does not make, or no evidence for the
+claim it does.
+
 ```bash
 npm run verify:quotes                      # from the repo root
 npm run verify:quotes -w @retiregolden/engine
