@@ -10,11 +10,15 @@
  * nominal brackets are carried forward for future years (bracket creep
  * modeled). States on legislated rate ramps (GA, IN, MS, MT, NE, NC, OK) are
  * commented inline — never hold those forward at refresh time. North Dakota
- * joins them for a different reason and with the same instruction: N.D.C.C.
+ * and Arkansas join them for a different reason and with the same instruction:
+ * both states index by statute and publish the result. N.D.C.C.
  * 57-38-30.3(1)(g) makes the tax commissioner publish a cost-of-living-adjusted
  * schedule that applies in lieu of the statutory one every year, so the ND
  * thresholds are a published figure that moves annually rather than a statutory
- * one that holds.
+ * one that holds; A.C.A. 26-51-201(d)(1) says the same of Arkansas's brackets
+ * and 26-51-430(c) of its standard deduction, so BOTH of those AR figures are
+ * published rather than statutory and DFA prints next year's in the AR1000ES
+ * each autumn.
  *
  * States whose standard deduction conforms to (or proxies) the FEDERAL
  * standard deduction — AZ, CO, DC, IA, ID, MO, MT, ND, NM — carry the federal
@@ -48,7 +52,15 @@ type RawStateTaxPack = Omit<StateTaxPack, 'states'> & { states: Record<string, R
 
 const PUBLIC_PENSION_OVERRIDES: Record<string, StateRetirementExclusion> = {
   AL: { kind: 'full' },
-  AR: { kind: 'full' },
+  // Arkansas is deliberately NOT here. Only uniformed-services retirement is
+  // fully exempt (A.C.A. 26-51-307(e)); an APERS, ATRS, county, municipal,
+  // police or fire pension sits inside 26-51-307(a)(1)'s "public or private
+  // employment-related retirement systems, plans, or programs" and gets the
+  // same $6,000 as a private pension. Absence from this map gives Arkansas
+  // that $6,000 in both buckets and sets `retirementRuleShared`, which is what
+  // 26-51-307(b)(1)(B)'s single per-taxpayer ceiling requires. The residual
+  // over-charge on a military pension is registered as
+  // `aca-26-51-307-e-uniformed-services-full-exemption`.
   HI: { kind: 'full' },
   IN: { kind: 'full' },
   KS: { kind: 'full' },
@@ -123,11 +135,33 @@ const rawStateYear2026 = {
       retirement: { kind: 'none' },
     },
     AR: {
+      // The thresholds below are DFA's PUBLISHED 2026 schedule (2026 Form
+      // AR1000ES Tax Rate Schedule), not the amounts printed in the Code.
+      // A.C.A. 26-51-201(d)(1) makes the Secretary prescribe indexed tables
+      // annually that apply "in lieu of" the statutory ones, and 26-51-430(c)
+      // does the same for the standard deduction, so Arkansas belongs with the
+      // legislated-ramp states above: never hold either forward at refresh
+      // time. The 0 / 4,500 pair this entry used to carry was the un-indexed
+      // 26-51-201(a)(3)(B) schedule, which by its own terms reaches only
+      // filers above roughly $94,700 of net income.
       code: 'AR', name: 'Arkansas', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 2410, marriedFilingJointly: 4820 },
+      capitalGainsTaxablePct: 50,
+      capitalGainsNotes: 'A.C.A. 26-51-815(b)(2)(C) exempts fifty percent of net capital gain, so half of it reaches ordinary Arkansas rates (Form AR1000D line 8). Not modeled: (b)(3) exempts net capital gain above $10,000,000 in full, and Arkansas taxes net SHORT-term gain without the fifty percent exclusion (Form AR1000D lines 11 and 12).',
+      capitalGainsSources: [
+        'DOCS/domain/state-tax-research/AR.md',
+        'https://arkleg.state.ar.us/Acts/FTPDocument?path=%2FACTS%2F2015R%2FPublic%2F&file=1173.pdf&ddBienniumSession=2015%2F2015R',
+        'https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000D_CapitalGains.pdf',
+      ],
+      standardDeduction: { single: 2470, marriedFilingJointly: 4940 },
       brackets: {
-        single: [{ lowerBound: 0, ratePct: 2 }, { lowerBound: 4500, ratePct: 3.9 }],
-        marriedFilingJointly: [{ lowerBound: 0, ratePct: 2 }, { lowerBound: 4500, ratePct: 3.9 }],
+        single: [
+          { lowerBound: 0, ratePct: 0 }, { lowerBound: 5600, ratePct: 2 }, { lowerBound: 11200, ratePct: 3 },
+          { lowerBound: 16000, ratePct: 3.4 }, { lowerBound: 26400, ratePct: 3.9 },
+        ],
+        marriedFilingJointly: [
+          { lowerBound: 0, ratePct: 0 }, { lowerBound: 5600, ratePct: 2 }, { lowerBound: 11200, ratePct: 3 },
+          { lowerBound: 16000, ratePct: 3.4 }, { lowerBound: 26400, ratePct: 3.9 },
+        ],
       },
       retirement: { kind: 'capped', capPerPerson: 6000 },
     },
