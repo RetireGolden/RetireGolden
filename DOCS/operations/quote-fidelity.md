@@ -153,7 +153,11 @@ truncation, and a truncation is a finding, not noise.
 ## Per-host rendering conventions
 
 Measured across every page this registry cites, not assumed. This is the table a fix needs in order not to
-guess. It is also encoded in `HOST_CONVENTIONS` in the script, so the two cannot drift apart silently.
+guess. It is also encoded in `HOST_CONVENTIONS` in the script, and
+`packages/engine/src/rules/quoteFidelityDocs.test.ts` holds the two together: it parses the table below,
+imports `HOST_CONVENTIONS`, and fails if they name different hosts or disagree on an apostrophe, a
+structural dash or a section sign. So the drift is caught by `npm test`, not by a reader noticing. The
+notes column is prose and is not compared.
 
 | Host | Possessive apostrophe | Structural dash | Section sign | Also worth knowing |
 |---|---|---|---|---|
