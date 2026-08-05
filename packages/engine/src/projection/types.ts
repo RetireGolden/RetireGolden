@@ -513,6 +513,7 @@ export type SimulatorRetirementRuntimeApplicationPhase =
   | 'ownerRmdDistribution'
   | 'automaticSeppDistribution'
   | 'legacyQcdDistribution'
+  | 'namedQcdDistribution'
   | 'namedRothConversionDebit'
   | 'namedRothConversionDestinationCredit'
   | 'legacyRothConversion'

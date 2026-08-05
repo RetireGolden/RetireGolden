@@ -115,26 +115,43 @@ function nonblank(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0
 }
 
+/**
+ * The journal's own copy of the inventory's origin classifier. The two are
+ * checked against each other -- `buildAnnualRetirementPhysicalEventInventory`
+ * rejects any record whose origin is not the one it expects for the kind -- so
+ * this switch is exhaustive for the same reason that one is: a kind left to a
+ * fallthrough would be published as a household-internal transfer and only the
+ * far side would notice.
+ */
 function originFor(
   kind: AnnualRetirementRuntimeEventKind,
 ): AnnualRetirementRuntimeEventOrigin {
-  if (kind === 'ownedIraRmd' || kind === 'employerPlanRmd' ||
-      kind === 'inheritedIraRmd') return 'rmdEngine'
-  if (kind === 'automaticSeppDistribution') return 'seppEngine'
-  if (kind === 'legacyNeedBasedWithdrawal' ||
-      kind === 'legacyRothConversion' || kind === 'legacyQcd') {
-    return 'legacyProjection'
+  switch (kind) {
+    case 'ownedIraRmd':
+    case 'employerPlanRmd':
+    case 'inheritedIraRmd': return 'rmdEngine'
+    case 'automaticSeppDistribution': return 'seppEngine'
+    case 'legacyNeedBasedWithdrawal':
+    case 'legacyRothConversion':
+    case 'legacyQcd': return 'legacyProjection'
+    // A gift is paid directly by the custodian to the donee organization, so
+    // unlike every kind on the transfer line below it has no household
+    // account on the receiving end. Deliberately not `legacyProjection`
+    // either: the aggregate strategy chose neither its amount nor its donor.
+    case 'namedQcd': return 'charitableDistributionLedger'
+    case 'ownedIraContribution':
+    case 'ownedIraEmployerContribution':
+    case 'employerPlanEmployeeContribution':
+    case 'employerPlanEmployerMatch': return 'contributionLedger'
+    // A named conversion moves between two of the household's own accounts, so
+    // it belongs with the other transfers, and deliberately not with
+    // `legacyProjection`: the aggregate strategy chose neither its amount nor
+    // its destination.
+    case 'namedRothConversion':
+    case 'annuityFundingTransfer':
+    case 'rolloverInflow':
+    case 'otherTraditionalTransfer': return 'transferLedger'
   }
-  // A named conversion moves between two of the household's own accounts, so
-  // it belongs with the other transfers. Named rather than left to the final
-  // fallthrough, and deliberately not `legacyProjection`: the aggregate
-  // strategy chose neither its amount nor its destination.
-  if (kind === 'namedRothConversion') return 'transferLedger'
-  if (kind === 'ownedIraContribution' ||
-      kind === 'ownedIraEmployerContribution' ||
-      kind === 'employerPlanEmployeeContribution' ||
-      kind === 'employerPlanEmployerMatch') return 'contributionLedger'
-  return 'transferLedger'
 }
 
 function issue(

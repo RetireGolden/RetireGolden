@@ -31,6 +31,7 @@ export type OwnedNonRothIraRuntimeSourceSeriesIssueKind =
   | 'exactActionStageRequired'
   | 'aggregateRothCreditInvalid'
   | 'namedRothConversionInvalid'
+  | 'namedQcdInvalid'
   | 'sourceSeriesConstructionInvalid'
 
 export interface OwnedNonRothIraRuntimeSourceSeriesIssue {
@@ -50,6 +51,7 @@ export interface NormalizedOwnedNonRothIraApplication {
     | 'legacyNeedBasedWithdrawal'
     | 'legacyRothConversion'
     | 'legacyQcd'
+    | 'namedQcd'
     | 'namedRothConversion'
     | 'ownedIraContribution'
     | 'rolloverInflow'
@@ -60,6 +62,7 @@ export interface NormalizedOwnedNonRothIraApplication {
     | 'ownerRmdDistribution'
     | 'automaticSeppDistribution'
     | 'legacyQcdDistribution'
+    | 'namedQcdDistribution'
     | 'namedRothConversionDebit'
     | 'legacyRothConversion'
     | 'legacyNeedBasedWithdrawal'
@@ -327,14 +330,18 @@ function requireNoExactActionOwnedIraMovement(
   const declaredOwnedIraSource = plan.strategies.retirementActions
     .filter((request) => request.year === taxYear)
     .flatMap((request) => {
-      // A named conversion is no longer on this list. It is the one exact
-      // action whose owned-IRA movement this replay can now explain: it
-      // publishes a `namedRothConversion` occurrence with its own application,
-      // and `requireNamedRothConversionCoverage` below binds every one of
-      // those to committed executor evidence in exact cents. The other kinds
-      // still move dollars nothing accounts for, so they still block.
+      // Neither a named conversion nor a named QCD is on this list any more,
+      // for two different reasons. A conversion's owned-IRA movement this
+      // replay can explain: it publishes a `namedRothConversion` occurrence
+      // with its own application, and `requireNamedRothConversionCoverage`
+      // below binds every one of those to committed executor evidence in
+      // exact cents. A named QCD has no committed executor evidence to bind
+      // to -- no stage in its chain has a `committed: true` arm -- so
+      // `requireNamedQcdCoverage` refuses every occurrence instead, which
+      // leaves a declared gift with nowhere to move dollars from rather than
+      // blocking the whole year for declaring one. An ordinary withdrawal
+      // still moves dollars nothing accounts for, so it still blocks.
       if (request.kind === 'ordinaryWithdrawal') return request.allocations
-      if (request.kind === 'qcd') return [request.allocation]
       return []
     })
     .map((allocation) => String(allocation.sourceAccountId))
@@ -484,6 +491,39 @@ function requireNamedRothConversionCoverage(
   }
 }
 
+/**
+ * Refuse every `namedQcd` occurrence, and say in the diagnostic why one cannot
+ * exist rather than merely that this year has none.
+ *
+ * The conversion coverage above can weigh an occurrence against committed cents
+ * because `rothConversionActionExecution` has a `committed: true` arm. No stage
+ * of the named QCD chain has one: the physical staging, the tax-character post
+ * pass, the derived character, the unified transaction finalization, and the
+ * action-execution evidence all type `committed` as the literal `false` and
+ * `movement` as `'notCommitted'`, and the QCD executor's own published record
+ * forces `executedAmount` to zero with a null execution date. So there is no
+ * evidence a named QCD occurrence could rejoin, which makes an occurrence not
+ * weak evidence but a claim the chain has no way to have made. Admitting one
+ * would let a forged occurrence explain an owned-IRA debit nothing authorised,
+ * and the year's balance chain would close on the forgery.
+ *
+ * The rejection is the whole coverage check, not a placeholder standing in for
+ * one. The slice that settles a gift's tax character is what supplies committed
+ * per-allocation cents, and it replaces this with the two-way binding the
+ * conversion arm performs -- every occurrence to one committed allocation, and
+ * every committed allocation to one occurrence.
+ */
+function requireNamedQcdCoverage(
+  occurrences: readonly Readonly<SimulatorAnnualRetirementRuntimeOccurrence>[],
+  taxYear: number,
+): void {
+  const named = occurrences.find((entry) => entry.kind === 'namedQcd')
+  if (named === undefined) return
+  fail('namedQcdInvalid', 'A named QCD occurrence requires committed charitable-distribution evidence, and no annual QCD stage can commit any', {
+    taxYear, producerOccurrenceKey: named.producerOccurrenceKey,
+  })
+}
+
 function compareNullableString(left: string | null, right: string | null): number {
   if (left === right) return 0
   if (left === null) return -1
@@ -550,6 +590,19 @@ function applicationShape(
       // proportionally more basis behind for the year's other distributions.
       // Registered as `irc-408-d-8-D-qcd-taxable-first`.
       return { applicationKind: 'debit', simulatorPhase: 'legacyQcdDistribution', form8606Line: null }
+    case 'namedQcd':
+      // The same 408(d)(8)(D) reading as the aggregate gift above: the gross
+      // stays off both Form 8606 lines, out of the annual denominator, and
+      // returns no basis. What the named arm may not inherit is the aggregate
+      // arm's freedom to assume it. A null line is unconditionally right only
+      // up to the donor's aggregate otherwise-includible balance; a gift past
+      // that point leaves a charitable remainder that is not a QCD, is basis,
+      // and does belong on a line. Only the pool-capacity stage can say which
+      // case a given gift is in, and no stage of the named QCD chain has a
+      // committed arm yet -- so `requireNamedQcdCoverage` above refuses every
+      // named occurrence outright and this shape is unreachable from a live
+      // annual pass. Registered as `irc-408-d-8-D-qcd-taxable-first`.
+      return { applicationKind: 'debit', simulatorPhase: 'namedQcdDistribution', form8606Line: null }
     case 'namedRothConversion':
       // A conversion is a conversion. IRC 408A(d)(3) and the Form 8606
       // line-8 instructions do not ask who chose the amount, so a named
@@ -576,15 +629,23 @@ function phaseRank(application: Readonly<SimulatorRetirementRuntimeApplication>)
     // The simulator computes the charitable gift once the forced distributions
     // are known and before any conversion or need-based withdrawal is sized.
     case 'legacyQcdDistribution': return 5
+    // A named gift sits beside the aggregate one and ahead of every
+    // conversion. Treas. Reg. 1.408-8(g)(1) takes every IRA distribution into
+    // account against section 401(a)(9) whether or not includible -- naming a
+    // qualified charitable distribution as its own example -- so the gift
+    // belongs after the forced distributions it may count against and before
+    // the conversions, which Treas. Reg. 1.408A-4 A-6(b) forbids from
+    // absorbing an RMD at all.
+    case 'namedQcdDistribution': return 6
     // The exact-cent executor runs after the year's forced distributions and
     // before the aggregate strategy sizes anything, which is what Treas. Reg.
     // 1.408A-4 A-6(b) requires of the RMD and what leaves the aggregate
     // sweep looking at balances the named request has already reduced.
-    case 'namedRothConversionDebit': return 6
-    case 'namedRothConversionDestinationCredit': return 7
-    case 'legacyRothConversion': return 8
-    case 'legacyRothConversionAggregateDestinationCredit': return 9
-    case 'legacyNeedBasedWithdrawal': return 10
+    case 'namedRothConversionDebit': return 7
+    case 'namedRothConversionDestinationCredit': return 8
+    case 'legacyRothConversion': return 9
+    case 'legacyRothConversionAggregateDestinationCredit': return 10
+    case 'legacyNeedBasedWithdrawal': return 11
   }
 }
 
@@ -611,8 +672,15 @@ function sourceCompatible(
     // IRC 408(d)(8)(B) reaches only a distribution from an individual
     // retirement plan, so an employer plan can never be a QCD source however
     // large its forced distribution is. Named rather than left to the default
-    // arm below, which would have accepted one.
-    case 'legacyQcd': return isAggregatedIra(account)
+    // arm below, which would have accepted one. The named arm answers to the
+    // same confinement: it reaches this switch carrying one Plan allocation,
+    // so an inherited IRA or an employer plan authored as its source is
+    // refused here structurally rather than only by the prerequisite's own
+    // reading of the request -- `irc-408-d-8-beneficiary-ira-source` and
+    // `irc-408-d-8-roth-ira-source` are both registered out of scope, and
+    // neither may be reached through the replay either.
+    case 'legacyQcd':
+    case 'namedQcd': return isAggregatedIra(account)
     default: return true
   }
 }
@@ -680,6 +748,26 @@ function occurrenceOrderAccountId(
     if (key.length !== 3 || key[0] !== occurrence.kind || key[1] !== sourceId ||
         destination?.type !== 'roth') {
       fail('sourceIdentityInvalid', 'Conversion key must bind its source and actual Plan Roth destination', {
+        taxYear, producerOccurrenceKey: occurrence.producerOccurrenceKey,
+      })
+    }
+    return sourceId!
+  }
+  if (occurrence.kind === 'namedQcd') {
+    // Four members, not two. A gift names no destination -- it leaves the
+    // household -- so the two members the aggregate key lacks are the action
+    // and the allocation alone. Those are what tell one donor's two gifts
+    // from the same IRA in the same year apart, which is exactly the
+    // distinction a household scalar cannot make and the reason the aggregate
+    // arm's dollars still require a separate characterization stage.
+    const request = plan.strategies.retirementActions.find((entry) =>
+      entry.kind === 'qcd' && entry.actionId === key[2] &&
+      entry.year === taxYear)
+    const allocation = request?.kind === 'qcd' ? request.allocation : undefined
+    if (key.length !== 4 || key[0] !== occurrence.kind || key[1] !== sourceId ||
+        allocation === undefined || allocation.allocationId !== key[3] ||
+        allocation.sourceAccountId !== sourceId) {
+      fail('sourceIdentityInvalid', 'Named QCD key must bind its Plan action, allocation, and stated source account', {
         taxYear, producerOccurrenceKey: occurrence.producerOccurrenceKey,
       })
     }
@@ -1217,6 +1305,12 @@ function validateUnchecked(
     requireNoExactActionOwnedIraMovement(
       plan, yearResult, accountById, taxYear,
     )
+    // Beside the guard above, and before the application chain rather than
+    // beside the QCD reconciliation below, because these two decide the same
+    // question: which exact actions this replay will let move owned-IRA
+    // dollars. A named gift is refused here, so no application referring to
+    // one ever reaches the balance chain.
+    requireNamedQcdCoverage(occurrenceSource.runtimeOccurrences, taxYear)
 
     for (const annuity of plan.accounts) {
       if (annuity.type !== 'annuity' || annuity.purchase?.year !== taxYear ||
@@ -1460,10 +1554,17 @@ function validateUnchecked(
       cents(overlay.grossAmountPlanDollars, 'QCD overlay amount', { taxYear }) <= 0)) {
       fail('sourceContractInvalid', 'A nonmoving QCD overlay must retain its exact captured contract and a positive amount', { taxYear })
     }
+    // `namedQcd` is summed here even though `requireNamedQcdCoverage` above has
+    // already refused every one of them, so this total is provably zero today.
+    // Leaving the kind out would make the reconciliation kind-partial: the day
+    // a named gift moves, its dollars would be in the published annual figure
+    // and absent from the total it is checked against, and the year would fail
+    // for the wrong reason or -- if the published figure were also missed --
+    // not at all.
     const movingQcd = occurrenceTotalInPlanOrder(
       occurrenceSource.runtimeOccurrences,
-      ['legacyQcd'],
-      'moving legacy QCD',
+      ['legacyQcd', 'namedQcd'],
+      'moving QCD',
       taxYear,
       accountOrder,
     )

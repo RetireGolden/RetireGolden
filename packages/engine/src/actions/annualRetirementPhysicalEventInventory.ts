@@ -39,6 +39,16 @@ export const annualRetirementRuntimeEventKinds = [
   'legacyRothConversion',
   'legacyQcd',
   /**
+   * A charitable distribution the exact-cent QCD executor committed against a
+   * named request, as opposed to the aggregate strategy's household scalar.
+   * The producer key carries the action and allocation that authorised it, so
+   * the occurrence names one donor and one source account, which is precisely
+   * what a household total cannot do. Its chronology and movement authority
+   * stay with the executor's own published evidence, so like the named
+   * conversion below it is not a resolved runtime event kind.
+   */
+  'namedQcd',
+  /**
    * A conversion the exact-cent retirement-action executor committed against a
    * named request, as opposed to the aggregate strategy's first-source sweep.
    * The producer key carries the action and allocation that authorised it, so
@@ -76,12 +86,31 @@ export const annualRetirementResolvedRuntimeEventKinds = [
 export type AnnualRetirementResolvedRuntimeEventKind =
   (typeof annualRetirementResolvedRuntimeEventKinds)[number]
 
+/**
+ * Every producer an annual retirement occurrence can come from. The list is the
+ * single source of truth: the record schema below is built from it, so an
+ * origin cannot exist in the type and be missing from the validator.
+ */
+const annualRetirementRuntimeEventOrigins = [
+  'rmdEngine',
+  'seppEngine',
+  'legacyProjection',
+  'contributionLedger',
+  'transferLedger',
+  /**
+   * A custodian-direct charitable distribution, which leaves the household
+   * altogether. Deliberately not `transferLedger`: that origin's stated claim
+   * is a movement between two of the household's own accounts, and IRC
+   * 408(d)(8)(B)(i) requires a QCD to be paid directly by the trustee to the
+   * donee organization, so there is no household account on the receiving end
+   * to transfer to. Recording a gift as a transfer would assert an internal
+   * movement for money that had stopped being the household's.
+   */
+  'charitableDistributionLedger',
+] as const
+
 export type AnnualRetirementRuntimeEventOrigin =
-  | 'rmdEngine'
-  | 'seppEngine'
-  | 'legacyProjection'
-  | 'contributionLedger'
-  | 'transferLedger'
+  (typeof annualRetirementRuntimeEventOrigins)[number]
 
 export type AnnualRetirementForm8606Category =
   | 'line7DistributionCandidate'
@@ -341,13 +370,7 @@ const runtimeKindSchema = z.enum(annualRetirementRuntimeEventKinds)
 const resolvedRuntimeKindSchema = z.enum(
   annualRetirementResolvedRuntimeEventKinds,
 )
-const runtimeOriginSchema = z.enum([
-  'rmdEngine',
-  'seppEngine',
-  'legacyProjection',
-  'contributionLedger',
-  'transferLedger',
-])
+const runtimeOriginSchema = z.enum(annualRetirementRuntimeEventOrigins)
 
 const attestationSchema = z.object({
   predicate: z.literal('completeAnnualRetirementPhysicalEventInventory'),
@@ -649,27 +672,39 @@ function safeSum(
   return asUsdCents(Number(sum))
 }
 
+/**
+ * Which producer a runtime event kind must have come from.
+ *
+ * Exhaustive on purpose, and with no trailing fallthrough. The predecessor
+ * ended in `return 'transferLedger'`, so a kind nobody classified was silently
+ * declared a movement between two household accounts — the one origin whose
+ * claim is hardest to notice being wrong, because a mis-origined record still
+ * reconciles everywhere else. A new kind is now a compile error here instead.
+ */
 function expectedOrigin(
   kind: AnnualRetirementRuntimeEventKind,
 ): AnnualRetirementRuntimeEventOrigin {
-  if (
-    kind === 'ownedIraRmd' ||
-    kind === 'employerPlanRmd' ||
-    kind === 'inheritedIraRmd'
-  ) return 'rmdEngine'
-  if (kind === 'automaticSeppDistribution') return 'seppEngine'
-  if (
-    kind === 'legacyNeedBasedWithdrawal' ||
-    kind === 'legacyRothConversion' ||
-    kind === 'legacyQcd'
-  ) return 'legacyProjection'
-  if (
-    kind === 'ownedIraContribution' ||
-    kind === 'ownedIraEmployerContribution' ||
-    kind === 'employerPlanEmployeeContribution' ||
-    kind === 'employerPlanEmployerMatch'
-  ) return 'contributionLedger'
-  return 'transferLedger'
+  switch (kind) {
+    case 'ownedIraRmd':
+    case 'employerPlanRmd':
+    case 'inheritedIraRmd': return 'rmdEngine'
+    case 'automaticSeppDistribution': return 'seppEngine'
+    case 'legacyNeedBasedWithdrawal':
+    case 'legacyRothConversion':
+    case 'legacyQcd': return 'legacyProjection'
+    // The aggregate arm's gift is `legacyProjection` above because the
+    // household scalar chose it. A named gift is chosen by the request and
+    // paid to the donee organization, so it is neither that nor a transfer.
+    case 'namedQcd': return 'charitableDistributionLedger'
+    case 'ownedIraContribution':
+    case 'ownedIraEmployerContribution':
+    case 'employerPlanEmployeeContribution':
+    case 'employerPlanEmployerMatch': return 'contributionLedger'
+    case 'namedRothConversion':
+    case 'annuityFundingTransfer':
+    case 'rolloverInflow':
+    case 'otherTraditionalTransfer': return 'transferLedger'
+  }
 }
 
 function isOwnedIra(account: TraditionalAccount): boolean {

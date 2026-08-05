@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { buildAnnualRetirementPhysicalEventInventory } from '../actions/annualRetirementPhysicalEventInventory.js'
+import {
+  buildAnnualRetirementPhysicalEventInventory,
+  type AnnualRetirementRuntimeInventoryRecord,
+} from '../actions/annualRetirementPhysicalEventInventory.js'
 import { asAccountId, asActionId, asAllocationId, asPersonId, asPlanId } from '../actions/identity.js'
 import { asPositiveUsdCents } from '../actions/money.js'
 import * as structuralId from '../actions/structuralId.js'
@@ -101,6 +104,8 @@ describe('simulator annual retirement runtime journal', () => {
     ['ownedIraEmployerContribution', 'contributionLedger'],
     ['employerPlanEmployeeContribution', 'contributionLedger'],
     ['employerPlanEmployerMatch', 'contributionLedger'],
+    ['namedQcd', 'charitableDistributionLedger'],
+    ['namedRothConversion', 'transferLedger'],
     ['annuityFundingTransfer', 'transferLedger'],
     ['rolloverInflow', 'transferLedger'],
     ['otherTraditionalTransfer', 'transferLedger'],
@@ -141,6 +146,37 @@ describe('simulator annual retirement runtime journal', () => {
       executionSequence: null,
       incompatibility: 'legacyAggregateIdentityUnavailable',
     })
+  })
+
+  // The journal and the inventory classify origins separately and the
+  // inventory checks the journal's answer against its own, so the pair has to
+  // agree on where a named gift comes from. It is not a transfer: IRC
+  // 408(d)(8)(B)(i) has the custodian pay the donee organization directly, so
+  // there is no household account on the far side of the movement, and calling
+  // it one would have been the quietest way to be wrong -- a mis-origined
+  // record reconciles everywhere else.
+  it('agrees with the inventory that a named gift is not a household transfer', () => {
+    const journal = sealed(occurrence({
+      producerOccurrenceKey: 'named-qcd',
+      kind: 'namedQcd',
+    }))
+    const record = journal.runtimeRecords[0]!
+    expect(record.origin).toBe('charitableDistributionLedger')
+
+    const build = (
+      records: readonly Readonly<AnnualRetirementRuntimeInventoryRecord>[],
+    ) => buildAnnualRetirementPhysicalEventInventory({
+      plan: basePlan(),
+      taxYear: context.taxYear,
+      runtimeRecords: records,
+      runtimeInventoryAttestation: journal.runtimeInventoryAttestation,
+    })
+
+    expect(build(journal.runtimeRecords).issues.map((item) => item.kind))
+      .not.toContain('runtimeEventOriginMismatch')
+    expect(build([{ ...record, origin: 'transferLedger' }])
+      .issues.map((item) => item.kind))
+      .toContain('runtimeEventOriginMismatch')
   })
 
   it('resolves only a supported occurrence with explicit physical chronology and authority', () => {

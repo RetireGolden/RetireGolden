@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
+import type { QualifiedCharitableDistributionRequest } from '../actions/contract.js'
+import {
+  asAccountId,
+  asActionId,
+  asAllocationId,
+  asPersonId,
+} from '../actions/identity.js'
+import { asPositiveUsdCents } from '../actions/money.js'
 import type { Account, Plan } from '../model/plan.js'
 import {
   singlePersonPlan,
@@ -39,10 +47,13 @@ function project(plan: Plan, endYear = TAX_YEAR): YearResult[] {
 }
 
 /**
- * The simulator's own annual phase order. A charitable gift is sized once the
- * forced distributions are known and before any conversion or need-based
- * withdrawal, so it takes a position in the middle of the chain rather than the
- * end -- and every later debit on the same account sees the reduced balance.
+ * The simulator's own annual phase order, mirroring the validator's `phaseRank`
+ * exactly. A charitable gift is sized once the forced distributions are known
+ * and before any conversion or need-based withdrawal, so it takes a position in
+ * the middle of the chain rather than the end -- and every later debit on the
+ * same account sees the reduced balance. Both gift phases sit together, after
+ * the forced distributions a gift may satisfy and ahead of the conversions,
+ * which may not absorb an RMD at all.
  */
 const PHASE_RANK: Readonly<Record<string, number>> = {
   annuityPurchaseFunding: 0,
@@ -51,9 +62,12 @@ const PHASE_RANK: Readonly<Record<string, number>> = {
   ownerRmdDistribution: 3,
   automaticSeppDistribution: 4,
   legacyQcdDistribution: 5,
-  legacyRothConversion: 6,
-  legacyRothConversionAggregateDestinationCredit: 7,
-  legacyNeedBasedWithdrawal: 8,
+  namedQcdDistribution: 6,
+  namedRothConversionDebit: 7,
+  namedRothConversionDestinationCredit: 8,
+  legacyRothConversion: 9,
+  legacyRothConversionAggregateDestinationCredit: 10,
+  legacyNeedBasedWithdrawal: 11,
 }
 
 interface MutableApplication {
@@ -74,6 +88,12 @@ interface MovingQcdOptions {
   readonly application?: boolean
   /** Publish a QCD total other than the dollars that actually moved. */
   readonly publishedTotal?: number
+  /**
+   * Stage the gift as a named request's rather than the aggregate strategy's:
+   * a `namedQcd` occurrence in the `namedQcdDistribution` phase, keyed on the
+   * authorising action and allocation instead of the source account alone.
+   */
+  readonly named?: { readonly actionId: string; readonly allocationId: string }
 }
 
 /**
@@ -94,14 +114,23 @@ function withMovingQcd(
   const applicationSource = year.retirementRuntimeApplicationSource!
   const applications = applicationSource
     .applications as unknown as MutableApplication[]
+  const kind = options.named === undefined ? 'legacyQcd' : 'namedQcd'
+  const phase = options.named === undefined
+    ? 'legacyQcdDistribution'
+    : 'namedQcdDistribution'
+  const producerOccurrenceKey = options.named === undefined
+    ? JSON.stringify([kind, sourceAccountId])
+    : JSON.stringify([
+      kind, sourceAccountId, options.named.actionId, options.named.allocationId,
+    ])
 
   if (options.occurrence !== false) {
     const occurrences = occurrenceSource.runtimeOccurrences as unknown as {
       producerOccurrenceKey: string
     }[]
     occurrences.push({
-      producerOccurrenceKey: JSON.stringify(['legacyQcd', sourceAccountId]),
-      kind: 'legacyQcd',
+      producerOccurrenceKey,
+      kind,
       grossAmountPlanDollars: amount,
       ownerPersonId: 'p1',
       sourceAccountId,
@@ -119,7 +148,7 @@ function withMovingQcd(
   const insertIndex = (() => {
     const found = applications
       .findIndex((entry) => (PHASE_RANK[entry.simulatorPhase] ?? 0) >
-        PHASE_RANK.legacyQcdDistribution!)
+        PHASE_RANK[phase]!)
     return found === -1 ? applications.length : found
   })()
   const sourceBalanceBefore = applications
@@ -129,8 +158,8 @@ function withMovingQcd(
   if (options.application !== false) {
     applications.splice(insertIndex, 0, {
       applicationKind: 'debit',
-      producerOccurrenceKey: JSON.stringify(['legacyQcd', sourceAccountId]),
-      simulatorPhase: 'legacyQcdDistribution',
+      producerOccurrenceKey,
+      simulatorPhase: phase,
       mutationOrdinal: 0,
       ownerPersonId: 'p1',
       sourceAccountId,
@@ -185,6 +214,90 @@ function preRmdPlan(id: string, accounts: Account[]): Plan {
   plan.id = id
   plan.accounts = [cash(), ...accounts]
   return plan
+}
+
+const GIFT_DOLLARS = 10_000
+
+/** One named gift, dated after the donor's exact 70½ threshold of 2026-07-01. */
+function namedGift(
+  overrides: Partial<QualifiedCharitableDistributionRequest> = {},
+): QualifiedCharitableDistributionRequest {
+  const amount = asPositiveUsdCents(GIFT_DOLLARS * 100)
+  return {
+    actionId: asActionId('gift-action'),
+    kind: 'qcd',
+    year: TAX_YEAR,
+    executionDate: `${TAX_YEAR}-08-01`,
+    executionSequence: 1,
+    requestedAmount: amount,
+    provenance: { source: 'manual' },
+    donorPersonId: asPersonId('p1'),
+    allocation: {
+      allocationId: asAllocationId('gift-allocation'),
+      sourceAccountId: asAccountId('ira'),
+      requestedAmount: amount,
+    },
+    charity: {
+      designationId: 'charity-1',
+      name: 'Public charity',
+      designationKind: 'eligiblePublicCharity',
+      directFromCustodianAttested: true,
+      eligibleOrganizationAttested: true,
+      notDonorAdvisedFundOrSupportingOrganizationAttested: true,
+      notSplitInterestEntityAttested: true,
+      entireDistributionOtherwiseDeductibleAttested: true,
+    },
+    ...overrides,
+  }
+}
+
+function namedGiftPlan(
+  id: string,
+  accounts: Account[],
+  request: QualifiedCharitableDistributionRequest = namedGift(),
+): Plan {
+  const plan = preRmdPlan(id, accounts)
+  plan.strategies.retirementActions = [request]
+  return plan
+}
+
+/** The producer key a named gift's occurrence has to carry: four members. */
+function namedGiftKey(
+  sourceAccountId = 'ira',
+  actionId = 'gift-action',
+  allocationId = 'gift-allocation',
+): string {
+  return JSON.stringify(['namedQcd', sourceAccountId, actionId, allocationId])
+}
+
+/**
+ * Publish a well-formed `namedQcd` occurrence and nothing else -- no
+ * application, no balance change, no published-total change. Every dollar in
+ * the year is exactly where the simulator left it, so the only thing the
+ * validator can object to is the occurrence's own existence.
+ */
+function withNamedQcdOccurrenceOnly(
+  years: YearResult[],
+  producerOccurrenceKey: string,
+  sourceAccountId = 'ira',
+): YearResult[] {
+  const occurrences = years[0]!.retirementRuntimeSource!
+    .runtimeOccurrences as unknown as { producerOccurrenceKey: string }[]
+  occurrences.push({
+    producerOccurrenceKey,
+    kind: 'namedQcd',
+    grossAmountPlanDollars: GIFT_DOLLARS,
+    ownerPersonId: 'p1',
+    sourceAccountId,
+    executionDate: null,
+    executionSequence: null,
+    movementAuthorityId: null,
+  } as never)
+  occurrences.sort((left, right) =>
+    left.producerOccurrenceKey < right.producerOccurrenceKey
+      ? -1
+      : left.producerOccurrenceKey > right.producerOccurrenceKey ? 1 : 0)
+  return years
 }
 
 describe('moving legacy QCD in the owned-IRA source series', () => {
@@ -469,5 +582,209 @@ describe('moving legacy QCD through the live annual pass', () => {
         status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
         issues: [{ kind: 'qcdStageRequired' }],
       })
+  })
+})
+
+describe('a named QCD occurrence has nothing it could be bound to', () => {
+  // `requireNamedQcdCoverage` is an unconditional rejection, and these two
+  // cases are what "unconditional" means: the first year is arithmetically
+  // perfect and the second is a complete, self-consistent moving fixture, and
+  // both are refused for the same reason. No stage of the named QCD chain has
+  // a `committed: true` arm, so no evidence exists that an occurrence could
+  // rejoin -- which makes the occurrence a claim the engine cannot have made.
+  it('refuses a gift occurrence in a year where not one dollar moved', () => {
+    const plan = namedGiftPlan('named-qcd-occurrence-only', [
+      traditional('ira', 100_000),
+    ])
+
+    const result = validateOwnedNonRothIraRuntimeSourceSeries(
+      plan, TAX_YEAR,
+      withNamedQcdOccurrenceOnly(project(plan), namedGiftKey()),
+    )
+
+    expect(result).toMatchObject({
+      status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+      issues: [{
+        kind: 'namedQcdInvalid',
+        taxYear: TAX_YEAR,
+        producerOccurrenceKey: namedGiftKey(),
+      }],
+    })
+  })
+
+  // The same fixture shape that makes the aggregate arm's gift acceptable:
+  // occurrence, application, balance chain, published total, all consistent.
+  // The named kind is refused anyway, so the rejection cannot be mistaken for
+  // the balance chain catching an unexplained debit.
+  it('refuses a gift occurrence backed by a complete moving fixture', () => {
+    const plan = namedGiftPlan('named-qcd-moving-fixture', [
+      traditional('ira', 100_000),
+    ])
+
+    const result = validateOwnedNonRothIraRuntimeSourceSeries(
+      plan, TAX_YEAR,
+      withMovingQcd(project(plan), 'ira', 100_000, GIFT_DOLLARS, {
+        named: { actionId: 'gift-action', allocationId: 'gift-allocation' },
+      }),
+    )
+
+    expect(result).toMatchObject({
+      status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+      issues: [{ kind: 'namedQcdInvalid', taxYear: TAX_YEAR }],
+    })
+  })
+
+  // IRC 408(d)(8)(B) reaches only a distribution from an individual retirement
+  // plan, and the source rules for an inherited or Roth source are registered
+  // out of scope. The replay refuses an employer-plan source structurally,
+  // before the coverage gate above and without reading the request: this key
+  // binds a real Plan action and allocation, so source compatibility is the
+  // only thing left for the validator to object to.
+  it('refuses an employer plan named as the source of a gift', () => {
+    const plan = namedGiftPlan(
+      'named-qcd-employer-source',
+      [traditional('ira', 100_000), traditional('k401', 100_000, 'employer')],
+      namedGift({
+        allocation: {
+          allocationId: asAllocationId('gift-allocation'),
+          sourceAccountId: asAccountId('k401'),
+          requestedAmount: asPositiveUsdCents(GIFT_DOLLARS * 100),
+        },
+      }),
+    )
+
+    const result = validateOwnedNonRothIraRuntimeSourceSeries(
+      plan, TAX_YEAR,
+      withNamedQcdOccurrenceOnly(project(plan), namedGiftKey('k401'), 'k401'),
+    )
+
+    expect(result).toMatchObject({
+      status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+      issues: [{
+        kind: 'sourceIdentityInvalid',
+        detail: 'Occurrence owner/source/kind must exact-rejoin its Plan account',
+      }],
+    })
+  })
+
+  // Two members are the aggregate gift's whole key, because a household scalar
+  // has no action behind it. A named gift keyed that way would be
+  // indistinguishable from a second gift out of the same account, which is the
+  // collision the extra two members exist to prevent.
+  it('refuses a gift key shaped like the aggregate arm’s', () => {
+    const plan = namedGiftPlan('named-qcd-short-key', [
+      traditional('ira', 100_000),
+    ])
+
+    const result = validateOwnedNonRothIraRuntimeSourceSeries(
+      plan, TAX_YEAR,
+      withNamedQcdOccurrenceOnly(
+        project(plan), JSON.stringify(['namedQcd', 'ira']),
+      ),
+    )
+
+    expect(result).toMatchObject({
+      status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+      issues: [{
+        kind: 'sourceIdentityInvalid',
+        detail: 'Named QCD key must bind its Plan action, allocation, and stated source account',
+      }],
+    })
+  })
+
+  // The cross-role case: a real action, a real allocation, and a real owned
+  // IRA of the donor's -- but not the account that allocation named. Accepting
+  // it would let one authorised gift explain a debit from a sibling account.
+  it('refuses a gift occurrence sourced from an account its allocation did not name', () => {
+    const plan = namedGiftPlan('named-qcd-wrong-source', [
+      traditional('ira', 100_000), traditional('ira2', 100_000),
+    ])
+
+    const result = validateOwnedNonRothIraRuntimeSourceSeries(
+      plan, TAX_YEAR,
+      withNamedQcdOccurrenceOnly(project(plan), namedGiftKey('ira2'), 'ira2'),
+    )
+
+    expect(result).toMatchObject({
+      status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+      issues: [{
+        kind: 'sourceIdentityInvalid',
+        detail: 'Named QCD key must bind its Plan action, allocation, and stated source account',
+      }],
+    })
+  })
+
+  // One authorising allocation is one gift. A duplicated key would let a
+  // single request account for two debits.
+  it('refuses a duplicated gift key', () => {
+    const plan = namedGiftPlan('named-qcd-duplicate-key', [
+      traditional('ira', 100_000),
+    ])
+    const years = withNamedQcdOccurrenceOnly(project(plan), namedGiftKey())
+
+    const result = validateOwnedNonRothIraRuntimeSourceSeries(
+      plan, TAX_YEAR,
+      withNamedQcdOccurrenceOnly(years, namedGiftKey()),
+    )
+
+    expect(result).toMatchObject({
+      status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+      issues: [{
+        kind: 'sourceIdentityInvalid',
+        detail: 'Runtime occurrence keys must be nonblank and unique',
+      }],
+    })
+  })
+})
+
+describe('a declared named QCD stops blocking the replay it never moved in', () => {
+  // The behavioural gain. Declaring a QCD from an owned IRA used to fail the
+  // whole year closed with `exactActionStageRequired`, because the guard could
+  // not tell a declared gift from a moving one. The occurrence kind is what
+  // tells them apart: a gift that moved would publish one and be refused by
+  // the coverage gate, and a gift that did not publishes nothing and leaves
+  // the year's evidence exactly as a year without the request.
+  it('closes the source series and the basis replay for the year that declares it', () => {
+    const plan = namedGiftPlan('named-qcd-declared-only', [
+      traditional('ira', 100_000, 'ira', 20_000),
+    ])
+    const validated = validatePlan(plan)
+    const years = project(plan)
+
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(validated, TAX_YEAR, years))
+      .toMatchObject({ status: 'ownedNonRothIraRuntimeSourceSeriesComplete' })
+    const replay = replayOwnedNonRothIraContiguousYears(validated, TAX_YEAR, years)
+    expect(replay.status).toBe('ownedNonRothIraContiguousReplayComplete')
+    // The settlement only commits when the replay closes, so a published
+    // annual replay is the end-to-end proof that the year is explainable.
+    expect(years[0]!.ownedNonRothIraAnnualReplay).toBeDefined()
+  })
+
+  // Slice 1 pinned that a named QCD publishes its prerequisite and moves
+  // nothing. This pins the same fact one layer down, where movement would show
+  // up first: no occurrence of the new kind, no application in its phase, and
+  // an IRA balance identical to the same household without the request. The
+  // comparison rather than a literal is deliberate -- when a gift does move,
+  // this test is rewritten, not deleted.
+  it('publishes no gift occurrence and moves no dollars', () => {
+    const withRequest = project(namedGiftPlan('named-qcd-with-request', [
+      traditional('ira', 100_000, 'ira', 20_000),
+    ]))[0]!
+    const withoutRequest = project(preRmdPlan('named-qcd-without-request', [
+      traditional('ira', 100_000, 'ira', 20_000),
+    ]))[0]!
+
+    expect(withRequest.retirementRuntimeSource!.runtimeOccurrences
+      .filter((occurrence) => occurrence.kind === 'namedQcd')).toEqual([])
+    expect(withRequest.retirementRuntimeApplicationSource!.applications
+      .filter((application) =>
+        application.simulatorPhase === 'namedQcdDistribution')).toEqual([])
+    expect(withRequest.qcd).toBe(0)
+    expect(withRequest.qcd).toBe(withoutRequest.qcd)
+    expect(withRequest.balances.ira).toBe(withoutRequest.balances.ira)
+    // The evidence the year does publish is the prerequisite, and only that.
+    expect(withRequest.qcdActionPrerequisites?.map(
+      (evidence) => evidence.actionId,
+    )).toEqual(['gift-action'])
   })
 })
