@@ -1332,7 +1332,7 @@ const registry = {
       citation: 'Pub. L. 119-21, sec. 70107(c)-(d) (OBBBA)',
       url: 'https://www.govinfo.gov/content/pkg/PLAW-119publ21/html/PLAW-119publ21.htm',
       quotedText:
-        '(c) Modification of Phaseout Amount.--Section 55(d)(4)(A)(ii) is amended by striking ``and\'\' at the end of subclause (II), and by adding at the end the following new subclause: ``(IV) by substituting `50 percent\' for `25 percent\', and\'\'. (d) <<NOTE: 26 USC 55 note.>> Effective Date.--The amendments made by this section shall apply to taxable years beginning after December 31, 2025.',
+        '(c) Modification of Phaseout Amount.--Section 55(d)(4)(A)(ii) is amended by striking ``and\'\' at the end of subclause (II), and by adding at the end the following new subclause: ``(IV) by substituting `50 percent\' for `25 percent\', and\'\'. ... Effective Date.--The amendments made by this section shall apply to taxable years beginning after December 31, 2025.',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
