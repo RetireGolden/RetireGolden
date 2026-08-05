@@ -1311,6 +1311,18 @@ const registry = {
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
+      citation: 'IRC 55(d)(2), phase-out chapeau',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim',
+      quotedText:
+        'The exemption amount of any taxpayer shall be reduced (but not below zero) by an amount equal to 25 percent of the amount by which the alternative minimum taxable income of the taxpayer exceeds-',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 55(d)(4)(B)(i), inflation adjustment',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim',
+      quotedText:
+        '(B) Inflation adjustment (i) In general In the case of any taxable year beginning in a calendar year after 2018 (2026, in the case of the $1,000,000 amount in subparagraph (A)(ii)(I)), the amounts described in clause (ii) shall each be increased by an amount equal to- (I) such dollar amount, multiplied by (II) the cost-of-living adjustment determined under section 1(f)(3) for the calendar year in which the taxable year begins,',
+    }, {
+      kind: 'statute',
       citation: 'IRC 55(d)(4)(A)(ii), as amended by Pub. L. 119-21',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim',
       quotedText:
