@@ -1032,6 +1032,95 @@ const registry = {
     implementedBy: ['packages/engine/src/actions/annualQcdExecutionPrerequisite.ts'],
   },
 
+  // --- Registered 2026-08-05, with the first committed named QCD ----------
+
+  'irc-408-d-8-A-named-qcd-limit-after-the-pack-year': {
+    title: 'Named QCD in a tax year with no sourced exclusion limit',
+    statement:
+      'The QCD exclusion limit is a per-taxpayer dollar amount indexed annually, and the sourced figure exists only for a year the IRS has published. Not modelled: a named QCD scheduled for a year past the parameter pack is refused qcd-tax-year-limit-unsupported and moves nothing, because the projection has no sourced limit for that year and general plan inflation is not a source. The aggregate qcdAnnual arm does extrapolate its limit by plan inflation; the named arm does not inherit that, because the aggregate arm never claims an action executed and the named arm claims exactly that. A named request also stands the aggregate arm down for its year, so such a year gives nothing at all and the projection warns.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408(d)(8)(A)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm',
+      quotedText:
+        'So much of the aggregate amount of qualified charitable distributions with respect to a taxpayer made during any taxable year which does not exceed $100,000 shall not be includible in gross income of such taxpayer for such taxable year.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408(d)(8)(G)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm',
+      quotedText:
+        'In the case of any taxable year beginning after 2023, each of the dollar amounts in subparagraphs (A) and (F) shall be increased by an amount equal to—',
+    }, {
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2025-67',
+      url: 'https://www.irs.gov/pub/irs-drop/n-25-67.pdf',
+      quotedText:
+        'The aggregate amount of qualified charitable distributions that are not includible in gross income under section 408(d)(8)(A) is increased from $108,000 to $111,000.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      // The refusal itself: the post-pass requires an exact sourced limit for
+      // the action's own tax year and fails `taxParameterUnavailable` on a
+      // stand-in pack, which stops the executor from committing.
+      'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts',
+      // The user-visible consequence, including the warning that says the
+      // recurring amount stood down as well.
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'treas-reg-1-408-8-g-projection-named-qcd-beyond-rmd': {
+    title: 'Named QCD modelled as beyond the required distribution',
+    statement:
+      'A qualified charitable distribution counts toward the year required minimum distribution, so a donor with a required amount can satisfy part of it with a gift and take only the balance as taxable cash. Not modelled in the named QCD arm: the annual pass distributes the whole required amount in cash before any gift is sized, so a named gift only ever meets a requirement the donor own IRAs could not, and every scheduled gift is modelled as an additional distribution beyond the required one. The aggregate qcdAnnual arm does model the coordination, through its nonmoving qcdFromRmd overlay, so the two arms answer the same household differently.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale:
+      'Direction of error: restrictive, by the amount of the required distribution the gift could have satisfied, and the balance sheet is drawn down by that same amount again. A donor with a $21,097 required distribution who schedules a $20,000 gift intends to give $20,000 out of the requirement and take $1,097 in cash: $1,097 of ordinary income and $21,097 out of the IRA. The projection distributes all $21,097 in cash first and then debits the gift separately: $21,097 of ordinary income and $41,097 out of the IRA. Ordinary income is overstated by the satisfiable amount and the IRA is understated by it, so the error compounds through every figure that reads either. The cause is ordering, not missing facts. The gift settles at phase rank 6 and the forced distributions at rank 3, and the ranks are themselves statutory: Treas. Reg. 1.408A-4 A-6(b) forbids a conversion from absorbing an unsatisfied requirement, which puts the gift ahead of the conversions, and 1.408-8(b)(3) satisfies the requirement in the order distributions actually occur, which is what makes an earlier cash distribution irrevocable. The retirement path is an RMD reserve: hold a scheduled same-year gift amount out of the forced cash distribution before rank 3 runs, which is the shape the plan already contemplates for conversion-linked withdrawals. Until it lands the executed record states the coordination truthfully rather than omitting it - `rmdSatisfiedAmount` is zero and the typed `coordination` field says the requirement had already been distributed before the gift.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8(g)(1)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.408-8',
+      quotedText:
+        'all amounts distributed from an IRA are taken into account in determining whether section 401(a)(9) is satisfied, regardless of whether the amount is includible in income. Thus, for example, a qualified charitable distribution made pursuant to section 408(d)(8) is taken into account in determining whether section 401(a)(9) is satisfied.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8(b)(3)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.408-8',
+      quotedText:
+        'any amount distributed during a calendar year from an IRA of that IRA owner is treated as a required minimum distribution under section 401(a)(9) to the extent that the total required minimum distribution for the year under section 401(a)(9) from all of that IRA owner\'s IRAs has not been satisfied (either by a distribution from the IRA or, as permitted under paragraph (e) of this section, from another IRA).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408(d)(8)(A)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm',
+      quotedText:
+        'So much of the aggregate amount of qualified charitable distributions with respect to a taxpayer made during any taxable year which does not exceed $100,000 shall not be includible in gross income of such taxpayer for such taxable year.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      // Where the ordering is decided: the forced distributions run well above
+      // the gift, and the RMD pool the gift is offered is what is left of the
+      // requirement by then.
+      'packages/engine/src/projection/simulate.ts',
+      // Where the consequence is published: `rmdSatisfiedAmount` with the typed
+      // disclosure that says why it is zero.
+      'packages/engine/src/actions/annualQcdExecution.ts',
+    ],
+  },
+
   'irc-408-d-3-C-ii-surviving-spouse-not-inherited': {
     title: 'A surviving spouse does not hold an inherited IRA',
     statement:
@@ -3218,7 +3307,7 @@ const registry = {
   'irc-408-d-8-B-ii-projection-annual-age-proxy': {
     title: 'Annual-ledger stand-in for the age 70.5 QCD date',
     statement:
-      'QCD eligibility begins on the date the donor attains age 70.5, which the exact-cent path computes as 846 calendar months from birth. Not modelled in the annual ledger: eligibility is a property of the whole calendar year, so a donor who crosses 70.5 in July is treated as eligible from 1 January of that year and a gift dated before the half-birthday is excluded.',
+      'QCD eligibility begins on the date the donor attains age 70.5, which the exact-cent path computes as 846 calendar months from birth. Not modelled in the aggregate qcdAnnual arm, which this record is about: eligibility is a property of the whole calendar year, so a donor who crosses 70.5 in July is treated as eligible from 1 January of that year and a gift dated before the half-birthday is excluded. A named QCD request does not inherit the proxy — it is admitted or refused against the exact threshold date, and a gift dated before it is refused qcd-before-age-70-half.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'understatesTax',
@@ -3247,7 +3336,7 @@ const registry = {
   'irc-408-d-8-A-projection-post-70-half-contribution-offset': {
     title: 'Reduction of the QCD exclusion by post-70.5 deductible IRA contributions',
     statement:
-      'The second sentence of 408(d)(8)(A) reduces the exclusion, but not below zero, by the excess of deductible section 219 contributions made for all taxable years ending on or after the donor attains age 70.5 over the reductions already taken in prior years. Not modelled: the annual ledger excludes the full gift no matter how much the donor has contributed and deducted since 70.5, and keeps no running total of reductions already applied.',
+      'The second sentence of 408(d)(8)(A) reduces the exclusion, but not below zero, by the excess of deductible section 219 contributions made for all taxable years ending on or after the donor attains age 70.5 over the reductions already taken in prior years. Not modelled in the aggregate qcdAnnual arm, which this record is about: it excludes the full gift no matter how much the donor has contributed and deducted since 70.5, and keeps no running total of reductions already applied. A named QCD request does apply the offset, from the donor-specific post-70.5 contribution history the Plan carries, and does keep the running per-donor total across the projected years; where the run cannot prove that total the named gift is non-actionable rather than offset by an assumed zero.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'understatesTax',
@@ -3270,7 +3359,7 @@ const registry = {
   'irc-408-d-8-A-projection-household-qcd-aggregation': {
     title: 'Annual-ledger substitution of the household for the individual donor',
     statement:
-      'The QCD exclusion limit runs per taxpayer, eligibility turns on the age of the individual for whose benefit the plan is maintained, and IRA required distributions are aggregated only within one individual own IRAs. Not modelled: the annual ledger asks only whether any living member of the household is old enough, pools both spouses required distributions into a single figure, and applies one annual dollar limit to that pooled figure.',
+      'The QCD exclusion limit runs per taxpayer, eligibility turns on the age of the individual for whose benefit the plan is maintained, and IRA required distributions are aggregated only within one individual own IRAs. Not modelled in the aggregate qcdAnnual arm, which this record is about: it asks only whether any living member of the household is old enough, pools both spouses required distributions into a single figure, and applies one annual dollar limit to that pooled figure. A named QCD request carries its own donor, its own source IRA, its own personal limit and its own contribution offset, and a request that would pool a spouse is refused qcd-spouse-pooling-refused.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
@@ -3305,7 +3394,7 @@ const registry = {
   'irc-408-d-8-D-projection-qcd-after-pro-rata': {
     title: 'Annual-ledger ordering of the QCD against pro-rata basis recovery',
     statement:
-      'A QCD is deemed to consist of otherwise-includible dollars up to the aggregate pre-tax balance, so it leaves the section 72 pro-rata computation entirely and the whole of the year basis remains available to the other distributions. Not modelled: the annual ledger applies pro-rata basis recovery to the entire required distribution first, including the part later routed to charity, and then subtracts the QCD in full from ordinary income.',
+      'A QCD is deemed to consist of otherwise-includible dollars up to the aggregate pre-tax balance, so it leaves the section 72 pro-rata computation entirely and the whole of the year basis remains available to the other distributions. Not modelled in the aggregate qcdAnnual arm, which this record is about: it applies pro-rata basis recovery to the entire required distribution first, including the part later routed to charity, and then subtracts the QCD in full from ordinary income. A named QCD request takes the statutory reading — the gift is drawn from the donor otherwise-taxable pool first, returns no basis, and enters neither Form 8606 line — which is the treatment irc-408-d-8-D-qcd-taxable-first registers as settled.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',

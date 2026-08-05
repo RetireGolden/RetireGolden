@@ -85,24 +85,32 @@ import {
   assessOrdinaryWithdrawalPlanBoundary,
   evaluateAnnualQcdExecutionPrerequisites,
   evaluateRetirementActionSchedule,
+  executeAnnualQcds,
   executeOrdinaryWithdrawals,
   executeRothConversions,
   ledgerCentTotalToPlanDollars,
   ledgerCentsToPlanDollars,
   ordinaryWithdrawalPublicationEligibility,
   ordinaryWithdrawalPublicationSource,
+  planDollarsToFlooredLedgerCents,
   planDollarsToLedgerCents,
   publishAnnualRetirementActions,
   rothConversionPublicationEligibility,
   rothConversionPublicationSource,
   signedLedgerCentTotalToPlanDollars,
+  stageAnnualQcdPhysicalExecution,
   type ActionId,
+  type AnnualQcdRmdPoolOpeningSnapshot,
+  type ClassifyOwnedNonRothIraAnnualWithdrawalsInput,
+  type ExecuteAnnualQcdsResult,
   type ExecuteOrdinaryWithdrawalsResult,
   type ExecuteRothConversionsResult,
   type PersonId,
   type QualifiedCharitableDistributionRequest,
   type TaxableAccountOpeningSnapshot,
 } from '../actions/index.js'
+import { addCalendarMonths } from '../actions/civilDate.js'
+import type { NonpersistedPriorQcdOffsetEvidence } from '../strategies/accountEligibility.js'
 import { exactCentLargestRemainderSlices } from '../actions/exactCentProRata.js'
 import { compareUtf16CodeUnits } from '../actions/structuralId.js'
 import { seppSeriesBeginsAfterSeparation } from '../actions/traditionalEmployerPlanPenaltyPrerequisite.js'
@@ -934,6 +942,32 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   let discretionaryMultiplier = 1
   let startingWithdrawalRate: number | null = null
   let startingRealPortfolio: number | null = null
+
+  /**
+   * Each donor's post-70½ deductible-contribution offset already consumed by
+   * this run's own committed gifts, in exact cents. It is state across the year
+   * loop because Notice 2020-68 makes the offset cumulative over the donor's
+   * lifetime, not annual: a dollar of post-70½ deductible contribution reduces
+   * one QCD and is then spent.
+   */
+  const namedQcdOffsetConsumedByDonor = new Map<string, number>()
+  /**
+   * Donors whose prior offset consumption this run cannot state.
+   *
+   * The Plan carries the deductible-contribution history but records nothing
+   * about how much of it earlier gifts already absorbed, so the only consumption
+   * this engine can prove is the consumption it performed itself. A gift the
+   * Plan declares for a year before the projection begins, and an aggregate
+   * `qcdAnnual` gift in an earlier projected year, are both real gifts whose
+   * offset application is unknown here. Either one makes the donor's history
+   * unprovable and the named gift non-actionable, which is the fail-closed
+   * answer the contract requires: zero is never substituted for an unknown.
+   */
+  const namedQcdOffsetHistoryUnprovable = new Set<string>()
+  for (const request of plan.strategies.retirementActions) {
+    if (request.kind !== 'qcd' || request.year >= startYear) continue
+    namedQcdOffsetHistoryUnprovable.add(request.donorPersonId)
+  }
 
   // Earnings-test FRA credit: months of benefit fully withheld before FRA are
   // credited back at FRA by recomputing the benefit as if claimed that many
@@ -2683,6 +2717,24 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
       iraProRata.set(ownerId, openIraProRataYear(basis, aggregateBalance))
     }
+    /**
+     * The same pre-distribution observation, kept per account and for every
+     * owner rather than only the ones carrying basis.
+     *
+     * A named QCD's exclusion is capped by its donor's otherwise-taxable pool,
+     * and the pool's Form 8606 denominator is invariant to where in the year it
+     * is measured: this ledger credits growth after distributions, so every
+     * later debit moves a dollar out of the balance and into the annual line it
+     * belongs to, leaving `balance + distributions` unchanged. Measured here it
+     * is the same number the year end would produce, and it is the only point
+     * at which it is available -- the gift settles before the conversions and
+     * withdrawals that finish consuming the pool.
+     */
+    const preDistributionOwnedIraBalance = new Map<string, number>()
+    for (const state of balances) {
+      if (!isAggregatedIra(state.account)) continue
+      preDistributionOwnedIraBalance.set(state.account.id, state.balance)
+    }
     // --- RMDs: forced traditional distributions (SECURE 2.0) ---------------
     // Treas. Reg. 1.408-8(e)(1)(i) requires that "the required minimum
     // distribution must be calculated separately for each IRA and the sum of
@@ -3093,6 +3145,16 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           }
         }
         qcd += qcdFromRmd
+        // The scalar gift has no donor, so it is charged to every eligible one.
+        // It is a real post-70½ charitable distribution whose share of the
+        // deductible-contribution offset this engine does not compute, so from
+        // this year on no named gift by these donors can state its own prior
+        // offset consumption. Recorded here rather than inferred later: the
+        // named arm stands the scalar down, so a year that reaches this line is
+        // the only place the fact exists.
+        if (qcd > 0) for (const donorId of donorIds) {
+          namedQcdOffsetHistoryUnprovable.add(donorId)
+        }
       }
     }
 
@@ -3192,10 +3254,59 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       actionDate,
       alive: stateOf(personId).alive,
     })
+    /**
+     * The donor's own prior consumption of the post-70½ deductible-contribution
+     * offset, or nothing when this run cannot state it.
+     *
+     * Two routes reach a provable answer, and neither invents a zero. When the
+     * donor made no deductible IRA contribution at or after 70½ there is no
+     * offset in existence, so no earlier gift can have consumed one and the
+     * figure is zero by arithmetic. Otherwise the figure is what this run's own
+     * committed gifts consumed, which is only the whole answer when no gift
+     * outside the run could have consumed any -- the condition
+     * `namedQcdOffsetHistoryUnprovable` records. Omitting the evidence is what
+     * fails the action closed: the eligibility predicate then refuses
+     * `qcd-contribution-history-unknown` and no dollar moves.
+     */
+    const priorQcdOffsetEvidenceFor = (
+      request: QualifiedCharitableDistributionRequest,
+    ): NonpersistedPriorQcdOffsetEvidence | null => {
+      const donor = people.find((person) => person.id === request.donorPersonId)
+      const thresholdDate = donor === undefined
+        ? null
+        : addCalendarMonths(donor.dob, 846)
+      if (thresholdDate === null) return null
+      const thresholdYear = Number(thresholdDate.slice(0, 4))
+      const offsetTotalCents = (
+        plan.retirementActionEligibilityFacts?.deductibleIraContributions ?? []
+      ).filter((record) =>
+        record.donorPersonId === request.donorPersonId &&
+        record.taxYear >= thresholdYear && record.taxYear <= request.year)
+        .reduce((sum, record) => sum + BigInt(record.amountCents), 0n)
+      const consumed = namedQcdOffsetConsumedByDonor.get(request.donorPersonId) ?? 0
+      if (offsetTotalCents > 0n &&
+          namedQcdOffsetHistoryUnprovable.has(request.donorPersonId)) {
+        return null
+      }
+      const actionDate = request.executionDate ?? null
+      return {
+        evidenceId: `projection-prior-qcd-offset:${JSON.stringify([
+          request.actionId,
+          request.donorPersonId,
+          year,
+          actionDate,
+        ])}`,
+        actionId: request.actionId,
+        donorPersonId: request.donorPersonId,
+        actionYear: year,
+        actionDate,
+        priorOffsetApplied: asUsdCents(offsetTotalCents === 0n ? 0 : consumed),
+      }
+    }
     // Identity and legal preflight for every named QCD, published as its own
     // executor source. Nothing here settles a balance, satisfies an RMD, or
-    // derives an exclusion: every annual stage stays unestablished and every
-    // record stays at zero movement.
+    // derives an exclusion; the annual QCD executor below reads this batch and
+    // decides whether any of it may move.
     const qcdActionPrerequisiteResult =
       currentYearQcdExecutionActions.length === 0
         ? undefined
@@ -3210,8 +3321,317 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
                   request.donorPersonId,
                   request.executionDate ?? null,
                 )),
+              priorQcdOffsetEvidence: currentYearQcdExecutionActions
+                .flatMap((request) => {
+                  const evidence = priorQcdOffsetEvidenceFor(request)
+                  return evidence === null ? [] : [evidence]
+                }),
             },
           })
+    /**
+     * The named charitable gift, settled and committed at phase rank 6.
+     *
+     * Position is the statute's, not convenience: Treas. Reg. 1.408-8(g)(1)
+     * counts every IRA distribution against section 401(a)(9) and names a
+     * qualified charitable distribution as its example, so the gift belongs
+     * after the forced distributions it may count against; and Treas. Reg.
+     * 1.408A-4 A-6(b) forbids a conversion from absorbing an unsatisfied RMD,
+     * so it belongs before the conversions. The aggregate arm has already stood
+     * down for this year, so the two can never sum.
+     */
+    let qcdActionExecution: ExecuteAnnualQcdsResult | undefined
+    /** Gross dollars a named gift moved out of an owned IRA this year. */
+    let namedQcdExecuted = 0
+    /**
+     * The share of that gift that satisfied a still-unmet owned-IRA RMD, and
+     * the income reduction riding on it.
+     *
+     * Both are structurally zero today, not merely usually zero, and the proof
+     * is worth writing down because it is also the warning. `rmdSatisfiedByAction`
+     * is `min(executed, rmdRemainingBefore)`, and `rmdRemainingBefore` is this
+     * owner's unmet IRA requirement after the sweep above -- which can only be
+     * positive when every one of the owner's aggregated IRAs is empty. An empty
+     * IRA is also an empty gift source, so `executed` is zero whenever
+     * `rmdRemainingBefore` is not, and the product is zero either way. Dollars
+     * taken beyond the RMD never entered income or cash, so offsetting them
+     * would be a phantom deduction; the exclusion shows up instead as a
+     * distribution that produced no income at all.
+     *
+     * The seams are wired anyway because the RMD-reserve slice named in
+     * `treas-reg-1-408-8-g-projection-named-qcd-beyond-rmd` makes them
+     * reachable. When it lands, DO NOT trust the two lines below: a reserve
+     * holds gift dollars out of the forced distribution, so those dollars never
+     * become cash and never enter income in the first place, and giving them
+     * back here would subtract them a second time. The give-back arithmetic has
+     * to be re-derived against whatever the reserve actually leaves in
+     * `rmdTotal` and `rmdNontaxable`, not carried forward from this shape.
+     */
+    let namedQcdRmdSatisfied = 0
+    let namedQcdIncomeOffset = 0
+    if (qcdActionPrerequisiteResult?.status === 'evaluated') {
+      const qcdRequests = qcdActionPrerequisiteResult.requests
+      const qcdDonorIds = [...new Set(qcdRequests.map((request) =>
+        String(request.donorPersonId)))].sort(compareUtf16CodeUnits)
+      const qcdSourceIds = new Set(qcdRequests.map((request) =>
+        String(request.allocation.sourceAccountId)))
+      // Truncated, not rounded. This snapshot is a spending capacity: the
+      // executor sizes the gift as `min(requested, openingBalance)`, and the
+      // commit below subtracts the result from the live balance, which the
+      // runtime journal then validates as an exact before/amount/after chain.
+      // Half-up rounding can report up to half a cent more than the account
+      // holds, so a gift that drains its source would authorise a cent that is
+      // not there and drive the balance negative -- permanently, since nothing
+      // downstream rebuilds it. Truncating makes the overdraw unreachable
+      // instead of detecting it afterwards.
+      const openingBalances = balances
+        .filter((state) => qcdSourceIds.has(state.account.id))
+        .map((state) => ({
+          accountId: asAccountId(state.account.id),
+          openingBalance: planDollarsToFlooredLedgerCents(state.balance),
+        }))
+      // The owner's Treas. Reg. 1.408-8(e)(1)(i) sum and how much of it the
+      // owner's own IRAs have already distributed by the time the gift is
+      // sized. Read from the same two maps the conversion executor reads, so
+      // the two executors cannot disagree about one owner's year.
+      const rmdPools: AnnualQcdRmdPoolOpeningSnapshot[] = qcdDonorIds.map((donorId) => {
+        const required = planDollarsToLedgerCents(iraRmdRequiredByOwner.get(donorId) ?? 0)
+        const remaining = planDollarsToLedgerCents(
+          Math.min(iraRmdUnsatisfiedByOwner.get(donorId) ?? 0, iraRmdRequiredByOwner.get(donorId) ?? 0),
+        )
+        const sourceAccountIds = plan.accounts
+          .filter((account) => isAggregatedIra(account) &&
+            (account.ownerPersonId ?? primary.id) === donorId)
+          .map((account) => asAccountId(account.id))
+          .sort(compareUtf16CodeUnits)
+        return {
+          predicate: 'annualQcdOwnedIraRmdPoolOpeningSnapshot' as const,
+          poolId: `projection-owned-ira-rmd-pool:${JSON.stringify([plan.id, donorId, year])}`,
+          taxYear: year,
+          donorPersonId: asPersonId(donorId),
+          scope: 'ownedIra' as const,
+          sourceAccountIds: sourceAccountIds as [ReturnType<typeof asAccountId>, ...ReturnType<typeof asAccountId>[]],
+          rmdRequiredAmount: required,
+          rmdSatisfiedBefore: asUsdCents(Number(BigInt(required) - BigInt(remaining))),
+          rmdRemainingBefore: remaining,
+          upstreamEvidenceId:
+            `projection-owner-ira-rmd-satisfaction:${JSON.stringify([plan.id, donorId, year])}`,
+        }
+      })
+      const physicalInput = {
+        prerequisite: qcdActionPrerequisiteResult,
+        plan,
+        runtimeEvidence: {
+          personAliveEvidence: qcdRequests.map((request) =>
+            actionPersonAliveEvidence(
+              request.actionId,
+              request.donorPersonId,
+              request.executionDate ?? null,
+            )),
+          priorQcdOffsetEvidence: qcdRequests.flatMap((request) => {
+            const evidence = priorQcdOffsetEvidenceFor(request)
+            return evidence === null ? [] : [evidence]
+          }),
+        },
+        openingBalances,
+        rmdPools,
+      }
+      // Staged once here only to learn what each source can actually cover, so
+      // the pool statement below can name the gift it is about. The executor
+      // rebuilds the same staging from the same input, so the two agree by
+      // construction rather than by being passed along.
+      const staging = stageAnnualQcdPhysicalExecution(physicalInput)
+      const stagedGiftByAccount = new Map<string, number>()
+      if (staging.status === 'annualQcdPhysicalExecutionStaged') {
+        for (const application of staging.applications) {
+          const accountId = String(application.request.allocation.sourceAccountId)
+          stagedGiftByAccount.set(
+            accountId,
+            (stagedGiftByAccount.get(accountId) ?? 0) + application.executedAmount,
+          )
+        }
+      }
+      // One complete owned-IRA pool per donor, stated as of the year's Form
+      // 8606 seed and net of the gift the post-pass adds back. Lines 7 and 8
+      // are empty because this stage inventories the gift alone: the year's
+      // other IRA activity is still ahead of it, and the denominator does not
+      // care -- every later distribution moves a dollar from the balance to a
+      // line and leaves the sum where it is. What reaches published evidence is
+      // that invariant sum and the basis numerator, never these two components.
+      const poolCapacityInputs: ClassifyOwnedNonRothIraAnnualWithdrawalsInput[] =
+        qcdDonorIds.map((donorId) => {
+          const poolAccounts = plan.accounts
+            .filter((account) => isAggregatedIra(account) &&
+              (account.ownerPersonId ?? primary.id) === donorId)
+            .sort((left, right) => compareUtf16CodeUnits(left.id, right.id))
+          const subtypeById = new Map(
+            (plan.retirementActionEligibilityFacts?.iraClassifications ?? [])
+              .map((record) => [String(record.sourceAccountId), record.subtype] as const),
+          )
+          const poolMembers = poolAccounts.map((account) => {
+            const preDistribution = planDollarsToLedgerCents(
+              preDistributionOwnedIraBalance.get(account.id) ?? 0,
+            )
+            const gift = stagedGiftByAccount.get(account.id) ?? 0
+            return {
+              sourceAccountId: asAccountId(account.id),
+              ownerPersonId: asPersonId(donorId),
+              accountType: 'traditional' as const,
+              accountKind: 'ira' as const,
+              inheritanceStatus: 'owned' as const,
+              // The Plan types every owned IRA as `traditional` and carries a
+              // SEP/SIMPLE subtype only where the household attested one, so
+              // the attestation is authoritative where it exists and the
+              // Plan's own classification stands where it does not.
+              subtype: subtypeById.get(account.id) ?? 'traditional' as const,
+              yearEndApplicableBalanceAmount: asUsdCents(
+                Number(BigInt(preDistribution) - BigInt(Math.min(gift, preDistribution))),
+              ),
+              iraClassificationEvidenceId:
+                `projection-owned-ira-classification:${JSON.stringify([plan.id, account.id, year])}`,
+              accountOwnershipEvidenceId:
+                `projection-owned-ira-ownership:${JSON.stringify([plan.id, account.id, year])}`,
+            }
+          })
+          const poolBalance = asUsdCents(Number(poolMembers.reduce(
+            (sum, member) => sum + BigInt(member.yearEndApplicableBalanceAmount), 0n)))
+          const poolId = `projection-owned-ira-pool:${JSON.stringify([plan.id, donorId, year])}`
+          return {
+            ownerPersonId: asPersonId(donorId),
+            ownerWideNonRothIraPoolId: poolId,
+            completePoolEvidence: {
+              predicate: 'completeOwnedNonRothIraPoolForOwnerAndTaxYear' as const,
+              ownerPersonId: asPersonId(donorId),
+              ownerWideNonRothIraPoolId: poolId,
+              taxYear: year,
+              accountIds: poolMembers.map((member) => member.sourceAccountId) as
+                [ReturnType<typeof asAccountId>, ...ReturnType<typeof asAccountId>[]],
+              yearEndApplicablePoolBalanceAmount: poolBalance,
+              evidenceId:
+                `projection-owned-ira-pool-evidence:${JSON.stringify([plan.id, donorId, year])}`,
+            },
+            annualBasisRecordEvidenceId:
+              `projection-owned-ira-annual-basis:${JSON.stringify([plan.id, donorId, year])}`,
+            taxYear: year,
+            poolMembers,
+            annualFacts: {
+              openingBasisAmount: planDollarsToLedgerCents(iraBasisByOwner.get(donorId) ?? 0),
+              taxYearNondeductibleContributionAmount: asUsdCents(0),
+              postYearNondeductibleContributionExcludedAmount: asUsdCents(0),
+              yearEndApplicablePoolBalanceAmount: poolBalance,
+              outstandingRolloverAmount: asUsdCents(0),
+              rolloverRepaymentAdjustmentAmount: asUsdCents(0),
+              form8606Line7DistributionAmount: asUsdCents(0),
+              form8606Line8NetConversionAmount: asUsdCents(0),
+            },
+            line7Distributions: [],
+            line8Conversions: [],
+          }
+        })
+      qcdActionExecution = executeAnnualQcds({ physicalInput, poolCapacityInputs })
+      if (qcdActionExecution.committed) {
+        const accountOrder = new Map(
+          plan.accounts.map((account, index) => [account.id, index] as const),
+        )
+        const balanceByAccountId = new Map(
+          balances.map((state) => [state.account.id, state] as const),
+        )
+        const committedGifts = qcdActionExecution.evidence
+          .filter((entry) => entry.executedAmount > 0)
+          .map((entry, index) => ({ entry, index }))
+          .sort((left, right) =>
+            (accountOrder.get(String(left.entry.sourceAccountId)) ?? Number.MAX_SAFE_INTEGER) -
+              (accountOrder.get(String(right.entry.sourceAccountId)) ?? Number.MAX_SAFE_INTEGER) ||
+            left.index - right.index)
+        for (const { entry } of committedGifts) {
+          const state = balanceByAccountId.get(String(entry.sourceAccountId))
+          if (state === undefined) {
+            throw new Error('Committed QCD source left the balance ledger')
+          }
+          const amount = ledgerCentsToPlanDollars(entry.executedAmount)
+          if (amount > state.balance) {
+            // Unreachable while the opening snapshot above is truncated, and
+            // asserted rather than assumed because the consequence of it being
+            // wrong is a negative balance that survives every later year and
+            // silently rolls back the year's exact-basis settlement.
+            throw new Error('Committed QCD exceeds its live source balance')
+          }
+          const kind = 'namedQcd' as const
+          // Four members. A gift names no destination -- it leaves the
+          // household -- so the action and the allocation are the only two
+          // members beyond the aggregate key, and they are what tell one
+          // donor's two gifts from the same IRA in the same year apart.
+          const producerOccurrenceKey = runtimeOccurrenceKey(
+            kind,
+            String(entry.sourceAccountId),
+            String(entry.actionId),
+            String(entry.allocationId),
+          )
+          const sourceBalanceBefore = state.balance
+          state.balance = sourceBalanceBefore - amount
+          recordAnnualRetirementRuntimeOccurrence({
+            producerOccurrenceKey,
+            kind,
+            grossAmountPlanDollars: amount,
+            ownerPersonId: state.account.ownerPersonId,
+            sourceAccountId: state.account.id,
+            executionDate: null,
+            executionSequence: null,
+            movementAuthorityId: null,
+          })
+          recordAnnualRetirementRuntimeApplication({
+            applicationKind: 'debit',
+            producerOccurrenceKey,
+            simulatorPhase: 'namedQcdDistribution',
+            ownerPersonId: state.account.ownerPersonId,
+            sourceAccountId: state.account.id,
+            sourceBalanceBeforePlanDollars: sourceBalanceBefore,
+            appliedAmountPlanDollars: amount,
+            sourceBalanceAfterPlanDollars: state.balance,
+          })
+          // No pro-rata split rides on this debit. IRC 408(d)(8)(D) deems the
+          // gift to consist of otherwise-includible dollars notwithstanding
+          // section 72, so it returns no basis and leaves the year's Form 8606
+          // ratio for the other distributions -- which is exactly why the
+          // commit gate only admits gifts that stayed inside the pool.
+          namedQcdExecuted += amount
+        }
+        for (const entry of qcdActionExecution.evidence) {
+          const donorId = String(entry.donorPersonId)
+          namedQcdOffsetConsumedByDonor.set(
+            donorId,
+            (namedQcdOffsetConsumedByDonor.get(donorId) ?? 0) +
+              entry.derivedFacts.deductibleContributionOffsetApplied,
+          )
+        }
+        namedQcdRmdSatisfied = ledgerCentsToPlanDollars(
+          qcdActionExecution.totalRmdSatisfiedAmount,
+        )
+        namedQcdIncomeOffset = Math.max(0, Math.min(
+          namedQcdRmdSatisfied,
+          ownedIraRmdTotal - rmdNontaxable,
+        ))
+        qcd += namedQcdExecuted
+      } else if (isStandIn && qcdActionExecution.issues.some((issue) =>
+        issue.kind === 'postPassBlocked')) {
+        // Keyed off the structural condition rather than the refusal's message
+        // text: in a stand-in year the post-pass refuses before any other
+        // question is reached, so `isStandIn` plus a post-pass block IS the
+        // missing-limit case, and a wording change in the executor cannot
+        // silently drop the warning.
+        // The QCD block's first user-visible warning. The aggregate arm may
+        // extrapolate its limit because it never claims an action executed;
+        // the named arm claims exactly that, and the contract forbids general
+        // plan inflation from turning a prior year's figure into legal
+        // evidence. Naming the year matters because the household also loses
+        // its scalar gift that year: a named request stands the aggregate arm
+        // down whether or not the named gift can move.
+        warnings.add(
+          `A named QCD is scheduled for ${year}, but RetireGolden has no sourced QCD limit for that tax year yet, ` +
+            'so the gift was not executed and the recurring QCD amount stood down for the year. ' +
+            'Plan the gift in a year whose limit is published, or model it with the recurring QCD amount instead.',
+        )
+      }
+    }
     let retirementActionExecution: ExecuteOrdinaryWithdrawalsResult | undefined
     let rothConversionActionExecution: ExecuteRothConversionsResult | undefined
     /**
@@ -3818,7 +4238,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       preTaxContributions +
       rmdTotal -
       rmdNontaxable -
-      qcdIncomeOffset +
+      qcdIncomeOffset -
+      namedQcdIncomeOffset +
       seppTotal -
       seppNontaxable +
       inheritedTotal +
@@ -3847,8 +4268,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const agesAlive = peopleStates.filter((s) => s.alive).map((s) => s.ageAttained)
     const privateRetirementBase = Math.max(
       0,
-      privateRetirementOrdinary + rmdTotal - rmdNontaxable - qcdIncomeOffset + seppTotal -
-        seppNontaxable + inheritedTotal,
+      privateRetirementOrdinary + rmdTotal - rmdNontaxable - qcdIncomeOffset -
+        namedQcdIncomeOffset + seppTotal - seppNontaxable + inheritedTotal,
     )
     const publicPensionBase = Math.max(0, publicPensionOrdinary)
     if (plan.assumptions.stateEffectiveTaxPct <= 0) {
@@ -3973,7 +4394,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         incomes.total -
         taxableYieldReinvested +
         rmdTotal -
-        qcdFromRmd +
+        qcdFromRmd -
+        namedQcdRmdSatisfied +
         seppTotal +
         inheritedTotal +
         propertySaleProceedsTotal +
@@ -4428,7 +4850,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       incomes.total -
       taxableYieldReinvested +
       rmdTotal -
-      qcdFromRmd +
+      qcdFromRmd -
+      namedQcdRmdSatisfied +
       seppTotal +
       inheritedTotal +
       propertySaleProceedsTotal +
@@ -5861,9 +6284,16 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           ...(rothConversionActionExecution === undefined
             ? []
             : [rothConversionPublicationSource(rothConversionActionExecution)]),
+          // The executor's own source when it settled the year, and the
+          // prerequisite's otherwise. They are the same shape and never both
+          // publish: `publishAnnualRetirementActions` throws on two records for
+          // one action, and the committed source is the one carrying the
+          // executed dates and amounts the executor is the authority on.
           ...(qcdActionPrerequisites === undefined
             ? []
-            : [qcdActionPrerequisites.publicationSource]),
+            : [qcdActionExecution?.committed === true
+                ? qcdActionExecution.publicationSource
+                : qcdActionPrerequisites.publicationSource]),
         ]
       : []
     const retirementActionPublicationRequests = [
@@ -5907,6 +6337,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       ...(qcdActionPrerequisites === undefined
         ? {}
         : { qcdActionPrerequisites: qcdActionPrerequisites.evidence }),
+      ...(qcdActionPrerequisites === undefined || qcdActionExecution === undefined
+        ? {}
+        : { qcdActionExecution }),
       penalties,
       magi: magiHistory.get(year)!,
       ...(yearAcaResult ? { aca: yearAcaResult } : {}),

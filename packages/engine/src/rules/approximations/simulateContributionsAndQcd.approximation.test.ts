@@ -1,5 +1,8 @@
 import { expect, it } from 'vitest'
 
+import type { QualifiedCharitableDistributionRequest } from '../../actions/contract.js'
+import { asAccountId, asActionId, asAllocationId, asPersonId } from '../../actions/identity.js'
+import { asPositiveUsdCents, asUsdCents } from '../../actions/money.js'
 import { createEmptyPlan, parsePlan, type Account, type IncomeStream, type Plan } from '../../model/plan.js'
 import { packForYear } from '../../params/index.js'
 import { createFlatTaxCalculator } from '../../projection/flatTax.js'
@@ -271,5 +274,121 @@ describeRule('irc-408-d-8-D-projection-qcd-after-pro-rata', {
     expect(year.qcd).toBeCloseTo(GIFT, 6)
     expect(year.magi).toBeCloseTo(produced, 6)
     expect(year.magi).not.toBeCloseTo(accepted, 6)
+  })
+})
+
+// --------------------------------------------------------------------------
+// Named QCD modelled as beyond the required distribution
+// --------------------------------------------------------------------------
+
+// A 237,000 dollar IRA at age 76 distributes 237,000 / 23.7 = 10,000, and the
+// scheduled gift is well inside it, so the whole of the gift is an amount the
+// requirement could have absorbed.
+const NAMED_IRA_BALANCE = 237_000
+const NAMED_REQUIRED_DISTRIBUTION = 10_000
+const NAMED_GIFT = 6_000
+/** The donor's exact 70.5 threshold, 846 calendar months from 1950-06-15. */
+const NAMED_DONOR_THRESHOLD_YEAR = 2020
+
+/** One named gift, fully attested, dated after the donor's exact threshold. */
+function attestedNamedGiftPlan(): { readonly plan: Plan; readonly iraAccountId: string } {
+  const plan = soloPlan('1950-06-15', null) // 76 in 2026, past the applicable age
+  const ira = traditionalIra(NAMED_IRA_BALANCE) as Extract<Account, { type: 'traditional' }>
+  plan.accounts = [cash(50_000), { ...ira, annualReturnPct: 0 }]
+  const amount = asPositiveUsdCents(NAMED_GIFT * 100)
+  plan.strategies.retirementActions = [{
+    actionId: asActionId('named-gift'),
+    kind: 'qcd',
+    year: 2026,
+    executionDate: '2026-08-01',
+    executionSequence: 1,
+    requestedAmount: amount,
+    provenance: { source: 'manual' },
+    donorPersonId: asPersonId('p1'),
+    allocation: {
+      allocationId: asAllocationId('named-gift-allocation'),
+      sourceAccountId: asAccountId(ira.id),
+      requestedAmount: amount,
+    },
+    charity: {
+      designationId: 'charity-1',
+      name: 'Public charity',
+      designationKind: 'eligiblePublicCharity',
+      directFromCustodianAttested: true,
+      eligibleOrganizationAttested: true,
+      notDonorAdvisedFundOrSupportingOrganizationAttested: true,
+      notSplitInterestEntityAttested: true,
+      entireDistributionOtherwiseDeductibleAttested: true,
+    },
+  } satisfies QualifiedCharitableDistributionRequest]
+  const contributionYears: number[] = []
+  for (let taxYear = NAMED_DONOR_THRESHOLD_YEAR; taxYear <= 2026; taxYear += 1) {
+    contributionYears.push(taxYear)
+  }
+  plan.retirementActionEligibilityFacts = {
+    iraClassifications: [{
+      sourceAccountId: ira.id,
+      subtype: 'traditional',
+      evidenceId: 'classification-named-ira',
+      provenance: { source: 'manual' },
+    }],
+    sepSimpleActivities: [],
+    deductibleIraContributions: contributionYears.map((taxYear) => ({
+      donorPersonId: 'p1',
+      taxYear,
+      amountCents: asUsdCents(0),
+      evidenceId: `contribution-${taxYear}`,
+      provenance: { source: 'manual', sourceId: `ledger-${taxYear}` },
+    })),
+  }
+  return { plan, iraAccountId: ira.id }
+}
+
+describeRule('treas-reg-1-408-8-g-projection-named-qcd-beyond-rmd', {
+  readings: {
+    // 1.408-8(g)(1) takes the gift into account against section 401(a)(9), so
+    // 6,000 of the 10,000 requirement is met by the gift and only the 4,000
+    // balance has to come out as taxable cash.
+    regulationGiftSatisfiesTheRequirement: NAMED_REQUIRED_DISTRIBUTION - NAMED_GIFT,
+    // The projection distributes the whole requirement in cash at phase rank 3
+    // and debits the gift separately at rank 6, so all 10,000 stays in income.
+    engineDistributesTheWholeRequirementFirst: NAMED_REQUIRED_DISTRIBUTION,
+  },
+  accepted: 'regulationGiftSatisfiesTheRequirement',
+  produced: 'engineDistributesTheWholeRequirementFirst',
+  note: 'a scheduled gift cannot displace cash already distributed',
+}, ({ accepted, produced }) => {
+  it('taxes the whole required distribution beside an excluded gift', () => {
+    const { plan, iraAccountId } = attestedNamedGiftPlan()
+    const year = year2026(plan)
+    const execution = year.qcdActionExecution
+
+    // Both readings rest on this exact requirement and this exact gift, and on
+    // the gift having actually moved: a refused gift would put MAGI on the
+    // produced figure for the wrong reason.
+    expect(year.rmd).toBeCloseTo(NAMED_REQUIRED_DISTRIBUTION, 6)
+    expect(year.qcd).toBeCloseTo(NAMED_GIFT, 6)
+    expect(execution?.committed).toBe(true)
+
+    expect(year.magi).toBeCloseTo(produced, 6)
+    expect(year.magi).not.toBeCloseTo(accepted, 6)
+
+    // The balance-sheet half of the same error: the IRA gives up the whole
+    // requirement and the gift, where the coordinated transaction would have
+    // taken the requirement alone.
+    expect(NAMED_IRA_BALANCE - (year.balances[iraAccountId] ?? 0))
+      .toBeCloseTo(NAMED_REQUIRED_DISTRIBUTION + NAMED_GIFT, 6)
+
+    // And the record says so rather than leaving the zero to be interpreted.
+    if (execution?.committed !== true) return
+    expect(execution.totalRmdSatisfiedAmount).toBe(0)
+    expect(execution.evidence[0].rmdCoordination).toMatchObject({
+      predicate: 'qcdRmdCoordination',
+      rmdRequiredAmount: NAMED_REQUIRED_DISTRIBUTION * 100,
+      rmdRemainingBefore: 0,
+      rmdSatisfiedAmount: 0,
+      rmdRemainingAfter: 0,
+      coordination: 'requirementAlreadyDistributedBeforeTheGift',
+    })
   })
 })

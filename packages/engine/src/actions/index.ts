@@ -90,7 +90,9 @@ export {
   type AnnualQcdExecutionPrerequisiteIssue,
   type AnnualQcdExecutionPrerequisitesBlocked,
   type AnnualQcdExecutionPrerequisitesEvaluated,
+  type AnnualQcdExecutedPublicationRecord,
   type AnnualQcdMissingStages,
+  type AnnualQcdNonmovingPublicationRecord,
   type AnnualQcdPublicationAllocationRecord,
   type AnnualQcdPublicationRecord,
   type AnnualQcdPublicationScheduleDiagnostic,
@@ -100,6 +102,18 @@ export {
   type EvaluateAnnualQcdExecutionPrerequisitesInput,
   type EvaluateAnnualQcdExecutionPrerequisitesResult,
 } from './annualQcdExecutionPrerequisite.js'
+export {
+  executeAnnualQcds,
+  type AnnualQcdExecutionEvidence,
+  type AnnualQcdExecutionIssue,
+  type AnnualQcdRmdCoordinationEvidence,
+  type AnnualQcdSettledExecutionEvidence,
+  type AnnualQcdStagedExecutionEvidence,
+  type ExecuteAnnualQcdsCommittedResult,
+  type ExecuteAnnualQcdsInput,
+  type ExecuteAnnualQcdsResult,
+  type ExecuteAnnualQcdsStagedResult,
+} from './annualQcdExecution.js'
 export {
   stageAnnualQcdPhysicalExecution,
   type AnnualQcdDetachedBalanceTransition,
@@ -231,6 +245,7 @@ export {
 export {
   ledgerCentTotalToPlanDollars,
   ledgerCentsToPlanDollars,
+  planDollarsToFlooredLedgerCents,
   planDollarsToLedgerCents,
   signedLedgerCentTotalToPlanDollars,
 } from './planBalanceAdapter.js'
