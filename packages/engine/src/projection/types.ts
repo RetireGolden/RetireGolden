@@ -818,7 +818,8 @@ export interface YearResult {
    *
    * Neither absence nor a short array proves what the year requested. A single
    * QCD is omitted when it shares an execution slot with a non-QCD action and
-   * so stayed with the ordinary-withdrawal executor, and the whole field is
+   * so stayed with the ordinary-withdrawal executor — and a year whose every
+   * QCD is routed away like that has no field at all. The whole field is also
    * absent when the prerequisite batch failed closed on malformed input or a
    * legacy diagnostics-only year published no executor sources at all.
    * `retirementActionPublication` remains the authority on which requests were
