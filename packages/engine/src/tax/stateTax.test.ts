@@ -298,13 +298,18 @@ describe('createStateTaxCalculator', () => {
 })
 
 // The projection runs in nominal dollars, so a 2046 withdrawal arrives inflated.
-// Nine state packs -- AZ, CO, DC, IA, ID, MO, MT, ND, NM -- do not carry a state
-// standard deduction at all: they carry a copy of the FEDERAL one, because their
-// law defines the state amount by reference to it (CO and ND go further, running
-// their brackets on federal taxable income, so the field IS the federal
-// deduction under another name). IRC 63(c)(7)(B)(ii) increases the federal
-// amount for every taxable year beginning after 2025 and the federal engine
-// projects that increase forward, so the copy has to travel with it.
+// A state pack tagged `standardDeductionConformity: 'federal'` carries no state
+// standard deduction at all: it carries a copy of the FEDERAL one. IRC
+// 63(c)(7)(B)(ii) increases the federal amount for every taxable year beginning
+// after 2025 and the federal engine projects that increase forward, so the copy
+// has to travel with it. North Dakota is used below because its brackets run on
+// federal taxable income, which makes the identity assertion at the end of this
+// block exact.
+//
+// WHICH packs may carry that tag is a question of each state's own law and is
+// not settled here or in the registry record this fixture covers -- two of the
+// nine currently tagged (AZ, DC) are under separate correction. Nothing in this
+// block depends on the roster being right: it exercises the tag, not the list.
 //
 // `inflationScale: 2` stands for a doubling of the price level. It is chosen so
 // the statutory rounding is a no-op and cannot be quietly wrong: the increase is

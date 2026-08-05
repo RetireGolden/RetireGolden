@@ -1,36 +1,32 @@
 import { expect, it } from 'vitest'
 
-import { createEmptyPlan, parsePlan, type Account, type Plan } from '../../model/plan.js'
-import { createFlatTaxCalculator } from '../../projection/flatTax.js'
-import { simulatePlan } from '../../projection/simulate.js'
-import { describeRule } from '../describeRule.js'
+import { createEmptyPlan, parsePlan, type Account, type Plan } from '../model/plan.js'
+import { describeRule } from '../rules/describeRule.js'
+import { createFlatTaxCalculator } from './flatTax.js'
+import { simulatePlan } from './simulate.js'
 
 /**
- * What is left of the destination defect after the owner slice.
+ * The distributee half of the conversion-identity rule, which is settled.
  *
- * The aggregate conversion path used to pick its destination once, as the first
- * Roth account in Plan array order with no owner predicate, and then draw from
- * every convertible traditional account with no owner filter. It now slices the
- * household target by owner, drains each owner's slice, and credits it to that
- * owner's own first Plan Roth; an owner with no Roth of their own converts
- * nothing and the user is told so. The distributee half of the rule is
- * therefore satisfied.
+ * The aggregate conversion path used to choose its destination once, as the
+ * first Roth account in Plan array order with no owner predicate, and then draw
+ * from every convertible traditional account with no owner filter. A married
+ * household whose only Roth belonged to A and whose only convertible balance
+ * belonged to B therefore converted B's dollars into A's Roth and said nothing.
+ * It now snapshots each owner's gross convertible balance after the RMD block,
+ * splits the sized household amount pro rata in exact cents, drains only that
+ * owner's accounts, credits only a Roth that owner owns, and trims and names the
+ * slice of an owner who holds no Roth at all.
  *
- * The vehicle half is not. This record is titled for the Roth *IRA* of the same
- * individual, and the destination search still accepts any account of type
- * `roth` — including a designated Roth account inside an employer plan. A
- * traditional IRA cannot be rolled into a designated Roth account: IRC
- * 408A(e)(1)(B)(i) admits a rollover from an individual retirement plan only on
- * the 408(d)(3) terms, and 408(d)(3)(A)(i) requires the receiving account to be
- * an individual retirement account or annuity, while the in-plan route of
- * 402A(c)(4) reaches only amounts already distributable from that same plan. So
- * an individual whose only Roth is a 401(k) designated Roth account still
- * receives converted IRA dollars there, and the statute permits no conversion
- * for that person at all.
+ * The builders here are deliberately a local copy of the ones in
+ * `rules/approximations/conversionDestinationVehicle.approximation.test.ts`
+ * rather than a shared import: importing one test module from another registers
+ * its suites twice, and a non-test helper module carrying plan builders would be
+ * shipped engine source that only tests use.
  */
 
 let counter = 0
-const testIds = (): string => `conv-${++counter}`
+const testIds = (): string => `owner-${++counter}`
 const fixedNow = (): Date => new Date('2026-06-11T00:00:00.000Z')
 
 const CONVERSION_YEAR = 2026
@@ -56,19 +52,6 @@ function rothIra(id: string, owner: string): Account {
     ownerPersonId: owner,
     annualReturnPct: null,
     kind: 'ira',
-    balance: 0,
-    annualContribution: 0,
-  }
-}
-
-function designatedRothAccount(id: string, owner: string): Account {
-  return {
-    type: 'roth',
-    id,
-    name: `Roth 401(k) ${owner}`,
-    ownerPersonId: owner,
-    annualReturnPct: null,
-    kind: 'employer',
     balance: 0,
     annualContribution: 0,
   }
@@ -137,38 +120,17 @@ function convertedIn(plan: Plan): { converted: number, magi: number } {
 
 describeRule('irc-408-d-3-A-i-conversion-benefits-the-distributee', {
   readings: {
-    // B's only Roth is a designated Roth account inside an employer plan, and
-    // 408(d)(3)(A)(i) requires the receiving account to be an individual
-    // retirement account or annuity. There is no account a rollover out of B's
-    // traditional IRA could legally land in, so the statutory answer is again
-    // "convert nothing" rather than "convert less".
-    statuteRequiresARothIraOfTheSameIndividual: 0,
-    engineAcceptsAnyRothOfTheSameIndividual: REQUESTED_CONVERSION,
+    // Only A holds a Roth and only B holds a convertible balance, so there is
+    // no pair of accounts a conversion could legally run between and the
+    // statutory answer is to convert nothing. The rejected reading is the
+    // engine's own former behaviour, which crossed the owner boundary and
+    // recognised the whole request.
+    statuteRequiresOneIndividualOnBothSides: 0,
+    crossOwnerConversionIntoTheOtherSpousesRoth: REQUESTED_CONVERSION,
   },
-  accepted: 'statuteRequiresARothIraOfTheSameIndividual',
-  produced: 'engineAcceptsAnyRothOfTheSameIndividual',
-}, ({ accepted, produced }) => {
-  it('converts a traditional IRA into the same individual’s designated Roth account', () => {
-    const plan = marriedHousehold()
-    plan.accounts = [
-      cash(500_000),
-      designatedRothAccount('rothB401k', 'p2'),
-      traditionalIra('tradB', 'p2', 400_000),
-    ]
-
-    const { converted, magi } = convertedIn(plan)
-
-    expect(converted).toBeCloseTo(produced, 6)
-    expect(converted).not.toBeCloseTo(accepted, 6)
-    // The income is recognised too, so this is not a bookkeeping-only slip:
-    // the household is taxed on a conversion the statute does not permit.
-    expect(magi).toBeCloseTo(REQUESTED_CONVERSION, 6)
-  })
-
-  it('no longer converts one spouse’s IRA into the other spouse’s Roth', () => {
-    // The half of this record that is closed. The only Roth belongs to A and
-    // the only convertible balance to B, so there is no pair of accounts a
-    // conversion could run between and the engine now converts nothing.
+  accepted: 'statuteRequiresOneIndividualOnBothSides',
+}, ({ accepted, readings }) => {
+  it('does not convert one spouse’s IRA into the other spouse’s Roth', () => {
     const plan = marriedHousehold()
     plan.accounts = [
       cash(500_000),
@@ -178,8 +140,12 @@ describeRule('irc-408-d-3-A-i-conversion-benefits-the-distributee', {
 
     const { converted, magi } = convertedIn(plan)
 
-    expect(converted).toBe(0)
-    expect(magi).toBe(0)
+    expect(converted).toBeCloseTo(accepted, 6)
+    expect(converted).not.toBeCloseTo(readings.crossOwnerConversionIntoTheOtherSpousesRoth, 6)
+    // No conversion means no inclusion. Asserted separately because a path that
+    // moved nothing while still recognising the income would satisfy the
+    // balance assertion alone and be a worse defect than the one it replaced.
+    expect(magi).toBeCloseTo(0, 6)
   })
 
   it('says whose share was skipped and what would let it convert', () => {
@@ -233,8 +199,8 @@ describeRule('irc-408-d-3-A-i-conversion-benefits-the-distributee', {
     // The control. Same request, same balances, same household -- only the
     // owner of the convertible account changes. A conversion from A's IRA to
     // A's Roth is exactly what the statute permits, and the engine produces
-    // the identical number for it. So the assertions above are pinning the
-    // owner and vehicle questions and not merely "a conversion happened".
+    // that number for it. So the assertions above are pinning the owner
+    // question and not merely "a conversion happened".
     const plan = marriedHousehold()
     plan.accounts = [
       cash(500_000),
@@ -245,5 +211,31 @@ describeRule('irc-408-d-3-A-i-conversion-benefits-the-distributee', {
     const { converted } = convertedIn(plan)
 
     expect(converted).toBeCloseTo(REQUESTED_CONVERSION, 6)
+  })
+
+  it('splits a household target between two owners who both hold convertible balances', () => {
+    // The other half of the owner boundary, and the one the trimming cases
+    // cannot show: where both people can convert, each person's own dollars
+    // move into that person's own Roth, pro rata on gross convertible balance.
+    // B holds three times A's balance, so B carries three quarters of the
+    // 50,000 request. The whole request converts, which is what distinguishes
+    // this from the refusal cases above.
+    const plan = marriedHousehold()
+    plan.accounts = [
+      cash(500_000),
+      rothIra('rothA', 'p1'),
+      rothIra('rothB', 'p2'),
+      traditionalIra('tradA', 'p1', 100_000),
+      traditionalIra('tradB', 'p2', 300_000),
+    ]
+
+    const result = simulatePlan(validate(plan), {
+      startYear: CONVERSION_YEAR,
+      taxCalculator: noTax,
+    })
+    const year = result.years.find((row) => row.year === CONVERSION_YEAR)!
+
+    expect(year.rothConversion).toBeCloseTo(REQUESTED_CONVERSION, 6)
+    expect(result.warnings).toEqual([])
   })
 })
