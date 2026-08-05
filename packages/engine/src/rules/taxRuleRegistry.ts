@@ -5525,16 +5525,26 @@ const registry = {
     conventionRationale: null,
     jurisdiction: 'state:TX',
     authority: [{
+      // Re-pointed 2026-08-05 from statutes.capitol.texas.gov, which has become
+      // a JavaScript application: every /Docs/CN/ path now answers 200 with a
+      // 1,354-character shell and no constitutional text, including the .pdf
+      // path, which returns HTML. A citation to it cannot be checked against
+      // the words it claims to quote by any automated means, which is the one
+      // property this registry's citations exist to have. The Texas Legislative
+      // Council publishes the same constitution as a real PDF with a clean text
+      // layer, dated on its cover page — "Includes Amendments Through the
+      // November 4, 2025, Constitutional Amendment Election" — which is also
+      // what makes it a better citation for section 24-b below.
       kind: 'statute',
       citation: 'Tex. Const. art. VIII, sec. 24-a',
-      url: 'https://statutes.capitol.texas.gov/Docs/CN/htm/CN.8.htm',
+      url: 'https://tlc.texas.gov/docs/legref/TxConst.pdf',
       quotedText:
         'INDIVIDUAL INCOME TAX PROHIBITED. The legislature may not impose a tax on the net incomes of individuals, including an individual\'s share of partnership and unincorporated association income. (Added Nov. 5, 2019.)',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2020,
     effectiveThrough: null,
-    verifiedOn: '2026-08-04',
+    verifiedOn: '2026-08-05',
     implementedBy: [
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
@@ -5553,20 +5563,33 @@ const registry = {
     authority: [{
       kind: 'statute',
       citation: 'Tex. Const. art. VIII, sec. 24-b(a)',
-      url: 'https://statutes.capitol.texas.gov/Docs/CN/htm/CN.8.htm',
+      url: 'https://tlc.texas.gov/docs/legref/TxConst.pdf',
       quotedText:
         'Subject to Subsection (b) of this section, the legislature may not impose a tax on the realized or unrealized capital gains of an individual, family, estate, or trust, including a tax on the sale or transfer of a capital asset that is payable by the individual, family, estate, or trust selling or transferring the asset.',
     }, {
-      kind: 'statute',
-      citation: 'Tex. Const. art. VIII, sec. 24-b(b)',
-      url: 'https://statutes.capitol.texas.gov/Docs/CN/htm/CN.8.htm',
+      // The carve-outs are quoted from the enrolled resolution rather than from
+      // the Legislative Council PDF the two authorities above use, for a reason
+      // that is about the document and not about the text: a running page
+      // header — "163 Art. VIII Sec.25" — falls between subdivisions (1) and
+      // (2), so every extraction of that page interleaves it into the middle of
+      // this subsection. The words are identical in both sources. Quoting the
+      // compilation would mean either carrying a page header inside the
+      // quotation or marking an elision that claims operative text was dropped
+      // when none was. S.J.R. 18 is the enrolled text the voters adopted, and
+      // it prints the subsection unbroken. Its `kind` is `legislativeHistory`
+      // because that is what an enrolled resolution is; the (Added Nov. 4,
+      // 2025.) note that closes the compilation's version is the compiler's
+      // annotation, not enacted text, so it is not quoted here.
+      kind: 'legislativeHistory',
+      citation: 'Tex. S.J.R. 18, 89th Leg., R.S. (2025) (enrolled), § 1 (proposed art. VIII, sec. 24-b(b))',
+      url: 'https://capitol.texas.gov/tlodocs/89R/billtext/html/SJ00018F.htm',
       quotedText:
-        'This section may not be construed as modifying the applicability or prohibiting the imposition or change in the rate of: (1) an ad valorem tax on property; (2) a sales tax on the sale of goods or services; or (3) a use tax on the storage, use, or other consumption in this state of goods or services. (Added Nov. 4, 2025.)',
+        'This section may not be construed as modifying the applicability or prohibiting the imposition or change in the rate of: (1) an ad valorem tax on property; (2) a sales tax on the sale of goods or services; or (3) a use tax on the storage, use, or other consumption in this state of goods or services.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-04',
+    verifiedOn: '2026-08-05',
     implementedBy: [
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
@@ -5600,6 +5623,21 @@ const registry = {
       url: 'https://www.flsenate.gov/Laws/Statutes/2025/220.03',
       quotedText:
         '“Taxpayer” means any corporation subject to the tax imposed by this code, and includes all corporations for which a consolidated return is filed under s. 220.131.',
+    }, {
+      // Added 2026-08-05. The three authorities above are a ceiling and an
+      // imposition, and a reader has to reason from them to reach the operative
+      // fact. Worse, the ceiling is not flat: section 5(a) bars a tax "in
+      // excess of" what may be "credited upon or DEDUCTED FROM" a similar
+      // federal tax, and whether "deducted from" reaches the federal deduction
+      // for state taxes — which would make the ceiling non-zero — is not
+      // resolved on the text alone and no Florida construction of it was found.
+      // The Legislature's own Office of Economic and Demographic Research
+      // states the fact flatly instead, so the record no longer has to rest the
+      // whole negative on a clause whose reach is open.
+      kind: 'stateAgencyPublication',
+      citation: 'Florida Tax Handbook 2025 (Office of Economic and Demographic Research), Personal Income Tax',
+      url: 'https://edr.state.fl.us/Content/revenues/reports/tax-handbook/taxhandbook2025.pdf',
+      quotedText: 'SUMMARY: Florida currently does not levy a personal income tax.',
     }],
     volatility: 'staticStatute',
     // 2026 under the convention above, not 1971. The constitutional cap does
@@ -5610,7 +5648,7 @@ const registry = {
     // the two statutory quotations back over fifty years of text nobody read.
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-04',
+    verifiedOn: '2026-08-05',
     implementedBy: [
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
@@ -6145,6 +6183,281 @@ const registry = {
       'packages/engine/src/params/state/types.ts',
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+  // ---------------------------------------------------------------------------
+  // The remaining no-individual-income-tax states, researched 2026-08-05.
+  //
+  // Nevada, Texas and Florida were registered in the first state slice above.
+  // Alaska, South Dakota, Tennessee and Wyoming are the rest of the seven, and
+  // they are here in one block because they share a problem the earlier three
+  // did not have: what has to be established is an ABSENCE, and an absence has
+  // no operative language. There is no section to quote, because the point is
+  // that no section exists.
+  //
+  // That splits the seven into two grades, and the grade is the most important
+  // thing each record below carries:
+  //
+  //   Constitutional — a prohibition addressed to a natural person's income.
+  //   It carries the whole claim by itself, because the legislature CANNOT
+  //   levy: the absence is not a policy fact that could change between pack
+  //   refreshes. Nevada, Texas and Tennessee (for earned income only).
+  //
+  //   Statutory absence — no imposition exists in the code. That is a fact
+  //   about what is missing, so the record rests on the revenue department's
+  //   or the legislature's own affirmative statement of the negative, and the
+  //   state is one ordinary session away from changing. South Dakota and
+  //   Wyoming, and Tennessee again for everything a retiree actually lives on.
+  //
+  // Alaska sits between them and closer to the top: 43.20.012(a) is not an
+  // absence at all but an express statutory exclusion of individuals from the
+  // only income tax Alaska has, which needs no negative inference. What it
+  // lacks is permanence.
+  //
+  // Two of these records quote an authority that appears to CONTRADICT the
+  // statement above it. That is deliberate and it is the whole reason the
+  // record is trustworthy. South Dakota's constitution expressly EMPOWERS its
+  // legislature to tax incomes, and Wyoming's conditions an income tax on a
+  // full credit rather than barring one — so a reader who saw only "no income
+  // tax" would come away believing both states are locked the way Nevada is.
+  // Quoting the provision that runs the other way is what stops that, and what
+  // tells the annual re-verification pass which of these five can move.
+  // ---------------------------------------------------------------------------
+
+  'ak-stat-43-20-012-a-tax-does-not-apply-to-individuals': {
+    title: 'Alaska’s net income tax does not apply to an individual',
+    statement:
+      'Alaska has one income tax, the Alaska Net Income Tax Act of chapter 43.20, and 43.20.012(a) states in terms that the tax imposed by that chapter does not apply to an individual or to a fiduciary. What the chapter does impose, at 43.20.011(e), falls on the taxable income of every CORPORATION. So no wage, capital gain, Social Security benefit, pension, or IRA or 401(k) distribution of an Alaska individual is subject to Alaska income tax, which is what the pack encodes as `hasIncomeTax: false`. This is a stronger footing than an absence: the exclusion is enumerated, so nobody has to be persuaded that a list of impositions is exhaustive. It is a weaker footing than Nevada\'s or Texas\'s: Alaska has no constitutional bar on an income tax, and a later legislature can amend 43.20.012(a) by simple majority.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:AK',
+    authority: [{
+      // The print-fetch URL rather than the practitioner one. akleg.gov serves
+      // its statutes through an AJAX endpoint: `statutes.asp#43.20.012`
+      // resolves in a browser and returns a shell to everything else, so a
+      // citation to it could never be checked against the text it claims to
+      // quote. This URL is the same publisher serving the same chapter, and it
+      // is the one that actually contains the words below.
+      kind: 'statute',
+      citation: 'Alaska Stat. 43.20.012(a)',
+      url: 'https://www.akleg.gov/basis/statutes.asp?media=print&type=fetch&secEnd=43.20.030',
+      quotedText:
+        'The tax imposed by this chapter does not apply to (1) an individual; (2) a fiduciary;',
+    }, {
+      // Quoted so the record is not read as "Alaska has no income tax". It has
+      // one; individuals are excluded from it. Without this the reader cannot
+      // tell whether the exclusion above is the whole chapter or a carve-out
+      // from something broader.
+      kind: 'statute',
+      citation: 'Alaska Stat. 43.20.011(e)',
+      url: 'https://www.akleg.gov/basis/statutes.asp?media=print&type=fetch&secEnd=43.20.030',
+      quotedText:
+        'There is imposed for each taxable year upon the entire taxable income of every corporation derived from sources within the state a tax computed as follows:',
+    }],
+    volatility: 'staticStatute',
+    // Not 1981. The individual tax was dismantled in two steps — 43.20.010 in
+    // 1975 and the rate schedules that had moved to 43.20.011(a)-(d) in 1980 —
+    // and neither session law is published on akleg.gov in any form. The only
+    // evidence of either is the codifier's bracketed note in the current
+    // statute, which this record deliberately does not quote: akleg.gov serves
+    // latin-1, so the section sign in "[Repealed, § 13 ch 70 SLA 1975.]" cannot
+    // survive as text and a quote carrying it could never be verified. A start
+    // year inferred from a repeal nobody can read is a guess.
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  'sd-no-individual-income-tax': {
+    title: 'South Dakota levies no individual income tax, and could',
+    statement:
+      'South Dakota imposes no income tax on individuals, so no wage, capital gain, Social Security benefit, pension, or IRA or 401(k) distribution reaches a South Dakota rate — which the pack encodes as `hasIncomeTax: false`. The second half of the title is the part a reader needs. The absence is statutory and nothing more: article XI, section 2 of the South Dakota Constitution expressly EMPOWERS the Legislature to impose taxes upon incomes, and to graduate them, and the Legislature has simply never done it. So unlike Nevada, Texas and Alaska, South Dakota is one ordinary session away from changing, and this record belongs on the annual re-verification list for that reason rather than out of routine.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:SD',
+    authority: [{
+      // The load-bearing citation, and the reason `stateAgencyPublication`
+      // exists. There is no South Dakota Codified Laws chapter to quote — the
+      // claim IS that none exists — so the only affirmative text stating the
+      // negative is the department's own. It is not corroboration here; it is
+      // the authority.
+      kind: 'stateAgencyPublication',
+      citation: 'S.D. Dept. of Revenue, Individuals — Taxes, "Income Tax"',
+      url: 'https://dor.sd.gov/individuals/taxes/',
+      quotedText: 'South Dakota is one of seven states that does not impose a state income tax.',
+    }, {
+      // Reads like a contradiction and is the opposite. It is quoted so this
+      // record cannot be mistaken for a constitutional prohibition, which is
+      // exactly what a reader who had just read the Nevada and Texas records
+      // would otherwise assume of a neighbouring "no income tax" entry.
+      kind: 'statute',
+      citation: 'S.D. Const. art. XI, § 2',
+      url: 'https://sdsos.gov/general-information/about-state-south-dakota/docs/2024%20South%20Dakota%20Constitution.pdf',
+      quotedText:
+        'The Legislature is empowered to impose taxes upon incomes and occupations, and taxes upon incomes may be graduated and progressive and reasonable exemptions may be provided.',
+    }],
+    volatility: 'staticStatute',
+    // The pack year on purpose. When South Dakota last levied an individual
+    // income tax, or whether it ever did, was not established from a primary
+    // source, and "never" would be an unsourced claim in a registry whose point
+    // is that it makes none. South Dakota Codified Laws are not served to any
+    // non-browser client from a .gov host, so the code was never read
+    // section-by-section and this record does not claim it was.
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  // Tennessee takes two records because the two halves of its negative rest on
+  // different authority with different durability, and collapsing them would
+  // let the constitutional weight of the earned-income bar silently vouch for a
+  // statutory repeal it says nothing about. The split matters more here than it
+  // did for Texas: there the two sections were both prohibitions differing only
+  // in start year, whereas Tennessee's constitution reaches only the income a
+  // retiree has already stopped earning.
+  'tn-const-2-28-earned-income-tax-prohibited': {
+    title: 'Tennessee’s constitution bars a tax on payroll or earned income only',
+    statement:
+      'Article II, section 28 forbids the Legislature to levy, authorize or permit any state OR LOCAL tax upon payroll or earned personal income, or measured by it, subject only to a carve-out for a tax already in effect on January 1, 2011. Read carefully, the prohibition reaches earned income and stops there. A pension, an IRA or 401(k) withdrawal, a capital gain, interest and dividends are none of them earned personal income — and the same section still contains the affirmative grant that authorised the Hall tax in the first place, which the 2014 amendment did not repeal. So for precisely the income a Tennessee retiree lives on, the negative is NOT constitutional; it is registered separately at tn-hall-income-tax-repealed-from-2021 and rests on a statute the Legislature retains express constitutional power to reverse. The local limb is what makes this record bear on more than the state rate: no Tennessee county or city may reach earned income either.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:TN',
+    authority: [{
+      kind: 'statute',
+      citation: 'Tenn. Const. art. II, § 28',
+      url: 'https://publications.tnsosfiles.com/pub/2023%20TN%20Constitution.pdf',
+      quotedText:
+        'Notwithstanding the authority to tax privileges or any other authority set forth in this Constitution, the Legislature shall not levy, authorize or otherwise permit any state or local tax upon payroll or earned personal income or any state or local tax measured by payroll or earned personal income; however, nothing contained herein shall be construed as prohibiting any tax in effect on January 1, 2011, or adjustment of the rate of such tax.',
+    }, {
+      // The retained grant, from the SAME section. Included deliberately: it is
+      // the clause that stops this record being read as covering unearned
+      // income, and it is still there.
+      kind: 'statute',
+      citation: 'Tenn. Const. art. II, § 28 (retained grant)',
+      url: 'https://publications.tnsosfiles.com/pub/2023%20TN%20Constitution.pdf',
+      quotedText:
+        'The Legislature shall have power to levy a tax upon incomes derived from stocks and bonds that are not taxed ad valorem.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  'tn-hall-income-tax-repealed-from-2021': {
+    title: 'Tennessee’s Hall tax on interest and dividends is gone from 2021',
+    statement:
+      'The Hall income tax — Tennessee\'s tax on interest from bonds and notes and on dividends from stock, and the one tax the 2014 constitutional amendment expressly preserved — was stepped down by statute from four percent for 2017 to one percent for 2020 and repealed beginning January 1, 2021. Together with the constitutional bar on taxing earned income, that leaves Tennessee levying no individual income tax of any kind, which is what the pack\'s `hasIncomeTax: false` encodes. The date is 2021 and not 2022: the 2016 act that created the elimination set it at 2022, and the 2017 IMPROVE Act moved it forward a year. This half of Tennessee\'s negative is statutory, and article II, section 28 leaves the Legislature express power to tax stock and bond income again by simple majority.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:TN',
+    authority: [{
+      // The department's own statement carries the whole claim including its
+      // date. The two enrolled public chapters that produced it — 2016 Pub. Ch.
+      // 1064 and 2017 Pub. Ch. 181 — are deliberately NOT cited: both are
+      // scanned PDFs whose OCR layer is visibly corrupt ("four percent (4o/o)",
+      // "January 1,2021"), and pasting a span from either into `quotedText`
+      // would put text in this registry that the document does not contain.
+      //
+      // The department's Hall landing page carries the same statement in
+      // plainer words and is the more obvious citation. It is not used, for a
+      // reason about the page rather than about its contents: stripped of
+      // markup it yields about 1,900 characters, and `verify-quotes` treats a
+      // page under 2,000 as a shell or a bot challenge — a rule that is right
+      // far more often than it is wrong and cannot tell a genuinely short page
+      // from a blocked one. A citation nothing can check is the one thing these
+      // records must not have, so the rates page, which states the repeal with
+      // its date and its statutory ramp, is cited instead.
+      //
+      // The elision is real. What falls between the two segments is the
+      // department's four-row rate table for 2017 through 2020; the segments
+      // are the sentence that introduces it and the row that ends it.
+      kind: 'stateAgencyPublication',
+      citation: 'TN Dept. of Revenue, Hall Income Tax — Due Date and Tax Rates',
+      url: 'https://www.tn.gov/revenue/taxes/hall-income-tax/due-date-and-tax-rates.html',
+      quotedText:
+        'The Hall income tax has been repealed, and the applicable tax rate for each year leading up to the repeal is as follows: ... Repeal beginning January 1, 2021',
+    }, {
+      // The grant the repeal did NOT touch, which is what makes this record
+      // statutory-grade rather than constitutional. Quoted here as well as on
+      // the sister record so neither can be read on its own and come out wrong.
+      kind: 'statute',
+      citation: 'Tenn. Const. art. II, § 28 (retained grant)',
+      url: 'https://publications.tnsosfiles.com/pub/2023%20TN%20Constitution.pdf',
+      quotedText:
+        'The Legislature shall have power to levy a tax upon incomes derived from stocks and bonds that are not taxed ad valorem.',
+    }],
+    volatility: 'staticStatute',
+    // Stated by the cited text itself, so the convention's 2026 fallback does
+    // not apply: the department names tax periods beginning January 1, 2021.
+    effectiveFrom: 2021,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  'wy-stat-39-12-101-no-state-or-local-income-tax': {
+    title: 'Wyoming levies no income tax, and no local one is possible',
+    statement:
+      'Wyoming\'s entire statutory income tax chapter is one section, and it imposes nothing. Title 39 chapter 12 consists of 39-12-101 alone, which preempts the field of income, earning and wage-based taxation to the state and forbids every county, city, town and other political subdivision to impose, levy or collect one. So the state-level negative the pack carries as `hasIncomeTax: false` is a statutory absence — the field is simply empty — while the LOCAL negative is affirmative, quotable and stronger: no Wyoming local income tax can exist, whatever rate a caller supplies. Article 15, section 18 of the Wyoming Constitution does not change the first half. It is not a prohibition but a condition on imposition: no income tax without a full credit for the sales, use and ad valorem taxes the same taxpayer paid that year. That is a severe practical deterrent and a legal presupposition that an income tax MAY be imposed, so Wyoming, like South Dakota, is one session away from changing.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:WY',
+    authority: [{
+      // The whole chapter, quoted in full. The line after it in the title is
+      // "CHAPTER 13 - AD VALOREM TAXATION"; the former income tax chapter is
+      // printed as "39-7-101. Repealed By Laws 1998, ch. 5, § 4."
+      kind: 'statute',
+      citation: 'Wyo. Stat. § 39-12-101',
+      url: 'https://www.wyoleg.gov/statutes/compress/title39.pdf',
+      quotedText:
+        'The state of Wyoming does hereby preempt for itself the field of imposing and levying income taxes, earning taxes, or any other form of tax based on wages or other income and no county, city, town or other political subdivision shall have the right to impose, levy or collect such taxes.',
+    }, {
+      // Quoted for what it is NOT. "No tax shall be imposed upon income
+      // WITHOUT allowing full credit" is a condition, and a reader told only
+      // that Wyoming has a constitutional provision about income tax would
+      // reasonably assume a bar.
+      kind: 'statute',
+      citation: 'Wyo. Const. art. 15, § 18',
+      url: 'https://sos.wyo.gov/Forms/Publications/WYConstitution.pdf',
+      quotedText:
+        'No tax shall be imposed upon income without allowing full credit against such tax liability for all sales, use, and ad valorem taxes paid in the taxable year by the same taxpayer to any taxing authority in Wyoming.',
+    }],
+    volatility: 'staticStatute',
+    // The pack year, for South Dakota's reason: no primary source was found
+    // establishing when Wyoming last levied an individual income tax or whether
+    // it ever did. 39-12-101 states no operative date of its own.
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
     ],
   },
 } as const satisfies Record<string, TaxRuleRecord>

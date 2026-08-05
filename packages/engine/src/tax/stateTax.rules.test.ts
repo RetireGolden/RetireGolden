@@ -691,11 +691,193 @@ describeRule('mrs-36-5124-c-1-b-decoupled-standard-deduction', {
   })
 })
 
+// ─── The rest of the seven no-individual-income-tax states ───────────────────
+//
+// Same outward shape as the Nevada, Texas and Florida fixtures above — the pack
+// answers `hasIncomeTax: false`, and each fixture prices the scenario a second
+// time with the state's own law neutralised so the zero is provably the law's
+// doing rather than an empty input. What differs is the counterfactual, and the
+// counterfactual is the record. Nevada's competing reading was a bar confined
+// to wages; Alaska's is a chapter that reaches individuals as well as
+// corporations; South Dakota's is the Legislature having used the power article
+// XI, section 2 gives it; Tennessee's is two different competing readings for
+// two different halves of one state's income, which is why Tennessee has two
+// records and neither leans on the other.
+//
+// Each scenario is built out of the income the competing reading would actually
+// catch. That matters most for Tennessee: a fixture that priced wages against
+// the Hall record, or dividends against the constitutional record, would come
+// out zero either way and prove nothing about either.
+
+describeRule('ak-stat-43-20-012-a-tax-does-not-apply-to-individuals', {
+  readings: {
+    individualsExcludedFromTheOnlyChapterThatImposes: 0,
+    theChapterReachingIndividualsAsItReachesCorporations: 150_000,
+  },
+  accepted: 'individualsExcludedFromTheOnlyChapterThatImposes',
+}, ({ accepted, readings }) => {
+  // Alaska DOES levy an income tax — 43.20.011(e) imposes one on every
+  // corporation. The whole content of 43.20.012(a) is that this taxpayer is not
+  // in it, so the scenario is an individual's income and nothing else.
+  const scenario = input({
+    state: 'AK',
+    // Retirement income is a SUBSET of ordinary income in this model, not an
+    // addition to it: the exclusion subtracts, nothing adds it in. So the
+    // counterfactual base is the ordinary figure, and the retirement line is
+    // here to say that all of it is what a retiree actually lives on.
+    ordinaryIncome: 150_000,
+    privateRetirementIncome: 150_000,
+    ssBenefits: 30_000,
+    agesAlive: [70],
+  })
+
+  it('leaves an Alaska individual outside the chapter that does impose a tax', () => {
+    expect(computeStateTaxableIncome(pack('AK'), scenario)).toBe(accepted)
+    expect(computeStateTax(pack('AK'), scenario)).toBe(0)
+  })
+
+  it('would carry the whole of it if the exclusion in 43.20.012(a) were not there', () => {
+    const reachable = { ...pack('AK'), hasIncomeTax: true }
+    expect(computeStateTaxableIncome(reachable, scenario))
+      .toBe(readings.theChapterReachingIndividualsAsItReachesCorporations)
+  })
+})
+
+describeRule('sd-no-individual-income-tax', {
+  readings: {
+    noImpositionExistsSoThereIsNoBase: 0,
+    theLegislatureHavingUsedItsArticleXiPower: 150_000,
+  },
+  accepted: 'noImpositionExistsSoThereIsNoBase',
+}, ({ accepted, readings }) => {
+  const scenario = input({
+    state: 'SD',
+    // Retirement income is a SUBSET of ordinary income in this model, not an
+    // addition to it: the exclusion subtracts, nothing adds it in. So the
+    // counterfactual base is the ordinary figure, and the retirement line is
+    // here to say that all of it is what a retiree actually lives on.
+    ordinaryIncome: 150_000,
+    privateRetirementIncome: 150_000,
+    ssBenefits: 30_000,
+    agesAlive: [70],
+  })
+
+  it('leaves a South Dakota retiree with no state base at all', () => {
+    expect(computeStateTaxableIncome(pack('SD'), scenario)).toBe(accepted)
+    expect(computeStateTax(pack('SD'), scenario)).toBe(0)
+  })
+
+  it('would build a base the day the Legislature exercised the power it holds', () => {
+    // The competing reading here is not a misreading of a prohibition — South
+    // Dakota has none. It is the same state one session later, which is exactly
+    // what separates this record from Nevada's and is why it is priced.
+    const enacted = { ...pack('SD'), hasIncomeTax: true }
+    expect(computeStateTaxableIncome(enacted, scenario))
+      .toBe(readings.theLegislatureHavingUsedItsArticleXiPower)
+  })
+})
+
+describeRule('tn-const-2-28-earned-income-tax-prohibited', {
+  readings: {
+    payrollBeyondTheReachOfStateAndLocalTaxAlike: 0,
+    payrollReachableAsInAnyOtherState: 140_000,
+  },
+  accepted: 'payrollBeyondTheReachOfStateAndLocalTaxAlike',
+}, ({ accepted, readings }) => {
+  // Earned income only, because earned income is all article II, section 28
+  // reaches. Not one dollar of retirement or investment income is in here; the
+  // sister record below prices that, and the split is the point.
+  const scenario = input({ state: 'TN', ordinaryIncome: 140_000, agesAlive: [70] })
+
+  it('keeps a Tennessee wage earner’s payroll out of any state base', () => {
+    expect(computeStateTaxableIncome(pack('TN'), scenario)).toBe(accepted)
+    expect(computeStateTax(pack('TN'), scenario)).toBe(0)
+  })
+
+  it('would tax the same payroll without the constitutional bar', () => {
+    const reachable = { ...pack('TN'), hasIncomeTax: true }
+    expect(computeStateTaxableIncome(reachable, scenario))
+      .toBe(readings.payrollReachableAsInAnyOtherState)
+  })
+})
+
+describeRule('tn-hall-income-tax-repealed-from-2021', {
+  readings: {
+    interestAndDividendsUntaxedFrom2021: 0,
+    // The Hall base, had the elimination not arrived: interest from bonds and
+    // notes, and dividends from stock. Article II, section 28 does not reach a
+    // dollar of it, and still grants the power to tax it.
+    theHallBaseAsItStoodBeforeTheRamp: 100_000,
+  },
+  accepted: 'interestAndDividendsUntaxedFrom2021',
+}, ({ accepted, readings }) => {
+  // Deliberately no wages. If this scenario carried any, the constitutional
+  // record above would explain the zero and this one would prove nothing.
+  const scenario = input({
+    state: 'TN',
+    ordinaryIncome: 60_000, // interest from bonds and notes
+    qualifiedDividends: 40_000,
+    agesAlive: [70],
+  })
+
+  it('leaves a Tennessee retiree’s interest and dividends untaxed', () => {
+    expect(computeStateTaxableIncome(pack('TN'), scenario)).toBe(accepted)
+    expect(computeStateTax(pack('TN'), scenario)).toBe(0)
+  })
+
+  it('would reach every dollar of it if the Hall tax had survived', () => {
+    const hallStillInForce = { ...pack('TN'), hasIncomeTax: true }
+    expect(computeStateTaxableIncome(hallStillInForce, scenario))
+      .toBe(readings.theHallBaseAsItStoodBeforeTheRamp)
+  })
+})
+
+describeRule('wy-stat-39-12-101-no-state-or-local-income-tax', {
+  readings: {
+    theFieldIsEmptyOfAnyImposition: 0,
+    titleThirtyNineCarryingAnImpositionAsWellAsAPreemption: 150_000,
+  },
+  accepted: 'theFieldIsEmptyOfAnyImposition',
+}, ({ accepted, readings }) => {
+  const scenario = input({
+    state: 'WY',
+    // Retirement income is a SUBSET of ordinary income in this model, not an
+    // addition to it: the exclusion subtracts, nothing adds it in. So the
+    // counterfactual base is the ordinary figure, and the retirement line is
+    // here to say that all of it is what a retiree actually lives on.
+    ordinaryIncome: 150_000,
+    privateRetirementIncome: 150_000,
+    ssBenefits: 30_000,
+    agesAlive: [70],
+  })
+
+  it('leaves a Wyoming retiree with no state base at all', () => {
+    expect(computeStateTaxableIncome(pack('WY'), scenario)).toBe(accepted)
+    expect(computeStateTax(pack('WY'), scenario)).toBe(0)
+  })
+
+  it('would build a base if chapter 12 imposed as well as preempted', () => {
+    // 39-12-101 is the whole of Wyoming's income tax chapter and it imposes
+    // nothing — it reserves the field. The competing reading is a chapter that
+    // did both, which is what almost every other state's title 39 equivalent
+    // does. The LOCAL half of this record — that no Wyoming county or city can
+    // levy one either, whatever rate a caller supplies — is priced separately
+    // in stateTax.test.ts, because it is a fact about `localRatePct` rather
+    // than about the state base.
+    const imposing = { ...pack('WY'), hasIncomeTax: true }
+    expect(computeStateTaxableIncome(imposing, scenario))
+      .toBe(readings.titleThirtyNineCarryingAnImpositionAsWellAsAPreemption)
+  })
+})
+
 describe('state jurisdiction records', () => {
   it('models every state these records describe', () => {
     // A record naming a state the pack does not carry would be a claim about
     // code that is not there.
-    for (const code of ['ND', 'PA', 'NV', 'TX', 'FL', 'WV', 'NY', 'IL', 'MO', 'IA', 'ME', 'SC']) {
+    for (const code of [
+      'ND', 'PA', 'NV', 'TX', 'FL', 'WV', 'NY', 'IL', 'MO', 'IA', 'ME', 'SC',
+      'AK', 'SD', 'TN', 'WY',
+    ]) {
       expect(stateParamsFor(code, TAX_YEAR), code).toBeDefined()
     }
   })
