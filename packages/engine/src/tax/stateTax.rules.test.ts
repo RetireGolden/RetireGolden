@@ -94,6 +94,83 @@ describeRule('ndcc-57-38-30-3-federal-taxable-income-base', {
   })
 })
 
+// The North Dakota gain fixture prices a bracketed figure, so it takes an
+// arithmetic helper rather than open-coding the bands inside the assertions.
+//
+// The 2026 schedule the tax commissioner published (Form ND-1ES): single 0% to
+// 49,575, 1.95% to 250,400, 2.50% above. Deduction 16,100 single, which is the
+// conformed FEDERAL figure — see the record above for why North Dakota carries it.
+//
+// Written out here rather than read from the pack on purpose. A fixture that
+// took its expected bands from the same table the calculator reads would agree
+// with the pack whatever the pack said, which is precisely the failure mode the
+// header of this file describes.
+function northDakotaBandedTax(
+  bands: readonly (readonly [number, number, number])[],
+  taxable: number,
+): number {
+  return bands.reduce(
+    (tax, [lower, upper, ratePct]) =>
+      tax + Math.max(0, Math.min(taxable, upper) - lower) * (ratePct / 100),
+    0,
+  )
+}
+const ND_2026_SINGLE = [[0, 49_575, 0], [49_575, 250_400, 1.95], [250_400, Infinity, 2.5]] as const
+const ND_DEDUCTION_SINGLE = 16_100
+const ndSingleTax = (taxable: number) => northDakotaBandedTax(ND_2026_SINGLE, taxable)
+
+const ND_GAIN_ORDINARY = 120_000
+const ND_LONG_TERM_GAIN = 100_000
+
+describeRule('ndcc-57-38-30-3-2-d-long-term-gain-exclusion', {
+  readings: {
+    sixtyPercentOfTheGainInTheBase:
+      ndSingleTax(ND_GAIN_ORDINARY + ND_LONG_TERM_GAIN * 0.6 - ND_DEDUCTION_SINGLE),
+    theWholeGainInTheBase:
+      ndSingleTax(ND_GAIN_ORDINARY + ND_LONG_TERM_GAIN - ND_DEDUCTION_SINGLE),
+  },
+  accepted: 'sixtyPercentOfTheGainInTheBase',
+}, ({ accepted, readings }) => {
+  // This fixture used to live in rules/approximations/ and asserted the
+  // opposite: that the engine produced `theWholeGainInTheBase`. The pack now
+  // carries `capitalGainsTaxablePct: 60`, so the record is settled and the
+  // assertion is inverted rather than deleted — which is exactly the transition
+  // `produced` exists to force.
+  const scenario = input({
+    state: 'ND',
+    ordinaryIncome: ND_GAIN_ORDINARY,
+    capitalGains: ND_LONG_TERM_GAIN,
+    agesAlive: [70],
+  })
+
+  it('leaves forty percent of a long-term gain out of the North Dakota base', () => {
+    expect(computeStateTax(pack('ND'), scenario)).toBeCloseTo(accepted, 6)
+    expect(computeStateTax(pack('ND'), scenario)).not.toBeCloseTo(readings.theWholeGainInTheBase, 6)
+    expect(computeStateTaxableIncome(pack('ND'), scenario))
+      .toBeCloseTo(ND_GAIN_ORDINARY + ND_LONG_TERM_GAIN * 0.6 - ND_DEDUCTION_SINGLE, 6)
+  })
+
+  it('would tax the whole gain with the included share left at its default', () => {
+    // Without the field the calculator falls back to 100% for any state whose
+    // gains are ordinary, which is the reading the subdivision rejects.
+    const wholeGain = { ...pack('ND'), capitalGainsTaxablePct: undefined }
+    expect(computeStateTax(wholeGain, scenario)).toBeCloseTo(readings.theWholeGainInTheBase, 6)
+  })
+
+  it('still taxes the included sixty percent at ordinary North Dakota rates', () => {
+    // `capitalGainsAsOrdinary` stays true, and it is not redundant with the
+    // included share: North Dakota has no preferential RATE, only a partial
+    // exclusion, so the sixty percent that arrives is stacked with ordinary
+    // income rather than priced on a schedule of its own.
+    const equivalentOrdinary = input({
+      state: 'ND',
+      ordinaryIncome: ND_GAIN_ORDINARY + ND_LONG_TERM_GAIN * 0.6,
+      agesAlive: [70],
+    })
+    expect(computeStateTax(pack('ND'), equivalentOrdinary)).toBeCloseTo(accepted, 6)
+  })
+})
+
 // PA is flat 3.07% with no standard deduction, so a Pennsylvania figure is the
 // taxable base times one rate and nothing else moves underneath it.
 const PA_RATE = 0.0307

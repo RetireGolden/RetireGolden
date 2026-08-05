@@ -320,19 +320,23 @@ describe('a conformed state standard deduction in a stand-in year', () => {
   const DOUBLED = 2
   const calc = createStateTaxCalculator()
 
-  // North Dakota, single: 16,100 conformed deduction, then 0% to 48,475, 1.95%
-  // to 244,825. 180,675 of ordinary income:
-  //   tracks federal   taxable 148,475 -> 1.95% x 100,000            = 1,950.0000
-  //   frozen at pack   taxable 164,575 -> 1.95% x 116,100            = 2,263.9500
-  //   deduction and    taxable 148,475, 0% band doubled to 96,950
-  //     brackets both  -> 1.95% x 51,525                             = 1,004.7375
+  // North Dakota, single: 16,100 conformed deduction, then the commissioner's
+  // published 2026 schedule — 0% to 49,575, 1.95% to 250,400. 180,675 of
+  // ordinary income:
+  //   tracks federal   taxable 148,475 -> 1.95% x  98,900            = 1,928.5500
+  //   frozen at pack   taxable 164,575 -> 1.95% x 115,000            = 2,242.5000
+  //   deduction and    taxable 148,475, 0% band doubled to 99,150
+  //     brackets both  -> 1.95% x 49,325                             =   961.8375
   // The third reading is the one worth naming. Indexing the brackets alongside
   // the deduction is the plausible over-correction, and it is wrong for a reason
   // the deduction case does not share: a state bracket is a state dollar figure
   // under state law, and the per-state research to move any of them does not
-  // exist yet (see params/state/index.ts).
+  // exist yet (see params/state/index.ts). North Dakota's own thresholds DO move
+  // annually, but by the commissioner's published schedule under N.D.C.C.
+  // 57-38-30.3(1)(g) rather than by the engine's inflation scale — which is why
+  // they are a pack-refresh figure and not something to index here.
   describeRule('irc-63-c-7-B-ii-conformed-state-deduction-tracks-federal', {
-    readings: { statute: 1_950, frozenAtThePackYear: 2_263.95, bracketsIndexedToo: 1_004.7375 },
+    readings: { statute: 1_928.55, frozenAtThePackYear: 2_242.5, bracketsIndexedToo: 961.8375 },
     accepted: 'statute',
   }, ({ accepted, readings }) => {
     it('measures nominal income against the federal deduction prescribed for that year', () => {

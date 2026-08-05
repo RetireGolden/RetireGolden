@@ -5364,10 +5364,10 @@ const registry = {
   'ndcc-57-38-30-3-2-d-long-term-gain-exclusion': {
     title: 'North Dakota excludes 40% of net long-term capital gain',
     statement:
-      'North Dakota taxable income is reduced by forty percent of the excess of net long-term capital gain over net short-term capital loss, so only sixty percent of a retiree\'s long-term gain reaches a North Dakota rate. Not modelled: the pack sets `capitalGainsAsOrdinary: true` and no `capitalGainsTaxablePct`, which defaults the included share to 100 percent, so the engine taxes the whole gain and charges a North Dakota retiree more than the statute does on every realization. The same subdivision also reduces the base by forty percent of qualified dividends that are federally taxed at a preferential rate, or by thirty percent of all dividends if they are not; the engine includes those in full too. That half of the gap is not separately registered but errs in the same direction.',
-    classification: 'approximated',
+      'North Dakota taxable income is reduced by forty percent of the excess of net long-term capital gain over net short-term capital loss, so only sixty percent of a retiree\'s long-term gain reaches a North Dakota rate. The pack now says so: `capitalGainsTaxablePct: 60`, which the calculator reads in preference to the 100 percent that `capitalGainsAsOrdinary: true` would otherwise default to — the sixty percent that does reach the base is still taxed at ordinary North Dakota rates, which is what that flag continues to assert. This record was `approximated` until 2026-08-05, when the field was set; the reclassification is the whole content of the change. The forty-percent exclusion for qualified dividends in the SAME subdivision is still not modelled and is registered separately as `ndcc-57-38-30-3-2-d-2-qualified-dividend-exclusion`, so the gap that survives is pinned rather than folded into a record that no longer describes one.',
+    classification: 'settled',
     contraryReading: null,
-    errorDirection: 'overstatesTax',
+    errorDirection: null,
     conventionRationale: null,
     jurisdiction: 'state:ND',
     authority: [{
@@ -5377,20 +5377,19 @@ const registry = {
       quotedText:
         'Reduced by forty percent of: (1) The excess of the taxpayer\'s net long-term capital gain for the taxable year over the net short-term capital loss for that year, as computed for purposes of the Internal Revenue Code of 1986, as amended. The adjustment provided by this subdivision is allowed only to the extent the net long-term capital gain is allocated to this state.',
     }, {
-      // The Century Code PDF renders the citation inside this quote with a gap
-      // — 'section 1(h) (11)' — under both layout and raw pdftotext extraction.
-      // It is reproduced that way rather than closed up to the conventional
-      // '1(h)(11)', because tidying a citation is still retyping it.
-      kind: 'statute',
-      citation: 'N.D.C.C. 57-38-30.3(2)(d)(2)',
-      url: 'https://ndlegis.gov/cencode/t57c38.pdf',
-      quotedText:
-        'Qualified dividends as defined under Internal Revenue Code section 1(h) (11), added by section 302(a) of the Jobs and Growth Tax Relief Reconciliation Act of 2003 [Pub. L. 108-27; 117 Stat. 752; 2 U.S.C. 963 et seq.], but only if taxed at a federal income tax rate that is lower than the regular federal income tax rates applicable to ordinary income. If, for any taxable year, qualified dividends are taxed at the regular federal income tax rates applicable to ordinary income, the reduction allowed under this subdivision is equal to thirty percent of all dividends included in federal taxable income.',
+      // The department's own arithmetic for the subdivision, which is what
+      // makes 60 rather than 40 the number the pack carries: the worksheet
+      // computes the amount SUBTRACTED, so the share that stays in the base is
+      // its complement.
+      kind: 'formInstruction',
+      citation: '2025 Form ND-1 instructions, Worksheet For Net Long-Term Capital Gain Exclusion (Form ND-1, line 6), line 8',
+      url: 'https://www.tax.nd.gov/sites/www/files/documents/forms/individual/2025-iit/2025-individual-income-tax-booklet.pdf',
+      quotedText: 'Multiply line 7 by 40% (.40). Enter this amount on Form ND-1, line 6',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-04',
+    verifiedOn: '2026-08-05',
     implementedBy: [
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',

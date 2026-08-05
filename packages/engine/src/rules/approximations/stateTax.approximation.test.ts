@@ -1,14 +1,12 @@
 /**
- * Pins for the four `approximated` state records — the gaps between what a
- * state's own law allows a retiree and what the "big levers" pack can express.
+ * Pins for the `approximated` state records — the gaps between what a state's
+ * own law allows a retiree and what the "big levers" pack can express.
  *
- * All four have the same cause. `StateTaxParams` models a state's retirement
- * treatment as one exclusion with an optional integer `minAge` and an optional
- * per-person cap, and its capital-gain treatment as a single included
- * percentage. Four states do not fit through that shape:
+ * They all have the same cause. `StateTaxParams` models a state's retirement
+ * treatment as two exclusions, each one an optional integer `minAge` and an
+ * optional per-person cap, and its capital-gain treatment as a single included
+ * percentage. These states do not fit through that shape:
  *
- *   - North Dakota excludes 40% of net long-term gain; the pack has no partial
- *     inclusion set, so the engine taxes 100%.
  *   - Pennsylvania conditions on the PLAN's age or service requirement; the
  *     pack substitutes a flat age 60.
  *   - New York conditions on attaining 59½; `minAge` is compared against an
@@ -18,10 +16,14 @@
  *
  * Each fixture drives the shipped pack to show the engine produces the
  * approximated figure, and prices the same scenario a second time through the
- * one field that would close the gap to show the statute's figure is reachable
+ * change that would close the gap to show the statute's figure is reachable
  * and different. The day someone closes one of these, the first assertion fails
  * and names the record to reclassify — which is the entire reason `produced`
- * exists.
+ * exists. North Dakota's 40% long-term-gain exclusion was on this list until
+ * 2026-08-05 and left it that way: the pack gained `capitalGainsTaxablePct: 60`,
+ * the assertion here failed, and the record and its fixture moved to
+ * `tax/stateTax.rules.test.ts` as `settled`. That is the transition `produced`
+ * exists to force, and it is what these pins are for.
  */
 
 import { expect, it } from 'vitest'
@@ -64,45 +66,6 @@ function bandedTax(bands: readonly (readonly [number, number, number])[], taxabl
     0,
   )
 }
-
-// ND single: 0% to 48,475, 1.95% to 244,825, 2.5% above. Deduction 16,100.
-const northDakotaTax = (taxable: number) => bandedTax(
-  [[0, 48_475, 0], [48_475, 244_825, 1.95], [244_825, Infinity, 2.5]],
-  taxable,
-)
-const ND_ORDINARY = 120_000
-const ND_LONG_TERM_GAIN = 100_000
-const ND_DEDUCTION = 16_100
-
-describeRule('ndcc-57-38-30-3-2-d-long-term-gain-exclusion', {
-  readings: {
-    sixtyPercentOfTheGainInTheBase:
-      northDakotaTax(ND_ORDINARY + ND_LONG_TERM_GAIN * 0.6 - ND_DEDUCTION),
-    theWholeGainInTheBase:
-      northDakotaTax(ND_ORDINARY + ND_LONG_TERM_GAIN - ND_DEDUCTION),
-  },
-  accepted: 'sixtyPercentOfTheGainInTheBase',
-  produced: 'theWholeGainInTheBase',
-}, ({ accepted, produced }) => {
-  const scenario = input({
-    state: 'ND',
-    ordinaryIncome: ND_ORDINARY,
-    capitalGains: ND_LONG_TERM_GAIN,
-    agesAlive: [70],
-  })
-
-  it('taxes the whole long-term gain rather than the statute’s 60%', () => {
-    expect(computeStateTax(pack('ND'), scenario)).toBeCloseTo(produced, 6)
-    expect(computeStateTax(pack('ND'), scenario)).not.toBeCloseTo(accepted, 6)
-  })
-
-  it('reaches the statute’s figure once the included share is set to 60%', () => {
-    // The one field that would close it. Not applied here: this file records
-    // the gap, it does not fix the pack.
-    const excluding = { ...pack('ND'), capitalGainsTaxablePct: 60 }
-    expect(computeStateTax(excluding, scenario)).toBeCloseTo(accepted, 6)
-  })
-})
 
 const PA_RATE = 0.0307
 const PA_PENSION = 60_000

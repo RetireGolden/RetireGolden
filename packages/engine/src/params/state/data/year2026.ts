@@ -9,7 +9,12 @@
  * latest-published (≈2025) figures carried forward; like the federal pack,
  * nominal brackets are carried forward for future years (bracket creep
  * modeled). States on legislated rate ramps (GA, IN, MS, MT, NE, NC, OK) are
- * commented inline — never hold those forward at refresh time.
+ * commented inline — never hold those forward at refresh time. North Dakota
+ * joins them for a different reason and with the same instruction: N.D.C.C.
+ * 57-38-30.3(1)(g) makes the tax commissioner publish a cost-of-living-adjusted
+ * schedule that applies in lieu of the statutory one every year, so the ND
+ * thresholds are a published figure that moves annually rather than a statutory
+ * one that holds.
  *
  * States whose standard deduction conforms to (or proxies) the FEDERAL
  * standard deduction — AZ, CO, DC, IA, ID, MO, MT, ND, NM — carry the federal
@@ -49,6 +54,15 @@ const PUBLIC_PENSION_OVERRIDES: Record<string, StateRetirementExclusion> = {
   KS: { kind: 'full' },
   LA: { kind: 'full' },
   MA: { kind: 'full' },
+  // North Dakota subtracts retired military personnel benefits in full
+  // (N.D.C.C. 57-38-30.3(2)(r)) and retired peace-officer benefits in full at
+  // twenty years' service or a medical retirement ((2)(t)). It subtracts no
+  // other public pension: a federal civil-service annuity or a state PERS
+  // pension is taxed like any other retirement income there. The bucket is one
+  // flag, so `full` is exact for the two categories the statute names and too
+  // generous for the rest — registered as
+  // `ndcc-57-38-30-3-2-closed-subtraction-list`.
+  ND: { kind: 'full' },
   NE: { kind: 'full' },
   NY: { kind: 'full' },
   OH: { kind: 'full' },
@@ -468,11 +482,26 @@ const rawStateYear2026 = {
     },
     ND: {
       // Brackets defined on federal taxable income; std deduction ≈ federal base.
+      //
+      // The thresholds below are the commissioner's PUBLISHED 2026 schedules
+      // (2026 Forms ND-1 and ND-EZ Tax Rate Schedules, Form ND-1ES), not the
+      // 2023 amounts printed in the Century Code. N.D.C.C. 57-38-30.3(1)(g)
+      // requires a cost-of-living-adjusted schedule to be published "in lieu
+      // of" the statutory one every year, so North Dakota belongs with the
+      // legislated-ramp states above: never hold these forward at refresh time,
+      // re-read the schedule the department publishes for the new pack year.
       code: 'ND', name: 'North Dakota', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
+      capitalGainsTaxablePct: 60,
+      capitalGainsNotes: 'N.D.C.C. 57-38-30.3(2)(d)(1) reduces North Dakota taxable income by forty percent of net long-term capital gain over net short-term capital loss, so sixty percent of the gain reaches a rate. The parallel forty-percent exclusion for qualified dividends in (2)(d)(2) has no field in this pack and is not modeled.',
+      capitalGainsSources: [
+        'DOCS/domain/state-tax-research/ND.md',
+        'https://ndlegis.gov/cencode/t57c38.pdf',
+        'https://www.tax.nd.gov/sites/www/files/documents/forms/individual/2025-iit/2025-individual-income-tax-booklet.pdf',
+      ],
       standardDeduction: { single: 16100, marriedFilingJointly: 32200 }, standardDeductionConformity: 'federal',
       brackets: {
-        single: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 48475, ratePct: 1.95 }, { lowerBound: 244825, ratePct: 2.5 }],
-        marriedFilingJointly: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 80975, ratePct: 1.95 }, { lowerBound: 298075, ratePct: 2.5 }],
+        single: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 49575, ratePct: 1.95 }, { lowerBound: 250400, ratePct: 2.5 }],
+        marriedFilingJointly: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 82800, ratePct: 1.95 }, { lowerBound: 304850, ratePct: 2.5 }],
       },
       retirement: { kind: 'none' },
     },
