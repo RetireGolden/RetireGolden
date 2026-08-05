@@ -20,6 +20,29 @@ export function exactCentProRataNearestHalfUp(
 }
 
 /**
+ * Rounds one exact nonnegative rational quantity of minor units to a whole
+ * minor unit, with an exact half rounding up.
+ *
+ * This is the degenerate pro rata — `exactCentProRataNearestHalfUp` taking the
+ * whole of its ratio — and it exists because the two callers mean different
+ * things. A pro rata asks what share of someone else's amount a weight earns.
+ * This asks what a quantity that is already an amount in its own right is worth
+ * once the currency's minor unit is imposed on it, which is the question a
+ * modeled annual tax liability carrying a fractional cent has to answer before
+ * anything can be allocated against it. Naming the two separately keeps a
+ * reader from having to decide which of `1n` and the denominator is the weight.
+ *
+ * Callers own domain validation: the numerator must be nonnegative and the
+ * denominator positive, both in exact minor units.
+ */
+export function exactCentNearestHalfUp(
+  numeratorMinorUnits: bigint,
+  denominatorMinorUnits: bigint,
+): bigint {
+  return exactCentProRataNearestHalfUp(numeratorMinorUnits, 1n, denominatorMinorUnits)
+}
+
+/**
  * Splits one exact-cent amount across weighted parts so the parts sum to the
  * whole exactly.
  *
