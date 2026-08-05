@@ -5196,6 +5196,7 @@ const registry = {
     implementedBy: [
       'packages/engine/src/params/state/index.ts',
       'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
     ],
   },
 
@@ -5271,7 +5272,10 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
-    implementedBy: ['packages/engine/src/tax/stateTax.ts'],
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
   },
 
   'nv-const-10-1-9-no-personal-income-tax': {
@@ -5443,8 +5447,8 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: [
-      'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
     ],
   },
 
@@ -5507,8 +5511,8 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: [
-      'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
     ],
   },
 
@@ -5565,8 +5569,8 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: [
-      'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
     ],
   },
 
@@ -5598,6 +5602,7 @@ const registry = {
     verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/params/state/index.ts',
+      'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
     ],
   },
@@ -5629,8 +5634,8 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: [
-      'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
     ],
   },
 } as const satisfies Record<string, TaxRuleRecord>

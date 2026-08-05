@@ -233,7 +233,58 @@ function stateRulesMissingStateAuthority(
     .map(([ruleId]) => ruleId)
 }
 
+/**
+ * Where a state rule's state-specific behaviour has to live.
+ *
+ * `tax/stateTax.ts` is generic. It applies brackets, one retirement exclusion,
+ * one standard deduction and a handful of flags in exactly the same way for all
+ * fifty-one jurisdictions, and it cannot tell North Dakota from Nevada except
+ * through the params it is handed. Everything that makes a state's treatment
+ * that state's treatment is under `params/state/` — the pack entry, the pack
+ * shape in `types.ts`, and the conformity indexer in `index.ts`.
+ *
+ * So a `state:` record whose `implementedBy` names nothing under that directory
+ * is not merely under-documented, it is self-contradicting: it claims the engine
+ * implements a state-specific rule in code that does not know which state it is,
+ * and it sends a reader to a file that reads identically for every other state.
+ * One record shipped that way and was caught in review rather than by a test,
+ * which is what this exists to change.
+ *
+ * Deliberately the DIRECTORY and not `data/year2026.ts`. A new pack lands each
+ * autumn, so pinning the filename would either fail on a rule first appearing in
+ * a later pack or force a stale citation. It also leaves room for the two
+ * legitimate non-data cases: a rule whose whole implementation is the conformity
+ * indexer in `index.ts`, and an `outOfScope` rule whose point is that the pack
+ * shape cannot express it — which is a fact about `types.ts`, and belongs there.
+ *
+ * What that costs, stated plainly: this cannot catch a trail that names SOME
+ * file under `params/state/` and omits another that matters. A second review
+ * finding was exactly that shape — a record naming `index.ts` for the conformity
+ * indexer while omitting the pack entry that sets the tag it reads — and no
+ * directory rule can see it. "Did you list every file that matters" is not
+ * decidable; this guard answers the one part of the question that is.
+ */
+const STATE_IMPLEMENTATION_ROOT = 'packages/engine/src/params/state/'
+
+interface ImplementedRule {
+  readonly jurisdiction: TaxRuleJurisdiction
+  readonly implementedBy: readonly string[]
+}
+
+/** State rules whose implementation trail stops at the generic calculator. */
+function stateRulesMissingPackImplementation(
+  entries: readonly (readonly [string, ImplementedRule])[],
+): readonly string[] {
+  return entries
+    .filter(([, rule]) => rule.jurisdiction !== 'federal')
+    .filter(([, rule]) => !rule.implementedBy.some((path) => path.startsWith(STATE_IMPLEMENTATION_ROOT)))
+    .map(([ruleId]) => ruleId)
+}
+
 const registryEntries: readonly (readonly [string, CitableRule])[] =
+  taxRuleIds.map((ruleId) => [ruleId, TAX_RULE_REGISTRY[ruleId]] as const)
+
+const implementationEntries: readonly (readonly [string, ImplementedRule])[] =
   taxRuleIds.map((ruleId) => [ruleId, TAX_RULE_REGISTRY[ruleId]] as const)
 
 describe('tax rule registry conformance', () => {
@@ -409,6 +460,43 @@ describe('tax rule registry conformance', () => {
         { citation: 'IRC 63', url: 'https://www.law.cornell.edu/uscode/text/26/63' },
         { citation: 'NDCC 57-38-30.3', url: 'https://ndlegis.gov/cencode/t57c38.html' },
       ],
+    }]])).toEqual([])
+  })
+
+  it('requires a state rule to name the parameter pack that makes it state-specific', () => {
+    // The citation guard above proves a state record rests on its own
+    // sovereign's law. This is the same question asked of the CODE: a state
+    // record must point at the params that carry the state's treatment, not
+    // only at the calculator that is identical for all fifty-one of them.
+    expect(stateRulesMissingPackImplementation(implementationEntries)).toEqual([])
+    expect(stateRulesMissingPackImplementation([['pa-fictional', {
+      jurisdiction: 'state:PA',
+      implementedBy: ['packages/engine/src/tax/stateTax.ts'],
+    }]])).toEqual(['pa-fictional'])
+    expect(stateRulesMissingPackImplementation([['pa-fictional', {
+      jurisdiction: 'state:PA',
+      implementedBy: [
+        'packages/engine/src/tax/stateTax.ts',
+        'packages/engine/src/params/state/data/year2026.ts',
+      ],
+    }]])).toEqual([])
+    // The two non-data cases the directory rule is written to admit.
+    expect(stateRulesMissingPackImplementation([['nd-fictional', {
+      jurisdiction: 'state:ND',
+      implementedBy: ['packages/engine/src/params/state/index.ts'],
+    }], ['ca-fictional-out-of-scope', {
+      jurisdiction: 'state:CA',
+      implementedBy: ['packages/engine/src/params/state/types.ts'],
+    }]])).toEqual([])
+  })
+
+  it('leaves the pack requirement off federal rules, which have no state params', () => {
+    // The asymmetry matters as much here as it does in the citation tier. Most
+    // federal records touch no state file at all, and requiring one would be
+    // the same category error in the opposite direction.
+    expect(stateRulesMissingPackImplementation([['irc-fictional-federal', {
+      jurisdiction: 'federal',
+      implementedBy: ['packages/engine/src/tax/federalTax.ts'],
     }]])).toEqual([])
   })
 
