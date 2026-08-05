@@ -88,11 +88,12 @@ export interface StateTaxParams {
    * `conformStateStandardDeduction` attaches it — from the federal pack for the
    * year, scaled by the same inflation factor as the basic amount — because it
    * is a federal figure the state borrows whole, not a state dollar amount
-   * anyone in the pack could edit. Params that have not been through that step
-   * (a raw `stateParamsFor` result handed straight to `computeStateTax`) carry
-   * neither the indexed basic amount nor this one; the projection and the
-   * relocation comparison both resolve params through `computeStateTaxYearTotal`,
-   * which conforms first.
+   * anyone in the pack could edit. So this field is a property of CONFORMED
+   * params, not of published ones: a raw `stateParamsFor` result carries
+   * neither the indexed basic amount nor this one, and pricing against it
+   * charges a conforming state its pack-year basic amount alone. Conforming
+   * before pricing a household-year is the contract, and
+   * `computeStateTaxYearTotal` is where it is met.
    *
    * Stored per person rather than pre-multiplied by the household's head count
    * so `prorateParams` can scale it for part-year residency exactly as it scales

@@ -160,8 +160,9 @@ describe('compareRelocationCandidates', () => {
     // FEDERAL one, so it carries the IRC 63(c)(3) age-65 addition, and this
     // fixture is 65 in the first projected year — which makes CO the case where
     // applying that addition on one side of the sweep and not the other would
-    // silently suppress the whole drivers table. Nothing else exercises it: the
-    // other candidates here (FL, PA, NY) all publish their own deduction.
+    // silently suppress the whole drivers table. The other candidates in this
+    // file — FL, PA, NY — all publish their own deduction, so none of them
+    // carries an addition for either side of the sweep to disagree about.
     const plan = caPublicPensionRetiree()
     const comparison = compareRelocationCandidates(plan, [{ state: 'CO' }], { startYear: START_YEAR })
     const co = row(comparison.rows, 'candidate-0')

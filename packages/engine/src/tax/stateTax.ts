@@ -118,13 +118,14 @@ export function computeStateTaxableIncome(
     taxable -= retirementExclusion(params.retirementPublic, publicPension, agesAlive)
   }
   taxable -= params.standardDeduction[taxStatus]
-  // Only a state whose deduction IS the federal one carries this, and only
-  // after `conformStateStandardDeduction` has attached it. It is the federal
-  // additional standard deduction for age 65 or older, per person, already
-  // indexed and already prorated for part-year residency if either applied —
-  // all that is left is the head count, which is the household's, not the
-  // state's. States that publish their own deduction never reach this line;
-  // whatever age relief they give lives in their brackets and exclusions.
+  // The federal additional standard deduction for age 65 or older, per person.
+  // Its presence on the params IS the eligibility test: only
+  // `conformStateStandardDeduction` attaches the field, and only to a state
+  // whose deduction is the federal one. A state that publishes its own carries
+  // no such field, and whatever age relief its law gives is already inside its
+  // own figures. The amount arrives already indexed and already prorated for
+  // part-year residency where either applied, so all that is left here is the
+  // head count, which is the household's rather than the state's.
   if (params.standardDeductionAge65Addition) {
     taxable -= age65StandardDeductionAddition(
       params.standardDeductionAge65Addition,
@@ -251,9 +252,10 @@ export function computeStateTaxYearTotal(input: TaxYearInput, opts: StateTaxYear
     // what IRC 63(c)(1) means by "the standard deduction" those states adopt.
     // Everything else in the pack — brackets included — stays nominal.
     //
-    // This is the only place the two resolve, and it is deliberately upstream
-    // of `prorateParams`: both figures arrive at the split-year path already
-    // conformed, so residency scales them together.
+    // Conforming here rather than later is deliberate: the params returned
+    // from this point on already hold both figures, so the split-year path
+    // below hands `prorateParams` a conformed pair and residency scales them
+    // together instead of only the basic half.
     const { pack } = packForYear(input.year)
     const params = conformStateStandardDeduction(
       published,
