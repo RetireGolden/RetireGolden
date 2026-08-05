@@ -5130,6 +5130,53 @@ const registry = {
     ],
   },
 
+  // --- Registered 2026-08-05 ------------------------------------------------
+  //
+  // Found while settling the conversion DESTINATION question above, and kept
+  // apart from it on purpose. That record now says the engine picks a lawful
+  // account to convert INTO; this one says it does not ask whether the dollars
+  // could have come OUT. Folding the second into the first would have let a
+  // settled record carry a claim it does not support.
+
+  'irc-401-k-2-B-i-employer-plan-conversion-source-not-gated-by-distributability': {
+    title: 'A pre-tax employer plan balance is treated as convertible without asking whether it may be distributed',
+    statement:
+      'A qualified cash or deferred arrangement must provide that amounts attributable to the employee’s elective contributions are not distributable earlier than one of a closed list of events: severance from employment, death or disability, a 401(k)(10) event, the attainment of age 59½ in a profit-sharing or stock bonus plan, hardship, and three narrower cases. A conversion out of an employer plan is a qualified rollover contribution only under 408A(e)(1)(B)(ii), which admits it only if the rollover meets the requirements of section 402(c), 403(b)(8) or 457(e)(16) -- every one of which operates on a distribution. A balance the plan may not distribute therefore cannot be converted at all. Not modelled: isConvertibleToRoth admits every owned traditional account, employer plans included, and applies no distributability gate of any kind. The aggregate conversion path both weights an owner’s slice by that balance and drains it, so a participant who has neither separated from service nor reached 59½ is modelled converting a 401(k) balance they cannot move.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'Stated as capacity first, because that is the part a planner acts on: the engine OVERSTATES how much an owner can convert, and it will size and execute conversions a participant is not permitted to make. Against the taxpayer’s tax exposure, which is what this field measures, the sign runs the same two-stage course as any spurious conversion. In the year of the modelled conversion the inclusion is not one the participant could have incurred, so tax is OVERSTATED. Afterwards it reverses: dollars that had to stay in the plan, to be taxed on a later distribution or as an RMD, instead sit in a Roth this engine neither taxes on withdrawal nor subjects to an RMD, which UNDERSTATES tax in every later year. Two limits on how far the record reaches. The restriction quoted below governs elective deferrals in a cash or deferred arrangement; 403(b) and governmental 457(b) plans carry their own distribution restrictions and the Plan schema cannot tell any of the three apart, since kind employer is the only discriminant a traditional account carries. And the gate is not absolute even inside 401(k): a plan may permit in-service distribution at 59½, and many do, so the engine and the statute agree for every separated or post-59½ participant. What the engine cannot do is tell them apart -- it holds no separation-from-service fact and no plan-terms fact, and a projection year’s retirement age is a plan assumption rather than an established event. Gating on the assumed retirement age was considered and not taken here: it would refuse conversions for a participant whose plan allows them and would still admit conversions for one whose plan does not, trading a knowable overstatement for an unknowable mixture.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 401(k)(2)(B)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim',
+      quotedText:
+        'under which amounts held by the trust which are attributable to employer contributions made pursuant to the employee\'s election- (i) may not be distributable to participants or other beneficiaries earlier than- (I) severance from employment, death, or disability, (II) an event described in paragraph (10), (III) in the case of a profit-sharing or stock bonus plan, the attainment of age 59½, (IV) subject to the provisions of paragraph (14), upon hardship of the employee, (V) in the case of a qualified reservist distribution (as defined in section 72(t)(2)(G)(iii)), the date on which a period referred to in subclause (III) of such section begins, (VI) except as may be otherwise provided by regulations, with respect to amounts invested in a lifetime income investment (as defined in subsection (a)(38)(B)(ii)), the date that is 90 days prior to the date that such lifetime income investment may no longer be held as an investment option under the arrangement, or (VII) as provided in section 401(a)(39),',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408A(e)(1)(B)(ii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408A&num=0&edition=prelim',
+      quotedText:
+        'The term "qualified rollover contribution" means a rollover contribution- ... (B) from an eligible retirement plan, but only if- ... (ii) in the case of any eligible retirement plan (as defined in section 402(c)(8)(B) other than clauses (i) and (ii) thereof), such rollover contribution meets the requirements of section 402(c), 403(b)(8), or 457(e)(16), as applicable',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Notice 2010-84, A-2',
+      url: 'https://www.irs.gov/irb/2010-51_IRB',
+      quotedText:
+        'However, an amount is not eligible for an in-plan Roth rollover unless it satisfies the rules for distribution under the Code and is an eligible rollover distribution as defined in § 402(c)(4).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/strategies/accountEligibility.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
   // --- Registered 2026-08-04: the charitable and section 68 cluster --------
   //
   // Four of these say the same structural thing from different angles. The
