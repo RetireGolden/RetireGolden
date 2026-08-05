@@ -181,11 +181,68 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
   IL: [
     'ilga.gov', // Illinois General Assembly, Illinois Compiled Statutes
   ],
+  IN: [
+    // Verified 2026-08-05, and the only state here needing THREE entries.
+    //
+    // `iga.in.gov` carries the Indiana Code, but not where a citation would
+    // look for it: `/laws/{year}/ic/titles/6/...` is a client-side route with
+    // no server-rendered text at all, and the machine-readable Code is at
+    // `/ic/{year}/Title_{n}/Article_{a}/Chapter_{c}.pdf`, a pattern that
+    // appears nowhere on the site. The host also serves a 691-byte React shell
+    // to any client without a browser User-Agent — every path, `/api/*`
+    // included — so a fetcher trusting HTTP 200 records an empty document as
+    // "the statute". Both traps fail silently, which is why they are recorded
+    // here and not only in the research file.
+    'iga.in.gov', // Indiana General Assembly, Indiana Code
+    // The entry nobody would guess. Indiana DOR's form index page is on
+    // in.gov, but every form link on it points at a different registrable
+    // host, and the forms are the operative instruction source for the
+    // military deduction and the exemptions.
+    'forms.in.gov', // Indiana DOR forms and instruction booklets
+    // And the uncomfortable one, admitted deliberately rather than by
+    // oversight: `in.gov` is a shared executive portal, which is the shape
+    // refused for Pennsylvania a few entries above. Three things distinguish
+    // it. Indiana DOR publishes its departmental notices and information
+    // bulletins under `www.in.gov/dor/files/` and NOWHERE else, so unlike
+    // Pennsylvania there is no narrower host to prefer and no Indiana
+    // regulation carrying the same language. IC 6-3-2-1(e) names Departmental
+    // Notice #1 as the vehicle by which the department must publish each
+    // even-numbered year's rate, so that document is statutorily designated
+    // rather than merely convenient. And the claim it is cited for — that a
+    // county levy attaches to every Indiana resident — has no code section
+    // stating it, which is precisely the case `stateAgencyPublication` exists
+    // for. What this cannot do is narrow to `/dor/files/`: the table holds
+    // hosts, not paths. That cost is real and is stated rather than glossed.
+    'in.gov', // Indiana DOR departmental notices and information bulletins
+  ],
   ME: [
     'legislature.maine.gov', // Office of the Revisor of Statutes, Maine Revised Statutes
   ],
   MO: [
     'revisor.mo.gov', // Missouri Revisor of Statutes
+  ],
+  MS: [
+    // Verified 2026-08-05. Mississippi is the second state, after Arkansas,
+    // where "primary source" cannot mean the codified statute: the Mississippi
+    // Code is published by LexisNexis under contract, legislature.ms.gov's only
+    // link to it is `lexisnexis.com/hottopics/mscode/`, and that redirects into
+    // a cookie-and-JavaScript session app on advance.lexis.com serving no text
+    // to a verifier. The statutory language therefore comes from BILLS, which
+    // reprint the affected section in full — preferring one that BRINGS a
+    // section FORWARD, since that prints it unmarked, over one that amends it,
+    // where the strike-through and underline markup interleaves.
+    'billstatus.ls.state.ms.us', // Mississippi Legislature bill status: bill text as introduced and enrolled
+    // The department, for the 2026 rate, the forms and the FAQ. Its form
+    // filenames contain SPACES, so a citation must keep the `%20`.
+    'dor.ms.gov', // Mississippi Department of Revenue
+    //
+    // NOT listed, and the omission is the point: `sos.ms.gov` publishes Title
+    // 35, Part III of the Mississippi Administrative Code — the department's
+    // own income tax regulations — and returns HTTP 403 to every non-browser
+    // client, with a browser User-Agent, with a Referer from the linking DOR
+    // page, over http, and on the apex domain alike. No Mississippi record can
+    // rest on regulation authority until someone pulls that PDF with a real
+    // browser, which matters most for `ms-early-or-excess-distribution-not-exempt`.
   ],
   ND: [
     // Re-checked 2026-08-05, when the second slice of North Dakota records was

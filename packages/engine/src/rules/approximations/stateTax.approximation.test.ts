@@ -26,6 +26,21 @@
  *   - Arizona's age-65 relief is a $2,100 per-person exemption above the
  *     deduction line; the pack's only age-65 field is the FEDERAL addition, and
  *     it attaches to conforming states alone.
+ *   - Indiana deducts military retirement in full and gives every other public
+ *     pension nothing; the North Dakota and Arizona shape again, pointed the
+ *     way Arkansas's is.
+ *   - Indiana's civil service annuity adjustment is capped at $16,000, gated at
+ *     62, and reduced by Social Security received; nothing in the bucket
+ *     offsets one income stream against another.
+ *   - Indiana's county income tax is universal and is not in the pack at all —
+ *     the one gap here that is a missing DEFAULT rather than a missing shape.
+ *   - Indiana's exemptions and Mississippi's are flat per-person subtractions
+ *     with an age-conditioned half; `standardDeduction` is per filing status.
+ *   - Mississippi's exclusion stops at a distribution bearing the federal
+ *     72(t) additional tax; that is a fact about a distribution and the input
+ *     model carries only household ages.
+ *   - A Mississippi COMBINED return runs the whole schedule per spouse;
+ *     `PerStatus<StateTaxBracket[]>` has one schedule per filing status.
  *   - Pennsylvania conditions on the PLAN's age or service requirement; the
  *     pack substitutes a flat age 60.
  *   - New York conditions on attaining 59½; `minAge` is compared against an
@@ -44,13 +59,20 @@
  * `tax/stateTax.rules.test.ts` as `settled`.
  *
  * Directions are mixed, and which way each runs is the thing to read first.
- * North Dakota's and Arizona's public-pension entries, Arkansas's age gate and
- * Arizona's gain subtraction all under-charge — three of them because closing a
- * real gap with a flag coarser than the statute opened a smaller one facing the
- * other way. The rest over-charge. An under-charge is the dangerous direction
- * and is registered for exactly that reason: a correction that quietly
- * introduces one is worse than the overstatement it replaced if nobody can see
- * it.
+ * North Dakota's and Arizona's public-pension entries, Arkansas's age gate,
+ * Arizona's gain subtraction, Indiana's absent county rate and Mississippi's
+ * early-distribution carve-out all under-charge — several of them because
+ * closing a real gap with a flag coarser than the statute opened a smaller one
+ * facing the other way. The rest over-charge. An under-charge is the dangerous
+ * direction and is registered for exactly that reason: a correction that
+ * quietly introduces one is worse than the overstatement it replaced if nobody
+ * can see it.
+ *
+ * Mississippi is the state where the sign flips WITHIN one jurisdiction rather
+ * than between two, which is why its records are never netted: the exemptions
+ * over-charge a 65-plus household living on exempt pension income, and the
+ * early-distribution carve-out under-charges the pre-59½ drawdown. Reading a
+ * blended direction for Mississippi would hide both.
  */
 
 import { expect, it } from 'vitest'
@@ -59,7 +81,7 @@ import { describeRule } from '../describeRule.js'
 import { stateParamsFor } from '../../params/state/index.js'
 import type { StateTaxParams } from '../../params/state/types.js'
 import type { TaxYearInput } from '../../projection/types.js'
-import { computeStateTax } from '../../tax/stateTax.js'
+import { computeStateTax, computeStateTaxDetail } from '../../tax/stateTax.js'
 
 const TAX_YEAR = 2026
 
@@ -576,5 +598,328 @@ describeRule('ars-43-1023-e-age-65-exemption', {
       agesAlive: [70],
     })
     expect(computeStateTax(pack('AZ'), preExempted)).toBeCloseTo(accepted, 6)
+  })
+})
+
+// Indiana is one flat rate on one base and the pack grants no deduction at
+// all, so every fixture below is 2.95% of whatever the pack leaves in that
+// base — which, for three of the four, is the whole of it.
+const IN_RATE = 0.0295
+const inTax = (taxable: number) => Math.max(0, taxable) * IN_RATE
+const IN_MILITARY_OTHER_INCOME = 24_000
+const IN_MILITARY_PENSION = 36_000
+const IN_MILITARY_GROSS = IN_MILITARY_OTHER_INCOME + IN_MILITARY_PENSION
+
+describeRule('ic-6-3-2-4-military-retirement-deduction', {
+  readings: {
+    militaryRetirementDeductedInFull: inTax(IN_MILITARY_OTHER_INCOME),
+    noDeductionAtAllLikeEveryOtherIndianaPension: inTax(IN_MILITARY_GROSS),
+  },
+  accepted: 'militaryRetirementDeductedInFull',
+  produced: 'noDeductionAtAllLikeEveryOtherIndianaPension',
+}, ({ accepted, produced }) => {
+  // An Indiana military retiree. IC 6-3-2-4(a)(2) deducts the pension outright
+  // with no age condition; the pack's public bucket carries the `none` Indiana
+  // applies to every OTHER public pension, so this household is over-charged.
+  const scenario = input({
+    state: 'IN',
+    ordinaryIncome: IN_MILITARY_GROSS,
+    publicPensionIncome: IN_MILITARY_PENSION,
+    agesAlive: [70],
+  })
+
+  it('charges Indiana tax on a military pension Indiana deducts in full', () => {
+    expect(computeStateTax(pack('IN'), scenario)).toBeCloseTo(produced, 6)
+    expect(computeStateTax(pack('IN'), scenario)).toBeGreaterThan(accepted)
+  })
+
+  it('reaches the statute’s figure only by exempting every public pension in the state', () => {
+    // Which is what closing it with the one flag available would mean, and
+    // what the pack did until 2026-08-05. The direction was chosen: an
+    // INPRS/PERF, TRF, municipal police or fire pension gets NOTHING under
+    // IC 6-3-2's closed list, and there are far more of those households than
+    // military ones. What would actually close the gap is a fact the input
+    // model does not carry — whether the pension is uniformed or civil.
+    const uniformedBucket = {
+      ...pack('IN'),
+      retirementRuleShared: false,
+      retirementPublic: { kind: 'full' as const },
+    }
+    expect(computeStateTax(uniformedBucket, scenario)).toBeCloseTo(accepted, 6)
+  })
+})
+
+const IN_CSRS_ANNUITY = 40_000
+const IN_CSRS_OTHER_INCOME = 10_000
+const IN_CSRS_GROSS = IN_CSRS_ANNUITY + IN_CSRS_OTHER_INCOME
+const IN_CSRS_DEDUCTION_CEILING = 16_000
+
+describeRule('ic-6-3-2-3-7-civil-service-annuity-age-62', {
+  readings: {
+    sixteenThousandDeductedAtSixtyTwo: inTax(IN_CSRS_GROSS - IN_CSRS_DEDUCTION_CEILING),
+    noCivilServiceAdjustmentAtAll: inTax(IN_CSRS_GROSS),
+  },
+  accepted: 'sixteenThousandDeductedAtSixtyTwo',
+  produced: 'noCivilServiceAdjustmentAtAll',
+}, ({ accepted, produced }) => {
+  // Sixty-five, a federal civil service annuity, and no Social Security — so
+  // IC 6-3-2-3.7(a)(2)'s offset takes nothing off and the whole $16,000
+  // ceiling is available. That is where the gap is widest, and it is a real
+  // household: a CSRS annuitant who never paid into Social Security.
+  const scenario = input({
+    state: 'IN',
+    ordinaryIncome: IN_CSRS_GROSS,
+    publicPensionIncome: IN_CSRS_ANNUITY,
+    agesAlive: [65],
+  })
+
+  it('gives a 65-year-old CSRS annuitant no adjustment at all', () => {
+    expect(computeStateTax(pack('IN'), scenario)).toBeCloseTo(produced, 6)
+    expect(computeStateTax(pack('IN'), scenario)).toBeGreaterThan(accepted)
+  })
+
+  it('reaches the statute’s figure only through a cap that cannot also carry the military case', () => {
+    // `capped` is the closest shape the bucket has, and it is wrong twice
+    // over: it carries no offset against Social Security received, which is
+    // what (a)(2) subtracts and what takes most annuitants to zero, and
+    // setting it puts a $16,000 ceiling on the military pension IC 6-3-2-4
+    // deducts outright. One flag cannot hold both.
+    const capped = {
+      ...pack('IN'),
+      retirementRuleShared: false,
+      retirementPublic: { kind: 'capped' as const, capPerPerson: IN_CSRS_DEDUCTION_CEILING, minAge: 62 },
+    }
+    expect(computeStateTax(capped, scenario)).toBeCloseTo(accepted, 6)
+  })
+})
+
+// A county at 2%, mid-range across the 92 for 2026 (the published extremes are
+// Porter at 0.5% and Randolph at 3%). Written as a rate a caller supplies,
+// because that is the only way one can reach the calculator.
+const IN_COUNTY_RATE_PCT = 2
+const IN_COUNTY_INCOME = 70_000
+
+describeRule('ic-6-3-6-2-2-county-income-tax-shares-the-state-base', {
+  readings: {
+    stateAndCountyOnTheSameBase:
+      inTax(IN_COUNTY_INCOME) + IN_COUNTY_INCOME * (IN_COUNTY_RATE_PCT / 100),
+    stateAloneWithTheCallerSilent: inTax(IN_COUNTY_INCOME),
+  },
+  accepted: 'stateAndCountyOnTheSameBase',
+  produced: 'stateAloneWithTheCallerSilent',
+}, ({ accepted, produced }) => {
+  const scenario = input({ state: 'IN', ordinaryIncome: IN_COUNTY_INCOME, agesAlive: [70] })
+
+  it('charges an Indiana household no county tax when the caller names no rate', () => {
+    // `assumptions.localIncomeTaxPct` defaults to 0 and a relocation candidate
+    // documents omission as 0, so this is what an Indiana projection costs
+    // unless somebody enters a county rate by hand — about $1,400 a year less
+    // than Indiana charges, against $2,065 of state tax.
+    expect(computeStateTaxDetail(pack('IN'), scenario).totalTax).toBeCloseTo(produced, 6)
+    expect(computeStateTaxDetail(pack('IN'), scenario).localTax).toBe(0)
+    expect(computeStateTaxDetail(pack('IN'), scenario).totalTax).toBeLessThan(accepted)
+  })
+
+  it('reaches the statute’s figure the moment a rate is supplied, which is the shape being right', () => {
+    // The mechanism is not missing — the county tax runs on state taxable
+    // income, which is exactly what `localRatePct` multiplies. What is missing
+    // is a per-state DEFAULT, and `StateTaxParams` has no field for one. No
+    // figure is invented here either: the 92 published rates span sixfold and
+    // Indiana publishes no statewide number to stand for them, so an average
+    // would be a figure with no publisher.
+    const withCounty = computeStateTaxDetail(pack('IN'), scenario, { localRatePct: IN_COUNTY_RATE_PCT })
+    expect(withCounty.totalTax).toBeCloseTo(accepted, 6)
+    expect(withCounty.localTax).toBeCloseTo(withCounty.taxableIncome * (IN_COUNTY_RATE_PCT / 100), 6)
+  })
+})
+
+// A married couple, both 67. Schedule 3 gives them $2,000 of personal
+// exemption and $1,000 each for age, so $4,000 in all.
+const IN_EXEMPTION_INCOME = 70_000
+const IN_EXEMPTIONS_65_PLUS_JOINT = 4_000
+
+describeRule('ic-6-3-1-3-5-exemptions-not-a-standard-deduction', {
+  readings: {
+    scheduleThreeExemptionsSubtracted: inTax(IN_EXEMPTION_INCOME - IN_EXEMPTIONS_65_PLUS_JOINT),
+    nothingSubtractedAtAll: inTax(IN_EXEMPTION_INCOME),
+  },
+  accepted: 'scheduleThreeExemptionsSubtracted',
+  produced: 'nothingSubtractedAtAll',
+}, ({ accepted, produced }) => {
+  const scenario = input({
+    state: 'IN',
+    filingStatus: 'marriedFilingJointly',
+    ordinaryIncome: IN_EXEMPTION_INCOME,
+    peopleAged65Plus: 2,
+    agesAlive: [67, 67],
+  })
+
+  it('subtracts nothing from an Indiana base Indiana subtracts $4,000 from', () => {
+    expect(computeStateTax(pack('IN'), scenario)).toBeCloseTo(produced, 6)
+    expect(computeStateTax(pack('IN'), scenario)).toBeGreaterThan(accepted)
+  })
+
+  it('reaches the statute’s figure only by borrowing a field that then over-deducts under 65', () => {
+    // `standardDeduction` is the only flat subtraction the pack has, and the
+    // figure that prices THIS household right is $4,000 — of which $2,000 is
+    // conditioned on age. A household under 65 gets $2,000 and would be
+    // over-deducted by the other half, turning an over-charge into an
+    // under-charge. That, plus the pack modelling no state personal exemption
+    // anywhere, is why the field stays at zero.
+    const borrowed = {
+      ...pack('IN'),
+      standardDeduction: { single: 2_000, marriedFilingJointly: IN_EXEMPTIONS_65_PLUS_JOINT },
+    }
+    expect(computeStateTax(borrowed, scenario)).toBeCloseTo(accepted, 6)
+    const underSixtyFive = input({
+      state: 'IN',
+      filingStatus: 'marriedFilingJointly',
+      ordinaryIncome: IN_EXEMPTION_INCOME,
+      agesAlive: [60, 60],
+    })
+    expect(computeStateTax(borrowed, underSixtyFive))
+      .toBeLessThan(inTax(IN_EXEMPTION_INCOME - 2_000))
+  })
+})
+
+// Mississippi: 0% on the first $10,000 of taxable income, 4% above it.
+const MS_RATE = 0.04
+const MS_ZERO_BAND = 10_000
+const MS_DEDUCTION_SINGLE = 2_300
+const MS_DEDUCTION_JOINT = 4_600
+const msTax = (taxable: number) => Math.max(0, Math.max(0, taxable) - MS_ZERO_BAND) * MS_RATE
+const MS_EARLY_WITHDRAWAL = 40_000
+
+describeRule('ms-early-or-excess-distribution-not-exempt', {
+  readings: {
+    earlyDistributionTaxedLikeOtherIncome: msTax(MS_EARLY_WITHDRAWAL - MS_DEDUCTION_SINGLE),
+    exemptLikeEveryOtherRetirementDistribution: 0,
+  },
+  accepted: 'earlyDistributionTaxedLikeOtherIncome',
+  produced: 'exemptLikeEveryOtherRetirementDistribution',
+}, ({ accepted, produced }) => {
+  // Fifty-eight, drawing a traditional IRA with no IRC 72(t) exception, so the
+  // distribution bears the additional tax and Form 80-100's Line 46
+  // instruction puts it on the taxable line.
+  const scenario = input({
+    state: 'MS',
+    ordinaryIncome: MS_EARLY_WITHDRAWAL,
+    privateRetirementIncome: MS_EARLY_WITHDRAWAL,
+    agesAlive: [58],
+  })
+
+  it('exempts an early withdrawal Mississippi taxes in full', () => {
+    expect(computeStateTax(pack('MS'), scenario)).toBeCloseTo(produced, 6)
+    expect(computeStateTax(pack('MS'), scenario)).toBeLessThan(accepted)
+  })
+
+  it('is not reachable through minAge, which asks a different question', () => {
+    // Two independent reasons, and both matter. `retirementExclusion` reads
+    // minAge against the HOUSEHOLD — if any person alive meets it the whole
+    // bucket is excluded — so the same setting that prices this filer right
+    // restores the exemption the moment an older spouse appears. And the
+    // statutory test is the federal 72(t) additional tax rather than an age: a
+    // substantially-equal-periodic-payment series bears no additional tax and
+    // stays exempt at any age, which an age gate would deny. So `minAge` is a
+    // different wrong rather than a smaller one.
+    const aged = { ...pack('MS'), retirementPrivate: { kind: 'full' as const, minAge: 60 } }
+    expect(computeStateTax(aged, scenario)).toBeCloseTo(accepted, 6)
+    const withOlderSpouse = input({
+      state: 'MS',
+      ordinaryIncome: MS_EARLY_WITHDRAWAL,
+      privateRetirementIncome: MS_EARLY_WITHDRAWAL,
+      agesAlive: [58, 62],
+    })
+    expect(computeStateTax(aged, withOlderSpouse)).toBeCloseTo(produced, 6)
+  })
+})
+
+// A Mississippi couple both 67, living on exempt pension income plus $40,000
+// of investment income. 27-7-21 gives them $12,000 of personal exemption and
+// $1,500 each for age.
+const MS_INVESTMENT_INCOME = 40_000
+const MS_EXEMPTIONS_65_PLUS_JOINT = 15_000
+
+describeRule('ms-27-7-21-personal-and-age-65-exemptions', {
+  readings: {
+    twelveThousandPlusThreeSubtracted:
+      msTax(MS_INVESTMENT_INCOME - MS_DEDUCTION_JOINT - MS_EXEMPTIONS_65_PLUS_JOINT),
+    standardDeductionAlone: msTax(MS_INVESTMENT_INCOME - MS_DEDUCTION_JOINT),
+  },
+  accepted: 'twelveThousandPlusThreeSubtracted',
+  produced: 'standardDeductionAlone',
+}, ({ accepted, produced }) => {
+  const scenario = input({
+    state: 'MS',
+    filingStatus: 'marriedFilingJointly',
+    ordinaryIncome: MS_INVESTMENT_INCOME,
+    peopleAged65Plus: 2,
+    agesAlive: [67, 67],
+  })
+
+  it('charges the modal Mississippi retiree 4% on $15,000 Mississippi exempts', () => {
+    expect(computeStateTax(pack('MS'), scenario)).toBeCloseTo(produced, 6)
+    expect(computeStateTax(pack('MS'), scenario)).toBeGreaterThan(accepted)
+    // The direction here is the OPPOSITE of the early-distribution record's,
+    // and this is the household where it bites: the pension and the Social
+    // Security are already outside the base, so nothing runs the other way.
+    expect(computeStateTax(pack('MS'), scenario) - accepted)
+      .toBeCloseTo(MS_EXEMPTIONS_65_PLUS_JOINT * MS_RATE, 6)
+  })
+
+  it('reaches the statute’s figure only by folding an exemption into the deduction field', () => {
+    // Which the pack does nowhere: that slot holds a state's STANDARD
+    // deduction, or for Colorado and North Dakota the federal-taxable-income
+    // converter. Doing it here would make Mississippi an unmarked exception,
+    // and the $3,000 age half would over-deduct for a couple under 65 exactly
+    // as Indiana's would.
+    const folded = {
+      ...pack('MS'),
+      standardDeduction: {
+        single: MS_DEDUCTION_SINGLE + 7_500,
+        marriedFilingJointly: MS_DEDUCTION_JOINT + MS_EXEMPTIONS_65_PLUS_JOINT,
+      },
+    }
+    expect(computeStateTax(folded, scenario)).toBeCloseTo(accepted, 6)
+  })
+})
+
+describeRule('ms-combined-return-runs-the-schedule-per-spouse', {
+  readings: {
+    aZeroBandInEachSpousesColumn:
+      Math.max(0, MS_INVESTMENT_INCOME - MS_DEDUCTION_JOINT - 2 * MS_ZERO_BAND) * MS_RATE,
+    oneZeroBandForTheReturn: msTax(MS_INVESTMENT_INCOME - MS_DEDUCTION_JOINT),
+  },
+  accepted: 'aZeroBandInEachSpousesColumn',
+  produced: 'oneZeroBandForTheReturn',
+}, ({ accepted, produced }) => {
+  const scenario = input({
+    state: 'MS',
+    filingStatus: 'marriedFilingJointly',
+    ordinaryIncome: MS_INVESTMENT_INCOME,
+    agesAlive: [67, 67],
+  })
+
+  it('gives a married couple one $10,000 zero band where a combined return gets two', () => {
+    expect(computeStateTax(pack('MS'), scenario)).toBeCloseTo(produced, 6)
+    expect(computeStateTax(pack('MS'), scenario)).toBeGreaterThan(accepted)
+    expect(computeStateTax(pack('MS'), scenario) - accepted).toBeCloseTo(MS_ZERO_BAND * MS_RATE, 6)
+  })
+
+  it('reaches the combined figure only by doubling the band for every married couple', () => {
+    // Expressible, and still wrong to ship. A single-income couple cannot use
+    // the combined method at all — the department's own gloss is "(both
+    // spouses work)" — so doubling the threshold would under-charge them by
+    // the same $400 it over-charges a two-income couple today, and swap a
+    // conservative error for a flattering one. What the pack lacks is a
+    // per-spouse column, which `PerStatus<StateTaxBracket[]>` has no room for.
+    const doubled = {
+      ...pack('MS'),
+      brackets: {
+        ...pack('MS').brackets,
+        marriedFilingJointly: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 2 * MS_ZERO_BAND, ratePct: 4 }],
+      },
+    }
+    expect(computeStateTax(doubled, scenario)).toBeCloseTo(accepted, 6)
   })
 })
