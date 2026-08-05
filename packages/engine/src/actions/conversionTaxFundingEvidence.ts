@@ -294,7 +294,10 @@ export interface ConversionTaxFundingFixedPointEvidence
  * allocated share to the cent and the group total is still wrong, because a
  * peer conversion in the same filing unit and year did not. It is why the group
  * figures are on every member's record rather than on a separate group record
- * nobody would be forced to read.
+ * nobody would be forced to read. `memberOnly` is its mirror — this member's
+ * own share is off while the group total balances, which happens when two
+ * peers' errors offset — and it is still a mismatch, because per-member
+ * fidelity is what makes each conversion individually executable.
  */
 export type ConversionTaxFundingMismatchKind =
   | 'memberOnly'
