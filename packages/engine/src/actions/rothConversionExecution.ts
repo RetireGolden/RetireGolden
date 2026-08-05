@@ -4,7 +4,7 @@ import {
   type ConversionTaxFunding,
   type RothConversionRequest,
 } from './contract.js'
-import { accountIdSchema } from './identity.js'
+import { accountIdSchema, type AllocationId } from './identity.js'
 import { asUsdCents, usdCentsSchema, type UsdCents } from './money.js'
 import {
   createActionReason,
@@ -691,6 +691,24 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
     if (request.year !== input.year) reasons.push(createActionReason('conversion-date-outside-action-year', { personId: request.personId }))
     const preflight = evaluateRetirementActionEligibilityFromPlan(request, input.plan as Plan, runtimeEvidence)
     if (preflight.status !== 'accepted') reasons.push(...preflight.reasons)
+    // Which allocations the preflight has already disqualified as sources: an
+    // unproven IRA subtype, an inherited source, an employer plan that has not
+    // opened for distribution. A physical-balance report about one of those
+    // would claim its balance was authoritatively consulted, and the
+    // disqualification is the statement that it could not have been — the
+    // account is not established as a source to consult. The report is
+    // withheld for that allocation and no other, because this executor answers
+    // every allocation in one pass rather than stopping at the first blocker:
+    // a household short on one IRA still learns it while a second stays
+    // unclassified.
+    const disqualifiedAllocationIds = new Set<AllocationId>()
+    if (preflight.status !== 'accepted') {
+      for (const reason of preflight.reasons) {
+        if (reason.allocationId !== undefined) {
+          disqualifiedAllocationIds.add(reason.allocationId)
+        }
+      }
+    }
     const destination = accounts.get(request.destinationRothAccountId)
     if (destination === undefined) {
       reasons.push(createActionReason('conversion-destination-not-found', { accountId: request.destinationRothAccountId }))
@@ -725,18 +743,22 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
       if (source.type !== 'traditional') {
         reasons.push(createActionReason('conversion-source-not-convertible', { accountId: allocation.sourceAccountId, allocationId: allocation.allocationId }))
       }
+      // A source this executor has just refused for what it IS carries the
+      // same silence as one the preflight refused, and for the same reason.
+      const sourceEstablished = source.type === 'traditional' &&
+        !disqualifiedAllocationIds.has(allocation.allocationId)
       if (remaining === undefined) {
         reasons.push(createActionReason('required-facts-missing', {
           personId: request.personId,
           accountId: allocation.sourceAccountId,
           allocationId: allocation.allocationId,
         }))
-      } else if (remaining === 0) {
+      } else if (sourceEstablished && remaining === 0) {
         reasons.push(createActionReason('conversion-balance-unavailable', {
           accountId: allocation.sourceAccountId,
           allocationId: allocation.allocationId,
         }))
-      } else if (remaining < allocation.requestedAmount) {
+      } else if (sourceEstablished && remaining < allocation.requestedAmount) {
         reasons.push(createActionReason('conversion-balance-trimmed', {
           accountId: allocation.sourceAccountId,
           allocationId: allocation.allocationId,
