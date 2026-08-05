@@ -95,8 +95,14 @@ of them changes what the authority says. The apostrophe-style list is reported h
 |---|---|
 | `EXACT` | Literal substring of the source. The contract, met. |
 | `ELISION-EXACT` | Every segment between elision markers is a literal substring. The correct way to shorten a quote. |
-| `PDF-WORD-LEVEL` | Every word of the quote is present in the extracted PDF text. **Not a pass** — see below. |
-| `PDF-NOT-VERIFIABLE` | The PDF could not be read, or the words are all present but the remaining character difference cannot be separated from extraction damage. |
+| `PDF-WORD-LEVEL` | The quote is a substring of the extracted PDF text once the punctuation ladder has been applied — the same test an HTML source would have to pass, but reported one grade lower because extraction, not the registry, may be what the ladder is absorbing. **Not a pass** — see below. |
+| `PDF-NOT-VERIFIABLE` | The PDF could not be read; or every word is present but **no ladder rung** accounts for the remaining difference, so a real defect cannot be told apart from extraction damage. |
+
+The two PDF verdicts are not "words present" versus "words absent" — a quote whose words are all
+absent is `ABSENT`, on a PDF as anywhere else. They differ by **whether the punctuation ladder
+explains the difference**. `PDF-WORD-LEVEL` means it did and the result is a substring;
+`PDF-NOT-VERIFIABLE` means it did not, which on an HTML source would be a finding and here is
+undetermined.
 
 ## Why PDF sources never PASS
 

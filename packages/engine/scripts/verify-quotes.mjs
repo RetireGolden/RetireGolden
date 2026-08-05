@@ -432,6 +432,21 @@ const cacheKey = (url) => createHash('sha256').update(url).digest('hex').slice(0
  */
 
 /**
+ * Cached response metadata, or null when the file cannot be trusted.
+ *
+ * @param {string} metaPath
+ * @returns {{contentType?: string, status?: number} | null}
+ */
+function readCacheMeta(metaPath) {
+  try {
+    const parsed = JSON.parse(readFileSync(metaPath, 'utf8'))
+    return typeof parsed === 'object' && parsed !== null ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+/**
  * @param {string} url
  * @param {{cacheDir: string, refresh: boolean, delayMs: number}} opts
  * @returns {Promise<{body: Buffer, contentType: string, status: number, fromCache: boolean, error?: string}>}
@@ -441,12 +456,18 @@ async function fetchWithCache(url, opts) {
   const bodyPath = join(opts.cacheDir, `${key}.body`)
   const metaPath = join(opts.cacheDir, `${key}.meta.json`)
   if (!opts.refresh && existsSync(bodyPath) && existsSync(metaPath)) {
-    const meta = JSON.parse(readFileSync(metaPath, 'utf8'))
-    return {
-      body: readFileSync(bodyPath),
-      contentType: meta.contentType ?? '',
-      status: meta.status ?? 0,
-      fromCache: true,
+    // A truncated or hand-edited meta file is a cache MISS, not a crash. An
+    // interrupted write leaves exactly that, and aborting on it would be the
+    // one failure mode this tool exists to avoid — it is worth something only
+    // if it finishes and produces a ledger. Falling through refetches.
+    const meta = readCacheMeta(metaPath)
+    if (meta !== null) {
+      return {
+        body: readFileSync(bodyPath),
+        contentType: meta.contentType ?? '',
+        status: meta.status ?? 0,
+        fromCache: true,
+      }
     }
   }
   await sleep(opts.delayMs)
@@ -510,11 +531,18 @@ async function loadSource(url, opts) {
     return { ...base, ok: false, problem: 'bot challenge or block page returned instead of the document' }
   }
   const variants = htmlVariants(text)
-  if (variants[0].length < MIN_SOURCE_TEXT_CHARS) {
+  // Measured on the LONGEST variant, not the first. `htmlVariants` returns two
+  // deliberately different joiner strategies, and the one that does not insert
+  // spacing between tags is routinely shorter — so testing `variants[0]` alone
+  // can condemn a real page as a stub while the other variant holds the whole
+  // document. A false UNFETCHABLE is the costlier error here: it hides a usable
+  // source behind a verdict that reads like the publisher's fault.
+  const longestVariant = variants.reduce((left, right) => (right.length > left.length ? right : left))
+  if (longestVariant.length < MIN_SOURCE_TEXT_CHARS) {
     return {
       ...base,
       ok: false,
-      problem: `only ${variants[0].length} characters of text — a shell or error page, not the document`,
+      problem: `only ${longestVariant.length} characters of text — a shell or error page, not the document`,
     }
   }
   return { ...base, ok: true, variants }
