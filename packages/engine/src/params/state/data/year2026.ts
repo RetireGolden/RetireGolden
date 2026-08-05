@@ -493,8 +493,8 @@ const rawStateYear2026 = {
       // on top of it — a $6,000/$12,000 personal exemption and $1,500 per
       // person aged 65 or over — has no field and is NOT modelled; see
       // `ms-27-7-21-personal-and-age-65-exemptions`. Nor is the per-spouse
-      // column a COMBINED return runs, which gives a two-income couple two
-      // $10,000 zero bands rather than one:
+      // column that a COMBINED return runs, which gives a two-income couple
+      // two $10,000 zero bands rather than one:
       // `ms-combined-return-runs-the-schedule-per-spouse`.
       code: 'MS', name: 'Mississippi', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 2300, marriedFilingJointly: 4600 },
