@@ -493,16 +493,49 @@ export function buildQcdAuthoringIntent(
   }
 }
 
+/**
+ * The three frames a gift's outcome can carry, and the line between them.
+ *
+ * The refusal frame introduces a list, so it may only render when the engine
+ * gave one. The other two exist so that a gift with nothing behind it is
+ * described rather than dressed in a refusal it never received.
+ */
+export const QCD_REFUSAL_FRAME =
+  'This gift is not modeled as executing. The projection gives these reasons:'
+
+export function qcdNotEvaluatedFrame(year: number): string {
+  return `This projection did not evaluate this gift for ${year}. Nothing moves for it, and the projection has no reasons to give about it.`
+}
+
+/**
+ * The record exists and moved nothing, but carries no sentence. No engine path
+ * is known to produce this, and the copy still has to hold if one appears: it
+ * says what the record says and claims nothing the record does not.
+ */
+export const QCD_NO_REASON_GIVEN_FRAME =
+  'This gift is not modeled as executing, and the projection gave no reason for it.'
+
 export interface QcdGiftReason {
   readonly code: string
   readonly message: string
 }
 
+/**
+ * `notEvaluated` is a state of the projection, not of the gift.
+ *
+ * A year can publish no record for a gift, and that is never a refusal: the
+ * year's whole QCD prerequisite batch can refuse as one, in which case the year
+ * publishes neither the QCD source nor its requests and every gift in it loses
+ * its record; a projection can produce no row for the gift's year; and
+ * `simulatePlan` can fail outright. In each case the engine has said nothing
+ * about this gift, so the surface must not borrow the refusal frame and stand
+ * it over an empty list.
+ */
 export type QcdGiftProjectionStatus =
   | 'executing'
   | 'notExecuting'
+  | 'notEvaluated'
   | 'beforeProjectionStart'
-  | 'unavailable'
 
 export interface QcdGiftProjection {
   readonly status: QcdGiftProjectionStatus
@@ -520,8 +553,14 @@ export interface QcdGiftProjection {
   readonly beyondRequiredDistribution: boolean
 }
 
-const UNAVAILABLE: QcdGiftProjection = {
-  status: 'unavailable',
+/**
+ * The only shape a gift with no published record may take: no reason, no
+ * blocker, no amount. A reason attributed to a gift the year never evaluated
+ * would be an invention, and a batch-level blocker attributed to a gift the
+ * batch never reached would be a misattribution.
+ */
+const NOT_EVALUATED: QcdGiftProjection = {
+  status: 'notEvaluated',
   reasons: [],
   executionIssues: [],
   executedAmountCents: 0,
@@ -552,22 +591,29 @@ export function projectNamedQcdGifts(
       taxCalculator,
     }).years
   } catch {
-    for (const gift of gifts) outcomes.set(gift.actionId, UNAVAILABLE)
+    for (const gift of gifts) outcomes.set(gift.actionId, NOT_EVALUATED)
     return outcomes
   }
   for (const gift of gifts) {
     if (gift.year < startYear) {
-      outcomes.set(gift.actionId, { ...UNAVAILABLE, status: 'beforeProjectionStart' })
+      outcomes.set(gift.actionId, { ...NOT_EVALUATED, status: 'beforeProjectionStart' })
       continue
     }
     const year = years.find((entry) => entry.year === gift.year)
     if (year === undefined) {
-      outcomes.set(gift.actionId, UNAVAILABLE)
+      outcomes.set(gift.actionId, NOT_EVALUATED)
       continue
     }
     const record = year.retirementActionPublication?.records.find(
       (entry) => entry.actionId === gift.actionId,
     )
+    // No record is not a refusal. Everything below reads the record, so a year
+    // that published nothing for this gift stops here rather than reporting an
+    // executed amount of zero as though the engine had decided something.
+    if (record === undefined) {
+      outcomes.set(gift.actionId, NOT_EVALUATED)
+      continue
+    }
     const prerequisite = year.qcdActionPrerequisites?.find(
       (entry) => entry.actionId === gift.actionId,
     )
@@ -577,19 +623,19 @@ export function projectNamedQcdGifts(
       : (execution?.issues ?? [])
           .filter((entry) => entry.actionId === null || entry.actionId === gift.actionId)
           .map((entry) => entry.detail)
-    const executedAmountCents = record?.executedAmount ?? 0
+    const executedAmountCents = record.executedAmount
     const rmdCoordination = execution?.committed === true
       ? execution.evidence.find((entry) => entry.actionId === gift.actionId)?.rmdCoordination
       : undefined
     outcomes.set(gift.actionId, {
       status: executedAmountCents > 0 ? 'executing' : 'notExecuting',
-      reasons: (record?.reasons ?? []).map((reason) => ({
+      reasons: record.reasons.map((reason) => ({
         code: reason.code,
         message: reason.message,
       })),
       executionIssues,
       executedAmountCents,
-      executedDate: record?.executedDate ?? null,
+      executedDate: record.executedDate,
       age70HalfThresholdDate:
         prerequisite?.eligibility.donor.age70HalfThresholdDate ?? null,
       beyondRequiredDistribution:

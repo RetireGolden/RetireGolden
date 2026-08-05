@@ -15,7 +15,9 @@ import { simulatePlan } from '@retiregolden/engine/projection/simulate'
 import { PlanCtx } from '../planContextCore'
 import {
   mintQcdCharityDesignationId,
+  qcdNotEvaluatedFrame,
   QCD_CHARITY_ATTESTATIONS,
+  QCD_REFUSAL_FRAME,
 } from '../retirementActionQcdAuthoring'
 import {
   QCD_NAMED_STANDS_DOWN_SCALAR,
@@ -177,6 +179,32 @@ function namedGift(year: number) {
   })
   if (!parsed.ok) throw new Error(parsed.issues.join('; '))
   return parsed.request
+}
+
+/**
+ * The evidence ID the simulator mints for a gift's prior-offset evidence. A
+ * Plan that already carries this exact string on one of its own eligibility
+ * records makes the whole year's QCD prerequisite batch refuse
+ * `evidenceIdReused`, and the year then publishes no record for any gift.
+ */
+function mintedPriorOffsetEvidenceId(gift: { actionId: string; year: number }): string {
+  return `projection-prior-qcd-offset:${JSON.stringify([
+    gift.actionId,
+    DONOR_ID,
+    gift.year,
+    `${gift.year}-08-01`,
+  ])}`
+}
+
+/**
+ * The invariant the refusal frame has to keep: it introduces a list, so it may
+ * never render without one. Asserted structurally over whatever the row drew.
+ */
+function assertRefusalFramesCarryReasons(host: HTMLElement) {
+  for (const callout of Array.from(host.querySelectorAll('.callout'))) {
+    if (!(callout.textContent ?? '').includes(QCD_REFUSAL_FRAME)) continue
+    expect(callout.querySelectorAll('li').length).toBeGreaterThan(0)
+  }
 }
 
 async function mount(
@@ -441,14 +469,55 @@ describe('named-QCD authoring', () => {
     })
     await act(async () => buttonByText(draft, 'Schedule this gift').click())
 
-    await waitForText(mounted.container, 'This gift is not modeled as executing.')
+    await waitForText(mounted.container, QCD_REFUSAL_FRAME)
     expect(mounted.container.textContent).toContain(
       createActionReason('qcd-direct-charity-unconfirmed').message,
     )
     expect(mounted.container.textContent).toContain('qcd-direct-charity-unconfirmed')
+    // The frame promises a list; this is the assertion that it has one.
+    assertRefusalFramesCarryReasons(mounted.container)
     // Saved, not rejected: a refusal is an answer about the projection, not a
     // reason to throw the household's gift away.
     expect(authoredGift(mounted.current()).charity.designationKind).toBe('donorAdvisedFund')
+  })
+
+  it('says the projection did not evaluate a gift it published no record for', async () => {
+    // The whole-year QCD batch refuses `evidenceIdReused`, so the year
+    // publishes no source and no requests and the gift gets no record at all.
+    // That is not a refusal, and the old code called it one: it rendered
+    // "The projection gives these reasons:" over an empty list.
+    const gift = namedGift(THIS_YEAR)
+    const plan = giftPlan({ throughYear: THIS_YEAR })
+    const facts = plan.retirementActionEligibilityFacts!
+    const collidingYear = facts.deductibleIraContributions.find(
+      (record) => record.taxYear === THIS_YEAR,
+    )!
+    collidingYear.evidenceId = mintedPriorOffsetEvidenceId(gift)
+    plan.strategies.retirementActions = [gift]
+    expect(parsePlan(structuredClone(plan)).ok).toBe(true)
+    const mounted = await mount(plan)
+
+    await waitForText(mounted.container, qcdNotEvaluatedFrame(THIS_YEAR))
+    const giftRow = row(mounted.container, `[data-qcd-gift-id="${gift.actionId}"]`)
+    expect(giftRow.textContent).toContain(qcdNotEvaluatedFrame(THIS_YEAR))
+    expect(giftRow.textContent).not.toContain(QCD_REFUSAL_FRAME)
+    expect(giftRow.querySelectorAll('.callout li')).toHaveLength(0)
+    assertRefusalFramesCarryReasons(mounted.container)
+  })
+
+  it('keeps a pre-projection gift distinct from a gift with no record', async () => {
+    const gift = namedGift(THIS_YEAR - 1)
+    const plan = giftPlan()
+    plan.strategies.retirementActions = [gift]
+    const mounted = await mount(plan)
+
+    const giftRow = row(mounted.container, `[data-qcd-gift-id="${gift.actionId}"]`)
+    expect(giftRow.textContent).toContain(
+      `This gift is scheduled for ${THIS_YEAR - 1}, before this projection starts in ${THIS_YEAR}`,
+    )
+    expect(giftRow.textContent).not.toContain(QCD_REFUSAL_FRAME)
+    expect(giftRow.textContent).not.toContain(qcdNotEvaluatedFrame(THIS_YEAR - 1))
+    assertRefusalFramesCarryReasons(mounted.container)
   })
 
   it('blocks the gift on each unchecked statement, one at a time', async () => {

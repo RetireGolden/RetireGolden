@@ -29,10 +29,13 @@ import {
   emptyQcdAuthoringDraft,
   exactActionYear,
   projectNamedQcdGifts,
+  qcdNotEvaluatedFrame,
   qcdSourceBoundaryIssues,
   qcdSourceOptions,
   QCD_CHARITY_ATTESTATIONS,
   QCD_DESIGNATION_KIND_OPTIONS,
+  QCD_NO_REASON_GIVEN_FRAME,
+  QCD_REFUSAL_FRAME,
   type QcdAuthoringDraft,
   type QcdDesignationKindChoice,
   type QcdGiftProjection,
@@ -47,7 +50,6 @@ import {
   RETIREMENT_ACTION_IRA_FACTS_HEADING,
 } from './RetirementActionEligibilityFactsEditor'
 
-const REFUSAL_FRAME = 'This gift is not modeled as executing. The projection gives these reasons:'
 const CREATE_FAILURE_FRAME = 'This gift was not created.'
 
 function personLabel(person: Plan['household']['people'][number]): string {
@@ -77,7 +79,7 @@ function GiftOutcome({
   year: number
   startYear: number
 }) {
-  if (outcome === undefined || outcome.status === 'unavailable') return null
+  if (outcome === undefined) return null
   if (outcome.status === 'beforeProjectionStart') {
     return (
       <div className="callout callout--warn" role="status">
@@ -86,7 +88,25 @@ function GiftOutcome({
       </div>
     )
   }
+  if (outcome.status === 'notEvaluated') {
+    return (
+      <div className="callout callout--warn" role="status">
+        {qcdNotEvaluatedFrame(year)}
+      </div>
+    )
+  }
   const executing = outcome.status === 'executing'
+  // The refusal frame introduces a list, so it may only render when there is a
+  // list to introduce. Without this the frame stood over nothing and claimed
+  // reasons the projection had not given.
+  const engineSentences = outcome.reasons.length + outcome.executionIssues.length
+  if (!executing && engineSentences === 0) {
+    return (
+      <div className="callout callout--warn" role="status">
+        {QCD_NO_REASON_GIVEN_FRAME}
+      </div>
+    )
+  }
   return (
     <div className={executing ? 'callout callout--info' : 'callout callout--warn'} role="status">
       {executing ? (
@@ -95,7 +115,7 @@ function GiftOutcome({
           {formatPositiveUsdCents(outcome.executedAmountCents)}.
         </strong>
       ) : (
-        <strong>{REFUSAL_FRAME}</strong>
+        <strong>{QCD_REFUSAL_FRAME}</strong>
       )}
       {outcome.reasons.length > 0 ? (
         <ul>
