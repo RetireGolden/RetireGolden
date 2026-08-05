@@ -3129,21 +3129,26 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // (`annualRetirementActionPublication.ts` `diagnosedWithinSource`), so a QCD
     // sharing a slot with a non-QCD action has to stay with the ordinary
     // executor: split across two sources the same collision would abort the
-    // whole publication instead of being reported.
+    // whole publication instead of being reported. This is decided per action,
+    // not per year -- the whole colliding slot moves, and a QCD scheduled
+    // elsewhere is untouched by someone else's collision. A QCD-only slot needs
+    // no exception, because both sides of it publish through the qcdExecutor,
+    // which reports the collision through its own schedule diagnostics.
     const currentYearQcdActionIds = new Set(
       currentYearQcdActions.map((request) => request.actionId),
     )
-    const qcdCrossKindScheduleCollision = currentYearSchedule.scheduleIssues.some(
-      (issue) =>
+    const crossKindCollidingQcdActionIds = new Set(
+      currentYearSchedule.scheduleIssues.flatMap((issue) =>
         issue.kind === 'executionSequenceConflict' &&
         issue.collidingActionIds.some((actionId) =>
-          currentYearQcdActionIds.has(actionId)) &&
-        issue.collidingActionIds.some((actionId) =>
-          !currentYearQcdActionIds.has(actionId)),
+          !currentYearQcdActionIds.has(actionId))
+          ? issue.collidingActionIds.filter((actionId) =>
+              currentYearQcdActionIds.has(actionId))
+          : []),
     )
-    const currentYearQcdExecutionActions = qcdCrossKindScheduleCollision
-      ? []
-      : currentYearQcdActions
+    const currentYearQcdExecutionActions = currentYearQcdActions.filter(
+      (request) => !crossKindCollidingQcdActionIds.has(request.actionId),
+    )
     // A named QCD leaves the ordinary executor's scope because its own executor
     // publishes it, and `publishAnnualRetirementActions` throws when two
     // executors publish the same action.
@@ -3151,7 +3156,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       ? currentYearActions
       : currentYearNonConversionActions
     ).filter((request) =>
-      request.kind !== 'qcd' || qcdCrossKindScheduleCollision)
+      request.kind !== 'qcd' ||
+      crossKindCollidingQcdActionIds.has(request.actionId))
     // One conversion-linked withdrawal group decision for the whole annual
     // pass, taken here because this is the only place every request set is
     // visible at once. Neither executor sees the same set: the conversion

@@ -2,9 +2,17 @@ import { describe, expect, it } from 'vitest'
 
 import { asAccountId, asActionId, asAllocationId, asPersonId } from '../actions/identity.js'
 import { asPositiveUsdCents } from '../actions/money.js'
-import type { QualifiedCharitableDistributionRequest } from '../actions/contract.js'
+import type {
+  OrdinaryWithdrawalRequest,
+  QualifiedCharitableDistributionRequest,
+} from '../actions/contract.js'
 import type { Account, Plan } from '../model/plan.js'
-import { singlePersonPlan, traditionalAccount, validatePlan } from '../testing/planFixtures.js'
+import {
+  cashAccount,
+  singlePersonPlan,
+  traditionalAccount,
+  validatePlan,
+} from '../testing/planFixtures.js'
 import { createFlatTaxCalculator } from './flatTax.js'
 import { simulatePlan } from './simulate.js'
 import type { YearResult } from './types.js'
@@ -53,6 +61,30 @@ function namedQcd(
       entireDistributionOtherwiseDeductibleAttested: true,
     },
     ...overrides,
+  }
+}
+
+function cashWithdrawal(
+  actionId: string,
+  executionDate: string,
+  executionSequence: number,
+): OrdinaryWithdrawalRequest {
+  const amount = asPositiveUsdCents(1_000 * 100)
+  return {
+    actionId: asActionId(actionId),
+    kind: 'ordinaryWithdrawal',
+    personId: asPersonId('p1'),
+    year: TAX_YEAR,
+    executionDate,
+    executionSequence,
+    requestedAmount: amount,
+    allocations: [{
+      allocationId: asAllocationId(`allocation-${actionId}`),
+      sourceAccountId: asAccountId('cash'),
+      requestedAmount: amount,
+    }],
+    purpose: { kind: 'spending' },
+    provenance: { source: 'manual' },
   }
 }
 
@@ -199,5 +231,128 @@ describe('a named QCD publishes its prerequisite without moving a dollar', () =>
 
     // The other reading, on the same household and the same year.
     expect(aggregate.qcd).toBeCloseTo(GIFT_DOLLARS, 6)
+  })
+})
+
+describe('a cross-kind slot collision moves only the QCD inside it', () => {
+  /** One QCD in a slot with a withdrawal, one QCD alone in a later slot. */
+  function collisionPlan(): Plan {
+    const plan = singlePersonPlan({ dob: '1950-03-01', planningAge: 95 })
+    plan.id = 'qcd-prerequisite-cross-kind-collision'
+    plan.accounts = [ira('ira', 500_000), cashAccount('cash', 100_000)]
+    plan.strategies.retirementActions = [
+      cashWithdrawal('withdrawal-w', `${TAX_YEAR}-08-01`, 1),
+      namedQcd({
+        actionId: asActionId('qcd-colliding'),
+        executionDate: `${TAX_YEAR}-08-01`,
+        executionSequence: 1,
+        allocation: {
+          allocationId: asAllocationId('qcd-colliding-allocation'),
+          sourceAccountId: asAccountId('ira'),
+          requestedAmount: asPositiveUsdCents(GIFT_DOLLARS * 100),
+        },
+      }),
+      namedQcd({
+        actionId: asActionId('qcd-alone'),
+        executionDate: `${TAX_YEAR}-09-01`,
+        executionSequence: 1,
+        allocation: {
+          allocationId: asAllocationId('qcd-alone-allocation'),
+          sourceAccountId: asAccountId('ira'),
+          requestedAmount: asPositiveUsdCents(GIFT_DOLLARS * 100),
+        },
+      }),
+    ]
+    return plan
+  }
+
+  it('routes the colliding QCD to the ordinary executor and the other to its own', () => {
+    const year = run(collisionPlan())
+    const publication = year.retirementActionPublication
+
+    expect(publication?.executorSources).toEqual([
+      'ordinaryWithdrawalExecutor',
+      'qcdExecutor',
+    ])
+    expect(Object.fromEntries(publication?.records.map((record) => [
+      record.actionId,
+      record.executorSource,
+    ]) ?? [])).toEqual({
+      'withdrawal-w': 'ordinaryWithdrawalExecutor',
+      'qcd-colliding': 'ordinaryWithdrawalExecutor',
+      'qcd-alone': 'qcdExecutor',
+    })
+  })
+
+  it('keeps the colliding group whole inside one executor source', () => {
+    const publication = run(collisionPlan()).retirementActionPublication
+
+    // The coordinator can only excuse a collision it can see within a single
+    // source, so both diagnostics have to name the same executor.
+    expect(publication?.scheduleDiagnostics).toEqual([
+      expect.objectContaining({
+        actionId: 'qcd-colliding',
+        executorSource: 'ordinaryWithdrawalExecutor',
+        collidingActionIds: ['qcd-colliding', 'withdrawal-w'],
+      }),
+      expect.objectContaining({
+        actionId: 'withdrawal-w',
+        executorSource: 'ordinaryWithdrawalExecutor',
+        collidingActionIds: ['qcd-colliding', 'withdrawal-w'],
+      }),
+    ])
+  })
+
+  it('publishes prerequisite evidence for exactly the QCD its executor owns', () => {
+    const year = run(collisionPlan())
+
+    expect(year.qcdActionPrerequisites?.map((evidence) => evidence.actionId))
+      .toEqual(['qcd-alone'])
+    expect(year.qcd).toBe(0)
+  })
+})
+
+describe('a QCD-only slot collision stays with the QCD executor', () => {
+  function samePlan(): Plan {
+    const plan = singlePersonPlan({ dob: '1950-03-01', planningAge: 95 })
+    plan.id = 'qcd-prerequisite-same-kind-collision'
+    plan.accounts = [ira('ira', 500_000)]
+    plan.strategies.retirementActions = ['qcd-x', 'qcd-y'].map((actionId) =>
+      namedQcd({
+        actionId: asActionId(actionId),
+        executionDate: `${TAX_YEAR}-08-01`,
+        executionSequence: 1,
+        allocation: {
+          allocationId: asAllocationId(`${actionId}-allocation`),
+          sourceAccountId: asAccountId('ira'),
+          requestedAmount: asPositiveUsdCents(GIFT_DOLLARS * 100),
+        },
+      }))
+    return plan
+  }
+
+  it('reports the collision through the qcdExecutor own diagnostics', () => {
+    const year = run(samePlan())
+    const publication = year.retirementActionPublication
+
+    // No exception is needed here: both sides of the slot belong to the same
+    // source, which is exactly what the coordinator can already excuse.
+    expect(publication?.executorSources).toEqual(['qcdExecutor'])
+    expect(publication?.scheduleDiagnostics.map((diagnostic) => [
+      diagnostic.actionId,
+      diagnostic.executorSource,
+      diagnostic.collidingActionIds,
+    ])).toEqual([
+      ['qcd-x', 'qcdExecutor', ['qcd-x', 'qcd-y']],
+      ['qcd-y', 'qcdExecutor', ['qcd-x', 'qcd-y']],
+    ])
+    expect(publication?.records.every((record) =>
+      record.executedAmount === 0 &&
+      record.readiness === 'nonActionable' &&
+      record.reasons.some((reason) =>
+        reason.code === 'action-sequence-conflict'))).toBe(true)
+    expect(year.qcdActionPrerequisites?.map((evidence) => evidence.actionId))
+      .toEqual(['qcd-x', 'qcd-y'])
+    expect(year.qcd).toBe(0)
   })
 })
