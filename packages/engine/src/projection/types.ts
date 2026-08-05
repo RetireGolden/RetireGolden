@@ -4,6 +4,7 @@ import type {
   AccountId,
   AnnualIraBasisAllocationEvidence,
   AnnualIraBasisRatio,
+  AnnualQcdExecutionPrerequisiteEvidence,
   AnnualRetirementActionPublication,
   ExecuteOrdinaryWithdrawalsResult,
   ExecuteRothConversionsResult,
@@ -808,6 +809,25 @@ export interface YearResult {
    * unavailable; absence means no named conversion request existed this year.
    */
   rothConversionActionExecution?: ExecuteRothConversionsResult
+  /**
+   * Planning-prerequisite evidence for the named QCD requests this year that
+   * the QCD executor published: the donor's exact age 70½ threshold date, the
+   * resolved source and copied charity designation, and the annual stages that
+   * remain unestablished. It establishes what is proven before any gift moves,
+   * never that one moved or became actionable.
+   *
+   * Neither absence nor a short array proves what the year requested. A single
+   * QCD is omitted when it shares an execution slot with a non-QCD action and
+   * so stayed with the ordinary-withdrawal executor — and a year whose every
+   * QCD is routed away like that has no field at all. The whole field is also
+   * absent when the prerequisite batch failed closed on malformed input or a
+   * legacy diagnostics-only year published no executor sources at all.
+   * `retirementActionPublication` remains the authority on which requests were
+   * published and by which executor, and this field is never present without
+   * it.
+   */
+  qcdActionPrerequisites?:
+    readonly Readonly<AnnualQcdExecutionPrerequisiteEvidence>[]
   /** Early-withdrawal penalties (10% traditional pre-59½, 20% HSA non-medical pre-65); not in `tax`. */
   penalties: number
   /** MAGI realized this year (drives IRMAA two years later and the ACA credit). */

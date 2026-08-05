@@ -83,6 +83,7 @@ import {
   asUsdCents,
   assessConversionLinkedWithdrawalGroups,
   assessOrdinaryWithdrawalPlanBoundary,
+  evaluateAnnualQcdExecutionPrerequisites,
   evaluateRetirementActionSchedule,
   executeOrdinaryWithdrawals,
   executeRothConversions,
@@ -95,8 +96,11 @@ import {
   rothConversionPublicationEligibility,
   rothConversionPublicationSource,
   signedLedgerCentTotalToPlanDollars,
+  type ActionId,
   type ExecuteOrdinaryWithdrawalsResult,
   type ExecuteRothConversionsResult,
+  type PersonId,
+  type QualifiedCharitableDistributionRequest,
   type TaxableAccountOpeningSnapshot,
 } from '../actions/index.js'
 import { exactCentLargestRemainderSlices } from '../actions/exactCentProRata.js'
@@ -3024,8 +3028,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // runtime source series validates in mutation order, which is a much larger
     // change than the guard is worth.
     //
-    // This suppresses nothing today: the ordinary-withdrawal executor refuses
-    // every non-`ordinaryWithdrawal` request, so a named QCD moves no dollars
+    // This suppresses nothing today: the QCD executor publishes a named
+    // request's prerequisite and nothing else, so a named QCD moves no dollars
     // yet. The guard exists so that the slice which makes one move cannot
     // silently double-count on the day it lands.
     const hasNamedQcdRequest = plan.strategies.retirementActions.some(
@@ -3116,9 +3120,44 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       currentYearSchedule.scheduleIssues.length > 0 &&
       currentYearNonConversionActions.length > 0 &&
       currentYearConversionActions.length > 0
-    const currentYearOrdinaryExecutionActions = mixedKindScheduleBlocked
+    const currentYearQcdActions = currentYearActions.filter(
+      (request): request is QualifiedCharitableDistributionRequest =>
+        request.kind === 'qcd',
+    )
+    // The annual publication coordinator excuses a schedule collision only
+    // between records of the same executor source
+    // (`annualRetirementActionPublication.ts` `diagnosedWithinSource`), so a QCD
+    // sharing a slot with a non-QCD action has to stay with the ordinary
+    // executor: split across two sources the same collision would abort the
+    // whole publication instead of being reported. This is decided per action,
+    // not per year -- the whole colliding slot moves, and a QCD scheduled
+    // elsewhere is untouched by someone else's collision. A QCD-only slot needs
+    // no exception, because both sides of it publish through the qcdExecutor,
+    // which reports the collision through its own schedule diagnostics.
+    const currentYearQcdActionIds = new Set(
+      currentYearQcdActions.map((request) => request.actionId),
+    )
+    const crossKindCollidingQcdActionIds = new Set(
+      currentYearSchedule.scheduleIssues.flatMap((issue) =>
+        issue.kind === 'executionSequenceConflict' &&
+        issue.collidingActionIds.some((actionId) =>
+          !currentYearQcdActionIds.has(actionId))
+          ? issue.collidingActionIds.filter((actionId) =>
+              currentYearQcdActionIds.has(actionId))
+          : []),
+    )
+    const currentYearQcdExecutionActions = currentYearQcdActions.filter(
+      (request) => !crossKindCollidingQcdActionIds.has(request.actionId),
+    )
+    // A named QCD leaves the ordinary executor's scope because its own executor
+    // publishes it, and `publishAnnualRetirementActions` throws when two
+    // executors publish the same action.
+    const currentYearOrdinaryExecutionActions = (mixedKindScheduleBlocked
       ? currentYearActions
       : currentYearNonConversionActions
+    ).filter((request) =>
+      request.kind !== 'qcd' ||
+      crossKindCollidingQcdActionIds.has(request.actionId))
     // One conversion-linked withdrawal group decision for the whole annual
     // pass, taken here because this is the only place every request set is
     // visible at once. Neither executor sees the same set: the conversion
@@ -3133,6 +3172,46 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       ...currentYearOrdinaryExecutionActions,
       ...currentYearConversionActions,
     ])
+    // The ordinary and QCD executors are handed disjoint request sets, so the
+    // one alive fact a request carries is minted here rather than per executor:
+    // a request must not change identity by moving between the two.
+    const actionPersonAliveEvidence = (
+      actionId: ActionId,
+      personId: PersonId,
+      actionDate: string | null,
+    ): NonpersistedActionPersonAliveEvidence => ({
+      evidenceId: `projection-alive:${JSON.stringify([
+        actionId,
+        personId,
+        year,
+        actionDate,
+      ])}`,
+      actionId,
+      personId,
+      actionYear: year,
+      actionDate,
+      alive: stateOf(personId).alive,
+    })
+    // Identity and legal preflight for every named QCD, published as its own
+    // executor source. Nothing here settles a balance, satisfies an RMD, or
+    // derives an exclusion: every annual stage stays unestablished and every
+    // record stays at zero movement.
+    const qcdActionPrerequisiteResult =
+      currentYearQcdExecutionActions.length === 0
+        ? undefined
+        : evaluateAnnualQcdExecutionPrerequisites({
+            taxYear: year,
+            plan,
+            requests: currentYearQcdExecutionActions,
+            runtimeEvidence: {
+              personAliveEvidence: currentYearQcdExecutionActions.map((request) =>
+                actionPersonAliveEvidence(
+                  request.actionId,
+                  request.donorPersonId,
+                  request.executionDate ?? null,
+                )),
+            },
+          })
     let retirementActionExecution: ExecuteOrdinaryWithdrawalsResult | undefined
     let rothConversionActionExecution: ExecuteRothConversionsResult | undefined
     /**
@@ -3317,19 +3396,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           }
           const personId =
             request.kind === 'qcd' ? request.donorPersonId : request.personId
-          return [{
-            evidenceId: `projection-alive:${JSON.stringify([
-              request.actionId,
-              personId,
-              year,
-              request.executionDate ?? null,
-            ])}`,
-            actionId: request.actionId,
+          return [actionPersonAliveEvidence(
+            request.actionId,
             personId,
-            actionYear: year,
-            actionDate: request.executionDate ?? null,
-            alive: stateOf(personId).alive,
-          }]
+            request.executionDate ?? null,
+          )]
         },
       )
       while (true) {
@@ -5748,6 +5819,17 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const retirementActionPublicationEligible =
       ordinaryPublicationEligibility?.kind !== 'legacyScheduleDiagnosticsOnly' &&
       conversionPublicationEligibility?.kind !== 'legacyScheduleDiagnosticsOnly'
+    // A blocked prerequisite batch has no publication source and no canonical
+    // requests, so the year publishes neither rather than half of either. The
+    // evidence also follows the publication boundary: in a legacy
+    // diagnostics-only year no executor source publishes, and prerequisite
+    // evidence with no publication record behind it would orphan the JSDoc's
+    // claim that the publication says which executor published what.
+    const qcdActionPrerequisites =
+      retirementActionPublicationEligible &&
+      qcdActionPrerequisiteResult?.status === 'evaluated'
+        ? qcdActionPrerequisiteResult
+        : undefined
     const retirementActionPublicationSources = retirementActionPublicationEligible
       ? [
           ...(retirementActionExecution === undefined
@@ -5756,11 +5838,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           ...(rothConversionActionExecution === undefined
             ? []
             : [rothConversionPublicationSource(rothConversionActionExecution)]),
+          ...(qcdActionPrerequisites === undefined
+            ? []
+            : [qcdActionPrerequisites.publicationSource]),
         ]
       : []
     const retirementActionPublicationRequests = [
       ...(retirementActionExecution?.requests ?? []),
       ...(rothConversionActionExecution?.requests ?? []),
+      ...(qcdActionPrerequisites?.requests ?? []),
     ]
     const retirementActionPublication =
       retirementActionPublicationSources.length > 0 &&
@@ -5795,6 +5881,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         ? {}
         : { retirementActionPublication }),
       ...(rothConversionActionExecution ? { rothConversionActionExecution } : {}),
+      ...(qcdActionPrerequisites === undefined
+        ? {}
+        : { qcdActionPrerequisites: qcdActionPrerequisites.evidence }),
       penalties,
       magi: magiHistory.get(year)!,
       ...(yearAcaResult ? { aca: yearAcaResult } : {}),
