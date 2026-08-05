@@ -224,28 +224,46 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
   standard deduction, Social Security taxation, private/public retirement-income exclusions, and capital-gain
   inclusion. Values are transcribed from the per-state research files in
   [state-tax-research/](state-tax-research/).
-- Nine jurisdictions — AZ, CO, DC, IA, ID, MO, MT, ND, NM — define their standard deduction by reference to the
+- Eight jurisdictions — CO, DC, IA, ID, MO, MT, ND, NM — define their standard deduction by reference to the
   federal one rather than publishing their own. Their packs carry a copy of the federal figure tagged
   `standardDeductionConformity: 'federal'`, and `indexConformedStateStandardDeduction` moves that copy by exactly
   the factor `indexFederalTaxPack` applied to the original, so one engine never holds two values for one statutory
   amount in a projected year (`irc-63-c-7-B-ii-conformed-state-deduction-tracks-federal`). Nothing else in the pack
   moves: brackets and retirement-exclusion caps are state figures under state law. ME and SC decoupled for 2026
-  and are deliberately untagged.
+  and are deliberately untagged; AZ left the list on 2026-08-05, because A.R.S. §43-1041(A) sets Arizona's own
+  amounts and (H) borrows only the federal indexation *method*, and the tag was additionally attaching an IRC
+  63(c)(3) age-65 addition Arizona does not grant (`ars-43-1041-standard-deduction-published-amount`; Arizona's
+  own age-65 relief is the unmodelled $2,100 exemption of `ars-43-1023-e-age-65-exemption`).
 - Capital gains default to federal conformity unless a state pack says otherwise. CA, MN, and NJ document
   ordinary state taxation of capital gains. PA uses current-year-only capital-loss conformity: federal
   prior-year carryforward losses do not offset PA-taxable current-year gains in the planning model. The raw
   current-year capital field remains signed, but PA floors that current-year-only input at zero. ND excludes
   40% of net long-term gain by statute and carries `capitalGainsTaxablePct: 60`
   (`ndcc-57-38-30-3-2-d-long-term-gain-exclusion`); the parallel 40% exclusion for qualified dividends has no
-  field and is registered as a gap (`ndcc-57-38-30-3-2-d-2-qualified-dividend-exclusion`).
-- ND is the one state whose bracket thresholds are neither fixed by statute nor on a legislated ramp: N.D.C.C.
+  field and is registered as a gap (`ndcc-57-38-30-3-2-d-2-qualified-dividend-exclusion`). AR excludes 50% of
+  net capital gain and carries `capitalGainsTaxablePct: 50`
+  (`aca-26-51-815-b-2-fifty-percent-capital-gain-exclusion`), with its full exemption of gain above $10,000,000
+  registered as a gap (`aca-26-51-815-b-3-ten-million-dollar-gain-exemption`). AZ subtracts 25% and carries
+  `capitalGainsTaxablePct: 75`, but only for an asset acquired after 2011 — a condition the engine cannot see
+  and which is registered as a gap running toward the taxpayer
+  (`ars-43-1022-22-long-term-capital-gain-subtraction`).
+- ND and AR are the states whose figures are neither fixed by statute nor on a legislated ramp: N.D.C.C.
   §57-38-30.3(1)(g) makes the tax commissioner publish a cost-of-living-adjusted schedule that applies *in lieu
   of* the printed one every year, so the department's form — not the Century Code — carries the operative
-  figures (`ndcc-57-38-30-3-1-g-commissioner-indexed-rate-schedule`). Re-read it every autumn.
-- ND is also the case where the public-pension bucket is coarser than the state's law. It subtracts military
-  retirement (§57-38-30.3(2)(r)) and 20-year peace-officer retirement ((2)(t)) and no other public pension, but
-  `retirementPublic` is one flag, so `{ kind: 'full' }` also exempts CSRS, FERS and state PERS pensions ND taxes
-  — the one state gap that **understates** tax (`ndcc-57-38-30-3-2-closed-subtraction-list`).
+  figures (`ndcc-57-38-30-3-1-g-commissioner-indexed-rate-schedule`), and A.C.A. §26-51-201(d)(1) and
+  §26-51-430(c) say the same of Arkansas's brackets and of its standard deduction
+  (`aca-26-51-201-published-indexed-rate-schedule`, `aca-26-51-430-c-published-indexed-standard-deduction`).
+  Re-read all of them every autumn.
+- ND, AR and AZ are the cases where the public-pension bucket is coarser than the state's law, and the flag
+  cannot be right for both populations in any of them. ND subtracts military and 20-year peace-officer
+  retirement and no other public pension, so `{ kind: 'full' }` also exempts the CSRS, FERS and state PERS
+  pensions ND taxes (`ndcc-57-38-30-3-2-closed-subtraction-list`). AZ subtracts uniformed-services retired pay
+  in full and caps a civil-service pension at $2,500, and carries `full` for the same reason and with the same
+  residual (`ars-43-1022-2-government-pension-exclusion`). AR is the mirror image: only uniformed-services
+  retirement is fully exempt there and every other public pension gets the same $6,000 as a private one, so the
+  bucket carries the cap and a military pension is over-charged instead
+  (`aca-26-51-307-e-uniformed-services-full-exemption`). The first two **understate** tax, which is the
+  dangerous direction; the third overstates it.
 - A current-year signed capital loss joins the opening carryforward pool before the annual ordinary-income
   deduction. Legacy taxable withdrawals, individually owned taxable ordinary-withdrawal actions, rebalances,
   and taxable annuity/TIPS funding share the same uncapped aggregate-basis economics; actions calculate it in

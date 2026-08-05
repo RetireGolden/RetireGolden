@@ -6480,6 +6480,737 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
   },
+
+  // ---------------------------------------------------------------------------
+  // Arkansas — 2026-08-05.
+  //
+  // Three things about these citations have to be said once rather than on each
+  // record.
+  //
+  // First, Arkansas does not publish its own code. The codified statutes and
+  // the Constitution of 1874 are both published by LexisNexis under contract,
+  // and the legislature links out to advance.lexis.com for both — a commercial
+  // host serving no statutory text to a verifier. The operative statutory
+  // language below is therefore quoted from the ENROLLED ACT that produced it,
+  // which prints the amended section in full, and every dollar amount that the
+  // Secretary indexes is quoted from the Department of Finance and
+  // Administration, which is its only publisher.
+  //
+  // Second, an enrolled Arkansas act prints a line number in the margin of
+  // every line, and the extractor reads those numbers as part of the text. A
+  // quotation that spans printed lines therefore carries them — "in excess of
+  // ten million 5 dollars ($10,000,000)". They are reproduced rather than
+  // deleted for the same reason the North Dakota rate schedule keeps its leader
+  // dots: removing them would be retyping the source, and a quote that has been
+  // retyped once can be retyped again.
+  //
+  // Third, an enrolled act sets an amendment in strike-through and underline,
+  // and extraction interleaves the struck and inserted words — 26-51-307(a)(1)
+  // prints as "received by any a resident" and "shall be is exempt", and
+  // 26-51-201(d)(1) as "a table which tables that shall apply". That is what
+  // the document contains; reconstructing the post-amendment sentence would be
+  // a paraphrase of the markup, which is exactly what `quotedText` forbids.
+  // ---------------------------------------------------------------------------
+
+  'aca-26-51-201-published-indexed-rate-schedule': {
+    title: 'Arkansas’s operative brackets are the Secretary’s published indexed schedule',
+    statement:
+      'Arkansas taxes net taxable income on a five-rate schedule — 0%, 2%, 3%, 3.4% and 3.9% — but the dollar thresholds those rates turn on are never the ones printed in the Code. A.C.A. 26-51-201(d)(1) directs the Secretary of the Department of Finance and Administration to prescribe tables annually that apply in lieu of the statutory ones, increasing each bracket’s minimum and maximum by the cost-of-living adjustment, rounded to the nearest $100, without changing any rate. The operative schedule for a year is therefore whatever the department published for it, and for 2026 that is 0% below $5,599, 2% from $5,600, 3% from $11,200, 3.4% from $16,000 and 3.9% from $26,400 — the same thresholds the department published for 2025, because that year’s adjustment rounded to zero. The pack carries those. What it carried before was the un-indexed two-rate schedule 26-51-201(a)(3)(B) prints, which by its own terms reaches only a filer whose net income exceeds the statutory threshold — above about $94,700, where the published schedule hands off to it — so every modelled Arkansas retiree below that was priced on a schedule Arkansas does not apply to them.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:AR',
+    authority: [{
+      kind: 'formInstruction',
+      citation: '2026 Form AR1000ES instructions, Tax Rate Schedule',
+      url: 'https://www.dfa.arkansas.gov/wp-content/uploads/2026_Final_AR1000ES.pdf',
+      quotedText:
+        'If your NET TAXABLE INCOME is less than $5,599, your tax is zero percent (0%) of your net taxable income.',
+    }, {
+      // The schedule's "IF YOUR NET TAXABLE INCOME IS" column, as one run of
+      // the form's own text. A rate schedule is a two-dimensional layout and
+      // the AR1000ES interleaves its two halves badly enough that a row read
+      // across pairs a threshold with the wrong rate; the column read down does
+      // not. So the thresholds are quoted from the column that holds them and
+      // the rates from the department's own bracket table below, rather than
+      // from a tidied single-string rendering of either.
+      kind: 'formInstruction',
+      citation: '2026 Form AR1000ES instructions, Tax Rate Schedule, "IF YOUR NET TAXABLE INCOME IS" column',
+      url: 'https://www.dfa.arkansas.gov/wp-content/uploads/2026_Final_AR1000ES.pdf',
+      quotedText: '$ 5,600.00 11,200.00 16,000.00 26,400.00 30,000.00 40,000.00 50,000.00',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Indexed Tax Brackets, "Less Than or Equal To" and "Percentage" columns',
+      url: 'https://www.dfa.arkansas.gov/wp-content/uploads/2025_TaxBrackets.pdf',
+      quotedText: '$5,599 0.00% $11,199 2.00% $15,999 3.00% $26,399 3.40% $94,700 3.90%',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Indexed Tax Brackets, "From" column',
+      url: 'https://www.dfa.arkansas.gov/wp-content/uploads/2025_TaxBrackets.pdf',
+      quotedText: 'From $0 $5,600 $11,200 $16,000 $26,400 $94,701',
+    }, {
+      kind: 'statute',
+      citation: 'Ark. Code Ann. 26-51-201(d)(1) (2023 Ark. Acts, Act 532, § 2)',
+      url: 'https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2023R%2FPublic%2FACT532.pdf',
+      quotedText:
+        '(d)(1) The Secretary of the Department of Finance and Administration 2 shall prescribe annually a table which tables that shall apply in lieu of the 3 table tables contained in subsection (a) of this section with respect to each 4 succeeding taxable year.',
+    }, {
+      kind: 'statute',
+      citation: 'Ark. Code Ann. 26-51-201(d)(1) (2023 Ark. Acts, Act 532, § 2)',
+      url: 'https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2023R%2FPublic%2FACT532.pdf',
+      quotedText:
+        'The secretary shall increase the minimum and maximum 5 dollar amounts for each rate bracket, rounding to the nearest one hundred 6 dollars ($100), for which a tax is imposed under the table by the cost-of- 7 living adjustment for each calendar year and by not changing the rate 8 applicable to any rate bracket as adjusted.',
+    }],
+    // Rates fixed by statute, thresholds republished every year by the
+    // department: the record goes stale on the autumn schedule, not on the
+    // annual statutory pass.
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2024,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'aca-26-51-430-c-published-indexed-standard-deduction': {
+    title: 'Arkansas’s standard deduction is its own figure, indexed annually and capped at 3%',
+    statement:
+      'Arkansas publishes a standard deduction of its own — $2,470 per taxpayer and $4,940 on a joint return, the amount printed for both 2025 and 2026 — and A.C.A. 26-51-430(c)(1) requires the Secretary to increase it every year by the cost-of-living adjustment, rounded to the nearest $10, with (c)(2)(A)(i) capping that adjustment at three percent. Nothing derives it from the federal standard deduction, so the Arkansas entry carries no `standardDeductionConformity` tag and takes no federal age-65 addition. The pack previously carried $2,410 and $4,820, which are the 2024 amounts.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:AR',
+    authority: [{
+      kind: 'statute',
+      citation: 'Ark. Code Ann. 26-51-430(c)(1) (2021 Ark. Acts (2d Ex. Sess.), Act 1, § 9)',
+      url: 'https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2021S2%2FPublic%2FACT1.pdf',
+      quotedText:
+        '(c)(1) The Secretary of the Department of Finance and Administration 19 shall increase annually the standard deduction provided under subsection (b) 20 of this section by the cost-of-living adjustment for the current calendar 21 year, rounding the amount to the nearest ten dollars ($10.00).',
+    }, {
+      kind: 'statute',
+      citation: 'Ark. Code Ann. 26-51-430(c)(2)(A)(i) (2021 Ark. Acts (2d Ex. Sess.), Act 1, § 9)',
+      url: 'https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2021S2%2FPublic%2FACT1.pdf',
+      quotedText:
+        '(2)(A)(i) For purposes of subdivision (c)(1) of this section, 23 the cost-of-living adjustment for a calendar year is the percentage, if any, 24 by which the Consumer Price Index for the current calendar year exceeds the 25 Consumer Price Index for the preceding calendar year, not to exceed three 26 percent (3%).',
+    }, {
+      kind: 'formInstruction',
+      citation: '2026 Form AR1000ES worksheet, line 2',
+      url: 'https://www.dfa.arkansas.gov/wp-content/uploads/2026_Final_AR1000ES.pdf',
+      quotedText:
+        'If you do not expect to itemize deductions, enter the standard deduction of $2,470 per taxpayer',
+    }, {
+      // The booklet's own Standard Deduction row, filing statuses 1 through 4,
+      // which is where the joint figure appears. Quoted as the row prints
+      // rather than as a sentence, for the reason the rate-schedule record
+      // gives about tables.
+      kind: 'formInstruction',
+      citation: '2025 Form AR1000F/AR1000NR instructions, Standard Deduction table',
+      url: 'https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000F_and_AR1000NR_Instructions.pdf',
+      quotedText: 'Standard Deduction $2,470 $4,940 $2,470 $2,470 each',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2022,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'aca-26-51-307-six-thousand-retirement-exemption': {
+    title: 'Arkansas exempts $6,000 of retirement income per taxpayer, once across every source',
+    statement:
+      'A.C.A. 26-51-307(a)(1) exempts the first $6,000 of benefits a resident receives from an individual retirement account, or the first $6,000 of retirement benefits received from a public or private employment-related retirement system, plan or program, regardless of how the plan is funded. The $6,000 is one annual ceiling per taxpayer rather than one per source: the department states it as a total across the employer-plan and IRA items alike. The pack expresses this as `{ kind: \'capped\', capPerPerson: 6000 }`, and by leaving Arkansas out of `PUBLIC_PENSION_OVERRIDES` it also sets `retirementRuleShared`, which is what makes the cap apply once to a household’s combined private and public retirement income instead of once in each bucket.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:AR',
+    authority: [{
+      kind: 'statute',
+      citation: 'Ark. Code Ann. 26-51-307(a)(1) (2017 Ark. Acts, Act 141, § 3)',
+      url: 'https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2017R%2FPublic%2FACT141.pdf',
+      quotedText:
+        '(a)(1) The first six thousand dollars ($6,000) of benefits received by 9 any a resident of this state from an individual retirement account or the 10 first six thousand dollars ($6,000) of retirement benefits received by any a 11 resident of this state from public or private employment-related retirement 12 systems, plans, or programs, regardless of the method of funding for these 13 systems, plans, or programs, shall be is exempt from the state income tax.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Form AR1000F/AR1000NR instructions, Exempt Income, note to items 12 and 13',
+      url: 'https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000F_and_AR1000NR_Instructions.pdf',
+      quotedText:
+        'Total exemptions from all plans described under 12 and 13 cannot exceed $6,000 per taxpayer, not including recovery of cost.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Form AR1000F/AR1000NR instructions, Line 18A',
+      url: 'https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000F_and_AR1000NR_Instructions.pdf',
+      quotedText:
+        'You are entitled to a $6,000 exemption from the taxable amount; the balance is taxable to Arkansas.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2018,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'aca-26-51-307-a-1-public-pension-inside-the-six-thousand': {
+    title: 'Arkansas gives a civil-service pension the same $6,000 as a private one',
+    statement:
+      'Outside the uniformed services, Arkansas grants public retirement income no exemption beyond the $6,000 of 26-51-307(a)(1). The subsection reaches "public or private employment-related retirement systems, plans, or programs" in one breath and caps both at the same figure, so a pension from the Arkansas Public Employees\' Retirement System, the Arkansas Teacher Retirement System, or a county, municipal, police or fire plan is exempt to exactly the extent a private pension is. The pack says so by keeping Arkansas out of `PUBLIC_PENSION_OVERRIDES`, which leaves the same capped rule in both buckets. Arkansas carried `{ kind: \'full\' }` there until 2026-08-05, which exempted every public pension in the state outright.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:AR',
+    authority: [{
+      kind: 'statute',
+      citation: 'Ark. Code Ann. 26-51-307(a)(1) (2017 Ark. Acts, Act 141, § 3)',
+      url: 'https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2017R%2FPublic%2FACT141.pdf',
+      quotedText:
+        '(a)(1) The first six thousand dollars ($6,000) of benefits received by 9 any a resident of this state from an individual retirement account or the 10 first six thousand dollars ($6,000) of retirement benefits received by any a 11 resident of this state from public or private employment-related retirement 12 systems, plans, or programs, regardless of the method of funding for these 13 systems, plans, or programs, shall be is exempt from the state income tax.',
+    }, {
+      // The department restating the same breadth on the return: one exemption,
+      // available whatever the plan is and however it was paid for. Quoted
+      // around the phrase "employment-related", which the booklet's own text
+      // layer breaks across a line and rejoins without the hyphen.
+      kind: 'formInstruction',
+      citation: '2025 Form AR1000F/AR1000NR instructions, Line 17',
+      url: 'https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000F_and_AR1000NR_Instructions.pdf',
+      quotedText:
+        '(The recipient does not have to be retired.) The method of funding is irrelevant. The exemption may be taken from either lump-sum or installment payments.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2018,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'aca-26-51-307-e-uniformed-services-full-exemption': {
+    title: 'Arkansas exempts uniformed-services retirement in full, and the pack caps it at $6,000',
+    statement:
+      'A.C.A. 26-51-307(e) exempts retirement benefits received by a member of the uniformed services, and survivor benefits funded by such retirement pay, from the Arkansas income tax entirely — no cap, no age condition, no phase-out. Under 26-51-307(f) that exemption and the $6,000 of subsection (a) are alternatives rather than additions: a taxpayer claiming the military exemption may claim the $6,000 only to the extent the military exemption falls short of it. Not modelled. The pack’s public bucket is one flag for every public pension the input model can carry, and in Arkansas that bucket is dominated by civil-service pensions the state exempts only to $6,000, so the bucket carries the capped rule and a military pension is charged Arkansas tax on everything above $6,000 that Arkansas does not charge. The direction is deliberate: the same flag set to `full` — which is what Arkansas carried until 2026-08-05 — is exact for the military retiree and exempts every teacher, trooper and state employee’s pension in Arkansas along with them, which errs the other way and by far the larger population.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:AR',
+    authority: [{
+      kind: 'statute',
+      citation: 'Ark. Code Ann. 26-51-307(e)(1) (2017 Ark. Acts, Act 141, § 3)',
+      url: 'https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2017R%2FPublic%2FACT141.pdf',
+      quotedText:
+        '(e)(1) The following are exempt from the income tax imposed under this 22 chapter: 23 (A) Retirement benefits received by a member of the 24 uniformed services from any of the uniformed services identified in 25 subdivision (e)(2) of this section; and 26 (B) Survivor benefits that are funded by the retirement 27 pay of a member of the uniformed services.',
+    }, {
+      kind: 'statute',
+      citation: 'Ark. Code Ann. 26-51-307(f)(1) (2023 Ark. Acts, Act 358, § 1)',
+      url: 'https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2023R%2FPublic%2FACT358.pdf',
+      quotedText:
+        '(f)(1) A Except as provided in subdivision (f)(2) of this section, a 30 taxpayer claiming an exemption under subsection (e) of this section is not 31 eligible for an exemption under subsection (a) of this section.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Form AR1000F/AR1000NR instructions, Line 17',
+      url: 'https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000F_and_AR1000NR_Instructions.pdf',
+      quotedText:
+        'LINE 17. Retirement benefits received by a member of the uniformed services are exempt from income tax.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Form AR1000F/AR1000NR instructions, Line 17, military retirement and the $6,000 exemption',
+      url: 'https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000F_and_AR1000NR_Instructions.pdf',
+      quotedText:
+        'Military retirees cannot claim the $6,000 exemption for traditional or employer-sponsored distributions if their military retirement exemption exceeds $6,000. If the military retirement exemption is less than $6,000, the remaining amount of the exemption may be taken for traditional or employer-sponsored distributions.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2018,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/types.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'aca-26-51-307-a-2-ira-age-fifty-nine-and-a-half-gate': {
+    title: 'Arkansas’s $6,000 reaches an IRA distribution only at 59½, and the pack does not test it',
+    statement:
+      'A.C.A. 26-51-307(a)(2) admits an individual retirement account distribution to the $6,000 exemption only after the participant reaches age 59½, or on the participant’s death or disability; every other premature distribution or early withdrawal is denied it, including one taken for medical expenses, higher education or a first home. Employer-plan benefits carry no such condition — the department states expressly that the recipient need not even be retired. Not modelled. `StateRetirementExclusion` has one `minAge`, and it gates the whole bucket: setting 59.5 would deny the exemption to an under-59½ Arkansan drawing an employer pension, which Arkansas allows. Leaving it unset grants the exemption on a pre-59½ IRA withdrawal Arkansas taxes in full, so the engine under-charges a household that draws an IRA early by the Arkansas tax on up to $6,000 per person.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:AR',
+    authority: [{
+      kind: 'statute',
+      citation: 'Ark. Code Ann. 26-51-307(a)(2)(A) (2017 Ark. Acts, Act 141, § 3)',
+      url: 'https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2017R%2FPublic%2FACT141.pdf',
+      quotedText:
+        '(2)(A) Only individual retirement account benefits received by 15 an individual retirement account participant after reaching fifty-nine and 16 one-half (59½) years of age qualify for the exemption.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Form AR1000F/AR1000NR instructions, Line 17, traditional IRA distributions',
+      url: 'https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000F_and_AR1000NR_Instructions.pdf',
+      quotedText:
+        'If you received a traditional IRA distribution after reaching the age of fifty-nine and one-half (59 1/2), the first $6,000 is exempt from tax.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2018,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/types.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'aca-26-51-404-b-6-social-security-exclusion': {
+    title: 'Arkansas leaves Social Security out of gross income altogether',
+    statement:
+      'Social Security payments and railroad retirement benefits are excluded from the Arkansas definition of gross income by 26-51-404(b)(6)(B), rather than deducted from it, so no part of a federally taxable benefit enters the Arkansas base at any income level; the department lists Social Security, VA benefits, workers\' compensation and railroad retirement together as exempt. 26-51-307(b)(2) then keeps the $6,000 retirement exemption from being spent on any of them. The pack expresses this as `taxesSocialSecurity: false`.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:AR',
+    authority: [{
+      kind: 'formInstruction',
+      citation: '2025 Form AR1000F/AR1000NR instructions, Exempt Income, item 8',
+      url: 'https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000F_and_AR1000NR_Instructions.pdf',
+      quotedText:
+        'Social Security benefits, VA benefits, Workers\' Compensation, Railroad Retirement benefits and related supplemental benefits are exempt from tax.',
+    }, {
+      kind: 'statute',
+      citation: 'Ark. Code Ann. 26-51-404(b)(6)(B) (2017 Ark. Acts, Act 141, § 5)',
+      url: 'https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2017R%2FPublic%2FACT141.pdf',
+      quotedText:
+        '(B) Social Security payments, railroad retirement 21 benefits, unemployment compensation benefits paid from federal unemployment 22 trust funds, and unemployment insurance benefits received from the railroad 23 retirement boards, and unemployment compensation paid under Title IV of the 24 Social Security Act, 42 U.S.C. § 601 et seq.;',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2018,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'aca-26-51-815-b-2-fifty-percent-capital-gain-exclusion': {
+    title: 'Arkansas exempts 50% of net capital gain',
+    statement:
+      'A.C.A. 26-51-815(b)(2) exempts a portion of a taxpayer’s net capital gain from the Arkansas income tax, and subdivision (C) sets that portion at fifty percent for gains on and after July 1, 2016. Form AR1000D is the arithmetic: line 8 multiplies the net capital gain by fifty percent to reach the Arkansas taxable amount. The pack says so with `capitalGainsTaxablePct: 50`, which the calculator reads in preference to the 100 percent that `capitalGainsAsOrdinary: true` would otherwise default to — the half that does reach the base is still stacked with ordinary income, because Arkansas has no preferential RATE, only a partial exclusion.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:AR',
+    authority: [{
+      kind: 'statute',
+      citation: 'Ark. Code Ann. 26-51-815(b)(2) (2015 Ark. Acts, Act 1173, § 1)',
+      url: 'https://arkleg.state.ar.us/Acts/FTPDocument?path=%2FACTS%2F2015R%2FPublic%2F&file=1173.pdf&ddBienniumSession=2015%2F2015R',
+      quotedText:
+        '(2) If a taxpayer has a net capital gain, the following portion 29 of the gain is exempt from state income tax:',
+    }, {
+      kind: 'statute',
+      citation: 'Ark. Code Ann. 26-51-815(b)(2)(C) (2015 Ark. Acts, Act 1173, § 1)',
+      url: 'https://arkleg.state.ar.us/Acts/FTPDocument?path=%2FACTS%2F2015R%2FPublic%2F&file=1173.pdf&ddBienniumSession=2015%2F2015R',
+      quotedText: '(C) Beginning on and after July 1, 2016, fifty percent 35 (50%).',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Form AR1000D, line 8',
+      url: 'https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000D_CapitalGains.pdf',
+      quotedText:
+        '8. Arkansas taxable amount. If a gain multiply line 7b by 50 percent (.50), otherwise enter loss',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2016,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'aca-26-51-815-b-3-ten-million-dollar-gain-exemption': {
+    title: 'Arkansas exempts net capital gain above $10 million in full',
+    statement:
+      'A.C.A. 26-51-815(b)(3) exempts from the Arkansas income tax the amount of net capital gain in excess of $10,000,000 from a gain realized on or after January 1, 2014, so the fifty percent inclusion of (b)(2) applies to the first $10,000,000 and nothing above it is taxed at all. Form AR1000D implements it at line 7b, which caps the figure the fifty percent is applied to. Not modelled: `capitalGainsTaxablePct` is a single share applied to the whole modelled gain, with no ceiling above which the share falls to zero, so a realization above $10,000,000 is charged Arkansas tax on half of the excess that Arkansas exempts entirely. The population this reaches is one the engine will essentially never see, which is a reason to record the gap rather than to model it.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:AR',
+    authority: [{
+      kind: 'statute',
+      citation: 'Ark. Code Ann. 26-51-815(b)(3) (2015 Ark. Acts, Act 1173, § 2)',
+      url: 'https://arkleg.state.ar.us/Acts/FTPDocument?path=%2FACTS%2F2015R%2FPublic%2F&file=1173.pdf&ddBienniumSession=2015%2F2015R',
+      quotedText:
+        '(3) The amount of net capital gain in excess of ten million 5 dollars ($10,000,000) from a gain realized on or after January 1, 2014, is 6 exempt from the state income tax.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Form AR1000D, line 7b',
+      url: 'https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000D_CapitalGains.pdf',
+      quotedText:
+        '7b. If the amount on line 7a is over $10,000,000, only enter $10,000,000. If less than $10,000,000, enter the total amount',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2014,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/types.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  // ---------------------------------------------------------------------------
+  // Arizona — 2026-08-05.
+  //
+  // Two things about these citations, said once.
+  //
+  // The URL for the rate is load-bearing and counter-intuitive. Laws 2021
+  // chapters 411 and 412 both amended A.R.S. 43-1011 and were never blended, so
+  // azleg publishes two versions of the section. `/ars/43/01011.htm` — the URL
+  // any reasonable citation would reach for — is the chapter 411 version, whose
+  // rate table stops at the 2019-2021 graduated schedule and never prints
+  // paragraph 9. The 2.5% flat rate is only on `/ars/43/01011.01.htm`. The
+  // `.01` is a versioning artifact in the filename; there is no A.R.S.
+  // 43-1011.01.
+  //
+  // And azleg publishes no session-law history for most of Title 43. Only
+  // 43-1011's two versions carry a source note, so the effective years on the
+  // records below rest on each statute's own "for taxable years beginning from
+  // and after" language where it has one, and otherwise on the year the current
+  // text is known to have been operative. Where a record would want a
+  // `legislativeHistory` authority there is nothing on the host to point at.
+  // ---------------------------------------------------------------------------
+
+  'ars-43-1011-a-9-flat-rate': {
+    title: 'Arizona taxes individual income at a flat 2.5%',
+    statement:
+      'A.R.S. 43-1011(A)(9) imposes a single rate of 2.5% on Arizona taxable income, with no graduated bands and no dependence on filing status. The paragraph is conditioned on the revenue notice of 43-243(B)(2); that notice was given, 43-243(D) directs the department to use paragraph 9 from the following taxable year, and 43-243(E) makes the notice a one-time event, so the rate cannot ratchet back. The department has applied 2.5% since tax year 2023 and the 2025 return still computes tax as 2.5% of line 45. The pack carries a single bracket at 2.5% for both filing statuses.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:AZ',
+    authority: [{
+      kind: 'statute',
+      citation: 'A.R.S. 43-1011(A)(9)',
+      url: 'https://www.azleg.gov/ars/43/01011.01.htm',
+      quotedText:
+        'Subject to subsection F of this section, for taxable years beginning from and after December 31 of the year in which notice is provided to the department pursuant to section 43-243, subsection B, paragraph 2, the tax is 2.5% of taxable income.',
+    }, {
+      kind: 'statute',
+      citation: 'A.R.S. 43-243(D)',
+      url: 'https://www.azleg.gov/ars/43/00243.htm',
+      quotedText:
+        'On receipt of the notice required pursuant to subsection B, paragraph 2 of this section, the department shall use the tax rates provided in section 43-1011, subsection A, paragraph 9 for taxable years beginning from and after December 31 of the year in which the notice required pursuant to subsection B, paragraph 2 of this section is received.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Arizona Form 140, line 46',
+      url: 'https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf',
+      quotedText: '46 Tax: Multiply line 45 by 2.5% (.025). Enter the result',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2023,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ars-43-1041-standard-deduction-published-amount': {
+    title: 'Arizona’s standard deduction is its own amount, indexed in the federal manner',
+    statement:
+      'A.R.S. 43-1041(A) prescribes Arizona’s own standard deductions, and 43-1041(H) directs the department to adjust those amounts for inflation "in the same manner in which" the federal basic standard deduction is adjusted under IRC 63. That is a borrowed method, not an incorporated amount: no provision of Title 43 says the Arizona deduction equals the federal one, and 43-105(A) excludes from Arizona’s conformity any change to the Code enacted after January 1, 2025. The pack therefore carries Arizona’s published figures — $15,750 single and $31,500 joint for 2025, the most recent the department has published — with NO `standardDeductionConformity` tag, which is also what keeps the federal age-65 additional standard deduction off the Arizona base, since Arizona grants no such addition. Arizona was tagged `federal` until 2026-08-05; the published amounts have in fact equalled the federal basic deduction in every year checked, but that is administrative practice rather than Arizona law, and the tag was importing a federal age-65 amount alongside it.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:AZ',
+    authority: [{
+      kind: 'statute',
+      citation: 'A.R.S. 43-1041(A)(1)',
+      url: 'https://www.azleg.gov/ars/43/01041.htm',
+      quotedText:
+        'In the case of a single person or a married person filing separately, the standard deduction is $12,200, subject to subsection H of this section.',
+    }, {
+      kind: 'statute',
+      citation: 'A.R.S. 43-1041(H)',
+      url: 'https://www.azleg.gov/ars/43/01041.htm',
+      quotedText:
+        'For each taxable year beginning from and after December 31, 2019, the department shall adjust the dollar amounts prescribed by subsection A, paragraphs 1, 2 and 3 of this section for inflation in the same manner in which the federal basic standard deduction is adjusted for inflation pursuant to section 63 of the internal revenue code.',
+    }, {
+      kind: 'statute',
+      citation: 'A.R.S. 43-105(A)',
+      url: 'https://www.azleg.gov/ars/43/00105.htm',
+      quotedText:
+        'For the purposes of computing income tax pursuant to this title, for taxable years beginning from and after December 31, 2024, "internal revenue code" means the United States internal revenue code of 1986, as amended, in effect on January 1, 2025, including those provisions that became effective during 2024 with the specific adoption of all retroactive effective dates, but excluding any changes to the code enacted after January 1, 2025.',
+    }, {
+      // The published dollar amounts, from the short form's own deduction line
+      // rather than from the booklet's "What's New" bullet list, which reflows
+      // through a two-column page and cannot be quoted as printed.
+      kind: 'formInstruction',
+      citation: '2025 Arizona Form 140A, line 18',
+      url: 'https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf',
+      quotedText:
+        '18 Standard deduction: If you checked filing status box 4 enter $31,500; box 5 enter $23,625; or box 6 or 7 enter $15,750.',
+    }],
+    // The amount moves every year under (H) even though the mechanism is
+    // statutory, so this falls due with the autumn figures rather than on the
+    // annual statutory pass.
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2020,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/index.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ars-43-1022-10-social-security-railroad-exclusion': {
+    title: 'Arizona subtracts every federally taxable Social Security dollar',
+    statement:
+      'A.R.S. 43-1022(10) subtracts from Arizona gross income the amount included in federal adjusted gross income under IRC 86 — Social Security benefits under Title II of the Social Security Act and railroad retirement benefits alike — with no income threshold, age condition or cap. The department extends the same line to tier 1 and tier 2 railroad retirement, railroad disability, unemployment and sickness payments. The pack expresses it as `taxesSocialSecurity: false`, so no benefit dollar reaches the 2.5% rate at any income level.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:AZ',
+    authority: [{
+      kind: 'statute',
+      citation: 'A.R.S. 43-1022(10)',
+      url: 'https://www.azleg.gov/ars/43/01022.htm',
+      quotedText:
+        'The amount included in federal adjusted gross income pursuant to section 86 of the internal revenue code, relating to taxation of social security and railroad retirement benefits.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Arizona Form 140 instructions, Line 30',
+      url: 'https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf',
+      quotedText:
+        'If you included such social security or railroad retirement benefits as income on your federal return, use line 30 to subtract this income.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2021,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ars-43-1022-26-uniformed-services-exclusion': {
+    title: 'Arizona excludes uniformed-services retired and retainer pay in full',
+    statement:
+      'For taxable years beginning after December 31, 2020, A.R.S. 43-1022(26)(c) subtracts from Arizona gross income the full amount of benefits, annuities and pensions received as retired or retainer pay of the uniformed services of the United States — no cap, no age condition, no phase-out — where the same paragraph capped the subtraction at $2,500 through 2018 and $3,500 for 2019 and 2020. The department extends it to each spouse on a joint return and to a surviving spouse receiving payments from the uniformed services. The pack expresses it by listing AZ in `PUBLIC_PENSION_OVERRIDES` as `{ kind: \'full\' }`, which is also what stops the public rule being copied onto private retirement income: Arizona subtracts nothing for a private pension or an IRA, and must keep subtracting nothing.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:AZ',
+    authority: [{
+      kind: 'statute',
+      citation: 'A.R.S. 43-1022(26)',
+      url: 'https://www.azleg.gov/ars/43/01022.htm',
+      quotedText:
+        'Benefits, annuities and pensions received as retired or retainer pay of the uniformed services of the United States in amounts as follows: (a) For taxable years through December 31, 2018, an amount totaling not more than $2,500. (b) For taxable years beginning from and after December 31, 2018 through December 31, 2020, an amount totaling not more than $3,500. (c) For taxable years beginning from and after December 31, 2020, the full amount received.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Arizona Form 140 instructions, Line 29b',
+      url: 'https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf',
+      quotedText:
+        'If you received benefits, annuities and pensions as retired or retainer pay of the uniformed services of the United States, you may subtract 100% of the amount you received.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2021,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ars-43-1022-no-private-retirement-exclusion': {
+    title: 'Arizona grants no exclusion for a private pension, annuity or IRA distribution',
+    statement:
+      'The subtractions that turn Arizona gross income into Arizona adjusted gross income are the closed enumeration of A.R.S. 43-1022. Two of its paragraphs reach retirement income — uniformed-services retired pay under (26) and government pensions under (2) — and none of them reaches a private pension, a commercial annuity, or a distribution from a traditional IRA or 401(k), so that income is taxed in full at 2.5%. The pack keeps `retirementPrivate` at `{ kind: \'none\' }`, and the entry for Arizona in `PUBLIC_PENSION_OVERRIDES` leaves `retirementRuleShared` false, so the public bucket’s exclusion cannot spill onto the private one.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:AZ',
+    authority: [{
+      // A negative claim's evidence is the closedness of the enumeration. The
+      // opening line makes the list exhaustive; the return's own subtraction
+      // line for pensions names only the government ones.
+      kind: 'statute',
+      citation: 'A.R.S. 43-1022',
+      url: 'https://www.azleg.gov/ars/43/01022.htm',
+      quotedText:
+        'In computing Arizona adjusted gross income, the following amounts shall be subtracted from Arizona gross income:',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Arizona Form 140, line 29a',
+      url: 'https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf',
+      quotedText:
+        '29a Exclusion for federal, Arizona state or local government pensions (up to $2,500 per taxpayer)',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2021,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ars-43-1022-2-government-pension-exclusion': {
+    title: 'Arizona caps a civil-service pension subtraction at $2,500, and the pack exempts it in full',
+    statement:
+      'A.R.S. 43-1022(2) subtracts benefits, annuities and pensions "in an amount totaling not more than $2,500" received from the federal civil-service and foreign-service retirement systems and any other retirement system established by federal law other than uniformed-services retired pay, and from the Arizona State Retirement System, the Corrections Officer Retirement Plan, the Public Safety Personnel Retirement System, the Elected Officials\' Retirement Plan, the Arizona Board of Regents and community-college optional programs, and county, city or town plans. Each spouse may claim their own $2,500, and a public pension from another state qualifies for nothing. Not modelled. `retirementPublic` is one flag covering every public pension the input model can carry, and it is set to `full` for the sake of 43-1022(26)’s uniformed-services exclusion, so a federal, Arizona state or Arizona local government pension is exempted outright when Arizona exempts only $2,500 of it. The error runs toward the taxpayer: an Arizona civil-service retiree is shown a state tax lower than they owe, by 2.5% of everything above $2,500.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:AZ',
+    authority: [{
+      kind: 'statute',
+      citation: 'A.R.S. 43-1022(2)',
+      url: 'https://www.azleg.gov/ars/43/01022.htm',
+      quotedText:
+        'Benefits, annuities and pensions in an amount totaling not more than $2,500 received from one or more of the following: (a) The United States government service retirement and disability fund, the United States foreign service retirement and disability system and any other retirement system or plan established by federal law, except retired or retainer pay of the uniformed services of the United States that qualifies for a subtraction under paragraph 26 of this section.',
+    }, {
+      kind: 'statute',
+      citation: 'A.R.S. 43-1022(2)(b)',
+      url: 'https://www.azleg.gov/ars/43/01022.htm',
+      quotedText:
+        'The Arizona state retirement system, the corrections officer retirement plan, the public safety personnel retirement system, the elected officials\' retirement plan, an optional retirement program established by the Arizona board of regents under section 15-1628, an optional retirement program established by a community college district board under section 15-1451 or a retirement plan established for employees of a county, city or town in this state.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Arizona Form 140 instructions, Line 29a',
+      url: 'https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf',
+      quotedText:
+        'If you received pension income from any of the sources listed below, subtract the amount you received or $2,500, whichever is less.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Arizona Form 140 instructions, Line 29a, out-of-state public pensions',
+      url: 'https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf',
+      quotedText:
+        'NOTE: Public retirement pensions from states other than Arizona do not qualify for this subtraction.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2021,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/types.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ars-43-1022-22-long-term-capital-gain-subtraction': {
+    title: 'Arizona subtracts 25% of long-term gain on a post-2011 asset only',
+    statement:
+      'A.R.S. 43-1022(22) subtracts a share of net long-term capital gain included in federal adjusted gross income, but only gain "derived from an investment in an asset acquired after December 31, 2011", and subdivision (c) sets that share at twenty-five percent for taxable years after 2014 while adding that no subtraction is allowed at all where the acquisition date cannot be verified. The pack carries `capitalGainsTaxablePct: 75`, which is right for an asset bought after 2011 and wrong for one bought before. Not modelled: the engine holds no acquisition date for the position a gain came from, so it applies the seventy-five percent inclusion to every Arizona gain, including one on a long-held pre-2012 holding that Arizona taxes in full. The error runs toward the taxpayer on exactly the households most likely to have one — a retiree realizing a position held for fifteen years — at 2.5% of the quarter Arizona does not exclude.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:AZ',
+    authority: [{
+      kind: 'statute',
+      citation: 'A.R.S. 43-1022(22)',
+      url: 'https://www.azleg.gov/ars/43/01022.htm',
+      quotedText:
+        'An amount of any net long-term capital gain included in federal adjusted gross income for the taxable year that is derived from an investment in an asset acquired after December 31, 2011, as follows:',
+    }, {
+      kind: 'statute',
+      citation: 'A.R.S. 43-1022(22)(c)',
+      url: 'https://www.azleg.gov/ars/43/01022.htm',
+      quotedText:
+        'For taxable years beginning from and after December 31, 2014, twenty-five percent of the net long-term capital gain included in federal adjusted gross income. For the purposes of this paragraph, a transferee that receives an asset by gift or at the death of a transferor is considered to have acquired the asset when the asset was acquired by the transferor. If the date an asset is acquired cannot be verified, a subtraction under this paragraph is not allowed.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Arizona Form 140 instructions, Line 24',
+      url: 'https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf',
+      quotedText:
+        'You may subtract 25% (.25) of any net long-term capital gain included in your federal adjusted gross income that is derived from an investment in an asset acquired after December 31, 2011.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2015,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/types.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ars-43-1023-e-age-65-exemption': {
+    title: 'Arizona’s age-65 relief is a flat $2,100 exemption the pack does not model',
+    statement:
+      'A.R.S. 43-1023(E) allows an exemption of $2,100 to a taxpayer who has attained age 65 before the close of the taxable year, and a second $2,100 for a spouse who has on a joint return. It reaches the return through 43-1022(1), which subtracts the 43-1023 exemptions from Arizona gross income — so it sits above the deduction line, and it is not an addition to the standard deduction. Nothing in 43-1023 indexes it. Not modelled: the pack has one age-65 field, `standardDeductionAge65Addition`, and `conformStateStandardDeduction` attaches it only to a state whose deduction IS the federal one, which Arizona’s is not. So an Arizona household aged 65 or over is charged 2.5% on $2,100 per person that Arizona exempts. Modelling it through the conformity tag was the alternative and is worse: that path attaches the FEDERAL age-65 addition, a different figure under a different statute, indexed every year while Arizona’s $2,100 is frozen, so the gap between the two would widen in every projected year of a plan.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:AZ',
+    authority: [{
+      kind: 'statute',
+      citation: 'A.R.S. 43-1023(E)',
+      url: 'https://www.azleg.gov/ars/43/01023.htm',
+      quotedText:
+        'A taxpayer is allowed an exemption of $2,100: 1. If the taxpayer has attained sixty-five years of age before the close of the taxable year filing a separate or joint return and the taxpayer is not claimed as a dependent by another taxpayer. 2. For the taxpayer\'s spouse if the spouse has attained sixty-five years of age before the close of the taxable year, a joint return is filed and the spouse is not a dependent of another taxpayer.',
+    }, {
+      // Where the exemption enters the return, and why it is not a deduction:
+      // 43-1022(1) subtracts it from Arizona GROSS income, so it is gone before
+      // 43-1001(11) reaches taxable income by taking the article 4 deductions
+      // off Arizona adjusted gross income. 43-1001 is not cited alongside it
+      // because that page carries under 1,600 characters of text and the quote
+      // verifier cannot tell so short a document from a shell page.
+      kind: 'statute',
+      citation: 'A.R.S. 43-1022(1)',
+      url: 'https://www.azleg.gov/ars/43/01022.htm',
+      quotedText: 'The amount of exemptions allowed by section 43-1023.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Arizona Form 140, line 38',
+      url: 'https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf',
+      quotedText: '38 Age 65 or over: Multiply the number in box 8 by $2,100',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2021,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/index.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)
