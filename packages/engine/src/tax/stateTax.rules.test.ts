@@ -44,11 +44,16 @@ const INFLATION_SCALE = 1.1
 
 /**
  * The federal age-65 addition the conformity helper takes, sourced the way
- * production sources it rather than restated as a literal. These records are
- * about the basic deduction travelling with the federal figure, and none of
- * them puts anyone over 65 in the scenario, so the addition contributes
- * nothing here — but it has to be the real one, because a stand-in would make
- * the test agree with itself instead of with the pack.
+ * production sources it rather than restated as a literal. It contributes
+ * nothing to any assertion below, but not for the reason a reader might guess:
+ * several scenarios do set `agesAlive: [70]`. What keeps the addition out is
+ * `peopleAged65Plus: 0` in the `input()` helper, which is the field the
+ * addition is actually counted against — `agesAlive` drives the retirement
+ * exclusions' minimum-age gates and nothing else here. A fixture that wanted
+ * to exercise the addition would have to raise the count, not the ages.
+ *
+ * It still has to be the real value rather than a stand-in, because a stand-in
+ * would make the test agree with itself instead of with the pack.
  */
 const FEDERAL_AGE65_ADDITION = packForYear(TAX_YEAR).pack.federalTax.age65Addition
 
@@ -82,19 +87,29 @@ describeRule('ndcc-57-38-30-3-federal-taxable-income-base', {
 const PA_RATE = 0.0307
 const PA_REALIZED_GAIN = 40_000
 const PA_CARRIED_LOSS = -10_000
+/** What the federal ledger reports once the carryforward has been absorbed. */
+const PA_FEDERALLY_NETTED_GAIN = PA_REALIZED_GAIN + PA_CARRIED_LOSS
 
 describeRule('pa-pit-no-capital-loss-carryforward', {
   readings: {
     // Only the year's own realized gain is a Pennsylvania gain.
     currentYearNetGainOnly: PA_REALIZED_GAIN * PA_RATE,
     // The federal ledger has already netted a prior-year loss against it.
-    federalCarryforwardConformity: 0,
+    federalCarryforwardConformity: PA_FEDERALLY_NETTED_GAIN * PA_RATE,
   },
   accepted: 'currentYearNetGainOnly',
 }, ({ accepted, readings }) => {
+  // Both figures are supplied because the two readings consume different ones:
+  // `currentYearOnly` re-reads the pre-carryforward realized gain, federal
+  // conformity takes the netted `capitalGains`. The netted figure is kept
+  // POSITIVE on purpose. An earlier version of this fixture passed the bare
+  // -10,000 carryforward as `capitalGains`, which made the conforming reading
+  // come out at zero — but from the loss floor rather than from the netting,
+  // so the fixture discriminated against a case the rule is not about. Two
+  // non-zero figures that differ by the carryforward test the actual mechanism.
   const scenario = input({
     state: 'PA',
-    capitalGains: PA_CARRIED_LOSS,
+    capitalGains: PA_FEDERALLY_NETTED_GAIN,
     realizedCapitalGainsBeforeCarryforward: PA_REALIZED_GAIN,
     agesAlive: [70],
   })
@@ -103,9 +118,10 @@ describeRule('pa-pit-no-capital-loss-carryforward', {
     expect(computeStateTax(pack('PA'), scenario)).toBeCloseTo(accepted, 6)
   })
 
-  it('would forgive the whole gain under federal conformity', () => {
+  it('would tax only the netted gain under federal conformity', () => {
     const conforming = { ...pack('PA'), capitalLossCarryforwardConformity: 'federal' as const }
-    expect(computeStateTax(conforming, scenario)).toBe(readings.federalCarryforwardConformity)
+    expect(computeStateTax(conforming, scenario))
+      .toBeCloseTo(readings.federalCarryforwardConformity, 6)
   })
 })
 
