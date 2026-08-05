@@ -4,6 +4,7 @@ import type {
   AccountId,
   AnnualIraBasisAllocationEvidence,
   AnnualIraBasisRatio,
+  AnnualQcdExecutionPrerequisiteEvidence,
   AnnualRetirementActionPublication,
   ExecuteOrdinaryWithdrawalsResult,
   ExecuteRothConversionsResult,
@@ -808,6 +809,15 @@ export interface YearResult {
    * unavailable; absence means no named conversion request existed this year.
    */
   rothConversionActionExecution?: ExecuteRothConversionsResult
+  /**
+   * Planning-prerequisite evidence for each named QCD request this year: the
+   * donor's exact age 70½ threshold date, the resolved source and copied
+   * charity designation, and the annual stages that remain unestablished. It
+   * establishes what is proven before any gift moves, never that one moved or
+   * became actionable; absence means no named QCD request was evaluated.
+   */
+  qcdActionPrerequisites?:
+    readonly Readonly<AnnualQcdExecutionPrerequisiteEvidence>[]
   /** Early-withdrawal penalties (10% traditional pre-59½, 20% HSA non-medical pre-65); not in `tax`. */
   penalties: number
   /** MAGI realized this year (drives IRMAA two years later and the ACA credit). */

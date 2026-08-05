@@ -14,12 +14,12 @@ import type { YearResult } from './types.js'
  * request, the same way the aggregate conversion arm stands down for a named
  * conversion.
  *
- * Nothing moves twice today, because the ordinary-withdrawal executor refuses
- * every request that is not an `ordinaryWithdrawal`, so a named QCD is inert.
- * That is exactly why this test exists now rather than later: the slice that
- * makes a named QCD move dollars would otherwise have the household give twice
- * — once from `strategies.qcdAnnual` and once from the action — and no other
- * fixture in the suite combines the two arms, so nothing would fail.
+ * Nothing moves twice today, because the QCD executor publishes a named
+ * request's identity/legal prerequisite and nothing else, so a named QCD is
+ * inert. That is exactly why this test exists now rather than later: the slice
+ * that makes a named QCD move dollars would otherwise have the household give
+ * twice — once from `strategies.qcdAnnual` and once from the action — and no
+ * other fixture in the suite combines the two arms, so nothing would fail.
  */
 
 const TAX_YEAR = 2026

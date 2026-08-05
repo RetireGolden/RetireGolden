@@ -1073,6 +1073,10 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
       (request) => request.actionId,
     )).toEqual(['conversion-a', 'qcd'])
     expect(qcdCollisionYear).not.toHaveProperty('rothConversionActionExecution')
+    // A QCD normally publishes through the qcdExecutor, but not when it shares
+    // a schedule slot with a non-QCD action: the publication coordinator can
+    // only excuse a collision between records of one executor source, so both
+    // sides of a cross-kind collision stay with the ordinary executor.
     expect(qcdCollisionYear.retirementActionPublication?.executorSources).toEqual([
       'ordinaryWithdrawalExecutor',
     ])
@@ -1253,9 +1257,20 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
     })
     expect(publication.records).toHaveLength(5)
     expect(publication.records.every((record) =>
-      record.outcome === 'refused' &&
       record.readiness === 'nonActionable' &&
       record.executedAmount === 0)).toBe(true)
+    // The QCD publishes through its own executor, so the ordinary executor's
+    // batch abort reaches only the four requests it was handed.
+    expect(Object.fromEntries(publication.records.map((record) => [
+      record.actionId,
+      [record.executorSource, record.outcome],
+    ]))).toEqual({
+      'conflict-a': ['ordinaryWithdrawalExecutor', 'refused'],
+      'conflict-b': ['ordinaryWithdrawalExecutor', 'refused'],
+      conversion: ['ordinaryWithdrawalExecutor', 'refused'],
+      'legacy-withdrawal': ['ordinaryWithdrawalExecutor', 'refused'],
+      qcd: ['qcdExecutor', 'unsupported'],
+    })
     expect(Object.fromEntries(publication.records.map((record) => [
       record.actionId,
       record.reasons.map((reason) => reason.code),
@@ -1263,8 +1278,14 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
       'conflict-a': ['action-sequence-conflict'],
       'conflict-b': ['action-sequence-conflict'],
       conversion: ['action-batch-schedule-conflict'],
-      qcd: ['action-batch-schedule-conflict'],
       'legacy-withdrawal': ['action-batch-schedule-conflict'],
+      qcd: [
+        'qcd-nonqcd-deduction-unsupported',
+        'qcd-rmd-evidence-missing',
+        'qcd-sep-simple-activity-unknown',
+        'qcd-tax-year-limit-unsupported',
+        'qcd-before-age-70-half',
+      ],
     })
     expect(year.balances).toMatchObject({
       'cash-a': 100,
@@ -1517,7 +1538,13 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
     const year = run(plan).years[0]!
 
     expect(year.retirementActionExecution).toMatchObject({ committed: true })
-    expect(year.retirementActionExecution?.evidence).toHaveLength(5)
+    // Four, not five: the QCD is the qcdExecutor's to publish.
+    expect(year.retirementActionExecution?.evidence).toHaveLength(4)
+    expect(year.retirementActionPublication?.executorSources).toEqual([
+      'ordinaryWithdrawalExecutor',
+      'qcdExecutor',
+      'rothConversionExecutor',
+    ])
     expect(year.rothConversionActionExecution?.evidence).toEqual([
       expect.objectContaining({
         actionId: 'conversion',
