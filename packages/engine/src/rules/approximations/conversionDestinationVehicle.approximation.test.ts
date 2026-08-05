@@ -3,7 +3,10 @@ import { expect, it } from 'vitest'
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../../model/plan.js'
 import { createFlatTaxCalculator } from '../../projection/flatTax.js'
 import { simulatePlan } from '../../projection/simulate.js'
-import type { YearResult } from '../../projection/types.js'
+import type {
+  SimulatorRetirementRuntimeAggregateRothDestinationCredit,
+  YearResult,
+} from '../../projection/types.js'
 import { describeRule } from '../describeRule.js'
 
 /**
@@ -36,7 +39,13 @@ const fixedNow = (): Date => new Date('2026-06-11T00:00:00.000Z')
 const CONVERSION_YEAR = 2026
 const REQUESTED_CONVERSION = 50_000
 
-function cash(balance: number): Account {
+// Each builder is typed at what it actually returns rather than at the `Account`
+// union it feeds, matching `projection/conversionOwnerIdentity.test.ts`. The
+// discriminant is the whole subject of this fixture -- `kind: 'employer'` versus
+// `kind: 'ira'` is the difference the record is about -- so a builder that
+// erased it back to the union would be the one place in the file where the
+// distinction went unstated.
+function cash(balance: number): Extract<Account, { type: 'cash' }> {
   return {
     type: 'cash',
     id: testIds(),
@@ -48,7 +57,7 @@ function cash(balance: number): Account {
   }
 }
 
-function rothIra(id: string, owner: string): Account {
+function rothIra(id: string, owner: string): Extract<Account, { type: 'roth' }> {
   return {
     type: 'roth',
     id,
@@ -61,7 +70,10 @@ function rothIra(id: string, owner: string): Account {
   }
 }
 
-function designatedRothAccount(id: string, owner: string): Account {
+function designatedRothAccount(
+  id: string,
+  owner: string,
+): Extract<Account, { type: 'roth' }> {
   return {
     type: 'roth',
     id,
@@ -74,7 +86,11 @@ function designatedRothAccount(id: string, owner: string): Account {
   }
 }
 
-function traditionalIra(id: string, owner: string, balance: number): Account {
+function traditionalIra(
+  id: string,
+  owner: string,
+  balance: number,
+): Extract<Account, { type: 'traditional' }> {
   return {
     type: 'traditional',
     id,
@@ -135,21 +151,33 @@ function yearOf(plan: Plan): Readonly<YearResult> {
 }
 
 /**
- * The account each destination credit actually landed in. Asserted alongside
- * the amount throughout, because this record is named for the KIND of account
- * the dollars reach: a fixture that only counted them would pass on a build
- * that credited some entirely different Roth.
+ * Every per-owner destination credit the aggregate conversion recorded, so the
+ * account the dollars landed in can be asserted alongside the amount: this
+ * record is named for the KIND of account they reach, and a fixture that only
+ * counted them would pass on a build that credited some entirely different
+ * Roth.
+ *
+ * The filter is a type guard, so `map` narrows without a second
+ * `applicationKind` check. An earlier draft re-tested the kind inside `map` and
+ * fell back to `null`, widening the return type with a branch the filter had
+ * already made unreachable -- on a fixture whose subject is assertions that
+ * cannot fail, a case a reader could never make execute is the same defect one
+ * layer down.
+ *
+ * Throws rather than returning empty when the source is absent: a missing
+ * source would otherwise turn every assertion below into a vacuous statement
+ * about an empty array.
  */
-function destinationAccountIds(year: Readonly<YearResult>): readonly (string | null)[] {
+function destinationCredits(
+  year: Readonly<YearResult>,
+): readonly Readonly<SimulatorRetirementRuntimeAggregateRothDestinationCredit>[] {
   const source = year.retirementRuntimeApplicationSource
   if (source === undefined) throw new Error('expected a runtime application source')
-  return source.applications
-    .filter((application) =>
-      application.applicationKind === 'aggregateRothDestinationCredit')
-    .map((application) =>
-      application.applicationKind === 'aggregateRothDestinationCredit'
-        ? application.destinationRothAccountId
-        : null)
+  return source.applications.filter(
+    (application): application is
+      Readonly<SimulatorRetirementRuntimeAggregateRothDestinationCredit> =>
+      application.applicationKind === 'aggregateRothDestinationCredit',
+  )
 }
 
 describeRule('irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira', {
@@ -182,7 +210,11 @@ describeRule('irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira', {
     // named on both the balance and the runtime credit.
     expect(year.balances['rothB401k']).toBeCloseTo(REQUESTED_CONVERSION, 6)
     expect(year.balances['tradB']).toBeCloseTo(350_000, 6)
-    expect(destinationAccountIds(year)).toEqual(['rothB401k'])
+    const credits = destinationCredits(year)
+    expect(credits).toHaveLength(1)
+    expect(credits[0]!.destinationRothAccountId).toBe('rothB401k')
+    expect(credits[0]!.destinationCreditedAmountPlanDollars)
+      .toBeCloseTo(REQUESTED_CONVERSION, 6)
     // The income is recognised too, so this is not a bookkeeping-only slip:
     // the household is taxed on a conversion the statute does not permit.
     expect(year.magi).toBeCloseTo(REQUESTED_CONVERSION, 6)
@@ -206,7 +238,11 @@ describeRule('irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira', {
 
     expect(year.rothConversion).toBeCloseTo(REQUESTED_CONVERSION, 6)
     expect(year.balances['rothBIra']).toBeCloseTo(REQUESTED_CONVERSION, 6)
-    expect(destinationAccountIds(year)).toEqual(['rothBIra'])
+    const credits = destinationCredits(year)
+    expect(credits).toHaveLength(1)
+    expect(credits[0]!.destinationRothAccountId).toBe('rothBIra')
+    expect(credits[0]!.destinationCreditedAmountPlanDollars)
+      .toBeCloseTo(REQUESTED_CONVERSION, 6)
   })
 
   it('raises no warning about the destination it chose', () => {

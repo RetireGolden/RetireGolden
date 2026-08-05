@@ -272,6 +272,16 @@ describeRule('irc-408-d-3-A-i-conversion-benefits-the-distributee', {
     for (const credit of credits) {
       // The identity requirement itself: every dollar in this credit came out
       // of an account belonging to the person whose Roth received it.
+      //
+      // The destination owner is pinned non-null FIRST, and that is not
+      // ceremony. Both sides of the comparison below are `string | null` --
+      // `destinationOwnerPersonId` comes from the destination account's
+      // `ownerPersonId` and each `sourceOwnerPersonIds` entry from a source
+      // account's, and either is null for an account with no owner set. So
+      // `null === null` would satisfy the identity check while proving nothing
+      // about identity, which is precisely the shape of assertion this branch
+      // exists to eliminate. Excluding null makes the comparison bite.
+      expect(credit.destinationOwnerPersonId).not.toBeNull()
       expect(credit.sourceOwnerPersonIds.length).toBeGreaterThan(0)
       for (const sourceOwner of credit.sourceOwnerPersonIds) {
         expect(sourceOwner).toBe(credit.destinationOwnerPersonId)
