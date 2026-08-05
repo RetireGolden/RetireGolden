@@ -4040,19 +4040,25 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         const rothAccounts = balances.filter((b): b is BalanceState & {
           account: Extract<Account, { type: 'roth' }>
         } => b.account.type === 'roth')
-        // Only a Roth IRA can receive these dollars. 408A(d)(3)(B) applies the
-        // conversion paragraph to an amount contributed to a Roth IRA, and the
-        // one route into a designated Roth account -- 402A(c)(4)(B) -- reaches
-        // only a distribution from the plan that maintains the account, which
-        // an IRA never is. The wider list survives the filter because the two
-        // reasons a person can lack a destination read differently to them: no
-        // Roth at all, against a Roth that sits where a conversion cannot go.
+        // Only a Roth IRA can receive these dollars. For an IRA source the
+        // statute decides it: 408A(d)(3)(B) applies the conversion paragraph
+        // to an amount contributed to a Roth IRA, and the one route into a
+        // designated Roth account -- 402A(c)(4)(B) -- reaches only a
+        // distribution from the plan that maintains the account, which an IRA
+        // never is. The drain below also takes employer traditional balances,
+        // where that in-plan route exists in law, but the Plan schema records
+        // no plan identity linking an employer traditional account to an
+        // employer Roth account, so "the same plan" cannot be established and
+        // a Roth IRA is the only destination whose lawfulness is verifiable.
+        // The wider list survives the filter because the two reasons a person
+        // can lack a destination read differently to them: no Roth at all,
+        // against a Roth that sits where this conversion cannot go.
         const rothDestinations = rothAccounts.filter((b) => b.account.kind === 'ira')
         if (rothDestinations.length === 0) {
           warnings.add(rothAccounts.length === 0
             ? 'Roth conversions were requested but the plan has no Roth account; conversions skipped.'
             : 'Roth conversions were requested but every Roth account in the plan sits inside an employer plan, ' +
-              'and an employer Roth account cannot receive a conversion from an IRA; conversions skipped.')
+              'and a Roth conversion here can land only in a Roth IRA; conversions skipped.')
         } else {
           // A conversion is a rollover inside one individual's own accounts:
           // IRC 408(d)(3)(A)(i) admits it only where the amount is paid out of
@@ -4120,9 +4126,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             if (!destinationByOwner.has(ownerId)) {
               const ownerName = personById.get(ownerId)?.name ?? ownerId
               warnings.add(rothHolders.has(ownerId)
-                ? `${ownerName}’s only Roth account is inside an employer plan, and an employer Roth ` +
-                  `account cannot receive a conversion from an IRA, so ${ownerName}’s share of the ` +
-                  'Roth conversion was skipped. ' +
+                ? `${ownerName}’s only Roth account is inside an employer plan, and this Roth ` +
+                  `conversion can land only in ${ownerName}’s own Roth IRA, so ${ownerName}’s share ` +
+                  'was skipped. ' +
                   `Opening a Roth IRA for ${ownerName} would let that share convert.`
                 : `${ownerName} has no Roth account, so ${ownerName}’s share of the Roth conversion was skipped — ` +
                   'a conversion has to land in the same person’s own Roth. ' +

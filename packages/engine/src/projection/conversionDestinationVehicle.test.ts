@@ -324,7 +324,7 @@ describeRule('irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira', {
     expect(year.magi).toBeCloseTo(0, 6)
     expect(warnings).toEqual([
       'Roth conversions were requested but every Roth account in the plan sits inside an ' +
-      'employer plan, and an employer Roth account cannot receive a conversion from an IRA; ' +
+      'employer plan, and a Roth conversion here can land only in a Roth IRA; ' +
       'conversions skipped.',
     ])
   })
