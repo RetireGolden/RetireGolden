@@ -14,10 +14,14 @@
  * This script fetches every distinct `authority[].url`, normalises source and
  * quote the same way, and asserts three things:
  *
- *   1. Every segment of an elided quote (one containing `...` or `…`) is a
- *      literal substring of the source. Honest elision is a legitimate and
- *      common practice here; a *broken* elision is a quote that has dropped
- *      text without saying so.
+ *   1. Every segment of an elided quote (one containing `...` or `…`) is
+ *      present in the source, judged by the same ladder as a whole quote — so
+ *      an elided quote earns ELISION-EXACT at rung 0 and ELISION-PUNCTUATION
+ *      beyond it, exactly mirroring EXACT and PUNCTUATION. It is deliberately
+ *      not held to a stricter standard than an unelided quote: the elision
+ *      markers say text was dropped, they do not promise the remaining spans
+ *      were transcribed more carefully. What this catches is a *broken*
+ *      elision — a quote that dropped text without saying so.
  *   2. After the punctuation ladder below, the quote is still a substring.
  *      The ladder folds away differences in how publishers *render* the same
  *      characters (see HOST_CONVENTIONS); what survives it is a difference in
@@ -261,10 +265,28 @@ const LADDER = Object.freeze([
 /**
  * Run after the ladder and after the truncation probe, never before: deleting
  * terminal punctuation would hide an unmarked truncation, which is a finding,
- * not noise. What it catches is a comma or period inserted *inside* a quote —
+ * not noise. What it catches is a comma, period, semicolon or colon inserted
+ * *inside* a quote —
  * e.g. IRC 72(t)(10)(A), where the registry writes `whichever is earlier, for
  * age 55` and the statute has `"whichever is earlier" for "age 55"`.
  */
+/**
+ * Which terminal character the truncation probe actually removed. Reported
+ * rather than assumed: the probe strips any of . ; : , and calling every one of
+ * them a period misdescribes a quote that ended on a semicolon — the same
+ * confident-but-wrong detail this tool exists to catch in the registry.
+ *
+ * @param {readonly string[]} segments
+ * @returns {string}
+ */
+function terminalCut(segments) {
+  const names = { '.': 'period', ';': 'semicolon', ':': 'colon', ',': 'comma' }
+  const cuts = segments.flatMap((s) => [...(s.match(/[.;:,]+$/)?.[0] ?? '')])
+  const distinct = [...new Set(cuts.map((ch) => names[ch] ?? ch))]
+  if (distinct.length === 0) return 'punctuation mark'
+  return distinct.length === 1 ? distinct[0] : distinct.join('/')
+}
+
 const strayPunctuation = (s) => s.replace(/[.,;:]/g, '')
 
 /**
@@ -743,7 +765,7 @@ function verdictFor(entry, source) {
     ) {
       return {
         verdict: 'TRUNCATED',
-        detail: 'the quote ends with a terminal period the source does not have there',
+        detail: `the quote ends with a terminal ${terminalCut(missing)} the source does not have there`,
         diagnosis: divergence(source.variants, missing[0], wordsOnly),
       }
     }
@@ -789,7 +811,7 @@ function verdictFor(entry, source) {
   ) {
     return {
       verdict: 'TRUNCATED',
-      detail: 'the quote ends with a terminal period the source does not have there',
+      detail: `the quote ends with a terminal ${terminalCut(missing)} the source does not have there`,
       diagnosis: divergence(source.variants, missing[0]),
     }
   }
