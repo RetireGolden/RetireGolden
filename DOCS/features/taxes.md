@@ -253,10 +253,12 @@ carries Arizona's published figure untagged (`ars-43-1041-standard-deduction-pub
 Capital-loss carryforward conformity is state-aware where it changes decisions. The default conforms to the
 federal net capital-gain line. Pennsylvania uses current-year-only conformity, so a federal prior-year loss
 carryforward does not erase PA-taxable current-year gains. CA/MN/NJ source metadata documents their ordinary
-capital-gain treatment in the 2026 pack. Four states exclude part of a gain by statute and carry the included
-share instead: ND 60% (40% excluded), AR 50%, AZ 75% (a 25% subtraction that reaches only assets acquired
-after 2011), and MO 0% (the whole gain subtracted). The share is applied to the modeled gain at ordinary state
-rates - none of these is a preferential *rate*.
+capital-gain treatment in the 2026 pack. Three income-taxing states exclude part of a gain by statute and
+carry the included share explicitly: ND 60% (40% excluded), AR 50%, and AZ 75% (a 25% subtraction that reaches
+only assets acquired after 2011). MO subtracts the whole gain, which `capitalGainsAsOrdinary: false` already
+says. The share is applied to the modeled gain at ordinary state rates - none of these is a preferential
+*rate*. The no-income-tax states also carry `capitalGainsAsOrdinary: false`, where the field is inert but
+still surfaced by the relocation drill-down; WA is the deliberate exception.
 
 Private retirement income includes private pensions, annuities, traditional IRA/401(k) withdrawals, RMDs, SEPP,
 and inherited-traditional distributions. Pension accounts can be marked as private or public / military; public
