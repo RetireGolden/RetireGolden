@@ -470,13 +470,44 @@ const rawStateYear2026 = {
       retirement: { kind: 'none' },
     },
     MS: {
-      // Legislated ramp: 4.4% (2025) -> 4.0% (2026), with further cuts scheduled. Re-verify annually.
+      // Legislated ramp, and the whole of it is now known. Miss. Code Ann.
+      // 27-7-5(1)(b)(ii) sets the rate ABOVE the $10,000 zero band at 4.4% for
+      // 2025 (subparagraph 2), 4% for 2026 (3), 3.75% for 2027 (4), 3.5% for
+      // 2028 (5), 3.25% for 2029 (6) and 3% from 2030 (7). 2024-2026 came from
+      // the Mississippi Tax Freedom Act of 2022 (2022 H.B. 531); 2027 onward
+      // and the trigger came from the Build Up Mississippi Act (2025 H.B. 1),
+      // effective July 1, 2025. From 2031 a revenue trigger codified at
+      // 27-7-5.1 cuts a further 0.2 to 0.3 of a point a year, and if the rate
+      // ever reaches zero the individual income tax stands repealed. So the
+      // next four refreshes each have a published figure waiting and NONE of
+      // them is this one. Registered as `ms-27-7-5-rate-ramp`.
+      //
+      // `capitalGainsAsOrdinary: true` is CORRECT here for the same reason it
+      // is in Indiana, and for the opposite reason to the three states a sweep
+      // would group it with: the department says outright that Mississippi has
+      // no different rate for capital gains. See
+      // `ms-capital-gains-taxed-as-ordinary`.
+      //
+      // The deduction below is Mississippi's own standard deduction and is
+      // fixed in statute rather than indexed, so it cannot go stale. What sits
+      // on top of it — a $6,000/$12,000 personal exemption and $1,500 per
+      // person aged 65 or over — has no field and is NOT modelled; see
+      // `ms-27-7-21-personal-and-age-65-exemptions`. Nor is the per-spouse
+      // column a COMBINED return runs, which gives a two-income couple two
+      // $10,000 zero bands rather than one:
+      // `ms-combined-return-runs-the-schedule-per-spouse`.
       code: 'MS', name: 'Mississippi', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 2300, marriedFilingJointly: 4600 },
       brackets: {
         single: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 10000, ratePct: 4 }],
         marriedFilingJointly: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 10000, ratePct: 4 }],
       },
+      // Unconditional in the statute, and the exclusion is from GROSS income
+      // rather than a deduction from it. What it does not reach is a
+      // distribution carrying the federal early- or excess-distribution tax,
+      // which the pack cannot express and which runs the other way from every
+      // other Mississippi gap here — see
+      // `ms-early-or-excess-distribution-not-exempt`.
       retirement: { kind: 'full' },
     },
     MO: {
