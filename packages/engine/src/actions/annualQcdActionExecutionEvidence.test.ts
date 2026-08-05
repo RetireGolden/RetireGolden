@@ -29,9 +29,9 @@ function qcd(id: string, donorPersonId: typeof p1, sourceAccountId: typeof ira1,
     allocation: { allocationId: asAllocationId(`allocation-${id}`), sourceAccountId, requestedAmount: asPositiveUsdCents(5_000) },
     charity: { ...charity, designationId: `charity-${id}` } }
 }
-interface FixtureOptions { readonly scheduleConflict?: boolean; readonly p1Contribution?: number; readonly p1Dob?: string }
+interface FixtureOptions { readonly scheduleConflict?: boolean; readonly p1Contribution?: number; readonly p1Dob?: string; readonly p1Date?: string }
 function fixture(p1Opening = 10_000, options: FixtureOptions = {}): { inputs: FinalizeAnnualQcdUnifiedTransactionInput[]; requests: QualifiedCharitableDistributionRequest[] } {
-  const requests = [qcd('qcd-p1', p1, ira1, '2026-04-01', 10), qcd('qcd-p2', p2, ira2,
+  const requests = [qcd('qcd-p1', p1, ira1, options.p1Date ?? '2026-04-01', 10), qcd('qcd-p2', p2, ira2,
     options.scheduleConflict ? '2026-04-01' : '2026-05-01', options.scheduleConflict ? 10 : 20)]
   const plan = couplePlan({ p1Dob: options.p1Dob ?? '1955-01-01', p2Dob: '1955-01-01', p1PlanningAge: 100, p2PlanningAge: 100 })
   plan.id = asPlanId('joint-qcd-plan'); plan.accounts = [traditionalAccount(ira1, 100, p1), traditionalAccount(ira2, 100, p2)]
@@ -196,6 +196,7 @@ describe('publishAnnualQcdActionExecutionEvidence', () => {
   describeRule('irc-408-d-8-B-ii-age-70-half', {
     readings: { monthEndClamp: '2026-02-28', rollForwardIntoMarch: '2026-03-03' },
     accepted: 'monthEndClamp',
+    note: 'month-end birth',
   }, ({ accepted, readings }) => {
     it('clamps a nonexistent target day to the last day of that month', () => {
       const result = publishAnnualQcdActionExecutionEvidence({
@@ -206,6 +207,41 @@ describe('publishAnnualQcdActionExecutionEvidence', () => {
       const threshold = result.actions[0]!.scheduledAgeEligibilityEvidence.age70HalfThresholdDate
       expect(threshold).toBe(accepted)
       expect(threshold).not.toBe(readings.rollForwardIntoMarch)
+    })
+  })
+
+  // The fixture above separates only the two month-end readings, and every
+  // month-end birthday except one returns the same date under both the one-step
+  // 846-month form and the regulation's two-step form, because `addCalendarMonths`
+  // clamps once and always backward. A 29 February birth is the sole class where
+  // the INTERMEDIATE value needs clamping too — the 70th anniversary of a leap-day
+  // birth never falls in a leap year, since 70 is congruent to 2 mod 4 — so it is
+  // the only fixture that can separate the three answers the record's own
+  // contraryReading names. Nothing in the engine tested a 29 February donor
+  // against this path before.
+  describeRule('irc-408-d-8-B-ii-age-70-half', {
+    readings: {
+      oneStep846Months: '2026-08-29',
+      clampedAnniversaryThenSixMonths: '2026-08-28',
+      rolledAnniversaryThenSixMonths: '2026-09-01',
+    },
+    accepted: 'oneStep846Months',
+    note: 'leap-day birth',
+  }, ({ accepted, readings }) => {
+    it('adds 846 months in one step rather than clamping the 70th anniversary first', () => {
+      const result = publishAnnualQcdActionExecutionEvidence({
+        ownerFinalizationInputs: fixture(10_000, { p1Dob: '1956-02-29', p1Date: '2026-09-01' }).inputs,
+      })
+      expect(result.status).toBe('annualQcdActionExecutionEvidencePublished')
+      if (result.status !== 'annualQcdActionExecutionEvidencePublished') return
+      const action = result.actions.find((entry) => entry.actionId === 'qcd-p1')!
+      const age = action.scheduledAgeEligibilityEvidence
+      expect(age.age70HalfThresholdDate).toBe(accepted)
+      expect(age.age70HalfThresholdDate).not.toBe(readings.clampedAnniversaryThenSixMonths)
+      expect(age.age70HalfThresholdDate).not.toBe(readings.rolledAnniversaryThenSixMonths)
+      // The convention is now published beside the date it produced, which is
+      // what lets a consumer see that the date was chosen rather than found.
+      expect(age.calculation).toBe('addCalendarMonths846WithMonthEndClamp')
     })
   })
 })

@@ -28,6 +28,18 @@ export interface AnnualQcdActionExecutionAllocationEvidence {
 export interface AnnualQcdExactAgeEligibilityEvidence {
   readonly predicate: 'qcdEligibilityDate'; readonly dateRole: 'scheduled' | 'executed'; readonly donorPersonId: PersonId
   readonly birthDate: string; readonly evaluationDate: string; readonly thresholdMonthCount: 846; readonly age70HalfThresholdDate: string
+  /**
+   * Names the arithmetic that produced `age70HalfThresholdDate`, because the
+   * date rests on an unsettled convention rather than on authority. Nothing
+   * addressed to IRC 408(d)(8)(B)(ii) says what "six calendar months after"
+   * means when the target day does not exist, and the one-step 846-month form
+   * this field names disagrees with a two-step reading by a day for a
+   * 29 February birth. The 714-month and 780-month thresholds already publish
+   * the same disclosure; this one did not, so a consumer could read the
+   * threshold date off a QCD record with nothing telling it the date was
+   * chosen. See the registry record irc-408-d-8-B-ii-age-70-half.
+   */
+  readonly calculation: 'addCalendarMonths846WithMonthEndClamp'
   readonly exactAgeOnEvaluationDate: number; readonly reachedAge70Half: true; readonly aliveEvidenceId: string; readonly ageEvidenceId: string
 }
 export interface AnnualQcdActionRmdPoolEvidence {
@@ -149,7 +161,8 @@ function completedCalendarMonthAge(birthDate: string, evaluationDate: string): n
 function exactAgeEvidence(donorPersonId: PersonId, birthDate: string, evaluationDate: string, age70HalfThresholdDate: string,
   dateRole: 'scheduled' | 'executed', aliveEvidenceId: string, claimed: Set<string>): AnnualQcdExactAgeEligibilityEvidence {
   const base = { predicate: 'qcdEligibilityDate' as const, dateRole, donorPersonId, birthDate, evaluationDate, thresholdMonthCount: 846 as const,
-    age70HalfThresholdDate, exactAgeOnEvaluationDate: completedCalendarMonthAge(birthDate, evaluationDate), reachedAge70Half: true as const, aliveEvidenceId }
+    age70HalfThresholdDate, calculation: 'addCalendarMonths846WithMonthEndClamp' as const,
+    exactAgeOnEvaluationDate: completedCalendarMonthAge(birthDate, evaluationDate), reachedAge70Half: true as const, aliveEvidenceId }
   const ageEvidenceId = deriveActionStructuralId('qcd-exact-age-eligibility-evidence', [base])
   if (claimed.has(ageEvidenceId)) fail('identifierCollision', 'QCD exact-age evidence ID collides with upstream evidence.')
   claimed.add(ageEvidenceId); return deepFreeze({ ...base, ageEvidenceId })

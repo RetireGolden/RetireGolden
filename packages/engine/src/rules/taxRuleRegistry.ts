@@ -488,7 +488,7 @@ const registry = {
   'irc-408-d-8-B-ii-age-70-half': {
     title: 'Date a donor attains age 70.5 for QCD eligibility',
     statement:
-      'QCD eligibility begins on the date six calendar months after the 70th anniversary of birth. The engine computes it as 846 calendar months from the birth date and clamps a nonexistent target day to the last day of that month.',
+      'QCD eligibility begins on the date six calendar months after the 70th anniversary of birth. The engine computes it as 846 calendar months from the birth date and clamps a nonexistent target day to the last day of that month. Every published QCD age record names that arithmetic in its own field, calculation: addCalendarMonths846WithMonthEndClamp, so a consumer reading the threshold date can see it was chosen rather than found; the age 59.5 and age 65 thresholds already publish the same disclosure for the same reason.',
     classification: 'unsettled',
     contraryReading:
       'A two-step computation (70th anniversary, then six months) diverges from the one-step 846-month form for a 29 February birth, because the 70th anniversary of a leap-day birth never falls in a leap year. For a 1956-02-29 birth the defensible answers are 2026-08-28 (clamped anniversary plus six months), 2026-08-29 (one step), and 2026-09-01 (rolled anniversary plus six months): five days apart, with nothing selecting among them.',
@@ -518,8 +518,13 @@ const registry = {
     volatility: 'awaitingGuidance',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/actions/annualQcdActionExecutionEvidence.ts'],
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/actions/annualQcdActionExecutionEvidence.ts',
+      'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts',
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/strategies/accountEligibility.ts',
+    ],
   },
 
   'irc-72-t-2-A-v-rule-of-55': {
