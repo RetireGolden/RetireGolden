@@ -153,6 +153,38 @@ describe('compareRelocationCandidates', () => {
     expect(pa.lifetimeTaxesAndPenalties).toBeLessThan(baseline.lifetimeTaxesAndPenalties)
   })
 
+  it('a conformed destination prices the age-65 addition, and its drivers still reconcile', () => {
+    // The sweep re-prices every recorded year through `computeStateTaxYearTotal`
+    // and refuses to show drivers unless the re-priced total matches the
+    // ledger's own state-tax lines to the cent. Colorado's deduction is the
+    // FEDERAL one, so it carries the IRC 63(c)(3) age-65 addition, and this
+    // fixture is 65 in the first projected year — which makes CO the case where
+    // applying that addition on one side of the sweep and not the other would
+    // silently suppress the whole drivers table. The other candidates in this
+    // file — FL, PA, NY — all publish their own deduction, so none of them
+    // carries an addition for either side of the sweep to disagree about.
+    const plan = caPublicPensionRetiree()
+    const comparison = compareRelocationCandidates(plan, [{ state: 'CO' }], { startYear: START_YEAR })
+    const co = row(comparison.rows, 'candidate-0')
+
+    expect(co.error).toBeNull()
+    expect(co.modeled).toBe(true)
+    expect(co.drivers).not.toBeNull()
+    const lineSum = co.stateTaxByYear.reduce((sum, l) => sum + l.tax, 0)
+    expect(co.drivers!.totalStateLocalTax).toBeCloseTo(lineSum, 6)
+    expect(co.warnings.some((w) => w.includes('could not reconcile'))).toBe(false)
+
+    // And the sweep row is still the plan with its state edited by hand.
+    const manual: Plan = validatePlan({
+      ...plan,
+      household: { ...plan.household, state: 'CO', stateMoves: [] },
+    })
+    const manualResult = simulatePlan(manual, { startYear: START_YEAR, taxCalculator: productionStack(manual) })
+    const manualSummary = summarizeProjection(manual, manualResult)
+    expect(co.lifetimeTaxesAndPenalties).toBe(manualSummary.lifetimeTaxesAndPenalties)
+    expect(co.endingAfterTaxEstate).toBe(manualSummary.endingAfterTaxEstate)
+  })
+
   it('a separate public-pension law surfaces as its own driver (NY)', () => {
     const plan = caPublicPensionRetiree()
     const comparison = compareRelocationCandidates(plan, [{ state: 'NY' }], { startYear: START_YEAR })

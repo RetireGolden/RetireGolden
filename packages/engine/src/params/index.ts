@@ -361,12 +361,35 @@ export function partBMonthlyPremium(
   return Math.round(base * (applicablePct / 25) * 100) / 100
 }
 
+/**
+ * The ADDITIONAL standard deduction for age 65 or older — IRC 63(c)(3) and
+ * 63(f)(1). It is a per-person amount: one for each person in the household who
+ * has reached 65, so a joint return with two such people gets it twice.
+ *
+ * Split out from `standardDeduction` so the state side can apply the identical
+ * arithmetic to the identical per-person figures. The nine jurisdictions tagged
+ * `standardDeductionConformity: 'federal'` define their standard deduction by
+ * reference to the federal one, and "the standard deduction" in IRC 63(c)(1) is
+ * the basic amount PLUS this one — a conformed copy that carried only the basic
+ * amount would over-tax every 65-and-over household in those states. The state
+ * copy is passed in rather than read from a pack here because it may have been
+ * prorated for part-year residency first; the multiplication by head count is
+ * the part that must not be reimplemented.
+ */
+export function age65StandardDeductionAddition(
+  perPerson: PerStatus<number>,
+  filingStatus: FilingStatus,
+  peopleAged65Plus: number,
+): number {
+  return perPerson[filingStatus] * peopleAged65Plus
+}
+
 export function standardDeduction(
   pack: ParameterPack,
   filingStatus: FilingStatus,
   peopleAged65Plus: number,
 ): number {
   const base = pack.federalTax.standardDeduction[filingStatus]
-  const addition = pack.federalTax.age65Addition[filingStatus] * peopleAged65Plus
+  const addition = age65StandardDeductionAddition(pack.federalTax.age65Addition, filingStatus, peopleAged65Plus)
   return base + addition
 }

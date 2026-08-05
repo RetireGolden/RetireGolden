@@ -15,14 +15,14 @@
  */
 
 import {
-  indexConformedStateStandardDeduction,
+  conformStateStandardDeduction,
   stateParamsFor,
   type StateRetirementExclusion,
   type StateTaxBracket,
   type StateTaxParams,
 } from '../params/state/index.js'
 import { taxableSocialSecurity } from './federalTax.js'
-import { packForYear } from '../params/index.js'
+import { age65StandardDeductionAddition, packForYear } from '../params/index.js'
 import { taxParameterFilingStatus, type TaxCalculator, type TaxYearInput } from '../projection/types.js'
 
 function bracketTax(brackets: StateTaxBracket[], taxable: number): number {
@@ -118,6 +118,21 @@ export function computeStateTaxableIncome(
     taxable -= retirementExclusion(params.retirementPublic, publicPension, agesAlive)
   }
   taxable -= params.standardDeduction[taxStatus]
+  // The federal additional standard deduction for age 65 or older, per person.
+  // Its presence on the params IS the eligibility test: only
+  // `conformStateStandardDeduction` attaches the field, and only to a state
+  // whose deduction is the federal one. A state that publishes its own carries
+  // no such field, and whatever age relief its law gives is already inside its
+  // own figures. The amount arrives already indexed and already prorated for
+  // part-year residency where either applied, so all that is left here is the
+  // head count, which is the household's rather than the state's.
+  if (params.standardDeductionAge65Addition) {
+    taxable -= age65StandardDeductionAddition(
+      params.standardDeductionAge65Addition,
+      taxStatus,
+      Math.max(0, input.peopleAged65Plus),
+    )
+  }
 
   return Math.max(0, taxable)
 }
@@ -147,12 +162,24 @@ function scaleExclusion(rule: StateRetirementExclusion, scale: number): StateRet
 }
 
 function prorateParams(params: StateTaxParams, scale: number): StateTaxParams {
+  const age65 = params.standardDeductionAge65Addition
   return {
     ...params,
     standardDeduction: {
       single: params.standardDeduction.single * scale,
       marriedFilingJointly: params.standardDeduction.marriedFilingJointly * scale,
     },
+    // The per-person age-65 addition is part of the same deduction and prorates
+    // with it: a 65+ filer resident for five months takes five twelfths of it
+    // against five twelfths of the year's income, not the whole year's.
+    ...(age65 === undefined
+      ? {}
+      : {
+          standardDeductionAge65Addition: {
+            single: age65.single * scale,
+            marriedFilingJointly: age65.marriedFilingJointly * scale,
+          },
+        }),
     brackets: {
       single: params.brackets.single.map((b) => ({ ...b, lowerBound: b.lowerBound * scale })),
       marriedFilingJointly: params.brackets.marriedFilingJointly.map((b) => ({ ...b, lowerBound: b.lowerBound * scale })),
@@ -220,9 +247,21 @@ export function computeStateTaxYearTotal(input: TaxYearInput, opts: StateTaxYear
     // than a state figure, and `computeFederalTax` projects that federal
     // figure past the pack year under IRC 63(c)(7)(B)(ii). The copy has to
     // travel with it, or one engine holds two values for one amount in the
-    // same year and taxes the gap at the state rate. Everything else in the
-    // pack — brackets included — stays nominal.
-    const params = indexConformedStateStandardDeduction(published, input.inflationScale ?? 1)
+    // same year and taxes the gap at the state rate — and it has to be the
+    // whole federal deduction, additional age-65 amount included, which is
+    // what IRC 63(c)(1) means by "the standard deduction" those states adopt.
+    // Everything else in the pack — brackets included — stays nominal.
+    //
+    // Conforming here rather than later is deliberate: the params returned
+    // from this point on already hold both figures, so the split-year path
+    // below hands `prorateParams` a conformed pair and residency scales them
+    // together instead of only the basic half.
+    const { pack } = packForYear(input.year)
+    const params = conformStateStandardDeduction(
+      published,
+      pack.federalTax.age65Addition,
+      input.inflationScale ?? 1,
+    )
     return opts.mapParams ? opts.mapParams(params) : params
   }
   if (overrideRate > 0) {

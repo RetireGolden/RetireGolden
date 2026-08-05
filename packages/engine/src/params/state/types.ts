@@ -66,14 +66,41 @@ export interface StateTaxParams {
    * for every taxable year beginning after 2025. A copy of that amount left
    * frozen at the pack year would take a different value from the original in
    * the very same projected year, and the whole widening gap would be taxed at
-   * the state rate. `indexConformedStateStandardDeduction` reads this flag and
-   * moves the copy with the original.
+   * the state rate. `conformStateStandardDeduction` reads this flag and moves
+   * the copy with the original.
+   *
+   * The same flag is what entitles the state base to the age-65 additional
+   * deduction: "the standard deduction" the state is pointing at is IRC
+   * 63(c)(1)'s, which is the basic amount plus the additional amounts of
+   * 63(c)(3). See `standardDeductionAge65Addition`.
    *
    * Absent (the default) means the state publishes its own deduction, which no
    * federal provision reaches. ME and SC are the type case: both decoupled from
    * the federal figure for 2026 and must NOT move with it.
    */
   standardDeductionConformity?: 'federal'
+  /**
+   * Per-person federal additional standard deduction for age 65 or older (IRC
+   * 63(c)(3), 63(f)(1)), attached to a conformed state's params so the state
+   * base gets the same deduction the federal base gets.
+   *
+   * NOT part of the published pack data, and never set for an untagged state.
+   * `conformStateStandardDeduction` attaches it — from the federal pack for the
+   * year, scaled by the same inflation factor as the basic amount — because it
+   * is a federal figure the state borrows whole, not a state dollar amount
+   * anyone in the pack could edit. So this field is a property of CONFORMED
+   * params, not of published ones: a raw `stateParamsFor` result carries
+   * neither the indexed basic amount nor this one, and pricing against it
+   * charges a conforming state its pack-year basic amount alone. Conforming
+   * before pricing a household-year is the contract, and
+   * `computeStateTaxYearTotal` is where it is met.
+   *
+   * Stored per person rather than pre-multiplied by the household's head count
+   * so `prorateParams` can scale it for part-year residency exactly as it scales
+   * the basic amount — a 65+ filer resident for five months gets five twelfths
+   * of the addition, not all of it.
+   */
+  standardDeductionAge65Addition?: PerStatus<number>
   brackets: PerStatus<StateTaxBracket[]>
   /** Private pensions, annuities, traditional IRA/401(k), RMD, SEPP, and inherited distributions. */
   retirementPrivate: StateRetirementExclusion
