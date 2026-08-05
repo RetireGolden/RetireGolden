@@ -676,16 +676,24 @@ const sourceIdentifierReasonCodes = new Set<ActionReason['code']>([
   ...Object.keys(sourceReasonResolutionRequirements) as ActionReason['code'][],
 ])
 
+// What each physical-balance reason asserts about the allocation it names: that
+// some of the request moved, or that none of it did. The distinction is about
+// MOVEMENT, not availability, and the two part company for conversions. A
+// trimmed withdrawal or QCD moves the dollars its source did hold, so its
+// allocation must show a positive executed amount beside a positive remainder.
+// The conversion executor commits whole or not at all, so a trimmed conversion
+// moves nothing even though its source held something — the same allocation
+// state an outright unavailable source produces, reached by a different fact.
 const balanceReasonAllocationStates = {
   'source-balance-trimmed': 'partial',
-  'source-balance-unavailable': 'unavailable',
-  'conversion-balance-trimmed': 'partial',
-  'conversion-balance-unavailable': 'unavailable',
+  'source-balance-unavailable': 'nonmoving',
+  'conversion-balance-trimmed': 'nonmoving',
+  'conversion-balance-unavailable': 'nonmoving',
   'qcd-balance-trimmed': 'partial',
-  'qcd-balance-unavailable': 'unavailable',
+  'qcd-balance-unavailable': 'nonmoving',
 } as const satisfies Readonly<Partial<Record<
   ActionReason['code'],
-  'partial' | 'unavailable'
+  'partial' | 'nonmoving'
 >>>
 
 const physicalBalanceReasonCodes = new Set<ActionReason['code']>(
@@ -1343,13 +1351,16 @@ function isStagedNonmovingConversionRecord(
   // source balance, which is exactly what makes a physical-balance reason
   // alongside them a report rather than a phase error. A record blocked only by
   // allocation-bound reasons is not in that regime and gets no bypass.
+  //
+  // `conversion-balance-trimmed` used to need naming here on top of the outcome
+  // test, because the registry classified it partial while this executor could
+  // only ever refuse on it. The registry now says refused, so the outcome test
+  // covers it and the exemption would only restate itself.
   const stagingPrerequisite = record.reasons.some((reason) =>
     ownerWideConversionPrerequisiteCodes.has(reason.code))
   return stagingPrerequisite &&
     record.reasons.every((reason) =>
-      reason.outcome === 'unsupported' ||
-      reason.outcome === 'refused' ||
-      reason.code === 'conversion-balance-trimmed')
+      reason.outcome === 'unsupported' || reason.outcome === 'refused')
 }
 
 function assertRecordBinding(
@@ -1744,18 +1755,10 @@ function assertRecordBinding(
     const balanceState = (
       balanceReasonAllocationStates as Readonly<Partial<Record<
         ActionReason['code'],
-        'partial' | 'unavailable'
+        'partial' | 'nonmoving'
       >>>
     )[reason.code]
-    const stagedConversionTrimMatches =
-      reason.code === 'conversion-balance-trimmed' &&
-      stagedNonmovingConversionAmountState &&
-      boundRecordAllocation?.resolution === 'resolved' &&
-      boundRecordAllocation.executedAmount === 0 &&
-      boundRecordAllocation.unexecutedAmount ===
-        boundRecordAllocation.requestedAmount
     const balanceStateMatches = balanceState === undefined ||
-      stagedConversionTrimMatches ||
       (boundRecordAllocation === undefined
         ? balanceState === 'partial'
           ? record.executedAmount > 0 && record.unexecutedAmount > 0

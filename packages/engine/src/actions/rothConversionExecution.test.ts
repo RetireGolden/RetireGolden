@@ -902,8 +902,8 @@ describe('executeRothConversions', () => {
 
     // The publication contract required all three staging codes to recognise a
     // staged non-moving conversion. Dropping one must not silently reroute the
-    // record: it still has to publish, both through the plain disposition
-    // schema and through the bypass a physical trim reason still needs.
+    // record: it still has to publish under the plain disposition schema, and
+    // so does the one below that also reports a short source.
     it('publishes a staged conversion whose reserve reason has cleared', () => {
       const result = executeRothConversions(withSatisfaction(40_000, 40_000))
       const record = result.evidence[0]!
@@ -936,9 +936,10 @@ describe('executeRothConversions', () => {
 
       expect(codes).toContain('conversion-balance-trimmed')
       expect(codes).not.toContain('conversion-rmd-reserve-unavailable')
-      // A partial-outcome reason inside an unsupported disposition is exactly
-      // what the staged-conversion bypass exists for, so this record proves the
-      // bypass still recognises the record after the reserve reason cleared.
+      // The trim reason is refusal-classified because this executor commits
+      // whole or not at all, so the record satisfies the disposition schema on
+      // its own terms. It does not need the staged-conversion bypass, and the
+      // bypass is not what is being exercised here.
       expect(actionExecutionDispositionSchema.safeParse({
         outcome: result.evidence[0]!.outcome,
         readiness: result.evidence[0]!.readiness,
@@ -946,7 +947,7 @@ describe('executeRothConversions', () => {
         executedAmount: result.evidence[0]!.executedAmount,
         unexecutedAmount: result.evidence[0]!.unexecutedAmount,
         reasons: result.evidence[0]!.reasons,
-      }).success).toBe(false)
+      }).success).toBe(true)
       expect(() => publishAnnualRetirementActions({
         taxYear: year,
         requests: result.requests,
@@ -1253,12 +1254,12 @@ describe('executeRothConversions', () => {
     )
 
     it.each(dispositions.filter(([label]) => label !== 'linkedWithdrawal'))(
-      'still publishes the %s record through the staged bypass when it also trims',
+      'still publishes the %s record under that schema when it also trims',
       (_label, taxFunding) => {
-        // A partial-outcome trim reason inside an unsupported disposition is
-        // exactly what the staged-conversion bypass exists for. Dropping the
-        // funding reason moved these records off the code the bypass used to
-        // require, so each one has to be published, not reasoned about.
+        // Dropping the funding reason moved these records off the code the
+        // staged-conversion bypass requires, so nothing catches them if the
+        // trim reason does not classify as a refusal. It does — this executor
+        // commits whole or not at all — so each record parses on its own terms.
         const value = input([withFunding(taxFunding)])
         value.openingBalances = value.openingBalances.map((snapshot) =>
           snapshot.accountId === 'traditional-a'
@@ -1269,7 +1270,7 @@ describe('executeRothConversions', () => {
 
         expect(record.reasons.map((reason) => reason.code))
           .toContain('conversion-balance-trimmed')
-        expect(dispositionParses(record)).toBe(false)
+        expect(dispositionParses(record)).toBe(true)
         expect(() => publishAnnualRetirementActions({
           taxYear: year,
           requests: result.requests,
