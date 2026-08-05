@@ -17,8 +17,9 @@ function daysInMonth(year: number, month: number): number {
 
 /** Return the calendar year containing this DOB's age-70½ date. Kept local so
  * the published planner remains compatible with its declared registry-engine
- * range, which predates the engine's public civil-date helpers. */
-function age70HalfThresholdYear(value: string): number | null {
+ * range, which predates the engine's public civil-date helpers. Exported so the
+ * eligibility-facts editor lists exactly the years a DOB edit would keep. */
+export function age70HalfThresholdYear(value: string): number | null {
   const match = CIVIL_ISO_DATE.exec(value)
   if (match === null) return null
   const year = Number(match[1])
