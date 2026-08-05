@@ -1301,13 +1301,338 @@ describeRule('ars-43-1022-no-private-retirement-exclusion', {
   })
 })
 
+// Indiana is one flat rate on one base, so every fixture below is 2.95% of
+// what the pack leaves in that base. The rate is written out rather than read
+// from the pack for the reason the North Dakota helper gives: a fixture that
+// took its rate from the table the calculator reads would agree with a wrong
+// table as readily as a right one.
+const IN_RATE = 0.0295
+const IN_RATE_2025 = 0.03
+const inTax = (taxable: number) => Math.max(0, taxable) * IN_RATE
+const IN_INCOME = 70_000
+
+describeRule('ic-6-3-2-1-flat-rate-ramp', {
+  readings: {
+    // IC 6-3-2-1(b)(7), the subdivision that governs a taxable year beginning
+    // in 2026.
+    twentyTwentySixRampStep: IN_INCOME * IN_RATE,
+    // (b)(6), the 2025 step. The whole difference between the two readings is
+    // the five hundredths of a point the ramp took off on January 1.
+    twentyTwentyFiveRateHeldForward: IN_INCOME * IN_RATE_2025,
+  },
+  accepted: 'twentyTwentySixRampStep',
+}, ({ accepted, readings }) => {
+  const scenario = input({ state: 'IN', ordinaryIncome: IN_INCOME, agesAlive: [70] })
+
+  it('charges the 2026 step of the ramp, not the 2025 one', () => {
+    expect(computeStateTax(pack('IN'), scenario)).toBeCloseTo(accepted, 6)
+    expect(computeStateTax(pack('IN'), scenario)).not.toBeCloseTo(readings.twentyTwentyFiveRateHeldForward, 6)
+  })
+
+  it('would over-charge by the ramp step if the prior year were held forward', () => {
+    const heldForward = {
+      ...pack('IN'),
+      brackets: {
+        single: [{ lowerBound: 0, ratePct: 3 }],
+        marriedFilingJointly: [{ lowerBound: 0, ratePct: 3 }],
+      },
+    }
+    expect(computeStateTax(heldForward, scenario)).toBeCloseTo(readings.twentyTwentyFiveRateHeldForward, 6)
+    expect(computeStateTax(heldForward, scenario)).toBeGreaterThan(accepted)
+  })
+
+  it('is filing-status blind, with no married-filing-jointly doubling', () => {
+    // IC 6-3-2-1(b) sets one rate on all Indiana adjusted gross income and
+    // never mentions filing status, so the same income costs the same tax
+    // whichever status it is priced under. Every bracketed state in the pack
+    // behaves the other way, which is what makes this worth pinning.
+    const joint = input({
+      state: 'IN', filingStatus: 'marriedFilingJointly', ordinaryIncome: IN_INCOME, agesAlive: [70, 68],
+    })
+    expect(computeStateTax(pack('IN'), joint)).toBeCloseTo(accepted, 6)
+  })
+})
+
+// Well past every section 86 threshold, so the federally taxable share of the
+// benefit is the 85% ceiling — 34,000 of 40,000.
+const IN_SS_OTHER_INCOME = 70_000
+const IN_SS_BENEFITS = 40_000
+const IN_SS_FEDERALLY_TAXABLE = IN_SS_BENEFITS * 0.85
+
+describeRule('ic-6-3-1-3-5-a-8-social-security-railroad-subtraction', {
+  readings: {
+    federallyTaxableAmountSubtractedBackOut: inTax(IN_SS_OTHER_INCOME),
+    federallyTaxableShareLeftInTheBase: inTax(IN_SS_OTHER_INCOME + IN_SS_FEDERALLY_TAXABLE),
+  },
+  accepted: 'federallyTaxableAmountSubtractedBackOut',
+}, ({ accepted, readings }) => {
+  const scenario = input({
+    state: 'IN',
+    ordinaryIncome: IN_SS_OTHER_INCOME,
+    ssBenefits: IN_SS_BENEFITS,
+    agesAlive: [70],
+  })
+
+  it('leaves a high-income Hoosier’s Social Security out of the Indiana base', () => {
+    expect(computeStateTax(pack('IN'), scenario)).toBeCloseTo(accepted, 6)
+    expect(computeStateTaxableIncome(pack('IN'), scenario)).toBeCloseTo(IN_SS_OTHER_INCOME, 6)
+  })
+
+  it('would pull 34,000 of benefit into the base if Indiana taxed it', () => {
+    const taxing = { ...pack('IN'), taxesSocialSecurity: true }
+    expect(computeStateTax(taxing, scenario)).toBeCloseTo(readings.federallyTaxableShareLeftInTheBase, 6)
+    expect(computeStateTaxableIncome(taxing, scenario) - computeStateTaxableIncome(pack('IN'), scenario))
+      .toBeCloseTo(IN_SS_FEDERALLY_TAXABLE, 6)
+  })
+})
+
+// A retired Indiana schoolteacher. TRF is a state retirement fund, nothing
+// about it is federal civil service or military, and no line of Schedule 2
+// reaches it — so Indiana taxes the pension exactly like her other income.
+const IN_TRF_OTHER_INCOME = 24_000
+const IN_TRF_PENSION = 36_000
+const IN_TRF_GROSS = IN_TRF_OTHER_INCOME + IN_TRF_PENSION
+
+describeRule('ic-6-3-2-no-general-retirement-deduction', {
+  readings: {
+    everyPensionInTheBase: inTax(IN_TRF_GROSS),
+    everyPublicPensionExempt: inTax(IN_TRF_OTHER_INCOME),
+  },
+  accepted: 'everyPensionInTheBase',
+}, ({ accepted, readings }) => {
+  const scenario = input({
+    state: 'IN',
+    ordinaryIncome: IN_TRF_GROSS,
+    publicPensionIncome: IN_TRF_PENSION,
+    agesAlive: [70],
+  })
+
+  it('taxes a TRF pension in full', () => {
+    expect(computeStateTax(pack('IN'), scenario)).toBeCloseTo(accepted, 6)
+    expect(computeStateTaxableIncome(pack('IN'), scenario)).toBeCloseTo(IN_TRF_GROSS, 6)
+  })
+
+  it('taxes a private pension and an IRA distribution the same way', () => {
+    // The closed list reaches neither, so which bucket the income arrives in
+    // cannot change the answer.
+    const privateSide = input({
+      state: 'IN',
+      ordinaryIncome: IN_TRF_GROSS,
+      privateRetirementIncome: IN_TRF_PENSION,
+      agesAlive: [70],
+    })
+    expect(computeStateTax(pack('IN'), privateSide)).toBeCloseTo(accepted, 6)
+  })
+
+  it('would exempt the whole pension under the override the pack used to carry', () => {
+    // IN: { kind: 'full' } in PUBLIC_PENSION_OVERRIDES, priced. It also cleared
+    // `retirementRuleShared`, so both halves of the old entry are restored
+    // here. The gap is the whole state tax on a $36,000 pension — and the
+    // county tax on it as well, which no fixture here can show because the
+    // pack carries no county rate.
+    const fullyExempt = {
+      ...pack('IN'),
+      retirementRuleShared: false,
+      retirementPublic: { kind: 'full' as const },
+    }
+    expect(computeStateTax(fullyExempt, scenario)).toBeCloseTo(readings.everyPublicPensionExempt, 6)
+    expect(computeStateTax(fullyExempt, scenario)).toBeLessThan(accepted)
+  })
+})
+
+// Mississippi: 0% on the first $10,000 of taxable income, 4% above it, over a
+// $2,300 single standard deduction.
+const MS_RATE = 0.04
+const MS_ZERO_BAND = 10_000
+const MS_DEDUCTION_SINGLE = 2_300
+const MS_DEDUCTION_JOINT = 4_600
+const msTax = (taxable: number) => Math.max(0, Math.max(0, taxable) - MS_ZERO_BAND) * MS_RATE
+
+describeRule('ms-27-7-5-rate-ramp', {
+  readings: {
+    // 27-7-5(1)(b)(ii)3 for the rate, (1)(a)(i)6 and (1)(b)(i) for the band.
+    zeroBandThenFourPercent: msTax(60_000 - MS_DEDUCTION_SINGLE),
+    // No zero band, which is what the flat characterisation of Mississippi
+    // would predict: 4% from the first dollar.
+    fourPercentFromTheFirstDollar: (60_000 - MS_DEDUCTION_SINGLE) * MS_RATE,
+  },
+  accepted: 'zeroBandThenFourPercent',
+}, ({ accepted, readings }) => {
+  const scenario = input({ state: 'MS', ordinaryIncome: 60_000, agesAlive: [70] })
+
+  it('exempts the first $10,000 of taxable income and charges 4% above it', () => {
+    expect(computeStateTax(pack('MS'), scenario)).toBeCloseTo(accepted, 6)
+    expect(computeStateTax(pack('MS'), scenario)).not.toBeCloseTo(readings.fourPercentFromTheFirstDollar, 6)
+  })
+
+  it('costs exactly the zero band times the rate less than a bandless schedule', () => {
+    const bandless = {
+      ...pack('MS'),
+      brackets: {
+        single: [{ lowerBound: 0, ratePct: 4 }],
+        marriedFilingJointly: [{ lowerBound: 0, ratePct: 4 }],
+      },
+    }
+    expect(computeStateTax(bandless, scenario)).toBeCloseTo(readings.fourPercentFromTheFirstDollar, 6)
+    expect(computeStateTax(bandless, scenario) - accepted).toBeCloseTo(MS_ZERO_BAND * MS_RATE, 6)
+  })
+
+  it('charges nothing at all below the band', () => {
+    const small = input({ state: 'MS', ordinaryIncome: 12_000, agesAlive: [70] })
+    expect(computeStateTaxableIncome(pack('MS'), small)).toBeCloseTo(12_000 - MS_DEDUCTION_SINGLE, 6)
+    expect(computeStateTax(pack('MS'), small)).toBe(0)
+  })
+})
+
+// A Mississippi couple living on a pension plus investment income. The pension
+// never enters gross income at all, so the tax is 4% of the investment income
+// above the deduction and the band.
+const MS_PENSION = 45_000
+const MS_INVESTMENT_INCOME = 40_000
+const MS_RETIREMENT_GROSS = MS_PENSION + MS_INVESTMENT_INCOME
+
+describeRule('ms-27-7-15-4-retirement-income-excluded-from-gross-income', {
+  readings: {
+    pensionOutsideGrossIncome: msTax(MS_INVESTMENT_INCOME - MS_DEDUCTION_JOINT),
+    pensionTaxedLikeOtherIncome: msTax(MS_RETIREMENT_GROSS - MS_DEDUCTION_JOINT),
+  },
+  accepted: 'pensionOutsideGrossIncome',
+}, ({ accepted, readings }) => {
+  const scenario = input({
+    state: 'MS',
+    filingStatus: 'marriedFilingJointly',
+    ordinaryIncome: MS_RETIREMENT_GROSS,
+    privateRetirementIncome: MS_PENSION,
+    agesAlive: [67, 67],
+  })
+
+  it('leaves a private pension out of the Mississippi base entirely', () => {
+    expect(computeStateTax(pack('MS'), scenario)).toBeCloseTo(accepted, 6)
+    expect(computeStateTaxableIncome(pack('MS'), scenario))
+      .toBeCloseTo(MS_INVESTMENT_INCOME - MS_DEDUCTION_JOINT, 6)
+  })
+
+  it('reaches paragraph (k) income on the same terms as paragraph (l) income', () => {
+    // (k) covers PERS and the federal systems, (l) covers everything else, and
+    // neither is capped — so a public pension and a private one of the same
+    // size cost the same, which is why `retirementRuleShared` is true here
+    // without a cap to share.
+    const publicSide = input({
+      state: 'MS',
+      filingStatus: 'marriedFilingJointly',
+      ordinaryIncome: MS_RETIREMENT_GROSS,
+      publicPensionIncome: MS_PENSION,
+      agesAlive: [67, 67],
+    })
+    expect(computeStateTax(pack('MS'), publicSide)).toBeCloseTo(accepted, 6)
+    expect(pack('MS').retirementRuleShared).toBe(true)
+  })
+
+  it('would tax the pension if the exclusion were dropped', () => {
+    const noExclusion = {
+      ...pack('MS'),
+      retirementPrivate: { kind: 'none' as const },
+      retirementPublic: { kind: 'none' as const },
+    }
+    expect(computeStateTax(noExclusion, scenario)).toBeCloseTo(readings.pensionTaxedLikeOtherIncome, 6)
+    expect(computeStateTax(noExclusion, scenario)).toBeGreaterThan(accepted)
+  })
+})
+
+describeRule('ms-27-7-17-standard-deduction-unindexed', {
+  readings: {
+    mississippisOwnFrozenAmount: msTax(60_000 - MS_DEDUCTION_SINGLE),
+    // What the tag would do to it: `conformStateStandardDeduction` moves a
+    // tagged amount with the federal indexation under IRC 63(c)(7)(B)(ii), so
+    // by a projected year ten percent into the horizon Mississippi's $2,300
+    // would have grown to $2,530 — a figure 27-7-17(3)(b) does not authorise
+    // in any year, since it fixes the amount "for each calendar year
+    // thereafter" and provides no adjustment at all.
+    theSameAmountDriftingWithTheFederalIndexation:
+      msTax(60_000 - MS_DEDUCTION_SINGLE * INFLATION_SCALE),
+  },
+  accepted: 'mississippisOwnFrozenAmount',
+}, ({ accepted, readings }) => {
+  const scenario = input({ state: 'MS', ordinaryIncome: 60_000, agesAlive: [70] })
+
+  it('deducts Mississippi’s own statutory amount', () => {
+    expect(computeStateTaxableIncome(pack('MS'), scenario)).toBeCloseTo(60_000 - MS_DEDUCTION_SINGLE, 6)
+    expect(computeStateTax(pack('MS'), scenario)).toBeCloseTo(accepted, 6)
+    expect(pack('MS').standardDeduction.marriedFilingJointly).toBe(MS_DEDUCTION_JOINT)
+  })
+
+  it('is untagged, so the federal conformity indexer moves neither it nor an age-65 addition', () => {
+    // 27-7-17(3)(b) fixes the amount with no indexation clause, so unlike
+    // Arkansas's it cannot go stale — and nothing in Mississippi law
+    // references IRC 63(c), so the tag would import a federal figure and a
+    // federal age-65 addition Mississippi does not grant.
+    expect(pack('MS').standardDeductionConformity).toBeUndefined()
+    const projected = conformStateStandardDeduction(pack('MS'), FEDERAL_AGE65_ADDITION, INFLATION_SCALE)
+    expect(projected.standardDeduction.single).toBe(MS_DEDUCTION_SINGLE)
+    expect(projected.standardDeductionAge65Addition).toBeUndefined()
+  })
+
+  it('would drift away from the statute in every projected year if it were tagged', () => {
+    const tagged = { ...pack('MS'), standardDeductionConformity: 'federal' as const }
+    const projected = conformStateStandardDeduction(tagged, FEDERAL_AGE65_ADDITION, INFLATION_SCALE)
+    expect(computeStateTax(projected, scenario))
+      .toBeCloseTo(readings.theSameAmountDriftingWithTheFederalIndexation, 6)
+    expect(projected.standardDeduction.single).toBeCloseTo(MS_DEDUCTION_SINGLE * INFLATION_SCALE, 6)
+    // And it would pick up a federal age-65 addition alongside — a second
+    // subtraction under IRC 63(c)(3) that no Mississippi provision grants,
+    // indexed on the same scale again.
+    expect(projected.standardDeductionAge65Addition?.single)
+      .toBeCloseTo(FEDERAL_AGE65_ADDITION.single * INFLATION_SCALE, 6)
+  })
+})
+
+const MS_GAIN_ORDINARY = 30_000
+const MS_CAPITAL_GAIN = 50_000
+
+describeRule('ms-capital-gains-taxed-as-ordinary', {
+  readings: {
+    wholeGainAtTheOrdinaryRate: msTax(MS_GAIN_ORDINARY + MS_CAPITAL_GAIN - MS_DEDUCTION_SINGLE),
+    halfTheGainExcludedLikeArkansas:
+      msTax(MS_GAIN_ORDINARY + MS_CAPITAL_GAIN * 0.5 - MS_DEDUCTION_SINGLE),
+  },
+  accepted: 'wholeGainAtTheOrdinaryRate',
+}, ({ accepted, readings }) => {
+  const scenario = input({
+    state: 'MS',
+    ordinaryIncome: MS_GAIN_ORDINARY,
+    capitalGains: MS_CAPITAL_GAIN,
+    agesAlive: [70],
+  })
+
+  it('puts the whole gain in the base at the ordinary rate', () => {
+    expect(computeStateTax(pack('MS'), scenario)).toBeCloseTo(accepted, 6)
+    expect(pack('MS').capitalGainsTaxablePct).toBeUndefined()
+  })
+
+  it('prices a gain exactly as it prices the same amount of ordinary income', () => {
+    const allOrdinary = input({
+      state: 'MS', ordinaryIncome: MS_GAIN_ORDINARY + MS_CAPITAL_GAIN, agesAlive: [70],
+    })
+    expect(computeStateTax(pack('MS'), allOrdinary)).toBeCloseTo(accepted, 6)
+  })
+
+  it('would exclude half the gain if the included share were set as Arkansas’s is', () => {
+    // The change a sweep across the ND/AR/AZ pattern would make. Mississippi
+    // is one of the two states in that sweep where the default is simply
+    // right, so this is the reading to reject rather than adopt.
+    const partialExclusion = { ...pack('MS'), capitalGainsTaxablePct: 50 }
+    expect(computeStateTax(partialExclusion, scenario)).toBeCloseTo(readings.halfTheGainExcludedLikeArkansas, 6)
+    expect(computeStateTax(partialExclusion, scenario)).toBeLessThan(accepted)
+  })
+})
+
 describe('state jurisdiction records', () => {
   it('models every state these records describe', () => {
     // A record naming a state the pack does not carry would be a claim about
     // code that is not there.
     for (const code of [
       'ND', 'PA', 'NV', 'TX', 'FL', 'WV', 'NY', 'IL', 'MO', 'IA', 'ME', 'SC',
-      'AK', 'SD', 'TN', 'WY', 'AR', 'AZ',
+      'AK', 'SD', 'TN', 'WY', 'AR', 'AZ', 'IN', 'MS',
     ]) {
       expect(stateParamsFor(code, TAX_YEAR), code).toBeDefined()
     }

@@ -76,7 +76,18 @@ const PUBLIC_PENSION_OVERRIDES: Record<string, StateRetirementExclusion> = {
   // over-charge on a military pension is registered as
   // `aca-26-51-307-e-uniformed-services-full-exemption`.
   HI: { kind: 'full' },
-  IN: { kind: 'full' },
+  // Indiana is deliberately NOT here. Its deductions are a closed list — the
+  // ten named lines of Schedule 2 plus the three-digit codes on line 11 — and
+  // no item in it reaches a pension from the Indiana Public Retirement System,
+  // a teachers' retirement fund, or a municipal police or fire fund. The only
+  // public-retirement relief in Indiana law is the FEDERAL civil service
+  // annuity adjustment (IC 6-3-2-3.7, first $16,000 less all Social Security
+  // and railroad retirement, age 62+) and the MILITARY retirement deduction
+  // (IC 6-3-2-4(a)(2), full). Absence from this map gives Indiana `none` in
+  // both buckets, which is what IC 6-3-2 requires of every other public
+  // retiree. The two residual over-charges are registered as
+  // `ic-6-3-2-4-military-retirement-deduction` and
+  // `ic-6-3-2-3-7-civil-service-annuity-age-62`.
   KS: { kind: 'full' },
   LA: { kind: 'full' },
   MA: { kind: 'full' },
@@ -330,7 +341,35 @@ const rawStateYear2026 = {
       retirement: { kind: 'full' },
     },
     IN: {
-      // Legislated ramp: 3.0% (2025) -> 2.95% (2026) -> 2.9% (2027). Re-verify annually.
+      // Legislated ramp, and Indiana's is statutory rather than published:
+      // IC 6-3-2-1(b)(6) sets 3% for 2025, (b)(7) 2.95% for 2026 and (b)(8)
+      // 2.9% for 2027 through 2029. P.L.201-2023, SEC.95 enacted the last two
+      // and P.L.80-2025, SEC.1 left both untouched — what it added is
+      // (b)(9)-(16), a CONDITIONAL ratchet of 0.05 of a point in each
+      // even-numbered year from 2030 through 2043 that fires only where the
+      // budget agency certifies four consecutive years of state general fund
+      // revenue growth of at least 3.5% plus a forecast of the same. Nothing
+      // lets a projection know a post-2029 rate, so 2.9% is the last figure
+      // this pack may carry and only through 2029. Registered as
+      // `ic-6-3-2-1-flat-rate-ramp`.
+      //
+      // `capitalGainsAsOrdinary: true` is CORRECT here and is not the defect
+      // North Dakota, Arkansas and Arizona each carried. Indiana's base is
+      // federal adjusted gross income (IC 6-3-1-3.5(a)), which already
+      // includes net capital gain, and the closed modification list that
+      // follows reaches no gain at all — no preferential rate, no exclusion,
+      // no holding period. A sweep for that pattern must leave Indiana alone.
+      //
+      // The deduction stays 0 because Indiana genuinely has none: Form IT-40
+      // runs deductions (Schedule 2) and exemptions (Schedule 3) as separate
+      // lines and there is no third. Schedule 3's flat per-person exemptions
+      // are real money and are NOT modelled here — see
+      // `ic-6-3-1-3-5-exemptions-not-a-standard-deduction` for why the pack
+      // does not borrow this field for them.
+      //
+      // No county rate is carried either, because there is no field for one
+      // and `localRatePct` reaches the calculator from the caller. All 92
+      // counties levy: see `ic-6-3-6-2-2-county-income-tax-shares-the-state-base`.
       code: 'IN', name: 'Indiana', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 0, marriedFilingJointly: 0 },
       brackets: { single: [{ lowerBound: 0, ratePct: 2.95 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 2.95 }] },
@@ -431,13 +470,44 @@ const rawStateYear2026 = {
       retirement: { kind: 'none' },
     },
     MS: {
-      // Legislated ramp: 4.4% (2025) -> 4.0% (2026), with further cuts scheduled. Re-verify annually.
+      // Legislated ramp, and the whole of it is now known. Miss. Code Ann.
+      // 27-7-5(1)(b)(ii) sets the rate ABOVE the $10,000 zero band at 4.4% for
+      // 2025 (subparagraph 2), 4% for 2026 (3), 3.75% for 2027 (4), 3.5% for
+      // 2028 (5), 3.25% for 2029 (6) and 3% from 2030 (7). 2024-2026 came from
+      // the Mississippi Tax Freedom Act of 2022 (2022 H.B. 531); 2027 onward
+      // and the trigger came from the Build Up Mississippi Act (2025 H.B. 1),
+      // effective July 1, 2025. From 2031 a revenue trigger codified at
+      // 27-7-5.1 cuts a further 0.2 to 0.3 of a point a year, and if the rate
+      // ever reaches zero the individual income tax stands repealed. So the
+      // next four refreshes each have a published figure waiting and NONE of
+      // them is this one. Registered as `ms-27-7-5-rate-ramp`.
+      //
+      // `capitalGainsAsOrdinary: true` is CORRECT here for the same reason it
+      // is in Indiana, and for the opposite reason to the three states a sweep
+      // would group it with: the department says outright that Mississippi has
+      // no different rate for capital gains. See
+      // `ms-capital-gains-taxed-as-ordinary`.
+      //
+      // The deduction below is Mississippi's own standard deduction and is
+      // fixed in statute rather than indexed, so it cannot go stale. What sits
+      // on top of it — a $6,000/$12,000 personal exemption and $1,500 per
+      // person aged 65 or over — has no field and is NOT modelled; see
+      // `ms-27-7-21-personal-and-age-65-exemptions`. Nor is the per-spouse
+      // column that a COMBINED return runs, which gives a two-income couple
+      // two $10,000 zero bands rather than one:
+      // `ms-combined-return-runs-the-schedule-per-spouse`.
       code: 'MS', name: 'Mississippi', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 2300, marriedFilingJointly: 4600 },
       brackets: {
         single: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 10000, ratePct: 4 }],
         marriedFilingJointly: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 10000, ratePct: 4 }],
       },
+      // Unconditional in the statute, and the exclusion is from GROSS income
+      // rather than a deduction from it. What it does not reach is a
+      // distribution carrying the federal early- or excess-distribution tax,
+      // which the pack cannot express and which runs the other way from every
+      // other Mississippi gap here — see
+      // `ms-early-or-excess-distribution-not-exempt`.
       retirement: { kind: 'full' },
     },
     MO: {

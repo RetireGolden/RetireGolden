@@ -7348,6 +7348,755 @@ const registry = {
       'packages/engine/src/actions/planBalanceAdapter.ts',
     ],
   },
+
+  // ---------------------------------------------------------------------------
+  // Indiana — 2026-08-05.
+  //
+  // Indiana needs THREE publishers where every other state here needed one or
+  // two, and the third is the one nobody would guess.
+  //
+  // The statute is on `iga.in.gov`, but not at the address a citation would
+  // naturally carry. `iga.in.gov/laws/2026/ic/titles/6/...` is the human-facing
+  // route, and it is client-side: there is no server-rendered statutory text on
+  // it at all. The machine-readable Indiana Code lives at
+  // `iga.in.gov/ic/{year}/Title_{n}/Article_{a}/Chapter_{c}.pdf`, a path that
+  // appears nowhere on the site. Worse, the whole host serves a 691-byte React
+  // shell to a client without a browser User-Agent — every path, `/api/*`
+  // included — so a fetcher that trusts HTTP 200 records an empty document as
+  // "the statute". Every Indiana statutory citation below is an `/ic/` PDF.
+  //
+  // DOR's FORMS are not on `in.gov` either. Its form index page is real, but
+  // every link on it points at `forms.in.gov/Download.aspx?id=NNNN`, a
+  // separately registrable host.
+  //
+  // Which leaves `in.gov`, and it is the one admission here that deserves to be
+  // uncomfortable: it is a shared executive portal, the shape refused for
+  // Pennsylvania. Three things make it different rather than a weakening. DOR's
+  // departmental notices and information bulletins are published under
+  // `www.in.gov/dor/files/` and nowhere else, so there is no narrower host to
+  // prefer and no Indiana regulation carrying the same language. IC 6-3-2-1(e)
+  // NAMES Departmental Notice #1 as the vehicle by which the department must
+  // publish each even-numbered year's rate, so that document is statutorily
+  // designated rather than merely convenient. And the claim it carries — that a
+  // county levy attaches to every Indiana resident — has no code section that
+  // states it, which is the case `stateAgencyPublication` exists for. The
+  // allowlist holds hosts and cannot express the `/dor/files/` narrowing; that
+  // it cannot is a real cost and is recorded here rather than glossed.
+  // ---------------------------------------------------------------------------
+
+  'ic-6-3-2-1-flat-rate-ramp': {
+    title: 'Indiana’s flat individual rate and its legislated ramp',
+    statement:
+      'Indiana imposes one flat rate on Indiana adjusted gross income, with no brackets and no variation by filing status. The statutory schedule is 3.05% for 2024, 3% for 2025, 2.95% for 2026, and 2.9% for taxable years after 2026 and before 2030. From 2030 through 2043 the rate falls a further five hundredths of a point in each even-numbered year, but only where the budget agency certifies four consecutive years of state general fund revenue growth of at least 3.5% together with a forecast of the same — a condition no projection can evaluate, so 2.9% is the last figure the pack may carry and only through 2029. The pack holds 2.95% for both filing statuses. A refresh that carries a prior year’s rate forward is wrong by construction, which is why Indiana sits on the never-hold-forward list in the pack header.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:IN',
+    authority: [{
+      kind: 'statute',
+      citation: 'IC 6-3-2-1(b)(7)',
+      url: 'https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_2.pdf',
+      quotedText:
+        'For taxable years beginning after December 31, 2025, and before January 1, 2027, two and ninety-five hundredths percent (2.95%).',
+    }, {
+      kind: 'statute',
+      citation: 'IC 6-3-2-1(b)(8)',
+      url: 'https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_2.pdf',
+      quotedText:
+        'For taxable years beginning after December 31, 2026, and before January 1, 2030, two and nine-tenths percent (2.9%).',
+    }, {
+      // Not `formInstruction`: Departmental Notice #1 is neither a form nor an
+      // instruction to one. It is a WITHHOLDING notice that states the annual
+      // rate as a fact, and IC 6-3-2-1(e) makes it the designated vehicle for
+      // doing so — the department's own statement about its own levy, which is
+      // exactly what `stateAgencyPublication` names.
+      kind: 'stateAgencyPublication',
+      citation: 'Indiana DOR, Departmental Notice #1, effective Jan. 1, 2026 (R46 / 01-26)',
+      url: 'https://www.in.gov/dor/files/dn01.pdf',
+      quotedText: 'For 2026, the state adjusted gross income tax rate for individuals is 2.95%.',
+    }, {
+      // The section's own source note. It is what establishes that P.L.201-2023
+      // set 2.95% and 2.9% and that P.L.80-2025 left both alone — the latter
+      // added only the conditional subdivisions and subsection (e), which a
+      // diff of the 2024 and 2026 code editions confirms. The enrolled acts
+      // themselves are unreachable: every `/acts/` pattern on iga returns the
+      // React shell, and the legislature's API carries no public-law-to-bill
+      // mapping in either direction.
+      kind: 'legislativeHistory',
+      citation: 'IC 6-3-2-1, source note',
+      url: 'https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_2.pdf',
+      quotedText:
+        'As amended by Acts 1979, P.L.68, SEC.1; Acts 1981, P.L.77, SEC.8; P.L.2-1982(ss), SEC.8; P.L.47-1984, SEC.4; P.L.390-1987(ss), SEC.37; P.L.192-2002(ss), SEC.70; P.L.81-2004, SEC.20; P.L.172-2011, SEC.54; P.L.205-2013, SEC.82; P.L.80-2014, SEC.9; P.L.212-2018(ss), SEC.20; P.L.138-2022, SEC.4; P.L.201-2023, SEC.95; P.L.80-2025, SEC.1.',
+    }],
+    volatility: 'staticStatute',
+    // Deliberate. The rate moves on January 1, 2027 by operation of the same
+    // statute, so a record left open would go stale in silence rather than
+    // name the year it stopped being true.
+    effectiveFrom: 2026,
+    effectiveThrough: 2026,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ic-6-3-1-3-5-a-8-social-security-railroad-subtraction': {
+    title: 'Indiana subtracts the federally taxable Social Security and Railroad Retirement amount',
+    statement:
+      'Indiana adjusted gross income begins from federal adjusted gross income under IRC 62, which already carries the portion of Social Security and Railroad Retirement benefits that IRC 86 makes taxable; IC 6-3-1-3.5(a)(8) then subtracts that entire included amount, with no threshold, age condition or cap. The mechanism matters for how the figure is stated: Indiana does not adopt the federal exclusion, it removes the federally taxable amount, and Railroad Retirement rides in the same subdivision rather than needing one of its own. The pack expresses this as `taxesSocialSecurity: false`.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:IN',
+    authority: [{
+      kind: 'statute',
+      citation: 'IC 6-3-1-3.5(a)(8)',
+      url: 'https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_1.pdf',
+      quotedText:
+        'Subtract an amount equal to the amount of federal Social Security and Railroad Retirement benefits included in a taxpayer\'s federal gross income by Section 86 of the Internal Revenue Code.',
+    }, {
+      kind: 'statute',
+      citation: 'IC 6-3-1-3.5(a)',
+      url: 'https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_1.pdf',
+      quotedText:
+        'In the case of all individuals, "adjusted gross income" (as defined in Section 62 of the Internal Revenue Code), modified as follows:',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ic-6-3-2-no-general-retirement-deduction': {
+    title: 'Indiana taxes private AND state and local government pensions in full',
+    statement:
+      'Indiana’s subtractions from adjusted gross income are a closed set — the modifications enumerated in IC 6-3-1-3.5(a), whose (a)(36) reaches out only to what IC 6-3-2 itself allows, operationally the ten named lines of Schedule 2 plus the named three-digit codes on line 11. Nothing in that set reaches a private pension, a commercial annuity, or a distribution from a traditional IRA, 401(k) or 403(b). Nothing in it reaches a pension from the Indiana Public Retirement System, a teachers’ retirement fund, or a municipal police or fire fund either: Indiana has no general public-pension deduction, and its only two public-retirement items are the FEDERAL civil service annuity adjustment and the MILITARY retirement deduction, each registered separately. The pack says so by keeping Indiana out of `PUBLIC_PENSION_OVERRIDES`, which leaves `{ kind: \'none\' }` in both buckets. Indiana carried `{ kind: \'full\' }` there until 2026-08-05, which exempted every public pension in the state outright — a retired Indiana teacher with a $36,000 TRF pension was charged nothing on income Indiana taxes in full.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:IN',
+    authority: [{
+      // A negative claim's evidence is the closedness of the enumeration, so
+      // the statutory half is the clause that bounds it.
+      kind: 'statute',
+      citation: 'IC 6-3-1-3.5(a)(36)',
+      url: 'https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_1.pdf',
+      quotedText: 'Subtract any other amounts the taxpayer is entitled to deduct under IC 6-3-2.',
+    }, {
+      // And the affirmative half is the department's own list of what is NOT
+      // taxable, which names Social Security, railroad retirement and life
+      // insurance and stops. The parallel "Taxable income includes ...
+      // Pensions (taxable portion) ... Annuities (taxable portion)" list in
+      // the same bulletin is a two-column table that reflows into a paraphrase
+      // on extraction, so it corroborates this record rather than quoting into
+      // it.
+      kind: 'stateAgencyPublication',
+      citation: 'Indiana DOR, Income Tax Information Bulletin #26 (January 2023)',
+      url: 'https://www.in.gov/dor/files/ib26.pdf',
+      quotedText:
+        'Nontaxable income includes, but is not limited to, income from the following sources: Social Security Railroad retirement benefits Life insurance proceeds',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ic-6-3-2-4-military-retirement-deduction': {
+    title: 'Indiana deducts military retirement in full, and the pack deducts none of it',
+    statement:
+      'For taxable years beginning after 2021, IC 6-3-2-4(a)(2) sets Indiana’s deduction for military retirement or survivor’s benefits at the lesser of the benefits included in adjusted gross income or $6,250 plus one hundred percent of the benefits above $6,250 — which is the whole amount. There is no age condition, no income phase-out, and the deduction reaches the individual’s surviving spouse; it is separate from and additional to the $5,000 for active or reserve service pay under (a)(1). Not modelled. The pack’s public bucket is one flag for every public pension the input model can carry, and in Indiana that bucket is dominated by INPRS/PERF, TRF, municipal police and fire retirees who get NOTHING, so the bucket carries `none` and a military pension is charged Indiana tax on income Indiana removes from the base entirely. The direction is chosen rather than inherited: the same flag set to `full` — which is what Indiana carried until 2026-08-05 — is exact for the military retiree and exempts every teacher, trooper and state employee’s pension in Indiana alongside them, which errs toward the taxpayer and across by far the larger population.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:IN',
+    authority: [{
+      kind: 'statute',
+      citation: 'IC 6-3-2-4(a)(2)',
+      url: 'https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_2.pdf',
+      quotedText:
+        'The amount of the deduction is the lesser of: (A) the benefits included in the adjusted gross income of the individual or the individual\'s surviving spouse; or (B) six thousand two hundred fifty dollars ($6,250) plus the following: (i) For taxable years beginning in 2019, twenty-five percent (25%) of the amount of the benefits in excess of six thousand two hundred fifty dollars ($6,250). (ii) For taxable years beginning in 2020, fifty percent (50%) of the amount of the benefits in excess of six thousand two hundred fifty dollars ($6,250). (iii) For taxable years beginning in 2021, seventy-five percent (75%) of the amount of the benefits in excess of six thousand two hundred fifty dollars ($6,250). (iv) For taxable years beginning after 2021, one hundred percent (100%) of the amount of the benefits in excess of six thousand two hundred fifty dollars ($6,250).',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Form IT-40 instruction booklet, Schedule 2 Other Deductions, code 632',
+      url: 'https://forms.in.gov/Download.aspx?id=16915',
+      quotedText:
+        'For 2022 and later, the deduction is equal to the entire amount of military retirement income and/or survivor\'s benefits.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/types.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ic-6-3-2-3-7-civil-service-annuity-age-62': {
+    title: 'Indiana’s civil service annuity deduction is age 62, capped, and offset by Social Security',
+    statement:
+      'An individual at least 62 years old before the end of the taxable year — or the surviving spouse of such an individual, at any age — deducts the first $16,000 of federal civil service annuity income included in adjusted gross income, reduced by the total Social Security and railroad retirement benefits received that year. The threshold is 62, not 65, and a retiree whose Social Security exceeds $16,000 gets nothing at all. Not modelled, and it could not be: `StateRetirementExclusion` has no offset against another income stream, and the bucket the deduction would sit in is the same one flag the military deduction wants pointed the other way. So a federal civil service annuitant aged 62 or over with modest Social Security is charged Indiana tax on up to $16,000 that Indiana deducts. The population is narrower than the military one and the amount is smaller, but the direction is the same and the two must be read together rather than netted.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:IN',
+    authority: [{
+      kind: 'statute',
+      citation: 'IC 6-3-2-3.7(b)',
+      url: 'https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_2.pdf',
+      quotedText:
+        'The individual is only entitled to the deduction provided by this section if the individual is at least sixty-two (62) years of age before the end of the taxable year. This subsection does not apply to the individual\'s surviving spouse.',
+    }, {
+      // (a) is split across the two entries below because the subsection spans
+      // a PAGE BREAK in the Code PDF, and iga's running "Indiana Code 2026"
+      // header lands inside the sentence — so a single quotation of the whole
+      // subsection is a passage the document does not contain. The break falls
+      // mid-clause, between "beginning after" and "December 31, 2015;", and the
+      // two halves meet exactly there rather than at a tidier point. Nothing is
+      // dropped and nothing is rejoined; a quote that has been retyped once can
+      // be retyped again.
+      kind: 'statute',
+      citation: 'IC 6-3-2-3.7(a), first page',
+      url: 'https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_2.pdf',
+      quotedText:
+        'Each taxable year, an individual or the individual\'s surviving spouse is entitled to an adjusted gross income tax deduction equal to the remainder of: (1) the: (A) first eight thousand dollars ($8,000), for taxable years beginning after December 31, 2014, and before January 1, 2016; and (B) first sixteen thousand dollars ($16,000), for taxable years beginning after',
+    }, {
+      kind: 'statute',
+      citation: 'IC 6-3-2-3.7(a), continued',
+      url: 'https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_2.pdf',
+      quotedText:
+        'December 31, 2015; which is received by the individual or the individual\'s surviving spouse during the taxable year from a federal civil service annuity, and which is included in adjusted gross income under Section 62 of the Internal Revenue Code; minus (2) the total amount of Social Security benefits and railroad retirement benefits received by the individual or the individual\'s surviving spouse during the taxable year.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Indiana DOR, Income Tax Information Bulletin #6 (June 2025)',
+      url: 'https://www.in.gov/dor/files/ib06.pdf',
+      quotedText:
+        'To qualify for the civil service annuity adjustment, the taxpayer must be at least 62 years old at the close of the tax year and have received a civil service annuity included in the taxpayer\'s adjusted gross income while a resident of Indiana.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/types.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ic-6-3-6-2-2-county-income-tax-shares-the-state-base': {
+    title: 'Indiana’s county income tax is universal, and the pack has no default for it',
+    statement:
+      'Every Indiana county levies a local income tax, imposed on "adjusted gross income" as IC 6-3-1-3.5 defines it — the same figure the state rate runs on, after both the Schedule 2 deductions and the Schedule 3 exemptions, which Schedule CT-40 reaches by starting from IT-40 line 7. Liability follows the taxpayer’s county of residence on January 1 of the year the taxable year begins, so a mid-year move between counties does not change the rate. Not modelled — and the gap is a missing DEFAULT rather than a missing mechanism. The engine’s shape is already exactly right: `computeStateTaxDetail` applies a flat `localRatePct` to state taxable income, which is the identical base. But that rate reaches the calculator only from the caller, through `assumptions.localIncomeTaxPct` or a relocation candidate, and both default to zero. No entry in `StateTaxParams` can carry a per-state default, and none is invented here: the 2026 county rates run from 0.005 to 0.03 with no published statewide figure to stand for them, and a synthetic average would be a number with no publisher. So an Indiana household priced without an explicit rate is under-charged by the whole county levy — roughly $1,400 a year on $70,000 of Indiana AGI at a mid-range 2% county rate, against $2,065 of state tax. Indiana is the worst case of this in the pack, because the levy is universal and the state rate is low, so the local share is the majority of the story.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:IN',
+    authority: [{
+      kind: 'statute',
+      citation: 'IC 6-3.6-2-2',
+      url: 'https://iga.in.gov/ic/2026/Title_6/Article_3.6/Chapter_2.pdf',
+      quotedText: '"Adjusted gross income" has the meaning set forth in IC 6-3-1-3.5.',
+    }, {
+      // The universality claim, which is what sets the direction. No code
+      // section states it — the rates are adopted county by county — so the
+      // only text that says every resident owes one is the department's.
+      kind: 'stateAgencyPublication',
+      citation: 'Indiana DOR, Income Tax Information Bulletin #26 (January 2023)',
+      url: 'https://www.in.gov/dor/files/ib26.pdf',
+      quotedText:
+        'If the taxpayer\'s place of residence or principal place of business or employment on January 1 was an Indiana county, the taxpayer owes local income tax.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Indiana DOR, Departmental Notice #1, effective Jan. 1, 2026 (R46 / 01-26)',
+      url: 'https://www.in.gov/dor/files/dn01.pdf',
+      quotedText:
+        'Both the county of residence and the county of principal business or employment of an individual are determined on Jan. 1 of the calendar year in which the individual\'s taxable year begins.',
+    }, {
+      // Where the county tax meets the return. CT-40 line 1 is literally
+      // "Enter the amount from IT-40, line 7", which is the cleanest proof
+      // that the two taxes share a base — but it is 36 characters and the
+      // conformance guard requires 40, so the neighbouring line is quoted
+      // instead and the identity is carried by IC 6-3.6-2-2 above.
+      kind: 'formInstruction',
+      citation: '2025 Schedule CT-40 (County Tax Schedule for Full-Year Residents), line 2',
+      url: 'https://forms.in.gov/Download.aspx?id=16902',
+      quotedText:
+        'Enter the county tax rate from the chart on the back of this schedule for the county where you lived on Jan. 1, 2025',
+    }],
+    // Not indexed — the rates are re-adopted by county fiscal bodies and
+    // republished by DOR every January and October. The operational
+    // consequence is identical to indexation: the table must be re-pulled
+    // annually. If the registry ever gains a `locallySet` volatility, this is
+    // the record to move.
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/types.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ic-6-3-1-3-5-exemptions-not-a-standard-deduction': {
+    title: 'Indiana has no standard deduction, and the exemptions it has instead are not modelled',
+    statement:
+      'Indiana grants no standard or itemized deduction against Indiana adjusted gross income, so `standardDeduction: 0` is a true statement about the field it sits in. In its place IC 6-3-1-3.5(a)(3)-(5) subtracts flat per-person amounts: $1,000 per filer and $1,000 for each spouse on a joint return, $1,000 for each additional amount allowable under IRC 63(f) — that is, $1,000 per person aged 65 or over and $1,000 per person who is blind — and a further $500 per person aged 65 or over whose federal adjusted gross income is under $40,000 ($20,000 married filing separately). The amounts are fixed in statute and are not indexed. None of it is modelled, so a married couple both 65 or over is charged Indiana state and county tax on $4,000 Indiana exempts, or $5,000 below the AGI threshold. Borrowing the `standardDeduction` field for it was considered and rejected twice over: the pack models no state personal exemption anywhere — that slot holds a state’s standard deduction, or for Colorado and North Dakota the federal-taxable-income converter — so doing it for Indiana alone would make one state an unmarked exception to a fifty-one-state convention; and the age-65 half is per person while the field is per filing status, so any single figure that priced a 65+ household correctly would over-deduct for one under 65 and turn an over-charge into an under-charge.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:IN',
+    authority: [{
+      kind: 'statute',
+      citation: 'IC 6-3-1-3.5(a)(3)',
+      url: 'https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_1.pdf',
+      quotedText:
+        'Subtract one thousand dollars ($1,000), or in the case of a joint return filed by a husband and wife, subtract for each spouse one thousand dollars ($1,000).',
+    }, {
+      kind: 'statute',
+      citation: 'IC 6-3-1-3.5(a)(4)(B)',
+      url: 'https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_1.pdf',
+      quotedText: 'each additional amount allowable under Section 63(f) of the Internal Revenue Code',
+    }, {
+      kind: 'statute',
+      citation: 'IC 6-3-1-3.5(a)(5)(C)',
+      url: 'https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_1.pdf',
+      quotedText:
+        'Five hundred dollars ($500) for each additional amount allowable under Section 63(f)(1) of the Internal Revenue Code if the federal adjusted gross income of the taxpayer, or the taxpayer and the taxpayer\'s spouse in the case of a joint return, is less than forty thousand dollars ($40,000). In the case of a married individual filing a separate return, the qualifying income amount in this clause is equal to twenty thousand dollars ($20,000).',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Schedule 3 (Exemptions), State Form 53997, line 1',
+      url: 'https://forms.in.gov/Download.aspx?id=16936',
+      quotedText: 'Enter $2000 if you are married filing jointly; otherwise, enter $1000',
+    }, {
+      // The department restating the two age-65 items. Quoted from the
+      // bulletin's prose rather than from Schedule 3's line 4, which is a
+      // checkbox grid and reflows into a paraphrase on extraction.
+      //
+      // One thing the statute alone does not settle, recorded rather than
+      // smoothed over: IRC 63(f)'s additional amounts are on their face
+      // increases to the FEDERAL standard deduction, so "allowable" in
+      // (a)(4)(B) is doing work Indiana's own text never defines, and whether
+      // a federal itemizer keeps the exemption is not answered there. DOR
+      // administers it unconditionally — Schedule 3 line 4 asks no itemizer
+      // question — and this record follows the department on that basis.
+      kind: 'stateAgencyPublication',
+      citation: 'Indiana DOR, Income Tax Information Bulletin #26 (January 2023), age 65 exemptions',
+      url: 'https://www.in.gov/dor/files/ib26.pdf',
+      quotedText:
+        'A $500 additional exemption for each individual age 65 or older if their federal adjusted gross income is less than $40,000 ($20,000 if married filing separately)',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/types.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  // ---------------------------------------------------------------------------
+  // Mississippi — 2026-08-05.
+  //
+  // Mississippi publishes no free `.gov` copy of its own Code. The
+  // legislature's only link to it points at `lexisnexis.com/hottopics/mscode/`,
+  // which redirects into a cookie-and-JavaScript session app on
+  // advance.lexis.com and serves no text to a verifier — the Arkansas pattern
+  // exactly, and for the same commercial reason. The statutory language below
+  // is therefore quoted from BILLS on `billstatus.ls.state.ms.us`, which
+  // reprint the affected section in full.
+  //
+  // A bill reprint is a reprint, so two guards were applied rather than
+  // assumed. Where possible the citation is to a bill that BRINGS THE SECTION
+  // FORWARD, which prints it unmarked — 27-7-17 and 27-7-21 below. Where the
+  // section was being amended, Mississippi's markup sets deletions in
+  // `<s>`/hidden spans and insertions in `<u>`, so the strike and the insertion
+  // interleave; 27-7-15's paragraphs were cross-checked word for word between
+  // two independent 2026 bills, and 27-7-5's own 2026 subparagraph is the one
+  // place a reconstruction would have been needed, so the 4% figure is quoted
+  // from the department's clean prose instead of from the bill.
+  //
+  // What is NOT reachable, stated so nobody assumes it was checked: Title 35,
+  // Part III of the Mississippi Administrative Code — the department's own
+  // income tax regulations — is published only on `www.sos.ms.gov`, and that
+  // host returns HTTP 403 to every non-browser client, with a browser
+  // User-Agent, with a Referer from the linking DOR page, over http, and on the
+  // apex domain alike. So no Mississippi record here can rest on regulation
+  // authority, which matters most for the early-distribution carve-out below:
+  // the regulation is exactly where a `regulation`-tier source for it would
+  // live. That is a reason to classify the record carefully, not to omit it.
+  //
+  // One document-URL trap: DOR form filenames contain SPACES, so a citation has
+  // to keep the `%20` — `80100251%202.pdf` is one file, not two.
+  // ---------------------------------------------------------------------------
+
+  'ms-27-7-5-rate-ramp': {
+    title: 'Mississippi’s zero band and its legislated rate ramp',
+    statement:
+      'Mississippi levies no tax on the first $10,000 of an individual’s taxable income and a single flat rate above it. That zero band is two clauses rather than one — 27-7-5(1)(a)(i)6 removed the tax on the first $5,000 from 2022 and (1)(b)(i) removed it on $5,000 to $10,000 from 2023 — and the pack models the pair as a 0% bracket below $10,000. The rate above the band is 4.4% for 2025, 4% for 2026, 3.75% for 2027, 3.5% for 2028, 3.25% for 2029 and 3% for 2030 and after, with a further revenue-triggered reduction of 0.2 to 0.3 of a point a year from 2031 under 27-7-5.1, and a self-repeal of the individual income tax entirely if the rate ever reaches zero. The pack holds 4% for both filing statuses. The next four refreshes each have a published figure waiting, so carrying this one forward is wrong by construction.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:MS',
+    authority: [{
+      // One subparagraph per entry rather than the enumeration as a run. The
+      // bill is a Microsoft Word export and every indent between subparagraphs
+      // survives extraction as a U+FFFD replacement character, so a quotation
+      // spanning two of them is a passage the page does not contain. Splitting
+      // is the honest repair: an elision would say text was dropped, and what
+      // sits between these sentences is not text.
+      kind: 'statute',
+      citation: 'Miss. Code Ann. 27-7-5(1)(b)(ii)4, as amended by 2025 Miss. H.B. 1, § 1',
+      url: 'https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm',
+      quotedText:
+        'For calendar year 2027, on such taxable income, the rate shall be three and three-quarters percent (3.75%);',
+    }, {
+      kind: 'statute',
+      citation: 'Miss. Code Ann. 27-7-5(1)(b)(ii)5, as amended by 2025 Miss. H.B. 1, § 1',
+      url: 'https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm',
+      quotedText:
+        'For calendar year 2028, on such taxable income, the rate shall be three and one-half percent (3.5%);',
+    }, {
+      kind: 'statute',
+      citation: 'Miss. Code Ann. 27-7-5(1)(b)(ii)6, as amended by 2025 Miss. H.B. 1, § 1',
+      url: 'https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm',
+      quotedText:
+        'For calendar year 2029, on such taxable income, the rate shall be three and one-quarter percent (3.25%); and',
+    }, {
+      kind: 'statute',
+      citation: 'Miss. Code Ann. 27-7-5(1)(b)(ii)7, as amended by 2025 Miss. H.B. 1, § 1',
+      url: 'https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm',
+      quotedText:
+        'For calendar year 2030 and all calendar years thereafter, except as otherwise provided in Section 2 of this act, on such taxable income, the rate shall be three percent (3%).',
+    }, {
+      // The self-repeal, which is what makes the post-2030 trigger something a
+      // planner has to know about rather than a curiosity.
+      kind: 'statute',
+      citation: 'Miss. Code Ann. 27-7-5(1)(b)(ii), closing sentence',
+      url: 'https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm',
+      quotedText:
+        'If the revised tax rates provided for in this subparagraph (ii) are further decreased for calendar years after calendar year 2026 to the extent that there is no tax levied on the taxable income of individuals under this subparagraph (ii), the individual income tax shall stand repealed.',
+    }, {
+      // The 2026 figure itself, and the reason it is quoted from the department
+      // rather than the bill: H.B. 1 amended subparagraph 3 by STRIKING "and
+      // all calendar years thereafter" from it, so the bill's text for 2026 is
+      // struck and inserted words interleaved, and any single-string rendering
+      // of it would be a reconstruction of markup rather than a quotation. The
+      // bill quote above covers 2027 onward, which is verbatim insertion.
+      //
+      // The missing space after "2026" is the department's own HTML table cell
+      // boundary. It is reproduced rather than silently repaired, for the same
+      // reason the Arkansas act quotes keep their margin line numbers.
+      kind: 'stateAgencyPublication',
+      citation: 'MS DOR, Individual Income Tax — Tax Rates',
+      url: 'https://www.dor.ms.gov/individual/tax-rates',
+      quotedText: 'Tax Year 2026Excess of $10,000 of Taxable Income is taxed @ 4%',
+    }, {
+      kind: 'legislativeHistory',
+      citation: '2025 Miss. H.B. 1 (Build Up Mississippi Act), § 30',
+      url: 'https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm',
+      quotedText:
+        'Sections 1 through 13 and Sections 25 through 29 of this act shall take effect and be in force from and after July 1, 2025, and Sections 15 through 24 of this act shall take effect and be in force from and after March 1, 2026.',
+    }],
+    volatility: 'staticStatute',
+    // Deliberate, exactly as for Indiana: the rate moves on January 1, 2027.
+    effectiveFrom: 2026,
+    effectiveThrough: 2026,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ms-27-7-15-4-retirement-income-excluded-from-gross-income': {
+    title: 'Mississippi excludes all retirement income from gross income, public and private',
+    statement:
+      'Retirement allowances, pensions, annuities and optional retirement allowances are excluded from Mississippi GROSS income, not deducted from it — paragraph (k) covering Social Security, Railroad Retirement, the Federal Civil Service Retirement Act, any other United States government system, the Mississippi Public Employees’ Retirement System, the Highway Safety Patrol Retirement System and any other Mississippi state or political-subdivision system, and paragraph (l) covering every other governmental system and any private retirement system or plan of which the recipient was a member during employment. Roth distributions follow the Internal Revenue Code. There is no cap, no income phase-out and no age condition in the statute, and the exclusion passes to the spouse or other beneficiary at the retiree’s death. Because it is an exclusion from gross income, exempt retirement income never enters the base and so never affects a threshold. The pack expresses it as `{ kind: \'full\' }` in both buckets with `retirementRuleShared` true — and here that shared flag is the law rather than a conservatism, since (k) and (l) between them reach all retirement income and neither is capped, so there is nothing to double.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:MS',
+    authority: [{
+      kind: 'statute',
+      // One sentence per entry, for the reason the block comment above gives:
+      // the bill's Word-export indents survive extraction as U+FFFD, so a
+      // quotation crossing a sentence boundary is a passage the page does not
+      // contain.
+      citation: 'Miss. Code Ann. 27-7-15(4)(k), as reprinted in 2026 Miss. H.B. 693',
+      url: 'https://billstatus.ls.state.ms.us/documents/2026/html/HB/0600-0699/HB0693IN.htm',
+      quotedText:
+        'Amounts received as retirement allowances, pensions, annuities or optional retirement allowances paid under the federal Social Security Act, the Railroad Retirement Act, the Federal Civil Service Retirement Act, or any other retirement system of the United States government, retirement allowances paid under the Mississippi Public Employees\' Retirement System, Mississippi Highway Safety Patrol Retirement System or any other retirement system of the State of Mississippi or any political subdivision thereof.',
+    }, {
+      kind: 'statute',
+      citation: 'Miss. Code Ann. 27-7-15(4)(l), as reprinted in 2026 Miss. H.B. 693',
+      url: 'https://billstatus.ls.state.ms.us/documents/2026/html/HB/0600-0699/HB0693IN.htm',
+      quotedText:
+        'Amounts received as retirement allowances, pensions, annuities or optional retirement allowances paid by any public or governmental retirement system not designated in paragraph (k) or any private retirement system or plan of which the recipient was a member at any time during the period of his employment.',
+    }, {
+      kind: 'statute',
+      citation: 'Miss. Code Ann. 27-7-15(4)(l), Roth distributions',
+      url: 'https://billstatus.ls.state.ms.us/documents/2026/html/HB/0600-0699/HB0693IN.htm',
+      quotedText:
+        'Amounts received as a distribution under a Roth Individual Retirement Account shall be treated in the same manner as provided under the Internal Revenue Code of 1986, as amended.',
+    }, {
+      kind: 'statute',
+      citation: 'Miss. Code Ann. 27-7-15(4)(l), survivor sentence',
+      url: 'https://billstatus.ls.state.ms.us/documents/2026/html/HB/0600-0699/HB0693IN.htm',
+      quotedText:
+        'The exemption allowed under this paragraph (l) shall be available to the spouse or other beneficiary at the death of the primary retiree.',
+    }, {
+      // The independent cross-check. H.B. 489 reprints the same subsection in
+      // the same session, word for word on (4)(k) and (4)(l), which is what
+      // makes a bill reprint usable as a statutory source at all.
+      kind: 'statute',
+      citation: 'Miss. Code Ann. 27-7-15(4), as reprinted in 2026 Miss. H.B. 489',
+      url: 'https://billstatus.ls.state.ms.us/documents/2026/html/HB/0400-0499/HB0489PS.htm',
+      quotedText:
+        'The words "gross income" do not include the following items of income which shall be exempt from taxation under this article:',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ms-early-or-excess-distribution-not-exempt': {
+    title: 'Mississippi’s retirement exclusion does not reach an early or excess distribution',
+    statement:
+      'A pension or annuity distribution taxable as an early or excess distribution under the Internal Revenue Code — the department points to federal Form 5329 — does not qualify for Mississippi’s retirement exemption and is reported as taxable income. Separation pay is not retirement income, and a deferred-compensation distribution taken before the plan’s retirement age or service requirement is likewise taxable. The operative test is the federal additional tax rather than a bare age cutoff, so a distribution falling inside an IRC 72(t) exception — 59½, death, disability, a substantially-equal-periodic-payment series — carries no additional tax and stays exempt. Not modelled, and deliberately not approximated by `minAge`. The condition is a fact about a DISTRIBUTION and the input model carries none: `retirementExclusion` reads `minAge` against the household’s ages and restores the exclusion if ANY person alive meets it, so `minAge: 60` would exempt a 58-year-old’s unqualified withdrawal on the strength of a 62-year-old spouse, and would simultaneously deny the exclusion to a genuine 72(t) series a Mississippi resident of any age may take. That is a different wrong rather than a smaller one. So the pack keeps the unconditional `full`. A single 58-year-old drawing $40,000 from a traditional IRA with no exception is shown $0, where this pack would charge $1,108 with the carve-out alone modelled and Mississippi itself charges about $868 — the difference between those two being the personal exemption that `ms-27-7-21-personal-and-age-65-exemptions` records as running the other way. It bites precisely the bridge-to-Social-Security and Rule-of-55 households a retirement planner exists to model.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:MS',
+    authority: [{
+      kind: 'formInstruction',
+      citation: 'MS DOR, 2025 Form 80-100 instructions, Line 46 — Total Pensions and Annuities',
+      url: 'https://www.dor.ms.gov/sites/default/files/tax-forms/individual/80100251%202.pdf',
+      quotedText:
+        'Pensions and annuities that are taxable as early or excess distributions under the Federal Internal Revenue Code (see Federal Form 5329) do not qualify for exemption from Mississippi income tax. Such income should be reported on this line as taxable income. Separation pay is not retirement income and does not qualify for exemption. Deferred compensation plan distributions received prior to attainment of retirement age and/or service requirements are taxable for Mississippi purposes and should be reported on this line.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'MS DOR, Individual Income Tax FAQ — "Is retirement income taxable?"',
+      url: 'https://www.dor.ms.gov/individual/individual-income-tax-frequently-asked-questions',
+      quotedText:
+        'Generally, retirement income, pensions and annuities are not subject to Mississippi Income tax if the recipient has met the retirement plan requirements. Early distributions are not considered retirement income and may be subject to tax.',
+    }, {
+      // The statutory hook is thin on its own, and saying so is part of the
+      // record: the words that carry the carve-out are the department's, not
+      // the legislature's. What 27-7-15(4)(l) supplies is the employment-link
+      // qualifier, which is where the department's authority to police the
+      // boundary sits.
+      kind: 'statute',
+      citation: 'Miss. Code Ann. 27-7-15(4)(l), as reprinted in 2026 Miss. H.B. 693',
+      url: 'https://billstatus.ls.state.ms.us/documents/2026/html/HB/0600-0699/HB0693IN.htm',
+      quotedText:
+        'any private retirement system or plan of which the recipient was a member at any time during the period of his employment',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/types.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ms-27-7-17-standard-deduction-unindexed': {
+    title: 'Mississippi’s standard deduction is fixed in statute and never indexed',
+    statement:
+      'Mississippi’s optional standard deduction is $4,600 for married individuals filing a joint or combined return, $2,300 for married individuals filing separate returns, $3,400 for a head of family and $2,300 for an individual who is not married. The statute states these as the amounts "for each calendar year thereafter" following 1998 and provides no indexation, so unlike Arkansas’s or North Dakota’s they do not move and cannot go stale — which is also why the pack entry carries no `standardDeductionConformity` tag: nothing in Mississippi law references IRC 63(c), and tagging it would move a frozen state figure with an annually rising federal one and hand the Mississippi base a federal age-65 addition Mississippi does not grant.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:MS',
+    authority: [{
+      kind: 'statute',
+      // Subdivision (i), the joint figure the pack carries. One subdivision
+      // per entry, for the reason the Mississippi block comment gives.
+      citation: 'Miss. Code Ann. 27-7-17(3)(b)(i), as brought forward in 2026 Miss. H.B. 866',
+      url: 'https://billstatus.ls.state.ms.us/documents/2026/html/HB/0800-0899/HB0866IN.htm',
+      quotedText:
+        'Three Thousand Four Hundred Dollars ($3,400.00) through calendar year 1997, Four Thousand Two Hundred Dollars ($4,200.00) for the calendar year 1998 and Four Thousand Six Hundred Dollars ($4,600.00) for each calendar year thereafter in the case of married individuals filing a joint or combined return;',
+    }, {
+      kind: 'statute',
+      citation: 'Miss. Code Ann. 27-7-17(3)(b)(iv), as brought forward in 2026 Miss. H.B. 866',
+      url: 'https://billstatus.ls.state.ms.us/documents/2026/html/HB/0800-0899/HB0866IN.htm',
+      quotedText:
+        'Two Thousand Three Hundred Dollars ($2,300.00) in the case of an individual who is not married.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 1999,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ms-27-7-21-personal-and-age-65-exemptions': {
+    title: 'Mississippi’s personal and age-65 exemptions sit on top of the standard deduction',
+    statement:
+      'In addition to the standard or itemized deduction, a Mississippi resident subtracts a personal exemption of $6,000 if single, $12,000 jointly for married individuals living together, or $9,500 as a head of family, plus $1,500 for each dependent, plus a further $1,500 each for the taxpayer and the spouse aged 65 or over, and the same again for blindness. Form 80-105 runs them as their own line, below the deduction and above taxable income. None of it is modelled: `standardDeduction` holds a state’s standard deduction, and the pack models no state personal exemption anywhere, so folding Mississippi’s into that slot would make one state an unmarked exception to a fifty-one-state convention. The result is that a married couple both 65 or over is charged 4% on $15,000 Mississippi exempts — about $600 a year — and a single filer aged 65 or over on $7,500, about $300. Note which way this runs and against whom: it OVER-charges the modal Mississippi retiree, whose pension and Social Security are already outside the base and whose remaining income is investment income, while `ms-early-or-excess-distribution-not-exempt` UNDER-charges the early retiree. Mississippi is the state in this pack where the sign of the error flips with the household’s age, and the flip point sits where a planner’s most interesting decisions get made — so the two records must be read separately rather than netted into one direction.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:MS',
+    authority: [{
+      kind: 'statute',
+      citation: 'Miss. Code Ann. 27-7-21(b), as brought forward in 2026 Miss. H.B. 1996',
+      url: 'https://billstatus.ls.state.ms.us/documents/2026/html/HB/1900-1999/HB1996IN.htm',
+      quotedText:
+        'In the case of a single individual, a personal exemption of Five Thousand Two Hundred Fifty Dollars ($5,250.00) for the 1979 and 1980 calendar years and Six Thousand Dollars ($6,000.00) for each calendar year thereafter.',
+    }, {
+      kind: 'statute',
+      citation: 'Miss. Code Ann. 27-7-21(c), as brought forward in 2026 Miss. H.B. 1996',
+      url: 'https://billstatus.ls.state.ms.us/documents/2026/html/HB/1900-1999/HB1996IN.htm',
+      quotedText:
+        'In the case of married individuals living together, a joint personal exemption of Eight Thousand Dollars ($8,000.00) for the 1979 and 1980 calendar years and Nine Thousand Five Hundred Dollars ($9,500.00) for the 1981 through 1997 calendar years, Ten Thousand Dollars ($10,000.00) for the calendar year 1998, Eleven Thousand Dollars ($11,000.00) for the calendar year 1999, and Twelve Thousand Dollars ($12,000.00) for each calendar year thereafter.',
+    }, {
+      // The one-exemption-per-couple sentence, separately: it is what makes the
+      // $12,000 a single joint figure rather than $6,000 apiece.
+      kind: 'statute',
+      citation: 'Miss. Code Ann. 27-7-21(c), one exemption per couple',
+      url: 'https://billstatus.ls.state.ms.us/documents/2026/html/HB/1900-1999/HB1996IN.htm',
+      quotedText:
+        'A husband and wife living together shall receive but one (1) personal exemption in the amounts provided for in this subsection for each calendar year against their aggregate income.',
+    }, {
+      // Quoted from the operative sentence rather than from the paragraph
+      // heading that precedes it, which the export separates with an indent.
+      kind: 'statute',
+      citation: 'Miss. Code Ann. 27-7-21(f), as brought forward in 2026 Miss. H.B. 1996',
+      url: 'https://billstatus.ls.state.ms.us/documents/2026/html/HB/1900-1999/HB1996IN.htm',
+      quotedText:
+        'In the case of any taxpayer or the spouse of the taxpayer who has attained the age of sixty-five (65) before the close of his taxable year, an additional exemption of One Thousand Five Hundred Dollars ($1,500.00).',
+    }, {
+      kind: 'formInstruction',
+      citation: 'MS DOR, 2025 Form 80-105, line 15',
+      url: 'https://www.dor.ms.gov/sites/default/files/tax-forms/individual/80105258%201.pdf',
+      quotedText: 'Exemptions (from line 12; if married filing separately use 1/2 amount)',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/types.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ms-combined-return-runs-the-schedule-per-spouse': {
+    title: 'A Mississippi combined return runs the rate schedule separately for each spouse',
+    statement:
+      'Mississippi married couples may file jointly, combined, or separately, and the department tells them to pick whichever costs least. On a COMBINED return, Mississippi adjusted gross income, deductions, exemptions and taxable income each go in a separate column for taxpayer and spouse, and the Schedule of Tax Computation applies the $10,000 zero band in EACH column — so a two-income couple has a $20,000 zero band, not $10,000. Not modelled. `PerStatus<StateTaxBracket[]>` holds one schedule per filing status with no notion of a per-spouse column, and simply doubling the married-filing-jointly thresholds would be wrong for a single-income couple, who cannot use the combined method at all. So the pack’s $10,000 band is exact for a joint return and over-charges a combined one by up to $400 a year. The previous research file asserted the pack’s treatment here was "correct", which made this defect documented as verified — a worse state than undocumented. One thing the sources do not settle: the department writes "(both spouses work)" and Form 80-100 "both spouses having earned incomes", while 27-7-17 and 27-7-21 say only "having separate incomes", so whether a retired couple with only investment income may file combined is genuinely open, and it changes this record’s magnitude for exactly the households the engine models.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:MS',
+    authority: [{
+      kind: 'stateAgencyPublication',
+      citation: 'MS DOR, Individual Income Tax — Tax Rates, combined returns',
+      url: 'https://www.dor.ms.gov/individual/tax-rates',
+      quotedText:
+        'If filing a combined return (both spouses work), each spouse can calculate their tax liability separately and add the results.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'MS DOR, 2025 Form 80-100 instructions, Schedule of Tax Computation, Line 1',
+      url: 'https://www.dor.ms.gov/sites/default/files/tax-forms/individual/80100251%202.pdf',
+      quotedText:
+        'Enter the first $10,000 of taxable income or part ($0 - $10,000) in Column A and Column B if applicable. Multiply the total of these two columns by 0% and enter the resulting tax in the far right column labeled "Income Tax".',
+    }, {
+      kind: 'formInstruction',
+      citation: 'MS DOR, 2025 Form 80-100 instructions, Filing Status for Married Persons',
+      url: 'https://www.dor.ms.gov/sites/default/files/tax-forms/individual/80100251%202.pdf',
+      quotedText:
+        'Married persons may file tax returns in any of these three methods: 1) joint, 2) combined or 3) separate. Choose the method which results in the least amount of tax.',
+    }, {
+      // The statutory half, and the source of the open question the statement
+      // names: the Code conditions the combined method on "separate incomes",
+      // where the department writes "both spouses work" and the form writes
+      // "earned incomes". Which of the three governs a retired couple with only
+      // investment income is not settled by anything retrievable, and it sets
+      // this record's magnitude for exactly the households the engine models.
+      kind: 'statute',
+      citation: 'Miss. Code Ann. 27-7-17(3)(b), combined returns',
+      url: 'https://billstatus.ls.state.ms.us/documents/2026/html/HB/0800-0899/HB0866IN.htm',
+      quotedText:
+        'In the case of a husband and wife living together, having separate incomes, and filing combined returns, the standard deduction authorized may be divided in any manner they choose.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/types.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ms-capital-gains-taxed-as-ordinary': {
+    title: 'Mississippi taxes capital gains at the ordinary rate',
+    statement:
+      'Mississippi computes capital gains and losses on federal rules, including the federal capital-loss limitation, and has no preferential rate, exclusion or holding-period benefit for them — the department says outright that all income is taxed at the same rate. The pack carries `capitalGainsAsOrdinary: true` with no `capitalGainsTaxablePct`, which is correct here and, like Indiana, is NOT the defect North Dakota, Arkansas and Arizona each turned out to carry; a reviewer sweeping for that pattern must leave Mississippi alone. The one unmodelled wrinkle is narrow: gain from the sale of an ownership interest must first be reduced by losses from transactions described in 27-7-9(f)(10).',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:MS',
+    authority: [{
+      kind: 'formInstruction',
+      citation: 'MS DOR, 2025 Form 80-100 instructions, Line 40 — Capital Gain or Loss',
+      url: 'https://www.dor.ms.gov/sites/default/files/tax-forms/individual/80100251%202.pdf',
+      quotedText:
+        'Mississippi generally follows IRS rules concerning computation of capital gains and losses. Capital loss deductions are subject to the same limitations as federal. However, Mississippi does not have different tax rates for capital gains. All income is taxed at the same rate. Gains from the sales of ownership interests must first be reduced by the amount of any losses determined from sales or transactions described in Miss. Code Ann. Section 27-7-9(f)(10).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)

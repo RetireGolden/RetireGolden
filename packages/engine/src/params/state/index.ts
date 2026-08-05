@@ -39,11 +39,14 @@ export function stateParamsFor(code: string, year: number): StateTaxParams | und
 
 /**
  * The FEDERAL standard deduction, carried forward inside the state pack for the
- * nine jurisdictions that define their own by reference to it, resolved to what
- * the federal figure actually is for the year being priced.
+ * jurisdictions that define their own by reference to it, resolved to what the
+ * federal figure actually is for the year being priced.
  *
- * Nine packs — AZ, CO, DC, IA, ID, MO, MT, ND, NM — do not carry a state figure
- * in `standardDeduction` at all. They carry a copy of the federal one, because
+ * Eight packs — CO, DC, IA, ID, MO, MT, ND, NM — do not carry a state figure
+ * in `standardDeduction` at all. (Arizona was a ninth until 2026-08-05, when
+ * A.R.S. 43-1041 turned out to borrow the federal indexation METHOD rather than
+ * the amount; see `ars-43-1041-standard-deduction-published-amount`.) They
+ * carry a copy of the federal one, because
  * that is what their law points at (and, for CO and ND, because their brackets
  * run on federal taxable income and this field is what converts the engine's
  * gross base into it). Two things follow, and this function does both.

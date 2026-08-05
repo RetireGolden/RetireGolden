@@ -367,7 +367,7 @@ export function partBMonthlyPremium(
  * has reached 65, so a joint return with two such people gets it twice.
  *
  * Split out from `standardDeduction` so the state side can apply the identical
- * arithmetic to the identical per-person figures. The nine jurisdictions tagged
+ * arithmetic to the identical per-person figures. The eight jurisdictions tagged
  * `standardDeductionConformity: 'federal'` define their standard deduction by
  * reference to the federal one, and "the standard deduction" in IRC 63(c)(1) is
  * the basic amount PLUS this one — a conformed copy that carried only the basic
