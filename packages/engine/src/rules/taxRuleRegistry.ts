@@ -5170,7 +5170,7 @@ const registry = {
   'ndcc-57-38-30-3-federal-taxable-income-base': {
     title: 'North Dakota taxable income is federal taxable income, adjusted',
     statement:
-      'North Dakota does not build a base of its own. Its brackets run on federal taxable income as computed under the Internal Revenue Code, reduced and increased by an enumerated list of state adjustments, so the federal standard deduction has already been subtracted before a North Dakota rate is ever applied. The pack therefore carries the federal figure in `standardDeduction` and tags it `standardDeductionConformity: \'federal\'`; the tag is what converts the engine\'s gross base into the federal-taxable-income base the statute names, and it is why the figure has to move with the federal one that IRC 63(c)(7)(B)(ii) raises each year rather than staying frozen at the pack year.',
+      'North Dakota does not build a base of its own. Its brackets run on federal taxable income as computed under the Internal Revenue Code, adjusted by an enumerated list of state adjustments, so the federal standard deduction has already been subtracted before a North Dakota rate is ever applied. The pack therefore carries the federal figure in `standardDeduction` and tags it `standardDeductionConformity: \'federal\'`; the tag is what converts the engine\'s gross base into the federal-taxable-income base the statute names, and it is why the figure has to move with the federal one that IRC 63(c)(7)(B)(ii) raises each year rather than staying frozen at the pack year.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -5203,7 +5203,7 @@ const registry = {
   'ndcc-57-38-30-3-2-d-long-term-gain-exclusion': {
     title: 'North Dakota excludes 40% of net long-term capital gain',
     statement:
-      'North Dakota taxable income is reduced by forty percent of the excess of net long-term capital gain over net short-term capital loss, so only sixty percent of a retiree\'s long-term gain reaches a North Dakota rate. Not modelled: the pack sets `capitalGainsAsOrdinary: true` and no `capitalGainsTaxablePct`, which defaults the included share to 100 percent, so the engine taxes the whole gain and charges a North Dakota retiree more than the statute does on every realization. The same subdivision also excludes forty percent of qualified dividends, which the engine likewise includes in full; that half of the gap is not separately registered but errs in the same direction.',
+      'North Dakota taxable income is reduced by forty percent of the excess of net long-term capital gain over net short-term capital loss, so only sixty percent of a retiree\'s long-term gain reaches a North Dakota rate. Not modelled: the pack sets `capitalGainsAsOrdinary: true` and no `capitalGainsTaxablePct`, which defaults the included share to 100 percent, so the engine taxes the whole gain and charges a North Dakota retiree more than the statute does on every realization. The same subdivision also reduces the base by forty percent of qualified dividends that are federally taxed at a preferential rate, or by thirty percent of all dividends if they are not; the engine includes those in full too. That half of the gap is not separately registered but errs in the same direction.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'overstatesTax',
@@ -5215,6 +5215,16 @@ const registry = {
       url: 'https://ndlegis.gov/cencode/t57c38.pdf',
       quotedText:
         'Reduced by forty percent of: (1) The excess of the taxpayer\'s net long-term capital gain for the taxable year over the net short-term capital loss for that year, as computed for purposes of the Internal Revenue Code of 1986, as amended. The adjustment provided by this subdivision is allowed only to the extent the net long-term capital gain is allocated to this state.',
+    }, {
+      // The Century Code PDF renders the citation inside this quote with a gap
+      // — 'section 1(h) (11)' — under both layout and raw pdftotext extraction.
+      // It is reproduced that way rather than closed up to the conventional
+      // '1(h)(11)', because tidying a citation is still retyping it.
+      kind: 'statute',
+      citation: 'N.D.C.C. 57-38-30.3(2)(d)(2)',
+      url: 'https://ndlegis.gov/cencode/t57c38.pdf',
+      quotedText:
+        'Qualified dividends as defined under Internal Revenue Code section 1(h) (11), added by section 302(a) of the Jobs and Growth Tax Relief Reconciliation Act of 2003 [Pub. L. 108-27; 117 Stat. 752; 2 U.S.C. 963 et seq.], but only if taxed at a federal income tax rate that is lower than the regular federal income tax rates applicable to ordinary income. If, for any taxable year, qualified dividends are taxed at the regular federal income tax rates applicable to ordinary income, the reduction allowed under this subdivision is equal to thirty percent of all dividends included in federal taxable income.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -5241,6 +5251,12 @@ const registry = {
       url: 'https://www.pacodeandbulletin.gov/Display/pacode?file=/secure/pacode/data/061/chapter101/s101.6.html',
       quotedText:
         'Amounts distributed to an individual from a plan shall be included in income to the extent that contributions were not previously included in this income except for either of the following: (I) Distributions made upon or after his retirement from service after reaching a specific age or after a stated period of employment. (II) Distributions transferred into another plan, where the transferred amounts are not included in income for Federal income tax purposes.',
+    }, {
+      kind: 'regulation',
+      citation: '61 Pa. Code 101.6(c)(8)(i)',
+      url: 'https://www.pacodeandbulletin.gov/Display/pacode?file=/secure/pacode/data/061/chapter101/s101.6.html',
+      quotedText:
+        'Scope. For the purpose of this section, the term plan includes Individual Retirement plans (IRA), Simplified Employee Pension Plans (SEP), Keogh plans, Federally qualified employe pension plans and similar old age or retirement benefit plans.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -5267,6 +5283,12 @@ const registry = {
       url: 'https://www.pacodeandbulletin.gov/Display/pacode?file=/secure/pacode/data/061/chapter103/s103.13.html',
       quotedText:
         'Gain or loss. A gain on the disposition of property is recognized in the taxable year in which the amount realized from the conversion of the property into cash or other property exceeds the adjusted basis of the property. A loss is recognized only with respect to transactions entered into for gain, profit or income and only in the taxable year in which the transaction, in respect to which loss is claimed, is closed and completed by an identifiable event which fixes the amount of the loss so there is no possibility of eventual recoupment.',
+    }, {
+      kind: 'regulation',
+      citation: '61 Pa. Code 103.13(e)',
+      url: 'https://www.pacodeandbulletin.gov/Display/pacode?file=/secure/pacode/data/061/chapter103/s103.13.html',
+      quotedText:
+        'Gain or loss on property acquired on or after June 1, 1971. The amount subject to tax shall be the net gains or net income less net losses derived from the sale, exchange or other disposition of property—real or personal, tangible or intangible—to the extent that the value of that which is received or receivable is greater than or, in the case of a loss, less than the basis of the taxpayer.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -5315,7 +5337,7 @@ const registry = {
   'tx-const-8-24-a-individual-income-tax-prohibited': {
     title: 'Texas may not tax an individual’s net income',
     statement:
-      'Section 24-a, adopted November 5, 2019 in place of the repealed section 24, forbids the Legislature to impose a tax on the net incomes of individuals. A Texas retiree\'s pension, IRA and employer-plan distributions and Social Security are therefore beyond the state\'s reach, which is what the pack\'s `hasIncomeTax: false` encodes. What section 24-a does NOT reach on its own is a tax on capital gains; that prohibition arrived separately and later, and is registered at tx-const-8-24-b-capital-gains-tax-prohibited.',
+      'Section 24-a, adopted November 5, 2019, forbids the Legislature to impose a tax on the net incomes of individuals. A Texas retiree\'s pension, IRA and employer-plan distributions and Social Security are therefore beyond the state\'s reach, which is what the pack\'s `hasIncomeTax: false` encodes. What the quoted text does NOT mention is capital gains; that prohibition arrived separately and later, and is registered at tx-const-8-24-b-capital-gains-tax-prohibited.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -5326,7 +5348,7 @@ const registry = {
       citation: 'Tex. Const. art. VIII, sec. 24-a',
       url: 'https://statutes.capitol.texas.gov/Docs/CN/htm/CN.8.htm',
       quotedText:
-        'INDIVIDUAL INCOME TAX PROHIBITED. The legislature may not impose a tax on the net incomes of individuals, including an individual\'s share of partnership and unincorporated association income.',
+        'INDIVIDUAL INCOME TAX PROHIBITED. The legislature may not impose a tax on the net incomes of individuals, including an individual\'s share of partnership and unincorporated association income. (Added Nov. 5, 2019.)',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2020,
@@ -5341,7 +5363,7 @@ const registry = {
   'tx-const-8-24-b-capital-gains-tax-prohibited': {
     title: 'Texas may not tax an individual’s capital gains from 2026',
     statement:
-      'Section 24-b, adopted November 4, 2025, forbids the Legislature to impose a tax on the realized OR unrealized capital gains of an individual, family, estate or trust, subject only to carve-outs for ad valorem, sales and use taxes. This is a genuinely new prohibition rather than a restatement: through tax year 2025, section 24-a barred a tax on "net incomes" and left a realized-gains tax an open constitutional question. The pack has modelled Texas as taxing gains at zero throughout, and that was correct on the facts for every one of those years — Texas enacted no such tax — but it rested on the absence of legislation, and from 2026 it rests on the constitution. `capitalGainsAsOrdinary: false` alongside `hasIncomeTax: false` is what carries it.',
+      'Section 24-b, adopted November 4, 2025, forbids the Legislature to impose a tax on the realized OR unrealized capital gains of an individual, family, estate or trust, subject only to carve-outs for ad valorem, sales and use taxes. It is a separate prohibition from section 24-a rather than a restatement of it: 24-a reaches "net incomes" and its text, quoted at tx-const-8-24-a-individual-income-tax-prohibited, does not mention capital gains. This record therefore claims nothing about tax years before 2026 — only that from 2026 a zero Texas figure on a realized gain is what the constitution requires. The engine has returned zero throughout, carried by `capitalGainsAsOrdinary: false` alongside `hasIncomeTax: false`.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -5358,7 +5380,7 @@ const registry = {
       citation: 'Tex. Const. art. VIII, sec. 24-b(b)',
       url: 'https://statutes.capitol.texas.gov/Docs/CN/htm/CN.8.htm',
       quotedText:
-        'This section may not be construed as modifying the applicability or prohibiting the imposition or change in the rate of: (1) an ad valorem tax on property; (2) a sales tax on the sale of goods or services; or (3) a use tax on the storage, use, or other consumption in this state of goods or services.',
+        'This section may not be construed as modifying the applicability or prohibiting the imposition or change in the rate of: (1) an ad valorem tax on property; (2) a sales tax on the sale of goods or services; or (3) a use tax on the storage, use, or other consumption in this state of goods or services. (Added Nov. 4, 2025.)',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -5373,7 +5395,7 @@ const registry = {
   'fl-const-7-5-a-income-tax-prohibited': {
     title: 'No Florida income tax reaches a natural person',
     statement:
-      'The Florida Constitution caps any tax on the income of a natural person resident or citizen of the state at the amounts creditable against or deductible from a similar federal or state tax, and the income tax Florida actually imposes is chapter 220\'s, which falls on "every taxpayer" where "taxpayer" is defined as a corporation. The constitutional ceiling and the statutory imposition therefore meet: no Florida individual income tax exists to be modelled, and the pack\'s `hasIncomeTax: false` zeroes the base for a Florida retiree at every level of income.',
+      'The Florida Constitution caps any tax on the income of a natural person resident or citizen of the state at the amounts creditable against or deductible from a similar federal or state tax. The income tax Florida does impose is chapter 220\'s, and that chapter reaches no natural person: it falls on "every taxpayer", and "taxpayer" is defined as a corporation. A constitutional ceiling above and an imposition that stops at the corporate boundary below are what leave a Florida retiree with nothing to compute, which the pack encodes as `hasIncomeTax: false`.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -5417,13 +5439,25 @@ const registry = {
   'wv-code-11-21-12-social-security-full-modification': {
     title: 'West Virginia exempts all Social Security from 2026',
     statement:
-      'West Virginia phased a decreasing modification for Social Security up to 100 percent, and from tax years beginning on or after January 1, 2026 the phase is complete at every income level: subdivision (A) already gave 100 percent to a taxpayer at or below $100,000 of federal AGI on a joint return, or $50,000 otherwise, and subdivision (E) gives 100 percent to the taxpayers above those thresholds that subdivision (B) had excluded. No federally taxable Social Security therefore survives into the West Virginia base, which is what `taxesSocialSecurity: false` encodes for the 2026 pack.',
+      'West Virginia phased a decreasing modification for Social Security up to 100 percent, and from tax years beginning on or after January 1, 2026 the phase is complete at every income level. It takes all four subdivisions to see that, and each does a different job: (A) allows 100 percent of the benefits included in federal adjusted gross income as a decreasing modification, (B) confines (A) to a taxpayer whose federal AGI does NOT exceed $100,000 on a joint return or $50,000 otherwise, (E) allows 100 percent from 2026, and (F) makes (E) available precisely to the taxpayers above those thresholds — the band (B) shuts (A) out of. The two bands are complementary and exhaust the range, so from 2026 no federally taxable Social Security survives into the West Virginia base, which is what `taxesSocialSecurity: false` encodes for the pack.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,
     jurisdiction: 'state:WV',
     authority: [{
+      kind: 'statute',
+      citation: 'W. Va. Code 11-21-12(c)(8)(A)',
+      url: 'https://code.wvlegislature.gov/11-21-12/',
+      quotedText:
+        'For taxable years beginning on or after January 1, 2022, 100 percent of the social security benefits received pursuant to Chapter 7 of Title 42 of the United States Code, including, but not limited to, social security benefits paid by the Social Security Administration as Old Age, Survivors and Disability Insurance Benefits as provided in 42 U.S.C. § 401 et. seq. or as Supplemental Security Income for the Aged, Blind, and Disabled as provided in 42 U.S.C. § 1381 et. seq., included in federal adjusted gross income for the taxable year shall be allowed as a decreasing modification from federal adjusted gross income when determining West Virginia taxable income subject to the tax imposed by this article, subject to the limitation in §11-21-12(c)(8)(B) of this code.',
+    }, {
+      kind: 'statute',
+      citation: 'W. Va. Code 11-21-12(c)(8)(B)',
+      url: 'https://code.wvlegislature.gov/11-21-12/',
+      quotedText:
+        'The deduction allowed by §11-21-12(c)(8)(A) of this code are allowable only when the federal adjusted gross income of a married couple filing a joint return does not exceed $100,000, or $50,000 in the case of a single individual or a married individual filing a separate return.',
+    }, {
       kind: 'statute',
       citation: 'W. Va. Code 11-21-12(c)(8)(E)',
       url: 'https://code.wvlegislature.gov/11-21-12/',
@@ -5435,12 +5469,6 @@ const registry = {
       url: 'https://code.wvlegislature.gov/11-21-12/',
       quotedText:
         'The deduction allowed by §11-21-12(c)(8)(C), §11-21-12(c)(8)(D), and §11-21-12(c)(8)(E) of this code are allowable only when the federal adjusted gross income of a married couple filing a joint return exceeds $100,000, or $50,000 in the case of a single individual or a married individual filing a separate return.',
-    }, {
-      kind: 'statute',
-      citation: 'W. Va. Code 11-21-12(c)(8)(B)',
-      url: 'https://code.wvlegislature.gov/11-21-12/',
-      quotedText:
-        'The deduction allowed by §11-21-12(c)(8)(A) of this code are allowable only when the federal adjusted gross income of a married couple filing a joint return does not exceed $100,000, or $50,000 in the case of a single individual or a married individual filing a separate return.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -5473,6 +5501,12 @@ const registry = {
       url: 'https://www.nysenate.gov/legislation/laws/TAX/612',
       quotedText:
         'However, the term "pensions and annuities" shall also include distributions received by an individual who has attained the age of fifty-nine and one-half from an individual retirement account or an individual retirement annuity, as defined in section four hundred eight of the internal revenue code, and distributions received by an individual who has attained the age of fifty-nine and one-half from self-employed individual and owner-employee retirement plans which qualify under section four hundred one of the internal revenue code, whether or not the payments are periodic in nature.',
+    }, {
+      kind: 'statute',
+      citation: 'N.Y. Tax Law 612(c)',
+      url: 'https://www.nysenate.gov/legislation/laws/TAX/612',
+      quotedText:
+        'Modifications reducing federal adjusted gross income. There shall be subtracted from federal adjusted gross income:',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -5551,7 +5585,7 @@ const registry = {
   'iowa-code-422-7-19-a-retirement-income-exclusion': {
     title: 'Iowa excludes retirement income from age 55',
     statement:
-      'Iowa subtracts the TOTAL amount received from a governmental or other pension or retirement plan — defined benefit and defined contribution plans, annuities, IRAs, employer and self-employed plans, and deferred compensation — by a person who is disabled, fifty-five years of age or older, or a qualifying survivor. There is no dollar ceiling, which is why the pack is `{ kind: \'full\', minAge: 55 }` rather than a capped exclusion, and fifty-five rather than the fifty-nine-and-a-half or sixty-five most states use.',
+      'Iowa subtracts the TOTAL amount received from a governmental or other pension or retirement plan — defined benefit and defined contribution plans, annuities, IRAs, employer and self-employed plans, and deferred compensation — by a person who is disabled, fifty-five years of age or older, or a qualifying survivor. There is no dollar ceiling, which is why the pack is `{ kind: \'full\', minAge: 55 }` rather than a capped exclusion, and fifty-five rather than an older threshold. The disability and survivor limbs are not modelled: `minAge` is the only condition the pack can express.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -5562,7 +5596,7 @@ const registry = {
       citation: 'Iowa Code 422.7(19)(a)',
       url: 'https://www.legis.iowa.gov/docs/code/422.7.pdf',
       quotedText:
-        'Subtract, to the extent included, the total amount received from a governmental or other pension or retirement plan, including defined benefit or defined contribution plans, annuities, individual retirement accounts, plans maintained or contributed to by an employer, or maintained or contributed to by a self-employed person as an employer, and deferred compensation plans or any earnings attributable to the deferred compensation plans received by a person who is any of the following: (1) Disabled. (2) Fifty-five years of age or older.',
+        'Subtract, to the extent included, the total amount received from a governmental or other pension or retirement plan, including defined benefit or defined contribution plans, annuities, individual retirement accounts, plans maintained or contributed to by an employer, or maintained or contributed to by a self-employed person as an employer, and deferred compensation plans or any earnings attributable to the deferred compensation plans received by a person who is any of the following: (1) Disabled. (2) Fifty-five years of age or older. (3) The surviving spouse of an individual or a survivor having an insurable interest in an individual who would have qualified for the exemption under this subsection for the tax year.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -5595,6 +5629,18 @@ const registry = {
       url: 'https://legislature.maine.gov/statutes/36/title36sec5124-C.html',
       quotedText:
         'The basic standard deduction is: (1) For single individuals and married persons filing separate returns, $12,000; (2) For individuals filing as heads of households, the amount allowed under subparagraph (1) multiplied by 1.5; and (3) For individuals filing married joint returns or surviving spouses, the amount allowed under subparagraph (1) multiplied by 2.',
+    }, {
+      kind: 'statute',
+      citation: '36 M.R.S. 5124-C(1-B)(B)',
+      url: 'https://legislature.maine.gov/statutes/36/title36sec5124-C.html',
+      quotedText:
+        'The additional standard deduction is the amount allowed under the Code, Section 63(c)(3).',
+    }, {
+      kind: 'statute',
+      citation: '36 M.R.S. 5124-C(1-A)',
+      url: 'https://legislature.maine.gov/statutes/36/title36sec5124-C.html',
+      quotedText:
+        'Amount; before January 1, 2026. For tax years beginning on or after January 1, 2020 and before January 1, 2026, the standard deduction of a resident individual is equal to the federal standard deduction, subject to the phase-out under subsection 2.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
