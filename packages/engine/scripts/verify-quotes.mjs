@@ -536,9 +536,13 @@ async function fetchWithCache(url, opts) {
       // verdict. A quote that runs past the truncation point comes back ABSENT,
       // and an ABSENT is an accusation against the registry — so a corrupted
       // cache would report a defect that belongs to the disk. Length mismatch
-      // falls through and refetches.
+      // falls through and refetches. So does a meta with no usable byte count —
+      // missing, non-numeric, or NaN — because an entry we cannot verify is not
+      // evidence, and trusting it unchecked would reintroduce exactly the
+      // real-looking wrong verdict the check exists to prevent. The file is left
+      // on disk; the refetch overwrites it.
       const cached = readFileSync(bodyPath)
-      if (typeof meta.bytes !== 'number' || cached.length === meta.bytes) {
+      if (typeof meta.bytes === 'number' && Number.isFinite(meta.bytes) && cached.length === meta.bytes) {
         return {
           body: cached,
           contentType: meta.contentType ?? '',
