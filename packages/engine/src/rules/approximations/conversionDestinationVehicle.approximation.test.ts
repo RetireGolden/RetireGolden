@@ -39,12 +39,26 @@ const fixedNow = (): Date => new Date('2026-06-11T00:00:00.000Z')
 const CONVERSION_YEAR = 2026
 const REQUESTED_CONVERSION = 50_000
 
-// Each builder is typed at what it actually returns rather than at the `Account`
-// union it feeds, matching `projection/conversionOwnerIdentity.test.ts`. The
-// discriminant is the whole subject of this fixture -- `kind: 'employer'` versus
-// `kind: 'ira'` is the difference the record is about -- so a builder that
-// erased it back to the union would be the one place in the file where the
-// distinction went unstated.
+/**
+ * Each builder is typed at the exact account it returns, down to `kind`. That
+ * matters more here than anywhere else in the suite: `kind: 'employer'` against
+ * `kind: 'ira'` IS the difference this record is about, so two builders sharing
+ * one type would leave the fixture's whole subject unstated by the code.
+ *
+ * The `& { kind: ... }` intersection is load-bearing, not stylistic, and the
+ * reason is a trap worth recording. `Account` discriminates on `type` alone:
+ * the roth and traditional members each carry `kind` as an `'ira' | 'employer'`
+ * union INSIDE a single member. So `Extract<Account, { type: 'roth' }>` admits
+ * both kinds and gives `rothIra` and `designatedRothAccount` the identical
+ * type -- which is what these annotations said before, under a comment
+ * claiming they encoded the discriminant. They did not.
+ *
+ * The obvious repair is worse than useless: `Extract<Account, { type: 'roth',
+ * kind: 'ira' }>` resolves to `never`, because the member's `kind` union is not
+ * assignable to the single literal, so nothing is extracted at all.
+ * Intersecting is what actually pins it. The check that these annotations mean
+ * anything is that swapping the two builders' bodies fails to compile.
+ */
 function cash(balance: number): Extract<Account, { type: 'cash' }> {
   return {
     type: 'cash',
@@ -57,7 +71,10 @@ function cash(balance: number): Extract<Account, { type: 'cash' }> {
   }
 }
 
-function rothIra(id: string, owner: string): Extract<Account, { type: 'roth' }> {
+function rothIra(
+  id: string,
+  owner: string,
+): Extract<Account, { type: 'roth' }> & { kind: 'ira' } {
   return {
     type: 'roth',
     id,
@@ -73,7 +90,7 @@ function rothIra(id: string, owner: string): Extract<Account, { type: 'roth' }> 
 function designatedRothAccount(
   id: string,
   owner: string,
-): Extract<Account, { type: 'roth' }> {
+): Extract<Account, { type: 'roth' }> & { kind: 'employer' } {
   return {
     type: 'roth',
     id,
@@ -90,7 +107,7 @@ function traditionalIra(
   id: string,
   owner: string,
   balance: number,
-): Extract<Account, { type: 'traditional' }> {
+): Extract<Account, { type: 'traditional' }> & { kind: 'ira' } {
   return {
     type: 'traditional',
     id,

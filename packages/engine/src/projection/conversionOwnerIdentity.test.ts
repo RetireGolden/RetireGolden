@@ -41,17 +41,41 @@ import type {
 const TAX_YEAR = 2026
 const noTax = createFlatTaxCalculator(0)
 
+/**
+ * Both builders are typed down to `kind`, not just to `type`.
+ *
+ * `Account` discriminates on `type` alone -- the roth and traditional members
+ * each carry `kind` as an `'ira' | 'employer'` union inside one member -- so
+ * `Extract<Account, { type: 'traditional' }>` still admits an employer plan,
+ * and `Extract<Account, { type: 'traditional', kind: 'ira' }>` resolves to
+ * `never` rather than narrowing. The `& { kind: 'ira' }` intersection is what
+ * pins it. Neither builder can return an employer account, so neither type
+ * should say it might.
+ *
+ * This file's own subject is the OWNER boundary rather than the account kind,
+ * so the annotation buys less here than it does in the vehicle fixture. It is
+ * still the honest type, and the two files now spell the same thing the same
+ * way.
+ */
 function ira(
   id: string,
   balance: number,
   ownerPersonId: string,
-): Extract<Account, { type: 'traditional' }> {
+): Extract<Account, { type: 'traditional' }> & { kind: 'ira' } {
   const account = traditionalAccount(id, balance, ownerPersonId, 'ira')
-  if (account.type !== 'traditional') throw new Error('expected IRA')
-  return { ...account, annualReturnPct: 0 }
+  // Checks `kind` as well as `type`, because the return type now claims both.
+  // A guard that established less than the signature promises would be the
+  // same defect one layer in: a narrowing that reads as proof and is not.
+  if (account.type !== 'traditional' || account.kind !== 'ira') {
+    throw new Error('expected a traditional IRA')
+  }
+  return { ...account, kind: 'ira', annualReturnPct: 0 }
 }
 
-function roth(id: string, ownerPersonId: string): Extract<Account, { type: 'roth' }> {
+function roth(
+  id: string,
+  ownerPersonId: string,
+): Extract<Account, { type: 'roth' }> & { kind: 'ira' } {
   return {
     type: 'roth',
     id,
