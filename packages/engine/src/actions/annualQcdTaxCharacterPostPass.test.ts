@@ -428,6 +428,29 @@ describe('stageAnnualQcdTaxCharacterPostPass', () => {
       expect(application.otherwiseTaxableAmountUsed).toBe(10_000_000)
       expect(application.personalLimitUsed).toBe(10_000_000)
     })
+
+    it('reproduces the contract\'s $100,000-pool worked example', () => {
+      // The plan doc's second worked example: a $131,000 transfer against only
+      // $100,000 of otherwise-taxable pool, offset $20,000, limit $111,000. It
+      // separates the statute from the limit-on-gross reading and NOT from the
+      // offset-before-limit reading, because T < L makes those two coincide:
+      //   statute            min(min(Q, T), L) - F = 10,000,000 - 2,000,000 = 8,000,000
+      //   limit on gross     min(min(Q, L) - F, T) = min(9,100,000, 10,000,000) = 9,100,000
+      //   offset before limit min(min(Q, T) - F, L) = min(8,000,000, 11,100,000) = 8,000,000
+      // That coincidence is why this example alone cannot cover the rule, and
+      // why the sibling suite below carries the L-binding half.
+      const application = staged(fixture([{ id: 'worked-b', amount: 13_100_000 }],
+        { capacity: { p1: 10_000_000 }, contribution: { p1: 2_000_000 } })).applications[0]!
+
+      expect(application.excludableQcdAmount).toBe(8_000_000)
+      expect(application.excludableQcdAmount)
+        .not.toBe(readings.rejectedLimitOnGrossDistribution)
+      // The contract states these two figures for this example by name.
+      expect(application.qualifiedCharitableDistributionAmount).toBe(10_000_000)
+      expect(application.nonQcdCharitableRemainder).toBe(3_100_000)
+      expect(application.taxableQcdAmount).toBe(2_000_000)
+      expect(application.charitableDeductionEligibleAmount).toBe(5_100_000)
+    })
   })
 
   // Q = 12,000,000c against T = 11,800,000c of pre-tax dollars, L = 11,100,000c,
@@ -465,6 +488,34 @@ describe('stageAnnualQcdTaxCharacterPostPass', () => {
       expect(application.deductibleContributionOffsetApplied).toBe(1_000)
       expect(application.excludableQcdAmount).toBe(0)
       expect(application.taxableQcdAmount).toBe(1_000)
+    })
+
+    it('reproduces the contract\'s fully-taxable worked example', () => {
+      // The plan doc's first worked example: a $131,000 transfer wholly inside a
+      // $131,000 otherwise-taxable pool, offset $20,000, limit $111,000. It
+      // separates the statute from the offset-before-limit reading and NOT from
+      // the limit-on-gross reading, because L < T makes those two coincide:
+      //   statute            min(min(Q, T), L) - F = 11,100,000 - 2,000,000 = 9,100,000
+      //   offset before limit min(min(Q, T) - F, L) = min(11,100,000, 11,100,000) = 11,100,000
+      //   limit on gross     min(min(Q, L) - F, T) = min(9,100,000, 13,100,000) = 9,100,000
+      // Together with the $100,000-pool variant in the sibling suite above, the
+      // pair covers all three orderings; neither does so alone.
+      const application = staged(fixture([{ id: 'worked-a', amount: 13_100_000 }],
+        { capacity: { p1: 13_100_000 }, contribution: { p1: 2_000_000 } })).applications[0]!
+
+      expect(application.excludableQcdAmount).toBe(9_100_000)
+      expect(application.excludableQcdAmount).not.toBe(readings.rejectedOffsetBeforeLimit)
+      // Every figure the contract states for this example by name.
+      expect(application.personalLimitUsed).toBe(11_100_000)
+      expect(application.otherwiseTaxableAmountUsed).toBe(13_100_000)
+      expect(application.otherwiseTaxableAmountAfter).toBe(0)
+      expect(application.deductibleContributionOffsetApplied).toBe(2_000_000)
+      expect(application.qualifiedCharitableDistributionAmount).toBe(13_100_000)
+      expect(application.taxableQcdAmount).toBe(4_000_000)
+      expect(application.nonQcdCharitableRemainder).toBe(0)
+      expect(application.charitableDeductionEligibleAmount).toBe(4_000_000)
+      expect(application.personalLimitAfter).toBe(0)
+      expect(application.deductibleContributionOffsetAfter).toBe(0)
     })
   })
 
