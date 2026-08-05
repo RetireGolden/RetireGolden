@@ -21,7 +21,7 @@
  * each autumn.
  *
  * States whose standard deduction conforms to (or proxies) the FEDERAL
- * standard deduction — AZ, CO, DC, IA, ID, MO, MT, ND, NM — carry the federal
+ * standard deduction — CO, DC, IA, ID, MO, MT, ND, NM — carry the federal
  * pack's figure for the same year ($16,100/$32,200 for 2026) and are tagged
  * `standardDeductionConformity: 'federal'`. That tag is load-bearing, not
  * documentation: IRC 63(c)(7)(B)(ii) raises the federal amount every year
@@ -29,8 +29,12 @@
  * pack year would disagree with the original inside one projected year. ME and
  * SC decoupled from the federal deduction for 2026 (ME §5124-C 1-B; SC H.4216)
  * and carry their own published amounts, so they are deliberately untagged.
- * Only the deduction is tagged — state BRACKETS stay nominal for every state
- * (see ../index.ts).
+ * Arizona left that list on 2026-08-05: A.R.S. §43-1041(A) sets Arizona's own
+ * dollar amounts and (H) borrows only the federal indexation METHOD, so the
+ * identity between the two was administrative practice rather than a rule of
+ * Arizona law, and the tag was additionally attaching an IRC 63(c)(3) age-65
+ * addition Arizona does not grant. Only the deduction is tagged — state
+ * BRACKETS stay nominal for every state (see ../index.ts).
  *
  * State taxable income in the engine starts from gross ordinary income (plus
  * gains, plus the federally taxable SS amount where the state taxes SS), minus
@@ -52,6 +56,16 @@ type RawStateTaxPack = Omit<StateTaxPack, 'states'> & { states: Record<string, R
 
 const PUBLIC_PENSION_OVERRIDES: Record<string, StateRetirementExclusion> = {
   AL: { kind: 'full' },
+  // Arizona subtracts uniformed-services retired and retainer pay in full
+  // (A.R.S. 43-1022(26)(c), from tax year 2021) and grants federal, Arizona
+  // state and Arizona local government pensions $2,500 per taxpayer
+  // (43-1022(2)). The bucket is one flag, so `full` is exact for the military
+  // case and too generous for the civil-service one — registered as
+  // `ars-43-1022-2-government-pension-exclusion`. Being in this map is also
+  // what keeps `retirementRuleShared` false, which is correct for Arizona:
+  // 43-1022's subtractions are independent paragraphs, and no paragraph
+  // reaches a private pension or an IRA at all.
+  AZ: { kind: 'full' },
   // Arkansas is deliberately NOT here. Only uniformed-services retirement is
   // fully exempt (A.C.A. 26-51-307(e)); an APERS, ATRS, county, municipal,
   // police or fire pension sits inside 26-51-307(a)(1)'s "public or private
@@ -129,8 +143,27 @@ const rawStateYear2026 = {
       brackets: { single: [], marriedFilingJointly: [] }, retirement: { kind: 'none' },
     },
     AZ: {
+      // The deduction below is ARIZONA's own published figure and carries no
+      // conformity tag. A.R.S. 43-1041(A) prescribes Arizona amounts and (H)
+      // borrows only the federal INFLATION METHOD, so nothing in Title 43
+      // adopts the federal dollar amount — and the tag's other consequence,
+      // the IRC 63(c)(3) age-65 addition, is relief Arizona does not grant at
+      // all. Its age-65 provision is 43-1023(E)'s flat, unindexed $2,100 per
+      // person, taken above the deduction line. 15,750 / 31,500 are the 2025
+      // amounts, the latest Arizona has published; the department publishes no
+      // 2026 figures yet, so this is the only Arizona-sourced number available
+      // for the pack year. Registered as
+      // `ars-43-1041-standard-deduction-published-amount` and
+      // `ars-43-1023-e-age-65-exemption`.
       code: 'AZ', name: 'Arizona', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 16100, marriedFilingJointly: 32200 }, standardDeductionConformity: 'federal',
+      capitalGainsTaxablePct: 75,
+      capitalGainsNotes: 'A.R.S. 43-1022(22)(c) subtracts twenty-five percent of net long-term capital gain from an asset acquired after December 31, 2011, so seventy-five percent of that gain reaches the flat 2.5% rate. The acquisition-date condition is not modeled: gain on a pre-2012 asset, and gain whose acquisition date cannot be verified, is taxed by Arizona in full.',
+      capitalGainsSources: [
+        'DOCS/domain/state-tax-research/AZ.md',
+        'https://www.azleg.gov/ars/43/01022.htm',
+        'https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf',
+      ],
+      standardDeduction: { single: 15750, marriedFilingJointly: 31500 },
       brackets: { single: [{ lowerBound: 0, ratePct: 2.5 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 2.5 }] },
       retirement: { kind: 'none' },
     },

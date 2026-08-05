@@ -109,12 +109,15 @@ describe('federal standard-deduction conformity tags', () => {
   //
   // What this CANNOT catch, and no test in this file can: a state whose tag and
   // whose stored amount are wrong together, i.e. one that does not really adopt
-  // the federal amount but has had that amount typed in anyway. AZ (conforms in
-  // method, not amount) and DC (decoupled from the OBBBA increase) are exactly
-  // that case and are still tagged here. Detecting it needs an outside
-  // authority for what the state's own 2026 deduction is, which is the job of
-  // an external oracle in stateTax.external.golden.test.ts, not of a test that
-  // can only read this pack.
+  // the federal amount but has had that amount typed in anyway. DC (decoupled
+  // from the OBBBA increase) is exactly that case and is still tagged here.
+  // Detecting it needs an outside authority for what the state's own 2026
+  // deduction is, which is the job of an external oracle in
+  // stateTax.external.golden.test.ts, not of a test that can only read this
+  // pack. AZ was the other instance and is no longer: a primary-source pass on
+  // 2026-08-05 found A.R.S. 43-1041(A) sets Arizona's own amounts and (H)
+  // borrows only the federal indexation method, so Arizona now carries its own
+  // published figure untagged.
   const federal = packForYear(2026).pack.federalTax.standardDeduction
   const carriesTheFederalFigure = (p: { standardDeduction: { single: number; marriedFilingJointly: number } }) =>
     p.standardDeduction.single === federal.single &&
