@@ -147,12 +147,12 @@ const LADDER = Object.freeze([
   {
     name: 'apostrophe',
     why: 'LII and most irs.gov pages render the possessive U+2019; uscode, govinfo and eCFR render U+0027.',
-    apply: (s) => s.replace(/[‘’ʼ′`]/g, "'"),
+    apply: (s) => s.replace(/[‘’\u02bc\u2032`]/g, "'"),
   },
   {
     name: 'quote-marks',
     why: 'LII wraps statutory defined terms in curly U+201C/U+201D; uscode, govinfo and eCFR use U+0022.',
-    apply: (s) => s.replace(/[“”″]/g, '"'),
+    apply: (s) => s.replace(/[“”\u2033]/g, '"'),
   },
   {
     name: 'dashes',
@@ -181,7 +181,7 @@ const LADDER = Object.freeze([
         .replace(/¾/g, ' 3/4')
         .replace(/⅓/g, ' 1/3')
         .replace(/⅔/g, ' 2/3')
-        .replace(/(\d)\s*⁄\s*(\d)/g, '$1/$2')
+        .replace(/(\d)\s*\u2044\s*(\d)/g, '$1/$2')
         // pdftotext renders "age 70½" as "age 701/2"; re-separate the whole
         // number so it lines up with the spaced form every quote uses.
         .replace(/(\d)(1\/2|1\/4|3\/4|1\/3|2\/3)\b/g, '$1 $2'),
@@ -276,13 +276,30 @@ const LADDER_FLOOR = LADDER.length - 1
 const DIAGNOSIS_RUNG = LADDER.findIndex((rung) => rung.name === 'case')
 
 // ─── HTML and PDF text extraction ────────────────────────────────────────────
-/** Named entities that appear in these publishers' statutory text. */
+/**
+ * Named entities that appear in these publishers' statutory text.
+ *
+ * Space and dash values are written as escapes rather than literals. A literal
+ * U+00A0 is invisible in source: a reviewer cannot see it, a diff cannot show
+ * it, and an editor or a paste can silently turn it into an ordinary space —
+ * after which this table would decode `&nbsp;` to the wrong character and the
+ * ladder's whitespace rung would disagree with the page for a reason nobody
+ * could find by reading the file. That is not hypothetical: `&ensp;`, `&emsp;`
+ * and `&thinsp;` were each decoding to an ordinary space instead of U+2002,
+ * U+2003 and U+2009, and nothing in the source could have shown it. Writing
+ * them as escapes is what made them legible enough to be wrong.
+ *
+ * The dashes follow for the same reason at one remove: U+2212 and U+2013 are
+ * not distinguishable from `-` at a glance. Visible glyphs whose key already
+ * names them — the curly quotes, the section sign, the fractions — stay
+ * literal, because there the character is the clearest thing to read.
+ */
 const ENTITIES = Object.freeze({
-  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
-  mdash: '—', ndash: '–', minus: '−', hellip: '…',
+  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: '\u00a0',
+  mdash: '\u2014', ndash: '\u2013', minus: '\u2212', hellip: '…',
   lsquo: '‘', rsquo: '’', ldquo: '“', rdquo: '”',
   sect: '§', frac12: '½', frac14: '¼', frac34: '¾',
-  ensp: ' ', emsp: ' ', thinsp: ' ', shy: '', times: '×',
+  ensp: '\u2002', emsp: '\u2003', thinsp: '\u2009', shy: '', times: '×',
   middot: '·', bull: '•', deg: '°', reg: '®', trade: '™',
 })
 
