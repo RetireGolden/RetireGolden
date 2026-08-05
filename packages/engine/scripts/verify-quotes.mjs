@@ -177,7 +177,9 @@ const HOST_CONVENTIONS = Object.freeze({
  * @typedef {object} Rung
  * @property {string} name
  * @property {string} why
- * @property {(s: string) => string} apply Applied to this rung only; rungs compose in order.
+ * @property {(s: string, isPdf?: boolean) => string} apply Applied to this rung only; rungs
+ *   compose in order. `isPdf` is passed to every rung and used by `section-sign`, which folds
+ *   only against a PDF because extraction destroys the glyph there and does not elsewhere.
  */
 /** @type {readonly Rung[]} */
 const LADDER = Object.freeze([
@@ -526,32 +528,37 @@ async function fetchWithCache(url, opts) {
         'accept-language': 'en-US,en;q=0.9',
       },
     })
-    // Bounded read. `arrayBuffer()` buffers whatever arrives, so a bad redirect
-    // or an unexpectedly large document could exhaust memory and kill the
-    // process before it emits a ledger — the failure this tool must never have.
-    // Over the cap the source is reported unfetchable, which is a finding about
-    // that one citation rather than the end of the run.
-    const declared = Number.parseInt(response.headers.get('content-length') ?? '', 10)
-    if (Number.isInteger(declared) && declared > MAX_SOURCE_BYTES) {
-      return {
-        body: Buffer.alloc(0),
-        contentType: response.headers.get('content-type') ?? '',
-        status: response.status,
-        fromCache: false,
-        error: `source is ${declared} bytes, over the ${MAX_SOURCE_BYTES}-byte cap`,
-      }
-    }
-    const body = Buffer.from(await response.arrayBuffer())
-    if (body.byteLength > MAX_SOURCE_BYTES) {
-      return {
-        body: Buffer.alloc(0),
-        contentType: response.headers.get('content-type') ?? '',
-        status: response.status,
-        fromCache: false,
-        error: `source is ${body.byteLength} bytes, over the ${MAX_SOURCE_BYTES}-byte cap`,
-      }
-    }
+    // Bounded read, enforced while reading rather than after. An earlier
+    // version checked `content-length` and then called `arrayBuffer()`, which
+    // is not a bound at all: a server that omits the header, understates it, or
+    // redirects to something enormous still gets fully buffered, and the
+    // process dies before printing a ledger — the one failure this tool must
+    // not have. Streaming and stopping at the cap makes the limit real
+    // regardless of what the server claims.
     const contentType = response.headers.get('content-type') ?? ''
+    const overCap = {
+      body: Buffer.alloc(0),
+      contentType,
+      status: response.status,
+      fromCache: false,
+    }
+    if (response.body === null) {
+      return { ...overCap, error: 'response carried no body' }
+    }
+    /** @type {Buffer[]} */
+    const chunks = []
+    let received = 0
+    for await (const chunk of response.body) {
+      const buf = Buffer.from(chunk)
+      received += buf.byteLength
+      if (received > MAX_SOURCE_BYTES) {
+        // Abandon the rest of the transfer rather than draining it.
+        await response.body.cancel()
+        return { ...overCap, error: `source exceeds the ${MAX_SOURCE_BYTES}-byte cap` }
+      }
+      chunks.push(buf)
+    }
+    const body = Buffer.concat(chunks)
     mkdirSync(opts.cacheDir, { recursive: true })
     writeFileSync(bodyPath, body)
     writeFileSync(
