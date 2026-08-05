@@ -144,6 +144,40 @@ describe('coordinateAnnualQcdDeductionTreatment', () => {
       unclaimedWithoutCarryforwardCents: 0 })
   })
 
+  // A wholly excluded gift leaves nothing for §170 to consider, and the
+  // contract makes that case the literal not-applicable arm. Demanding a tax
+  // unit for it would have forced a caller to name a filing treatment it never
+  // selected and a liability run it never made, in order to describe a
+  // deduction of zero -- the same substitution the contract forbids, from the
+  // other side. So the tax unit becomes required exactly where an amount exists
+  // to limit, and the two cases are separated by the evidence type rather than
+  // by convention: this arm can hold only literal zeros.
+  it('coordinates an all-not-applicable batch with no tax-unit evidence at all', () => {
+    const input = fixture(undefined, { taxableCapacity: { p1: 1_000 } }, [])
+    const result = coordinated({ ...input, standardTaxUnits: [] })
+
+    expect(result.taxUnits).toEqual([])
+    expect(result.orderedActionEvidence).toHaveLength(1)
+    const only = result.orderedActionEvidence[0]!
+    expect(only.filingTreatment).toBe('notApplicableNoDeductionEvidence')
+    expect(only.deductionTreatment).toEqual({ treatment: 'notApplicable', eligibleContributionCents: 0,
+      currentYearClaimedDeductionCents: 0, limitationCarryforwardCents: 0, unclaimedWithoutCarryforwardCents: 0 })
+    expect(result.reasonCode).toBeNull()
+    // Nothing was invented to get here: no liability-run binding, no tax-input
+    // snapshot, no AGI, no contribution base, no selected filing treatment.
+    expect(JSON.stringify(result)).not.toContain('liabilityRun')
+    expect(JSON.stringify(result)).not.toContain('adjustedGrossIncome')
+  })
+
+  it('refuses an unclaimed action whose charitable amount is positive', () => {
+    // Same shape, but the gift exceeds the donor's otherwise-taxable pool, so a
+    // non-QCD remainder survives and needs §170 evidence nobody supplied.
+    const input = fixture([{ id: 'qcd-a', amount: 1_000, date: '2026-08-01' }], { taxableCapacity: { p1: 400 } }, [])
+    expect(coordinateAnnualQcdDeductionTreatment({ ...input, standardTaxUnits: [] }))
+      .toMatchObject({ status: 'annualQcdDeductionTreatmentBlocked',
+        reasonCode: 'qcd-nonqcd-deduction-unsupported', issues: [{ kind: 'actionInvalid' }] })
+  })
+
   it('keeps standard per-action total distinct from the annual tax-unit total', () => {
     const result = coordinated(fixture([
       { id: 'first', amount: 75_000, date: '2026-03-01' }, { id: 'second', amount: 75_000, date: '2026-08-01' },
@@ -154,6 +188,12 @@ describe('coordinateAnnualQcdDeductionTreatment', () => {
       totalDeductionAmountAppliedByTaxLedgerCents: 1_525_000 })
   })
 
+  // The `actionInvalid` case below is deliberately a POSITIVE-eligible batch.
+  // A tax unit is what supplies the §170 limit chain, the selected filing
+  // treatment, and the liability run an evaluated amount was computed inside,
+  // so removing it from an action that has a charitable amount to deduct must
+  // still refuse. The relaxation registered in the suite above applies only
+  // where there is no such amount; this pin is what keeps the two apart.
   it.each([
     ['standardInvalid', (input: CoordinateAnnualQcdDeductionTreatmentInput) => { (input.standardTaxUnits as AnnualQcdStandardSection170pTaxUnitInput[]).push(input.standardTaxUnits[0]!) }],
     ['actionInvalid', (input: CoordinateAnnualQcdDeductionTreatmentInput) => { (input.standardTaxUnits as AnnualQcdStandardSection170pTaxUnitInput[]).splice(0) }],

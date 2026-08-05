@@ -29,7 +29,15 @@ function qcd(id: string, donorPersonId: typeof p1, sourceAccountId: typeof ira1,
     allocation: { allocationId: asAllocationId(`allocation-${id}`), sourceAccountId, requestedAmount: asPositiveUsdCents(5_000) },
     charity: { ...charity, designationId: `charity-${id}` } }
 }
-interface FixtureOptions { readonly scheduleConflict?: boolean; readonly p1Contribution?: number; readonly p1Dob?: string; readonly p1Date?: string }
+interface FixtureOptions { readonly scheduleConflict?: boolean; readonly p1Contribution?: number; readonly p1Dob?: string; readonly p1Date?: string
+  /**
+   * Attach an itemized §170 tax unit. Off by default, because every gift in
+   * this fixture is wholly excluded and therefore has a zero charitable
+   * amount: attaching a tax unit would put an invented liability run, tax-input
+   * snapshot and AGI into a record whose deduction treatment is not applicable.
+   * One test turns it on, to keep the tax-unit-backed authority chain covered.
+   */
+  readonly itemizedTaxUnit?: boolean }
 function fixture(p1Opening = 10_000, options: FixtureOptions = {}): { inputs: FinalizeAnnualQcdUnifiedTransactionInput[]; requests: QualifiedCharitableDistributionRequest[] } {
   const requests = [qcd('qcd-p1', p1, ira1, options.p1Date ?? '2026-04-01', 10), qcd('qcd-p2', p2, ira2,
     options.scheduleConflict ? '2026-04-01' : '2026-05-01', options.scheduleConflict ? 10 : 20)]
@@ -79,7 +87,8 @@ function fixture(p1Opening = 10_000, options: FixtureOptions = {}): { inputs: Fi
   const deductionTreatmentInput: CoordinateAnnualQcdDeductionTreatmentInput = { postPassInput: { physicalInput: { prerequisite, plan: parsed.plan, runtimeEvidence,
     openingBalances: owners.map(([, accountId, , opening]) => ({ accountId, openingBalance: asUsdCents(Math.min(opening, 5_000)) })), rmdPools },
     poolCapacityInputs: owners.map(([personId, accountId, suffix, opening]) => capacity(personId, accountId, suffix, opening)) },
-    itemizedTaxUnits: [taxUnit], itemizedLiabilitySources: [liability], standardTaxUnits: [] }
+    itemizedTaxUnits: options.itemizedTaxUnit === true ? [taxUnit] : [],
+    itemizedLiabilitySources: options.itemizedTaxUnit === true ? [liability] : [], standardTaxUnits: [] }
   const common = { plan, taxYear: year, runtimeRecords: [], runtimeInventoryAttestation: { predicate: 'completeAnnualRetirementPhysicalEventInventory' as const,
     planId: asPlanId(plan.id), taxYear: year, ledgerRunId: 'joint-ledger', inventoryStatus: 'completeIncludingExplicitEmpty' as const,
     resolvedEventIds: [], unresolvedActivityIds: [], evidenceId: 'joint-inventory', upstreamEvidenceId: 'joint-inventory-upstream' } }
@@ -99,8 +108,14 @@ describe('publishAnnualQcdActionExecutionEvidence', () => {
       ['qcd-p1', 5_000, 'executed'], ['qcd-p2', 5_000, 'executed']])
     expect(result.actions.every((action) => action.taxCharacter.reduce((sum, segment) => sum + segment.amountCents, 0) === action.executedAmount &&
       action.taxCharacter.every((segment) => segment.characterEvidence.unifiedPhysicalApplicationEvidenceId === action.allocation.unifiedPhysicalApplicationEvidenceId) &&
-      action.taxCalculation.authorityEvidenceIds.includes('joint-unit-evidence') && action.acceptedSourceEligibility.donorPersonId === action.donorPersonId &&
+      action.taxCalculation.authorityEvidenceIds.includes(action.taxablePool.capacityEvidenceId) && action.acceptedSourceEligibility.donorPersonId === action.donorPersonId &&
       action.acceptedSourceEligibility.sourceIraAccountId === action.allocation.sourceAccountId)).toBe(true)
+    // Every gift here is wholly excluded, so no filing treatment was selected
+    // and none is claimed. Nothing in the published record invents one.
+    expect(result.actions.map((action) => action.charitableDeductionTreatment.filingTreatment))
+      .toEqual(['notApplicableNoDeductionEvidence', 'notApplicableNoDeductionEvidence'])
+    expect(JSON.stringify(result)).not.toContain('joint-liability')
+    expect(JSON.stringify(result)).not.toContain('joint-tax-input')
     expect(result.actions[0]).toMatchObject({ kind: 'qcd', personId: 'p1', donorPersonId: 'p1', sourceIraAccountId: 'ira-p1', year: 2026,
       derivedFactsStatus: 'complete', charitableDistributionAmount: 5_000, qualifiedCharitableDistributionAmount: 5_000,
       exactAgeOnScheduledDate: 71.25, exactAgeOnExecutedDate: 71.25,
@@ -108,7 +123,8 @@ describe('publishAnnualQcdActionExecutionEvidence', () => {
         evaluationDate: '2026-04-01', thresholdMonthCount: 846, exactAgeOnEvaluationDate: 71.25, reachedAge70Half: true },
       executedAgeEligibilityEvidence: { dateRole: 'executed', evaluationDate: '2026-04-01' }, rmdSatisfiedAmount: 0,
       rmdPool: { scope: 'donorOwnedIraRmdPool', accountIds: ['ira-p1'] }, taxablePool: { scope: 'donorOwnedNonRothIras', accountIds: ['ira-p1'] },
-      charitableDeductionTreatment: { treatment: 'notApplicable', eligibleContributionAmount: 0 },
+      charitableDeductionTreatment: { treatment: 'notApplicable', eligibleContributionAmount: 0,
+        filingTreatment: 'notApplicableNoDeductionEvidence' },
       penalty: [], penaltyCoverage: [{ reason: 'qcdDirectTransfer', executedAmount: 5_000 }] })
     expect(result.actions[0]!.qcdPrerequisiteEvidenceId).not.toBe(result.actions[0]!.unifiedPhysicalApplicationEvidenceId)
     expect(result).toMatchObject({ committed: false, movement: 'notCommitted', actionability: 'established', publicationStatus: 'qcdExecutorSourceReady',
@@ -127,9 +143,19 @@ describe('publishAnnualQcdActionExecutionEvidence', () => {
     expect(refused.status).toBe('annualQcdActionExecutionEvidencePublished'); expect(refused.actions[0]).toMatchObject({ actionId: 'qcd-p1', executedAmount: 0,
       disposition: { outcome: 'refused', readiness: 'nonActionable', reasons: [{ code: 'qcd-balance-unavailable' }] }, taxCharacter: [],
       exactAgeOnScheduledDate: 71.25, exactAgeOnExecutedDate: null, executedAgeEligibilityEvidence: null, rmdSatisfiedAmount: 0, penaltyCoverage: [] })
-    const adjusted = publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: fixture(10_000, { p1Contribution: 1_000 }).inputs })
+    // A post-70.5 deductible contribution leaves a taxable QCD portion behind,
+    // so this gift is NOT wholly excluded and its charitable amount is
+    // positive. It therefore needs the §170 evidence a tax unit carries, and
+    // the same fixture without one is refused rather than treated as zero.
+    const adjusted = publishAnnualQcdActionExecutionEvidence({
+      ownerFinalizationInputs: fixture(10_000, { p1Contribution: 1_000, itemizedTaxUnit: true }).inputs })
     expect(adjusted.status).toBe('annualQcdActionExecutionEvidencePublished'); expect(adjusted.actions[0]).toMatchObject({
-      deductibleContributionOffsetApplied: 1_000, disposition: { outcome: 'executed', reasons: [{ code: 'qcd-contribution-offset-applied' }] } })
+      deductibleContributionOffsetApplied: 1_000, charitableDeductionEligibleAmount: 1_000,
+      charitableDeductionTreatment: { filingTreatment: 'itemized' },
+      disposition: { outcome: 'executed', reasons: [{ code: 'qcd-contribution-offset-applied' }] } })
+    expect(publishAnnualQcdActionExecutionEvidence({
+      ownerFinalizationInputs: fixture(10_000, { p1Contribution: 1_000 }).inputs }).status)
+      .toBe('annualQcdActionExecutionEvidenceBlocked')
   })
 
   it('rejects incomplete/duplicate owner unions and reserves every upstream identity role', () => {
@@ -184,6 +210,27 @@ describe('publishAnnualQcdActionExecutionEvidence', () => {
       exactAgeOnScheduledDate: 70.5, scheduledAgeEligibilityEvidence: { age70HalfThresholdDate: '2026-04-01' } })
     expect(publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: fixture(10_000, { p1Dob: '1955-10-02' }).inputs }))
       .toMatchObject({ status: 'annualQcdActionExecutionEvidenceBlocked' })
+  })
+
+  it('still binds the tax-unit authority chain when a tax unit is supplied', () => {
+    // The relaxation removes the REQUIREMENT for a tax unit on a wholly
+    // excluded gift; it does not remove the ability to supply one, and a
+    // supplied unit must still reach the published authority list. Without
+    // this, the itemized path would lose its only coverage at this level the
+    // moment the default fixture stopped inventing one.
+    const result = publishAnnualQcdActionExecutionEvidence({
+      ownerFinalizationInputs: fixture(10_000, { itemizedTaxUnit: true }).inputs,
+    })
+    if (result.status !== 'annualQcdActionExecutionEvidencePublished') throw new Error(result.issues[0].detail)
+    expect(result.actions.map((action) => action.charitableDeductionTreatment.filingTreatment))
+      .toEqual(['itemized', 'itemized'])
+    expect(result.actions.every((action) =>
+      action.taxCalculation.authorityEvidenceIds.includes('joint-unit-evidence'))).toBe(true)
+    // The amounts are unchanged: a tax unit does not create a deduction where
+    // the gift was wholly excluded.
+    expect(result.actions.every((action) =>
+      action.charitableDeductionTreatment.treatment === 'notApplicable' &&
+      action.charitableDeductionTreatment.eligibleContributionAmount === 0)).toBe(true)
   })
 
   // No authority resolves what "six calendar months after" means when the

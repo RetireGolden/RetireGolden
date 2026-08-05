@@ -17,7 +17,14 @@ export interface AnnualQcdUnifiedTaxCalculation {
   readonly personalLimitBefore: UsdCents; readonly personalLimitUsed: UsdCents; readonly personalLimitAfter: UsdCents
   readonly deductibleContributionOffsetBefore: UsdCents; readonly deductibleContributionOffsetApplied: UsdCents; readonly deductibleContributionOffsetAfter: UsdCents
   readonly excludableQcdAmount: UsdCents; readonly taxableQcdAmount: UsdCents; readonly nonQcdCharitableRemainder: UsdCents
-  readonly charitableDeductionEligibleAmount: UsdCents; readonly filingTreatment: 'itemized' | 'standardDeduction'
+  readonly charitableDeductionEligibleAmount: UsdCents
+  /**
+   * `notApplicableNoDeductionEvidence` when the gift was wholly excluded and no
+   * tax unit claimed it, so there was no filing treatment to select. It travels
+   * only with `deductionTreatment: 'notApplicable'` and all-zero components --
+   * see the coordinator's two-arm evidence type.
+   */
+  readonly filingTreatment: 'itemized' | 'standardDeduction' | 'notApplicableNoDeductionEvidence'
   readonly deductionTreatment: 'notApplicable' | 'evaluated'; readonly currentYearClaimedDeductionCents: UsdCents
   readonly limitationCarryforwardCents: UsdCents; readonly unclaimedWithoutCarryforwardCents: UsdCents
   readonly authorityEvidenceIds: readonly string[]; readonly evidenceId: string

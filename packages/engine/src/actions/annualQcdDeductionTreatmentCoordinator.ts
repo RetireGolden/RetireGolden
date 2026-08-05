@@ -24,20 +24,62 @@ export interface CoordinateAnnualQcdDeductionTreatmentInput {
   readonly itemizedLiabilitySources: readonly Readonly<AnnualQcdItemizedLiabilitySourceInput>[]
   readonly standardTaxUnits: readonly Readonly<AnnualQcdStandardSection170pTaxUnitInput>[]
 }
+/**
+ * The literal not-applicable arm: every component is the number zero, not a
+ * `UsdCents` that happens to be zero. IRC 408(d)(8)(E) denies a deduction for
+ * exactly the excluded amount, so a gift with nothing left over has no
+ * contribution to limit and no filing treatment to select. The contract makes
+ * this arm literal for that reason -- zero is a derived zero here, never a
+ * placeholder for a limit nobody sourced.
+ */
+export type QcdNotApplicableDeductionTreatmentEvidence =
+  { readonly treatment: 'notApplicable'; readonly eligibleContributionCents: 0; readonly currentYearClaimedDeductionCents: 0; readonly limitationCarryforwardCents: 0; readonly unclaimedWithoutCarryforwardCents: 0 }
 export type QcdCharitableDeductionTreatmentEvidence =
-  | { readonly treatment: 'notApplicable'; readonly eligibleContributionCents: 0; readonly currentYearClaimedDeductionCents: 0; readonly limitationCarryforwardCents: 0; readonly unclaimedWithoutCarryforwardCents: 0 }
+  | QcdNotApplicableDeductionTreatmentEvidence
   | { readonly treatment: 'evaluated'; readonly filingTreatment: 'itemized'; readonly taxUnitId: string; readonly taxYear: 2026; readonly adjustedGrossIncomeBeforeCharitableDeductionCents: number; readonly itemizedDeductionBeforeActionCents: UsdCents; readonly itemizedDeductionAfterActionCents: UsdCents; readonly standardDeductionCents: UsdCents; readonly eligibleContributionCents: UsdCents; readonly currentYearClaimedDeductionCents: UsdCents; readonly limitationCarryforwardCents: UsdCents; readonly unclaimedWithoutCarryforwardCents: UsdCents; readonly deductionAmountAppliedByTaxLedgerCents: UsdCents; readonly totalDeductionAmountAppliedByTaxLedgerCents: UsdCents; readonly limitationEvidenceId: string; readonly itemizationEvidenceId: string; readonly itemizedLiabilityActionEvidence: Readonly<AnnualQcdItemizedLiabilityActionEvidence>; readonly itemizedSection170ActionEvidence: Readonly<AnnualQcdItemizedSection170ActionEvidence>; readonly annualSection68Evidence: Readonly<AnnualSection68ItemizedDeductionEvidence>; readonly section68ActionAttributionEvidence: Readonly<Section68ItemizedActionAttributionEvidence> }
   | { readonly treatment: 'evaluated'; readonly filingTreatment: 'standardDeduction'; readonly taxUnitId: string; readonly taxYear: 2026; readonly adjustedGrossIncomeBeforeCharitableDeductionCents: number; readonly itemizedDeductionBeforeActionCents: UsdCents; readonly itemizedDeductionAfterActionCents: UsdCents; readonly standardDeductionCents: UsdCents; readonly eligibleContributionCents: UsdCents; readonly currentYearClaimedDeductionCents: UsdCents; readonly limitationCarryforwardCents: UsdCents; readonly unclaimedWithoutCarryforwardCents: UsdCents; readonly deductionAmountAppliedByTaxLedgerCents: UsdCents; readonly totalDeductionAmountAppliedByTaxLedgerCents: UsdCents; readonly limitationEvidenceId: string; readonly itemizationEvidenceId: string; readonly standardSection170pActionEvidence: Readonly<AnnualQcdStandardSection170pActionEvidence>; readonly standardSection170pTaxUnitEvidence: Readonly<AnnualQcdStandardSection170pTaxUnitEvidence> }
-export interface AnnualQcdDeductionTreatmentActionEvidence {
+interface AnnualQcdDeductionTreatmentActionBase {
   readonly actionId: string
   readonly donorPersonId: PersonId
   readonly scheduledDate: string
   readonly scheduledSequence: number
   readonly postPassApplicationEvidenceId: string
-  readonly filingTreatment: 'itemized' | 'standardDeduction'
-  readonly deductionTreatment: Readonly<QcdCharitableDeductionTreatmentEvidence>
   readonly evidenceId: string
 }
+/**
+ * A QCD's deduction treatment, in two structurally separated arms.
+ *
+ * The `itemized`/`standardDeduction` arm is backed by a tax unit: a selected
+ * filing treatment, a sourced §170 limit chain, and an annual tax-liability run
+ * the amounts were computed inside. It is the only arm that may carry an
+ * `evaluated` treatment, and every action with a positive
+ * `charitableDeductionEligibleAmount` must land in it.
+ *
+ * The `notApplicableNoDeductionEvidence` arm exists because a gift that is
+ * wholly excluded leaves nothing for §170 to consider. The contract makes that
+ * case the literal not-applicable arm (doc: "When charitableDeductionEligibleAmount
+ * is zero, charitableDeductionTreatment is the literal notApplicable arm"), and
+ * demands tax-unit-wide AGI, limit and filing-treatment evidence only for the
+ * evaluated arm whose fields that evidence backs. Requiring a tax unit anyway
+ * would have forced a caller to supply a filing treatment it had not selected
+ * and a liability run it had not made, to describe a deduction of zero -- which
+ * is the substitution the contract forbids, wearing the opposite mask.
+ *
+ * The separation is what keeps the relaxation from leaking. This arm can carry
+ * only `QcdNotApplicableDeductionTreatmentEvidence`, whose components are the
+ * literal zero, so no positive amount is expressible here at all; and the
+ * coordinator additionally refuses at runtime if any action with a positive
+ * eligible amount reaches it.
+ */
+export type AnnualQcdDeductionTreatmentActionEvidence =
+  | (AnnualQcdDeductionTreatmentActionBase & {
+    readonly filingTreatment: 'itemized' | 'standardDeduction'
+    readonly deductionTreatment: Readonly<QcdCharitableDeductionTreatmentEvidence>
+  })
+  | (AnnualQcdDeductionTreatmentActionBase & {
+    readonly filingTreatment: 'notApplicableNoDeductionEvidence'
+    readonly deductionTreatment: Readonly<QcdNotApplicableDeductionTreatmentEvidence>
+  })
 export type AnnualQcdSelectedDeductionTaxUnitEvidence =
   | { readonly filingTreatment: 'itemized'; readonly taxUnitId: string; readonly taxUnitEvidenceId: string; readonly memberPersonIds: readonly PersonId[]; readonly finalTotalDeductionAppliedByTaxLedgerCents: UsdCents; readonly terminalEvidence: Readonly<AnnualQcdItemizedLiabilityTaxUnitEvidence> }
   | { readonly filingTreatment: 'standardDeduction'; readonly taxUnitId: string; readonly taxUnitEvidenceId: string; readonly memberPersonIds: readonly PersonId[]; readonly finalTotalDeductionAppliedByTaxLedgerCents: UsdCents; readonly terminalEvidence: Readonly<AnnualQcdStandardSection170pTaxUnitEvidence> }
@@ -87,7 +129,7 @@ function checkPartition(eligible: UsdCents, claimed: UsdCents, carryforward: Usd
   if (eligible === 0 && (claimed !== 0 || carryforward !== 0 || unclaimed !== 0 || applied !== 0)) fail('actionInvalid', 'Not-applicable QCD deduction effects must be literal zero.')
   return eligible > 0
 }
-const notApplicable = (): QcdCharitableDeductionTreatmentEvidence => deepFreeze({ treatment: 'notApplicable', eligibleContributionCents: 0, currentYearClaimedDeductionCents: 0, limitationCarryforwardCents: 0, unclaimedWithoutCarryforwardCents: 0 })
+const notApplicable = (): QcdNotApplicableDeductionTreatmentEvidence => deepFreeze({ treatment: 'notApplicable', eligibleContributionCents: 0, currentYearClaimedDeductionCents: 0, limitationCarryforwardCents: 0, unclaimedWithoutCarryforwardCents: 0 })
 function coordinate(input: CoordinateAnnualQcdDeductionTreatmentInput): AnnualQcdDeductionTreatmentCoordinated {
   const residual = stageAnnualQcdResidualForm8606({ postPassInput: input.postPassInput })
   if (residual.status !== 'annualQcdResidualForm8606Staged') fail('residualInvalid', 'Canonical QCD residual rebuilding failed.')
@@ -162,13 +204,31 @@ function coordinate(input: CoordinateAnnualQcdDeductionTreatmentInput): AnnualQc
   if (new Set(actionCandidates.map((entry) => entry.actionId)).size !== actionCandidates.length) fail('actionInvalid', 'QCD actions may appear in only one deduction branch.')
   const byId = new Map(actionCandidates.map((entry) => [entry.actionId, entry]))
   const requests = new Map(input.postPassInput.physicalInput.prerequisite.requests.map((entry) => [entry.actionId, entry]))
+  let unclaimed = 0
   const orderedActionEvidence = residual.postPass.applications.map((application) => {
     const entry = byId.get(application.actionId)
     const request = requests.get(application.actionId)
-    if (entry === undefined || request === undefined || request.executionDate === null || entry.donorPersonId !== application.donorPersonId || entry.scheduledDate !== request.executionDate || entry.scheduledSequence !== request.executionSequence || entry.postPassApplicationEvidenceId !== application.evidenceId || entry.deductionTreatment.eligibleContributionCents !== application.charitableDeductionEligibleAmount) fail('actionInvalid', 'Every canonical QCD action must have one matching deduction treatment.')
+    const scheduledDate: string | null | undefined = request?.executionDate
+    if (request === undefined || scheduledDate === null || scheduledDate === undefined) fail('actionInvalid', 'Every canonical QCD action must resolve to its scheduled request.')
+    if (entry === undefined) {
+      // No tax unit claimed this action. That is admissible only when the gift
+      // was wholly excluded, so §170 has nothing to consider and the contract's
+      // literal not-applicable arm is the whole truth about its treatment. A
+      // positive eligible amount here is the unsupported case the contract
+      // names, and it refuses rather than treating the missing limit,
+      // filing-treatment and carryforward facts as zero.
+      if (application.charitableDeductionEligibleAmount !== 0) fail('actionInvalid', 'Every canonical QCD action with a positive charitable amount must have one matching deduction treatment.')
+      unclaimed += 1
+      const facts = { actionId: application.actionId, donorPersonId: application.donorPersonId,
+        scheduledDate, scheduledSequence: request.executionSequence,
+        postPassApplicationEvidenceId: application.evidenceId,
+        filingTreatment: 'notApplicableNoDeductionEvidence' as const, deductionTreatment: notApplicable() }
+      return deepFreeze({ ...facts, evidenceId: deriveActionStructuralId('annual-qcd-deduction-treatment-action', [residual.evidenceId, facts]) })
+    }
+    if (entry.donorPersonId !== application.donorPersonId || entry.scheduledDate !== scheduledDate || entry.scheduledSequence !== request.executionSequence || entry.postPassApplicationEvidenceId !== application.evidenceId || entry.deductionTreatment.eligibleContributionCents !== application.charitableDeductionEligibleAmount) fail('actionInvalid', 'Every canonical QCD action must have one matching deduction treatment.')
     return entry
   })
-  if (orderedActionEvidence.length !== actionCandidates.length) fail('actionInvalid', 'Deduction treatment contains an extra QCD action.')
+  if (orderedActionEvidence.length - unclaimed !== actionCandidates.length) fail('actionInvalid', 'Deduction treatment contains an extra QCD action.')
   const withoutId = { status: 'annualQcdDeductionTreatmentCoordinated' as const, committed: false as const,
     movement: 'notCommitted' as const, taxYear: 2026 as const, residualEvidenceId: residual.evidenceId,
     taxUnits, orderedActionEvidence, exactAmountAuthority: 'cents' as const, reasonCode: null, issues: [] as const }

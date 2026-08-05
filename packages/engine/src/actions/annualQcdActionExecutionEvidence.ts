@@ -52,7 +52,15 @@ export interface AnnualQcdActionTaxablePoolEvidence {
   readonly taxablePoolGrossBalanceBefore: UsdCents; readonly taxablePoolBasisBefore: UsdCents; readonly capacityEvidenceId: string
 }
 export interface AnnualQcdActionCharitableDeductionEvidence {
-  readonly treatment: 'notApplicable' | 'evaluated'; readonly filingTreatment: 'itemized' | 'standardDeduction'
+  readonly treatment: 'notApplicable' | 'evaluated'
+  /**
+   * `notApplicableNoDeductionEvidence` when the gift was wholly excluded under
+   * IRC 408(d)(8)(A) and therefore had no charitable amount for §170 to
+   * consider, so no filing treatment was selected for it and none is claimed
+   * here. It occurs only with `treatment: 'notApplicable'` and a zero
+   * `eligibleContributionAmount`.
+   */
+  readonly filingTreatment: 'itemized' | 'standardDeduction' | 'notApplicableNoDeductionEvidence'
   readonly eligibleContributionAmount: UsdCents; readonly currentYearClaimedDeductionAmount: UsdCents
   readonly limitationCarryforwardAmount: UsdCents; readonly unclaimedWithoutCarryforwardAmount: UsdCents; readonly authorityEvidenceIds: readonly string[]
 }
