@@ -3011,8 +3011,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // conversion is at the aggregate conversion gate below: "an aggregate
     // fallback would debit different sources and hide that result". Without
     // this the two arms both run and the household gives twice — once from the
-    // scalar and once from the action — and no fixture would catch it, because
-    // none combines the two.
+    // scalar and once from the action. Nothing in the suite combined the two
+    // arms before this guard, which is why the defect could have shipped
+    // unnoticed; simulate.qcdNamedSuppression.test.ts now does, and fails
+    // without the condition below.
     //
     // Counted here from the Plan rather than reusing `currentYearActions`,
     // which is not filtered until well below this block. Moving this block down
@@ -3024,10 +3026,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // every non-`ordinaryWithdrawal` request, so a named QCD moves no dollars
     // yet. The guard exists so that the slice which makes one move cannot
     // silently double-count on the day it lands.
-    const namedQcdRequestCount = plan.strategies.retirementActions.filter(
+    const hasNamedQcdRequest = plan.strategies.retirementActions.some(
       (request) => request.year === year && request.kind === 'qcd',
-    ).length
-    if (plan.strategies.qcdAnnual > 0 && namedQcdRequestCount === 0) {
+    )
+    if (plan.strategies.qcdAnnual > 0 && !hasNamedQcdRequest) {
       const donorIds = new Set(peopleStates
         .filter((s) => s.alive && (s.ageAttained >= 71 ||
           (s.ageAttained === 70 && (birthMonthByPerson.get(s.personId) ?? 1) <= 6)))
