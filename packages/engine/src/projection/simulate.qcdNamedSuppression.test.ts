@@ -60,12 +60,12 @@ function namedQcd(amount: number): QualifiedCharitableDistributionRequest {
 }
 
 /** Born 1950, so age 76 in 2026: past the applicable age, with an RMD due. */
-function donorPlan(withNamedAction: boolean): Plan {
+function donorPlan(options: { named: boolean, scalar: boolean }): Plan {
   const plan = singlePersonPlan({ dob: '1950-03-01', planningAge: 95 })
-  plan.id = `qcd-named-suppression-${withNamedAction ? 'named' : 'scalar'}`
+  plan.id = `qcd-named-suppression-${options.named ? 'named' : 'no-named'}-${options.scalar ? 'scalar' : 'no-scalar'}`
   plan.accounts = [ira('ira', 500_000)]
-  plan.strategies.qcdAnnual = GIFT
-  if (withNamedAction) plan.strategies.retirementActions = [namedQcd(GIFT)]
+  plan.strategies.qcdAnnual = options.scalar ? GIFT : 0
+  if (options.named) plan.strategies.retirementActions = [namedQcd(GIFT)]
   return plan
 }
 
@@ -84,26 +84,32 @@ describe('a named QCD request suppresses the aggregate arm', () => {
   it('gives the scalar amount when no named request exists', () => {
     // The control. Without it this file would pass on a build that had simply
     // stopped doing QCDs at all.
-    const year = run(donorPlan(false))
+    const year = run(donorPlan({ named: false, scalar: GIFT > 0 }))
 
     expect(year.qcd).toBeCloseTo(GIFT, 6)
   })
 
-  it('gives nothing from the scalar when the year carries a named request', () => {
-    const year = run(donorPlan(true))
+  it('adds nothing when the scalar sits beside a named request', () => {
+    // The invariant, asserted as a comparison rather than a number: with a
+    // named request present, setting the scalar must not change the year.
+    //
+    // Written this way deliberately. Asserting a literal zero would pin today's
+    // behaviour, where a named QCD moves nothing because the executor refuses
+    // it — and would then fail on the very slice this guard exists to protect,
+    // the one that makes named QCDs move dollars. The suppression is still
+    // correct at that point; only the total changes. Comparing the two runs
+    // survives that, because it asks what the SCALAR contributed rather than
+    // what the year totalled.
+    const withScalar = run(donorPlan({ named: true, scalar: true }))
+    const withoutScalar = run(donorPlan({ named: true, scalar: false }))
 
-    // Zero rather than GIFT: the aggregate arm stood down. The named action
-    // contributes nothing yet because the executor refuses it, so the total
-    // for the year is zero — which is the correct answer for "the household
-    // authored a named gift the engine cannot execute", and emphatically not
-    // the 2 x GIFT that would follow from both arms running.
-    expect(year.qcd).toBe(0)
+    expect(withScalar.qcd).toBe(withoutScalar.qcd)
   })
 
   it('leaves a later year alone', () => {
     // The suppression is per year, matching the conversion gate. A named
     // request in 2026 must not silence the scalar in 2027.
-    const plan = donorPlan(true)
+    const plan = donorPlan({ named: true, scalar: true })
     const years = simulatePlan(validatePlan(plan), {
       startYear: TAX_YEAR,
       horizonEndYear: TAX_YEAR + 1,
