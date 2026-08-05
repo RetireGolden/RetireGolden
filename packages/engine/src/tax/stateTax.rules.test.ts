@@ -18,7 +18,8 @@
 import { describe, expect, it } from 'vitest'
 
 import { describeRule } from '../rules/describeRule.js'
-import { indexConformedStateStandardDeduction, stateParamsFor } from '../params/state/index.js'
+import { packForYear } from '../params/index.js'
+import { conformStateStandardDeduction, stateParamsFor } from '../params/state/index.js'
 import type { TaxYearInput } from '../projection/types.js'
 import { computeStateTax, computeStateTaxableIncome } from './stateTax.js'
 
@@ -41,6 +42,16 @@ const pack = (code: string) => stateParamsFor(code, TAX_YEAR)!
 /** A projected year 10% further into the horizon than the published pack. */
 const INFLATION_SCALE = 1.1
 
+/**
+ * The federal age-65 addition the conformity helper takes, sourced the way
+ * production sources it rather than restated as a literal. These records are
+ * about the basic deduction travelling with the federal figure, and none of
+ * them puts anyone over 65 in the scenario, so the addition contributes
+ * nothing here — but it has to be the real one, because a stand-in would make
+ * the test agree with itself instead of with the pack.
+ */
+const FEDERAL_AGE65_ADDITION = packForYear(TAX_YEAR).pack.federalTax.age65Addition
+
 describeRule('ndcc-57-38-30-3-federal-taxable-income-base', {
   readings: {
     // North Dakota's brackets run on FEDERAL taxable income, so the deduction
@@ -51,7 +62,7 @@ describeRule('ndcc-57-38-30-3-federal-taxable-income-base', {
   accepted: 'federalDeductionCarriedForward',
 }, ({ accepted, readings }) => {
   it('moves North Dakota’s deduction with the federal figure it is a copy of', () => {
-    const projected = indexConformedStateStandardDeduction(pack('ND'), INFLATION_SCALE)
+    const projected = conformStateStandardDeduction(pack('ND'), FEDERAL_AGE65_ADDITION, INFLATION_SCALE)
     expect(projected.standardDeduction.single).toBeCloseTo(accepted, 6)
     expect(projected.standardDeduction.marriedFilingJointly).toBeCloseTo(32_200 * INFLATION_SCALE, 6)
   })
@@ -61,7 +72,7 @@ describeRule('ndcc-57-38-30-3-federal-taxable-income-base', {
     // helper returns the pack-year figure, and every dollar of the widening gap
     // would be taxed at a North Dakota rate.
     const untagged = { ...pack('ND'), standardDeductionConformity: undefined }
-    expect(indexConformedStateStandardDeduction(untagged, INFLATION_SCALE).standardDeduction.single)
+    expect(conformStateStandardDeduction(untagged, FEDERAL_AGE65_ADDITION, INFLATION_SCALE).standardDeduction.single)
       .toBe(readings.aStateFigureFrozenAtThePackYear)
   })
 })
@@ -379,13 +390,13 @@ describeRule('mrs-36-5124-c-1-b-decoupled-standard-deduction', {
   it('holds Maine’s deduction still as the federal figure is projected upward', () => {
     // Untagged, so the conformity indexer must pass it through untouched.
     expect(pack('ME').standardDeductionConformity).toBeUndefined()
-    expect(indexConformedStateStandardDeduction(pack('ME'), INFLATION_SCALE).standardDeduction.single)
+    expect(conformStateStandardDeduction(pack('ME'), FEDERAL_AGE65_ADDITION, INFLATION_SCALE).standardDeduction.single)
       .toBe(accepted)
   })
 
   it('would inflate it every projected year if it were tagged as conforming', () => {
     const mistagged = { ...pack('ME'), standardDeductionConformity: 'federal' as const }
-    expect(indexConformedStateStandardDeduction(mistagged, INFLATION_SCALE).standardDeduction.single)
+    expect(conformStateStandardDeduction(mistagged, FEDERAL_AGE65_ADDITION, INFLATION_SCALE).standardDeduction.single)
       .toBeCloseTo(readings.federalDeductionCarriedForward, 6)
   })
 })
