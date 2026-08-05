@@ -50,6 +50,7 @@ and a doc disagree, fix the doc to match the code.
 | [operations/ci-cd-and-deploy.md](operations/ci-cd-and-deploy.md) | Build, test, and deploy to Azure Static Web Apps |
 | [operations/security-scanning.md](operations/security-scanning.md) | Semgrep (SAST) + OWASP ZAP (DAST) and how they gate the pipeline |
 | [operations/owl-parity.md](operations/owl-parity.md) | The Owl parity oracle: cross-checking the optimizer against an independent implementation |
+| [operations/quote-fidelity.md](operations/quote-fidelity.md) | `npm run verify:quotes` — checking every tax rule's quoted authority against the source it cites |
 
 ## App routes
 

@@ -23,6 +23,7 @@
     "dev": "npm run dev -w retiregolden-web",
     "cases": "npm run cases -w retiregolden-web",
     "cases:diff": "npm run cases:diff -w retiregolden-web",
-    "owl-parity": "npm run owl-parity -w retiregolden-web"
+    "owl-parity": "npm run owl-parity -w retiregolden-web",
+    "verify:quotes": "npm run verify:quotes -w @retiregolden/engine"
   }
 }

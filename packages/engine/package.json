@@ -315,6 +315,7 @@
     "build": "tsc -b tsconfig.build.json",
     "generate:schema": "npm run build && node scripts/generate-schema.mjs",
     "generate:version": "node scripts/generate-version.mjs",
+    "verify:quotes": "node scripts/verify-quotes.mjs",
     "lint": "eslint .",
     "test": "tsc -p tsconfig.json && vitest run",
     "test:coverage": "tsc -p tsconfig.json && vitest run --coverage",
