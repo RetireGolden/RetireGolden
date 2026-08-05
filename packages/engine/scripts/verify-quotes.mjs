@@ -265,10 +265,12 @@ const LADDER = Object.freeze([
 /**
  * Run after the ladder and after the truncation probe, never before: deleting
  * terminal punctuation would hide an unmarked truncation, which is a finding,
- * not noise. What it catches is a comma, period, semicolon or colon inserted
- * *inside* a quote —
- * e.g. IRC 72(t)(10)(A), where the registry writes `whichever is earlier, for
- * age 55` and the statute has `"whichever is earlier" for "age 55"`.
+ * not noise. It strips the mark from both texts, so what it catches is a comma,
+ * period, semicolon or colon that one side carries *inside* the passage and the
+ * other does not. Which side that is, it cannot tell — in practice it is the
+ * quote, as in IRC 72(t)(10)(A), where the registry writes `whichever is
+ * earlier, for age 55` and the statute has `"whichever is earlier" for
+ * "age 55"`.
  */
 /**
  * Which terminal character the truncation probe actually removed. Reported
@@ -832,8 +834,12 @@ function verdictFor(entry, source) {
   if (missing.every((s) => matchesStray(source.variants, s))) {
     return {
       verdict: elided ? 'ELISION-PUNCTUATION' : 'PUNCTUATION',
+      // Symmetric: `matchesStray` strips the mark from the quote and from the
+      // source, so a match here proves only that the two disagree about one —
+      // not that the source lacks it. Naming a direction the test cannot see
+      // would be the same overconfidence this script exists to catch.
       detail:
-        'matches only after ignoring a comma, period, semicolon or colon the source does not have',
+        'matches only after ignoring a comma, period, semicolon or colon on which the quote and the source disagree',
     }
   }
 

@@ -79,7 +79,7 @@ The ledger is split into three buckets so the serious findings are not buried un
 | Verdict | Means | What to do |
 |---|---|---|
 | `ABSENT` | No arrangement of rendering differences makes the quote a substring of the cited page. The diagnosis prints how many words matched before divergence and what the source actually says at that point. | Read the diagnosis. Three common shapes: a **composed** sentence assembled from a table or an enumerated list (the dangerous one — it reads like a quotation and is not); a **rewritten** sentence in the registry's own words; a **de-symbolised** quote where only `$`, `%`, `§` or a possessive was changed. Re-quote from the source. |
-| `TRUNCATED` | The quote matches once its terminal period is removed — i.e. the quote closes a sentence the source keeps writing. | Check what was cut. This has hidden operative limbs before (`…is taken into account.` where the regulation reads `…is taken into account **in determining whether section 401(a)(9) is satisfied**`). Either restore the full sentence or mark the cut with `...`. |
+| `TRUNCATED` | The quote matches once the terminal punctuation it ends with is removed — i.e. the quote closes a sentence the source keeps writing. The mark is stripped from the quote only, never from the source, so this one *is* directional; the ledger names which mark it was (period, semicolon, colon or comma). | Check what was cut. This has hidden operative limbs before (`…is taken into account.` where the regulation reads `…is taken into account **in determining whether section 401(a)(9) is satisfied**`). Either restore the full sentence or mark the cut with `...`. |
 | `ELISION-BROKEN` | A quote uses `...` markers, but at least one segment between them is not in the source. | The elision is not the problem; the segment is. Treat as `ABSENT` for that segment. |
 | `UNFETCHABLE` | The page could not be retrieved, or returned a challenge/stub instead of the document. | Not a registry defect on its own, but the citation is unverified until it resolves. `www.jct.gov` sits behind a Cloudflare challenge and is expected here; the script does not attempt to defeat it. Consider citing a mirror that serves the same text. |
 
@@ -145,8 +145,10 @@ break in the HTML. So `EXACT` means *"a literal substring once whitespace is nor
 | `whitespace` | all whitespace | Tag stripping and PDF reflow insert or drop spaces that were never in the text. Applied last, when spacing is the only remaining noise. |
 
 One check runs *after* the ladder and after the truncation probe: **stray punctuation** — a comma, period,
-semicolon or colon inserted inside the quote. It runs last on purpose, because deleting terminal punctuation
-earlier would hide an unmarked truncation, and a truncation is a finding, not noise.
+semicolon or colon on which the quote and the source disagree. The mark is stripped from both texts, so the
+check cannot tell which side carries the extra one; in practice it is the quote, but the verdict does not
+claim that. It runs last on purpose, because deleting terminal punctuation earlier would hide an unmarked
+truncation, and a truncation is a finding, not noise.
 
 ## Per-host rendering conventions
 
