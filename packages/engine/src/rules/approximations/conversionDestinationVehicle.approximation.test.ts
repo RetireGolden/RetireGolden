@@ -3,6 +3,7 @@ import { expect, it } from 'vitest'
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../../model/plan.js'
 import { createFlatTaxCalculator } from '../../projection/flatTax.js'
 import { simulatePlan } from '../../projection/simulate.js'
+import type { YearResult } from '../../projection/types.js'
 import { describeRule } from '../describeRule.js'
 
 /**
@@ -125,13 +126,30 @@ function validate(plan: Plan): Plan {
 
 const noTax = createFlatTaxCalculator(0)
 
-function convertedIn(plan: Plan): { converted: number, magi: number } {
+function yearOf(plan: Plan): Readonly<YearResult> {
   const result = simulatePlan(validate(plan), {
     startYear: CONVERSION_YEAR,
     taxCalculator: noTax,
   })
-  const year = result.years.find((row) => row.year === CONVERSION_YEAR)!
-  return { converted: year.rothConversion, magi: year.magi }
+  return result.years.find((row) => row.year === CONVERSION_YEAR)!
+}
+
+/**
+ * The account each destination credit actually landed in. Asserted alongside
+ * the amount throughout, because this record is named for the KIND of account
+ * the dollars reach: a fixture that only counted them would pass on a build
+ * that credited some entirely different Roth.
+ */
+function destinationAccountIds(year: Readonly<YearResult>): readonly (string | null)[] {
+  const source = year.retirementRuntimeApplicationSource
+  if (source === undefined) throw new Error('expected a runtime application source')
+  return source.applications
+    .filter((application) =>
+      application.applicationKind === 'aggregateRothDestinationCredit')
+    .map((application) =>
+      application.applicationKind === 'aggregateRothDestinationCredit'
+        ? application.destinationRothAccountId
+        : null)
 }
 
 describeRule('irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira', {
@@ -155,22 +173,28 @@ describeRule('irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira', {
       traditionalIra('tradB', 'p2', 400_000),
     ]
 
-    const { converted, magi } = convertedIn(plan)
+    const year = yearOf(plan)
 
-    expect(converted).toBeCloseTo(produced, 6)
-    expect(converted).not.toBeCloseTo(accepted, 6)
+    expect(year.rothConversion).toBeCloseTo(produced, 6)
+    expect(year.rothConversion).not.toBeCloseTo(accepted, 6)
+    // Where the dollars went, not merely how many moved. The record's whole
+    // claim is about the KIND of account they reached, so the destination is
+    // named on both the balance and the runtime credit.
+    expect(year.balances['rothB401k']).toBeCloseTo(REQUESTED_CONVERSION, 6)
+    expect(year.balances['tradB']).toBeCloseTo(350_000, 6)
+    expect(destinationAccountIds(year)).toEqual(['rothB401k'])
     // The income is recognised too, so this is not a bookkeeping-only slip:
     // the household is taxed on a conversion the statute does not permit.
-    expect(magi).toBeCloseTo(REQUESTED_CONVERSION, 6)
+    expect(year.magi).toBeCloseTo(REQUESTED_CONVERSION, 6)
   })
 
   it('converts the same amount into a Roth IRA, so the fixture is about the vehicle', () => {
     // The control. Same request, same balances, same household, same owner --
     // only the KIND of the destination account changes, from an employer
     // designated Roth account to a Roth IRA. The engine produces the identical
-    // number for both, which is exactly the defect: it cannot tell them apart.
-    // Without this, the assertion above would only be pinning "a conversion
-    // happened".
+    // number AND the same shape of credit for both, which is exactly the
+    // defect: it cannot tell them apart. Without this, the assertion above
+    // would only be pinning "a conversion happened".
     const plan = marriedHousehold()
     plan.accounts = [
       cash(500_000),
@@ -178,9 +202,11 @@ describeRule('irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira', {
       traditionalIra('tradB', 'p2', 400_000),
     ]
 
-    const { converted } = convertedIn(plan)
+    const year = yearOf(plan)
 
-    expect(converted).toBeCloseTo(REQUESTED_CONVERSION, 6)
+    expect(year.rothConversion).toBeCloseTo(REQUESTED_CONVERSION, 6)
+    expect(year.balances['rothBIra']).toBeCloseTo(REQUESTED_CONVERSION, 6)
+    expect(destinationAccountIds(year)).toEqual(['rothBIra'])
   })
 
   it('raises no warning about the destination it chose', () => {
@@ -191,6 +217,11 @@ describeRule('irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira', {
     // the only warning channel there is; an earlier draft of the sibling
     // fixture read `year.warnings`, which does not exist on `YearResult`, and
     // passed while proving nothing.
+    //
+    // The conversion is asserted alongside the silence on purpose. An absence
+    // of warnings is the weakest shape an assertion can take -- a build that
+    // refused the conversion outright would also be silent here -- so the
+    // silence is only meaningful pinned to the movement it failed to mention.
     const plan = marriedHousehold()
     plan.accounts = [
       cash(500_000),
@@ -202,7 +233,9 @@ describeRule('irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira', {
       startYear: CONVERSION_YEAR,
       taxCalculator: noTax,
     })
+    const year = result.years.find((row) => row.year === CONVERSION_YEAR)!
 
+    expect(year.balances['rothB401k']).toBeCloseTo(REQUESTED_CONVERSION, 6)
     expect(result.warnings).toEqual([])
   })
 })
