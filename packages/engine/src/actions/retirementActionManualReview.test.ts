@@ -589,9 +589,24 @@ describe('manual retirement-action review and replacement', () => {
     expect(taxable.evidence.evidenceId).not.toBe(cash.evidence.evidenceId)
   })
 
-  it.each(['legacyAggregateQcd', 'qcd'] as const)(
-    'keeps %s explicit, unsupported, and non-mutating until a canonical QCD allocator exists',
-    (kind) => {
+  /**
+   * Both QCD kinds leave this path unreplaced, and the published policy says
+   * which of the two reasons applied. The aggregate kind has no allocator arm
+   * to be handed to; the named kind has one and is authored through it, so it
+   * never belongs here in the first place.
+   */
+  it.each([
+    {
+      kind: 'legacyAggregateQcd',
+      policy: 'explicitManualReviewRequiredNoCanonicalAllocatorArm',
+    },
+    {
+      kind: 'qcd',
+      policy: 'explicitNoReplacementNamedQcdUsesCanonicalAllocatorArm',
+    },
+  ] as const)(
+    'keeps $kind explicit, unsupported, and non-mutating, and publishes $policy',
+    ({ kind, policy }) => {
       const plan = basePlan()
       const qcd = kind === 'legacyAggregateQcd'
         ? action({
@@ -638,7 +653,7 @@ describe('manual retirement-action review and replacement', () => {
         replacement: null,
         plan: null,
         evidence: {
-          policy: 'explicitManualReviewRequiredNoCanonicalAllocatorArm',
+          policy,
           targetOmittedBeforeAllocation: false,
           inferredFields: [],
           unsupportedKind: kind,
