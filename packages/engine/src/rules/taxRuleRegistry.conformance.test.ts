@@ -86,9 +86,63 @@ const FEDERAL_PRIMARY_PUBLISHERS: readonly string[] = [
  */
 const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly string[]>>> = {
   // Verified 2026-08-04 against the sites themselves.
+  //
+  // Every host below is a legislature, a code publisher, or a revenue
+  // department — never a state's general www portal. Pennsylvania is where that
+  // line had to be drawn on purpose. The Department of Revenue moved its
+  // Personal Income Tax Guide off revenue.pa.gov onto www.pa.gov/agencies/
+  // revenue/..., so citing the Guide would mean admitting the bare publisher
+  // `pa.gov`, and `pa.gov` is the whole executive branch: labor, transportation,
+  // health, and everything else Pennsylvania publishes would become admissible
+  // authority for a Pennsylvania tax record. That is not a narrower version of
+  // the ND precedent, it is the opposite of it — the tier exists to name the
+  // publisher that speaks for the tax, and a state portal names no publisher at
+  // all. Nor is a host under active reorganisation a good thing to pin a
+  // citation to.
+  //
+  // So Pennsylvania is sourced to the Pennsylvania Code instead. Both PA records
+  // rest on 61 Pa. Code § 101.6 and § 103.13, which carry the operative language
+  // the Guide restates, are the Department's own regulations rather than its
+  // summary of them, and have a `kind` this registry can label honestly —
+  // `regulation`. `TaxRuleAuthorityKind` has no member for a state revenue
+  // department's guidance, and inventing one by writing `irsPublication` over a
+  // pa.gov URL would be a worse defect than the one the publisher tier prevents.
+  FL: [
+    'flsenate.gov', // Florida Senate: the Constitution and the Florida Statutes
+  ],
+  IA: [
+    'legis.iowa.gov', // Iowa Legislature, Iowa Code
+  ],
+  IL: [
+    'ilga.gov', // Illinois General Assembly, Illinois Compiled Statutes
+  ],
+  ME: [
+    'legislature.maine.gov', // Office of the Revisor of Statutes, Maine Revised Statutes
+  ],
+  MO: [
+    'revisor.mo.gov', // Missouri Revisor of Statutes
+  ],
   ND: [
     'tax.nd.gov', // Office of State Tax Commissioner
     'ndlegis.gov', // Century Code, Title 57 Taxation (ch. 57-38, Income Tax)
+  ],
+  NV: [
+    'leg.state.nv.us', // Nevada Legislature: the Constitution and NRS
+  ],
+  NY: [
+    'nysenate.gov', // New York State Senate, Consolidated Laws (Tax Law)
+  ],
+  PA: [
+    'pacodeandbulletin.gov', // Pennsylvania Code and Bulletin (61 Pa. Code, Revenue)
+  ],
+  SC: [
+    'scstatehouse.gov', // South Carolina Legislature, Code of Laws
+  ],
+  TX: [
+    'statutes.capitol.texas.gov', // Texas Legislative Council, Constitution and Statutes
+  ],
+  WV: [
+    'code.wvlegislature.gov', // West Virginia Legislature, West Virginia Code
   ],
 }
 

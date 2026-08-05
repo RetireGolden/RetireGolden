@@ -5142,6 +5142,457 @@ const registry = {
     verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
   },
+
+  // ---------------------------------------------------------------------------
+  // State rules.
+  //
+  // The engine has computed a state figure for all fifty states and the District
+  // of Columbia since the V5 pack shipped, and until now not one of those figures
+  // had a record here. The twelve states below are the first slice: the ones
+  // whose pack entry turns on a provision a reader would otherwise have to take
+  // on trust — why North Dakota carries the FEDERAL standard deduction while
+  // Maine must not, why Pennsylvania alone is `currentYearOnly` on capital
+  // losses, why Illinois excludes retirement income with no age test at all, and
+  // which three states the pack calls `hasIncomeTax: false` on constitutional
+  // rather than legislative grounds.
+  //
+  // On `effectiveFrom`: where the cited text states its own operative date, that
+  // date is used. Where it does not — a state code section carries no inline
+  // effective date the way an IRC amendment note does — the field is set to 2026,
+  // the year the text was read and the year the pack models. That is a year the
+  // rule governs but is generally NOT the first one, and it is deliberately the
+  // conservative direction: a rule recorded as starting later than it did
+  // understates its reach into years this engine never projects, whereas a
+  // guessed early year would be an unsourced claim in a registry whose whole
+  // point is that it makes none.
+  // ---------------------------------------------------------------------------
+
+  'ndcc-57-38-30-3-federal-taxable-income-base': {
+    title: 'North Dakota taxable income is federal taxable income, adjusted',
+    statement:
+      'North Dakota does not build a base of its own. Its brackets run on federal taxable income as computed under the Internal Revenue Code, reduced and increased by an enumerated list of state adjustments, so the federal standard deduction has already been subtracted before a North Dakota rate is ever applied. The pack therefore carries the federal figure in `standardDeduction` and tags it `standardDeductionConformity: \'federal\'`; the tag is what converts the engine\'s gross base into the federal-taxable-income base the statute names, and it is why the figure has to move with the federal one that IRC 63(c)(7)(B)(ii) raises each year rather than staying frozen at the pack year.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:ND',
+    authority: [{
+      kind: 'statute',
+      citation: 'N.D.C.C. 57-38-30.3(2)',
+      url: 'https://ndlegis.gov/cencode/t57c38.pdf',
+      quotedText:
+        'For purposes of this section, "North Dakota taxable income" means the federal taxable income of an individual, estate, or trust as computed under the Internal Revenue Code of 1986, as amended, adjusted as follows:',
+    }, {
+      kind: 'statute',
+      citation: 'N.D.C.C. 57-38-30.3(1)',
+      url: 'https://ndlegis.gov/cencode/t57c38.pdf',
+      quotedText:
+        'Provided, that for purposes of this section, any person required to file a state income tax return under this chapter, but who has not computed a federal taxable income figure, shall compute a federal taxable income figure using a pro forma return in order to determine a federal taxable income figure to be used as a starting point in computing state income tax under this section.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/params/state/index.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ndcc-57-38-30-3-2-d-long-term-gain-exclusion': {
+    title: 'North Dakota excludes 40% of net long-term capital gain',
+    statement:
+      'North Dakota taxable income is reduced by forty percent of the excess of net long-term capital gain over net short-term capital loss, so only sixty percent of a retiree\'s long-term gain reaches a North Dakota rate. Not modelled: the pack sets `capitalGainsAsOrdinary: true` and no `capitalGainsTaxablePct`, which defaults the included share to 100 percent, so the engine taxes the whole gain and charges a North Dakota retiree more than the statute does on every realization. The same subdivision also excludes forty percent of qualified dividends, which the engine likewise includes in full; that half of the gap is not separately registered but errs in the same direction.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:ND',
+    authority: [{
+      kind: 'statute',
+      citation: 'N.D.C.C. 57-38-30.3(2)(d)',
+      url: 'https://ndlegis.gov/cencode/t57c38.pdf',
+      quotedText:
+        'Reduced by forty percent of: (1) The excess of the taxpayer\'s net long-term capital gain for the taxable year over the net short-term capital loss for that year, as computed for purposes of the Internal Revenue Code of 1986, as amended. The adjustment provided by this subdivision is allowed only to the extent the net long-term capital gain is allocated to this state.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  'pa-pit-retirement-benefits-not-compensation': {
+    title: 'Pennsylvania does not tax a retired employee’s plan distributions',
+    statement:
+      'A distribution from an old age or retirement benefit plan — the regulation names IRAs, SEPs, Keoghs and federally qualified employer plans — is outside Pennsylvania compensation when it is made upon or after the recipient\'s retirement from service after reaching a specific age or after a stated period of employment. The test is the PLAN\'s age or service condition, not any single age fixed by Pennsylvania law. Approximated: the pack encodes it as `{ kind: \'full\', minAge: 60 }`, a flat age test, which is why a Pennsylvania retiree pays no state tax on retirement income here at all.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale: null,
+    jurisdiction: 'state:PA',
+    authority: [{
+      kind: 'regulation',
+      citation: '61 Pa. Code 101.6(c)(8)(iii)(A)',
+      url: 'https://www.pacodeandbulletin.gov/Display/pacode?file=/secure/pacode/data/061/chapter101/s101.6.html',
+      quotedText:
+        'Amounts distributed to an individual from a plan shall be included in income to the extent that contributions were not previously included in this income except for either of the following: (I) Distributions made upon or after his retirement from service after reaching a specific age or after a stated period of employment. (II) Distributions transferred into another plan, where the transferred amounts are not included in income for Federal income tax purposes.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  'pa-pit-no-capital-loss-carryforward': {
+    title: 'A Pennsylvania capital loss is recognized only in its own year',
+    statement:
+      'Pennsylvania taxes the net of a year\'s own gains and losses on the disposition of property, and a loss is recognized only in the taxable year in which the transaction giving rise to it is closed and completed. A loss therefore has nowhere to go once its year ends: it neither carries back nor carries forward, and a prior-year federal carryforward cannot reduce a Pennsylvania gain. This is the sole consumer of `capitalLossCarryforwardConformity: \'currentYearOnly\'`, which makes the state base read `realizedCapitalGainsBeforeCarryforward` instead of the carryforward-netted `capitalGains` the federal ledger produces.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:PA',
+    authority: [{
+      kind: 'regulation',
+      citation: '61 Pa. Code 103.13(a)',
+      url: 'https://www.pacodeandbulletin.gov/Display/pacode?file=/secure/pacode/data/061/chapter103/s103.13.html',
+      quotedText:
+        'Gain or loss. A gain on the disposition of property is recognized in the taxable year in which the amount realized from the conversion of the property into cash or other property exceeds the adjusted basis of the property. A loss is recognized only with respect to transactions entered into for gain, profit or income and only in the taxable year in which the transaction, in respect to which loss is claimed, is closed and completed by an identifiable event which fixes the amount of the loss so there is no possibility of eventual recoupment.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: ['packages/engine/src/tax/stateTax.ts'],
+  },
+
+  'nv-const-10-1-9-no-personal-income-tax': {
+    title: 'Nevada may not tax the personal income of a natural person',
+    statement:
+      'The Nevada Constitution forbids an income tax on the wages OR the personal income of natural persons, reserving to the Legislature only the income or revenue of a business conducted for profit. The bar is not confined to earned income, so a Nevada retiree\'s pension, IRA and 401(k) distributions, Social Security and capital gains are all beyond the state\'s reach. The pack models this as `hasIncomeTax: false`, which makes the whole state base zero rather than exempting income category by category.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:NV',
+    authority: [{
+      kind: 'statute',
+      citation: 'Nev. Const. art. 10, sec. 1(9)',
+      url: 'https://www.leg.state.nv.us/const/nvconst.html',
+      quotedText:
+        'No income tax shall be levied upon the wages or personal income of natural persons. Notwithstanding the foregoing provision, and except as otherwise provided in subsection 1 of this Section, taxes may be levied upon the income or revenue of any business in whatever form it may be conducted for profit in the State.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  'tx-const-8-24-a-individual-income-tax-prohibited': {
+    title: 'Texas may tax neither an individual’s net income nor their capital gains',
+    statement:
+      'Section 24-a, adopted in 2019 in place of the repealed section 24, forbids the Legislature to impose a tax on the net incomes of individuals. Section 24-b, adopted in November 2025, closes the question the first one left open by separately forbidding a tax on an individual\'s realized OR unrealized capital gains. Between them no part of a Texas retiree\'s income is reachable, which is what the pack\'s `hasIncomeTax: false` and `capitalGainsAsOrdinary: false` encode.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:TX',
+    authority: [{
+      kind: 'statute',
+      citation: 'Tex. Const. art. VIII, sec. 24-a',
+      url: 'https://statutes.capitol.texas.gov/Docs/CN/htm/CN.8.htm',
+      quotedText:
+        'INDIVIDUAL INCOME TAX PROHIBITED. The legislature may not impose a tax on the net incomes of individuals, including an individual\'s share of partnership and unincorporated association income.',
+    }, {
+      kind: 'statute',
+      citation: 'Tex. Const. art. VIII, sec. 24-b(a)',
+      url: 'https://statutes.capitol.texas.gov/Docs/CN/htm/CN.8.htm',
+      quotedText:
+        'Subject to Subsection (b) of this section, the legislature may not impose a tax on the realized or unrealized capital gains of an individual, family, estate, or trust, including a tax on the sale or transfer of a capital asset that is payable by the individual, family, estate, or trust selling or transferring the asset.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2020,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  'fl-const-7-5-a-income-tax-prohibited': {
+    title: 'No Florida income tax reaches a natural person',
+    statement:
+      'The Florida Constitution caps any tax on the income of a natural person resident or citizen of the state at the amounts creditable against or deductible from a similar federal or state tax, and the income tax Florida actually imposes is chapter 220\'s, which falls on "every taxpayer" where "taxpayer" is defined as a corporation. The constitutional ceiling and the statutory imposition therefore meet: no Florida individual income tax exists to be modelled, and the pack\'s `hasIncomeTax: false` zeroes the base for a Florida retiree at every level of income.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:FL',
+    authority: [{
+      kind: 'statute',
+      citation: 'Fla. Const. art. VII, sec. 5(a)',
+      url: 'https://www.flsenate.gov/Laws/Constitution/Article7',
+      quotedText:
+        'NATURAL PERSONS. No tax upon estates or inheritances or upon the income of natural persons who are residents or citizens of the state shall be levied by the state, or under its authority, in excess of the aggregate of amounts which may be allowed to be credited upon or deducted from any similar tax levied by the United States or any state.',
+    }, {
+      kind: 'statute',
+      citation: 'Fla. Stat. 220.11(1)',
+      url: 'https://www.flsenate.gov/Laws/Statutes/2025/220.11',
+      quotedText:
+        'A tax measured by net income is hereby imposed on every taxpayer for each taxable year for the privilege of conducting business, earning or receiving income in this state, or being a resident or citizen of this state.',
+    }, {
+      kind: 'statute',
+      citation: 'Fla. Stat. 220.03(1)(z)',
+      url: 'https://www.flsenate.gov/Laws/Statutes/2025/220.03',
+      quotedText:
+        '“Taxpayer” means any corporation subject to the tax imposed by this code, and includes all corporations for which a consolidated return is filed under s. 220.131.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 1971,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  'wv-code-11-21-12-social-security-full-modification': {
+    title: 'West Virginia exempts all Social Security from 2026',
+    statement:
+      'West Virginia phased a decreasing modification for Social Security up to 100 percent, and from tax years beginning on or after January 1, 2026 the phase is complete at every income level: subdivision (A) already gave 100 percent to a taxpayer at or below $100,000 of federal AGI on a joint return, or $50,000 otherwise, and subdivision (E) gives 100 percent to the taxpayers above those thresholds that subdivision (B) had excluded. No federally taxable Social Security therefore survives into the West Virginia base, which is what `taxesSocialSecurity: false` encodes for the 2026 pack.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:WV',
+    authority: [{
+      kind: 'statute',
+      citation: 'W. Va. Code 11-21-12(c)(8)(E)',
+      url: 'https://code.wvlegislature.gov/11-21-12/',
+      quotedText:
+        'For taxable years beginning on or after January 1, 2026, 100 percent of the social security benefits received pursuant to Chapter 7 of Title 42 of the United States Code, including, but not limited to, social security benefits paid by the Social Security Administration as Old Age, Survivors and Disability Insurance Benefits as provided in 42 U.S.C. § 401 et. seq. or as Supplemental Security Income for the Aged, Blind, and Disabled as provided in 42 U.S.C. 1381 et. seq., included in federal adjusted gross income for the taxable year shall be allowed as a decreasing modification from federal adjusted gross income when determining West Virginia taxable income subject to the tax imposed by this article, subject to the limitation in §11-21-12(c)(8)(F) of this code.',
+    }, {
+      kind: 'statute',
+      citation: 'W. Va. Code 11-21-12(c)(8)(F)',
+      url: 'https://code.wvlegislature.gov/11-21-12/',
+      quotedText:
+        'The deduction allowed by §11-21-12(c)(8)(C), §11-21-12(c)(8)(D), and §11-21-12(c)(8)(E) of this code are allowable only when the federal adjusted gross income of a married couple filing a joint return exceeds $100,000, or $50,000 in the case of a single individual or a married individual filing a separate return.',
+    }, {
+      kind: 'statute',
+      citation: 'W. Va. Code 11-21-12(c)(8)(B)',
+      url: 'https://code.wvlegislature.gov/11-21-12/',
+      quotedText:
+        'The deduction allowed by §11-21-12(c)(8)(A) of this code are allowable only when the federal adjusted gross income of a married couple filing a joint return does not exceed $100,000, or $50,000 in the case of a single individual or a married individual filing a separate return.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ny-tax-612-c-3-a-pension-annuity-exclusion': {
+    title: 'New York’s $20,000 pension exclusion requires attaining 59½',
+    statement:
+      'New York subtracts up to $20,000 of pension and annuity income, including IRA and self-employed plan distributions, received by an individual who has ATTAINED THE AGE OF FIFTY-NINE AND ONE-HALF. Half a year is the whole of the condition, and the pack cannot express it: `StateRetirementExclusion.minAge` is compared against an integer age, so `{ capPerPerson: 20000, minAge: 59 }` grants the full exclusion from the birthday rather than six months later. A New Yorker who is 59 but not yet 59½ is given a $20,000 subtraction the statute does not allow them, and the engine reports less New York tax than they owe.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:NY',
+    authority: [{
+      kind: 'statute',
+      citation: 'N.Y. Tax Law 612(c)(3-a)',
+      url: 'https://www.nysenate.gov/legislation/laws/TAX/612',
+      quotedText:
+        'Pensions and annuities received by an individual who has attained the age of fifty-nine and one-half, not otherwise excluded pursuant to paragraph three of this subsection, to the extent includible in gross income for federal income tax purposes, but not in excess of twenty thousand dollars, which are periodic payments attributable to personal services performed by such individual prior to his retirement from employment, which arise (i) from an employer-employee relationship or (ii) from contributions to a retirement plan which are deductible for federal income tax purposes.',
+    }, {
+      kind: 'statute',
+      citation: 'N.Y. Tax Law 612(c)(3-a), second sentence',
+      url: 'https://www.nysenate.gov/legislation/laws/TAX/612',
+      quotedText:
+        'However, the term "pensions and annuities" shall also include distributions received by an individual who has attained the age of fifty-nine and one-half from an individual retirement account or an individual retirement annuity, as defined in section four hundred eight of the internal revenue code, and distributions received by an individual who has attained the age of fifty-nine and one-half from self-employed individual and owner-employee retirement plans which qualify under section four hundred one of the internal revenue code, whether or not the payments are periodic in nature.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  'il-ita-203-a-2-F-retirement-income-subtraction': {
+    title: 'Illinois subtracts retirement income with no age condition',
+    statement:
+      'Illinois base income deducts every amount included in federal adjusted gross income under IRC 402(a), 402(c), 403(a), 403(b), 406(a), 407(a) and 408 — qualified plan and IRA distributions — together with governmental retirement plan distributions and retirement payments to retired partners. The subparagraph states no age, no dollar cap, and no retirement-status condition, which is why the pack is `{ kind: \'full\' }` with no `minAge` and why an Illinois plan shows no state tax on a withdrawal taken years before any other state would exempt it.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:IL',
+    authority: [{
+      kind: 'statute',
+      citation: '35 ILCS 5/203(a)(2)(F)',
+      url: 'https://www.ilga.gov/Legislation/ilcs/documents/003500050K203.htm',
+      quotedText:
+        'An amount equal to all amounts included in such total pursuant to the provisions of Sections 402(a), 402(c), 403(a), 403(b), 406(a), 407(a), and 408 of the Internal Revenue Code, or included in such total as distributions under the provisions of any retirement or disability plan for employees of any governmental agency or unit, or retirement payments to retired partners, which payments are excluded in computing net earnings from self employment by Section 1402 of the Internal Revenue Code and regulations adopted pursuant thereto;',
+    }, {
+      kind: 'statute',
+      citation: '35 ILCS 5/203(a)(2)',
+      url: 'https://www.ilga.gov/Legislation/ilcs/documents/003500050K203.htm',
+      quotedText:
+        'and by deducting from the total so obtained the sum of the following amounts:',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'mo-rsmo-143-121-capital-gain-deduction': {
+    title: 'Missouri subtracts 100% of an individual’s capital gains',
+    statement:
+      'From tax years beginning on or after January 1, 2025 Missouri subtracts from federal adjusted gross income one hundred percent of all income reported as a capital gain for federal purposes by an individual. Missouri is consequently the only state in the pack that levies an income tax and still carries `capitalGainsAsOrdinary: false`, which defaults the included share of modeled net capital gain to zero.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:MO',
+    authority: [{
+      kind: 'statute',
+      citation: 'Mo. Rev. Stat. 143.121.3(14)(a)',
+      url: 'https://revisor.mo.gov/main/OneSection.aspx?section=143.121',
+      quotedText:
+        'For all tax years beginning on or after January 1, 2025, one hundred percent of all income reported as a capital gain for federal income tax purposes by an individual subject to tax pursuant to section 143.011; and',
+    }, {
+      kind: 'statute',
+      citation: 'Mo. Rev. Stat. 143.121.3',
+      url: 'https://revisor.mo.gov/main/OneSection.aspx?section=143.121',
+      quotedText:
+        'There shall be subtracted from the taxpayer\'s federal adjusted gross income the following amounts to the extent included in federal adjusted gross income:',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2025,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  'iowa-code-422-7-19-a-retirement-income-exclusion': {
+    title: 'Iowa excludes retirement income from age 55',
+    statement:
+      'Iowa subtracts the TOTAL amount received from a governmental or other pension or retirement plan — defined benefit and defined contribution plans, annuities, IRAs, employer and self-employed plans, and deferred compensation — by a person who is disabled, fifty-five years of age or older, or a qualifying survivor. There is no dollar ceiling, which is why the pack is `{ kind: \'full\', minAge: 55 }` rather than a capped exclusion, and fifty-five rather than the fifty-nine-and-a-half or sixty-five most states use.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:IA',
+    authority: [{
+      kind: 'statute',
+      citation: 'Iowa Code 422.7(19)(a)',
+      url: 'https://www.legis.iowa.gov/docs/code/422.7.pdf',
+      quotedText:
+        'Subtract, to the extent included, the total amount received from a governmental or other pension or retirement plan, including defined benefit or defined contribution plans, annuities, individual retirement accounts, plans maintained or contributed to by an employer, or maintained or contributed to by a self-employed person as an employer, and deferred compensation plans or any earnings attributable to the deferred compensation plans received by a person who is any of the following: (1) Disabled. (2) Fifty-five years of age or older.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'mrs-36-5124-c-1-b-decoupled-standard-deduction': {
+    title: 'Maine’s standard deduction decoupled from the federal figure in 2026',
+    statement:
+      'For tax years beginning on or after January 1, 2026 a Maine resident\'s standard deduction is Maine\'s own basic amount plus the additional deduction under IRC 63(c)(3) — no longer the federal standard deduction that subsection 1-A carried through 2025. Maine must therefore NOT be tagged `standardDeductionConformity: \'federal\'`: the tag exists to keep a borrowed federal figure equal to the federal one as IRC 63(c)(7)(B)(ii) raises it each year, and applying it to a figure Maine now sets for itself would inflate the deduction, and shrink Maine tax, further with every projected year.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:ME',
+    authority: [{
+      kind: 'statute',
+      citation: '36 M.R.S. 5124-C(1-B)',
+      url: 'https://legislature.maine.gov/statutes/36/title36sec5124-C.html',
+      quotedText:
+        'Amount; on or after January 1, 2026. For tax years beginning on or after January 1, 2026, the standard deduction of a resident individual is equal to the sum of the basic standard deduction and the additional standard deduction, subject to the phase-out under subsection 2.',
+    }, {
+      kind: 'statute',
+      citation: '36 M.R.S. 5124-C(1-B)(A)',
+      url: 'https://legislature.maine.gov/statutes/36/title36sec5124-C.html',
+      quotedText:
+        'The basic standard deduction is: (1) For single individuals and married persons filing separate returns, $12,000; (2) For individuals filing as heads of households, the amount allowed under subparagraph (1) multiplied by 1.5; and (3) For individuals filing married joint returns or surviving spouses, the amount allowed under subparagraph (1) multiplied by 2.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/params/state/index.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  'sc-code-12-6-1170-retirement-income-deduction': {
+    title: 'South Carolina’s retirement deduction has a tier below age 65',
+    statement:
+      'South Carolina allows the original owner of a qualified retirement account a deduction of up to three thousand dollars of retirement income, rising to ten thousand dollars beginning in the year the taxpayer reaches sixty-five. Approximated: the pack models the upper tier only, as `{ kind: \'capped\', capPerPerson: 10000, minAge: 65 }`, so a South Carolinian under sixty-five is given no deduction at all and is charged tax on three thousand dollars the statute reaches. The separate section (B) deduction of up to fifteen thousand dollars at sixty-five, net of the (A) amount, is likewise unmodelled and errs the same way.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:SC',
+    authority: [{
+      kind: 'statute',
+      citation: 'S.C. Code 12-6-1170(A)(1)',
+      url: 'https://www.scstatehouse.gov/code/t12c006.php',
+      quotedText:
+        'An individual taxpayer who is the original owner of a qualified retirement account is allowed an annual deduction from South Carolina taxable income of not more than three thousand dollars of retirement income received. Beginning in the year in which the taxpayer reaches age sixty-five, the taxpayer may deduct not more than ten thousand dollars of retirement income that is included in South Carolina taxable income.',
+    }, {
+      kind: 'statute',
+      citation: 'S.C. Code 12-6-1170(B)',
+      url: 'https://www.scstatehouse.gov/code/t12c006.php',
+      quotedText:
+        'Beginning for the taxable year during which a resident individual taxpayer attains the age of sixty-five years, the resident individual taxpayer is allowed a deduction from South Carolina taxable income received in an amount not to exceed fifteen thousand dollars reduced by any amount the taxpayer deducts pursuant to subsection (A) not including amounts deducted as a surviving spouse.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)
