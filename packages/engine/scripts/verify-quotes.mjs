@@ -175,7 +175,16 @@ const HOST_CONVENTIONS = Object.freeze({
 const LADDER = Object.freeze([
   {
     name: 'exact',
-    why: 'No transformation. This is the contract the field states.',
+    // Not "no transformation" — `ladderTo` collapses runs of whitespace and
+    // trims at EVERY depth including this one, so the honest description is
+    // "nothing beyond the whitespace baseline". That baseline is unavoidable
+    // rather than a concession: source text is reconstructed from markup, where
+    // a newline and an indent between two tags carry no meaning, and refusing
+    // to collapse would fail every quote that spans a line break in the HTML.
+    // It is named here because a rung that folds something while claiming to
+    // fold nothing is the same species of overstatement this tool exists to
+    // catch.
+    why: 'Nothing beyond the whitespace baseline every rung shares. The contract the field states.',
     apply: (s) => s,
   },
   {

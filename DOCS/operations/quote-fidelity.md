@@ -93,7 +93,7 @@ of them changes what the authority says. The apostrophe-style list is reported h
 
 | Verdict | Means |
 |---|---|
-| `EXACT` | Literal substring of the source. The contract, met. |
+| `EXACT` | Literal substring of the source once whitespace is normalised — see the baseline note under the ladder. Nothing else folded. The contract, met. |
 | `ELISION-EXACT` | Every segment between elision markers is a literal substring. The correct way to shorten a quote. |
 | `PDF-WORD-LEVEL` | The quote is a substring of the extracted PDF text once the punctuation ladder has been applied — the same test an HTML source would have to pass, but reported one grade lower because extraction, not the registry, may be what the ladder is absorbing. **Not a pass** — see below. |
 | `PDF-NOT-VERIFIABLE` | The PDF could not be read; or every word is present but **no ladder rung** accounts for the remaining difference, so a real defect cannot be told apart from extraction damage. |
@@ -124,9 +124,16 @@ Cumulative, weakest first. A quote is tested at each rung in order and reported 
 matches, so the reported rung is the minimal transformation needed — which is the diagnosis. Every rung
 exists because of a specific host convention, listed in the next section.
 
+**Every rung, including the first, sits on a whitespace baseline**: runs of whitespace are collapsed
+to a single space and both strings are trimmed before any comparison. That is not a concession to
+sloppy quoting — source text is reconstructed from markup, where a newline and an indent between two
+tags carry no meaning, and refusing to collapse would fail every quote that happens to span a line
+break in the HTML. So `EXACT` means *"a literal substring once whitespace is normalised"*, not
+*"byte-for-byte"*. Nothing else is folded at that rung.
+
 | Rung | Folds | Because |
 |---|---|---|
-| `exact` | nothing | The contract the field states. |
+| `exact` | nothing beyond the whitespace baseline above | The contract the field states. |
 | `apostrophe` | U+2019 U+02BC U+2032 → U+0027 | LII and most irs.gov pages render the possessive U+2019; uscode, govinfo and eCFR render U+0027. |
 | `quote-marks` | U+201C U+201D → U+0022 | LII wraps statutory defined terms in curly quotes; the other hosts use straight. |
 | `dashes` | U+2014 U+2013 U+2212 U+2010 U+2011 → `-` | The same structural dash is an em dash on LII/govinfo/eCFR and a plain hyphen-minus on uscode. |
