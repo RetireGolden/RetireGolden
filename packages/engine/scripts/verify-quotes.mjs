@@ -88,6 +88,14 @@ const FETCH_TIMEOUT_MS = 45_000
  */
 const MIN_SOURCE_TEXT_CHARS = 2000
 
+/**
+ * Upper bound on a fetched body. The largest source this registry cites is
+ * the enrolled OBBBA text at about 1.2 MB, so 32 MB is far above anything
+ * legitimate and still small enough that a runaway redirect cannot exhaust
+ * memory and abort the run before a ledger is printed.
+ */
+const MAX_SOURCE_BYTES = 32 * 1024 * 1024
+
 /** Bodies that are a challenge or block page regardless of status code. */
 const BLOCK_MARKERS =
   /Just a moment\.\.\.|challenges\.cloudflare\.com|Access Denied|Request unsuccessful|Pardon Our Interruption/i
@@ -231,8 +239,8 @@ const LADDER = Object.freeze([
   },
   {
     name: 'section-sign',
-    why: 'Every host writes § in a regulation cite; registry quotes sometimes spell it "section".',
-    apply: (s) => s.replace(/§§/g, 'sections').replace(/§/g, 'section'),
+    why: 'PDF extraction destroys §. On an HTML source a quote that spells it out has rewritten a word, so this rung does not apply there.',
+    apply: (s, isPdf) => (isPdf ? s.replace(/§§/g, 'sections').replace(/§/g, 'section') : s),
   },
   {
     name: 'case',
@@ -275,12 +283,22 @@ const INVISIBLE = /\u00ad|\u200b|\u200c|\u200d|\ufeff/g
 
 /**
  * Apply the ladder cumulatively up to and including `depth`.
+ *
+ * `isPdf` exists for one rung. Folding `§` into the word "section" is
+ * legitimate against a PDF, where extraction genuinely destroys the glyph, and
+ * illegitimate against HTML, where every host emits `§` and a quote spelling it
+ * out has rewritten a word — the same class as `$6,000` written "6,000 dollar
+ * amount", which this tool reports as ABSENT. Applying it everywhere silently
+ * downgraded three HTML de-symbolisations from serious to advisory and
+ * contradicted the documented contract.
+ *
  * @param {string} s
  * @param {number} depth
+ * @param {boolean} [isPdf] Whether the text being compared came from a PDF.
  */
-function ladderTo(s, depth) {
+function ladderTo(s, depth, isPdf = false) {
   let out = s
-  for (let i = 0; i <= depth; i += 1) out = LADDER[i].apply(out)
+  for (let i = 0; i <= depth; i += 1) out = LADDER[i].apply(out, isPdf)
   return collapse(out)
 }
 
@@ -508,7 +526,31 @@ async function fetchWithCache(url, opts) {
         'accept-language': 'en-US,en;q=0.9',
       },
     })
+    // Bounded read. `arrayBuffer()` buffers whatever arrives, so a bad redirect
+    // or an unexpectedly large document could exhaust memory and kill the
+    // process before it emits a ledger — the failure this tool must never have.
+    // Over the cap the source is reported unfetchable, which is a finding about
+    // that one citation rather than the end of the run.
+    const declared = Number.parseInt(response.headers.get('content-length') ?? '', 10)
+    if (Number.isInteger(declared) && declared > MAX_SOURCE_BYTES) {
+      return {
+        body: Buffer.alloc(0),
+        contentType: response.headers.get('content-type') ?? '',
+        status: response.status,
+        fromCache: false,
+        error: `source is ${declared} bytes, over the ${MAX_SOURCE_BYTES}-byte cap`,
+      }
+    }
     const body = Buffer.from(await response.arrayBuffer())
+    if (body.byteLength > MAX_SOURCE_BYTES) {
+      return {
+        body: Buffer.alloc(0),
+        contentType: response.headers.get('content-type') ?? '',
+        status: response.status,
+        fromCache: false,
+        error: `source is ${body.byteLength} bytes, over the ${MAX_SOURCE_BYTES}-byte cap`,
+      }
+    }
     const contentType = response.headers.get('content-type') ?? ''
     mkdirSync(opts.cacheDir, { recursive: true })
     writeFileSync(bodyPath, body)
@@ -582,10 +624,10 @@ async function loadSource(url, opts) {
  * @param {string} needle
  * @returns {number} rung index, or -1 if it never matches
  */
-function matchRung(variants, needle) {
+function matchRung(variants, needle, isPdf = false) {
   for (let depth = 0; depth < LADDER.length; depth += 1) {
-    const target = ladderTo(needle, depth)
-    if (variants.some((v) => ladderTo(v, depth).includes(target))) return depth
+    const target = ladderTo(needle, depth, isPdf)
+    if (variants.some((v) => ladderTo(v, depth, isPdf).includes(target))) return depth
   }
   return -1
 }
@@ -678,7 +720,7 @@ function verdictFor(entry, source) {
   // the words are all there. Words that are genuinely *absent* remain a real
   // finding — extraction loss cannot add or remove whole words.
   if (source.isPdf) {
-    const missing = segments.filter((s) => matchRung(source.variants, s) < 0)
+    const missing = segments.filter((s) => matchRung(source.variants, s, source.isPdf) < 0)
     if (missing.length === 0) {
       return {
         verdict: 'PDF-WORD-LEVEL',
@@ -714,7 +756,7 @@ function verdictFor(entry, source) {
     }
   }
 
-  const rungs = segments.map((s) => matchRung(source.variants, s))
+  const rungs = segments.map((s) => matchRung(source.variants, s, source.isPdf))
 
   if (rungs.every((r) => r === 0)) {
     return elided
@@ -736,7 +778,7 @@ function verdictFor(entry, source) {
   const trimmed = missing.map((s) => s.replace(/[.;:,]+$/, ''))
   if (
     trimmed.some((s, i) => s !== missing[i]) &&
-    trimmed.every((s) => matchRung(source.variants, s) >= 0)
+    trimmed.every((s) => matchRung(source.variants, s, source.isPdf) >= 0)
   ) {
     return {
       verdict: 'TRUNCATED',

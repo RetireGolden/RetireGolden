@@ -140,7 +140,7 @@ break in the HTML. So `EXACT` means *"a literal substring once whitespace is nor
 | `dash-spacing` | whitespace around `-` | Sources set the structural dash tight (`the sum of—(A)`); registry quotes commonly write ` - `. |
 | `spaces` | U+00A0 and friends → space | HTML sources emit no-break spaces inside statutory text; they survive entity decoding. |
 | `fractions` | `½` `1⁄2` `701/2` → `70 1/2` | uscode sets `age 59½` tight, eCFR sets `age 70 1⁄2` with U+2044, PDFs yield `701/2`. |
-| `section-sign` | `§`/`§§` → "section"/"sections" | Every host writes `§` in a regulation cite; registry quotes sometimes spell it out. |
+| `section-sign` | `§`/`§§` → "section"/"sections", **PDF sources only** | PDF extraction destroys `§` (it comes out U+FFFD). On an HTML source every host emits `§`, so a quote that spells it out has rewritten a word — that is a registry rewrite and stays , not a rendering difference. |
 | `case` | lowercase | A quote beginning mid-sentence is commonly lowercased to fit its lead-in. |
 | `whitespace` | all whitespace | Tag stripping and PDF reflow insert or drop spaces that were never in the text. Applied last, when spacing is the only remaining noise. |
 
