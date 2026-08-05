@@ -499,9 +499,15 @@ export function buildQcdAuthoringIntent(
  * The refusal frame introduces a list, so it may only render when the engine
  * gave one. The other two exist so that a gift with nothing behind it is
  * described rather than dressed in a refusal it never received.
+ *
+ * The list it introduces holds two kinds of engine sentence — the publication
+ * record's typed reasons and the QCD executor's movement-level blockers — and
+ * either can be the only one present. So the frame says the projection
+ * explains itself, and does not promise the particular kind of explanation
+ * that happens to follow.
  */
 export const QCD_REFUSAL_FRAME =
-  'This gift is not modeled as executing. The projection gives these reasons:'
+  'This gift is not modeled as executing. The projection says why:'
 
 export function qcdNotEvaluatedFrame(year: number): string {
   return `This projection did not evaluate this gift for ${year}. Nothing moves for it, and the projection has no reasons to give about it.`

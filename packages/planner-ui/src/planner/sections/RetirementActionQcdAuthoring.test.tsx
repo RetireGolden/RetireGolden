@@ -485,7 +485,7 @@ describe('named-QCD authoring', () => {
     // The whole-year QCD batch refuses `evidenceIdReused`, so the year
     // publishes no source and no requests and the gift gets no record at all.
     // That is not a refusal, and the old code called it one: it rendered
-    // "The projection gives these reasons:" over an empty list.
+    // the refusal frame over an empty list.
     const gift = namedGift(THIS_YEAR)
     const plan = giftPlan({ throughYear: THIS_YEAR })
     const facts = plan.retirementActionEligibilityFacts!
