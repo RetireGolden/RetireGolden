@@ -1307,19 +1307,19 @@ const registry = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The 25 percent rate in the base text of section 55(d) is pre-2026 law. Pub. L. 119-21 substitutes 50 percent for taxable years beginning after 2025, which is why the pack carries a rate that disagrees with the unamended statute. Recording that substitution is the point of this rule: a reader checking the base text alone will conclude the pack is wrong.',
+      'Cited to the enrolled bill rather than to a code mirror, and quoted as the amending instruction rather than as a rule, because there is no running sentence to quote. Section 70107(c) operates by striking and inserting, so the 50 percent figure exists only as new subclause (IV) of 55(d)(4)(A)(ii). Neither uscode.house.gov nor law.cornell.edu carries the amended text as of 2026-08-04 -- both still print the pre-2026 (d)(4) -- so a mirror would have shown 25 percent and contradicted this record. An earlier version of this record papered over that by composing a readable sentence that appears in no source at all; the substance was right and the quote was invented. The threshold figures in the statement come from 55(d)(4)(A)(ii)(I) as amended and from 70107(b), which reindexes the 1,000,000 amount from calendar year 2025.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
-      citation: 'IRC 55(d)(4), as amended by Pub. L. 119-21',
-      url: 'https://www.law.cornell.edu/uscode/text/26/55',
+      citation: 'Pub. L. 119-21, sec. 70107(c) (OBBBA)',
+      url: 'https://www.govinfo.gov/content/pkg/PLAW-119publ21/html/PLAW-119publ21.htm',
       quotedText:
-        'In the case of any taxable year beginning after December 31, 2025, subparagraph (A) shall be applied by substituting 50 percent for 25 percent, and the threshold amount shall be 500,000 dollars (1,000,000 dollars in the case of a joint return), adjusted for inflation.',
+        '(c) Modification of Phaseout Amount.--Section 55(d)(4)(A)(ii) is amended by striking ``and\'\' at the end of subclause (II), and by adding at the end the following new subclause: ``(IV) by substituting `50 percent\' for `25 percent\', and\'\'.',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/params/data/year2026.ts',
