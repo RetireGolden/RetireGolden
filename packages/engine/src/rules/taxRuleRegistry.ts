@@ -5585,6 +5585,21 @@ const registry = {
       url: 'https://capitol.texas.gov/tlodocs/89R/billtext/html/SJ00018F.htm',
       quotedText:
         'This section may not be construed as modifying the applicability or prohibiting the imposition or change in the rate of: (1) an ad valorem tax on property; (2) a sales tax on the sale of goods or services; or (3) a use tax on the storage, use, or other consumption in this state of goods or services.',
+    }, {
+      // The adoption date, inside a span, which is what authority-sufficiency
+      // section 3 requires of any fact the record's `effectiveFrom` depends on.
+      // It used to travel on the tail of the subsection (b) quote as the
+      // compilation's "(Added Nov. 4, 2025.)" note; moving that quote to the
+      // enrolled resolution would have dropped the date off the record
+      // entirely, since an enrolled bill carries no compiler's annotation. The
+      // resolution states the election date itself instead, which is the better
+      // source for it either way — a "(Added …)" note is the publisher's
+      // summary of an event, and this is the enacted instruction that fixed it.
+      kind: 'legislativeHistory',
+      citation: 'Tex. S.J.R. 18, 89th Leg., R.S. (2025) (enrolled), § 2',
+      url: 'https://capitol.texas.gov/tlodocs/89R/billtext/html/SJ00018F.htm',
+      quotedText:
+        'This proposed constitutional amendment shall be submitted to the voters at an election to be held November 4, 2025.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
