@@ -54,6 +54,18 @@ export interface FederalTaxDetail {
   seniorDeduction: number
   /** True when the itemized total beat the standard deduction this year. */
   itemized: boolean
+  /**
+   * IRC §68 reduction applied to the itemized *candidate* this year; 0 when it
+   * does not bite or the year predates it. Surfaced because `itemized` alone
+   * cannot explain a deduction that shrank — without this the ledger shows a
+   * smaller number and no reason for it.
+   *
+   * It is computed before the election, so it is not necessarily a reduction in
+   * the deduction actually taken: a nonzero value alongside `itemized: false`
+   * means §68 bit the itemized candidate and the standard deduction still won.
+   * Only when `itemized` is true did this figure come out of `deduction`.
+   */
+  section68Limitation: number
   taxableIncome: number
   /** Taxable income taxed at ordinary rates (after preferential carve-out). */
   ordinaryTaxable: number
@@ -112,10 +124,95 @@ function itemizedTotal(
   pack: ParameterPack,
   items: TaxYearInput['itemizedDeductions'],
   year: number,
+  contributionBase: number,
 ): number {
   if (!items) return 0
   const salt = Math.min(Math.max(0, items.stateAndLocalTaxes), saltCapForYear(pack, year))
-  return salt + Math.max(0, items.mortgageInterest) + Math.max(0, items.charitable)
+  const charitable = charitableAfterFloor(Math.max(0, items.charitable), contributionBase, year)
+  return salt + Math.max(0, items.mortgageInterest) + charitable
+}
+
+/**
+ * IRC §170(b)(1)(I) floor: a charitable contribution is allowed only to the
+ * extent the aggregate exceeds 0.5 percent of the contribution base, which
+ * §170(b)(1)(H) defines as adjusted gross income. Added by OBBBA for taxable
+ * years beginning after 2025, hence the year gate.
+ *
+ * Two things this deliberately does not do.
+ *
+ * It does not apply the §170(b)(1)(I)(ii) category waterfall, which consumes
+ * the floor against the (D) through (A) categories before it reaches (G) cash
+ * gifts. `itemizedDeductions.charitable` is one undifferentiated figure, so
+ * there are no categories to walk and the whole floor lands on the only line
+ * there is. Registered separately rather than hidden here.
+ *
+ * It does not carry the disallowed amount forward. §170(d)(1)(C)(i) lets
+ * floor-disallowed dollars survive only by enlarging an excess that some other
+ * carryover rule is already carrying from the same year, so for a household
+ * giving below the percentage ceiling — the ordinary retiree — the disallowance
+ * is permanent and there is nothing to carry. The ceiling itself is not wired,
+ * so no such excess can arise here.
+ *
+ * The 0.5 percent is written as an exact integer ratio. Spelling it `0.005 *
+ * base` introduces a float intermediate into a figure that feeds an equality
+ * comparison against the standard deduction.
+ */
+function charitableAfterFloor(
+  charitable: number,
+  contributionBase: number,
+  year: number,
+): number {
+  if (year < 2026 || charitable <= 0) return charitable
+  const floor = (Math.max(0, contributionBase) * 5) / 1_000
+  return Math.max(0, charitable - floor)
+}
+
+/**
+ * IRC §68 overall limitation on itemized deductions.
+ *
+ * The base does not depend on the itemized total, and that is the statute's
+ * doing rather than a simplification. §68(a)(2) reaches taxable income
+ * "(determined without regard to this section and increased by such amount of
+ * itemized deductions)". The first parenthetical strips §68's own output from
+ * its input; the second adds the itemized deductions back, so they cancel and
+ * the base collapses to AGI less the deductions that are not itemized. No fixed
+ * point is required here, and none should be introduced — the caller's tax
+ * solvers rely on this being a closed form.
+ *
+ * `qualifiedBusinessIncomeDeduction` is absent from the subtraction because
+ * §199A is not modelled anywhere in this engine. That is a genuine zero rather
+ * than an omission: there is no QBI figure to subtract.
+ *
+ * Suspended by TCJA for 2018 through 2025 and replaced — not revived — by
+ * OBBBA for 2026 onward, so the year gate is a real statutory boundary. The
+ * pre-2018 Pease rule was a different computation (3 percent of excess AGI,
+ * capped at 80 percent of deductions, with exempt categories) and is out of
+ * scope; a year before 2026 gets no reduction rather than the wrong one.
+ */
+function section68Reduction(
+  pack: ParameterPack,
+  taxStatus: FilingStatus,
+  itemizedBeforeLimitation: number,
+  agi: number,
+  seniorDeduction: number,
+  year: number,
+): number {
+  if (year < 2026 || itemizedBeforeLimitation <= 0) return 0
+  const brackets = pack.federalTax.brackets[taxStatus]
+  // §68(a)(2) names "the dollar amount at which the 37 percent rate bracket
+  // under section 1 begins", so the bracket is found by its rate rather than by
+  // being last. If a future pack ever tops out below 37 percent the statute's
+  // reference has no referent, and the top bracket is the honest stand-in —
+  // silently skipping the limitation would understate tax without saying so.
+  const thirtySeven = brackets.find((bracket) => bracket.ratePct === 37)
+    ?? brackets[brackets.length - 1]
+  if (thirtySeven === undefined) return 0
+  const base = Math.max(0, agi - seniorDeduction - thirtySeven.lowerBound)
+  // Multiply before dividing: 2/37 is not representable, and evaluating it
+  // first leaves an intermediate that only rounds back to the right answer by
+  // luck. Left unrounded, like every other figure on this path; the exact-cent
+  // ledger rounds half-up at the cent and the two agree to within half a cent.
+  return (2 * Math.min(itemizedBeforeLimitation, base)) / 37
 }
 
 /**
@@ -386,7 +483,23 @@ export function computeFederalTax(input: TaxYearInput): FederalTaxDetail {
   // The OBBBA senior deduction applies whether you take the standard deduction or
   // itemize, so it rides on top of whichever base is larger.
   const standardBase = standardDeduction(pack, taxStatus, input.peopleAged65Plus)
-  const itemized = itemizedTotal(pack, input.itemizedDeductions, year)
+  // §170(b)(1)(H) defines the contribution base as adjusted gross income, and
+  // the charitable deduction is below the line, so `agi` does not depend on it.
+  const itemizedBeforeSection68 = itemizedTotal(pack, input.itemizedDeductions, year, agi)
+  // §68(b) applies this "after the application of any other limitation on the
+  // allowance of any itemized deduction", so it runs on the assembled total and
+  // nothing may be added to that total afterwards. The election below compares
+  // the reduced figure, because a household elects between the standard
+  // deduction and what it may actually deduct, not what it could have.
+  const section68Limitation = section68Reduction(
+    pack,
+    taxStatus,
+    itemizedBeforeSection68,
+    agi,
+    senior,
+    year,
+  )
+  const itemized = itemizedBeforeSection68 - section68Limitation
   const useItemized = itemized > standardBase
   const deduction = Math.max(standardBase, itemized) + senior
 
@@ -397,6 +510,12 @@ export function computeFederalTax(input: TaxYearInput): FederalTaxDetail {
   const ordinaryTax = bracketTax(pack.federalTax.brackets[taxStatus], ordinaryTaxable)
   const capitalGainsTax = capitalGainsTaxStacked(pack, taxStatus, ordinaryTaxable, preferentialIncome)
 
+  // Deliberately the pre-§68 SALT figure. §68 reduces the aggregate of itemized
+  // deductions and names no component, so "how much SALT survived" has no
+  // answer once it applies. Form 6251 line 2a takes Schedule A line 7, which is
+  // the SALT deduction before the overall limitation, so the add-back is
+  // measured there too. Prorating §68 across components to answer a question
+  // the statute does not ask would invent a number.
   const saltPreference = useItemized
     ? Math.min(Math.max(0, input.itemizedDeductions?.stateAndLocalTaxes ?? 0), saltCapForYear(pack, year))
     : 0
@@ -431,6 +550,7 @@ export function computeFederalTax(input: TaxYearInput): FederalTaxDetail {
     deduction,
     seniorDeduction: senior,
     itemized: useItemized,
+    section68Limitation,
     taxableIncome,
     ordinaryTaxable,
     preferentialIncome,

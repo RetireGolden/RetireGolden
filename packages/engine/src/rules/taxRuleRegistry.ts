@@ -211,6 +211,38 @@ export interface TaxRuleRecord {
 }
 
 const registry = {
+  'irc-170-b-1-I-half-percent-floor': {
+    title: 'The 0.5% floor on an itemizer’s charitable contributions',
+    statement:
+      'An itemizer may deduct a charitable contribution only to the extent the aggregate of such contributions exceeds 0.5 percent of the contribution base, which 170(b)(1)(H) defines as adjusted gross income before any net operating loss carryback. Because the allowance is only of the excess, a gift at or below the floor is disallowed in full rather than merely reduced.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 170(b)(1)(I)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
+      quotedText:
+        'Any charitable contribution otherwise allowable (without regard to this subparagraph) as a deduction under this section shall be allowed only to the extent that the aggregate of such contributions exceeds 0.5 percent of the taxpayer\'s contribution base for the taxable year.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 170(b)(1)(H)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this section, the term "contribution base" means adjusted gross income (computed without regard to any net operating loss carryback to the taxable year under section 172).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/tax/federalTax.ts',
+      'packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts',
+    ],
+  },
+
   'irc-170-b-1-I-floor-ordering': {
     title: 'Order of the 0.5% floor and the percentage ceiling',
     statement:
@@ -606,7 +638,10 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
-    implementedBy: ['packages/engine/src/actions/annualSection68ItemizedDeduction.ts'],
+    implementedBy: [
+      'packages/engine/src/actions/annualSection68ItemizedDeduction.ts',
+      'packages/engine/src/tax/federalTax.ts',
+    ],
   },
 
   'irc-170-b-1-G-cash-percentage-ceiling': {
@@ -5022,46 +5057,11 @@ const registry = {
     ],
   },
 
-  'irc-170-b-1-I-projection-floor-not-applied': {
-    title: 'The 0.5 percent floor is not applied to the projected charitable deduction',
-    statement:
-      'A charitable contribution otherwise allowable is allowed only to the extent the aggregate of such contributions exceeds 0.5 percent of the taxpayer’s contribution base, which 170(b)(1)(H) defines as adjusted gross income. Not modelled: the live tax path builds its itemized total as capped SALT plus mortgage interest plus the supplied charitable figure taken at face value, subtracts no floor, and has no contribution-base concept, so the itemized total is larger than the statute allows by the lesser of the gift and 0.5 percent of AGI. The floor is the ceiling on the error, not its measure: a gift at or below the floor is disallowed in full, so the whole gift is the overstatement, and only once the gift exceeds the floor does the overstatement settle at 0.5 percent of AGI. The tax consequence is narrower still than the deduction error: the live path takes the greater of the standard deduction and the itemized total, so a household whose inflated total still falls short of the standard deduction pays exactly the same tax. It reaches a return two ways -- a household that itemizes on the correct figure pays less tax by that overstatement at its marginal rate, and a household near the boundary is pushed into itemizing by the inflation itself and then deducts a total the statute never allowed.',
-    classification: 'approximated',
-    contraryReading: null,
-    errorDirection: 'understatesTax',
-    conventionRationale:
-      'The direction was checked against the one interaction that could reverse it and does not. Floor-disallowed dollars have no carryover of their own: 170(d)(1)(C)(i) lets them survive only by enlarging an excess that some other carryover rule is already carrying forward from the same year, so for a household giving below the percentage ceiling — the ordinary retiree case — the disallowance is permanent and no later year returns it. The engine holds an exact implementation of this floor, including the ordering settled at irc-170-b-1-I-floor-ordering and the carryover gate at irc-170-d-1-C-floor-carryforward-gate, in packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts. Nothing under packages/engine/src/projection or in federalTax.ts calls it, which is why this record describes the live path and not that one.',
-    jurisdiction: 'federal',
-    authority: [{
-      kind: 'statute',
-      citation: 'IRC 170(b)(1)(I), first sentence',
-      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
-      quotedText:
-        'Any charitable contribution otherwise allowable (without regard to this subparagraph) as a deduction under this section shall be allowed only to the extent that the aggregate of such contributions exceeds 0.5 percent of the taxpayer\'s contribution base for the taxable year.',
-    }, {
-      kind: 'statute',
-      citation: 'IRC 170(b)(1)(H)',
-      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
-      quotedText:
-        'For purposes of this section, the term "contribution base" means adjusted gross income (computed without regard to any net operating loss carryback to the taxable year under section 172).',
-    }, {
-      kind: 'statute',
-      citation: 'Pub. L. 119-21, sec. 70425(c) (OBBBA)',
-      url: 'https://www.govinfo.gov/content/pkg/PLAW-119publ21/html/PLAW-119publ21.htm',
-      quotedText:
-        'Effective Date.--The amendments made by this section shall apply to taxable years beginning after December 31, 2025.',
-    }],
-    volatility: 'staticStatute',
-    effectiveFrom: 2026,
-    effectiveThrough: null,
-    verifiedOn: '2026-08-04',
-    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
-  },
 
   'irc-170-b-1-G-projection-cash-ceiling-not-applied': {
     title: 'The 60 percent ceiling on cash gifts is not applied to the projected charitable deduction',
     statement:
-      'Cash contributions to public charities are deductible only up to 60 percent of the contribution base reduced by contributions already taken into account under 170(b)(1)(A), and (G)(ii) carries the excess forward as a contribution of the same class in each of the 5 succeeding years. Not modelled: the live tax path deducts the whole supplied charitable figure in the year it is given and holds no carryforward state of any kind, so a household giving above the ceiling receives in one year a deduction the statute spreads across as many as six, and receives nothing in the five that follow.',
+      'Cash contributions to public charities are deductible only up to 60 percent of the contribution base reduced by contributions already taken into account under 170(b)(1)(A), and (G)(ii) carries the excess forward as a contribution of the same class in each of the 5 succeeding years. Not modelled: the live tax path applies the 170(b)(1)(I) floor but no percentage ceiling, and holds no carryforward state of any kind, so a household giving above the ceiling receives in one year a deduction the statute spreads across as many as six, and receives nothing in the five that follow. The ceiling is deliberately not wired ahead of the carryforward: applying it alone would disallow dollars 170(b)(1)(G)(ii) merely defers and never return them, which is a worse answer than the present one rather than a partial fix. It also treats the whole supplied figure as cash to a public charity, which the plan schema cannot contradict -- an appreciated-property gift faces a 30 percent limit under 170(b)(1)(C) and would need a category the input does not carry.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
@@ -5088,41 +5088,6 @@ const registry = {
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
   },
 
-  'irc-68-projection-overall-limitation-not-applied': {
-    title: 'The overall limitation on itemized deductions is not applied in the projection',
-    statement:
-      'Itemized deductions otherwise allowable are reduced by 2/37 of the lesser of those deductions or the excess of taxable income, determined without regard to section 68 and increased by those deductions, over the dollar amount at which the 37 percent rate bracket begins, and 68(b) takes that reduction after every other limitation on an itemized deduction. Not modelled: the live tax path deducts the greater of the standard deduction and its itemized total and never reduces either, so a household whose income clears the 37 percent bracket threshold keeps every dollar of itemized deduction section 68 would have taken away.',
-    classification: 'approximated',
-    contraryReading: null,
-    errorDirection: 'understatesTax',
-    conventionRationale:
-      'One direction only, and permanently. Section 68 can only reduce an itemized deduction, never enlarge one; it carries nothing forward, so no later year gives back what it disallows; and 68(b) places it last, after the section 170 limitations, so nothing downstream of it can reverse the sign. For 2026 the threshold is the 37 percent bracket start — $640,600 for a single filer, $768,700 on a joint return — so the gap is confined to high-income households, but for those it compounds with the two section 170 limitations this same path omits: the itemized total section 68 would have reduced is already too large before the reduction is skipped. Volatility is annuallyIndexed rather than staticStatute because 68(a)(2) points at a section 1 bracket boundary the IRS restates every autumn, even though the 2/37 rate itself is fixed. The exact bigint-rational implementation is in packages/engine/src/actions/annualSection68ItemizedDeduction.ts, registered settled at irc-68-overall-itemized-limitation, and is unreachable from the projection.',
-    jurisdiction: 'federal',
-    authority: [{
-      kind: 'statute',
-      citation: 'IRC 68(a)',
-      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section68&num=0&edition=prelim',
-      quotedText:
-        'In the case of an individual, the amount of the itemized deductions otherwise allowable for the taxable year (determined without regard to this section) shall be reduced by 2/37 of the lesser of- (1) such amount of itemized deductions, or (2) so much of the taxable income of the taxpayer for the taxable year (determined without regard to this section and increased by such amount of itemized deductions) as exceeds the dollar amount at which the 37 percent rate bracket under section 1 begins with respect to the taxpayer.',
-    }, {
-      kind: 'statute',
-      citation: 'IRC 68(b)',
-      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section68&num=0&edition=prelim',
-      quotedText:
-        'This section shall be applied after the application of any other limitation on the allowance of any itemized deduction.',
-    }, {
-      kind: 'statute',
-      citation: 'Pub. L. 119-21, sec. 70111(c) (OBBBA)',
-      url: 'https://www.govinfo.gov/content/pkg/PLAW-119publ21/html/PLAW-119publ21.htm',
-      quotedText:
-        'Effective Date.--The amendments made by this section shall apply to taxable years beginning after December 31, 2025.',
-    }],
-    volatility: 'annuallyIndexed',
-    effectiveFrom: 2026,
-    effectiveThrough: null,
-    verifiedOn: '2026-08-04',
-    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
-  },
 
   'irc-170-p-projection-nonitemizer-deduction-not-allowed': {
     title: 'The nonitemizer charitable deduction is not allowed in the projection',

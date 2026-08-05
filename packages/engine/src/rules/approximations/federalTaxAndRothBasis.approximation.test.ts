@@ -66,16 +66,31 @@ describe('federal tax and Roth basis approximations', () => {
   //
   // The household below has $200,000 of AGI and $80,000 of unreimbursed care
   // costs, so the 7.5% floor is $15,000 and $65,000 is deductible. Its other
-  // itemized items already total $60,000, comfortably past the $16,100 standard
-  // deduction, so both readings itemize and the flip is not what separates
-  // them: the statutory deduction is $125,000, the engine's is $60,000.
+  // itemized items are $30,000 SALT (under the $40,400 2026 cap), $20,000 of
+  // mortgage interest and a $10,000 gift, of which 170(b)(1)(I) allows only the
+  // excess over 0.5% of the $200,000 contribution base: $10,000 - $1,000 =
+  // $9,000. 68 reaches nothing here, because AGI of $200,000 is far below the
+  // $640,600 start of the 37% bracket 68(a)(2) measures from, so the base is
+  // zero under both readings. That leaves $59,000 of allowable items,
+  // comfortably past the $16,100 standard deduction, so both readings itemize
+  // and the flip is not what separates them: the statutory deduction is
+  // $59,000 + $65,000 = $124,000, the engine's is $59,000.
   //
   // The statutory reading is computed by the same engine call with the $65,000
-  // deductible amount routed through the charitable line — an uncapped itemized
-  // dollar — so the comparison is between two real engine outputs and not
-  // against a hand-arithmetic figure.
+  // deductible amount routed through the MORTGAGE INTEREST line, so the
+  // comparison is between two real engine outputs and not against a
+  // hand-arithmetic figure. It used to ride the charitable line, which was the
+  // uncapped itemized dollar until 170(b)(1)(I) was wired in. It no longer is:
+  // the floor would now bite the synthesised figure, and the reading would only
+  // stay clean while the household's genuine gift happened to exceed the floor
+  // on its own — an accident of these inputs rather than a property of the
+  // synthesis. Mortgage interest carries the amount through untouched (the
+  // engine takes `items.mortgageInterest` at face value, which is the very
+  // thing the 163(h)(3)(F) fixture below pins), so the gap between the two
+  // readings is the medical deduction and nothing else. Both readings pay the
+  // same $1,000 charitable floor, so it cancels out of the difference.
   describeRule('irc-213-a-medical-expense-deduction', {
-    readings: { statute: 125_000, engineOmitsMedicalEntirely: 60_000 },
+    readings: { statute: 124_000, engineOmitsMedicalEntirely: 59_000 },
     accepted: 'statute',
     produced: 'engineOmitsMedicalEntirely',
     note: 'deductible medical above the 7.5% floor for a household already itemizing',
@@ -83,6 +98,11 @@ describe('federal tax and Roth basis approximations', () => {
     const medicalExpenses = 80_000
     const grossIncome = 200_000
     const otherItemized = { stateAndLocalTaxes: 30_000, mortgageInterest: 20_000, charitable: 10_000 }
+    /** The 213(a) amount, routed through an itemized line the engine does floor. */
+    const asMortgageInterest = (
+      items: { stateAndLocalTaxes: number, mortgageInterest: number, charitable: number },
+      deductibleMedical: number,
+    ) => ({ ...items, mortgageInterest: items.mortgageInterest + deductibleMedical })
 
     it('omits deductible medical expenses from the itemized total', () => {
       const detail = computeFederalTax(singleFiler(grossIncome, otherItemized))
@@ -93,6 +113,9 @@ describe('federal tax and Roth basis approximations', () => {
       expect(deductibleMedical).toBe(65_000)
 
       expect(detail.itemized).toBe(true)
+      // 30,000 SALT + 20,000 interest + (10,000 - 0.5% x 200,000) gift = 59,000,
+      // with no 68 reduction against a 200,000 AGI.
+      expect(detail.section68Limitation).toBe(0)
       expect(detail.deduction).toBe(produced)
       expect(detail.deduction).not.toBe(accepted)
     })
@@ -109,43 +132,43 @@ describe('federal tax and Roth basis approximations', () => {
     })
 
     it('reaches the statutory deduction only when the medical amount is smuggled in as another itemized dollar', () => {
-      const statutory = computeFederalTax(singleFiler(grossIncome, {
-        ...otherItemized,
-        charitable: otherItemized.charitable + 65_000,
-      }))
+      const statutory = computeFederalTax(
+        singleFiler(grossIncome, asMortgageInterest(otherItemized, 65_000)),
+      )
 
+      // 30,000 + (20,000 + 65,000) + 9,000 = 124,000.
       expect(statutory.deduction).toBe(accepted)
-      // The whole understatement is the deductible medical amount.
+      // The whole understatement is the deductible medical amount: the 1,000
+      // charitable floor is paid on both sides and cancels.
       expect(accepted - produced).toBe(65_000)
     })
 
     it('overstates tax, by the deduction it cannot see at the marginal rate', () => {
       const engine = computeFederalTax(singleFiler(grossIncome, otherItemized))
-      const statutory = computeFederalTax(singleFiler(grossIncome, {
-        ...otherItemized,
-        charitable: otherItemized.charitable + 65_000,
-      }))
+      const statutory = computeFederalTax(
+        singleFiler(grossIncome, asMortgageInterest(otherItemized, 65_000)),
+      )
 
-      expect(engine.taxableIncome).toBe(140_000)
-      expect(statutory.taxableIncome).toBe(75_000)
+      expect(engine.taxableIncome).toBe(141_000) // 200,000 - 59,000
+      expect(statutory.taxableIncome).toBe(76_000) // 200,000 - 124,000
       // errorDirection: 'overstatesTax'.
       expect(engine.totalTax).toBeGreaterThan(statutory.totalTax)
     })
 
     it('cannot see the election flip a heavy medical year forces', () => {
-      // Other itemized items of 6,000 lose to the 16,100 standard deduction;
-      // adding the 65,000 of deductible medical takes the total to 71,000 and
-      // the household should itemize. The engine keeps the standard deduction.
+      // Other itemized items of 6,000 gross, 5,000 after the 1,000 charitable
+      // floor, lose to the 16,100 standard deduction; adding the 65,000 of
+      // deductible medical takes the total to 70,000 and the household should
+      // itemize. The engine keeps the standard deduction.
       const sparse = { stateAndLocalTaxes: 4_000, mortgageInterest: 0, charitable: 2_000 }
       const engine = computeFederalTax(singleFiler(grossIncome, sparse))
-      const statutory = computeFederalTax(singleFiler(grossIncome, {
-        ...sparse,
-        charitable: sparse.charitable + 65_000,
-      }))
+      const statutory = computeFederalTax(
+        singleFiler(grossIncome, asMortgageInterest(sparse, 65_000)),
+      )
 
       expect(engine.itemized).toBe(false)
       expect(statutory.itemized).toBe(true)
-      expect(statutory.deduction).toBe(71_000)
+      expect(statutory.deduction).toBe(70_000) // 4,000 + 65,000 + (2,000 - 1,000)
     })
   })
 
