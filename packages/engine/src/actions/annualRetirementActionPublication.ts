@@ -1580,7 +1580,6 @@ function assertRecordBinding(
   }
   const hasPhysicalBalanceReason = record.reasons.some((reason) =>
     physicalBalanceReasonCodes.has(reason.code))
-  const stagedNonmovingConversionAmountState = stagedNonmovingConversion
   const mixedResolutionConversionBalanceReasonsAreBound =
     request.kind === 'rothConversion' &&
     record.reasons
@@ -1600,13 +1599,40 @@ function assertRecordBinding(
   ) {
     throw new Error(`Executor reason resolution differs for action "${request.actionId}"`)
   }
-  if (
-    hasPhysicalBalanceReason &&
-    !stagedNonmovingConversionAmountState &&
-    record.reasons.some((reason) =>
-      !physicalBalanceReasonCodes.has(reason.code) &&
-      (reason.outcome === 'refused' || reason.outcome === 'unsupported'))
-  ) {
+  // What makes a physical-balance reason incoherent is a contradiction about
+  // ONE SOURCE, not the mere presence of another blocker on the record. The
+  // reason says this source's balance was authoritatively consulted; a reason
+  // that disqualifies the same source says it was never established as a
+  // source to consult. Those two cannot both be evidence, and the pair is
+  // rejected — `rejects rothConversion physical reason
+  // conversion-balance-unavailable after blocking reason
+  // conversion-inherited-source` and its withdrawal and QCD siblings pin
+  // exactly that shape.
+  //
+  // A blocker bound to a DIFFERENT allocation contradicts nothing here. It is
+  // the shape `permits different conversion source classifications on disjoint
+  // allocations` already settled for the classification reasons, and a balance
+  // reason is bound to its allocation the same way. Only the conversion
+  // executor reaches it, because it answers every allocation in one pass
+  // instead of stopping at the first blocker — and that is deliberate: a
+  // household short on one IRA learns it while a second stays unclassified.
+  //
+  // A blocker naming no allocation is a fact about the person, the date, or
+  // the destination. It refuses the request without claiming anything about
+  // what any source held, so it is reported beside the balance reasons rather
+  // than instead of them. The reverse does not hold: a balance reason that
+  // names no allocation answers for every allocation at once, so any
+  // disqualified source contradicts it.
+  const balanceReasonIsShadowed = record.reasons.some((balanceReason) =>
+    physicalBalanceReasonCodes.has(balanceReason.code) &&
+    record.reasons.some((blockingReason) =>
+      !physicalBalanceReasonCodes.has(blockingReason.code) &&
+      (blockingReason.outcome === 'refused' ||
+        blockingReason.outcome === 'unsupported') &&
+      blockingReason.allocationId !== undefined &&
+      (balanceReason.allocationId === undefined ||
+        blockingReason.allocationId === balanceReason.allocationId)))
+  if (balanceReasonIsShadowed) {
     throw new Error(`Executor reason phase differs for action "${request.actionId}"`)
   }
   for (const reason of record.reasons) {

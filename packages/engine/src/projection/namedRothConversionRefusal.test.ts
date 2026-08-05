@@ -99,6 +99,70 @@ function overdrawnPlan(): Plan {
   return plan
 }
 
+/**
+ * The same request across two sources, with a second blocker that is not about
+ * balances at all. `ira-a` is classified and short; `ira-b` is short too but is
+ * left out of `iraClassifications`, so it draws `conversion-ira-subtype-unknown`
+ * — an allocation-bound blocker, not an owner-wide prerequisite, so nothing
+ * routes this record to the staged-conversion bypass.
+ *
+ * The two reasons the year should carry are about two different sources. What
+ * `ira-b` must NOT also carry is a balance report: the disqualification says it
+ * was never established as a source, so a report that its balance was consulted
+ * would claim something the disqualification rules out.
+ */
+const MIXED_ALLOCATION_A = 150_000_00
+const MIXED_ALLOCATION_B = 200_000_00
+const MIXED_REQUESTED_AMOUNT = MIXED_ALLOCATION_A + MIXED_ALLOCATION_B
+
+function mixedBlockerPlan(): Plan {
+  const plan = singlePersonPlan({ planningAge: 60, dob: '1970-01-01' })
+  plan.id = 'named-conversion-mixed-blockers'
+  plan.accounts = [
+    cash('cash-a', 1_000_000),
+    traditionalIra('ira-a', SOURCE_BALANCE),
+    traditionalIra('ira-b', SOURCE_BALANCE),
+    rothIra('roth-second'),
+  ]
+  plan.retirementActionEligibilityFacts = {
+    iraClassifications: [{
+      evidenceId: 'ira-a-classification',
+      provenance: { source: 'manual' },
+      sourceAccountId: 'ira-a',
+      subtype: 'traditional',
+    }],
+    sepSimpleActivities: [],
+    deductibleIraContributions: [],
+  }
+  const parsed = parseRetirementActionRequest({
+    actionId: 'named-conversion',
+    kind: 'rothConversion',
+    personId: 'p1',
+    year: TAX_YEAR,
+    executionDate: '2026-06-15',
+    executionSequence: 1,
+    requestedAmount: MIXED_REQUESTED_AMOUNT,
+    allocations: [
+      {
+        allocationId: 'alloc-a',
+        sourceAccountId: 'ira-a',
+        requestedAmount: MIXED_ALLOCATION_A,
+      },
+      {
+        allocationId: 'alloc-b',
+        sourceAccountId: 'ira-b',
+        requestedAmount: MIXED_ALLOCATION_B,
+      },
+    ],
+    destinationRothAccountId: 'roth-second',
+    taxFunding: { kind: 'noneExpected' },
+    provenance: { source: 'manual' },
+  })
+  if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+  plan.strategies.retirementActions = [parsed.request]
+  return plan
+}
+
 function project(plan: Plan): YearResult[] {
   return simulatePlan(validatePlan(plan), {
     startYear: TAX_YEAR,
@@ -157,5 +221,73 @@ describe('named Roth conversion that outruns its source', () => {
     expect(series.years[0]!.namedRothDestinationCredits).toEqual([])
     expect(series.years[0]!.ownerSources[0]!.applications.filter((entry) =>
       entry.occurrenceKind === 'namedRothConversion')).toEqual([])
+  })
+})
+
+describe('named Roth conversion blocked on one source and short on another', () => {
+  it('publishes both blockers instead of aborting the projection', () => {
+    const year = project(mixedBlockerPlan())[0]!
+    const records = year.retirementActionPublication?.records ?? []
+
+    expect(records).toHaveLength(1)
+    expect(records[0]).toMatchObject({
+      actionId: 'named-conversion',
+      executorSource: 'rothConversionExecutor',
+      // Unsupported, not refused: the contract orders an unsupported reason
+      // first and the subtype blocker is the unsupported one.
+      outcome: 'unsupported',
+      readiness: 'nonActionable',
+      executedAmount: 0,
+      unexecutedAmount: MIXED_REQUESTED_AMOUNT,
+      executedDate: null,
+      executedSequence: null,
+    })
+    expect(records[0]?.reasons).toEqual([
+      expect.objectContaining({
+        code: 'conversion-ira-subtype-unknown',
+        outcome: 'unsupported',
+        accountId: 'ira-b',
+        allocationId: 'alloc-b',
+      }),
+      expect.objectContaining({
+        code: 'conversion-balance-trimmed',
+        outcome: 'refused',
+        accountId: 'ira-a',
+        allocationId: 'alloc-a',
+      }),
+    ])
+  })
+
+  it('withholds the balance report for the source it could not establish', () => {
+    const year = project(mixedBlockerPlan())[0]!
+    const reasons = year.retirementActionPublication?.records[0]?.reasons ?? []
+
+    // `ira-b` is short as well as unclassified, and says only that it is
+    // unclassified. `ira-a` is the one source proven convertible, so it is the
+    // only one whose balance this record answers for.
+    expect(reasons.filter((reason) => reason.allocationId === 'alloc-b')
+      .map((reason) => reason.code)).toEqual(['conversion-ira-subtype-unknown'])
+    expect(reasons.filter((reason) => reason.allocationId === 'alloc-a')
+      .map((reason) => reason.code)).toEqual(['conversion-balance-trimmed'])
+  })
+
+  it('moves no principal out of either source', () => {
+    const plan = mixedBlockerPlan()
+    const years = project(plan)
+    const year = years[0]!
+
+    expect(year.rothConversionActionExecution?.committed).toBe(false)
+    expect(year.balances['ira-a']).toBeCloseTo(SOURCE_BALANCE, 6)
+    expect(year.balances['ira-b']).toBeCloseTo(SOURCE_BALANCE, 6)
+    expect(year.balances['roth-second']).toBeCloseTo(0, 6)
+    expect(year.rothConversion).toBeCloseTo(0, 6)
+
+    const series = validateOwnedNonRothIraRuntimeSourceSeries(
+      validatePlan(plan), TAX_YEAR, years,
+    )
+    if (series.status !== 'ownedNonRothIraRuntimeSourceSeriesComplete') {
+      throw new Error(`source series blocked: ${JSON.stringify(series.issues)}`)
+    }
+    expect(series.years[0]!.namedRothDestinationCredits).toEqual([])
   })
 })

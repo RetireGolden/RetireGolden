@@ -2785,6 +2785,76 @@ describe('annual retirement-action publication', () => {
     })?.records).toHaveLength(1)
   })
 
+  // The same disjoint-allocation reading, for a physical-balance reason. What
+  // the balance reason contradicts is a disqualification of ITS OWN source --
+  // the case below this one rejects that pair for all three executors. A
+  // disqualification of a different source contradicts nothing, and the
+  // conversion executor produces exactly this record because it answers every
+  // allocation in one pass rather than stopping at the first blocker.
+  it('permits a conversion balance reason beside a blocker on a disjoint allocation', () => {
+    const action = request(
+      'rothConversion',
+      'disjoint-balance-and-classification',
+      '2030-06-15',
+      1,
+    )
+    if (action.kind !== 'rothConversion') throw new Error('expected conversion')
+    action.allocations = [
+      {
+        allocationId: asAllocationId('short-allocation'),
+        sourceAccountId: asAccountId('short-source'),
+        requestedAmount: asPositiveUsdCents(5_000),
+      },
+      {
+        allocationId: asAllocationId('unclassified-allocation'),
+        sourceAccountId: asAccountId('unclassified-source'),
+        requestedAmount: asPositiveUsdCents(5_000),
+      },
+    ]
+    const [short, unclassified] = action.allocations
+    if (short === undefined || unclassified === undefined) throw new Error('fixture drift')
+
+    expect(publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [action],
+      sources: [source('rothConversionExecutor', [recordForBlockingReasons(action, [
+        createActionReason('conversion-ira-subtype-unknown', {
+          accountId: unclassified.sourceAccountId,
+          allocationId: unclassified.allocationId,
+        }),
+        createActionReason('conversion-balance-trimmed', {
+          accountId: short.sourceAccountId,
+          allocationId: short.allocationId,
+        }),
+      ])])],
+    })?.records).toHaveLength(1)
+  })
+
+  it('rejects an unallocated conversion balance reason beside any disqualified source', () => {
+    const action = request(
+      'rothConversion',
+      'unallocated-balance-and-classification',
+      '2030-06-15',
+      1,
+    )
+    if (action.kind !== 'rothConversion') throw new Error('expected conversion')
+    const allocation = action.allocations[0]!
+
+    // A balance reason naming no allocation answers for every allocation at
+    // once, so a disqualified source anywhere does contradict it.
+    expect(() => publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [action],
+      sources: [source('rothConversionExecutor', [recordForBlockingReasons(action, [
+        createActionReason('conversion-ira-subtype-unknown', {
+          accountId: allocation.sourceAccountId,
+          allocationId: allocation.allocationId,
+        }),
+        createActionReason('conversion-balance-trimmed'),
+      ])])],
+    })).toThrow(/reason phase differs/i)
+  })
+
   it.each([
     ['ordinaryWithdrawal', 'source-balance-unavailable', 'source-owner-mismatch'],
     ['rothConversion', 'conversion-balance-unavailable', 'conversion-inherited-source'],
