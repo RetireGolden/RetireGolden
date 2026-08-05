@@ -504,7 +504,7 @@ const cacheKey = (url) => createHash('sha256').update(url).digest('hex').slice(0
  * Cached response metadata, or null when the file cannot be trusted.
  *
  * @param {string} metaPath
- * @returns {{contentType?: string, status?: number} | null}
+ * @returns {{contentType?: string, status?: number, bytes?: number} | null}
  */
 function readCacheMeta(metaPath) {
   try {
@@ -531,11 +531,20 @@ async function fetchWithCache(url, opts) {
     // if it finishes and produces a ledger. Falling through refetches.
     const meta = readCacheMeta(metaPath)
     if (meta !== null) {
-      return {
-        body: readFileSync(bodyPath),
-        contentType: meta.contentType ?? '',
-        status: meta.status ?? 0,
-        fromCache: true,
+      // The body is checked against the byte count the meta recorded, because a
+      // short body is worse than a missing one: it yields a real-looking
+      // verdict. A quote that runs past the truncation point comes back ABSENT,
+      // and an ABSENT is an accusation against the registry — so a corrupted
+      // cache would report a defect that belongs to the disk. Length mismatch
+      // falls through and refetches.
+      const cached = readFileSync(bodyPath)
+      if (typeof meta.bytes !== 'number' || cached.length === meta.bytes) {
+        return {
+          body: cached,
+          contentType: meta.contentType ?? '',
+          status: meta.status ?? 0,
+          fromCache: true,
+        }
       }
     }
   }
