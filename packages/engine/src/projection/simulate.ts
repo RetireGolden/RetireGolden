@@ -432,6 +432,33 @@ function planWithdrawals(
   const takeFrom = (state: BalanceState, want: number): number => {
     const take = Math.min(available.get(state.account.id) ?? 0, want, remaining)
     if (take <= 0) return 0
+    // A traditional draw the exact-cent ledger records as zero is discharged
+    // here rather than at the apply loop below, and the difference is the whole
+    // year's consistency. The apply loop only moves balances; this function is
+    // where `byCategory`, `byAccountId` and `remaining` are decided together,
+    // and every downstream figure -- the published traditional withdrawal
+    // total, the ordinary income it produces, the tax on that income, and the
+    // shortfall -- is read from what it returns. Skipping the movement alone
+    // would leave the year publishing a withdrawal the runtime journal has no
+    // occurrence for, which the source series refuses outright: the draw would
+    // no longer happen and the total would still claim it did.
+    //
+    // Confined to traditional accounts because they are the ones under the
+    // journal's explains-every-movement contract. Nothing else drained here
+    // publishes a runtime occurrence, and a taxable account additionally
+    // carries planned cost-basis state that this plan settles, so widening the
+    // condition would be a different change with a different blast radius.
+    if (state.account.type === 'traditional' && planDollarsMoveNoLedgerCent(take)) {
+      // Discharged, not deferred, on the same terms as a sub-cent required
+      // distribution: the quantum comes off both the account's availability and
+      // the outstanding need, and no plan entry records it. The alternative is
+      // to leave the need standing and send the household to another account
+      // for a fraction of a cent, which would change which balances fund a real
+      // need over a quantity no ledger can express.
+      available.set(state.account.id, (available.get(state.account.id) ?? 0) - take)
+      remaining -= take
+      return 0
+    }
     if (state.account.type === 'equityComp' && state.balance > 0) {
       const basisRatio = Math.min(1, state.costBasis / state.balance)
       realizedGains += take * (1 - basisRatio)
@@ -4737,7 +4764,16 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             const ownerRemaining = remainingByOwner.get(ownerId) ?? 0
             if (ownerRemaining <= 0) continue
             const take = Math.min(state.balance, ownerRemaining)
-            if (take <= 0) continue
+            // The same discharge the forced distributions and the aggregate
+            // gift apply. A source holding a residue the exact-cent ledger
+            // cannot express passes `take <= 0` and would convert it, which
+            // journals a `legacyRothConversion` occurrence for a gross that
+            // rounds to nothing -- and the runtime source series admits no such
+            // occurrence, so the year refuses and the annual exact-basis
+            // settlement rolls back for as long as the residue survives.
+            // Skipped whole: no movement, no occurrence, no destination credit
+            // to reconcile against a debit that never happened.
+            if (take <= 0 || planDollarsMoveNoLedgerCent(take)) continue
             const destination = destinationByOwner.get(ownerId)!
             const sourceBalanceBefore = state.balance
             state.balance -= take
@@ -5958,6 +5994,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // --- apply flows -------------------------------------------------------
     for (const state of balances) {
       const taken = withdrawalPlan.byAccountId.get(state.account.id) ?? 0
+      // No sub-cent discharge here. A traditional draw the exact-cent ledger
+      // records as zero never reaches this loop: `planWithdrawals` refuses to
+      // allocate one, so the year's published traditional total, its ordinary
+      // income and this movement are all derived from the same plan and cannot
+      // disagree about whether the draw happened. Discharging here instead
+      // would move the balance and leave the total claiming a withdrawal with
+      // no occurrence to explain it.
       if (taken <= 0) continue
       const sourceBalanceBefore = state.balance
       let ownedIraProducerOccurrenceKey: string | null = null

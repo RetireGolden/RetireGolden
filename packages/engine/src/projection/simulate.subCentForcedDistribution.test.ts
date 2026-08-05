@@ -48,6 +48,21 @@ const PRE_RMD_WINDOW_DOB = '1955-03-01'
  * whole cent came out.
  */
 const SUB_CENT_BALANCE = 0.007679324895434547
+/**
+ * A residue below HALF a cent, which is a different case and needs saying.
+ *
+ * `SUB_CENT_BALANCE` above rounds to one cent, so an arm that sweeps a whole
+ * balance journals a one-cent occurrence for it and the ledger accepts that --
+ * the balance chain closes on a residual the normalizer already tolerates.
+ * What no arm may journal is a gross that rounds to ZERO, and only a balance
+ * under half a cent produces one. Both residues are reachable: a drain leaves
+ * whatever the float held after the last whole cent came out.
+ *
+ * The forced-distribution case does not need the distinction, because a
+ * required amount is a small fraction of the balance it is computed from -- a
+ * sub-cent IRA's requirement is well under half a cent either way.
+ */
+const HALF_CENT_RESIDUE = 0.0034196624477172734
 
 function ira(id: string, balance: number): Extract<Account, { type: 'traditional' }> {
   const account = traditionalAccount(id, balance, 'p1', 'ira')
@@ -181,6 +196,74 @@ describe('an aggregate QCD in the pre-RMD window', () => {
       expect(year.qcd).toBe(0)
       expect(year.rmd).toBe(0)
       expect(year.balances.ira).toBe(years[0]!.balances.ira)
+      expect(
+        (year.retirementRuntimeSource?.runtimeOccurrences ?? [])
+          .map((occurrence) => occurrence.kind),
+      ).toEqual([])
+    }
+    expect(seriesStatus(plan, years)).toBe('ownedNonRothIraRuntimeSourceSeriesComplete')
+  })
+})
+
+describe('an aggregate Roth conversion against a sub-cent owned IRA', () => {
+  it('converts nothing and journals no zero-cent debit', () => {
+    // The aggregate sweep takes `min(balance, ownerRemaining)` from every
+    // convertible account, so a source holding a residue too small to express
+    // in cents was converted anyway and the debit was journalled as a movement
+    // the exact-cent ledger cannot hold. A conversion of nothing also leaves no
+    // destination credit for the replay to reconcile against a debit, which is
+    // the other half of what it would have been asked to close over.
+    const plan = subCentPlan('sub-cent-aggregate-conversion')
+    plan.accounts = [
+      ira('ira', HALF_CENT_RESIDUE),
+      {
+        type: 'roth',
+        id: 'roth',
+        name: 'roth',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 0,
+        annualContribution: 0,
+      },
+      cashAccount('cash', 200_000),
+    ]
+    plan.strategies.rothConversion = {
+      mode: 'manual',
+      conversions: [
+        { year: TAX_YEAR, amount: 10_000 },
+        { year: TAX_YEAR + 1, amount: 10_000 },
+      ],
+    }
+    const years = project(plan, TAX_YEAR + 1)
+
+    for (const year of years) {
+      expect(year.rothConversion).toBe(0)
+      expect(year.balances.ira).toBe(HALF_CENT_RESIDUE)
+      expect(year.balances.roth).toBe(0)
+      expect(
+        (year.retirementRuntimeSource?.runtimeOccurrences ?? [])
+          .map((occurrence) => occurrence.kind),
+      ).toEqual([])
+    }
+    expect(seriesStatus(plan, years)).toBe('ownedNonRothIraRuntimeSourceSeriesComplete')
+  })
+})
+
+describe('a need-based withdrawal against a sub-cent owned IRA', () => {
+  it('draws nothing and journals no zero-cent withdrawal', () => {
+    // Spending the household cannot meet reaches the IRA, and the withdrawal
+    // planner allocates whatever is there -- including a residue below a cent,
+    // which was then journalled as a `legacyNeedBasedWithdrawal` for a gross
+    // that rounds to zero. The household is short either way: a fraction of a
+    // cent was never going to fund anything.
+    const plan = subCentPlan('sub-cent-need-based')
+    plan.accounts = [ira('ira', HALF_CENT_RESIDUE), cashAccount('cash', 0)]
+    plan.expenses.baseAnnual = 30_000
+    const years = project(plan, TAX_YEAR + 1)
+
+    for (const year of years) {
+      expect(year.balances.ira).toBe(HALF_CENT_RESIDUE)
       expect(
         (year.retirementRuntimeSource?.runtimeOccurrences ?? [])
           .map((occurrence) => occurrence.kind),
