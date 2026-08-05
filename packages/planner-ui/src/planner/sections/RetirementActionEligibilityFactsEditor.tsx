@@ -94,7 +94,13 @@ function IraClassificationRow({ plan, account }: { plan: Readonly<Plan>; account
       setIssue(conflict)
       return
     }
-    if (participationStart !== '' && parseCivilIsoDate(participationStart) === null) {
+    // Only the SIMPLE arm carries a participation start date, so a stale entry
+    // behind a hidden field never blocks a traditional or SEP classification.
+    if (
+      subtype === 'simple' &&
+      participationStart !== '' &&
+      parseCivilIsoDate(participationStart) === null
+    ) {
       setIssue('Enter a real participation start date, or leave it blank.')
       return
     }
@@ -137,7 +143,10 @@ function IraClassificationRow({ plan, account }: { plan: Readonly<Plan>; account
             { value: 'sep', label: 'SEP IRA' },
             { value: 'simple', label: 'SIMPLE IRA' },
           ]}
-          onCommit={(next) => setSubtype(next)}
+          onCommit={(next) => {
+            setSubtype(next)
+            setIssue(null)
+          }}
         />
         {subtype === 'simple' ? (
           <DateField
@@ -268,7 +277,14 @@ function SepSimpleActivityRow({
           <button
             type="button"
             className="btn-ghost btn-ghost-danger"
-            onClick={() => update((next) => removeSepSimpleActivity(next, account.id, year))}
+            onClick={() => {
+              // The row falls back to not-on-record, so its draft answer and
+              // plan year end date go with the record they described.
+              setPlanYearEndDate('')
+              setAnswer('')
+              setIssue(null)
+              update((next) => removeSepSimpleActivity(next, account.id, year))
+            }}
           >
             Remove
           </button>
@@ -403,7 +419,13 @@ function DeductibleContributionRow({
           <button
             type="button"
             className="btn-ghost btn-ghost-danger"
-            onClick={() => update((next) => removeDeductibleContribution(next, person.id, year))}
+            onClick={() => {
+              // A removed year is unknown again, so the money field goes blank
+              // rather than keeping the amount the record used to state.
+              setDollars(null)
+              setIssue(null)
+              update((next) => removeDeductibleContribution(next, person.id, year))
+            }}
           >
             Remove
           </button>

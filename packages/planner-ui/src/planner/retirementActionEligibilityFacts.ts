@@ -417,8 +417,12 @@ export function centsToPlanDollars(cents: UsdCents): number | null {
   }
 }
 
-export function formatUsdCents(cents: number): string {
-  const value = BigInt(asUsdCents(cents))
+/**
+ * Takes validated cents, so a raw number that was never parsed as an exact-cent
+ * amount is a compile error rather than a runtime parse failure.
+ */
+export function formatUsdCents(cents: UsdCents): string {
+  const value = BigInt(cents)
   const dollars = (value / 100n).toLocaleString('en-US')
   const fraction = String(value % 100n).padStart(2, '0')
   return `$${dollars}.${fraction}`
