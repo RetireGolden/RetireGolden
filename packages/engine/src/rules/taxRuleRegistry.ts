@@ -4155,25 +4155,43 @@ const registry = {
   'irc-63-c-7-B-ii-conformed-state-deduction-tracks-federal': {
     title: 'A state deduction defined by reference to the federal one moves when the federal one moves',
     statement:
-      'The basic standard deduction is increased for every taxable year beginning after 2025, so its value is a function of the year rather than a constant. Nine state packs (AZ, CO, DC, IA, ID, MO, MT, ND, NM) do not carry a state figure at all -- they carry a copy of the federal one, because their law defines the state deduction by reference to it or, for CO and ND, because their brackets run on federal taxable income and this field is what converts the engine gross base into that base. The copy is the same statutory amount as the original, so it takes the original value in every projected year. Holding it at the pack year while the federal figure is projected forward puts two different values on one amount inside a single year and taxes the whole widening difference at the state rate.',
+      'The basic standard deduction is increased for every taxable year beginning after 2025, so its value is a function of the year rather than a constant. What a state that defines its deduction by reference to the federal one borrows is not that basic amount alone: 63(c)(1) makes the standard deduction the sum of the basic standard deduction and the additional standard deduction, 63(c)(3) sends the second of those to subsection (f), and 63(f)(1) entitles the taxpayer to an additional amount for himself if he has attained age 65 before the close of his taxable year and again for a spouse who has. A state pack tagged as conformed carries no state figure of its own: it carries a copy of the federal basic amount together with the federal per-person age-65 addition, and both are scaled by the same factor the federal pack is indexed by, so the copy takes the federal value in every projected year. Holding it at the pack year while the federal figure is projected forward would put two different values on one amount inside a single year and tax the whole widening difference at the state rate. Which packs may carry that tag is a question of each state’s own law, and this record does not answer it -- nothing quoted below says anything about any state.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'This record is anchored federally because the proposition is federal: nothing here decides how a state adjusts a figure of its own, it keeps a borrowed federal figure equal to the federal figure. Two boundaries follow from that and are deliberate. State BRACKETS are not touched -- those are state dollar amounts under state law, some indexed, some fixed by statute, several on legislated rate ramps, and the per-state research to move any of them does not exist yet -- and neither are the state retirement-exclusion caps, which are likewise state figures (the Colorado 24,000 dollar pension subtraction is not indexed by Colorado law). A state that decouples from the federal amount simply loses the conformity tag and stops moving; Maine and South Carolina did exactly that for 2026 and are untagged. The scaling factor is the plan assumed general inflation rather than the C-CPI-U of section 1(f)(3), and the statutory rounding of the increase to the next lowest multiple of 50 dollars is not reproduced -- the same two approximations indexFederalTaxPack already makes, and they must be the same ones, because a conformed copy indexed on any other basis would diverge from the federal figure it is a copy of.',
+      'This record is anchored federally because the proposition it settles is federal: it does not decide how a state adjusts a figure of its own, it keeps a borrowed federal figure equal to the federal figure, and it says what that federal figure comprises. The roster is deliberately no longer part of it. An earlier version named nine packs (AZ, CO, DC, IA, ID, MO, MT, ND, NM) and asserted that their law defines the state deduction by reference to the federal one, on the strength of two citations that are both federal and neither of which mentions any state -- a settled record whose disputed half rested on nothing. Research outside this record, resting on no authority carried here, reports two of the nine wrongly tagged: Arizona conforming in method rather than in amount, and the District of Columbia decoupled from the OBBBA increase. Neither is asserted here and neither can be, because confirming either needs an Arizona or a District of Columbia primary source and the conformance guard admits no publisher for either state; the pack corrections are separately decided work. The right long-term shape is a per-state record carrying that state’s own authority for its own conformity, one for each pack that claims to borrow the federal figure. That is a larger piece of work than this correction and is scoped as a follow-up, not attempted here. Three boundaries survive from the earlier version and are deliberate. State BRACKETS are not touched -- those are state dollar amounts under state law, some indexed, some fixed by statute, several on legislated rate ramps, and the per-state research to move any of them does not exist yet -- and neither are the state retirement-exclusion caps, which are likewise state figures (the Colorado 24,000 dollar pension subtraction is not indexed by Colorado law). A state that decouples from the federal amount loses the tag, keeps its own figure, and gets no age-65 addition from this path either; Maine and South Carolina did exactly that for 2026 and are untagged. And the scaling factor is the plan assumed general inflation rather than the C-CPI-U of section 1(f)(3), with the statutory rounding of the increase to the next lowest multiple of 50 dollars not reproduced -- the same two approximations indexFederalTaxPack already makes, and they must be the same ones, because a conformed copy indexed on any other basis would diverge from the federal figure it is a copy of.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 63(c)(7)(B)(ii)',
       url: 'https://www.law.cornell.edu/uscode/text/26/63',
       quotedText:
-        'In the case of a taxable year beginning after 2025, the 23,625 dollar and 15,750 dollar amounts in subparagraph (A) shall each be increased by an amount equal to - (I) such dollar amount, multiplied by (II) the cost-of-living adjustment determined under section 1(f)(3) for the calendar year in which the taxable year begins, determined by substituting 2024 for 2016 in subparagraph (A)(ii) thereof. If any increase under this clause is not a multiple of 50 dollars, such increase shall be rounded to the next lowest multiple of 50 dollars.',
+        'In the case of a taxable year beginning after 2025, the $23,625 and $15,750 amounts in subparagraph (A) shall each be increased by an amount equal to— (I) such dollar amount, multiplied by (II) the cost-of-living adjustment determined under section 1(f)(3) for the calendar year in which the taxable year begins, determined by substituting “2024” for “2016” in subparagraph (A)(ii) thereof. If any increase under this clause is not a multiple of $50, such increase shall be rounded to the next lowest multiple of $50.',
     }, {
       kind: 'statute',
       citation: 'IRC 63(c)(7)(A)',
       url: 'https://www.law.cornell.edu/uscode/text/26/63',
       quotedText:
-        'Increase in standard deduction. Paragraph (2) shall be applied - (i) by substituting 23,625 dollars for 4,400 dollars in subparagraph (B), and (ii) by substituting 15,750 dollars for 3,000 dollars in subparagraph (C).',
+        'Paragraph (2) shall be applied— (i) by substituting “$23,625” for “$4,400” in subparagraph (B), and (ii) by substituting “$15,750” for “$3,000” in subparagraph (C).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 63(c)(1)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/63',
+      quotedText:
+        'Except as otherwise provided in this subsection, the term “standard deduction” means the sum of— (A) the basic standard deduction, and (B) the additional standard deduction.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 63(c)(3)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/63',
+      quotedText:
+        'For purposes of paragraph (1), the additional standard deduction is the sum of each additional amount to which the taxpayer is entitled under subsection (f).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 63(f)(1)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/63',
+      quotedText:
+        'The taxpayer shall be entitled to an additional amount of $600— (A) for himself if he has attained age 65 before the close of his taxable year, and (B) for the spouse of the taxpayer if the spouse has attained age 65 before the close of the taxable year and an additional exemption is allowable to the taxpayer for such spouse under section 151(b).',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
@@ -4181,6 +4199,7 @@ const registry = {
     verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/params/state/index.ts',
+      'packages/engine/src/params/index.ts',
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
     ],
@@ -4981,46 +5000,107 @@ const registry = {
       'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts',
     ],
   },
+  // The distributee half of the old single conversion-identity record, which
+  // asserted the owner boundary and the destination vehicle together and was
+  // classified `approximated` for both. The owner boundary is now modelled, so
+  // holding the two in one record would leave the closed half carrying an
+  // accusation and an `errorDirection` that no longer describe anything -- the
+  // exact rot the approximated-coverage guard exists to catch. Split, each half
+  // gets the classification that is true of it, and the fixture that pins it:
+  // a discriminating one here, a `produced` one on the vehicle record below.
   'irc-408-d-3-A-i-conversion-benefits-the-distributee': {
-    title: 'A conversion must land in the Roth IRA of the same individual',
+    title: 'A conversion must come out of and go into the same individual’s own accounts',
     statement:
-      'A Roth conversion is a rollover within one individual’s own accounts. Section 408A(e)(1)(B)(i) admits a rollover from an individual retirement plan as a qualified rollover contribution only if it meets the requirements of section 408(d)(3), and 408(d)(3)(A) requires both that the amount be paid out to the individual for whose benefit the account is maintained and that it be paid into an account for the benefit of such individual; 408A(d)(3)(B) imposes the same identity requirement directly on conversions. Dollars distributed from one spouse’s traditional IRA therefore cannot be converted into the other spouse’s Roth IRA, on a joint return or any other. Not modelled: the projection chooses the destination once as the first Roth account in Plan order with no owner predicate, then draws from every convertible traditional account with no owner filter, so a married household whose only Roth belongs to person A and whose only convertible balance belongs to person B converts B’s dollars into A’s Roth, recognises the income, and raises no warning.',
-    classification: 'approximated',
+      'A Roth conversion is a rollover inside one individual’s own accounts. Section 408A(e)(1) defines a qualified rollover contribution, and clause (B)(i) admits one from an individual retirement plan only if it meets the requirements of section 408(d)(3). Section 408(d)(3)(A) admits two destinations and attaches the same person to both: an individual retirement account or annuity for the benefit of such individual under clause (i), or an eligible retirement plan for the benefit of such individual under clause (ii). Section 408A(d)(3)(B) imposes that identity requirement on the conversion itself, applying the conversion paragraph to a distribution from a plan maintained for the benefit of an individual which is contributed to a Roth IRA maintained for the benefit of such individual. Dollars distributed from one spouse’s traditional IRA therefore cannot be converted into the other spouse’s Roth, on a joint return or any other. The projection observes that boundary: after the RMD block it snapshots each owner’s gross convertible balance, splits the sized household amount between owners pro rata by exact-cent largest remainder, drains only that owner’s own convertible accounts, credits only a Roth account that owner owns, and trims the slice of an owner who holds no Roth of their own -- naming that person in a warning that says the share was skipped and that opening a Roth IRA for them would let it convert. What the destination search does not check is which KIND of Roth account the dollars land in; that residual is registered separately as irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira and is not asserted here.',
+    classification: 'settled',
     contraryReading: null,
-    errorDirection: 'bothDirections',
+    errorDirection: null,
     conventionRationale:
-      'The direction varies with the facts, and it is worth being exact about the conversion year, because the intuition that a joint return makes that year neutral holds only for part of the fact space. Where both spouses have convertible balances, the joint return recognises the same income either way and the year is indeed neutral; the divergence is only in whose Roth ends up holding the layer. Where the balances are split, as in the discriminating case above, the authority permits no conversion at all, so the whole inclusion is spurious and tax in that year is OVERSTATED. Afterwards it runs the other way. Dollars that should have remained in B’s traditional IRA, to be taxed on a later distribution or as an RMD, instead sit in A’s Roth growing untaxed; B keeps nondeductible basis the conversion should have consumed; and the credited amount is in substance a Roth contribution by A, subject to the 408A(c)(2) ceiling and the 408A(c)(3) phase-out, so an excess draws the section 4973 six percent excise this engine never charges. Those understate tax. Against them, the misplaced layer starts a 408A(d)(3)(F) five-year recapture clock on A that A was never entitled to, which overstates. On any later separate return, survivor year, or divorce the two people’s balances are simply the wrong size and the sign follows whichever person is being reported. What keeps this open rather than fixed is that the correct behaviour requires deciding which owner’s dollars convert and where each lands, and that allocation policy has not yet been taken. The evidence shape already reflects the asymmetry: in projection/types.ts the sources are a per-owner ownerReplays array while SimulatorOwnedNonRothIraAnnualReplay.aggregateRothDestinationCredit is at most one credit per year and carries ownerPersonId: null, so crediting per owner makes it plural across internal/ownedNonRothIraRuntimeSourceSeries.ts, internal/ownedNonRothIraContiguousReplay.ts, internal/ownedNonRothIraAnnualAttemptSettlement.ts, and projection/annualPassTransaction.ts. That is the reason the approximation stands, not a defence of it: nothing from this path is filing-grade for a married household whose Roth and traditional balances are not held by the same person.',
+      'The authority fixes whose dollars may move and whose account may receive them. It selects nothing about how a household-level conversion request is divided between two people who each hold convertible balances, and nothing about which of one person’s several Roth accounts receives their share, so both are engine conventions. The split is pro rata on each owner’s GROSS convertible balance, not on the taxable fraction of it, because what an owner may convert is limited by what they hold and not by how much of it is pre-tax; the weight is snapshotted after the RMD block, which Treas. Reg. 1.408A-4 A-6(b) requires the forced distribution to precede, and before the drain loop reduces any balance, because reading it mid-loop would weight each owner by whatever the earlier owners happened to leave behind. A genuine split is allocated in exact cents by largest remainder so the parts sum to the whole with no floating-point residue deciding whose dollars move; a household with one convertible owner is deliberately NOT routed through cents, because quantizing a target the sizer produced in raw Plan dollars would change an answer the owner boundary has no quarrel with. The receiving account is that owner’s first Roth account in Plan order, which is arbitrary between two accounts of the same kind and is not arbitrary between kinds -- see the vehicle record. An owner whose slice is trimmed for want of a destination is excluded from the shortfall total the year reports, because an owner who cannot convert is not a shortfall against anyone’s balance and saying so would answer the wrong question with the wrong fix.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
-      citation: 'IRC 408A(e)(1)(B)(i)',
+      citation: 'IRC 408A(e)(1), through clause (B)(ii)',
       url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408A.htm',
       quotedText:
-        '(B) from an eligible retirement plan, but only if— (i) in the case of an individual retirement plan, such rollover contribution meets the requirements of section 408(d)(3), and',
+        'The term "qualified rollover contribution" means a rollover contribution— (A) to a Roth IRA from another such account, (B) from an eligible retirement plan, but only if— (i) in the case of an individual retirement plan, such rollover contribution meets the requirements of section 408(d)(3), and (ii) in the case of any eligible retirement plan (as defined in section 402(c)(8)(B) other than clauses (i) and (ii) thereof), such rollover contribution meets the requirements of section 402(c), 403(b)(8), or 457(e)(16), as applicable, and',
     }, {
       kind: 'statute',
-      citation: 'IRC 408(d)(3)(A), flush text and clause (i)',
+      citation: 'IRC 408(d)(3)(A), complete',
       url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm',
       quotedText:
-        'Paragraph (1) does not apply to any amount paid or distributed out of an individual retirement account or individual retirement annuity to the individual for whose benefit the account or annuity is maintained if— (i) the entire amount received (including money and any other property) is paid into an individual retirement account or individual retirement annuity (other than an endowment contract) for the benefit of such individual not later than the 60th day after the day on which he receives the payment or distribution; or',
+        'Paragraph (1) does not apply to any amount paid or distributed out of an individual retirement account or individual retirement annuity to the individual for whose benefit the account or annuity is maintained if— (i) the entire amount received (including money and any other property) is paid into an individual retirement account or individual retirement annuity (other than an endowment contract) for the benefit of such individual not later than the 60th day after the day on which he receives the payment or distribution; or (ii) the entire amount received (including money and any other property) is paid into an eligible retirement plan for the benefit of such individual not later than the 60th day after the date on which the payment or distribution is received, except that the maximum amount which may be paid into such plan may not exceed the portion of the amount received which is includible in gross income (determined without regard to this paragraph). For purposes of clause (ii), the term "eligible retirement plan" means an eligible retirement plan described in clause (iii), (iv), (v), or (vi) of section 402(c)(8)(B).',
     }, {
       kind: 'statute',
-      citation: 'IRC 408A(d)(3)(B), first sentence',
+      citation: 'IRC 408A(d)(3)(B), complete',
       url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408A.htm',
       quotedText:
-        'This paragraph shall apply to a distribution from an eligible retirement plan (as defined by section 402(c)(8)(B)) maintained for the benefit of an individual which is contributed to a Roth IRA maintained for the benefit of such individual in a qualified rollover contribution.',
-    }, {
-      kind: 'statute',
-      citation: 'IRC 408A(d)(3)(A)(i)',
-      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408A.htm',
-      quotedText:
-        'Notwithstanding sections 402(c), 403(b)(8), 408(d)(3), and 457(e)(16), in the case of any distribution to which this paragraph applies— (i) there shall be included in gross income any amount which would be includible were it not part of a qualified rollover contribution,',
+        'This paragraph shall apply to a distribution from an eligible retirement plan (as defined by section 402(c)(8)(B)) maintained for the benefit of an individual which is contributed to a Roth IRA maintained for the benefit of such individual in a qualified rollover contribution. This paragraph shall not apply to a distribution which is a qualified rollover contribution from a Roth IRA or a qualified rollover contribution from a designated Roth account which is a rollover contribution described in section 402A(c)(3)(A).',
     }, {
       kind: 'regulation',
       citation: 'Treas. Reg. 1.408A-4, A-1(a), second requirement',
       url: 'https://www.ecfr.gov/current/title-26/section-1.408A-4',
       quotedText:
         'Second, the amount contributed to the Roth IRA must satisfy the definition of a qualified rollover contribution in section 408A(e) (i.e., it must satisfy the requirements for a rollover contribution as defined in section 408(d)(3), except that the one-rollover-per-year limitation in section 408(d)(3)(B) does not apply).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+  },
+  'irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira': {
+    title: 'A conversion out of an IRA must land in a Roth IRA, not a designated Roth account',
+    statement:
+      'The paragraph that makes a conversion taxable is 408A(d)(3), and (B) applies it only to a distribution which is contributed to a Roth IRA maintained for the benefit of such individual; (C) then treats the conversion of an individual retirement plan other than a Roth IRA to a Roth IRA as a distribution to which the paragraph applies, and (A)(i) is what includes the amount in gross income. A Roth IRA is an individual retirement plan designated as a Roth IRA at the time the plan is established. A designated Roth account is a different thing: it is a separate account the employer’s applicable retirement plan establishes for that employee’s designated Roth contributions and the earnings on them. Treas. Reg. 1.408A-4 A-1(b) names the three methods by which an amount can be converted, and each of the three ends in a Roth IRA. The only route by which a designated Roth account takes a taxable rollover is 402A(c)(4), and (B) confines that route to a distribution from the same plan which maintains the account, so a distribution out of an IRA cannot reach one. Not modelled: the projection’s destination search takes every account of type roth, keeps the first one each person owns in Plan order, and tests nothing about the kind of account it is -- so an individual whose only Roth is a designated Roth account inside an employer plan has their traditional IRA converted into it, the household recognises the income, and no warning is raised.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'The direction is still both, but for a plainer reason than the cross-owner defect this record was split out of, and the limbs that made that one intricate are gone with it: there is no longer a spurious Roth contribution credited to the wrong person, so no 408A(c)(2) ceiling, no 408A(c)(3) phase-out, no section 4973 excise this engine never charges, and no 408A(d)(3)(F) recapture clock started on someone who never converted. What is left runs in two stages over one person. In the conversion year, where that person’s only Roth is a designated Roth account, the authority permits no conversion at all, so the whole inclusion is spurious and tax is OVERSTATED. Afterwards it reverses: dollars that should have stayed in the traditional IRA, to be taxed on a later distribution or as an RMD, instead sit in a Roth account this engine neither taxes on withdrawal nor subjects to an RMD, which UNDERSTATES tax in every later year. One sub-case is neutral and is worth naming so the record is not read as wider than it is: where the person also owns a Roth IRA but the designated Roth account happens to come first in Plan order, the same dollars would have converted lawfully into the Roth IRA, the year’s income is identical, and only the account holding the layer is wrong. What keeps this open rather than fixed is that refusing the destination is not the whole answer. The engine would have to decide whether to fall back to a later Roth IRA the person owns, or to trim the slice and warn as the owner boundary does, and the second changes the amount converted for a household that has a lawful destination available -- a policy that has not been taken. Until it is, nothing from this path is filing-grade for a person whose Roth balances are held inside an employer plan.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408A(d)(3)(A), complete',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408A.htm',
+      quotedText:
+        'Notwithstanding sections 402(c), 403(b)(8), 408(d)(3), and 457(e)(16), in the case of any distribution to which this paragraph applies— (i) there shall be included in gross income any amount which would be includible were it not part of a qualified rollover contribution, (ii) section 72(t) shall not apply, and (iii) unless the taxpayer elects not to have this clause apply, any amount required to be included in gross income for any taxable year beginning in 2010 by reason of this paragraph shall be so included ratably over the 2-taxable-year period beginning with the first taxable year beginning in 2011. Any election under clause (iii) for any distributions during a taxable year may not be changed after the due date for such taxable year.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408A(d)(3)(B), complete',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408A.htm',
+      quotedText:
+        'This paragraph shall apply to a distribution from an eligible retirement plan (as defined by section 402(c)(8)(B)) maintained for the benefit of an individual which is contributed to a Roth IRA maintained for the benefit of such individual in a qualified rollover contribution. This paragraph shall not apply to a distribution which is a qualified rollover contribution from a Roth IRA or a qualified rollover contribution from a designated Roth account which is a rollover contribution described in section 402A(c)(3)(A).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408A(d)(3)(C)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408A.htm',
+      quotedText:
+        'The conversion of an individual retirement plan (other than a Roth IRA) to a Roth IRA shall be treated for purposes of this paragraph as a distribution to which this paragraph applies.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408A(b)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408A.htm',
+      quotedText:
+        'For purposes of this title, the term "Roth IRA" means an individual retirement plan (as defined in section 7701(a)(37)) which is designated (in such manner as the Secretary may prescribe) at the time of establishment of the plan as a Roth IRA. Such designation shall be made in such manner as the Secretary may prescribe.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 402A(b)(2)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim',
+      quotedText:
+        'A program shall not be treated as a qualified Roth contribution program unless the applicable retirement plan- (A) establishes separate accounts ("designated Roth accounts") for the designated Roth contributions of each employee and any earnings properly allocable to the contributions, and (B) maintains separate recordkeeping with respect to each account.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 402A(c)(4)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim',
+      quotedText:
+        'In the case of an applicable retirement plan which includes a qualified Roth contribution program, this paragraph shall apply to a distribution from such plan other than from a designated Roth account which is contributed in a qualified rollover contribution (within the meaning of section 408A(e)) to the designated Roth account maintained under such plan for the benefit of the individual to whom the distribution is made.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408A-4, A-1(b), complete',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.408A-4',
+      quotedText:
+        'An amount can be converted by any of three methods— (1) An amount distributed from a traditional IRA is contributed (rolled over) to a Roth IRA within the 60-day period described in section 408(d)(3)(A)(i); (2) An amount in a traditional IRA is transferred in a trustee-to-trustee transfer from the trustee of the traditional IRA to the trustee of the Roth IRA; or (3) An amount in a traditional IRA is transferred to a Roth IRA maintained by the same trustee. For purposes of sections 408 and 408A, redesignating a traditional IRA as a Roth IRA is treated as a transfer of the entire account balance from a traditional IRA to a Roth IRA.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
