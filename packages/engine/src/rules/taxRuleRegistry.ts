@@ -5300,10 +5300,18 @@ const registry = {
     ],
   },
 
+  // Texas takes two records rather than one because its two prohibitions have
+  // two different start years. Section 24-a has barred a tax on individual net
+  // income since the voters adopted it in November 2019; section 24-b did not
+  // bar a tax on capital gains until November 2025. A single record spanning
+  // both would have to carry one `effectiveFrom`, and either value makes it lie
+  // about half its range: 2020 asserts a capital-gains prohibition that did not
+  // exist until 2026, and 2026 disclaims a net-income prohibition that has been
+  // in force for six years. Split, each record is true of every year it claims.
   'tx-const-8-24-a-individual-income-tax-prohibited': {
-    title: 'Texas may tax neither an individual’s net income nor their capital gains',
+    title: 'Texas may not tax an individual’s net income',
     statement:
-      'Section 24-a, adopted in 2019 in place of the repealed section 24, forbids the Legislature to impose a tax on the net incomes of individuals. Section 24-b, adopted in November 2025, closes the question the first one left open by separately forbidding a tax on an individual\'s realized OR unrealized capital gains. Between them no part of a Texas retiree\'s income is reachable, which is what the pack\'s `hasIncomeTax: false` and `capitalGainsAsOrdinary: false` encode.',
+      'Section 24-a, adopted November 5, 2019 in place of the repealed section 24, forbids the Legislature to impose a tax on the net incomes of individuals. A Texas retiree\'s pension, IRA and employer-plan distributions and Social Security are therefore beyond the state\'s reach, which is what the pack\'s `hasIncomeTax: false` encodes. What section 24-a does NOT reach on its own is a tax on capital gains; that prohibition arrived separately and later, and is registered at tx-const-8-24-b-capital-gains-tax-prohibited.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -5315,15 +5323,41 @@ const registry = {
       url: 'https://statutes.capitol.texas.gov/Docs/CN/htm/CN.8.htm',
       quotedText:
         'INDIVIDUAL INCOME TAX PROHIBITED. The legislature may not impose a tax on the net incomes of individuals, including an individual\'s share of partnership and unincorporated association income.',
-    }, {
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2020,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  'tx-const-8-24-b-capital-gains-tax-prohibited': {
+    title: 'Texas may not tax an individual’s capital gains from 2026',
+    statement:
+      'Section 24-b, adopted November 4, 2025, forbids the Legislature to impose a tax on the realized OR unrealized capital gains of an individual, family, estate or trust, subject only to carve-outs for ad valorem, sales and use taxes. This is a genuinely new prohibition rather than a restatement: through tax year 2025, section 24-a barred a tax on "net incomes" and left a realized-gains tax an open constitutional question. The pack has modelled Texas as taxing gains at zero throughout, and that was correct on the facts for every one of those years — Texas enacted no such tax — but it rested on the absence of legislation, and from 2026 it rests on the constitution. `capitalGainsAsOrdinary: false` alongside `hasIncomeTax: false` is what carries it.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:TX',
+    authority: [{
       kind: 'statute',
       citation: 'Tex. Const. art. VIII, sec. 24-b(a)',
       url: 'https://statutes.capitol.texas.gov/Docs/CN/htm/CN.8.htm',
       quotedText:
         'Subject to Subsection (b) of this section, the legislature may not impose a tax on the realized or unrealized capital gains of an individual, family, estate, or trust, including a tax on the sale or transfer of a capital asset that is payable by the individual, family, estate, or trust selling or transferring the asset.',
+    }, {
+      kind: 'statute',
+      citation: 'Tex. Const. art. VIII, sec. 24-b(b)',
+      url: 'https://statutes.capitol.texas.gov/Docs/CN/htm/CN.8.htm',
+      quotedText:
+        'This section may not be construed as modifying the applicability or prohibiting the imposition or change in the rate of: (1) an ad valorem tax on property; (2) a sales tax on the sale of goods or services; or (3) a use tax on the storage, use, or other consumption in this state of goods or services.',
     }],
     volatility: 'staticStatute',
-    effectiveFrom: 2020,
+    effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: [
@@ -5361,7 +5395,13 @@ const registry = {
         '“Taxpayer” means any corporation subject to the tax imposed by this code, and includes all corporations for which a consolidated return is filed under s. 220.131.',
     }],
     volatility: 'staticStatute',
-    effectiveFrom: 1971,
+    // 2026 under the convention above, not 1971. The constitutional cap does
+    // carry a 1971 adoption note, but two of the three authorities here are
+    // quoted from the 2025 compilation of the Florida Statutes, and chapter 220
+    // has plainly been amended since 1971 — the definition of "taxpayer" in
+    // particular. Dating the record from the constitution alone would extend
+    // the two statutory quotations back over fifty years of text nobody read.
+    effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: [

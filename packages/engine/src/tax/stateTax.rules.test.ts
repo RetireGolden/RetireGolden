@@ -134,15 +134,49 @@ describeRule('nv-const-10-1-9-no-personal-income-tax', {
   })
 })
 
+// Texas is two records, one per constitutional section, because the sections
+// have different start years. Two fixtures, each on the income its own section
+// reaches, and neither leaning on the other.
+
 describeRule('tx-const-8-24-a-individual-income-tax-prohibited', {
   readings: {
-    // Section 24-b, adopted November 2025, reaches realized capital gains too.
-    netIncomeAndCapitalGainsBothBarred: 0,
-    // Section 24-a alone bars a tax on "net incomes"; a realized-gains tax was
-    // the live question it left open, and the answer decides $100,000 of base.
-    onlyNetIncomeBarredLeavingGainsReachable: 100_000,
+    netIncomeBeyondTheLegislaturesReach: 0,
+    netIncomeReachableAsInAnyOtherState: 120_000,
   },
-  accepted: 'netIncomeAndCapitalGainsBothBarred',
+  accepted: 'netIncomeBeyondTheLegislaturesReach',
+}, ({ accepted, readings }) => {
+  // Ordinary retirement income only: this is what section 24-a bars on its own,
+  // with no capital gain in the scenario to borrow section 24-b's authority.
+  const scenario = input({
+    state: 'TX',
+    ordinaryIncome: 120_000,
+    privateRetirementIncome: 120_000,
+    ssBenefits: 30_000,
+    agesAlive: [70],
+  })
+
+  it('leaves a Texas retiree’s pension and IRA income out of any state base', () => {
+    expect(computeStateTaxableIncome(pack('TX'), scenario)).toBe(accepted)
+    expect(computeStateTax(pack('TX'), scenario)).toBe(0)
+  })
+
+  it('would carry all of it if the legislature could reach net income', () => {
+    const reachable = { ...pack('TX'), hasIncomeTax: true }
+    expect(computeStateTaxableIncome(reachable, scenario))
+      .toBe(readings.netIncomeReachableAsInAnyOtherState)
+  })
+})
+
+describeRule('tx-const-8-24-b-capital-gains-tax-prohibited', {
+  readings: {
+    // Section 24-b, adopted November 2025 and in force from tax year 2026.
+    realizedGainBarredBySection24b: 0,
+    // The state of the law through tax year 2025: section 24-a bars a tax on
+    // "net incomes", and whether that reached a realized-gains tax was open.
+    // The answer decides $100,000 of base.
+    gainOutsideTheNetIncomeBarOfSection24a: 100_000,
+  },
+  accepted: 'realizedGainBarredBySection24b',
 }, ({ accepted, readings }) => {
   const scenario = input({ state: 'TX', capitalGains: 100_000, agesAlive: [70] })
 
@@ -150,10 +184,10 @@ describeRule('tx-const-8-24-a-individual-income-tax-prohibited', {
     expect(computeStateTaxableIncome(pack('TX'), scenario)).toBe(accepted)
   })
 
-  it('would put the gain in the base if only section 24-a were in force', () => {
+  it('would put the gain in the base under the question section 24-a left open', () => {
     const gainsReachable = { ...pack('TX'), hasIncomeTax: true, capitalGainsAsOrdinary: true }
     expect(computeStateTaxableIncome(gainsReachable, scenario))
-      .toBe(readings.onlyNetIncomeBarredLeavingGainsReachable)
+      .toBe(readings.gainOutsideTheNetIncomeBarOfSection24a)
   })
 })
 
