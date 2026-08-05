@@ -3611,9 +3611,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           ownedIraRmdTotal - rmdNontaxable,
         ))
         qcd += namedQcdExecuted
-      } else if (qcdActionExecution.issues.some((issue) =>
-        issue.kind === 'postPassBlocked' &&
-        issue.detail.includes('lacks an exact sourced QCD limit'))) {
+      } else if (isStandIn && qcdActionExecution.issues.some((issue) =>
+        issue.kind === 'postPassBlocked')) {
+        // Keyed off the structural condition rather than the refusal's message
+        // text: in a stand-in year the post-pass refuses before any other
+        // question is reached, so `isStandIn` plus a post-pass block IS the
+        // missing-limit case, and a wording change in the executor cannot
+        // silently drop the warning.
         // The QCD block's first user-visible warning. The aggregate arm may
         // extrapolate its limit because it never claims an action executed;
         // the named arm claims exactly that, and the contract forbids general
