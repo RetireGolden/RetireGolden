@@ -22,12 +22,14 @@ Four classifications:
 
 The split between `approximated` and `outOfScope` is the load-bearing one: "computes a knowably-wrong number" and
 "refuses to answer" are different risks to whoever consumes the result, and one field used to carry both. As of
-**2026-08-04** the registry holds 151 records — 110 settled, 28 approximated, 9 outOfScope, 4 unsettled; the
+**2026-08-05** the registry holds 179 records — 130 settled, 36 approximated, 9 outOfScope, 4 unsettled; the
 registry itself is where those counts are current. Every record also carries a `jurisdiction`, which fixes the
 publisher tier its citations may be drawn from: a federal rule may cite only federal publishers, and a state rule
 may cite its own state's publishers plus the federal law its state code incorporates by reference — a state source
-may never carry a federal rule. Only **North Dakota**'s tier is seeded and no record yet carries a state
-jurisdiction; the guard is deliberately proved before the records that will depend on it are written.
+may never carry a federal rule. Twenty-one records now carry a state jurisdiction, across twelve states
+(FL, IA, IL, ME, MO, ND, NV, NY, PA, SC, TX, WV); a state whose publisher tier has not been researched admits
+nothing at all, so the tier fails closed and the first record for a new state cannot be written until its
+publishers have been checked.
 
 ---
 
@@ -232,7 +234,18 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
 - Capital gains default to federal conformity unless a state pack says otherwise. CA, MN, and NJ document
   ordinary state taxation of capital gains. PA uses current-year-only capital-loss conformity: federal
   prior-year carryforward losses do not offset PA-taxable current-year gains in the planning model. The raw
-  current-year capital field remains signed, but PA floors that current-year-only input at zero.
+  current-year capital field remains signed, but PA floors that current-year-only input at zero. ND excludes
+  40% of net long-term gain by statute and carries `capitalGainsTaxablePct: 60`
+  (`ndcc-57-38-30-3-2-d-long-term-gain-exclusion`); the parallel 40% exclusion for qualified dividends has no
+  field and is registered as a gap (`ndcc-57-38-30-3-2-d-2-qualified-dividend-exclusion`).
+- ND is the one state whose bracket thresholds are neither fixed by statute nor on a legislated ramp: N.D.C.C.
+  §57-38-30.3(1)(g) makes the tax commissioner publish a cost-of-living-adjusted schedule that applies *in lieu
+  of* the printed one every year, so the department's form — not the Century Code — carries the operative
+  figures (`ndcc-57-38-30-3-1-g-commissioner-indexed-rate-schedule`). Re-read it every autumn.
+- ND is also the case where the public-pension bucket is coarser than the state's law. It subtracts military
+  retirement (§57-38-30.3(2)(r)) and 20-year peace-officer retirement ((2)(t)) and no other public pension, but
+  `retirementPublic` is one flag, so `{ kind: 'full' }` also exempts CSRS, FERS and state PERS pensions ND taxes
+  — the one state gap that **understates** tax (`ndcc-57-38-30-3-2-closed-subtraction-list`).
 - A current-year signed capital loss joins the opening carryforward pool before the annual ordinary-income
   deduction. Legacy taxable withdrawals, individually owned taxable ordinary-withdrawal actions, rebalances,
   and taxable annuity/TIPS funding share the same uncapped aggregate-basis economics; actions calculate it in
