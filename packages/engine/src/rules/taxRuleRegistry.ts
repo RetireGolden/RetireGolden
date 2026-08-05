@@ -1307,19 +1307,43 @@ const registry = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The 25 percent rate in the base text of section 55(d) is pre-2026 law. Pub. L. 119-21 substitutes 50 percent for taxable years beginning after 2025, which is why the pack carries a rate that disagrees with the unamended statute. Recording that substitution is the point of this rule: a reader checking the base text alone will conclude the pack is wrong.',
+      'One authority per claim in the statement, because each claim rests on a different provision. 55(d)(2) carries the reduction formula and the not-below-zero floor; its 25 percent is the unmodified figure the substitution below replaces, so the two have to be read together. The codified 55(d)(4)(A)(ii) carries the rest: subclause (I) substitutes the 1,000,000 dollar threshold and subclause (IV) substitutes 50 percent for 25 percent. 55(d)(4)(B)(i) carries the indexing, and independently names the 1,000,000 dollar amount as the subparagraph (A)(ii)(I) amount. Paragraph (2)(A) is the joint-return figure and (B) is 50 percent of it, which is where the 500,000 dollar amount for an unmarried taxpayer comes from. The enrolled bill is kept beside it as the amending authority, because (IV) exists only because section 70107(c) added it and a reader tracing the 50 percent figure should be able to see the instruction that created it. Corrected 2026-08-04: an earlier version of this record said neither uscode.house.gov nor law.cornell.edu carried the amended text and cited the enrolled bill alone for that reason. That was true when the quote sweep ran and is no longer true -- uscode has since published the OBBBA text. A rationale that explains why a citation looks unusual has to be re-checked when the reason expires, or it becomes the next stale claim. Corrected again on the same day: this paragraph opened "Two authorities" after two more were added, so it failed its own instruction inside one commit. The count is now stated nowhere in this paragraph, because a number in prose beside a list is a second place to keep in step, and this one had already gone stale once. Extended on 2026-08-04: the statement keys the figures to filing status, and effectiveFrom keys the whole record to 2026, and neither was visible in what was quoted. Both were one clause away in spans already cited -- the chapeau continues into subparagraphs (A) and (B), which tie the amounts to paragraph (1)(A) and (1)(B), and section 70107 continues into subsection (d), which supplies the applicability date. The date deliberately stays in effectiveFrom rather than being added to the statement: a structured field already carries it, and restating it in prose would create exactly the second place to keep in step that this paragraph gave up its own count to avoid. The chapeau was widened in place. The enrolled bill could not be, because subsections (c) and (d) are not contiguous in the enrolled text: govinfo prints a codification annotation between them, and that annotation is the publisher speaking rather than Congress, so it cannot sit inside a quotedText. That left an elision or a split, and a split is better here -- each subsection is then quoted whole and verbatim, which is what a reader checking the citation expects to find, and neither quote depends on the checker honouring an ellipsis to read as accurate.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
-      citation: 'IRC 55(d)(4), as amended by Pub. L. 119-21',
-      url: 'https://www.law.cornell.edu/uscode/text/26/55',
+      citation: 'IRC 55(d)(2), phase-out chapeau and subparagraphs (A)-(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim',
       quotedText:
-        'In the case of any taxable year beginning after December 31, 2025, subparagraph (A) shall be applied by substituting 50 percent for 25 percent, and the threshold amount shall be 500,000 dollars (1,000,000 dollars in the case of a joint return), adjusted for inflation.',
+        'The exemption amount of any taxpayer shall be reduced (but not below zero) by an amount equal to 25 percent of the amount by which the alternative minimum taxable income of the taxpayer exceeds- (A) $150,000 in the case of a taxpayer described in paragraph (1)(A), (B) $112,500 in the case of a taxpayer described in paragraph (1)(B), and',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 55(d)(4)(B)(i), inflation adjustment',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim',
+      quotedText:
+        '(B) Inflation adjustment (i) In general In the case of any taxable year beginning in a calendar year after 2018 (2026, in the case of the $1,000,000 amount in subparagraph (A)(ii)(I)), the amounts described in clause (ii) shall each be increased by an amount equal to- (I) such dollar amount, multiplied by (II) the cost-of-living adjustment determined under section 1(f)(3) for the calendar year in which the taxable year begins,',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 55(d)(4)(A)(ii), as amended by Pub. L. 119-21',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim',
+      quotedText:
+        '(ii) paragraph (2) shall be applied- (I) by substituting "$1,000,000" for "$150,000" in subparagraph (A), (II) by substituting "50 percent of the dollar amount applicable under subparagraph (A)" for "$112,500" in subparagraph (B), (III) in the case of a taxpayer described in paragraph (1)(D), without regard to the substitution under subclause (I), and (IV) by substituting "50 percent" for "25 percent", and',
+    }, {
+      kind: 'statute',
+      citation: 'Pub. L. 119-21, sec. 70107(c) (OBBBA)',
+      url: 'https://www.govinfo.gov/content/pkg/PLAW-119publ21/html/PLAW-119publ21.htm',
+      quotedText:
+        '(c) Modification of Phaseout Amount.--Section 55(d)(4)(A)(ii) is amended by striking ``and\'\' at the end of subclause (II), and by adding at the end the following new subclause: ``(IV) by substituting `50 percent\' for `25 percent\', and\'\'.',
+    }, {
+      kind: 'statute',
+      citation: 'Pub. L. 119-21, sec. 70107(d) (OBBBA), effective date',
+      url: 'https://www.govinfo.gov/content/pkg/PLAW-119publ21/html/PLAW-119publ21.htm',
+      quotedText:
+        'Effective Date.--The amendments made by this section shall apply to taxable years beginning after December 31, 2025.',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/params/data/year2026.ts',
