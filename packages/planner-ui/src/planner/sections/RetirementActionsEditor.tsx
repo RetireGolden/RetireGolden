@@ -7,6 +7,11 @@ import type { Plan } from '@retiregolden/engine/model/plan'
 import { usePlan } from '../planContextCore'
 import { currentStartYear, taxCalculatorFor } from '../useProjection'
 import {
+  classifiableIraAccounts,
+  contributionDonors,
+} from '../retirementActionEligibilityFacts'
+import { RetirementActionEligibilityFactsEditor } from './RetirementActionEligibilityFactsEditor'
+import {
   CheckboxField,
   DateField,
   MoneyField,
@@ -427,33 +432,53 @@ function QcdManualReviewRow({
   )
 }
 
-/** Public Strategy-screen control for resolving migrated aggregate actions. */
+/**
+ * Public Strategy-screen control for the facts an action needs on record, and
+ * for resolving migrated aggregate actions.
+ *
+ * The card mounts whenever either half has something to show. A plan with no
+ * migrated rows still needs somewhere to record an IRA's type, which is what a
+ * conversion review refuses without.
+ */
 export function RetirementActionsEditor() {
   const { plan } = usePlan()
   const actions = migratedRetirementActionsNeedingReview(plan)
-  if (actions.length === 0) return null
+  const hasFacts = classifiableIraAccounts(plan).length > 0 ||
+    contributionDonors(plan, currentStartYear()).length > 0
+  if (actions.length === 0 && !hasFacts) return null
 
   return (
     <div className="card">
       <h2>Retirement actions</h2>
       <p className="card-hint">
-        Migrated aggregate actions stay non-actionable until their execution source is reviewed.
+        What your IRAs need on record before RetireGolden can model an action against them, and
+        any actions carried in from an older plan format.
       </p>
-      {actions.map((action) => action.kind === 'legacyAggregateQcd' ? (
-        <QcdManualReviewRow
-          key={action.actionId}
-          plan={plan}
-          targetActionId={action.actionId}
-          year={action.year}
-          requestedAmount={action.requestedAmount}
-        />
-      ) : (
-        <ManualReviewRow
-          key={action.actionId}
-          plan={plan}
-          target={action}
-        />
-      ))}
+      <RetirementActionEligibilityFactsEditor />
+      {actions.length > 0 ? (
+        <>
+          <h3>Actions carried in from an older plan</h3>
+          <p className="card-hint">
+            Migrated aggregate actions stay non-actionable until their execution source is
+            reviewed.
+          </p>
+          {actions.map((action) => action.kind === 'legacyAggregateQcd' ? (
+            <QcdManualReviewRow
+              key={action.actionId}
+              plan={plan}
+              targetActionId={action.actionId}
+              year={action.year}
+              requestedAmount={action.requestedAmount}
+            />
+          ) : (
+            <ManualReviewRow
+              key={action.actionId}
+              plan={plan}
+              target={action}
+            />
+          ))}
+        </>
+      ) : null}
     </div>
   )
 }
