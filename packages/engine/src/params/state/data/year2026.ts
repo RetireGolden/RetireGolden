@@ -97,7 +97,22 @@ const rawStateYear2026 = {
       retirement: { kind: 'capped', capPerPerson: 6000, minAge: 65 },
     },
     AK: {
-      code: 'AK', name: 'Alaska', hasIncomeTax: false, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
+      // `capitalGainsAsOrdinary: false` here, as for every no-income-tax state
+      // except Washington. The field is inert once `hasIncomeTax` is false —
+      // `computeStateTaxableIncome` returns zero before reading it — but it is
+      // not invisible: `capitalGainsTaxablePct` defaults from it, and the
+      // relocation drill-down shows that percentage to a user. `true` would
+      // have printed "100% of your capital gain is in Alaska's base" beside a
+      // state that has no base, which is worse than meaningless.
+      //
+      // Alaska, Florida and Wyoming carried `true` and Nevada, New Hampshire,
+      // South Dakota, Tennessee and Texas carried `false`, with nothing marking
+      // the difference as deliberate. It was not. Washington keeps `true`
+      // deliberately and is left alone: it is the one state here that really
+      // does tax long-term gains, and its 7% excise is out of scope rather than
+      // absent — see its own note. Changing it on the strength of a tidying
+      // pass, without research, is what this comment exists to prevent.
+      code: 'AK', name: 'Alaska', hasIncomeTax: false, taxesSocialSecurity: false, capitalGainsAsOrdinary: false,
       standardDeduction: { single: 0, marriedFilingJointly: 0 },
       brackets: { single: [], marriedFilingJointly: [] }, retirement: { kind: 'none' },
     },
@@ -198,7 +213,9 @@ const rawStateYear2026 = {
       retirement: { kind: 'none' },
     },
     FL: {
-      code: 'FL', name: 'Florida', hasIncomeTax: false, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
+      // `false` per the AK note above. Fla. Const. art. VII § 5(a) reaches "the
+      // income of natural persons" generally, which a gains tax would be.
+      code: 'FL', name: 'Florida', hasIncomeTax: false, taxesSocialSecurity: false, capitalGainsAsOrdinary: false,
       standardDeduction: { single: 0, marriedFilingJointly: 0 },
       brackets: { single: [], marriedFilingJointly: [] }, retirement: { kind: 'none' },
     },
@@ -670,7 +687,9 @@ const rawStateYear2026 = {
       retirement: { kind: 'capped', capPerPerson: 24000, minAge: 67 },
     },
     WY: {
-      code: 'WY', name: 'Wyoming', hasIncomeTax: false, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
+      // `false` per the AK note above. Wyoming's whole income tax chapter is
+      // one preemption section; there is nothing for a gain to be ordinary to.
+      code: 'WY', name: 'Wyoming', hasIncomeTax: false, taxesSocialSecurity: false, capitalGainsAsOrdinary: false,
       standardDeduction: { single: 0, marriedFilingJointly: 0 },
       brackets: { single: [], marriedFilingJointly: [] }, retirement: { kind: 'none' },
     },
