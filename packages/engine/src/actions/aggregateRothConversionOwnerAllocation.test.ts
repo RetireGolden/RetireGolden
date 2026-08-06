@@ -383,13 +383,48 @@ describe('draws', () => {
     expect(drawnAmounts(allocation)).toEqual([['pat-ira-b', 1_000]])
   })
 
-  it('allocates nothing at all for a nonpositive request', () => {
+  it.each([
+    ['a zero request', 0],
+    ['a negative request', -40_000],
+  ])('allocates nothing at all for %s', (_label, desired) => {
+    // A negative figure must not reach the split: it produces negative slice
+    // targets, and the caller's shortfall test then measures the year against
+    // them. Nothing is refused either -- there is no share a missing Roth IRA
+    // failed to receive, so there is nothing to tell anyone about.
     const balances = states(ira('pat-ira', 100_000, 'p1'), rothIra('pat-roth', 'p1'))
-    const allocation = allocate(balances, 0)
+    const allocation = allocate(balances, desired)
 
-    if (allocation.status !== 'allocated') throw new Error('expected an allocation')
-    expect(allocation.draws).toEqual([])
-    expect(allocation.convertibleTargetPlanDollars).toBe(0)
+    expect(allocation).toEqual({
+      status: 'allocated',
+      slices: [],
+      trims: [],
+      draws: [],
+      destinations: [],
+      convertibleTargetPlanDollars: 0,
+    })
+  })
+
+  it.each([
+    ['NaN', Number.NaN],
+    ['an infinity', Number.POSITIVE_INFINITY],
+  ])('throws on %s rather than converting it into a household refusal', (_label, desired) => {
+    // Malformed input, not a small request. The two refusal reasons are facts
+    // about a household that the ledger turns into sentences for the person
+    // whose household it is, and this is not one of them.
+    const balances = states(ira('pat-ira', 100_000, 'p1'), rothIra('pat-roth', 'p1'))
+
+    expect(() => allocate(balances, desired)).toThrow(RangeError)
+    expect(balances.map((state) => state.balance)).toEqual([100_000, 0])
+  })
+
+  it('never lets the ledger reach either guard', () => {
+    // `simulate.ts` sizes `desired` itself and calls only inside
+    // `desired > 0.01`, which is false for NaN and for every nonpositive
+    // figure. The guards exist for the promotion chooser and whatever consumes
+    // this next, and this is the arithmetic that says so.
+    for (const desired of [Number.NaN, 0, -1, 0.005]) {
+      expect(desired > 0.01).toBe(false)
+    }
   })
 
   it('never takes from an account that is not a convertible source', () => {

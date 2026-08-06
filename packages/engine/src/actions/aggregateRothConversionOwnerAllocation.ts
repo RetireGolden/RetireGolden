@@ -186,9 +186,34 @@ export interface AggregateRothConversionOwnerAllocationInput<
  * Allocate one year's household conversion amount across the owners who may
  * lawfully convert it.
  *
- * The caller owns the domain question of whether to ask at all: a nonpositive
- * or sub-cent `desiredPlanDollars` is not rejected here, it simply allocates
- * nothing.
+ * The caller owns the domain question of whether to ask at all, and the two
+ * ways of not asking are answered differently because they are different
+ * things.
+ *
+ * A `desiredPlanDollars` of zero or less is a request for nothing, and gets
+ * nothing: no slice, no draw, no trim, and a zero target. It is answered before
+ * the household destination question is asked, because there is no share for a
+ * missing Roth IRA to have failed to receive — refusing a household that asked
+ * for nothing would put a warning in front of a user about a conversion nobody
+ * proposed. Passing a negative figure through instead would be worse than
+ * useless: it produces negative slice targets, and the caller's own shortfall
+ * test then measures the year against them.
+ *
+ * A non-finite `desiredPlanDollars` is malformed input rather than a small
+ * request, and throws. It cannot be honoured, and it cannot be reported through
+ * `AggregateRothConversionRefusalReason` either: those two reasons are facts
+ * about a household that the ledger turns into sentences for the person whose
+ * household it is, and "the number was NaN" is not one. Throwing is also the
+ * arithmetic layer's own idiom — `planDollarsToLedgerCents` and
+ * `ledgerCentTotalToPlanDollars` both raise `RangeError` on a figure they
+ * cannot represent — and it fails at the entry rather than several steps into
+ * the split, where the same input reaches those functions anyway with no
+ * mention of where it came from.
+ *
+ * The ledger cannot reach either guard: it sizes `desired` itself and calls
+ * only inside `desired > 0.01`, which is false for `NaN` and for every
+ * nonpositive figure. The guards are for the promotion chooser and for whatever
+ * consumes this next.
  */
 export function allocateAggregateRothConversionByOwner<
   TBalance extends AggregateRothConversionBalance,
@@ -196,6 +221,21 @@ export function allocateAggregateRothConversionByOwner<
   input: AggregateRothConversionOwnerAllocationInput<TBalance>,
 ): AggregateRothConversionOwnerAllocation<TBalance> {
   const { balances, desiredPlanDollars, primaryPersonId } = input
+  if (!Number.isFinite(desiredPlanDollars)) {
+    throw new RangeError(
+      'A household Roth conversion amount must be a finite Plan-dollar figure',
+    )
+  }
+  if (desiredPlanDollars <= 0) {
+    return {
+      status: 'allocated',
+      slices: [],
+      trims: [],
+      draws: [],
+      destinations: [],
+      convertibleTargetPlanDollars: 0,
+    }
+  }
   const ownerOf = (account: Account): string =>
     account.ownerPersonId ?? primaryPersonId
 

@@ -137,7 +137,8 @@ export interface AggregateConversionPromotionWinner {
  *
  * Accounts that can neither be converted nor receive a conversion may be
  * omitted; every account that can must be present, because an absent balance
- * would weight its owner by a zero nobody stated.
+ * would weight its owner by a zero nobody stated. At most one entry per year:
+ * a second one for the same year is refused rather than resolved.
  */
 export interface AggregateConversionPromotionYearBalances {
   readonly year: number
@@ -163,6 +164,8 @@ export type AggregateConversionPromotionIssueKind =
   | 'invalidWinnerSchedule'
   /** No balance snapshot for a scheduled year. */
   | 'missingYearBalances'
+  /** Two balance snapshots for one year, so which one is authoritative is unstated. */
+  | 'duplicateYearBalances'
   /** A convertible or Roth account with no stated balance in a year. */
   | 'missingAccountBalance'
   /** Every scheduled year allocated nothing, so there is no candidate to mint. */
@@ -374,9 +377,23 @@ export function chooseAggregateConversionPromotionIntents(
     )])
   }
 
-  const balancesByYear = new Map(
-    yearBalances.map((entry) => [entry.year, entry.balances]),
-  )
+  // Built by hand rather than by `new Map(entries)`, which resolves a repeated
+  // key by keeping the last one silently. Two snapshots for one year is a
+  // caller that does not know which balances the ledger read, and allocating
+  // against whichever happened to be written second would answer with a
+  // schedule nobody could trace back to a projection. Named year and all,
+  // because the caller has to find the duplicate to remove it.
+  const balancesByYear = new Map<number, Readonly<Record<string, number>>>()
+  for (const [index, entry] of yearBalances.entries()) {
+    if (balancesByYear.has(entry.year)) {
+      return unallocatable(years, [issue(
+        'duplicateYearBalances',
+        `yearBalances.${index}.year`,
+        `Year ${entry.year} carries more than one balance snapshot, and which one the ledger read is unstated.`,
+      )])
+    }
+    balancesByYear.set(entry.year, entry.balances)
+  }
   const primaryPersonId = plan.household.people[0]?.id
   if (primaryPersonId === undefined) {
     return unallocatable(years, [issue(

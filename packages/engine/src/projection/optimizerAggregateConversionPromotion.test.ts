@@ -403,6 +403,7 @@ describe('what it refuses to promote', () => {
   it.each([
     ['a zero amount', [{ year: TAX_YEAR, amount: 0 }]],
     ['a negative amount', [{ year: TAX_YEAR, amount: -1 }]],
+    ['a NaN amount', [{ year: TAX_YEAR, amount: Number.NaN }]],
     ['a sub-cent amount', [{ year: TAX_YEAR, amount: 100.001 }]],
     ['years out of order', [
       { year: TAX_YEAR + 1, amount: 10_000 },
@@ -413,10 +414,15 @@ describe('what it refuses to promote', () => {
       { year: TAX_YEAR, amount: 10_000 },
     ]],
   ])('refuses %s, which could never produce comparable evidence', (_label, conversions) => {
-    const choice = chooseFor(plan(), 100_000, {
+    const household = plan()
+    const call = () => chooseFor(household, 100_000, {
       winner: { source: 'candidate', candidateId: 'bracket-22', conversions },
     })
 
+    // Refused, not thrown: the schedule is read before any of it reaches the
+    // allocation policy, which raises on a figure it cannot represent.
+    expect(call).not.toThrow()
+    const choice = call()
     if (choice.status !== 'unallocatable') throw new Error('expected a refusal')
     expect(choice.issues.map((entry) => entry.kind)).toEqual(['invalidWinnerSchedule'])
   })
@@ -438,6 +444,50 @@ describe('what it refuses to promote', () => {
 
     if (choice.status !== 'unallocatable') throw new Error('expected a refusal')
     expect(choice.issues.map((entry) => entry.kind)).toEqual(['missingYearBalances'])
+  })
+
+  it('refuses two snapshots for one year rather than keeping whichever came last', () => {
+    // `new Map(entries)` resolves a repeated key by keeping the last silently.
+    // Allocating against whichever balances happened to be written second would
+    // produce a schedule nobody could trace back to a projection, so the whole
+    // input is refused and the year is named.
+    const household = plan()
+    const snapshot = openingBalances(household, TAX_YEAR)
+    const choice = chooseFor(household, 100_000, {
+      yearBalances: [
+        snapshot,
+        { year: TAX_YEAR, balances: { ...snapshot.balances, 'alex-401k': 1_000 } },
+      ],
+    })
+
+    if (choice.status !== 'unallocatable') throw new Error('expected a refusal')
+    expect(choice.issues).toEqual([{
+      kind: 'duplicateYearBalances',
+      field: 'yearBalances.1.year',
+      detail: `Year ${TAX_YEAR} carries more than one balance snapshot, and which one the ledger read is unstated.`,
+    }])
+    // Refused whole: no year was allocated against either snapshot.
+    expect(choice.years).toEqual([])
+  })
+
+  it('allocates normally when the same snapshots carry one year each', () => {
+    // The discriminating half: two entries are fine, two for one year are not.
+    const household = plan()
+    const choice = chosen(chooseAggregateConversionPromotionIntents({
+      plan: validatePlan(household),
+      winner: {
+        source: 'candidate',
+        candidateId: 'bracket-22',
+        conversions: [{ year: TAX_YEAR, amount: 100_000 }],
+      },
+      yearBalances: [
+        openingBalances(household, TAX_YEAR),
+        openingBalances(household, TAX_YEAR + 1),
+      ],
+    }))
+
+    expect(choice.intents).toHaveLength(1)
+    expect(choice.intents[0]!.requestedAmount).toBe(7_256_637)
   })
 
   it('refuses a snapshot that omits an account the policy would weight', () => {
