@@ -3488,10 +3488,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // runtime source series validates in mutation order, which is a much larger
     // change than the guard is worth.
     //
-    // This suppresses nothing today: the QCD executor publishes a named
-    // request's prerequisite and nothing else, so a named QCD moves no dollars
-    // yet. The guard exists so that the slice which makes one move cannot
-    // silently double-count on the day it lands.
+    // This suppressed nothing when it was written — the QCD executor published
+    // a named request's prerequisite and nothing else — and it is load-bearing
+    // now: PR #213 made a committed named QCD debit its source below, so
+    // without this gate the scalar arm would give a second time from the same
+    // IRAs in the same year.
     const hasNamedQcdRequest = passRetirementActions.some(
       (request) => request.year === year && request.kind === 'qcd',
     )
@@ -6158,33 +6159,98 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           remainingConvertibleGross += Math.max(0, state.balance)
         }
       }
-      // Committed action movement for the LP's balance recursion. Mirrors the
-      // apply loop above exactly — same `committed` gate, same changed-snapshot
-      // filter — so the solver's buckets move by the dollars this ledger
-      // actually moved, not by the request. A refused or partially executed
-      // request therefore reports what executed and nothing more. Named Roth
-      // conversions contribute none: `executeRothConversions` publishes
-      // evidence only (`committed: false` by type) and moves no balance, so
-      // there is no second source to fold in here.
+      // Committed action movement for the LP's balance recursion. Every
+      // exact-cent executor that moved an account this year reports here,
+      // each behind the same `committed` gate its own apply loop above ran
+      // on — so the solver's buckets move by the dollars this ledger actually
+      // moved, not by the dollars the requests asked for. A refused or
+      // partially executed request therefore reports what executed and
+      // nothing more.
       //
-      // The delta is taken in CENTS and converted once. `ledgerCentsToPlanDollars`
-      // guarantees each endpoint round-trips, not that their difference does:
-      // subtracting two separately-rounded dollar numbers routinely lands a ULP
-      // off an exact cent (100000.02 − 50000.02 is 50000.00000000001), and that
-      // residue would ride into the LP's coefficients. One conversion of the
-      // exact-cent difference keeps the amount exactly the cents that moved.
+      // THREE executors move balances, and this reads all three:
+      //   - ordinary withdrawals, whose result carries opening/closing
+      //     snapshots, so the movement is their difference;
+      //   - named Roth conversions, a debit per executed allocation and one
+      //     credit to the destination the action named (PR #182);
+      //   - named QCDs, a debit only — the gift leaves the household (#213).
+      // The last two are recent. The netting this feeds (PR #177) was built
+      // when `executeRothConversions` and `executeAnnualQcds` published
+      // evidence and moved nothing, and the sentence recording that outlived
+      // the fact: from #182 the LP carried a traditional bucket the ledger
+      // had already debited, growing it for every remaining year.
+      //
+      // Cash is `committedActionProceeds` and remains the ordinary
+      // withdrawal's alone. Neither of the other two delivers spendable cash:
+      // a conversion reallocates between buckets, and a gift leaves.
+      //
+      // Still absent, and deliberately so: a committed conversion's ORDINARY
+      // INCOME. `ordinaryIncomeBase` excludes every conversion because the LP
+      // re-decides conversions as its own variable, and a forced exogenous
+      // conversion-income term does not exist in `OptimizerYear`. That
+      // understates the solve's tax in a named-conversion year by the tax on
+      // the converted amount. It is strictly smaller than the balance error
+      // fixed here — one year's tax rather than a bucket that compounds — and
+      // it needs a model term, not a probe field.
+      //
+      // The deltas are accumulated and converted in CENTS, once per account.
+      // `ledgerCentsToPlanDollars` guarantees each endpoint round-trips, not
+      // that their difference does: subtracting two separately-rounded dollar
+      // numbers routinely lands a ULP off an exact cent (100000.02 − 50000.02
+      // is 50000.00000000001), and that residue would ride into the LP's
+      // coefficients. One conversion of the exact-cent total keeps the amount
+      // exactly the cents that moved, which is also why an account named by
+      // two executors is summed here rather than reported twice.
+      const committedActionCentsByAccountId = new Map<string, bigint>()
+      const addCommittedActionCents = (accountId: string, cents: bigint): void => {
+        committedActionCentsByAccountId.set(
+          accountId,
+          (committedActionCentsByAccountId.get(accountId) ?? 0n) + cents,
+        )
+      }
+      if (retirementActionExecution?.committed) {
+        for (const snapshot of retirementActionExecution.balances) {
+          addCommittedActionCents(
+            String(snapshot.accountId),
+            BigInt(snapshot.closingBalance) - BigInt(snapshot.openingBalance),
+          )
+        }
+      }
+      if (rothConversionActionExecution?.committed) {
+        for (const evidence of rothConversionActionExecution.evidence) {
+          if (evidence.outcome !== 'executed') continue
+          // The destination credit is the sum of this action's executed
+          // allocations, which is what the credit pass above adds — not the
+          // requested amount, and not a figure read from a second field that
+          // could disagree with the debits.
+          let creditedCents = 0n
+          for (const allocation of evidence.allocations) {
+            const movedCents = BigInt(allocation.executedAmount)
+            creditedCents += movedCents
+            addCommittedActionCents(String(allocation.sourceAccountId), -movedCents)
+          }
+          addCommittedActionCents(
+            String(evidence.destinationRothAccountId),
+            creditedCents,
+          )
+        }
+      }
+      if (qcdActionExecution?.committed) {
+        for (const evidence of qcdActionExecution.evidence) {
+          if (evidence.executedAmount <= 0) continue
+          addCommittedActionCents(
+            String(evidence.sourceAccountId),
+            -BigInt(evidence.executedAmount),
+          )
+        }
+      }
       const optimizerCommittedActionAccountMovement =
-        retirementActionExecution?.committed
-          ? retirementActionExecution.balances
-            .filter((snapshot) => snapshot.closingBalance !== snapshot.openingBalance)
-            .map((snapshot) => ({
-              accountId: String(snapshot.accountId),
-              amount: signedLedgerCentTotalToPlanDollars(
-                BigInt(snapshot.closingBalance) - BigInt(snapshot.openingBalance),
-              ),
-            }))
-            .sort((left, right) => compareUtf16CodeUnits(left.accountId, right.accountId))
-          : []
+        [...committedActionCentsByAccountId]
+          .filter(([, cents]) => cents !== 0n)
+          .map(([accountId, cents]) => ({
+            accountId,
+            amount: signedLedgerCentTotalToPlanDollars(cents),
+          }))
+          .sort((left, right) => compareUtf16CodeUnits(left.accountId, right.accountId))
       optimizerProbe = {
         year,
         committedActionAccountMovement: optimizerCommittedActionAccountMovement,

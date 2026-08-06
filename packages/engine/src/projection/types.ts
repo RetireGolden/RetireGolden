@@ -187,11 +187,15 @@ export interface PersonYearState {
 /**
  * One account's committed retirement-action balance movement in a probe year.
  *
- * The exact-cent action executor debits and credits NAMED accounts, while the
+ * The exact-cent action executors debit and credit NAMED accounts, while the
  * optimizer collapses the portfolio into four bucket scalars. Reporting the
  * movement per account — rather than pre-bucketed — keeps the bucket taxonomy
  * in the one place that already owns it (`buildOptimizerInput`), so the two
  * cannot drift into disagreeing about which bucket an account belongs to.
+ *
+ * One entry per account, even where two executors named the same one: an
+ * ordinary withdrawal and a conversion can both draw the same IRA in a year,
+ * and their exact cents are summed before the single dollar conversion.
  */
 export interface OptimizerCommittedActionAccountMovement {
   accountId: string
@@ -205,15 +209,21 @@ export interface OptimizerCommittedActionAccountMovement {
 export interface OptimizerYearProbe {
   year: number
   /**
-   * Balance movement the exact-cent retirement-action executor COMMITTED this
+   * Balance movement the exact-cent retirement-action executors COMMITTED this
    * year, per account, sorted by account id; empty in a year with no committed
    * action movement (which is every year of an action-free plan).
    *
+   * All three moving executors report here: ordinary withdrawals (a debit,
+   * paired with `committedActionProceeds` below), named Roth conversions (a
+   * debit per executed allocation and a credit to the named destination, no
+   * proceeds), and named QCDs (a debit only — the gift leaves the household).
+   *
    * Without this the LP's balance recursion carries a portfolio the exact
-   * ledger never holds: the executor debits the named source inside `simulate`
+   * ledger never holds: an executor debits the named source inside `simulate`
    * while the solver evolves opening buckets that never saw the debit. Worse
-   * than fully blind — `capitalGainsBase` below already picks up the action's
-   * realized gain, so the solve prices the action's tax and keeps its dollars.
+   * than fully blind — the action's tax consequence is already priced, by
+   * `capitalGainsBase` for a taxable withdrawal and by the `ordinaryIncomeBase`
+   * offset for a gift, so the solve pays for the action and keeps its dollars.
    */
   committedActionAccountMovement: readonly OptimizerCommittedActionAccountMovement[]
   /**

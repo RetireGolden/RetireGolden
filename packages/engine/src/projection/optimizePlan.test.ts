@@ -12,6 +12,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   ACTION_REASON_REGISTRY,
+  asUsdCents,
   parseActionReason,
   parseRetirementActionRequest,
 } from '../actions/index.js'
@@ -1048,6 +1049,73 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
     return parsed.request
   }
 
+  /** An identity-complete named conversion the executor will actually commit. */
+  function committedConversion(
+    actionId: string,
+    sourceAccountId: string,
+    destinationRothAccountId: string,
+    year: number,
+    dollars: number,
+  ) {
+    const cents = dollars * 100
+    const parsed = parseRetirementActionRequest({
+      actionId,
+      kind: 'rothConversion',
+      year,
+      executionDate: `${year}-03-04`,
+      executionSequence: 1,
+      requestedAmount: cents,
+      provenance: { source: 'manual' },
+      personId: 'p1',
+      allocations: [{
+        allocationId: `${actionId}-allocation`,
+        sourceAccountId,
+        requestedAmount: cents,
+      }],
+      destinationRothAccountId,
+      taxFunding: { kind: 'noneExpected' },
+    })
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    return parsed.request
+  }
+
+  /** An identity-complete named QCD the executor will actually commit. */
+  function committedQcd(
+    actionId: string,
+    sourceAccountId: string,
+    year: number,
+    dollars: number,
+  ) {
+    const cents = dollars * 100
+    const parsed = parseRetirementActionRequest({
+      actionId,
+      kind: 'qcd',
+      year,
+      executionDate: `${year}-08-01`,
+      executionSequence: 1,
+      requestedAmount: cents,
+      provenance: { source: 'manual' },
+      donorPersonId: 'p1',
+      allocation: {
+        allocationId: `${actionId}-allocation`,
+        sourceAccountId,
+        requestedAmount: cents,
+      },
+      charity: {
+        designationId: 'charity-1',
+        name: 'Public charity',
+        designationKind: 'eligiblePublicCharity',
+        directFromCustodianAttested: true,
+        eligibleOrganizationAttested: true,
+        notDonorAdvisedFundOrSupportingOrganizationAttested: true,
+        notSplitInterestEntityAttested: true,
+        entireDistributionOtherwiseDeductibleAttested: true,
+      },
+    })
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    return parsed.request
+  }
+
   function probesFor(plan: Plan): OptimizerYearProbe[] {
     const probes: OptimizerYearProbe[] = []
     simulatePlan(plan, { ...opts, captureOptimizerInputs: (captured) => probes.push(captured) })
@@ -1334,6 +1402,132 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
         freeProbe.acaConversionMagiHeadroom!,
       6,
     )
+  })
+
+  it('moves the traditional dollars a committed named conversion took, and credits the Roth', () => {
+    // The discriminator, stated before the plan exists. A named conversion has
+    // committed and moved balances since PR #182, but the probe that feeds the
+    // LP was written before that and reported only the ordinary-withdrawal
+    // executor. On the old code every expectation below reads zero: an empty
+    // movement array and an undefined bucket delta, while the ledger's own
+    // balances show the dollars gone. That is not a rounding gap — the LP
+    // carried the whole converted amount in `trad` for every remaining year and
+    // sized further conversions against a balance the household no longer had.
+    const draft = tradHeavyPlan()
+    const trad = draft.accounts.find((account) => account.type === 'traditional')!
+    const roth = draft.accounts.find((account) => account.type === 'roth')!
+    draft.retirementActionEligibilityFacts = {
+      iraClassifications: [{
+        evidenceId: 'acted-conversion-classification',
+        provenance: { source: 'manual' },
+        sourceAccountId: trad.id,
+        subtype: 'traditional',
+      }],
+      sepSimpleActivities: [],
+      deductibleIraContributions: [],
+    }
+    draft.strategies.retirementActions = [
+      committedConversion('acted-conversion', trad.id, roth.id, 2026, 60_000),
+    ]
+    const plan = validate(draft)
+    const probes = probesFor(plan)
+    const probe = probes[0]!
+
+    // The ledger's own answer first, so the probe is checked against a
+    // conversion that demonstrably happened rather than against itself.
+    const ledger = simulatePlan(plan, opts).years[0]!
+    expect(ledger.rothConversionActionExecution?.committed).toBe(true)
+    expect(ledger.rothConversion).toBeCloseTo(60_000, 6)
+
+    // Both legs, because a debit reported without its credit would make the
+    // solver poorer than the household by the converted amount.
+    expect(
+      Object.fromEntries(
+        probe.committedActionAccountMovement.map((entry) => [entry.accountId, entry.amount]),
+      ),
+    ).toEqual({ [trad.id]: -60_000, [roth.id]: 60_000 })
+    expect(probe.committedActionAccountMovement.map((entry) => entry.accountId))
+      .toEqual([...probe.committedActionAccountMovement.map((entry) => entry.accountId)].sort())
+    // A conversion delivers no spendable cash — it reallocates — so the
+    // proceeds term stays the ordinary withdrawal's alone.
+    expect(probe.committedActionProceeds).toBe(0)
+
+    const buckets = optimizerOpeningBuckets(plan)
+    expect(committedActionMovementForYear(buckets.bucketByAccountId, probe)).toEqual({
+      trad: -60_000,
+      inheritedTrad: 0,
+      other: 60_000,
+      taxable: 0,
+      proceeds: 0,
+    })
+    // And it reaches the LP the bridge actually builds.
+    expect(buildOptimizerInput(plan, opts).years[0]!.committedActionMovement)
+      .toEqual(committedActionMovementForYear(buckets.bucketByAccountId, probe))
+    // One year only. The conversion is a 2026 request; later years committed
+    // nothing and must stay byte-identical to an action-free plan's.
+    for (const later of probes.slice(1)) {
+      expect(later.committedActionAccountMovement).toEqual([])
+    }
+  })
+
+  it('moves the traditional dollars a committed named QCD gave away, with no credit anywhere', () => {
+    // The second executor that started moving balances after this probe was
+    // written (PR #213). A gift LEAVES the household, so unlike a conversion it
+    // has no matching credit and unlike a withdrawal it delivers no proceeds —
+    // the household is genuinely poorer, and the LP has to see that.
+    //
+    // This one was the worse of the two to omit: the gift's income offset
+    // already rides into `ordinaryIncomeBase` through `namedQcdIncomeOffset`,
+    // so the solve was pricing the gift's tax break while keeping its dollars.
+    const draft = tradHeavyPlan()
+    // Born 1950-03-01: age 76 in 2026, 70½ since 2020, and an RMD is due.
+    draft.household.people[0] = { ...draft.household.people[0]!, dob: '1950-03-01' }
+    const trad = draft.accounts.find((account) => account.type === 'traditional')!
+    const contributionYears: number[] = []
+    for (let taxYear = 2020; taxYear <= 2026; taxYear += 1) contributionYears.push(taxYear)
+    draft.retirementActionEligibilityFacts = {
+      iraClassifications: [{
+        evidenceId: 'acted-qcd-classification',
+        provenance: { source: 'manual' },
+        sourceAccountId: trad.id,
+        subtype: 'traditional',
+      }],
+      sepSimpleActivities: [],
+      // The post-70½ deductible-contribution history the gift's anti-abuse
+      // offset needs; all zero, so the whole gift stays excludable.
+      deductibleIraContributions: contributionYears.map((taxYear) => ({
+        donorPersonId: 'p1',
+        taxYear,
+        amountCents: asUsdCents(0),
+        evidenceId: `acted-qcd-contribution-${taxYear}`,
+        provenance: { source: 'manual', sourceId: `ledger-${taxYear}` },
+      })),
+    }
+    draft.strategies.retirementActions = [
+      committedQcd('acted-qcd', trad.id, 2026, 20_000),
+    ]
+    const plan = validate(draft)
+    const probe = probesFor(plan)[0]!
+
+    const ledger = simulatePlan(plan, opts).years[0]!
+    expect(ledger.qcdActionExecution?.committed).toBe(true)
+    expect(ledger.qcd).toBeCloseTo(20_000, 6)
+
+    // The gift, and nothing else. The same year takes an RMD and funds
+    // spending out of the aggregate arms, and neither belongs here: the LP
+    // re-decides those itself, so reporting them would double-count.
+    expect(probe.committedActionAccountMovement).toEqual([
+      { accountId: trad.id, amount: -20_000 },
+    ])
+    expect(probe.committedActionProceeds).toBe(0)
+    expect(committedActionMovementForYear(optimizerOpeningBuckets(plan).bucketByAccountId, probe))
+      .toEqual({
+        trad: -20_000,
+        inheritedTrad: 0,
+        other: 0,
+        taxable: 0,
+        proceeds: 0,
+      })
   })
 
   it('refuses to drop movement it cannot place in a bucket', () => {
