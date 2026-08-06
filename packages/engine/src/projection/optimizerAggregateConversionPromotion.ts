@@ -217,6 +217,18 @@ export type AggregateConversionPromotionIssueKind =
   | 'invalidWinnerSchedule'
   /** No balance snapshot for a scheduled year. */
   | 'missingYearBalances'
+  /**
+   * A scheduled year published its balance snapshot and not the household
+   * amount the policy was asked for.
+   *
+   * Produced by `optimizerAggregateConversionPromotionRun.ts` rather than by
+   * this module, which takes that amount from its caller. It is a separate kind
+   * from `missingYearBalances` because it is a separate absence with a separate
+   * remedy: the weights are there and the figure to weight is not, and a
+   * refusal that named the balances would send a reader looking for a snapshot
+   * that exists.
+   */
+  | 'missingYearDesiredAmount'
   /** Two balance snapshots for one year, so which one is authoritative is unstated. */
   | 'duplicateYearBalances'
   /** A participating account with no stated balance in a year. */

@@ -1304,7 +1304,18 @@ export function runExactLedgerTournament(
           promoted.published.readiness,
         )
         if (promotedVeto !== null) {
-          throw new Error('A promoted identity-complete winner was vetoed as identity-incomplete')
+          // Names both candidates and the readiness that was supposed to tell
+          // them apart, because a production log of this needs to say WHICH
+          // promotion went wrong: the aggregate winner it came from, the
+          // candidate it became, and the state the veto read off it.
+          throw new Error(
+            'A promoted identity-complete winner was vetoed as identity-incomplete: ' +
+            `promoted candidate "${promoted.published.candidateId}" ` +
+            `(readiness ${promoted.published.readiness.state}, ` +
+            `${promoted.published.conversions.length} conversion year(s)) ` +
+            `from aggregate winner "${readinessVeto.vetoedCandidateId ?? readinessVeto.vetoedWinnerSource}" ` +
+            `vetoed as ${promotedVeto.reason}`,
+          )
         }
         return {
           policyId: 'max-after-tax-estate',

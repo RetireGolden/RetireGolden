@@ -510,15 +510,20 @@ describe('what the runner refuses', () => {
       .toEqual(['milpWinnerNotPromotable'])
   })
 
-  it('refuses a scheduled year the vetoed projection published no snapshot for', () => {
+  /**
+   * The vetoed projection with one published allocation field removed from
+   * every year, so each half's absence can be refused on its own terms.
+   */
+  function runWithout(field: 'balances' | 'desired') {
     const ctx = contextFor(singleOwnerHousehold())
     const { exploratoryCandidate, veto } = vetoedWinner(ctx, 'bracket-24')
     const strippedYears = veto.vetoedResult.years.map((year) => {
       const stripped = { ...year }
-      delete stripped.aggregateRothConversionAllocationBalances
+      if (field === 'balances') delete stripped.aggregateRothConversionAllocationBalances
+      else delete stripped.aggregateRothConversionAllocationDesired
       return stripped
     })
-    const run = runAggregateConversionPromotion({
+    return runAggregateConversionPromotion({
       context: ctx,
       exploratoryCandidate,
       readinessVeto: {
@@ -526,16 +531,41 @@ describe('what the runner refuses', () => {
         vetoedResult: { ...veto.vetoedResult, years: strippedYears },
       },
     })
+  }
+
+  function refusalKinds(run: ReturnType<typeof runWithout>): string[] {
     if (run.status !== 'notPromoted') {
       throw new Error(`expected no promotion, got ${run.status}`)
     }
-
-    // Fail closed: with no published weights there is no allocation to make,
-    // and the Plan's opening balances are not a substitute for them.
     if (run.promotion.status !== 'unallocatable') {
       throw new Error(`expected an unallocatable promotion, got ${run.promotion.status}`)
     }
-    expect([...new Set(run.promotion.choice.issues.map((entry) => entry.kind))])
-      .toEqual(['missingYearBalances'])
+    return [...new Set(run.promotion.choice.issues.map((entry) => entry.kind))]
+  }
+
+  it('refuses a scheduled year the vetoed projection published no snapshot for', () => {
+    // Fail closed: with no published weights there is no allocation to make,
+    // and the Plan's opening balances are not a substitute for them.
+    expect(refusalKinds(runWithout('balances'))).toEqual(['missingYearBalances'])
+  })
+
+  it('refuses a missing household amount as itself, not as missing balances', () => {
+    // THE OTHER HALF, AND WHY IT IS A DIFFERENT REFUSAL. Both fields are
+    // published from the same call, so a projection carrying one and not the
+    // other did not come from `simulatePlan` — but the two absences have
+    // different remedies, and a reader told "no balance snapshot" here would go
+    // looking for a snapshot that is sitting right there in the year. The
+    // weights are present; the figure to weight is not.
+    expect(refusalKinds(runWithout('desired'))).toEqual(['missingYearDesiredAmount'])
+
+    // And the detail says which of the two published fields is the absentee,
+    // rather than describing the allocation as wholly unpublished.
+    const run = runWithout('desired')
+    if (run.status !== 'notPromoted' || run.promotion.status !== 'unallocatable') {
+      throw new Error('expected an unallocatable promotion')
+    }
+    const issue = run.promotion.choice.issues[0]!
+    expect(issue.field).toContain('aggregateRothConversionAllocationDesired')
+    expect(issue.detail).toContain('published the balances')
   })
 })

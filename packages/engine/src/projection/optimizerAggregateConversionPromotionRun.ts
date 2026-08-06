@@ -225,23 +225,29 @@ export type AggregateConversionPromotionRunResult =
 const COMPARABLE_RANKING_STATES: readonly string[] = ['beneficial', 'neutral', 'rejected']
 
 /** One year the aggregate allocation policy ran: what it was asked for, and on what. */
+/** What one projection year published about the allocation its policy ran. */
 interface PublishedAllocation {
   readonly year: number
-  readonly desiredPlanDollars: number
-  readonly balances: Readonly<Record<string, number>>
+  /** The household amount the policy was asked for, when the year stated one. */
+  readonly desiredPlanDollars: number | undefined
+  /** The balances it weighted owners by, when the year stated them. */
+  readonly balances: Readonly<Record<string, number>> | undefined
 }
 
 /**
- * Every year of a projection that published an allocation snapshot, in
+ * Every year of a projection that published either half of its allocation, in
  * projection order.
  *
- * A year without one ran no aggregate conversion arm — see the field's own
- * contract for the full list of causes — so it is skipped here rather than
- * stated as an empty snapshot. The two fields are published from the same call
- * and are therefore present together; a year carrying one and not the other did
- * not come from `simulatePlan`, and is skipped for the same reason, which makes
- * it a scheduled year with no snapshot rather than a year allocated against
- * half of one.
+ * A year that published neither ran no aggregate conversion arm — see the
+ * fields' own contracts for the full list of causes — so it is absent here
+ * rather than stated as an empty snapshot.
+ *
+ * THE TWO HALVES ARE KEPT SEPARATELY RATHER THAN COLLAPSED. `simulatePlan`
+ * publishes both from the same call, so a year carrying one and not the other
+ * did not come from it; but a caller holding such a projection is owed a
+ * refusal that names which half is missing, because the two have different
+ * remedies and a reader told "no balances" would go looking for a snapshot that
+ * is sitting right there.
  */
 function publishedAllocations(
   result: Readonly<ProjectionResult>,
@@ -250,7 +256,7 @@ function publishedAllocations(
   for (const year of result.years) {
     const balances = year.aggregateRothConversionAllocationBalances
     const desiredPlanDollars = year.aggregateRothConversionAllocationDesired
-    if (balances === undefined || desiredPlanDollars === undefined) continue
+    if (balances === undefined && desiredPlanDollars === undefined) continue
     published.push({ year: year.year, desiredPlanDollars, balances })
   }
   return published
@@ -260,10 +266,15 @@ function publishedAllocations(
  * The schedule to promote: the winner's years, each at the household amount the
  * ledger's policy was asked for in that year.
  *
- * A winner year the projection published no allocation for is refused by name
+ * A winner year the projection published no such amount for is refused by name
  * rather than promoted at the executed figure. The executed figure means
  * something different — it is what survived the trim — and substituting it here
  * is exactly the re-trim this function exists to prevent.
+ *
+ * The refusal distinguishes the two ways that amount can be absent: a year that
+ * published nothing at all (`missingYearBalances`, the chooser's own kind for a
+ * scheduled year with no snapshot), and a year that published its weights and
+ * not the figure to weight (`missingYearDesiredAmount`).
  */
 function promotedSchedule(
   vetoedConversions: readonly { year: number; amount: number }[],
@@ -271,21 +282,31 @@ function promotedSchedule(
 ):
   | { readonly schedule: readonly AggregateConversionPromotionYear[] }
   | { readonly issues: readonly [AggregateConversionPromotionIssue, ...AggregateConversionPromotionIssue[]] } {
-  const desiredByYear = new Map(
-    published.map((entry) => [entry.year, entry.desiredPlanDollars]),
-  )
+  const publishedByYear = new Map(published.map((entry) => [entry.year, entry]))
   const schedule: AggregateConversionPromotionYear[] = []
   const issues: AggregateConversionPromotionIssue[] = []
   for (const conversion of vetoedConversions) {
-    const desired = desiredByYear.get(conversion.year)
+    const entry = publishedByYear.get(conversion.year)
+    const desired = entry?.desiredPlanDollars
     if (desired === undefined) {
-      issues.push({
-        kind: 'missingYearBalances',
-        field: 'readinessVeto.vetoedResult.years',
-        detail: `The vetoed projection converted in ${conversion.year} but published no aggregate ` +
-          'allocation for it, so the household amount its policy was asked for is unstated. The ' +
-          'executed total is not a substitute: it is what survived the trim.',
-      })
+      const balancesArePresent = entry?.balances !== undefined
+      issues.push(balancesArePresent
+        ? {
+          kind: 'missingYearDesiredAmount',
+          field: `readinessVeto.vetoedResult.years.${conversion.year}.aggregateRothConversionAllocationDesired`,
+          detail: `The vetoed projection converted in ${conversion.year} and published the balances its ` +
+            'allocation policy weighted owners by, but not the household amount that policy was asked ' +
+            'for, so there is nothing to allocate across those weights. The executed total is not a ' +
+            'substitute: it is what survived the trim.',
+        }
+        : {
+          kind: 'missingYearBalances',
+          field: `readinessVeto.vetoedResult.years.${conversion.year}`,
+          detail: `The vetoed projection converted in ${conversion.year} but published no aggregate ` +
+            'allocation for it at all — neither the balances its policy weighted owners by nor the ' +
+            'household amount that policy was asked for. The executed total is not a substitute for ' +
+            'the second: it is what survived the trim.',
+        })
       continue
     }
     // Quantized to whole cents, which is what the policy itself does with the
@@ -360,8 +381,14 @@ export function runAggregateConversionPromotion(
       },
     }
   }
+  // Only the years that actually stated their weights. A year that stated an
+  // amount and no balances is left out here on purpose, so the chooser refuses
+  // it with its own `missingYearBalances` naming the year rather than being
+  // handed an empty snapshot to allocate against.
   const yearBalances: AggregateConversionPromotionYearBalances[] = published
-    .map((entry) => ({ year: entry.year, balances: entry.balances }))
+    .flatMap((entry) => entry.balances === undefined
+      ? []
+      : [{ year: entry.year, balances: entry.balances }])
   const promotion = promoteAggregateConversionSchedule({
     plan: context.plan,
     winner: {
