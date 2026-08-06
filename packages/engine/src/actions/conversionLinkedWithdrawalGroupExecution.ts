@@ -5,6 +5,7 @@ import {
 import type { RetirementActionRequest } from './contract.js'
 import {
   type ConversionLinkedWithdrawalGroupAssessment,
+  type ConversionLinkedWithdrawalGroupAuthorization,
   type ConversionLinkedWithdrawalGroupDisposition,
   type ConversionLinkedWithdrawalGroupReasonCode,
   type ConversionLinkedWithdrawalGroupRefusalKind,
@@ -22,26 +23,38 @@ import {
   type MergedRetirementActionSchedulePosition,
 } from './execution.js'
 import type { ActionId, PersonId } from './identity.js'
-import type { UsdCents } from './money.js'
+import { asUsdCents, type UsdCents } from './money.js'
 import { compareUtf16CodeUnits } from './structuralId.js'
+
+/** A leg nobody reported on moved nothing and was authored nothing. */
+const ZERO_CENTS: UsdCents = asUsdCents(0)
 
 /**
  * The atomic annual funding group, executed: where each leg would sit in one
  * merged schedule, what the filing unit's conversions actually cost it, how
- * that cost divides across them, and — for every group, without exception —
- * the refusal.
+ * that cost divides across them, whether both legs moved — and, when the whole
+ * chain proves out, the permission that let them.
  *
- * This is the executor the linked-withdrawal pathway has been refusing
- * *pending*, and it is deliberately an executor that moves nothing. Read that
- * as the design rather than as an unfinished edge: everything a group needs in
- * order to move is computed and published here, and the single thing withheld
- * is permission. `ConversionLinkedWithdrawalGroupDisposition` still has one
- * member, the result type below has no executable arm to widen into, and every
- * record says `movement: 'none'` by literal type. The slice that opens the gate
- * changes those and nothing else, which is what makes its diff reviewable as a
- * money decision instead of as a restructuring.
+ * The gate is open, and how it opens is the whole of this module's authority.
+ * `authorizeConversionLinkedWithdrawalGroups` below is the only producer of a
+ * `executedAsAtomicGroup` disposition anywhere in the engine, and it produces
+ * one only from a *staging run*: a whole annual pass, discarded, in which both
+ * legs of every group already moved their entire authored amount and the annual
+ * funding evaluation over that run's actual funding vector reached a
+ * `satisfied` fixed point. The run that commits then re-derives the same
+ * evaluation from its own liabilities and its own movement, and says `executed`
+ * only if it agrees.
  *
- * Three things are produced and each answers a question the pathway could not
+ * Nothing here touches a balance. That is not a gap: the two legs are moved by
+ * the executors that own their kinds — `actions/execution.ts` for the
+ * withdrawal and `actions/rothConversionExecution.ts` for the conversion — and
+ * they have to be, because publication requires exactly one record per action
+ * from the executor source that owns it. What makes the movement *atomic* is
+ * that both of those executors read one verdict rather than two, so there is a
+ * single answer to release or refuse and no reconciliation between a pair of
+ * them.
+ *
+ * Four things are produced and each answers a question the pathway could not
  * answer before.
  *
  * **Ordering.** Both legs are ordered through one
@@ -65,18 +78,24 @@ import { compareUtf16CodeUnits } from './structuralId.js'
  * because two liabilities that came from one run would subtract to zero and
  * publish "this group cost nothing" with a straight face.
  *
- * One consequence of refusing everything is worth stating rather than
- * discovering. A refused conversion converts nothing, so its
- * `allocationWeight` — its finalized taxable conversion principal — is zero,
- * and its dedicated withdrawal executes nothing, so `fundedAmount` is zero. A
- * simulator that hands this executor a real refused group therefore gets a
- * degenerate evaluation: a required amount of zero allocated across zero
- * weight, funded with zero, which is a satisfied fixed point that is true and
- * uninformative at the same time. What is *not* degenerate about it is the pair
- * of liabilities and the pair of run identities on every member's record, which
- * are real figures from two real passes. The allocation only starts to bite
- * when a weight can be positive, and a weight can only be positive once
- * something converts.
+ * **The movement.** Each record says what its two legs actually did in the run
+ * that produced it, in exact cents, against what they were authored to do. Both
+ * moved their whole authored amount, or the group's movement is `none` — there
+ * is no arm for one leg, and no arm for a part of one. `movementCoherent` is
+ * the field that distinguishes "neither moved" from "the run contradicted
+ * itself", because the second is a defect in an executor and the first is the
+ * ordinary answer.
+ *
+ * One consequence of a refused group is worth stating rather than discovering.
+ * A refused conversion converts nothing, so its `allocationWeight` — its
+ * finalized taxable conversion principal — is zero, and its dedicated
+ * withdrawal executes nothing, so `fundedAmount` is zero. A simulator that
+ * hands this executor a real refused group therefore gets a degenerate
+ * evaluation: a required amount of zero allocated across zero weight, funded
+ * with zero, which is a satisfied fixed point that is true and uninformative at
+ * the same time. That degeneracy is exactly why `authorize…` below demands
+ * movement as well as satisfaction: a refused group's evaluation is satisfied
+ * and must never be read as permission.
  */
 
 /** One conversion in the filing unit's annual group, as the simulator saw it. */
@@ -135,6 +154,29 @@ export interface ConversionLinkedWithdrawalGroupLiabilityRun {
   readonly identity: Readonly<AnnualLiabilityRunIdentity>
 }
 
+/**
+ * What one leg of one group actually did in the run that is reporting.
+ *
+ * `authoredAmount` is what the household asked for, in exact cents, and
+ * `executedAmount` is what moved. They are carried apart rather than as a
+ * single "moved" flag because a leg that moved a *part* of its authored amount
+ * is not a leg that moved: the conversion executor has no partial arm at all,
+ * and a partial withdrawal beside a whole conversion is the funding shortfall
+ * this pathway exists to refuse.
+ */
+export interface ConversionLinkedWithdrawalGroupLegMovementInput {
+  readonly authoredAmount: UsdCents
+  readonly executedAmount: UsdCents
+}
+
+/** Both legs of one assessed pair, as the reporting run left them. */
+export interface ConversionLinkedWithdrawalGroupMovementInput {
+  readonly conversionActionId: ActionId
+  readonly withdrawalActionId: ActionId
+  readonly conversion: Readonly<ConversionLinkedWithdrawalGroupLegMovementInput>
+  readonly withdrawal: Readonly<ConversionLinkedWithdrawalGroupLegMovementInput>
+}
+
 export interface ExecuteConversionLinkedWithdrawalGroupsInput {
   readonly taxYear: number
   /** The union of both executors' requests, as the assessment saw them. */
@@ -147,6 +189,13 @@ export interface ExecuteConversionLinkedWithdrawalGroupsInput {
   /** `T1(F)`: the run that committed, with them present. */
   readonly candidate: Readonly<ConversionLinkedWithdrawalGroupLiabilityRun> | null
   readonly members: readonly Readonly<ConversionLinkedWithdrawalGroupMemberInput>[]
+  /**
+   * What each pair's two legs did in this run. Omitted means nothing moved,
+   * which is what a caller that refused every group has to say and what every
+   * caller could say before the gate opened.
+   */
+  readonly movements?:
+    readonly Readonly<ConversionLinkedWithdrawalGroupMovementInput>[]
 }
 
 /**
@@ -214,10 +263,27 @@ export interface ConversionLinkedWithdrawalGroupExecutionRecord {
   readonly conversionActionId: ActionId
   readonly withdrawalActionId: ActionId
   readonly disposition: ConversionLinkedWithdrawalGroupDisposition
-  readonly refusalKind: ConversionLinkedWithdrawalGroupRefusalKind
-  readonly reasonCode: ConversionLinkedWithdrawalGroupReasonCode
-  /** Literal, not a computed zero. The gate is the type, not the arithmetic. */
-  readonly movement: 'none'
+  /** Null exactly when the pair was released; see the verdict union. */
+  readonly refusalKind: ConversionLinkedWithdrawalGroupRefusalKind | null
+  readonly reasonCode: ConversionLinkedWithdrawalGroupReasonCode | null
+  /**
+   * Whether both legs moved their whole authored amount, or neither did.
+   *
+   * `bothLegs` requires four equalities at once — each leg's executed cents
+   * equal its authored cents, and both are positive — so there is no spelling
+   * of this field for a group that moved one leg, or part of one.
+   */
+  readonly movement: 'none' | 'bothLegs'
+  /**
+   * Whether the two legs agree. False is a defect rather than a refusal: one
+   * leg moved beside one that did not, or a leg moved an amount nobody
+   * authored, and publication is where that becomes a throw.
+   */
+  readonly movementCoherent: boolean
+  readonly conversionExecutedAmount: UsdCents
+  readonly withdrawalExecutedAmount: UsdCents
+  readonly conversionAuthoredAmount: UsdCents
+  readonly withdrawalAuthoredAmount: UsdCents
   readonly conversionPosition: Readonly<MergedRetirementActionSchedulePosition> | null
   readonly withdrawalPosition: Readonly<MergedRetirementActionSchedulePosition> | null
   /**
@@ -236,14 +302,20 @@ export interface ConversionLinkedWithdrawalGroupExecutionRecord {
 }
 
 /**
- * Every group refused, with the whole of what was computed for them.
+ * The year's groups, with the whole of what was computed for them.
  *
- * There is one status and it is `refused`. A second status is the money change,
- * and it belongs to the slice that makes it.
+ * `executed` is claimed only when every one of three things holds at once: the
+ * annual funding evaluation was built and every member of it reached a
+ * `satisfied` fixed point; every group's two legs moved their whole authored
+ * amount; and every group's verdict released it. Any shortfall in any of them
+ * makes the year's whole set `refused` — including a year in which some groups
+ * moved, because a partial release changes the funding vector the evaluation
+ * answers for and the result would then be describing a different run than the
+ * one that happened.
  */
 export interface ExecuteConversionLinkedWithdrawalGroupsResult {
-  readonly status: 'refused'
-  readonly movement: 'none'
+  readonly status: 'refused' | 'executed'
+  readonly movement: 'none' | 'bothLegs'
   readonly taxYear: number
   readonly ordering: Readonly<MergedRetirementActionSchedule> | null
   readonly groups: readonly Readonly<ConversionLinkedWithdrawalGroupExecutionRecord>[]
@@ -485,12 +557,35 @@ export function executeConversionLinkedWithdrawalGroups(
       ? funding.members.map((member) => [member.conversionActionId, member] as const)
       : [],
   )
+  const movementByPair = new Map(
+    (input.movements ?? []).map((movement) =>
+      [
+        JSON.stringify([
+          movement.conversionActionId,
+          movement.withdrawalActionId,
+        ]),
+        movement,
+      ] as const),
+  )
   const groups = input.assessment.groups.map(
     (group): Readonly<ConversionLinkedWithdrawalGroupExecutionRecord> => {
       const conversionPosition =
         positionByActionId.get(group.conversionActionId) ?? null
       const withdrawalPosition =
         positionByActionId.get(group.withdrawalActionId) ?? null
+      const movement = movementByPair.get(JSON.stringify([
+        group.conversionActionId,
+        group.withdrawalActionId,
+      ]))
+      const conversionAuthored = movement?.conversion.authoredAmount ?? ZERO_CENTS
+      const withdrawalAuthored = movement?.withdrawal.authoredAmount ?? ZERO_CENTS
+      const conversionExecuted = movement?.conversion.executedAmount ?? ZERO_CENTS
+      const withdrawalExecuted = movement?.withdrawal.executedAmount ?? ZERO_CENTS
+      const bothLegsWhole =
+        conversionExecuted > 0 && withdrawalExecuted > 0 &&
+        conversionExecuted === conversionAuthored &&
+        withdrawalExecuted === withdrawalAuthored
+      const neitherLegMoved = conversionExecuted === 0 && withdrawalExecuted === 0
       return {
         groupId: group.groupId,
         personId: group.personId,
@@ -500,7 +595,18 @@ export function executeConversionLinkedWithdrawalGroups(
         disposition: group.disposition,
         refusalKind: group.refusalKind,
         reasonCode: group.reasonCode,
-        movement: 'none' as const,
+        movement: bothLegsWhole ? 'bothLegs' as const : 'none' as const,
+        // Anything between the two is incoherent: a leg that moved beside one
+        // that did not, or a leg that moved an amount nobody authored. A
+        // released pair that moved nothing is incoherent too — the release was
+        // permission for a movement, and its absence means an executor
+        // disregarded the verdict.
+        movementCoherent: (bothLegsWhole || neitherLegMoved) &&
+          (group.disposition === 'executedAsAtomicGroup') === bothLegsWhole,
+        conversionExecutedAmount: conversionExecuted,
+        withdrawalExecutedAmount: withdrawalExecuted,
+        conversionAuthoredAmount: conversionAuthored,
+        withdrawalAuthoredAmount: withdrawalAuthored,
         conversionPosition,
         withdrawalPosition,
         orderingComplete: conversionPosition !== null &&
@@ -512,12 +618,188 @@ export function executeConversionLinkedWithdrawalGroups(
       }
     },
   )
+  // Claimed only when nothing in the year disagrees: every group released,
+  // every group's legs both whole and coherent, and every member's own
+  // evaluation a satisfied fixed point over this run's liabilities.
+  const executed = groups.length > 0 &&
+    funding.status === 'annualGroupEvaluated' &&
+    funding.members.every((member) => member.evaluation === 'satisfied') &&
+    groups.every((group) =>
+      group.disposition === 'executedAsAtomicGroup' &&
+      group.movement === 'bothLegs' &&
+      group.movementCoherent &&
+      group.orderingComplete &&
+      group.fundingEvidence !== null)
   return deepFreeze({
-    status: 'refused' as const,
-    movement: 'none' as const,
+    status: executed ? 'executed' as const : 'refused' as const,
+    movement: executed ? 'bothLegs' as const : 'none' as const,
     taxYear: input.taxYear,
     ordering,
     groups,
     funding,
+  })
+}
+
+/**
+ * Why the year's groups were not released.
+ *
+ * Each is a proof that did not arrive, and none of them is a defect: a year
+ * whose withdrawal was authored a cent short of what the conversions turned out
+ * to cost is a plan that does not fund itself, and saying so is the whole
+ * answer.
+ */
+export type ConversionLinkedWithdrawalGroupAuthorizationWithheldKind =
+  /** The staging run had no group to stage. */
+  | 'noAnnualGroup'
+  /** The staging run's own executor refused, so nothing was staged. */
+  | 'stagingRefused'
+  /** A group's two legs did not both move their whole authored amount. */
+  | 'stagingMovementIncomplete'
+  /** A withdrawal named by two conversions is dedicated to neither. */
+  | 'sharedFundingWithdrawal'
+  /** The annual funding evaluation could not be built from the staging run. */
+  | 'fundingUnevaluated'
+  /** The funding evaluation reached a mismatch rather than a fixed point. */
+  | 'fundingMismatched'
+
+export interface ConversionLinkedWithdrawalGroupAuthorized {
+  readonly status: 'conversionLinkedWithdrawalGroupsAuthorized'
+  readonly taxYear: number
+  readonly authorizations:
+    readonly Readonly<ConversionLinkedWithdrawalGroupAuthorization>[]
+}
+
+export interface ConversionLinkedWithdrawalGroupAuthorizationWithheld {
+  readonly status: 'conversionLinkedWithdrawalGroupsWithheld'
+  readonly taxYear: number
+  readonly reason: ConversionLinkedWithdrawalGroupAuthorizationWithheldKind
+  readonly issues: readonly string[]
+}
+
+export type ConversionLinkedWithdrawalGroupAuthorizationResult =
+  | Readonly<ConversionLinkedWithdrawalGroupAuthorized>
+  | Readonly<ConversionLinkedWithdrawalGroupAuthorizationWithheld>
+
+/**
+ * Read a staging run's own group execution and say whether the run that commits
+ * may release the same groups.
+ *
+ * This is the commit path, and it is a function of a discarded run rather than
+ * of the run it authorises — which is the only shape the arithmetic admits.
+ * `T1(F)` is "the unit's annual liability with the conversions present, funded
+ * as stated", so it exists only in a run where the group already moved; a gate
+ * that demanded the fixed point *before* letting anything move would be asking
+ * for a figure that only movement produces. So a whole annual pass is run with
+ * the groups provisionally released, its liability and its actual funding
+ * vector are read off it, its evaluation is checked, and the pass is thrown
+ * away. What survives is this permission.
+ *
+ * Every condition is required of *every* group, and the result is all or
+ * nothing. Releasing a subset would give the committed run a different funding
+ * vector from the staged one, and the proof would then be about a run that did
+ * not happen.
+ *
+ * Note what is deliberately *not* trusted here: the staging run's own
+ * `status === 'executed'`. That field is this module's summary of the same
+ * facts, and reading a summary of the facts instead of the facts would make the
+ * gate agree with itself by construction. The movement, the coherence, the
+ * evaluation and the disposition are each read directly.
+ */
+export function authorizeConversionLinkedWithdrawalGroups(
+  staging: Readonly<ExecuteConversionLinkedWithdrawalGroupsResult>,
+): Readonly<ConversionLinkedWithdrawalGroupAuthorizationResult> {
+  const taxYear = staging.taxYear
+  if (staging.groups.length === 0) {
+    return deepFreeze({
+      status: 'conversionLinkedWithdrawalGroupsWithheld' as const,
+      taxYear,
+      reason: 'noAnnualGroup' as const,
+      issues: [],
+    })
+  }
+  const contested = staging.groups.filter((group) =>
+    group.refusalKind === 'sharedFundingWithdrawal')
+  if (contested.length > 0) {
+    return deepFreeze({
+      status: 'conversionLinkedWithdrawalGroupsWithheld' as const,
+      taxYear,
+      reason: 'sharedFundingWithdrawal' as const,
+      issues: contested
+        .map((group) =>
+          `Withdrawal "${group.withdrawalActionId}" is named by more than one conversion.`)
+        .sort(compareUtf16CodeUnits),
+    })
+  }
+  const incomplete = staging.groups.filter((group) =>
+    group.movement !== 'bothLegs' || !group.movementCoherent ||
+    !group.orderingComplete)
+  if (incomplete.length > 0) {
+    return deepFreeze({
+      status: 'conversionLinkedWithdrawalGroupsWithheld' as const,
+      taxYear,
+      reason: incomplete.every((group) =>
+        group.conversionExecutedAmount === 0 &&
+        group.withdrawalExecutedAmount === 0)
+        ? 'stagingRefused' as const
+        : 'stagingMovementIncomplete' as const,
+      issues: incomplete
+        .map((group) =>
+          `Group "${group.groupId}" staged ${group.conversionExecutedAmount} of ${group.conversionAuthoredAmount} conversion cents and ${group.withdrawalExecutedAmount} of ${group.withdrawalAuthoredAmount} withdrawal cents.`)
+        .sort(compareUtf16CodeUnits),
+    })
+  }
+  if (staging.funding.status !== 'annualGroupEvaluated') {
+    return deepFreeze({
+      status: 'conversionLinkedWithdrawalGroupsWithheld' as const,
+      taxYear,
+      reason: 'fundingUnevaluated' as const,
+      issues: [...staging.funding.issues],
+    })
+  }
+  const evaluation = staging.funding
+  const mismatched = evaluation.members.filter((member) =>
+    member.evaluation !== 'satisfied')
+  if (mismatched.length > 0) {
+    return deepFreeze({
+      status: 'conversionLinkedWithdrawalGroupsWithheld' as const,
+      taxYear,
+      reason: 'fundingMismatched' as const,
+      issues: mismatched
+        .map((member) =>
+          `Conversion "${member.conversionActionId}" funded ${member.fundedAmount} against a required ${member.requiredFundingAmount}.`)
+        .sort(compareUtf16CodeUnits),
+    })
+  }
+  const memberByConversionActionId = new Map(
+    evaluation.members.map((member) => [member.conversionActionId, member] as const),
+  )
+  const authorizations: ConversionLinkedWithdrawalGroupAuthorization[] = []
+  for (const group of staging.groups) {
+    const member = memberByConversionActionId.get(group.conversionActionId)
+    if (member === undefined) {
+      return deepFreeze({
+        status: 'conversionLinkedWithdrawalGroupsWithheld' as const,
+        taxYear,
+        reason: 'fundingUnevaluated' as const,
+        issues: [
+          `Conversion "${group.conversionActionId}" moved with no member evaluation of its own.`,
+        ],
+      })
+    }
+    authorizations.push({
+      conversionActionId: group.conversionActionId,
+      withdrawalActionId: group.withdrawalActionId,
+      funding: {
+        annualGroupId: member.annualGroupId,
+        requiredFundingAmount: member.requiredFundingAmount,
+        fundedAmount: member.fundedAmount,
+      },
+    })
+  }
+  return deepFreeze({
+    status: 'conversionLinkedWithdrawalGroupsAuthorized' as const,
+    taxYear,
+    authorizations: authorizations.sort((left, right) =>
+      compareUtf16CodeUnits(left.conversionActionId, right.conversionActionId)),
   })
 }

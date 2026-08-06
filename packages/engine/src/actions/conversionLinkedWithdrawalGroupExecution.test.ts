@@ -218,12 +218,14 @@ function run(input: {
 
 describe('executeConversionLinkedWithdrawalGroups', () => {
   describe('what it refuses to do', () => {
-    it('has no arm that moves anything, whatever it was handed', () => {
-      // The gate is the type, and this is the assertion that reads it as a
-      // type rather than as an arithmetic outcome. `status` and `movement` are
-      // literal, so an executable arm cannot be reached by supplying better
-      // inputs: it can only be reached by widening the union, which is the
-      // money change and belongs to its own review.
+    it('refuses a group that was handed no movement, however good its figures', () => {
+      // This used to read `status` and `movement` as literal types, which was
+      // the gate while the executor had no executable arm at all. It has one
+      // now, so the pin moves from the type to the *predicate*: perfect
+      // liabilities, a real merged ordering and a satisfied evaluation are
+      // still not permission, because nothing moved. A caller that omits the
+      // movement is a caller reporting a year in which the legs stayed still,
+      // and the answer to that is refusal whatever else it supplies.
       const result = run({
         requests: dedicatedPair(),
         members: [member('conversion-a', 50_000_00, 2_500_00)],
@@ -231,10 +233,8 @@ describe('executeConversionLinkedWithdrawalGroups', () => {
         candidate: candidateRun(1_250_000),
       })
 
-      const status: 'refused' = result.status
-      const movement: 'none' = result.movement
-      expect(status).toBe('refused')
-      expect(movement).toBe('none')
+      expect(result.status).toBe('refused')
+      expect(result.movement).toBe('none')
       expect(result.groups.map((group) => group.movement)).toEqual(['none'])
       expect(result.groups.map((group) => group.disposition))
         .toEqual(['refusedPendingGroupExecution'])

@@ -2344,19 +2344,27 @@ describe('annual retirement-action publication', () => {
   // exercised as `partial`. A conversion record is never partial: its executor
   // commits whole or not at all, and the only trim reason it can carry now
   // classifies as a refusal, so a partial conversion record no longer parses.
+  //
+  // `partial` + `executed` used to be accepted, and it is the row the gate
+  // opening changed. Both legs move money, so the both-or-neither comparison
+  // sees two positives and agrees — while the conversion has in fact been
+  // funded short by exactly the cents the withdrawal failed to raise. That is
+  // the first case the assertion meets now that a leg can move, and refusing
+  // it is the point: a partly funded conversion is not the conversion the
+  // household authored.
   it.each([
-    ['executed', 'executed', true],
-    ['partial', 'executed', true],
-    ['executed', 'refused', false],
-    ['refused', 'executed', false],
-    ['partial', 'unsupported', false],
-    ['unsupported', 'executed', false],
-    ['refused', 'unsupported', true],
-    ['unsupported', 'refused', true],
-    ['unsupported', 'unsupported', true],
+    ['executed', 'executed', 'accepted'],
+    ['partial', 'executed', 'partial'],
+    ['executed', 'refused', 'disposition'],
+    ['refused', 'executed', 'disposition'],
+    ['partial', 'unsupported', 'disposition'],
+    ['unsupported', 'executed', 'disposition'],
+    ['refused', 'unsupported', 'accepted'],
+    ['unsupported', 'refused', 'accepted'],
+    ['unsupported', 'unsupported', 'accepted'],
   ] as const)(
     'binds linked withdrawal %s and conversion %s movement atomically',
-    (withdrawalDisposition, conversionDisposition, accepted) => {
+    (withdrawalDisposition, conversionDisposition, outcome) => {
       const [withdrawal, conversion] = linkedConversionPair(
         `atomic-${withdrawalDisposition}-${conversionDisposition}-conversion`,
         `atomic-${withdrawalDisposition}-${conversionDisposition}-withdrawal`,
@@ -2396,10 +2404,13 @@ describe('annual retirement-action publication', () => {
         ],
       })
 
-      if (accepted) expect(reverse()).toEqual(forward())
+      if (outcome === 'accepted') expect(reverse()).toEqual(forward())
       else {
-        expect(forward).toThrow(/linked conversion funding disposition differs/i)
-        expect(reverse).toThrow(/linked conversion funding disposition differs/i)
+        const message = outcome === 'partial'
+          ? /linked conversion funding moved partially/i
+          : /linked conversion funding disposition differs/i
+        expect(forward).toThrow(message)
+        expect(reverse).toThrow(message)
       }
     },
   )

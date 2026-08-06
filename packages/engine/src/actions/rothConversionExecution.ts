@@ -26,6 +26,7 @@ import {
   assessConversionLinkedWithdrawalGroups,
   conversionLinkedWithdrawalGroupForConversion,
   type ConversionLinkedWithdrawalGroupAssessment,
+  type ConversionLinkedWithdrawalGroupFundingAuthority,
   type RetirementActionGroupRuntimeEvidence,
 } from './conversionLinkedWithdrawalGroup.js'
 
@@ -119,18 +120,17 @@ export type RothConversionAllocationExecutionEvidence =
  * - `notExpected` — the request names no funding, so nothing is owed.
  * - `externallyAttested` — funded from outside the plan, on the household's
  *   attestation.
- * - `funded` — the required amount was computed and the funding met it. **No
- *   producer.** Reaching it means a linked withdrawal moved beside its
- *   conversion, which is the movement the group disposition still refuses.
+ * - `funded` — the required amount was computed and the funding met it. Its
+ *   producer is the released group verdict: a conversion whose disposition is
+ *   `executedAsAtomicGroup` carries the proved share of the filing unit's
+ *   `max(0, T1(F) − T0)` and the cents its dedicated withdrawal moved against
+ *   it. Both figures travel on the verdict rather than being derived here,
+ *   because only a whole annual pass can produce them.
  * - `canceled` — the funding group aborted because a peer conversion in the
  *   same filing unit and year was non-actionable. **No producer.** The annual
- *   group that gives "peer" a meaning exists as of this slice, but a
- *   cancellation is a statement about a group that was going to move.
- *
- * The last two are landed as types ahead of their producers deliberately. The
- * alternative is that the slice which opens the gate widens this union in the
- * same diff that moves the dollars, and a reviewer of that diff then has to
- * decide a vocabulary question and a money question at once.
+ *   group that gives "peer" a meaning exists, but a cancellation is a statement
+ *   about a group that was going to move, and the release is all-or-nothing
+ *   across the unit's whole group — so no member is ever left holding one.
  */
 export interface RothConversionTaxFundingExecutionEvidence {
   kind: RothConversionRequest['taxFunding']['kind']
@@ -418,6 +418,34 @@ function taxFundingReasons(
 }
 
 /**
+ * The group's proved funding figures for this conversion, or nothing.
+ *
+ * Returns a figure pair only when the conversion's own group verdict released
+ * it. A conversion that names a linked withdrawal and has no release has no
+ * funding to publish, and one that names any other funding kind has no group to
+ * read — both fall through to the arms `committedTaxFunding` already answers.
+ */
+function releasedLinkedFunding(
+  request: Readonly<RothConversionRequest>,
+  groups: Readonly<ConversionLinkedWithdrawalGroupAssessment>,
+): Readonly<ConversionLinkedWithdrawalGroupFundingAuthority> | null {
+  if (request.taxFunding.kind !== 'linkedWithdrawal') return null
+  const verdict = conversionLinkedWithdrawalGroupForConversion(
+    groups,
+    request.actionId,
+  )
+  if (verdict === null || verdict.disposition !== 'executedAsAtomicGroup') {
+    return null
+  }
+  // The verdict is matched on the conversion; the withdrawal it was released
+  // against has to be the one this request names, or the funding published
+  // would be a different pair's.
+  return verdict.withdrawalActionId === request.taxFunding.withdrawalActionId
+    ? verdict.fundingAuthority
+    : null
+}
+
+/**
  * The funding evidence a committed conversion carries.
  *
  * Only the two dispositions that need nothing else to execute can reach here;
@@ -428,25 +456,42 @@ function taxFundingReasons(
  * attestation would have to cover is the missing coordinator's to compute, and
  * this executor will not invent it.
  *
- * The two unreachable arms are answered explicitly anyway, and the switch is
- * exhaustive over the union rather than falling through to a default. Before
- * this, anything that was not `externalCash` returned `notExpected` with both
- * figures zero — so the first `linkedWithdrawal` to reach commit would have
- * published "no funding was expected, none was required, none was paid" as the
- * funding evidence for a conversion that was in fact funded by a withdrawal.
- * Unreachable today, and the wrong thing to leave waiting behind a gate that
- * slice 3 of the linked-withdrawal pathway exists to open. `unsupported` with
- * null figures is the honest answer: this executor cannot state what was
- * required or paid, and says so rather than asserting zeros it did not compute.
+ * `linkedWithdrawal` splits on whether its group was released. A released one
+ * publishes `funded` with the share of the filing unit's annual liability the
+ * group proved it owed and the cents its dedicated withdrawal moved against it;
+ * the two are equal by the fixed point the release rests on, and they are
+ * carried rather than recomputed because nothing at this call site can compute
+ * an annual liability. An unreleased one never reaches here at all — its
+ * refusal reason is still on the request — and the arm is answered anyway with
+ * `unsupported` and null figures, because the alternative is that a future
+ * change to the release gate silently republishes the last arm's answer.
+ *
+ * `conversionPrincipalWithholding` stays unreachable and is answered the same
+ * way. The switch is exhaustive over the union rather than falling through to a
+ * default: before this, anything that was not `externalCash` returned
+ * `notExpected` with both figures zero, so the first `linkedWithdrawal` to
+ * reach commit would have published "no funding was expected, none was
+ * required, none was paid" for a conversion that was in fact funded by a
+ * withdrawal.
  */
 function committedTaxFunding(
   request: Readonly<RothConversionRequest>,
+  linkedFunding: Readonly<ConversionLinkedWithdrawalGroupFundingAuthority> | null,
 ): RothConversionTaxFundingExecutionEvidence {
   const funding = request.taxFunding
   const evidenceId = deriveActionStructuralId(
     'retirement-action-conversion-tax-funding',
     [request.actionId, request.year, funding.kind, request.executionDate ?? null],
   )
+  if (funding.kind === 'linkedWithdrawal' && linkedFunding !== null) {
+    return {
+      kind: funding.kind,
+      status: 'funded',
+      requiredFundingAmount: linkedFunding.requiredFundingAmount,
+      fundedAmount: linkedFunding.fundedAmount,
+      evidenceId,
+    }
+  }
   switch (funding.kind) {
     case 'externalCash':
       return {
@@ -491,6 +536,7 @@ function executedEvidence(
   basisStatus: 'zeroBasis' | 'nonzeroBasis',
   basisEvidenceId: string,
   rmdReserveEvidenceId: string,
+  linkedFunding: Readonly<ConversionLinkedWithdrawalGroupFundingAuthority> | null,
 ): Readonly<RothConversionExecutedExecutionEvidence> {
   // A proven-zero aggregated-IRA basis numerator makes the whole gross
   // includible under IRC 408A(d)(3)(A) and there is nothing to apportion, so
@@ -528,7 +574,7 @@ function executedEvidence(
     outcome: 'executed',
     readiness: 'actionable',
     allocations: allocations as unknown as Readonly<RothConversionExecutedExecutionEvidence>['allocations'],
-    taxFunding: committedTaxFunding(request),
+    taxFunding: committedTaxFunding(request, linkedFunding),
     reasons: [],
     provenance: request.provenance,
   }
@@ -845,6 +891,7 @@ function executeUnchecked(input: ExecuteRothConversionsInput): ExecuteRothConver
       evidence.push(executedEvidence(
         request, executedDate, basis.status, basis.evidenceId,
         rmdReserveEvidenceId,
+        releasedLinkedFunding(request, conversionLinkedWithdrawalGroups),
       ))
       continue
     }
