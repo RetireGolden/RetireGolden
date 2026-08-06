@@ -212,6 +212,20 @@ describe('readPromotedSchedule', () => {
     expect(readPromotedSchedule(plan(), notAConversion).status).toBe('unreadable')
   })
 
+  it('refuses a patch that leaves the aggregate strategy running beside the named requests', () => {
+    const promotion = publishedPromotion(equivalentPromotion())!
+    const aggregateStillOn = {
+      ...promotion,
+      planPatch: {
+        strategies: {
+          rothConversion: { mode: 'manual', conversions: [{ year: 2026, amount: 65_000 }] },
+          retirementActions: [FIRST, SECOND],
+        },
+      },
+    }
+    expect(readPromotedSchedule(plan(), aggregateStillOn).status).toBe('unreadable')
+  })
+
   it('reports the plan schema’s own words when the patch does not parse', () => {
     const promotion = publishedPromotion(equivalentPromotion())!
     const missingSource = {

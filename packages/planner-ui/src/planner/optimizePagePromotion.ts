@@ -81,9 +81,11 @@ export type PromotedScheduleRead =
  * Materialize a promoted schedule against a plan and describe it row by row.
  *
  * FAIL CLOSED IN BOTH DIRECTIONS: the installed action IDs must be exactly the
- * ones the promotion names, and each one must be a conversion request. A patch
- * that parsed but installed something else is not a schedule this surface may
- * present, let alone apply.
+ * ones the promotion names, each one must be a conversion request, and the
+ * aggregate conversion strategy must be off in the patched plan. A patch that
+ * parsed but installed something else, or that left the aggregate strategy
+ * running beside the named requests to convert the same dollars twice, is not
+ * a schedule this surface may present, let alone apply.
  */
 export function readPromotedSchedule(
   plan: Readonly<Plan>,
@@ -91,6 +93,10 @@ export function readPromotedSchedule(
 ): PromotedScheduleRead {
   const applied = applyScenarioPatch(plan, promotion.planPatch)
   if (!applied.ok) return { status: 'unreadable', issues: applied.issues }
+
+  if (applied.plan.strategies.rothConversion.mode !== 'none') {
+    return { status: 'unreadable', issues: [] }
+  }
 
   const named = [...promotion.actionRequestIds]
   const installed = applied.plan.strategies.retirementActions
