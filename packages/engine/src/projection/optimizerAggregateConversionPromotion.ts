@@ -691,7 +691,13 @@ export function promoteAggregateConversionSchedule(
   },
 ): AggregateConversionPromotionResult {
   const { exploratoryCandidate, ...choiceInput } = input
+  // A missing or blank candidate ID is its own refusal, reported by the
+  // chooser as `winnerCandidateIdMissing`; running the mismatch test over it
+  // would name the wrong defect. The mismatch check therefore applies only to
+  // a winner that actually names a candidate.
   if (input.winner.source === 'candidate' &&
+      input.winner.candidateId !== null &&
+      input.winner.candidateId.trim().length > 0 &&
       exploratoryCandidate.id !== input.winner.candidateId) {
     return {
       status: 'unallocatable',

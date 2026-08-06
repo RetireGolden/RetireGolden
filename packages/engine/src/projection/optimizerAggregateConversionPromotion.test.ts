@@ -840,6 +840,19 @@ describe('minting the candidate', () => {
       .toEqual(['exploratoryCandidateMismatch'])
   })
 
+  it('names the missing candidate ID rather than a mismatch nobody stated', () => {
+    // A blank winner ID trivially differs from the exploratory candidate's,
+    // and the mismatch wording would send a reader after the wrong defect.
+    // The chooser's own refusal is the accurate one, so the mismatch check
+    // stands aside for it.
+    const plan = exampleCoupleHousehold(EXAMPLE_COUPLE_ACCOUNTS())
+    const promotion = promote(plan, 100_000, '  ')
+
+    if (promotion.status !== 'unallocatable') throw new Error('expected a refusal')
+    expect(promotion.choice.issues.map((entry) => entry.kind))
+      .toEqual(['winnerCandidateIdMissing'])
+  })
+
   it('reports the adapter’s own block rather than swallowing it', () => {
     // The winner's year falls outside the exploratory candidate's window, so
     // the adapter refuses the schedule it is asked to stand behind.
