@@ -825,16 +825,12 @@ describe('RetirementActionsEditor', () => {
     ])
   })
 
-  it('keeps a fully reviewed conversion visible until canonical movement is executable', async () => {
+  it('replaces a fully reviewed conversion with the named request that executes it', async () => {
     const plan = editorPlan()
     const target = migratedAction('legacyAggregateRothConversion')
     plan.strategies.retirementActions = [target]
     const mounted = await mount(plan)
     const owner = plan.household.people[0]!
-
-    expect(mounted.container.textContent).toContain(
-      'Roth-conversion review cannot be completed until canonical conversion movement is executable.',
-    )
 
     await change(controlByLabel(mounted.container, 'Person'), owner.id)
     await change(controlByLabel(mounted.container, 'Source account'), 'source-ira')
@@ -857,11 +853,24 @@ describe('RetirementActionsEditor', () => {
     )
     await act(async () => save!.click())
 
-    expect(mounted.current().strategies.retirementActions).toEqual([target])
-    expect(mounted.container.textContent).toContain(
-      'This migrated conversion remains under review.',
-    )
-    expect(mounted.container.textContent).toContain('Needs source review')
+    const saved = mounted.current().strategies.retirementActions
+    expect(saved).toHaveLength(1)
+    const replacement = saved[0]!
+    if (replacement.kind !== 'rothConversion') throw new Error('expected a named conversion')
+    expect(replacement.actionId).not.toBe(target.actionId)
+    expect(replacement.personId).toBe(owner.id)
+    expect(replacement.year).toBe(2034)
+    expect(replacement.executionDate).toBe('2034-09-01')
+    expect(replacement.executionSequence).toBe(4)
+    expect(replacement.requestedAmount).toBe(25_000_00)
+    expect(replacement.destinationRothAccountId).toBe('destination-roth')
+    expect(replacement.taxFunding).toEqual({ kind: 'noneExpected' })
+    expect(replacement.provenance).toEqual({ source: 'manual' })
+    expect(replacement.allocations.map((allocation) => [
+      allocation.sourceAccountId,
+      allocation.requestedAmount,
+    ])).toEqual([['source-ira', 25_000_00]])
+    expect(mounted.container.textContent).not.toContain('Needs source review')
     expect(parsePlan(mounted.current()).ok).toBe(true)
   })
 
@@ -917,7 +926,16 @@ describe('RetirementActionsEditor', () => {
     expect(mounted.container.textContent).not.toContain(
       'Enter a positive exact-cent tax-funding amount.',
     )
-    expect(mounted.current().strategies.retirementActions).toEqual([target])
+    const saved = mounted.current().strategies.retirementActions
+    expect(saved).toHaveLength(1)
+    const replacement = saved[0]!
+    if (replacement.kind !== 'rothConversion') throw new Error('expected a named conversion')
+    expect(replacement.taxFunding).toEqual({
+      kind: 'externalCash',
+      amount: 7,
+      attested: true,
+    })
+    expect(parsePlan(mounted.current()).ok).toBe(true)
   })
 
   it('revokes external-cash attestation whenever its amount changes', async () => {

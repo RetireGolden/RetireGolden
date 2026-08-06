@@ -25,7 +25,8 @@ import {
   emptyRetirementActionManualEditorDraft,
   formatPositiveUsdCents,
   migratedRetirementActionsNeedingReview,
-  RETIREMENT_ACTION_CONVERSION_EXECUTOR_BOUNDARY,
+  retirementActionManualDestinationCandidate,
+  retirementActionManualDestinationSupportIssue,
   retirementActionManualExecutionIssue,
   retirementActionManualPersonSupportIssue,
   retirementActionManualSourceCandidate,
@@ -98,9 +99,8 @@ function destinationOptions(plan: Readonly<Plan>, personId: string) {
   if (personId === '') return []
   return plan.accounts
     .filter((account) =>
-      account.ownerPersonId === personId &&
-      account.type === 'roth' &&
-      account.kind === 'ira',
+      retirementActionManualDestinationCandidate(account) &&
+      retirementActionManualDestinationSupportIssue(account, personId) === null,
     )
     .sort((left, right) => left.id < right.id ? -1 : left.id > right.id ? 1 : 0)
     .map((account) => ({ value: account.id, label: accountOptionLabel(account) }))
@@ -213,12 +213,6 @@ function ManualReviewRow({
         This amount came from an aggregate schedule. Choose every identity and execution fact;
         nothing below is preselected from account order or household position.
       </p>
-      {target.kind === 'legacyAggregateRothConversion' ? (
-        <div className="callout callout--warn" role="status">
-          <strong>{RETIREMENT_ACTION_CONVERSION_EXECUTOR_BOUNDARY}</strong>{' '}
-          Draft facts may still be entered below, but saving cannot replace this migrated row.
-        </div>
-      ) : null}
       {unavailablePeople.length > 0 ? (
         <div className="callout callout--warn" role="status">
           <strong>Some household members are unavailable for this action year.</strong>
