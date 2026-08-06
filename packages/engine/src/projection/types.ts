@@ -761,7 +761,18 @@ export interface YearResult {
   rothConversion: number
   /**
    * The live balances the shared aggregate-conversion allocation policy
-   * weighted this year's owners by, per account ID, in Plan order.
+   * weighted this year's owners by, keyed by account ID.
+   *
+   * THE KEYS CARRY NO ORDER, and a consumer must not read one into them. This
+   * is a plain object, so JavaScript enumerates any integer-like key first and
+   * in numeric order regardless of insertion — an account whose ID is `"12"`
+   * moves to the front — and nothing in the Plan schema forbids such an ID.
+   * Plan order is real and load-bearing for this policy (it decides the owner
+   * slices, the destination search, and the order sources are drawn from), but
+   * it lives in `plan.accounts` and is recovered by joining on it, which is
+   * exactly what `optimizerAggregateConversionPromotion.ts` does before it
+   * allocates. A caller that iterates these keys instead is reading an order
+   * this field never had.
    *
    * These are the exact figures
    * `actions/aggregateRothConversionOwnerAllocation.ts` read, captured at the

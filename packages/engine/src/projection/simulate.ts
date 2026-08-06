@@ -4667,6 +4667,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         // a schedule a person is invited to act on. Publishing here is the
         // only way the two can be the same numbers rather than two numbers
         // that agree today.
+        //
+        // The Plan order this walks in is how the entries are built and not
+        // something the published field promises: a plain object enumerates
+        // integer-like keys first whatever order they went in, so a consumer
+        // recovers Plan order by joining on `plan.accounts`. Stated on the
+        // field itself.
         aggregateRothConversionAllocationBalances = Object.freeze(
           Object.fromEntries(
             balances

@@ -174,6 +174,13 @@ export interface AggregateConversionPromotionWinner {
  *
  * At most one entry per year: a second one for the same year is refused rather
  * than resolved.
+ *
+ * THE KEY ORDER IS NOT READ, and a caller must not arrange one hoping it will
+ * be. `promotionBalancesForYear` joins these balances onto `plan.accounts` and
+ * takes Plan order from there, because Plan order decides the owner slices, the
+ * destination search and the order sources are drawn from — and a plain object
+ * cannot carry it anyway, since JavaScript enumerates integer-like keys first
+ * however they were inserted.
  */
 export interface AggregateConversionPromotionYearBalances {
   readonly year: number

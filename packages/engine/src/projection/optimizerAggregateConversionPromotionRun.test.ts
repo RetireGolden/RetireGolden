@@ -367,10 +367,12 @@ describe('the equality contract', () => {
     }
     // Equal and opposite in every year that diverges: the residue sits on one
     // side of a movement that did happen, rather than money appearing anywhere.
+    // Summed rather than paired off, so the assertion does not depend on which
+    // order `Object.keys` handed the two accounts back in.
     for (const year of new Set(divergences.map((entry) => entry.year))) {
       const inYear = divergences.filter((entry) => entry.year === year)
       expect(inYear).toHaveLength(2)
-      expect(inYear[0]!.differenceCents).toBe(-inYear[1]!.differenceCents)
+      expect(inYear.reduce((total, entry) => total + entry.differenceCents, 0)).toBe(0)
     }
     // Every mandatory key that is not a balance still agrees, which is what
     // makes the diagnosis specific rather than "the projections differ".

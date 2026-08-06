@@ -193,12 +193,25 @@ describe('the published snapshot is what the policy consumed', () => {
     // in it although nothing may convert into one: it is what tells an owner
     // who holds only that kind apart from an owner who holds no Roth at all,
     // and those two hear different sentences.
-    expect(Object.keys(snapshot)).toEqual([
-      'alex-ira',
-      'sam-ira',
-      'alex-roth',
-      'sam-designated-roth',
-    ])
+    //
+    // Asserted as a SET, and never as an enumeration: the field promises which
+    // accounts are stated and what each one held, not what order the keys come
+    // out in, and a plain object cannot promise the second (an integer-like ID
+    // enumerates first however it was inserted). Pinning `Object.keys` order
+    // would pin a property the contract disclaims.
+    expect(new Set(Object.keys(snapshot)))
+      .toEqual(new Set(['alex-ira', 'sam-ira', 'alex-roth', 'sam-designated-roth']))
+    // Per account, joined the way a consumer joins it: on `plan.accounts`,
+    // which is where Plan order actually lives.
+    expect(validatePlan(plan).accounts
+      .filter((account) => snapshot[account.id] !== undefined)
+      .map((account) => [account.id, snapshot[account.id]]))
+      .toEqual([
+        ['alex-ira', 820_000],
+        ['sam-ira', 310_000],
+        ['alex-roth', 145_000],
+        ['sam-designated-roth', 60_000],
+      ])
     // The cash account funds the household and weights nobody, so it is absent
     // rather than published as a figure a reader might weight by.
     expect(snapshot['joint-cash']).toBeUndefined()
