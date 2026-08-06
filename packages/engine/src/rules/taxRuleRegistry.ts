@@ -5175,7 +5175,10 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedBy: [
+      'packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
   },
   'irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira': {
     title: 'A conversion must land in a Roth IRA, never a designated Roth account',
@@ -5253,6 +5256,7 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-05',
     implementedBy: [
+      'packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
     ],
