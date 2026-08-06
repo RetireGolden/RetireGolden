@@ -194,8 +194,9 @@ export interface OptimizerYear {
    * Consequence worth stating plainly: this SHRINKS the feasible region. An
    * over-committed plan — one whose recorded actions drain a bucket harder than
    * the horizon can stand — now reports `infeasible` rather than quietly
-   * solving a richer portfolio. That is the honest answer, and it is one reason
-   * the optimize pipeline still refuses action-bearing plans upstream.
+   * solving a richer portfolio. That is the honest answer, and it is what lets
+   * the engine admit action-bearing plans at all; the only remaining refusal
+   * is the Optimize page's own `optimizerUnsupportedRetirementActions` gate.
    */
   committedActionMovement?: {
     /** Signed movement in the owner-traditional bucket; a debit is negative. Nominal. */
