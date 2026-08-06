@@ -637,7 +637,11 @@ describe('counterfactual annual pass, against the real annual pass', () => {
     )
     const counterfactualYear = controller.observations[0]!.counterfactualYear
 
-    // Today's named arm moves no dollars, so the committed year gives nothing.
+    // Zero for a reason specific to this fixture, not because the named arm
+    // cannot move: a committed named QCD has debited its source since PR #213,
+    // and `donorPlan` carries no `retirementActionEligibilityFacts`, so this
+    // request is refused. The suppression it triggers is unconditional, which
+    // is the whole point — the year gives nothing at all.
     expect(committed.years[0]!.qcd).toBeCloseTo(0, 6)
     // The counterfactual, with no named request in it, gives the aggregate gift.
     expect(counterfactualYear?.qcd).toBeCloseTo(QCD_GIFT_DOLLARS, 6)
