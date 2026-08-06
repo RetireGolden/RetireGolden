@@ -218,14 +218,17 @@ function retirementActionPersonId(action: PlanRetirementAction): PersonId | unde
  * `committedActionMovementForYear` debits the bucket the ledger debited. What
  * still blocks a recommendation is upstream of the arithmetic:
  *
- *   - Named Roth conversions and QCDs commit NO balance movement in the
- *     simulator (`executeRothConversions` publishes evidence with
- *     `committed: false`; a QCD's source account never reaches the executor).
- *     The exact ledger silently drops the recorded intent, so there is no
- *     ledger state for the solver to be right about.
  *   - Every positive-conversion schedule this pipeline produces is vetoed
- *     `identityIncomplete` regardless, because an aggregate schedule carries no
+ *     `identityIncomplete`, because an aggregate schedule carries no
  *     owner/source/destination. A correct LP would still publish nothing.
+ *
+ * What no longer blocks it is the ledger dropping the recorded intent. This
+ * comment used to say named Roth conversions and QCDs commit no balance
+ * movement in the simulator, and both halves are now false: a committed
+ * conversion moves ordered debits and destination credits and is folded into
+ * the published `YearResult.rothConversion` (#182/#186/#187/#188), and the
+ * named QCD path was wired in #213/#219. The netting above is therefore
+ * waiting on nothing but a plan the throw below still refuses to admit.
  *
  * So an action-bearing plan still gets a refusal rather than an answer. Callers
  * check this BEFORE dispatching an optimize request and present a
