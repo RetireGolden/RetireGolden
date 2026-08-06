@@ -198,8 +198,11 @@ Annual computation inside the projection loop ([tax/federalTax.ts](../../package
 
 SECURE 2.0 start ages 73 (born 1951–1959) / **75 (born 1960+)**; Uniform Lifetime Table (Joint Life when
 a spouse is >10 yrs younger). RMDs forced into the ledger as taxable income whether or not spending needs
-them (excess reinvested into taxable). QCDs route a user-set charitable amount from the RMD, excluded
-from income (2026 limit $111k, data-driven). A **QLAC** annuity purchase (§2,
+them (excess reinvested into taxable). A user-set household QCD amount is excluded from income (2026 limit
+$111k, data-driven) and is **not** conditional on an RMD — the pre-RMD window from 70½ is open, and dollars
+beyond the owner's RMD are debited straight from donor-owned IRAs. Separately, a named `qcd` retirement
+action identifies the donor, the source IRA, and the charity, and the annual ledger commits it per donor
+([taxes.md § Named QCD actions](taxes.md#named-qcd-actions)). A **QLAC** annuity purchase (§2,
 [domain rules §17](../domain/domain-rules-reference.md)) removes its premium from the RMD base until the
 deferred payouts begin. The inherited-account **10-year rule** is modeled (forced
 distributions to the post-death deadline — [strategies/inheritedIra.ts](../../packages/engine/src/strategies/inheritedIra.ts)).
@@ -220,6 +223,12 @@ strategies, a true MILP **optimizer** co-optimizes conversions and withdrawals �
 convergence loop with in-solve taxable-gain, state-bracket, taxable-SS phase-in, and IRMAA-lookback fidelity,
 plus an opt-in **co-optimized Social Security claim age**; the strict Owl parity gate (§13) proves the result
 meets or beats Owl on every parity fixture — see [optimizer.md](optimizer.md).
+
+Both modes are aggregate: a year and a household amount. A named `rothConversion` retirement action is the
+identity-bearing path, naming owner, source accounts, and destination Roth, and the annual ledger commits it —
+optionally as an atomic group with the sibling withdrawal that funds its tax. An aggregate optimizer winner is
+withheld until the promotion loop can name those identities and its own exact-ledger run earns the
+recommendation ([optimizer.md § Promoting an aggregate conversion schedule](optimizer.md#promoting-an-aggregate-conversion-schedule)).
 
 ## 9. Withdrawal strategy
 

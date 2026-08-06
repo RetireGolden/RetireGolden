@@ -59,6 +59,10 @@ type-checks against the real `dist/` through a project reference). No React/DOM/
 | Folder (`src/`) | What's here |
 |--------|-------------|
 | `model/` | `plan.ts` (Zod `Plan` schema, `CURRENT_PLAN_SCHEMA_VERSION`), `migrations.ts` |
+| `schema/` | Generated JSON Schema per plan version (`plan.v1..v4.generated.ts`), `generate.ts`, `planSchemaMeta.ts` |
+| `rules/` | `taxRuleRegistry.ts` (one typed frozen record per statutory rule), `describeRule.ts` (the fixture helper that requires a `produced` reading for an `approximated` record), the conformance and quote-fidelity suites, and `approximations/` |
+| `actions/` | Identity-bearing retirement actions: the request contract (`contract.ts`), exact-cent money/identity/structural-ID primitives, the three executors the ledger calls (`execution.ts`, `rothConversionExecution.ts`, `annualQcdExecution.ts`), the conversion-linked funding group, the owned-IRA / beneficiary / SEPP / employer-plan evidence boundaries, and `reasons.ts` (the typed refusal registry) |
+| `internal/` | Not part of the package's public API: the bounded annual-attempt driver, the T0 counterfactual liability run, and the owned-IRA runtime source-series / replay / settlement chain the simulator runs after each attempt |
 | `params/` | `index.ts` (incl. `TRUSTEES_DEFAULT_SS_HAIRCUT`) + `provenance.ts`; federal packs in `data/` (e.g. `year2026.ts`); per-state in `state/` |
 | `tax/` | `federalTax.ts` (incl. `applyCapitalLossCarryforward`), `stateTax.ts`, `aca.ts`, `medicare.ts` |
 | `allocation/` | `assetClasses.ts` (per-class returns/volatilities/yields, blended-return helpers) |
@@ -67,7 +71,7 @@ type-checks against the real `dist/` through a project reference). No React/DOM/
 | `socialSecurity/` | Pure SS math consumed by the ledger: `nra`, `benefitFactor`, `claimFactor`, `piaFromEarnings`, `ssaWageData`, `maritalBenefits`, `survivorBenefit`, `familyMaximum`, `disability` |
 | `longevity/` | `ssaPeriod2022.ts` (SSA period life table) + shared `types.ts` |
 | `strategies/` | `rothConversion.ts`, `optimizer.ts`, `sepp.ts`, `inheritedIra.ts` |
-| `projection/` | `simulate.ts` (the annual ledger), `compare.ts`, `optimizePlan.ts`, `types.ts` (`YearResult`) |
+| `projection/` | `simulate.ts` (the annual ledger), `compare.ts`, `optimizePlan.ts`, `types.ts` (`YearResult`), `annualPassTransaction.ts` (the checkpoint/rollback the staging probe runs under), `optimizerAggregateConversionPromotion*.ts` (turning an aggregate optimizer winner into named requests) |
 | `montecarlo/` | `marketModels.ts`, `historicalReturns.ts`, `rng.ts`, `mortality.ts`, `survival.ts` (survival-percentile ages), `ltcShock.ts`, `run.ts`, `frontiers.ts` |
 | `decisions/` | Shared exact-ledger decision engine: `objectives.ts` (objective policies), candidate `generators.ts`, `evaluateCandidate.ts`, `tournament.ts`, `search.ts`, `spendingSolver.ts`, `swrComparator.ts` (published SWR rules on the user's plan) |
 | `spending/` | Spending layers, guardrails, flexible goals, ABW, and shape presets (`layers.ts`, `guardrails.ts`, `flexibleGoals.ts`, `abw.ts`, `shapePresets.ts`) |
@@ -129,6 +133,12 @@ test files.
   `MonteCarloPage.tsx`, `OptimizePage.tsx`, `SpendingSolverPage.tsx`, `ScenariosPage.tsx`,
   `RelocationComparePage.tsx`, `ComparePlansPage.tsx`, `ProvenancePanel.tsx`, `insights/`
   (`InsightsPage.tsx`, `InsightCardView.tsx`).
+- Retirement actions: `sections/RetirementActionsEditor.tsx` (authoring + the migrated-action manual review),
+  `sections/RetirementActionQcdAuthoringSection.tsx` + `retirementActionQcdAuthoring.ts`,
+  `sections/RetirementActionEligibilityFactsEditor.tsx` + `retirementActionEligibilityFacts.ts` (the IRA
+  classification / SEP-SIMPLE activity / deductible-contribution facts an action needs),
+  `retirementActionPromotionPanels.tsx` + `retirementActionPromotionCopy.ts` + `optimizePagePromotion.ts`
+  (per-verdict optimizer promotion surfaces and the fail-closed Apply read-back).
 - Trust layer: `AssumptionsCardPage.tsx` + `assumptionsExport.ts` (per-plan assumptions card with
   provenance tags and copy-export), `explainPanels.tsx` ("why this number" panels on Monte Carlo and
   Optimize), `HowTestedPage.tsx` (`/how-tested` validation story), `provenanceLinks.ts` (cite-the-authority

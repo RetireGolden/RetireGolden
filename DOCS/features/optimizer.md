@@ -193,6 +193,75 @@ target** (`strategies.survivorReserveTarget`, today's dollars) as a hard floor, 
 whose deflated survivor-year investable balance falls below it. Insights previews use the same evaluator, so an
 Insights card and this page always agree on a change's exact numbers and recommendation state.
 
+## Promoting an aggregate conversion schedule
+
+A tournament winner is a household amount per year and nothing else, so it is vetoed `identityIncomplete`
+before publication: nobody has said whose dollars move, out of which account, into which. The promotion loop
+answers that question and lets the veto lift when — and only when — the answer earns a recommendation on its
+own terms.
+
+The loop runs once per vetoed winner, inside `runExactLedgerTournament`:
+
+1. **Choose.** `chooseAggregateConversionPromotionIntents`
+   ([projection/optimizerAggregateConversionPromotion.ts](../../packages/engine/src/projection/optimizerAggregateConversionPromotion.ts))
+   names the owners, source accounts, destinations, and exact cents by calling the *same*
+   [actions/aggregateRothConversionOwnerAllocation.ts](../../packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts)
+   policy the ledger executes, so a promoted schedule allocates by the rule the projection ran rather than by a
+   second rule that happens to agree. The policy weights each owner by their gross convertible balance as it
+   stood after that year's forced distributions and before any conversion drain, splits by largest remainders,
+   and sends each owner's slice to their first Roth IRA in plan order; an owner with no Roth IRA is trimmed,
+   exactly as the ledger trims them, and the household converts less than the winner's figure as a result.
+   The chooser re-solves nothing — the amount promoted for each year is the ledger's own published
+   `aggregateRothConversionAllocationDesired`, the pre-trim figure the policy was asked for, because handing
+   back the post-trim executed figure would trim the absent owner's phantom share a second time. The one place
+   the chooser is stricter than the policy is an account the plan records no owner for: the policy attributes
+   it to the primary person, and the chooser refuses to name it.
+2. **Mint and price.** The named intents become a candidate through the fill-target adapter, and
+   `evaluateCandidate` runs the exact ledger on it — its own projection, with readiness and execution
+   diagnostics on.
+3. **Compare.** The verdict comes from the equality core (`compareOptimizerExactLedgerResults`): every
+   evaluated account, every year, taxes and penalties and investable total and net worth, equal to the cent,
+   with no epsilon. The richer comparator is then called only to attach binding evidence, never to decide,
+   because its `null` answers several different questions at once.
+
+The tournament publishes on five outcomes (`RetirementActionPromotion` in
+[projection/optimizePlan.ts](../../packages/engine/src/projection/optimizePlan.ts)):
+
+| Outcome | What it means | Published |
+|---|---|---|
+| `equivalent` | Naming the identities changed nothing: the two projections match to the cent | Yes — the promoted candidate, with the equality evidence |
+| `repriced` | A genuinely different projection that earned a recommendation on its own evaluation | Yes — ranked on its own metrics, never on the aggregate's |
+| `repricedNotRecommended` | Different, and not beneficial, or not clear of the schedule it would displace by the switch margin | No |
+| `notComparable` | Minted and priced, then the ledger declined to execute it, or a projection fell outside the equality core's domain | No |
+| `notPromoted` | Nothing lawful could be minted | No |
+
+When a promotion is published the veto is lifted and the promoted candidate *is* the recommendation; otherwise
+the veto stands and the reason is surfaced. A **MILP winner always lands in `notPromoted`**: the comparator's
+solver arm wants provenance whose source ID is the allocated candidate's own ID, which no adapter-minted
+request can carry, so only a fill-to-target generator winner is promotable at all.
+
+The gating predicate is the candidate's own `retirementActionReadiness.state === 'identityComplete'` — not a
+test on the plan's facts. Recorded IRA classification facts are necessary but not sufficient: without them the
+promoted candidate's requests do not execute, the evaluation comes back diagnostic, and the run reports
+`notComparable`; with them, a promotion can still be withheld by any of the three no-publish outcomes.
+
+**The UI.** [planner/retirementActionPromotionPanels.tsx](../../packages/planner-ui/src/planner/retirementActionPromotionPanels.tsx)
+renders one surface per outcome, with every string in
+[planner/retirementActionPromotionCopy.ts](../../packages/planner-ui/src/planner/retirementActionPromotionCopy.ts).
+A published promotion shows the year / person / from / to / amount table read back out of the plan the patch
+installs, plus the owners it trimmed; a `repriced` one also shows the exploratory schedule it came from. A
+withheld promotion shows the frame for its outcome, the engine's own diagnostics or issue details verbatim, and
+— when the plan has unclassified IRA sources — a link to record them, worded so it never promises that
+recording them would produce a recommendation.
+
+**Apply is a fail-closed read-back**, not a re-aggregation. `readPromotedSchedule`
+([planner/optimizePagePromotion.ts](../../packages/planner-ui/src/planner/optimizePagePromotion.ts)) applies the
+promotion's plan patch and then re-reads the result: the aggregate conversion strategy must be off
+(`strategies.rothConversion.mode === 'none'`), the installed action IDs must equal the promised IDs as an
+ordered sequence, and every installed action must be a `rothConversion`. Anything else reads back `unreadable`
+and Apply is blocked. The same read-back memo feeds the table, the Monte Carlo run, the report, and the button,
+so Apply cannot install a plan different from the one on screen.
+
 **Local search refinement:** when a simple candidate wins the tournament, the worker path runs a bounded
 **coordinate-descent search** (`refineConversionSchedule` in
 [engine/decisions/search.ts](../../packages/engine/src/decisions/search.ts)) over the winning schedule's
@@ -277,6 +346,17 @@ Each sharpens the same withdrawal/conversion engine:
 - Inherited traditional accounts are not owner-convertible and are excluded from optimizer conversion
   supply; the exact ledger also refuses to convert them.
 - Permanent-life cash value is not an optimizer drawdown source.
+- The LP models the **balance and cash** consequences of a committed retirement action exactly —
+  `committedActionMovement` carries four signed balance scalars plus the withdrawal's proceeds, and an account
+  in no bucket throws rather than being dropped — and **none** of the income consequences.
+  `ordinaryIncomeBase` excludes every conversion because the LP re-decides conversions as its own variable, and
+  no exogenous term supplies a committed conversion's ordinary income, so a named-conversion year understates
+  the solve's tax by the tax on the converted amount. `strategies.qcdAnnual` has no LP term either: its income
+  offset reaches the solver only as a constant inside the probe's ordinary-income base, and nothing in the LP
+  represents that a QCD satisfies the RMD floor without generating income. The exact-ledger tournament prices
+  every candidate regardless, which is what keeps both gaps out of the recommendation.
+- A plan carrying retirement actions is admitted by `buildOptimizerInput`, but the Optimize page still declines
+  to run for one via the typed `optimizerUnsupportedRetirementActions` predicate.
 
 ## Spike findings (historical)
 

@@ -154,15 +154,47 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
   is open, and dollars requested beyond the owner's IRA RMD are debited straight from donor-owned aggregated IRAs,
   shrinking every later RMD base. Age 70½ is resolved from the birth month at annual granularity (attained 71, or
   attained 70 with a birth month of January–June); within-year timing is not modeled, so a gift dated before the
-  half-birthday counts. That is an engineering convention rather than a legal conclusion — the defining regulation
-  was withdrawn — and is recorded `unsettled` in `irc-408-d-8-B-ii-age-70-half`. The income reduction covers only
+  half-birthday counts. That proxy is registered `approximated` / `understatesTax`
+  (`irc-408-d-8-B-ii-projection-annual-age-proxy`) and errs permissively by up to twelve months for every birth
+  month. The threshold date it is layered on is a separate question: the six-calendar-months sentence survives only
+  in a defined-benefit provision, and nothing resolves a month-end or leap-day birth, so that convention is
+  recorded `unsettled` in `irc-408-d-8-B-ii-age-70-half`. The income reduction covers only
   the taxable share of the RMD dollars routed out; the beyond-RMD dollars never entered income, so deducting them
   would be phantom. Three approximations remain in the annual ledger, each registered: eligibility and the annual
   limit are applied to the **household** rather than to each donor
   (`irc-408-d-8-A-projection-household-qcd-aggregation`), pro-rata basis recovery runs across the whole
   distribution before the gift is subtracted instead of leaving the gift out of the section 72 computation
   (`irc-408-d-8-D-projection-qcd-after-pro-rata`), and the post-70½ deductible-contribution offset in the second
-  sentence of 408(d)(8)(A) is not applied. No charity, direct transfer, or per-donor IRA source is identified.
+  sentence of 408(d)(8)(A) is not applied — the aggregate arm excludes the full gift however much the donor has
+  deducted since 70½ and keeps no running total (`irc-408-d-8-A-projection-post-70-half-contribution-offset`). No
+  charity, direct transfer, or per-donor IRA source is identified.
+- **Named QCD actions.** A `qcd` retirement action names the donor, one owned source IRA, an exact-cent
+  allocation, and a charity, and the annual projection **commits** it — `simulate.ts` calls the execution
+  prerequisite, the physical staging, and the executor, and only the executor can report a committed gift.
+  Everything the aggregate arm approximates at household level is answered per donor here. Age 70½ is the exact
+  civil date 846 calendar months from the birth date with a month-end clamp, published on the record as
+  `calculation: 'addCalendarMonths846WithMonthEndClamp'` so a reader can see the arithmetic was chosen
+  (`irc-408-d-8-B-ii-age-70-half`, `unsettled`: the six-calendar-months sentence survives only in a
+  defined-benefit provision, and nothing at any level resolves a month-end or leap-day birth). The gift's
+  scheduled date must fall in the action year and on or after that threshold. The source must be an owned,
+  non-inherited IRA carrying a recorded classification fact; employer plans and inherited IRAs are excluded
+  structurally (`irc-408-d-8-beneficiary-ira-source`, `irc-408-d-8-roth-ira-source`). The charity must be
+  designated an eligible public charity with the direct-transfer, eligible-organization, and
+  not-a-DAF-or-supporting-organization attestations all true; a split-interest designation is refused on its own
+  reason (`irc-408-d-8-F-split-interest-sublimit`). The post-70½ deductible-contribution offset **is** applied on
+  this arm, from persisted per-donor contribution evidence plus a lifetime running total the annual pass carries,
+  and a donor whose history cannot be proved is failed closed rather than offset by an assumed zero. The annual
+  exclusion limit must be a sourced figure for the action's own year: a gift past the parameter pack is refused
+  and stands the aggregate arm down for that year too (`irc-408-d-8-A-named-qcd-limit-after-the-pack-year`,
+  `outOfScope` — the aggregate arm extrapolates its limit by plan inflation, and the named arm does not inherit
+  that because only it claims an action executed). Two boundaries remain. The annual pass distributes the whole
+  required amount in cash before any gift is sized, so every named gift is modeled as beyond the requirement and
+  the record's `rmdSatisfiedAmount` is structurally zero — stated on the record through a typed `coordination`
+  field rather than left to be inferred, and registered `approximated` / `overstatesTax` with a `produced` fixture
+  (`treas-reg-1-408-8-g-projection-named-qcd-beyond-rmd`); the aggregate arm does model the coordination, so the
+  two arms answer the same household differently. And the executor refuses the whole batch whenever any gift
+  leaves a positive section 170 amount to deduct, so no named QCD produces a charitable deduction. The ordering
+  rule that makes an earlier cash distribution irrevocable is `treas-reg-1-408-8-b-3-rmd-first-dollars-out`.
 - **Inherited accounts.** A designated beneficiary's annual amount uses the **Single Life Table** divisor fixed at
   the age attained in the year after the owner's death and reduced by one for each later year (Treas. Reg.
   1.401(a)(9)-5(d)(3)(iii)) — not a life expectancy recomputed at the beneficiary's current age
@@ -327,10 +359,31 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
   whole gross as taxable; at a positive one it commits the dollars and states **no** character, and the annual
   settlement supplies the Form 8606 line-10 ratio back through the assumption vector, so the year holds one answer
   to the owner's pro-rata question instead of a second mid-year one. Under §408A(d)(3)(F)(ii) the layer's
-  recapture amount is then the credited dollars net of that basis return. Still refused with balances unchanged: a
-  conversion whose tax is funded by a linked sibling withdrawal (the atomic annual group executor that would move
-  both together does not exist), withholding from conversion principal, and a request larger than the source —
-  there is no partial-execution arm.
+  recapture amount is then the credited dollars net of that basis return (`irc-408A-d-3-F-roth-conversion-recapture`).
+  Still refused with balances unchanged: withholding from conversion principal, and a request larger than the
+  source — there is no partial-execution arm. An employer plan is refused as a named source for want of dated
+  rollover-availability evidence and as a named destination outright; the legacy aggregate schedules do convert an
+  employer balance with no distributability gate, registered `approximated`
+  (`irc-401-k-2-B-i-employer-plan-conversion-source-not-gated-by-distributability`).
+- **Conversion-linked tax funding.** A named conversion may name a sibling ordinary withdrawal that pays its tax,
+  and the annual projection moves both legs or neither: the disposition is `executedAsAtomicGroup` or
+  `refusedPendingGroupExecution`. Sizing the funding takes three runs of the same annual pass — a T0
+  counterfactual without the conversions, a staging probe inside a simulator annual-pass transaction that is
+  always rolled back, and the committed run — each minting a liability-run identity typed `baselineT0`,
+  `candidateT1`, or `committedAnnual`, with a mismatched or colliding slot a typed refusal rather than a silent
+  mispricing. The group's required funding is the exact rational `max(0, T1 − T0)`, quantized once
+  nearest-cent-half-up and split by largest remainders; what the withdrawal actually executed is observed
+  separately and reconciled against it. Authorization is per conversion/withdrawal pair, read off the discarded
+  probe's own facts, and released all-or-nothing across one filing unit's year. The arm is reachable only for an
+  owner with proven-zero aggregated nondeductible basis: a positive Form 8606 numerator makes the conversion's
+  character null, a null character is no allocation weight, and the funding evaluation refuses a weight nobody can
+  state instead of reading it as zero — so one positive-basis owner withholds that year's other groups with it. An
+  unproven basis never reaches the group, because the conversion itself is refused first.
+- **Promoting an aggregate schedule.** The `identityIncomplete` veto is now conditional rather than absolute: an
+  optimizer winner can be turned into named requests by the promotion loop, which allocates by the same
+  owner-allocation policy the ledger executes, prices the named candidate on its own exact-ledger run, and
+  publishes only on `equivalent` (the two projections match to the cent) or on `repriced` where the named
+  schedule earns a recommendation on its own metrics. See [features/optimizer.md](../features/optimizer.md).
 - Strategy interactions the engine must reflect: bracket fill, IRMAA tiers (+2yr lag), ACA cliff, SS provisional income, NIIT, senior-deduction phase-out, widow's-penalty (survivor files single), reduced future RMDs.
 
 ## 11. Withdrawal sequencing (modeling conventions)
@@ -349,15 +402,20 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
   (`irc-72-t-3-B-sepp-separation-annual-proxy`). IRAs are exempt from the test, as the statute provides.
 - Research consensus: naive "taxable-then-deferred-then-Roth" is beaten by bracket-aware blends (fill low brackets from traditional every year); this motivates the bracket-targeted strategy and the LP optimizer (see [features/optimizer.md](../features/optimizer.md) and the Owl oracle).
 - The optimizer recommendation is **optimal on the exact ledger to tolerance** (2026-07-08): the MILP models the taxable-SS phase-in, IRMAA 2-year lookback, taxable-gain realization, and state brackets in-solve; an exact-ledger convergence loop re-linearizes around the incumbent; and the exact-ledger tournament (windowed bracket fills, top-two + MILP-winner local search) arbitrates and gates everything. The dev-only Owl parity harness (`npm run owl-parity`) measures RetireGolden at-or-above Owl on every fixture.
-- **The optimizer publishes no positive-conversion recommendation today.** An aggregate schedule carries no owner,
-  source account, or destination account, so every schedule the pipeline produces that would convert a positive
-  amount is vetoed `identityIncomplete` before publication and the tournament falls back to the plan's incumbent
-  conversions; only a winning schedule that converts nothing can be published. Separately, a plan that already
-  carries retirement actions is refused up front as a typed precondition — `optimizerUnsupportedRetirementActions`
-  returns an `optimizer-retirement-action-unsupported` reason that surfaces must check before dispatching —
-  because the optimizer prices conversions against aggregate account balances, which do not reflect what a
-  recorded action moves. The LP does now net committed action movement into its per-year balance recursion
-  (`committedActionMovement`), so the arithmetic is in place ahead of the veto being liftable.
+- **An aggregate schedule is still vetoed; a named one can be published.** A schedule carrying only a year and a
+  household amount names no owner, source account, or destination, so every one that would convert a positive
+  amount is vetoed `identityIncomplete` before publication. What lifts the veto is not a different amount but a
+  different kind of schedule: the promotion loop turns a vetoed winner into named retirement-action requests,
+  prices them on their own exact-ledger run, and the tournament publishes the promoted candidate when it is
+  cent-identical to the aggregate winner or, being a different projection, earns a recommendation on its own
+  metrics. A solver winner is never promotable, because the provenance the comparator requires of one is
+  provenance no adapter-minted request can carry. With nothing published the veto stands and the tournament falls
+  back to the plan's incumbent conversions. Separately, `buildOptimizerInput` now admits an action-bearing plan —
+  the LP nets committed action movement into its per-year balance recursion (`committedActionMovement`) — while
+  the typed `optimizerUnsupportedRetirementActions` predicate remains the Optimize page's own gate, returning an
+  `optimizer-retirement-action-unsupported` reason that surface must check before dispatching. The LP models no
+  income consequence of a committed action: a named-conversion year understates the solve's tax by the tax on the
+  converted amount, and `strategies.qcdAnnual` has no LP term at all.
 
 ## 12. Monte Carlo methodology notes
 
@@ -876,12 +934,34 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   — 408(d)(8)(D) keeps a QCD out of the pro-rata computation entirely, so it never belongs to a basis allocation.
   The named-QCD arm commits inside the projection too: `simulate.ts` calls the QCD execution prerequisite,
   physical staging and executor, which run the tax-character post-pass and owner-wide pool capacity behind
-  them. What is still standalone and uncalled by `simulate.ts` is the Plan-owned annual coordinator and its
-  post-candidate evidence builder, the SEPP payment validator and annual reconciler, and the `annualQcd*`
-  evidence, finalization and §170 deduction stack below the executor. Each of those reports
+  them. A fourth path moves dollars only as part of a pair: a conversion whose tax is funded by a named sibling
+  withdrawal executes as an atomic group or not at all (§10).
+  The named-conversion and named-QCD **source** opening balances, the linked group's leg-fundability probe, and
+  the legacy aggregate QCD drain each cross in through `planDollarsToFlooredLedgerCents` rather than the
+  measuring converter, because the measuring converter rounds half-up and can report up to half a cent more than
+  the account holds. Truncating makes an overdraw unreachable instead of detectable afterwards; the sub-cent
+  residue stays in the account, so a drained source closes at that residue rather than at a hard zero. A
+  destination keeps the measuring converter, since a credit is a measurement and not a spending capacity, and so
+  does the movement predicate, where flooring would wrongly suppress a movement between half a cent and a cent.
+  Every movement out of an owned non-Roth IRA is then bound in both directions to the runtime source series
+  (`internal/ownedNonRothIraRuntimeSourceSeries.ts`), which the settlement pass runs: a named conversion or QCD
+  occurrence must rejoin exactly one committed executor record in exact cents, and every committed record must
+  have its occurrence, so neither a forged occurrence nor an unrecorded balance change survives. The series also
+  carries the signed cent residual that independently rounding a before, gross, and after value leaves, so the
+  `before ± amount + residual === after` identity holds rather than being approximated.
+  What is still standalone and uncalled by `simulate.ts` is the Plan-owned annual coordinator and its
+  post-candidate evidence builder, the SEPP payment validator and annual reconciler, the employer-plan
+  withdrawal-character and penalty boundaries, and the `annualQcd*` evidence, finalization and §170 deduction
+  stack below the executor — eight of the twelve `annualQcd*` modules are reachable only from each other and the
+  package barrel. Each of those reports
   `movement: notCommitted`, and none of them establishes custodian settlement or filing-grade treatment.
   The standalone Plan-owned commit boundary that once headed that list is gone; owned-IRA basis is settled
   from runtime occurrences through `internal/ownedNonRothIraAnnualAttemptSettlement.ts`.
+  The section 170 and section 68 ledger family is gated the same way and deliberately: nothing in `projection/`
+  or `tax/federalTax.ts` reaches it, so the registry records pin the live behavior rather than the shelved
+  implementation (`irc-170-b-1-G-projection-cash-ceiling-not-applied` and
+  `irc-170-p-projection-nonitemizer-deduction-not-allowed`, both `approximated`), and the named-QCD executor
+  refuses outright any gift that would leave a positive section 170 amount to deduct.
 - **Fixed-asset disposition.** Setting `costBasis` on a property switches its planned sale from the legacy
   tax-free `expectedNetProceeds` estimate to exact treatment: gain = sale price − selling costs
   (`sellingCostPct`) − basis; depreciation (`depreciationRecapture`) is ordinary income and never excludable;
@@ -900,6 +980,10 @@ additive with a no-op default, so plans saved before it stay byte-identical.
 [engine/actions/ownedNonRothIraAnnualPlanCoordinator.ts](../../packages/engine/src/actions/ownedNonRothIraAnnualPlanCoordinator.ts),
 [engine/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts](../../packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts),
 [engine/actions/ownedNonRothIraSeppAnnualReconciliation.ts](../../packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts),
+[engine/actions/rothConversionExecution.ts](../../packages/engine/src/actions/rothConversionExecution.ts),
+[engine/actions/annualQcdExecution.ts](../../packages/engine/src/actions/annualQcdExecution.ts),
+[engine/actions/conversionLinkedWithdrawalGroupExecution.ts](../../packages/engine/src/actions/conversionLinkedWithdrawalGroupExecution.ts),
+[engine/internal/ownedNonRothIraRuntimeSourceSeries.ts](../../packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts),
 [engine/tax/propertySale.ts](../../packages/engine/src/tax/propertySale.ts), threaded through
 [engine/projection/simulate.ts](../../packages/engine/src/projection/simulate.ts) and the after-tax estate metric in
 [engine/projection/compare.ts](../../packages/engine/src/projection/compare.ts).
