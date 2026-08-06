@@ -831,6 +831,32 @@ function exactCentAmountFrom(
 }
 
 /**
+ * Reduce an exact `bigint` rational count of cents into the amount shape this
+ * module compares by field equality.
+ *
+ * The producer of a liability figure lives outside this module — the annual pass
+ * is the only thing that can compute one — and it needs the lowest-terms
+ * reduction that `sameExactCentAmount` and the cross-member identity check
+ * silently depend on. Exporting the reduction rather than the invariant's
+ * restatement keeps one implementation of "in lowest terms": a second one would
+ * eventually spell the same liability two ways, and two members of one group
+ * carrying the same liability would then compare unequal.
+ *
+ * Non-throwing. A negative numerator, a non-positive denominator, or a reduced
+ * pair that leaves the safe-integer range all return `null` rather than a
+ * partially valid amount.
+ */
+export function reducedConversionTaxFundingExactCentAmount(
+  numeratorMinorUnits: bigint,
+  denominator: bigint,
+): Readonly<ConversionTaxFundingExactCentAmount> | null {
+  if (numeratorMinorUnits < 0n || denominator <= 0n) return null
+  return exactCentAmountFrom(
+    reduceExactCentRational(numeratorMinorUnits, denominator),
+  )
+}
+
+/**
  * Build one filing unit's annual funding evaluation from two liabilities and
  * the conversions they are owed by.
  *
