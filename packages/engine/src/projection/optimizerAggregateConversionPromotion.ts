@@ -120,8 +120,9 @@ import type { Account, Plan } from '../model/plan.js'
  *
  * Its one caller is `optimizerAggregateConversionPromotionRun.ts`, which reads
  * the ledger's published snapshots off the vetoed projection, runs this
- * chooser, prices the minted candidate on the exact ledger and records what
- * `compareOptimizerAllocatedCandidate` said about the pair. No optimizer entry
+ * chooser, prices the minted candidate on the exact ledger, and decides the
+ * verdict with the exact-ledger equality core — `compareOptimizerAllocatedCandidate`
+ * only attaches binding evidence to an `equivalent`. No optimizer entry
  * point calls that runner yet, and no surface publishes its answer: the veto
  * and the `buildOptimizerInput` throw both still stand, and lifting them is the
  * next slice.
