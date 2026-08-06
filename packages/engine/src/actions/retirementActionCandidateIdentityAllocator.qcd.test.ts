@@ -7,7 +7,12 @@ import {
   type QcdCandidateIdentityIntent,
 } from './retirementActionCandidateIdentityAllocator.js'
 import type { Account, Plan } from '../model/plan.js'
-import { couplePlan, singlePersonPlan, traditionalAccount } from '../testing/planFixtures.js'
+import {
+  couplePlan,
+  ownedNonRothIraAnnualFilingSourceRecord,
+  singlePersonPlan,
+  traditionalAccount,
+} from '../testing/planFixtures.js'
 
 const charity = {
   designationId: 'charity-a',
@@ -160,5 +165,26 @@ describe('QCD candidate identity allocation', () => {
     if (collision.status === 'blocked') {
       expect(collision.issues.map((entry) => entry.kind)).toContain('generatedIdentityCollision')
     }
+  })
+
+  it('refuses a gift allocated against an annual filing-source root the arbiter rejects', () => {
+    const plan = singlePersonPlan()
+    plan.accounts = [traditionalAccount('ira-a', 100_000)]
+    const clean = structuredClone(plan)
+    plan.retirementActionAnnualTaxFacts = {
+      ownedNonRothIraAnnualFilingSourceRecords: [
+        ownedNonRothIraAnnualFilingSourceRecord(plan, 'p1', ['ira-a'], 2030, 'first'),
+        ownedNonRothIraAnnualFilingSourceRecord(plan, 'p1', ['ira-a'], 2030, 'second'),
+      ],
+    }
+
+    const rejected = allocateRetirementActionCandidateIdentity(plan, qcdIntent())
+    const unaffected = allocateRetirementActionCandidateIdentity(clean, qcdIntent())
+
+    expect(rejected.status).toBe('blocked')
+    if (rejected.status !== 'blocked') return
+    expect(rejected.issues.map((entry) => entry.kind)).toEqual(['ambiguousIdentity'])
+    expect(rejected.issues[0].detail).toContain('duplicateOwnerYearSource')
+    expect(unaffected.status).toBe('allocated')
   })
 })

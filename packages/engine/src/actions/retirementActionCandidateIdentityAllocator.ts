@@ -25,6 +25,9 @@ import {
   type PositiveUsdCents,
 } from './money.js'
 import {
+  reservePlanOwnedNonRothIraAnnualFilingSourceIdentifiers,
+} from './ownedNonRothIraAnnualFilingSourceResolver.js'
+import {
   createActionReason,
   type ActionReason,
   type BlockingActionReasonCode,
@@ -38,9 +41,6 @@ import {
   type Account,
   type Plan,
 } from '../model/plan.js'
-import {
-  planOwnedNonRothIraAnnualFilingSourceIdentifierClaims,
-} from '../model/retirementActionAnnualTaxFacts.js'
 
 export interface RetirementActionCandidateSourceIntent {
   /** Existing stable Plan account identity; categories and display names are not accepted. */
@@ -206,16 +206,37 @@ function matchingAccounts(plan: Readonly<Plan>, accountId: string): readonly Acc
   return plan.accounts.filter((account) => account.id === accountId)
 }
 
-function completePlanReservedIdentifiers(plan: Readonly<Plan>): Set<string> {
+interface CompletePlanIdentityNamespace {
+  reserved: Set<string>
+  /** Non-null when the annual filing-source root lost arbitration and proves nothing. */
+  filingSourceRejection: RetirementActionCandidateIdentityIssue | null
+}
+
+/**
+ * The Plan identity namespace, with the annual filing-source root consulted
+ * through its canonical arbiter rather than indexed directly: a duplicated
+ * owner/year key or a shared source identifier rejects every affected record,
+ * and identifiers no arbitration proved are never reserved from a rejected root.
+ */
+function completePlanIdentityNamespace(
+  plan: Readonly<Plan>,
+): CompletePlanIdentityNamespace {
+  const reservation = reservePlanOwnedNonRothIraAnnualFilingSourceIdentifiers(plan)
   const reserved = new Set(retirementActionPlanReservedIdentifiers(plan))
-  for (const record of (
-    plan.retirementActionAnnualTaxFacts?.ownedNonRothIraAnnualFilingSourceRecords ?? []
-  )) {
-    for (const claim of planOwnedNonRothIraAnnualFilingSourceIdentifierClaims(record)) {
-      reserved.add(claim.value)
-    }
+  for (const identifier of reservation.identifiers) reserved.add(identifier)
+  const rejectedKinds = [...new Set(reservation.issues.map((entry) => entry.kind))]
+    .sort(compareUtf16CodeUnits)
+  return {
+    reserved,
+    filingSourceRejection: reservation.status === 'rejected'
+      ? issue(
+          'ambiguousIdentity',
+          'plan.retirementActionAnnualTaxFacts.ownedNonRothIraAnnualFilingSourceRecords',
+          `The Plan's annual filing-source records are rejected without precedence (${rejectedKinds.join(', ')}), so the identifiers they claim cannot be proven and no identity may be allocated against them.`,
+          null,
+        )
+      : null,
   }
-  return reserved
 }
 
 function ordinarySourceIssue(
@@ -573,7 +594,11 @@ function allocateQcdCandidateIdentityUnchecked(
     )])
   }
 
-  const reserved = completePlanReservedIdentifiers(plan)
+  const namespace = completePlanIdentityNamespace(plan)
+  if (namespace.filingSourceRejection !== null) {
+    return blocked([namespace.filingSourceRejection])
+  }
+  const reserved = namespace.reserved
   const collisionIssues: RetirementActionCandidateIdentityIssue[] = []
   for (const claim of [
     { field: 'actionId', value: actionId },
@@ -969,7 +994,11 @@ function allocateRetirementActionCandidateIdentityUnchecked(
     }))
     .sort((left, right) => compareUtf16CodeUnits(left.allocationId, right.allocationId))
 
-  const reserved = completePlanReservedIdentifiers(plan)
+  const namespace = completePlanIdentityNamespace(plan)
+  if (namespace.filingSourceRejection !== null) {
+    return blocked([namespace.filingSourceRejection])
+  }
+  const reserved = namespace.reserved
   const collisionIssues: RetirementActionCandidateIdentityIssue[] = []
   for (const claim of [
     { field: 'actionId', value: actionId },

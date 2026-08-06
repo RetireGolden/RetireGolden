@@ -23,6 +23,7 @@ import { planSchema, type Account, type Plan } from '../model/plan.js'
 import {
   cashAccount,
   couplePlan,
+  ownedNonRothIraAnnualFilingSourceRecord,
   singlePersonPlan,
   taxableAccount,
   traditionalAccount,
@@ -1053,6 +1054,47 @@ describe('manual retirement-action review and replacement', () => {
     expect(issueKinds(review(plan, 'legacy-withdrawal', ordinaryIntent()))).toEqual([
       'reviewEvidenceCollision',
     ])
+  })
+
+  it('reserves annual filing-source identifiers through the arbiter for review evidence', () => {
+    const plan = basePlan()
+    plan.strategies.retirementActions = [legacyWithdrawal()]
+    const baseline = review(plan, 'legacy-withdrawal', ordinaryIntent())
+    expect(baseline.status).toBe('replacementReady')
+    if (baseline.status !== 'replacementReady') return
+    const source = ownedNonRothIraAnnualFilingSourceRecord(plan, 'p1', ['traditional-a'])
+    source.sourceRecordId = baseline.evidence.evidenceId
+    plan.retirementActionAnnualTaxFacts = {
+      ownedNonRothIraAnnualFilingSourceRecords: [source],
+    }
+    expect(planSchema.safeParse(plan).success).toBe(true)
+
+    expect(issueKinds(review(plan, 'legacy-withdrawal', ordinaryIntent()))).toEqual([
+      'reviewEvidenceCollision',
+    ])
+  })
+
+  it('refuses review against an annual filing-source root the arbiter rejects', () => {
+    const plan = basePlan()
+    plan.strategies.retirementActions = [legacyWithdrawal()]
+    plan.retirementActionAnnualTaxFacts = {
+      ownedNonRothIraAnnualFilingSourceRecords: [
+        ownedNonRothIraAnnualFilingSourceRecord(plan, 'p1', ['traditional-a'], 2030, 'first'),
+        ownedNonRothIraAnnualFilingSourceRecord(plan, 'p1', ['traditional-a'], 2030, 'second'),
+      ],
+    }
+
+    const result = review(plan, 'legacy-withdrawal', ordinaryIntent())
+
+    // Refused on the duplicated root itself, not on the downstream Plan parse:
+    // the same rejection the arbiter publishes, at the first consult of the root.
+    expect(result).toMatchObject({ status: 'blocked', outcome: 'refused' })
+    expect(issueKinds(result)).toEqual(['allocatorBlocked'])
+    if (result.status === 'replacementReady') return
+    expect(result.issues[0].detail).toContain('duplicateOwnerYearSource')
+    expect(result.issues[0].allocatorIssue?.field).toBe(
+      'plan.retirementActionAnnualTaxFacts.ownedNonRothIraAnnualFilingSourceRecords',
+    )
   })
 
   it('classifies a correctable replacement Plan validation failure as refused', () => {

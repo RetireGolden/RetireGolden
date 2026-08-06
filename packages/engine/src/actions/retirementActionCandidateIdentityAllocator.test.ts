@@ -511,6 +511,68 @@ describe('retirement-action candidate identity allocator', () => {
     expect(issueKinds(collision)).toContain('generatedIdentityCollision')
   })
 
+  it('refuses to allocate against an annual filing-source root the arbiter rejects', () => {
+    const plan = singlePersonPlan()
+    plan.accounts = [ownedCash('cash-a'), traditionalAccount('trad-a', 100_000)]
+    const first = ownedNonRothIraAnnualFilingSourceRecord(plan, 'p1', ['trad-a'], 2030, 'first')
+    const second = ownedNonRothIraAnnualFilingSourceRecord(plan, 'p1', ['trad-a'], 2030, 'second')
+    plan.retirementActionAnnualTaxFacts = {
+      ownedNonRothIraAnnualFilingSourceRecords: [first, second],
+    }
+    // The duplicated owner/year key is exactly what the persisted Plan refuses,
+    // so the allocator must not reach a different verdict from the same root.
+    expect(parsePlan(plan).ok).toBe(false)
+
+    const result = allocateRetirementActionCandidateIdentity(plan, ordinaryIntent())
+
+    expect(result.status).toBe('blocked')
+    expect(issueKinds(result)).toEqual(['ambiguousIdentity'])
+    expect(reasonCodes(result)).toEqual([])
+    if (result.status !== 'blocked') return
+    expect(result.issues[0].field).toBe(
+      'plan.retirementActionAnnualTaxFacts.ownedNonRothIraAnnualFilingSourceRecords',
+    )
+    expect(result.issues[0].detail).toContain('duplicateOwnerYearSource')
+    expect(result.request).toBeNull()
+  })
+
+  it('refuses an annual filing-source root whose records share one stable identifier', () => {
+    const plan = singlePersonPlan()
+    plan.accounts = [ownedCash('cash-a'), traditionalAccount('trad-a', 100_000)]
+    const first = ownedNonRothIraAnnualFilingSourceRecord(plan, 'p1', ['trad-a'], 2030, 'first')
+    const second = ownedNonRothIraAnnualFilingSourceRecord(plan, 'p1', ['trad-a'], 2031, 'second')
+    second.sourceEvidenceId = first.sourceEvidenceId
+    plan.retirementActionAnnualTaxFacts = {
+      ownedNonRothIraAnnualFilingSourceRecords: [first, second],
+    }
+
+    const result = allocateRetirementActionCandidateIdentity(plan, ordinaryIntent())
+
+    expect(result.status).toBe('blocked')
+    expect(issueKinds(result)).toEqual(['ambiguousIdentity'])
+    if (result.status !== 'blocked') return
+    expect(result.issues[0].detail).toContain('duplicateSourceIdentifier')
+  })
+
+  it('allocates unchanged against a clean annual filing-source root', () => {
+    const plan = singlePersonPlan()
+    plan.accounts = [ownedCash('cash-a'), traditionalAccount('trad-a', 100_000)]
+    const clean = structuredClone(plan)
+    plan.retirementActionAnnualTaxFacts = {
+      ownedNonRothIraAnnualFilingSourceRecords: [
+        ownedNonRothIraAnnualFilingSourceRecord(plan, 'p1', ['trad-a'], 2030, 'first'),
+        ownedNonRothIraAnnualFilingSourceRecord(plan, 'p1', ['trad-a'], 2031, 'second'),
+      ],
+    }
+    expect(parsePlan(plan).ok).toBe(true)
+
+    const withSources = allocateRetirementActionCandidateIdentity(plan, ordinaryIntent())
+    const withoutSources = allocateRetirementActionCandidateIdentity(clean, ordinaryIntent())
+
+    expect(withSources.status).toBe('allocated')
+    expect(withSources).toEqual(withoutSources)
+  })
+
   it('canonicalizes nested purpose facts rather than depending on object property insertion order', () => {
     const plan = singlePersonPlan()
     plan.accounts = [ownedCash('cash-a')]

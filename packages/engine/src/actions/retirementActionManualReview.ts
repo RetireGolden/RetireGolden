@@ -13,6 +13,9 @@ import {
 } from './identity.js'
 import type { PositiveUsdCents } from './money.js'
 import {
+  reservePlanOwnedNonRothIraAnnualFilingSourceIdentifiers,
+} from './ownedNonRothIraAnnualFilingSourceResolver.js'
+import {
   allocateRetirementActionCandidateIdentity,
   type RetirementActionCandidateIdentityEvidence,
   type RetirementActionCandidateIdentityIntent,
@@ -27,9 +30,6 @@ import {
   retirementActionPlanReservedIdentifiers,
   type Plan,
 } from '../model/plan.js'
-import {
-  planOwnedNonRothIraAnnualFilingSourceIdentifierClaims,
-} from '../model/retirementActionAnnualTaxFacts.js'
 
 export interface RetirementActionManualReviewInput {
   plan: Readonly<Plan>
@@ -251,16 +251,36 @@ function actionAllocationIds(action: RetirementActionRequest): string[] {
     : []
 }
 
-function completePlanReservedIdentifiers(plan: Readonly<Plan>): Set<string> {
+interface CompletePlanIdentityNamespace {
+  reserved: Set<string>
+  /** Non-null when the annual filing-source root lost arbitration and proves nothing. */
+  filingSourceRejection: RetirementActionManualReviewIssue | null
+}
+
+/**
+ * The Plan identity namespace, with the annual filing-source root consulted
+ * through its canonical arbiter rather than indexed directly, so a duplicated
+ * owner/year key or a shared source identifier rejects every affected record
+ * here exactly as it does everywhere else the root is read.
+ */
+function completePlanIdentityNamespace(
+  plan: Readonly<Plan>,
+): CompletePlanIdentityNamespace {
+  const reservation = reservePlanOwnedNonRothIraAnnualFilingSourceIdentifiers(plan)
   const reserved = new Set(retirementActionPlanReservedIdentifiers(plan))
-  for (const sourceRecord of (
-    plan.retirementActionAnnualTaxFacts?.ownedNonRothIraAnnualFilingSourceRecords ?? []
-  )) {
-    for (const claim of planOwnedNonRothIraAnnualFilingSourceIdentifierClaims(sourceRecord)) {
-      reserved.add(claim.value)
-    }
+  for (const identifier of reservation.identifiers) reserved.add(identifier)
+  const rejectedKinds = [...new Set(reservation.issues.map((entry) => entry.kind))]
+    .sort(compareUtf16CodeUnits)
+  return {
+    reserved,
+    filingSourceRejection: reservation.status === 'rejected'
+      ? issue(
+          'replacementPlanInvalid',
+          'plan.retirementActionAnnualTaxFacts.ownedNonRothIraAnnualFilingSourceRecords',
+          `The Plan's annual filing-source records are rejected without precedence (${rejectedKinds.join(', ')}), so the identifiers they claim cannot be proven and no manual-review evidence may be created against them.`,
+        )
+      : null,
   }
-  return reserved
 }
 
 type ReviewedIdentityReferences = Pick<
@@ -797,7 +817,11 @@ function reviewUnchecked(
       },
     }),
   ])
-  const reservedIdentifiers = completePlanReservedIdentifiers(replacementPlanResult.data)
+  const namespace = completePlanIdentityNamespace(replacementPlanResult.data)
+  if (namespace.filingSourceRejection !== null) {
+    return blocked([namespace.filingSourceRejection], target)
+  }
+  const reservedIdentifiers = namespace.reserved
   reservedIdentifiers.add(target.actionId)
   for (const allocationId of actionAllocationIds(target)) reservedIdentifiers.add(allocationId)
   if (reservedIdentifiers.has(reviewEvidenceId)) {
