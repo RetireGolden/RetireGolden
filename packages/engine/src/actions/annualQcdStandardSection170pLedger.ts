@@ -4,11 +4,11 @@ import { asUsdCents, type UsdCents } from './money.js'
 import { stageAnnualQcdResidualForm8606, type AnnualQcdResidualForm8606Staged } from './annualQcdResidualForm8606.js'
 import type { StageAnnualQcdTaxCharacterPostPassInput } from './annualQcdTaxCharacterPostPass.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from './structuralId.js'
+import type { AnnualLiabilityRunBinding } from './annualLiabilityRunIdentity.js'
 import type { TaxableWithdrawalTaxUnitEvidence } from './taxableWithdrawalCharacter.js'
 
-export type AnnualQcdSection170pRunBinding =
-  | { readonly liabilityRunKind: 'committedAnnual' | 'baselineT0'; readonly candidateFundingVectorEvidenceId: null }
-  | { readonly liabilityRunKind: 'candidateT1'; readonly candidateFundingVectorEvidenceId: string }
+/** The canonical liability-run binding, under this ledger's published name. */
+export type AnnualQcdSection170pRunBinding = AnnualLiabilityRunBinding
 export interface AnnualQcdStandardSection170pTaxUnitInput {
   readonly taxUnit: Readonly<TaxableWithdrawalTaxUnitEvidence>
   readonly annualTaxLiabilityEvidenceId: string

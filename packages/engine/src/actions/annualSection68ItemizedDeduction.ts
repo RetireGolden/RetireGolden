@@ -3,16 +3,17 @@ import {
   type CharitableDeductionFilingStatus,
 } from '../tax/annualCharitableDeductionParameters.js'
 import { parseCivilIsoDate } from './civilDate.js'
+import type { AnnualLiabilityRunBinding } from './annualLiabilityRunIdentity.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from './structuralId.js'
-export type AnnualSection68LiabilityRunBinding =
-  | {
-      readonly liabilityRunKind: 'committedAnnual' | 'baselineT0'
-      readonly candidateFundingVectorEvidenceId: null
-    }
-  | {
-      readonly liabilityRunKind: 'candidateT1'
-      readonly candidateFundingVectorEvidenceId: string
-    }
+/**
+ * The canonical liability-run binding, under the name this module publishes.
+ *
+ * Three modules declared this union independently and a fourth was about to.
+ * The shape is unchanged — the alias is the same type, so every record already
+ * serialised under it round-trips byte for byte — and the declaration now lives
+ * beside the minter that produces the identities it binds.
+ */
+export type AnnualSection68LiabilityRunBinding = AnnualLiabilityRunBinding
 export interface AnnualSection68ItemizedActionInput {
   readonly actionKind: 'qcd'
   readonly actionId: string
