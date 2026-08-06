@@ -2985,10 +2985,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
        * vector the run actually used or it did not.
        *
        * `stageProvisionally` belongs to the discarded staging run alone. It
-       * releases every uncontested group whose two legs are fundable from the
-       * balances standing at the seam, so that the run can discover what the
-       * year costs when they move — which is the only way `T1(F)` exists at
-       * all. Nothing it publishes is kept.
+       * releases the year's groups so the run can discover what the year
+       * costs when they move — which is the only way `T1(F)` exists at all —
+       * and the release is all-or-nothing across the year's assessment: one
+       * contested pair, or one leg unfundable from the balances standing at
+       * the seam, and nothing stages. Nothing it publishes is kept.
        *
        * `proven` is the committed run of a year whose staging proved out, and
        * the authorizations it carries were minted by
