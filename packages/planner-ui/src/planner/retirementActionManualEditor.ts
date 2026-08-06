@@ -256,9 +256,14 @@ function reviewedConversionExecutionIssue(
 }
 
 /**
- * Preview every action in the replacement's year through the canonical exact-
- * cent executor. This catches chronology, proportional taxable-basis rounding,
- * and annual Plan-number totals before the migrated row is removed.
+ * Preview the replacement's year on the already-superseded candidate plan,
+ * before that plan is offered for saving. A withdrawal replacement runs the
+ * canonical exact-cent executor directly; a conversion replacement runs the
+ * projection and reads the execution record it published, because the
+ * executor's Form 8606 basis numerator and RMD outcome only exist inside a
+ * projected year. Either way this catches chronology, proportional
+ * taxable-basis rounding, and annual Plan-number totals before anything is
+ * saved.
  */
 export function retirementActionManualExecutionIssue(
   plan: Readonly<Plan>,
