@@ -404,6 +404,13 @@ describe('what it refuses to promote', () => {
     ['a zero amount', [{ year: TAX_YEAR, amount: 0 }]],
     ['a negative amount', [{ year: TAX_YEAR, amount: -1 }]],
     ['a NaN amount', [{ year: TAX_YEAR, amount: Number.NaN }]],
+    // Beyond the exact-cent safe-integer range, where the arithmetic layer
+    // raises rather than answers. A contract that promises typed issues must
+    // not throw one input class and refuse the rest, and `not.toThrow()` below
+    // is the half of this row that matters.
+    ['an amount past the exact-cent safe range', [
+      { year: TAX_YEAR, amount: Number.MAX_SAFE_INTEGER },
+    ]],
     ['a sub-cent amount', [{ year: TAX_YEAR, amount: 100.001 }]],
     ['years out of order', [
       { year: TAX_YEAR + 1, amount: 10_000 },

@@ -283,6 +283,33 @@ function participatesInAllocation(account: Account): boolean {
 }
 
 /**
+ * One Plan-dollar figure as exact positive cents, or null when the ledger's own
+ * arithmetic cannot express it.
+ *
+ * `planDollarsToLedgerCents` raises `RangeError` for a figure beyond the
+ * exact-cent safe-integer range, and `ledgerCentsToPlanDollars` for a cent count
+ * that cannot come back as the same number. Both are the right answer for the
+ * arithmetic layer and the wrong one for this caller: the winner's schedule is
+ * caller data that `winnerCentsByYear` exists to validate, and a contract that
+ * promises typed issues must not throw one input class and refuse the rest.
+ * `optimizerAllocatedCandidateComparison.ts` keeps its own evidence-or-null
+ * contract the same way.
+ *
+ * This is the opposite case from the allocation policy's deliberate throw, and
+ * the two are worth telling apart. There, a non-finite amount is malformed input
+ * to an internal module whose callers have already validated — nobody is left to
+ * report it to. Here, refusing IS the job.
+ */
+function exactLedgerCentsOrNull(dollars: number): number | null {
+  try {
+    const cents = planDollarsToLedgerCents(dollars)
+    return cents > 0 && ledgerCentsToPlanDollars(cents) === dollars ? cents : null
+  } catch {
+    return null
+  }
+}
+
+/**
  * The winner's schedule as exact cents per year, read by the same rules
  * `optimizerAllocatedCandidateComparison.ts` reads it with: strictly increasing
  * years, positive amounts, and an exact cent round trip. A schedule this
@@ -311,12 +338,12 @@ function winnerCentsByYear(
         'Every promoted year must carry a positive conversion amount.',
       )
     }
-    const cents = planDollarsToLedgerCents(conversion.amount)
-    if (cents <= 0 || ledgerCentsToPlanDollars(cents) !== conversion.amount) {
+    const cents = exactLedgerCentsOrNull(conversion.amount)
+    if (cents === null) {
       return issue(
         'invalidWinnerSchedule',
         `winner.conversions.${index}.amount`,
-        'The winner amount is not an exact cent figure the ledger could have executed.',
+        'The winner amount is not an exact cent figure inside the ledger’s safe range.',
       )
     }
     byYear.set(conversion.year, cents)
