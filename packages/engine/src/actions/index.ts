@@ -853,6 +853,8 @@ export {
   type OwnedNonRothIraAnnualFilingSourceResolutionIssue,
   type OwnedNonRothIraAnnualFilingSourceResolutionIssueKind,
   type PlanOwnedNonRothIraAnnualFilingSourceIdentityReservation,
+  type RejectedPlanOwnedNonRothIraAnnualFilingSourceIdentities,
+  type ReservedPlanOwnedNonRothIraAnnualFilingSourceIdentities,
   type ResolvedPlanOwnedNonRothIraAnnualFilingSource,
   type ResolvePlanOwnedNonRothIraAnnualFilingSourcesInput,
   type ResolvePlanOwnedNonRothIraAnnualFilingSourcesResult,

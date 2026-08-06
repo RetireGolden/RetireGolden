@@ -326,7 +326,7 @@ describe('Plan-owned annual filing-source resolver', () => {
     const reserved = reservePlanOwnedNonRothIraAnnualFilingSourceIdentifiers(plan)
 
     expect(reserved.status).toBe('reserved')
-    expect(reserved.issues).toEqual([])
+    if (reserved.status !== 'reserved') return
     expect(reserved.identifiers).toEqual([...new Set([
       ...planOwnedNonRothIraAnnualFilingSourceIdentifierClaims(first),
       ...planOwnedNonRothIraAnnualFilingSourceIdentifierClaims(second),
@@ -340,20 +340,26 @@ describe('Plan-owned annual filing-source resolver', () => {
     }
     const rejected = reservePlanOwnedNonRothIraAnnualFilingSourceIdentifiers(plan)
 
-    expect(rejected.status).toBe('rejected')
-    expect(rejected.identifiers).toEqual([])
-    expect(rejected.issues.map((issue) => issue.kind)).toEqual([
-      'duplicateOwnerYearSource',
-      'duplicateOwnerYearSource',
-    ])
-    expect(rejected.issues.every((issue) => issue.sourceOrigin === 'plan')).toBe(true)
+    // The rejected arm offers no identifiers at all -- not even the survivors' --
+    // so no caller can spend a claim that lost arbitration.
+    expect(rejected).toEqual({
+      status: 'rejected',
+      issues: [
+        expect.objectContaining({ kind: 'duplicateOwnerYearSource', sourceOrigin: 'plan' }),
+        expect.objectContaining({ kind: 'duplicateOwnerYearSource', sourceOrigin: 'plan' }),
+      ],
+    })
+    expect(Object.hasOwn(rejected, 'identifiers')).toBe(false)
+    // The rejected arm declares no `identifiers` at all, so an unnarrowed read
+    // does not compile. This pin fails the typecheck if that is ever relaxed.
+    // @ts-expect-error identifiers is unreachable before narrowing to 'reserved'
+    expect(rejected.identifiers).toBeUndefined()
   })
 
   it('reserves nothing from an absent annual filing-source root', () => {
     expect(reservePlanOwnedNonRothIraAnnualFilingSourceIdentifiers(filingPlan())).toEqual({
       status: 'reserved',
       identifiers: [],
-      issues: [],
     })
   })
 

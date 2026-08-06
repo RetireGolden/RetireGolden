@@ -47,18 +47,36 @@ export interface ResolvePlanOwnedNonRothIraAnnualFilingSourcesResult {
   issues: readonly Readonly<OwnedNonRothIraAnnualFilingSourceResolutionIssue>[]
 }
 
-/**
- * The persisted filing-source root arbitrated for identity-namespace use only.
- * `rejected` means at least one persisted record lost the same no-precedence
- * arbitration the full resolver applies, so the identifiers that record claims
- * are not proven and no caller may treat the root as an authority.
- */
-export interface PlanOwnedNonRothIraAnnualFilingSourceIdentityReservation {
-  status: 'reserved' | 'rejected'
-  /** Sorted identifier claims of the surviving sources; a rejected source claims nothing. */
+/** Every persisted record survived arbitration, so the root claims these identifiers. */
+export interface ReservedPlanOwnedNonRothIraAnnualFilingSourceIdentities {
+  status: 'reserved'
+  /** Sorted identifier claims of the arbitrated sources. */
   identifiers: readonly string[]
-  issues: readonly Readonly<OwnedNonRothIraAnnualFilingSourceResolutionIssue>[]
 }
+
+/**
+ * At least one persisted record lost arbitration, so the root proves nothing:
+ * this arm carries no identifiers at all rather than the survivors' claims,
+ * because a partially arbitrated root is not a partially usable namespace.
+ */
+export interface RejectedPlanOwnedNonRothIraAnnualFilingSourceIdentities {
+  status: 'rejected'
+  issues: readonly [
+    Readonly<OwnedNonRothIraAnnualFilingSourceResolutionIssue>,
+    ...Readonly<OwnedNonRothIraAnnualFilingSourceResolutionIssue>[],
+  ]
+}
+
+/**
+ * The persisted filing-source root arbitrated for identity-namespace use only,
+ * under the same no-precedence rule the full resolver applies. The two arms are
+ * disjoint by construction: a caller cannot read `identifiers` without first
+ * narrowing to `reserved`, so no root that lost arbitration can be mistaken for
+ * an authority.
+ */
+export type PlanOwnedNonRothIraAnnualFilingSourceIdentityReservation =
+  | ReservedPlanOwnedNonRothIraAnnualFilingSourceIdentities
+  | RejectedPlanOwnedNonRothIraAnnualFilingSourceIdentities
 
 interface Candidate extends ResolvedPlanOwnedNonRothIraAnnualFilingSource {
   sourceIndex: number
@@ -215,13 +233,22 @@ function sortIssues(
  * Arbitrates the persisted filing-source root alone, for callers that consult it
  * as an identity namespace rather than as annual evidence. Same rule, same
  * refusals: a caller that reads the root directly would reserve identifiers no
- * arbitration proved.
+ * arbitration proved. A rejected root yields the refusals and nothing else --
+ * the survivors' claims are not offered, because a caller holding them cannot
+ * tell them apart from a namespace that arbitrated cleanly.
  */
 export function reservePlanOwnedNonRothIraAnnualFilingSourceIdentifiers(
   plan: Readonly<Plan>,
 ): Readonly<PlanOwnedNonRothIraAnnualFilingSourceIdentityReservation> {
   const { resolved, issues } = arbitrateSourceCandidates(planSourceCandidates(plan))
   sortIssues(issues)
+  const [firstIssue, ...remainingIssues] = issues
+  if (firstIssue !== undefined) {
+    return deepFreeze({
+      status: 'rejected',
+      issues: [firstIssue, ...remainingIssues],
+    })
+  }
   const identifiers = new Set<string>()
   for (const candidate of resolved) {
     for (const claim of planOwnedNonRothIraAnnualFilingSourceIdentifierClaims(
@@ -231,9 +258,8 @@ export function reservePlanOwnedNonRothIraAnnualFilingSourceIdentifiers(
     }
   }
   return deepFreeze({
-    status: issues.length > 0 ? 'rejected' as const : 'reserved' as const,
+    status: 'reserved',
     identifiers: [...identifiers].sort(compareText),
-    issues,
   })
 }
 
