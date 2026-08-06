@@ -37,8 +37,14 @@ import { deriveActionStructuralId } from './structuralId.js'
  *   `rothConversionExecution.ts` still publishes `unsupported` with null
  *   figures for the linked-withdrawal arm. Neither reads anything below.
  * - This module is not exported from `actions/index.ts` and is not a package
- *   subpath, so nothing outside the engine can reach it either. The slice that
- *   writes the first consumer publishes it.
+ *   subpath, so no builder or record type below can be reached from outside the
+ *   engine. The slice that writes the first consumer publishes it. One
+ *   exception, and it is a value shape rather than a capability:
+ *   `ConversionTaxFundingExactCentAmount` is re-exported by
+ *   `projection/simulate.ts`, because the counterfactual annual pass hands one
+ *   to a caller through a published option and an amount nobody can name is
+ *   not a surface. Nothing that builds, validates or parses an evidence record
+ *   travels with it.
  *
  * Two conventions differ from the specification this implements, and both are
  * the surrounding code's conventions rather than deviations of convenience.
@@ -828,6 +834,32 @@ function exactCentAmountFrom(
     denominator: Number(rational.denominator),
     intermediateArithmetic: 'bigintRational',
   }
+}
+
+/**
+ * Reduce an exact `bigint` rational count of cents into the amount shape this
+ * module compares by field equality.
+ *
+ * The producer of a liability figure lives outside this module — the annual pass
+ * is the only thing that can compute one — and it needs the lowest-terms
+ * reduction that `sameExactCentAmount` and the cross-member identity check
+ * silently depend on. Exporting the reduction rather than the invariant's
+ * restatement keeps one implementation of "in lowest terms": a second one would
+ * eventually spell the same liability two ways, and two members of one group
+ * carrying the same liability would then compare unequal.
+ *
+ * Non-throwing. A negative numerator, a non-positive denominator, or a reduced
+ * pair that leaves the safe-integer range all return `null` rather than a
+ * partially valid amount.
+ */
+export function reducedConversionTaxFundingExactCentAmount(
+  numeratorMinorUnits: bigint,
+  denominator: bigint,
+): Readonly<ConversionTaxFundingExactCentAmount> | null {
+  if (numeratorMinorUnits < 0n || denominator <= 0n) return null
+  return exactCentAmountFrom(
+    reduceExactCentRational(numeratorMinorUnits, denominator),
+  )
 }
 
 /**

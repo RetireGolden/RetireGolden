@@ -39,6 +39,13 @@ import { compareUtf16CodeUnits, deriveActionStructuralId } from './structuralId.
  * it does so under the three names the barrel already exports, so unifying the
  * copies adds nothing to the published surface and removes nothing from it.
  *
+ * The `T0` slice has since landed the counterfactual pass, and its published
+ * option carries a minted identity out to the caller, so `projection/simulate.ts`
+ * re-exports the four types needed to name one: the run binding, the identity,
+ * a tax input and its value. Types only — the minter and the collision check
+ * stay unreachable, because naming what a run *is* costs nothing while minting
+ * one is the capability this module is still holding back.
+ *
  * Both identities are structural, in the idiom the rest of the actions layer
  * already uses: a canonical JSON serialisation hashed with SHA-256, via
  * `deriveActionStructuralId`. The consequence worth stating is the one the

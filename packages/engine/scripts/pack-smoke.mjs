@@ -11,12 +11,14 @@
  */
 import { execFileSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const pkgDir = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const shell = process.platform === 'win32' // npm is npm.cmd on Windows
+const require = createRequire(import.meta.url)
 
 const smokeScript = `
 import assert from 'node:assert/strict'
@@ -1368,6 +1370,68 @@ console.log(
 )
 `
 
+/**
+ * A consumer declaring the counterfactual annual-pass option by hand.
+ *
+ * Every type it names is one `SimulateOptions.annualCounterfactual` puts in
+ * front of a caller, and each is defined in a module the exports map refuses —
+ * `internal/counterfactualAnnualLiability`, `actions/annualLiabilityRunIdentity`,
+ * `actions/conversionTaxFundingEvidence` — so this compiles only because
+ * `projection/simulate` republishes them. `noUnusedLocals` is on, which is what
+ * keeps the imports from being decoration.
+ */
+const typesSmokeSource = `
+import type {
+  AnnualLiabilityRunBinding,
+  AnnualLiabilityRunIdentity,
+  AnnualLiabilityRunTaxInput,
+  AnnualLiabilityRunTaxInputValue,
+  ConversionTaxFundingExactCentAmount,
+  CounterfactualAnnualLiabilityComponents,
+  CounterfactualAnnualLiabilityRead,
+  CounterfactualAnnualLiabilityRefusalKind,
+  CounterfactualAnnualLiabilityRefused,
+  CounterfactualAnnualLiabilityResult,
+  SimulateAnnualCounterfactualRequest,
+  SimulateOptions,
+} from '@retiregolden/engine/projection/simulate'
+import type { ActionId } from '@retiregolden/engine/actions/identity'
+
+// The option, spelled out the way a consumer would have to spell it.
+const filingStatus: AnnualLiabilityRunTaxInputValue =
+  { representation: 'declaredTerm', term: 'single' }
+const taxInput: AnnualLiabilityRunTaxInput =
+  { inputId: 'federalFilingStatus', value: filingStatus }
+
+function readLiability(read: CounterfactualAnnualLiabilityRead): number {
+  const identity: Readonly<AnnualLiabilityRunIdentity> = read.identity
+  const binding: Readonly<AnnualLiabilityRunBinding> = identity.liabilityRun
+  if (binding.liabilityRunKind !== 'baselineT0') return 0
+  const amount: Readonly<ConversionTaxFundingExactCentAmount> = read.liability
+  const components: Readonly<CounterfactualAnnualLiabilityComponents> =
+    read.liabilityComponents
+  return amount.numeratorMinorUnits / amount.denominator +
+    components.taxPlanDollars * 0
+}
+
+function whyRefused(refused: CounterfactualAnnualLiabilityRefused): CounterfactualAnnualLiabilityRefusalKind {
+  return refused.reason
+}
+
+const request: SimulateAnnualCounterfactualRequest = {
+  omitActionIds: [] as readonly ActionId[],
+  taxUnitId: 'tax-unit',
+  nonGroupTaxInputs: [taxInput],
+  capture: (result: Readonly<CounterfactualAnnualLiabilityResult>) => {
+    if (result.status === 'counterfactualAnnualLiabilityRead') readLiability(result)
+    else whyRefused(result)
+  },
+}
+
+export const options: Pick<SimulateOptions, 'annualCounterfactual'> =
+  { annualCounterfactual: request }
+`
+
 const work = mkdtempSync(join(tmpdir(), 'engine-pack-smoke-'))
 try {
   const packOutput = execFileSync('npm', ['pack', '--pack-destination', work], {
@@ -1399,6 +1463,34 @@ try {
 
   writeFileSync(join(work, 'smoke.mjs'), smokeScript)
   execFileSync(process.execPath, ['smoke.mjs'], { cwd: work, stdio: 'inherit' })
+
+  // Types are erased, so every import above would pass against declarations
+  // that resolve to nothing. This compiles a consumer-shaped file against the
+  // installed tarball with the repo's own TypeScript — no registry fetch, so
+  // the no-network property holds — and is the only thing here that proves a
+  // published option's payload can actually be NAMED by the consumer it is
+  // handed to, rather than merely received.
+  writeFileSync(join(work, 'types-smoke.ts'), typesSmokeSource)
+  writeFileSync(join(work, 'tsconfig.smoke.json'), JSON.stringify({
+    compilerOptions: {
+      target: 'es2023',
+      lib: ['ES2023'],
+      module: 'nodenext',
+      moduleResolution: 'nodenext',
+      noEmit: true,
+      strict: true,
+      skipLibCheck: true,
+      verbatimModuleSyntax: true,
+      noUnusedLocals: true,
+    },
+    files: ['types-smoke.ts'],
+  }))
+  execFileSync(
+    process.execPath,
+    [require.resolve('typescript/bin/tsc'), '-p', 'tsconfig.smoke.json'],
+    { cwd: work, stdio: 'inherit' },
+  )
+  console.log('pack smoke OK: the published option types compile from the packed declarations')
 } finally {
   try {
     rmSync(work, { recursive: true, force: true })
