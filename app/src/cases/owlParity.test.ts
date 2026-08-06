@@ -1,4 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { combineTaxCalculators, createFederalTaxCalculator } from '@retiregolden/engine/tax/federalTax'
+import { createStateTaxCalculator } from '@retiregolden/engine/tax/stateTax'
+import { runExactLedgerTournament } from '@retiregolden/engine/projection/optimizePlan'
+import { simulatePlan } from '@retiregolden/engine/projection/simulate'
 
 import {
   OWL_PARITY_FIXTURES,
@@ -43,6 +47,55 @@ describe('Owl parity oracle harness', () => {
 
     expect(retireGoldenParityBenchmarkConversions(tournament as never)).toEqual(calculated)
     expect(tournament.winnerConversions).toEqual([])
+  })
+
+  it('still reads the vetoed schedule on every fixture, because none records an IRA classification', () => {
+    // WHY THIS EXISTS. The optimizer now promotes a vetoed aggregate winner
+    // into identity-bearing conversion requests and publishes THAT when it
+    // earns a recommendation, which lifts the veto and would silently switch
+    // what `retireGoldenParityBenchmarkConversions` benchmarks -- from the
+    // calculated aggregate schedule to the promoted one. The two are different
+    // schedules whenever promotion reprices, so a silent switch would move the
+    // parity baseline for a reason that has nothing to do with Owl.
+    //
+    // It does not switch here, and this is the measurement rather than the
+    // argument. The named-conversion executor requires the Plan to have
+    // classified its source IRA; the aggregate ledger requires nothing of the
+    // sort. No parity fixture records that evidence, so every promotion is
+    // priced and then declined by the ledger -- `notComparable` -- the veto
+    // stands, and the benchmark keeps reading exactly what it read before.
+    //
+    // A fixture that later gains classification evidence will fail here rather
+    // than move the baseline quietly, and re-baselining is then a deliberate
+    // act with a stated reason.
+    for (const fixture of OWL_PARITY_FIXTURES) {
+      const plan = fixture.plan
+      const options = {
+        startYear: 2026,
+        taxCalculator: combineTaxCalculators(
+          createFederalTaxCalculator(),
+          createStateTaxCalculator({
+            overridePct: plan.assumptions.stateEffectiveTaxPct,
+            localPct: plan.assumptions.localIncomeTaxPct,
+          }),
+        ),
+      }
+      const tournament = runExactLedgerTournament(
+        plan,
+        simulatePlan(plan, options),
+        null,
+        options,
+      )
+
+      expect(plan.retirementActionEligibilityFacts?.iraClassifications ?? []).toEqual([])
+      expect(tournament.retirementActionPromotion?.outcome).toBe('notComparable')
+      expect(tournament.retirementActionReadinessVeto).not.toBeNull()
+      expect(retireGoldenParityBenchmarkConversions(tournament))
+        .toEqual(tournament.retirementActionReadinessVeto?.vetoedConversions)
+      expect(tournament.winnerConversions).not.toEqual(
+        tournament.retirementActionReadinessVeto?.vetoedConversions,
+      )
+    }
   })
 
   it('converts every fixture plan to a deterministic Owl TOML case', () => {

@@ -15,7 +15,9 @@ import {
 import {
   promoteAggregateConversionSchedule,
   type AggregateConversionPromotionChoice,
+  type AggregateConversionPromotionIssue,
   type AggregateConversionPromotionResult,
+  type AggregateConversionPromotionYear,
   type AggregateConversionPromotionYearBalances,
 } from './optimizerAggregateConversionPromotion.js'
 import type { RetirementActionReadinessVeto } from './optimizePlan.js'
@@ -25,22 +27,38 @@ import type { ProjectionResult } from './types.js'
  * Run the promotion loop for one vetoed aggregate winner, and say what can
  * honestly be claimed about the pair of projections it produces.
  *
- * WHAT THIS SLICE IS AND IS NOT. It measures; it publishes nothing. No
- * optimizer entry point calls it, `readinessVetoFor` still vetoes every
- * positive-conversion winner, `refuseAggregateScheduleRecommendation` still
- * rewrites `beneficial` to `identityIncomplete`, and `buildOptimizerInput`
- * still throws on a plan carrying identity-bearing retirement actions. Lifting
- * those three is the next slice; this one exists so that slice starts from a
- * measured fact instead of an assertion in a plan document.
+ * WHAT THIS FUNCTION DECIDES AND WHAT ITS CALLER DECIDES. It measures; it
+ * publishes nothing and ranks nothing. `runExactLedgerTournament` calls it for
+ * every vetoed winner and decides publication from the verdict: an
+ * `equivalent` or a `repriced` candidate that earns a recommendation on its own
+ * exact-ledger evaluation replaces the aggregate winner and lifts the veto; the
+ * other verdicts leave the veto standing and surface the reason. That split is
+ * the point — this module can say what is true of the pair, and only the
+ * tournament can say what beats what.
  *
  * THE LOOP:
  *
  *   the veto's own projection      (`vetoedResult` — what the ledger ran)
- *     → the snapshots it published (`YearResult.aggregateRothConversionAllocationBalances`)
+ *     → the snapshots it published (`YearResult.aggregateRothConversionAllocation*`)
  *     → CHOOSE  the owners, sources, destinations and exact cents
  *     → MINT    the identity-complete candidate (the fill-target adapter)
  *     → PRICE   it on the exact ledger, its OWN run (`evaluateCandidate`)
  *     → COMPARE the two projections, on the equality core
+ *
+ * WHICH HOUSEHOLD AMOUNT IS PROMOTED, AND WHY IT IS NOT THE WINNER'S. The
+ * winner's schedule names the YEARS; the amount promoted for each of them is
+ * the ledger's own published `aggregateRothConversionAllocationDesired` — the
+ * figure the allocation policy was asked for, before it trimmed any owner.
+ *
+ * `vetoedConversions` is derived from EXECUTED conversions (`buildRichCandidates`
+ * reads `YearResult.rothConversion`), so for a household with a trimmed owner it
+ * is already post-trim: it is the surviving owners' share alone. Handing that
+ * figure back to the policy as a household amount would slice it across the
+ * whole household a second time and trim the absent owner's phantom share
+ * again, and the promoted schedule would convert strictly less than the ledger
+ * did for no reason anyone chose. Promoting the pre-trim figure makes the
+ * chooser's answer the ledger's own allocation: the same owners, the same
+ * sources, the same cents.
  *
  * WHY THE SNAPSHOTS COME OFF THE VETOED PROJECTION AND NOWHERE ELSE. The owner
  * weights that decide whose dollars move are a fact about the run that produced
@@ -87,11 +105,11 @@ import type { ProjectionResult } from './types.js'
  *   implementation-ready, because it is the only state in which naming the
  *   owners changed nothing about what the ledger does.
  * - `repriced` — they are genuinely different projections, and every
- *   precondition for saying so held. That is the expected answer, not a
- *   failure: an identity-complete conversion executes at a different point in
- *   the annual sequence and moves exact cents rather than Plan dollars, and
- *   where an owner has no Roth IRA the household converts strictly less than
- *   the winner's figure. The aggregate winner stays exploratory; the allocated
+ *   precondition for saying so held. That is not a failure: an identity-complete
+ *   conversion executes at a different point in the annual sequence and moves
+ *   exact cents rather than Plan dollars, so a long schedule accumulates
+ *   sub-cent residue the equality core's nearest-cent quantization eventually
+ *   stops absorbing. The aggregate winner stays exploratory; the allocated
  *   candidate's own `ExactDecisionEvaluation` is what a later rank may consume.
  *   Nothing may rank the allocated schedule on the aggregate's metrics, which
  *   is the failure the comparator exists to prevent.
@@ -206,25 +224,102 @@ export type AggregateConversionPromotionRunResult =
 /** The ranking states an equivalence or repricing claim may be made about. */
 const COMPARABLE_RANKING_STATES: readonly string[] = ['beneficial', 'neutral', 'rejected']
 
+/** One year the aggregate allocation policy ran: what it was asked for, and on what. */
+/** What one projection year published about the allocation its policy ran. */
+interface PublishedAllocation {
+  readonly year: number
+  /** The household amount the policy was asked for, when the year stated one. */
+  readonly desiredPlanDollars: number | undefined
+  /** The balances it weighted owners by, when the year stated them. */
+  readonly balances: Readonly<Record<string, number>> | undefined
+}
+
 /**
- * Every year of a projection that published an allocation snapshot, in
+ * Every year of a projection that published either half of its allocation, in
  * projection order.
  *
- * A year without one ran no aggregate conversion arm — see the field's own
- * contract for the full list of causes — so it is skipped here rather than
- * stated as an empty snapshot. A scheduled year that needed one and finds none
- * is the chooser's `missingYearBalances`, which names the year.
+ * A year that published neither ran no aggregate conversion arm — see the
+ * fields' own contracts for the full list of causes — so it is absent here
+ * rather than stated as an empty snapshot.
+ *
+ * THE TWO HALVES ARE KEPT SEPARATELY RATHER THAN COLLAPSED. `simulatePlan`
+ * publishes both from the same call, so a year carrying one and not the other
+ * did not come from it; but a caller holding such a projection is owed a
+ * refusal that names which half is missing, because the two have different
+ * remedies and a reader told "no balances" would go looking for a snapshot that
+ * is sitting right there.
  */
-function publishedAllocationSnapshots(
+function publishedAllocations(
   result: Readonly<ProjectionResult>,
-): AggregateConversionPromotionYearBalances[] {
-  const snapshots: AggregateConversionPromotionYearBalances[] = []
+): PublishedAllocation[] {
+  const published: PublishedAllocation[] = []
   for (const year of result.years) {
     const balances = year.aggregateRothConversionAllocationBalances
-    if (balances === undefined) continue
-    snapshots.push({ year: year.year, balances })
+    const desiredPlanDollars = year.aggregateRothConversionAllocationDesired
+    if (balances === undefined && desiredPlanDollars === undefined) continue
+    published.push({ year: year.year, desiredPlanDollars, balances })
   }
-  return snapshots
+  return published
+}
+
+/**
+ * The schedule to promote: the winner's years, each at the household amount the
+ * ledger's policy was asked for in that year.
+ *
+ * A winner year the projection published no such amount for is refused by name
+ * rather than promoted at the executed figure. The executed figure means
+ * something different — it is what survived the trim — and substituting it here
+ * is exactly the re-trim this function exists to prevent.
+ *
+ * The refusal distinguishes the two ways that amount can be absent: a year that
+ * published nothing at all (`missingYearBalances`, the chooser's own kind for a
+ * scheduled year with no snapshot), and a year that published its weights and
+ * not the figure to weight (`missingYearDesiredAmount`).
+ */
+function promotedSchedule(
+  vetoedConversions: readonly { year: number; amount: number }[],
+  published: readonly PublishedAllocation[],
+):
+  | { readonly schedule: readonly AggregateConversionPromotionYear[] }
+  | { readonly issues: readonly [AggregateConversionPromotionIssue, ...AggregateConversionPromotionIssue[]] } {
+  const publishedByYear = new Map(published.map((entry) => [entry.year, entry]))
+  const schedule: AggregateConversionPromotionYear[] = []
+  const issues: AggregateConversionPromotionIssue[] = []
+  for (const conversion of vetoedConversions) {
+    const entry = publishedByYear.get(conversion.year)
+    const desired = entry?.desiredPlanDollars
+    if (desired === undefined) {
+      const balancesArePresent = entry?.balances !== undefined
+      issues.push(balancesArePresent
+        ? {
+          kind: 'missingYearDesiredAmount',
+          field: `readinessVeto.vetoedResult.years[year=${conversion.year}].aggregateRothConversionAllocationDesired`,
+          detail: `The vetoed projection converted in ${conversion.year} and published the balances its ` +
+            'allocation policy weighted owners by, but not the household amount that policy was asked ' +
+            'for, so there is nothing to allocate across those weights. The executed total is not a ' +
+            'substitute: it is what survived the trim.',
+        }
+        : {
+          kind: 'missingYearBalances',
+          field: `readinessVeto.vetoedResult.years[year=${conversion.year}]`,
+          detail: `The vetoed projection converted in ${conversion.year} but published no aggregate ` +
+            'allocation for it at all — neither the balances its policy weighted owners by nor the ' +
+            'household amount that policy was asked for. The executed total is not a substitute for ' +
+            'the second: it is what survived the trim.',
+        })
+      continue
+    }
+    // Quantized to whole cents, which is what the policy itself does with the
+    // figure (`planDollarsToLedgerCents`, half-up) before it slices anything,
+    // and what `buildRichCandidates` does to the executed amounts the winner's
+    // schedule is made of. The chooser refuses an amount that is not an exact
+    // cent figure, and it is right to: the request contract this promotes into
+    // is denominated in cents, and a float carrying sub-cent noise cannot be
+    // asked for.
+    schedule.push({ year: conversion.year, amount: Math.round(desired * 100) / 100 })
+  }
+  const [first, ...rest] = issues
+  return first === undefined ? { schedule } : { issues: [first, ...rest] }
 }
 
 /**
@@ -275,14 +370,33 @@ export function runAggregateConversionPromotion(
   input: AggregateConversionPromotionRunInput,
 ): AggregateConversionPromotionRunResult {
   const { context, readinessVeto, exploratoryCandidate } = input
+  const published = publishedAllocations(readinessVeto.vetoedResult)
+  const promoted = promotedSchedule(readinessVeto.vetoedConversions, published)
+  if ('issues' in promoted) {
+    return {
+      status: 'notPromoted',
+      promotion: {
+        status: 'unallocatable',
+        choice: { status: 'unallocatable', years: [], issues: promoted.issues },
+      },
+    }
+  }
+  // Only the years that actually stated their weights. A year that stated an
+  // amount and no balances is left out here on purpose, so the chooser refuses
+  // it with its own `missingYearBalances` naming the year rather than being
+  // handed an empty snapshot to allocate against.
+  const yearBalances: AggregateConversionPromotionYearBalances[] = published
+    .flatMap((entry) => entry.balances === undefined
+      ? []
+      : [{ year: entry.year, balances: entry.balances }])
   const promotion = promoteAggregateConversionSchedule({
     plan: context.plan,
     winner: {
       source: readinessVeto.vetoedWinnerSource,
       candidateId: readinessVeto.vetoedCandidateId,
-      conversions: readinessVeto.vetoedConversions,
+      conversions: promoted.schedule,
     },
-    yearBalances: publishedAllocationSnapshots(readinessVeto.vetoedResult),
+    yearBalances,
     exploratoryCandidate,
   })
   if (promotion.status !== 'promoted') return { status: 'notPromoted', promotion }

@@ -922,30 +922,28 @@ describe('optimizerUnsupportedRetirementActions', () => {
     expect(reasons[1]!.personId).toBeUndefined()
   })
 
-  it('agrees with the last-resort invariant inside buildOptimizerInput', () => {
+  it('no longer stands for a throw: the engine prices what the surface still gates', () => {
     const actionFree = validate(tradHeavyPlan())
     const draft = tradHeavyPlan()
     draft.strategies.retirementActions = [identityWithdrawal(draft)]
     const actionBearing = validate(draft)
 
-    // The predicate is the gate and the throw is the backstop, so a plan the
-    // predicate clears must never reach the throw, and vice versa. If these two
-    // conditions drift, a surface that checks the predicate would dispatch a run
-    // that dies on a raw engine string again.
-    for (const [plan, refused] of [[actionFree, false], [actionBearing, true]] as const) {
-      expect(optimizerUnsupportedRetirementActions(plan).length > 0).toBe(refused)
-      let threw = false
-      try {
-        buildOptimizerInput(plan, opts)
-      } catch {
-        threw = true
-      }
-      expect(threw).toBe(refused)
-    }
+    // The predicate still reports the action -- it is what `OptimizePage` reads
+    // to decide whether it can tell the user anything sensible -- and it no
+    // longer stands for an engine refusal. `buildOptimizerInput` used to throw
+    // on exactly this plan; it admits it, and the netting below is what makes
+    // that safe.
+    expect(optimizerUnsupportedRetirementActions(actionFree)).toHaveLength(0)
+    expect(optimizerUnsupportedRetirementActions(actionBearing)).toHaveLength(1)
+    expect(() => buildOptimizerInput(actionFree, opts)).not.toThrow()
+    expect(() => buildOptimizerInput(actionBearing, opts)).not.toThrow()
+    // The probe-source overload too: convergence re-linearizes around an
+    // incumbent plan, which may equally carry recorded actions.
+    expect(() => buildOptimizerInput(actionFree, opts, actionBearing)).not.toThrow()
 
-    // The probe-source overload is guarded too: convergence re-linearizes around
-    // an incumbent plan, and that plan must clear the precondition as well.
-    expect(() => buildOptimizerInput(actionFree, opts, actionBearing)).toThrow()
+    // What makes that safe is the bucket netting, which the LP now reaches for
+    // real; the suite below pins its arithmetic on a plan whose action the
+    // executor commits.
   })
 })
 
@@ -1349,6 +1347,24 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
     )
   })
 
+  it('carries that movement through the public bridge, now that it admits the plan', () => {
+    const { plan } = actedTaxablePlan()
+    const probes = probesFor(plan)
+
+    // Until the precondition throw was lifted this arithmetic was unreachable
+    // through `buildOptimizerInput` and could only be exercised by calling
+    // `committedActionMovementForYear` directly. It is the same answer, on the
+    // same probe, and it is now what the LP is actually built from.
+    const input = buildOptimizerInput(plan, opts)
+    expect(input.years.map((year) => year.committedActionMovement)).toEqual(
+      probes.map((probe) =>
+        committedActionMovementForYear(optimizerOpeningBuckets(plan).bucketByAccountId, probe)),
+    )
+    expect(input.years[0]!.committedActionMovement).toBeDefined()
+    expect(input.years.slice(1).every((year) => year.committedActionMovement === undefined))
+      .toBe(true)
+  })
+
   it('emits a byte-identical LP for an action-free plan', () => {
     const input = buildOptimizerInput(validate(tradHeavyPlan()), opts)
 
@@ -1366,7 +1382,7 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
 })
 
 describe('optimizePlan end-to-end', () => {
-  it('fails closed while identity-bearing retirement actions are unsupported', () => {
+  it('builds an LP for a plan carrying a recorded retirement action', () => {
     const plan = tradHeavyPlan()
     const action = parseRetirementActionRequest({
       actionId: 'optimizer-cash-action',
@@ -1379,9 +1395,13 @@ describe('optimizePlan end-to-end', () => {
     if (!action.ok) throw new Error(action.issues.join('; '))
     plan.strategies.retirementActions = [action.request]
 
-    expect(() => buildOptimizerInput(validate(plan), opts)).toThrow(
-      'optimizer does not yet support identity-bearing retirement actions',
-    )
+    // The refusal this replaces threw a raw engine string. The LP is built,
+    // over the same years as the action-free plan's, and it is the surface
+    // precondition -- not the engine -- that still declines to show a result.
+    const input = buildOptimizerInput(validate(plan), opts)
+    expect(input.years.length)
+      .toBe(buildOptimizerInput(validate(tradHeavyPlan()), opts).years.length)
+    expect(optimizerUnsupportedRetirementActions(validate(plan))).toHaveLength(1)
   })
 
   it('improves the after-tax estate vs the no-conversion baseline', async () => {
@@ -2345,6 +2365,14 @@ describe('exact-ledger candidate tournament', () => {
     expect(tournament.retirementActionReadinessVeto?.vetoedConversions.length).toBeGreaterThan(0)
     expect(calculatedConversions(tournament.retirementActionReadinessVeto!.vetoedResult))
       .toEqual(tournament.retirementActionReadinessVeto!.vetoedConversions)
+    // WHY THIS STILL WITHHOLDS, now that a vetoed winner is promoted rather
+    // than abandoned. The winner was allocated to named owners and sources and
+    // priced, and the ledger then declined to execute the requests: this plan
+    // records no IRA classification, which the named-conversion executor
+    // requires and the aggregate ledger does not. Stated here so the test is
+    // green for a reason and not by accident — a plan that gains that evidence
+    // publishes, and `optimizePlan.vetoLift.test.ts` is where that is measured.
+    expect(tournament.retirementActionPromotion?.outcome).toBe('notComparable')
   })
 
   it('holds an explicitly applied incumbent schedule when nothing beats it', () => {
@@ -2457,6 +2485,11 @@ describe('objective-mode tournament (sustainable-spending plan, Step 5)', () => 
       vetoedValidation: { recommendationState: 'rejected' },
     })
     expect(tournament.retirementActionReadinessVeto?.vetoedConversions.length).toBeGreaterThan(0)
+    // The promotion loop does not run under a non-default objective at all:
+    // publishing there would mean re-ranking the promoted candidate against
+    // the same field under this policy's own primary metric, which is the
+    // policy tournament's job and not the promotion loop's.
+    expect(tournament.retirementActionPromotion).toBeNull()
   })
 
   it('updates every displayed winner metric after local search refinement', () => {

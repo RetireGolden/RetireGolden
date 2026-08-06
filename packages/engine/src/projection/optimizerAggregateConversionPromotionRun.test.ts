@@ -15,11 +15,19 @@ import { compareOptimizerExactLedgerResults } from './optimizerExactLedgerCompar
  * What happens when the aggregate winner is actually promoted and priced.
  *
  * The plan document asserted that an identity-complete form of an aggregate
- * schedule cannot in general be a faithful re-expression of it. This suite is
- * where that stops being an assertion: every case below runs the real ledger on
- * both sides — a genuine aggregate projection for the winner, a genuine
- * exact-ledger evaluation for the promoted candidate — and records what
+ * schedule cannot in general be a faithful re-expression of it, and named a
+ * two-owner household with a trimmed owner as the case that proves it. This
+ * suite is where that stops being an assertion: every case below runs the real
+ * ledger on both sides — a genuine aggregate projection for the winner, a
+ * genuine exact-ledger evaluation for the promoted candidate — and records what
  * `compareOptimizerExactLedgerResults`, the equality core, said about the pair.
+ *
+ * WHAT IT MEASURED, against that prediction: the two-owner household IS a
+ * faithful re-expression, once the amount promoted is the one the ledger's
+ * policy was asked for rather than the one it executed. The trimmed owner was
+ * never the obstacle — re-trimming was, and no longer happens. What does
+ * diverge is sub-cent residue over a long schedule, which the last case below
+ * measures.
  *
  * WHAT THE SUITE IS MOST CAREFUL ABOUT is the difference between "these two
  * priced differently" and "no comparison could be made". Both would arrive as a
@@ -212,60 +220,65 @@ function singleOwnerHousehold(): Plan {
   return plan
 }
 
-describe('a two-owner household is repriced, and the trim is why', () => {
-  it('promotes the winner, executes cleanly, and diverges from the aggregate ledger', () => {
+describe('a two-owner household promotes to the ledger’s own allocation', () => {
+  it('promotes the winner, executes cleanly, and is proved equivalent', () => {
     const { veto, run } = runFor(twoOwnerHousehold(traditionalIra('alex-ira', 820_000, ALEX)), 'bracket-10')
-    if (run.status !== 'repriced') {
-      throw new Error(`expected a repriced promotion, got ${run.status}`)
+    if (run.status !== 'equivalent') {
+      throw new Error(`expected an equivalent promotion, got ${run.status}`)
     }
 
     // The promotion itself succeeded: identity-complete requests that the exact
-    // ledger executed as written. This is not a blocked candidate wearing a
-    // "repriced" label -- there is nothing wrong with it except that it is a
-    // different projection.
+    // ledger executed as written.
     expect(run.allocatedEvaluation.recommendationState).toBe('beneficial')
     expect(run.allocatedEvaluation.diagnostics).toEqual([])
     expect(run.candidate.retirementActionReadiness?.state).toBe('identityComplete')
 
-    // And it diverges for the reason the design predicted: Sam has no Roth IRA,
-    // so Sam's share is trimmed and the household converts strictly less than
-    // the schedule the tournament ranked.
+    // Sam has no Roth IRA, so Sam's share is trimmed and the household converts
+    // strictly less than the amount the policy was asked for. That trim is the
+    // LEDGER'S trim, charged once against the pre-trim figure -- which is why
+    // naming the owners changed nothing and the equality core proves it.
     const firstYear = run.choice.years[0]!
     expect(firstYear.trims).toEqual([{
       ownerPersonId: SAM,
       reason: 'ownerHoldsNoRothAccount',
-      slicePlanDollars: 11_347.33,
+      slicePlanDollars: 15_637.17,
     }])
     expect(firstYear.allocatedCents).toBeLessThan(firstYear.winnerCents)
     expect(veto.vetoedConversions[0]!.amount).toBe(41_362.83)
+    expect(run.exactLedgerComparison.equality).toBe('exactMinorUnitByRequiredKey')
   })
 
-  it('re-trims a winner amount the ledger had already trimmed — PR4 has to decide this', () => {
+  it('promotes the pre-trim household amount, so the ledger’s own allocation round-trips', () => {
     const { veto, run } = runFor(twoOwnerHousehold(traditionalIra('alex-ira', 820_000, ALEX)), 'bracket-10')
-    if (run.status !== 'repriced') {
-      throw new Error(`expected a repriced promotion, got ${run.status}`)
+    if (run.status !== 'equivalent') {
+      throw new Error(`expected an equivalent promotion, got ${run.status}`)
     }
 
-    // A MEASURED FACT THIS SLICE EXISTS TO SURFACE, not a behaviour anyone
-    // designed. `vetoedConversions` is derived from EXECUTED conversions
-    // (`buildRichCandidates` reads `YearResult.rothConversion`), so for a
-    // household with a trimmed owner the winner's figure is already
-    // post-trim -- 41,362.83 is Alex's share alone; Sam converted nothing.
-    // Handing that figure back to the policy as a HOUSEHOLD amount slices it
-    // 820,000 : 310,000 a second time and trims Sam's phantom share again, so
-    // the promoted schedule converts about 73% of what the ledger moved.
+    // THE DEFECT THIS PINS THE FIX FOR. `vetoedConversions` is derived from
+    // EXECUTED conversions (`buildRichCandidates` reads
+    // `YearResult.rothConversion`), so for a household with a trimmed owner the
+    // winner's figure is already post-trim -- 41,362.83 is Alex's share alone;
+    // Sam converted nothing. Handing THAT back to the policy as a household
+    // amount would slice it 820,000 : 310,000 a second time and trim Sam's
+    // phantom share again, and the promoted schedule would convert about 73% of
+    // what the ledger moved.
     //
-    // Nothing in this slice publishes that schedule, so nothing is wrong with a
-    // user's plan today. But PR4 cannot lift the veto over it: either the
-    // runner must be given the pre-trim household amount the policy was
-    // originally asked for (which no published field carries yet), or the
-    // chooser's contract has to say what a post-trim winner amount means. The
-    // figures are pinned here so the choice is made deliberately.
+    // So the runner promotes the pre-trim figure the ledger published instead,
+    // and the round trip closes: the policy allocates the same amount to the
+    // same owner out of the same account, and what lands is the very figure the
+    // ledger executed.
     const firstYear = run.choice.years[0]!
-    expect(firstYear.winnerCents).toBe(4_136_283)
-    expect(firstYear.allocatedCents).toBe(3_001_550)
-    expect(firstYear.trims[0]!.slicePlanDollars).toBe(11_347.33)
-    expect(firstYear.winnerCents - firstYear.allocatedCents).toBe(1_134_733)
+    const desired = veto.vetoedResult.years[0]!.aggregateRothConversionAllocationDesired
+    expect(firstYear.winnerCents).toBe(Math.round(desired! * 100))
+    expect(firstYear.allocatedCents).toBe(4_136_283)
+    expect(veto.vetoedConversions[0]!.amount).toBe(41_362.83)
+    // Sam is still trimmed -- that is the identity rule, not a defect -- and the
+    // trim is charged once, against the amount the policy was actually asked
+    // for. 310,000 : 1,130,000 of the pre-trim figure, to the cent.
+    expect(firstYear.trims).toHaveLength(1)
+    expect(firstYear.trims[0]!.ownerPersonId).toBe(SAM)
+    expect(firstYear.winnerCents - firstYear.allocatedCents)
+      .toBe(Math.round(firstYear.trims[0]!.slicePlanDollars * 100))
     expect(veto.vetoedResult.years[0]!.balances['sam-ira']).toBe(310_000)
   })
 
@@ -279,8 +292,8 @@ describe('a two-owner household is repriced, and the trim is why', () => {
     // even accept an IRA classification on such an account.
     //
     // So promotion mints the requests and the ledger declines to execute them.
-    // That is a second reason PR4's veto lift cannot reach the flagship
-    // example, entirely separate from the trim.
+    // That is why the veto lift cannot reach the flagship example: not the
+    // trim, which promotes faithfully, but the source class.
     //
     // AND IT IS NOT A REPRICING. The two projections do differ -- one converted
     // and one did not -- so a verdict read off a bare null would have called
@@ -338,10 +351,20 @@ describe('the equality contract', () => {
     expect(run.binding?.allocatedCandidateId).toBe(run.candidate.id)
     expect(run.binding?.allocatedActionIds.length)
       .toBe(veto.vetoedConversions.length)
-    // Nothing was trimmed and nothing was lost: the promoted schedule converts
-    // the winner's figure exactly.
+    // Nothing was trimmed: one owner, one destination, so nobody's share had
+    // nowhere to go. What the promoted schedule converts each year is what the
+    // ledger converted that year, to the cent -- including the final year, in
+    // which the source ran out and both sides moved the same short amount.
+    // (`allocatedCents === winnerCents` would be the wrong pin: the household
+    // was asked for the full bracket fill in that year and the balance could
+    // not fund it, on both sides.)
     expect(run.choice.years.every((year) => year.trims.length === 0)).toBe(true)
-    expect(run.choice.years.every((year) => year.allocatedCents === year.winnerCents))
+    const executedCentsByYear = new Map(veto.vetoedResult.years
+      .filter((year) => year.rothConversion > 1)
+      .map((year) => [year.year, Math.round(year.rothConversion * 100)]))
+    expect(run.choice.years.map((year) => [year.year, year.allocatedCents]))
+      .toEqual([...executedCentsByYear])
+    expect(run.choice.years.some((year) => year.allocatedCents < year.winnerCents))
       .toBe(true)
   })
 
@@ -487,15 +510,20 @@ describe('what the runner refuses', () => {
       .toEqual(['milpWinnerNotPromotable'])
   })
 
-  it('refuses a scheduled year the vetoed projection published no snapshot for', () => {
+  /**
+   * The vetoed projection with one published allocation field removed from
+   * every year, so each half's absence can be refused on its own terms.
+   */
+  function runWithout(field: 'balances' | 'desired') {
     const ctx = contextFor(singleOwnerHousehold())
     const { exploratoryCandidate, veto } = vetoedWinner(ctx, 'bracket-24')
     const strippedYears = veto.vetoedResult.years.map((year) => {
       const stripped = { ...year }
-      delete stripped.aggregateRothConversionAllocationBalances
+      if (field === 'balances') delete stripped.aggregateRothConversionAllocationBalances
+      else delete stripped.aggregateRothConversionAllocationDesired
       return stripped
     })
-    const run = runAggregateConversionPromotion({
+    return runAggregateConversionPromotion({
       context: ctx,
       exploratoryCandidate,
       readinessVeto: {
@@ -503,16 +531,41 @@ describe('what the runner refuses', () => {
         vetoedResult: { ...veto.vetoedResult, years: strippedYears },
       },
     })
+  }
+
+  function refusalKinds(run: ReturnType<typeof runWithout>): string[] {
     if (run.status !== 'notPromoted') {
       throw new Error(`expected no promotion, got ${run.status}`)
     }
-
-    // Fail closed: with no published weights there is no allocation to make,
-    // and the Plan's opening balances are not a substitute for them.
     if (run.promotion.status !== 'unallocatable') {
       throw new Error(`expected an unallocatable promotion, got ${run.promotion.status}`)
     }
-    expect([...new Set(run.promotion.choice.issues.map((entry) => entry.kind))])
-      .toEqual(['missingYearBalances'])
+    return [...new Set(run.promotion.choice.issues.map((entry) => entry.kind))]
+  }
+
+  it('refuses a scheduled year the vetoed projection published no snapshot for', () => {
+    // Fail closed: with no published weights there is no allocation to make,
+    // and the Plan's opening balances are not a substitute for them.
+    expect(refusalKinds(runWithout('balances'))).toEqual(['missingYearBalances'])
+  })
+
+  it('refuses a missing household amount as itself, not as missing balances', () => {
+    // THE OTHER HALF, AND WHY IT IS A DIFFERENT REFUSAL. Both fields are
+    // published from the same call, so a projection carrying one and not the
+    // other did not come from `simulatePlan` — but the two absences have
+    // different remedies, and a reader told "no balance snapshot" here would go
+    // looking for a snapshot that is sitting right there in the year. The
+    // weights are present; the figure to weight is not.
+    expect(refusalKinds(runWithout('desired'))).toEqual(['missingYearDesiredAmount'])
+
+    // And the detail says which of the two published fields is the absentee,
+    // rather than describing the allocation as wholly unpublished.
+    const run = runWithout('desired')
+    if (run.status !== 'notPromoted' || run.promotion.status !== 'unallocatable') {
+      throw new Error('expected an unallocatable promotion')
+    }
+    const issue = run.promotion.choice.issues[0]!
+    expect(issue.field).toContain('aggregateRothConversionAllocationDesired')
+    expect(issue.detail).toContain('published the balances')
   })
 })

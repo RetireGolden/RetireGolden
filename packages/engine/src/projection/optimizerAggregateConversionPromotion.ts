@@ -122,13 +122,23 @@ import type { Account, Plan } from '../model/plan.js'
  * the ledger's published snapshots off the vetoed projection, runs this
  * chooser, prices the minted candidate on the exact ledger, and decides the
  * verdict with the exact-ledger equality core — `compareOptimizerAllocatedCandidate`
- * only attaches binding evidence to an `equivalent`. No optimizer entry
- * point calls that runner yet, and no surface publishes its answer: the veto
- * and the `buildOptimizerInput` throw both still stand, and lifting them is the
- * next slice.
+ * only attaches binding evidence to an `equivalent`. `runExactLedgerTournament`
+ * runs that loop for every vetoed winner and publishes the promoted candidate
+ * when it earns a recommendation on its own evaluation, so what this module
+ * chooses is now what a person is invited to act on.
  */
 
-/** One year of the winner's schedule, in Plan dollars. */
+/**
+ * One year of the schedule to promote, in Plan dollars.
+ *
+ * THE AMOUNT IS THE HOUSEHOLD FIGURE THE ALLOCATION POLICY IS ASKED FOR, which
+ * for a household with an owner who has nowhere to convert to is NOT the amount
+ * the ledger executed. The executed total is that figure minus the trimmed
+ * owner's slice; slicing it across the whole household again would trim the
+ * absent owner's phantom share a second time. The ledger publishes the figure
+ * this field wants as `YearResult.aggregateRothConversionAllocationDesired`,
+ * and `optimizerAggregateConversionPromotionRun.ts` reads it from there.
+ */
 export interface AggregateConversionPromotionYear {
   readonly year: number
   readonly amount: number
@@ -207,6 +217,18 @@ export type AggregateConversionPromotionIssueKind =
   | 'invalidWinnerSchedule'
   /** No balance snapshot for a scheduled year. */
   | 'missingYearBalances'
+  /**
+   * A scheduled year published its balance snapshot and not the household
+   * amount the policy was asked for.
+   *
+   * Produced by `optimizerAggregateConversionPromotionRun.ts` rather than by
+   * this module, which takes that amount from its caller. It is a separate kind
+   * from `missingYearBalances` because it is a separate absence with a separate
+   * remedy: the weights are there and the figure to weight is not, and a
+   * refusal that named the balances would send a reader looking for a snapshot
+   * that exists.
+   */
+  | 'missingYearDesiredAmount'
   /** Two balance snapshots for one year, so which one is authoritative is unstated. */
   | 'duplicateYearBalances'
   /** A participating account with no stated balance in a year. */
@@ -229,7 +251,11 @@ export interface AggregateConversionPromotionIssue {
 /** What the policy did with one scheduled year. */
 export interface AggregateConversionPromotionYearOutcome {
   readonly year: number
-  /** The winner's household figure for the year, in exact cents. */
+  /**
+   * The household figure the policy was asked for this year, in exact cents —
+   * the caller's stated amount, pre-trim. `allocatedCents` below is what the
+   * identity rules let land, and the difference is the trim.
+   */
   readonly winnerCents: number
   /** What the identity-complete intents actually convert, in exact cents. */
   readonly allocatedCents: number
