@@ -756,19 +756,6 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   Plan-identity-authoritative, runtime-snapshot-bound planning evidence only; all typed blocked and bound
   outcomes remain `movement: notCommitted` and `actionability: notEstablished` and cannot execute or
   simulate an action.
-  The standalone pure `executePlanOwnedNonRothIraAnnualWithdrawals` boundary reruns that Plan coordinator
-  internally, so a caller cannot present a forged coordinated result as commit authority. Every source,
-  eligibility, schedule, or annual-evidence blocking arm passes through unchanged. An all-zero batch
-  establishes normative `refused`/`nonActionable` dispositions with null executed dates and unchanged
-  balances, but claims `movement: noMovement`, not a commit. Only `annualEvidenceBound` can publish
-  `movement: committed` and `actionability: established`, exact opening/closing cents, positive-action
-  execution dates, per-allocation annual tax character, complete penalty coverage for every positive
-  allocation, and final evaluations only for positive ordinary-income exposure,
-  and a collision-checked structural execution evidence ID transitively bound to the Plan inventory,
-  physical eligibility, movement candidate, annual finalization, and candidate binding. A zero action
-  among positive siblings remains refused with no tax or penalty record; a positive partial action keeps
-  `source-balance-trimmed` as its normative reason. This commit boundary is still isolated from the annual
-  simulator and does not establish custodian completion or filing-grade tax adjudication.
   The pure `buildAnnualRetirementPhysicalEventInventory` boundary now establishes the prerequisite
   Plan/year chronology shape without integrating it into the simulator. It derives traditional-account
   Plan action allocations from the validated Plan and exact-rejoins them with one complete runtime
@@ -820,31 +807,6 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   from positive actual staged gross. Bigint sums produce safe-cent lines 6 and 9. The immutable success
   contains only a classifier input and reconciliation evidence; it does not call the classifier, penalty
   gates, executor, or simulator, mutate balance or basis, commit movement, or establish actionability.
-  The matching pure `executePlanOwnedNonRothIraAnnualPostCandidate` boundary rebuilds that result, reruns
-  only the candidate-level annual coordinator with caller-supplied penalty facts, and exact-rejoins the
-  canonical candidate, line-7 characterization, reconciliation, and supplied finalization. It publishes
-  normative committed/refused action and balance evidence from the snapshot's already-applied candidate;
-  it never invokes the older Plan coordinator/executor and never stages or applies another balance delta.
-  Its collision-checked execution ID binds the reconciliation, finalization and candidate binding,
-  snapshot allocation applications, candidate balances, and published evidence. Any stale or tampered
-  link fails closed with no movement. A combined semantic identifier registry also rejects cross-role or
-  differently bound reuse between post-candidate, penalty, finalization, and binding evidence while
-  retaining exact same-role references. Unresolved penalty evidence remains non-actionable. This binder
-  is still isolated from the annual simulator and is not custodian completion evidence.
-  The pure `probePlanOwnedNonRothIraAnnualPass` controller closes the speculative annual-pass loop without
-  changing simulator state. A speculative movement input/candidate requires no pre-pass runtime
-  attestation. After the full pass, the controller reruns the PR107 transaction against the truthful
-  inventory and original action-boundary opening balances, exact-rejoins the candidate, and internally
-  constructs the PR105 snapshot from canonical applications/transitions plus the complete December 31
-  owner-wide pool. A structurally derived completed-pass envelope binds the Plan, owner, year, ledger,
-  candidate, inventory, transaction, canonical assumption vector, and canonical year-end observations.
-  The controller rebuilds PR105, the annual finalization, and PR106; it projects per-allocation executed,
-  basis-return, ordinary-income, and allocated-penalty cents without duplicating their math. Exact effects
-  return either commit-ready positive control or settled no-movement control, valid changed economics
-  return reprobe, and incomplete, unified-ledger, stale, colliding, or malformed evidence returns rollback.
-  Every outer arm is nonmoving; a stable binding is exposed for a later atomic compare-and-swap consumer.
-  Penalty-prerequisite facts remain caller-supplied planning evidence, are explicitly allow-listed before
-  coordination, and do not by themselves establish Plan, filing, custodian, or simulator authority.
   A separate standalone `validateOwnedNonRothIraSeppCurrentPaymentCandidate` boundary can now validate
   one named owned-IRA SEPP scheduled-payment transition against canonical character/distribution
   coverage, explicit election and annual-schedule evidence, no-disqualifying-modification coverage,
@@ -912,10 +874,14 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   evidence chain can re-join every balance change. The legacy QCD path does the same for its beyond-RMD debits,
   which carry a `legacyQcd` occurrence and a `legacyQcdDistribution` debit application with a null Form 8606 line
   — 408(d)(8)(D) keeps a QCD out of the pro-rata computation entirely, so it never belongs to a basis allocation.
-  Everything else in the actions package is still standalone and uncalled by `simulate.ts`: the Plan-owned annual
-  coordinator and executor, the post-candidate classification and execution chain, the SEPP payment validator and
-  annual reconciler, and the whole `annualQcd*` character/§170 deduction stack. Each of those reports
+  The named-QCD arm commits inside the projection too: `simulate.ts` calls the QCD execution prerequisite,
+  physical staging and executor, which run the tax-character post-pass and owner-wide pool capacity behind
+  them. What is still standalone and uncalled by `simulate.ts` is the Plan-owned annual coordinator and its
+  post-candidate evidence builder, the SEPP payment validator and annual reconciler, and the `annualQcd*`
+  evidence, finalization and §170 deduction stack below the executor. Each of those reports
   `movement: notCommitted`, and none of them establishes custodian settlement or filing-grade treatment.
+  The standalone Plan-owned commit boundary that once headed that list is gone; owned-IRA basis is settled
+  from runtime occurrences through `internal/ownedNonRothIraAnnualAttemptSettlement.ts`.
 - **Fixed-asset disposition.** Setting `costBasis` on a property switches its planned sale from the legacy
   tax-free `expectedNetProceeds` estimate to exact treatment: gain = sale price − selling costs
   (`sellingCostPct`) − basis; depreciation (`depreciationRecapture`) is ordinary income and never excludable;
@@ -932,7 +898,6 @@ additive with a no-op default, so plans saved before it stay byte-identical.
 [engine/actions/annualIraBasisAllocation.ts](../../packages/engine/src/actions/annualIraBasisAllocation.ts),
 [engine/actions/ownedNonRothIraWithdrawalCharacter.ts](../../packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts),
 [engine/actions/ownedNonRothIraAnnualPlanCoordinator.ts](../../packages/engine/src/actions/ownedNonRothIraAnnualPlanCoordinator.ts),
-[engine/actions/ownedNonRothIraAnnualExecution.ts](../../packages/engine/src/actions/ownedNonRothIraAnnualExecution.ts),
 [engine/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts](../../packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts),
 [engine/actions/ownedNonRothIraSeppAnnualReconciliation.ts](../../packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts),
 [engine/tax/propertySale.ts](../../packages/engine/src/tax/propertySale.ts), threaded through
