@@ -97,6 +97,12 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    // The app suite runs whole projections and optimizer tournaments, and CI
+    // runs it under v8 coverage on runners measured at ~6x local speed (#230).
+    // Vitest's 5s default kept tipping marginal tests one at a time (owlParity
+    // in #230, decisions/search on the next run), so the suite declares its
+    // real scale once. Hangs still fail; they just get 30s to prove it.
+    testTimeout: 30_000,
     coverage: {
       provider: 'v8',
       // Package coverage (and thresholds) lives with each package; the app
