@@ -600,3 +600,164 @@ describe('optimizer recommendation evidence', () => {
     expect(evidence.winnerSource).toBe('none')
   })
 })
+
+/**
+ * The report's half of the promoted-schedule verdicts. A published promotion
+ * lifts the veto, so the report's existing withheld arms never see one; what it
+ * has to say instead is which schedule won, and that the winner is the one
+ * naming accounts.
+ */
+describe('optimizer recommendation evidence for a promoted winner', () => {
+  const winnerValidation = {
+    baseline: { endingAfterTaxEstate: 100_000 },
+    candidate: { endingAfterTaxEstate: 104_000 },
+    afterTaxEstateDelta: 4_000,
+    endingNetWorthDelta: 3_500,
+    lifetimeTaxDelta: -5_000,
+    moneyLastsYearsDelta: 0,
+    requestedConversionTotal: 40_000,
+    executedConversionTotal: 40_000,
+    executedConversionRatio: 1,
+    firstMateriallyUnexecutedYear: null,
+    traditionalDepletionYear: null,
+    recommendationState: 'beneficial',
+  }
+
+  function publishedTournament(promotion: unknown) {
+    return {
+      tournament: {
+        policyId: 'max-after-tax-estate',
+        candidates: [],
+        winnerSource: 'candidate',
+        winnerCandidateId: 'promoted-candidate',
+        winnerLabel: 'Explicit schedule after exploring: Fill the 22% bracket',
+        winnerConversions: [{ year: 2026, amount: 40_000 }],
+        winnerValidation,
+        marginOverMilpDollars: 0,
+        searchRefined: false,
+        searchSimulations: 0,
+        acaActionabilityVeto: null,
+        retirementActionReadinessVeto: null,
+        retirementActionPromotion: promotion,
+      },
+      claimAge: null,
+    }
+  }
+
+  it('marks an equivalent winner as the named account schedule', () => {
+    const evidence = reportEvidenceFromOptimizeResult(publishedTournament({
+      outcome: 'equivalent',
+      candidateId: 'promoted-candidate',
+      label: 'Explicit schedule after exploring: Fill the 22% bracket',
+      actionRequestIds: ['promoted-2026'],
+      planPatch: {},
+      years: [],
+      evidence: { equality: 'exactMinorUnitByRequiredKey' },
+      binding: null,
+    }) as never)
+
+    expect(evidence.recommendationState).toBe('beneficial')
+    expect(evidence.winnerLabel).toBe(
+      'Explicit schedule after exploring: Fill the 22% bracket (named account schedule)',
+    )
+    expect(evidence.winnerLabel).not.toContain('withheld pending account allocation')
+  })
+
+  it('says a repriced winner carries its own pricing', () => {
+    const evidence = reportEvidenceFromOptimizeResult(publishedTournament({
+      outcome: 'repriced',
+      candidateId: 'promoted-candidate',
+      label: 'Explicit schedule after exploring: Fill the 22% bracket',
+      actionRequestIds: ['promoted-2026'],
+      planPatch: {},
+      years: [],
+      aggregateConversions: [{ year: 2026, amount: 60_000 }],
+    }) as never)
+
+    expect(evidence.winnerLabel).toBe(
+      'Explicit schedule after exploring: Fill the 22% bracket ' +
+      '(named account schedule, priced on its own projection)',
+    )
+  })
+
+  it('adds what the promotion loop found to a withheld winner’s loss reason', () => {
+    const evidence = reportEvidenceFromOptimizeResult({
+      tournament: {
+        policyId: 'max-after-tax-estate',
+        candidates: [{
+          id: 'fill-22',
+          label: 'Fill the 22% bracket',
+          executedConversionTotal: 60_000,
+          afterTaxEstateDelta: 4_000,
+          lifetimeTaxDelta: -5_000,
+          moneyLastsYearsDelta: 0,
+        }],
+        winnerSource: 'none',
+        winnerCandidateId: null,
+        winnerLabel: null,
+        winnerConversions: [],
+        winnerValidation: null,
+        marginOverMilpDollars: 0,
+        searchRefined: false,
+        searchSimulations: 0,
+        acaActionabilityVeto: null,
+        retirementActionReadinessVeto: {
+          reason: 'identityIncomplete',
+          vetoedWinnerSource: 'candidate',
+          vetoedCandidateId: 'fill-22',
+          vetoedCandidateLabel: 'Fill the 22% bracket',
+          vetoedConversions: [{ year: 2026, amount: 60_000 }],
+          vetoedValidation: { ...winnerValidation, recommendationState: 'identityIncomplete' },
+        },
+        retirementActionPromotion: {
+          outcome: 'notComparable',
+          reason: 'allocatedRankingNotComparable',
+          allocatedRecommendationState: 'diagnostic',
+          diagnostics: ['Blocking reasons: conversion-plan-availability-unknown.'],
+        },
+      },
+      claimAge: null,
+    } as never)
+
+    expect(evidence.candidates[0]?.lossReason).toMatch(
+      /owner, source IRA, and Roth destination.*did not execute as written/is,
+    )
+  })
+
+  it('leaves the withheld sentence alone when no promotion loop ran', () => {
+    const evidence = reportEvidenceFromOptimizeResult({
+      tournament: {
+        policyId: 'max-after-tax-estate',
+        candidates: [{
+          id: 'fill-22',
+          label: 'Fill the 22% bracket',
+          executedConversionTotal: 60_000,
+          afterTaxEstateDelta: 4_000,
+          lifetimeTaxDelta: -5_000,
+          moneyLastsYearsDelta: 0,
+        }],
+        winnerSource: 'none',
+        winnerCandidateId: null,
+        winnerLabel: null,
+        winnerConversions: [],
+        winnerValidation: null,
+        marginOverMilpDollars: 0,
+        searchRefined: false,
+        searchSimulations: 0,
+        acaActionabilityVeto: null,
+        retirementActionReadinessVeto: {
+          reason: 'identityIncomplete',
+          vetoedWinnerSource: 'candidate',
+          vetoedCandidateId: 'fill-22',
+          vetoedCandidateLabel: 'Fill the 22% bracket',
+          vetoedConversions: [{ year: 2026, amount: 60_000 }],
+          vetoedValidation: { ...winnerValidation, recommendationState: 'identityIncomplete' },
+        },
+        retirementActionPromotion: null,
+      },
+      claimAge: null,
+    } as never)
+
+    expect(evidence.candidates[0]?.lossReason).toMatch(/until those account identities are allocated\.$/)
+  })
+})

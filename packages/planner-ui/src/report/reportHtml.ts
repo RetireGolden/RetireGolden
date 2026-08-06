@@ -28,6 +28,7 @@ import {
   type ReportValidationEvidence,
 } from './reportModel'
 import { retirementActionReadinessVetoExplanation } from '../planner/retirementActionReadinessVetoCopy'
+import { promotedWinnerLabelSuffix } from '../planner/retirementActionPromotionCopy'
 import { isCalculatedIdentityWithheldPostProcessing } from '../planner/optimizePageChart'
 
 export type {
@@ -453,7 +454,10 @@ function lossReasonForCandidate(
     readinessVeto?.vetoedCandidateId === candidate.id ||
     (readinessVeto?.vetoedWinnerSource === 'milp' && candidate.id === 'milp-cleaned-schedule')
   ) {
-    return retirementActionReadinessVetoExplanation(readinessVeto)
+    return retirementActionReadinessVetoExplanation(
+      readinessVeto,
+      tournament.retirementActionPromotion,
+    )
   }
   if (candidate.afterTaxEstateDelta <= 1) return 'Did not improve after-tax estate over the current plan.'
   if (tournament.acaActionabilityVeto?.vetoedCandidateIds.includes(candidate.id)) {
@@ -524,12 +528,12 @@ export function reportEvidenceFromOptimizeResult(result: OptimizeResult): Report
           : 'calculated policy winner')} (withheld pending account allocation)`
       : withheldCleanedSchedule
         ? "the solver's cleaned schedule (withheld pending account allocation)"
-      : tournament.winnerLabel ??
+      : `${tournament.winnerLabel ??
         (tournament.winnerSource === 'milp'
           ? "the solver's cleaned schedule"
           : tournament.winnerSource === 'incumbent'
             ? 'current plan strategy'
-            : 'none')
+            : 'none')}${promotedWinnerLabelSuffix(tournament.retirementActionPromotion)}`
   const candidateRows = tournament.candidates.map((candidate) => ({
     afterTaxEstateDelta: candidate.afterTaxEstateDelta,
     candidateId: candidate.id,
@@ -549,7 +553,10 @@ export function reportEvidenceFromOptimizeResult(result: OptimizeResult): Report
       candidateId: 'milp-cleaned-schedule',
       label: readinessVeto.vetoedCandidateLabel ?? "the solver's cleaned schedule",
       lifetimeTaxDelta: vetoed.lifetimeTaxDelta,
-      lossReason: retirementActionReadinessVetoExplanation(readinessVeto),
+      lossReason: retirementActionReadinessVetoExplanation(
+        readinessVeto,
+        tournament.retirementActionPromotion,
+      ),
       moneyLastsYearsDelta: vetoed.moneyLastsYearsDelta,
     })
   }
