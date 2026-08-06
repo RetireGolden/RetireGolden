@@ -1352,6 +1352,14 @@ function assertLinkedWithdrawalRequests(
  * That one asks whether the two legs agree; two contested conversions could
  * agree with the shared withdrawal and with each other while all three moved,
  * and the double-count would pass it. This asks the different question.
+ *
+ * Two failures, and they are not the same failure. A leg that moved is an
+ * executor that disregarded the verdict. A leg with no record at all is a leg
+ * whose stillness this publication simply cannot see — which happens when the
+ * contested withdrawal names an action the publication was never given, since
+ * the omitted-actions check upstream only covers requests that are present.
+ * Reporting the second as movement would name a defect that did not occur and
+ * send a reader looking at the wrong executor.
  */
 function assertContestedLinkedWithdrawalRecordsStill(
   requests: readonly Readonly<RetirementActionRequest>[],
@@ -1364,7 +1372,12 @@ function assertContestedLinkedWithdrawalRecordsStill(
     const contested = [withdrawalId, ...conversionIds]
     for (const actionId of contested) {
       const record = recordById.get(actionId)
-      if (record === undefined || record.executedAmount > 0) {
+      if (record === undefined) {
+        throw new Error(
+          `Contested linked conversion funding has no record for action "${actionId}"`,
+        )
+      }
+      if (record.executedAmount > 0) {
         throw new Error(
           `Contested linked conversion funding moved for action "${actionId}"`,
         )

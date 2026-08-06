@@ -103,7 +103,33 @@ export interface ConversionLinkedWithdrawalGroupMemberInput {
   readonly fundedAmount: UsdCents
 }
 
-/** One annual liability, and the run that produced it. */
+/**
+ * One annual liability, and the run that produced it.
+ *
+ * The run's *kind* is not decoration here, and each slot admits exactly one.
+ *
+ * The baseline is `baselineT0`: the counterfactual with the group's requests
+ * removed. Nothing else can fill that slot, because `T0` is defined by what was
+ * taken out of it.
+ *
+ * The candidate is `candidateT1`, and the reason is the funding vector rather
+ * than the wall clock. `candidateT1` is the only binding that carries a
+ * `candidateFundingVectorEvidenceId`, and the evidence contract's candidate is
+ * "the unit's annual liability with them, *funded as stated*" — a candidate
+ * that does not name the vector it was run against cannot be subtracted from a
+ * baseline honestly, because a different vector is a different candidate.
+ * `committedAnnual` structurally cannot name one: its funding-vector field is
+ * `null` by the union.
+ *
+ * That is worth stating plainly because it is easy to misread. In this slice
+ * `T1` and the committed pass are the same physical run — there is no third
+ * run, and the year publishes one liability. But `liabilityRunKind` names the
+ * *role and inputs* an identity answers for, not which execution produced it,
+ * and the same pass minted as `committedAnnual` would be claiming a role that
+ * has no funding vector attached. So the simulator mints it a second time as
+ * `candidateT1` over the year's actual vector, and that is the identity this
+ * slot takes.
+ */
 export interface ConversionLinkedWithdrawalGroupLiabilityRun {
   readonly liability: Readonly<ConversionTaxFundingExactCentAmount>
   readonly identity: Readonly<AnnualLiabilityRunIdentity>
@@ -139,6 +165,10 @@ export type ConversionLinkedWithdrawalGroupFundingRefusalKind =
   | 'annualLiabilityUnavailable'
   /** The two runs are not provably distinct runs over distinct inputs. */
   | 'liabilityRunIdentityCollided'
+  /** A run was handed over under a kind its slot cannot accept. */
+  | 'liabilityRunKindInvalid'
+  /** A run answers for another filing unit, or another tax year. */
+  | 'liabilityRunUnitMismatched'
   /** A group member could not be matched to a conversion the assessment named. */
   | 'annualGroupMembershipInvalid'
   /** A member's taxable conversion principal is not yet stateable. */
@@ -326,6 +356,32 @@ function evaluateFunding(
         : 'The candidate (T1) annual liability run is missing.',
     ])
   }
+  // Each slot admits exactly the kind that can honestly fill it, named rather
+  // than excluded. Asking only that the candidate is "not the baseline" would
+  // admit a `committedAnnual` identity, which cannot carry the funding vector
+  // the candidate is defined by -- and the evidence would then claim a
+  // liability "funded as stated" while naming no statement of the funding.
+  if (baseline.identity.liabilityRun.liabilityRunKind !== 'baselineT0') {
+    return refusedFunding('liabilityRunKindInvalid', [
+      `The baseline slot takes a "baselineT0" run, not "${baseline.identity.liabilityRun.liabilityRunKind}".`,
+    ])
+  }
+  if (candidate.identity.liabilityRun.liabilityRunKind !== 'candidateT1') {
+    return refusedFunding('liabilityRunKindInvalid', [
+      `The candidate slot takes a "candidateT1" run, not "${candidate.identity.liabilityRun.liabilityRunKind}".`,
+      'Only a candidate run names the funding vector it was run against, and a candidate that does not name its vector cannot be subtracted from a baseline.',
+    ])
+  }
+  if (
+    baseline.identity.taxUnitId !== input.taxUnit.taxUnitId ||
+    candidate.identity.taxUnitId !== input.taxUnit.taxUnitId ||
+    baseline.identity.taxYear !== input.taxUnit.taxYear ||
+    candidate.identity.taxYear !== input.taxUnit.taxYear
+  ) {
+    return refusedFunding('liabilityRunUnitMismatched', [
+      'Both liability runs must answer for the filing unit and tax year the evaluation names.',
+    ])
+  }
   // Both directions, because the failure that matters is not a hash collision:
   // it is a caller handing over one run twice, whose difference is zero and
   // whose evidence would say the group cost the household nothing.
@@ -336,19 +392,13 @@ function evaluateFunding(
   if (
     distinct.status !== 'annualLiabilityRunIdentitySetDistinct' ||
     baseline.identity.annualTaxLiabilityEvidenceId ===
-      candidate.identity.annualTaxLiabilityEvidenceId ||
-    baseline.identity.liabilityRun.liabilityRunKind !== 'baselineT0' ||
-    candidate.identity.liabilityRun.liabilityRunKind === 'baselineT0' ||
-    baseline.identity.taxUnitId !== input.taxUnit.taxUnitId ||
-    candidate.identity.taxUnitId !== input.taxUnit.taxUnitId ||
-    baseline.identity.taxYear !== input.taxUnit.taxYear ||
-    candidate.identity.taxYear !== input.taxUnit.taxYear
+      candidate.identity.annualTaxLiabilityEvidenceId
   ) {
     return refusedFunding('liabilityRunIdentityCollided', [
       ...(distinct.status === 'annualLiabilityRunIdentitySetDistinct'
         ? []
         : distinct.issues.map((issue) => issue.detail)),
-      'The baseline and candidate liability runs must be distinct runs of the named filing unit and year.',
+      'The baseline and candidate liability runs must be two distinct runs.',
     ])
   }
 

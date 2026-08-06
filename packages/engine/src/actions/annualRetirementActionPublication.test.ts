@@ -2230,6 +2230,52 @@ describe('annual retirement-action publication', () => {
     )).toThrow(/contested linked conversion funding moved/i)
   })
 
+  it('names a contested leg it cannot see as missing, not as moved', () => {
+    // The two failures this assertion can reach are different defects and get
+    // different messages. A leg that moved is an executor disregarding the
+    // verdict; a leg with no record is a leg whose stillness the publication
+    // cannot verify at all.
+    //
+    // The missing case is reachable, and this is the shape that reaches it: two
+    // conversions naming a withdrawal that is not in the publication. The
+    // omitted-actions check upstream covers only requests that are present, and
+    // an absent withdrawal is not a request — so nothing before this notices,
+    // and the contested-shape gate means the request-shape assertion does not
+    // throw on it either.
+    const conversionA = request('rothConversion', 'absent-target-a', '2030-06-01', 1)
+    const conversionB = request('rothConversion', 'absent-target-b', '2030-06-02', 2)
+    if (
+      conversionA.kind !== 'rothConversion' || conversionB.kind !== 'rothConversion'
+    ) throw new Error('fixture drift')
+    const absentWithdrawalId = asActionId('withdrawal-never-published')
+    conversionA.taxFunding = {
+      kind: 'linkedWithdrawal',
+      withdrawalActionId: absentWithdrawalId,
+    }
+    conversionB.taxFunding = {
+      kind: 'linkedWithdrawal',
+      withdrawalActionId: absentWithdrawalId,
+    }
+    const stillRecord = (
+      action: RetirementActionRequest,
+    ): Omit<AnnualRetirementActionRecord, 'executorSource'> => ({
+      ...record(action),
+      outcome: 'refused',
+      reasons: [createActionReason('conversion-tax-funding-unallocated')],
+    })
+
+    expect(() => publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [conversionA, conversionB],
+      sources: [source('rothConversionExecutor', [
+        stillRecord(conversionA),
+        stillRecord(conversionB),
+      ])],
+    })).toThrow(
+      /contested linked conversion funding has no record for action "withdrawal-never-published"/i,
+    )
+  })
+
   it('publishes executed linked funding from generic sources independent of order', () => {
     const [withdrawal, conversion] = linkedConversionPair(
       'executed-linked-conversion',

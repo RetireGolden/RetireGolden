@@ -509,28 +509,83 @@ describe('executeConversionLinkedWithdrawalGroups', () => {
       })
     })
 
-    it('refuses two liabilities that are not two runs', () => {
+    it('refuses two identities that disagree about what they name', () => {
+      // The failure the collision check exists for is not a hash collision. It
+      // is a caller rebuilding an identity by hand, so that one ID ends up
+      // covering two different runs — here, a candidate wearing the baseline's
+      // input-snapshot ID while carrying its own inputs. The snapshot names the
+      // inputs and only the inputs, so one ID over two input sets is a lie
+      // about what was computed, and it survives every kind and unit check
+      // because both of those are still correct.
       const baseline = baselineRun(1_000_000)
-      const requests = dedicatedPair()
-      const members = [member('conversion-a', 0, 0)]
+      const candidate = candidateRun(1_250_000)
 
-      // The same run twice. Its difference is zero, and evidence built from it
-      // would say the group cost the household nothing.
       expect(run({
-        requests,
-        members,
+        requests: dedicatedPair(),
+        members: [member('conversion-a', 0, 0)],
         baseline,
         candidate: {
-          liability: exactCents(1_000_000),
-          identity: baseline.identity,
+          liability: candidate.liability,
+          identity: {
+            ...candidate.identity,
+            taxInputSnapshotId: baseline.identity.taxInputSnapshotId,
+          },
         },
       }).funding).toMatchObject({
         status: 'annualGroupNotEvaluated',
         reason: 'liabilityRunIdentityCollided',
       })
+    })
 
-      // A candidate in the baseline's slot: two distinct identities that still
-      // do not name a baseline and a candidate.
+    it('takes exactly the run kind each slot is defined by', () => {
+      // Each slot is named rather than merely fenced off from the other. The
+      // baseline is `baselineT0` because `T0` is defined by what was removed
+      // from it. The candidate is `candidateT1` because that is the only
+      // binding carrying a funding vector, and the evidence contract's
+      // candidate is the liability "funded as stated" -- a candidate that does
+      // not name its vector cannot be subtracted from a baseline, since a
+      // different vector is a different candidate.
+      //
+      // `committedAnnual` is the arm this pins hardest. In this slice the
+      // committed pass and `T1` are the same physical run, which makes it easy
+      // to reach for the committed identity here — but `liabilityRunKind` names
+      // the role and inputs an identity answers for, not which execution
+      // produced it, and `committedAnnual` structurally cannot carry a funding
+      // vector: its field is `null` by the union. So the run is minted a second
+      // time as `candidateT1` over the year's actual vector, and only that is
+      // admitted.
+      const requests = dedicatedPair()
+      const members = [member('conversion-a', 0, 0)]
+      const committed: Readonly<ConversionLinkedWithdrawalGroupLiabilityRun> = {
+        liability: exactCents(1_250_000),
+        identity: identity(
+          {
+            liabilityRunKind: 'committedAnnual',
+            candidateFundingVectorEvidenceId: null,
+          },
+          [],
+        ),
+      }
+
+      const committedAsCandidate = run({
+        requests,
+        members,
+        baseline: baselineRun(1_000_000),
+        candidate: committed,
+      }).funding
+      expect(committedAsCandidate).toMatchObject({
+        status: 'annualGroupNotEvaluated',
+        reason: 'liabilityRunKindInvalid',
+      })
+      if (committedAsCandidate.status !== 'annualGroupNotEvaluated') {
+        throw new Error('expected a refusal')
+      }
+      expect(committedAsCandidate.issues[0])
+        .toMatch(/candidate slot takes a "candidateT1" run, not "committedAnnual"/)
+
+      // The mirror: a candidate identity in the baseline's slot. Two distinct
+      // identities that still do not name a baseline and a candidate, and it is
+      // a kind defect rather than a collision.
       expect(run({
         requests,
         members,
@@ -541,7 +596,38 @@ describe('executeConversionLinkedWithdrawalGroups', () => {
         candidate: candidateRun(1_250_000),
       }).funding).toMatchObject({
         status: 'annualGroupNotEvaluated',
-        reason: 'liabilityRunIdentityCollided',
+        reason: 'liabilityRunKindInvalid',
+      })
+
+      // And a committed identity in the baseline's slot, which the old
+      // "anything but the other one" reading would also have let through on the
+      // candidate side.
+      expect(run({
+        requests,
+        members,
+        baseline: committed,
+        candidate: candidateRun(1_250_000),
+      }).funding).toMatchObject({
+        status: 'annualGroupNotEvaluated',
+        reason: 'liabilityRunKindInvalid',
+      })
+    })
+
+    it('refuses runs that answer for another filing unit or year', () => {
+      // Not a collision and not a kind defect: two well-formed runs of the
+      // right kinds that simply do not belong to the unit whose conversions are
+      // being allocated. Allocating one unit's tax bill across another unit's
+      // conversions can still balance to the cent, which is why the identity is
+      // checked rather than inferred from the arithmetic coming out even.
+      expect(run({
+        requests: dedicatedPair(),
+        members: [member('conversion-a', 0, 0)],
+        baseline: baselineRun(1_000_000),
+        candidate: candidateRun(1_250_000),
+        taxUnitOverride: { ...taxUnit, taxUnitId: 'a-different-filing-unit' },
+      }).funding).toMatchObject({
+        status: 'annualGroupNotEvaluated',
+        reason: 'liabilityRunUnitMismatched',
       })
     })
 
