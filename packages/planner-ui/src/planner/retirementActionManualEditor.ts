@@ -571,7 +571,8 @@ export function retirementActionManualDestinationCandidate(
  * The destination refusals the canonical allocator's conversion arm makes,
  * stated here in the surface's own words so a household reads them beside the
  * control that answers them rather than after a save that could never land.
- * Each one mirrors a `conversionDestinationIssue` refusal exactly.
+ * Each one enforces the same condition as a `conversionDestinationIssue`
+ * refusal; the wording is this surface's own, not the allocator's.
  */
 export function retirementActionManualDestinationSupportIssue(
   account: Plan['accounts'][number],
