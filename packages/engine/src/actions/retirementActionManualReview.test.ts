@@ -11,7 +11,12 @@ import {
 } from './identity.js'
 import { asPositiveUsdCents } from './money.js'
 import {
+  reservePlanOwnedNonRothIraAnnualFilingSourceIdentifiers,
+} from './ownedNonRothIraAnnualFilingSourceResolver.js'
+import {
   allocateRetirementActionCandidateIdentity,
+  rejectedPlanFilingSourceRootIdentityIssue,
+  PLAN_OWNED_NON_ROTH_IRA_ANNUAL_FILING_SOURCE_ROOT_FIELD,
   type OrdinaryWithdrawalCandidateIdentityIntent,
   type RothConversionCandidateIdentityIntent,
 } from './retirementActionCandidateIdentityAllocator.js'
@@ -1084,6 +1089,11 @@ describe('manual retirement-action review and replacement', () => {
       ],
     }
 
+    const reservation = reservePlanOwnedNonRothIraAnnualFilingSourceIdentifiers(plan)
+    expect(reservation.status).toBe('rejected')
+    if (reservation.status !== 'rejected') return
+    const rootRejection = rejectedPlanFilingSourceRootIdentityIssue(reservation)
+
     const result = review(plan, 'legacy-withdrawal', ordinaryIntent())
 
     // Refused on the duplicated root itself, not on the downstream Plan parse:
@@ -1091,10 +1101,16 @@ describe('manual retirement-action review and replacement', () => {
     expect(result).toMatchObject({ status: 'blocked', outcome: 'refused' })
     expect(issueKinds(result)).toEqual(['allocatorBlocked'])
     if (result.status === 'replacementReady') return
-    expect(result.issues[0].detail).toContain('duplicateOwnerYearSource')
-    expect(result.issues[0].allocatorIssue?.field).toBe(
-      'plan.retirementActionAnnualTaxFacts.ownedNonRothIraAnnualFilingSourceRecords',
-    )
+    // Both sites publish this one identity issue, so a reader introspects one
+    // rejection shape wherever the root was consulted.
+    expect(rootRejection).toEqual({
+      kind: 'ambiguousIdentity',
+      field: PLAN_OWNED_NON_ROTH_IRA_ANNUAL_FILING_SOURCE_ROOT_FIELD,
+      reason: null,
+      detail: expect.stringContaining('duplicateOwnerYearSource'),
+    })
+    expect(result.issues[0].allocatorIssue).toEqual(rootRejection)
+    expect(result.issues[0].detail).toBe(rootRejection.detail)
   })
 
   it('classifies a correctable replacement Plan validation failure as refused', () => {

@@ -26,6 +26,7 @@ import {
 } from './money.js'
 import {
   reservePlanOwnedNonRothIraAnnualFilingSourceIdentifiers,
+  type RejectedPlanOwnedNonRothIraAnnualFilingSourceIdentities,
 } from './ownedNonRothIraAnnualFilingSourceResolver.js'
 import {
   createActionReason,
@@ -210,6 +211,30 @@ type CompletePlanIdentityNamespace =
   | { status: 'reserved'; reserved: Set<string> }
   | { status: 'rejected'; rejection: RetirementActionCandidateIdentityIssue }
 
+/** The Plan path every site names when it refuses the annual filing-source root. */
+export const PLAN_OWNED_NON_ROTH_IRA_ANNUAL_FILING_SOURCE_ROOT_FIELD =
+  'plan.retirementActionAnnualTaxFacts.ownedNonRothIraAnnualFilingSourceRecords'
+
+/**
+ * The identity refusal a rejected annual filing-source root produces. Exported
+ * so every site that consults the root refuses in one shape a consumer can
+ * introspect, rather than each inventing its own vocabulary for one rejection.
+ * No action reason honestly applies: the registered predicates describe a
+ * request the Plan refused, not a Plan whose own records cannot be arbitrated.
+ */
+export function rejectedPlanFilingSourceRootIdentityIssue(
+  reservation: Readonly<RejectedPlanOwnedNonRothIraAnnualFilingSourceIdentities>,
+): RetirementActionCandidateIdentityIssue {
+  const rejectedKinds = [...new Set(reservation.issues.map((entry) => entry.kind))]
+    .sort(compareUtf16CodeUnits)
+  return issue(
+    'ambiguousIdentity',
+    PLAN_OWNED_NON_ROTH_IRA_ANNUAL_FILING_SOURCE_ROOT_FIELD,
+    `The Plan's annual filing-source records are rejected without precedence (${rejectedKinds.join(', ')}), so the identifiers they claim cannot be proven and no identity may be allocated against them.`,
+    null,
+  )
+}
+
 /**
  * The Plan identity namespace, with the annual filing-source root consulted
  * through its canonical arbiter rather than indexed directly: a duplicated
@@ -221,16 +246,9 @@ function completePlanIdentityNamespace(
 ): CompletePlanIdentityNamespace {
   const reservation = reservePlanOwnedNonRothIraAnnualFilingSourceIdentifiers(plan)
   if (reservation.status === 'rejected') {
-    const rejectedKinds = [...new Set(reservation.issues.map((entry) => entry.kind))]
-      .sort(compareUtf16CodeUnits)
     return {
       status: 'rejected',
-      rejection: issue(
-        'ambiguousIdentity',
-        'plan.retirementActionAnnualTaxFacts.ownedNonRothIraAnnualFilingSourceRecords',
-        `The Plan's annual filing-source records are rejected without precedence (${rejectedKinds.join(', ')}), so the identifiers they claim cannot be proven and no identity may be allocated against them.`,
-        null,
-      ),
+      rejection: rejectedPlanFilingSourceRootIdentityIssue(reservation),
     }
   }
   const reserved = new Set(retirementActionPlanReservedIdentifiers(plan))

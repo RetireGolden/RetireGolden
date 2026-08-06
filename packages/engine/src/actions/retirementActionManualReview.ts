@@ -17,6 +17,7 @@ import {
 } from './ownedNonRothIraAnnualFilingSourceResolver.js'
 import {
   allocateRetirementActionCandidateIdentity,
+  rejectedPlanFilingSourceRootIdentityIssue,
   type RetirementActionCandidateIdentityEvidence,
   type RetirementActionCandidateIdentityIntent,
   type RetirementActionCandidateIdentityIssue,
@@ -261,20 +262,29 @@ type CompletePlanIdentityNamespace =
  * owner/year key or a shared source identifier rejects every affected record
  * here exactly as it does everywhere else the root is read. A rejected root
  * yields no namespace at all rather than the survivors' claims.
+ *
+ * The refusal is the allocator's own identity issue, reported the way every
+ * other identity refusal reaches this contract: `allocatorBlocked` carrying the
+ * root problem in `allocatorIssue`. A reader that introspects one site's
+ * rejection can read this one the same way. Today the replacement Plan has
+ * already parsed by the time this runs, and `planSchema` refuses a duplicated
+ * root itself, so the rejected arm is unreachable through the public entry --
+ * which is a reason for it to speak the contract, not an excuse to invent a
+ * second vocabulary nothing else would understand.
  */
 function completePlanIdentityNamespace(
   plan: Readonly<Plan>,
 ): CompletePlanIdentityNamespace {
   const reservation = reservePlanOwnedNonRothIraAnnualFilingSourceIdentifiers(plan)
   if (reservation.status === 'rejected') {
-    const rejectedKinds = [...new Set(reservation.issues.map((entry) => entry.kind))]
-      .sort(compareUtf16CodeUnits)
+    const allocatorIssue = rejectedPlanFilingSourceRootIdentityIssue(reservation)
     return {
       status: 'rejected',
       rejection: issue(
-        'replacementPlanInvalid',
-        'plan.retirementActionAnnualTaxFacts.ownedNonRothIraAnnualFilingSourceRecords',
-        `The Plan's annual filing-source records are rejected without precedence (${rejectedKinds.join(', ')}), so the identifiers they claim cannot be proven and no manual-review evidence may be created against them.`,
+        'allocatorBlocked',
+        allocatorIssue.field,
+        allocatorIssue.detail,
+        allocatorIssue,
       ),
     }
   }
