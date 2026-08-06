@@ -293,7 +293,7 @@ function promotedSchedule(
       issues.push(balancesArePresent
         ? {
           kind: 'missingYearDesiredAmount',
-          field: `readinessVeto.vetoedResult.years.${conversion.year}.aggregateRothConversionAllocationDesired`,
+          field: `readinessVeto.vetoedResult.years[year=${conversion.year}].aggregateRothConversionAllocationDesired`,
           detail: `The vetoed projection converted in ${conversion.year} and published the balances its ` +
             'allocation policy weighted owners by, but not the household amount that policy was asked ' +
             'for, so there is nothing to allocate across those weights. The executed total is not a ' +
@@ -301,7 +301,7 @@ function promotedSchedule(
         }
         : {
           kind: 'missingYearBalances',
-          field: `readinessVeto.vetoedResult.years.${conversion.year}`,
+          field: `readinessVeto.vetoedResult.years[year=${conversion.year}]`,
           detail: `The vetoed projection converted in ${conversion.year} but published no aggregate ` +
             'allocation for it at all — neither the balances its policy weighted owners by nor the ' +
             'household amount that policy was asked for. The executed total is not a substitute for ' +
