@@ -894,7 +894,6 @@ additive with a no-op default, so plans saved before it stay byte-identical.
 [engine/actions/annualIraBasisAllocation.ts](../../packages/engine/src/actions/annualIraBasisAllocation.ts),
 [engine/actions/ownedNonRothIraWithdrawalCharacter.ts](../../packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts),
 [engine/actions/ownedNonRothIraAnnualPlanCoordinator.ts](../../packages/engine/src/actions/ownedNonRothIraAnnualPlanCoordinator.ts),
-[engine/actions/ownedNonRothIraAnnualExecution.ts](../../packages/engine/src/actions/ownedNonRothIraAnnualExecution.ts),
 [engine/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts](../../packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts),
 [engine/actions/ownedNonRothIraSeppAnnualReconciliation.ts](../../packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts),
 [engine/tax/propertySale.ts](../../packages/engine/src/tax/propertySale.ts), threaded through
