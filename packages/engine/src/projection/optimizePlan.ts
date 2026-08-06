@@ -32,10 +32,12 @@ import {
   refineConversionSchedule,
   simpleRothConversionGenerator,
   socialSecurityClaimGenerator,
+  type DecisionCandidate,
   type DecisionContext,
   type ExactDecisionEvaluation,
   type ObjectivePolicy,
   type ObjectivePolicyId,
+  type RetirementActionCandidateReadiness,
 } from '../decisions/index.js'
 import { applyScenarioPatch } from '../scenarios/scenarios.js'
 import {
@@ -48,6 +50,13 @@ import { expectedAccountReturnPct } from '../allocation/assetClasses.js'
 import { buildLognormalModelConfigForPlan } from '../montecarlo/marketModels.js'
 import { summarizeProjection, type ProjectionSummary } from './compare.js'
 import { allowLegacyAggregateDecisionCalculation } from './internal/legacyAggregateDecisionCalculation.js'
+import type { AggregateConversionPromotionYearOutcome } from './optimizerAggregateConversionPromotion.js'
+import {
+  runAggregateConversionPromotion,
+  type AggregateConversionPromotionComparabilityReason,
+} from './optimizerAggregateConversionPromotionRun.js'
+import type { OptimizerAllocatedCandidateComparisonEvidence } from './optimizerAllocatedCandidateComparison.js'
+import type { OptimizerExactLedgerComparisonEvidence } from './optimizerExactLedgerComparison.js'
 import { simulatePlan, type SimulateOptions } from './simulate.js'
 import type { AcaSupportCode, OptimizerYearProbe, ProjectionResult } from './types.js'
 
@@ -209,32 +218,24 @@ function retirementActionPersonId(action: PlanRetirementAction): PersonId | unde
 }
 
 /**
- * PRECONDITION for the whole optimize pipeline: the recorded retirement actions
- * this plan carries that the optimizer cannot price — one registry reason per
- * action, empty when the plan is action-free.
+ * The recorded retirement actions this plan carries that the optimizer's
+ * SURFACES do not yet present a result for — one registry reason per action,
+ * empty when the plan is action-free.
  *
- * The LP's balance recursion no longer ignores committed movement — the probe
- * now carries what the exact-cent executor actually moved, per account, and
- * `committedActionMovementForYear` debits the bucket the ledger debited. What
- * still blocks a recommendation is upstream of the arithmetic:
+ * WHAT THIS IS NOW, AND WHAT IT IS NOT. It is no longer an engine precondition.
+ * `buildOptimizerInput` used to throw on an action-bearing plan and this
+ * predicate guarded the identical condition; the throw is gone, the LP's
+ * bucket netting debits what the exact-cent executor actually moved
+ * (`committedActionMovementForYear`), and the pipeline prices an action-bearing
+ * plan like any other. Calling `optimizePlan` on one is supported.
  *
- *   - Every positive-conversion schedule this pipeline produces is vetoed
- *     `identityIncomplete`, because an aggregate schedule carries no
- *     owner/source/destination. A correct LP would still publish nothing.
- *
- * What no longer blocks it is the ledger dropping the recorded intent. This
- * comment used to say named Roth conversions and QCDs commit no balance
- * movement in the simulator, and both halves are now false: a committed
- * conversion moves ordered debits and destination credits and is folded into
- * the published `YearResult.rothConversion` (#182/#186/#187/#188), and the
- * named QCD path was wired in #213/#219. The netting above is therefore
- * waiting on nothing but a plan the throw below still refuses to admit.
- *
- * So an action-bearing plan still gets a refusal rather than an answer. Callers
- * check this BEFORE dispatching an optimize request and present a
- * non-actionable result; the throw inside `buildOptimizerInput` guards the
- * identical condition as an unreachable last-resort invariant
- * (`optimizePlan.test.ts` pins the two together).
+ * WHAT STILL HOLDS IT UP IS THE TELLING. `OptimizePage` reads this predicate
+ * and renders a non-actionable result naming each person, and the surfaces that
+ * would have to explain an optimizer answer sitting on top of a plan's own
+ * named requests — which schedule was priced, which year the named executor
+ * already owns, what Apply would install — have not been written. Publishing a
+ * recommendation through copy that does not describe it is the failure this
+ * keeps closed. Removing it is the surface slice's, once that copy exists.
  *
  * Reporting per action — rather than one plan-level flag — keeps the count and
  * the named person available to the surface doing the telling.
@@ -391,21 +392,22 @@ export function committedActionMovementForYear(
  * optimum by iteration (see `optimizePlan`).
  */
 export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probeSourcePlan?: Plan): OptimizerInput {
-  // Last-resort invariant, not the user-facing gate. Surfaces check
-  // `optimizerUnsupportedRetirementActions` before dispatching, so reaching
-  // this throw means a caller skipped the precondition — better a raw failure
-  // than a recommendation this pipeline would withhold anyway. The bucket
-  // arithmetic below is now action-aware; see that predicate's doc for what is
-  // still missing, and note that lifting this throw is a separate decision
-  // that has to answer the blanket `identityIncomplete` veto too.
-  if (
-    plan.strategies.retirementActions.length > 0 ||
-    (probeSourcePlan?.strategies.retirementActions.length ?? 0) > 0
-  ) {
-    throw new Error(
-      'The optimizer does not yet support identity-bearing retirement actions',
-    )
-  }
+  // An action-bearing plan is admitted. The throw that used to stand here
+  // refused one outright, and the two things it was waiting on have both
+  // landed: the bucket netting below now debits what the exact-cent executor
+  // actually moved, per account, and the blanket `identityIncomplete` veto is
+  // no longer blanket — a winner whose conversions are named requests is
+  // published rather than withheld.
+  //
+  // What an action-bearing plan gets is the arithmetic the netting describes,
+  // and no special treatment beyond it. A year that already carries a named
+  // conversion request makes the named executor authoritative and forces the
+  // aggregate mode to `none` for that year, so an LP solution that also wanted
+  // to convert there executes nothing extra; the post-processor snaps its
+  // schedule to executed amounts, so the year is dropped rather than
+  // recommended. The ledger stays the authority on what happens, exactly as it
+  // is for every other schedule this pipeline emits.
+  //
   // Strip conversions so the probe reflects no-conversion income/RMD/spending,
   // unless the caller supplies an incumbent-schedule plan to re-linearize around.
   const probeSource: Plan = probeSourcePlan ?? { ...plan, strategies: { ...plan.strategies, rothConversion: { mode: 'none' } } }
@@ -515,21 +517,11 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
       // the probe's own ledger — no second simulation, and no re-deriving them
       // from the request.
       //
-      // UNREACHABLE TODAY, deliberately. The precondition throw at the top of
-      // this function refuses any `plan` or `probeSourcePlan` carrying
-      // retirement actions, and `probeSource` is derived from one of those two.
-      // So the probe run is always action-free: `committedActionAccountMovement`
-      // is empty, `committedActionProceeds` is 0, and this call returns
-      // `undefined` for every year — which is exactly what keeps action-free
-      // plans emitting a byte-identical LP.
-      //
-      // It is wired up anyway because the netting is the correctness foundation
-      // the throw is waiting on: with it in place, lifting the throw is a
-      // decision about identity and the `identityIncomplete` veto (see
-      // `optimizerUnsupportedRetirementActions`), not a fresh solver-arithmetic
-      // problem. `optimizePlan.test.ts` proves the arithmetic now by calling
-      // `committedActionMovementForYear` directly on an ACTED plan's probe,
-      // since `buildOptimizerInput` will not accept one.
+      // Reachable since the precondition throw at the top of this function was
+      // lifted: `probeSource` is derived from `plan` or `probeSourcePlan`, and
+      // either may now carry retirement actions. For a plan that carries none
+      // this is unchanged and returns `undefined` for every year, which is what
+      // keeps action-free plans emitting a byte-identical LP.
       committedActionMovement: committedActionMovementForYear(bucketByAccountId, p),
     }
   })
@@ -641,6 +633,124 @@ export interface RetirementActionReadinessVeto {
   readonly vetoedResult: ProjectionResult
 }
 
+/** One promoted year: what the policy was asked for, and what could lawfully land. */
+export interface RetirementActionPromotionYear {
+  readonly year: number
+  /** The household figure the ledger's allocation policy was asked for, in cents. */
+  readonly askedCents: number
+  /** What the identity-complete requests convert, in cents. */
+  readonly allocatedCents: number
+  /** Owners whose share no lawful Roth IRA could receive, and why. */
+  readonly trims: readonly {
+    readonly ownerPersonId: string
+    readonly reason: 'ownerHoldsNoRothAccount' | 'ownerHoldsOnlyEmployerDesignatedRoth'
+    readonly slicePlanDollars: number
+  }[]
+}
+
+/**
+ * What the promotion loop made of a vetoed aggregate winner.
+ *
+ * WORKER-SAFE BY CONSTRUCTION: plain data only, no `ProjectionResult` and no
+ * `ExactDecisionEvaluation`. `ExactLedgerTournamentSummary` therefore carries
+ * this field through unchanged, unlike `retirementActionReadinessVeto`.
+ *
+ * HOW TO READ IT ALONGSIDE `retirementActionReadinessVeto`, which is the single
+ * question a surface has to ask: the veto is `null` exactly when a schedule was
+ * published, and non-null exactly when the aggregate winner stayed exploratory.
+ * An `equivalent` or `repriced` outcome here says the published winner IS the
+ * promoted identity-complete candidate; the other two say nothing was published
+ * and name why.
+ */
+export type RetirementActionPromotion =
+  | Readonly<{
+    /**
+     * The promoted candidate and the aggregate winner are the same projection
+     * to the cent — every evaluated account, every year, tax, penalties,
+     * investable total and net worth. Naming the owners, sources and
+     * destinations changed nothing the ledger does, and `evidence` is the
+     * proof of it.
+     */
+    outcome: 'equivalent'
+    candidateId: string
+    label: string
+    /** The action request IDs the recommendation installs. */
+    actionRequestIds: readonly string[]
+    /**
+     * The plan patch that installs them. Applying the recommendation means
+     * applying this, not re-installing `winnerConversions` as an aggregate
+     * strategy: for `equivalent` the two coincide by proof, for `repriced`
+     * they do not.
+     */
+    planPatch: Readonly<Record<string, unknown>>
+    years: readonly RetirementActionPromotionYear[]
+    /** The equality claim itself. */
+    evidence: Readonly<OptimizerExactLedgerComparisonEvidence>
+    /**
+     * The richer binding evidence tying the promoted requests to the winner
+     * they came from, when its own preconditions held. `null` does not weaken
+     * the equality claim; it means no audit trail may be cited for it.
+     */
+    binding: Readonly<OptimizerAllocatedCandidateComparisonEvidence> | null
+  }>
+  | Readonly<{
+    /**
+     * A genuinely different projection, priced on its own exact-ledger run and
+     * published on its own terms. The aggregate winner stays beside it as
+     * exploratory diagnostic — `aggregateConversions` — and nothing ranks the
+     * promoted schedule on the aggregate's metrics.
+     */
+    outcome: 'repriced'
+    candidateId: string
+    label: string
+    actionRequestIds: readonly string[]
+    planPatch: Readonly<Record<string, unknown>>
+    years: readonly RetirementActionPromotionYear[]
+    /** The aggregate schedule the winner ranked on, kept as diagnostic only. */
+    aggregateConversions: { year: number; amount: number }[]
+  }>
+  | Readonly<{
+    /**
+     * The promotion was minted and priced, and then no equivalence question
+     * could honestly be asked of the pair. NOTHING IS PUBLISHED: the aggregate
+     * winner stays exploratory and the reason is surfaced, because a schedule
+     * whose own ledger declined to execute it is not a recommendation.
+     */
+    outcome: 'notComparable'
+    reason: AggregateConversionPromotionComparabilityReason
+    /** The exact-ledger state the promoted candidate's own evaluation reached. */
+    allocatedRecommendationState: ExactDecisionEvaluation['recommendationState']
+    /** The candidate's own diagnostics, which say what the ledger refused. */
+    diagnostics: readonly string[]
+  }>
+  | Readonly<{
+    /**
+     * Nothing lawful could be minted, so nothing was priced. A solver winner
+     * lands here by construction — the comparator's optimizer arm wants
+     * provenance no adapter-minted request can carry — and so does a winner
+     * the chooser could not name owners, sources or destinations for.
+     */
+    outcome: 'notPromoted'
+    issues: readonly { kind: string; field: string; detail: string }[]
+  }>
+  | Readonly<{
+    /**
+     * Promoted, priced, comparable — and not an improvement on its own terms,
+     * or not one big enough to displace what it would replace. Reachable only
+     * from `repriced`: an `equivalent` candidate prices exactly as the
+     * aggregate winner that already won.
+     *
+     * This is the arm that keeps the repricing honest. A promoted schedule is
+     * published because IT wins, not because the aggregate schedule it came
+     * from did.
+     */
+    outcome: 'repricedNotRecommended'
+    candidateId: string
+    label: string
+    allocatedRecommendationState: ExactLedgerRecommendationState
+    years: readonly RetirementActionPromotionYear[]
+  }>
+
 export interface ExactLedgerTournament {
   /** Objective policy that ranked this tournament (default `max-after-tax-estate`). */
   policyId: ObjectivePolicyId
@@ -680,8 +790,23 @@ export interface ExactLedgerTournament {
   /**
    * A calculated policy winner that was withheld because its aggregate
    * conversion schedule lacks complete owner/source/destination identities.
+   *
+   * Null whenever a schedule was published — including one published by
+   * promoting a vetoed winner into named requests, which is what
+   * `retirementActionPromotion` records.
    */
   retirementActionReadinessVeto: RetirementActionReadinessVeto | null
+  /**
+   * What the promotion loop made of a vetoed aggregate winner, or null when no
+   * winner was vetoed.
+   *
+   * Also null under a non-default objective policy. Publishing there would mean
+   * ranking the promoted candidate against the same field under that policy's
+   * own primary metric and hard constraints, which is the policy tournament's
+   * job and not this one's; until it does that, a non-estate objective keeps
+   * withholding a vetoed winner exactly as before.
+   */
+  retirementActionPromotion: RetirementActionPromotion | null
 }
 
 /** Worker/UI-safe veto summary; the authoritative result remains engine-side. */
@@ -755,6 +880,23 @@ function policyRankablePostProcessedSchedule(
     : null
 }
 
+/**
+ * The publication veto for a winner whose conversions name nobody.
+ *
+ * IT HAS TO CONSULT THE WINNER'S READINESS, and asking about the amounts alone
+ * would now get the wrong answer. A winner's conversions are read off the
+ * projection's executed `YearResult.rothConversion`, and that figure has
+ * included named execution since #182/#186/#187/#188 — so a promoted
+ * identity-complete candidate produces a schedule of positive amounts exactly
+ * like an aggregate one, and the amount test cannot tell them apart. Left
+ * alone it would veto the one schedule in the pipeline that has nothing left
+ * to allocate.
+ *
+ * `identityComplete` readiness is not a claim this function takes on trust
+ * from a label: `evaluateCandidate` fails closed on a candidate whose stated
+ * request IDs are not the ones its patch installs, and the promotion loop
+ * prices its candidate through that path before any of this is reached.
+ */
 function readinessVetoFor(
   source: 'candidate' | 'milp',
   candidateId: string | null,
@@ -762,10 +904,12 @@ function readinessVetoFor(
   conversions: { year: number; amount: number }[],
   validation: ExactLedgerValidation,
   result: ProjectionResult,
+  readiness?: RetirementActionCandidateReadiness,
 ): RetirementActionReadinessVeto | null {
-  // Every positive-movement schedule produced here is still aggregate: it has
-  // exact amounts but no legal owner/source/destination identities. That is a
-  // publication veto regardless of how a custom policy ranked its estate
+  if (readiness?.state === 'identityComplete') return null
+  // Every other positive-movement schedule produced here is still aggregate: it
+  // has exact amounts but no legal owner/source/destination identities. That is
+  // a publication veto regardless of how a custom policy ranked its estate
   // validation (beneficial, neutral, or rejected).
   return conversions.some((conversion) => conversion.amount > 0)
     ? {
@@ -1124,15 +1268,61 @@ export function runExactLedgerTournament(
         winner.result,
       )
       if (readinessVeto !== null) {
-        return fallbackTournament(
+        // The winner is an aggregate schedule, so it cannot be recommended as
+        // it stands. Promote it: name the owners, sources and destinations its
+        // own ledger allocated to, price the result on its own exact-ledger
+        // run, and publish THAT when it earns a recommendation.
+        const promoted = promoteVetoedWinner(
           plan,
           baselineResult,
-          displayCandidates,
-          'max-after-tax-estate',
-          null,
+          simulateOptions,
           readinessVeto,
-          { searchRefined, searchSimulations },
+          milpRecommended ? milpDelta + margin : Number.NEGATIVE_INFINITY,
         )
+        if (promoted.published === null) {
+          return fallbackTournament(
+            plan,
+            baselineResult,
+            displayCandidates,
+            'max-after-tax-estate',
+            null,
+            readinessVeto,
+            { searchRefined, searchSimulations },
+            promoted.promotion,
+          )
+        }
+        // Asked a second time, of the promoted candidate: its conversions are
+        // as positive as the aggregate winner's, and only its readiness tells
+        // the two apart.
+        const promotedVeto = readinessVetoFor(
+          'candidate',
+          promoted.published.candidateId,
+          promoted.published.label,
+          promoted.published.conversions,
+          promoted.published.validation,
+          promoted.published.result,
+          promoted.published.readiness,
+        )
+        if (promotedVeto !== null) {
+          throw new Error('A promoted identity-complete winner was vetoed as identity-incomplete')
+        }
+        return {
+          policyId: 'max-after-tax-estate',
+          candidates: displayCandidates,
+          winnerSource: 'candidate',
+          winnerCandidateId: promoted.published.candidateId,
+          winnerLabel: promoted.published.label,
+          winnerConversions: promoted.published.conversions,
+          winnerValidation: promoted.published.validation,
+          marginOverMilpDollars: milpRecommended
+            ? promoted.published.validation.afterTaxEstateDelta - milpDelta
+            : 0,
+          searchRefined,
+          searchSimulations,
+          acaActionabilityVeto: null,
+          retirementActionReadinessVeto: null,
+          retirementActionPromotion: promoted.promotion,
+        }
       }
       return {
         policyId: 'max-after-tax-estate',
@@ -1147,6 +1337,7 @@ export function runExactLedgerTournament(
         searchSimulations,
         acaActionabilityVeto: null,
         retirementActionReadinessVeto: null,
+        retirementActionPromotion: null,
       }
     }
   }
@@ -1198,6 +1389,19 @@ export function runExactLedgerTournament(
       winnerResult,
     )
     if (readinessVeto !== null) {
+      // A solver winner is refused by the chooser and always arrives back as
+      // `notPromoted` — the comparator's optimizer arm asks for provenance
+      // whose source ID is the allocated candidate's own, which the adapter
+      // derives from the very requests that would have to carry it. Run it
+      // anyway, so the refusal is a recorded boundary on the result rather
+      // than an unexamined branch here.
+      const promoted = promoteVetoedWinner(
+        plan,
+        baselineResult,
+        simulateOptions,
+        readinessVeto,
+        Number.NEGATIVE_INFINITY,
+      )
       return fallbackTournament(
         plan,
         baselineResult,
@@ -1206,6 +1410,7 @@ export function runExactLedgerTournament(
         null,
         readinessVeto,
         { searchRefined, searchSimulations },
+        promoted.promotion,
       )
     }
     return {
@@ -1221,6 +1426,7 @@ export function runExactLedgerTournament(
       searchSimulations,
       acaActionabilityVeto: null,
       retirementActionReadinessVeto: null,
+      retirementActionPromotion: null,
     }
   }
   return fallbackTournament(
@@ -1245,6 +1451,203 @@ export function runExactLedgerTournament(
   )
 }
 
+/**
+ * The exact-ledger conversions a projection executed, in the one derivation the
+ * whole pipeline uses (`buildRichCandidates`, `incumbentExecutedConversions`).
+ */
+function executedConversions(result: ProjectionResult): { year: number; amount: number }[] {
+  return result.years
+    .filter((year) => year.rothConversion > 1)
+    .map((year) => ({ year: year.year, amount: roundDollars(year.rothConversion) }))
+}
+
+function promotionYears(
+  years: readonly AggregateConversionPromotionYearOutcome[],
+): RetirementActionPromotionYear[] {
+  return years.map((year) => ({
+    year: year.year,
+    askedCents: year.winnerCents,
+    allocatedCents: year.allocatedCents,
+    trims: year.trims.map((trim) => ({ ...trim })),
+  }))
+}
+
+/** A promoted winner that may be published, or the record of why none was. */
+interface PromotedWinner {
+  readonly promotion: RetirementActionPromotion
+  /** Present only when the promoted candidate is the recommendation. */
+  readonly published: {
+    readonly candidateId: string
+    readonly label: string
+    readonly conversions: { year: number; amount: number }[]
+    readonly validation: ExactLedgerValidation
+    readonly result: ProjectionResult
+    readonly readiness: RetirementActionCandidateReadiness
+  } | null
+}
+
+/**
+ * Run the promotion loop over a vetoed aggregate winner and say what, if
+ * anything, the tournament may publish in its place.
+ *
+ * THE SEMANTICS, PER VERDICT:
+ *
+ * - `equivalent` — the promoted candidate is the recommendation, and the
+ *   equality evidence rides along. It prices identically to the schedule that
+ *   already won, so there is nothing further to rank.
+ * - `repriced` — the promoted candidate is the recommendation IF it earns one
+ *   on its own exact-ledger evaluation, judged by the same two tests the
+ *   aggregate winner had to pass: beneficial, and clear of whatever solver
+ *   schedule it would displace by the switch margin. It is a different
+ *   projection, so it is not entitled to the aggregate winner's verdict, and
+ *   ranking it on the aggregate's metrics is precisely the failure the
+ *   comparator exists to prevent. When it does not earn one, nothing is
+ *   published and `repricedNotRecommended` says so.
+ * - `notComparable` — nothing is published. The promotion was minted and
+ *   priced and then the ledger declined to execute it, or a projection fell
+ *   outside the equality core's domain; either way the aggregate winner stays
+ *   exploratory and the named reason is what the surface has to tell.
+ * - `notPromoted` — nothing is published, exactly as before the lift. A solver
+ *   winner always lands here.
+ */
+function promoteVetoedWinner(
+  plan: Plan,
+  baselineResult: ProjectionResult,
+  simulateOptions: SimulateOptions,
+  readinessVeto: RetirementActionReadinessVeto,
+  publicationFloorDollars: number,
+): PromotedWinner {
+  const ctx = decisionContext(plan, baselineResult, simulateOptions)
+  const exploratoryCandidate = dedupeCandidates(simpleRothConversionGenerator.generate(ctx))
+    .find((candidate: DecisionCandidate) => candidate.id === readinessVeto.vetoedCandidateId)
+  if (exploratoryCandidate === undefined) {
+    // A solver winner names no candidate, and so does a policy winner the
+    // generator no longer produces. Both are the chooser's own refusal; state
+    // it in its vocabulary rather than inventing a second one.
+    return {
+      promotion: {
+        outcome: 'notPromoted',
+        issues: [{
+          kind: readinessVeto.vetoedWinnerSource === 'milp'
+            ? 'milpWinnerNotPromotable'
+            : 'exploratoryCandidateMismatch',
+          field: 'readinessVeto.vetoedCandidateId',
+          detail: readinessVeto.vetoedWinnerSource === 'milp'
+            ? 'A solver winner needs optimizer provenance whose source ID is the allocated candidate’s own ID, which no adapter-minted request can carry.'
+            : 'The vetoed winner names no generator candidate this plan still produces, so the promoted requests have no provenance to take.',
+        }],
+      },
+      published: null,
+    }
+  }
+
+  const run = runAggregateConversionPromotion({
+    context: ctx,
+    readinessVeto,
+    exploratoryCandidate,
+  })
+  if (run.status === 'notPromoted') {
+    const issues = run.promotion.status === 'unallocatable'
+      ? run.promotion.choice.issues
+      : run.promotion.adaptation.issues
+    return {
+      promotion: {
+        outcome: 'notPromoted',
+        issues: issues.map((issue) => ({
+          kind: issue.kind,
+          field: issue.field,
+          detail: issue.detail,
+        })),
+      },
+      published: null,
+    }
+  }
+  if (run.status === 'notComparable') {
+    return {
+      promotion: {
+        outcome: 'notComparable',
+        reason: run.reason,
+        allocatedRecommendationState: run.allocatedEvaluation.recommendationState,
+        diagnostics: [...run.allocatedEvaluation.diagnostics],
+      },
+      published: null,
+    }
+  }
+
+  const readiness = run.candidate.retirementActionReadiness
+  if (readiness?.state !== 'identityComplete' || run.candidate.planPatch === undefined) {
+    // Unreachable through the adapter, which mints both together, and refused
+    // rather than trusted because everything downstream — the veto's identity
+    // test, the patch a surface would apply — reads exactly these two fields.
+    return {
+      promotion: {
+        outcome: 'notPromoted',
+        issues: [{
+          kind: 'promotedCandidateNotIdentityBearing',
+          field: 'candidate.retirementActionReadiness',
+          detail: 'The promoted candidate reached the tournament without identity-complete readiness and an installing patch.',
+        }],
+      },
+      published: null,
+    }
+  }
+
+  const conversions = executedConversions(run.allocatedEvaluation.candidateResult)
+  const validation = evaluateIdentityCompleteLedgerSchedule(
+    plan,
+    conversions,
+    baselineResult,
+    run.allocatedEvaluation.candidateResult,
+  )
+  const published = {
+    candidateId: run.candidate.id,
+    label: run.candidate.label,
+    conversions,
+    validation,
+    result: run.allocatedEvaluation.candidateResult,
+    readiness,
+  }
+  const shared = {
+    candidateId: run.candidate.id,
+    label: run.candidate.label,
+    actionRequestIds: [...readiness.actionRequestIds],
+    planPatch: run.candidate.planPatch,
+    years: promotionYears(run.choice.years),
+  }
+  if (run.status === 'equivalent') {
+    return {
+      promotion: {
+        ...shared,
+        outcome: 'equivalent',
+        evidence: run.exactLedgerComparison,
+        binding: run.binding,
+      },
+      published,
+    }
+  }
+  if (validation.recommendationState !== 'beneficial' ||
+      validation.afterTaxEstateDelta <= publicationFloorDollars) {
+    return {
+      promotion: {
+        outcome: 'repricedNotRecommended',
+        candidateId: run.candidate.id,
+        label: run.candidate.label,
+        allocatedRecommendationState: validation.recommendationState,
+        years: promotionYears(run.choice.years),
+      },
+      published: null,
+    }
+  }
+  return {
+    promotion: {
+      ...shared,
+      outcome: 'repriced',
+      aggregateConversions: readinessVeto.vetoedConversions.map((conversion) => ({ ...conversion })),
+    },
+    published,
+  }
+}
+
 /** Shared incumbent/none fallback when nothing evaluated beats the current plan. */
 function fallbackTournament(
   plan: Plan,
@@ -1257,6 +1660,7 @@ function fallbackTournament(
     searchRefined: false,
     searchSimulations: 0,
   },
+  retirementActionPromotion: RetirementActionPromotion | null = null,
 ): ExactLedgerTournament {
   const incumbent = incumbentExecutedConversions(plan, baselineResult)
   if (incumbent) {
@@ -1273,6 +1677,7 @@ function fallbackTournament(
       searchSimulations: search.searchSimulations,
       acaActionabilityVeto,
       retirementActionReadinessVeto,
+      retirementActionPromotion,
     }
   }
   return {
@@ -1288,6 +1693,7 @@ function fallbackTournament(
     searchSimulations: search.searchSimulations,
     acaActionabilityVeto,
     retirementActionReadinessVeto,
+    retirementActionPromotion,
   }
 }
 
@@ -1386,6 +1792,7 @@ function runPolicyRankedTournament(
         searchSimulations: 0,
         acaActionabilityVeto: null,
         retirementActionReadinessVeto: null,
+        retirementActionPromotion: null,
       },
       winnerResult: milpRecommended.cleanedResult,
     }
@@ -1410,6 +1817,7 @@ function runPolicyRankedTournament(
           searchSimulations: 0,
           acaActionabilityVeto: null,
           retirementActionReadinessVeto: null,
+          retirementActionPromotion: null,
         },
         winnerResult: richWinner.result,
       }
@@ -1615,11 +2023,34 @@ function evaluateExactLedgerScheduleCalculation(
   }
 }
 
+/**
+ * Which kind of schedule a validation is about.
+ *
+ * `aggregate` is a household figure per year and nothing else — no owner, no
+ * source account, no destination — and cannot become a recommendation, however
+ * well it prices. `identityComplete` is a schedule whose conversions are named
+ * retirement-action requests that the exact ledger executed: it has already
+ * said whose dollars move, out of which account, into which, so there is
+ * nothing left to withhold it for.
+ */
+export type ExactLedgerScheduleIdentity = 'aggregate' | 'identityComplete'
+
+/**
+ * Withhold a recommendation from a schedule that names nobody.
+ *
+ * The identity is a required argument rather than an assumption: this function
+ * used to treat every schedule that reached it as aggregate, which was true
+ * while nothing in the tree could produce the other kind. The promotion loop
+ * now can, and a promoted schedule that arrived here unlabelled would be
+ * withheld for missing exactly the identities it carries.
+ */
 function refuseAggregateScheduleRecommendation(
   validation: ExactLedgerValidation,
   requestedConversions: readonly { year: number; amount: number }[],
+  identity: ExactLedgerScheduleIdentity,
 ): ExactLedgerValidation {
   if (
+    identity === 'identityComplete' ||
     requestedConversions.every((conversion) => conversion.amount <= 0) ||
     validation.recommendationState === 'neutral' ||
     validation.recommendationState === 'rejected' ||
@@ -1634,9 +2065,12 @@ function refuseAggregateScheduleRecommendation(
 }
 
 /**
- * Public optimizer validation retains exact calculation metrics, but an
- * aggregate conversion schedule cannot become a recommendation until WS4
- * allocates stable owner/source/destination action identities.
+ * Public optimizer validation for an AGGREGATE schedule: the exact calculation
+ * metrics are retained in full, and the recommendation is withheld, because a
+ * household figure per year does not identify the owner, source account, or
+ * destination the movement needs.
+ *
+ * The identity-complete twin is `evaluateIdentityCompleteLedgerSchedule`.
  */
 export function evaluateExactLedgerSchedule(
   plan: Plan,
@@ -1654,6 +2088,41 @@ export function evaluateExactLedgerSchedule(
       options,
     ),
     requestedConversions,
+    'aggregate',
+  )
+}
+
+/**
+ * The same validation for a schedule whose movements are named retirement
+ * actions, priced on the projection those actions produced.
+ *
+ * WHO MAY CALL THIS. Only a caller holding a candidate whose
+ * `retirementActionReadiness` is `identityComplete` and whose requests the exact
+ * ledger executed as written — which today is the promotion loop, and the
+ * candidate it hands over has been through `evaluateCandidate` without the
+ * legacy-aggregate marker, so a request that did not execute has already
+ * disqualified it. The conversions passed here are the ones the candidate's own
+ * projection EXECUTED, so requested and executed agree by construction and the
+ * execution-shortfall diagnostics have nothing to report; the shortfall this
+ * function cannot see is one the candidate's own evaluation already refused.
+ */
+export function evaluateIdentityCompleteLedgerSchedule(
+  plan: Plan,
+  executedConversions: { year: number; amount: number }[],
+  baselineResult: ProjectionResult,
+  candidateResult: ProjectionResult,
+  options: ExactLedgerValidationOptions = {},
+): ExactLedgerValidation {
+  return refuseAggregateScheduleRecommendation(
+    evaluateExactLedgerScheduleCalculation(
+      plan,
+      executedConversions,
+      baselineResult,
+      candidateResult,
+      options,
+    ),
+    executedConversions,
+    'identityComplete',
   )
 }
 
@@ -1825,9 +2294,13 @@ export function postProcessExactLedgerSchedule(
   const minimumRequestedConversionDollars =
     options.minimumRequestedConversionDollars ?? DEFAULT_MINIMUM_REQUESTED_CONVERSION_DOLLARS
   const cleanedConversionTotal = cleanedSchedule.conversions.reduce((sum, conversion) => sum + conversion.amount, 0)
+  // The post-processor's own product is the solver's household schedule, which
+  // names nobody; promotion happens later, in the tournament, on whatever
+  // schedule wins there.
   cleanedValidation = refuseAggregateScheduleRecommendation(
     cleanedValidation,
     cleanedSchedule.conversions,
+    'aggregate',
   )
   const recommendationSchedule =
     stabilized &&

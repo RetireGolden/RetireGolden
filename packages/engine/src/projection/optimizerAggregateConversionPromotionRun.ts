@@ -27,13 +27,14 @@ import type { ProjectionResult } from './types.js'
  * Run the promotion loop for one vetoed aggregate winner, and say what can
  * honestly be claimed about the pair of projections it produces.
  *
- * WHAT THIS SLICE IS AND IS NOT. It measures; it publishes nothing. No
- * optimizer entry point calls it, `readinessVetoFor` still vetoes every
- * positive-conversion winner, `refuseAggregateScheduleRecommendation` still
- * rewrites `beneficial` to `identityIncomplete`, and `buildOptimizerInput`
- * still throws on a plan carrying identity-bearing retirement actions. Lifting
- * those three is the next slice; this one exists so that slice starts from a
- * measured fact instead of an assertion in a plan document.
+ * WHAT THIS FUNCTION DECIDES AND WHAT ITS CALLER DECIDES. It measures; it
+ * publishes nothing and ranks nothing. `runExactLedgerTournament` calls it for
+ * every vetoed winner and decides publication from the verdict: an
+ * `equivalent` or a `repriced` candidate that earns a recommendation on its own
+ * exact-ledger evaluation replaces the aggregate winner and lifts the veto; the
+ * other verdicts leave the veto standing and surface the reason. That split is
+ * the point — this module can say what is true of the pair, and only the
+ * tournament can say what beats what.
  *
  * THE LOOP:
  *

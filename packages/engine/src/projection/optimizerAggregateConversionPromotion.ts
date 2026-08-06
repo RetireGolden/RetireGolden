@@ -122,10 +122,10 @@ import type { Account, Plan } from '../model/plan.js'
  * the ledger's published snapshots off the vetoed projection, runs this
  * chooser, prices the minted candidate on the exact ledger, and decides the
  * verdict with the exact-ledger equality core — `compareOptimizerAllocatedCandidate`
- * only attaches binding evidence to an `equivalent`. No optimizer entry
- * point calls that runner yet, and no surface publishes its answer: the veto
- * and the `buildOptimizerInput` throw both still stand, and lifting them is the
- * next slice.
+ * only attaches binding evidence to an `equivalent`. `runExactLedgerTournament`
+ * runs that loop for every vetoed winner and publishes the promoted candidate
+ * when it earns a recommendation on its own evaluation, so what this module
+ * chooses is now what a person is invited to act on.
  */
 
 /**

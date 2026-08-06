@@ -154,6 +154,10 @@ function fakeTournament(overrides: Partial<ExactLedgerTournament> = {}): ExactLe
     searchSimulations: 64,
     acaActionabilityVeto: null,
     retirementActionReadinessVeto: null,
+    // No winner was vetoed in this fixture, so no promotion loop ran. The
+    // panel reads neither field; it is here so the fixture stays a whole
+    // `ExactLedgerTournament` rather than a partial one.
+    retirementActionPromotion: null,
     ...overrides,
   }
 }
