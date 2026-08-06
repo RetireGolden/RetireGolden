@@ -10,14 +10,19 @@ import {
 } from './contract.js'
 import { parseCivilIsoDate } from './civilDate.js'
 import type {
+  ExecuteConversionLinkedWithdrawalGroupsResult,
+} from './conversionLinkedWithdrawalGroupExecution.js'
+import type { ConversionTaxFundingEvidence } from './conversionTaxFundingEvidence.js'
+import type {
   ExecuteOrdinaryWithdrawalsResult,
   OrdinaryWithdrawalExecutionEvidence,
   OrdinaryWithdrawalExecutionScheduleIssue,
 } from './execution.js'
-import type {
-  ExecuteRothConversionsResult,
-  RothConversionExecutionEvidence,
-  RothConversionExecutionScheduleIssue,
+import {
+  committedRothConversionTaxFundingStatuses,
+  type ExecuteRothConversionsResult,
+  type RothConversionExecutionEvidence,
+  type RothConversionExecutionScheduleIssue,
 } from './rothConversionExecution.js'
 import {
   accountIdSchema,
@@ -80,6 +85,24 @@ export interface AnnualRetirementActionRecord {
   readonly outcome: ActionOutcome
   readonly allocations: readonly Readonly<AnnualRetirementActionAllocationRecord>[]
   readonly reasons: readonly Readonly<ActionReason>[]
+  /**
+   * The filing unit's annual funding evaluation, as it bears on this record.
+   *
+   * Present only on a conversion that belongs to an evaluated annual group, and
+   * absent — not null — otherwise, so that "no group was evaluated for this
+   * conversion" and "this conversion is not in a group" are one absence rather
+   * than two spellings of it.
+   *
+   * Funding evidence used to be verified by this module and then dropped: the
+   * executor's `taxFunding` is checked against the request and never reaches a
+   * record, which left the specification's duty to recompute the same
+   * baseline/candidate equation from final evidence with nowhere to live. It
+   * lives here. Note what it is and is not: it is the *annual group's*
+   * evaluation — two liability runs, the quantized requirement, this
+   * conversion's allocated share and what funded it — and not the executor's
+   * per-request `taxFunding`, which stays where it is.
+   */
+  readonly conversionTaxFunding?: Readonly<ConversionTaxFundingEvidence>
 }
 
 export type AnnualRetirementActionScheduleDiagnostic = Readonly<{
@@ -116,6 +139,18 @@ export interface PublishAnnualRetirementActionsInput {
   readonly taxYear: number
   readonly requests: readonly Readonly<RetirementActionRequest>[]
   readonly sources: readonly Readonly<AnnualRetirementActionPublicationSource>[]
+  /**
+   * The year's conversion-linked withdrawal groups, executed.
+   *
+   * Optional, and a year without linked groups omits it. It is not an executor
+   * source: it publishes no record of its own and owns no action. What it does
+   * is carry the annual funding evaluation onto the conversion records the
+   * executor sources already published, which is the only place a whole filing
+   * unit's evaluation can be attached to individual conversions without one of
+   * them claiming to own it.
+   */
+  readonly conversionLinkedWithdrawalGroups?:
+    Readonly<ExecuteConversionLinkedWithdrawalGroupsResult>
 }
 
 const annualRecordAllocationSchema = z
@@ -759,9 +794,17 @@ function reasonAppliesToKind(
   if (code.startsWith('withdrawal-')) return kind === 'ordinaryWithdrawal'
   if (code.startsWith('qcd-')) return kind === 'qcd'
   if (code.startsWith('conversion-')) {
+    // The two linked-funding codes are the only `conversion-` reasons an
+    // ordinary withdrawal may carry, because they are the only ones that are
+    // about a group the withdrawal is a leg of rather than about a conversion.
+    // Which of the two it carries follows the group verdict, and the verdict
+    // hands the same code to both legs — a withdrawal refusing `unallocated`
+    // beside a conversion refusing `evidence-unsupported` would be the two
+    // sides answering one group question differently.
     return kind === 'rothConversion' ||
       (kind === 'ordinaryWithdrawal' &&
-        code === 'conversion-tax-funding-evidence-unsupported')
+        (code === 'conversion-tax-funding-evidence-unsupported' ||
+          code === 'conversion-tax-funding-unallocated'))
   }
   return true
 }
@@ -1141,7 +1184,8 @@ export function rothConversionPublicationSource(
                 evidence.nontaxableConvertedAmount === null)) &&
             evidence.executedDate === (evidence.request.executionDate ?? null) &&
             evidence.executedSequence === evidence.request.executionSequence &&
-            evidence.taxFunding.status !== 'unsupported' &&
+            (committedRothConversionTaxFundingStatuses as readonly string[])
+              .includes(evidence.taxFunding.status) &&
             typeof evidence.taxFunding.evidenceId === 'string' &&
             evidence.taxFunding.evidenceId.trim().length > 0 &&
             evidence.reasons.length === 0
@@ -1216,33 +1260,68 @@ function schedulePosition(
     : null
 }
 
-function assertLinkedWithdrawalRequests(
+function conversionIdsByLinkedWithdrawalId(
   requests: readonly Readonly<RetirementActionRequest>[],
-  requestById: ReadonlyMap<ActionId, Readonly<RetirementActionRequest>>,
-): void {
-  const conversionIdsByWithdrawalId = new Map<ActionId, ActionId[]>()
+): ReadonlyMap<ActionId, readonly ActionId[]> {
+  const byWithdrawalId = new Map<ActionId, ActionId[]>()
   for (const request of requests) {
     if (
       request.kind !== 'rothConversion' ||
       request.taxFunding.kind !== 'linkedWithdrawal'
     ) continue
     const withdrawalId = request.taxFunding.withdrawalActionId
-    const conversionIds = conversionIdsByWithdrawalId.get(withdrawalId)
+    const conversionIds = byWithdrawalId.get(withdrawalId)
     if (conversionIds === undefined) {
-      conversionIdsByWithdrawalId.set(withdrawalId, [request.actionId])
+      byWithdrawalId.set(withdrawalId, [request.actionId])
     } else {
       conversionIds.push(request.actionId)
     }
   }
+  return byWithdrawalId
+}
+
+/**
+ * The request-shape clauses an uncontested linked pair must satisfy, each still
+ * a throw.
+ *
+ * A conversion whose named withdrawal is absent, is not an ordinary withdrawal,
+ * belongs to another person or year, is not a tax payment, or does not point
+ * back is a Plan that contradicts itself about what the withdrawal is for.
+ * Nothing downstream can publish a coherent record for it, so it aborts.
+ *
+ * What changed is the multiplicity case, and the change is that it leaves here
+ * entirely rather than that one clause of it softens. Two conversions naming
+ * one withdrawal is a Plan that is merely *wrong* rather than incoherent: every
+ * leg is individually well formed, and the contract's word for what it violates
+ * is "dedicated". A malformed plan should refuse in the simulator rather than
+ * crash it, so the group verdict refuses the whole contested set on the merits
+ * and what remains here is `assertContestedLinkedWithdrawalRecordsStill`.
+ *
+ * Softening only the multiplicity clause would have accomplished nothing, and
+ * the reason is worth stating because it is not obvious. `purpose.referenceId`
+ * is single-valued, so at most one of two contesting conversions can hold the
+ * withdrawal's back-reference — the other one *necessarily* fails the
+ * back-reference clause as well. A contest that stopped throwing on
+ * multiplicity would therefore have gone on throwing on the very next clause,
+ * for the same shape, with a message naming the wrong defect. So multiplicity
+ * gates the whole check: within a contested set the back-reference cannot be
+ * satisfied by construction, and asserting it would be asserting something the
+ * contest has already made impossible.
+ */
+function assertLinkedWithdrawalRequests(
+  requests: readonly Readonly<RetirementActionRequest>[],
+  requestById: ReadonlyMap<ActionId, Readonly<RetirementActionRequest>>,
+): void {
+  const conversionIdsByWithdrawalId = conversionIdsByLinkedWithdrawalId(requests)
   for (const request of requests) {
     if (
       request.kind !== 'rothConversion' ||
       request.taxFunding.kind !== 'linkedWithdrawal'
     ) continue
     const withdrawalId = request.taxFunding.withdrawalActionId
+    if ((conversionIdsByWithdrawalId.get(withdrawalId)?.length ?? 0) > 1) continue
     const withdrawal = requestById.get(withdrawalId)
     if (
-      conversionIdsByWithdrawalId.get(withdrawalId)?.length !== 1 ||
       withdrawal?.kind !== 'ordinaryWithdrawal' ||
       withdrawal.personId !== request.personId ||
       withdrawal.year !== request.year ||
@@ -1256,6 +1335,70 @@ function assertLinkedWithdrawalRequests(
   }
 }
 
+/**
+ * A withdrawal two conversions both name is dedicated to neither, so no leg of
+ * the contest may have moved.
+ *
+ * This is the record-level half of converting the multiplicity clause from a
+ * throw into a typed refusal. The typed refusal is upstream — the group verdict
+ * marks every contesting pair `sharedFundingWithdrawal` and both executors
+ * refuse on it — and what remains here is the assertion that they did. It
+ * throws only when a leg moved anyway, which is a defect in an executor rather
+ * than in the Plan, and is the one thing publication must never let past: a
+ * conversion funded by a withdrawal that some other conversion is also
+ * counting on has taken those dollars twice.
+ *
+ * Note the deliberate asymmetry with `assertLinkedWithdrawalRecordAtomicity`.
+ * That one asks whether the two legs agree; two contested conversions could
+ * agree with the shared withdrawal and with each other while all three moved,
+ * and the double-count would pass it. This asks the different question.
+ *
+ * Two failures, and they are not the same failure. A leg that moved is an
+ * executor that disregarded the verdict. A leg with no record at all is a leg
+ * whose stillness this publication simply cannot see — which happens when the
+ * contested withdrawal names an action the publication was never given, since
+ * the omitted-actions check upstream only covers requests that are present.
+ * Reporting the second as movement would name a defect that did not occur and
+ * send a reader looking at the wrong executor.
+ */
+function assertContestedLinkedWithdrawalRecordsStill(
+  requests: readonly Readonly<RetirementActionRequest>[],
+  records: readonly Readonly<AnnualRetirementActionRecord>[],
+): void {
+  const recordById = new Map(records.map((record) => [record.actionId, record]))
+  for (const [withdrawalId, conversionIds] of
+    conversionIdsByLinkedWithdrawalId(requests)) {
+    if (conversionIds.length < 2) continue
+    const contested = [withdrawalId, ...conversionIds]
+    for (const actionId of contested) {
+      const record = recordById.get(actionId)
+      if (record === undefined) {
+        throw new Error(
+          `Contested linked conversion funding has no record for action "${actionId}"`,
+        )
+      }
+      if (record.executedAmount > 0) {
+        throw new Error(
+          `Contested linked conversion funding moved for action "${actionId}"`,
+        )
+      }
+    }
+  }
+}
+
+/**
+ * Both legs of a linked pair moved, or neither did.
+ *
+ * This throw has never fired and, while every group refuses, cannot: both legs
+ * report `executedAmount === 0`, so both sides of the comparison are `false`
+ * and they agree. It is asserted anyway rather than deleted, because it is the
+ * last line of defence for the state of the world where one leg *can* move —
+ * a conversion that converted on funding its withdrawal never took, or a
+ * withdrawal that drained an account for a conversion that then refused. The
+ * slice that opens the gate makes this a live surface for every partial and
+ * insufficient case; until then its unreachability is a property worth pinning
+ * rather than an omission.
+ */
 function assertLinkedWithdrawalRecordAtomicity(
   requests: readonly Readonly<RetirementActionRequest>[],
   records: readonly Readonly<AnnualRetirementActionRecord>[],
@@ -1317,6 +1460,11 @@ const ownerWideConversionPrerequisiteCodes: ReadonlySet<ActionReason['code']> =
     'conversion-basis-evidence-missing',
     'conversion-rmd-reserve-unavailable',
     'conversion-tax-funding-evidence-unsupported',
+    // The same owner-wide prerequisite under the code a run that could compute
+    // the required amount uses. It is settled before any source balance is
+    // consulted for exactly the same reason its `unsupported` sibling is, and
+    // omitting it would deny the bypass to precisely the better-evidenced case.
+    'conversion-tax-funding-unallocated',
     'conversion-principal-withholding-unsupported',
     'conversion-date-missing',
     'conversion-date-outside-action-year',
@@ -1651,12 +1799,20 @@ function assertRecordBinding(
     ) {
       throw new Error(`Executor funding reason differs for action "${request.actionId}"`)
     }
+    // The linked withdrawal is the second request that may carry this code, and
+    // it carries it as the other leg of the conversion's group rather than for
+    // funding of its own. What it must be is a tax payment naming the
+    // conversion back: an ordinary withdrawal with any other purpose has no
+    // group to be refused with, so the reason would be describing a linkage
+    // that does not exist.
     if (
       reason.code === 'conversion-tax-funding-unallocated' &&
-      (
-        request.kind !== 'rothConversion' ||
-        request.taxFunding.kind === 'noneExpected'
-      )
+      (request.kind === 'ordinaryWithdrawal'
+        ? request.purpose.kind !== 'taxPayment'
+        : (
+          request.kind !== 'rothConversion' ||
+          request.taxFunding.kind === 'noneExpected'
+        ))
     ) {
       throw new Error(`Executor funding reason differs for action "${request.actionId}"`)
     }
@@ -1804,6 +1960,47 @@ function assertRecordBinding(
 }
 
 /**
+ * Carry the annual group's funding evaluation onto the conversion records it
+ * evaluated.
+ *
+ * Mutates the record array in place, before it is sorted and frozen, because
+ * the alternative is rebuilding every record to add a field to a few of them.
+ *
+ * Three things are checked and each one is a way the evaluation could belong to
+ * a different year, a different action, or a conversion that moved. The last is
+ * the one worth naming: a member record is an evaluation of funding, and while
+ * every group refuses, an evaluated member whose conversion executed would mean
+ * the group's own gate disagreed with the executor's.
+ */
+function attachConversionTaxFundingEvidence(
+  records: AnnualRetirementActionRecord[],
+  groups: Readonly<ExecuteConversionLinkedWithdrawalGroupsResult> | undefined,
+): void {
+  if (groups === undefined) return
+  const recordIndexById = new Map(
+    records.map((record, index) => [record.actionId, index] as const),
+  )
+  for (const group of groups.groups) {
+    const evidence = group.fundingEvidence
+    if (evidence === null) continue
+    const index = recordIndexById.get(group.conversionActionId)
+    const record = index === undefined ? undefined : records[index]
+    if (
+      index === undefined || record === undefined ||
+      groups.taxYear !== record.year ||
+      record.kind !== 'rothConversion' ||
+      evidence.conversionActionId !== record.actionId ||
+      record.executedAmount > 0
+    ) {
+      throw new Error(
+        `Conversion tax funding evidence differs for action "${group.conversionActionId}"`,
+      )
+    }
+    records[index] = { ...record, conversionTaxFunding: evidence }
+  }
+}
+
+/**
  * Compose executor adapters into one complete, detached annual publication.
  * Every annual request must have exactly one owning record. Cross-executor
  * action or schedule overlap fails closed instead of silently preferring one
@@ -1933,6 +2130,7 @@ export function publishAnnualRetirementActions(
   if (missing.length > 0) {
     throw new Error(`Annual publication omitted actions: ${missing.sort(compareUtf16CodeUnits).join(', ')}`)
   }
+  assertContestedLinkedWithdrawalRecordsStill(requests, records)
   assertLinkedWithdrawalRecordAtomicity(requests, records)
 
   const diagnosticKeys = new Set<string>()
@@ -2064,10 +2262,17 @@ export function publishAnnualRetirementActions(
         `Schedule batch conflict disposition differs for action "${record.actionId}"`,
       )
     }
+    // Both linked-funding codes, because both now reach a withdrawal record.
+    // The verdict emits `unallocated` once the run held a baseline liability
+    // and `evidence-unsupported` when it did not, and either way the withdrawal
+    // may only carry it because a conversion in this batch named it. A
+    // withdrawal refusing for a conversion nobody published is a linkage the
+    // publication cannot see and must not certify.
     if (
       record.kind === 'ordinaryWithdrawal' &&
       record.reasons.some((reason) =>
-        reason.code === 'conversion-tax-funding-evidence-unsupported') &&
+        reason.code === 'conversion-tax-funding-evidence-unsupported' ||
+        reason.code === 'conversion-tax-funding-unallocated') &&
       !requests.some((request) =>
         request.kind === 'rothConversion' &&
         request.taxFunding.kind === 'linkedWithdrawal' &&
@@ -2128,6 +2333,8 @@ export function publishAnnualRetirementActions(
     }
     scheduled.set(key, record)
   }
+
+  attachConversionTaxFundingEvidence(records, input.conversionLinkedWithdrawalGroups)
 
   const executorSources = [...sourceKinds].sort(compareUtf16CodeUnits) as [
     AnnualRetirementActionExecutorSource,

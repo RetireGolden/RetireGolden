@@ -26,9 +26,12 @@ import {
 } from './conversionLinkedWithdrawalGroup.js'
 import { executeOrdinaryWithdrawals } from './execution.js'
 import {
+  committedRothConversionTaxFundingStatuses,
   executeRothConversions,
+  type CommittedRothConversionTaxFundingStatus,
   type ExecuteRothConversionsInput,
   type ExecuteRothConversionsStagedResult,
+  type RothConversionTaxFundingExecutionEvidence,
 } from './rothConversionExecution.js'
 import {
   ordinaryWithdrawalPublicationSource,
@@ -1095,6 +1098,37 @@ describe('executeRothConversions', () => {
   // not exist; and one is refused on the merits rather than staged. These
   // conversions differ only in `taxFunding`, so any difference in the published
   // reason set is that field's doing and nothing else's.
+  describe('the funding status vocabulary', () => {
+    it('carries the two arms the contract names and nothing produces yet', () => {
+      // The specification names four funding arms and none of its four values
+      // is one of the three that shipped. Two of them are the shipped names for
+      // the same states -- `unavailable` is `unsupported`, `notRequired` is
+      // `notExpected` -- and the two that are genuinely missing are added here
+      // rather than renaming anything, because the shipped vocabulary is what
+      // every serialized record and every publication invariant already
+      // carries.
+      //
+      // Neither addition has a producer. `funded` means a linked withdrawal
+      // moved beside its conversion, which the group disposition still refuses;
+      // `canceled` means a funding group aborted, which is a statement about a
+      // group that was going to move. They are landed ahead of their producers
+      // so that the slice which opens the gate is not deciding a vocabulary
+      // question in the same diff that moves a dollar.
+      expectTypeOf<RothConversionTaxFundingExecutionEvidence['status']>()
+        .toEqualTypeOf<
+          'unsupported' | 'notExpected' | 'externallyAttested' | 'funded' | 'canceled'
+        >()
+      // A committed conversion may name only the arms that mean its funding was
+      // settled. `canceled` is deliberately absent: a canceled group did not
+      // fund a conversion that moved, and a negative test would have admitted
+      // it by default.
+      expect([...committedRothConversionTaxFundingStatuses])
+        .toEqual(['notExpected', 'externallyAttested', 'funded'])
+      expectTypeOf<CommittedRothConversionTaxFundingStatus>()
+        .toEqualTypeOf<'notExpected' | 'externallyAttested' | 'funded'>()
+    })
+  })
+
   describe('tax-funding disposition split', () => {
     const linkedWithdrawalActionId = asActionId('tax-funding-withdrawal')
 
@@ -1476,7 +1510,30 @@ describe('executeRothConversions', () => {
           conversionActionId: 'conversion-a',
           withdrawalActionId: linkedWithdrawalActionId,
           disposition: 'refusedPendingGroupExecution',
+          refusalKind: 'pendingGroupExecution',
+          contestingConversionActionIds: [],
           reasonCode: 'conversion-tax-funding-evidence-unsupported',
+        }])
+        // The reason code follows the run, not the pair. A caller that read a
+        // baseline annual liability held the inputs the funding question needs,
+        // so its refusal is on the merits rather than a declined answer — and
+        // the shape is otherwise identical, because nothing else about the pair
+        // changed.
+        expect(assessConversionLinkedWithdrawalGroups(
+          [pair.conversion, pair.fundingWithdrawal],
+          { annualLiabilityBaseline: 'read' },
+        ).groups).toEqual([{
+          groupId: expect.stringMatching(
+            /^retirement-action-conversion-linked-withdrawal-group:/,
+          ),
+          personId: 'p1',
+          year,
+          conversionActionId: 'conversion-a',
+          withdrawalActionId: linkedWithdrawalActionId,
+          disposition: 'refusedPendingGroupExecution',
+          refusalKind: 'pendingGroupExecution',
+          contestingConversionActionIds: [],
+          reasonCode: 'conversion-tax-funding-unallocated',
         }])
         expect(Object.isFrozen(groups)).toBe(true)
         // Either member finds the same verdict, which is what lets two
@@ -1600,12 +1657,40 @@ describe('executeRothConversions', () => {
         ])
 
         expect(answeringBoth.groups).toHaveLength(2)
+        // Answering for both is what lets it through to the refusal — and the
+        // refusal has since acquired a reason of its own. This test's own
+        // docblock reserved that: the slice adding an executable arm had to
+        // decide which conversion wins, and it decided that neither does. A
+        // withdrawal two conversions name is dedicated to neither, so every
+        // contesting pair refuses on the merits rather than pending a staging
+        // gap, and `unallocated` is the refused-on-the-merits code. What did
+        // not change is the amount, which is still zero, and that is the half
+        // of this contract the tie-break was ever about.
+        expect(answeringBoth.groups.map((group) => ({
+          conversionActionId: group.conversionActionId,
+          refusalKind: group.refusalKind,
+          contestingConversionActionIds: group.contestingConversionActionIds,
+          reasonCode: group.reasonCode,
+        }))).toEqual([
+          {
+            conversionActionId: 'conversion-a',
+            refusalKind: 'sharedFundingWithdrawal',
+            contestingConversionActionIds: ['conversion-a', 'conversion-b'],
+            reasonCode: 'conversion-tax-funding-unallocated',
+          },
+          {
+            conversionActionId: 'conversion-b',
+            refusalKind: 'sharedFundingWithdrawal',
+            contestingConversionActionIds: ['conversion-a', 'conversion-b'],
+            reasonCode: 'conversion-tax-funding-unallocated',
+          },
+        ])
         expect(runWithdrawal(
           { ...pair, inFlightPlan: planBothConversions },
           answeringBoth,
         ).evidence[0]).toMatchObject({
           actionId: linkedWithdrawalActionId,
-          disposition: { outcome: 'unsupported', executedAmount: 0 },
+          disposition: { outcome: 'refused', executedAmount: 0 },
         })
       })
 

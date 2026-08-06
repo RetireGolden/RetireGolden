@@ -86,6 +86,7 @@ import {
   evaluateAnnualQcdExecutionPrerequisites,
   evaluateRetirementActionSchedule,
   executeAnnualQcds,
+  executeConversionLinkedWithdrawalGroups,
   executeOrdinaryWithdrawals,
   executeRothConversions,
   ledgerCentsToPlanDollars,
@@ -102,7 +103,10 @@ import {
   type ActionId,
   type AnnualQcdRmdPoolOpeningSnapshot,
   type ClassifyOwnedNonRothIraAnnualWithdrawalsInput,
+  type ConversionLinkedWithdrawalGroupLiabilityRun,
+  type ConversionLinkedWithdrawalGroupMemberInput,
   type ExecuteAnnualQcdsResult,
+  type ExecuteConversionLinkedWithdrawalGroupsResult,
   type ExecuteOrdinaryWithdrawalsResult,
   type ExecuteRothConversionsResult,
   type PersonId,
@@ -115,7 +119,10 @@ import {
 } from '../actions/aggregateRothConversionOwnerAllocation.js'
 import { addCalendarMonths } from '../actions/civilDate.js'
 import type { NonpersistedPriorQcdOffsetEvidence } from '../strategies/accountEligibility.js'
-import { compareUtf16CodeUnits } from '../actions/structuralId.js'
+import {
+  compareUtf16CodeUnits,
+  deriveActionStructuralId,
+} from '../actions/structuralId.js'
 import { seppSeriesBeginsAfterSeparation } from '../actions/traditionalEmployerPlanPenaltyPrerequisite.js'
 import { type SimulatorAnnualRetirementRuntimeOccurrence } from './annualRetirementRuntimeJournal.js'
 import type { SimulatorAnnualPassStateBindings } from './annualPassTransaction.js'
@@ -129,9 +136,19 @@ import {
   committedOwnedNonRothIraAnnualReplayPublication,
 } from
   '../internal/ownedNonRothIraAnnualReplayPublication.js'
-import { runCounterfactualAnnualLiability, type CounterfactualAnnualLiabilityResult } from
-  '../internal/counterfactualAnnualLiability.js'
-import type { AnnualLiabilityRunTaxInput } from '../actions/annualLiabilityRunIdentity.js'
+import {
+  COUNTERFACTUAL_OMISSION_TAX_INPUT_ID,
+  exactAnnualLiabilityFromPlanDollars,
+  runCounterfactualAnnualLiability,
+  type CounterfactualAnnualLiabilityResult,
+} from '../internal/counterfactualAnnualLiability.js'
+import {
+  mintAnnualLiabilityRunIdentity,
+  type AnnualLiabilityRunTaxInput,
+} from '../actions/annualLiabilityRunIdentity.js'
+import type {
+  ConversionTaxFundingTaxUnitEvidence,
+} from '../actions/conversionTaxFundingEvidence.js'
 import { deriveOwnedNonRothIraReplayAllocationIdentity } from
   '../internal/ownedNonRothIraReplayIdentity.js'
 import { effectiveBirthYear, fraForBirthYear, fraTotalMonths, survivorFraForBirthYear } from '../socialSecurity/nra.js'
@@ -1344,6 +1361,180 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const aliveCount = peopleStates.filter((s) => s.alive).length
     const filingStatusForYear = filingStatusFor(year, aliveCount)
     const taxFilingStatusForYear = taxParameterFilingStatus(filingStatusForYear)
+
+    /**
+     * The filing unit every exact-cent action evidence in this year answers to,
+     * or null when the projection cannot name one unambiguously.
+     *
+     * Derived once at year scope rather than inside the annual pass. Nothing in
+     * it depends on the pass — `peopleStates` fixes each person's survival for
+     * the whole year before the pass opens, the filing status follows from
+     * that, and the state-filing inputs are read off the household — so
+     * computing it per pass produced the same four values every time. What
+     * moving it buys is that the annual liability runs can name their filing
+     * unit: a counterfactual pass runs *around* the pass rather than inside it,
+     * and a tax unit that only existed within one could not be the unit both
+     * runs answer for.
+     *
+     * Null is a real answer and not a fallback. A year where three people are
+     * alive under a joint status, or where a person's identity does not satisfy
+     * the action layer's nonblank contract, has no unambiguous unit, and
+     * inventing one would attribute a liability to a filing unit that never
+     * filed.
+     */
+    const annualActionTaxUnit = ((): Readonly<{
+      taxUnitId: string
+      taxUnitEvidenceId: string
+      stateFilingStatusId: string
+      federalFilingStatus: 'single' | 'marriedFilingJointly' | 'qualifyingSurvivingSpouse'
+      members: readonly [
+        ReturnType<typeof asPersonId>,
+        ...ReturnType<typeof asPersonId>[],
+      ]
+    }> | null => {
+      let aliveTaxUnitMemberIds: ReturnType<typeof asPersonId>[]
+      try {
+        aliveTaxUnitMemberIds = peopleStates
+          .filter((state) => state.alive)
+          .map((state) => asPersonId(state.personId))
+          .sort((left, right) => left < right ? -1 : left > right ? 1 : 0)
+      } catch {
+        // A persisted household ID can satisfy the Plan's legacy string
+        // schema without satisfying action identity's nonblank contract.
+        // Omit tax-unit evidence rather than letting unrelated cash/equity
+        // action execution fail with a validation exception.
+        return null
+      }
+      const federalFilingStatus =
+        filingStatusForYear === 'marriedFilingJointly' &&
+          aliveTaxUnitMemberIds.length === 2
+          ? 'marriedFilingJointly' as const
+          : (filingStatusForYear === 'single' ||
+              filingStatusForYear === 'qualifyingSurvivingSpouse') &&
+            aliveTaxUnitMemberIds.length === 1
+            ? filingStatusForYear
+            : null
+      if (federalFilingStatus === null) return null
+      const members = aliveTaxUnitMemberIds as [
+        ReturnType<typeof asPersonId>,
+        ...ReturnType<typeof asPersonId>[],
+      ]
+      const annualStateFilingInputs = [
+        stateForYear(plan.household, year),
+        stateResidencySegmentsForYear(plan.household, year),
+      ] as const
+      return {
+        taxUnitId: `projection-tax-unit:${JSON.stringify([
+          year,
+          filingStatusForYear,
+          members,
+        ])}`,
+        taxUnitEvidenceId: `projection-tax-unit-evidence:${JSON.stringify([
+          year,
+          filingStatusForYear,
+          members,
+          annualStateFilingInputs,
+        ])}`,
+        stateFilingStatusId: `projection-state-filing-status:${JSON.stringify([
+          year,
+          filingStatusForYear,
+          members,
+          annualStateFilingInputs,
+        ])}`,
+        federalFilingStatus,
+        members,
+      }
+    })()
+
+    /** The same unit, in the shape the conversion funding contract names it. */
+    const conversionFundingTaxUnitEvidence:
+      Readonly<ConversionTaxFundingTaxUnitEvidence> | null =
+      annualActionTaxUnit === null
+        ? null
+        : {
+          taxUnitId: annualActionTaxUnit.taxUnitId,
+          taxYear: year,
+          federalFilingStatus: annualActionTaxUnit.federalFilingStatus,
+          stateFilingStatusId: annualActionTaxUnit.stateFilingStatusId,
+          taxUnitEvidenceId: annualActionTaxUnit.taxUnitEvidenceId,
+          taxUnitMemberPersonIds: annualActionTaxUnit.members,
+        }
+
+    /**
+     * What the year's two annual liability runs were computed from, other than
+     * which requests each of them ran.
+     *
+     * The baseline and the candidate must agree about every one of these or
+     * their difference is not the group's tax effect but the difference between
+     * two unrelated calculations. They are stated as the filing unit's own
+     * evidence identifiers rather than re-enumerated as figures: the tax-unit
+     * evidence ID is already derived from the year, the filing status, the
+     * exact member set and the state-filing inputs, so it is the compact,
+     * already-canonical name for the run's non-group inputs. Both runs read the
+     * same one because it is computed once, at year scope, above.
+     */
+    const annualLiabilityNonGroupTaxInputs:
+      readonly Readonly<AnnualLiabilityRunTaxInput>[] =
+      annualActionTaxUnit === null
+        ? []
+        : [
+          {
+            inputId: 'taxUnitEvidenceId',
+            value: {
+              representation: 'declaredTerm',
+              term: annualActionTaxUnit.taxUnitEvidenceId,
+            },
+          },
+          {
+            inputId: 'federalFilingStatus',
+            value: {
+              representation: 'declaredTerm',
+              term: annualActionTaxUnit.federalFilingStatus,
+            },
+          },
+          {
+            inputId: 'stateFilingStatusId',
+            value: {
+              representation: 'declaredTerm',
+              term: annualActionTaxUnit.stateFilingStatusId,
+            },
+          },
+          {
+            inputId: 'taxUnitMemberPersonIds',
+            value: {
+              representation: 'declaredTerm',
+              term: JSON.stringify(annualActionTaxUnit.members),
+            },
+          },
+        ]
+
+    /**
+     * Both legs of every conversion-linked withdrawal group this year declares.
+     *
+     * This is the counterfactual's omission set, and it is read off the Plan
+     * rather than off the assessment inside the pass, because the counterfactual
+     * has to be launched before any pass runs. The two agree by construction:
+     * the assessment reads the same conversions out of the same array.
+     *
+     * Both legs, not just the conversion. `T0` is the unit's liability with
+     * "every conversion in this annual group and every dedicated linked
+     * withdrawal omitted", and a baseline that removed the conversion while
+     * leaving its funding withdrawal to draw down a taxable account would
+     * measure the withdrawal's own tax as part of the group's cost.
+     */
+    const annualLinkedGroupOmissionIds: readonly ActionId[] = (() => {
+      const ids = new Set<ActionId>()
+      for (const request of plan.strategies.retirementActions) {
+        if (
+          request.kind !== 'rothConversion' ||
+          request.year !== year ||
+          request.taxFunding.kind !== 'linkedWithdrawal'
+        ) continue
+        ids.add(request.actionId)
+        ids.add(request.taxFunding.withdrawalActionId)
+      }
+      return [...ids]
+    })()
 
     // --- income ----------------------------------------------------------
     const incomes: YearIncomes = {
@@ -2732,6 +2923,21 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         readonly Readonly<OwnedNonRothIraAnnualSettlementEffect>[],
       omittedRetirementActionIds:
         ReadonlySet<ActionId> = NO_OMITTED_RETIREMENT_ACTION_IDS,
+      /**
+       * `T0` for this run's conversion-linked withdrawal groups, when the
+       * caller ran a counterfactual for them.
+       *
+       * Handed in rather than computed here, and that is not a convenience.
+       * The counterfactual is a second whole run of this same closure, so a run
+       * that computed its own baseline would recurse; the caller runs it
+       * outside, before this one commits anything, and passes the reading down.
+       * A run that has no baseline — the counterfactual itself, and the two
+       * fallback runs after a rolled-back settlement — is not a broken run: it
+       * says so, its groups keep the `unsupported` funding reason, and the
+       * annual funding evaluation is refused rather than invented.
+       */
+      annualLiabilityBaseline:
+        Readonly<ConversionLinkedWithdrawalGroupLiabilityRun> | null = null,
     ): { yearResult: YearResult; optimizerProbe: OptimizerYearProbe | null } => {
     /**
      * The Plan's retirement actions as *this* run of the pass sees them.
@@ -3456,11 +3662,21 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // array: a counterfactual that removed a conversion from the executors but
     // left it visible here would still have its group assessed, and the group
     // verdict is what both executors answer to.
-    const conversionLinkedWithdrawalGroups = assessConversionLinkedWithdrawalGroups([
-      ...passRetirementActions,
-      ...currentYearOrdinaryExecutionActions,
-      ...currentYearConversionActions,
-    ])
+    // The baseline's availability is what decides between the two funding
+    // reason codes. A run that read a `T0` held the inputs the funding question
+    // needs, so a group it refuses is refused on the merits; a run that did not
+    // is declining to answer, which is what `unsupported` says.
+    const conversionLinkedWithdrawalGroups = assessConversionLinkedWithdrawalGroups(
+      [
+        ...passRetirementActions,
+        ...currentYearOrdinaryExecutionActions,
+        ...currentYearConversionActions,
+      ],
+      {
+        annualLiabilityBaseline:
+          annualLiabilityBaseline === null ? 'unavailable' : 'read',
+      },
+    )
     // The ordinary and QCD executors are handed disjoint request sets, so the
     // one alive fact a request carries is minted here rather than per executor:
     // a request must not change identity by moving between the two.
@@ -3906,60 +4122,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             return []
           }
         })
-      let aliveTaxUnitMemberIds:
-        | ReturnType<typeof asPersonId>[]
-        | null = null
-      try {
-        aliveTaxUnitMemberIds = peopleStates
-          .filter((state) => state.alive)
-          .map((state) => asPersonId(state.personId))
-          .sort((left, right) => left < right ? -1 : left > right ? 1 : 0)
-      } catch {
-        // A persisted household ID can satisfy the Plan's legacy string
-        // schema without satisfying action identity's nonblank contract.
-        // Omit tax-unit evidence rather than letting unrelated cash/equity
-        // action execution fail with a validation exception.
-      }
-      const hasUnambiguousTaxUnit =
-        aliveTaxUnitMemberIds !== null &&
-        ((filingStatusForYear === 'marriedFilingJointly' &&
-          aliveTaxUnitMemberIds.length === 2) ||
-        ((filingStatusForYear === 'single' ||
-          filingStatusForYear === 'qualifyingSurvivingSpouse') &&
-          aliveTaxUnitMemberIds.length === 1))
-      const taxUnitMembers = hasUnambiguousTaxUnit
-        ? aliveTaxUnitMemberIds as [
-          ReturnType<typeof asPersonId>,
-          ...ReturnType<typeof asPersonId>[],
-        ]
-        : null
-      const annualStateFilingInputs = [
-        stateForYear(plan.household, year),
-        stateResidencySegmentsForYear(plan.household, year),
-      ] as const
-      const taxUnitId = taxUnitMembers === null
-        ? null
-        : `projection-tax-unit:${JSON.stringify([
-          year,
-          filingStatusForYear,
-          taxUnitMembers,
-        ])}`
-      const taxUnitEvidenceId = taxUnitMembers === null
-        ? null
-        : `projection-tax-unit-evidence:${JSON.stringify([
-          year,
-          filingStatusForYear,
-          taxUnitMembers,
-          annualStateFilingInputs,
-        ])}`
-      const stateFilingStatusId = taxUnitMembers === null
-        ? null
-        : `projection-state-filing-status:${JSON.stringify([
-          year,
-          filingStatusForYear,
-          taxUnitMembers,
-          annualStateFilingInputs,
-        ])}`
+      const taxUnitMembers = annualActionTaxUnit?.members ?? null
+      const taxUnitId = annualActionTaxUnit?.taxUnitId ?? null
+      const taxUnitEvidenceId = annualActionTaxUnit?.taxUnitEvidenceId ?? null
+      const stateFilingStatusId = annualActionTaxUnit?.stateFilingStatusId ?? null
       let taxableAccountSnapshots: TaxableAccountOpeningSnapshot[] =
         taxUnitMembers === null ||
         taxUnitId === null ||
@@ -6516,6 +6682,136 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       ...(rothConversionActionExecution?.requests ?? []),
       ...(qcdActionPrerequisites?.requests ?? []),
     ]
+    /**
+     * The committed run — `T1(F)` — named as a liability run of its own.
+     *
+     * `T1` is not a third pass. It is this one: the run that commits is the run
+     * with the group's requests present, so its final post-pass tax and
+     * penalties are the candidate liability, read through the same exact-cent
+     * conversion the counterfactual reads its own through.
+     *
+     * The funding vector it names is the year's actual one: for each group, the
+     * withdrawal and the cents it executed. That is what makes it a
+     * `candidateT1` rather than an ordinary committed run — a candidate that
+     * did not name the vector it was run against cannot honestly be subtracted
+     * from a baseline, because a different vector is a different candidate. The
+     * vector is all zeros today, and stating it is what will make the slice
+     * that funds a conversion mint a visibly different run.
+     */
+    const committedAnnualLiabilityRun = (
+      taxPlanDollars: number,
+      penaltiesPlanDollars: number,
+    ): Readonly<ConversionLinkedWithdrawalGroupLiabilityRun> | null => {
+      const unit = conversionFundingTaxUnitEvidence
+      if (unit === null) return null
+      const liability = exactAnnualLiabilityFromPlanDollars(
+        taxPlanDollars,
+        penaltiesPlanDollars,
+      )
+      if (liability === null) return null
+      const executedByActionId = new Map(
+        (retirementActionExecution?.evidence ?? []).map((evidence) =>
+          [evidence.actionId, evidence.disposition.executedAmount] as const),
+      )
+      const fundingVector = conversionLinkedWithdrawalGroups.groups
+        .map((group) => [
+          group.conversionActionId,
+          group.withdrawalActionId,
+          executedByActionId.get(group.withdrawalActionId) ?? 0,
+        ])
+      const minted = mintAnnualLiabilityRunIdentity({
+        planId: plan.id,
+        taxUnitId: unit.taxUnitId,
+        taxYear: year,
+        liabilityRun: {
+          liabilityRunKind: 'candidateT1',
+          candidateFundingVectorEvidenceId: deriveActionStructuralId(
+            'retirement-action-conversion-tax-funding-vector',
+            [unit.taxUnitId, year, fundingVector],
+          ),
+        },
+        taxInputs: [
+          ...annualLiabilityNonGroupTaxInputs,
+          {
+            inputId: COUNTERFACTUAL_OMISSION_TAX_INPUT_ID,
+            // Stated, not omitted. "This run removed nothing" is a fact about
+            // the run, and it is the fact that makes the two snapshot IDs
+            // comparable: the baseline's spells what it removed, and a
+            // candidate that said nothing at all would be claiming a different
+            // kind of input set rather than a different value of the same one.
+            value: { representation: 'declaredTerm', term: JSON.stringify([]) },
+          },
+        ],
+      })
+      return minted.status === 'annualLiabilityRunIdentityMinted'
+        ? { liability, identity: minted.identity }
+        : null
+    }
+
+    /**
+     * The year's conversion-linked withdrawal groups, executed — which is to
+     * say staged, evidenced, and refused.
+     *
+     * It runs here and not at the phase where the group was assessed, because
+     * `T1(F)` is this run's own final liability and does not exist until the
+     * funding solve has converged. The verdict the executors answered to was
+     * taken much earlier and is unchanged by anything below; what is added here
+     * is the evidence that accompanies the refusal, and evidence cannot precede
+     * the figure it is evidence of.
+     *
+     * Every input it needs is read off what already happened. The weights are
+     * committed taxable conversion principal, which is zero for a refused
+     * conversion; the funded amounts are the linked withdrawals' committed
+     * executed cents, zero for the same reason. That degeneracy is the honest
+     * shape of a group that refused, and it is not what the evaluation is for:
+     * what it carries that nothing carried before is two real annual liability
+     * runs, distinctly identified, whose difference is the group's tax effect.
+     */
+    const conversionLinkedWithdrawalGroupExecution:
+      Readonly<ExecuteConversionLinkedWithdrawalGroupsResult> | undefined =
+      conversionLinkedWithdrawalGroups.groups.length === 0
+        ? undefined
+        : executeConversionLinkedWithdrawalGroups({
+            taxYear: year,
+            requests: [
+              ...passRetirementActions,
+              ...currentYearOrdinaryExecutionActions,
+              ...currentYearConversionActions,
+            ],
+            assessment: conversionLinkedWithdrawalGroups,
+            taxUnit: conversionFundingTaxUnitEvidence,
+            baseline: annualLiabilityBaseline,
+            candidate: committedAnnualLiabilityRun(tax, penalties),
+            members: conversionLinkedWithdrawalGroups.groups.map(
+              (group): ConversionLinkedWithdrawalGroupMemberInput => {
+                const conversionEvidence = rothConversionActionExecution?.evidence
+                  .find((evidence) => evidence.actionId === group.conversionActionId)
+                const withdrawalEvidence = retirementActionExecution?.evidence
+                  .find((evidence) => evidence.actionId === group.withdrawalActionId)
+                return {
+                  conversionActionId: group.conversionActionId,
+                  conversionPersonId: group.personId,
+                  // A conversion this run never executed has no taxable
+                  // principal; one that executed while leaving its Form 8606
+                  // character to the annual settlement has one nobody can state
+                  // yet, and null is how the evaluation refuses rather than
+                  // reading the unknown as zero.
+                  allocationWeight: conversionEvidence === undefined
+                    ? null
+                    : conversionEvidence.outcome === 'executed'
+                      ? (conversionEvidence.taxableConvertedAmount === null
+                          ? null
+                          : asUsdCents(conversionEvidence.taxableConvertedAmount))
+                      : asUsdCents(0),
+                  // A withdrawal that never reached the executor funded
+                  // nothing, which is a zero this run can state.
+                  fundedAmount: asUsdCents(
+                    withdrawalEvidence?.disposition.executedAmount ?? 0,
+                  ),
+                }
+              },
+            ),
+          })
     const retirementActionPublication =
       retirementActionPublicationSources.length > 0 &&
       retirementActionPublicationEligible
@@ -6523,6 +6819,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             taxYear: year,
             requests: retirementActionPublicationRequests,
             sources: retirementActionPublicationSources,
+            ...(conversionLinkedWithdrawalGroupExecution === undefined
+              ? {}
+              : {
+                conversionLinkedWithdrawalGroups:
+                  conversionLinkedWithdrawalGroupExecution,
+              }),
           })
         : undefined
     const yearResult: YearResult = {
@@ -6551,6 +6853,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       ...(retirementActionPublication === undefined
         ? {}
         : { retirementActionPublication }),
+      ...(conversionLinkedWithdrawalGroupExecution === undefined
+        ? {}
+        : {
+          conversionLinkedWithdrawalGroupExecution:
+            conversionLinkedWithdrawalGroupExecution,
+        }),
       ...(rothConversionActionExecution ? { rothConversionActionExecution } : {}),
       ...(qcdActionPrerequisites === undefined
         ? {}
@@ -6665,6 +6973,53 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       expenses,
     }
 
+    /**
+     * `T0` for this year's conversion-linked withdrawal groups: one
+     * counterfactual pass with both legs of every group removed.
+     *
+     * Called from inside the attempt driver's per-attempt scope rather than
+     * once before it, which is the placement the counterfactual driver reserved
+     * for its consumer. It matters: the settlement loop runs the annual pass
+     * repeatedly under different assumed Form 8606 effects, and a baseline
+     * taken under one assumption vector is not a counterfactual of a run taken
+     * under another. Sharing the vector is what makes the difference of the two
+     * liabilities the group's tax effect and not the settlement's.
+     *
+     * The cost is real and bounded: a year with no linked group runs nothing
+     * extra, and a year with one doubles that year's passes.
+     *
+     * Every refusal returns null, and null is not a failure the year has to
+     * survive — it is the ordinary answer for a year with no group, no
+     * unambiguous filing unit, or a counterfactual that could not be restored.
+     * The pass then keeps the `unsupported` funding reason it had before any of
+     * this existed.
+     */
+    const runLinkedGroupCounterfactualBaseline = (
+      assumedEffects:
+        readonly Readonly<OwnedNonRothIraAnnualSettlementEffect>[],
+    ): Readonly<ConversionLinkedWithdrawalGroupLiabilityRun> | null => {
+      const unit = conversionFundingTaxUnitEvidence
+      if (unit === null || annualLinkedGroupOmissionIds.length === 0) return null
+      const read = runCounterfactualAnnualLiability({
+        state: annualPassState,
+        request: {
+          planId: plan.id,
+          taxUnitId: unit.taxUnitId,
+          taxYear: year,
+          omitActionIds: annualLinkedGroupOmissionIds,
+          nonGroupTaxInputs: annualLiabilityNonGroupTaxInputs,
+        },
+        // No baseline of its own: a counterfactual that ran a counterfactual
+        // would not terminate, and it has nothing to evidence anyway — the
+        // group whose funding is in question is exactly what it removed.
+        runPass: (omittedRetirementActionIds) =>
+          runPostContributionAnnualPass(assumedEffects, omittedRetirementActionIds),
+      })
+      return read.status === 'counterfactualAnnualLiabilityRead'
+        ? { liability: read.liability, identity: read.identity }
+        : null
+    }
+
     // The counterfactual pre-pass, before anything commits this year.
     //
     // It has to precede the run that commits, not follow it: the pass writes the
@@ -6725,6 +7080,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         runAttempt: (context) => {
           const attempt = runPostContributionAnnualPass(
             context.assumedEffects,
+            undefined,
+            runLinkedGroupCounterfactualBaseline(context.assumedEffects),
           )
           finalAttempt = attempt
           return [attempt.yearResult]
@@ -6852,10 +7209,18 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         } else {
           ownedNonRothIraSettlementRolledBackOwners.add(rolledBackOwner)
         }
-        settledAnnualPass = runPostContributionAnnualPass([])
+        settledAnnualPass = runPostContributionAnnualPass(
+          [],
+          undefined,
+          runLinkedGroupCounterfactualBaseline([]),
+        )
       }
     } else {
-      settledAnnualPass = runPostContributionAnnualPass([])
+      settledAnnualPass = runPostContributionAnnualPass(
+        [],
+        undefined,
+        runLinkedGroupCounterfactualBaseline([]),
+      )
     }
     years.push(settledAnnualPass.yearResult)
     if (settledAnnualPass.optimizerProbe !== null) {

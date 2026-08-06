@@ -589,22 +589,34 @@ describe('the boundary this contract stops at', () => {
       .toEqual(['refusedPendingGroupExecution'])
   })
 
-  it('is published by neither barrel, so nothing outside can consume it', () => {
-    // The safety property is that no caller can build a satisfied record,
-    // because no caller can supply `T0`. Slice 3 writes that producer and
-    // publishes this surface alongside it; until then a public evidence type
-    // with no producer would be a promise the engine cannot keep. Both
-    // barrels are checked because either one would export it to consumers,
-    // and `package.json` denies every `./actions/*` subpath that is not
-    // listed there, so an unexported module has no other way out.
+  it('is published now that a producer exists, and not before', () => {
+    // This pin used to assert the opposite, and its own text named the
+    // condition for flipping: "Slice 3 writes that producer and publishes this
+    // surface alongside it; until then a public evidence type with no producer
+    // would be a promise the engine cannot keep." The producer is
+    // `executeConversionLinkedWithdrawalGroups`, the simulator calls it, and
+    // the records it builds now ride on published annual action records — so
+    // the surface is reachable whether or not the barrel names it, and naming
+    // it is the honest half of that.
+    //
+    // The safety property this was protecting has not moved and is not this
+    // module's to hold: no dollar moves because
+    // `ConversionLinkedWithdrawalGroupDisposition` still has one member and
+    // `committedTaxFunding`'s linked arm still publishes `unsupported`. Both
+    // are pinned above and beside this one.
     for (const name of [
       'buildConversionTaxFundingAnnualGroupEvidence',
       'conversionTaxFundingEvidenceSchema',
       'parseConversionTaxFundingAnnualGroup',
       'parseConversionTaxFundingEvidence',
     ]) {
-      expect(Object.keys(actionsBarrel)).not.toContain(name)
-      expect(Object.keys(engineBarrel)).not.toContain(name)
+      expect(Object.keys(actionsBarrel)).toContain(name)
     }
+    // The engine barrel is a different surface with a different discipline: it
+    // does not re-export the actions barrel wholesale, and a consumer reaching
+    // this contract does so through the `./actions` subpath. Checked so that
+    // publishing here cannot quietly widen the top-level package too.
+    expect(Object.keys(engineBarrel))
+      .not.toContain('buildConversionTaxFundingAnnualGroupEvidence')
   })
 })

@@ -7,6 +7,7 @@ import type {
   AnnualQcdExecutionPrerequisiteEvidence,
   AnnualRetirementActionPublication,
   ExecuteAnnualQcdsResult,
+  ExecuteConversionLinkedWithdrawalGroupsResult,
   ExecuteOrdinaryWithdrawalsResult,
   ExecuteRothConversionsResult,
   PersonId,
@@ -866,6 +867,21 @@ export interface YearResult {
    * remain on their dedicated result fields.
    */
   retirementActionPublication?: AnnualRetirementActionPublication
+  /**
+   * The year's conversion-linked withdrawal groups, executed.
+   *
+   * Present only in a year that declares at least one linked group, because a
+   * year with none has nothing to say about them and an empty result would be
+   * indistinguishable from a year whose groups were all evaluated to nothing.
+   *
+   * Nothing here moves a dollar, and the type says so: every group carries
+   * `movement: 'none'` and the result carries `status: 'refused'`. What it
+   * carries that the publication's records cannot is the merged schedule the
+   * group's two legs would occupy, and — when the funding evaluation was
+   * refused rather than made — which of its inputs was missing.
+   */
+  conversionLinkedWithdrawalGroupExecution?:
+    Readonly<ExecuteConversionLinkedWithdrawalGroupsResult>
   /**
    * Request-keyed named Roth-conversion movement evidence. A non-actionable
    * result is published when annual basis, RMD-reserve, or funding proof is
