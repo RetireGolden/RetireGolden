@@ -7,10 +7,10 @@ import {
 import type { StageAnnualQcdTaxCharacterPostPassInput } from './annualQcdTaxCharacterPostPass.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from './structuralId.js'
 import { annualCharitableDeductionParameters } from '../tax/annualCharitableDeductionParameters.js'
+import type { AnnualLiabilityRunBinding } from './annualLiabilityRunIdentity.js'
 import type { TaxableWithdrawalTaxUnitEvidence } from './taxableWithdrawalCharacter.js'
-export type AnnualQcdSection170RunBinding =
-  | { readonly liabilityRunKind: 'committedAnnual' | 'baselineT0'; readonly candidateFundingVectorEvidenceId: null }
-  | { readonly liabilityRunKind: 'candidateT1'; readonly candidateFundingVectorEvidenceId: string }
+/** The canonical liability-run binding, under this ledger's published name. */
+export type AnnualQcdSection170RunBinding = AnnualLiabilityRunBinding
 export interface AnnualQcdFloorCarryforwardEligibilityInput {
   readonly actionId: string
   readonly eligible: boolean

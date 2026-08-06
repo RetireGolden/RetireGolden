@@ -333,6 +333,8 @@ function snapshotInvariantState(
   allocationTrack: readonly [string, unknown][]
   seppAmortAmount: readonly [string, unknown][]
   magiHistory: readonly [number, unknown][]
+  namedQcdOffsetConsumedByDonor: readonly [string, unknown][]
+  namedQcdOffsetHistoryUnprovable: readonly string[]
   warnings: readonly string[]
   valueBindings: SimulatorAnnualPassValueSnapshot
   expenses: unknown
@@ -354,6 +356,10 @@ function snapshotInvariantState(
     allocationTrack: snapshotStringMap(state.allocationTrack),
     seppAmortAmount: snapshotStringMap(state.seppAmortAmount),
     magiHistory: snapshotNumberMap(state.magiHistory),
+    namedQcdOffsetConsumedByDonor:
+      snapshotStringMap(state.namedQcdOffsetConsumedByDonor),
+    namedQcdOffsetHistoryUnprovable:
+      [...state.namedQcdOffsetHistoryUnprovable].sort(compareUtf16CodeUnits),
     warnings: [...state.warnings].sort(compareUtf16CodeUnits),
     valueBindings: snapshotAnnualPassValues(state),
     expenses: structuredClone(state.expenses),

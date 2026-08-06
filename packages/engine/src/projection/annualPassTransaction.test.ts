@@ -187,6 +187,14 @@ function fixture(): {
       [2029, 75_000],
       [2028, 70_000],
     ]),
+    namedQcdOffsetConsumedByDonor: new Map([
+      ['donor', 1_200],
+      ['deleted-donor', 300],
+    ]),
+    namedQcdOffsetHistoryUnprovable: new Set([
+      'unprovable-donor',
+      'deleted-unprovable-donor',
+    ]),
     warnings: new Set(['first warning', 'second warning']),
     unassignedCash: valueBinding(scalars, 'unassignedCash'),
     priorYearPortfolioReturnPct: valueBinding(scalars, 'priorYearPortfolioReturnPct'),
@@ -220,6 +228,10 @@ function stateBytes(bindings: SimulatorAnnualPassStateBindings): string {
     allocationTrack: [...bindings.allocationTrack],
     seppAmortAmount: [...bindings.seppAmortAmount],
     magiHistory: [...bindings.magiHistory],
+    namedQcdOffsetConsumedByDonor: [...bindings.namedQcdOffsetConsumedByDonor],
+    namedQcdOffsetHistoryUnprovable: [
+      ...bindings.namedQcdOffsetHistoryUnprovable,
+    ],
     warnings: [...bindings.warnings],
     scalars: {
       unassignedCash: bindings.unassignedCash.read(),
@@ -349,6 +361,11 @@ function mutateEntireAnnualPass(bindings: SimulatorAnnualPassStateBindings): voi
   bindings.magiHistory.set(2029, 501)
   bindings.magiHistory.delete(2028)
   bindings.magiHistory.set(2030, 502)
+  bindings.namedQcdOffsetConsumedByDonor.set('donor', 1_900)
+  bindings.namedQcdOffsetConsumedByDonor.delete('deleted-donor')
+  bindings.namedQcdOffsetConsumedByDonor.set('added-donor', 700)
+  bindings.namedQcdOffsetHistoryUnprovable.delete('deleted-unprovable-donor')
+  bindings.namedQcdOffsetHistoryUnprovable.add('added-unprovable-donor')
   bindings.warnings.clear()
   bindings.warnings.add('probe-only warning')
 
@@ -457,6 +474,41 @@ describe('simulator annual-pass transaction', () => {
     expect(bindings.warnings).toBe(originalContainers.warnings)
     expect(bindings.expenses).toBe(originalContainers.expenses)
     expect([...bindings.warnings]).toEqual(['first warning', 'second warning'])
+  })
+
+  it('restores the named-QCD donor ledgers a rolled-back attempt wrote', () => {
+    // The two ledgers the simulator keeps across the year loop: how much of a
+    // donor's post-70½ deductible-contribution offset this run's own gifts have
+    // already spent, and which donors' offset history the run cannot state at
+    // all. Both are written inside the annual pass and read by the next one, so
+    // an attempt that is rolled back must leave neither behind: an abandoned
+    // gift that kept its consumption standing would make the retry -- or the
+    // legacy fallback the simulator drops to after a rolled-back settlement --
+    // charge a second gift against an offset no committed gift ever consumed.
+    //
+    // Asserted byte-equal rather than economically equal, and on the original
+    // containers rather than on replacements, because the simulator holds these
+    // two by reference in closures that outlive the transaction.
+    const { bindings } = fixture()
+    const consumed = bindings.namedQcdOffsetConsumedByDonor
+    const unprovable = bindings.namedQcdOffsetHistoryUnprovable
+    const before = stateBytes(bindings)
+    const transaction = beginSimulatorAnnualPassTransaction(bindings)
+
+    consumed.set('donor', 2_400)
+    consumed.set('gifted-this-attempt', 5_000)
+    consumed.delete('deleted-donor')
+    unprovable.add('unprovable-this-attempt')
+    unprovable.delete('deleted-unprovable-donor')
+
+    transaction.rollback()
+
+    expect(stateBytes(bindings)).toBe(before)
+    expect(bindings.namedQcdOffsetConsumedByDonor).toBe(consumed)
+    expect(bindings.namedQcdOffsetHistoryUnprovable).toBe(unprovable)
+    expect([...consumed]).toEqual([['donor', 1_200], ['deleted-donor', 300]])
+    expect([...unprovable])
+      .toEqual(['unprovable-donor', 'deleted-unprovable-donor'])
   })
 
   it('does not freeze or otherwise take ownership of simulator-provided state', () => {

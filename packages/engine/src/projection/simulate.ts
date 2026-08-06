@@ -6517,6 +6517,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       allocationTrack,
       seppAmortAmount,
       magiHistory,
+      namedQcdOffsetConsumedByDonor,
+      namedQcdOffsetHistoryUnprovable,
       warnings,
       unassignedCash: annualPassValueBinding(
         () => unassignedCash,
