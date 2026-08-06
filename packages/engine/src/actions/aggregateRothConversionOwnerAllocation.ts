@@ -48,10 +48,11 @@ import {
  * - `treas-reg-1-408A-4-a-6-rmd-precedes-conversion` — why the caller must
  *   snapshot balances after the forced distribution and before any drain.
  *
- * This module reads balances and returns a plan. It mutates nothing: the
- * caller's balance records are handed back inside the result so the ledger can
- * debit the objects it owns, and it is the ledger — not this policy — that
- * moves a cent.
+ * This module reads balances and returns the movements it would take — an
+ * `AggregateRothConversionOwnerAllocation`, never a `Plan`; nothing here
+ * produces or patches one. It mutates nothing either: the caller's balance
+ * records are handed back inside the result so the ledger can debit the objects
+ * it owns, and it is the ledger — not this policy — that moves a cent.
  */
 
 /**

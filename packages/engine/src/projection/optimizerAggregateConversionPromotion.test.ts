@@ -500,7 +500,77 @@ describe('what it refuses to promote', () => {
     })
 
     if (choice.status !== 'unallocatable') throw new Error('expected a refusal')
-    expect(choice.issues.map((entry) => entry.kind)).toEqual(['missingAccountBalance'])
+    // The field path is the caller's own array position, because `yearBalances`
+    // is an array: a path that reads like an index has to be one.
+    expect(choice.issues).toEqual([{
+      kind: 'missingAccountBalance',
+      field: 'yearBalances.0.balances.sam-ira',
+      detail: `Every owned traditional and every Roth account needs a stated nonnegative balance for ${TAX_YEAR}.`,
+    }])
+  })
+
+  it('refuses a snapshot that omits a designated Roth account it can never convert into', () => {
+    // The account is required precisely because nothing can land in it: it is
+    // what tells an owner who holds only that kind apart from an owner who
+    // holds no Roth at all, and the two hear different sentences.
+    const household = exampleCoupleHousehold([
+      employer401k('alex-401k', 820_000, ALEX),
+      traditionalIra('sam-ira', 310_000, SAM),
+      designatedRoth('sam-roth-401k', 5_000, SAM),
+      rothIra('alex-roth', 145_000, ALEX),
+    ])
+    const partial = openingBalances(household, TAX_YEAR)
+    const balances = { ...partial.balances }
+    delete balances['sam-roth-401k']
+    const choice = chooseFor(household, 100_000, {
+      yearBalances: [{ year: TAX_YEAR, balances }],
+    })
+
+    if (choice.status !== 'unallocatable') throw new Error('expected a refusal')
+    expect(choice.issues[0]!.field).toBe('yearBalances.0.balances.sam-roth-401k')
+  })
+
+  it('names the year rather than a position when a whole snapshot is absent', () => {
+    // Nothing to index: the entry the caller has to add is the one that is not
+    // there.
+    const choice = chooseFor(plan(), 100_000, {
+      winner: {
+        source: 'candidate',
+        candidateId: 'bracket-22',
+        conversions: [{ year: TAX_YEAR + 4, amount: 100_000 }],
+      },
+      yearBalances: [openingBalances(plan(), TAX_YEAR)],
+    })
+
+    if (choice.status !== 'unallocatable') throw new Error('expected a refusal')
+    expect(choice.issues).toEqual([{
+      kind: 'missingYearBalances',
+      field: 'yearBalances',
+      detail: `Year ${TAX_YEAR + 4} is promoted with no balance snapshot for the policy to weight its owners by.`,
+    }])
+  })
+
+  it('says a Plan with nobody in it has no primary person, not a missing balance', () => {
+    // The fallback owner for an account the Plan records no individual owner
+    // for. Calling that a missing account balance sends a reader after the
+    // wrong input entirely.
+    const household = plan()
+    const choice = chooseAggregateConversionPromotionIntents({
+      plan: { ...household, household: { ...household.household, people: [] } },
+      winner: {
+        source: 'candidate',
+        candidateId: 'bracket-22',
+        conversions: [{ year: TAX_YEAR, amount: 100_000 }],
+      },
+      yearBalances: [openingBalances(household, TAX_YEAR)],
+    })
+
+    if (choice.status !== 'unallocatable') throw new Error('expected a refusal')
+    expect(choice.issues).toEqual([{
+      kind: 'missingPrimaryPerson',
+      field: 'plan.household.people',
+      detail: 'A Plan with no person has no owner for an account the Plan records no individual owner for.',
+    }])
   })
 
   it('refuses a household with no Roth account at all', () => {

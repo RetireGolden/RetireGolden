@@ -135,10 +135,23 @@ export interface AggregateConversionPromotionWinner {
  * One scheduled year's balances, per Plan account ID, as the ledger held them
  * after the forced distributions and before any conversion drain.
  *
- * Accounts that can neither be converted nor receive a conversion may be
- * omitted; every account that can must be present, because an absent balance
- * would weight its owner by a zero nobody stated. At most one entry per year:
- * a second one for the same year is refused rather than resolved.
+ * THE EXACT SET THAT MUST BE PRESENT: every Plan account for which
+ * `isConvertibleToRoth` holds — an owned, non-inherited traditional account,
+ * employer plans included — and every account of `type: 'roth'`, of BOTH kinds.
+ * Everything else may be omitted: cash, taxable, equity comp, HSA, inherited
+ * traditional, property, debt.
+ *
+ * A designated Roth account is in that set even though no conversion may land
+ * in one, which is the part worth stating plainly. It is what tells an owner
+ * who holds only that kind apart from an owner who holds no Roth at all, and
+ * those two hear different sentences and are offered different remedies. Its
+ * balance is not read; the requirement is on the snapshot, which has to state
+ * the household the ledger saw rather than the part of it that happened to
+ * matter. Omitting a required account is refused (`missingAccountBalance`)
+ * rather than read as a zero nobody stated.
+ *
+ * At most one entry per year: a second one for the same year is refused rather
+ * than resolved.
  */
 export interface AggregateConversionPromotionYearBalances {
   readonly year: number
@@ -166,8 +179,10 @@ export type AggregateConversionPromotionIssueKind =
   | 'missingYearBalances'
   /** Two balance snapshots for one year, so which one is authoritative is unstated. */
   | 'duplicateYearBalances'
-  /** A convertible or Roth account with no stated balance in a year. */
+  /** A participating account with no stated balance in a year. */
   | 'missingAccountBalance'
+  /** The Plan names nobody, so an unowned account has no owner to fall back to. */
+  | 'missingPrimaryPerson'
   /** Every scheduled year allocated nothing, so there is no candidate to mint. */
   | 'noLawfulConversion'
 
@@ -254,7 +269,15 @@ function issue(
   return { kind, field, detail }
 }
 
-/** Does this account take part in the allocation policy at all? */
+/**
+ * Does this account take part in the allocation policy at all?
+ *
+ * The two ways to take part are supplying dollars and being a Roth account. The
+ * second is wider than "can receive a conversion" on purpose: a designated Roth
+ * account can receive nothing, and it still decides which of the two trim
+ * reasons its owner hears. `AggregateConversionPromotionYearBalances` documents
+ * this as the exact set a snapshot must state.
+ */
 function participatesInAllocation(account: Account): boolean {
   return isConvertibleToRoth(account) || account.type === 'roth'
 }
@@ -307,6 +330,13 @@ interface PromotionBalance extends AggregateRothConversionBalance {
   readonly balance: number
 }
 
+/** One caller-supplied snapshot, with the array position it arrived at. */
+interface IndexedYearBalances {
+  readonly index: number
+  readonly year: number
+  readonly balances: Readonly<Record<string, number>>
+}
+
 /**
  * Join one year's stated balances onto the Plan's own accounts, in Plan order.
  *
@@ -317,18 +347,19 @@ interface PromotionBalance extends AggregateRothConversionBalance {
  */
 function promotionBalancesForYear(
   plan: Readonly<Plan>,
-  year: number,
-  balances: Readonly<Record<string, number>>,
+  snapshot: IndexedYearBalances,
 ): PromotionBalance[] | AggregateConversionPromotionIssue {
   const states: PromotionBalance[] = []
   for (const account of plan.accounts) {
     if (!participatesInAllocation(account)) continue
-    const balance = balances[account.id]
+    const balance = snapshot.balances[account.id]
     if (typeof balance !== 'number' || !Number.isFinite(balance) || balance < 0) {
       return issue(
         'missingAccountBalance',
-        `yearBalances.${year}.balances.${account.id}`,
-        'Every convertible and Roth account needs a stated nonnegative balance for a scheduled year.',
+        // The caller's own array position, not the year: `yearBalances` is an
+        // array, and a field path that reads like an index has to be one.
+        `yearBalances.${snapshot.index}.balances.${account.id}`,
+        `Every owned traditional and every Roth account needs a stated nonnegative balance for ${snapshot.year}.`,
       )
     }
     states.push({ account, balance })
@@ -383,7 +414,7 @@ export function chooseAggregateConversionPromotionIntents(
   // against whichever happened to be written second would answer with a
   // schedule nobody could trace back to a projection. Named year and all,
   // because the caller has to find the duplicate to remove it.
-  const balancesByYear = new Map<number, Readonly<Record<string, number>>>()
+  const balancesByYear = new Map<number, IndexedYearBalances>()
   for (const [index, entry] of yearBalances.entries()) {
     if (balancesByYear.has(entry.year)) {
       return unallocatable(years, [issue(
@@ -392,14 +423,14 @@ export function chooseAggregateConversionPromotionIntents(
         `Year ${entry.year} carries more than one balance snapshot, and which one the ledger read is unstated.`,
       )])
     }
-    balancesByYear.set(entry.year, entry.balances)
+    balancesByYear.set(entry.year, { index, year: entry.year, balances: entry.balances })
   }
   const primaryPersonId = plan.household.people[0]?.id
   if (primaryPersonId === undefined) {
     return unallocatable(years, [issue(
-      'missingAccountBalance',
+      'missingPrimaryPerson',
       'plan.household.people',
-      'A Plan with no person has no owner to allocate a conversion to.',
+      'A Plan with no person has no owner for an account the Plan records no individual owner for.',
     )])
   }
 
@@ -408,12 +439,14 @@ export function chooseAggregateConversionPromotionIntents(
     if (stated === undefined) {
       issues.push(issue(
         'missingYearBalances',
-        `yearBalances.${year}`,
-        'Every promoted year needs the balance snapshot the policy weights its owners by.',
+        // No array position to point at -- the entry the caller has to add is
+        // the one that is not there -- so the year goes in the detail.
+        'yearBalances',
+        `Year ${year} is promoted with no balance snapshot for the policy to weight its owners by.`,
       ))
       continue
     }
-    const balances = promotionBalancesForYear(plan, year, stated)
+    const balances = promotionBalancesForYear(plan, stated)
     if (!Array.isArray(balances)) {
       issues.push(balances)
       continue
