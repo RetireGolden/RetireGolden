@@ -37,8 +37,14 @@ import { deriveActionStructuralId } from './structuralId.js'
  *   `rothConversionExecution.ts` still publishes `unsupported` with null
  *   figures for the linked-withdrawal arm. Neither reads anything below.
  * - This module is not exported from `actions/index.ts` and is not a package
- *   subpath, so nothing outside the engine can reach it either. The slice that
- *   writes the first consumer publishes it.
+ *   subpath, so no builder or record type below can be reached from outside the
+ *   engine. The slice that writes the first consumer publishes it. One
+ *   exception, and it is a value shape rather than a capability:
+ *   `ConversionTaxFundingExactCentAmount` is re-exported by
+ *   `projection/simulate.ts`, because the counterfactual annual pass hands one
+ *   to a caller through a published option and an amount nobody can name is
+ *   not a surface. Nothing that builds, validates or parses an evidence record
+ *   travels with it.
  *
  * Two conventions differ from the specification this implements, and both are
  * the surrounding code's conventions rather than deviations of convenience.

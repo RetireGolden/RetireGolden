@@ -242,6 +242,42 @@ export interface SimulateAnnualCounterfactualRequest {
 }
 
 /**
+ * The counterfactual option's own vocabulary, republished from the module that
+ * owns it.
+ *
+ * A published option that hands a caller a value it cannot name is only half a
+ * surface. `SimulateOptions` reaches consumers through the package root and
+ * through `@retiregolden/engine/projection/simulate`, while the definitions
+ * below sit in `internal/` and in two `actions/` modules that are deliberately
+ * not package subpaths — so without this a consumer could receive a reading and
+ * still have no way to declare a variable for it, short of a deep import the
+ * exports map refuses. Re-exporting is the answer rather than opening those
+ * subpaths: what the option promises is nameable, and nothing else about the
+ * modules behind it becomes reachable. The counterfactual driver itself, the
+ * liability-run identity minter, and the conversion tax-funding evidence
+ * builder all stay where they are, unreachable, until the slice that writes
+ * their first consumer publishes them.
+ *
+ * Types only, and deliberately: a re-exported constructor would be a capability
+ * escaping ahead of its consumer.
+ */
+export type {
+  CounterfactualAnnualLiabilityComponents,
+  CounterfactualAnnualLiabilityRead,
+  CounterfactualAnnualLiabilityRefusalKind,
+  CounterfactualAnnualLiabilityRefused,
+  CounterfactualAnnualLiabilityResult,
+} from '../internal/counterfactualAnnualLiability.js'
+export type {
+  AnnualLiabilityRunBinding,
+  AnnualLiabilityRunIdentity,
+  AnnualLiabilityRunTaxInput,
+  AnnualLiabilityRunTaxInputValue,
+} from '../actions/annualLiabilityRunIdentity.js'
+export type { ConversionTaxFundingExactCentAmount } from
+  '../actions/conversionTaxFundingEvidence.js'
+
+/**
  * The omission an ordinary annual pass makes: none.
  *
  * Module-level and shared so an ordinary pass allocates no set, and frozen at
