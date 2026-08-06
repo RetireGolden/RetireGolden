@@ -2154,6 +2154,82 @@ describe('annual retirement-action publication', () => {
     })).toThrow(/funding linkage differs/i)
   })
 
+  it('refuses a contested shared withdrawal instead of throwing on it', () => {
+    // Two conversions naming one withdrawal used to abort the publication, and
+    // with it the whole projection. It is a Plan that is wrong rather than
+    // incoherent — the contract's word is "dedicated", and a withdrawal two
+    // conversions name is dedicated to neither — so it refuses in the simulator
+    // now and publishes three still records.
+    //
+    // Note what could not have worked. Softening only the multiplicity clause
+    // would not have reached this shape: `purpose.referenceId` is
+    // single-valued, so the second conversion also fails the back-reference
+    // clause, and the publication would have gone on throwing for the same Plan
+    // under a message naming the wrong defect. Multiplicity therefore gates the
+    // whole request-shape check.
+    const [withdrawal, conversion] = linkedConversionPair(
+      'contested-conversion-a',
+      'contested-withdrawal',
+    )
+    const second = request('rothConversion', 'contested-conversion-b', '2030-06-02', 2)
+    if (second.kind !== 'rothConversion') throw new Error('fixture drift')
+    second.taxFunding = {
+      kind: 'linkedWithdrawal',
+      withdrawalActionId: withdrawal.actionId,
+    }
+    // `unallocated` is classified `refused`, so every record carrying it is a
+    // refused record — the classification and the outcome are one statement,
+    // and the disposition schema is what enforces that they agree.
+    const contestedReason = createActionReason('conversion-tax-funding-unallocated')
+    const contestedRecord = (
+      action: RetirementActionRequest,
+    ): Omit<AnnualRetirementActionRecord, 'executorSource'> => ({
+      ...record(action),
+      outcome: 'refused',
+      reasons: [contestedReason],
+    })
+    const withdrawalRecord = contestedRecord(withdrawal)
+    const publish = (
+      conversionRecord: Omit<AnnualRetirementActionRecord, 'executorSource'>,
+      secondRecord: Omit<AnnualRetirementActionRecord, 'executorSource'>,
+      withdrawalSourceRecord = withdrawalRecord,
+    ) => publishAnnualRetirementActions({
+      taxYear: 2030,
+      requests: [withdrawal, conversion, second],
+      sources: [
+        source('ordinaryWithdrawalExecutor', [withdrawalSourceRecord]),
+        source('rothConversionExecutor', [conversionRecord, secondRecord]),
+      ],
+    })
+
+    const published = publish(
+      contestedRecord(conversion),
+      contestedRecord(second),
+    )
+
+    expect(published?.records.map((entry) => entry.actionId).sort())
+      .toEqual([
+        'contested-conversion-a',
+        'contested-conversion-b',
+        'contested-withdrawal',
+      ])
+    expect(published?.records.every((entry) => entry.executedAmount === 0))
+      .toBe(true)
+
+    // And the stillness is the assertion that replaced the throw. A leg of a
+    // contest that moved has taken dollars a second conversion was also
+    // counting on, which is the one thing publication must never certify —
+    // and it is a defect in an executor rather than in the Plan, so it still
+    // aborts.
+    expect(() => publish(executedRecord(conversion), contestedRecord(second)))
+      .toThrow(/contested linked conversion funding moved/i)
+    expect(() => publish(
+      contestedRecord(conversion),
+      contestedRecord(second),
+      executedRecord(withdrawal),
+    )).toThrow(/contested linked conversion funding moved/i)
+  })
+
   it('publishes executed linked funding from generic sources independent of order', () => {
     const [withdrawal, conversion] = linkedConversionPair(
       'executed-linked-conversion',
@@ -2387,18 +2463,13 @@ describe('annual retirement-action publication', () => {
       [wrongReferenceWithdrawal, wrongReferenceConversion],
     ])
 
-    const [sharedWithdrawal, firstConversion] = linkedConversionPair(
-      'first-shared-conversion',
-      'shared-withdrawal',
-    )
-    const [, secondConversion] = linkedConversionPair(
-      'second-shared-conversion',
-      'shared-withdrawal',
-    )
-    malformedCases.push([
-      'ambiguous target',
-      [sharedWithdrawal, firstConversion, secondConversion],
-    ])
+    // The 'ambiguous target' case -- two conversions naming one withdrawal --
+    // used to belong to this list and no longer does. It is the one malformed
+    // shape that is wrong rather than incoherent: every leg is individually
+    // well formed, and what it violates is the contract's word "dedicated". It
+    // now refuses in the simulator instead of aborting the publication; see
+    // 'refuses a contested shared withdrawal instead of throwing on it', which
+    // also pins the assertion that replaced the throw.
 
     for (const [label, requests] of malformedCases) {
       for (const orderedRequests of [requests, [...requests].reverse()]) {

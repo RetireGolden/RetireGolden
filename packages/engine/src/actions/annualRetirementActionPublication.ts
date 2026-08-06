@@ -1281,33 +1281,45 @@ function conversionIdsByLinkedWithdrawalId(
 }
 
 /**
- * The five request-shape clauses a linked pair must satisfy, each still a
- * throw.
+ * The request-shape clauses an uncontested linked pair must satisfy, each still
+ * a throw.
  *
  * A conversion whose named withdrawal is absent, is not an ordinary withdrawal,
  * belongs to another person or year, is not a tax payment, or does not point
  * back is a Plan that contradicts itself about what the withdrawal is for.
  * Nothing downstream can publish a coherent record for it, so it aborts.
  *
- * The sixth clause used to live here and no longer does. Multiplicity — two
- * conversions naming one withdrawal — is a Plan that is merely *wrong* rather
- * than incoherent: every leg is individually well formed, and the contract's
- * word for what it violates is "dedicated". A malformed plan should refuse in
- * the simulator rather than crash it, so the group verdict now refuses the
- * whole contested set on the merits and this function's obligation is reduced
- * to proving that nothing moved — see
- * `assertContestedLinkedWithdrawalRecordsStill`.
+ * What changed is the multiplicity case, and the change is that it leaves here
+ * entirely rather than that one clause of it softens. Two conversions naming
+ * one withdrawal is a Plan that is merely *wrong* rather than incoherent: every
+ * leg is individually well formed, and the contract's word for what it violates
+ * is "dedicated". A malformed plan should refuse in the simulator rather than
+ * crash it, so the group verdict refuses the whole contested set on the merits
+ * and what remains here is `assertContestedLinkedWithdrawalRecordsStill`.
+ *
+ * Softening only the multiplicity clause would have accomplished nothing, and
+ * the reason is worth stating because it is not obvious. `purpose.referenceId`
+ * is single-valued, so at most one of two contesting conversions can hold the
+ * withdrawal's back-reference — the other one *necessarily* fails the
+ * back-reference clause as well. A contest that stopped throwing on
+ * multiplicity would therefore have gone on throwing on the very next clause,
+ * for the same shape, with a message naming the wrong defect. So multiplicity
+ * gates the whole check: within a contested set the back-reference cannot be
+ * satisfied by construction, and asserting it would be asserting something the
+ * contest has already made impossible.
  */
 function assertLinkedWithdrawalRequests(
   requests: readonly Readonly<RetirementActionRequest>[],
   requestById: ReadonlyMap<ActionId, Readonly<RetirementActionRequest>>,
 ): void {
+  const conversionIdsByWithdrawalId = conversionIdsByLinkedWithdrawalId(requests)
   for (const request of requests) {
     if (
       request.kind !== 'rothConversion' ||
       request.taxFunding.kind !== 'linkedWithdrawal'
     ) continue
     const withdrawalId = request.taxFunding.withdrawalActionId
+    if ((conversionIdsByWithdrawalId.get(withdrawalId)?.length ?? 0) > 1) continue
     const withdrawal = requestById.get(withdrawalId)
     if (
       withdrawal?.kind !== 'ordinaryWithdrawal' ||
