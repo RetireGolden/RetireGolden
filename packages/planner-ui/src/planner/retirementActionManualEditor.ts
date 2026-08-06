@@ -45,9 +45,6 @@ export type ConversionTaxFundingChoice =
   | 'noneExpected'
   | 'conversionPrincipalWithholding'
 
-export const RETIREMENT_ACTION_CONVERSION_EXECUTOR_BOUNDARY =
-  'Roth-conversion review cannot be completed until canonical conversion movement is executable. This migrated conversion remains under review.'
-
 /**
  * Every blank is intentional. A migrated aggregate action has no trustworthy
  * person/account/date/sequence identity to seed these controls from.
@@ -210,9 +207,63 @@ function hasUnambiguousProjectedTaxUnit(
 }
 
 /**
- * Preview every action in the replacement's year through the canonical exact-
- * cent executor. This catches chronology, proportional taxable-basis rounding,
- * and annual Plan-number totals before the migrated row is removed.
+ * Preview a reviewed conversion through the projection that will execute it.
+ *
+ * A named conversion's own executor refuses without owner-wide annual evidence
+ * it cannot produce for itself: the Form 8606 aggregated-IRA basis numerator
+ * and the Treas. Reg. 1.408A-4 A-6 required-distribution outcome are both
+ * supplied by `simulatePlan`, from state that only exists once the action year
+ * has been reached. So there is no honest same-tick preflight for this arm the
+ * way there is for a withdrawal, and inventing one here would mean asserting
+ * the two facts the executor exists to refuse without. The projection is the
+ * preview, and the refusal it publishes is carried out in the engine's words.
+ */
+function reviewedConversionExecutionIssue(
+  plan: Readonly<Plan>,
+  replacement: Extract<RetirementActionRequest, { kind: 'rothConversion' }>,
+  projectionStartYear: number,
+  taxCalculator: TaxCalculator,
+): string | null {
+  if (replacement.year < projectionStartYear) {
+    return `The reviewed conversion is scheduled before the current projection starts in ${projectionStartYear}, so its action-year source state cannot be established. The migrated row remains under review.`
+  }
+  let years: ReturnType<typeof simulatePlan>['years']
+  try {
+    years = simulatePlan(structuredClone(plan), {
+      startYear: projectionStartYear,
+      horizonEndYear: replacement.year,
+      taxCalculator,
+    }).years
+  } catch {
+    return 'The reviewed conversion could not be previewed through its projected action-year source state. The migrated row remains under review.'
+  }
+  const evidence = years
+    .find((year) => year.year === replacement.year)
+    ?.rothConversionActionExecution
+    ?.evidence.find((entry) => entry.actionId === replacement.actionId)
+  if (evidence === undefined) {
+    return `The projection published no execution record for the reviewed conversion in ${replacement.year}. The migrated row remains under review.`
+  }
+  if (
+    evidence.readiness === 'actionable' &&
+    evidence.executedAmount === replacement.requestedAmount
+  ) {
+    return null
+  }
+  const reasons = [...new Set(evidence.reasons.map((reason) => reason.message))]
+  const stated = reasons.length === 0 ? '' : ` ${reasons.join(' ')}`
+  return `The reviewed conversion would move no funds in ${replacement.year}.${stated}`
+}
+
+/**
+ * Preview the replacement's year on the already-superseded candidate plan,
+ * before that plan is offered for saving. A withdrawal replacement runs the
+ * canonical exact-cent executor directly; a conversion replacement runs the
+ * projection and reads the execution record it published, because the
+ * executor's Form 8606 basis numerator and RMD outcome only exist inside a
+ * projected year. Either way this catches chronology, proportional
+ * taxable-basis rounding, and annual Plan-number totals before anything is
+ * saved.
  */
 export function retirementActionManualExecutionIssue(
   plan: Readonly<Plan>,
@@ -223,7 +274,18 @@ export function retirementActionManualExecutionIssue(
   const replacements = plan.strategies.retirementActions.filter(
     (action) => action.actionId === replacementActionId,
   )
-  if (replacements.length !== 1 || replacements[0]!.kind !== 'ordinaryWithdrawal') {
+  if (replacements.length !== 1) {
+    return 'The reviewed replacement could not be identified for exact-cent execution preview.'
+  }
+  if (replacements[0]!.kind === 'rothConversion') {
+    return reviewedConversionExecutionIssue(
+      plan,
+      replacements[0]!,
+      projectionStartYear,
+      taxCalculator,
+    )
+  }
+  if (replacements[0]!.kind !== 'ordinaryWithdrawal') {
     return 'The reviewed replacement could not be identified for exact-cent execution preview.'
   }
   const replacement = replacements[0]!
@@ -504,6 +566,38 @@ export function retirementActionManualSourceSupportIssue(
     : null
 }
 
+export function retirementActionManualDestinationCandidate(
+  account: Plan['accounts'][number],
+): boolean {
+  return account.type === 'roth' && account.kind === 'ira'
+}
+
+/**
+ * The destination refusals the canonical allocator's conversion arm makes,
+ * stated here in the surface's own words so a household reads them beside the
+ * control that answers them rather than after a save that could never land.
+ * Each one enforces the same condition as a `conversionDestinationIssue`
+ * refusal; the wording is this surface's own, not the allocator's.
+ */
+export function retirementActionManualDestinationSupportIssue(
+  account: Plan['accounts'][number],
+  actingPersonId: string,
+): string | null {
+  if (account.ownerPersonId === null) {
+    return 'This jointly owned Roth destination does not record the individual owner identity a conversion requires.'
+  }
+  if (account.ownerPersonId !== actingPersonId) {
+    return 'This Roth destination account is owned by a different household member than the selected person.'
+  }
+  if (account.type !== 'roth') {
+    return 'A conversion destination must be a Roth account.'
+  }
+  if (account.kind !== 'ira') {
+    return 'Employer Roth destinations are not supported until same-plan evidence is modeled. Choose a Roth IRA.'
+  }
+  return null
+}
+
 export function positiveDollarsToCents(
   value: number | null,
 ): ReturnType<typeof asPositiveUsdCents> | null {
@@ -597,9 +691,24 @@ export function buildRetirementActionManualIntent(
   if (target.kind === 'legacyAggregateWithdrawal') {
     if (draft.withdrawalPurpose === '') issues.push('Choose the withdrawal purpose.')
   } else {
-    issues.push(RETIREMENT_ACTION_CONVERSION_EXECUTOR_BOUNDARY)
-    if (draft.destinationRothAccountId.trim() === '') {
+    const destinationSelected = draft.destinationRothAccountId.trim() !== ''
+    const selectedDestinationMatches = destinationSelected
+      ? plan.accounts.filter(
+          (account) => account.id === draft.destinationRothAccountId,
+        )
+      : []
+    if (!destinationSelected) {
       issues.push('Choose the exact Roth destination account.')
+    } else if (selectedDestinationMatches.length === 0) {
+      issues.push('The selected Roth destination account is no longer available in this Plan. Choose the exact destination account again.')
+    } else if (selectedDestinationMatches.length !== 1) {
+      issues.push('The selected Roth destination account ID is duplicated in this Plan. Choose a unique destination account.')
+    } else {
+      const destinationIssue = retirementActionManualDestinationSupportIssue(
+        selectedDestinationMatches[0]!,
+        draft.personId,
+      )
+      if (destinationIssue !== null) issues.push(destinationIssue)
     }
     if (draft.conversionTaxFunding === '') {
       issues.push('Choose how conversion taxes are funded.')

@@ -9,15 +9,23 @@ import {
   ledgerCentsToPlanDollars,
   planDollarsToLedgerCents,
 } from '@retiregolden/engine/actions/planBalanceAdapter'
+import {
+  reviewAndReplaceRetirementActionManually,
+} from '@retiregolden/engine/actions/retirementActionManualReview'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import { createFlatTaxCalculator } from '@retiregolden/engine/projection/flatTax'
-import { couplePlan } from '@retiregolden/engine/testing/planFixtures'
+import { simulatePlan } from '@retiregolden/engine/projection/simulate'
+import {
+  couplePlan,
+  singlePersonPlan,
+  validatePlan,
+} from '@retiregolden/engine/testing/planFixtures'
 
 import {
   buildRetirementActionManualIntent,
   emptyRetirementActionManualEditorDraft,
   formatPositiveUsdCents,
-  RETIREMENT_ACTION_CONVERSION_EXECUTOR_BOUNDARY,
+  retirementActionManualDestinationSupportIssue,
   retirementActionManualExecutionIssue,
   retirementActionManualPersonSupportIssue,
   retirementActionManualSourceSupportIssue,
@@ -107,6 +115,16 @@ const supportedPlan: Pick<
       annualReturnPct: null,
       kind: 'ira',
       balance: 100_000,
+      annualContribution: 0,
+    },
+    {
+      type: 'roth',
+      id: 'roth-a',
+      name: 'Roth IRA',
+      ownerPersonId: 'person-a',
+      annualReturnPct: null,
+      kind: 'ira',
+      balance: 10_000,
       annualContribution: 0,
     },
   ],
@@ -247,7 +265,6 @@ describe('buildRetirementActionManualIntent', () => {
     )).toEqual({
       ok: false,
       issues: [
-        RETIREMENT_ACTION_CONVERSION_EXECUTOR_BOUNDARY,
         'Choose the exact Roth destination account.',
         'Enter a positive exact-cent tax-funding amount.',
         'Confirm that the external cash is available for conversion taxes.',
@@ -266,9 +283,89 @@ describe('buildRetirementActionManualIntent', () => {
       supportedPlan,
     )
     expect(built).toEqual({
-      ok: false,
-      issues: [RETIREMENT_ACTION_CONVERSION_EXECUTOR_BOUNDARY],
+      ok: true,
+      intent: {
+        kind: 'rothConversion',
+        year: 2034,
+        executionDate: '2034-06-15',
+        executionSequence: 1,
+        requestedAmount: target.requestedAmount,
+        personId: 'person-a',
+        provenance: { source: 'manual' },
+        sourceAllocations: [{
+          sourceAccountId: 'ira-a',
+          requestedAmount: target.requestedAmount,
+        }],
+        destinationRothAccountId: 'roth-a',
+        taxFunding: { kind: 'externalCash', amount: 7, attested: true },
+      },
     })
+  })
+
+  it('refuses every Roth destination the canonical allocator would refuse', () => {
+    const target = migrated('legacyAggregateRothConversion')
+    const draft = {
+      ...emptyRetirementActionManualEditorDraft(),
+      personId: 'person-a',
+      sourceAccountId: 'ira-a',
+      fullSourceAmountConfirmed: true,
+      executionDate: '2034-06-15',
+      executionSequence: '1',
+      conversionTaxFunding: 'noneExpected' as const,
+    }
+    const issuesFor = (destinationRothAccountId: string, accounts = supportedPlan.accounts) => {
+      const result = buildRetirementActionManualIntent(
+        target,
+        { ...draft, destinationRothAccountId },
+        [],
+        { ...supportedPlan, accounts },
+      )
+      return result.ok ? [] : result.issues
+    }
+    const withDestination = (
+      overrides: Partial<Plan['accounts'][number]>,
+    ): Plan['accounts'] => [
+      supportedPlan.accounts[1]!,
+      { ...supportedPlan.accounts[2]!, ...overrides } as Plan['accounts'][number],
+    ]
+
+    expect(issuesFor('')).toEqual(['Choose the exact Roth destination account.'])
+    expect(issuesFor('roth-missing')).toEqual([
+      'The selected Roth destination account is no longer available in this Plan. Choose the exact destination account again.',
+    ])
+    expect(issuesFor('roth-a', [
+      supportedPlan.accounts[1]!,
+      supportedPlan.accounts[2]!,
+      supportedPlan.accounts[2]!,
+    ])).toEqual([
+      'The selected Roth destination account ID is duplicated in this Plan. Choose a unique destination account.',
+    ])
+    expect(issuesFor('roth-a', withDestination({ ownerPersonId: null }))).toEqual([
+      'This jointly owned Roth destination does not record the individual owner identity a conversion requires.',
+    ])
+    expect(issuesFor('roth-a', withDestination({ ownerPersonId: 'person-b' }))).toEqual([
+      'This Roth destination account is owned by a different household member than the selected person.',
+    ])
+    expect(issuesFor('roth-a', withDestination({ kind: 'employer' }))).toEqual([
+      'Employer Roth destinations are not supported until same-plan evidence is modeled. Choose a Roth IRA.',
+    ])
+    expect(issuesFor('ira-a')).toEqual(['A conversion destination must be a Roth account.'])
+    expect(issuesFor('roth-a')).toEqual([])
+  })
+
+  it('states the destination support matrix the allocator enforces', () => {
+    const roth = supportedPlan.accounts[2]!
+    expect(retirementActionManualDestinationSupportIssue(roth, 'person-a')).toBeNull()
+    expect(retirementActionManualDestinationSupportIssue(
+      { ...roth, ownerPersonId: null },
+      'person-a',
+    )).toBe(
+      'This jointly owned Roth destination does not record the individual owner identity a conversion requires.',
+    )
+    expect(retirementActionManualDestinationSupportIssue(
+      supportedPlan.accounts[0]!,
+      'person-a',
+    )).toBe('A conversion destination must be a Roth account.')
   })
 
   it('keeps conversion-principal withholding explicitly unsupported and non-saveable', () => {
@@ -292,7 +389,6 @@ describe('buildRetirementActionManualIntent', () => {
     expect(result).toEqual({
       ok: false,
       issues: [
-        RETIREMENT_ACTION_CONVERSION_EXECUTOR_BOUNDARY,
         'Conversion-principal withholding is not supported. Choose external cash or no tax funding expected.',
       ],
     })
@@ -314,7 +410,7 @@ describe('buildRetirementActionManualIntent', () => {
         kind: 'employer',
         balance: 100_000,
         annualContribution: 0,
-      }],
+      }, supportedPlan.accounts[2]!],
       retirementActionEligibilityFacts: undefined,
     }
 
@@ -336,7 +432,6 @@ describe('buildRetirementActionManualIntent', () => {
       ok: false,
       issues: [
         'Employer-plan conversion sources are not supported until plan-availability evidence is modeled. Choose a traditional IRA.',
-        RETIREMENT_ACTION_CONVERSION_EXECUTOR_BOUNDARY,
       ],
     })
   })
@@ -844,6 +939,137 @@ function executionPreviewPlan(): Plan {
   return plan
 }
 
+const CONVERSION_YEAR = 2034
+
+/**
+ * A Plan carrying exactly one migrated aggregate conversion, with the source
+ * IRA classified and a Roth IRA destination the same person owns. Returns are
+ * flat and spending is nil so the only movement in the projection is the one
+ * under review.
+ */
+function conversionReviewPlan(options: { iraBalanceDollars?: number } = {}): {
+  plan: Plan
+  target: ReturnType<typeof migrated>
+} {
+  const plan = singlePersonPlan({ planningAge: 100, dob: '1970-01-01' })
+  plan.id = 'migrated-conversion-review'
+  plan.accounts = [
+    {
+      type: 'traditional', id: 'ira-a', name: 'Traditional IRA', ownerPersonId: 'p1',
+      annualReturnPct: 0, kind: 'ira',
+      balance: options.iraBalanceDollars ?? 100_000, annualContribution: 0,
+    },
+    {
+      type: 'roth', id: 'roth-a', name: 'Roth IRA', ownerPersonId: 'p1',
+      annualReturnPct: 0, kind: 'ira', balance: 0, annualContribution: 0,
+    },
+  ]
+  plan.retirementActionEligibilityFacts = {
+    iraClassifications: [{
+      evidenceId: 'ira-a-classification',
+      provenance: { source: 'manual' },
+      sourceAccountId: 'ira-a',
+      subtype: 'traditional',
+    }],
+    sepSimpleActivities: [],
+    deductibleIraContributions: [],
+  }
+  plan.strategies.rothConversion = { mode: 'none' }
+  const target = migrated('legacyAggregateRothConversion')
+  plan.strategies.retirementActions = [target]
+  return { plan: validatePlan(plan), target }
+}
+
+const conversionReviewDraft = {
+  ...emptyRetirementActionManualEditorDraft(),
+  personId: 'p1',
+  sourceAccountId: 'ira-a',
+  destinationRothAccountId: 'roth-a',
+  fullSourceAmountConfirmed: true,
+  executionDate: '2034-06-15',
+  executionSequence: '1',
+  conversionTaxFunding: 'noneExpected' as const,
+}
+
+/** Build the intent, then replace the migrated row through the engine. */
+function completeConversionReview(plan: Plan, target: ReturnType<typeof migrated>) {
+  const built = buildRetirementActionManualIntent(
+    target,
+    conversionReviewDraft,
+    plan.strategies.retirementActions,
+    plan,
+  )
+  if (!built.ok) throw new Error(built.issues.join('; '))
+  const result = reviewAndReplaceRetirementActionManually({
+    plan,
+    targetActionId: target.actionId,
+    replacementIntent: built.intent,
+  })
+  if (result.status !== 'replacementReady') {
+    throw new Error(result.issues.map((entry) => entry.detail).join('; '))
+  }
+  return result
+}
+
+describe('migrated aggregate conversion replacement', () => {
+  it('supersedes the migrated row with one named conversion in its place', () => {
+    const { plan, target } = conversionReviewPlan()
+    const result = completeConversionReview(plan, target)
+
+    expect(result.replacement.kind).toBe('rothConversion')
+    expect(result.plan.strategies.retirementActions).toHaveLength(1)
+    expect(result.plan.strategies.retirementActions[0]).toEqual(result.replacement)
+    expect(result.plan.strategies.retirementActions.some(
+      (action) => action.actionId === target.actionId,
+    )).toBe(false)
+    expect(result.evidence.targetOmittedBeforeAllocation).toBe(true)
+    expect(result.evidence.target.actionId).toBe(target.actionId)
+
+    const replacement = result.replacement
+    if (replacement.kind !== 'rothConversion') throw new Error('expected a conversion')
+    expect(replacement.year).toBe(CONVERSION_YEAR)
+    expect(replacement.personId).toBe('p1')
+    expect(replacement.executionDate).toBe('2034-06-15')
+    expect(replacement.executionSequence).toBe(1)
+    expect(replacement.requestedAmount).toBe(DEFAULT_REQUESTED_AMOUNT)
+    expect(replacement.destinationRothAccountId).toBe('roth-a')
+    expect(replacement.taxFunding).toEqual({ kind: 'noneExpected' })
+    expect(replacement.provenance).toEqual({ source: 'manual' })
+    expect(replacement.allocations).toHaveLength(1)
+    expect(replacement.allocations[0]!.sourceAccountId).toBe('ira-a')
+    expect(replacement.allocations[0]!.requestedAmount).toBe(DEFAULT_REQUESTED_AMOUNT)
+  })
+
+  it('moves the exact cents out of the IRA and into the Roth in the projection', () => {
+    const { plan, target } = conversionReviewPlan()
+    const result = completeConversionReview(plan, target)
+
+    const year = simulatePlan(structuredClone(result.plan) as Plan, {
+      startYear: CONVERSION_YEAR,
+      horizonEndYear: CONVERSION_YEAR,
+      taxCalculator: noTax,
+    }).years.find((entry) => entry.year === CONVERSION_YEAR)
+    const execution = year?.rothConversionActionExecution
+    expect(execution?.committed).toBe(true)
+
+    const evidence = execution!.evidence.find(
+      (entry) => entry.actionId === result.replacement.actionId,
+    )!
+    expect(evidence.readiness).toBe('actionable')
+    expect(evidence.outcome).toBe('executed')
+    expect(evidence.reasons).toEqual([])
+    expect(evidence.executedAmount).toBe(123_456)
+    expect(evidence.destinationCreditAmount).toBe(123_456)
+    expect(evidence.executedDate).toBe('2034-06-15')
+
+    expect(execution!.balances).toEqual([
+      { accountId: 'ira-a', openingBalance: 10_000_000, closingBalance: 9_876_544 },
+      { accountId: 'roth-a', openingBalance: 0, closingBalance: 123_456 },
+    ])
+    expect(year!.rothConversion).toBe(1_234.56)
+  })
+})
+
 describe('retirementActionManualExecutionIssue', () => {
   it('uses executor basis rounding to reject an unrepresentable taxable closing basis', () => {
     const plan = executionPreviewPlan()
@@ -980,6 +1206,47 @@ describe('retirementActionManualExecutionIssue', () => {
       noTax,
     )).toBe(
       'The reviewed withdrawal would execute no funds from its projected action-year source state after prior-year activity. Choose another source or keep the migrated row under review.',
+    )
+  })
+
+  it('accepts a reviewed conversion whose projection commits the movement', () => {
+    const { plan, target } = conversionReviewPlan()
+    const result = completeConversionReview(plan, target)
+
+    expect(retirementActionManualExecutionIssue(
+      result.plan,
+      result.replacement.actionId,
+      CONVERSION_YEAR,
+      noTax,
+    )).toBeNull()
+  })
+
+  it('carries the projection refusal out verbatim when the source cannot fund it', () => {
+    const { plan, target } = conversionReviewPlan({ iraBalanceDollars: 500 })
+    const result = completeConversionReview(plan, target)
+
+    expect(retirementActionManualExecutionIssue(
+      result.plan,
+      result.replacement.actionId,
+      CONVERSION_YEAR,
+      noTax,
+    )).toBe(
+      'The reviewed conversion would move no funds in 2034. ' +
+        'The named conversion source had less available; no principal disappeared.',
+    )
+  })
+
+  it('refuses a reviewed conversion scheduled before the projection starts', () => {
+    const { plan, target } = conversionReviewPlan()
+    const result = completeConversionReview(plan, target)
+
+    expect(retirementActionManualExecutionIssue(
+      result.plan,
+      result.replacement.actionId,
+      CONVERSION_YEAR + 1,
+      noTax,
+    )).toBe(
+      'The reviewed conversion is scheduled before the current projection starts in 2035, so its action-year source state cannot be established. The migrated row remains under review.',
     )
   })
 
