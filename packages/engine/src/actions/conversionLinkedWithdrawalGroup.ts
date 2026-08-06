@@ -158,11 +158,27 @@ export interface ConversionLinkedWithdrawalGroupAuthorization {
  * carried as identity rather than read as constraints. That is deliberate and
  * preserved from the scan this replaced: narrowing membership to a shared
  * person-year would stop refusing the cross-year withdrawal and thereby
- * release it to move, which is a money decision and not this slice's. The
- * consequence — a cross-year pair that refuses here and then throws in
- * publication, because one year's published requests cannot contain the other
- * year's conversion — is a pre-existing latent crash, flagged in the pull
- * request description as its own slice.
+ * release it to move, which is a money decision and not this function's.
+ *
+ * **Scoping the candidate set is the caller's job, and it is not optional.**
+ * Because there is no year predicate here, a caller that hands over more than
+ * one year's requests gets one annual group spanning all of them — every year's
+ * conversion in every year's member set, every year's pair inside an
+ * all-or-nothing release. The simulator learned this the hard way and now
+ * assesses each annual pass over that year's actions alone; so does
+ * `actions/execution.ts`, whose own completeness check is keyed on the year it
+ * is executing.
+ *
+ * The cross-year pair itself is closed at the schema. `parsePlan` requires a
+ * conversion's linked withdrawal to resolve to exactly one *same-person,
+ * same-year* ordinary withdrawal whose `taxPayment` purpose references that
+ * conversion back, so no validated Plan can carry one. What remains, and is
+ * worth naming rather than declaring solved: a Plan handed straight to
+ * `simulatePlan` without validation can still carry the shape, and it still
+ * aborts in publication — `assertLinkedWithdrawalRequests` cannot resolve a
+ * withdrawal that one year's published requests do not contain. That is a
+ * pre-existing crash on an unvalidated Plan, unreachable through the front
+ * door, and its own slice.
  */
 interface ConversionLinkedWithdrawalGroupVerdictBase {
   /** Structural identity of the assessed group, derived from its members. */

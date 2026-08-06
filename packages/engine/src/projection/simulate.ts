@@ -2971,10 +2971,18 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
        * Three modes and they are not three degrees of the same permission.
        *
        * `refuseAll` is every run that has nothing to release: the
-       * counterfactual, the two fallbacks after a rolled-back settlement, and
-       * the committed run of any year whose staging did not prove out. It is
-       * the default, so a new call site refuses by omission rather than by
-       * remembering to.
+       * counterfactual, the staging run of a year that could read no `T0` or
+       * whose staging did not prove out, and any caller that says nothing at
+       * all. It is the default, so a new call site refuses by omission rather
+       * than by remembering to.
+       *
+       * Note which runs are *not* on that list. The two settlement fallbacks —
+       * after a rolled-back settlement, and when the settlement feature is off
+       * — both go through `linkedGroupPermissionForAttempt([])` like every
+       * other committed run, so each stages under the empty assumption vector
+       * and can be handed `proven`. A fallback is a different assumption
+       * vector, not a lesser permission: the group either proved out under the
+       * vector the run actually used or it did not.
        *
        * `stageProvisionally` belongs to the discarded staging run alone. It
        * releases every uncontested group whose two legs are fundable from the
@@ -3707,16 +3715,40 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // can derive the same groups the other would, and a group spanning a Plan
     // action and an in-flight one is visible to neither. Both are given this
     // one verdict so the pair cannot be answered two ways within a year.
-    // The Plan half of this set is `passRetirementActions`, not the Plan's own
-    // array: a counterfactual that removed a conversion from the executors but
-    // left it visible here would still have its group assessed, and the group
-    // verdict is what both executors answer to.
+    // The Plan half of this set is `currentYearActions` — `passRetirementActions`
+    // narrowed to this year — and both halves of that matter.
+    //
+    // It is `passRetirementActions` rather than the Plan's own array because a
+    // counterfactual that removed a conversion from the executors but left it
+    // visible here would still have its group assessed, and the group verdict
+    // is what both executors answer to.
+    //
+    // It is narrowed to this year because a pass may only answer for the year
+    // it is running. `assessConversionLinkedWithdrawalGroups` has no year
+    // predicate of its own — membership is read off the conversion side alone —
+    // so handing it the Plan's whole multi-year array made every year's groups
+    // a member of every year's annual group. Two independent consequences
+    // followed and either alone was fatal: another year's conversion has no
+    // execution evidence in this one, so its `allocationWeight` is null and the
+    // whole annual evaluation refuses `allocationWeightUnavailable`; and the
+    // release is all-or-nothing across the candidate set, so the other year's
+    // pair had to be authorized too, whereupon `withdrawalLegsMovedWhole` found
+    // no withdrawal evidence for it and revoked every release. A plan holding
+    // one self-funding pair in each of two years could therefore never move
+    // either of them. The all-or-nothing rule is right and stays; it is a rule
+    // about one filing unit in one year, and the set was what was wrong.
+    //
+    // This is also what makes the omission set above honest. It is already
+    // keyed on `request.year === year`, and its docblock claims the assessment
+    // "reads the same conversions out of the same array" — a claim that was
+    // false for exactly as long as this set was unscoped.
+    //
     // The baseline's availability is what decides between the two funding
     // reason codes. A run that read a `T0` held the inputs the funding question
     // needs, so a group it refuses is refused on the merits; a run that did not
     // is declining to answer, which is what `unsupported` says.
     const linkedGroupAssessmentRequests = [
-      ...passRetirementActions,
+      ...currentYearActions,
       ...currentYearOrdinaryExecutionActions,
       ...currentYearConversionActions,
     ]
@@ -3739,11 +3771,27 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      *
      * Read at the seam and not at each executor's own call site, because the
      * question a staging release has to answer is about *both* legs before
-     * *either* moves. That is sound here for one specific reason: the two legs
-     * draw from disjoint account sets — a conversion may only source an owned
-     * non-inherited traditional IRA, and an ordinary withdrawal may only source
-     * cash, equity compensation or taxable — so neither leg's movement can
-     * change the capacity the other was measured against.
+     * *either* moves.
+     *
+     * Be precise about what this read is and is not. It is **per action**, and
+     * it is **not aggregated** — not across a group's two legs, and not across
+     * groups. Disjointness holds between one group's own two legs, because a
+     * conversion may only source an owned non-inherited traditional IRA and an
+     * ordinary withdrawal may only source cash, equity compensation or taxable;
+     * that is what makes each leg's answer independent of the other's movement.
+     * It does not extend to a year holding two groups whose withdrawals draw on
+     * one cash account: each can be individually fundable while their sum is
+     * not, and this read will say yes to both.
+     *
+     * So this is a *precondition for staging*, never a proof of movement. What
+     * actually makes the release safe is that the staging run then moves the
+     * legs for real and is read for what happened: a withdrawal the account
+     * could not cover comes back short or refused,
+     * `withdrawalLegsMovedWhole` revokes, `movementCoherent` goes false, and
+     * `authorizeConversionLinkedWithdrawalGroups` withholds. The seam read
+     * earns its place by turning the common case into a clean refusal instead
+     * of a staging run that has to be discarded through a throw — not by
+     * deciding anything on its own.
      */
     const legFundableFromCurrentBalances = (
       request: Readonly<RetirementActionRequest>,
