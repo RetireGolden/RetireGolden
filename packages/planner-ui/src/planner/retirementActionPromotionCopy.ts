@@ -191,6 +191,9 @@ function formatAccountList(names: readonly string[]): string {
  * that, and a promise here would be one this surface cannot keep.
  */
 export function promotionIraFactsGapNote(accountNames: readonly string[]): string {
+  if (accountNames.length === 0) {
+    throw new RangeError('The IRA facts gap note needs at least one account to name')
+  }
   const list = formatAccountList(accountNames)
   const subject = accountNames.length === 1 ? 'this account' : 'these accounts'
   return (

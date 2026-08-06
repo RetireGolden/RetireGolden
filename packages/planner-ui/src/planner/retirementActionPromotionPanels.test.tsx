@@ -33,6 +33,7 @@ import {
   PROMOTION_NOT_COMPARABLE_FRAME,
   PROMOTION_NOT_PROMOTED_FRAME,
   PROMOTION_REPRICED_NOT_RECOMMENDED_FRAME,
+  promotionIraFactsGapNote,
 } from './retirementActionPromotionCopy'
 import { RETIREMENT_ACTION_IRA_FACTS_ANCHOR } from './sections/RetirementActionEligibilityFactsEditor'
 
@@ -322,5 +323,9 @@ describe('PromotionWithheldPanel', () => {
     expect(recorded.container.querySelector('a')).toBeNull()
     expect(recorded.container.textContent).not.toContain('IRA classification on record')
     recorded.unmount()
+  })
+
+  it('refuses to build the facts gap note with no account to name', () => {
+    expect(() => promotionIraFactsGapNote([])).toThrow(RangeError)
   })
 })
