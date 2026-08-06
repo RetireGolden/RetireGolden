@@ -96,7 +96,18 @@ describe('Owl parity oracle harness', () => {
         tournament.retirementActionReadinessVeto?.vetoedConversions,
       )
     }
-  })
+  },
+  // WHY THIS NEEDS MORE THAN THE 5s DEFAULT. Measuring the decline costs a
+  // full optimizer tournament per fixture — six of them, 102 projection runs
+  // in total — and the promotion is one of those runs per fixture, priced
+  // before the ledger declines it (measured: ~105ms of ~760ms, so the
+  // tournaments themselves are the bulk and promotion is priced exactly once
+  // each, not once per candidate). The default is not generous enough because
+  // CI runs this under v8 coverage on a slower machine: the sibling manifest
+  // test in this file measures 15.3s here and 96.6s there, a 6.3x factor that
+  // puts ~0.8s local at ~5.4s on CI. Sized against that CI figure rather than
+  // the local one, with room for runner contention.
+  30_000)
 
   it('converts every fixture plan to a deterministic Owl TOML case', () => {
     const files = owlCaseFiles()
