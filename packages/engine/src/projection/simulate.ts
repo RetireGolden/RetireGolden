@@ -6709,13 +6709,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         penaltiesPlanDollars,
       )
       if (liability === null) return null
+      const executedByActionId = new Map(
+        (retirementActionExecution?.evidence ?? []).map((evidence) =>
+          [evidence.actionId, evidence.disposition.executedAmount] as const),
+      )
       const fundingVector = conversionLinkedWithdrawalGroups.groups
         .map((group) => [
           group.conversionActionId,
           group.withdrawalActionId,
-          retirementActionExecution?.evidence.find(
-            (evidence) => evidence.actionId === group.withdrawalActionId,
-          )?.disposition.executedAmount ?? 0,
+          executedByActionId.get(group.withdrawalActionId) ?? 0,
         ])
       const minted = mintAnnualLiabilityRunIdentity({
         planId: plan.id,

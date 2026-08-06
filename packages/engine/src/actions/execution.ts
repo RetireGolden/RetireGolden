@@ -987,7 +987,7 @@ export function mergedRetirementActionSchedule(
     retirementActionRequestSchema.parse(request),
   )
   if (!Number.isSafeInteger(year) || year < 1 || year > 9999) {
-    throw new RangeError('Execution year must be a four-digit positive calendar year')
+    throw new RangeError('Execution year must be a positive calendar year no later than 9999')
   }
   const state = buildRetirementActionScheduleState(year, requests)
   return deepFreeze({
@@ -1018,7 +1018,7 @@ export function evaluateRetirementActionSchedule(
     retirementActionRequestSchema.parse(request),
   )
   if (!Number.isSafeInteger(year) || year < 1 || year > 9999) {
-    throw new RangeError('Execution year must be a four-digit positive calendar year')
+    throw new RangeError('Execution year must be a positive calendar year no later than 9999')
   }
   const state = buildRetirementActionScheduleState(year, requests)
   return deepFreeze({
@@ -1645,7 +1645,7 @@ function executeOrdinaryWithdrawalsInScope(
     }),
   )
   if (!Number.isSafeInteger(input.year) || input.year < 1 || input.year > 9999) {
-    throw new RangeError('Execution year must be a four-digit positive calendar year')
+    throw new RangeError('Execution year must be a positive calendar year no later than 9999')
   }
   const scheduleState = buildRetirementActionScheduleState(input.year, requests)
   const scheduled = scheduleState.scheduled
