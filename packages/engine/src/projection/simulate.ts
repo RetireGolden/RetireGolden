@@ -109,7 +109,10 @@ import {
   type QualifiedCharitableDistributionRequest,
   type TaxableAccountOpeningSnapshot,
 } from '../actions/index.js'
-import { allocateAggregateRothConversionByOwner } from '../actions/aggregateRothConversionOwnerAllocation.js'
+import {
+  allocateAggregateRothConversionByOwner,
+  participatesInAggregateRothConversionAllocation,
+} from '../actions/aggregateRothConversionOwnerAllocation.js'
 import { addCalendarMonths } from '../actions/civilDate.js'
 import type { NonpersistedPriorQcdOffsetEvidence } from '../strategies/accountEligibility.js'
 import { compareUtf16CodeUnits } from '../actions/structuralId.js'
@@ -4562,6 +4565,16 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }
 
     let rothConversion = 0
+    /**
+     * The snapshot the allocation policy weighted this year's owners by,
+     * published on the year so the optimizer's promotion path can name the
+     * same sources and the same cents the ledger moved instead of re-deriving
+     * them. Set at the call below and nowhere else, which is what makes its
+     * absence mean "the policy was never asked" -- see the field's own
+     * contract on `YearResult`.
+     */
+    let aggregateRothConversionAllocationBalances:
+      Readonly<Record<string, number>> | undefined
     // A named request is authoritative for this year even when blocked. An
     // aggregate fallback would debit different sources and hide that result.
     const rc = currentYearConversionActions.length > 0
@@ -4645,6 +4658,23 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         // `balances` as they stand here: after the RMD block (Treas. Reg.
         // 1.408A-4 A-6(b) requires the forced distribution to precede the
         // conversion) and before anything below reduces `state.balance`.
+        //
+        // That snapshot is published on the year, at the instant the policy
+        // reads it and over exactly the accounts the policy reads. A promotion
+        // that weighted owners by any other figures -- the Plan's opening
+        // balances, a neighbouring year's, a reconstruction from the closing
+        // ones -- would name sources and cents this projection never moved, on
+        // a schedule a person is invited to act on. Publishing here is the
+        // only way the two can be the same numbers rather than two numbers
+        // that agree today.
+        aggregateRothConversionAllocationBalances = Object.freeze(
+          Object.fromEntries(
+            balances
+              .filter((state) =>
+                participatesInAggregateRothConversionAllocation(state.account))
+              .map((state) => [state.account.id, state.balance]),
+          ),
+        )
         const allocation = allocateAggregateRothConversionByOwner({
           balances,
           desiredPlanDollars: desired,
@@ -6359,6 +6389,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       inheritedDistribution: inheritedTotal,
       qcd,
       rothConversion: totalRothConversion,
+      ...(aggregateRothConversionAllocationBalances === undefined
+        ? {}
+        : { aggregateRothConversionAllocationBalances }),
       retirementRuntimeSource,
       retirementRuntimeApplicationSource,
       ownedNonRothIraPostGrowthSource,

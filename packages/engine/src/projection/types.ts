@@ -760,6 +760,56 @@ export interface YearResult {
   /** Dollars moved traditional → Roth this year (taxed as ordinary income, no penalty). */
   rothConversion: number
   /**
+   * The live balances the shared aggregate-conversion allocation policy
+   * weighted this year's owners by, per account ID, in Plan order.
+   *
+   * These are the exact figures
+   * `actions/aggregateRothConversionOwnerAllocation.ts` read, captured at the
+   * instant it read them: after the year's forced distributions (Treas. Reg.
+   * 1.408A-4 A-6(b) puts the RMD first) and before anything below drains a
+   * source. They are pre-drain by definition, so they are not the year's
+   * closing balances and never agree with `balances` for a converting account.
+   *
+   * WHY IT IS PUBLISHED. The optimizer's promotion path has to name whose
+   * dollars moved, out of which account, into which — and the owner weights
+   * that decide it are a fact about this projection, not about the Plan. A
+   * promotion that re-derived them from the Plan's opening balances, or from
+   * any other year's, would put a second-source number on a schedule a person
+   * is invited to act on. This field is what the ledger saw.
+   *
+   * THE SET IS EXACTLY `participatesInAggregateRothConversionAllocation`:
+   * every owned non-inherited traditional account (employer plans included)
+   * and every Roth account of both kinds. A designated Roth account is in it
+   * although no conversion may land in one, because it is what tells an owner
+   * who holds only that kind apart from an owner who holds no Roth at all.
+   * Nothing else is: cash, taxable, equity compensation, HSA, inherited
+   * traditional, property and debt are absent because the policy reads none of
+   * them.
+   *
+   * WHY IT MIGHT BE ABSENT, in full. `simulatePlan` publishes it for exactly
+   * the years in which the aggregate allocation policy ran, so absence means
+   * one of:
+   *
+   * - the year had a named conversion request, which makes the named executor
+   *   authoritative and forces the aggregate mode to `none`;
+   * - the Plan's conversion strategy is `mode: 'none'`;
+   * - nobody in the household was alive in the year;
+   * - a `fillToTarget` strategy whose window does not cover the year;
+   * - a `fillToTarget` sizing that produced nothing to convert — an invalid
+   *   bracket target, non-actionable ACA evidence, a safety-net floor trim, or
+   *   simply no headroom — or a `manual`/`optimized` schedule with no entry for
+   *   the year; in every one of those the sized household amount failed the
+   *   `> 0.01` test and the policy was never called;
+   * - the `YearResult` was constructed by an external consumer rather than by
+   *   `simulatePlan`, which is what the optionality is for.
+   *
+   * Presence says the policy was asked, and nothing more. It does not say the
+   * household converted: the policy may have refused it for want of any Roth
+   * IRA, or trimmed an owner who has none, and the year then publishes this
+   * snapshot beside a `rothConversion` of zero.
+   */
+  aggregateRothConversionAllocationBalances?: Readonly<Record<string, number>>
+  /**
    * Projection-only raw source capture for legacy retirement-account
    * mutations. A later replay consumer owns journal validation, structural
    * identity derivation, and sealing; this field changes no legacy movement.
