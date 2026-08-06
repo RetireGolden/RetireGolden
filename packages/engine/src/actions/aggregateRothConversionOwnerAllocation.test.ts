@@ -197,7 +197,10 @@ describe('owner slices', () => {
 
   it('gives an unowned account to the primary person', () => {
     // A Plan account with no individual owner is the primary's for every
-    // purpose here: their weight, their slice, their destination.
+    // purpose here: their weight, their slice, their destination. It is an
+    // attribution for arithmetic and not a statement of ownership, which is why
+    // the promotion chooser refuses to name such an account on a request --
+    // `optimizerAggregateConversionPromotion.test.ts` pins that half.
     const balances = states(ira('joint-ira', 50_000, null), rothIra('pat-roth', 'p1'))
     const allocation = allocate(balances, 10_000)
 

@@ -88,6 +88,17 @@ import { isConvertibleToRoth } from '../strategies/accountEligibility.js'
  * A MILP winner is therefore refused here with a named issue rather than
  * promoted into evidence that could never be produced.
  *
+ * WHERE IT PARTS COMPANY WITH THE LEDGER. The policy attributes an account the
+ * Plan records no individual owner for to the primary person, because the
+ * ledger does. The identity path refuses one, because a conversion runs inside
+ * one individual's own accounts and the Plan has not said whose this is. A
+ * `chosen` result has to mean the adapter will take it, so an ownerless account
+ * among the sources or destinations a year would NAME is refused here, by name
+ * — see `ownerlessSelectedAccounts`, which also records how far the divergence
+ * actually reaches (`planSchema` forbids the state; the TypeScript type does
+ * not). This is the one place the two arms genuinely disagree rather than one
+ * being a subset of the other.
+ *
  * WHAT IT INHERITS AND CANNOT FIX. The policy's convertible set is
  * `isConvertibleToRoth`, which admits every owned traditional account including
  * an employer plan and applies no distributability gate --
@@ -183,6 +194,8 @@ export type AggregateConversionPromotionIssueKind =
   | 'missingAccountBalance'
   /** The Plan names nobody, so an unowned account has no owner to fall back to. */
   | 'missingPrimaryPerson'
+  /** An account the year would name records no individual owner. */
+  | 'missingAccountOwner'
   /** Every scheduled year allocated nothing, so there is no candidate to mint. */
   | 'noLawfulConversion'
 
@@ -395,6 +408,69 @@ function promotionBalancesForYear(
 }
 
 /**
+ * Every account the year would NAME on a request that the Plan records no
+ * individual owner for.
+ *
+ * THE DIVERGENCE THIS EXISTS FOR. The allocation policy attributes an account
+ * with `ownerPersonId: null` to the primary person, because the aggregate
+ * ledger does: a household figure has to come from somewhere, and no projection
+ * refuses to run over a joint account. The identity path does the opposite and
+ * is right to — `allocateRetirementActionCandidateIdentity` answers a null
+ * owner with `ambiguousIdentity` and the registered reason
+ * `conversion-source-owner-mismatch` (or its destination twin), because a
+ * conversion is a rollover inside one individual's own accounts and "the Plan
+ * did not say" is not the same claim as "the primary person's". Left alone, the
+ * chooser would hand back `chosen` intents the adapter is guaranteed to block,
+ * and would launder an arithmetic fallback into an assertion of ownership on a
+ * request a person would act on.
+ *
+ * BE PRECISE ABOUT HOW REACHABLE THIS IS, because the honest scope is narrower
+ * than it first looks and a diagnostic that overstates it sends people looking
+ * for a plan they cannot have. `planSchema` already refuses `ownerPersonId:
+ * null` on every traditional, roth and hsa account (`model/plan.ts`,
+ * `individuallyOwnedAccountTypes`), and those are the only account types this
+ * policy can select as a source or a destination. So no Plan that has been
+ * parsed can reach this, and no user can be in the state it describes. What can
+ * reach it is a caller holding a Plan-SHAPED object it never parsed — which the
+ * TypeScript type permits, since `ownerPersonId` is `string | null` on the
+ * account type and the invariant lives in a `superRefine` a signature cannot
+ * show. This function closes that gap; the schema closes the real one, and the
+ * suite pins the schema half first for exactly that reason.
+ *
+ * Only accounts the year actually names are checked. An ownerless account that
+ * contributes to a weight but supplies no draw is the ledger's arithmetic, and
+ * the request never mentions it.
+ *
+ * Worth knowing what pins what: the `?? primaryPersonId` fallback is an
+ * unregistered ledger convention — `irc-408-d-3-A-i-conversion-benefits-the-distributee`
+ * registers the owner boundary, the gross-balance weight, the exact-cent split,
+ * the destination search and the trim, and says nothing about an account with no
+ * recorded owner. What is registered on this side is the refusal, in the action
+ * reason vocabulary. If the fallback is ever to be relied on for anything a user
+ * acts on, it needs a record of its own first.
+ */
+function ownerlessSelectedAccounts<TBalance extends AggregateRothConversionBalance>(
+  allocation: Extract<
+    ReturnType<typeof allocateAggregateRothConversionByOwner<TBalance>>,
+    { status: 'allocated' }
+  >,
+): Array<{ account: Account; role: 'source' | 'destination' }> {
+  const ownerless: Array<{ account: Account; role: 'source' | 'destination' }> = []
+  // Sources in Plan order, then the destinations they credit, so two ownerless
+  // accounts are always reported in the same order.
+  for (const draw of allocation.draws) {
+    if (draw.sourceAccount.ownerPersonId === null) {
+      ownerless.push({ account: draw.sourceAccount, role: 'source' })
+    }
+  }
+  for (const slice of allocation.slices) {
+    const account = slice.destination.destinationAccount
+    if (account.ownerPersonId === null) ownerless.push({ account, role: 'destination' })
+  }
+  return ownerless
+}
+
+/**
  * Choose the owners, sources, destinations and exact cents that make an
  * aggregate winner's schedule executable.
  *
@@ -493,6 +569,24 @@ export function chooseAggregateConversionPromotionIntents(
         refusal: allocation.reason,
         intents: [],
       })
+      continue
+    }
+
+    const ownerless = ownerlessSelectedAccounts(allocation)
+    if (ownerless.length > 0) {
+      for (const entry of ownerless) {
+        const index = plan.accounts.findIndex((account) => account.id === entry.account.id)
+        issues.push(issue(
+          'missingAccountOwner',
+          `plan.accounts.${index}.ownerPersonId`,
+          `The Plan records no individual owner for “${entry.account.name}” (${entry.account.id}), ` +
+          `which ${entry.role === 'source' ? 'supplies' : 'receives'} the ${year} conversion. ` +
+          'A conversion request must name whose account it is, and the aggregate ledger’s fallback ' +
+          'to the primary person is not a statement of ownership. A parsed Plan cannot be in this ' +
+          'state — planSchema requires an individual owner on every traditional, roth and hsa ' +
+          'account — so this Plan reached the chooser without being parsed.',
+        ))
+      }
       continue
     }
 

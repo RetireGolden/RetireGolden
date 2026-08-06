@@ -4,7 +4,7 @@ import type { RothConversionRequest } from '../actions/contract.js'
 import { rothConversionRequestSchema } from '../actions/contract.js'
 import { planDollarsToLedgerCents } from '../actions/planBalanceAdapter.js'
 import type { DecisionCandidate } from '../decisions/types.js'
-import type { Account, Plan } from '../model/plan.js'
+import { parsePlan, type Account, type Plan } from '../model/plan.js'
 import { applyScenarioPatch } from '../scenarios/scenarios.js'
 import { couplePlan, singlePersonPlan, validatePlan } from '../testing/planFixtures.js'
 import { createFlatTaxCalculator } from './flatTax.js'
@@ -139,6 +139,25 @@ function chooseFor(
     },
     yearBalances: [openingBalances(plan, TAX_YEAR)],
     ...overrides,
+  })
+}
+
+/**
+ * The same call with the Plan handed over unparsed.
+ *
+ * `validatePlan` would reject the households below before the chooser saw them,
+ * which is the point being made about them: the state exists in the TypeScript
+ * type and nowhere else.
+ */
+function chooseUnparsed(plan: Plan, amount: number) {
+  return chooseAggregateConversionPromotionIntents({
+    plan,
+    winner: {
+      source: 'candidate',
+      candidateId: 'bracket-22',
+      conversions: [{ year: TAX_YEAR, amount }],
+    },
+    yearBalances: [openingBalances(plan, TAX_YEAR)],
   })
 }
 
@@ -590,6 +609,90 @@ describe('what it refuses to promote', () => {
     if (choice.status !== 'unallocatable') throw new Error('expected a refusal')
     expect(choice.issues.map((entry) => entry.kind)).toEqual(['noLawfulConversion'])
     expect(choice.years[0]!.refusal).toBe('householdHoldsNoRothAccount')
+  })
+})
+
+/**
+ * The one place the ledger's attribution and the identity path genuinely
+ * disagree: an account the Plan records no individual owner for is the primary
+ * person's for the policy's arithmetic, and nobody's for a request.
+ *
+ * The order of these cases is the point. The schema is the real guarantee and is
+ * pinned first; the chooser's refusal is a backstop for a Plan-shaped object
+ * that was never parsed, which the TypeScript type permits because
+ * `ownerPersonId` is `string | null` and the invariant lives in a `superRefine`.
+ * Written the other way round, the suite would read as though a user could put
+ * their plan in this state.
+ */
+describe('an account with no recorded owner', () => {
+  it('cannot exist in a parsed Plan at all', () => {
+    const ownerlessSource = parsePlan(exampleCoupleHousehold([
+      { ...traditionalIra('joint-ira', 400_000, ALEX), ownerPersonId: null },
+      rothIra('alex-roth', 145_000, ALEX),
+    ]))
+    const ownerlessDestination = parsePlan(exampleCoupleHousehold([
+      traditionalIra('alex-ira', 400_000, ALEX),
+      { ...rothIra('joint-roth', 0, ALEX), ownerPersonId: null },
+    ]))
+
+    if (ownerlessSource.ok || ownerlessDestination.ok) {
+      throw new Error('planSchema is expected to require an individual owner')
+    }
+    expect(ownerlessSource.issues).toContain(
+      'accounts.0.ownerPersonId: traditional accounts must have an individual owner',
+    )
+    expect(ownerlessDestination.issues).toContain(
+      'accounts.1.ownerPersonId: roth accounts must have an individual owner',
+    )
+  })
+
+  it('is refused by name as a source when an unparsed Plan carries one', () => {
+    // The policy attributes this account to the primary person because the
+    // ledger does. The allocator answers a null owner with `ambiguousIdentity`,
+    // so emitting it would hand back `chosen` intents the adapter is guaranteed
+    // to block -- and would launder an arithmetic fallback into a claim of
+    // ownership on a request a person would act on.
+    const household = exampleCoupleHousehold([
+      { ...traditionalIra('joint-ira', 400_000, ALEX), ownerPersonId: null, name: 'Joint IRA' },
+      rothIra('alex-roth', 145_000, ALEX),
+    ])
+    const choice = chooseUnparsed(household, 100_000)
+
+    if (choice.status !== 'unallocatable') throw new Error('expected a refusal')
+    expect(choice.issues).toHaveLength(1)
+    expect(choice.issues[0]!.kind).toBe('missingAccountOwner')
+    expect(choice.issues[0]!.field).toBe('plan.accounts.0.ownerPersonId')
+    expect(choice.issues[0]!.detail).toContain('“Joint IRA” (joint-ira)')
+    expect(choice.issues[0]!.detail).toContain('supplies')
+  })
+
+  it('is refused by name as a destination when an unparsed Plan carries one', () => {
+    const household = exampleCoupleHousehold([
+      traditionalIra('alex-ira', 400_000, ALEX),
+      { ...rothIra('joint-roth', 0, ALEX), ownerPersonId: null, name: 'Joint Roth' },
+    ])
+    const choice = chooseUnparsed(household, 100_000)
+
+    if (choice.status !== 'unallocatable') throw new Error('expected a refusal')
+    expect(choice.issues).toHaveLength(1)
+    expect(choice.issues[0]!.kind).toBe('missingAccountOwner')
+    expect(choice.issues[0]!.field).toBe('plan.accounts.1.ownerPersonId')
+    expect(choice.issues[0]!.detail).toContain('“Joint Roth” (joint-roth)')
+    expect(choice.issues[0]!.detail).toContain('receives')
+  })
+
+  it('chooses normally once the same accounts record who owns them', () => {
+    // The control: nothing about this household is unusual except the stated
+    // ownership, and stating it is the whole remedy.
+    const household = exampleCoupleHousehold([
+      traditionalIra('alex-ira', 400_000, ALEX),
+      rothIra('alex-roth', 0, ALEX),
+    ])
+    const choice = chosen(chooseFor(household, 100_000))
+
+    expect(choice.intents).toHaveLength(1)
+    expect(choice.intents[0]!.personId).toBe(ALEX)
+    expect(choice.intents[0]!.sourceAllocations[0]!.sourceAccountId).toBe('alex-ira')
   })
 })
 

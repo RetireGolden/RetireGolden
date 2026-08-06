@@ -179,7 +179,21 @@ export interface AggregateRothConversionOwnerAllocationInput<
   readonly balances: readonly TBalance[]
   /** The household amount to convert, in Plan dollars. */
   readonly desiredPlanDollars: number
-  /** Owner of an account the Plan records no individual owner for. */
+  /**
+   * Owner of an account the Plan records no individual owner for.
+   *
+   * This fallback is the aggregate ledger's: a household figure has to come
+   * from somewhere, and no projection refuses to run over a joint account. It
+   * is an attribution for arithmetic and NOT a statement of ownership, and a
+   * caller that turns this allocation into identity-bearing requests must not
+   * treat it as one — `allocateRetirementActionCandidateIdentity` answers a
+   * null `ownerPersonId` with `ambiguousIdentity` and the registered
+   * `conversion-source-owner-mismatch` reason, because a conversion runs inside
+   * one individual's own accounts and "the Plan did not say" is a different
+   * claim from "the primary person's". The promotion chooser refuses such an
+   * account by name for exactly that reason; nothing registers the fallback
+   * itself.
+   */
   readonly primaryPersonId: string
 }
 
