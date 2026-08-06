@@ -59,6 +59,17 @@ import {
   recommendationBody,
   recommendationHeading,
 } from './optimizePageRecommendation'
+import {
+  promotedRecommendationPlan,
+  promotionBlocksApply,
+  publishedPromotion,
+  withheldPromotion,
+} from './optimizePagePromotion'
+import {
+  PromotedSchedulePanel,
+  PromotionWithheldPanel,
+} from './retirementActionPromotionPanels'
+import { promotedScheduleApplyHint } from './retirementActionPromotionCopy'
 import { currentStartYear, projectPlan, seedFromPlanId } from './useProjection'
 import { chartTooltipStyle } from './chartStyle'
 
@@ -202,7 +213,22 @@ export function OptimizePage() {
   const claimAge = heldResult?.claimAge ?? null
   const claimChangeRecommended = claimAge?.winningClaimPatch != null
   const planForRecommendation = useMemo(() => planWithWinningClaim(plan, claimAge), [plan, claimAge])
+  // A promoted winner IS the recommendation, and it is a set of named requests
+  // rather than an aggregate schedule. Everything downstream of the
+  // recommendation — Monte Carlo, the report, Apply — has to describe that
+  // plan; `withOptimizedConversions` below would re-aggregate the very
+  // identities the promotion exists to name.
+  const promotion = tournament?.retirementActionPromotion ?? null
+  const published = useMemo(() => publishedPromotion(promotion), [promotion])
+  const withheld = useMemo(() => withheldPromotion(promotion), [promotion])
+  const promotedPlan = useMemo(
+    () => (published === null
+      ? null
+      : promotedRecommendationPlan(plan, { claimAge, promotion: published })),
+    [plan, claimAge, published],
+  )
   const optimizedPlan = useMemo(() => {
+    if (promotedPlan !== null) return promotedPlan.status === 'read' ? promotedPlan.plan : null
     if (recommendedConversions.length > 0) return withOptimizedConversions(planForRecommendation, recommendedConversions)
     // Price a claim-only plan only when the joint result established that the
     // incumbent strategy holds or no conversion change exists. A withheld
@@ -218,6 +244,7 @@ export function OptimizePage() {
       ? planForRecommendation
       : null
   }, [
+    promotedPlan,
     planForRecommendation,
     recommendedConversions,
     claimChangeRecommended,
@@ -303,7 +330,12 @@ export function OptimizePage() {
       hasPostProcessingAdjustments ||
       (validation?.firstMateriallyUnexecutedYear !== null && validation?.firstMateriallyUnexecutedYear !== undefined))
   const showRecommendedBars = shouldShowRecommendedScheduleBars(candidateWins, hasExecutionMismatch)
-  const blocksApply = candidateWins
+  // The patch is the recommendation. A withheld verdict has none, and a
+  // published verdict whose patch does not read back onto this plan has none
+  // either; in both cases the aggregate schedule is not a substitute.
+  const blocksApply = promotionBlocksApply(promotion, promotedPlan)
+    ? true
+    : candidateWins
     ? false
     : recommendationState === 'rejected' ||
       recommendationState === 'unexecutable' ||
@@ -338,7 +370,20 @@ export function OptimizePage() {
   )
 
   const apply = (mode: 'optimized' | 'manual') => {
-    if (recommendedConversions.length === 0 || blocksApply) return
+    if (blocksApply) return
+    if (published !== null) {
+      // A promoted schedule installs the patch the engine published: named
+      // requests, each carrying its person, source accounts and Roth
+      // destination. There is no manual arm, because an aggregate manual
+      // schedule cannot carry any of that.
+      if (mode !== 'optimized' || promotedPlan?.status !== 'read') return
+      const installed = promotedPlan.plan
+      update((draft) => {
+        Object.assign(draft, installed)
+      })
+      return
+    }
+    if (recommendedConversions.length === 0) return
     // Claim change and schedule install together: the schedule was computed
     // against the claim-patched plan, so conversions alone would be wrong.
     update((d) => applyOptimizeRecommendation(d, { claimAge, conversions: recommendedConversions, mode }))
@@ -644,6 +689,8 @@ export function OptimizePage() {
               </div>
             </div>
 
+            {withheld ? <PromotionWithheldPanel plan={plan} promotion={withheld} /> : null}
+
             <div className="stat-grid">
               <DeltaStat
                 label="After-tax estate"
@@ -724,12 +771,26 @@ export function OptimizePage() {
               </p>
             </div>
 
+            {published && promotedPlan ? (
+              <PromotedSchedulePanel
+                read={promotedPlan}
+                promotion={published}
+                winnerConversions={recommendedConversions}
+              />
+            ) : null}
+
             <div className="card">
               <h2>Use this schedule</h2>
               <p className="card-hint">
                 {blocksApply
                   ? 'This result is shown as a diagnostic; it cannot be applied to your plan as a recommended schedule.'
-                  : `Apply keeps it labeled as optimizer output; Accept as manual copies the same amounts into an editable manual conversion schedule you can adjust under Strategy.${
+                  : published
+                    ? `${promotedScheduleApplyHint(published.actionRequestIds.length)}${
+                        claimChangeRecommended
+                          ? ' Apply also installs the Social Security claim change shown above, because the schedule was computed assuming it.'
+                          : ''
+                      }`
+                    : `Apply keeps it labeled as optimizer output; Accept as manual copies the same amounts into an editable manual conversion schedule you can adjust under Strategy.${
                       claimChangeRecommended
                         ? ' Both buttons also install the Social Security claim change shown above, because the schedule was computed assuming it.'
                         : ''
@@ -737,11 +798,13 @@ export function OptimizePage() {
               </p>
               <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                 <button type="button" className="btn btn-primary btn-small" disabled={blocksApply || readOnly} onClick={() => apply('optimized')}>
-                  Apply optimized schedule
+                  {published ? 'Apply named schedule' : 'Apply optimized schedule'}
                 </button>
-                <button type="button" className="btn btn-secondary btn-small" disabled={blocksApply || readOnly} onClick={() => apply('manual')}>
-                  Accept as manual
-                </button>
+                {published ? null : (
+                  <button type="button" className="btn btn-secondary btn-small" disabled={blocksApply || readOnly} onClick={() => apply('manual')}>
+                    Accept as manual
+                  </button>
+                )}
                 {rerunButton()}
               </div>
             </div>
